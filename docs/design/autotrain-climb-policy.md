@@ -69,6 +69,12 @@ manifest and routes a typed `repair_harness` action to
 that canonical-owner repair is acknowledged. The exact retry stays queued behind the
 repair, whose receipt resets the consecutive count. This prevents an infinite
 unmodified timeout replay loop while retaining the exact reproduction input.
+When AgentV itself finalizes every record disposition and reports one or more typed
+internal decode timeouts, the loop does not spend that replay allowance pretending
+the supervisor stage is still incomplete. It routes immediately to canonical
+`model_build` runtime repair and queues the frozen arm behind that repair. Quality
+metrics remain incomplete and non-promotable; the finalized timeout is infrastructure
+evidence that identifies the next owner.
 
 One cycle still obeys the repository hard cap. Control and candidate receive equal
 wall shares after retaining the canonical finalization reserve. Before either arm

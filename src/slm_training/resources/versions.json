@@ -2561,7 +2561,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v47",
+      "version": "v48",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2598,6 +2598,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v48",
+          "date": "2026-08-01",
+          "note": "Route a fully finalized AgentV scoreboard with typed internal decode timeouts directly to canonical model-build runtime repair before frozen replay instead of spending another unchanged generic retry"
+        },
         {
           "version": "v47",
           "date": "2026-08-01",
