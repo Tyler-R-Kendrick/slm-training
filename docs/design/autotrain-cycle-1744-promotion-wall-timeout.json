@@ -1,0 +1,72 @@
+{
+  "schema": "autotrain_measured_results/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c4",
+  "cycle_index": 1744,
+  "loop_id": "continuous-openui-local",
+  "loop_cycle_index": 4,
+  "run_class": "fixture_scratch",
+  "source_commit": "d91e19e632cc7639c51a2ba414157d465236bafb",
+  "source_dirty": false,
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "primary_metric": "held_out.structural_similarity",
+  "frozen_manifest_sha256": "cde1ec25426ee759b7fe1ad0db011244775021d2f31bf4658f734336026af292",
+  "cycle_role": "promotion",
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c4-control",
+      "status": "wall_timeout",
+      "training": {
+        "executed": true,
+        "parameter_count": 1766990,
+        "device": "cpu"
+      },
+      "suites_requested": ["smoke", "held_out"],
+      "measurement_complete": false,
+      "partial_metrics": {
+        "held_out.structural_similarity": 0.4166666666666667
+      },
+      "claim_boundary": "eval stage exceeded MAX_RUN_MINUTES; no scoreboard.json written"
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c4-component-edge",
+      "status": "wall_timeout",
+      "training": {
+        "executed": true,
+        "parameter_count": 1766990,
+        "device": "cpu"
+      },
+      "suites_requested": ["smoke", "held_out"],
+      "measurement_complete": false,
+      "partial_metrics": {
+        "held_out.structural_similarity": 0.4166666666666667
+      },
+      "partial_efficiency_signal": {
+        "mpr_per_ms_before": 2.9114217e-05,
+        "mpr_per_ms_after": 3.1761156e-05,
+        "gain_fraction": 0.090915674,
+        "minimum_effect": 0.05,
+        "quality_held": {"parse_rate": 1.0, "meaningful_program_rate": 0.3333333333333333},
+        "authoritative": false
+      },
+      "claim_boundary": "eval stage exceeded MAX_RUN_MINUTES; no scoreboard.json written; partial efficiency signal is non-authoritative"
+    }
+  ],
+  "climb_state": "inconclusive",
+  "ship_state": "blocked",
+  "positive": false,
+  "stack_layer": false,
+  "checkpoint_promoted": false,
+  "reasons": [
+    "measurement_incomplete:c20260802-continuous-openui-local-8c0b60dd-c4-control:missing_scoreboard",
+    "measurement_incomplete:c20260802-continuous-openui-local-8c0b60dd-c4-component-edge:missing_scoreboard",
+    "wall_timeout:36e83814077e5cbf2296d923139c554e2f8940113e1556fe5f62e81c5bd76a64",
+    "wall_timeout:d20b152274757ebee4603412e7fc34f641e78b155375b5538897f2423640f6a1",
+    "primary_metric_null_or_worse:held_out.structural_similarity:control=0.4166666666666667 candidate=0.4166666666666667 improvement=0.0"
+  ],
+  "next_priorities": [
+    "retry_measurement: replay the identical frozen component-edge/control arms before drawing any promotion conclusion.",
+    "If the timeout reproduces on replay, escalate a repair_harness signal for the promotion-suite wall-budget allocation."
+  ]
+}
