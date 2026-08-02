@@ -25,6 +25,7 @@ progress, not model-quality or ship evidence.
 | clean semantic-projection reproduction | 79 | 55 | 18,816.261 | 144,780 | 10,921 | 163,306 | typed timeout |
 | direct semantic constructors (dirty) | 81 | 57 | 18,271.607 | 144,814 | 10,971 | 163,367 | typed timeout |
 | clean constructors + refreshed ranker | 83 | 59 | 18,460.255 | 144,925 | 11,077 | 163,561 | typed timeout |
+| shared classification projections (dirty) | 100 | 66 | 17,604.310 | 145,039 | 11,238 | 163,766 | typed timeout |
 
 All rows use the same c1737 control checkpoint, `smoke` offset 0, one record,
 strict compiler-tree policy, CPU, and a 24-second diagnostic deadline. The
@@ -67,6 +68,13 @@ harness-telemetry repair signal.
   refreshed stale opaque-ID assertions and rebuilt the committed train-only
   speculative ranker. The clean row therefore measures the integrated v14 +
   v287 runtime, while the dirty 81-token row isolates the constructor repair.
+- Compiler terminal kinds and surface pieces now use tokenizer-identity-scoped
+  projection caches, component filters reuse the canonical kind-id set, and a
+  completion transition calculates its token kind once before handing it to
+  the parser and semantic-state authorities. The dirty v15/v288 reproduction
+  advances 100 certified tokens (+20.5% over the prior clean 83), performs 66
+  forwards, and lowers compiler time by 856 ms while preserving the same
+  typed timeout. This is retained runtime progress pending an immutable replay.
 - Repeating `SIGALRM` delivery is disarmed before timeout bookkeeping. The
   prior failure exited 142 with an uncaught second alarm; the repaired runs
   exit 0 with `decode_outcome=runtime_timeout` and complete AgentV artifacts.
@@ -113,8 +121,9 @@ MPR/ms gain because it is below the preregistered 5% minimum effect.
    only calls whose answer is already exactly implied by a certified grammar
    state; per-call reader reuse is neutral, while Node response wait remains
    material.
-2. Profile semantic-state interning and `_decision_kind` projection after the
-   constructor repair; do not add another cache without measured reuse.
+2. Profile parser accept-set refresh and control-fork key construction. The
+   semantic-state interning hypothesis is already active, while the measured
+   decision/token projection reuse is now implemented and exact-tested.
 3. Reduce compiler state construction cost before changing any
    timeout. The compiler consumes about 20 seconds of the 24-second wall,
    whereas neural work is roughly 3.7 seconds.

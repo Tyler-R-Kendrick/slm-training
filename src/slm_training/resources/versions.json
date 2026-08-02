@@ -1146,7 +1146,7 @@
       ]
     },
     "dsl.completion_kernel": {
-      "version": "v14",
+      "version": "v15",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/grammar/fastpath/engine.py",
@@ -1173,6 +1173,11 @@
         "docs/design/adr-constrained-diffusion-topology-split.md"
       ],
       "history": [
+        {
+          "version": "v15",
+          "date": "2026-08-02",
+          "note": "Reuse exact tokenizer-kind projections across completion transitions and preserve tokenizer-local surface-cache ownership, without changing grammar candidates or proof order."
+        },
         {
           "version": "v14",
           "date": "2026-08-02",
@@ -10797,7 +10802,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v287",
+      "version": "v288",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -10840,6 +10845,16 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v288",
+          "date": "2026-08-02",
+          "note": "no-bump: complete the v288 slot-authority repair by retaining an explicit canonical request contract when legacy external marker text cannot form model identity."
+        },
+        {
+          "version": "v288",
+          "date": "2026-08-02",
+          "note": "Cache tokenizer-identity-scoped compiler terminal projections, classify components by the canonical kind-id set, and keep visible honest slot inventory authoritative over stale non-opaque arguments."
+        },
         {
           "version": "v287",
           "date": "2026-08-02",

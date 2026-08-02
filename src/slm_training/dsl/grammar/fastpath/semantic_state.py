@@ -579,6 +579,7 @@ def advance(
     *,
     arena: SemanticArena | None = None,
     _macro_seen: frozenset[int] = frozenset(),
+    _token_kind: str | None = None,
 ) -> SemanticState:
     """Advance ``state`` by one token; pure, interned, no-op-stable.
 
@@ -590,7 +591,8 @@ def advance(
     tid = int(token_id)
     if state.tokenizer_key != _tokenizer_key(tokenizer):
         raise ValueError("semantic state is bound to a different tokenizer")
-    if _kind_of(tokenizer, tid) == "macro":
+    kind = _kind_of(tokenizer, tid) if _token_kind is None else str(_token_kind)
+    if kind == "macro":
         expanded = _expanded_macro_ids(tokenizer, tid, _macro_seen)
         if expanded is None:
             return state
@@ -610,8 +612,6 @@ def advance(
     raw = str(getattr(tokenizer, "id_to_token", {}).get(tid, ""))
     if raw in {"", "COMMENT", "WS_INLINE"}:
         return state
-    kind = _kind_of(tokenizer, tid)
-
     declared = state.declared_mask
     referenced = state.referenced_mask
     active = state.active_slot

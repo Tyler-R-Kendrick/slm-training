@@ -274,6 +274,28 @@ def test_macro_surface_piece_tracks_mutable_expansion_table() -> None:
     assert macro_id not in getattr(tok, "_grammar_surface_piece_cache", {})
 
 
+def test_surface_piece_cache_is_tokenizer_identity_scoped() -> None:
+    tok = DSLNativeTokenizer.build()
+    token_id = int(tok.token_to_id["Stack"])
+    assert token_surface_piece(tok, token_id) == "Stack"
+
+    class _SurfaceProxy:
+        def __init__(self, inner: DSLNativeTokenizer) -> None:
+            self._inner = inner
+            self.id_to_token = dict(inner.id_to_token)
+            self.id_to_token[token_id] = "Panel"
+
+        def __getattr__(self, name: str):
+            return getattr(self._inner, name)
+
+        def kind_of(self, _token_id: int) -> str:
+            return "structural"
+
+    proxy = _SurfaceProxy(tok)
+    assert token_surface_piece(proxy, token_id) == "Panel"
+    assert proxy._grammar_surface_piece_cache_owner() is proxy
+
+
 def test_mutually_recursive_macro_expansion_fails_closed() -> None:
     tok = _tok()
     tok.macro_expansions = (("<MACRO_1>", "Card"), ("<MACRO_0>", "("))
