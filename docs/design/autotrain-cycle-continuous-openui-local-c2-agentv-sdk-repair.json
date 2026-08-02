@@ -1,0 +1,70 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 2,
+  "cycle_intent": "retry_measurement",
+  "evidence_class": "fixture",
+  "decision": "infrastructure_failure",
+  "scoreable": false,
+  "comparison": {
+    "matched_dimensions": [
+      "train_version",
+      "steps",
+      "batch_size",
+      "seed",
+      "context_backend",
+      "decode_policy"
+    ],
+    "treatment": "n/a (frozen replay of cycle 1's control/bounds arms; training completed on both arms, evaluation failed identically before AgentV SDK install)",
+    "prediction_identical": null,
+    "parameter_delta": null
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c2-control",
+      "status": "failed",
+      "training": "completed",
+      "trainable_params": 1608962,
+      "error": "RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER",
+      "measurement": "incomplete",
+      "smoke": null,
+      "held_out": null,
+      "agentv": null
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c2-bounds",
+      "status": "failed",
+      "training": "completed",
+      "trainable_params": 1608962,
+      "error": "RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER",
+      "measurement": "incomplete",
+      "smoke": null,
+      "held_out": null,
+      "agentv": null
+    }
+  ],
+  "ship_gates_pass": false,
+  "lean": "not_applicable:screening",
+  "root_cause": "This scheduled session's checkout never ran `npm ci`, so `node_modules/@agentv/core` did not exist. `evaluate_model.py --ship-gates` calls `publish_model_evaluation` -> `publish_agentv_evaluation` -> `slm_training.evals.agentv._agentv_runtime`, which raises when neither `AGENTV_RUNNER` nor the checked-out `node_modules/@agentv/core/package.json` is present. Training completed successfully on both frozen arms (1,608,962 trainable params each); only the AgentV publish step of evaluation failed. Not a harness code defect: `src/slm_training/evals/agentv.py` already strips host `NODE_OPTIONS` from the AgentV subprocess env (commit 14ddf5e2, present at this cycle's integration_commit e97e69c9), so this is a distinct, earlier-stage bootstrap gap (SDK checkout missing) from that already-fixed NODE_OPTIONS crash.",
+  "fix": "Ran `npm ci` at the repo root with the host's polluted `NODE_OPTIONS` stripped for the subprocess (`env -u NODE_OPTIONS npm ci`; the ambient `NODE_OPTIONS=\"--import tsx\" --max-old-space-size=8192` also blocks bare `node`/`npm` invocation, matching the same class of issue the AgentV subprocess fix addresses). npm ci added 267 packages including `node_modules/@agentv/core` in ~18s. Verified directly by calling `slm_training.evals.agentv._agentv_runtime(repo_root)` with `AGENTV_RUNNER` unset: resolves `scripts/run_agentv_eval.mjs` + `node_modules/@agentv/core/package.json`. `git status` confirmed the working tree stayed clean after `npm ci` (node_modules is gitignored; package.json/package-lock.json unchanged). No repository code changed for this cycle.",
+  "next_priority": {
+    "area": "infrastructure",
+    "hypothesis": "The measurement is incomplete; replay the exact frozen control and candidate arms now that the AgentV SDK checkout is present.",
+    "required_controls": [
+      "identical_frozen_manifest",
+      "no_knob_change"
+    ]
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "e97e69c97332b50dc95cac454a51e6858578ce7b",
+    "code_dirty": false,
+    "components": {
+      "evals.agentv": "v6",
+      "harness.model_build.eval": "v77",
+      "harness.experiment_feature_flags": "v4"
+    },
+    "stamped_at": "2026-08-02T23:37:01.079693+00:00"
+  }
+}
