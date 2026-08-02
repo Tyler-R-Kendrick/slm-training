@@ -1156,7 +1156,7 @@
       ]
     },
     "dsl.completion_kernel": {
-      "version": "v12",
+      "version": "v13",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/grammar/fastpath/engine.py",
@@ -1183,6 +1183,11 @@
         "docs/design/adr-constrained-diffusion-topology-split.md"
       ],
       "history": [
+        {
+          "version": "v13",
+          "date": "2026-08-02",
+          "note": "Cache frozen tokenizer identity, kind, and special-token projections on the request tokenizer for semantic-state transitions without changing transition facts or interning keys."
+        },
         {
           "version": "v12",
           "date": "2026-08-02",
