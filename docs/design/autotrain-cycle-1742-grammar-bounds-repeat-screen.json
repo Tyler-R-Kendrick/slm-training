@@ -1,0 +1,88 @@
+{
+  "schema": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c2",
+  "loop_id": "continuous-openui-20260730",
+  "cycle_index": 1742,
+  "campaign_role": "screening",
+  "cycle_intent": "screening",
+  "run_class": "ship_eval",
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "steps": 22,
+  "seed": 100002,
+  "checkpoint_reuse": "fresh matched-arm train, not a frozen replay",
+  "upstream_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "integration_commit": "b18898a8238615d7d2b4bcb6e187815f94b00bab",
+  "primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "label": "matched control",
+      "grammar_completion_bounds": false,
+      "trainable_parameters": 1608962,
+      "suite_n": 3,
+      "completed_document_n": 3,
+      "incomplete_document_n": 0,
+      "decode_timeout_count": 0,
+      "parse_rate_completed": 1.0,
+      "meaningful_program_rate_completed": 0.0,
+      "structural_similarity_completed": 0.0964,
+      "binder_reference_f1_completed": 0.0,
+      "latency_ms_p50_completed": 1126.16,
+      "reward_score": 0.0,
+      "checkpoint_sha256": "76044b8101f0b162c4a8ac8ac1623dca38f151f2c4e53daaaade86c6ca2e26a8",
+      "gate_pass": false,
+      "scoreable_comparison": true
+    },
+    {
+      "label": "grammar_completion_bounds",
+      "grammar_completion_bounds": true,
+      "trainable_parameters": 1608962,
+      "suite_n": 3,
+      "completed_document_n": 3,
+      "incomplete_document_n": 0,
+      "decode_timeout_count": 0,
+      "parse_rate_completed": 1.0,
+      "meaningful_program_rate_completed": 0.0,
+      "structural_similarity_completed": 0.0964,
+      "binder_reference_f1_completed": 0.0,
+      "latency_ms_p50_completed": 1193.63,
+      "reward_score": 0.0,
+      "checkpoint_sha256": "de1c30776e158eb8a8c19cbc3b8ef27af830ebe4d4912ae401862d4697a86dfc",
+      "gate_pass": false,
+      "scoreable_comparison": true
+    }
+  ],
+  "comparison": {
+    "parameter_matched": true,
+    "measurement_complete": true,
+    "quality_delta": "none (tied on parse_rate, meaningful_program_rate, structural_similarity, binder_reference_f1)",
+    "latency_delta_fraction": 0.0599,
+    "latency_direction": "candidate slower",
+    "disposition": "rejected_quality_null_and_latency_regression"
+  },
+  "harness_feedback": {
+    "signal": "Second independent seed (100002) confirms the c1741 result: grammar_completion_bounds ties the matched control on every quality metric and is slower on completed-document p50 latency (5.99% here vs 12.29% at seed 100001). No harness defect; AgentV toolchain ran clean end to end with no infra errors this cycle.",
+    "repair": "None. Candidate hypothesis is exhausted for this arm shape; the driver's own next-priority ranks a distinct 'component-plan' hypothesis first.",
+    "component_version": "harness.model_build.eval/v74"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "b18898a8238615d7d2b4bcb6e187815f94b00bab",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v74",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v22"
+    }
+  },
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260802-continuous-openui-202607-98199209-c2-bounds",
+      "fixture_insufficient_n:c20260802-continuous-openui-202607-98199209-c2-control",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.0964 candidate=0.0964 improvement=0.0"
+    ]
+  }
+}
