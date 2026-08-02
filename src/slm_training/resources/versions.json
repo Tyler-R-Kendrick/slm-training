@@ -2707,6 +2707,11 @@
           "note": "Preserve matched-control recipes for champion confirmation and promotion, including steps-only candidates, and reclaim attempts that fail before experiment execution starts."
         },
         {
+          "version": "v66",
+          "date": "2026-08-02",
+          "note": "Reserve five seconds inside the supervised evaluation stage for scoreboard binding, gates, AgentV, outcome persistence, and feedback after the inner evaluator stops."
+        },
+        {
           "version": "v65",
           "date": "2026-08-02",
           "note": "Pass the remaining experiment-stage wall into model-build evaluation so it can finalize typed per-record outcomes before the outer supervisor interrupt."
