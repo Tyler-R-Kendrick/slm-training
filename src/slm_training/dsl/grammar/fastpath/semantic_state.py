@@ -175,13 +175,30 @@ def _next_ordinal() -> int:
 
 
 def _tokenizer_key(tokenizer: Any) -> int:
+    cached = getattr(tokenizer, "_semantic_state_tokenizer_key", None)
+    if (
+        isinstance(cached, tuple)
+        and len(cached) == 2
+        and callable(cached[0])
+        and cached[0]() is tokenizer
+    ):
+        return int(cached[1])
     try:
         ordinal = _TOKENIZER_WEAK.get(tokenizer)
         if ordinal is None:
             ordinal = _next_ordinal()
             _TOKENIZER_WEAK[tokenizer] = ordinal
-        return int(ordinal)
-    except TypeError:  # not weak-referenceable — fall back to identity
+        ordinal = int(ordinal)
+        try:
+            setattr(
+                tokenizer,
+                "_semantic_state_tokenizer_key",
+                (weakref.ref(tokenizer), ordinal),
+            )
+        except (AttributeError, TypeError):
+            pass
+        return ordinal
+    except TypeError:  # unhashable/not weak-referenceable — fall back to identity
         entry = _TOKENIZER_ORDINALS.get(id(tokenizer))
         if entry is None or entry[0] is not tokenizer:
             if len(_TOKENIZER_ORDINALS) >= _TOKENIZER_ORDINALS_CAP:
@@ -190,7 +207,16 @@ def _tokenizer_key(tokenizer: Any) -> int:
                 _TOKENIZER_ORDINALS.clear()
             entry = (tokenizer, _next_ordinal())
             _TOKENIZER_ORDINALS[id(tokenizer)] = entry
-        return int(entry[1])
+        ordinal = int(entry[1])
+        try:
+            setattr(
+                tokenizer,
+                "_semantic_state_tokenizer_key",
+                (weakref.ref(tokenizer), ordinal),
+            )
+        except (AttributeError, TypeError):
+            pass
+        return ordinal
 
 
 @dataclass(frozen=True)
@@ -322,15 +348,67 @@ def initial_state(
 
 
 def _kind_of(tokenizer: Any, token_id: int) -> str:
+    tid = int(token_id)
+    cached = getattr(tokenizer, "_semantic_state_kind_cache", None)
+    cache = (
+        cached[1]
+        if isinstance(cached, tuple)
+        and len(cached) == 2
+        and callable(cached[0])
+        and cached[0]() is tokenizer
+        and isinstance(cached[1], dict)
+        else None
+    )
+    if cache is not None and tid in cache:
+        return str(cache[tid])
     kind_of = getattr(tokenizer, "kind_of", None)
     if callable(kind_of):
         try:
-            return str(getattr(kind_of(token_id), "value", ""))
+            kind = str(getattr(kind_of(tid), "value", ""))
         except (TimeoutError, KeyboardInterrupt):
             raise
         except Exception:  # noqa: BLE001
-            return ""
-    return ""
+            kind = ""
+    else:
+        kind = ""
+    if cache is None:
+        cache = {}
+        try:
+            setattr(
+                tokenizer,
+                "_semantic_state_kind_cache",
+                (weakref.ref(tokenizer), cache),
+            )
+        except (AttributeError, TypeError):
+            return kind
+    cache[tid] = kind
+    return kind
+
+
+def _special_ids(tokenizer: Any) -> frozenset[int]:
+    cached = getattr(tokenizer, "_semantic_state_special_ids", None)
+    if (
+        isinstance(cached, tuple)
+        and len(cached) == 2
+        and callable(cached[0])
+        and cached[0]() is tokenizer
+        and isinstance(cached[1], frozenset)
+    ):
+        return cached[1]
+    ids = frozenset(
+        int(getattr(tokenizer, name))
+        for name in ("pad_id", "bos_id", "eos_id", "mask_id", "unk_id")
+        if getattr(tokenizer, name, None) is not None
+    )
+    try:
+        setattr(
+            tokenizer,
+            "_semantic_state_special_ids",
+            (weakref.ref(tokenizer), ids),
+        )
+    except (AttributeError, TypeError):
+        pass
+    return ids
 
 
 def _expanded_macro_ids(
@@ -506,12 +584,7 @@ def advance(
                 _macro_seen=_macro_seen | {tid},
             )
         return current
-    specials = {
-        int(getattr(tokenizer, name))
-        for name in ("pad_id", "bos_id", "eos_id", "mask_id", "unk_id")
-        if getattr(tokenizer, name, None) is not None
-    }
-    if tid in specials:
+    if tid in _special_ids(tokenizer):
         return state
     raw = str(getattr(tokenizer, "id_to_token", {}).get(tid, ""))
     if raw in {"", "COMMENT", "WS_INLINE"}:
