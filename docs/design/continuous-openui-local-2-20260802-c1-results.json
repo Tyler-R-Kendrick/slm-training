@@ -1,0 +1,117 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local-2",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local--c94ddb78-c1",
+  "cycle_index": 1,
+  "cycle_intent": "screening (fresh lineage, no predecessor) -- screen an untested _SCREENING_ARM_BANK lever against the original feasible eval fixture",
+  "predecessor_campaign_id": null,
+  "source_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "integration_commit": "ee6ce85cb6aacb4d98fe6684ad61e2992665c202",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "summary": "First cycle of a fresh loop lineage continuous-openui-local-2, started specifically to keep screening the remaining untested levers in _SCREENING_ARM_BANK without inheriting the continuous-openui-local loop's blocked repair_harness gate (that lineage's cycle 12 named harness_family=model_build -- decode-compiler performance on test_data_scaleup_v1, n=12 -- as an unacknowledged prerequisite that _require_predecessor_actions enforces even for fresh cycles in that lineage). This cycle has no predecessor_campaign_id, so no cross-lineage gate applied. The driver's own thrash rotation (THRASH_ROTATE) picked the 'bounds' lever (grammar_completion_bounds) as the recommended experiment out of the untested bank (canvas, both, batch1, bounds, component-plan, component-edge, component-inventory, component-structure, binder-topology, steps were all proposed candidates in this cycle's hypothesis matrix; binder-topology was already tested in the prior lineage). The compiler_alignment picked eval_version=e938_role_safe_all_targets_v2 (smoke suite, n=3) via _feasible_eval_version -- exactly the suite the prior lineage's c12 fix intended future fresh cycles to land on, and it did: both arms completed within the per-arm wall budget with zero decode timeouts (compare to the old lineage's test_data_scaleup_v1 n=12 attempts, which hit wall_timeout at processed_record_n=3/12 every time). Result: bit-identical structural_similarity (0.0575 both arms, 0.0 delta) and all other quality metrics identical; only latency_ms_p50 moved (+3.98ms candidate vs control, within noise) and latency_ms_p95 moved more (+134ms) but that is a latency-only delta with no accompanying quality change, which the classifier correctly treats as not positive. Ship gates reject both arms on fixture_insufficient_n (n=3 < 20) as expected/designed at this scale -- this is honest fixture-scope evidence, not a ship claim.",
+  "eval_feasibility_confirmation": {
+    "note": "Directly validates the prior loop's c12 harness fix (_feasible_eval_version, commit 14ec931). eval_version=e938_role_safe_all_targets_v2, eval_suites=smoke, n=3 was selected automatically and completed both arms with zero wall_timeout / zero decode_timeout_count.",
+    "cycle_wall_seconds": 19.7,
+    "agentv_ship_gate_harness_duration_ms": 316,
+    "decode_timeout_count_control": 0,
+    "decode_timeout_count_candidate": 0
+  },
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "steps": 20,
+    "steps_actual": 21,
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "eval_suites": "smoke",
+    "decode_timeout_seconds": 24.0,
+    "batch_size": 2,
+    "context_backend": "scratch"
+  },
+  "hypothesis": {
+    "control": "Matched fixture control with both grammar levers off completes smoke eval under the published suite.",
+    "candidate": "grammar_completion_bounds reduces smoke latency_ms_p50 versus the matched control without lowering parse_rate.",
+    "lever": "grammar_completion_bounds",
+    "candidate_experiment_id": "c20260802-continuous-openui-local--c94ddb78-c1-bounds",
+    "control_experiment_id": "c20260802-continuous-openui-local--c94ddb78-c1-control"
+  },
+  "smoke_metrics": {
+    "n": 3,
+    "control": {
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "structural_similarity": 0.057499999999999996,
+      "binder_reference_f1": 0.6333333333333333,
+      "ast_beq_rate": 0.0,
+      "canonical_beq_rate": 0.0,
+      "reward_score": 0.0,
+      "component_type_recall": 0.0,
+      "latency_ms_p50": 1557.01,
+      "latency_ms_p95": 1580.79
+    },
+    "candidate": {
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "structural_similarity": 0.057499999999999996,
+      "binder_reference_f1": 0.6333333333333333,
+      "ast_beq_rate": 0.0,
+      "canonical_beq_rate": 0.0,
+      "reward_score": 0.0,
+      "component_type_recall": 0.0,
+      "latency_ms_p50": 1560.99,
+      "latency_ms_p95": 1715.0
+    },
+    "delta": {
+      "structural_similarity": 0.0,
+      "latency_ms_p50": 3.98,
+      "latency_ms_p95": 134.21
+    }
+  },
+  "harness_signals": [],
+  "sdlc_delivery": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260802-continuous-openui-local--c94ddb78-c1-control",
+      "fixture_insufficient_n:c20260802-continuous-openui-local--c94ddb78-c1-bounds",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.057499999999999996 candidate=0.057499999999999996 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ],
+    "measurement_complete": true,
+    "fixture_volume_gate_hits": 2
+  },
+  "cycle_handoff": {
+    "climb_state": "rejected",
+    "ship_state": "blocked",
+    "actions": [
+      {"kind": "document", "owner": "documenting-experiment-results", "status": "completed_this_cycle"},
+      {"kind": "next_experiment", "owner": "autotrain", "status": "queued_for_cycle_2", "proposed_experiment_id": "c20260802-continuous-openui-local--c94ddb78-c1-component-plan"}
+    ],
+    "checkpoint_documentation_required": true,
+    "checkpoint_paths": [
+      "runs/c20260802-continuous-openui-local--c94ddb78-c1-bounds/checkpoints/last.pt",
+      "runs/c20260802-continuous-openui-local--c94ddb78-c1-control/checkpoints/last.pt"
+    ]
+  },
+  "checkpoint_disposition": "Fixture-scale screening checkpoints only (n=3, steps=21, non-positive). Not promoted, not a new roster entry. MODEL_CARD.md/README updated with a screening-note history line per checkpoint_documentation_required=true, no roster change.",
+  "recommendation_for_next_cycle": [
+    "model: run the 'component-plan' candidate next (driver's own rank-1 priority) -- distinct untested lever, avoids repeating the just-exhausted 'bounds' null.",
+    "evaluation: keep e938_role_safe_all_targets_v2 (smoke, n=3) as the fixed matched suite for this lineage; do not retarget test_data_scaleup_v1 here -- that stays the separately tracked decode-compiler follow-up owned by the continuous-openui-local lineage / PR #1307.",
+    "infrastructure: no repair_harness signal this cycle -- _feasible_eval_version worked exactly as designed, zero decode timeouts. Nothing to escalate."
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "ee6ce85cb6aacb4d98fe6684ad61e2992665c202",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v74",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v286"
+    }
+  }
+}

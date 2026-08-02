@@ -7033,6 +7033,11 @@
         {
           "version": "v3",
           "date": "2026-08-02",
+          "note": "no-bump: add honest model-card and README provenance for the unrelated continuous-openui-local-2 c1 grammar-bounds null screen (fresh loop lineage, no predecessor); SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
           "note": "no-bump: add honest model-card and README provenance for the unrelated continuous-openui-local c9 binder-topology null screen at 2x escalated steps; SLM-228 spectral-disposition behavior is unchanged"
         },
         {
