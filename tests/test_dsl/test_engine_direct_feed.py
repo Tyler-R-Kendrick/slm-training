@@ -274,6 +274,28 @@ def test_macro_surface_piece_tracks_mutable_expansion_table() -> None:
     assert macro_id not in getattr(tok, "_grammar_surface_piece_cache", {})
 
 
+def test_surface_piece_cache_is_tokenizer_identity_scoped() -> None:
+    tok = DSLNativeTokenizer.build()
+    token_id = int(tok.token_to_id["Stack"])
+    assert token_surface_piece(tok, token_id) == "Stack"
+
+    class _SurfaceProxy:
+        def __init__(self, inner: DSLNativeTokenizer) -> None:
+            self._inner = inner
+            self.id_to_token = dict(inner.id_to_token)
+            self.id_to_token[token_id] = "Panel"
+
+        def __getattr__(self, name: str):
+            return getattr(self._inner, name)
+
+        def kind_of(self, _token_id: int) -> str:
+            return "structural"
+
+    proxy = _SurfaceProxy(tok)
+    assert token_surface_piece(proxy, token_id) == "Panel"
+    assert proxy._grammar_surface_piece_cache_owner() is proxy
+
+
 def test_mutually_recursive_macro_expansion_fails_closed() -> None:
     tok = _tok()
     tok.macro_expansions = (("<MACRO_1>", "Card"), ("<MACRO_0>", "("))
@@ -422,7 +444,7 @@ def test_disposable_fork_rejection_skips_redundant_snapshot() -> None:
 
 
 def test_control_fork_reuses_callback_free_parser_configuration() -> None:
-    """Only mutable parser state is copied after callbacks are suppressed."""
+    """Only feed-mutated parser stacks copy after callbacks are suppressed."""
     source = OpenUIIncrementalEngine()
     source.reset()
     control = source.copy_control()
@@ -435,7 +457,8 @@ def test_control_fork_reuses_callback_free_parser_configuration() -> None:
     assert control_conf.callbacks == {}
     assert descendant_conf is control_conf
     assert descendant._ip.parser_state.state_stack is not control._ip.parser_state.state_stack
-    assert descendant._ip.lexer_thread is not control._ip.lexer_thread
+    assert control._ip.lexer_thread is not source._ip.lexer_thread
+    assert descendant._ip.lexer_thread is control._ip.lexer_thread
 
 
 def test_fork_fed_history_detaches_on_commit() -> None:
@@ -452,6 +475,20 @@ def test_fork_fed_history_detaches_on_commit() -> None:
     assert branch.feed_token_id(tok, tok.token_to_id["="]) is True
     assert source._fed_tokens == source_history
     assert branch._fed_tokens is not source._fed_tokens
+
+
+def test_fork_direct_map_cache_detaches_on_new_tokenizer() -> None:
+    first = _tok()
+    source = OpenUIIncrementalEngine()
+    source.reset()
+    assert source._direct_map(first) is not None
+    branch = source.copy_control()
+    assert source._direct_map_cache is branch._direct_map_cache
+
+    second = _tok()
+    assert branch._direct_map(second) is not None
+    assert source._direct_map_cache is not branch._direct_map_cache
+    assert id(second) not in source._direct_map_cache
 
 
 def test_decode_state_append_path_uses_direct_feed() -> None:

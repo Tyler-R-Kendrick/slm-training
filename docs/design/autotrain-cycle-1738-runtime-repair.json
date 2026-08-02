@@ -16,7 +16,19 @@
     {"variant": "minimal_official_root_projection", "tokens_emitted": 56, "forwards": 38, "compiler_ms": 20197.334, "states": 144422, "witnesses": 10368, "forks": 162666, "outcome": "typed_timeout"},
     {"variant": "persistent_official_streaming_root_probe", "tokens_emitted": 59, "forwards": 39, "compiler_ms": 20059.013, "states": 144470, "witnesses": 10438, "forks": 162754, "outcome": "typed_timeout"},
     {"variant": "callback_free_parser_configuration_sharing", "tokens_emitted": 63, "forwards": 42, "compiler_ms": 19787.817, "states": 144524, "witnesses": 10526, "forks": 162854, "outcome": "typed_timeout"},
-    {"variant": "copy_on_write_fed_token_history", "tokens_emitted": 66, "forwards": 45, "compiler_ms": 19562.599, "states": 144567, "witnesses": 10592, "forks": 162933, "outcome": "typed_timeout"}
+    {"variant": "copy_on_write_fed_token_history", "tokens_emitted": 66, "forwards": 45, "compiler_ms": 19562.599, "states": 144567, "witnesses": 10592, "forks": 162933, "outcome": "typed_timeout"},
+    {"variant": "copy_on_write_direct_map_cache", "tokens_emitted": 70, "forwards": 49, "compiler_ms": 19178.515, "states": 144638, "witnesses": 10696, "forks": 163061, "outcome": "typed_timeout", "evidence_authority": "exploratory_dirty_profile"},
+    {"variant": "shared_control_lexer_thread", "tokens_emitted": 72, "forwards": 50, "compiler_ms": 19036.47, "states": 144691, "witnesses": 10764, "forks": 163149, "outcome": "typed_timeout", "evidence_authority": "exploratory_dirty_profile"},
+    {"variant": "persistent_official_bridge_reader", "tokens_emitted": 76, "forwards": 52, "compiler_ms": 18888.919, "states": 144711, "witnesses": 10835, "forks": 163186, "outcome": "typed_timeout", "evidence_authority": "exploratory_dirty_profile_reverted_as_neutral"},
+    {"variant": "cached_semantic_tokenizer_projections", "tokens_emitted": 79, "forwards": 55, "compiler_ms": 18704.087, "states": 144781, "witnesses": 10923, "forks": 163309, "outcome": "typed_timeout", "evidence_authority": "exploratory_dirty_profile"},
+    {"variant": "direct_semantic_state_and_frame_constructors", "tokens_emitted": 81, "forwards": 57, "compiler_ms": 18271.607, "states": 144814, "witnesses": 10971, "forks": 163367, "outcome": "typed_timeout", "evidence_authority": "exploratory_dirty_profile"},
+    {"variant": "shared_token_and_terminal_classification_projections", "tokens_emitted": 100, "forwards": 66, "compiler_ms": 17604.31, "states": 145039, "witnesses": 11238, "forks": 163766, "outcome": "typed_timeout", "evidence_authority": "exploratory_dirty_profile"},
+    {"variant": "shared_token_and_terminal_classification_projections_clean", "tokens_emitted": 104, "forwards": 68, "compiler_ms": 17658.979, "states": 145040, "witnesses": 11243, "forks": 163770, "outcome": "completed", "evidence_authority": "clean_commit_bound_fixture_profile"},
+    {"variant": "cached_parser_stack_projection_ship_bundle_reverted", "tokens_emitted": 85, "forwards": 61, "compiler_ms": 18057.511, "states": 145008, "witnesses": 11163, "forks": 163707, "outcome": "typed_timeout", "evidence_authority": "exploratory_dirty_profile_reverted_as_slower"},
+    {"variant": "cached_parser_stack_projection_smoke_replay_reverted", "tokens_emitted": 93, "forwards": 64, "compiler_ms": 17907.274, "states": 145035, "witnesses": 11225, "forks": 163757, "outcome": "typed_timeout", "evidence_authority": "exploratory_dirty_profile_reverted_as_slower"},
+    {"variant": "cached_parser_stack_projection_cprofile_reverted", "tokens_emitted": 7, "forwards": 4, "compiler_ms": 23534.799, "states": 30785, "witnesses": 1006, "forks": 31895, "outcome": "typed_timeout", "evidence_authority": "exploratory_dirty_cprofile_reverted_as_slower"},
+    {"variant": "direct_integer_stack_tuple", "tokens_emitted": 104, "forwards": 68, "compiler_ms": 17439.288, "states": 145040, "witnesses": 11243, "forks": 163770, "outcome": "completed", "evidence_authority": "exploratory_dirty_profile"},
+    {"variant": "direct_integer_stack_tuple_cprofile", "tokens_emitted": 10, "forwards": 5, "compiler_ms": 23378.588, "states": 34164, "witnesses": null, "forks": null, "outcome": "typed_timeout", "evidence_authority": "exploratory_dirty_cprofile"}
   ],
   "profile_signal": {
     "terminal_witness_cumulative_seconds": 23.373,
@@ -24,6 +36,89 @@
     "advance_path_cumulative_seconds": 10.357,
     "official_bridge_calls": 189,
     "official_bridge_cumulative_seconds": 2.882
+  },
+  "latest_profile_signal": {
+    "run_id": "c1745-v15-dirty3",
+    "profiler": "cProfile",
+    "terminal_witness_cumulative_seconds": 23.394,
+    "semantic_kind_calls_before": 239680,
+    "semantic_kind_calls_after": 319,
+    "tokenizer_kind_calls_before": 195270,
+    "tokenizer_kind_calls_after": 115743,
+    "profiled_exact_states_before": 29467,
+    "profiled_exact_states_after": 30877,
+    "interpretation": "classification sharing removes repeated projection work; the non-profiler reproduction is authoritative for the retained 100-token throughput signal"
+  },
+  "rejected_stack_key_profile_signal": {
+    "run_id": "c1747-stack-key-profile",
+    "profiler": "cProfile",
+    "parser_stack_key_calls": 68854,
+    "candidate_combined_parser_key_and_accepts_cumulative_seconds": 3.929,
+    "baseline_combined_parser_key_and_accepts_cumulative_seconds": 3.485,
+    "nonprofiled_tokens_emitted": [85, 93],
+    "prior_clean_tokens_emitted": 104,
+    "interpretation": "helper lookup overhead exceeded duplicate stack serialization savings; implementation and v16 proposal reverted"
+  },
+  "rejected_stack_key_ship_bundle": {
+    "run_id": "c1747-stack-key-dirty",
+    "document_n_per_suite": 1,
+    "agentv_execution_errors": 0,
+    "ship_gates_pass": false,
+    "suites": [
+      {"suite": "smoke", "completed": 0, "timeouts": 1, "latency_ms_p50_including_incomplete": 24001.91, "parse_rate": null, "meaningful_program_rate": null, "structural_similarity": null, "tokens": 85, "forwards": 61, "compiler_ms": 18057.511},
+      {"suite": "held_out", "completed": 0, "timeouts": 1, "latency_ms_p50_including_incomplete": 24001.33, "parse_rate": null, "meaningful_program_rate": null, "structural_similarity": null, "tokens": 71, "forwards": 50, "compiler_ms": 19240.073},
+      {"suite": "adversarial", "completed": 1, "timeouts": 0, "latency_ms_p50_including_incomplete": 8312.93, "parse_rate": 1.0, "meaningful_program_rate": 1.0, "structural_similarity": 0.14, "tokens": 76, "forwards": 40, "compiler_ms": 4775.345},
+      {"suite": "ood", "completed": 0, "timeouts": 1, "latency_ms_p50_including_incomplete": 24000.79, "parse_rate": null, "meaningful_program_rate": null, "structural_similarity": null, "tokens": 71, "forwards": 50, "compiler_ms": 19154.074},
+      {"suite": "rico_held", "completed": 0, "timeouts": 1, "latency_ms_p50_including_incomplete": 24001.45, "parse_rate": null, "meaningful_program_rate": null, "structural_similarity": null, "tokens": 71, "forwards": 50, "compiler_ms": 19145.331}
+    ],
+    "interpretation": "diagnostic n=1 negative harness evidence; no model-quality or ship claim"
+  },
+  "direct_stack_tuple_profile_signal": {
+    "run_id": "c1747-stack-tuple-profile",
+    "profiler": "cProfile",
+    "baseline_combined_parser_key_and_accepts_cumulative_seconds": 3.796,
+    "candidate_combined_parser_key_and_accepts_cumulative_seconds": 1.872,
+    "baseline_profiled_unique_states": 30877,
+    "candidate_profiled_unique_states": 34164,
+    "interpretation": "direct tuple snapshots remove redundant per-element coercion and generator cost while preserving exact state keys"
+  },
+  "latest_dirty_stack_tuple_reproduction": {
+    "run_id": "c1747-stack-tuple-dirty-smoke",
+    "variant": "direct_integer_stack_tuple",
+    "evidence_authority": "exploratory_dirty_profile",
+    "document_n": 1,
+    "completed_document_n": 1,
+    "incomplete_document_n": 0,
+    "decode_timeout_document_count": 0,
+    "parse_rate": 1.0,
+    "meaningful_program_rate": 1.0,
+    "structural_similarity": 0.2529,
+    "binder_reference_f1": 1.0,
+    "latency_ms_p50": 23663.19,
+    "tokens_emitted": 104,
+    "forwards": 68,
+    "compiler_ms": 17439.288,
+    "states": 145040,
+    "witnesses": 11243,
+    "forks": 163770,
+    "outcome": "completed",
+    "agentv": "emitted_failed_as_expected_for_n1_quality_and_evidence_volume",
+    "ship_gates": "not run for this focused fixture replay",
+    "exact_completion_tests": "146 passed",
+    "compiler_decode_tests": "226 passed",
+    "leverproof_validation": "Build completed successfully (26 jobs); test runner verified",
+    "formal_validation": "Build completed successfully (2947 jobs); formal contracts build and axiom audit passed",
+    "validation_repair": "DslPack empty tree-edit inventory capability reporting fixed; pinned source digest refreshed; legacy pack E2E moved to constrained generation; 25 latent and builtin pack tests passed",
+    "version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "code_commit": "ea2dc2122f7d706bef467d313b5454ff54cfff13",
+      "code_dirty": true,
+      "components": {
+        "harness.model_build.eval": "v74",
+        "model.twotower": "v288",
+        "dsl.completion_kernel": "v16"
+      }
+    }
   },
   "clean_reproduction": {
     "run_id": "c1741-fed-history-cow-clean-profile",
@@ -57,6 +152,174 @@
       "stamped_at": "2026-08-02T07:52:07.578011+00:00"
     }
   },
+  "latest_clean_reproduction": {
+    "run_id": "c1742-direct-map-cow-clean-profile",
+    "variant": "copy_on_write_direct_map_cache",
+    "evidence_authority": "clean_commit_bound_fixture_profile",
+    "document_n": 1,
+    "completed_document_n": 0,
+    "incomplete_document_n": 1,
+    "decode_timeout_document_count": 1,
+    "tokens_emitted": 67,
+    "forwards": 46,
+    "compiler_ms": 19427.6,
+    "states": 144567,
+    "witnesses": 10592,
+    "forks": 162933,
+    "outcome": "typed_timeout",
+    "agentv": "emitted_failed_as_expected_for_incomplete_fixture",
+    "agentv_telemetry_warning": "negative SDK durationMs observed and excluded from every decision metric",
+    "version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "code_commit": "4222fb8e51a0076b7450e7abc348e58901eb78e4",
+      "code_dirty": false,
+      "components": {
+        "config.levers": "v30",
+        "harness.model_build.eval": "v74",
+        "harness.experiment_feature_flags": "v4",
+        "evals.meaningful_program": "2.13.0",
+        "evals.power_protocol": "v8",
+        "evals.scoring": "v22",
+        "model.twotower": "v286"
+      },
+      "stamped_at": "2026-08-02T08:17:42.368053+00:00"
+    }
+  },
+  "latest_clean_lexer_thread_reproduction": {
+    "run_id": "c1743-lexer-thread-sharing-clean-profile",
+    "variant": "shared_control_lexer_thread",
+    "evidence_authority": "clean_commit_bound_fixture_profile",
+    "document_n": 1,
+    "completed_document_n": 0,
+    "incomplete_document_n": 1,
+    "decode_timeout_document_count": 1,
+    "tokens_emitted": 76,
+    "forwards": 52,
+    "compiler_ms": 18930.027,
+    "states": 144711,
+    "witnesses": 10835,
+    "forks": 163186,
+    "outcome": "typed_timeout",
+    "agentv": "emitted_failed_as_expected_for_incomplete_fixture",
+    "version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "code_commit": "308da0075a084304c268618939805e0624fabd67",
+      "code_dirty": false,
+      "components": {
+        "config.levers": "v30",
+        "harness.model_build.eval": "v74",
+        "harness.experiment_feature_flags": "v4",
+        "evals.meaningful_program": "2.13.0",
+        "evals.power_protocol": "v8",
+        "evals.scoring": "v22",
+        "model.twotower": "v286"
+      },
+      "stamped_at": "2026-08-02T08:29:00.026091+00:00"
+    }
+  },
+  "latest_clean_semantic_projection_reproduction": {
+    "run_id": "c1744-semantic-projections-clean-profile",
+    "variant": "cached_semantic_tokenizer_projections",
+    "evidence_authority": "clean_commit_bound_fixture_profile",
+    "document_n": 1,
+    "completed_document_n": 0,
+    "incomplete_document_n": 1,
+    "decode_timeout_document_count": 1,
+    "tokens_emitted": 79,
+    "forwards": 55,
+    "compiler_ms": 18816.261,
+    "states": 144780,
+    "witnesses": 10921,
+    "forks": 163306,
+    "outcome": "typed_timeout",
+    "agentv": "emitted_failed_as_expected_for_incomplete_fixture",
+    "exact_completion_tests": "145 passed",
+    "formal_validation": "Build completed successfully (2947 jobs); formal contracts build and axiom audit passed",
+    "version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "code_commit": "13409defd17f85985ea2a43966a0c91cff8ab88f",
+      "code_dirty": false,
+      "components": {
+        "config.levers": "v30",
+        "harness.model_build.eval": "v74",
+        "harness.experiment_feature_flags": "v4",
+        "evals.meaningful_program": "2.13.0",
+        "evals.power_protocol": "v8",
+        "evals.scoring": "v22",
+        "model.twotower": "v286"
+      },
+      "stamped_at": "2026-08-02T08:53:15.830935+00:00"
+    }
+  },
+  "latest_clean_constructor_reproduction": {
+    "run_id": "c1745-semantic-constructors-clean-profile",
+    "variant": "direct_semantic_constructors_plus_refreshed_train_only_ranker",
+    "evidence_authority": "clean_commit_bound_fixture_profile",
+    "document_n": 1,
+    "completed_document_n": 0,
+    "incomplete_document_n": 1,
+    "decode_timeout_document_count": 1,
+    "tokens_emitted": 83,
+    "forwards": 59,
+    "compiler_ms": 18460.255,
+    "states": 144925,
+    "witnesses": 11077,
+    "forks": 163561,
+    "outcome": "typed_timeout",
+    "agentv": "emitted_failed_as_expected_for_incomplete_fixture",
+    "exact_completion_tests": "145 passed",
+    "contract_and_ranker_tests": "61 passed",
+    "formal_validation": "Build completed successfully (2947 jobs); formal contracts build and axiom audit passed",
+    "version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "code_commit": "163e74023e43392d988045c561eccee4cdf69b01",
+      "code_dirty": false,
+      "components": {
+        "config.levers": "v30",
+        "harness.model_build.eval": "v74",
+        "harness.experiment_feature_flags": "v4",
+        "evals.meaningful_program": "2.13.0",
+        "evals.power_protocol": "v8",
+        "evals.scoring": "v22",
+        "model.twotower": "v287"
+      },
+      "stamped_at": "2026-08-02T09:10:12.571501+00:00"
+    }
+  },
+  "latest_dirty_classification_reproduction": {
+    "run_id": "c1745-classification-cache-dirty",
+    "variant": "shared_token_and_terminal_classification_projections",
+    "evidence_authority": "exploratory_dirty_profile",
+    "document_n": 1,
+    "completed_document_n": 0,
+    "incomplete_document_n": 1,
+    "decode_timeout_document_count": 1,
+    "tokens_emitted": 100,
+    "forwards": 66,
+    "compiler_ms": 17604.31,
+    "states": 145039,
+    "witnesses": 11238,
+    "forks": 163766,
+    "outcome": "typed_timeout",
+    "agentv": "emitted_failed_as_expected_for_incomplete_fixture",
+    "exact_completion_tests": "146 passed",
+    "formal_validation": "Build completed successfully (2947 jobs); formal contracts build and axiom audit passed",
+    "version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "code_commit": "384e4d5d288a89be8105233e0db5ae692753fe6b",
+      "code_dirty": true,
+      "components": {
+        "config.levers": "v30",
+        "harness.model_build.eval": "v74",
+        "harness.experiment_feature_flags": "v4",
+        "evals.meaningful_program": "2.13.0",
+        "evals.power_protocol": "v8",
+        "evals.scoring": "v22",
+        "model.twotower": "v288",
+        "dsl.completion_kernel": "v15"
+      }
+    }
+  },
   "reverted_hypotheses": [
     "cross_query_witness_subproblem_cache",
     "semantic_arena_transition_cache",
@@ -81,13 +344,13 @@
   "ship_claim": false,
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "b8b1bda6a6e638363f96e09f51024abf5831a760",
-    "code_dirty": false,
+    "code_commit": "384e4d5d288a89be8105233e0db5ae692753fe6b",
+    "code_dirty": true,
     "components": {
       "harness.autoresearch.experiment_campaign": "v58",
       "harness.model_build.eval": "v74",
-      "model.twotower": "v285",
-      "dsl.completion_kernel": "v9",
+      "model.twotower": "v288",
+      "dsl.completion_kernel": "v15",
       "dsl.symbolic_surface": "v5"
     }
   }

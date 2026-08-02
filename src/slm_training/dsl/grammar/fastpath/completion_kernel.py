@@ -355,11 +355,8 @@ class CompletionSession:
             self._transitions[key] = None
             return None
         kind_of = getattr(self._tokenizer, "kind_of", None)
-        kind = (
-            str(getattr(kind_of(tid), "value", ""))
-            if callable(kind_of)
-            else ""
-        )
+        raw_kind = kind_of(tid) if callable(kind_of) else None
+        kind = str(getattr(raw_kind, "value", ""))
         if kind == "macro":
             expand = getattr(self._tokenizer, "expand_macros", None)
             expanded = list(expand([tid])) if callable(expand) else []
@@ -374,6 +371,7 @@ class CompletionSession:
             self._tokenizer,
             tid,
             _restore_on_reject=False,
+            _token_kind=raw_kind,
         )
         if outcome is None:
             # Ambiguous junction — canonical text route.
@@ -392,6 +390,7 @@ class CompletionSession:
             self._tokenizer,
             schema=self._schema,
             arena=self._semantic_arena,
+            _token_kind=kind,
         )
         child_id = self._intern_state(
             child,

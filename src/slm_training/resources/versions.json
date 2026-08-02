@@ -1156,7 +1156,7 @@
       ]
     },
     "dsl.completion_kernel": {
-      "version": "v10",
+      "version": "v16",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/grammar/fastpath/engine.py",
@@ -1183,6 +1183,36 @@
         "docs/design/adr-constrained-diffusion-topology-split.md"
       ],
       "history": [
+        {
+          "version": "v16",
+          "date": "2026-08-02",
+          "note": "Snapshot the already-integer LALR state stack directly for exact interning and accepts memo keys, removing redundant per-element integer coercion."
+        },
+        {
+          "version": "v15",
+          "date": "2026-08-02",
+          "note": "Reuse exact tokenizer-kind projections across completion transitions and preserve tokenizer-local surface-cache ownership, without changing grammar candidates or proof order."
+        },
+        {
+          "version": "v14",
+          "date": "2026-08-02",
+          "note": "Construct hot immutable semantic states and delimiter frames directly instead of reflecting through dataclasses.replace, preserving identical fields and interning authority."
+        },
+        {
+          "version": "v13",
+          "date": "2026-08-02",
+          "note": "Cache frozen tokenizer identity, kind, and special-token projections on the request tokenizer for semantic-state transitions without changing transition facts or interning keys."
+        },
+        {
+          "version": "v12",
+          "date": "2026-08-02",
+          "note": "Share the dormant lexer thread across callback-free control parser descendants while retaining independently copied feed-mutated parser stacks."
+        },
+        {
+          "version": "v11",
+          "date": "2026-08-02",
+          "note": "Share verified tokenizer-to-terminal maps across completion parser forks and detach the cache only when a branch encounters a new tokenizer."
+        },
         {
           "version": "v10",
           "date": "2026-08-02",
@@ -1291,7 +1321,7 @@
       ]
     },
     "dsl.operators.registry": {
-      "version": "v11",
+      "version": "v12",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/registry.py",
@@ -1299,6 +1329,11 @@
         "tests/test_dsl/test_operator_registry.py"
       ],
       "history": [
+        {
+          "version": "v12",
+          "date": "2026-08-02",
+          "note": "Treat empty pack-owned tree-edit inventories as unavailable in filled_slots, matching their fail-closed DslPack contract and dashboard capability reporting."
+        },
         {
           "version": "v11",
           "date": "2026-07-29",
@@ -9585,6 +9620,11 @@
         {
           "version": "v2",
           "date": "2026-08-02",
+          "note": "no-bump: refresh the pinned pack source hash after fail-closed capability reporting changed; staged symbolic-surface behavior is unchanged"
+        },
+        {
+          "version": "v2",
+          "date": "2026-08-02",
           "note": "no-bump: refresh pinned symbolic-surface source hashes after opaque-marker test reconciliation; staged harness behavior is unchanged"
         },
         {
@@ -10837,7 +10877,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v287",
+      "version": "v289",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -10880,6 +10920,16 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v289",
+          "date": "2026-08-02",
+          "note": "Cache tokenizer-identity-scoped compiler terminal projections, classify components by the canonical kind-id set, retain explicit request authority for legacy external marker text, and keep visible honest slot inventory authoritative over stale non-opaque arguments."
+        },
+        {
+          "version": "v288",
+          "date": "2026-08-02",
+          "note": "Regenerate the committed speculative n-gram ranker from the latest canonical train-only corpus after opaque structural-id and fixture refreshes."
+        },
         {
           "version": "v287",
           "date": "2026-08-02",
