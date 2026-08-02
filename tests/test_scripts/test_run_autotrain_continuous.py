@@ -2595,6 +2595,44 @@ def test_cycle_handoff_marks_incomplete_measurement_for_frozen_retry(
     assert all(action.kind != "next_experiment" for action in handoff.actions)
 
 
+def test_cycle_handoff_uses_delivery_completeness_for_wall_timeout_retry(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "cycle-1"
+    (camp / "manifests").mkdir(parents=True)
+    (camp / "manifests" / "cand.json").write_text("{}\n")
+
+    handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="screening",
+        cycle_intent="screening",
+        primary_metric="smoke.structural_similarity",
+        matrix=_priority_matrix(),
+        delivery={
+            "positive": False,
+            "candidate_id": "cand",
+            "measurement_complete": False,
+            "reasons": ["wall_timeout:control", "primary_metric_unavailable"],
+            "stack_layer": False,
+        },
+        resolution=None,
+        formal_status=None,
+    )
+
+    assert handoff.climb_state == "inconclusive"
+    assert handoff.priorities[0].area == "infrastructure"
+    assert handoff.priorities[0].proposed_experiment_id == "cand"
+    assert "exact frozen" in handoff.priorities[0].hypothesis
+    assert any(action.kind == "retry_measurement" for action in handoff.actions)
+    assert all(action.kind != "next_experiment" for action in handoff.actions)
+
+
 def test_finalized_decode_timeout_routes_directly_to_runtime_repair(
     tmp_path: Path,
 ) -> None:

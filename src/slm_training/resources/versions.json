@@ -2571,7 +2571,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v56",
+      "version": "v57",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2611,6 +2611,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v57",
+          "date": "2026-08-02",
+          "note": "Treat Phase A measurement_complete=false and stopped evals with partial train metrics as infrastructure-incomplete evidence, queue the exact frozen retry, and render that retry as the leading terminal priority."
+        },
         {
           "version": "v56",
           "date": "2026-08-02",
@@ -6970,6 +6975,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest model-card and README provenance for two unrelated incomplete c1737 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
+        },
         {
           "version": "v3",
           "date": "2026-08-02",

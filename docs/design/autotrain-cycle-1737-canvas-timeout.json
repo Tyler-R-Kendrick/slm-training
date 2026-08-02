@@ -1,0 +1,91 @@
+{
+  "schema": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1737",
+  "loop_id": "continuous-openui-20260730",
+  "cycle_index": 1737,
+  "campaign_role": "screening",
+  "cycle_intent": "screening",
+  "run_class": "fixture_scratch_incomplete",
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "steps": 22,
+  "seed": 101737,
+  "batch_size": 2,
+  "checkpoint_sync": "explicit no-sync scratch",
+  "upstream_commit": "62f315565318479b83e6352e1b0d75ab66011b9b",
+  "integration_commit": "e43d05633dca9919762392f8f9485924f20902d3",
+  "primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "label": "matched control",
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1737-control",
+      "trainable_parameters": 1608962,
+      "compact_active_canvas": false,
+      "last_loss": 9.591416358947754,
+      "training_wall_seconds": 3.127485829987563,
+      "checkpoint_sha256": "855314615df97a41600217659d31c2898a84a59f2b5a0800d3e2b15d5912cb46",
+      "evaluation": {
+        "suite": "smoke",
+        "status": "interrupted",
+        "processed_record_n": 2,
+        "suite_n": 3,
+        "active_record_ids": ["smoke_callout_01"],
+        "measurement_complete": false,
+        "scoreable": false,
+        "forwards_count_sum": 88,
+        "completion_unique_states_sum": 276746
+      },
+      "agentv_bundle": "not_emitted",
+      "ship_gates": "not_run",
+      "metrics": "unavailable"
+    },
+    {
+      "label": "compact active canvas",
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1737-canvas",
+      "trainable_parameters": 1608962,
+      "compact_active_canvas": true,
+      "last_loss": 9.591416358947754,
+      "training_wall_seconds": 3.0253208259819075,
+      "checkpoint_sha256": "4669b0b6500139c4f5c9e65ba2a867575b18c2664bf9b38a3d30c37277725f8d",
+      "evaluation": {
+        "suite": "smoke",
+        "status": "interrupted",
+        "processed_record_n": 2,
+        "suite_n": 3,
+        "active_record_ids": ["smoke_callout_01"],
+        "measurement_complete": false,
+        "scoreable": false,
+        "forwards_count_sum": 88,
+        "completion_unique_states_sum": 275313
+      },
+      "agentv_bundle": "not_emitted",
+      "ship_gates": "not_run",
+      "metrics": "unavailable"
+    }
+  ],
+  "comparison": {
+    "parameter_matched": true,
+    "quality_delta": "unavailable",
+    "latency_delta": "unavailable",
+    "measurement_complete": false,
+    "disposition": "inconclusive_exact_frozen_retry_required"
+  },
+  "formal_evidence": {
+    "status": "not_applicable:screening",
+    "reason": "No completed candidate or promotion decision exists; the full repository Lean suite was green before the run."
+  },
+  "harness_feedback": {
+    "signal": "Phase A recorded measurement_complete=false, but the handoff and diagnosis initially treated stopped arms with trainable_params as completed model evidence.",
+    "repair": "Honor explicit measurement completeness, route stopped outcomes with partial training metrics to infrastructure, queue the exact frozen retry, and render it as the leading terminal priority.",
+    "component_version": "harness.autoresearch.experiment_campaign/v57"
+  },
+  "next_action": {
+    "kind": "retry_measurement",
+    "frozen_manifest_sha256": "763ae28e2cfe014b874770c27bb116f5acf3261860e824519b544d585f14d96d",
+    "replay_count": "0/2"
+  },
+  "checkpoint_documentation_required": true,
+  "checkpoint_reuse": "frozen replay only",
+  "ship_eligible": false
+}

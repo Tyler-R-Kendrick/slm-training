@@ -2795,7 +2795,7 @@ def _predecessor_priority_slug(
             candidate_id=str(delivery.get("candidate_id") or ""),
             role=str(handoff.get("cycle_role") or "screening"),
         )
-        measurement_incomplete = (
+        measurement_incomplete = delivery.get("measurement_complete") is False or (
             any(
                 str(reason).startswith("measurement_incomplete:")
                 for reason in current.get("reasons") or []
@@ -2849,7 +2849,8 @@ def _write_cycle_handoff(
     status = str((resolution or {}).get("status") or "")
     diagnosis_target = _diagnosis_target(camp_dir)
     measurement_incomplete = (
-        any(
+        delivery.get("measurement_complete") is False
+        or any(
             item.startswith("measurement_incomplete:")
             for item in delivery.get("reasons") or []
         )
@@ -2886,7 +2887,27 @@ def _write_cycle_handoff(
             *(delivery.get("reasons") or []),
         ]
     )
-    if cycle_intent == "retry_measurement" and not measurement_incomplete:
+    if measurement_incomplete:
+        priorities = (
+            NextRunPriorityV1(
+                rank=1,
+                area="infrastructure",
+                hypothesis=(
+                    "The measurement is incomplete; replay the exact frozen "
+                    "control and candidate before testing a new hypothesis."
+                ),
+                evidence_ids=(evidence_id,),
+                confidence=0.95,
+                expected_information_gain=(
+                    "Completes the preregistered comparison without treating "
+                    "partial train or decode telemetry as model evidence."
+                ),
+                authority="observed_result",
+                disposition="experiment_next",
+                proposed_experiment_id=candidate_id or None,
+            ),
+        )
+    elif cycle_intent == "retry_measurement":
         priorities = _completed_candidate_priorities(
             matrix,
             candidate_id,
