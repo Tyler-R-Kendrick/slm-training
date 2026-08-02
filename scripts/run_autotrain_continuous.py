@@ -174,9 +174,12 @@ def _raise_for_bounded_result(result: BoundedProcessResult) -> None:
 
 
 def _arm_wall_minutes(policy_minutes: float) -> float:
-    """Give both decision arms equal room and reserve one share for orchestration."""
+    """Give both decision arms equal room and retain finalization headroom."""
 
-    symmetric_minutes = float(MAX_HARNESS_WALL_SECONDS) / 3 / 60
+    arm_seconds = (
+        float(MAX_HARNESS_WALL_SECONDS) - HARNESS_FINALIZATION_RESERVE_SECONDS
+    ) / 2
+    symmetric_minutes = arm_seconds / 60
     return min(float(policy_minutes), symmetric_minutes)
 
 
