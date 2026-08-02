@@ -2694,6 +2694,11 @@
         {
           "version": "v67",
           "date": "2026-08-02",
+          "note": "Detect finalized numeric-literal termination starvation, expose the existing size-matched LTR tail-loss lever to governed campaigns, and steer the next cycle to a new constrained literal-close arm instead of replaying the stalled checkpoint."
+        },
+        {
+          "version": "v67",
+          "date": "2026-08-02",
           "note": "Reserve five seconds inside the supervised evaluation stage for scoreboard binding, gates, AgentV, outcome persistence, and feedback after the inner evaluator stops."
         },
         {
