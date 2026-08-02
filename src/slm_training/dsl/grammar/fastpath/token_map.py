@@ -97,12 +97,15 @@ def allowed_id_set(
     if not terminals:
         return None
     if _is_dsl_native(tokenizer):
-        fingerprint = hash(tuple(sorted(tokenizer.token_to_id.items())))
-        key = (fingerprint, int(getattr(tokenizer, "version", 0)), terminals)
-        cached = _DSL_ALLOWED_CACHE.get(key) if use_cache else None
+        key: tuple[int, int, frozenset[str]] | None = None
+        cached: frozenset[int] | None = None
+        if use_cache:
+            fingerprint = hash(tuple(sorted(tokenizer.token_to_id.items())))
+            key = (fingerprint, int(getattr(tokenizer, "version", 0)), terminals)
+            cached = _DSL_ALLOWED_CACHE.get(key)
         if cached is None:
             result = _allowed_id_set_dsl(tokenizer, terminals)
-            if result is not None and use_cache:
+            if result is not None and key is not None:
                 _DSL_ALLOWED_CACHE[key] = frozenset(result)
         else:
             result = set(cached)
