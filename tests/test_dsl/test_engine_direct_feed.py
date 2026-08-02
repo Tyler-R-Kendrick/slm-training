@@ -384,6 +384,32 @@ def test_forks_do_not_rebuild_or_alex() -> None:
         assert fork.parser_state_key() != key_before
 
 
+def test_disposable_fork_rejection_skips_redundant_snapshot() -> None:
+    """An isolated throwaway branch need not clone itself before rejection."""
+    tok = _tok()
+    source = OpenUIIncrementalEngine()
+    source.reset()
+    branch = source.copy_control()
+    source_key = source.parser_state_key()
+    source_terminals = source.next_terminals()
+
+    def _unexpected_snapshot():
+        raise AssertionError("disposable branch took a rollback snapshot")
+
+    branch._snapshot = _unexpected_snapshot  # type: ignore[method-assign]
+    assert (
+        branch.feed_token_id(
+            tok,
+            tok.token_to_id["="],
+            _restore_on_reject=False,
+        )
+        is False
+    )
+    # The rejected branch is disposable; the source remains exact and usable.
+    assert source.parser_state_key() == source_key
+    assert source.next_terminals() == source_terminals
+
+
 def test_decode_state_append_path_uses_direct_feed() -> None:
     """GrammarDecodeState.advance_token commits via direct feed: zero full
     syncs after ``reset`` and grammar state identical to the text baseline."""
