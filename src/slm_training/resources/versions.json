@@ -2641,7 +2641,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v73",
+      "version": "v74",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2681,6 +2681,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v74",
+          "date": "2026-08-02",
+          "note": "Traverse the content-bound campaign predecessor chain across initialized-only recovery nodes when resolving completed frozen training stages."
+        },
         {
           "version": "v73",
           "date": "2026-08-02",

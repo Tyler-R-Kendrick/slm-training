@@ -3433,7 +3433,8 @@ def test_frozen_replay_finds_completed_train_across_retry_lineage(
 ) -> None:
     root = tmp_path / "autoresearch"
     source_campaign = "cycle-1"
-    retry_campaign = "cycle-2"
+    initialized_only_campaign = "cycle-2"
+    retry_campaign = "cycle-3"
     source_dir = root / source_campaign
     retry_dir = root / retry_campaign
     source_experiment = {
@@ -3462,14 +3463,29 @@ def test_frozen_replay_finds_completed_train_across_retry_lineage(
     retry_path = retry_dir / "manifests" / "retry-batch1.json"
     retry_path.parent.mkdir(parents=True)
     retry_path.write_text(retry_manifest.model_dump_json(indent=2) + "\n")
+    initialized_only_dir = root / initialized_only_campaign
+    initialized_only_dir.mkdir(parents=True)
+    (initialized_only_dir / "campaign.json").write_text(
+        _mod.CampaignSpec(
+            campaign_id=initialized_only_campaign,
+            objective="initialized recovery gap",
+            primary_metric="smoke.parse_rate",
+            loop_id="loop-1",
+            cycle_index=2,
+            predecessor_campaign_id=source_campaign,
+            upstream_commit="b" * 40,
+            integration_commit="b" * 40,
+        ).model_dump_json(indent=2)
+        + "\n"
+    )
     (retry_dir / "campaign.json").write_text(
         _mod.CampaignSpec(
             campaign_id=retry_campaign,
             objective="fixture replay",
             primary_metric="smoke.parse_rate",
             loop_id="loop-1",
-            cycle_index=2,
-            predecessor_campaign_id=source_campaign,
+            cycle_index=3,
+            predecessor_campaign_id=initialized_only_campaign,
             upstream_commit="b" * 40,
             integration_commit="b" * 40,
         ).model_dump_json(indent=2)

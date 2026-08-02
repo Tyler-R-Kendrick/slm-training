@@ -4455,8 +4455,29 @@ def _completed_frozen_train_source(
         predecessor_id = campaign.predecessor_campaign_id
         if predecessor_id is None:
             return None
-        current_dir = root / predecessor_id
-        current_path, current_manifest = _manifest_with_sha(current_dir, replay_sha)
+        predecessor_seen: set[str] = set()
+        while predecessor_id is not None:
+            if predecessor_id in predecessor_seen:
+                raise RuntimeError("frozen campaign predecessor lineage contains a cycle")
+            predecessor_seen.add(predecessor_id)
+            current_dir = root / predecessor_id
+            try:
+                current_path, current_manifest = _manifest_with_sha(
+                    current_dir, replay_sha
+                )
+                break
+            except RuntimeError as exc:
+                if not str(exc).startswith("frozen replay manifest is missing:"):
+                    raise
+                predecessor_campaign_path = current_dir / "campaign.json"
+                if not predecessor_campaign_path.is_file():
+                    raise
+                predecessor_campaign = CampaignSpec.model_validate_json(
+                    predecessor_campaign_path.read_text(encoding="utf-8")
+                )
+                predecessor_id = predecessor_campaign.predecessor_campaign_id
+        else:
+            raise RuntimeError(f"frozen replay manifest is missing: {replay_sha}")
 
 
 def _apply_frozen_replay(
