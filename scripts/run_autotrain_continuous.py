@@ -433,6 +433,7 @@ _RETRYABLE_PROMOTE_STATUSES = frozenset(
 # Recipe levers that define "same knobs" for confirmatory retest. Measurement
 # knobs (seed, decode_timeout, eval_suites) are re-sampled from role policy.
 _LEVER_KNOB_KEYS = (
+    "ltr_prefix_loss_weight",
     "ltr_tail_loss_weight",
     "compiler_alignment_loss_weight",
     "compiler_alignment_margin",
@@ -613,6 +614,11 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         "design-dropout",
         "Deterministic DESIGN.md context dropout reduces scaffold-copy reliance and improves structural_similarity without lowering parse_rate or binder_reference_f1.",
         {"design_md_dropout": 0.25},
+    ),
+    (
+        "scaffold-prefix",
+        "Prefix-weighted LTR supervision improves early scaffold formation and structural_similarity without lowering parse_rate or binder_reference_f1.",
+        {"ltr_prefix_loss_weight": 1.0},
     ),
     (
         "component-structure",
@@ -1048,6 +1054,8 @@ def _arm_slug_from_knobs(
         return "literal-margin"
     if knobs.get("ltr_tail_loss_weight"):
         return "literal-close"
+    if knobs.get("ltr_prefix_loss_weight"):
+        return "scaffold-prefix"
     if knobs.get("component_plan_loss_weight") and knobs.get(
         "component_edge_loss_weight"
     ):
@@ -1258,6 +1266,7 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
         "mixed-mask",
         "symbol-boundary",
         "design-dropout",
+        "scaffold-prefix",
     )
     legacy_quality_slugs = {
         "component-plan",
@@ -3708,6 +3717,7 @@ def _completed_candidate_priorities(
         "binder_arity_loss_weight",
         "symbol_boundary_loss_weight",
         "design_md_dropout",
+        "ltr_prefix_loss_weight",
     }
     def has_quality_objective(knobs: dict[str, Any]) -> bool:
         return any(float(knobs.get(key) or 0) > 0 for key in quality_keys) or (
@@ -5358,6 +5368,7 @@ def _matrix(
             "mask_pattern": "random",
             "symbol_boundary_loss_weight": 0.0,
             "design_md_dropout": 0.0,
+            "ltr_prefix_loss_weight": 0.0,
             "structural_aux_head_profile": "none",
             "compiler_decode_mode": "off",
             "ltr_tail_loss_weight": 0.0,
@@ -5433,6 +5444,7 @@ def _matrix(
                 "mask_pattern",
                 "symbol_boundary_loss_weight",
                 "design_md_dropout",
+                "ltr_prefix_loss_weight",
                 "structural_aux_head_profile",
                 "compiler_decode_mode",
                 "steps",
@@ -5627,6 +5639,7 @@ def _matrix(
                 "mask_pattern",
                 "symbol_boundary_loss_weight",
                 "design_md_dropout",
+                "ltr_prefix_loss_weight",
                 "structural_aux_head_profile",
                 "compiler_decode_mode",
                 "steps",
@@ -6085,6 +6098,7 @@ def _manifest(
                 "mask_pattern": "random",
                 "symbol_boundary_loss_weight": 0.0,
                 "design_md_dropout": 0.0,
+                "ltr_prefix_loss_weight": 0.0,
             },
             sort_keys=True,
         ).encode()

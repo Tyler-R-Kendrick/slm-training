@@ -1380,6 +1380,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 getattr(config, "constraint_graph_mode", "off") or "off"
             ),
             "ltr_loss_weight": getattr(config, "ltr_loss_weight", 0.0),
+            "ltr_prefix_loss_weight": getattr(
+                config, "ltr_prefix_loss_weight", 0.0
+            ),
             "ltr_tail_loss_weight": getattr(config, "ltr_tail_loss_weight", 0.0),
             "ltr_tail_tokens": getattr(config, "ltr_tail_tokens", 0),
             "compiler_alignment_loss_weight": getattr(

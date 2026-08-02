@@ -136,6 +136,13 @@ use `--compiler openai`, whose default is `gpt-5.6-sol` with `store=False`.
 
 ## Closed loop
 
+The c1802 screening result rejects `design_md_dropout=.25`: against its
+size-matched control it reduced smoke structure `.174167→.096400`, component
+recall `.25→.0833`, and meaningful-program rate `.3333→0`. Campaign harness
+v103 therefore preregisters zero-parameter prefix-LTR supervision as the next
+distinct scaffold-learning hypothesis. See
+[`autotrain-cycle-1802-design-dropout-rejected.md`](autotrain-cycle-1802-design-dropout-rejected.md).
+
 ```text
 repo lineage + HF Daily Papers + web + prior artifacts
                          |
