@@ -150,8 +150,12 @@ def test_train_model_cli_rejects_prohibited_marker_semantic_levers(
         )
 
 
+@pytest.mark.parametrize(
+    "profile",
+    case_values(__file__, "test_train_model_cli_threads_structural_aux_head_profile"),
+)
 def test_train_model_cli_threads_structural_aux_head_profile(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, profile: str
 ) -> None:
     captured: dict[str, ModelBuildConfig] = {}
     monkeypatch.setattr(
@@ -172,12 +176,12 @@ def test_train_model_cli_threads_structural_aux_head_profile(
                 "--steps",
                 "0",
                 "--structural-aux-head-profile",
-                "binder-topology",
+                profile,
             ]
         )
         == 0
     )
-    assert captured["config"].structural_aux_head_profile == "binder-topology"
+    assert captured["config"].structural_aux_head_profile == profile
 
 
 def test_train_model_cli_decode_weights_default_to_zero_not_none(
