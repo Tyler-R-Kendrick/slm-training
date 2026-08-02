@@ -12809,6 +12809,35 @@ class TwoTowerModel(nn.Module):
             )
 
     @torch.inference_mode()
+    def prepare_generation(self) -> None:
+        """Initialize immutable constrained-decode authority before requests.
+
+        Evaluation and serving callers may invoke this once outside a request
+        deadline.  It loads the exact OpenUI schema, parser, lexer, static
+        token-to-terminal artifact, and packed-kernel modules without running
+        a model forward or admitting any token.  Decode legality and output
+        remain unchanged; only process-cold harness setup is separated from
+        per-document latency.
+        """
+        if not bool(self.config.grammar_constrained):
+            return
+        from slm_training.dsl.grammar.fastpath import completion_kernel  # noqa: F401
+        from slm_training.dsl.grammar.fastpath.compiler_draft import (
+            _official_schema,
+        )
+        from slm_training.dsl.grammar.fastpath.engine import engine_for_dsl
+        from slm_training.models.grammar import active_dsl
+
+        _official_schema()
+        engine = engine_for_dsl(active_dsl())
+        if engine is None:
+            raise RuntimeError("constrained generation has no incremental grammar engine")
+        engine.reset()
+        # This deterministic lookup is normally lazy on the first token feed.
+        # Resolve it here so no document inherits process-cold artifact I/O.
+        engine._direct_map(self.tokenizer)
+
+    @torch.inference_mode()
     def generate_batch_requests(
         self,
         requests: list[GenerationRequest],

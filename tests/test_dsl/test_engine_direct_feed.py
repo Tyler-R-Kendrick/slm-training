@@ -263,6 +263,17 @@ def test_macro_expansion_feeds_iteratively() -> None:
     assert engine.parser_state_key() == key
 
 
+def test_macro_surface_piece_tracks_mutable_expansion_table() -> None:
+    tok = _tok()
+    macro_id = tok.macro_id(0)
+    before = token_surface_piece(tok, macro_id)
+    tok.set_macro_expansions([["Card", "(", ")"]])
+    after = token_surface_piece(tok, macro_id)
+    assert after == tok.decode([macro_id])
+    assert after != before
+    assert macro_id not in getattr(tok, "_grammar_surface_piece_cache", {})
+
+
 def test_mutually_recursive_macro_expansion_fails_closed() -> None:
     tok = _tok()
     tok.macro_expansions = (("<MACRO_1>", "Card"), ("<MACRO_0>", "("))
@@ -408,6 +419,39 @@ def test_disposable_fork_rejection_skips_redundant_snapshot() -> None:
     # The rejected branch is disposable; the source remains exact and usable.
     assert source.parser_state_key() == source_key
     assert source.next_terminals() == source_terminals
+
+
+def test_control_fork_reuses_callback_free_parser_configuration() -> None:
+    """Only mutable parser state is copied after callbacks are suppressed."""
+    source = OpenUIIncrementalEngine()
+    source.reset()
+    control = source.copy_control()
+    descendant = control.copy()
+
+    source_conf = source._ip.parser_state.parse_conf
+    control_conf = control._ip.parser_state.parse_conf
+    descendant_conf = descendant._ip.parser_state.parse_conf
+    assert control_conf is not source_conf
+    assert control_conf.callbacks == {}
+    assert descendant_conf is control_conf
+    assert descendant._ip.parser_state.state_stack is not control._ip.parser_state.state_stack
+    assert descendant._ip.lexer_thread is not control._ip.lexer_thread
+
+
+def test_fork_fed_history_detaches_on_commit() -> None:
+    """Append-only token history is shared until either fork mutates it."""
+    tok = _tok()
+    source = OpenUIIncrementalEngine()
+    source.reset()
+    assert source.feed_token_id(tok, tok.token_to_id["<BIND_0>"]) is True
+    branch = source.copy_control()
+
+    assert branch._fed_tokens is source._fed_tokens
+    assert branch._fed_lark is source._fed_lark
+    source_history = list(source._fed_tokens)
+    assert branch.feed_token_id(tok, tok.token_to_id["="]) is True
+    assert source._fed_tokens == source_history
+    assert branch._fed_tokens is not source._fed_tokens
 
 
 def test_decode_state_append_path_uses_direct_feed() -> None:

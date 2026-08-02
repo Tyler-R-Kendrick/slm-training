@@ -133,6 +133,13 @@ class CompletionSession:
         self._intern: dict[tuple[Any, Any], int] = {}
         self._transitions: dict[tuple[int, int], int | None] = {}
         self._outgoing: dict[int, CompletionForest] = {}
+        # Exact top-level witness queries recur across sibling completion
+        # domains.  Cache only a fully returned verdict for the identical
+        # (interned state, room) request.  Nested subproblems remain
+        # query-local so the historical per-candidate node allowance and
+        # first-path ordering are unchanged; UNKNOWN and interrupted queries
+        # are never persisted.
+        self._witness_roots: dict[tuple[int, int], WitnessResult] = {}
         self._forced: dict[tuple[int, int], tuple[tuple[int, ...], int, str]] = {}
         self._counters: dict[str, int] = {
             "session_starts": 1,
@@ -169,6 +176,7 @@ class CompletionSession:
         self._intern.clear()
         self._transitions.clear()
         self._outgoing.clear()
+        self._witness_roots.clear()
         self._forced.clear()
         self._semantic_arena.clear()
 
@@ -462,6 +470,13 @@ class CompletionSession:
         """
         sid = int(state_id)
         rm = max(0, int(room))
+        check_decode_deadline()
+        root_key = (sid, rm)
+        root_cached = self._witness_roots.get(root_key)
+        if root_cached is not None:
+            self._counters["reachability_cache_hits"] += 1
+            return root_cached
+
         nodes_left = self._node_budget
         query_cache: OrderedDict[tuple[int, int], WitnessResult] = OrderedDict()
 
@@ -511,7 +526,10 @@ class CompletionSession:
                 query_cache.popitem(last=False)
             return result
 
-        return _eval(sid, rm)
+        result = _eval(sid, rm)
+        if result.status is not WitnessStatus.UNKNOWN:
+            self._witness_roots[root_key] = result
+        return result
 
     # --- forced singleton closure ---------------------------------------------
 

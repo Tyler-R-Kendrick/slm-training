@@ -1161,7 +1161,9 @@ def diagnose_outcome(outcome: ExperimentOutcome) -> Diagnosis:
         )
         actions.append("repair runtime capacity and replay the identical frozen arm")
         confidence = 0.95
-    elif outcome.status in {"failed", "stopped"} and not metrics and not data:
+    elif outcome.status == "stopped" or (
+        outcome.status == "failed" and not metrics and not data
+    ):
         target = "infrastructure"
         evidence.append(outcome.error or "experiment process failed")
         actions.append("repair the failed harness stage and rerun the identical spec")

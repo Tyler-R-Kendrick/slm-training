@@ -2225,6 +2225,60 @@ def _classify_positive(
         }
 
     reasons_pre: list[str] = []
+    for run_id in (control_id, candidate_id):
+        scoreboard_path = camp_dir / "runs" / run_id / "scoreboard.json"
+        if not scoreboard_path.is_file():
+            reasons_pre.append(f"measurement_incomplete:{run_id}:missing_scoreboard")
+            continue
+        scoreboard = _read_json(scoreboard_path)
+        suites = scoreboard.get("suites")
+        if isinstance(suites, dict):
+            if any(not isinstance(suite, dict) for suite in suites.values()):
+                reasons_pre.append(f"measurement_incomplete:{run_id}:invalid_suites")
+                continue
+            suite_rows = list(suites.items())
+        elif isinstance(suites, list):
+            if any(not isinstance(suite, dict) for suite in suites):
+                reasons_pre.append(f"measurement_incomplete:{run_id}:invalid_suites")
+                continue
+            suite_rows = [
+                (str(suite.get("suite") or index), suite)
+                for index, suite in enumerate(suites)
+            ]
+        else:
+            reasons_pre.append(f"measurement_incomplete:{run_id}:invalid_suites")
+            continue
+        if not suite_rows:
+            reasons_pre.append(f"measurement_incomplete:{run_id}:empty_suites")
+            continue
+        for suite_name, suite in suite_rows:
+            total_n = suite.get("document_n", suite.get("n"))
+            completed_n = suite.get("completed_document_n")
+            incomplete_n = suite.get("incomplete_document_n")
+            timeout_n = suite.get("decode_timeout_document_count")
+            if type(timeout_n) is not int:
+                timeout_n = suite.get("decode_timeout_count")
+            counts = (total_n, completed_n, incomplete_n, timeout_n)
+            if (
+                any(type(value) is not int or value < 0 for value in counts)
+                or completed_n + incomplete_n != total_n
+                or timeout_n > incomplete_n
+            ):
+                reasons_pre.append(
+                    "measurement_incomplete:"
+                    f"{run_id}:{suite_name}:invalid_counts:"
+                    f"document_n={total_n}:completed_document_n={completed_n}:"
+                    f"incomplete_document_n={incomplete_n}:"
+                    f"decode_timeout_count={timeout_n}"
+                )
+                continue
+            if incomplete_n > 0 or timeout_n > 0:
+                reasons_pre.append(
+                    "measurement_incomplete:"
+                    f"{run_id}:{suite_name}:"
+                    f"incomplete_document_n={incomplete_n}:"
+                    f"decode_timeout_count={timeout_n}"
+                )
     outcomes = list((camp_dir / "artifacts" / "outcomes").glob("*.json"))
     for path in outcomes:
         out = _read_json(path)
@@ -2358,6 +2412,14 @@ def _classify_positive(
         decision["stack_layer"] = False
         if not reasons:
             reasons.append("no_positive_signal")
+    if any(
+        str(reason).startswith(
+            ("measurement_incomplete:", "wall_timeout:", "empty_metrics:")
+        )
+        for reason in reasons
+    ):
+        decision["positive"] = False
+        decision["stack_layer"] = False
 
     decision["reasons"] = reasons
     decision["control_id"] = control_id
@@ -2795,7 +2857,7 @@ def _predecessor_priority_slug(
             candidate_id=str(delivery.get("candidate_id") or ""),
             role=str(handoff.get("cycle_role") or "screening"),
         )
-        measurement_incomplete = (
+        measurement_incomplete = delivery.get("measurement_complete") is False or (
             any(
                 str(reason).startswith("measurement_incomplete:")
                 for reason in current.get("reasons") or []
@@ -2849,7 +2911,8 @@ def _write_cycle_handoff(
     status = str((resolution or {}).get("status") or "")
     diagnosis_target = _diagnosis_target(camp_dir)
     measurement_incomplete = (
-        any(
+        delivery.get("measurement_complete") is False
+        or any(
             item.startswith("measurement_incomplete:")
             for item in delivery.get("reasons") or []
         )
@@ -2886,7 +2949,27 @@ def _write_cycle_handoff(
             *(delivery.get("reasons") or []),
         ]
     )
-    if cycle_intent == "retry_measurement" and not measurement_incomplete:
+    if measurement_incomplete:
+        priorities = (
+            NextRunPriorityV1(
+                rank=1,
+                area="infrastructure",
+                hypothesis=(
+                    "The measurement is incomplete; replay the exact frozen "
+                    "control and candidate before testing a new hypothesis."
+                ),
+                evidence_ids=(evidence_id,),
+                confidence=0.95,
+                expected_information_gain=(
+                    "Completes the preregistered comparison without treating "
+                    "partial train or decode telemetry as model evidence."
+                ),
+                authority="observed_result",
+                disposition="experiment_next",
+                proposed_experiment_id=candidate_id or None,
+            ),
+        )
+    elif cycle_intent == "retry_measurement":
         priorities = _completed_candidate_priorities(
             matrix,
             candidate_id,

@@ -1146,7 +1146,7 @@
       ]
     },
     "dsl.completion_kernel": {
-      "version": "v6",
+      "version": "v10",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/grammar/fastpath/engine.py",
@@ -1173,6 +1173,26 @@
         "docs/design/adr-constrained-diffusion-topology-split.md"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-08-02",
+          "note": "Keep mutable macro expansions out of the token surface cache and cover the expansion-table mutation boundary with exact direct-feed regression evidence."
+        },
+        {
+          "version": "v9",
+          "date": "2026-08-02",
+          "note": "Share append-only fed-token histories across completion parser forks and detach both buffers before the first branch-local terminal commit."
+        },
+        {
+          "version": "v8",
+          "date": "2026-08-02",
+          "note": "Share immutable callback-free Lark parser configuration across descendant control-only completion forks while retaining fork-local stacks and lexer threads."
+        },
+        {
+          "version": "v7",
+          "date": "2026-08-02",
+          "note": "Memoize immutable semantic-state hashes and completed exact top-level witness verdicts without caching UNKNOWN or changing candidate order, proof budgets, or grammar authority."
+        },
         {
           "version": "v6",
           "date": "2026-08-01",
@@ -1662,7 +1682,7 @@
       ]
     },
     "dsl.symbolic_surface": {
-      "version": "v4",
+      "version": "v5",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/language_contract.py",
@@ -1670,6 +1690,11 @@
         "tests/test_dsl/test_language_contract.py"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-08-02",
+          "note": "Project root-presence probes through a cached official lang-core bridge result while retaining identical parser authority and fail-closed ParseError behavior."
+        },
         {
           "version": "v4",
           "date": "2026-07-25",
@@ -2571,7 +2596,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v56",
+      "version": "v59",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2611,6 +2636,26 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v59",
+          "date": "2026-08-02",
+          "note": "no-bump: move the invalid and empty scoreboard parameter table into the canonical external test-case resource; assertions and harness behavior are unchanged."
+        },
+        {
+          "version": "v59",
+          "date": "2026-08-02",
+          "note": "Fail closed before positive classification when either arm lacks a scoreboard, has invalid or empty suites, or reports inconsistent document and timeout counts."
+        },
+        {
+          "version": "v58",
+          "date": "2026-08-02",
+          "note": "Require every authoritative suite scoreboard to be complete before SDLC delivery can classify a cycle as positive, with typed per-run and per-suite incompleteness reasons."
+        },
+        {
+          "version": "v57",
+          "date": "2026-08-02",
+          "note": "Treat Phase A measurement_complete=false and stopped evals with partial train metrics as infrastructure-incomplete evidence, queue the exact frozen retry, and render that retry as the leading terminal priority."
+        },
         {
           "version": "v56",
           "date": "2026-08-02",
@@ -6973,6 +7018,16 @@
         {
           "version": "v3",
           "date": "2026-08-02",
+          "note": "no-bump: add honest model-card and README provenance for two unrelated incomplete c1737 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest model-card and README provenance for two unrelated c1736 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
           "note": "no-bump: add honest model-card and README provenance for two unrelated c1735 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
         },
         {
@@ -8486,7 +8541,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v73",
+      "version": "v74",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -8507,6 +8562,11 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v74",
+          "date": "2026-08-02",
+          "note": "Initialize constrained generation outside document deadlines, disclose initialization latency, and disarm repeating SIGALRM delivery before timeout bookkeeping so timeouts remain typed evidence."
+        },
         {
           "version": "v73",
           "date": "2026-08-01",
@@ -9467,6 +9527,11 @@
         "docs/design/dsh0-08-foundation-disposition-20260723.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-02",
+          "note": "no-bump: refresh pinned symbolic-surface source hashes after opaque-marker test reconciliation; staged harness behavior is unchanged"
+        },
         {
           "version": "v2",
           "date": "2026-07-24",
@@ -10712,7 +10777,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v284",
+      "version": "v286",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -10755,6 +10820,16 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v286",
+          "date": "2026-08-02",
+          "note": "Decode mutable macro token surfaces from the live expansion table instead of retaining stale per-token cached text."
+        },
+        {
+          "version": "v285",
+          "date": "2026-08-02",
+          "note": "Preload exact constrained-generation authority outside per-document deadlines and cache tokenizer surface/kind projections used by the compiler without changing legal domains or model ranking."
+        },
         {
           "version": "v284",
           "date": "2026-08-01",

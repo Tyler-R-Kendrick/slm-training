@@ -3539,6 +3539,22 @@ def test_partial_decode_scoreboard_routes_to_infrastructure() -> None:
     assert diagnosis.target == "infrastructure"
 
 
+def test_stopped_eval_with_training_metrics_routes_to_infrastructure() -> None:
+    diagnosis = diagnose_outcome(
+        ExperimentOutcome(
+            experiment_id="partial-candidate",
+            campaign_id="partial-cycle",
+            status="stopped",
+            metrics={"train.last_loss": 1.25},
+            error="stage exceeded wall-time limit: evaluate_model",
+        )
+    )
+
+    assert diagnosis.target == "infrastructure"
+    assert "wall-time" in diagnosis.evidence[0]
+    assert "identical spec" in diagnosis.recommended_actions[0]
+
+
 def test_train_version_and_data_build_are_mutually_exclusive() -> None:
     with pytest.raises(ValidationError, match="train_version or data_source"):
         ExperimentKnobs(

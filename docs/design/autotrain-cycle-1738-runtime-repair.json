@@ -1,0 +1,94 @@
+{
+  "schema": "autotrain_runtime_repair/v1",
+  "run_class": "fixture_scratch_profile",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1738",
+  "record_id": "smoke_hero_01",
+  "checkpoint": "c20260802-continuous-openui-202607-98199209-c1737-control",
+  "device": "cpu",
+  "evaluation_policy": "strict_compiler_tree",
+  "eval_limit": 1,
+  "eval_offset": 0,
+  "decode_timeout_seconds": 24,
+  "evidence_authority": "exploratory_dirty_profiles_with_clean_latest_reproduction",
+  "profiles": [
+    {"variant": "cold_setup_separated", "tokens_emitted": 37, "forwards": 26, "compiler_ms": 21396.637, "states": 128093, "witnesses": 9060, "forks": 145179, "outcome": "typed_timeout"},
+    {"variant": "immutable_semantic_hash", "tokens_emitted": 50, "forwards": 36, "compiler_ms": 20457.3, "states": 132384, "witnesses": 9679, "forks": 149955, "outcome": "typed_timeout"},
+    {"variant": "minimal_official_root_projection", "tokens_emitted": 56, "forwards": 38, "compiler_ms": 20197.334, "states": 144422, "witnesses": 10368, "forks": 162666, "outcome": "typed_timeout"},
+    {"variant": "persistent_official_streaming_root_probe", "tokens_emitted": 59, "forwards": 39, "compiler_ms": 20059.013, "states": 144470, "witnesses": 10438, "forks": 162754, "outcome": "typed_timeout"},
+    {"variant": "callback_free_parser_configuration_sharing", "tokens_emitted": 63, "forwards": 42, "compiler_ms": 19787.817, "states": 144524, "witnesses": 10526, "forks": 162854, "outcome": "typed_timeout"},
+    {"variant": "copy_on_write_fed_token_history", "tokens_emitted": 66, "forwards": 45, "compiler_ms": 19562.599, "states": 144567, "witnesses": 10592, "forks": 162933, "outcome": "typed_timeout"}
+  ],
+  "profile_signal": {
+    "terminal_witness_cumulative_seconds": 23.373,
+    "outgoing_cumulative_seconds": 12.535,
+    "advance_path_cumulative_seconds": 10.357,
+    "official_bridge_calls": 189,
+    "official_bridge_cumulative_seconds": 2.882
+  },
+  "clean_reproduction": {
+    "run_id": "c1741-fed-history-cow-clean-profile",
+    "variant": "copy_on_write_fed_token_history",
+    "evidence_authority": "clean_commit_bound_fixture_profile",
+    "document_n": 1,
+    "completed_document_n": 0,
+    "incomplete_document_n": 1,
+    "decode_timeout_document_count": 1,
+    "tokens_emitted": 64,
+    "forwards": 43,
+    "compiler_ms": 19595.679,
+    "states": 144537,
+    "witnesses": 10548,
+    "forks": 162878,
+    "outcome": "typed_timeout",
+    "agentv": "emitted_failed_as_expected_for_incomplete_fixture",
+    "version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "code_commit": "b8b1bda6a6e638363f96e09f51024abf5831a760",
+      "code_dirty": false,
+      "components": {
+        "config.levers": "v30",
+        "harness.model_build.eval": "v74",
+        "harness.experiment_feature_flags": "v4",
+        "evals.meaningful_program": "2.13.0",
+        "evals.power_protocol": "v8",
+        "evals.scoring": "v22",
+        "model.twotower": "v285"
+      },
+      "stamped_at": "2026-08-02T07:52:07.578011+00:00"
+    }
+  },
+  "reverted_hypotheses": [
+    "cross_query_witness_subproblem_cache",
+    "semantic_arena_transition_cache",
+    "first_path_limited_forest",
+    "closure_preferred_witness_order",
+    "verified_final_branch_state_transfer",
+    "verified_intermediate_branch_state_transfer"
+  ],
+  "frozen_replay": {
+    "cycle_index": 1740,
+    "measurement_complete": false,
+    "arms": [
+      {"label": "matched_control", "completed_document_n": 2, "incomplete_document_n": 1, "latency_ms_p50_including_incomplete": 19078.93, "forwards": 134, "states": 313834},
+      {"label": "compact_canvas", "completed_document_n": 2, "incomplete_document_n": 1, "latency_ms_p50_including_incomplete": 18827.2, "forwards": 131, "states": 313793}
+    ],
+    "classifier_positive": false,
+    "candidate_efficiency_gain_fraction": 0.04036364,
+    "minimum_efficiency_effect_fraction": 0.05
+  },
+  "disposition": "retain_exact_repairs_continue_runtime_hypothesis_loop",
+  "model_quality_claim": false,
+  "ship_claim": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "b8b1bda6a6e638363f96e09f51024abf5831a760",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v58",
+      "harness.model_build.eval": "v74",
+      "model.twotower": "v285",
+      "dsl.completion_kernel": "v9",
+      "dsl.symbolic_surface": "v5"
+    }
+  }
+}

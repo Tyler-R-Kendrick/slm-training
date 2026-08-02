@@ -158,18 +158,22 @@ def test_convergent_suffix_states_expand_once(packed_graph: dict) -> None:
     # D is reachable via both B and C; its subtree carries no witness, so the
     # DP evaluates (D, room) under several rooms across one query.  The
     # outgoing forest for D is still built exactly once (shared domain memo);
-    # a second query reuses that packed graph without persisting a
-    # behavior-changing positive-witness shortcut.
+    # a second identical top-level query reuses its completed exact verdict.
+    # Nested subproblems remain query-local, preserving the per-candidate
+    # expansion budget and first-path order.
     session = _GraphSession(packed_graph)
     assert session.terminal_witness(session.sid("A"), 5) == _supported(
         (1, 3, 7, 14, 13)
     )
     assert session.builds > 0
     builds_after_first_query = session.builds
+    expanded_after_first_query = session.stats()["witness_states_expanded"]
     assert session.terminal_witness(session.sid("A"), 5) == _supported(
         (1, 3, 7, 14, 13)
     )
     assert session.builds == builds_after_first_query
+    assert session.stats()["witness_states_expanded"] == expanded_after_first_query
+    assert session.stats()["reachability_cache_hits"] > 0
 
 
 def test_child_prefixes_are_persistent_until_authority_scan(

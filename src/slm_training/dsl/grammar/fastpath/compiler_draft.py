@@ -201,23 +201,41 @@ def unresolved_binder_reference_pieces(
 
 
 def _semantic_kind(tokenizer: Any, token_id: int) -> str:
+    tid = int(token_id)
+    cache = getattr(tokenizer, "_compiler_semantic_kind_cache", None)
+    if isinstance(cache, dict) and tid in cache:
+        return str(cache[tid])
     kind_of = getattr(tokenizer, "kind_of", None)
     if callable(kind_of):
         try:
-            kind = kind_of(int(token_id))
-            return str(getattr(kind, "value", kind))
+            raw_kind = kind_of(tid)
+            kind = str(getattr(raw_kind, "value", raw_kind))
+            if not isinstance(cache, dict):
+                cache = {}
+                setattr(tokenizer, "_compiler_semantic_kind_cache", cache)
+            cache[tid] = kind
+            return kind
         except (TimeoutError, KeyboardInterrupt):
             raise
         except Exception:  # noqa: BLE001
             pass
-    piece = _token_piece(tokenizer, token_id)
+    piece = _token_piece(tokenizer, tid)
     if piece[:1].isupper() and piece.isidentifier():
-        return "component"
-    if piece[:1].islower() and piece.isidentifier():
-        return "binder"
-    if piece.startswith(":") or piece.startswith("<SYM_"):
-        return "symbol"
-    return "structural"
+        kind = "component"
+    elif piece[:1].islower() and piece.isidentifier():
+        kind = "binder"
+    elif piece.startswith(":") or piece.startswith("<SYM_"):
+        kind = "symbol"
+    else:
+        kind = "structural"
+    if not isinstance(cache, dict):
+        cache = {}
+        try:
+            setattr(tokenizer, "_compiler_semantic_kind_cache", cache)
+        except (AttributeError, TypeError):
+            return kind
+    cache[tid] = kind
+    return kind
 
 
 def _grammar_terminal_kind(
@@ -1173,8 +1191,7 @@ def _generated_ast_is_complete(prefix_text: str) -> bool:
     try:
         from slm_training.dsl import lang_core
 
-        program = lang_core.parse(prefix_text)
-        return isinstance(program.root, dict) and bool(program.root)
+        return lang_core.parse_has_root(prefix_text)
     except (TimeoutError, KeyboardInterrupt):
         raise
     except lang_core.ParseError:
@@ -2565,9 +2582,8 @@ def _build_openui_completion_forest_direct(
                     candidate, tuple(drafted), ConstraintStage.GRAMMAR, True, "admitted"
                 )
             )
-
     if not paths:
-        coverage: Coverage = "partial" if terminals else "none"
+        coverage = "partial" if terminals else "none"
     elif inventory_complete and _known_terminal_coverage(tokenizer, terminals):
         coverage = "complete"
     else:

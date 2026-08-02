@@ -10,6 +10,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.casefiles import case_values
+
 _SCRIPT = (
     Path(__file__).resolve().parents[2] / "scripts" / "run_autotrain_continuous.py"
 )
@@ -571,10 +573,23 @@ def test_predecessor_completed_null_drives_next_screening_arm(tmp_path: Path) ->
         recommended_slug="binder-topology",
     )
     candidate_id = matrix["recommended_experiment_id"]
+    control_id = matrix["hypotheses"][0]["experiment"]["experiment_id"]
+    for arm in (control_id, candidate_id):
+        run = camp / "runs" / arm
+        _write_eval(
+            run / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            meaningful_program_rate=0.0,
+            structural_similarity=0.1,
+            latency_ms_p50=1000.0,
+        )
+        _write_complete_scoreboard(run, "smoke")
     (camp / "matrix-proposal.json").write_text(json.dumps(matrix))
     (camp / "sdlc_delivery.json").write_text(
         json.dumps(
             {
+                "control_id": control_id,
                 "candidate_id": candidate_id,
                 "positive": False,
                 "reasons": ["no_registered_effect"],
@@ -689,14 +704,16 @@ def test_predecessor_reclassifies_stale_positive_under_current_policy(
     candidate_id = matrix["recommended_experiment_id"]
     control_id = matrix["hypotheses"][0]["experiment"]["experiment_id"]
     for arm, latency in ((control_id, 3453.06), (candidate_id, 3430.55)):
+        run = camp / "runs" / arm
         _write_eval(
-            camp / "runs" / arm / "eval_smoke.json",
+            run / "eval_smoke.json",
             suite="smoke",
             parse_rate=1.0,
             meaningful_program_rate=0.3333333333333333,
             structural_similarity=0.41973333333333335,
             latency_ms_p50=latency,
         )
+        _write_complete_scoreboard(run, "smoke")
     (camp / "matrix-proposal.json").write_text(json.dumps(matrix))
     (camp / "sdlc_delivery.json").write_text(
         json.dumps(
@@ -748,14 +765,16 @@ def test_promotion_cadence_null_exhausts_completed_arm(tmp_path: Path) -> None:
     candidate_id = matrix["recommended_experiment_id"]
     control_id = matrix["hypotheses"][0]["experiment"]["experiment_id"]
     for arm in (control_id, candidate_id):
+        run = camp / "runs" / arm
         _write_eval(
-            camp / "runs" / arm / "eval_held_out.json",
+            run / "eval_held_out.json",
             suite="held_out",
             parse_rate=1.0,
             meaningful_program_rate=0.0,
             structural_similarity=0.06024,
             latency_ms_p50=2000.0,
         )
+        _write_complete_scoreboard(run, "held_out")
     (camp / "matrix-proposal.json").write_text(json.dumps(matrix))
     (camp / "sdlc_delivery.json").write_text(
         json.dumps(
@@ -1711,6 +1730,23 @@ def _write_eval(path: Path, *, suite: str, **metrics: float) -> None:
     path.write_text(__import__("json").dumps(payload), encoding="utf-8")
 
 
+def _write_complete_scoreboard(run: Path, *suite_names: str) -> None:
+    suites = {}
+    for suite in suite_names:
+        document_n = 5 if suite == "held_out" else 3
+        suites[suite] = {
+            "suite": suite,
+            "n": document_n,
+            "document_n": document_n,
+            "completed_document_n": document_n,
+            "incomplete_document_n": 0,
+            "decode_timeout_document_count": 0,
+        }
+    (run / "scoreboard.json").write_text(
+        json.dumps({"suites": suites}), encoding="utf-8"
+    )
+
+
 def test_run_metrics_loads_held_out_when_preferred(tmp_path: Path) -> None:
     camp = tmp_path / "camp"
     run = camp / "runs" / "arm-a"
@@ -1765,6 +1801,52 @@ def test_classify_positive_rejects_c1731_efficiency_jitter(tmp_path: Path) -> No
     )
 
 
+def test_classify_positive_marks_finalized_decode_timeout_incomplete(
+    tmp_path: Path,
+) -> None:
+    camp = tmp_path / "camp"
+    for arm, similarity in (("c-control", 0.2), ("c-candidate", 0.4)):
+        run = camp / "runs" / arm
+        _write_eval(
+            run / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            meaningful_program_rate=1.0,
+            structural_similarity=similarity,
+            latency_ms_p50=1000.0,
+        )
+        (run / "scoreboard.json").write_text(
+            json.dumps(
+                {
+                    "suites": [
+                        {
+                            "suite": "smoke",
+                            "n": 3,
+                            "completed_document_n": 2,
+                            "incomplete_document_n": 1,
+                            "decode_timeout_document_count": 1,
+                        }
+                    ]
+                }
+            )
+        )
+
+    result = _mod._classify_positive(
+        camp_dir=camp,
+        primary_metric="smoke.structural_similarity",
+        control_id="c-control",
+        candidate_id="c-candidate",
+        role="screening",
+    )
+
+    assert result["positive"] is False
+    assert _mod._measurement_is_complete(result) is False
+    assert any(
+        reason.startswith("measurement_incomplete:c-control:smoke:")
+        for reason in result["reasons"]
+    )
+
+
 def test_classify_positive_promotion_sees_held_out_primary(tmp_path: Path) -> None:
     """Promotion must ignore a same-leaf smoke override and score held-out."""
     camp = tmp_path / "camp"
@@ -1786,6 +1868,7 @@ def test_classify_positive_promotion_sees_held_out_primary(tmp_path: Path) -> No
             structural_similarity=ss,
             latency_ms_p50=12000.0,
         )
+        _write_complete_scoreboard(run, "smoke", "held_out")
         # No gates.json → avoid fixture_insufficient_n noise for this unit test.
     result = _mod._classify_positive(
         camp_dir=camp,
@@ -1800,6 +1883,93 @@ def test_classify_positive_promotion_sees_held_out_primary(tmp_path: Path) -> No
         for r in (result.get("reasons") or [])
     )
     assert result["positive"] is True
+
+
+def test_classify_positive_rejects_missing_scoreboards(tmp_path: Path) -> None:
+    camp = tmp_path / "camp"
+    for arm, similarity in (("c-control", 0.2), ("c-candidate", 0.4)):
+        _write_eval(
+            camp / "runs" / arm / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            meaningful_program_rate=1.0,
+            structural_similarity=similarity,
+            latency_ms_p50=1000.0,
+        )
+    result = _mod._classify_positive(
+        camp_dir=camp,
+        primary_metric="smoke.structural_similarity",
+        control_id="c-control",
+        candidate_id="c-candidate",
+    )
+    assert result["positive"] is False
+    assert {
+        "measurement_incomplete:c-control:missing_scoreboard",
+        "measurement_incomplete:c-candidate:missing_scoreboard",
+    }.issubset(result["reasons"])
+
+
+@pytest.mark.parametrize(
+    ("suites", "reason"),
+    case_values(__file__, "test_classify_positive_rejects_invalid_or_empty_suites"),
+)
+def test_classify_positive_rejects_invalid_or_empty_suites(
+    tmp_path: Path, suites: object, reason: str
+) -> None:
+    camp = tmp_path / "camp"
+    for arm, similarity in (("c-control", 0.2), ("c-candidate", 0.4)):
+        run = camp / "runs" / arm
+        _write_eval(
+            run / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            meaningful_program_rate=1.0,
+            structural_similarity=similarity,
+            latency_ms_p50=1000.0,
+        )
+        _write_complete_scoreboard(run, "smoke")
+    scoreboard = camp / "runs" / "c-candidate" / "scoreboard.json"
+    scoreboard.write_text(json.dumps({"suites": suites}), encoding="utf-8")
+    result = _mod._classify_positive(
+        camp_dir=camp,
+        primary_metric="smoke.structural_similarity",
+        control_id="c-control",
+        candidate_id="c-candidate",
+    )
+    assert result["positive"] is False
+    assert f"measurement_incomplete:c-candidate:{reason}" in result["reasons"]
+
+
+def test_classify_positive_rejects_inconsistent_suite_counts(tmp_path: Path) -> None:
+    camp = tmp_path / "camp"
+    for arm, similarity in (("c-control", 0.2), ("c-candidate", 0.4)):
+        run = camp / "runs" / arm
+        _write_eval(
+            run / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            meaningful_program_rate=1.0,
+            structural_similarity=similarity,
+            latency_ms_p50=1000.0,
+        )
+        _write_complete_scoreboard(run, "smoke")
+    scoreboard = camp / "runs" / "c-candidate" / "scoreboard.json"
+    payload = json.loads(scoreboard.read_text(encoding="utf-8"))
+    payload["suites"]["smoke"]["completed_document_n"] = 2
+    scoreboard.write_text(json.dumps(payload), encoding="utf-8")
+    result = _mod._classify_positive(
+        camp_dir=camp,
+        primary_metric="smoke.structural_similarity",
+        control_id="c-control",
+        candidate_id="c-candidate",
+    )
+    assert result["positive"] is False
+    assert any(
+        reason.startswith(
+            "measurement_incomplete:c-candidate:smoke:invalid_counts:"
+        )
+        for reason in result["reasons"]
+    )
 
 
 def test_promotion_cycle_ignores_smoke_cli_primary_override() -> None:
@@ -2592,6 +2762,44 @@ def test_cycle_handoff_marks_incomplete_measurement_for_frozen_retry(
         action for action in handoff.actions if action.kind == "retry_measurement"
     )
     assert retry.frozen_manifest_sha256 == hashlib.sha256(b"{}\n").hexdigest()
+    assert all(action.kind != "next_experiment" for action in handoff.actions)
+
+
+def test_cycle_handoff_uses_delivery_completeness_for_wall_timeout_retry(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "cycle-1"
+    (camp / "manifests").mkdir(parents=True)
+    (camp / "manifests" / "cand.json").write_text("{}\n")
+
+    handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="screening",
+        cycle_intent="screening",
+        primary_metric="smoke.structural_similarity",
+        matrix=_priority_matrix(),
+        delivery={
+            "positive": False,
+            "candidate_id": "cand",
+            "measurement_complete": False,
+            "reasons": ["wall_timeout:control", "primary_metric_unavailable"],
+            "stack_layer": False,
+        },
+        resolution=None,
+        formal_status=None,
+    )
+
+    assert handoff.climb_state == "inconclusive"
+    assert handoff.priorities[0].area == "infrastructure"
+    assert handoff.priorities[0].proposed_experiment_id == "cand"
+    assert "exact frozen" in handoff.priorities[0].hypothesis
+    assert any(action.kind == "retry_measurement" for action in handoff.actions)
     assert all(action.kind != "next_experiment" for action in handoff.actions)
 
 

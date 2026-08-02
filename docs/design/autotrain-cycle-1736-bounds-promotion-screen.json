@@ -1,0 +1,153 @@
+{
+  "schema": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1736",
+  "loop_id": "continuous-openui-20260730",
+  "cycle_index": 1736,
+  "campaign_role": "promotion",
+  "cycle_intent": "promotion",
+  "run_class": "fixture_scratch",
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "eval_suites": ["smoke", "held_out"],
+  "steps": 24,
+  "seed": 101736,
+  "batch_size": 2,
+  "checkpoint_sync": "explicit no-sync scratch",
+  "upstream_commit": "62f315565318479b83e6352e1b0d75ab66011b9b",
+  "integration_commit": "f22d2e89df5f0949a502c7227ea1dbf174cfefdd",
+  "primary_metric": "held_out.structural_similarity",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "f22d2e89df5f0949a502c7227ea1dbf174cfefdd",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v73",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v284"
+    },
+    "stamped_at": "2026-08-02T05:47:47.159844+00:00"
+  },
+  "gate_version": "openui_ship_gates_v6",
+  "arms": [
+    {
+      "label": "matched control",
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1736-control",
+      "trainable_parameters": 1608962,
+      "grammar_completion_bounds": false,
+      "last_loss": 10.143678665161133,
+      "training_wall_seconds": 2.8885454399860464,
+      "checkpoint_sha256": "1383c5a991bd5b30964a85fa7e08e1f012d2611fe830a1c5df9004eb4efd2c4f",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "component_type_recall": 0.0,
+        "ast_node_f1": 0.0,
+        "ast_edge_f1": 0.0,
+        "placeholder_fidelity": 0.0,
+        "reward_score": 0.0,
+        "latency_ms_p50": 2933.21
+      },
+      "held_out": {
+        "n": 5,
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.08940000000000001,
+        "component_type_recall": 0.1,
+        "ast_node_f1": 0.1,
+        "ast_edge_f1": 0.0,
+        "placeholder_fidelity": 0.0,
+        "reward_score": 0.0,
+        "latency_ms_p50": 3058.12
+      },
+      "decode_stats": {
+        "smoke_forwards_count_sum": 30,
+        "smoke_completion_unique_states_sum": 33955,
+        "smoke_completion_witness_states_expanded_sum": 4613,
+        "smoke_completion_parser_forks_sum": 37962,
+        "held_out_forwards_count_sum": 54,
+        "held_out_completion_unique_states_sum": 61016,
+        "held_out_completion_witness_states_expanded_sum": 7839,
+        "held_out_completion_parser_forks_sum": 67793
+      },
+      "agentv_execution_errors": 0,
+      "ship_gates_pass": false
+    },
+    {
+      "label": "grammar completion bounds enabled",
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1736-bounds",
+      "trainable_parameters": 1608962,
+      "grammar_completion_bounds": true,
+      "last_loss": 10.143678665161133,
+      "training_wall_seconds": 3.8855469310074113,
+      "checkpoint_sha256": "a61139516ed7f3d99bd71c4d11e23dda2727f8a6c1c7de7b65bf4811bcda0f3b",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "component_type_recall": 0.0,
+        "ast_node_f1": 0.0,
+        "ast_edge_f1": 0.0,
+        "placeholder_fidelity": 0.0,
+        "reward_score": 0.0,
+        "latency_ms_p50": 3072.99
+      },
+      "held_out": {
+        "n": 5,
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.08940000000000001,
+        "component_type_recall": 0.1,
+        "ast_node_f1": 0.1,
+        "ast_edge_f1": 0.0,
+        "placeholder_fidelity": 0.0,
+        "reward_score": 0.0,
+        "latency_ms_p50": 3177.65
+      },
+      "decode_stats": {
+        "smoke_forwards_count_sum": 30,
+        "smoke_completion_unique_states_sum": 33955,
+        "smoke_completion_witness_states_expanded_sum": 4613,
+        "smoke_completion_parser_forks_sum": 37962,
+        "held_out_forwards_count_sum": 54,
+        "held_out_completion_unique_states_sum": 61016,
+        "held_out_completion_witness_states_expanded_sum": 7839,
+        "held_out_completion_parser_forks_sum": 67793
+      },
+      "agentv_execution_errors": 0,
+      "ship_gates_pass": false
+    }
+  ],
+  "comparison": {
+    "parameter_matched": true,
+    "smoke_quality_delta": 0.0,
+    "held_out_quality_delta": 0.0,
+    "smoke_latency_regression_fraction": 0.047654276,
+    "held_out_latency_regression_fraction": 0.039086105,
+    "training_wall_ratio": 1.345156935,
+    "disposition": "quality_null_slower_rejected"
+  },
+  "formal_evidence": {
+    "status": "not_applicable:no_champion",
+    "reason": "The promotion-cadence screen produced no confirmed champion, so no campaign Lean certificate was applicable; the full repository Lean suite passed before this cycle."
+  },
+  "next_priority": {
+    "area": "experiments",
+    "experiment": "compact_active_canvas",
+    "hypothesis": "compact_active_canvas reduces smoke latency_ms_p50 versus the matched control without lowering parse_rate"
+  },
+  "checkpoint_documentation_required": true,
+  "checkpoint_reuse": "forbidden",
+  "ship_eligible": false
+}

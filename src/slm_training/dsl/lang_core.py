@@ -284,6 +284,25 @@ def parse(source: str) -> Program:
     return program
 
 
+def parse_has_root(source: str) -> bool:
+    """Ask the official parser only whether it produced a root AST node.
+
+    Completion search needs this single bit, not the serialized AST,
+    placeholders, policy walk, or sidecar metadata returned by :func:`parse`.
+    The bridge executes the identical parser and returns only that projection.
+    """
+    cache_key = "parse_has_root:" + hashlib.sha256(source.encode("utf-8")).hexdigest()
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return bool(cached)
+    result = _invoke({"op": "parse_has_root", "source": source})
+    if result.get("error"):
+        raise ParseError(result["error"])
+    value = bool(result.get("has_root"))
+    _cache_put(cache_key, value)
+    return value
+
+
 def validate(source: str) -> Program:
     """Parse + official schema validation + placeholder content policy."""
     cache_key = "validate:" + hashlib.sha256(source.encode("utf-8")).hexdigest()

@@ -10,6 +10,8 @@ fresh ``OpenUIIncrementalEngine`` synced to the decoded prefix text.
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 import pytest
 
 from slm_training.dsl.grammar.fastpath import semantic_state as ss
@@ -524,3 +526,13 @@ def test_completion_session_threads_one_state_per_request(tok, schema) -> None:
         current = nxt
     stats = session.stats()
     assert stats["unique_states"] >= 4
+
+
+def test_semantic_state_memoizes_immutable_structural_hash(tok) -> None:
+    state = replace(ss.initial_state(tok))
+    assert "_semantic_hash" not in state.__dict__
+
+    first = hash(state)
+
+    assert state.__dict__["_semantic_hash"] == first
+    assert hash(state) == first
