@@ -9,6 +9,8 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+
+from tests.casefiles import case_values
 from pydantic import ValidationError
 
 from slm_training.autoresearch.engine import (
@@ -3580,13 +3582,7 @@ def test_execute_keeps_typed_ship_gate_rejection_as_completed_evidence(
 
 @pytest.mark.parametrize(
     "missing_counter",
-    (
-        "n",
-        "document_n",
-        "completed_document_n",
-        "incomplete_document_n",
-        "decode_timeout_count",
-    ),
+    case_values(__file__, "test_expected_gate_rejection_requires_every_completeness_counter"),
 )
 def test_expected_gate_rejection_requires_every_completeness_counter(
     tmp_path: Path, missing_counter: str

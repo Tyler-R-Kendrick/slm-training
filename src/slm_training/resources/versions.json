@@ -12,7 +12,7 @@
   ],
   "components": {
     "formal.leverproof": {
-      "version": "v9",
+      "version": "v10",
       "kind": "harness",
       "paths": [
         "src/leverproof_lean/",
@@ -25,6 +25,11 @@
         "src/leverproof_lean/Test/Proofs.lean"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-08-02",
+          "note": "Keep proof audits fail closed while portably falling back to grep when ripgrep is absent."
+        },
         {
           "version": "v9",
           "date": "2026-08-02",
@@ -2644,6 +2649,11 @@
         {
           "version": "v60",
           "date": "2026-08-02",
+          "note": "no-bump: externalize the completeness-counter regression inputs without changing harness behavior."
+        },
+        {
+          "version": "v60",
+          "date": "2026-08-02",
           "note": "Require complete AgentV-bound evaluation counters, SHA-bound action receipts, theorem-repair handoffs, bounded supervised child stages, symmetric formal and arm budgets, counterbalanced serialized arms, and content-revalidated promotion replicates."
         },
         {
@@ -3005,6 +3015,11 @@
         ".github/workflows/ci.yml"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-08-02",
+          "note": "no-bump: cover and document the portable proof-audit search-tool fallback without changing formal orchestration behavior."
+        },
         {
           "version": "v8",
           "date": "2026-08-02",

@@ -50,15 +50,22 @@ LEVERPROOF_MAKEFILE = ROOT / "src/leverproof_lean/Makefile"
 
 
 def _make_proofs(
-    cwd: Path, *, lake: Path = Path("/bin/true"), path: str | None = None
+    cwd: Path,
+    *,
+    lake: Path = Path("/bin/true"),
+    path: str | None = None,
+    rg: str | None = None,
 ) -> subprocess.CompletedProcess[str]:
     make = shutil.which("make")
     assert make is not None
     env = dict(os.environ)
     if path is not None:
         env["PATH"] = path
+    command = [make, "-f", str(LEVERPROOF_MAKEFILE), "proofs", f"LAKE={lake}"]
+    if rg is not None:
+        command.append(f"RG={rg}")
     return subprocess.run(
-        [make, "-f", str(LEVERPROOF_MAKEFILE), "proofs", f"LAKE={lake}"],
+        command,
         cwd=cwd,
         env=env,
         capture_output=True,
@@ -67,14 +74,20 @@ def _make_proofs(
     )
 
 
-def test_leverproof_source_audit_requires_rg(tmp_path: Path) -> None:
+def test_leverproof_source_audit_requires_a_search_tool(tmp_path: Path) -> None:
     empty_bin = tmp_path / "bin"
     empty_bin.mkdir()
 
     result = _make_proofs(tmp_path, path=str(empty_bin))
 
     assert result.returncode != 0
-    assert "proof source audit requires rg" in result.stderr
+    assert "proof source audit requires rg or grep" in result.stderr
+
+
+def test_leverproof_source_audit_falls_back_to_grep(tmp_path: Path) -> None:
+    result = _make_proofs(tmp_path, rg="missing-rg-for-test")
+
+    assert result.returncode == 0
 
 
 def test_leverproof_source_audit_fails_on_rg_error(tmp_path: Path) -> None:

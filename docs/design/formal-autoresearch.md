@@ -66,8 +66,9 @@ preflight path rather than an unknown-template side path.
 `make -C src/leverproof_lean test` rejects `sorry`, `admit`, custom `axiom`,
 `unsafe`, and `native_decide`; `scripts.verify_formal_contracts` rejects the
 proof placeholders and custom axioms in the Mathlib package. Both audit their
-exported theorems for Lean's `sorryAx`. The LeverProof Make audit first requires
-`rg`, distinguishes no-match from search failure, rejects source-level `sorryAx`,
+exported theorems for Lean's `sorryAx`. The LeverProof Make audit prefers `rg`
+and portably falls back to `grep` only when `rg` is absent; both paths distinguish
+no-match from search failure and reject source-level `sorryAx`,
 and rejects `sorryAx` in theorem-audit output. Lean's ordinary foundational axioms
 such as `propext` remain disclosed by `#print axioms`; missing tools or unexpected
 output fail closed. The repository hard run cap is the timeout.

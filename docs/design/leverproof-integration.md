@@ -79,8 +79,9 @@ controlled tests. Missing evidence, digest drift, replay failure, timeout,
 candidate mismatch, v1 evidence at a new promotion, or any band breach fails
 promotion closed.
 
-`make test` also owns the proof-source trust check. It requires `rg`, treats a
-search error differently from a clean no-match, rejects proof escapes including
+`make test` also owns the proof-source trust check. It prefers `rg` and falls back
+to `grep` only when needed; either path treats a search error differently from a
+clean no-match and rejects proof escapes including
 literal `sorryAx`, and rejects any `sorryAx` dependency disclosed by the exported
 theorem audit. The continuous driver runs the checker in a
 bounded process group under the smaller of the cycle deadline and 120 seconds and
