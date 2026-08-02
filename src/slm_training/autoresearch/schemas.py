@@ -240,6 +240,7 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "compiler_search_backtrack_limit",
         "data_source",
         "design_md_context",
+        "design_md_dropout",
         "eval_version",
         "fidelity_loss_weight",
         "semantic_contrast_dir",
@@ -550,6 +551,7 @@ class ExperimentKnobs(StrictModel):
     schema_in_context: bool | None = None
     slot_contract_in_context: bool | None = None
     design_md_context: bool | None = None
+    design_md_dropout: float | None = Field(default=None, ge=0, le=1)
     local_files_only: bool | None = None
     sync_checkpoints: bool | None = None
     topology_actions: bool | None = None

@@ -681,6 +681,8 @@ def compile_commands(
             train.append("--slot-contract-in-context")
         if knobs.design_md_context is False:
             train.append("--no-design-md-context")
+        if knobs.design_md_dropout is not None:
+            train.extend(["--design-md-dropout", str(knobs.design_md_dropout)])
         for field, flag in {
             "runtime_symbol_features": "runtime-symbol-features",
             "constraint_graph_mode": "constraint-graph-mode",
