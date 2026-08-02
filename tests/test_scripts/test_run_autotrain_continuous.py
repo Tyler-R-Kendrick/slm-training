@@ -117,6 +117,7 @@ def test_efficiency_win_counts_when_faster_with_same_mpr() -> None:
         r.startswith("primary_metric_win:") or r.startswith("efficiency_win:")
         for r in reasons
     )
+    assert any(r.startswith("quality_held:") for r in reasons)
 
 
 def test_efficiency_micro_win_is_rejected_as_noise() -> None:
@@ -127,12 +128,12 @@ def test_efficiency_micro_win_is_rejected_as_noise() -> None:
         t_mpr=0.3333333333333333,
     )
     positive, reasons = _classify(
-        control=control, candidate=candidate, primary_metric="smoke.structural_similarity"
+        control=control,
+        candidate=candidate,
+        primary_metric="smoke.structural_similarity",
     )
     assert positive is False
-    assert any(
-        r.startswith("efficiency_win_rejected_min_effect:") for r in reasons
-    )
+    assert any(r.startswith("efficiency_win_rejected_min_effect:") for r in reasons)
 
 
 def test_mpr_regression_blocks_latency_win() -> None:
@@ -516,6 +517,7 @@ def test_completed_null_steers_to_distinct_quality_arm() -> None:
 
     assert priorities[0].proposed_experiment_id == "c20260731-c1729-component-plan"
     assert "completed null" in priorities[0].expected_information_gain
+    assert "component-plan" in priorities[0].hypothesis
 
 
 def test_predecessor_completed_null_drives_next_screening_arm(tmp_path: Path) -> None:
@@ -561,12 +563,132 @@ def test_predecessor_completed_null_drives_next_screening_arm(tmp_path: Path) ->
     )
 
     assert (
-        _mod._predecessor_priority_slug(root, camp.name, skip=set())
-        == "component-plan"
+        _mod._predecessor_priority_slug(root, camp.name, skip=set()) == "component-plan"
     )
-    assert _mod._predecessor_priority_slug(
-        root, camp.name, skip={"component-plan"}
-    ) != "binder-topology"
+    assert (
+        _mod._predecessor_priority_slug(root, camp.name, skip={"component-plan"})
+        != "binder-topology"
+    )
+
+
+def test_predecessor_reclassifies_stale_positive_under_current_policy(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "continuous-loop-20260801-c1731"
+    matrix = _mod._matrix(
+        campaign_id=camp.name,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=22,
+        cycle=1731,
+        role="screening",
+        recommended_slug="component-plan",
+    )
+    candidate_id = matrix["recommended_experiment_id"]
+    control_id = matrix["hypotheses"][0]["experiment"]["experiment_id"]
+    for arm, latency in ((control_id, 3453.06), (candidate_id, 3430.55)):
+        _write_eval(
+            camp / "runs" / arm / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            meaningful_program_rate=0.3333333333333333,
+            structural_similarity=0.41973333333333335,
+            latency_ms_p50=latency,
+        )
+    (camp / "matrix-proposal.json").write_text(json.dumps(matrix))
+    (camp / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "control_id": control_id,
+                "candidate_id": candidate_id,
+                "positive": True,
+                "reasons": ["historical_noise_scale_efficiency_win"],
+            }
+        )
+    )
+    (camp / "cycle_handoff.json").write_text(
+        json.dumps(
+            {
+                "cycle_role": "screening",
+                "cycle_intent": "screening",
+                "primary_metric": "smoke.structural_similarity",
+                "priorities": [
+                    {
+                        "rank": 1,
+                        "disposition": "experiment_next",
+                        "proposed_experiment_id": candidate_id,
+                    }
+                ],
+            }
+        )
+    )
+
+    assert (
+        _mod._predecessor_priority_slug(root, camp.name, skip=set()) == "component-edge"
+    )
+
+
+def test_promotion_cadence_null_exhausts_completed_arm(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "continuous-loop-20260801-c1732"
+    matrix = _mod._matrix(
+        campaign_id=camp.name,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=22,
+        cycle=1732,
+        role="promotion",
+        recommended_slug="component-plan",
+    )
+    candidate_id = matrix["recommended_experiment_id"]
+    control_id = matrix["hypotheses"][0]["experiment"]["experiment_id"]
+    for arm in (control_id, candidate_id):
+        _write_eval(
+            camp / "runs" / arm / "eval_held_out.json",
+            suite="held_out",
+            parse_rate=1.0,
+            meaningful_program_rate=0.0,
+            structural_similarity=0.06024,
+            latency_ms_p50=2000.0,
+        )
+    (camp / "matrix-proposal.json").write_text(json.dumps(matrix))
+    (camp / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "control_id": control_id,
+                "candidate_id": candidate_id,
+                "positive": False,
+                "reasons": ["primary_metric_null_or_worse"],
+            }
+        )
+    )
+    (camp / "cycle_handoff.json").write_text(
+        json.dumps(
+            {
+                "cycle_role": "promotion",
+                "cycle_intent": "promotion",
+                "primary_metric": "held_out.structural_similarity",
+                "priorities": [
+                    {
+                        "rank": 1,
+                        "disposition": "experiment_next",
+                        "proposed_experiment_id": candidate_id,
+                    }
+                ],
+            }
+        )
+    )
+
+    assert (
+        _mod._predecessor_priority_slug(root, camp.name, skip=set()) == "component-edge"
+    )
 
 
 def test_matrix_promote_path_confirmed_knobs() -> None:
@@ -1546,7 +1668,7 @@ def test_classify_positive_rejects_c1731_efficiency_jitter(tmp_path: Path) -> No
 
 
 def test_classify_positive_promotion_sees_held_out_primary(tmp_path: Path) -> None:
-    """Regression: promote primary must not be unavailable when held_out eval exists."""
+    """Promotion must ignore a same-leaf smoke override and score held-out."""
     camp = tmp_path / "camp"
     for arm, ss in (("c-control", 0.30), ("c-promote", 0.40)):
         run = camp / "runs" / arm
@@ -1569,7 +1691,7 @@ def test_classify_positive_promotion_sees_held_out_primary(tmp_path: Path) -> No
         # No gates.json → avoid fixture_insufficient_n noise for this unit test.
     result = _mod._classify_positive(
         camp_dir=camp,
-        primary_metric="held_out.structural_similarity",
+        primary_metric="smoke.structural_similarity",
         control_id="c-control",
         candidate_id="c-promote",
         role="promotion",
@@ -1580,6 +1702,17 @@ def test_classify_positive_promotion_sees_held_out_primary(tmp_path: Path) -> No
         for r in (result.get("reasons") or [])
     )
     assert result["positive"] is True
+
+
+def test_promotion_cycle_ignores_smoke_cli_primary_override() -> None:
+    assert (
+        _mod._effective_primary_metric(
+            role="promotion",
+            policy_metric="held_out.structural_similarity",
+            requested_metric="smoke.structural_similarity",
+        )
+        == "held_out.structural_similarity"
+    )
 
 
 def test_classify_positive_promotion_null_held_out_not_positive(tmp_path: Path) -> None:
