@@ -2571,7 +2571,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v51",
+      "version": "v52",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2611,6 +2611,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v52",
+          "date": "2026-08-02",
+          "note": "Require a policy-owned five-percent minimum efficiency effect so noise-scale latency jitter cannot mint positive continuous cycles or repeat exhausted model arms."
+        },
         {
           "version": "v51",
           "date": "2026-08-01",
@@ -6945,6 +6950,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest model-card provenance for two unrelated c1731 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
+        },
         {
           "version": "v3",
           "date": "2026-08-02",
