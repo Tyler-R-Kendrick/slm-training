@@ -1,0 +1,62 @@
+{
+  "schema": "autotrain_measured_results/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202608-75a7803e-c1",
+  "cycle_index": 1,
+  "loop_id": "continuous-openui-20260802-local",
+  "run_class": "fixture_scratch",
+  "source_commit": "cb3f557663bed01d9a35f304ff65b8f8a19eefcc",
+  "source_dirty": false,
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "primary_metric": "smoke.binder_reference_f1",
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202608-75a7803e-c1-control",
+      "status": "failed",
+      "exit_code": 2,
+      "campaign_manifest_sha256": "67bbb3f9981931248d95c6941e1eca17b3a08646f31ffbc82690ed46524fc7e4",
+      "metrics": {},
+      "failure": "train_model exited before training: ModuleNotFoundError: No module named 'torch' (src/slm_training/runtime/accel/__init__.py:28, detect_device).",
+      "cause": "infrastructure_gap: fresh container venv (python3.12) had slm_training installed via `pip install -e .` without the optional `torch` extra, so the base runtime import fails before any model code runs."
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202608-75a7803e-c1-bounds",
+      "status": "failed",
+      "exit_code": 2,
+      "campaign_manifest_sha256": "b0caa3196f28fb7b6c37ca40f5412da457187948c40667dc59377845180f580f",
+      "metrics": {},
+      "failure": "Identical failure to control: ModuleNotFoundError: No module named 'torch'.",
+      "cause": "Same infrastructure_gap as control; not a knob-dependent failure."
+    }
+  ],
+  "diagnosis": {
+    "area": "infrastructure",
+    "signal": "ModuleNotFoundError: No module named 'torch'",
+    "authority": "observed",
+    "confidence": 0.9,
+    "disposition": "repair the failed harness stage and rerun the identical spec"
+  },
+  "repair_applied": "pip install \"torch>=2.2,<2.6\" --index-url https://download.pytorch.org/whl/cpu (installed torch==2.5.1+cpu into .venv); verified with `python -c \"import torch\"`. Follow-up cycles in this container should `pip install -e '.[torch]'` (or equivalent) instead of the bare editable install to avoid re-hitting this gap.",
+  "sdlc_phase_a": {
+    "positive": false,
+    "reasons": [
+      "empty_metrics:control",
+      "empty_metrics:bounds",
+      "primary_metric_unavailable"
+    ],
+    "stack_layer": false
+  },
+  "honesty": "environment_probe; infrastructure failure only, no model measurement produced; no checkpoint or ship claim; both arms unscored for smoke.binder_reference_f1",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "cb3f557663bed01d9a35f304ff65b8f8a19eefcc",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v48",
+      "harness.model_build.eval": "v73",
+      "model.twotower": "v276"
+    },
+    "stamped_at": "2026-08-02T02:32:00.307424+00:00"
+  }
+}
