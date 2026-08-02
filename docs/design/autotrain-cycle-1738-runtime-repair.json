@@ -23,7 +23,10 @@
     {"variant": "cached_semantic_tokenizer_projections", "tokens_emitted": 79, "forwards": 55, "compiler_ms": 18704.087, "states": 144781, "witnesses": 10923, "forks": 163309, "outcome": "typed_timeout", "evidence_authority": "exploratory_dirty_profile"},
     {"variant": "direct_semantic_state_and_frame_constructors", "tokens_emitted": 81, "forwards": 57, "compiler_ms": 18271.607, "states": 144814, "witnesses": 10971, "forks": 163367, "outcome": "typed_timeout", "evidence_authority": "exploratory_dirty_profile"},
     {"variant": "shared_token_and_terminal_classification_projections", "tokens_emitted": 100, "forwards": 66, "compiler_ms": 17604.31, "states": 145039, "witnesses": 11238, "forks": 163766, "outcome": "typed_timeout", "evidence_authority": "exploratory_dirty_profile"},
-    {"variant": "shared_token_and_terminal_classification_projections_clean", "tokens_emitted": 104, "forwards": 68, "compiler_ms": 17658.979, "states": 145040, "witnesses": 11243, "forks": 163770, "outcome": "completed", "evidence_authority": "clean_commit_bound_fixture_profile"}
+    {"variant": "shared_token_and_terminal_classification_projections_clean", "tokens_emitted": 104, "forwards": 68, "compiler_ms": 17658.979, "states": 145040, "witnesses": 11243, "forks": 163770, "outcome": "completed", "evidence_authority": "clean_commit_bound_fixture_profile"},
+    {"variant": "cached_parser_stack_projection_ship_bundle_reverted", "tokens_emitted": 85, "forwards": 61, "compiler_ms": 18057.511, "states": 145008, "witnesses": 11163, "forks": 163707, "outcome": "typed_timeout", "evidence_authority": "exploratory_dirty_profile_reverted_as_slower"},
+    {"variant": "cached_parser_stack_projection_smoke_replay_reverted", "tokens_emitted": 93, "forwards": 64, "compiler_ms": 17907.274, "states": 145035, "witnesses": 11225, "forks": 163757, "outcome": "typed_timeout", "evidence_authority": "exploratory_dirty_profile_reverted_as_slower"},
+    {"variant": "cached_parser_stack_projection_cprofile_reverted", "tokens_emitted": 7, "forwards": 4, "compiler_ms": 23534.799, "states": 30785, "witnesses": 1006, "forks": 31895, "outcome": "typed_timeout", "evidence_authority": "exploratory_dirty_cprofile_reverted_as_slower"}
   ],
   "profile_signal": {
     "terminal_witness_cumulative_seconds": 23.373,
@@ -43,6 +46,30 @@
     "profiled_exact_states_before": 29467,
     "profiled_exact_states_after": 30877,
     "interpretation": "classification sharing removes repeated projection work; the non-profiler reproduction is authoritative for the retained 100-token throughput signal"
+  },
+  "rejected_stack_key_profile_signal": {
+    "run_id": "c1747-stack-key-profile",
+    "profiler": "cProfile",
+    "parser_stack_key_calls": 68854,
+    "candidate_combined_parser_key_and_accepts_cumulative_seconds": 3.929,
+    "baseline_combined_parser_key_and_accepts_cumulative_seconds": 3.485,
+    "nonprofiled_tokens_emitted": [85, 93],
+    "prior_clean_tokens_emitted": 104,
+    "interpretation": "helper lookup overhead exceeded duplicate stack serialization savings; implementation and v16 proposal reverted"
+  },
+  "rejected_stack_key_ship_bundle": {
+    "run_id": "c1747-stack-key-dirty",
+    "document_n_per_suite": 1,
+    "agentv_execution_errors": 0,
+    "ship_gates_pass": false,
+    "suites": [
+      {"suite": "smoke", "completed": 0, "timeouts": 1, "latency_ms_p50_including_incomplete": 24001.91, "parse_rate": null, "meaningful_program_rate": null, "structural_similarity": null, "tokens": 85, "forwards": 61, "compiler_ms": 18057.511},
+      {"suite": "held_out", "completed": 0, "timeouts": 1, "latency_ms_p50_including_incomplete": 24001.33, "parse_rate": null, "meaningful_program_rate": null, "structural_similarity": null, "tokens": 71, "forwards": 50, "compiler_ms": 19240.073},
+      {"suite": "adversarial", "completed": 1, "timeouts": 0, "latency_ms_p50_including_incomplete": 8312.93, "parse_rate": 1.0, "meaningful_program_rate": 1.0, "structural_similarity": 0.14, "tokens": 76, "forwards": 40, "compiler_ms": 4775.345},
+      {"suite": "ood", "completed": 0, "timeouts": 1, "latency_ms_p50_including_incomplete": 24000.79, "parse_rate": null, "meaningful_program_rate": null, "structural_similarity": null, "tokens": 71, "forwards": 50, "compiler_ms": 19154.074},
+      {"suite": "rico_held", "completed": 0, "timeouts": 1, "latency_ms_p50_including_incomplete": 24001.45, "parse_rate": null, "meaningful_program_rate": null, "structural_similarity": null, "tokens": 71, "forwards": 50, "compiler_ms": 19145.331}
+    ],
+    "interpretation": "diagnostic n=1 negative harness evidence; no model-quality or ship claim"
   },
   "clean_reproduction": {
     "run_id": "c1741-fed-history-cow-clean-profile",
@@ -293,7 +320,8 @@
     "verified_final_branch_state_transfer",
     "verified_intermediate_branch_state_transfer",
     "copy_on_write_control_parser_stacks_below_effect_floor",
-    "persistent_official_bridge_reader_neutral"
+    "persistent_official_bridge_reader_neutral",
+    "cached_parser_stack_projection_slower"
   ],
   "frozen_replay": {
     "cycle_index": 1740,
