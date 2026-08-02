@@ -2646,7 +2646,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v96",
+      "version": "v97",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2686,6 +2686,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v97",
+          "date": "2026-08-02",
+          "note": "Extract every evaluation suite headline independently of verbose per-record telemetry so held-out primaries cannot disappear from outcomes and terminal matrices."
+        },
         {
           "version": "v96",
           "date": "2026-08-02",
