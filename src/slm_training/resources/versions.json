@@ -2606,7 +2606,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v61",
+      "version": "v62",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2647,9 +2647,19 @@
       ],
       "history": [
         {
+          "version": "v62",
+          "date": "2026-08-02",
+          "note": "Merge two independent v61 bumps from a common v60 base (frozen-replay slug recovery fix vs. campaign-lock digest projection); both v61 entries below are preserved unedited, this entry only reconciles the version counter after the concurrent-branch collision."
+        },
+        {
           "version": "v61",
           "date": "2026-08-02",
           "note": "Fix _apply_frozen_replay slug recovery: a single-hyphen rsplit truncated multi-word _SCREENING_ARM_BANK slugs (component-plan, component-edge, component-inventory, binder-topology, component-structure), so any frozen-replay retry_measurement for those arms crashed with 'unsupported automatic frozen replay arm'. Match against known bank slugs (longest-first suffix match) instead."
+        },
+        {
+          "version": "v61",
+          "date": "2026-08-02",
+          "note": "Validate historical campaign-lock digests against an explicit projection that omits only replicate-ledger defaults added after those locks were written."
         },
         {
           "version": "v60",
