@@ -2714,27 +2714,45 @@ def _completed_candidate_priorities(
             )
     if alternative is not None:
         next_id = str(alternative["experiment_id"])
+        alternative_knobs = dict(alternative.get("knobs") or {})
         slug = (
-            _arm_slug_from_knobs(
-                dict(alternative.get("knobs") or {}), candidate_id=next_id
-            )
+            _arm_slug_from_knobs(alternative_knobs, candidate_id=next_id)
             or next_id.rsplit("-", 1)[-1]
         )
+        is_quality_hypothesis = any(
+            float(alternative_knobs.get(key) or 0) > 0 for key in quality_keys
+        )
+        selected_hypothesis = str(alternative.get("hypothesis") or "").strip()
+        if is_quality_hypothesis:
+            area = "model"
+            hypothesis = (
+                "The completed frozen replay rejects the prior arm; test "
+                if resolved_infrastructure
+                else "The completed non-positive arm is exhausted; test "
+            ) + f"the distinct size-matched '{slug}' quality hypothesis next."
+            information_gain = (
+                "Moves from resolved infrastructure attribution to model quality."
+                if resolved_infrastructure
+                else "Avoids rerunning a completed null while preserving matched attribution."
+            )
+        else:
+            area = "experiments"
+            hypothesis = (
+                "The recent quality families are exhausted; run the distinct "
+                f"'{slug}' diagnostic next."
+            )
+            if selected_hypothesis:
+                hypothesis += f" {selected_hypothesis}"
+            information_gain = (
+                "Tests a different registered lever after the recent quality-family "
+                "cooldown without mislabeling a runtime diagnostic as quality."
+            )
         rows[0].update(
             {
-                "area": "model",
-                "hypothesis": (
-                    "The completed frozen replay rejects the prior arm; test "
-                    if resolved_infrastructure
-                    else "The completed non-positive arm is exhausted; test "
-                )
-                + f"the distinct size-matched '{slug}' quality hypothesis next.",
+                "area": area,
+                "hypothesis": hypothesis,
                 "confidence": 0.9,
-                "expected_information_gain": (
-                    "Moves from resolved infrastructure attribution to model quality."
-                    if resolved_infrastructure
-                    else "Avoids rerunning a completed null while preserving matched attribution."
-                ),
+                "expected_information_gain": information_gain,
                 "authority": "observed_result",
                 "disposition": "experiment_next",
                 "proposed_experiment_id": next_id,
