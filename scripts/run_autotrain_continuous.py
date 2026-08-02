@@ -443,6 +443,7 @@ _LEVER_KNOB_KEYS = (
     "component_plan_loss_weight",
     "component_plan_decode_weight",
     "component_edge_loss_weight",
+    "component_edge_alignment_loss_weight",
     "component_edge_decode_weight",
     "component_inventory_loss_weight",
     "component_inventory_decode_weight",
@@ -566,6 +567,14 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         "fidelity",
         "Stronger placeholder-fidelity supervision improves binder_reference_f1 and structural_similarity without lowering parse_rate.",
         {"fidelity_loss_weight": 1.5},
+    ),
+    (
+        "edge-alignment",
+        "Compiler-decision component-edge alignment improves structural_similarity and binder_reference_f1 without lowering parse_rate.",
+        {
+            "component_edge_alignment_loss_weight": 1.0,
+            "structural_aux_head_profile": "component-edge",
+        },
     ),
     (
         "component-structure",
@@ -1007,6 +1016,8 @@ def _arm_slug_from_knobs(
         return "component-structure"
     if knobs.get("component_plan_loss_weight"):
         return "component-plan"
+    if knobs.get("component_edge_alignment_loss_weight"):
+        return "edge-alignment"
     if knobs.get("component_edge_loss_weight"):
         return "component-edge"
     if knobs.get("component_inventory_loss_weight"):
@@ -1193,6 +1204,7 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
         "literal-margin",
         "literal-close",
         "fidelity",
+        "edge-alignment",
     )
     legacy_quality_slugs = {
         "component-plan",
@@ -3633,6 +3645,7 @@ def _completed_candidate_priorities(
         "compiler_alignment_loss_weight",
         "component_plan_loss_weight",
         "component_edge_loss_weight",
+        "component_edge_alignment_loss_weight",
         "component_inventory_loss_weight",
         "binder_topology_loss_weight",
         "binder_component_plan_loss_weight",
@@ -5207,6 +5220,7 @@ def _matrix(
             "component_plan_loss_weight": 0.0,
             "component_plan_decode_weight": 0.0,
             "component_edge_loss_weight": 0.0,
+            "component_edge_alignment_loss_weight": 0.0,
             "component_edge_decode_weight": 0.0,
             "component_inventory_loss_weight": 0.0,
             "component_inventory_decode_weight": 0.0,
@@ -5273,6 +5287,7 @@ def _matrix(
                 "component_plan_loss_weight",
                 "component_plan_decode_weight",
                 "component_edge_loss_weight",
+                "component_edge_alignment_loss_weight",
                 "component_edge_decode_weight",
                 "component_inventory_loss_weight",
                 "component_inventory_decode_weight",
@@ -5458,6 +5473,7 @@ def _matrix(
                 "component_plan_loss_weight",
                 "component_plan_decode_weight",
                 "component_edge_loss_weight",
+                "component_edge_alignment_loss_weight",
                 "component_edge_decode_weight",
                 "component_inventory_loss_weight",
                 "component_inventory_decode_weight",
@@ -5898,6 +5914,7 @@ def _manifest(
                 "compact_active_canvas": False,
                 "component_plan_loss_weight": 0.0,
                 "component_edge_loss_weight": 0.0,
+                "component_edge_alignment_loss_weight": 0.0,
                 "component_inventory_loss_weight": 0.0,
                 "binder_topology_loss_weight": 0.0,
                 "binder_component_plan_loss_weight": 0.0,
