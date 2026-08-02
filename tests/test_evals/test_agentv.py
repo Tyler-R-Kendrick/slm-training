@@ -199,6 +199,35 @@ def test_agentv_forwards_w3c_trace_id_to_the_node_runner(tmp_path, monkeypatch) 
     ]
 
 
+def test_agentv_sanitizes_node_options_for_the_runner_subprocess(
+    tmp_path, monkeypatch
+) -> None:
+    runner = tmp_path / "runner.mjs"
+    runner.write_text("// fixture")
+    sdk_root = tmp_path / "sdk-root"
+    captured = {}
+    monkeypatch.setattr(agentv_module, "_agentv_runtime", lambda _: (runner, sdk_root))
+    monkeypatch.setenv("NODE_OPTIONS", "--import tsx")
+
+    def fake_run(command, **kwargs):
+        captured["env"] = kwargs.get("env")
+        return SimpleNamespace(
+            returncode=0,
+            stdout=json.dumps({"summary": {}, "artifacts": {}}),
+            stderr="",
+        )
+
+    monkeypatch.setattr(agentv_module.subprocess, "run", fake_run)
+    publish_agentv_evaluation(
+        tmp_path,
+        name="node-options",
+        claim="fixture_wiring_not_ship",
+        cases=[{"id": "case", "criteria": "passes", "pass": True}],
+    )
+    assert captured["env"] is not None
+    assert captured["env"]["NODE_OPTIONS"] == ""
+
+
 def test_agentv_model_bundle_cannot_pass_a_smoke_only_run(tmp_path) -> None:
     published = publish_model_evaluation(
         tmp_path,

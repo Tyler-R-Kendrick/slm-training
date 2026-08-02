@@ -34,6 +34,15 @@ def _agentv_runtime(repo_root: Path) -> tuple[Path, Path]:
     )
 
 
+def _sanitized_node_env() -> dict[str, str]:
+    # Session environments may inject NODE_OPTIONS entries (e.g. --import tsx)
+    # that this Node build rejects with exit 9, silently killing the runner.
+    # Mirrors slm_training.dsl.grammar.backends.graphql_js._sanitized_env.
+    env = dict(os.environ)
+    env["NODE_OPTIONS"] = ""
+    return env
+
+
 def publish_agentv_evaluation(
     run_dir: Path | str,
     *,
@@ -122,6 +131,7 @@ def publish_agentv_evaluation(
         check=False,
         capture_output=True,
         text=True,
+        env=_sanitized_node_env(),
     )
     if completed.returncode:
         detail = (completed.stderr or completed.stdout).strip()

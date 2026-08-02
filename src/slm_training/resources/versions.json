@@ -1794,7 +1794,7 @@
       ]
     },
     "evals.agentv": {
-      "version": "v6",
+      "version": "v7",
       "kind": "harness",
       "paths": [
         "src/slm_training/evals/agentv.py",
@@ -1802,6 +1802,11 @@
         "tests/test_evals/test_agentv.py"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-08-02",
+          "note": "Sanitize NODE_OPTIONS in the AgentV node runner subprocess env (mirrors dsl.grammar.backends.graphql_js._sanitized_env); a session-injected NODE_OPTIONS value made the pinned Node build reject the runner (exit 9), blocking every model-build ship-gate evaluation in the continuous-openui-local autotrain loop"
+        },
         {
           "version": "v6",
           "date": "2026-08-02",
