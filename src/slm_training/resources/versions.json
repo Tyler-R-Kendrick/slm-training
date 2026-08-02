@@ -10619,7 +10619,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v276",
+      "version": "v277",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -10662,6 +10662,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v277",
+          "date": "2026-08-01",
+          "note": "Precompute immutable DSL token-kind enum values once per tokenizer so exact completion and semantic authority avoid repeated enum construction during witness search."
+        },
         {
           "version": "v276",
           "date": "2026-08-01",
