@@ -409,6 +409,17 @@ frozen input can diagnose `target=harness`, and it must identify one canonical
 harness family. The controller repairs that shared owner through
 `improve-openui-harnesses`, then replays the identical model/data arm. This keeps
 harness improvement attributable instead of allowing a model and judge to co-adapt.
+An experiment outcome whose process status is `failed` is routed immediately to
+`harness_failure` rather than being hidden inside a generic incomplete-measurement
+retry. Frozen recipes rejected by the capability gate are immutable negative
+evidence and are not replayed; the next cycle preregisters a valid successor.
+
+Structural auxiliary screening arms couple each trained loss to its legal-candidate
+decode ranker. Their lexer compiler-path companion is `compiler_decode_mode=tree`,
+which is bound into both train and evaluation commands and copied to the
+size-matched control. Confirmatory and promotion manifests retain the same compiler
+mode. The compatibility validator remains fail-closed for any arm missing that
+companion.
 
 Lean optimum feedback crosses the same campaign boundary. A theorem-backed miss
 stops the contradicted campaign and leaves the persistent outer goal in

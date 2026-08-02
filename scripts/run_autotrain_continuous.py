@@ -341,6 +341,7 @@ _LEVER_KNOB_KEYS = (
     "binder_topology_loss_weight",
     "binder_topology_decode_weight",
     "structural_aux_head_profile",
+    "compiler_decode_mode",
     "steps",
     "batch_size",
     "train_version",
@@ -395,6 +396,7 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
             "component_plan_loss_weight": 1.0,
             "component_plan_decode_weight": 1.0,
             "structural_aux_head_profile": "component-plan",
+            "compiler_decode_mode": "tree",
         },
     ),
     (
@@ -404,6 +406,7 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
             "component_edge_loss_weight": 1.0,
             "component_edge_decode_weight": 1.0,
             "structural_aux_head_profile": "component-edge",
+            "compiler_decode_mode": "tree",
         },
     ),
     (
@@ -413,6 +416,7 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
             "component_inventory_loss_weight": 1.0,
             "component_inventory_decode_weight": 1.0,
             "structural_aux_head_profile": "component-inventory",
+            "compiler_decode_mode": "tree",
         },
     ),
     (
@@ -422,6 +426,7 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
             "binder_topology_loss_weight": 0.25,
             "binder_topology_decode_weight": 1.0,
             "structural_aux_head_profile": "binder-topology",
+            "compiler_decode_mode": "tree",
         },
     ),
     (
@@ -433,6 +438,7 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
             "component_edge_loss_weight": 1.0,
             "component_edge_decode_weight": 1.0,
             "structural_aux_head_profile": "component-structure",
+            "compiler_decode_mode": "tree",
         },
     ),
 )
@@ -2292,6 +2298,14 @@ def _classify_positive(
     outcomes = list((camp_dir / "artifacts" / "outcomes").glob("*.json"))
     for path in outcomes:
         out = _read_json(path)
+        experiment_id = str(out.get("experiment_id") or path.stem)
+        if (
+            experiment_id in {control_id, candidate_id}
+            and out.get("status") == "failed"
+        ):
+            reasons_pre.append(
+                f"harness_failure:{experiment_id}:experiment_failed"
+            )
         err = str(out.get("error") or "")
         if "wall-time" in err or "wall time" in err.lower():
             reasons_pre.append(f"wall_timeout:{path.stem}")
@@ -3401,6 +3415,24 @@ def _require_automatic_replayable(manifest: ExperimentCampaignV1) -> None:
         )
 
 
+def _nonreplayable_configuration_failure(
+    camp_dir: Path, experiment_id: str
+) -> str | None:
+    """Identify frozen arms whose exact configuration cannot reach execution."""
+
+    for path in (camp_dir / "artifacts" / "outcomes").glob("*.json"):
+        outcome = _read_json(path)
+        if (
+            outcome.get("experiment_id") != experiment_id
+            or outcome.get("status") != "failed"
+        ):
+            continue
+        error = str(outcome.get("error") or "")
+        if "lever_capability_compatibility" in error:
+            return "lever_capability_compatibility"
+    return None
+
+
 def _load_frozen_replay(
     root: Path, loop_id: str, predecessor_campaign_id: str | None
 ) -> dict[str, Any] | None:
@@ -3433,6 +3465,17 @@ def _load_frozen_replay(
     candidate_path, candidate_manifest = _manifest_with_sha(
         camp_dir, action.frozen_manifest_sha256
     )
+    nonreplayable = _nonreplayable_configuration_failure(
+        camp_dir, candidate_manifest.experiment_id
+    )
+    if nonreplayable:
+        print(
+            "FROZEN_REPLAY_SKIP reason=nonreplayable_configuration "
+            f"detail={nonreplayable} campaign={predecessor_campaign_id} "
+            f"action_index={action_index}",
+            flush=True,
+        )
+        return None
     _require_automatic_replayable(candidate_manifest)
     matrix = json.loads((camp_dir / "matrix-proposal.json").read_text(encoding="utf-8"))
     control_id = str(matrix["hypotheses"][0]["experiment"]["experiment_id"])
@@ -3734,6 +3777,7 @@ def _matrix(
             "binder_topology_loss_weight": 0.0,
             "binder_topology_decode_weight": 0.0,
             "structural_aux_head_profile": "none",
+            "compiler_decode_mode": "off",
             # Measurement completeness: smoke-only screening + longer decode wall.
             "decode_timeout_seconds": decode_timeout,
             "eval_suites": eval_suites,
@@ -3789,6 +3833,7 @@ def _matrix(
                 "binder_topology_loss_weight",
                 "binder_topology_decode_weight",
                 "structural_aux_head_profile",
+                "compiler_decode_mode",
                 "steps",
                 "batch_size",
                 "train_version",
@@ -3803,6 +3848,9 @@ def _matrix(
             steps=promo_steps,
             structural_aux_head_profile=str(
                 promo_extra.get("structural_aux_head_profile") or "none"
+            ),
+            compiler_decode_mode=str(
+                promo_extra.get("compiler_decode_mode") or "off"
             ),
         )
         cand_knobs = knobs(steps=promo_steps, **promo_extra)
@@ -3954,6 +4002,7 @@ def _matrix(
                 "binder_topology_loss_weight",
                 "binder_topology_decode_weight",
                 "structural_aux_head_profile",
+                "compiler_decode_mode",
                 "steps",
                 "batch_size",
                 "train_version",
@@ -3968,6 +4017,9 @@ def _matrix(
             steps=confirm_steps,
             structural_aux_head_profile=str(
                 confirm_extra.get("structural_aux_head_profile") or "none"
+            ),
+            compiler_decode_mode=str(
+                confirm_extra.get("compiler_decode_mode") or "off"
             ),
         )
         # Drop lever defaults then re-apply champion levers on candidate.
@@ -4128,7 +4180,12 @@ def _matrix(
                             bank_by_slug[rec_slug][1].get(
                                 "structural_aux_head_profile", "none"
                             )
-                        )
+                        ),
+                        compiler_decode_mode=str(
+                            bank_by_slug[rec_slug][1].get(
+                                "compiler_decode_mode", "off"
+                            )
+                        ),
                     ),
                     "Baseline for size-matched continuous attribution.",
                 ),

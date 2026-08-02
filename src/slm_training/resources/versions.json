@@ -2631,7 +2631,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v60",
+      "version": "v61",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2671,6 +2671,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v61",
+          "date": "2026-08-02",
+          "note": "Bind structural decode arms and size-matched controls to the required tree compiler path in train and eval, classify failed outcomes as harness failures, and skip immutable capability-invalid frozen retries in favor of new preregistered successors"
+        },
         {
           "version": "v60",
           "date": "2026-08-02",
