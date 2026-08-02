@@ -2641,7 +2641,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v61",
+      "version": "v62",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2681,6 +2681,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v62",
+          "date": "2026-08-02",
+          "note": "Preserve matched-control recipes for champion confirmation and promotion, including steps-only candidates, and reclaim attempts that fail before experiment execution starts."
+        },
         {
           "version": "v61",
           "date": "2026-08-02",
