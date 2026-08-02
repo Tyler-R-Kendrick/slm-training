@@ -1,0 +1,68 @@
+{
+  "schema": "autotrain_measured_results/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c4",
+  "cycle_index": 1724,
+  "loop_id": "continuous-openui-20260730",
+  "run_class": "fixture_scratch",
+  "source_commit": "ff66befa970b0c1f31a5b9fcdb02c044f67efbc3",
+  "source_dirty": false,
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "primary_metric": "smoke.binder_reference_f1",
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c4-control",
+      "status": "stopped",
+      "training": {
+        "executed": false,
+        "source_campaign": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c2",
+        "parameter_count": 1608962
+      },
+      "suite_n": 0,
+      "metrics": {},
+      "ship_gates_pass": null,
+      "stop_reason": "evaluation wall timeout in completion_kernel._eval recursion (engine._ip_control_copy via _snapshot)"
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c4-canvas",
+      "status": "stopped",
+      "training": {
+        "executed": false,
+        "source_campaign": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c2",
+        "parameter_count": 1608962
+      },
+      "suite_n": 0,
+      "metrics": {},
+      "ship_gates_pass": null,
+      "stop_reason": "evaluation wall timeout in completion_kernel._eval recursion (engine._ip_control_copy via _snapshot)"
+    }
+  ],
+  "diagnostic_signal": {
+    "target": "infrastructure",
+    "observed_stack": "build_completion_forest -> session.terminal_witness -> completion_kernel._eval (recursed) -> advance_path -> advance -> engine.feed_token_id -> engine._feed_terminal_direct -> engine._snapshot -> engine._ip_control_copy -> copy.copy(parser_state.parse_conf)",
+    "authority": "observed_interrupt_trace",
+    "prior_related": "third consecutive cycle (c1722, c1723, c1724) with both arms timing out in the same completion_kernel._eval top-level call chain",
+    "disposition": "three-strikes hard block per the continuous-loop absolute law; stop the session loop and require a counted per-frame probe before any further replay or repair",
+    "claim_boundary": "does not identify a single slow frame; establishes only that decode reliably fails to complete within MAX_RUN_MINUTES on this checkpoint/manifest lineage in this container"
+  },
+  "disposition": {
+    "measurement_complete": false,
+    "climb_state": "blocked",
+    "ship_state": "blocked",
+    "promotion": "rejected_hard_block",
+    "next_run": "instrumented counted-probe replay of the c1722 frozen manifest before any further blind retry"
+  },
+  "checkpoint_documentation_required": false,
+  "session_closeout": {
+    "cycles_this_session": [
+      "c1721",
+      "c1722",
+      "c1723",
+      "c1724"
+    ],
+    "positive_cycles": 0,
+    "stack_layers_opened": 0,
+    "hard_block_reason": "same completion_kernel decode-timeout family reproduced on three consecutive cycles with no new information"
+  }
+}
