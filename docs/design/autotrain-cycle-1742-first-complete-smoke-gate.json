@@ -1,0 +1,108 @@
+{
+  "schema": "autotrain_measured_results/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 1742,
+  "loop_id": "continuous-openui-local",
+  "loop_cycle_index": 2,
+  "run_class": "fixture_scratch",
+  "source_commit": "466bbaa4c5eb22eb99ac016e94fedcf2af353809",
+  "source_dirty": false,
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "primary_metric": "smoke.structural_similarity",
+  "frozen_manifest_sha256": "b46f6da367f14bbd32618fb36ed6d6431f12eddcb3099aad275b39cacc6cfb70",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "466bbaa4c5eb22eb99ac016e94fedcf2af353809",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v74",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v287"
+    }
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c2-control",
+      "status": "completed_gate_rejection",
+      "training": {
+        "executed": true,
+        "parameter_count": 1608962,
+        "steps": 21,
+        "device": "cpu"
+      },
+      "suite": "smoke",
+      "suite_n": 3,
+      "metrics": {
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "latency_ms_p50": 1610.57
+      },
+      "ship_gates_pass": false,
+      "gate_failures": [
+        "smoke:insufficient_n actual=3 need>=20",
+        "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+        "smoke:structural_similarity actual=0.057499999999999996 need>=0.35",
+        "smoke:component_type_recall actual=0.0 need>=0.35",
+        "smoke:ast_beq_rate actual=0.0 need>=0.2",
+        "smoke:canonical_beq_rate actual=0.0 need>=0.1",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "held_out:missing_suite",
+        "adversarial:missing_suite",
+        "ood:missing_suite",
+        "rico_held:missing_suite"
+      ],
+      "claim_boundary": "three-document fixture; missing ship suites and quality thresholds"
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c2-bounds",
+      "status": "completed_gate_rejection",
+      "training": {
+        "executed": true,
+        "parameter_count": 1608962,
+        "steps": 21,
+        "device": "cpu"
+      },
+      "suite": "smoke",
+      "suite_n": 3,
+      "metrics": {
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "latency_ms_p50": 1653.04
+      },
+      "ship_gates_pass": false,
+      "gate_failures": [
+        "smoke:insufficient_n actual=3 need>=20",
+        "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+        "smoke:structural_similarity actual=0.057499999999999996 need>=0.35",
+        "smoke:component_type_recall actual=0.0 need>=0.35",
+        "smoke:ast_beq_rate actual=0.0 need>=0.2",
+        "smoke:canonical_beq_rate actual=0.0 need>=0.1",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "held_out:missing_suite",
+        "adversarial:missing_suite",
+        "ood:missing_suite",
+        "rico_held:missing_suite"
+      ],
+      "claim_boundary": "three-document fixture; missing ship suites and quality thresholds"
+    }
+  ],
+  "climb_state": "rejected",
+  "ship_state": "blocked",
+  "positive": false,
+  "stack_layer": false,
+  "checkpoint_promoted": false,
+  "next_priorities": [
+    "Test the size-matched 'component-plan' quality hypothesis next (c20260802-continuous-openui-local-8c0b60dd-c2-component-plan).",
+    "Keep the matched control as the size-matched baseline every cycle."
+  ]
+}
