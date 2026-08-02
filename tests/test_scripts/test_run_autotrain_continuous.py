@@ -3335,7 +3335,10 @@ def test_terminal_interrupted_replay_finalizes_without_rerunning_arms(
     assert handoffs[0]["campaign_id"] == campaign_id
 
 
-def test_frozen_replay_preserves_recipe_and_links_current_main_successor() -> None:
+@pytest.mark.parametrize("candidate_slug", ("batch1", "component-plan", "literal-close"))
+def test_frozen_replay_preserves_recipe_and_links_current_main_successor(
+    candidate_slug: str,
+) -> None:
     old_campaign = "continuous-loop-20260801-loop-12345678-c1710"
     new_campaign = "continuous-loop-20260801-loop-12345678-c1712"
     matrix = _mod._matrix(
@@ -3350,7 +3353,7 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor() -> No
         eval_version="e938_role_safe_all_targets_v2",
         steps=22,
         cycle=1712,
-        recommended_slug="batch1",
+        recommended_slug=candidate_slug,
     )
     old_control = json.loads(json.dumps(matrix["hypotheses"][0]["experiment"]))
     old_candidate = json.loads(
@@ -3358,7 +3361,9 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor() -> No
             next(
                 row["experiment"]
                 for row in matrix["hypotheses"]
-                if row["experiment"]["experiment_id"].endswith("-batch1")
+                if row["experiment"]["experiment_id"].endswith(
+                    f"-{candidate_slug}"
+                )
             )
         )
     )
@@ -3367,7 +3372,7 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor() -> No
         campaign_id=old_campaign,
     )
     old_candidate.update(
-        experiment_id="c20260801-loop-12345678-c1710-batch1",
+        experiment_id=f"c20260801-loop-12345678-c1710-{candidate_slug}",
         campaign_id=old_campaign,
     )
     old_control["knobs"].update(steps=80, seed=101710, batch_size=2)

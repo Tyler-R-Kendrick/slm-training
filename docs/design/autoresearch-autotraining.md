@@ -67,6 +67,9 @@ acknowledged. A crashed campaign without a handoff remains append-only provenanc
 but cannot shadow the latest completed execution/retry authority. It remains in the
 strict campaign lineage; an already-written gap is recovered only through one unique
 chain of initialized-only campaigns, while completed or ambiguous gaps fail closed.
+Replay arm identity is resolved by longest registered suffix, so hyphenated canonical
+arms such as `component-plan` and `literal-close` cannot be truncated into an
+unsupported last word.
 Replay manifests carrying Lean formal obligations require a fresh formal preflight
 and otherwise fail closed.
 Lineage validation is shared by status and feedback traversal so those surfaces cannot

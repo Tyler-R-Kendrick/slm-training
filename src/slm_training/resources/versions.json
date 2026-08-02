@@ -2641,7 +2641,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v71",
+      "version": "v72",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2681,6 +2681,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v72",
+          "date": "2026-08-02",
+          "note": "Resolve frozen replay arm identity by longest registered suffix so hyphenated arms such as component-plan and literal-close remain replayable."
+        },
         {
           "version": "v71",
           "date": "2026-08-02",

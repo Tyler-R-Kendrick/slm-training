@@ -4439,9 +4439,21 @@ def _apply_frozen_replay(
 ) -> dict[str, dict[str, Any]]:
     prefix = campaign_id.replace("continuous-loop-", "c")
     old_candidate_id = str(replay["candidate"]["experiment"]["experiment_id"])
-    slug = old_candidate_id.rsplit("-", 1)[-1]
-    if slug not in {item[0] for item in _SCREENING_ARM_BANK}:
-        raise RuntimeError(f"unsupported automatic frozen replay arm: {slug}")
+    registered_slugs = sorted(
+        (item[0] for item in _SCREENING_ARM_BANK), key=len, reverse=True
+    )
+    slug = next(
+        (
+            registered
+            for registered in registered_slugs
+            if old_candidate_id.endswith(f"-{registered}")
+        ),
+        None,
+    )
+    if slug is None:
+        raise RuntimeError(
+            f"unsupported automatic frozen replay arm: {old_candidate_id}"
+        )
     new_ids = {"control": f"{prefix}-control", "candidate": f"{prefix}-{slug}"}
     for role, new_id in new_ids.items():
         target = next(
