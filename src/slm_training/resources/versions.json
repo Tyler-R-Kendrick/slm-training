@@ -6953,6 +6953,11 @@
         {
           "version": "v3",
           "date": "2026-08-02",
+          "note": "no-bump: add honest model-card provenance for two unrelated continuous-openui-local c3 scratch checkpoints (component-edge efficiency screen); SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
           "note": "no-bump: add honest model-card provenance for two unrelated continuous-openui-local c2 scratch checkpoints (component-plan regression screen); SLM-228 spectral-disposition behavior is unchanged"
         },
         {

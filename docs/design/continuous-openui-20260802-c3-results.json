@@ -1,0 +1,64 @@
+{
+    "schema": "continuous_autotrain_cycle_results/v1",
+    "loop_id": "continuous-openui-local",
+    "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c3",
+    "cycle_index": 3,
+    "source_commit": "1a92671c",
+    "honesty": "fixture_or_scratch",
+    "not_ship_claim": true,
+    "recipe": {
+        "device": "cpu",
+        "steps": 20,
+        "context_backend": "scratch",
+        "train_version": "wf_smoke_v2",
+        "eval_version": "e938_role_safe_all_targets_v2",
+        "max_wall_minutes": 3,
+        "ship_gates": true
+    },
+    "arms": {
+        "c20260802-continuous-openui-local-8c0b60dd-c3-control": {
+            "status": "completed_eval_gates_failed",
+            "trainable_params": 1766987,
+            "checkpoint_sha256": "22bbed9ee8f44ee5c2da573df852c453e845810433a92881fd4a930f342e749e",
+            "smoke": {
+                "n": 3,
+                "parse_rate": 1.0,
+                "meaningful_program_rate": 0.3333333333333333,
+                "structural_similarity": 0.23083333333333333,
+                "component_type_recall": 0.16666666666666666,
+                "binder_reference_f1": 0.7333333333333334,
+                "latency_ms_p50": 4267.38
+            }
+        },
+        "c20260802-continuous-openui-local-8c0b60dd-c3-component-edge": {
+            "status": "completed_eval_gates_failed",
+            "trainable_params": 1766987,
+            "checkpoint_sha256": "86379a8c7d000b0fb5f8a7c0b05d194a18de3e120e96ab3a82379b7ad0e2de47",
+            "smoke": {
+                "n": 3,
+                "parse_rate": 1.0,
+                "meaningful_program_rate": 0.3333333333333333,
+                "structural_similarity": 0.23083333333333333,
+                "component_type_recall": 0.16666666666666666,
+                "binder_reference_f1": 0.7333333333333334,
+                "latency_ms_p50": 3818.46
+            }
+        }
+    },
+    "primary_metric": "smoke.structural_similarity",
+    "primary_delta": 0.0,
+    "efficiency_metric": "mpr_per_ms",
+    "efficiency_before": 7.8111941e-05,
+    "efficiency_after": 8.7295227e-05,
+    "efficiency_gain_fraction": 0.11756572,
+    "efficiency_minimum": 0.05,
+    "sdlc_phase_a": "POSITIVE",
+    "stack_action": "positive_no_tracked_delta_skip_stack",
+    "conclusion": "Size-matched (1,766,987 params both arms) component-edge candidate holds quality exactly even with control on every smoke metric (parse 1.0, meaningful_program_rate 0.3333, structural_similarity 0.2308, component_type_recall 0.1667, binder_reference_f1 0.7333 -- all identical) while cutting p50 latency 4,267.38ms -> 3,818.46ms (-10.5% wall, +11.76% in mpr_per_ms throughput), above the SDLC Phase A policy's 5% minimum efficiency-gain floor. SDLC Phase A classified this cycle POSITIVE (quality held + efficiency win). The driver's own stack_action was positive_no_tracked_delta_skip_stack because the working tree was clean at classification time (before this documentation commit existed); once this doc lands it is the tracked delta and the cycle is stacked per the 'documentation creates a reviewable delta' rule in continuous.md.",
+    "next_priorities": [
+        "Confirm the component-edge latency win on a new seed / larger step budget before treating it as a durable recipe default",
+        "Keep ship gates honest: fixture n=3 still fails insufficient_n; this is an efficiency screening signal, not a ship claim",
+        "Rotate the next screening arm to a distinct lever per the hypothesizer feedback queue"
+    ],
+    "recorded_at": "2026-08-02T04:40:10.374315Z"
+}
