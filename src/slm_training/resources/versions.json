@@ -1749,7 +1749,7 @@
       ]
     },
     "evals.agentv": {
-      "version": "v6",
+      "version": "v7",
       "kind": "harness",
       "paths": [
         "src/slm_training/evals/agentv.py",
@@ -1757,6 +1757,11 @@
         "tests/test_evals/test_agentv.py"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-08-02T11:35:36+00:00",
+          "note": "Sanitize inherited NODE_OPTIONS before spawning the AgentV SDK node runner, mirroring the graphql-js bridge guard; session environments that inject --import tsx were making every eval publish fail closed with node exit 9 (RuntimeError: AgentV SDK evaluation failed), not just the missing-SDK path. Regression test asserts the sanitized env is passed to subprocess.run."
+        },
         {
           "version": "v6",
           "date": "2026-07-30T10:18:42-05:00",
