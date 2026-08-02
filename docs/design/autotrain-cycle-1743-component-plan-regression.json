@@ -1,0 +1,86 @@
+{
+  "schema": "autotrain_measured_results/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c3",
+  "cycle_index": 1743,
+  "loop_id": "continuous-openui-local",
+  "loop_cycle_index": 3,
+  "run_class": "fixture_scratch",
+  "source_commit": "a8c3beed96bc828c5a9c71100434ee4b750656e9",
+  "source_dirty": false,
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "primary_metric": "smoke.structural_similarity",
+  "frozen_manifest_sha256": "d1df33a964aed730e2fb6708a21f3c54c48b6baa71bf07d721644c8ae517fb2c",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "a8c3beed96bc828c5a9c71100434ee4b750656e9",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v74",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v287"
+    }
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c3-control",
+      "status": "completed_gate_rejection",
+      "training": {
+        "executed": true,
+        "parameter_count": 1755760,
+        "device": "cpu"
+      },
+      "suite": "smoke",
+      "suite_n": 3,
+      "metrics": {
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.7333333333333334,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.23083333333333333,
+        "latency_ms_p50": 3808.12
+      },
+      "ship_gates_pass": false,
+      "claim_boundary": "three-document fixture; missing ship suites and quality thresholds"
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c3-component-plan",
+      "status": "completed_gate_rejection",
+      "training": {
+        "executed": true,
+        "parameter_count": 1755760,
+        "device": "cpu"
+      },
+      "suite": "smoke",
+      "suite_n": 3,
+      "metrics": {
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.1725,
+        "latency_ms_p50": 3734.8
+      },
+      "ship_gates_pass": false,
+      "claim_boundary": "three-document fixture; missing ship suites and quality thresholds; regresses control on binder_reference_f1 and primary metric"
+    }
+  ],
+  "climb_state": "rejected",
+  "ship_state": "blocked",
+  "positive": false,
+  "stack_layer": false,
+  "checkpoint_promoted": false,
+  "reasons": [
+    "fixture_insufficient_n:c20260802-continuous-openui-local-8c0b60dd-c3-control",
+    "fixture_insufficient_n:c20260802-continuous-openui-local-8c0b60dd-c3-component-plan",
+    "non_regression_fail:binder_reference_f1:0.7333333333333334->0.6333333333333333",
+    "primary_metric_null_or_worse:smoke.structural_similarity:control=0.23083333333333333 candidate=0.1725 improvement=-0.05833333333333335"
+  ],
+  "next_priorities": [
+    "Test the distinct size-matched 'component-edge' quality hypothesis next (c20260802-continuous-openui-local-8c0b60dd-c3-component-edge).",
+    "Keep the matched control as the size-matched baseline every cycle."
+  ]
+}
