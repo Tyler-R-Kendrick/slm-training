@@ -11,6 +11,7 @@ import json
 import re
 import subprocess
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
@@ -362,7 +363,12 @@ def _proof_sources_are_total(template: FormalTemplate) -> bool:
 
 
 def _run(
-    command: list[str], *, cwd: Path, timeout_seconds: float
+    command: list[str],
+    *,
+    cwd: Path,
+    timeout_seconds: float,
+    on_start: Callable[[int], None] | None = None,
+    on_heartbeat: Callable[[int], None] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     total = min(float(MAX_RUN_SECONDS), max(0.001, timeout_seconds))
     grace = min(float(KILL_GRACE_SECONDS), total * 0.1)
@@ -372,6 +378,8 @@ def _run(
         cwd=cwd,
         interrupt_after_seconds=interrupt_after,
         kill_grace_seconds=grace,
+        on_start=on_start,
+        on_heartbeat=on_heartbeat,
     )
     if result.timed_out:
         return subprocess.CompletedProcess(
@@ -412,6 +420,8 @@ def run_formal_preflight(
     claim: FormalClaimV1,
     *,
     timeout_seconds: float = float(MAX_RUN_SECONDS),
+    on_start: Callable[[int], None] | None = None,
+    on_heartbeat: Callable[[int], None] | None = None,
 ) -> tuple[FormalPreflightV1, FormalObligationV1]:
     """Build the pinned Lean project and emit a content-addressable result.
 
@@ -438,7 +448,13 @@ def run_formal_preflight(
         if template.lean_project == "leverproof"
         else ["lake", "build", "OpenUIProofs"]
     )
-    build = _run(build_command, cwd=lean_root, timeout_seconds=remaining())
+    build = _run(
+        build_command,
+        cwd=lean_root,
+        timeout_seconds=remaining(),
+        on_start=on_start,
+        on_heartbeat=on_heartbeat,
+    )
     build_timed_out = _is_timeout_result(build)
     audit = (
         subprocess.CompletedProcess([], 0, "", "")
@@ -447,6 +463,8 @@ def run_formal_preflight(
             ["lake", "env", "lean", "OpenUIProofs/Axioms.lean"],
             cwd=lean_root,
             timeout_seconds=remaining(),
+            on_start=on_start,
+            on_heartbeat=on_heartbeat,
         )
         if build.returncode == 0
         else subprocess.CompletedProcess(
@@ -462,6 +480,8 @@ def run_formal_preflight(
             ["lake", "env", "lean", "--version"],
             cwd=lean_root,
             timeout_seconds=min(remaining(), 30.0),
+            on_start=on_start,
+            on_heartbeat=on_heartbeat,
         )
         if build.returncode == 0 and audit.returncode == 0
         else subprocess.CompletedProcess([], 1, "", "proof audit failed")

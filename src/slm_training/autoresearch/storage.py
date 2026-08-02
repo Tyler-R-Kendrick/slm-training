@@ -7,6 +7,7 @@ import fcntl
 import hashlib
 import json
 import os
+import subprocess
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -15,6 +16,7 @@ from typing import Any
 from pydantic import BaseModel
 
 from slm_training.autoresearch.schemas import (
+    AutotrainActionEvidenceV1,
     AutotrainActionReceiptV1,
     AutotrainActionV1,
     AutotrainCycleHandoffV1,
@@ -23,6 +25,7 @@ from slm_training.autoresearch.schemas import (
     ExperimentOutcome,
     HypothesisFeedback,
     HypothesisMatrix,
+    evaluation_completeness_failures,
     evaluation_measurement_incomplete,
     utc_now,
 )
@@ -56,6 +59,11 @@ _PREREQUISITE_ACTION_KINDS = frozenset(
     }
 )
 _EXECUTION_ACTION_KINDS = frozenset({"retry_measurement", "next_experiment", "monitor"})
+_REPAIR_ACTION_KINDS = frozenset({"repair_harness", "repair_formal"})
+_DATA_EVIDENCE_NAMES = frozenset(
+    {"data_manifest.json", "quality_report.json", "synthesis_feedback.json"}
+)
+_REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
 def autotrain_action_sha256(action: AutotrainActionV1) -> str:
@@ -80,6 +88,165 @@ def append_autotrain_action_receipt(
     return path
 
 
+def _git(*args: str) -> subprocess.CompletedProcess[bytes]:
+    return subprocess.run(
+        ["git", "-C", str(_REPO_ROOT), *args],
+        check=False,
+        capture_output=True,
+        timeout=MAX_RUN_SECONDS,
+    )
+
+
+def _git_commit_evidence(
+    uri: str, handoff: AutotrainCycleHandoffV1, action: AutotrainActionV1
+) -> AutotrainActionEvidenceV1:
+    commit = _git("cat-file", "commit", uri)
+    if commit.returncode:
+        raise ValueError(f"receipt evidence is not a Git commit: {uri}")
+    if action.kind == "deliver_stack":
+        if _git("merge-base", "--is-ancestor", uri, "origin/main").returncode:
+            raise ValueError(
+                "deliver_stack evidence must be a commit merged into origin/main"
+            )
+    elif action.kind in _REPAIR_ACTION_KINDS:
+        if (
+            uri == handoff.integration_commit
+            or _git(
+                "merge-base", "--is-ancestor", handoff.integration_commit, uri
+            ).returncode
+        ):
+            raise ValueError(
+                f"{action.kind} evidence must be a repair commit after the campaign"
+            )
+    else:
+        raise ValueError(f"{action.kind} evidence must be a durable file")
+    return AutotrainActionEvidenceV1(
+        uri=uri,
+        kind="git_commit",
+        sha256=hashlib.sha256(commit.stdout).hexdigest(),
+    )
+
+
+def _file_evidence(
+    root: Path,
+    handoff: AutotrainCycleHandoffV1,
+    action: AutotrainActionV1,
+    uri: str,
+    *,
+    status: str | None = None,
+) -> AutotrainActionEvidenceV1:
+    campaign_root = (root / handoff.campaign_id).resolve()
+    repo_root = _REPO_ROOT.resolve()
+    candidates = (
+        (campaign_root / uri, "campaign_artifact"),
+        (repo_root / uri, "repo_file"),
+    )
+    resolved = next(
+        (
+            (candidate.resolve(), kind)
+            for candidate, kind in candidates
+            if candidate.is_file()
+            and candidate.resolve().is_relative_to(
+                campaign_root if kind == "campaign_artifact" else repo_root
+            )
+        ),
+        None,
+    )
+    if resolved is None:
+        raise ValueError(
+            f"receipt evidence must be an existing durable path or commit: {uri}"
+        )
+    path, kind = resolved
+    if action.kind == "deliver_stack" and path.name == "sdlc_delivery.json" and status == "completed":
+        # A positive result with no tracked code/docs delta (pure knob
+        # thrash / re-screen) has nothing to stack: `sdlc_delivery.json`
+        # itself already records that decision as
+        # `stack_action="positive_no_tracked_delta_skip_stack"`
+        # (`stack_layer=False`, `has_tracked_delta=False`). Accept that
+        # exact campaign's own delivery record as self-evidence for the
+        # skip -- it is the objective, durable proof there was nothing
+        # to merge -- without weakening the merged-commit requirement
+        # for any campaign that actually has a reviewable delta to
+        # stack. Bind the check to `handoff.campaign_id` so evidence
+        # from one campaign's skip decision can never stand in for
+        # another's. `status` must be "completed": `pending_autotrain_actions`
+        # only clears a prerequisite on a "completed" receipt, so
+        # "blocked" here would validate but never actually unblock the
+        # successor cycle.
+        try:
+            delivery = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise ValueError(
+                "deliver_stack skip evidence must be readable JSON"
+            ) from exc
+        if (
+            delivery.get("campaign_id") == handoff.campaign_id
+            and delivery.get("stack_action") == "positive_no_tracked_delta_skip_stack"
+            and delivery.get("stack_layer") is False
+            and delivery.get("has_tracked_delta") is False
+        ):
+            return AutotrainActionEvidenceV1(
+                uri=uri,
+                kind=kind,
+                sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
+            )
+    if action.kind in _REPAIR_ACTION_KINDS or action.kind == "deliver_stack":
+        raise ValueError(f"{action.kind} evidence must be a Git commit")
+    if action.kind == "stop_campaign" and kind != "campaign_artifact":
+        raise ValueError("stop_campaign evidence must be a campaign artifact")
+    if action.kind == "rebuild_data" and path.name not in _DATA_EVIDENCE_NAMES:
+        raise ValueError(
+            "rebuild_data evidence must be a data manifest or quality/feedback report"
+        )
+    if action.kind == "document":
+        if kind != "repo_file":
+            raise ValueError("document evidence must be tracked in the repository")
+        relative = path.relative_to(repo_root)
+        if _git("ls-files", "--error-unmatch", str(relative)).returncode:
+            raise ValueError("document evidence must be tracked in the repository")
+    return AutotrainActionEvidenceV1(
+        uri=uri,
+        kind=kind,
+        sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
+    )
+
+
+def bind_autotrain_action_evidence(
+    root: Path | str,
+    handoff: AutotrainCycleHandoffV1,
+    action: AutotrainActionV1,
+    evidence_uris: tuple[str, ...],
+    *,
+    status: str | None = None,
+) -> tuple[AutotrainActionEvidenceV1, ...]:
+    """Resolve, authorize, and content-bind evidence for one action."""
+
+    artifact_root = Path(root)
+    return tuple(
+        _git_commit_evidence(uri, handoff, action)
+        if len(uri) == 40 and all(char in "0123456789abcdef" for char in uri)
+        else _file_evidence(artifact_root, handoff, action, uri, status=status)
+        for uri in evidence_uris
+    )
+
+
+def _receipt_satisfies_action(
+    root: Path | str,
+    handoff: AutotrainCycleHandoffV1,
+    action: AutotrainActionV1,
+    receipt: AutotrainActionReceiptV1,
+) -> bool:
+    if not receipt.evidence or receipt.action_kind != action.kind:
+        return False
+    try:
+        current = bind_autotrain_action_evidence(
+            root, handoff, action, receipt.evidence_uris, status=receipt.status
+        )
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return False
+    return current == receipt.evidence
+
+
 def _pending_autotrain_actions(
     root: Path | str,
     handoff: AutotrainCycleHandoffV1,
@@ -97,6 +264,13 @@ def _pending_autotrain_actions(
             if (
                 receipt.campaign_id == handoff.campaign_id
                 and receipt.status == "completed"
+                and receipt.action_index < len(handoff.actions)
+                and _receipt_satisfies_action(
+                    root,
+                    handoff,
+                    handoff.actions[receipt.action_index],
+                    receipt,
+                )
             ):
                 completed.add((receipt.action_index, receipt.action_sha256))
     return tuple(
@@ -596,7 +770,7 @@ def _completed_gate_rejection(
     if (
         outcome.status not in {"completed", "failed"}
         or (outcome.status == "failed" and outcome.exit_code != 8)
-        or evaluation_measurement_incomplete(outcome.metrics)
+        or evaluation_completeness_failures(outcome.metrics)
     ):
         return False
     path = (
@@ -614,6 +788,12 @@ def _completed_gate_rejection(
     evals = scoreboard.get("evals")
     runner = evals.get("runner") if isinstance(evals, dict) else None
     stamp = scoreboard.get("version_stamp")
+    if evaluation_completeness_failures(
+        scoreboard,
+        require_agent_bindings=True,
+        artifact_root=_REPO_ROOT,
+    ):
+        return False
     return bool(
         scoreboard.get("run_id") == outcome.experiment_id
         and isinstance(gates, dict)
