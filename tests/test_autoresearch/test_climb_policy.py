@@ -41,6 +41,7 @@ def test_load_climb_policy_has_volatile_fields_and_digest() -> None:
     } == {"parse_rate", "binder_reference_f1"}
     assert policy.promotion_primary["metric"]
     assert policy.promotion_dispose["require_primary_win"] is True
+    assert policy.positive_classification["minimum_efficiency_gain_fraction"] == 0.05
     assert policy.cadence["screening_cycles_per_promotion"]
     assert policy.exhausted_identity_fields
     assert policy.recipe_tweak_knobs

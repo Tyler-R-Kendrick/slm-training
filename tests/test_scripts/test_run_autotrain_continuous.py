@@ -18,8 +18,22 @@ assert _SPEC is not None and _SPEC.loader is not None
 _mod = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(_mod)
 
-_classify = _mod._classify_metric_tradeoff
+_classify_metric_tradeoff = _mod._classify_metric_tradeoff
 _PRIMARY = "smoke.latency_ms_p50"
+
+
+def _classify(
+    *,
+    control: dict[str, float | None],
+    candidate: dict[str, float | None],
+    primary_metric: str,
+) -> tuple[bool, list[str]]:
+    return _classify_metric_tradeoff(
+        control=control,
+        candidate=candidate,
+        primary_metric=primary_metric,
+        minimum_efficiency_gain_fraction=0.05,
+    )
 
 
 def _arms(
@@ -102,6 +116,22 @@ def test_efficiency_win_counts_when_faster_with_same_mpr() -> None:
     assert any(
         r.startswith("primary_metric_win:") or r.startswith("efficiency_win:")
         for r in reasons
+    )
+
+
+def test_efficiency_micro_win_is_rejected_as_noise() -> None:
+    control, candidate = _arms(
+        c_lat=3453.06,
+        t_lat=3430.55,
+        c_mpr=0.3333333333333333,
+        t_mpr=0.3333333333333333,
+    )
+    positive, reasons = _classify(
+        control=control, candidate=candidate, primary_metric="smoke.structural_similarity"
+    )
+    assert positive is False
+    assert any(
+        r.startswith("efficiency_win_rejected_min_effect:") for r in reasons
     )
 
 
@@ -1487,6 +1517,32 @@ def test_run_metrics_loads_held_out_when_preferred(tmp_path: Path) -> None:
     assert held["structural_similarity"] == 0.42
     assert held["held_out.structural_similarity"] == 0.42
     assert held["smoke.structural_similarity"] == 0.2
+
+
+def test_classify_positive_rejects_c1731_efficiency_jitter(tmp_path: Path) -> None:
+    camp = tmp_path / "camp"
+    for arm, latency in (("c-control", 3453.06), ("c-component-plan", 3430.55)):
+        _write_eval(
+            camp / "runs" / arm / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            binder_reference_f1=0.6333333333333333,
+            meaningful_program_rate=0.3333333333333333,
+            structural_similarity=0.41973333333333335,
+            latency_ms_p50=latency,
+        )
+    result = _mod._classify_positive(
+        camp_dir=camp,
+        primary_metric="smoke.structural_similarity",
+        control_id="c-control",
+        candidate_id="c-component-plan",
+        role="screening",
+    )
+    assert result["positive"] is False
+    assert any(
+        reason.startswith("efficiency_win_rejected_min_effect:")
+        for reason in result["reasons"]
+    )
 
 
 def test_classify_positive_promotion_sees_held_out_primary(tmp_path: Path) -> None:

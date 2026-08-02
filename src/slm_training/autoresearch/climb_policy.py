@@ -257,6 +257,15 @@ def load_climb_policy(path: str | None = None) -> ClimbPolicy:
         raise ClimbPolicyError(
             f"{policy_path}: measurement.max_consecutive_frozen_replays must be >= 1"
         )
+    positive = _require_mapping(payload, "positive_classification", policy_path)
+    minimum_efficiency_gain_fraction = float(
+        positive.get("minimum_efficiency_gain_fraction", -1.0)
+    )
+    if not 0.0 < minimum_efficiency_gain_fraction < 1.0:
+        raise ClimbPolicyError(
+            f"{policy_path}: positive_classification."
+            "minimum_efficiency_gain_fraction must be in (0, 1)"
+        )
     return ClimbPolicy(
         path=policy_path.resolve(),
         schema=schema,
