@@ -426,6 +426,7 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         },
     ),
 )
+_RECENT_EXHAUSTION_CYCLE_WINDOW = len(_SCREENING_ARM_BANK)
 
 
 def _finite_metric(value: object) -> float | None:
@@ -758,6 +759,61 @@ def _skip_arm_slugs(
         if count >= _CAUSAL_FAMILY_ATTEMPT_CAP
     )
     return skip
+
+
+def _recent_completed_nonpositive_slugs(
+    root: Path,
+    predecessor_campaign_id: str | None,
+    *,
+    max_cycles: int = _RECENT_EXHAUSTION_CYCLE_WINDOW,
+) -> set[str]:
+    """Cool down complete null arms for one bounded pass through the bank."""
+
+    cursor = predecessor_campaign_id
+    seen: set[str] = set()
+    exhausted: set[str] = set()
+    loop_id: str | None = None
+    for _ in range(max(0, max_cycles)):
+        if not cursor or cursor in seen:
+            break
+        seen.add(cursor)
+        camp_dir = root / cursor
+        campaign = _read_json(camp_dir / "campaign.json")
+        handoff = _read_json(camp_dir / "cycle_handoff.json")
+        delivery = _read_json(camp_dir / "sdlc_delivery.json")
+        campaign_loop = str(campaign.get("loop_id") or handoff.get("loop_id") or "")
+        if loop_id is None:
+            loop_id = campaign_loop or None
+        elif campaign_loop and campaign_loop != loop_id:
+            break
+        candidate_id = str(delivery.get("candidate_id") or "")
+        intent = str(
+            delivery.get("cycle_intent")
+            or handoff.get("cycle_intent")
+            or handoff.get("cycle_role")
+            or ""
+        )
+        if (
+            candidate_id
+            and intent in {"screening", "promotion"}
+            and delivery.get("positive") is False
+            and delivery.get("measurement_complete") is True
+        ):
+            matrix = _read_json(camp_dir / "matrix-proposal.json")
+            knobs = next(
+                (
+                    dict((item.get("experiment") or {}).get("knobs") or {})
+                    for item in matrix.get("hypotheses") or []
+                    if str((item.get("experiment") or {}).get("experiment_id") or "")
+                    == candidate_id
+                ),
+                {},
+            )
+            slug = _arm_slug_from_knobs(knobs, candidate_id=candidate_id)
+            if slug:
+                exhausted.add(slug)
+        cursor = str(campaign.get("predecessor_campaign_id") or "")
+    return exhausted
 
 
 def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
@@ -2582,7 +2638,11 @@ def _consecutive_frozen_replays(
 
 
 def _completed_candidate_priorities(
-    matrix: dict[str, Any], candidate_id: str, *, resolved_infrastructure: bool
+    matrix: dict[str, Any],
+    candidate_id: str,
+    *,
+    resolved_infrastructure: bool,
+    skip_slugs: set[str] | None = None,
 ) -> tuple[NextRunPriorityV1, ...]:
     """Replace stale steering after a candidate produces a complete result."""
 
@@ -2601,6 +2661,7 @@ def _completed_candidate_priorities(
         and str(item.get("experiment_id")) != candidate_id
         and not str(item.get("experiment_id")).endswith("-control")
     ]
+    skip_slugs = skip_slugs or set()
     quality_keys = {
         "component_plan_loss_weight",
         "component_edge_loss_weight",
@@ -2615,8 +2676,26 @@ def _completed_candidate_priorities(
                 float((item.get("knobs") or {}).get(key) or 0) > 0
                 for key in quality_keys
             )
+            and (
+                _arm_slug_from_knobs(
+                    dict(item.get("knobs") or {}),
+                    candidate_id=str(item.get("experiment_id") or ""),
+                )
+                not in skip_slugs
+            )
         ),
-        alternatives[0] if alternatives else None,
+        next(
+            (
+                item
+                for item in alternatives
+                if _arm_slug_from_knobs(
+                    dict(item.get("knobs") or {}),
+                    candidate_id=str(item.get("experiment_id") or ""),
+                )
+                not in skip_slugs
+            ),
+            None,
+        ),
     )
     for row in rows:
         if (
@@ -2716,6 +2795,7 @@ def _predecessor_priority_slug(
                     _read_json(matrix_path),
                     str(delivery.get("candidate_id") or ""),
                     resolved_infrastructure=False,
+                    skip_slugs=skip,
                 )
             ]
     for priority in sorted(priorities, key=lambda item: int(item.get("rank") or 999)):
@@ -2743,6 +2823,7 @@ def _write_cycle_handoff(
     delivery: dict[str, Any],
     resolution: dict[str, Any] | None,
     formal_status: str | None,
+    skip_slugs: set[str] | None = None,
 ) -> AutotrainCycleHandoffV1:
     """Write the typed boundary consumed by the agent between bounded cycles."""
     camp_dir = root / campaign_id
@@ -2789,7 +2870,10 @@ def _write_cycle_handoff(
     )
     if cycle_intent == "retry_measurement" and not measurement_incomplete:
         priorities = _completed_candidate_priorities(
-            matrix, candidate_id, resolved_infrastructure=True
+            matrix,
+            candidate_id,
+            resolved_infrastructure=True,
+            skip_slugs=skip_slugs,
         )
     elif (
         cycle_intent in {"screening", "promotion"}
@@ -2797,7 +2881,10 @@ def _write_cycle_handoff(
         and not delivery.get("positive")
     ):
         priorities = _completed_candidate_priorities(
-            matrix, candidate_id, resolved_infrastructure=False
+            matrix,
+            candidate_id,
+            resolved_infrastructure=False,
+            skip_slugs=skip_slugs,
         )
     else:
         priorities = tuple(
@@ -4651,7 +4738,16 @@ def run_cycle(
             promoting_champion = None
             cycle_intent = role
             promote_levers = None
-    skip_slugs = _skip_arm_slugs(queue_entries, integration_commit=integration)
+    recent_exhausted = _recent_completed_nonpositive_slugs(root, pred)
+    skip_slugs = (
+        _skip_arm_slugs(queue_entries, integration_commit=integration)
+        | recent_exhausted
+    )
+    if recent_exhausted:
+        print(
+            "RECENT_EXHAUSTION skip=" + ",".join(sorted(recent_exhausted)),
+            flush=True,
+        )
     rec_slug = _predecessor_priority_slug(
         root, pred, skip=skip_slugs
     ) or _select_recommended_slug(cycle, skip=skip_slugs)
@@ -5030,6 +5126,7 @@ def run_cycle(
         delivery=delivery,
         resolution=resolution,
         formal_status=promote_formal_status,
+        skip_slugs=skip_slugs,
     )
     _run(
         [

@@ -2571,7 +2571,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v54",
+      "version": "v55",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2611,6 +2611,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v55",
+          "date": "2026-08-02",
+          "note": "Cool down complete non-positive arm families across one bounded predecessor-chain bank pass and steer successor priorities to the next unexhausted quality hypothesis."
+        },
         {
           "version": "v54",
           "date": "2026-08-02",
@@ -6960,6 +6965,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest model-card and README provenance for two unrelated c1733 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
+        },
         {
           "version": "v3",
           "date": "2026-08-02",
