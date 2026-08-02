@@ -1156,7 +1156,7 @@
       ]
     },
     "dsl.completion_kernel": {
-      "version": "v11",
+      "version": "v12",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/grammar/fastpath/engine.py",
@@ -1183,6 +1183,11 @@
         "docs/design/adr-constrained-diffusion-topology-split.md"
       ],
       "history": [
+        {
+          "version": "v12",
+          "date": "2026-08-02",
+          "note": "Share the dormant lexer thread across callback-free control parser descendants while retaining independently copied feed-mutated parser stacks."
+        },
         {
           "version": "v11",
           "date": "2026-08-02",

@@ -16,6 +16,7 @@ progress, not model-quality or ship evidence.
 | callback-free parser configuration sharing | 63 | 42 | 19,787.817 | 144,524 | 10,526 | 162,854 | typed timeout |
 | copy-on-write fed-token history | 66 | 45 | 19,562.599 | 144,567 | 10,592 | 162,933 | typed timeout |
 | copy-on-write direct-map cache | 70 | 49 | 19,178.515 | 144,638 | 10,696 | 163,061 | typed timeout |
+| shared control lexer thread | 72 | 50 | 19,036.470 | 144,691 | 10,764 | 163,149 | typed timeout |
 | clean committed reproduction | 64 | 43 | 19,595.679 | 144,537 | 10,548 | 162,878 | typed timeout |
 
 All rows use the same c1737 control checkpoint, `smoke` offset 0, one record,
