@@ -113,11 +113,14 @@ diagnose):
    predecessor prerequisite per `contracts.md`; left un-acked. Per the
    lever-bank note below, cycle 4 should rotate to a fresh untested lever
    rather than repeating this one.
-3. `deliver_stack` (owner `sdlc`) -- **not applicable**: per the `NON_POSITIVE`
-   reclassification above (and matching the driver's own `stack_layer=false`
-   either way), no reviewable delta is stacked this cycle. Acknowledged as
-   `blocked` with the reclassification note as evidence (no PR to open, no
-   push performed, per session scope).
+3. `deliver_stack` (owner `sdlc`) -- **not applicable, left un-acked**: per
+   the `NON_POSITIVE` reclassification above (and matching the driver's own
+   `stack_layer=false` either way), no reviewable delta is stacked this
+   cycle. The harness's own `_validate_action_evidence` correctly refuses to
+   let `deliver_stack` be acknowledged (`completed` or `blocked`) with
+   anything other than a commit already merged into `origin/main` -- this
+   session neither pushes nor opens a PR, so no such commit exists, and the
+   action is intentionally left pending rather than force-acked.
 
 `checkpoint_documentation_required=true` -- `docs/MODEL_CARD.md` and the
 README model-card summary updated with a screening-note history line (not a

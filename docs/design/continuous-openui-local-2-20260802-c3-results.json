@@ -107,7 +107,7 @@
     "actions": [
       {"kind": "document", "owner": "documenting-experiment-results", "status": "completed_this_cycle"},
       {"kind": "next_experiment", "owner": "autotrain", "status": "queued", "proposed_experiment_id": "c20260802-continuous-openui-local--c94ddb78-c3-component-edge"},
-      {"kind": "deliver_stack", "owner": "sdlc", "status": "not_applicable_non_positive", "note": "No tracked code/docs delta beyond this cycle's docs; reclassified NON_POSITIVE per loop quality policy -- no stack layer opened, matching the driver's own stack_layer=false."}
+      {"kind": "deliver_stack", "owner": "sdlc", "status": "left_unacked", "note": "Reclassified NON_POSITIVE per loop quality policy -- no stack layer opened, matching the driver's own stack_layer=false. autoresearch ack-action's _validate_action_evidence refuses any deliver_stack acknowledgement (completed or blocked) without a commit already merged into origin/main; this session neither pushes nor opens a PR, so the action is intentionally left pending rather than force-acked."}
     ],
     "checkpoint_documentation_required": true,
     "checkpoint_paths": [
