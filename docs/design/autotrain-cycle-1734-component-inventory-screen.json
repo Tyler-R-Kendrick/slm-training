@@ -1,0 +1,111 @@
+{
+  "schema": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1734",
+  "loop_id": "continuous-openui-20260730",
+  "cycle_index": 1734,
+  "campaign_role": "screening",
+  "cycle_intent": "screening",
+  "run_class": "fixture_scratch",
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "steps": 22,
+  "seed": 101734,
+  "batch_size": 2,
+  "checkpoint_sync": "explicit no-sync scratch",
+  "upstream_commit": "20ae71ff43051edc79d2475a51848a0bd5adb7f0",
+  "integration_commit": "2b2c33166d8ee207cdf2bdf1f5825bc70959420b",
+  "primary_metric": "smoke.structural_similarity",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "2b2c33166d8ee207cdf2bdf1f5825bc70959420b",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v73",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v284"
+    },
+    "stamped_at": "2026-08-02T05:29:02.818592+00:00"
+  },
+  "gate_version": "openui_ship_gates_v6",
+  "arms": [
+    {
+      "label": "matched control",
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1734-control",
+      "trainable_parameters": 1682363,
+      "component_inventory_loss_weight": 0.0,
+      "last_loss": 13.66918659210205,
+      "training_wall_seconds": 2.548115985991899,
+      "checkpoint_sha256": "0e2cac426598226eb2d87602bca9a36d097df4108cbc81374fd4b9602f0afe28",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.17416666666666666,
+        "component_type_recall": 0.25,
+        "ast_node_f1": 0.2619047619047619,
+        "ast_edge_f1": 0.0,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.7653333333333334,
+        "latency_ms_p50": 1574.83
+      },
+      "decode_stats": {
+        "forwards_count_sum": 11,
+        "completion_unique_states_sum": 31118,
+        "completion_witness_states_expanded_sum": 861,
+        "completion_parser_forks_sum": 32126
+      },
+      "agentv_execution_errors": 0,
+      "ship_gates_pass": false
+    },
+    {
+      "label": "component-inventory loss 1.0",
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1734-component-inventory",
+      "trainable_parameters": 1682363,
+      "component_inventory_loss_weight": 1.0,
+      "last_loss": 14.77133846282959,
+      "training_wall_seconds": 2.7207766299834475,
+      "checkpoint_sha256": "4b61fecf35a8263a6d3c70871fe229fa28ffaced272b2aa73ee1ecd849549229",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.17416666666666666,
+        "component_type_recall": 0.25,
+        "ast_node_f1": 0.2619047619047619,
+        "ast_edge_f1": 0.0,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.7653333333333334,
+        "latency_ms_p50": 1567.47
+      },
+      "decode_stats": {
+        "forwards_count_sum": 11,
+        "completion_unique_states_sum": 31118,
+        "completion_witness_states_expanded_sum": 861,
+        "completion_parser_forks_sum": 32126
+      },
+      "agentv_execution_errors": 0,
+      "ship_gates_pass": false
+    }
+  ],
+  "comparison": {
+    "parameter_matched": true,
+    "quality_delta": 0.0,
+    "latency_improvement_fraction": 0.0046954647,
+    "minimum_efficiency_gain_fraction": 0.05,
+    "disposition": "quality_null_efficiency_below_floor_rejected"
+  },
+  "formal_evidence": {
+    "status": "not_applicable:screening",
+    "reason": "Lean promotion proof is required only for a confirmed champion promotion"
+  },
+  "next_hypothesis": "component-structure",
+  "checkpoint_documentation_required": true,
+  "checkpoint_reuse": "forbidden",
+  "ship_eligible": false
+}
