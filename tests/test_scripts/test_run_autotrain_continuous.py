@@ -520,6 +520,40 @@ def test_completed_null_steers_to_distinct_quality_arm() -> None:
     assert "component-plan" in priorities[0].hypothesis
 
 
+def test_completed_null_labels_runtime_successor_as_diagnostic() -> None:
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-20260802-c1735",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=22,
+        cycle=1735,
+        role="screening",
+        recommended_slug="component-structure",
+    )
+    candidate_id = matrix["recommended_experiment_id"]
+
+    priorities = _mod._completed_candidate_priorities(
+        matrix,
+        candidate_id,
+        resolved_infrastructure=False,
+        skip_slugs={
+            "component-plan",
+            "component-edge",
+            "component-inventory",
+            "binder-topology",
+        },
+    )
+
+    assert priorities[0].area == "experiments"
+    assert priorities[0].proposed_experiment_id.endswith("-bounds")
+    assert "diagnostic" in priorities[0].hypothesis
+    assert "latency_ms_p50" in priorities[0].hypothesis
+    assert "quality hypothesis" not in priorities[0].hypothesis
+
+
 def test_predecessor_completed_null_drives_next_screening_arm(tmp_path: Path) -> None:
     root = tmp_path / "autoresearch"
     camp = root / "continuous-loop-20260731-c1729"
