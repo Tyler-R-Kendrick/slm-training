@@ -178,7 +178,7 @@ def test_climb_policy_measurement_helpers() -> None:
     assert stage_wall_minutes_for_role(policy, "screening") == 3
     assert decode_timeout_seconds_for_role(policy, "screening") >= 20
     assert eval_suites_for_role(policy, "screening") == ("smoke",)
-    assert max_consecutive_frozen_replays(policy) == 2
+    assert max_consecutive_frozen_replays(policy) == 1
 
 
 def test_run_metrics_loads_screening_quality_primary(tmp_path: Path) -> None:
@@ -3559,7 +3559,7 @@ def test_cycle_handoff_exhausts_identical_replays_into_harness_repair(
             {
                 "loop_id": "loop-1",
                 "campaign_id": "cycle-1",
-                "cycle_intent": "retry_measurement",
+                "cycle_intent": "promotion",
             }
         )
     )
@@ -3593,7 +3593,7 @@ def test_cycle_handoff_exhausts_identical_replays_into_harness_repair(
     )
     assert repair.owner == "improve-openui-harnesses"
     assert repair.frozen_manifest_sha256 == hashlib.sha256(b"{}\n").hexdigest()
-    assert "(2/2)" in repair.reason
+    assert "(1/1)" in repair.reason
     retry = next(
         action for action in handoff.actions if action.kind == "retry_measurement"
     )

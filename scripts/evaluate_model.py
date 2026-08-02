@@ -590,6 +590,16 @@ def main(argv: list[str] | None = None) -> int:
         help="Per-record decode timeout from the centralized run policy.",
     )
     parser.add_argument(
+        "--evaluation-wall-seconds",
+        type=float,
+        default=None,
+        help=(
+            "Optional cumulative evaluation wall. The canonical runner fairly "
+            "partitions it across remaining records and reserves scoreboard "
+            "finalization time."
+        ),
+    )
+    parser.add_argument(
         "--no-design-md-context",
         action="store_true",
         help="Override: do not concatenate DESIGN.md into context.",
@@ -822,9 +832,7 @@ def main(argv: list[str] | None = None) -> int:
         semantic_plan_typed_array_item_margin_decode_weight=(
             args.semantic_plan_typed_array_item_margin_decode_weight
         ),
-        compiler_schema_component_types=(
-            args.compiler_schema_component_types
-        ),
+        compiler_schema_component_types=(args.compiler_schema_component_types),
         request_aware_slot_reservation=args.request_aware_slot_reservation,
         slot_alias_unique_decode=args.slot_alias_unique_decode,
         visible_reference_decode_weight=args.visible_reference_decode_weight,
@@ -851,6 +859,7 @@ def main(argv: list[str] | None = None) -> int:
         ),
         compiler_search_backtrack_limit=max(0, args.compiler_search_backtrack_limit),
         decode_timeout_seconds=args.decode_timeout_seconds,
+        evaluation_wall_seconds=args.evaluation_wall_seconds,
         grammar_dsl=args.grammar_dsl,
         grammar_trust_model=args.grammar_trust_model,
         grammar_sample_decode=args.grammar_sample_decode,
@@ -913,9 +922,7 @@ def main(argv: list[str] | None = None) -> int:
         from slm_training.runtime.telemetry import run_trace
 
         suites = [s.strip() for s in args.suites.split(",") if s.strip()]
-        suite_reachability = _load_suite_reachability(
-            args.suite_reachability_json
-        )
+        suite_reachability = _load_suite_reachability(args.suite_reachability_json)
         with run_trace(args.run_id, "eval", run_dir=config.run_dir):
             scoreboard = evaluate_suites(
                 config,
@@ -950,9 +957,7 @@ def main(argv: list[str] | None = None) -> int:
 
     with run_trace(args.run_id, "eval", run_dir=config.run_dir):
         if args.grammar_leakage_audit:
-            audit = evaluate_grammar_leakage_audit(
-                config, checkpoint=args.checkpoint
-            )
+            audit = evaluate_grammar_leakage_audit(config, checkpoint=args.checkpoint)
             summary = {
                 "schema_version": audit["schema_version"],
                 "suite": audit["suite"],

@@ -115,7 +115,9 @@ def _evaluation_version_components(config: ModelBuildConfig) -> tuple[str, ...]:
     return components + (("model.twotower",) if config.model_name == "twotower" else ())
 
 
-def _record_langsmith_evaluation(config, *, suites: dict[str, dict], scoreboard: dict) -> None:
+def _record_langsmith_evaluation(
+    config, *, suites: dict[str, dict], scoreboard: dict
+) -> None:
     """Publish only aggregate evaluation data to the active summary trace."""
     from slm_training.runtime.telemetry import current_trace
 
@@ -123,11 +125,7 @@ def _record_langsmith_evaluation(config, *, suites: dict[str, dict], scoreboard:
     if trace is None:
         return
     summary = {
-        suite: {
-            key: metrics[key]
-            for key in _LANGSMITH_METRIC_KEYS
-            if key in metrics
-        }
+        suite: {key: metrics[key] for key in _LANGSMITH_METRIC_KEYS if key in metrics}
         for suite, metrics in suites.items()
     }
     trace.record_summary(
@@ -178,7 +176,9 @@ _TEMPORAL_DECODE_TRACE_FIELDS = (
 )
 
 
-def _temporal_decode_evidence(stats: object | None, record_id: str) -> list[dict[str, object]]:
+def _temporal_decode_evidence(
+    stats: object | None, record_id: str
+) -> list[dict[str, object]]:
     """Return the prefix-time, model-available trace projection for one record.
 
     This is deliberately not a ``DecodeStats.as_dict()`` snapshot: aggregate
@@ -193,9 +193,7 @@ def _temporal_decode_evidence(stats: object | None, record_id: str) -> list[dict
         if trace.get("record_id") != record_id:
             continue
         item = {
-            key: trace[key]
-            for key in _TEMPORAL_DECODE_TRACE_FIELDS
-            if key in trace
+            key: trace[key] for key in _TEMPORAL_DECODE_TRACE_FIELDS if key in trace
         }
         if "position" in item:
             evidence.append(item)
@@ -238,9 +236,15 @@ def _aggregate_scope_contract_metrics(
     def summarize(group: list[dict[str, Any]]) -> dict[str, Any]:
         summary: dict[str, Any] = {"sample_count": len(group)}
         for key in mean_keys:
-            values = [float(row[key]) for row in group if isinstance(row.get(key), (int, float))]
+            values = [
+                float(row[key])
+                for row in group
+                if isinstance(row.get(key), (int, float))
+            ]
             if values:
-                summary[f"{key}_mean" if key.endswith("_size") else key] = sum(values) / len(values)
+                summary[f"{key}_mean" if key.endswith("_size") else key] = sum(
+                    values
+                ) / len(values)
         tp = sum(int(row.get("failure_cone_tp", 0)) for row in group)
         fp = sum(int(row.get("failure_cone_fp", 0)) for row in group)
         fn = sum(int(row.get("failure_cone_fn", 0)) for row in group)
@@ -252,7 +256,9 @@ def _aggregate_scope_contract_metrics(
                 "failure_cone_recall": recall,
                 "failure_cone_f1": (
                     2.0 * precision * recall / (precision + recall)
-                    if precision is not None and recall is not None and precision + recall
+                    if precision is not None
+                    and recall is not None
+                    and precision + recall
                     else None
                 ),
             }
@@ -426,9 +432,7 @@ def _contract_recall(pred: str, record: ExampleRecord) -> float | None:
     return len(pred_set & gold_set) / len(gold_set)
 
 
-def _binder_reference_f1(
-    precision: float | None, recall: float | None
-) -> float | None:
+def _binder_reference_f1(precision: float | None, recall: float | None) -> float | None:
     """Harmonic mean for the existing binder/reference contract evidence."""
     if precision is None or recall is None:
         return None
@@ -591,6 +595,7 @@ def _effective_evaluation_policy(
             else int(value("generate_max_attempts"))
         ),
         "decode_timeout_seconds": value("decode_timeout_seconds"),
+        "evaluation_wall_seconds": value("evaluation_wall_seconds"),
         "allow_unconstrained_fallback": bool(value("allow_unconstrained_fallback")),
         "gen_steps": int(value("gen_steps") or 0),
         "grammar_ltr_max_tokens": int(value("grammar_ltr_max_tokens") or 0),
@@ -871,6 +876,34 @@ def _clear_repeating_decode_alarm(previous: Any) -> None:
     finally:
         if callable(pthread_sigmask) and old_mask is not None:
             pthread_sigmask(signal.SIG_SETMASK, old_mask)
+
+
+_EVALUATION_FINALIZATION_RESERVE_SECONDS = 2.0
+
+
+def _effective_record_decode_timeout(
+    requested_seconds: float,
+    *,
+    evaluation_deadline: float | None,
+    remaining_record_n: int,
+    chunk_record_n: int,
+    now: float | None = None,
+) -> float:
+    """Allocate a fair, bounded record share from the cumulative eval wall."""
+
+    if evaluation_deadline is None:
+        return requested_seconds
+    current = time.monotonic() if now is None else float(now)
+    usable = max(
+        0.05,
+        float(evaluation_deadline) - current - _EVALUATION_FINALIZATION_RESERVE_SECONDS,
+    )
+    fair_share = usable * max(1, int(chunk_record_n)) / max(1, int(remaining_record_n))
+    if requested_seconds > 0:
+        fair_share = min(float(requested_seconds), fair_share)
+    return max(0.05, fair_share)
+
+
 def evaluate(
     config: ModelBuildConfig,
     model=None,
@@ -879,6 +912,8 @@ def evaluate(
     publish_agentv: bool = True,
     cache: EvalCache | None = None,
     generation_overrides: dict[str, Any] | None = None,
+    evaluation_deadline: float | None = None,
+    evaluation_remaining_records: list[int] | None = None,
 ) -> dict:
     from slm_training.harnesses.model_build.feature_flags import resolve, save_snapshot
 
@@ -897,11 +932,13 @@ def evaluate(
         suite_limit = getattr(config, "rico_eval_limit", None)
     records = records[
         suite_offset : (
-            suite_offset + max(0, int(suite_limit))
-            if suite_limit is not None
-            else None
+            suite_offset + max(0, int(suite_limit)) if suite_limit is not None else None
         )
     ]
+    if evaluation_deadline is None and config.evaluation_wall_seconds:
+        evaluation_deadline = time.monotonic() + float(config.evaluation_wall_seconds)
+    if evaluation_remaining_records is None and evaluation_deadline is not None:
+        evaluation_remaining_records = [len(records)]
     ckpt = checkpoint or (config.checkpoint_dir / "last.pt")
 
     if model is not None:
@@ -1060,6 +1097,10 @@ def evaluate(
                     (run_dir / "eval.json").write_text(
                         json.dumps(cached_metrics, indent=2) + "\n", encoding="utf-8"
                     )
+                if evaluation_remaining_records is not None:
+                    evaluation_remaining_records[0] = max(
+                        0, evaluation_remaining_records[0] - len(records)
+                    )
                 (run_dir / "decode_progress.json").unlink(missing_ok=True)
                 return cached_metrics
 
@@ -1174,14 +1215,10 @@ def evaluate(
         for prompt in prompts:
             try:
                 out.append(
-                    plugin.generate(
-                        prompt, max_len=canvas_cap, **generation_overrides
-                    )
+                    plugin.generate(prompt, max_len=canvas_cap, **generation_overrides)
                 )
             except TypeError:
-                out.append(
-                    plugin.generate(prompt, gold=None, **generation_overrides)
-                )
+                out.append(plugin.generate(prompt, gold=None, **generation_overrides))
         consume = getattr(plugin, "consume_generation_evidence", None)
         evidence = consume() if callable(consume) else []
         return out, list(evidence)
@@ -1196,6 +1233,7 @@ def evaluate(
     # classified into the decode-outcome taxonomy.
     chunk_decode_meta: list[dict[str, Any]] = []
     processed_record_n = 0
+    effective_decode_timeouts: list[float] = []
 
     def _generate_chunk(
         chunk: list[ExampleRecord],
@@ -1208,7 +1246,24 @@ def evaluate(
         decode running for minutes past ``decode_timeout_seconds``.
         """
         nonlocal decode_timeout_count, processed_record_n
-        seconds = float(getattr(config, "decode_timeout_seconds", 0) or 0)
+        requested_seconds = float(getattr(config, "decode_timeout_seconds", 0) or 0)
+        remaining_record_n = (
+            int(evaluation_remaining_records[0])
+            if evaluation_remaining_records is not None
+            else len(chunk)
+        )
+        seconds = _effective_record_decode_timeout(
+            requested_seconds,
+            evaluation_deadline=evaluation_deadline,
+            remaining_record_n=remaining_record_n,
+            chunk_record_n=len(chunk),
+        )
+        if evaluation_deadline is not None:
+            effective_decode_timeouts.append(seconds)
+            if evaluation_remaining_records is not None:
+                evaluation_remaining_records[0] = max(
+                    0, evaluation_remaining_records[0] - len(chunk)
+                )
 
         def _run(timed_out: bool) -> tuple[list[str], list[dict[str, Any]]]:
             nonlocal processed_record_n
@@ -1220,7 +1275,13 @@ def evaluate(
             stats = (
                 decode_stats_rows[-1] if len(decode_stats_rows) > stats_before else None
             )
-            chunk_decode_meta.append({"timed_out": timed_out, "stats": stats})
+            chunk_decode_meta.append(
+                {
+                    "timed_out": timed_out,
+                    "stats": stats,
+                    "effective_timeout_seconds": seconds,
+                }
+            )
             processed_record_n += len(chunk)
             return result
 
@@ -1281,7 +1342,13 @@ def evaluate(
             if stats is not None:
                 _annotate_decode_trace_records(stats, chunk)
                 decode_stats_rows.append(stats)
-            chunk_decode_meta.append({"timed_out": True, "stats": stats})
+            chunk_decode_meta.append(
+                {
+                    "timed_out": True,
+                    "stats": stats,
+                    "effective_timeout_seconds": seconds,
+                }
+            )
             decode_timeout_count += len(chunk)
             processed_record_n += len(chunk)
             return ["" for _ in chunk], []
@@ -1537,17 +1604,15 @@ def evaluate(
             ast_beq_bit = 1.0 if exact >= 1.0 else 0.0
         can_beq_bit = 1.0 if _canonical_beq(scored_pred, record.openui) else 0.0
         # Optional certificate pair from record meta / prediction evidence.
-        pred_cert = (evidence or {}).get("support_certificate") or (
-            evidence or {}
-        ).get("formal_object")
+        pred_cert = (evidence or {}).get("support_certificate") or (evidence or {}).get(
+            "formal_object"
+        )
         gold_cert = (record.meta or {}).get("support_certificate") or (
             record.meta or {}
         ).get("formal_object")
         cert_bit: float | None
         if pred_cert is not None or gold_cert is not None:
-            cert_bit = (
-                1.0 if _certificate_equivalent(pred_cert, gold_cert) else 0.0
-            )
+            cert_bit = 1.0 if _certificate_equivalent(pred_cert, gold_cert) else 0.0
         else:
             cert_bit = None
         recall = component_type_recall(scored_pred, record.openui)
@@ -1659,7 +1724,9 @@ def evaluate(
                     "bucket": (
                         "small"
                         if len(record.openui) < 160
-                        else "medium" if len(record.openui) < 400 else "large"
+                        else "medium"
+                        if len(record.openui) < 400
+                        else "large"
                     ),
                 },
                 "serialized": serialized,
@@ -1766,6 +1833,7 @@ def evaluate(
 
     from slm_training.evals.power_protocol import binomial_rate_evidence
     from slm_training.evals.record_schema import RUN_CLASSES, SCHEMA_VERSION
+
     def _rate_evidence(successes: int, total: int) -> dict[str, Any]:
         evidence_class = (
             "unmeasured"
@@ -1809,7 +1877,9 @@ def evaluate(
         "evidence_class": "unmeasured",
     }
 
-    run_class = config.run_class if config.run_class in RUN_CLASSES else "scratch_matrix"
+    run_class = (
+        config.run_class if config.run_class in RUN_CLASSES else "scratch_matrix"
+    )
     metrics = {
         "schema_version": SCHEMA_VERSION,
         "run_class": run_class,
@@ -1823,6 +1893,13 @@ def evaluate(
         "eval_offset": suite_offset,
         "seed": int(getattr(config, "seed", 0) or 0),
         "diagnostic_subset": suite_limit is not None or suite_offset > 0,
+        "evaluation_wall_seconds": config.evaluation_wall_seconds,
+        "effective_decode_timeout_seconds_min": (
+            min(effective_decode_timeouts) if effective_decode_timeouts else None
+        ),
+        "effective_decode_timeout_seconds_max": (
+            max(effective_decode_timeouts) if effective_decode_timeouts else None
+        ),
         # Persist the effective decode policy beside every scoreboard.  This
         # is essential for comparing historical runs: checkpoint defaults and
         # CLI diagnostic overrides can materially change quality and timeout
@@ -1865,9 +1942,7 @@ def evaluate(
         "rate_evidence": {
             "parse_rate": syntax_rate_evidence,
             "syntax_parse_rate": syntax_rate_evidence,
-            "raw_syntax_validity": _rate_evidence(
-                raw_syntax_ok, completed_document_n
-            ),
+            "raw_syntax_validity": _rate_evidence(raw_syntax_ok, completed_document_n),
             "meaningful_program_rate": meaningful_rate_evidence,
             "exact_match": _rate_evidence(int(sum(exact_vals)), len(exact_vals)),
             "decode_timeout_rate": timeout_rate_evidence,
@@ -2127,8 +2202,11 @@ def evaluate(
         metrics["speculative_stats"] = spec_stats.as_dict()
     if decode_stats_rows:
         from slm_training.models.decode_stats import aggregate_stats
+
         metrics["decode_stats"] = aggregate_stats(decode_stats_rows)
-        retries = sum(int(getattr(row, "unconstrained_retries", 0)) for row in decode_stats_rows)
+        retries = sum(
+            int(getattr(row, "unconstrained_retries", 0)) for row in decode_stats_rows
+        )
         metrics["constrained_fallback_rate"] = retries / len(decode_stats_rows)
         metrics["rate_evidence"]["constrained_fallback_rate"] = {
             "schema": "rate_evidence/v1",
@@ -2183,9 +2261,14 @@ def evaluate(
                 "skipped": f"suite {config.suite!r} is not in the ship-gate policy"
             }
     # SDE3-01: persist the full suite result for exact replay when enabled.
-    if cache is not None and cache_key is not None and cache.config.mode in (
-        EvalCacheMode.READ_WRITE,
-        EvalCacheMode.REFRESH,
+    if (
+        cache is not None
+        and cache_key is not None
+        and cache.config.mode
+        in (
+            EvalCacheMode.READ_WRITE,
+            EvalCacheMode.REFRESH,
+        )
     ):
         try:
             cache.put(cache_key, metrics, dependencies=cache_dependencies)
@@ -2244,9 +2327,9 @@ def evaluate_grammar_leakage_audit(
         },
     }
     selected_names = variant_names or tuple(all_variants)
-    if "constrained_native" not in selected_names or not set(
-        selected_names
-    ).issubset(all_variants):
+    if "constrained_native" not in selected_names or not set(selected_names).issubset(
+        all_variants
+    ):
         raise ValueError(
             "grammar leakage audit variants must include constrained_native"
         )
@@ -2323,6 +2406,7 @@ def evaluate_grammar_leakage_audit(
             grouped["complexity"].setdefault(
                 str((detail.get("complexity") or {}).get("bucket") or "unknown"), []
             ).append(detail)
+
         def _completed_rate(rows: list[dict[str, Any]], key: str) -> float | None:
             completed = [
                 row
@@ -2337,9 +2421,7 @@ def evaluate_grammar_leakage_audit(
             axis: {
                 label: {
                     "n": len(rows),
-                    "completed_n": sum(
-                        1 for row in rows if not row.get("incomplete")
-                    ),
+                    "completed_n": sum(1 for row in rows if not row.get("incomplete")),
                     "incomplete_n": sum(1 for row in rows if row.get("incomplete")),
                     "meaningful_program_rate": _completed_rate(
                         rows, "binding_aware_meaningful_v2"
@@ -2391,6 +2473,25 @@ def evaluate_suites(
     from slm_training.harnesses.model_build.ship_gates import write_ship_gates
 
     board: dict[str, dict] = {}
+    evaluation_deadline = (
+        time.monotonic() + float(config.evaluation_wall_seconds)
+        if config.evaluation_wall_seconds
+        else None
+    )
+    remaining_records = None
+    if evaluation_deadline is not None:
+        def selected_record_n(suite: str) -> int:
+            records = load_suite_records(config.test_dir, suite)
+            limit = config.eval_limit
+            if limit is None and suite == "rico_held":
+                limit = config.rico_eval_limit
+            offset = max(0, int(config.eval_offset))
+            stop = offset + max(0, int(limit)) if limit is not None else None
+            return len(records[offset:stop])
+
+        remaining_records = [
+            sum(selected_record_n(suite) for suite in suites)
+        ]
     for suite in suites:
         suite_config = replace(config, suite=suite)
         metrics = evaluate(
@@ -2399,6 +2500,8 @@ def evaluate_suites(
             checkpoint=checkpoint,
             publish_agentv=False,
             cache=cache,
+            evaluation_deadline=evaluation_deadline,
+            evaluation_remaining_records=remaining_records,
         )
         board[suite] = {k: v for k, v in metrics.items() if k != "details"}
     from slm_training.evals.record_schema import RUN_CLASSES, SCHEMA_VERSION
