@@ -26,7 +26,9 @@
     {"variant": "shared_token_and_terminal_classification_projections_clean", "tokens_emitted": 104, "forwards": 68, "compiler_ms": 17658.979, "states": 145040, "witnesses": 11243, "forks": 163770, "outcome": "completed", "evidence_authority": "clean_commit_bound_fixture_profile"},
     {"variant": "cached_parser_stack_projection_ship_bundle_reverted", "tokens_emitted": 85, "forwards": 61, "compiler_ms": 18057.511, "states": 145008, "witnesses": 11163, "forks": 163707, "outcome": "typed_timeout", "evidence_authority": "exploratory_dirty_profile_reverted_as_slower"},
     {"variant": "cached_parser_stack_projection_smoke_replay_reverted", "tokens_emitted": 93, "forwards": 64, "compiler_ms": 17907.274, "states": 145035, "witnesses": 11225, "forks": 163757, "outcome": "typed_timeout", "evidence_authority": "exploratory_dirty_profile_reverted_as_slower"},
-    {"variant": "cached_parser_stack_projection_cprofile_reverted", "tokens_emitted": 7, "forwards": 4, "compiler_ms": 23534.799, "states": 30785, "witnesses": 1006, "forks": 31895, "outcome": "typed_timeout", "evidence_authority": "exploratory_dirty_cprofile_reverted_as_slower"}
+    {"variant": "cached_parser_stack_projection_cprofile_reverted", "tokens_emitted": 7, "forwards": 4, "compiler_ms": 23534.799, "states": 30785, "witnesses": 1006, "forks": 31895, "outcome": "typed_timeout", "evidence_authority": "exploratory_dirty_cprofile_reverted_as_slower"},
+    {"variant": "direct_integer_stack_tuple", "tokens_emitted": 104, "forwards": 68, "compiler_ms": 17439.288, "states": 145040, "witnesses": 11243, "forks": 163770, "outcome": "completed", "evidence_authority": "exploratory_dirty_profile"},
+    {"variant": "direct_integer_stack_tuple_cprofile", "tokens_emitted": 10, "forwards": 5, "compiler_ms": 23378.588, "states": 34164, "witnesses": null, "forks": null, "outcome": "typed_timeout", "evidence_authority": "exploratory_dirty_cprofile"}
   ],
   "profile_signal": {
     "terminal_witness_cumulative_seconds": 23.373,
@@ -70,6 +72,53 @@
       {"suite": "rico_held", "completed": 0, "timeouts": 1, "latency_ms_p50_including_incomplete": 24001.45, "parse_rate": null, "meaningful_program_rate": null, "structural_similarity": null, "tokens": 71, "forwards": 50, "compiler_ms": 19145.331}
     ],
     "interpretation": "diagnostic n=1 negative harness evidence; no model-quality or ship claim"
+  },
+  "direct_stack_tuple_profile_signal": {
+    "run_id": "c1747-stack-tuple-profile",
+    "profiler": "cProfile",
+    "baseline_combined_parser_key_and_accepts_cumulative_seconds": 3.796,
+    "candidate_combined_parser_key_and_accepts_cumulative_seconds": 1.872,
+    "baseline_profiled_unique_states": 30877,
+    "candidate_profiled_unique_states": 34164,
+    "interpretation": "direct tuple snapshots remove redundant per-element coercion and generator cost while preserving exact state keys"
+  },
+  "latest_dirty_stack_tuple_reproduction": {
+    "run_id": "c1747-stack-tuple-dirty-smoke",
+    "variant": "direct_integer_stack_tuple",
+    "evidence_authority": "exploratory_dirty_profile",
+    "document_n": 1,
+    "completed_document_n": 1,
+    "incomplete_document_n": 0,
+    "decode_timeout_document_count": 0,
+    "parse_rate": 1.0,
+    "meaningful_program_rate": 1.0,
+    "structural_similarity": 0.2529,
+    "binder_reference_f1": 1.0,
+    "latency_ms_p50": 23663.19,
+    "tokens_emitted": 104,
+    "forwards": 68,
+    "compiler_ms": 17439.288,
+    "states": 145040,
+    "witnesses": 11243,
+    "forks": 163770,
+    "outcome": "completed",
+    "agentv": "emitted_failed_as_expected_for_n1_quality_and_evidence_volume",
+    "ship_gates": "not run for this focused fixture replay",
+    "exact_completion_tests": "146 passed",
+    "compiler_decode_tests": "226 passed",
+    "leverproof_validation": "Build completed successfully (26 jobs); test runner verified",
+    "formal_validation": "Build completed successfully (2947 jobs); formal contracts build and axiom audit passed",
+    "validation_repair": "DslPack empty tree-edit inventory capability reporting fixed; pinned source digest refreshed; legacy pack E2E moved to constrained generation; 25 latent and builtin pack tests passed",
+    "version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "code_commit": "ea2dc2122f7d706bef467d313b5454ff54cfff13",
+      "code_dirty": true,
+      "components": {
+        "harness.model_build.eval": "v74",
+        "model.twotower": "v288",
+        "dsl.completion_kernel": "v16"
+      }
+    }
   },
   "clean_reproduction": {
     "run_id": "c1741-fed-history-cow-clean-profile",

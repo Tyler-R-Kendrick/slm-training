@@ -142,7 +142,18 @@ class DslPack:
     completion_artifact: str | None = None
 
     def filled_slots(self) -> tuple[str, ...]:
-        return tuple(f.name for f in fields(self) if getattr(self, f.name) is not None)
+        empty_means_unavailable = {
+            "leaf_components",
+            "container_components",
+            "component_property_domains",
+            "statement_templates",
+        }
+        return tuple(
+            item.name
+            for item in fields(self)
+            if (value := getattr(self, item.name)) is not None
+            and (item.name not in empty_means_unavailable or bool(value))
+        )
 
     def require(self, slot: str) -> Any:
         """Return the named slot, failing closed when the pack omits it."""
