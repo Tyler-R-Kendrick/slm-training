@@ -1,0 +1,48 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-pq269u",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-pq269u-2619fa49-c2",
+  "cycle_index": 2,
+  "source_commit": "9ba7f7baba1e3858e0ef484a86093dcb1d351ae9",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "honest_slot_contract": true,
+    "slot_contract_constrained_decode": true,
+    "compiler_decode_mode": "off"
+  },
+  "arms": {
+    "c2-control": {
+      "status": "measurement_incomplete",
+      "reason": "smoke suite n=3/32 documents evaluated; all 3 hit decode_timeout_count under the 24s per-doc / 3-minute wall cap before AgentEvals could score a real sample"
+    },
+    "c2-bounds": {
+      "status": "measurement_incomplete",
+      "reason": "smoke suite n=3/32 documents evaluated; all 3 hit decode_timeout_count under the 24s per-doc / 3-minute wall cap before AgentEvals could score a real sample"
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "conclusion": "The c1 harness repair (npm ci + NODE_OPTIONS sanitization) is confirmed: the AgentV publish step now executes end-to-end and produces a real scoreboard/gates.json with 10 AgentEvals criteria evaluated (proven executable unblock), instead of crashing before any measurement. The remaining gap is unrelated to the AgentV runner: only 3 of 32 requested smoke documents completed decode before the 3-minute wall cap, and all 3 hit decode_timeout_count, so every quality metric (meaningful_program_rate, structural_similarity, ast_beq_rate, etc.) is null and the ship gates fail closed on insufficient_n. This is the well-documented fixture-scale wall-cap constraint (see prior 'decode-timeout wall' threads), not a new defect.",
+  "repair": {
+    "harness_family": "model_build",
+    "frozen_manifest_sha256": "24062fb2a55e70c1c6bcf4ecbf145ed535229206f7b06c64a3b4f109acc23e25",
+    "actions_taken": [],
+    "regression_coverage": "n/a -- no code change this cycle; documenting the decode-timeout-under-wall-cap constraint as the next-priority investigation"
+  },
+  "known_debt_discovered": {
+    "summary": "Confirmed the decode-timeout-vs-wall-cap tension already tracked by prior continuous-loop threads (e.g. is-the-30s-decode-timeout-wall docs) still applies to this fixture recipe at steps=20; not re-diagnosed here.",
+    "sample_failures": []
+  },
+  "next_priorities": [
+    "Investigate whether a lower --decode-timeout-seconds or a smaller requested smoke n would let more documents complete within the 3-minute wall cap, or whether this recipe genuinely needs a longer wall budget than MAX_RUN_MINUTES allows for smoke-scale evaluation",
+    "Route any canonical eval-runtime change through improve-openui-harnesses rather than ad hoc knob edits"
+  ],
+  "recorded_at": "2026-08-02T18:43:30+00:00"
+}
