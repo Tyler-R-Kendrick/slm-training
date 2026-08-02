@@ -487,7 +487,7 @@
       ]
     },
     "data.test_build": {
-      "version": "v6",
+      "version": "v7",
       "kind": "data_builder",
       "paths": [
         "scripts/build_test_data.py",
@@ -495,6 +495,11 @@
         "src/slm_training/resources/test_seeds.jsonl"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-08-02",
+          "note": "continuous-openui-local c10 harness/data cycle: grow the hand-authored fixture seed pool that feeds smoke/held_out (component-diverse RadioGroup/Select/CheckBoxGroup/TextArea/DatePicker/Steps/Table/Accordion/Carousel/TagBlock/CodeBlock/MarkDownRenderer records) from smoke=3/held_out=5 to smoke=12/held_out=15, purely additive -- no existing record changed, adversarial/ood untouched. Diagnostic goal: give the eval suite enough n to distinguish structural aux-loss levers from measurement noise after 4 consecutive bit-identical n=3/5 screens. All new records pass validate()/assert_symbol_only_output(), are structurally disjoint from wf_smoke_v2's 48 train structure fingerprints and from train_seeds.jsonl (0 leakage_rejected), and pass the existing disjointness/locked-manifest/symbol-only test suite."
+        },
         {
           "version": "v6",
           "date": "2026-07-30",

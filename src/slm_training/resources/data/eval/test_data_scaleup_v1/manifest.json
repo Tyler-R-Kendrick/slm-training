@@ -1,0 +1,67 @@
+{
+  "version": "test_data_scaleup_v1",
+  "kind": "test_data",
+  "source": "fixture",
+  "suites": {
+    "smoke": "src/slm_training/resources/data/eval/test_data_scaleup_v1/suites/smoke/records.jsonl",
+    "held_out": "src/slm_training/resources/data/eval/test_data_scaleup_v1/suites/held_out/records.jsonl",
+    "adversarial": "src/slm_training/resources/data/eval/test_data_scaleup_v1/suites/adversarial/records.jsonl",
+    "ood": "src/slm_training/resources/data/eval/test_data_scaleup_v1/suites/ood/records.jsonl"
+  },
+  "stats": "src/slm_training/resources/data/eval/test_data_scaleup_v1/stats.json",
+  "ids": [
+    "smoke_hero_01",
+    "smoke_button_01",
+    "smoke_callout_01",
+    "smoke_radio_01",
+    "smoke_select_01",
+    "smoke_textarea_01",
+    "smoke_tag_01",
+    "smoke_markdown_01",
+    "smoke_datepicker_01",
+    "smoke_codeblock_01",
+    "smoke_checkbox_01",
+    "smoke_steps_01",
+    "held_out_form_01",
+    "held_out_dual_card_01",
+    "held_out_input_01",
+    "held_out_tabs_01",
+    "held_out_settings_01",
+    "held_out_table_01",
+    "held_out_accordion_01",
+    "held_out_carousel_01",
+    "held_out_form_select_01",
+    "held_out_radio_form_01",
+    "held_out_checkbox_form_01",
+    "held_out_steps_card_01",
+    "held_out_tagblock_callout_01",
+    "held_out_markdown_datepicker_01",
+    "held_out_table_callout_01",
+    "adv_empty_prompt_01",
+    "adv_dual_card_01",
+    "adv_deep_nest_01",
+    "adv_many_buttons_01",
+    "ood_dashboard_01",
+    "ood_gallery_01",
+    "ood_modal_01",
+    "ood_auth_01"
+  ],
+  "suite_counts": {
+    "smoke": 12,
+    "held_out": 15,
+    "adversarial": 4,
+    "ood": 4
+  },
+  "content_fingerprint": "bebe5b5798a706746eff98804741a947918ace2e9c084b943d1ad22ca47198ee",
+  "train_manifest": "src/slm_training/resources/data/train/wf_smoke_v2/manifest.json",
+  "built_at": "2026-08-02T10:39:05.581810+00:00",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "38b2f0ce9007542fd28037c14da7de34a1c9d3b0",
+    "code_dirty": true,
+    "components": {
+      "data.test_build": "v7"
+    },
+    "stamped_at": "2026-08-02T10:39:05.606691+00:00"
+  }
+}

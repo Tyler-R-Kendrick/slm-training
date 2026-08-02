@@ -1,0 +1,52 @@
+{
+  "version": "test_data_scaleup_v1",
+  "source": "fixture",
+  "seed_path": "src/slm_training/resources/test_seeds.jsonl",
+  "rico_path": null,
+  "rico_hf_split": null,
+  "rico_limit": null,
+  "rico_hf_cache_path": "src/slm_training/resources/rico/hf_test_cache.jsonl",
+  "target_records": null,
+  "sanitize_mode": "enforce",
+  "sanitize": {
+    "mode": "enforce",
+    "sanitized": 35,
+    "changed": 35,
+    "skipped": {},
+    "rewrites": {
+      "defaults_elided": 33,
+      "dead_bindings_removed": 0,
+      "containers_flattened": 0,
+      "flatten_opportunities": 1
+    },
+    "literals_templatized": 0,
+    "records_templatized": 0,
+    "fallbacks": 0,
+    "fallback_reasons": {},
+    "cache": {
+      "hits": 0,
+      "misses": 35
+    }
+  },
+  "suite_counts": {
+    "smoke": 12,
+    "held_out": 15,
+    "adversarial": 4,
+    "ood": 4
+  },
+  "total_records": 35,
+  "error_count": 0,
+  "errors": [],
+  "leakage_rejected": 0,
+  "train_manifest": "src/slm_training/resources/data/train/wf_smoke_v2/manifest.json",
+  "built_at": "2026-08-02T10:39:05.581810+00:00",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "38b2f0ce9007542fd28037c14da7de34a1c9d3b0",
+    "code_dirty": true,
+    "components": {
+      "data.test_build": "v7"
+    },
+    "stamped_at": "2026-08-02T10:39:05.606691+00:00"
+  }
+}
