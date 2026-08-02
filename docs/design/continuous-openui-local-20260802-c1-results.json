@@ -1,0 +1,53 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c1",
+  "cycle_index": 1,
+  "source_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 21,
+    "seed": 0,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suites": "smoke",
+    "ship_gates": true
+  },
+  "arms": {
+    "c1-control": {
+      "status": "completed_no_scoreboard",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 1225.4
+      },
+      "blocker": "AgentV SDK unavailable during publish_model_evaluation (RuntimeError: run npm ci or set AGENTV_RUNNER); missing_scoreboard"
+    },
+    "c1-bounds": {
+      "status": "completed_no_scoreboard",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 1260.34
+      },
+      "blocker": "AgentV SDK unavailable during publish_model_evaluation (RuntimeError: run npm ci or set AGENTV_RUNNER); missing_scoreboard"
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "conclusion": "Fresh ephemeral session had no npm deps installed; `npm ci` at repo root was missing, so evaluate_model's AgentV publish step raised RuntimeError before writing scoreboard.json on both arms. Raw smoke metrics computed cleanly for both arms with structural_similarity tied at 0.0575 (0.0 delta) and meaningful_program_rate 0.0 on both -- not a model win even once the scoreboard is unblocked. Environment gap (npm ci) fixed in-session for the retry.",
+  "next_priorities": [
+    "Retry the identical frozen c1-control/c1-bounds arms now that `npm ci` has installed @agentv/core so scoreboard.json / ship gates actually run to completion (retry_measurement queued by the driver).",
+    "Session bootstrap for this repo needs python3.12 venv + `npm ci` at repo root before any autotrain cycle in a fresh checkout; consider a documented one-shot bootstrap step or SessionStart hook.",
+    "meaningful_program_rate stuck at 0.0 on a 21-step wf_smoke_v2 fixture on both arms -- expected at this step count, not evidence of a lever effect."
+  ]
+}
