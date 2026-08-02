@@ -326,7 +326,14 @@ class CompletionSession:
                 self._transitions[key] = None
                 return None
         child = self._fork(record.engine)
-        outcome = child.feed_token_id(self._tokenizer, tid)
+        # ``child`` is already an isolated control fork and is discarded when
+        # the feed rejects.  Avoid cloning it a second time solely to restore
+        # a branch that cannot be observed again.
+        outcome = child.feed_token_id(
+            self._tokenizer,
+            tid,
+            _restore_on_reject=False,
+        )
         if outcome is None:
             # Ambiguous junction — canonical text route.
             self._counters["full_sync_fallbacks"] += 1

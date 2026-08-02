@@ -2497,7 +2497,11 @@ def _build_openui_completion_forest_direct(
             # Prefer the checked static token→terminal map.  Ambiguous or
             # unsupported junctions retain the canonical text path exactly;
             # verified direct feeds avoid re-lexing every witness branch.
-            direct = branch.feed_token_id(tokenizer, int(token_id))
+            direct = branch.feed_token_id(
+                tokenizer,
+                int(token_id),
+                _restore_on_reject=False,
+            )
             admitted = (
                 branch.advance_checked(piece) if direct is None else bool(direct)
             )
@@ -2528,7 +2532,11 @@ def _build_openui_completion_forest_direct(
                 break
             drafted.append(int(forced))
             piece = _token_piece(tokenizer, forced)
-            direct = branch.feed_token_id(tokenizer, int(forced))
+            direct = branch.feed_token_id(
+                tokenizer,
+                int(forced),
+                _restore_on_reject=False,
+            )
             admitted = (
                 branch.advance_checked(piece) if direct is None else bool(direct)
             )

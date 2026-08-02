@@ -604,17 +604,30 @@ class OpenUIIncrementalEngine:
             self._prefix += " "
         self._prefix += piece
 
-    def _feed_terminal_direct(self, term: str, value: str, piece: str) -> bool:
-        """Feed one verified terminal; restore exactly on grammar rejection."""
+    def _feed_terminal_direct(
+        self,
+        term: str,
+        value: str,
+        piece: str,
+        *,
+        restore_on_reject: bool = True,
+    ) -> bool:
+        """Feed one verified terminal; optionally restore on rejection.
+
+        Callers normally retain the transactional default.  A caller that has
+        just forked this engine and will discard the fork on ``False`` may opt
+        out of the redundant second control-state copy.
+        """
         assert self._ip is not None
-        snap = self._snapshot()
+        snap = self._snapshot() if restore_on_reject else None
         token = Token(term, value)
         try:
             self._ip.feed_token(token)
             self._fed_token_count += 1
         except UnexpectedToken:
             # Mirror advance_checked: never leave a poisoned InteractiveParser.
-            self._restore(snap)
+            if snap is not None:
+                self._restore(snap)
             return False
         except UnexpectedEOF:
             # Defensive (mirrors _full_sync): keep the fed token committed.
@@ -639,6 +652,7 @@ class OpenUIIncrementalEngine:
         token_id: int,
         *,
         _macro_seen: frozenset[int] = frozenset(),
+        _restore_on_reject: bool = True,
     ) -> bool | None:
         """Feed one DSL-native token id directly as its Lark terminal.
 
@@ -648,6 +662,11 @@ class OpenUIIncrementalEngine:
         is unsupported — the caller must use the canonical text path
         (``advance_checked(token_surface_piece(...))``) instead. Anything that
         cannot be verified against the live grammar fails closed.
+
+        ``_restore_on_reject=False`` is reserved for an already-isolated fork
+        that the caller discards when this method returns ``False``.  The
+        default remains fully transactional, and macro expansion always keeps
+        its own all-or-nothing snapshot.
         """
         mapping = self._direct_map(tokenizer)
         if mapping is None:
@@ -683,10 +702,20 @@ class OpenUIIncrementalEngine:
                     if not body or not _NUMBER_COMPLETE.fullmatch(body):
                         return False  # malformed frame: fail closed
                     self._frame = None
-                    return self._feed_terminal_direct("NUMBER", body, body)
+                    return self._feed_terminal_direct(
+                        "NUMBER",
+                        body,
+                        body,
+                        restore_on_reject=_restore_on_reject,
+                    )
                 self._frame = None
                 quoted = '"' + body + '"'
-                return self._feed_terminal_direct("STRING", quoted, quoted)
+                return self._feed_terminal_direct(
+                    "STRING",
+                    quoted,
+                    quoted,
+                    restore_on_reject=_restore_on_reject,
+                )
             if kind is TokenKind.BYTE:
                 raw = str(tokenizer.id_to_token.get(tid, ""))
                 ch = chr(int(raw[2:], 16)) if raw.startswith("B:") else None
@@ -732,25 +761,45 @@ class OpenUIIncrementalEngine:
                 # a second adjacent NL token is a no-op — never a second
                 # _NL terminal, which the grammar never sees.
                 return True
-            return self._feed_terminal_direct(term, piece, piece)
+            return self._feed_terminal_direct(
+                term,
+                piece,
+                piece,
+                restore_on_reject=_restore_on_reject,
+            )
 
         # --- bools / null ---
         term = mapping["bool"].get(tid) or mapping["null"].get(tid)
         if term is not None:
             text = str(tokenizer.id_to_token.get(tid, ""))
-            return self._feed_terminal_direct(term, text, text)
+            return self._feed_terminal_direct(
+                term,
+                text,
+                text,
+                restore_on_reject=_restore_on_reject,
+            )
 
         # --- fixed string rows ---
         if tid in mapping["str_lit_ids"]:
             body = str(tokenizer.id_to_token.get(tid, ""))[4:]
             quoted = json.dumps(body, ensure_ascii=False)
-            return self._feed_terminal_direct("STRING", quoted, quoted)
+            return self._feed_terminal_direct(
+                "STRING",
+                quoted,
+                quoted,
+                restore_on_reject=_restore_on_reject,
+            )
 
         # --- broad content kinds ---
         term = mapping["kind_terminals"].get(kind)
         if term is not None:
             piece = tokenizer.decode([tid]) or str(tokenizer.id_to_token.get(tid, ""))
-            return self._feed_terminal_direct(term, piece, piece)
+            return self._feed_terminal_direct(
+                term,
+                piece,
+                piece,
+                restore_on_reject=_restore_on_reject,
+            )
 
         # --- macros: feed the verified fixed expansion iteratively ---
         if kind is TokenKind.MACRO:
