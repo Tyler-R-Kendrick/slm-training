@@ -86,7 +86,9 @@ class _StateRecord:
 
     engine: OpenUIIncrementalEngine
     semantic: Any
-    prefix_ids: tuple[int, ...]
+    prefix_ids: tuple[int, ...] | None
+    parent_state_id: int | None = None
+    token_id: int | None = None
 
 
 class CompletionSession:
@@ -192,16 +194,29 @@ class CompletionSession:
         self,
         engine: OpenUIIncrementalEngine,
         semantic: Any,
-        prefix_ids: tuple[int, ...],
+        prefix_ids: tuple[int, ...] | None,
+        *,
+        parent_state_id: int | None = None,
+        token_id: int | None = None,
     ) -> int:
         key = (engine.parser_state_key(), semantic)
         state_id = self._intern.get(key)
         if state_id is not None:
             self._counters["state_intern_hits"] += 1
             return state_id
+        if prefix_ids is None and (parent_state_id is None or token_id is None):
+            raise ValueError("a deferred prefix requires its parent state and token")
         state_id = len(self._states)
         self._intern[key] = state_id
-        self._states.append(_StateRecord(engine, semantic, prefix_ids))
+        self._states.append(
+            _StateRecord(
+                engine,
+                semantic,
+                prefix_ids,
+                parent_state_id=parent_state_id,
+                token_id=token_id,
+            )
+        )
         self._counters["state_intern_misses"] += 1
         self._counters["unique_states"] += 1
         return state_id
@@ -266,7 +281,25 @@ class CompletionSession:
         return self._intern_state(positioned, semantic, ids)
 
     def prefix_ids_of(self, state_id: int) -> tuple[int, ...]:
-        return self._states[int(state_id)].prefix_ids
+        return self._materialize_prefix(int(state_id))
+
+    def _materialize_prefix(self, state_id: int) -> tuple[int, ...]:
+        """Materialize one persistent prefix only when an authority scan needs it."""
+        record = self._states[int(state_id)]
+        if record.prefix_ids is not None:
+            return record.prefix_ids
+        suffix: list[int] = []
+        cursor = int(state_id)
+        while True:
+            ancestor = self._states[cursor]
+            if ancestor.prefix_ids is not None:
+                prefix = ancestor.prefix_ids + tuple(reversed(suffix))
+                record.prefix_ids = prefix
+                return prefix
+            if ancestor.parent_state_id is None or ancestor.token_id is None:
+                raise RuntimeError("deferred completion prefix has no concrete ancestor")
+            suffix.append(int(ancestor.token_id))
+            cursor = int(ancestor.parent_state_id)
 
     def semantic_of(self, state_id: int) -> Any:
         return self._states[int(state_id)].semantic
@@ -353,7 +386,11 @@ class CompletionSession:
             arena=self._semantic_arena,
         )
         child_id = self._intern_state(
-            child, semantic, record.prefix_ids + (tid,)
+            child,
+            semantic,
+            None,
+            parent_state_id=int(state_id),
+            token_id=tid,
         )
         self._transitions[key] = child_id
         return child_id
@@ -392,7 +429,7 @@ class CompletionSession:
         scan_counter: dict[str, int] = {"avoided": 0}
         forest = _build_openui_completion_forest_direct(
             self._tokenizer,
-            list(record.prefix_ids),
+            list(self._materialize_prefix(state_id)),
             state=state,
             engine=engine,
             slot_contract=list(self._slot_contract),
