@@ -1,0 +1,42 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260802",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202608-39ee9cf7-c5",
+  "cycle_index": 5,
+  "source_commit": "3cb06385d95769bbcde2e5b0b0e0f16138b1d3c8",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c5-control": {
+      "status": "harness_failure",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "latency_ms_p50": 1672.85
+      },
+      "reason": "measurement_incomplete: incomplete_document_n=1, decode_timeout_count=1"
+    },
+    "c5-component-plan": {
+      "status": "harness_failure",
+      "reason": "measurement_incomplete: all 3 smoke documents hit decode_timeout (completed_document_n=0, incomplete_document_n=3). Lever config: compiler_decode_mode=tree, component_plan_decode_weight=1.0 (all other decode weights 0.0), effective_decode_timeout_seconds~=6.93 per document."
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "conclusion": "New (third) infrastructure signal this loop, distinct from the c2 AgentV SDK gap and the c3 one-run control timeout: the component-plan lever (compiler_decode_mode=tree, component_plan_decode_weight=1.0) times out on every smoke document within its ~6.93s per-document decode budget under the 3-minute wall cap on this container's CPU. Control also lost one document to a timeout (1/3), suggesting the constrained-decode path is close to the wall-budget edge generally on this hardware, and the component-plan weighting profile pushes it over. This has not yet been isolated as a code bug (infinite loop / pathological branching in the tree decode mode) vs. expected slowness for CPU-only fixture runs -- needs a dedicated repair_harness (family model_build) investigation before further component-plan hypothesis testing.",
+  "next_priorities": [
+    "repair_harness (model_build): profile compiler_decode_mode=tree with component_plan_decode_weight=1.0 to determine whether decode_timeout is pathological (bug) or just needs more per-document budget on CPU-only hardware",
+    "Until profiled, do not retry the identical component-plan arm blindly -- would just re-timeout and waste wall budget",
+    "Separately: dedicated repair pass for the 64 pre-existing tests/test_evals failures on main flagged in cycle 2's doc (still open)"
+  ],
+  "recorded_at": "2026-08-02T18:35:00+00:00"
+}
