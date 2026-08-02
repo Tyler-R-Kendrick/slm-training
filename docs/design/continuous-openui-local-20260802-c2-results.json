@@ -1,0 +1,93 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 2,
+  "cycle_intent": "retry_measurement",
+  "source_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "integration_commit": "2a4e7fa6408f148a7123debb1aeb7af80f843362",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "replay_of": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c1",
+  "replay_reason": "c1's ship-gate scoreboard.json never wrote for either arm because the local sandbox's ambient NODE_OPTIONS=\"--import tsx\" blocked every node subprocess (AgentV publish). Fixed with `env -u NODE_OPTIONS npm ci` + running this driver invocation with NODE_OPTIONS unset; this replay is the identical frozen control/candidate arm re-measured to completion.",
+  "primary_metric": "smoke.structural_similarity",
+  "primary_direction": "increase",
+  "measurement_complete": true,
+  "arms": {
+    "c2-control": {
+      "status": "completed_eval_gates_failed",
+      "code_git_sha": "2a4e7fa6408f148a7123debb1aeb7af80f843362",
+      "checkpoint_sha256": "c2ba05273c48aacf76d86b19c76cff8bccae92462b111f84f808ea4cf6f7eda2",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 1409.95
+      },
+      "levers": {
+        "grammar_completion_bounds": false
+      }
+    },
+    "c2-bounds": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 1368.81
+      },
+      "levers": {
+        "grammar_completion_bounds": true
+      }
+    }
+  },
+  "primary_delta": 0.0,
+  "latency_delta_ms": -41.13999999999942,
+  "gate_failures": {
+    "smoke": [
+      "insufficient_n actual=3 need>=20",
+      "meaningful_program_rate actual=0.0 need>=0.66",
+      "structural_similarity actual=0.0575 need>=0.35",
+      "component_type_recall actual=0.0 need>=0.35",
+      "ast_beq_rate actual=0.0 need>=0.2",
+      "canonical_beq_rate actual=0.0 need>=0.1",
+      "reward_score actual=0.0 need>=0.3"
+    ],
+    "missing_suites": ["held_out", "adversarial", "ood", "rico_held"]
+  },
+  "conclusion": "Frozen replay of the c1 control/bounds arm now completes a full AgentV ship-gate scoreboard for both arms (measurement_complete=true). structural_similarity ties exactly at 0.0575 (delta 0.0) and meaningful_program_rate stays 0.0 on both arms, so the -41.1ms p50 latency delta on the bounds candidate is again a pure latency blip with no quality win. Ship gates correctly fail closed on fixture n=3 (<20) and every quality threshold; held_out/adversarial/ood/rico_held suites are not run at this smoke scope. This confirms (rather than merely infers) the c1 NON_POSITIVE classification.",
+  "sdlc_classification": {
+    "positive": false,
+    "stack_layer": false,
+    "action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260802-continuous-openui-local-8c0b60dd-c2-bounds",
+      "fixture_insufficient_n:c20260802-continuous-openui-local-8c0b60dd-c2-control",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.057499999999999996 candidate=0.057499999999999996 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "next_priorities": [
+    "Test the distinct size-matched 'component-plan' quality hypothesis next (grammar_completion_bounds is now exhausted for this recipe and cannot be re-selected without a new preregistered hypothesis).",
+    "Keep the matched control as the size-matched baseline every cycle.",
+    "Soft ship-gate fails on fixture n never stop the continuous loop; do not weaken gates."
+  ],
+  "recorded_at": "2026-08-02T09:40:44.742528Z"
+}
