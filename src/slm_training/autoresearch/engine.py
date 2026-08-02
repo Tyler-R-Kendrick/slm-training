@@ -666,6 +666,13 @@ def compile_commands(
             train.extend(
                 ["--binder-arity-decode-weight", str(knobs.binder_arity_decode_weight)]
             )
+        if knobs.symbol_boundary_loss_weight is not None:
+            train.extend(
+                [
+                    "--symbol-boundary-loss-weight",
+                    str(knobs.symbol_boundary_loss_weight),
+                ]
+            )
         if knobs.fidelity_loss_weight is not None:
             train.extend(["--fidelity-loss-weight", str(knobs.fidelity_loss_weight)])
         if knobs.schema_in_context:

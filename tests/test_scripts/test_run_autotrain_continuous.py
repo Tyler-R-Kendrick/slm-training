@@ -643,6 +643,9 @@ def test_select_recommended_slug_prioritizes_successor_quality_after_legacy_null
     skip.add("slot-augmentation")
     assert _mod._select_recommended_slug(1797, skip=skip) == "mixed-mask"
 
+    skip.add("mixed-mask")
+    assert _mod._select_recommended_slug(1798, skip=skip) == "symbol-boundary"
+
 
 def test_confirmation_bypasses_exhausted_screening_selector() -> None:
     all_slugs = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
@@ -1042,6 +1045,43 @@ def test_mixed_mask_arm_is_size_matched_and_replayable() -> None:
     assert candidate["mask_pattern"] == "mixed"
     assert _mod._arm_slug_from_knobs(candidate) == "mixed-mask"
     assert "mask_pattern" in _mod._LEVER_KNOB_KEYS
+
+
+def test_symbol_boundary_arm_is_size_matched_and_replayable() -> None:
+    campaign_id = "continuous-loop-20260802-c1801"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1801,
+        role="screening",
+        recommended_slug="symbol-boundary",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-symbol-boundary"]
+
+    assert control["symbol_boundary_loss_weight"] == 0.0
+    assert candidate["symbol_boundary_loss_weight"] == 1.0
+    assert _mod._arm_slug_from_knobs(candidate) == "symbol-boundary"
+    assert "symbol_boundary_loss_weight" in _mod._LEVER_KNOB_KEYS
+
+    experiment = next(
+        row["experiment"]
+        for row in matrix["hypotheses"]
+        if row["experiment"]["experiment_id"].endswith("-symbol-boundary")
+    )
+    manifest = _mod._manifest(campaign_id, experiment, "a" * 40)
+    arm_shas = {arm.role: arm.config_sha256 for arm in manifest.arms}
+    assert arm_shas["control"] != arm_shas["candidate"]
 
 
 def test_completed_frozen_retry_steers_to_distinct_quality_arm() -> None:

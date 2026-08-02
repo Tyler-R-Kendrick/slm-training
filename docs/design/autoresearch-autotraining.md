@@ -268,7 +268,10 @@ control. It is parameter-size matched, remains grammar constrained, and tests
 opaque-symbol generalization without introducing surface-name features. If that
 approach is rejected, `mask_pattern=mixed` is the next registered same-size
 training-method arm against explicit `random`; it changes corruption exposure,
-not deterministic decode legality.
+not deterministic decode legality. A null or rejected mixed-mask arm advances
+to `symbol_boundary_loss_weight=1` against zero. That objective reweights the
+existing output-token CE at opaque-symbol positions and their immediate
+neighbors, adds no head or parameters, and does not affect the grammar oracle.
 
 ### Program experiments route through this loop (G1, SLM-46)
 

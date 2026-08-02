@@ -2646,7 +2646,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v99",
+      "version": "v100",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2686,6 +2686,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v100",
+          "date": "2026-08-02",
+          "note": "Add a zero-parameter symbol-boundary training objective after the screening bank exhausted and make candidate campaign locks fingerprint slot, mask, and boundary controls against their true off states."
+        },
         {
           "version": "v99",
           "date": "2026-08-02",
@@ -7343,6 +7348,11 @@
         {
           "version": "v3",
           "date": "2026-08-02",
+          "note": "no-bump: add honest c1800 rejected mixed-mask checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
           "note": "no-bump: add honest c1799 rejected slot-augmentation checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
         },
         {
@@ -9550,7 +9560,7 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v31",
+      "version": "v32",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
@@ -9558,6 +9568,11 @@
         "src/slm_training/harnesses/quality/__init__.py"
       ],
       "history": [
+        {
+          "version": "v32",
+          "date": "2026-08-02",
+          "note": "Record the symbol-boundary auxiliary loss weight in every training recipe."
+        },
         {
           "version": "v31",
           "date": "2026-08-02",
@@ -11362,7 +11377,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v294",
+      "version": "v295",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -11405,6 +11420,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v295",
+          "date": "2026-08-02",
+          "note": "Expose the existing zero-parameter opaque-symbol boundary loss through the canonical train CLI and typed autoresearch compiler."
+        },
         {
           "version": "v294",
           "date": "2026-08-02",

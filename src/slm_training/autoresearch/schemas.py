@@ -230,6 +230,7 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "binder_topology_decode_weight",
         "binder_arity_loss_weight",
         "binder_arity_decode_weight",
+        "symbol_boundary_loss_weight",
         "compiler_decode_mode",
         "compiler_search_mode",
         "compiler_search_trigger",
@@ -533,6 +534,7 @@ class ExperimentKnobs(StrictModel):
     binder_topology_decode_weight: float | None = Field(default=None, ge=0, le=20)
     binder_arity_loss_weight: float | None = Field(default=None, ge=0, le=20)
     binder_arity_decode_weight: float | None = Field(default=None, ge=0, le=20)
+    symbol_boundary_loss_weight: float | None = Field(default=None, ge=0, le=20)
     fidelity_loss_weight: float | None = Field(default=None, ge=0, le=20)
     semantic_contrast_dir: str | None = Field(default=None, min_length=1, max_length=512)
     semantic_contrast_loss_weight: float | None = Field(default=None, ge=0, le=20)

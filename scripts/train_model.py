@@ -968,6 +968,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Bias legal reference-list continue/stop paths by planned arity.",
     )
     parser.add_argument(
+        "--symbol-boundary-loss-weight",
+        type=float,
+        default=0.0,
+        help="Extra CE weight on opaque-symbol tokens and their immediate boundaries.",
+    )
+    parser.add_argument(
         "--root-reference-arity-loss-weight",
         type=float,
         default=0.0,
@@ -1625,6 +1631,7 @@ def main(argv: list[str] | None = None) -> int:
         ),
         binder_arity_loss_weight=args.binder_arity_loss_weight,
         binder_arity_decode_weight=args.binder_arity_decode_weight,
+        symbol_boundary_loss_weight=args.symbol_boundary_loss_weight,
         root_reference_arity_loss_weight=args.root_reference_arity_loss_weight,
         root_reference_arity_decode_weight=args.root_reference_arity_decode_weight,
         root_reference_identity_loss_weight=(args.root_reference_identity_loss_weight),
