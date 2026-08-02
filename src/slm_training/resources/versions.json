@@ -2641,7 +2641,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v74",
+      "version": "v75",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2681,6 +2681,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v75",
+          "date": "2026-08-02",
+          "note": "Retire candidate-only runtime failures after their bounded frozen replay, steer to a distinct hypothesis, and label terminal matrices as model-runtime rejections without inventing quality metrics."
+        },
         {
           "version": "v74",
           "date": "2026-08-02",

@@ -3819,7 +3819,7 @@ def test_finalized_decode_timeout_routes_directly_to_runtime_repair(
     assert handoff.actions.index(repair) < handoff.actions.index(retry)
 
 
-def test_replayed_finalized_decode_timeout_reports_exhausted_budget(
+def test_replayed_finalized_decode_timeout_rejects_runtime_arm(
     tmp_path: Path,
 ) -> None:
     root = tmp_path / "autoresearch"
@@ -3872,14 +3872,11 @@ def test_replayed_finalized_decode_timeout_reports_exhausted_budget(
         formal_status=None,
     )
 
-    repair = next(
-        action for action in handoff.actions if action.kind == "repair_harness"
-    )
-    retry = next(
-        action for action in handoff.actions if action.kind == "retry_measurement"
-    )
-    assert "replay budget exhausted (1/1)" in repair.reason
-    assert "validate the repaired canonical runtime" in retry.reason
+    assert handoff.climb_state == "rejected"
+    assert any("candidate_runtime_rejected" in reason for reason in handoff.reasons)
+    assert all(action.kind != "repair_harness" for action in handoff.actions)
+    assert all(action.kind != "retry_measurement" for action in handoff.actions)
+    assert any(action.kind == "next_experiment" for action in handoff.actions)
 
 
 def test_numeric_literal_close_starvation_steers_new_training_arm(

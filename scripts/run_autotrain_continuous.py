@@ -3738,6 +3738,25 @@ def _write_cycle_handoff(
         )
         or diagnosis_target == "infrastructure"
     )
+    candidate_id = str(delivery.get("candidate_id") or "")
+    finalized_decode_timeout = _has_finalized_decode_timeout(camp_dir, candidate_id)
+    frozen_replay_count = 0
+    frozen_replay_limit = 0
+    if finalized_decode_timeout:
+        from slm_training.autoresearch.climb_policy import (
+            load_climb_policy,
+            max_consecutive_frozen_replays,
+        )
+
+        frozen_replay_count = _consecutive_frozen_replays(
+            root, loop_id, campaign_id, cycle_intent
+        )
+        frozen_replay_limit = max_consecutive_frozen_replays(load_climb_policy())
+    runtime_arm_rejected = bool(
+        finalized_decode_timeout
+        and cycle_intent == "retry_measurement"
+        and frozen_replay_count >= frozen_replay_limit
+    )
     if status in {"promoted", "climb_accepted"}:
         climb_state = "climb_accepted"
     elif status == "confirmed":
@@ -3748,6 +3767,12 @@ def _write_cycle_handoff(
         climb_state = "inconclusive"
     elif status in {"rejected", "promotion_failed"}:
         climb_state = "rejected"
+    elif runtime_arm_rejected:
+        # A candidate-only timeout reproduced by the exact frozen checkpoint
+        # while its matched control completes is a decisive runtime rejection
+        # of this model arm.  Quality remains unavailable, but the loop must not
+        # misroute the same trajectory into an unbounded harness-repair cycle.
+        climb_state = "rejected"
     elif measurement_incomplete:
         climb_state = "inconclusive"
     elif delivery.get("positive"):
@@ -3755,7 +3780,6 @@ def _write_cycle_handoff(
     else:
         climb_state = "rejected"
 
-    candidate_id = str(delivery.get("candidate_id") or "")
     numeric_close_starvation = bool(
         candidate_id and _has_numeric_literal_close_starvation(camp_dir, candidate_id)
     )
@@ -3777,7 +3801,15 @@ def _write_cycle_handoff(
             ),
         ]
     )
-    if measurement_incomplete and numeric_close_starvation:
+    if runtime_arm_rejected:
+        reasons += (f"candidate_runtime_rejected_after_frozen_replay:{candidate_id}",)
+        priorities = _completed_candidate_priorities(
+            matrix,
+            candidate_id,
+            resolved_infrastructure=True,
+            skip_slugs=skip_slugs,
+        )
+    elif measurement_incomplete and numeric_close_starvation:
         priorities = (
             NextRunPriorityV1(
                 rank=1,
@@ -3863,7 +3895,6 @@ def _write_cycle_handoff(
     ]
     theorem_stop = any("theorem_backed_band_miss" in item for item in reasons)
     assumption_miss = any("assumption_backed_band_miss" in item for item in reasons)
-    finalized_decode_timeout = _has_finalized_decode_timeout(camp_dir, candidate_id)
     # A finalized AgentV timeout is more specific than the evaluate process's
     # generic non-zero exit. Preserve both repair and content-bound retry actions
     # so acknowledging the repair cannot make the required replay unreachable.
@@ -3931,36 +3962,32 @@ def _write_cycle_handoff(
             ),
         )
     elif finalized_decode_timeout:
-        from slm_training.autoresearch.climb_policy import (
-            load_climb_policy,
-            max_consecutive_frozen_replays,
-        )
-
         manifest_path = camp_dir / "manifests" / f"{candidate_id}.json"
         manifest_sha = (
             hashlib.sha256(manifest_path.read_bytes()).hexdigest()
             if manifest_path.is_file()
             else None
         )
-        replay_count = _consecutive_frozen_replays(
-            root, loop_id, campaign_id, cycle_intent
-        )
-        replay_limit = max_consecutive_frozen_replays(load_climb_policy())
-        replay_exhausted = replay_count >= replay_limit
-        actions[0:0] = [
+        if runtime_arm_rejected:
+            actions.append(
+                AutotrainActionV1(
+                    kind="next_experiment",
+                    owner="autotrain",
+                    reason=(
+                        "retire the candidate-only runtime rejection and consume "
+                        "the next distinct ranked hypothesis"
+                    ),
+                    evidence_ids=(evidence_id,),
+                )
+            )
+        else:
+            actions[0:0] = [
             AutotrainActionV1(
                 kind="repair_harness",
                 owner="improve-openui-harnesses",
                 reason=(
-                    (
-                        "identical finalized-timeout replay budget exhausted "
-                        f"({replay_count}/{replay_limit}); "
-                    )
-                    if replay_exhausted
-                    else (
-                        "AgentV finalized every record disposition and reported an "
-                        "internal decode timeout; "
-                    )
+                    "AgentV finalized every record disposition and reported an "
+                    "internal decode timeout; "
                 )
                 + (
                     "repair canonical model-build runtime before replaying the "
@@ -3974,18 +4001,13 @@ def _write_cycle_handoff(
                 kind="retry_measurement",
                 owner="autotrain",
                 reason=(
-                    "validate the repaired canonical runtime with the identical "
-                    "frozen arm"
-                    if replay_exhausted
-                    else (
-                        "replay the identical frozen arm after the required "
-                        "canonical runtime repair"
-                    )
+                    "replay the identical frozen arm after the required "
+                    "canonical runtime repair"
                 ),
                 evidence_ids=(evidence_id,),
                 frozen_manifest_sha256=manifest_sha,
             ),
-        ]
+            ]
     elif measurement_incomplete:
         from slm_training.autoresearch.climb_policy import (
             load_climb_policy,
