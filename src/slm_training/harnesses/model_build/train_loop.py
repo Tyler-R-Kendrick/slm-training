@@ -1366,6 +1366,19 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "seed": config.seed,
             "steps_requested": config.steps,
             "batch_size": config.batch_size,
+            "mask_pattern": str(getattr(config, "mask_pattern", "random") or "random"),
+            "runtime_symbol_features": str(
+                getattr(config, "runtime_symbol_features", "none") or "none"
+            ),
+            "symbol_slot_augmentation": bool(
+                getattr(config, "symbol_slot_augmentation", False)
+            ),
+            "semantic_candidate_masks": bool(
+                getattr(config, "semantic_candidate_masks", False)
+            ),
+            "constraint_graph_mode": str(
+                getattr(config, "constraint_graph_mode", "off") or "off"
+            ),
             "ltr_loss_weight": getattr(config, "ltr_loss_weight", 0.0),
             "ltr_tail_loss_weight": getattr(config, "ltr_tail_loss_weight", 0.0),
             "ltr_tail_tokens": getattr(config, "ltr_tail_tokens", 0),

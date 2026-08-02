@@ -2782,6 +2782,12 @@ def test_loop_result_matrix_is_derived_from_verified_campaign_chain(
             "held_out.incomplete_document_n": 0,
             "held_out.decode_timeout_count": 0,
             "held_out.structural_similarity": 0.75,
+            "smoke.n": 3,
+            "smoke.document_n": 3,
+            "smoke.completed_document_n": 3,
+            "smoke.incomplete_document_n": 0,
+            "smoke.decode_timeout_count": 0,
+            "smoke.parse_rate": 1.0,
             "trainable_params": 1234,
             "ship_gates_pass": 1,
         },
@@ -2808,10 +2814,14 @@ def test_loop_result_matrix_is_derived_from_verified_campaign_chain(
         status="none",
         artifact_sha256=diagnosis_path.stem,
     )
+    (tmp_path / loop_campaign.campaign_id / "cycle_handoff.json").write_text(
+        json.dumps({"primary_metric": "smoke.parse_rate"}),
+        encoding="utf-8",
+    )
 
     matrix = render_loop_result_matrix(tmp_path, "loop-1")
     assert "Liveness" in matrix
-    assert "| 1 | cccccccc | dddddddd | hyp-0 | 1234 | 0.75 |" in matrix
+    assert "| 1 | cccccccc | dddddddd | hyp-0 | 1234 | 1 |" in matrix
     assert (
         "| — | pass | complete | none | fixture | — | blocked | completed |" in matrix
     )

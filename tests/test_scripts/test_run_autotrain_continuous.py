@@ -640,6 +640,9 @@ def test_select_recommended_slug_prioritizes_successor_quality_after_legacy_null
     skip.add("semantic-contrast")
     assert _mod._select_recommended_slug(1796, skip=skip) == "slot-augmentation"
 
+    skip.add("slot-augmentation")
+    assert _mod._select_recommended_slug(1797, skip=skip) == "mixed-mask"
+
 
 def test_confirmation_bypasses_exhausted_screening_selector() -> None:
     all_slugs = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
@@ -1011,6 +1014,34 @@ def test_slot_augmentation_arm_is_size_matched_and_replayable() -> None:
     assert candidate["symbol_slot_augmentation"] is True
     assert _mod._arm_slug_from_knobs(candidate) == "slot-augmentation"
     assert "symbol_slot_augmentation" in _mod._LEVER_KNOB_KEYS
+
+
+def test_mixed_mask_arm_is_size_matched_and_replayable() -> None:
+    campaign_id = "continuous-loop-20260802-c1800"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1800,
+        role="screening",
+        recommended_slug="mixed-mask",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-mixed-mask"]
+
+    assert control["mask_pattern"] == "random"
+    assert candidate["mask_pattern"] == "mixed"
+    assert _mod._arm_slug_from_knobs(candidate) == "mixed-mask"
+    assert "mask_pattern" in _mod._LEVER_KNOB_KEYS
 
 
 def test_completed_frozen_retry_steers_to_distinct_quality_arm() -> None:
@@ -3358,6 +3389,17 @@ def test_promotion_cycle_ignores_smoke_cli_primary_override() -> None:
             requested_metric="smoke.structural_similarity",
         )
         == "held_out.structural_similarity"
+    )
+
+
+def test_screening_cycle_ignores_held_out_cli_primary_override() -> None:
+    assert (
+        _mod._effective_primary_metric(
+            role="screening",
+            policy_metric="smoke.structural_similarity",
+            requested_metric="held_out.structural_similarity",
+        )
+        == "smoke.structural_similarity"
     )
 
 

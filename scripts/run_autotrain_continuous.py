@@ -459,6 +459,7 @@ _LEVER_KNOB_KEYS = (
     "semantic_contrast_margin",
     "semantic_contrast_fraction",
     "symbol_slot_augmentation",
+    "mask_pattern",
     "structural_aux_head_profile",
     "compiler_decode_mode",
     "steps",
@@ -595,6 +596,11 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         "slot-augmentation",
         "Request-local slot permutation and alpha-renaming augmentation improves held-out binder_reference_f1 and structural_similarity without lowering parse_rate.",
         {"symbol_slot_augmentation": True},
+    ),
+    (
+        "mixed-mask",
+        "Mixed random and structured corruption better matches iterative denoising and improves structural_similarity without lowering parse_rate or binder_reference_f1.",
+        {"mask_pattern": "mixed"},
     ),
     (
         "component-structure",
@@ -1042,6 +1048,8 @@ def _arm_slug_from_knobs(
         return "semantic-contrast"
     if knobs.get("symbol_slot_augmentation"):
         return "slot-augmentation"
+    if knobs.get("mask_pattern") == "mixed":
+        return "mixed-mask"
     if knobs.get("component_edge_loss_weight"):
         return "component-edge"
     if knobs.get("component_inventory_loss_weight"):
@@ -1231,6 +1239,7 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
         "edge-alignment",
         "semantic-contrast",
         "slot-augmentation",
+        "mixed-mask",
     )
     legacy_quality_slugs = {
         "component-plan",
@@ -3682,7 +3691,7 @@ def _completed_candidate_priorities(
     def has_quality_objective(knobs: dict[str, Any]) -> bool:
         return any(float(knobs.get(key) or 0) > 0 for key in quality_keys) or (
             float(knobs.get("fidelity_loss_weight") or 0.5) != 0.5
-        )
+        ) or str(knobs.get("mask_pattern") or "random") != "random"
 
     targeted_alternative = next(
         (
@@ -5306,6 +5315,7 @@ def _matrix(
             "fidelity_loss_weight": 0.5,
             "semantic_contrast_loss_weight": 0.0,
             "symbol_slot_augmentation": False,
+            "mask_pattern": "random",
             "structural_aux_head_profile": "none",
             "compiler_decode_mode": "off",
             "ltr_tail_loss_weight": 0.0,
@@ -5378,6 +5388,7 @@ def _matrix(
                 "semantic_contrast_margin",
                 "semantic_contrast_fraction",
                 "symbol_slot_augmentation",
+                "mask_pattern",
                 "structural_aux_head_profile",
                 "compiler_decode_mode",
                 "steps",
@@ -5569,6 +5580,7 @@ def _matrix(
                 "semantic_contrast_margin",
                 "semantic_contrast_fraction",
                 "symbol_slot_augmentation",
+                "mask_pattern",
                 "structural_aux_head_profile",
                 "compiler_decode_mode",
                 "steps",
@@ -6125,11 +6137,16 @@ def _effective_primary_metric(
     replay_metric: str | None = None,
 ) -> str:
     effective = replay_metric or policy_metric
+    requested_parts = requested_metric.rsplit(".", maxsplit=1)
+    effective_parts = effective.rsplit(".", maxsplit=1)
+    requested_scope = requested_parts[0] if len(requested_parts) == 2 else ""
+    effective_scope = effective_parts[0] if len(effective_parts) == 2 else ""
     if (
         replay_metric is None
         and role == "screening"
         and requested_metric
-        and requested_metric.split(".")[-1] == effective.split(".")[-1]
+        and requested_parts[-1] == effective_parts[-1]
+        and requested_scope in {"", effective_scope}
     ):
         return requested_metric
     return effective
