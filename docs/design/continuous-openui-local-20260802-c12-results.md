@@ -14,7 +14,7 @@
 
 `_arm_wall_minutes(policy_minutes)` in `scripts/run_autotrain_continuous.py`:
 
-```
+```text
 arm_seconds = (MAX_HARNESS_WALL_SECONDS(155s) - HARNESS_FINALIZATION_RESERVE_SECONDS(15s)) / 2
             = 70s
 ```
@@ -78,7 +78,7 @@ baseline and unrelated to this loop. This cycle's fix lives entirely in
 `tests/test_scripts` under `check_changed.py`'s prefix table, so it commits
 cleanly:
 
-```
+```shell
 $ python -c "from scripts.check_changed import hook_test_targets, changed_files; \
              print(hook_test_targets(changed_files(staged=True)))"
 ['tests/test_scripts/test_run_autotrain_continuous.py']
