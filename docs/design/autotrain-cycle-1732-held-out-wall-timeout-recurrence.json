@@ -1,0 +1,46 @@
+{
+  "schema": "autotrain_measured_results/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c5",
+  "cycle_index": 1732,
+  "loop_id": "continuous-openui-20260730",
+  "run_class": "fixture_scratch",
+  "source_commit": "f7b61ef55756fd65a63cee2f5c397a038cba7e4b",
+  "source_dirty": false,
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "predecessor_campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c4",
+  "cycle_role": "promotion",
+  "status": "non_positive_wall_timeout_recurrence",
+  "harness_signal": {
+    "family": "model_build",
+    "symptom": "frozen-replay successor to c4 on the identical frozen manifest (3e7649a0402c5cbd73aa38df858c35848ae349140ea4c71c558e7f49e6ad691a) hit the same 'stage exceeded wall-time limit' for `scripts.evaluate_model --suites smoke,held_out` on both arms; the driver's own trailing `status --matrix` call was then killed too (TimeoutExpired at 7.4s) because the two arm timeouts had already consumed the cycle's wall budget.",
+    "occurrence_count": 2,
+    "occurrence_1": "docs/design/autotrain-cycle-1731-held-out-wall-timeout.md (campaign c4)",
+    "disposition": "still a soft failure (2 of the 3 identical consecutive occurrences needed for the hard-block rule); this campaign never wrote a cycle_handoff.json (crashed mid-status), so it is an initialized-only campaign the driver's own recovery logic will skip past, matching how c2 was skipped in favor of c3.",
+    "recommended_next_action_if_occurrence_3": "route through improve-openui-harnesses: split the promotion-role evaluate_model invocation into two independently wall-budgeted stages (smoke, then held_out) instead of one combined `--suites smoke,held_out` process, so each stage fits inside MAX_RUN_MINUTES rather than the combined call exhausting it. Do not weaken ship gates or drop held_out from promotion suites to work around this."
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c5-control",
+      "status": "wall_timeout",
+      "metrics": null
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c5-steps",
+      "status": "wall_timeout",
+      "metrics": null
+    }
+  ],
+  "checkpoint_documentation_required": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "f7b61ef55756fd65a63cee2f5c397a038cba7e4b",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.train": "v27",
+      "harness.experiment_feature_flags": "v3"
+    },
+    "stamped_at": "2026-08-02T03:49:00Z"
+  }
+}
