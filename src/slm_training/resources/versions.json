@@ -2646,7 +2646,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v103",
+      "version": "v104",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2686,6 +2686,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v104",
+          "date": "2026-08-02",
+          "note": "Add direct component-token reconstruction weighting and per-step token-family loss attribution after prefix supervision was null."
+        },
         {
           "version": "v103",
           "date": "2026-08-02",
@@ -7363,6 +7368,11 @@
         {
           "version": "v3",
           "date": "2026-08-02",
+          "note": "no-bump: add honest c1803 rejected scaffold-prefix checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
           "note": "no-bump: add honest c1802 rejected DESIGN-dropout checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
         },
         {
@@ -9585,7 +9595,7 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v33",
+      "version": "v34",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
@@ -9593,6 +9603,11 @@
         "src/slm_training/harnesses/quality/__init__.py"
       ],
       "history": [
+        {
+          "version": "v34",
+          "date": "2026-08-02",
+          "note": "Persist component-token objective weight and token-family loss attribution in training evidence."
+        },
         {
           "version": "v33",
           "date": "2026-08-02",
@@ -11407,7 +11422,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v295",
+      "version": "v296",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -11450,6 +11465,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v296",
+          "date": "2026-08-02",
+          "note": "Add zero-parameter component-token reconstruction weighting with raw component, prefix, and non-component CE attribution."
+        },
         {
           "version": "v295",
           "date": "2026-08-02",

@@ -364,6 +364,9 @@ class TwoTowerConfig:
     ltr_loss_weight: float = 0.5
     # Extra weight on the first content transitions (root -> assignment).
     ltr_prefix_loss_weight: float = 0.0
+    # Extra reconstruction weight on component-type tokens. Zero-parameter;
+    # the same token-family mask also feeds train-only loss attribution.
+    component_token_loss_weight: float = 0.0
     # Extra weight on the final real LTR tokens (default-off).
     ltr_tail_loss_weight: float = 0.0
     ltr_tail_tokens: int = 32
@@ -3298,6 +3301,10 @@ class TwoTowerModel(nn.Module):
             flat_targets = target_ids.reshape(-1)
             ce = F.cross_entropy(flat_logits, flat_targets, reduction="none")
             weights = torch.ones_like(ce)
+            positions = torch.arange(target_ids.size(1), device=target_ids.device)
+            first = target_ids[:, 0].eq(self.tokenizer.bos_id)
+            content_rank = positions.unsqueeze(0) - first.unsqueeze(1).long()
+            prefix_positions = (content_rank >= 0) & (content_rank < 3) & ltr_suffix
             if ltr_w > 0.0 and fuse and ltr_suffix.any():
                 suffix_flat = ltr_suffix.reshape(-1)
                 weights = weights + (ltr_w * suffix_flat.float())
@@ -3305,17 +3312,30 @@ class TwoTowerModel(nn.Module):
                     getattr(self.config, "ltr_prefix_loss_weight", 0.0) or 0.0
                 )
                 if prefix_w > 0.0:
-                    positions = torch.arange(
-                        target_ids.size(1), device=target_ids.device
+                    weights = weights + (
+                        prefix_w * prefix_positions.reshape(-1).float()
                     )
-                    first = target_ids[:, 0].eq(self.tokenizer.bos_id)
-                    content_rank = positions.unsqueeze(0) - first.unsqueeze(1).long()
-                    prefix = (content_rank >= 0) & (content_rank < 3) & ltr_suffix
-                    weights = weights + (prefix_w * prefix.reshape(-1).float())
                 tail_w = float(getattr(self.config, "ltr_tail_loss_weight", 0.0) or 0.0)
                 if tail_w > 0.0:
                     tail = self._ltr_tail_mask(target_ids, ltr_suffix)
                     weights = weights + (tail_w * tail.reshape(-1).float())
+            kind_ids = getattr(self.tokenizer, "kind_ids", None)
+            component_ids = set(kind_ids("component")) if callable(kind_ids) else set()
+            component_positions = torch.zeros_like(target_ids, dtype=torch.bool)
+            for token_id in component_ids:
+                component_positions |= target_ids.eq(int(token_id))
+            component_w = float(
+                getattr(self.config, "component_token_loss_weight", 0.0) or 0.0
+            )
+            if component_w > 0.0 and not component_ids:
+                raise ValueError(
+                    "component_token_loss_weight requires a tokenizer with "
+                    "typed component token ids"
+                )
+            if component_w > 0.0 and component_positions.any():
+                weights = weights + (
+                    component_w * component_positions.reshape(-1).float()
+                )
             if mdlm_row_w is not None:
                 # Broadcast per-row MDLM 1/t weights onto token positions.
                 seq = target_ids.size(1)
@@ -3342,6 +3362,19 @@ class TwoTowerModel(nn.Module):
                     dtype=torch.bool,
                 )
                 mask_flat = mask_flat & token_rows.repeat_interleave(target_ids.size(1))
+            component_flat = component_positions.reshape(-1) & mask_flat
+            prefix_flat = prefix_positions.reshape(-1) & mask_flat
+            other_flat = mask_flat & ~component_positions.reshape(-1)
+            for family, selected in (
+                ("component", component_flat),
+                ("prefix", prefix_flat),
+                ("non_component", other_flat),
+            ):
+                count = int(selected.sum().detach().cpu())
+                self.last_training_metrics[f"token_loss_{family}_count"] = count
+                self.last_training_metrics[f"token_loss_{family}_mean_ce"] = (
+                    float(ce[selected].mean().detach().cpu()) if count else None
+                )
             mask_loss = (ce * weights)[mask_flat].mean()
             # Diagnostic only: preserve per-record masked token loss without
             # changing the scalar objective or its gradient reduction.
