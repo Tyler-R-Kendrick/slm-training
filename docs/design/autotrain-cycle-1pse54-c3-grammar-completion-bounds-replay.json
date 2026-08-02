@@ -5,6 +5,25 @@
   "cycle_index": 3,
   "cycle_intent": "retry_measurement",
   "frozen_replay_of": "continuous-loop-20260802-continuous-openui-1pse54-c1f3ee08-c2",
+  "frozen_replay_provenance": {
+    "source_campaign_id": "continuous-loop-20260802-continuous-openui-1pse54-c1f3ee08-c2",
+    "frozen_manifest_sha256": "7ab08b83e6078e94edbe3605149524836350ab9aca008a40e8a271f67a586598",
+    "reused_checkpoints": [
+      {
+        "experiment_id": "c20260802-continuous-openui-1pse54-c1f3ee08-c2-control",
+        "manifest_sha256": "c0286c22ef0ebb642c0d4d513886accc206468631537fd791d53fff9d919b1e0",
+        "checkpoint_path": "outputs/autoresearch/continuous-loop-20260802-continuous-openui-1pse54-c1f3ee08-c2/runs/c20260802-continuous-openui-1pse54-c1f3ee08-c2-control/checkpoints/last.pt",
+        "checkpoint_sha256": "808ee893a079a1e6cc7e2ac5d362ac73de39a52cc446bef328b937f1ef2efc36"
+      },
+      {
+        "experiment_id": "c20260802-continuous-openui-1pse54-c1f3ee08-c2-bounds",
+        "manifest_sha256": "7ab08b83e6078e94edbe3605149524836350ab9aca008a40e8a271f67a586598",
+        "checkpoint_path": "outputs/autoresearch/continuous-loop-20260802-continuous-openui-1pse54-c1f3ee08-c2/runs/c20260802-continuous-openui-1pse54-c1f3ee08-c2-bounds/checkpoints/last.pt",
+        "checkpoint_sha256": "094287fbbb61daf17d45316e362316db239f75c23e720f9866fba6da485e147c"
+      }
+    ],
+    "note": "c3 replays evaluation only; no retraining occurred, so these are the exact same checkpoint bytes documented in autotrain-cycle-1pse54-c2-agentv-node-options-block.json."
+  },
   "evidence_class": "fixture",
   "decision": "rejected_quality_null",
   "scoreable": true,
@@ -26,6 +45,9 @@
   "arms": [
     {
       "experiment_id": "c20260802-continuous-openui-1pse54-c1f3ee08-c3-control",
+      "reused_checkpoint_of": "c20260802-continuous-openui-1pse54-c1f3ee08-c2-control",
+      "reused_manifest_sha256": "c0286c22ef0ebb642c0d4d513886accc206468631537fd791d53fff9d919b1e0",
+      "reused_checkpoint_sha256": "808ee893a079a1e6cc7e2ac5d362ac73de39a52cc446bef328b937f1ef2efc36",
       "params": 1608962,
       "smoke": {
         "n": 3,
@@ -44,6 +66,9 @@
     },
     {
       "experiment_id": "c20260802-continuous-openui-1pse54-c1f3ee08-c3-bounds",
+      "reused_checkpoint_of": "c20260802-continuous-openui-1pse54-c1f3ee08-c2-bounds",
+      "reused_manifest_sha256": "7ab08b83e6078e94edbe3605149524836350ab9aca008a40e8a271f67a586598",
+      "reused_checkpoint_sha256": "094287fbbb61daf17d45316e362316db239f75c23e720f9866fba6da485e147c",
       "params": 1608962,
       "smoke": {
         "n": 3,

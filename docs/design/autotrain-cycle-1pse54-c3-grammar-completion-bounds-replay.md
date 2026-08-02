@@ -18,6 +18,22 @@ rejected outright, not merely below an efficiency floor. Smoke `n=3` and every
 non-smoke suite is missing, so this is fixture wiring evidence only — not a
 ship claim.
 
+## Provenance
+
+No retraining occurred in this cycle: both arms reuse the exact c2
+checkpoint bytes under the locked c2 frozen manifest
+(`7ab08b83e6078e94edbe3605149524836350ab9aca008a40e8a271f67a586598`).
+
+| Arm | Reused manifest SHA-256 | Reused checkpoint SHA-256 |
+| --- | --- | --- |
+| control | `c0286c22ef0ebb642c0d4d513886accc206468631537fd791d53fff9d919b1e0` | `808ee893a079a1e6cc7e2ac5d362ac73de39a52cc446bef328b937f1ef2efc36` |
+| bounds | `7ab08b83e6078e94edbe3605149524836350ab9aca008a40e8a271f67a586598` | `094287fbbb61daf17d45316e362316db239f75c23e720f9866fba6da485e147c` |
+
+These are the identical checkpoints documented in
+[`autotrain-cycle-1pse54-c2-agentv-node-options-block.md`](autotrain-cycle-1pse54-c2-agentv-node-options-block.md);
+full digest and path detail is in the `frozen_replay_provenance` block of
+[`autotrain-cycle-1pse54-c3-grammar-completion-bounds-replay.json`](autotrain-cycle-1pse54-c3-grammar-completion-bounds-replay.json).
+
 ## Harness confirmation
 
 This is the direct replay-proof requested by the c2 documentation
