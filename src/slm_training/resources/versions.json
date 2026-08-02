@@ -2646,7 +2646,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v93",
+      "version": "v94",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2686,6 +2686,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v94",
+          "date": "2026-08-02",
+          "note": "Treat promotion cadence as an opportunity for a prior screening winner: when no queued or confirmed target exists, fall back to smoke-only screening instead of leaking a fresh arm into held-out promotion suites."
+        },
         {
           "version": "v93",
           "date": "2026-08-02",
@@ -7310,6 +7315,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1796 incomplete semantic-contrast checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
         {
           "version": "v3",
           "date": "2026-08-02",
