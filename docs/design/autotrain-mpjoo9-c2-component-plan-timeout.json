@@ -1,0 +1,103 @@
+{
+  "schema": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-mpjoo9-2b5d9d52-c2",
+  "loop_id": "continuous-openui-mpjoo9-20260802",
+  "cycle_index": 2,
+  "campaign_role": "screening",
+  "cycle_intent": "screening",
+  "run_class": "fixture_scratch",
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "requested_steps": 20,
+  "actual_steps": 22,
+  "stopped_on": "steps",
+  "batch_size": 2,
+  "trainable_parameters": 1755764,
+  "checkpoint_sync": "explicit no-sync scratch",
+  "upstream_commit": "d2c3b97c1148bd503773a169890a2d5310ab3cdb",
+  "integration_commit": "a72a453e17bc3f8218ebc802d16cd3f4e9f18ee2",
+  "primary_metric": "smoke.structural_similarity",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "a72a453e17bc3f8218ebc802d16cd3f4e9f18ee2",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.train": "v28",
+      "harness.experiment_feature_flags": "v4"
+    },
+    "stamped_at": "2026-08-02T05:44:18.312412+00:00"
+  },
+  "gate_version": "openui_ship_gates_v6",
+  "arms": [
+    {
+      "label": "matched control",
+      "experiment_id": "c20260802-continuous-openui-mpjoo9-2b5d9d52-c2-control",
+      "status": "trained_evaluation_wall_timeout",
+      "training": {
+        "trainable_parameters": 1755764,
+        "last_loss": 14.390222549438477,
+        "steps_completed": 22,
+        "checkpoint_sha256": "417b3ce88a30d9ddebff22dee520ec5cf07d1e51288ed2d9a7b1881423c274cc"
+      },
+      "smoke": {
+        "n": null,
+        "parse_rate": null,
+        "structural_similarity": null,
+        "meaningful_program_rate": null,
+        "binder_reference_f1": null,
+        "latency_ms_p50": null
+      },
+      "agentv_execution_errors": null,
+      "agentv_sdk_available": false,
+      "ship_gates_pass": false,
+      "note": "training completed (22/20 steps, checkpoint written); evaluate_model was not reached before the campaign's per-arm wall budget (max_wall_minutes=1.1667) was exhausted, so this arm has no smoke scoreboard at all -- not even a base-suite score."
+    },
+    {
+      "label": "component-plan candidate",
+      "experiment_id": "c20260802-continuous-openui-mpjoo9-2b5d9d52-c2-component-plan",
+      "status": "completed_gate_rejection_agentv_unavailable",
+      "training": {
+        "trainable_parameters": 1755764,
+        "last_loss": 19.916019439697266,
+        "steps_completed": 22,
+        "checkpoint_sha256": "68f1ce95aa6e6401797695cc10e3f0a97d38d322cd503fbe8c2fc6d6bf903bdf"
+      },
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0964,
+        "binder_reference_f1": 0.0,
+        "latency_ms_p50": 2300.04
+      },
+      "agentv_execution_errors": "RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER",
+      "agentv_sdk_available": false,
+      "ship_gates_pass": false
+    }
+  ],
+  "comparison": {
+    "parameter_matched": true,
+    "quality_delta": null,
+    "disposition": "wall_timeout:76ba3bbc916ec3e1e9d34efdfb6a6c59756a4805de6c2258b9d734a5e8dedc82,primary_metric_unavailable"
+  },
+  "formal_evidence": {
+    "status": "not_applicable:screening",
+    "reason": "Lean promotion proof is required only for a confirmed champion promotion"
+  },
+  "harness_feedback": {
+    "signal": "Control arm's evaluate_model call never ran: the per-arm campaign wall budget (max_wall_minutes=1.1667, derived from the repository MAX_RUN_MINUTES=3 cap split across the 3-arm campaign allowance) was exhausted after training completed for both arms plus the candidate's evaluate_model call, leaving no wall budget for the control's own evaluation. This is expected soft-failure behavior at fixture scale under a tight wall cap, not a canonical-harness defect -- no HarnessSignalV1 opened.",
+    "repair": "not attempted this cycle; this is a wall-budget/ordering artifact of running 2 arms' train+eval inside a 3-minute-derived cap on CPU, not a code bug. A future cycle could reduce --steps further or evaluate a single arm at a time to fit the budget, but the driver already retries a fresh matched-control every cycle by design.",
+    "repaired_next_hypothesis": "component-edge"
+  },
+  "checkpoint_documentation_required": true,
+  "checkpoint_reuse": "forbidden",
+  "ship_eligible": false,
+  "blockers": [
+    {
+      "kind": "environment",
+      "description": "Same recurring AgentV SDK unavailability as cycle 1 (Node.js/npm toolchain not installed in this sandbox) on the candidate arm, plus a per-arm wall-budget exhaustion that skipped the control arm's evaluation entirely.",
+      "action": "run `npm ci` / set AGENTV_RUNNER before the next supervised cycle for AgentV-backed ship-gate publication; consider a smaller per-arm step count if wall-budget exhaustion recurs on 2-arm CPU campaigns."
+    }
+  ]
+}
