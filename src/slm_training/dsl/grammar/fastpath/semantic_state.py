@@ -263,6 +263,46 @@ class SemanticState:
         if len(self.edges) != len(self.reachable):
             raise ValueError("edges and reachable must have equal length")
 
+    def __hash__(self) -> int:
+        """Memoize the structural hash of this immutable request state.
+
+        Completion-graph interning probes the same semantic state many times
+        across parser branches.  Dataclass' generated hash recursively walked
+        every stack/edge/order tuple on every probe; immutability makes the
+        value safe to retain without changing equality or authority.
+        """
+        cached = self.__dict__.get("_semantic_hash")
+        if cached is not None:
+            return int(cached)
+        value = hash(
+            (
+                self.tokenizer_key,
+                self.declared_mask,
+                self.referenced_mask,
+                self.active_slot,
+                self.edges,
+                self.reachable,
+                self.binder_types,
+                self.stack,
+                self.pending_component,
+                self.pending_bind,
+                self.pending_allowed,
+                self.expect_decl_component,
+                self.emitted_components,
+                self.used_sym_mask,
+                self.completed_str,
+                self.literal_kind,
+                self.literal_body,
+                self.requirements,
+                self.schema_tracked,
+                self.opaque_bind,
+                self.decl_order,
+                self.ref_order,
+            )
+        )
+        object.__setattr__(self, "_semantic_hash", value)
+        return value
+
 
 def _intern(
     state: SemanticState, arena: SemanticArena | None = None

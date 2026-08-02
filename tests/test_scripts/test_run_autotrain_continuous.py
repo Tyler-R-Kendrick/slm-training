@@ -1765,6 +1765,52 @@ def test_classify_positive_rejects_c1731_efficiency_jitter(tmp_path: Path) -> No
     )
 
 
+def test_classify_positive_marks_finalized_decode_timeout_incomplete(
+    tmp_path: Path,
+) -> None:
+    camp = tmp_path / "camp"
+    for arm, similarity in (("c-control", 0.2), ("c-candidate", 0.4)):
+        run = camp / "runs" / arm
+        _write_eval(
+            run / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            meaningful_program_rate=1.0,
+            structural_similarity=similarity,
+            latency_ms_p50=1000.0,
+        )
+        (run / "scoreboard.json").write_text(
+            json.dumps(
+                {
+                    "suites": [
+                        {
+                            "suite": "smoke",
+                            "n": 3,
+                            "completed_document_n": 2,
+                            "incomplete_document_n": 1,
+                            "decode_timeout_document_count": 1,
+                        }
+                    ]
+                }
+            )
+        )
+
+    result = _mod._classify_positive(
+        camp_dir=camp,
+        primary_metric="smoke.structural_similarity",
+        control_id="c-control",
+        candidate_id="c-candidate",
+        role="screening",
+    )
+
+    assert result["positive"] is False
+    assert _mod._measurement_is_complete(result) is False
+    assert any(
+        reason.startswith("measurement_incomplete:c-control:smoke:")
+        for reason in result["reasons"]
+    )
+
+
 def test_classify_positive_promotion_sees_held_out_primary(tmp_path: Path) -> None:
     """Promotion must ignore a same-leaf smoke override and score held-out."""
     camp = tmp_path / "camp"

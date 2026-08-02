@@ -3,7 +3,7 @@
  * JSON-over-stdio CLI for @openuidev/lang-core.
  *
  * Input (stdin, one JSON object):
- *   { "op": "parse"|"validate"|"serialize"|"prompt"|"schema"|"stream_check", ... }
+ *   { "op": "parse"|"parse_has_root"|"validate"|"serialize"|"prompt"|"schema"|"stream_check", ... }
  *
  * Output (stdout): JSON result object.
  */
@@ -16,6 +16,10 @@ import { library, CONTENT_PROPS, PLACEHOLDER_RE } from "./library.mjs";
 
 const schema = library.toJSONSchema();
 const parser = createParser(schema, library.root);
+// Completion probes arrive as nearby prefixes.  Reuse the official streaming
+// parser so it can update that shared prefix incrementally instead of parsing
+// every root-presence query from byte zero.
+const rootProbeParser = createStreamingParser(schema, library.root);
 const FEATURES = [
   "state",
   "query",
@@ -173,6 +177,13 @@ function handle(req) {
       meta: result.meta,
       ...programMetadata(result),
     };
+  }
+
+  if (op === "parse_has_root") {
+    const source = req.source;
+    if (typeof source !== "string") throw new Error("source must be a string");
+    const result = rootProbeParser.set(source);
+    return { ok: true, has_root: Boolean(result.root) };
   }
 
   if (op === "parse" || op === "validate") {

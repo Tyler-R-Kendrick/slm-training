@@ -2225,6 +2225,33 @@ def _classify_positive(
         }
 
     reasons_pre: list[str] = []
+    for run_id in (control_id, candidate_id):
+        scoreboard = _read_json(camp_dir / "runs" / run_id / "scoreboard.json")
+        suites = scoreboard.get("suites")
+        if isinstance(suites, dict):
+            suite_rows = list(suites.items())
+        elif isinstance(suites, list):
+            suite_rows = [
+                (str(suite.get("suite") or index), suite)
+                for index, suite in enumerate(suites)
+                if isinstance(suite, dict)
+            ]
+        else:
+            continue
+        for suite_name, suite in suite_rows:
+            incomplete_n = suite.get("incomplete_document_n")
+            timeout_n = suite.get("decode_timeout_document_count")
+            if not isinstance(timeout_n, int):
+                timeout_n = suite.get("decode_timeout_count")
+            if (isinstance(incomplete_n, int) and incomplete_n > 0) or (
+                isinstance(timeout_n, int) and timeout_n > 0
+            ):
+                reasons_pre.append(
+                    "measurement_incomplete:"
+                    f"{run_id}:{suite_name}:"
+                    f"incomplete_document_n={incomplete_n or 0}:"
+                    f"decode_timeout_count={timeout_n or 0}"
+                )
     outcomes = list((camp_dir / "artifacts" / "outcomes").glob("*.json"))
     for path in outcomes:
         out = _read_json(path)
@@ -2358,6 +2385,14 @@ def _classify_positive(
         decision["stack_layer"] = False
         if not reasons:
             reasons.append("no_positive_signal")
+    if any(
+        str(reason).startswith(
+            ("measurement_incomplete:", "wall_timeout:", "empty_metrics:")
+        )
+        for reason in reasons
+    ):
+        decision["positive"] = False
+        decision["stack_layer"] = False
 
     decision["reasons"] = reasons
     decision["control_id"] = control_id

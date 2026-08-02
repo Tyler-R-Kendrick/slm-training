@@ -1,0 +1,46 @@
+{
+  "schema": "autotrain_runtime_repair/v1",
+  "run_class": "fixture_scratch_profile",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1738",
+  "record_id": "smoke_hero_01",
+  "checkpoint": "c20260802-continuous-openui-202607-98199209-c1737-control",
+  "device": "cpu",
+  "evaluation_policy": "strict_compiler_tree",
+  "eval_limit": 1,
+  "eval_offset": 0,
+  "decode_timeout_seconds": 24,
+  "profiles": [
+    {"variant": "cold_setup_separated", "tokens_emitted": 37, "forwards": 26, "compiler_ms": 21396.637, "states": 128093, "witnesses": 9060, "forks": 145179, "outcome": "typed_timeout"},
+    {"variant": "immutable_semantic_hash", "tokens_emitted": 50, "forwards": 36, "compiler_ms": 20457.3, "states": 132384, "witnesses": 9679, "forks": 149955, "outcome": "typed_timeout"},
+    {"variant": "minimal_official_root_projection", "tokens_emitted": 56, "forwards": 38, "compiler_ms": 20197.334, "states": 144422, "witnesses": 10368, "forks": 162666, "outcome": "typed_timeout"},
+    {"variant": "persistent_official_streaming_root_probe", "tokens_emitted": 59, "forwards": 39, "compiler_ms": 20059.013, "states": 144470, "witnesses": 10438, "forks": 162754, "outcome": "typed_timeout"}
+  ],
+  "profile_signal": {
+    "terminal_witness_cumulative_seconds": 23.373,
+    "outgoing_cumulative_seconds": 12.535,
+    "advance_path_cumulative_seconds": 10.357,
+    "official_bridge_calls": 189,
+    "official_bridge_cumulative_seconds": 2.882
+  },
+  "reverted_hypotheses": [
+    "cross_query_witness_subproblem_cache",
+    "semantic_arena_transition_cache",
+    "first_path_limited_forest",
+    "closure_preferred_witness_order"
+  ],
+  "disposition": "retain_exact_repairs_continue_runtime_hypothesis_loop",
+  "model_quality_claim": false,
+  "ship_claim": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "1a196a2a79466a29b93670306180bbc10772897f",
+    "code_dirty": true,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v58",
+      "harness.model_build.eval": "v74",
+      "model.twotower": "v285",
+      "dsl.completion_kernel": "v7",
+      "dsl.symbolic_surface": "v5"
+    }
+  }
+}

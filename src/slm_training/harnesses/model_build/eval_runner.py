@@ -853,6 +853,24 @@ def _seed_eval_rng(seed: int) -> None:
         pass
 
 
+def _clear_repeating_decode_alarm(previous: Any) -> None:
+    """Cancel SIGALRM without letting a pending interval tick escape cleanup."""
+    if not (hasattr(signal, "setitimer") and hasattr(signal, "SIGALRM")):
+        return
+    old_mask = None
+    pthread_sigmask = getattr(signal, "pthread_sigmask", None)
+    if callable(pthread_sigmask):
+        old_mask = pthread_sigmask(signal.SIG_BLOCK, {signal.SIGALRM})
+    try:
+        # Ignoring SIGALRM while blocked discards any already-pending interval
+        # tick before the caller's previous disposition is restored.
+        signal.signal(signal.SIGALRM, signal.SIG_IGN)
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        if previous is not None:
+            signal.signal(signal.SIGALRM, previous)
+    finally:
+        if callable(pthread_sigmask) and old_mask is not None:
+            pthread_sigmask(signal.SIG_SETMASK, old_mask)
 def evaluate(
     config: ModelBuildConfig,
     model=None,
@@ -1049,6 +1067,18 @@ def evaluate(
     generate_batch_requests = getattr(plugin, "generate_batch_requests", None)
     generate_batch = getattr(plugin, "generate_batch", None)
     generate_with_stats = getattr(plugin, "generate_with_stats", None)
+    prepare_generation = getattr(plugin, "prepare_generation", None)
+    decode_initialization_ms = 0.0
+    if callable(prepare_generation):
+        # Process-scoped parser/schema/static-artifact initialization is not a
+        # document decode.  Run it once, outside every per-chunk deadline, and
+        # disclose its wall cost separately so the first record is not the
+        # accidental owner of cold harness setup while later records are warm.
+        initialization_started = time.perf_counter()
+        prepare_generation()
+        decode_initialization_ms = (
+            time.perf_counter() - initialization_started
+        ) * 1000.0
     if callable(generate_batch_requests) or callable(generate_batch):
         batch_size = max(
             1,
@@ -1236,12 +1266,17 @@ def evaluate(
                 raise TimeoutError(f"decode exceeded {seconds:g}s")
 
             previous = signal.signal(signal.SIGALRM, _alarm)
-            # First fire at budget; then every 0.1s until cleared. Interval
-            # prevents a swallowed one-shot from disabling the wall.
-            signal.setitimer(signal.ITIMER_REAL, seconds, min(0.1, max(0.05, seconds / 10.0)))
+            # First fire at budget; then every 0.5s until cleared. Re-firing
+            # prevents a swallowed one-shot from disabling the wall, while
+            # leaving the outer timeout handler enough time to disarm before
+            # another tick can interrupt its bookkeeping.
+            signal.setitimer(signal.ITIMER_REAL, seconds, 0.5)
         try:
             return _run(timed_out=False)
         except TimeoutError as exc:
+            if use_alarm:
+                _clear_repeating_decode_alarm(previous)
+                use_alarm = False
             stats = getattr(exc, "decode_stats", None)
             if stats is not None:
                 _annotate_decode_trace_records(stats, chunk)
@@ -1252,14 +1287,13 @@ def evaluate(
             return ["" for _ in chunk], []
         except KeyboardInterrupt as exc:
             if use_alarm:
-                signal.setitimer(signal.ITIMER_REAL, 0)
+                _clear_repeating_decode_alarm(previous)
+                use_alarm = False
             _persist_interrupted(exc)
             raise
         finally:
             if use_alarm:
-                signal.setitimer(signal.ITIMER_REAL, 0)
-                if previous is not None:
-                    signal.signal(signal.SIGALRM, previous)
+                _clear_repeating_decode_alarm(previous)
             clear_decode_deadline()
 
     def _decode_outcome_fields(
@@ -1919,6 +1953,7 @@ def evaluate(
         "decode_timeout_rate": (
             (decode_timeout_document_n / document_n) if document_n else None
         ),
+        "decode_initialization_ms": round(decode_initialization_ms, 3),
         "decode_canvas_cap": canvas_cap,
         # SLM-303: per-taxonomy decode-outcome counts over details[] rows
         # (additive; every taxonomy key always present).

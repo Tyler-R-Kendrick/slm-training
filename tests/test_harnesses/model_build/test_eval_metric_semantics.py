@@ -383,6 +383,59 @@ def test_supervisor_interrupt_persists_non_scoreable_decode_progress(
     assert progress["version_stamp"]["stamp_schema"] == "version_stamp/v1"
 
 
+def test_decode_initialization_runs_before_document_generation(tmp_path: Path) -> None:
+    config = _smoke_config(tmp_path)
+
+    class PreparedModel:
+        def __init__(self) -> None:
+            self.prepared = False
+
+        def prepare_generation(self) -> None:
+            self.prepared = True
+
+        def generate_with_stats(
+            self, prompt: str
+        ) -> tuple[str, eval_runner.DecodeStats]:
+            assert prompt
+            assert self.prepared
+            return _GOLD, eval_runner.DecodeStats(tokens_emitted=1)
+
+    metrics = evaluate(config, model=PreparedModel(), publish_agentv=False)
+
+    assert metrics["decode_initialization_ms"] >= 0.0
+
+
+def test_repeating_decode_alarm_is_blocked_while_cancelled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[tuple[str, object]] = []
+    previous = object()
+
+    monkeypatch.setattr(
+        eval_runner.signal,
+        "pthread_sigmask",
+        lambda how, mask: events.append(("mask", how)) or {"old"},
+    )
+    monkeypatch.setattr(
+        eval_runner.signal,
+        "signal",
+        lambda _sig, handler: events.append(("handler", handler)),
+    )
+    monkeypatch.setattr(
+        eval_runner.signal,
+        "setitimer",
+        lambda _which, seconds, *_args: events.append(("timer", seconds)),
+    )
+
+    eval_runner._clear_repeating_decode_alarm(previous)
+
+    assert events[0] == ("mask", eval_runner.signal.SIG_BLOCK)
+    assert events[1] == ("handler", eval_runner.signal.SIG_IGN)
+    assert events[2] == ("timer", 0)
+    assert events[3] == ("handler", previous)
+    assert events[4] == ("mask", eval_runner.signal.SIG_SETMASK)
+
+
 def test_progress_persistence_failure_does_not_mask_supervisor_interrupt(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:

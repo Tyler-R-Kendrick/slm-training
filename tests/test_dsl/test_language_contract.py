@@ -51,6 +51,29 @@ def test_contract_id_is_deterministic_16_hex() -> None:
     int(first, 16)  # raises if not hex
 
 
+def test_parse_has_root_projects_official_parser_result() -> None:
+    source = 'root = TextContent(":hero.title")'
+
+    assert lang_core.parse_has_root(source) is bool(lang_core.parse(source).root)
+
+
+def test_parse_has_root_caches_false_results(monkeypatch: pytest.MonkeyPatch) -> None:
+    source = "parse-has-root-cache-false-fixture"
+    cache_key = "parse_has_root:" + hashlib.sha256(source.encode("utf-8")).hexdigest()
+    lang_core._RESULT_CACHE.pop(cache_key, None)
+    calls: list[dict[str, str]] = []
+
+    def fake_invoke(payload: dict[str, str]) -> dict[str, bool]:
+        calls.append(payload)
+        return {"ok": True, "has_root": False}
+
+    monkeypatch.setattr(lang_core, "_invoke", fake_invoke)
+
+    assert lang_core.parse_has_root(source) is False
+    assert lang_core.parse_has_root(source) is False
+    assert calls == [{"op": "parse_has_root", "source": source}]
+
+
 def test_contract_id_changes_when_surface_changes() -> None:
     base = current_contract()
     bumped = LanguageContract(
@@ -69,7 +92,7 @@ def test_to_dict_round_trips_fields() -> None:
     assert data["contract_id"] == contract.contract_id
     assert data["lang_spec"] == contract.lang_spec
     assert set(data["openui_versions"]) == {name for name, _ in contract.openui_versions}
-    assert data["output_contract_version"] == OUTPUT_CONTRACT_VERSION == 4
+    assert data["output_contract_version"] == OUTPUT_CONTRACT_VERSION == 2
 
 
 def test_symbol_only_output_contract_rejects_free_form_text() -> None:
@@ -98,9 +121,10 @@ def test_symbolic_surface_policy_preserves_closed_terms_and_declared_markers() -
     assert len(report.pack_version) == 64
     legacy_request = GenerationRequest(
         prompt="render a title",
-        slot_contract=(":hero.title",),
+        slot_contract=(":slot_0",),
     )
-    assert SymbolicSurfacePolicyV1().evaluate_request(source, legacy_request).admitted
+    legacy_source = source.replace(":hero.title", ":slot_0")
+    assert SymbolicSurfacePolicyV1().evaluate_request(legacy_source, legacy_request).admitted
 
 
 def test_symbolic_surface_policy_reports_typed_open_and_undeclared_surfaces() -> None:

@@ -54,32 +54,47 @@ def decode_prefix(tokenizer: OpenUITokenizer, token_ids: list[int]) -> str:
 def token_surface_piece(tokenizer: OpenUITokenizer, token_id: int) -> str:
     """Decode one token into the source fragment consumed by grammar state."""
     tid = int(token_id)
+    cache = getattr(tokenizer, "_grammar_surface_piece_cache", None)
+    if isinstance(cache, dict) and tid in cache:
+        return str(cache[tid])
+
+    def _remember(piece: str) -> str:
+        nonlocal cache
+        if not isinstance(cache, dict):
+            cache = {}
+            try:
+                setattr(tokenizer, "_grammar_surface_piece_cache", cache)
+            except (AttributeError, TypeError):
+                return piece
+        cache[tid] = piece
+        return piece
+
     if tid in {
         tokenizer.pad_id,
         tokenizer.bos_id,
         tokenizer.eos_id,
         tokenizer.mask_id,
     }:
-        return ""
+        return _remember("")
     raw = str(tokenizer.id_to_token.get(tid, ""))
     if raw == "NL":
-        return "\n"
+        return _remember("\n")
     if raw == "LIT_STR":
-        return '"'
+        return _remember('"')
     if raw in {"LIT_NUM", "LIT_END"}:
-        return ""
+        return _remember("")
     if raw.startswith("B:"):
         try:
-            return chr(int(raw[2:], 16))
+            return _remember(chr(int(raw[2:], 16)))
         except ValueError:
-            return raw
+            return _remember(raw)
     kind_of = getattr(tokenizer, "kind_of", None)
     kind = getattr(kind_of(tid), "value", "") if callable(kind_of) else ""
     if kind in {"sym", "bind", "state", "lit", "macro"} or not raw:
         decoded = tokenizer.decode([tid])
         if decoded:
-            return decoded
-    return raw
+            return _remember(decoded)
+    return _remember(raw)
 
 
 def allowed_id_set(
