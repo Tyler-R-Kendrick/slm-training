@@ -54,11 +54,14 @@ are not direct speed ratios.
 | --- | --- | ---: | ---: | ---: | ---: | ---: | --- |
 | c1739 | matched control | 2/3 | 1 | 20,108.53 ms | 118 | 310,372 | incomplete |
 | c1739 | compact canvas | 2/3 | 1 | 19,685.63 ms | 119 | 313,492 | incomplete |
+| c1740 | matched control | 2/3 | 1 | 19,078.93 ms | 134 | 313,834 | incomplete |
+| c1740 | compact canvas | 2/3 | 1 | 18,827.20 ms | 131 | 313,793 | incomplete |
 
 This replay confirms that the accepted repairs preserve typed evidence and
 increase exact progress, but remain insufficient to make the authoritative
 comparison scoreable. The corrected SDLC classifier reports the cycle as
-non-positive.
+non-positive. c1740 also rejects the candidate's approximately 4.04% partial
+MPR/ms gain because it is below the preregistered 5% minimum effect.
 
 ## Next hypotheses
 

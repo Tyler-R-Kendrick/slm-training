@@ -32,13 +32,15 @@
     "verified_intermediate_branch_state_transfer"
   ],
   "frozen_replay": {
-    "cycle_index": 1739,
+    "cycle_index": 1740,
     "measurement_complete": false,
     "arms": [
-      {"label": "matched_control", "completed_document_n": 2, "incomplete_document_n": 1, "latency_ms_p50_including_incomplete": 20108.53, "forwards": 118, "states": 310372},
-      {"label": "compact_canvas", "completed_document_n": 2, "incomplete_document_n": 1, "latency_ms_p50_including_incomplete": 19685.63, "forwards": 119, "states": 313492}
+      {"label": "matched_control", "completed_document_n": 2, "incomplete_document_n": 1, "latency_ms_p50_including_incomplete": 19078.93, "forwards": 134, "states": 313834},
+      {"label": "compact_canvas", "completed_document_n": 2, "incomplete_document_n": 1, "latency_ms_p50_including_incomplete": 18827.2, "forwards": 131, "states": 313793}
     ],
-    "classifier_positive": false
+    "classifier_positive": false,
+    "candidate_efficiency_gain_fraction": 0.04036364,
+    "minimum_efficiency_effect_fraction": 0.05
   },
   "disposition": "retain_exact_repairs_continue_runtime_hypothesis_loop",
   "model_quality_claim": false,
