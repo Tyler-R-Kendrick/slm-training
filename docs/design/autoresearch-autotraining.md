@@ -20,6 +20,14 @@ the successor. `AutotrainLoopStateV1` supplies a durable heartbeat and resumable
 phase. Fixture `climb_accepted` and full `ship_promoted` are intentionally
 different verdicts.
 
+Champion confirmation and promotion retain both source recipes. The queue stores
+the candidate and its matched control knobs, while legacy entries recover the
+control recipe from the source campaign. This is required for levers such as
+training steps: applying the candidate step count to both arms would erase the
+treatment and violate distinct-matrix validation. A crash before any
+`experiment_started` event releases the reserved confirm/promote attempt; actual
+measurements still consume the bounded attempt.
+
 The terminal dashboard calls a loop `RUNNING` only when the host can see the
 driver process. An absent driver is `DEAD` (or preserves an explicit `BLOCKED`
 state); stale persisted `RUNNING` text cannot override process truth.

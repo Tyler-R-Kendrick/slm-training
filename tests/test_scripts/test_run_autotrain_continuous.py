@@ -280,6 +280,15 @@ def test_champion_queue_enqueue_dedup_and_confirm_resolve(tmp_path: Path) -> Non
         __import__("json").dumps({"experiment_id": "c1-bounds", "knobs": knobs}),
         encoding="utf-8",
     )
+    (exp_dir / "c1-control.json").write_text(
+        __import__("json").dumps(
+            {
+                "experiment_id": "c1-control",
+                "knobs": {**knobs, "grammar_completion_bounds": False, "steps": 40},
+            }
+        ),
+        encoding="utf-8",
+    )
     delivery = {
         "positive": True,
         "campaign_id": "continuous-loop-c1",
@@ -300,6 +309,8 @@ def test_champion_queue_enqueue_dedup_and_confirm_resolve(tmp_path: Path) -> Non
     assert entry is not None
     assert entry["status"] == "queued"
     assert entry["knobs"]["grammar_completion_bounds"] is True
+    assert entry["control_knobs"]["grammar_completion_bounds"] is False
+    assert entry["control_knobs"]["steps"] == 40
     assert "seed" not in entry["knobs"]
     # Dedup: same fingerprint stays single open entry.
     again = _mod._enqueue_champion(
@@ -387,6 +398,12 @@ def test_matrix_confirm_path_same_levers_new_seed() -> None:
             "batch_size": 2,
             "train_version": "wf_smoke_v2",
         },
+        confirm_control_levers={
+            "steps": 80,
+            "batch_size": 2,
+            "train_version": "wf_smoke_v2",
+            "structural_aux_head_profile": "component-edge",
+        },
     )
     HypothesisMatrix.model_validate(matrix)
     ids = [h["experiment"]["experiment_id"] for h in matrix["hypotheses"]]
@@ -404,6 +421,96 @@ def test_matrix_confirm_path_same_levers_new_seed() -> None:
     assert ctrl["structural_aux_head_profile"] == "component-edge"
     assert cand["seed"] == ctrl["seed"] == 100_000 + 9
     assert cand["steps"] == 81
+    assert ctrl["steps"] == 80
+
+
+def test_matrix_steps_confirm_preserves_distinct_source_control_recipe() -> None:
+    from slm_training.autoresearch.schemas import HypothesisMatrix
+
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-20260802-c1758",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1758,
+        role="screening",
+        confirm_levers={"steps": 44, "batch_size": 2},
+        confirm_control_levers={"steps": 22, "batch_size": 2},
+    )
+
+    validated = HypothesisMatrix.model_validate(matrix)
+    control = validated.hypotheses[0].experiment.knobs
+    candidate = validated.hypotheses[1].experiment.knobs
+    assert control.steps == 22
+    assert candidate.steps == 44
+    assert control.seed == candidate.seed == 101758
+
+
+def test_matrix_steps_promotion_preserves_distinct_source_control_recipe() -> None:
+    from slm_training.autoresearch.schemas import HypothesisMatrix
+
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-20260802-c1760",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1760,
+        role="promotion",
+        promote_levers={"steps": 44, "batch_size": 2},
+        promote_control_levers={"steps": 22, "batch_size": 2},
+    )
+
+    validated = HypothesisMatrix.model_validate(matrix)
+    control = validated.hypotheses[0].experiment.knobs
+    candidate = validated.hypotheses[1].experiment.knobs
+    assert control.steps == 22
+    assert candidate.steps == 44
+    assert control.seed == candidate.seed == 101760
+
+
+def test_preexecution_champion_failure_reclaims_attempt(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    confirming = {
+        "status": "confirming",
+        "confirm_attempts": 1,
+        "confirm_campaign_id": "c1758",
+    }
+    promoting = {
+        "status": "promoting",
+        "promote_attempts": 1,
+        "promotion_campaign_id": "c1759",
+    }
+
+    assert _mod._recover_interrupted_champion_entries(root, [confirming, promoting])
+    assert confirming["status"] == "queued"
+    assert confirming["confirm_attempts"] == 0
+    assert promoting["status"] == "confirmed"
+    assert promoting["promote_attempts"] == 0
+
+
+def test_started_champion_measurement_keeps_attempt_spent(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    campaign = root / "c1758"
+    campaign.mkdir(parents=True)
+    (campaign / "events.jsonl").write_text(
+        json.dumps({"event_type": "experiment_started"}) + "\n",
+        encoding="utf-8",
+    )
+    entry = {
+        "status": "confirming",
+        "confirm_attempts": 1,
+        "confirm_campaign_id": "c1758",
+    }
+
+    assert _mod._recover_interrupted_champion_entries(root, [entry])
+    assert entry["status"] == "confirming"
+    assert entry["confirm_attempts"] == 1
 
 
 def test_select_recommended_slug_rotates_and_skips() -> None:
