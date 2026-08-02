@@ -2641,7 +2641,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v62",
+      "version": "v63",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2681,6 +2681,16 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v63",
+          "date": "2026-08-02",
+          "note": "Preserve matched-control recipes for champion confirmation and promotion, including steps-only candidates, and reclaim attempts that fail before experiment execution starts."
+        },
+        {
+          "version": "v62",
+          "date": "2026-08-02",
+          "note": "Preserve matched-control recipes for champion confirmation and promotion, including steps-only candidates, and reclaim attempts that fail before experiment execution starts."
+        },
         {
           "version": "v62",
           "date": "2026-08-02",
@@ -10942,7 +10952,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v288",
+      "version": "v289",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -10986,6 +10996,11 @@
       ],
       "history": [
         {
+          "version": "v289",
+          "date": "2026-08-02",
+          "note": "Cache tokenizer-identity-scoped compiler terminal projections, classify components by the canonical kind-id set, retain explicit request authority for legacy external marker text, and keep visible honest slot inventory authoritative over stale non-opaque arguments."
+        },
+        {
           "version": "v288",
           "date": "2026-08-02",
           "note": "no-bump: complete the v288 slot-authority repair by retaining an explicit canonical request contract when legacy external marker text cannot form model identity."
@@ -10994,6 +11009,11 @@
           "version": "v288",
           "date": "2026-08-02",
           "note": "Cache tokenizer-identity-scoped compiler terminal projections, classify components by the canonical kind-id set, and keep visible honest slot inventory authoritative over stale non-opaque arguments."
+        },
+        {
+          "version": "v288",
+          "date": "2026-08-02",
+          "note": "Regenerate the committed speculative n-gram ranker from the latest canonical train-only corpus after opaque structural-id and fixture refreshes."
         },
         {
           "version": "v287",

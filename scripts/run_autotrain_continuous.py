@@ -773,6 +773,51 @@ def _load_champion_queue(path: Path) -> list[dict[str, Any]]:
     return entries
 
 
+def _campaign_started_experiment(root: Path, campaign_id: object) -> bool:
+    """Return whether a reserved champion attempt reached actual execution."""
+    if not isinstance(campaign_id, str) or not campaign_id:
+        return False
+    path = root / campaign_id / "events.jsonl"
+    if not path.is_file():
+        return False
+    for line in path.read_text(encoding="utf-8").splitlines():
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(event, dict) and event.get("event_type") == "experiment_started":
+            return True
+    return False
+
+
+def _recover_interrupted_champion_entries(
+    root: Path, entries: list[dict[str, Any]]
+) -> bool:
+    """Release pre-execution attempts and restore interrupted promotion heads."""
+    changed = False
+    for row in entries:
+        status = row.get("status")
+        if status not in {"confirming", "promoting"}:
+            continue
+        # _update_champion_status records the currently reserved campaign in
+        # confirm_campaign_id for both phases; promotion_campaign_id may still
+        # name an older completed/inconclusive replicate.
+        campaign_id = row.get("confirm_campaign_id") or row.get("promotion_campaign_id")
+        started = _campaign_started_experiment(root, campaign_id)
+        attempt_field = (
+            "promote_attempts" if status == "promoting" else "confirm_attempts"
+        )
+        if not started:
+            row[attempt_field] = max(0, int(row.get(attempt_field) or 0) - 1)
+            row["last_preflight_failure_campaign_id"] = campaign_id
+        if status == "promoting":
+            row["status"] = "confirmed"
+        elif not started:
+            row["status"] = "queued"
+        changed = True
+    return changed
+
+
 def _write_champion_queue(path: Path, entries: list[dict[str, Any]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + ".tmp")
@@ -1016,9 +1061,11 @@ def _enqueue_champion(
     if not _should_enqueue_champion(delivery):
         return None
     candidate_id = str(delivery.get("candidate_id") or "")
+    control_id = str(delivery.get("control_id") or "")
     if not candidate_id or candidate_id == delivery.get("control_id"):
         return None
     knobs = _lever_knobs(_load_experiment_knobs(camp_dir, candidate_id))
+    control_knobs = _lever_knobs(_load_experiment_knobs(camp_dir, control_id))
     if not knobs:
         return None
     # Any non-control thrash lever may champion (bounds/canvas/both/steps/batch1).
@@ -1047,12 +1094,13 @@ def _enqueue_champion(
         "source_campaign_id": delivery.get("campaign_id"),
         "source_cycle_index": delivery.get("cycle_index"),
         "source_candidate_id": candidate_id,
-        "source_control_id": delivery.get("control_id"),
+        "source_control_id": control_id,
         "source_role": delivery.get("cycle_role") or delivery.get("role"),
         "source_integration_commit": _read_json(camp_dir / "campaign.json").get(
             "integration_commit"
         ),
         "knobs": knobs,
+        "control_knobs": control_knobs,
         "knobs_fingerprint": fp,
         "source_metrics": {
             "control": delivery.get("control_metrics"),
@@ -4181,7 +4229,9 @@ def _matrix(
     role: str = "screening",
     policy: Any | None = None,
     confirm_levers: dict[str, Any] | None = None,
+    confirm_control_levers: dict[str, Any] | None = None,
     promote_levers: dict[str, Any] | None = None,
+    promote_control_levers: dict[str, Any] | None = None,
     recommended_slug: str | None = None,
     skip_slugs: set[str] | None = None,
 ) -> dict:
@@ -4334,15 +4384,21 @@ def _matrix(
             }
         }
         promo_steps = int(promo_extra.pop("steps", steps) or steps)
-        control_knobs = knobs(
-            steps=promo_steps,
-            structural_aux_head_profile=str(
-                promo_extra.get("structural_aux_head_profile") or "none"
-            ),
-            compiler_decode_mode=str(
-                promo_extra.get("compiler_decode_mode") or "off"
-            ),
+        control_extra = {
+            k: v
+            for k, v in (promote_control_levers or {}).items()
+            if k in _LEVER_KNOB_KEYS
+        }
+        control_steps = int(control_extra.pop("steps", steps) or steps)
+        control_extra.setdefault(
+            "structural_aux_head_profile",
+            str(promo_extra.get("structural_aux_head_profile") or "none"),
         )
+        control_extra.setdefault(
+            "compiler_decode_mode",
+            str(promo_extra.get("compiler_decode_mode") or "off"),
+        )
+        control_knobs = knobs(steps=control_steps, **control_extra)
         cand_knobs = knobs(steps=promo_steps, **promo_extra)
         candidates = [
             {
@@ -4503,15 +4559,21 @@ def _matrix(
             }
         }
         confirm_steps = int(confirm_extra.pop("steps", steps) or steps)
-        control_knobs = knobs(
-            steps=confirm_steps,
-            structural_aux_head_profile=str(
-                confirm_extra.get("structural_aux_head_profile") or "none"
-            ),
-            compiler_decode_mode=str(
-                confirm_extra.get("compiler_decode_mode") or "off"
-            ),
+        control_extra = {
+            k: v
+            for k, v in (confirm_control_levers or {}).items()
+            if k in _LEVER_KNOB_KEYS
+        }
+        control_steps = int(control_extra.pop("steps", steps) or steps)
+        control_extra.setdefault(
+            "structural_aux_head_profile",
+            str(confirm_extra.get("structural_aux_head_profile") or "none"),
         )
+        control_extra.setdefault(
+            "compiler_decode_mode",
+            str(confirm_extra.get("compiler_decode_mode") or "off"),
+        )
+        control_knobs = knobs(steps=control_steps, **control_extra)
         # Drop lever defaults then re-apply champion levers on candidate.
         cand_knobs = knobs(steps=confirm_steps, **confirm_extra)
         # HypothesisMatrix requires ≥5 arms; only control + recommended execute.
@@ -5150,13 +5212,9 @@ def run_cycle(
     # stays screening|promotion for suites/claim_class legality.
     queue_path = _champion_queue_path(root, loop_id)
     queue_entries = _load_champion_queue(queue_path)
-    # Recover mid-cycle crash: promoting → confirmed so next promotion slot retries.
-    # promotion_inconclusive / harness_failure already retriable via _queue_head_confirmed.
-    recovered = False
-    for row in queue_entries:
-        if row.get("status") == "promoting":
-            row["status"] = "confirmed"
-            recovered = True
+    # Pre-execution crashes do not spend bounded champion attempts. Promotion
+    # heads also return to confirmed so the next promotion slot can retry.
+    recovered = _recover_interrupted_champion_entries(root, queue_entries)
     if recovered:
         _write_champion_queue(queue_path, queue_entries)
     open_champion = _queue_head_open(queue_entries)
@@ -5435,9 +5493,19 @@ def run_cycle(
                 item for item in feedback if item.get("matrix_id") == previous_matrix_id
             ]
     confirm_levers = None
+    confirm_control_levers = None
     promote_levers = None
+    promote_control_levers = None
     if open_champion is not None:
         confirm_levers = _lever_knobs(open_champion.get("knobs") or {})
+        confirm_control_levers = _lever_knobs(open_champion.get("control_knobs") or {})
+        if not confirm_control_levers:
+            source_dir = root / str(open_champion.get("source_campaign_id") or "")
+            confirm_control_levers = _lever_knobs(
+                _load_experiment_knobs(
+                    source_dir, str(open_champion.get("source_control_id") or "")
+                )
+            )
         if not confirm_levers:
             # Corrupt queue entry — reject and fall back to thrash matrix.
             _update_champion_status(
@@ -5454,6 +5522,17 @@ def run_cycle(
             confirm_levers = None
     elif promoting_champion is not None:
         promote_levers = _lever_knobs(promoting_champion.get("knobs") or {})
+        promote_control_levers = _lever_knobs(
+            promoting_champion.get("control_knobs") or {}
+        )
+        if not promote_control_levers:
+            source_dir = root / str(promoting_champion.get("source_campaign_id") or "")
+            promote_control_levers = _lever_knobs(
+                _load_experiment_knobs(
+                    source_dir,
+                    str(promoting_champion.get("source_control_id") or ""),
+                )
+            )
         if not promote_levers:
             _update_champion_status(
                 root=root,
@@ -5494,7 +5573,9 @@ def run_cycle(
         role=role,
         policy=policy,
         confirm_levers=confirm_levers,
+        confirm_control_levers=confirm_control_levers,
         promote_levers=promote_levers,
+        promote_control_levers=promote_control_levers,
         recommended_slug=rec_slug
         if promote_levers is None and confirm_levers is None
         else None,
