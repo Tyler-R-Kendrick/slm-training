@@ -441,6 +441,38 @@ def test_training_loss_rechecks_opaque_role_safe_targets() -> None:
         )
 
 
+def test_structural_aux_profile_matches_trainable_capacity() -> None:
+    records = [
+        ExampleRecord(
+            id="a",
+            prompt="Hero",
+            openui=HERO,
+            placeholders=[":slot_0", ":slot_1"],
+            split="train",
+        )
+    ]
+    common = {
+        "d_model": 32,
+        "n_heads": 4,
+        "context_layers": 1,
+        "denoiser_layers": 1,
+        "output_tokenizer": "lexer",
+        "compiler_decode_mode": "tree",
+        "structural_aux_head_profile": "binder-topology",
+    }
+    control = TwoTowerModel.from_records(records, config=TwoTowerConfig(**common))
+    candidate = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(**common, binder_topology_loss_weight=0.25),
+    )
+
+    control_params = sum(p.numel() for p in control.trainable_parameters())
+    candidate_params = sum(p.numel() for p in candidate.trainable_parameters())
+    assert control.binder_topology_head is not None
+    assert candidate.binder_topology_head is not None
+    assert control_params == candidate_params
+
+
 def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) -> None:
     records = [
         ExampleRecord(

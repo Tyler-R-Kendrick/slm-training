@@ -900,9 +900,7 @@ def test_frozen_training_reuse_verifies_lineage_recipe_and_checkpoint(
             "learning_rate": float(_command_flag(train, "--lr")),
         },
     }
-    (run_dir / "train_summary.json").write_text(
-        json.dumps(summary), encoding="utf-8"
-    )
+    (run_dir / "train_summary.json").write_text(json.dumps(summary), encoding="utf-8")
 
     prepared, receipt = _prepare_reused_training(
         campaign=campaign(),
@@ -2157,9 +2155,7 @@ def test_feedback_context_skips_only_initialized_incomplete_cycles(
         stores.append(campaign_store)
 
     first_matrix = hypothesis_matrix(campaign_id="cycle-1")
-    first_matrix_path = stores[0].write_artifact(
-        "hypothesis_matrices", first_matrix
-    )
+    first_matrix_path = stores[0].write_artifact("hypothesis_matrices", first_matrix)
     stores[0].append_event(
         "hypothesis_matrix_formed", artifact_sha256=first_matrix_path.stem
     )
@@ -2231,8 +2227,12 @@ def test_replay_config_authority_is_content_bound_to_lineage(tmp_path: Path) -> 
     second_store = CampaignStore("cycle-2", tmp_path)
     second_store.initialize(second)
     source = experiment_campaign(campaign_id="cycle-1", experiment_id="old-arm")
-    source_experiment = hypothesis_matrix().hypotheses[0].experiment.model_copy(
-        update={"campaign_id": "cycle-1", "experiment_id": "old-arm"}
+    source_experiment = (
+        hypothesis_matrix()
+        .hypotheses[0]
+        .experiment.model_copy(
+            update={"campaign_id": "cycle-1", "experiment_id": "old-arm"}
+        )
     )
     first_store.write_artifact("experiments", source_experiment)
     source_path = first_store.root / "manifests" / "old-arm.json"
@@ -2275,9 +2275,7 @@ def test_replay_config_authority_is_content_bound_to_lineage(tmp_path: Path) -> 
         proposed,
     ) == {"new-arm": normalized_knobs_sha256(replay_candidate.experiment)}
 
-    forged = successor.model_copy(
-        update={"replay_of_manifest_sha256": "f" * 64}
-    )
+    forged = successor.model_copy(update={"replay_of_manifest_sha256": "f" * 64})
     successor_path.write_text(forged.model_dump_json(indent=2) + "\n")
     with pytest.raises(ValueError, match="authority is invalid"):
         _authorized_replay_configs(
@@ -3209,6 +3207,7 @@ def test_execute_resolves_truncated_train_stdout_from_canonical_summary(
         "steps": 20,
         "stopped_on": "steps",
         "checkpoint": str(checkpoint),
+        "track": {"trainable_params": 12345},
         "large_payload": "x" * 100_000,
     }
     evaluation = {
@@ -3228,6 +3227,7 @@ def test_execute_resolves_truncated_train_stdout_from_canonical_summary(
             ),
         )
     )
+
     def run_stage(*args, **kwargs):
         reply = next(replies)
         artifact = (
@@ -3237,9 +3237,7 @@ def test_execute_resolves_truncated_train_stdout_from_canonical_summary(
         )
         artifact.write_text(
             json.dumps(
-                train_summary
-                if artifact.name == "train_summary.json"
-                else evaluation
+                train_summary if artifact.name == "train_summary.json" else evaluation
             )
         )
         return reply
@@ -3275,6 +3273,7 @@ def test_execute_resolves_truncated_train_stdout_from_canonical_summary(
     )
 
     assert outcome.status == "completed"
+    assert outcome.metrics["trainable_params"] == 12345
     assert outcome.stage_telemetry[0]["parsed_output_source"] == str(
         run_dir / "train_summary.json"
     )

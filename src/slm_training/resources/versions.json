@@ -2571,7 +2571,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v49",
+      "version": "v50",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2608,6 +2608,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v50",
+          "date": "2026-08-01",
+          "note": "Match structural auxiliary-head capacity across screening arms, carry trainable parameter counts into outcomes and terminal matrices, replace completed-null steering with a distinct next hypothesis, and consume that priority in the next screening cycle."
+        },
         {
           "version": "v49",
           "date": "2026-08-01",
@@ -3249,7 +3254,7 @@
       ]
     },
     "harness.experiment_feature_flags": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/feature_flags.py",
@@ -3257,6 +3262,11 @@
         "src/slm_training/resources/experiment_feature_flag_history.json"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-08-01",
+          "note": "Register the structural auxiliary-head profile as a persisted OpenFeature training lever for capacity-matched controls."
+        },
         {
           "version": "v3",
           "date": "2026-07-24",
@@ -6930,6 +6940,11 @@
         {
           "version": "v3",
           "date": "2026-08-01",
+          "note": "no-bump: add honest model-card provenance for two unrelated c1729 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-01",
           "note": "no-bump: add honest model-card provenance for the unrelated c1717 control scratch checkpoint; SLM-228 spectral-disposition behavior is unchanged"
         },
         {
@@ -8857,7 +8872,7 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v27",
+      "version": "v28",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
@@ -8865,6 +8880,11 @@
         "src/slm_training/harnesses/quality/__init__.py"
       ],
       "history": [
+        {
+          "version": "v28",
+          "date": "2026-08-01",
+          "note": "Record the structural auxiliary-head profile in every training recipe so capacity-matched control provenance is explicit."
+        },
         {
           "version": "v27",
           "date": "2026-07-29",
@@ -10624,7 +10644,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v277",
+      "version": "v283",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -10667,6 +10687,36 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v283",
+          "date": "2026-08-01",
+          "note": "Keep explicit production request slot contracts structured and out of model-facing prompt text while continuing to prohibit silent gold-contract channels."
+        },
+        {
+          "version": "v282",
+          "date": "2026-08-01",
+          "note": "Invalidate packed completion state when LTR repair traverses a pre-existing canvas token outside the advertised branch while retaining strict rejection for newly chosen tokens."
+        },
+        {
+          "version": "v281",
+          "date": "2026-08-01",
+          "note": "Reject surface-identifier model configurations at construction so external names cannot become scoring or grammar authority."
+        },
+        {
+          "version": "v280",
+          "date": "2026-08-01",
+          "note": "Retain semantic component-membership probing for broad identifier terminals whenever the completion compiler cannot provide a complete certificate."
+        },
+        {
+          "version": "v279",
+          "date": "2026-08-01",
+          "note": "Union current-corpus and parent-checkpoint context vocabularies during warm start while remapping learned source embedding rows and retaining new-corpus rows."
+        },
+        {
+          "version": "v278",
+          "date": "2026-08-01",
+          "note": "Allow structural auxiliary heads to be prebuilt independently of loss weight so zero-loss controls and supervised candidates have identical trainable capacity."
+        },
         {
           "version": "v277",
           "date": "2026-08-01",
