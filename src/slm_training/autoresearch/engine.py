@@ -20,6 +20,7 @@ from slm_training.autoresearch.schemas import (
     HypothesisMatrix,
     OptimumFeedbackV1,
     ResearchSource,
+    evaluation_completeness_failures,
     evaluation_measurement_incomplete,
     utc_now,
 )
@@ -917,7 +918,7 @@ def execute_commands(
         elif "scripts.evaluate_model" in command:
             metrics.update(flattened)
         expected_gate_rejection = _expected_gate_rejection(
-            command, completed.returncode, parsed
+            command, completed.returncode, parsed, artifact_root=Path(cwd)
         )
         stages.append(
             {
@@ -1079,7 +1080,11 @@ def _incomplete_train_reason(
 
 
 def _expected_gate_rejection(
-    command: list[str], returncode: int, parsed: object | None
+    command: list[str],
+    returncode: int,
+    parsed: object | None,
+    *,
+    artifact_root: Path | None = None,
 ) -> bool:
     """Exit 8 is evidence when the typed AgentV/gate scoreboard is complete."""
 
@@ -1091,18 +1096,16 @@ def _expected_gate_rejection(
     ):
         return False
     gates = parsed.get("gates")
-    evals = parsed.get("evals")
     suites = parsed.get("suites")
-    runner = evals.get("runner") if isinstance(evals, dict) else None
-    if evaluation_measurement_incomplete(_numeric_metrics(parsed)):
+    if evaluation_completeness_failures(
+        parsed,
+        require_agent_bindings=True,
+        artifact_root=artifact_root,
+    ):
         return False
     return bool(
         isinstance(gates, dict)
         and gates.get("pass") is False
-        and isinstance(evals, dict)
-        and isinstance(runner, dict)
-        and runner.get("name") == "AgentV"
-        and runner.get("execution_errors") == 0
         and isinstance(suites, dict)
         and suites
     )

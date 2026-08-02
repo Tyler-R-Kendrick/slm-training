@@ -68,6 +68,10 @@ prompt + DESIGN.md → Context Tower (scratch | frozen HF) → hidden states
 Optional preference stage ranks candidates with the composite reward.
 **Note:** current “DPO” training is reference-free (surrogate on masked log-probs) — not textbook DPO.
 
+`ModelBuildConfig.eval_shards` currently accepts only `1`. Values above one
+previously described planned parallelism without an implemented process-isolated
+evaluation path; configuration now fails closed rather than claiming unused shards.
+
 ### Shared-recursive diagnostic boundary
 
 `SharedRecursiveDenoiserTower` exposes `initial_transition_state()` and

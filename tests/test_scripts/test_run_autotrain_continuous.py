@@ -7,6 +7,7 @@ import importlib.util
 import json
 import subprocess
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -1285,6 +1286,11 @@ def _write_run_eval(
     run_dir = camp / "runs" / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
     payload = {
+        "n": 3,
+        "document_n": 3,
+        "completed_document_n": 3,
+        "incomplete_document_n": 0,
+        "decode_timeout_count": 0,
         "structural_similarity": structural_similarity,
         "parse_rate": parse_rate,
         "meaningful_program_rate": 0.5,
@@ -1298,23 +1304,38 @@ def _write_run_eval(
     )
 
 
-def test_resolve_promotion_with_in_band_cert_promotes(tmp_path: Path) -> None:
-    root = tmp_path / "autoresearch"
-    loop_id = "loop-cert"
-    camp = root / "c-cert"
-    camp.mkdir(parents=True)
-    _write_run_eval(camp, "c-control", structural_similarity=0.10)
-    _write_run_eval(camp, "c-promote", structural_similarity=0.20)
+def _seed_complete_promotion_pair(
+    camp: Path, *, prefix: str, seed: int
+) -> tuple[str, str, dict[str, float], dict[str, float]]:
+    control_id = f"{prefix}-control"
+    candidate_id = f"{prefix}-promote"
+    _write_run_eval(camp, control_id, structural_similarity=0.10)
+    _write_run_eval(camp, candidate_id, structural_similarity=0.20)
     exp_sha = _mod.locked_promote_expectations_sha256()
-    cert = _v2_cert(exp_sha=exp_sha, relation="in_band")
     (camp / "metric-certificate.json").write_text(
-        __import__("json").dumps(cert), encoding="utf-8"
+        json.dumps(_v2_cert(exp_sha=exp_sha, relation="in_band")), encoding="utf-8"
     )
     _mod.record_formal_preflight_status(
         camp,
         status="proved",
         template_id=_mod._PROMOTE_FORMAL_TEMPLATE_ID,
     )
+    manifests = camp / "manifests"
+    manifests.mkdir(parents=True)
+    for arm_id in (control_id, candidate_id):
+        (manifests / f"{arm_id}.json").write_text(
+            json.dumps({"experiment_id": arm_id, "seeds": [seed]}),
+            encoding="utf-8",
+        )
+    control, candidate = _held_out_win_metrics()
+    return control_id, candidate_id, control, candidate
+
+
+def test_resolve_promotion_requires_two_content_bound_seed_pairs(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-cert"
     path = _mod._champion_queue_path(root, loop_id)
     entry = {
         "schema": _mod._CHAMPION_QUEUE_SCHEMA,
@@ -1324,31 +1345,148 @@ def test_resolve_promotion_with_in_band_cert_promotes(tmp_path: Path) -> None:
         "knobs_fingerprint": "fpok",
     }
     _mod._write_champion_queue(path, [entry])
-    control, candidate = _held_out_win_metrics()
-    resolved = _mod._resolve_promotion_result(
-        root=root,
-        loop_id=loop_id,
-        entry=entry,
-        delivery={
+
+    statuses: list[str] = []
+    for cycle_index, seed in ((9, 109), (10, 110)):
+        campaign_id = f"c-cert-{cycle_index}"
+        camp = root / campaign_id
+        control_id, candidate_id, control, candidate = _seed_complete_promotion_pair(
+            camp, prefix=campaign_id, seed=seed
+        )
+        delivery = {
             "positive": True,
+            "measurement_complete": True,
             "reasons": ["quality_held:parse=1.0 mpr=1.0"],
-            "control_id": "c-control",
-            "candidate_id": "c-promote",
+            "control_id": control_id,
+            "candidate_id": candidate_id,
             "control_metrics": control,
             "candidate_metrics": candidate,
-        },
-        campaign_id="c-cert",
-        cycle_index=9,
+            "arm_seed": seed,
+            "arm_order": _mod._counterbalanced_arm_order(
+                control_id,
+                candidate_id,
+                cycle_index=cycle_index,
+                seed=seed,
+                promotion_replicate_index=len(statuses),
+            ),
+        }
+        (camp / "sdlc_delivery.json").write_text(json.dumps(delivery), encoding="utf-8")
+        resolved = _mod._resolve_promotion_result(
+            root=root,
+            loop_id=loop_id,
+            entry=_mod._load_champion_queue(path)[0],
+            delivery=delivery,
+            campaign_id=campaign_id,
+            cycle_index=cycle_index,
+            camp_dir=camp,
+            formal_preflight_status="proved",
+            arm_exits={control_id: 0, candidate_id: 0},
+        )
+        assert resolved is not None
+        statuses.append(str(resolved["status"]))
+
+    assert statuses == ["promotion_inconclusive", "climb_accepted"]
+    replicate_ledger = _mod._promotion_replicate_ledger_path(root, loop_id)
+    rows, error = _mod._record_promotion_replicate(
+        root=root,
+        loop_id=loop_id,
+        entry=_mod._load_champion_queue(path)[0],
+        campaign_id=campaign_id,
+        cycle_index=cycle_index,
         camp_dir=camp,
-        arm_exits={"c-control": 0, "c-promote": 0},
+        delivery=delivery,
+        arm_exits={control_id: 0, candidate_id: 0},
     )
-    assert resolved is not None
-    assert resolved["status"] == "climb_accepted"
+    assert error is None
+    assert len(rows) == 2
+    replicates = [
+        json.loads(line)
+        for line in replicate_ledger.read_text(encoding="utf-8").splitlines()
+    ]
+    assert len(replicates) == 2
+    for replicate in replicates:
+        seed = replicate["seed"]
+        camp = root / replicate["campaign_id"]
+        for arm_id in (replicate["control_id"], replicate["candidate_id"]):
+            manifest = json.loads((camp / "manifests" / f"{arm_id}.json").read_text())
+            assert manifest["seeds"] == [seed]
     ledger = root / "loops" / loop_id / "learning_certificate_ledger.jsonl"
     assert ledger.is_file()
     line = ledger.read_text(encoding="utf-8").strip().splitlines()[-1]
     assert "climb_accepted" in line
     assert "promote_primary_win" in line or "primary_improvement" in line
+
+
+def test_tampered_promotion_replicate_does_not_satisfy_seed_floor(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-tampered"
+    entry = {"entry_id": "champ", "knobs_fingerprint": "fingerprint"}
+    ledger = _mod._promotion_replicate_ledger_path(root, loop_id)
+    ledger.parent.mkdir(parents=True)
+    ledger.write_text(
+        json.dumps(
+            {
+                "schema": _mod._PROMOTION_REPLICATE_SCHEMA,
+                "entry_id": "champ",
+                "knobs_fingerprint": "fingerprint",
+                "seed": 101,
+                "content_sha256": "0" * 64,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    assert _mod._verified_promotion_replicates(root, loop_id, entry) == []
+
+
+@pytest.mark.parametrize("mutated", ["manifest", "certificate", "delivery"])
+def test_mutated_promotion_evidence_invalidates_replicate(
+    tmp_path: Path, mutated: str
+) -> None:
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-mutated"
+    campaign_id = "campaign-1"
+    camp = root / campaign_id
+    entry = {"entry_id": "champ", "knobs_fingerprint": "fingerprint"}
+    control_id, candidate_id, control, candidate = _seed_complete_promotion_pair(
+        camp, prefix=campaign_id, seed=101
+    )
+    delivery = {
+        "measurement_complete": True,
+        "control_id": control_id,
+        "candidate_id": candidate_id,
+        "control_metrics": control,
+        "candidate_metrics": candidate,
+        "arm_seed": 101,
+        "arm_order": [control_id, candidate_id],
+    }
+    delivery_path = camp / "sdlc_delivery.json"
+    delivery_path.write_text(json.dumps(delivery), encoding="utf-8")
+    rows, error = _mod._record_promotion_replicate(
+        root=root,
+        loop_id=loop_id,
+        entry=entry,
+        campaign_id=campaign_id,
+        cycle_index=1,
+        camp_dir=camp,
+        delivery=delivery,
+        arm_exits={control_id: 0, candidate_id: 0},
+    )
+    assert error is None and len(rows) == 1
+
+    if mutated == "manifest":
+        path = camp / "manifests" / f"{candidate_id}.json"
+        path.write_text(path.read_text(encoding="utf-8") + " ", encoding="utf-8")
+    elif mutated == "certificate":
+        path = camp / "metric-certificate.json"
+        path.write_text(path.read_text(encoding="utf-8") + " ", encoding="utf-8")
+    else:
+        delivery["arm_seed"] = 102
+        delivery_path.write_text(json.dumps(delivery), encoding="utf-8")
+
+    assert _mod._verified_promotion_replicates(root, loop_id, entry) == []
 
 
 def test_resolve_promotion_null_primary_not_promoted(tmp_path: Path) -> None:
@@ -1391,6 +1529,7 @@ def test_resolve_promotion_null_primary_not_promoted(tmp_path: Path) -> None:
         campaign_id="c-null",
         cycle_index=11,
         camp_dir=camp,
+        formal_preflight_status="proved",
         arm_exits={"ctrl": 0, "cand": 0},
     )
     assert resolved is not None
@@ -1429,6 +1568,7 @@ def test_resolve_promotion_assumption_miss_writes_five_lane(tmp_path: Path) -> N
         campaign_id="c-5lane",
         cycle_index=10,
         camp_dir=camp,
+        formal_preflight_status="proved",
     )
     assert resolved is not None
     assert resolved["status"] == "promotion_failed"
@@ -1512,8 +1652,8 @@ def test_promote_formal_claims_match_obligations_for_execute_binding() -> None:
     assert man.formal_obligations[0].preflight_sha256 == preflight_sha
 
 
-def test_ensure_promote_formal_preflight_content_addressed_when_recorded(
-    tmp_path: Path,
+def test_ensure_promote_formal_preflight_revalidates_recorded_artifact(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     import hashlib
     import json
@@ -1559,12 +1699,62 @@ def test_ensure_promote_formal_preflight_content_addressed_when_recorded(
     (camp / "formal_preflight_status.json").write_text(
         json.dumps(st, indent=2) + "\n", encoding="utf-8"
     )
+    validated = SimpleNamespace(status="proved")
+    monkeypatch.setattr(
+        "slm_training.autoresearch.formal.validate_formal_preflight_artifact",
+        lambda *args, **kwargs: validated,
+    )
     status, sha = _mod.ensure_promote_formal_preflight(
         camp_dir=camp, campaign_id="c1", experiment_id="e1", run_lean=False
     )
     assert status == "proved"
     assert sha == content_sha
     assert (art / f"{sha}.json").is_file()
+    recorded = json.loads(
+        (camp / "formal_preflight_status.json").read_text(encoding="utf-8")
+    )
+    assert recorded["binding_validated_sha256"] == content_sha
+    assert _mod._formal_preflight_status(camp) == "proved"
+
+
+def test_ensure_promote_formal_preflight_rejects_stale_recorded_artifact(
+    tmp_path: Path,
+) -> None:
+    camp = tmp_path / "camp"
+    camp.mkdir()
+    sha = "a" * 64
+    _mod.record_formal_preflight_status(
+        camp, status="proved", template_id=_mod._PROMOTE_FORMAL_TEMPLATE_ID
+    )
+    status_path = camp / "formal_preflight_status.json"
+    recorded = json.loads(status_path.read_text(encoding="utf-8"))
+    recorded["preflight_sha256"] = sha
+    status_path.write_text(json.dumps(recorded, indent=2) + "\n", encoding="utf-8")
+
+    status, returned_sha = _mod.ensure_promote_formal_preflight(
+        camp_dir=camp, campaign_id="c1", experiment_id="e1", run_lean=False
+    )
+
+    assert status == "unknown"
+    assert returned_sha is None
+    assert _mod._formal_preflight_status(camp) == "unknown"
+    recorded = json.loads(status_path.read_text(encoding="utf-8"))
+    assert recorded["reason"].startswith("cached_formal_preflight_invalid:")
+
+
+def test_formal_preflight_status_rejects_unvalidated_proved_sidecar(
+    tmp_path: Path,
+) -> None:
+    camp = tmp_path / "camp"
+    _mod.record_formal_preflight_status(
+        camp, status="proved", template_id=_mod._PROMOTE_FORMAL_TEMPLATE_ID
+    )
+    status_path = camp / "formal_preflight_status.json"
+    recorded = json.loads(status_path.read_text(encoding="utf-8"))
+    recorded["preflight_sha256"] = "a" * 64
+    status_path.write_text(json.dumps(recorded, indent=2) + "\n", encoding="utf-8")
+
+    assert _mod._formal_preflight_status(camp) is None
 
 
 def test_skip_arm_slugs_only_while_open() -> None:
@@ -1706,6 +1896,90 @@ def test_export_promote_metric_certificate_fail_closed_without_metrics(
     assert path is None
     assert err is not None
     assert "incomplete_metrics" in err or "checker_missing" in err
+
+
+def test_promote_certificate_checker_uses_bounded_stage_and_120s_cap(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from slm_training.harnesses.experiments import verified_metrics
+
+    camp = tmp_path / "camp"
+    root = tmp_path / "ar"
+    checker = tmp_path / "leverproof-lean"
+    checker.write_text("checker", encoding="utf-8")
+    _seed_promote_runs(camp)
+    monkeypatch.setattr(verified_metrics, "IN_REPO_CHECKER", checker)
+    monkeypatch.setattr(_mod.time, "monotonic", lambda: 100.0)
+    captured: dict[str, object] = {}
+
+    def bounded(cmd, **kwargs):
+        captured.update({"cmd": cmd, **kwargs})
+        return _mod.BoundedProcessResult(
+            command=tuple(cmd),
+            outcome=_mod.ProcessOutcome.COMPLETED,
+            returncode=0,
+            stdout='{"schema":"metric_certificate/v2","selected_candidate":"candidate"}',
+            stderr="",
+            duration_seconds=0.1,
+        )
+
+    monkeypatch.setattr(_mod, "_stage_command", bounded)
+    path, err = _mod.export_promote_metric_certificate(
+        camp_dir=camp,
+        campaign_id="camp1",
+        control_id="c-control",
+        candidate_id="c-promote",
+        delivery={},
+        deadline=500.0,
+        root=root,
+        loop_id="loop-x",
+    )
+
+    assert err is None
+    assert path is not None
+    assert captured["deadline"] == 220.0
+    assert captured["root"] == root
+    assert captured["loop_id"] == "loop-x"
+    assert captured["stage"] == "promotion-certificate"
+
+
+def test_promote_certificate_checker_timeout_fails_closed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from slm_training.harnesses.experiments import verified_metrics
+
+    camp = tmp_path / "camp"
+    checker = tmp_path / "leverproof-lean"
+    checker.write_text("checker", encoding="utf-8")
+    _seed_promote_runs(camp)
+    monkeypatch.setattr(verified_metrics, "IN_REPO_CHECKER", checker)
+
+    def timed_out(cmd, **kwargs):
+        del kwargs
+        return _mod.BoundedProcessResult(
+            command=tuple(cmd),
+            outcome=_mod.ProcessOutcome.KILLED,
+            returncode=-9,
+            stdout="",
+            stderr="",
+            duration_seconds=120.0,
+            timed_out=True,
+            interrupted=True,
+            killed=True,
+        )
+
+    monkeypatch.setattr(_mod, "_stage_command", timed_out)
+    path, err = _mod.export_promote_metric_certificate(
+        camp_dir=camp,
+        campaign_id="camp1",
+        control_id="c-control",
+        candidate_id="c-promote",
+        delivery={},
+    )
+
+    assert path is None
+    assert err == "promote_certify_failed:checker timed out within 120s cap"
+    assert not (camp / "metric-certificate.json").exists()
 
 
 def test_rate_to_pm_and_latency_helpers() -> None:
@@ -2040,9 +2314,7 @@ def test_classify_positive_rejects_inconsistent_suite_counts(tmp_path: Path) -> 
     )
     assert result["positive"] is False
     assert any(
-        reason.startswith(
-            "measurement_incomplete:c-candidate:smoke:invalid_counts:"
-        )
+        reason.startswith("measurement_incomplete:c-candidate:smoke:invalid_counts:")
         for reason in result["reasons"]
     )
 
@@ -2138,6 +2410,106 @@ def test_stage_process_updates_child_liveness(tmp_path: Path) -> None:
     assert refreshed.heartbeat_at >= first.heartbeat_at
 
 
+def test_stage_command_publishes_child_pid_and_heartbeat(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "ar"
+    loop = "loop-x"
+    _mod._write_loop_state(
+        root,
+        _mod.AutotrainLoopStateV1(
+            loop_id=loop,
+            state="RUNNING",
+            phase="running",
+            pid=123,
+            active_stage="orchestration",
+        ),
+    )
+
+    def bounded(cmd, **kwargs):
+        kwargs["on_start"](456)
+        kwargs["on_heartbeat"](456)
+        return _mod.BoundedProcessResult(
+            command=tuple(cmd),
+            outcome=_mod.ProcessOutcome.COMPLETED,
+            returncode=0,
+            stdout="",
+            stderr="",
+            duration_seconds=0.1,
+        )
+
+    monkeypatch.setattr(_mod, "run_bounded_process", bounded)
+    _mod._stage_command(
+        ["true"],
+        cwd=tmp_path,
+        root=root,
+        loop_id=loop,
+        stage="campaign-research",
+    )
+    state = _mod.AutotrainLoopStateV1.model_validate_json(
+        _mod._loop_state_path(root, loop).read_text()
+    )
+
+    assert state.active_stage == "campaign-research"
+    assert state.child_pid == 456
+    assert state.stage_started_at is not None
+    assert state.heartbeat_at is not None
+
+
+def test_promote_formal_preflight_publishes_child_liveness(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "ar"
+    loop = "loop-x"
+    camp = root / "camp1"
+    _mod._write_loop_state(
+        root,
+        _mod.AutotrainLoopStateV1(
+            loop_id=loop,
+            state="RUNNING",
+            phase="running",
+            pid=123,
+            active_stage="orchestration",
+        ),
+    )
+
+    def successful(
+        command,
+        *,
+        cwd,
+        timeout_seconds,
+        on_start=None,
+        on_heartbeat=None,
+    ):
+        del cwd
+        del timeout_seconds
+        assert on_start is not None
+        assert on_heartbeat is not None
+        on_start(789)
+        on_heartbeat(789)
+        stdout = "Lean (version 4.30.0)" if "--version" in command else "passed"
+        return subprocess.CompletedProcess(command, 0, stdout=stdout, stderr="")
+
+    monkeypatch.setattr("slm_training.autoresearch.formal._run", successful)
+    status, sha = _mod.ensure_promote_formal_preflight(
+        camp_dir=camp,
+        campaign_id="camp1",
+        experiment_id="camp1-promote",
+        run_lean=True,
+        root=root,
+        loop_id=loop,
+    )
+    state = _mod.AutotrainLoopStateV1.model_validate_json(
+        _mod._loop_state_path(root, loop).read_text()
+    )
+
+    assert status == "proved"
+    assert sha is not None
+    assert state.active_stage == "promotion-formal-preflight"
+    assert state.child_pid == 789
+    assert state.heartbeat_at is not None
+
+
 def test_promote_formal_timeout_obeys_repository_cap() -> None:
     from slm_training.levers import MAX_RUN_SECONDS
 
@@ -2159,18 +2531,70 @@ def test_arm_wall_budget_is_symmetric_and_reserves_orchestration() -> None:
     arm_minutes = _mod._arm_wall_minutes(3)
     expected = min(
         3.0,
-        (MAX_HARNESS_WALL_SECONDS - HARNESS_FINALIZATION_RESERVE_SECONDS) / 2 / 60,
+        (MAX_HARNESS_WALL_SECONDS - HARNESS_FINALIZATION_RESERVE_SECONDS) / 3 / 60,
     )
     assert arm_minutes == pytest.approx(expected)
     assert _mod._arm_wall_minutes(0.5) == pytest.approx(
         min(
             0.5,
-            (MAX_HARNESS_WALL_SECONDS - HARNESS_FINALIZATION_RESERVE_SECONDS) / 2 / 60,
+            (MAX_HARNESS_WALL_SECONDS - HARNESS_FINALIZATION_RESERVE_SECONDS) / 3 / 60,
         )
     )
-    assert 2 * arm_minutes * 60 + HARNESS_FINALIZATION_RESERVE_SECONDS == (
-        MAX_HARNESS_WALL_SECONDS
+    reserved = 2 * arm_minutes * 60 + HARNESS_FINALIZATION_RESERVE_SECONDS
+    assert reserved < MAX_HARNESS_WALL_SECONDS
+
+
+def test_formal_budget_reserves_two_full_arms_and_finalization(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from slm_training.levers import (
+        HARNESS_FINALIZATION_RESERVE_SECONDS,
+        MAX_RUN_SECONDS,
     )
+
+    monkeypatch.setattr(_mod.time, "monotonic", lambda: 10.0)
+    arm_minutes = 0.75
+    deadline = 200.0
+    formal = _mod._promotion_formal_budget_seconds(
+        deadline=deadline,
+        arm_count=2,
+        arm_wall_minutes=arm_minutes,
+    )
+    reserved = 2 * arm_minutes * 60 + HARNESS_FINALIZATION_RESERVE_SECONDS
+    capped_remaining = min(float(MAX_RUN_SECONDS), deadline - 10.0)
+    assert formal == pytest.approx(capped_remaining - reserved)
+    assert formal + reserved == pytest.approx(capped_remaining)
+
+
+def test_counterbalanced_arm_order_alternates_without_relabeling() -> None:
+    first = _mod._counterbalanced_arm_order(
+        "control", "candidate", cycle_index=1, seed=101
+    )
+    second = _mod._counterbalanced_arm_order(
+        "control", "candidate", cycle_index=2, seed=102
+    )
+    assert first == ["control", "candidate"]
+    assert second == ["candidate", "control"]
+    assert set(first) == set(second) == {"control", "candidate"}
+
+
+def test_promotion_order_uses_replicate_index_when_cadence_has_same_parity() -> None:
+    first = _mod._counterbalanced_arm_order(
+        "control",
+        "candidate",
+        cycle_index=3,
+        seed=103,
+        promotion_replicate_index=0,
+    )
+    second = _mod._counterbalanced_arm_order(
+        "control",
+        "candidate",
+        cycle_index=5,
+        seed=105,
+        promotion_replicate_index=1,
+    )
+    assert first == ["control", "candidate"]
+    assert second == ["candidate", "control"]
 
 
 def test_driver_requires_room_for_both_arms_before_starting(
@@ -2308,6 +2732,8 @@ def test_cycle_handoff_separates_fixture_climb_from_ship(tmp_path: Path) -> None
             "candidate_id": "cand",
             "reasons": ["primary_metric_win:x"],
             "stack_layer": False,
+            "arm_order": ["control", "cand"],
+            "arm_seed": 101,
         },
         resolution={"status": "climb_accepted", "resolve_reasons": []},
         formal_status="proved",
@@ -2317,6 +2743,7 @@ def test_cycle_handoff_separates_fixture_climb_from_ship(tmp_path: Path) -> None
     assert handoff.evidence_class == "fixture"
     assert handoff.checkpoint_paths == ("runs/cand/last.pt",)
     assert handoff.checkpoint_documentation_required is True
+    assert "arm_order:control,cand" in handoff.reasons
     assert "MODEL_CARD" in next(
         action.reason for action in handoff.actions if action.kind == "document"
     )

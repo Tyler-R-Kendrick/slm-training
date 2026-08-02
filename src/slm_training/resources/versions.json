@@ -12,7 +12,7 @@
   ],
   "components": {
     "formal.leverproof": {
-      "version": "v8",
+      "version": "v10",
       "kind": "harness",
       "paths": [
         "src/leverproof_lean/",
@@ -25,6 +25,16 @@
         "src/leverproof_lean/Test/Proofs.lean"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-08-02",
+          "note": "Keep proof audits fail closed while portably falling back to grep when ripgrep is absent."
+        },
+        {
+          "version": "v9",
+          "date": "2026-08-02",
+          "note": "Fail closed when ripgrep is unavailable or errors, reject source-level sorryAx escapes, and reject sorryAx in theorem-audit output."
+        },
         {
           "version": "v8",
           "date": "2026-08-01",
@@ -2674,7 +2684,22 @@
         {
           "version": "v61",
           "date": "2026-08-02",
+          "note": "no-bump: merge the already-versioned v60 supervisor integrity changes into the later v61 continuous branch without additional behavior changes."
+        },
+        {
+          "version": "v61",
+          "date": "2026-08-02",
           "note": "Bind structural decode arms and size-matched controls to the required tree compiler path in train and eval, classify failed outcomes as harness failures, and skip immutable capability-invalid frozen retries in favor of new preregistered successors"
+        },
+        {
+          "version": "v60",
+          "date": "2026-08-02",
+          "note": "no-bump: externalize the completeness-counter regression inputs without changing harness behavior."
+        },
+        {
+          "version": "v60",
+          "date": "2026-08-02",
+          "note": "Require complete AgentV-bound evaluation counters, SHA-bound action receipts, theorem-repair handoffs, bounded supervised child stages, symmetric formal and arm budgets, counterbalanced serialized arms, and content-revalidated promotion replicates."
         },
         {
           "version": "v60",
@@ -3029,7 +3054,7 @@
       ]
     },
     "harness.autoresearch.formal": {
-      "version": "v7",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/formal.py",
@@ -3040,6 +3065,16 @@
         ".github/workflows/ci.yml"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-08-02",
+          "note": "no-bump: cover and document the portable proof-audit search-tool fallback without changing formal orchestration behavior."
+        },
+        {
+          "version": "v8",
+          "date": "2026-08-02",
+          "note": "Expose Lean process start and heartbeat callbacks through the bounded process-group runner so supervisor state identifies and can reap formal children."
+        },
         {
           "version": "v7",
           "date": "2026-08-01",
@@ -6470,6 +6505,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-08-02",
+          "note": "no-bump: document the quality-matrix process-isolation requirement without changing the SLM-197 scorer or experiment."
+        },
+        {
+          "version": "v1",
           "date": "2026-07-27",
           "note": "no-bump: append the SLM-420 (DSH5-12) advanced-operator disposition terminal entry to the shared quality matrix without changing the SLM-197 scorer or matrix behavior"
         },
@@ -8645,6 +8685,11 @@
         {
           "version": "v74",
           "date": "2026-08-02",
+          "note": "no-bump: add regression coverage for rejecting unsupported eval_shards values in model-build configuration; evaluation behavior is unchanged."
+        },
+        {
+          "version": "v74",
+          "date": "2026-08-02",
           "note": "Initialize constrained generation outside document deadlines, disclose initialization latency, and disarm repeating SIGALRM delivery before timeout bookkeeping so timeouts remain typed evidence."
         },
         {
@@ -9307,6 +9352,11 @@
         "docs/design/ldi3-04-remine-intervene-campaign-report-20260718.json"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: bind continuous autotrain action acknowledgements to typed evidence identities without changing preference remine behavior."
+        },
         {
           "version": "v3",
           "date": "2026-08-01",
@@ -10086,12 +10136,17 @@
       ]
     },
     "matrix.quality": {
-      "version": "v8",
+      "version": "v9",
       "kind": "matrix",
       "paths": [
         "scripts/run_quality_matrix.py"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-08-02",
+          "note": "Reject workers greater than one until quality-matrix execution state is process-isolated, preventing shared stdout and mutable registry corruption."
+        },
         {
           "version": "v8",
           "date": "2026-07-25",
@@ -10914,6 +10969,11 @@
           "version": "v288",
           "date": "2026-08-02",
           "note": "Cache tokenizer-identity-scoped compiler terminal projections, classify components by the canonical kind-id set, and keep visible honest slot inventory authoritative over stale non-opaque arguments."
+        },
+        {
+          "version": "v287",
+          "date": "2026-08-02",
+          "note": "Reject eval_shards values other than one until evaluation supports real process-isolated shard execution, preventing false parallelism claims."
         },
         {
           "version": "v287",

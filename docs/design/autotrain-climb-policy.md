@@ -48,6 +48,9 @@ control for repairs, documentation, and delivery. Each cycle writes strict
 resume state use `AutotrainLoopStateV1` at `loops/<loop_id>/state.json`. While an
 arm runs, start/heartbeat callbacks publish its process-group leader as
 `child_pid` plus `stage_started_at`, so the report reflects live process truth. The
+same state-aware bounded wrapper owns Git synchronization, campaign init,
+research, hypothesis compilation, status, Lean preflight, and certificate checking;
+there are no unsupervised child-process islands in the driver. The
 handoff separates climb from ship state and carries evidence-bound actions that
 name their owner skill. Three consecutive hard failures with the same fingerprint
 mark the loop blocked instead of printing and sleeping forever; timeouts, transient
@@ -56,8 +59,9 @@ hard-block count.
 It also enumerates checkpoints created during the cycle and requires the
 supervisor to update the model card and README summary before continuing.
 Prerequisite actions are closed by append-only, action-digest-bound receipts whose
-evidence resolves to an existing artifact or commit. A theorem-backed
-`stop_campaign` is itself a prerequisite. The next supervised campaign fails
+typed evidence SHA is revalidated on every read. Historical URI-only receipts do
+not authorize a successor. A theorem-backed `stop_campaign` and its distinct
+`repair_formal` action are both prerequisites. The next supervised campaign fails
 closed if required stop, harness, Lean, data, documentation, or merged-delivery
 evidence is absent. Partial eval scoreboards are infrastructure evidence and never
 enter model-quality comparison.
@@ -95,13 +99,20 @@ the supervisor stage is still incomplete. It routes immediately to canonical
 metrics remain incomplete and non-promotable; the finalized timeout is infrastructure
 evidence that identifies the next owner.
 
-One cycle still obeys the repository hard cap. Control and candidate receive equal
-wall shares after retaining the canonical finalization reserve. Before either arm
-starts, the driver proves both full shares plus that reserve fit in the remaining
-cycle wall; otherwise it fails closed instead of giving the second arm less time.
+One cycle still obeys the repository hard cap. The bounded wall is partitioned into
+three equal planning shares after retaining the canonical finalization reserve: a
+promotion-only formal share and equal control/candidate shares. Before Lean or
+either arm starts, the driver proves both complete arm shares plus finalization fit;
+Lean receives only the remaining time after those reservations. It fails closed
+instead of allowing proof startup or the first arm to starve the second.
 This avoids stranding orchestration time that a complete multi-record evaluation
 needs while keeping decision-bearing evaluation serialized so CPU contention cannot
-invalidate latency attribution. Scratch one-shot arms keep the serving checkpoint
+invalidate latency attribution. Serialized arms are counterbalanced AB/BA by cycle
+parity; promotion replicates alternate using the count of already verified
+replicates. Every campaign declares the one seed it actually executes. Promotion
+evidence is append-only and content-bound to both manifests, the durable delivery,
+the metric certificate, and the exact metrics; acceptance requires distinct seeds
+and both orderings. Scratch one-shot arms keep the serving checkpoint
 but skip the unused full optimizer/RNG state. A long-lived unsupervised driver that
 integrates a new HEAD re-executes itself before creating a campaign, preventing stale
 imported policy constants from poisoning later cycles.
@@ -130,7 +141,7 @@ AgentEvals verdict:
 | Gate | Contract |
 | --- | --- |
 | Locked expectations | `metric_expectations.promote.v1.json` SHA-256 bound on the promote campaign as `metric_expectations_sha256` **before** outcomes; dispose **fails closed** if digest missing/unreadable or mismatches the certificate |
-| Formal preflight | Required template `metrics.structural_similarity_monotone`; content-addressed artifact `artifacts/formal_preflights/<sha>.json` bound into obligations. Promote experiment carries `formal_claims` inside the hypothesis matrix before lock. Train only when formal status is `proved`. This template routes to the Mathlib-free LeverProof theorem and mandatory `make test` audit; cached artifacts must match the current bindings and source digest. The Lean wall is `MAX_RUN_SECONDS`; timeout remains inconclusive. |
+| Formal preflight | Required template `metrics.structural_similarity_monotone`; content-addressed artifact `artifacts/formal_preflights/<sha>.json` bound into obligations. Promote experiment carries `formal_claims` inside the hypothesis matrix before lock. Train only when formal status is `proved`. This template routes to the Mathlib-free LeverProof theorem and mandatory `make test` audit. A cached proved sidecar has no authority until the artifact is revalidated against campaign/experiment/claim identity, current template, source digests, and proof bundle, and the sidecar records that validated SHA. The Lean wall is the time left after both arms and finalization are reserved; timeout remains inconclusive. |
 | **Primary effect** | Dual-arm policy `promotion_primary` (default `held_out.structural_similarity`) must improve by more than `minimum_effect` (default **0.01**). Parse non-regression when both arms measure parse_rate. Null / insufficient delta → `promotion_failed` (model/effect reject), not harness. Policy knobs: `promotion_dispose.*`. |
 | Certificate | Continuous exports LeverProof `metric-certificate.json` from control and candidate suite metrics; disposition uses `optimum_feedback`. `continue` alone never authorizes `climb_accepted` or ship. |
 | Phase A metrics | Promotion role loads **`eval_held_out.json`** for the policy primary |

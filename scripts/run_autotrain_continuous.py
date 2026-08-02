@@ -60,6 +60,7 @@ from slm_training.autoresearch.storage import (
     CampaignStore,
     append_autotrain_action_receipt,
     autotrain_action_sha256,
+    bind_autotrain_action_evidence,
     pending_autotrain_actions,
     pending_autotrain_execution_actions,
 )
@@ -110,15 +111,80 @@ def _remaining_timeout(deadline: float | None = None) -> float:
     return min(float(MAX_RUN_SECONDS), remaining)
 
 
-def _git(*args: str, cwd: Path | None = None, deadline: float | None = None) -> str:
-    result = _bounded_command(["git", *args], cwd=cwd or Path.cwd(), deadline=deadline)
+def _stage_process_callbacks(
+    *, root: Path | None, loop_id: str | None, stage: str | None
+) -> tuple[Callable[[int], None] | None, Callable[[int], None] | None]:
+    if root is None and loop_id is None:
+        return None, None
+    if root is None or loop_id is None or stage is None:
+        raise ValueError("root, loop_id, and stage must be supplied together")
+    _set_active_stage(root, loop_id, stage)
+
+    def update(pid: int) -> None:
+        _set_stage_process(root, loop_id, stage, pid)
+
+    return update, update
+
+
+def _stage_command(
+    cmd: list[str],
+    *,
+    cwd: Path,
+    deadline: float | None = None,
+    root: Path | None = None,
+    loop_id: str | None = None,
+    stage: str | None = None,
+) -> BoundedProcessResult:
+    on_start, on_heartbeat = _stage_process_callbacks(
+        root=root, loop_id=loop_id, stage=stage
+    )
+    return _bounded_command(
+        cmd,
+        cwd=cwd,
+        deadline=deadline,
+        on_start=on_start,
+        on_heartbeat=on_heartbeat,
+    )
+
+
+def _git(
+    *args: str,
+    cwd: Path | None = None,
+    deadline: float | None = None,
+    root: Path | None = None,
+    loop_id: str | None = None,
+    stage: str | None = None,
+) -> str:
+    result = _stage_command(
+        ["git", *args],
+        cwd=cwd or Path.cwd(),
+        deadline=deadline,
+        root=root,
+        loop_id=loop_id,
+        stage=stage,
+    )
     _raise_for_bounded_result(result)
     return result.stdout.strip()
 
 
-def _run(cmd: list[str], *, cwd: Path, deadline: float | None = None) -> None:
+def _run(
+    cmd: list[str],
+    *,
+    cwd: Path,
+    deadline: float | None = None,
+    root: Path | None = None,
+    loop_id: str | None = None,
+    stage: str | None = None,
+) -> None:
     print("+", " ".join(cmd), flush=True)
-    result = _bounded_command(cmd, cwd=cwd, deadline=deadline)
+    result = _stage_command(
+        cmd,
+        cwd=cwd,
+        deadline=deadline,
+        root=root,
+        loop_id=loop_id,
+        stage=stage,
+    )
     if result.stdout:
         print(
             result.stdout, end="" if result.stdout.endswith("\n") else "\n", flush=True
@@ -174,11 +240,11 @@ def _raise_for_bounded_result(result: BoundedProcessResult) -> None:
 
 
 def _arm_wall_minutes(policy_minutes: float) -> float:
-    """Give both decision arms equal room and retain finalization headroom."""
+    """Give formal + both decision arms equal room and retain finalization."""
 
     arm_seconds = (
         float(MAX_HARNESS_WALL_SECONDS) - HARNESS_FINALIZATION_RESERVE_SECONDS
-    ) / 2
+    ) / 3
     symmetric_minutes = arm_seconds / 60
     return min(float(policy_minutes), symmetric_minutes)
 
@@ -190,6 +256,43 @@ def _require_symmetric_arm_budget(
     remaining = _remaining_timeout(deadline)
     if remaining < required:
         raise subprocess.TimeoutExpired("symmetric decision-arm budget", required)
+
+
+def _promotion_formal_budget_seconds(
+    *, deadline: float, arm_count: int, arm_wall_minutes: float
+) -> float:
+    """Return only wall time left after reserving complete arms + finalization."""
+
+    reserved = arm_count * arm_wall_minutes * 60 + HARNESS_FINALIZATION_RESERVE_SECONDS
+    available = _remaining_timeout(deadline) - reserved
+    if available <= 0:
+        raise subprocess.TimeoutExpired("promotion formal preflight budget", reserved)
+    return min(float(_PROMOTE_FORMAL_TIMEOUT_S), available)
+
+
+def _counterbalanced_arm_order(
+    control_id: str,
+    candidate_id: str,
+    *,
+    cycle_index: int,
+    seed: int,
+    promotion_replicate_index: int | None = None,
+) -> list[str]:
+    """Serialize matched arms in deterministic AB/BA order without relabeling."""
+
+    if cycle_index < 1:
+        raise ValueError("cycle_index must be positive")
+    if type(seed) is not int:
+        raise TypeError("seed must be an integer")
+    order = [control_id, candidate_id]
+    reverse = (
+        promotion_replicate_index % 2 == 1
+        if promotion_replicate_index is not None
+        else cycle_index % 2 == 0
+    )
+    if reverse:
+        order.reverse()
+    return order
 
 
 def _read_json(path: Path) -> dict[str, Any]:
@@ -1429,6 +1532,9 @@ def export_promote_metric_certificate(
     control_id: str,
     candidate_id: str,
     delivery: dict[str, Any] | None = None,
+    deadline: float | None = None,
+    root: Path | None = None,
+    loop_id: str | None = None,
 ) -> tuple[Path | None, str | None]:
     """Build LeverProof evidence + certificate for continuous promote.
 
@@ -1544,16 +1650,24 @@ def export_promote_metric_certificate(
         return None, f"promote_evidence_build_failed:{exc}"
 
     cert_path = camp_dir / "metric-certificate.json"
+    checker_deadline = time.monotonic() + 120.0
+    if deadline is not None:
+        checker_deadline = min(checker_deadline, deadline)
     try:
-        completed = subprocess.run(
+        completed = _stage_command(
             [str(IN_REPO_CHECKER), "check", str(evidence_path)],
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=120,
+            cwd=camp_dir,
+            deadline=checker_deadline,
+            root=root,
+            loop_id=loop_id,
+            stage="promotion-certificate",
         )
-    except (OSError, subprocess.TimeoutExpired) as exc:
+    except subprocess.TimeoutExpired as exc:
         return None, f"promote_certify_failed:{exc}"
+    if completed.timed_out:
+        return None, "promote_certify_failed:checker timed out within 120s cap"
+    if completed.outcome is ProcessOutcome.LAUNCH_FAILED:
+        return None, f"promote_certify_failed:{completed.launch_error}"
     if completed.returncode != 0:
         detail = (completed.stderr or completed.stdout or "rejected").strip()[:400]
         return None, f"promote_certify_rejected:{detail}"
@@ -1581,19 +1695,17 @@ def export_promote_metric_certificate(
 
 
 def _formal_preflight_status(camp_dir: Path) -> str | None:
-    """Read recorded formal preflight status for promote gate."""
+    """Read only a cache-validated formal preflight status for promote gate."""
     path = camp_dir / "formal_preflight_status.json"
     if path.is_file():
         data = _read_json(path)
         status = data.get("status")
-        return str(status) if status is not None else None
-    # Content-addressed formal preflight artifacts
-    art = camp_dir / "artifacts" / "formal_preflights"
-    if art.is_dir():
-        for p in sorted(art.glob("*.json")):
-            data = _read_json(p)
-            if data.get("status"):
-                return str(data["status"])
+        if status != "proved":
+            return str(status) if status is not None else None
+        expected_sha = data.get("preflight_sha256")
+        validated_sha = data.get("binding_validated_sha256")
+        if expected_sha and validated_sha == expected_sha:
+            return "proved"
     return None
 
 
@@ -1645,6 +1757,8 @@ def ensure_promote_formal_preflight(
     experiment_id: str,
     run_lean: bool = False,
     timeout_seconds: float = _PROMOTE_FORMAL_TIMEOUT_S,
+    root: Path | None = None,
+    loop_id: str | None = None,
 ) -> tuple[str, str | None]:
     """Record formal preflight; return ``(status, content_sha256|None)``.
 
@@ -1652,12 +1766,49 @@ def ensure_promote_formal_preflight(
     ``artifacts/formal_preflights/<sha>.json`` matching
     ``validate_formal_preflights`` binding. Fail closed on any error.
     """
+    from slm_training.autoresearch.schemas import FormalClaimV1
+
+    claim = FormalClaimV1(**promote_formal_claim_dict())
     status_path = camp_dir / "formal_preflight_status.json"
     if status_path.is_file():
         data = _read_json(status_path)
         status = str(data.get("status") or "missing")
         sha = data.get("preflight_sha256")
-        return status, str(sha) if sha else None
+        if status == "proved" and sha:
+            artifact = camp_dir / "artifacts" / "formal_preflights" / f"{sha}.json"
+            try:
+                from slm_training.autoresearch.formal import (
+                    validate_formal_preflight_artifact,
+                )
+
+                validated = validate_formal_preflight_artifact(
+                    artifact,
+                    campaign_id=campaign_id,
+                    experiment_id=experiment_id,
+                    claim=claim,
+                    expected_sha256=str(sha),
+                )
+                if validated.status != "proved":
+                    raise ValueError(
+                        f"required cached formal status is {validated.status!r}"
+                    )
+            except Exception as exc:  # noqa: BLE001 - stale cache fails closed
+                if not run_lean:
+                    record_formal_preflight_status(
+                        camp_dir,
+                        status="unknown",
+                        template_id=_PROMOTE_FORMAL_TEMPLATE_ID,
+                        reason=f"cached_formal_preflight_invalid:{exc}",
+                    )
+                    return "unknown", None
+            else:
+                data["binding_validated_sha256"] = str(sha)
+                status_path.write_text(
+                    json.dumps(data, indent=2) + "\n", encoding="utf-8"
+                )
+                return "proved", str(sha)
+        elif not run_lean:
+            return status, str(sha) if sha else None
 
     if not run_lean:
         record_formal_preflight_status(
@@ -1669,15 +1820,16 @@ def ensure_promote_formal_preflight(
         return "missing", None
 
     try:
-        from slm_training.autoresearch.formal import run_formal_preflight
+        from slm_training.autoresearch.formal import (
+            run_formal_preflight,
+            validate_formal_preflight_artifact,
+        )
         from slm_training.autoresearch.schemas import (
             ExperimentKnobs,
             ExperimentSpec,
-            FormalClaimV1,
         )
         from slm_training.lineage.records import canonical_json
 
-        claim = FormalClaimV1(**promote_formal_claim_dict())
         exp = ExperimentSpec(
             experiment_id=experiment_id,
             campaign_id=campaign_id,
@@ -1691,11 +1843,16 @@ def ensure_promote_formal_preflight(
             formal_claims=(claim,),
         )
         # The caller can further tighten the repository-wide wall.
+        on_start, on_heartbeat = _stage_process_callbacks(
+            root=root, loop_id=loop_id, stage="promotion-formal-preflight"
+        )
         preflight, _obligation = run_formal_preflight(
             campaign_id,
             exp,
             claim,
             timeout_seconds=timeout_seconds,
+            on_start=on_start,
+            on_heartbeat=on_heartbeat,
         )
         status = str(preflight.status)
         duration = float(getattr(preflight, "duration_seconds", 0.0) or 0.0)
@@ -1734,6 +1891,15 @@ def ensure_promote_formal_preflight(
         status_path = camp_dir / "formal_preflight_status.json"
         st = _read_json(status_path)
         st["preflight_sha256"] = content_sha
+        if status == "proved":
+            validate_formal_preflight_artifact(
+                out,
+                campaign_id=campaign_id,
+                experiment_id=experiment_id,
+                claim=claim,
+                expected_sha256=content_sha,
+            )
+            st["binding_validated_sha256"] = content_sha
         status_path.write_text(json.dumps(st, indent=2) + "\n", encoding="utf-8")
         return status, content_sha
     except Exception as exc:  # noqa: BLE001 — fail closed for non-timeout errors
@@ -1820,6 +1986,271 @@ def detect_promote_harness_failure(
         if "harness_failure:missing_promote_run" not in reasons:
             reasons.append("harness_failure:missing_promote_run")
     return reasons
+
+
+_PROMOTION_REPLICATE_SCHEMA = "autotrain_promotion_replicate/v1"
+
+
+def _promotion_replicate_ledger_path(root: Path, loop_id: str) -> Path:
+    return root / "loops" / loop_id / "promotion_replicates.jsonl"
+
+
+def _promotion_replicate_sha(payload: dict[str, Any]) -> str:
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _promotion_replicate_evidence_is_current(root: Path, row: dict[str, Any]) -> bool:
+    campaign_id = row.get("campaign_id")
+    if not isinstance(campaign_id, str) or not campaign_id:
+        return False
+    camp_dir = (root / campaign_id).resolve()
+    if not camp_dir.is_relative_to(root.resolve()):
+        return False
+    delivery_path = camp_dir / "sdlc_delivery.json"
+    delivery = _read_json(delivery_path)
+    evidence = row.get("evidence")
+    if not delivery_path.is_file() or not isinstance(evidence, dict):
+        return False
+    if (
+        evidence.get("delivery_sha256")
+        != hashlib.sha256(delivery_path.read_bytes()).hexdigest()
+    ):
+        return False
+    control_id = str(row.get("control_id") or "")
+    candidate_id = str(row.get("candidate_id") or "")
+    seed = row.get("seed")
+    order = row.get("arm_order")
+    if (
+        type(seed) is not int
+        or not control_id
+        or not candidate_id
+        or not isinstance(order, list)
+        or len(order) != 2
+        or any(not isinstance(item, str) for item in order)
+        or set(order) != {control_id, candidate_id}
+        or delivery.get("measurement_complete") is not True
+        or delivery.get("control_id") != control_id
+        or delivery.get("candidate_id") != candidate_id
+        or delivery.get("arm_seed") != seed
+        or delivery.get("arm_order") != order
+    ):
+        return False
+    metrics_sha = _promotion_replicate_sha(
+        {
+            "control": delivery.get("control_metrics") or {},
+            "candidate": delivery.get("candidate_metrics") or {},
+        }
+    )
+    if evidence.get("metrics_sha256") != metrics_sha:
+        return False
+    manifest_digests = evidence.get("manifests")
+    if not isinstance(manifest_digests, dict) or set(manifest_digests) != {
+        control_id,
+        candidate_id,
+    }:
+        return False
+    for arm_id in (control_id, candidate_id):
+        manifest_path = camp_dir / "manifests" / f"{arm_id}.json"
+        manifest = _read_json(manifest_path)
+        if (
+            not manifest_path.is_file()
+            or seed not in (manifest.get("seeds") or [])
+            or manifest_digests.get(arm_id)
+            != hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+        ):
+            return False
+    certificate = camp_dir / "metric-certificate.json"
+    return (
+        certificate.is_file()
+        and evidence.get("certificate_sha256")
+        == hashlib.sha256(certificate.read_bytes()).hexdigest()
+    )
+
+
+def _verified_promotion_replicates(
+    root: Path, loop_id: str, entry: dict[str, Any]
+) -> list[dict[str, Any]]:
+    path = _promotion_replicate_ledger_path(root, loop_id)
+    if not path.is_file():
+        return []
+    rows: list[dict[str, Any]] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if (
+            not isinstance(row, dict)
+            or row.get("schema") != _PROMOTION_REPLICATE_SCHEMA
+        ):
+            continue
+        if row.get("entry_id") != entry.get("entry_id") or row.get(
+            "knobs_fingerprint"
+        ) != entry.get("knobs_fingerprint"):
+            continue
+        claimed = row.get("content_sha256")
+        content = {key: value for key, value in row.items() if key != "content_sha256"}
+        if claimed != _promotion_replicate_sha(content):
+            continue
+        if not _promotion_replicate_evidence_is_current(root, row):
+            continue
+        rows.append(row)
+    return rows
+
+
+def _record_promotion_replicate(
+    *,
+    root: Path,
+    loop_id: str,
+    entry: dict[str, Any],
+    campaign_id: str,
+    cycle_index: int,
+    camp_dir: Path,
+    delivery: dict[str, Any],
+    arm_exits: dict[str, int] | None,
+) -> tuple[list[dict[str, Any]], str | None]:
+    """Append one complete, content-bound paired-seed promotion result."""
+
+    rows = _verified_promotion_replicates(root, loop_id, entry)
+    if any(row.get("campaign_id") == campaign_id for row in rows):
+        return rows, None
+    control_id = str(delivery.get("control_id") or "")
+    candidate_id = str(delivery.get("candidate_id") or "")
+    seed = delivery.get("arm_seed")
+    order = delivery.get("arm_order")
+    exits = arm_exits or {}
+    if delivery.get("measurement_complete") is not True:
+        return rows, "promotion_replicate_incomplete:measurement"
+    if type(seed) is not int:
+        return rows, "promotion_replicate_incomplete:seed"
+    if (
+        not isinstance(order, list)
+        or len(order) != 2
+        or set(order) != {control_id, candidate_id}
+    ):
+        return rows, "promotion_replicate_incomplete:arm_order"
+    if any(exits.get(arm_id) != 0 for arm_id in (control_id, candidate_id)):
+        return rows, "promotion_replicate_incomplete:arm_exit"
+
+    manifest_digests: dict[str, str] = {}
+    for arm_id in (control_id, candidate_id):
+        path = camp_dir / "manifests" / f"{arm_id}.json"
+        manifest = _read_json(path)
+        if not path.is_file() or seed not in (manifest.get("seeds") or []):
+            return rows, f"promotion_replicate_incomplete:manifest:{arm_id}"
+        manifest_digests[arm_id] = hashlib.sha256(path.read_bytes()).hexdigest()
+    certificate = camp_dir / "metric-certificate.json"
+    if not certificate.is_file():
+        return rows, "promotion_replicate_incomplete:certificate"
+    delivery_path = camp_dir / "sdlc_delivery.json"
+    durable_delivery = _read_json(delivery_path)
+    if not delivery_path.is_file() or any(
+        durable_delivery.get(key) != delivery.get(key)
+        for key in (
+            "measurement_complete",
+            "control_id",
+            "candidate_id",
+            "control_metrics",
+            "candidate_metrics",
+            "arm_seed",
+            "arm_order",
+        )
+    ):
+        return rows, "promotion_replicate_incomplete:durable_delivery"
+
+    evidence = {
+        "manifests": manifest_digests,
+        "certificate_sha256": hashlib.sha256(certificate.read_bytes()).hexdigest(),
+        "delivery_sha256": hashlib.sha256(delivery_path.read_bytes()).hexdigest(),
+        "metrics_sha256": _promotion_replicate_sha(
+            {
+                "control": delivery.get("control_metrics") or {},
+                "candidate": delivery.get("candidate_metrics") or {},
+            }
+        ),
+    }
+    record: dict[str, Any] = {
+        "schema": _PROMOTION_REPLICATE_SCHEMA,
+        "loop_id": loop_id,
+        "entry_id": entry.get("entry_id"),
+        "knobs_fingerprint": entry.get("knobs_fingerprint"),
+        "campaign_id": campaign_id,
+        "cycle_index": cycle_index,
+        "seed": seed,
+        "arm_order": order,
+        "control_id": control_id,
+        "candidate_id": candidate_id,
+        "evidence": evidence,
+        "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+    record["content_sha256"] = _promotion_replicate_sha(record)
+    if not any(row.get("content_sha256") == record["content_sha256"] for row in rows):
+        path = _promotion_replicate_ledger_path(root, loop_id)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(record, sort_keys=True) + "\n")
+        rows.append(record)
+    return rows, None
+
+
+def _gate_promotion_on_replicates(
+    *,
+    root: Path,
+    loop_id: str,
+    entry: dict[str, Any],
+    campaign_id: str,
+    cycle_index: int,
+    camp_dir: Path,
+    delivery: dict[str, Any],
+    arm_exits: dict[str, int] | None,
+    disposition: dict[str, Any],
+) -> dict[str, Any]:
+    """Prevent a favorable single pair from satisfying a multi-seed claim."""
+
+    if disposition.get("status") != "climb_accepted":
+        return disposition
+    from slm_training.autoresearch.climb_policy import (
+        load_climb_policy,
+        promotion_seed_floor,
+    )
+
+    min_seeds, require_multi_seed = promotion_seed_floor(load_climb_policy())
+    required = int(min_seeds) if require_multi_seed else 1
+    rows, error = _record_promotion_replicate(
+        root=root,
+        loop_id=loop_id,
+        entry=entry,
+        campaign_id=campaign_id,
+        cycle_index=cycle_index,
+        camp_dir=camp_dir,
+        delivery=delivery,
+        arm_exits=arm_exits,
+    )
+    distinct_seeds = {int(row["seed"]) for row in rows if type(row.get("seed")) is int}
+    order_roles = {
+        "AB" if row.get("arm_order", [None])[0] == row.get("control_id") else "BA"
+        for row in rows
+    }
+    orders_complete = required < 2 or order_roles == {"AB", "BA"}
+    if error is None and len(distinct_seeds) >= required and orders_complete:
+        return {
+            **disposition,
+            "promotion_replicate_count": len(distinct_seeds),
+            "promotion_replicate_required": required,
+        }
+    reason = error or (
+        f"promotion_replicates_incomplete:{len(distinct_seeds)}/{required}:"
+        f"orders={','.join(sorted(order_roles))}"
+    )
+    return {
+        **disposition,
+        "status": "promotion_inconclusive",
+        "inconclusive": True,
+        "promotion_replicate_count": len(distinct_seeds),
+        "promotion_replicate_required": required,
+        "reasons": [*(disposition.get("reasons") or []), reason],
+    }
 
 
 def _resolve_promotion_result(
@@ -1957,6 +2388,17 @@ def _resolve_promotion_result(
             promotion_primary=dict(climb.promotion_primary),
             promotion_dispose=dict(climb.promotion_dispose),
         )
+        disposition = _gate_promotion_on_replicates(
+            root=root,
+            loop_id=loop_id,
+            entry=entry,
+            campaign_id=campaign_id,
+            cycle_index=cycle_index,
+            camp_dir=camp,
+            delivery=delivery,
+            arm_exits=arm_exits,
+            disposition=disposition,
+        )
         status = str(disposition["status"])
         resolve_reasons = list(disposition.get("reasons") or []) + reasons_in
 
@@ -1986,6 +2428,14 @@ def _resolve_promotion_result(
                     "locked_expectations_sha256": locked_expectations_sha256,
                     "primary_improvement": disposition.get("primary_improvement"),
                     "promotion_primary_met": disposition.get("promotion_primary_met"),
+                    "promotion_replicate_count": disposition.get(
+                        "promotion_replicate_count"
+                    ),
+                    "promotion_replicate_required": disposition.get(
+                        "promotion_replicate_required"
+                    ),
+                    "arm_order": delivery.get("arm_order"),
+                    "arm_seed": delivery.get("arm_seed"),
                     "reasons": resolve_reasons,
                     "harness_failure": bool(disposition.get("harness_failure")),
                     "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -2015,6 +2465,14 @@ def _resolve_promotion_result(
                 row["formal_preflight_status"] = formal_preflight_status
                 row["primary_improvement"] = disposition.get("primary_improvement")
                 row["promotion_primary_met"] = disposition.get("promotion_primary_met")
+                row["promotion_replicate_count"] = disposition.get(
+                    "promotion_replicate_count"
+                )
+                row["promotion_replicate_required"] = disposition.get(
+                    "promotion_replicate_required"
+                )
+                row["last_arm_order"] = delivery.get("arm_order")
+                row["last_arm_seed"] = delivery.get("arm_seed")
                 # Incomplete formal / harness: not a decisive promote attempt.
                 if (
                     status in {"promotion_inconclusive", "harness_failure"}
@@ -2465,6 +2923,8 @@ def _phase_a_delivery(
     cycle_index: int | None = None,
     role: str | None = None,
     cycle_intent: str | None = None,
+    arm_order: list[str] | None = None,
+    arm_seed: int | None = None,
     deadline: float | None = None,
 ) -> dict[str, Any]:
     """Record SDLC Phase A decision; never open stacked PR for non-positive."""
@@ -2545,7 +3005,19 @@ def _phase_a_delivery(
     decision["climb_policy_sha256"] = policy.sha256
     # Stack only when positive AND there is something reviewable to ship.
     # Pure knob-only fixture cycles with a metric blip do not open empty PRs.
-    porcelain = _git("status", "--porcelain", cwd=cwd, deadline=deadline) if cwd else ""
+    porcelain = (
+        _git(
+            "status",
+            "--porcelain",
+            cwd=cwd,
+            deadline=deadline,
+            root=root,
+            loop_id=loop_id,
+            stage="phase-a-git-status",
+        )
+        if cwd
+        else ""
+    )
     has_tracked_delta = bool(porcelain.strip())
     stack_layer = bool(decision["positive"] and has_tracked_delta)
     if decision["positive"] and not has_tracked_delta:
@@ -2571,6 +3043,8 @@ def _phase_a_delivery(
         "has_tracked_delta": has_tracked_delta,
         "stack_action": stack_action,
         "agent_required": agent_required,
+        "arm_order": list(arm_order or []),
+        "arm_seed": arm_seed,
         **{k: v for k, v in decision.items() if k not in {"positive", "stack_layer"}},
     }
     out_path = camp_dir / "sdlc_delivery.json"
@@ -2971,6 +3445,11 @@ def _write_cycle_handoff(
         for item in [
             *((resolution or {}).get("resolve_reasons") or []),
             *(delivery.get("reasons") or []),
+            *(
+                [f"arm_order:{','.join(delivery.get('arm_order') or [])}"]
+                if delivery.get("arm_order")
+                else []
+            ),
         ]
     )
     if measurement_incomplete:
@@ -3035,15 +3514,23 @@ def _write_cycle_handoff(
     )
     finalized_decode_timeout = _has_finalized_decode_timeout(camp_dir, candidate_id)
     if theorem_stop:
-        actions.insert(
-            0,
+        actions[0:0] = [
             AutotrainActionV1(
                 kind="stop_campaign",
                 owner="improve-lean-optimums",
                 reason="theorem-backed metric band contradiction",
                 evidence_ids=(evidence_id,),
             ),
-        )
+            AutotrainActionV1(
+                kind="repair_formal",
+                owner="improve-lean-optimums",
+                reason=(
+                    "repair the theorem assumptions or proof model before ordinary "
+                    "training resumes"
+                ),
+                evidence_ids=(evidence_id,),
+            ),
+        ]
     elif harness_failure:
         family = _primary_harness_family(camp_dir)
         manifest_path = camp_dir / "manifests" / f"{candidate_id}.json"
@@ -3379,6 +3866,9 @@ def _finalize_terminal_interrupted_replay(
         ],
         cwd=cwd,
         deadline=deadline,
+        root=root,
+        loop_id=loop_id,
+        stage="recover-status",
     )
     print(
         f"CYCLE_RECOVERED {campaign_id} role={role} intent={cycle_intent} "
@@ -4325,12 +4815,10 @@ def _manifest(
         claim_class = str(
             defaults.get("claim_class_promotion") or "promotion_candidate"
         )
-        min_seeds, require_ms = promotion_seed_floor(pol)
         base_seed = int(experiment.get("knobs", {}).get("seed") or 7)
-        if require_ms and min_seeds >= 2:
-            seeds = tuple(base_seed + i for i in range(min_seeds))
-        else:
-            seeds = (base_seed,)
+        # One bounded campaign executes one actual seed. The cross-campaign,
+        # content-bound replicate ledger owns the policy multi-seed gate.
+        seeds = (base_seed,)
         # Promotion-class needs causal shape fields.
         mechanism_off = ("mechanism_off",)
         kill_criteria = (
@@ -4508,6 +4996,12 @@ def _manifest(
         claim_class=claim_class,  # type: ignore[arg-type]
         locked_eval_manifest_sha256=locked_eval,
         metric_expectations_sha256=metric_expectations_sha,
+        replicate_ledger_schema=(
+            _PROMOTION_REPLICATE_SCHEMA if role == "promotion" else None
+        ),
+        replicate_seed_floor=(
+            promotion_seed_floor(pol)[0] if role == "promotion" else None
+        ),
         source_commit=commit,
         source_dirty=False,
         author="autotrain-continuous-driver",
@@ -4560,27 +5054,72 @@ def run_cycle(
         train_version = str(policy.defaults.get("train_version") or train_version)
 
     if sync_git:
-        _run(["git", "fetch", "origin", "main"], cwd=cwd, deadline=deadline)
+        _run(
+            ["git", "fetch", "origin", "main"],
+            cwd=cwd,
+            deadline=deadline,
+            root=root,
+            loop_id=loop_id,
+            stage="sync-fetch",
+        )
         _run(
             ["git", "merge", "--no-edit", "origin/main"],
             cwd=cwd,
             deadline=deadline,
+            root=root,
+            loop_id=loop_id,
+            stage="sync-merge",
         )
-        integrated = _git("rev-parse", "HEAD", cwd=cwd, deadline=deadline)
+        integrated = _git(
+            "rev-parse",
+            "HEAD",
+            cwd=cwd,
+            deadline=deadline,
+            root=root,
+            loop_id=loop_id,
+            stage="sync-integration-head",
+        )
         if startup_commit is not None and integrated != startup_commit:
             raise _CodeUpdated(
                 f"integrated {integrated}; restart stale process from {startup_commit}"
             )
-    if _git("status", "--porcelain", cwd=cwd, deadline=deadline):
+    if _git(
+        "status",
+        "--porcelain",
+        cwd=cwd,
+        deadline=deadline,
+        root=root,
+        loop_id=loop_id,
+        stage="sync-clean-status",
+    ):
         raise RuntimeError("loop worktree is dirty; continuous requires a clean tree")
-    upstream = _git("rev-parse", "origin/main", cwd=cwd, deadline=deadline)
-    integration = _git("rev-parse", "HEAD", cwd=cwd, deadline=deadline)
+    upstream = _git(
+        "rev-parse",
+        "origin/main",
+        cwd=cwd,
+        deadline=deadline,
+        root=root,
+        loop_id=loop_id,
+        stage="sync-upstream-head",
+    )
+    integration = _git(
+        "rev-parse",
+        "HEAD",
+        cwd=cwd,
+        deadline=deadline,
+        root=root,
+        loop_id=loop_id,
+        stage="sync-current-head",
+    )
     if upstream != integration:
         # merge should have equalized; if not, still require ancestor
         _run(
             ["git", "merge-base", "--is-ancestor", upstream, integration],
             cwd=cwd,
             deadline=deadline,
+            root=root,
+            loop_id=loop_id,
+            stage="sync-ancestry",
         )
 
     recovered_campaign = _finalize_terminal_interrupted_replay(
@@ -4810,7 +5349,14 @@ def run_cycle(
         init.extend(["--predecessor-campaign-id", lineage_pred])
     for evidence_root in _continuous_evidence_roots(root, loop_id, pred):
         init.extend(["--evidence-root", str(evidence_root)])
-    _run(init, cwd=cwd, deadline=deadline)
+    _run(
+        init,
+        cwd=cwd,
+        deadline=deadline,
+        root=root,
+        loop_id=loop_id,
+        stage="campaign-init",
+    )
     _run(
         [
             *ar,
@@ -4821,6 +5367,9 @@ def run_cycle(
         ],
         cwd=cwd,
         deadline=deadline,
+        root=root,
+        loop_id=loop_id,
+        stage="campaign-research",
     )
 
     camp_dir = root / campaign_id
@@ -4994,28 +5543,60 @@ def run_cycle(
     ]
     for path in replay_manifest_paths.values():
         hypothesize_cmd.extend(["--frozen-replay-manifest", str(path)])
-    _run(hypothesize_cmd, cwd=cwd, deadline=deadline)
+    _run(
+        hypothesize_cmd,
+        cwd=cwd,
+        deadline=deadline,
+        root=root,
+        loop_id=loop_id,
+        stage="campaign-hypothesize",
+    )
 
     exp_dir = camp_dir / "artifacts" / "experiments"
     by_id = {
         json.loads(path.read_text(encoding="utf-8"))["experiment_id"]: path
         for path in exp_dir.glob("*.json")
     }
-    # execute control then recommended
-    order = [
-        matrix["hypotheses"][0]["experiment"]["experiment_id"],
-        matrix["recommended_experiment_id"],
-    ]
+    control_eid = str(matrix["hypotheses"][0]["experiment"]["experiment_id"])
+    candidate_eid = str(matrix["recommended_experiment_id"])
+    candidate_exp = json.loads(by_id[candidate_eid].read_text(encoding="utf-8"))
+    arm_seed = int((candidate_exp.get("knobs") or {}).get("seed") or 7)
+    promotion_replicate_index = (
+        len(_verified_promotion_replicates(root, loop_id, promoting_champion))
+        if cycle_intent == "promote" and promoting_champion is not None
+        else None
+    )
+    order = _counterbalanced_arm_order(
+        control_eid,
+        candidate_eid,
+        cycle_index=cycle,
+        seed=arm_seed,
+        promotion_replicate_index=promotion_replicate_index,
+    )
+    scheduled_order = list(order)
+    arm_count = len({eid for eid in order if eid in by_id})
     # Promote path: formal preflight must be proved before train executes.
     promote_formal_status: str | None = None
     promote_preflight_sha: str | None = None
     if cycle_intent == "promote" and promoting_champion is not None:
+        _require_symmetric_arm_budget(
+            deadline=deadline,
+            arm_count=arm_count,
+            arm_wall_minutes=arm_wall_minutes,
+        )
+        formal_budget = _promotion_formal_budget_seconds(
+            deadline=deadline,
+            arm_count=arm_count,
+            arm_wall_minutes=arm_wall_minutes,
+        )
         promote_formal_status, promote_preflight_sha = ensure_promote_formal_preflight(
             camp_dir=camp_dir,
             campaign_id=campaign_id,
             experiment_id=str(matrix["recommended_experiment_id"]),
             run_lean=True,
-            timeout_seconds=_remaining_timeout(deadline),
+            timeout_seconds=formal_budget,
+            root=root,
+            loop_id=loop_id,
         )
         print(
             f"PROMOTE_FORMAL_PREFLIGHT status={promote_formal_status} "
@@ -5055,9 +5636,6 @@ def run_cycle(
         is_promote_arm = cycle_intent == "promote" and (
             eid.endswith("-promote") or "-promote" in eid
         )
-        # formal_claims must already be on the matrix member (promote path in
-        # _matrix). Do not rewrite the experiment after hypothesize — that
-        # breaks exact matrix membership and aborts the promote arm (exit=1).
         if eid in replay_manifest_paths:
             man_path = replay_manifest_paths[eid]
         else:
@@ -5100,17 +5678,13 @@ def run_cycle(
             )
         print("+", " ".join(cmd), flush=True)
         stage = f"experiment:{eid}"
-        _set_active_stage(root, loop_id, stage)
-        result = _bounded_command(
+        result = _stage_command(
             cmd,
             cwd=cwd,
             deadline=deadline,
-            on_start=lambda pid, stage=stage: _set_stage_process(
-                root, loop_id, stage, pid
-            ),
-            on_heartbeat=lambda pid, stage=stage: _set_stage_process(
-                root, loop_id, stage, pid
-            ),
+            root=root,
+            loop_id=loop_id,
+            stage=stage,
         )
         if result.stdout:
             print(
@@ -5144,6 +5718,8 @@ def run_cycle(
         cycle_index=cycle,
         role=role,
         cycle_intent=cycle_intent,
+        arm_order=scheduled_order,
+        arm_seed=arm_seed,
         deadline=deadline,
     )
     if (
@@ -5174,6 +5750,12 @@ def run_cycle(
                 action_kind="retry_measurement",
                 status="completed",
                 evidence_uris=evidence,
+                evidence=bind_autotrain_action_evidence(
+                    root,
+                    replay["handoff"],
+                    replay["action"],
+                    evidence,
+                ),
             ),
         )
         print(
@@ -5237,6 +5819,9 @@ def run_cycle(
                     control_id=control_id,
                     candidate_id=candidate_id,
                     delivery=delivery,
+                    deadline=deadline,
+                    root=root,
+                    loop_id=loop_id,
                 )
                 if cert_err:
                     print(f"PROMOTE_CERT_EXPORT_FAIL {cert_err}", flush=True)
@@ -5320,6 +5905,9 @@ def run_cycle(
         ],
         cwd=cwd,
         deadline=deadline,
+        root=root,
+        loop_id=loop_id,
+        stage="campaign-status",
     )
     print(
         f"CYCLE_COMPLETE {campaign_id} role={role} intent={cycle_intent} "
@@ -5359,7 +5947,14 @@ def main(argv: list[str] | None = None) -> int:
     root = args.root if args.root.is_absolute() else cwd / args.root
     root.mkdir(parents=True, exist_ok=True)
     try:
-        code_sha = _git("rev-parse", "HEAD", cwd=cwd)
+        code_sha = _git(
+            "rev-parse",
+            "HEAD",
+            cwd=cwd,
+            root=root,
+            loop_id=args.loop_id,
+            stage="driver-startup-git",
+        )
     except (subprocess.CalledProcessError, OSError):
         code_sha = None
     try:

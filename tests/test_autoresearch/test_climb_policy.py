@@ -332,6 +332,11 @@ def test_continuous_classify_positive_entry(tmp_path: Path) -> None:
     (control / "eval_smoke.json").write_text(
         json.dumps(
             {
+                "n": 3,
+                "document_n": 3,
+                "completed_document_n": 3,
+                "incomplete_document_n": 0,
+                "decode_timeout_count": 0,
                 "latency_ms_p50": 11.0,
                 "parse_rate": 1.0,
                 "meaningful_program_rate": 1.0,
@@ -342,6 +347,11 @@ def test_continuous_classify_positive_entry(tmp_path: Path) -> None:
     (cand / "eval_smoke.json").write_text(
         json.dumps(
             {
+                "n": 3,
+                "document_n": 3,
+                "completed_document_n": 3,
+                "incomplete_document_n": 0,
+                "decode_timeout_count": 0,
                 "latency_ms_p50": 10.0,
                 "parse_rate": 1.0,
                 "meaningful_program_rate": 1.0,
@@ -349,6 +359,21 @@ def test_continuous_classify_positive_entry(tmp_path: Path) -> None:
         ),
         encoding="utf-8",
     )
+    complete_scoreboard = {
+        "suites": {
+            "smoke": {
+                "n": 3,
+                "document_n": 3,
+                "completed_document_n": 3,
+                "incomplete_document_n": 0,
+                "decode_timeout_count": 0,
+            }
+        }
+    }
+    for run_dir in (control, cand):
+        (run_dir / "scoreboard.json").write_text(
+            json.dumps(complete_scoreboard), encoding="utf-8"
+        )
     win = _classify_positive(
         camp_dir=camp,
         primary_metric="smoke.latency_ms_p50",
@@ -361,6 +386,11 @@ def test_continuous_classify_positive_entry(tmp_path: Path) -> None:
     (cand / "eval_smoke.json").write_text(
         json.dumps(
             {
+                "n": 3,
+                "document_n": 3,
+                "completed_document_n": 3,
+                "incomplete_document_n": 0,
+                "decode_timeout_count": 0,
                 "latency_ms_p50": 12.5,
                 "parse_rate": 1.0,
                 "meaningful_program_rate": 1.0,
@@ -378,7 +408,17 @@ def test_continuous_classify_positive_entry(tmp_path: Path) -> None:
     assert bad["positive"] is False
 
     (cand / "eval_smoke.json").write_text(
-        json.dumps({"latency_ms_p50": 10.0, "parse_rate": 1.0}),
+        json.dumps(
+            {
+                "n": 3,
+                "document_n": 3,
+                "completed_document_n": 3,
+                "incomplete_document_n": 0,
+                "decode_timeout_count": 0,
+                "latency_ms_p50": 10.0,
+                "parse_rate": 1.0,
+            }
+        ),
         encoding="utf-8",
     )
     # Win on metric but uncharged capacity growth
@@ -591,8 +631,9 @@ def test_policy_require_multi_seed_false_allows_single_seed_promotion() -> None:
 
 
 def test_continuous_manifest_promotion_uses_held_out_primary() -> None:
-    """Promotion-role continuous manifests use policy promotion primary + multi-seed."""
+    """Each bounded promotion manifest honestly declares its one executed seed."""
     from scripts.run_autotrain_continuous import _manifest
+    from slm_training.autoresearch.climb_policy import promotion_seed_floor
 
     policy = load_climb_policy()
     promo = primary_for_role(policy, "promotion")
@@ -616,8 +657,10 @@ def test_continuous_manifest_promotion_uses_held_out_primary() -> None:
     assert man.claim_class == "promotion_candidate"
     assert man.endpoints[0].metric == promo["metric"]
     assert man.endpoints[0].direction == promo["direction"]
-    min_seeds = int(promo.get("min_seeds") or 2)
-    assert len(man.seeds) >= min_seeds
+    assert man.seeds == (7,)
+    assert promotion_seed_floor(policy)[0] >= 2
+    assert man.replicate_ledger_schema == "autotrain_promotion_replicate/v1"
+    assert man.replicate_seed_floor == promotion_seed_floor(policy)[0]
     assert man.locked_eval_manifest_sha256
     assert man.mechanism_off_arm_ids
     assert man.executable_kill_criteria
