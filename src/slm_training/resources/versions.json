@@ -2561,7 +2561,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v44",
+      "version": "v45",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2598,6 +2598,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v45",
+          "date": "2026-08-01",
+          "note": "Keep timed-out stage telemetry fail closed for stale or invalid decode_progress artifacts and cover both rejection paths"
+        },
         {
           "version": "v44",
           "date": "2026-08-01",
@@ -8368,7 +8373,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v72",
+      "version": "v73",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -8389,6 +8394,11 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v73",
+          "date": "2026-08-01",
+          "note": "Preserve the original supervisor interrupt when best-effort decode progress annotation or serialization fails"
+        },
         {
           "version": "v72",
           "date": "2026-08-01",

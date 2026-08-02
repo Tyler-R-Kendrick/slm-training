@@ -3010,6 +3010,80 @@ def test_execute_ingests_fresh_decode_progress_on_stage_timeout(
     )
 
 
+@pytest.mark.parametrize("sidecar_case", ["unchanged", "invalid"])
+def test_execute_rejects_untrusted_decode_progress_on_stage_timeout(
+    tmp_path: Path, monkeypatch, sidecar_case: str
+) -> None:
+    import slm_training.autoresearch.engine as engine
+    from slm_training.harness_core.bounded_process import (
+        BoundedProcessResult,
+        ProcessOutcome,
+    )
+
+    run_root = tmp_path / "runs"
+    run_id = "interrupted-eval"
+    progress_path = run_root / run_id / "decode_progress.json"
+    if sidecar_case == "unchanged":
+        progress_path.parent.mkdir(parents=True)
+        progress_path.write_text(
+            json.dumps(
+                {
+                    "schema_version": "DecodeProgressV1",
+                    "run_id": run_id,
+                    "measurement_complete": False,
+                    "scoreable": False,
+                }
+            )
+        )
+
+    def timed_out(command, **_kwargs):
+        if sidecar_case == "invalid":
+            progress_path.parent.mkdir(parents=True)
+            progress_path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "DecodeProgressV1",
+                        "run_id": run_id,
+                        "measurement_complete": False,
+                        "scoreable": True,
+                    }
+                )
+            )
+        return BoundedProcessResult(
+            command=tuple(command),
+            outcome=ProcessOutcome.INTERRUPTED,
+            returncode=130,
+            stdout="",
+            stderr="interrupted",
+            duration_seconds=1.0,
+            timed_out=True,
+            interrupted=True,
+        )
+
+    monkeypatch.setattr(engine, "run_bounded_process", timed_out)
+    outcome = execute_commands(
+        experiment(),
+        [
+            [
+                "python",
+                "-m",
+                "scripts.evaluate_model",
+                "--run-root",
+                str(run_root),
+                "--run-id",
+                run_id,
+            ]
+        ],
+        cwd=tmp_path,
+    )
+
+    assert outcome.status == "stopped"
+    stage = outcome.stage_telemetry[0]
+    assert stage["measurement_complete"] is False
+    assert "partial_output" not in stage
+    assert "partial_output_source" not in stage
+
+
 def test_experiment_wall_budget_reads_history_but_execution_is_capped() -> None:
     assert CampaignBudget().max_wall_minutes == float(MAX_RUN_MINUTES)
     assert CampaignBudget(max_wall_minutes=0.25).max_wall_minutes == 0.25

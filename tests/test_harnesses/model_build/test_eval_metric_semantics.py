@@ -383,6 +383,26 @@ def test_supervisor_interrupt_persists_non_scoreable_decode_progress(
     assert progress["version_stamp"]["stamp_schema"] == "version_stamp/v1"
 
 
+def test_progress_persistence_failure_does_not_mask_supervisor_interrupt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    config = _smoke_config(tmp_path)
+
+    class InterruptedBatchModel:
+        def generate_batch_requests(self, requests, **_kwargs):
+            assert requests
+            raise KeyboardInterrupt
+
+    def fail_persistence(*_args, **_kwargs) -> None:
+        raise TypeError("not JSON serializable")
+
+    monkeypatch.setattr(eval_runner, "_persist_decode_progress", fail_persistence)
+    with pytest.raises(KeyboardInterrupt):
+        evaluate(config, model=InterruptedBatchModel(), publish_agentv=False)
+
+    assert "decode progress persistence failed" in capsys.readouterr().err
+
+
 def test_agentv_single_suite_publishes_one_case() -> None:
     suites = {
         "smoke": {

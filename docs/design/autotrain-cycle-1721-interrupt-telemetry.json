@@ -146,6 +146,8 @@
     "progress_scoreable": false,
     "progress_removed_after_complete_eval": true,
     "fresh_progress_ingested_by_autoresearch": true,
+    "persistence_failure_masks_interrupt": false,
+    "stale_or_invalid_progress_ingested": false,
     "partial_metrics_promoted": false,
     "grammar_authority_changed": false,
     "model_parameters_changed": false,
@@ -179,8 +181,8 @@
     "code_commit": "6f38011faff5913f564fbe7969b934b1c580320c",
     "code_dirty": true,
     "components": {
-      "harness.autoresearch.experiment_campaign": "v44",
-      "harness.model_build.eval": "v72",
+      "harness.autoresearch.experiment_campaign": "v45",
+      "harness.model_build.eval": "v73",
       "model.twotower": "v275"
     },
     "stamped_at": "2026-08-01T19:40:00-05:00"

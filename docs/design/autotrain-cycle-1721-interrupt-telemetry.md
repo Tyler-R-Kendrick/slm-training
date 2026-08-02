@@ -51,6 +51,8 @@ atomically writes a version-stamped `DecodeProgressV1` sidecar; and autoresearch
 ingests only a fresh sidecar into stopped-stage telemetry. The artifact is explicitly
 non-scoreable and is removed after canonical evaluation succeeds. Grammar authority,
 model scores, parameters, deadlines, gates, and promotion policy are unchanged.
+Best-effort sidecar annotation or serialization failures cannot replace the original
+supervisor interrupt, and stale or invalid sidecars remain fail-closed.
 
 1. Replay the identical frozen c1721 manifest and require the stopped or completed
    outcome to expose exact witness, edge, prefill, forward, and timing counters.
@@ -63,5 +65,5 @@ model scores, parameters, deadlines, gates, and promotion policy are unchanged.
 
 Eval commit: `6f38011faff5913f564fbe7969b934b1c580320c`
 (`harness.autoresearch.experiment_campaign=v43`,
-`harness.model_build.eval=v71`, `model.twotower=v274`). The telemetry repair bumps
-those components to `v44`, `v72`, and `v275`, respectively.
+`harness.model_build.eval=v71`, `model.twotower=v274`). The telemetry repair and
+review hardening bump those components to `v45`, `v73`, and `v275`, respectively.

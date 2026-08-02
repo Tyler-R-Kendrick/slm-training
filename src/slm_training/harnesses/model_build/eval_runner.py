@@ -1195,17 +1195,17 @@ def evaluate(
             return result
 
         def _persist_interrupted(exc: KeyboardInterrupt) -> None:
-            stats = getattr(exc, "decode_stats", None)
-            if isinstance(stats, DecodeStats):
-                _annotate_decode_trace_records(stats, chunk)
-            partial_rows = [
-                row for row in decode_stats_rows if isinstance(row, DecodeStats)
-            ]
-            if isinstance(stats, DecodeStats) and all(
-                stats is not row for row in partial_rows
-            ):
-                partial_rows.append(stats)
             try:
+                stats = getattr(exc, "decode_stats", None)
+                if isinstance(stats, DecodeStats):
+                    _annotate_decode_trace_records(stats, chunk)
+                partial_rows = [
+                    row for row in decode_stats_rows if isinstance(row, DecodeStats)
+                ]
+                if isinstance(stats, DecodeStats) and all(
+                    stats is not row for row in partial_rows
+                ):
+                    partial_rows.append(stats)
                 _persist_decode_progress(
                     config,
                     status="interrupted",
@@ -1214,7 +1214,7 @@ def evaluate(
                     stats_rows=partial_rows,
                     version_stamp=progress_version_stamp,
                 )
-            except OSError as progress_error:
+            except Exception as progress_error:  # noqa: BLE001
                 print(
                     f"decode progress persistence failed: {progress_error}",
                     file=sys.stderr,
