@@ -1,0 +1,58 @@
+{
+    "schema": "continuous_autotrain_cycle_results/v1",
+    "loop_id": "continuous-openui-local",
+    "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c2",
+    "cycle_index": 2,
+    "source_commit": "895f0b729c5a5db1c9a2ed4a0f56d8f5b4b3e5a1",
+    "honesty": "fixture_or_scratch",
+    "not_ship_claim": true,
+    "recipe": {
+        "device": "cpu",
+        "steps": 20,
+        "context_backend": "scratch",
+        "train_version": "wf_smoke_v2",
+        "eval_version": "e938_role_safe_all_targets_v2",
+        "max_wall_minutes": 3,
+        "ship_gates": true
+    },
+    "arms": {
+        "c20260802-continuous-openui-local-8c0b60dd-c2-control": {
+            "status": "completed_eval_gates_failed",
+            "trainable_params": 1755764,
+            "checkpoint_sha256": "417b3ce88a30d9ddebff22dee520ec5cf07d1e51288ed2d9a7b1881423c274cc",
+            "smoke": {
+                "n": 3,
+                "parse_rate": 1.0,
+                "meaningful_program_rate": 0.0,
+                "structural_similarity": 0.32666666666666666,
+                "component_type_recall": 0.16666666666666666,
+                "binder_reference_f1": 0.0,
+                "latency_ms_p50": 12662.88
+            }
+        },
+        "c20260802-continuous-openui-local-8c0b60dd-c2-component-plan": {
+            "status": "completed_eval_gates_failed",
+            "trainable_params": 1755764,
+            "checkpoint_sha256": "68f1ce95aa6e6401797695cc10e3f0a97d38d322cd503fbe8c2fc6d6bf903bdf",
+            "smoke": {
+                "n": 3,
+                "parse_rate": 1.0,
+                "meaningful_program_rate": 0.0,
+                "structural_similarity": 0.0964,
+                "component_type_recall": 0.08333333333333333,
+                "binder_reference_f1": 0.0,
+                "latency_ms_p50": 1406.41
+            }
+        }
+    },
+    "primary_metric": "smoke.structural_similarity",
+    "primary_delta": -0.23026666666666668,
+    "conclusion": "Size-matched (1,755,764 params both arms) component-plan candidate underperforms the control on the primary metric (structural_similarity 0.0964 vs 0.3267, -70.5% relative) despite the control's much higher p50 latency (12,662.9ms vs 1,406.4ms). SDLC Phase A correctly classified this NON_POSITIVE: fixture n=3 is below the honest ship threshold (need>=20) and the primary metric moved backward, not forward. Neither arm passes honest ship gates (smoke insufficient_n; held_out/adversarial/ood/rico_held missing_suite by design at fixture scale).",
+    "next_priorities": [
+        "Do not carry the component-plan head forward as a win; treat this as a rejected screening hypothesis at this step count/seed",
+        "Test the distinct size-matched 'component-edge' quality hypothesis next (per hypothesizer feedback)",
+        "Keep the matched control as the baseline every cycle to avoid recipe-drift false positives",
+        "Investigate why control p50 (12.66s) is ~9x the component-plan candidate's p50 (1.41s) on an otherwise size-matched arm -- likely warm vs cold decode path, not a levers difference; needs a dedicated latency screen before treating it as signal"
+    ],
+    "recorded_at": "2026-08-02T04:35:38.136763Z"
+}
