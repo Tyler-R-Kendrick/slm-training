@@ -140,6 +140,13 @@ class TokenKind(str, Enum):
     ABSTRACT = "abstract"
 
 
+def _token_kind_or_special(raw: str | None) -> TokenKind:
+    try:
+        return TokenKind(raw)
+    except (TypeError, ValueError):
+        return TokenKind.SPECIAL
+
+
 # Fixed-vocabulary kinds a macro expansion may contain (C3). Dynamic
 # per-example rows (SYM/BIND/STATE) are excluded by construction so every
 # expansion is context-free and the α-equivalence pitfall documented in
@@ -535,6 +542,12 @@ class DSLNativeTokenizer:
         repr=False,
         compare=False,
     )
+    _token_kind_cache: tuple[TokenKind, ...] = field(
+        default=(),
+        init=False,
+        repr=False,
+        compare=False,
+    )
 
     @property
     def pad_id(self) -> int:
@@ -561,11 +574,17 @@ class DSLNativeTokenizer:
         return len(self.token_to_id)
 
     def kind_of(self, token_id: int) -> TokenKind:
-        raw = self.id_to_kind.get(int(token_id), TokenKind.SPECIAL.value)
-        try:
-            return TokenKind(raw)
-        except ValueError:
-            return TokenKind.SPECIAL
+        tid = int(token_id)
+        cache = getattr(self, "_token_kind_cache", ())
+        if not cache:  # checkpoints serialized before this immutable lookup table
+            cache = tuple(
+                _token_kind_or_special(self.id_to_kind.get(i))
+                for i in range(self.vocab_size)
+            )
+            self._token_kind_cache = cache
+        if 0 <= tid < len(cache):
+            return cache[tid]
+        return TokenKind.SPECIAL
 
     def kind_ids(self, kind: TokenKind | str) -> set[int]:
         want = kind.value if isinstance(kind, TokenKind) else str(kind)

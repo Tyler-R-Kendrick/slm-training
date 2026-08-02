@@ -86,6 +86,21 @@ def test_kind_ids_cache_preserves_fresh_set_and_legacy_checkpoint_contract(
     assert tok.kind_ids(TokenKind.BIND) == expected
 
 
+def test_kind_of_uses_immutable_table_and_supports_legacy_checkpoints(
+    tok: DSLNativeTokenizer,
+) -> None:
+    component_id = tok.token_to_id["Stack"]
+    assert tok._token_kind_cache == ()
+    assert tok.kind_of(component_id) is TokenKind.COMPONENT
+    assert len(tok._token_kind_cache) == tok.vocab_size
+    assert tok.kind_of(-1) is TokenKind.SPECIAL
+    assert tok.kind_of(tok.vocab_size) is TokenKind.SPECIAL
+
+    del tok._token_kind_cache
+    assert tok.kind_of(component_id) is TokenKind.COMPONENT
+    assert len(tok._token_kind_cache) == tok.vocab_size
+
+
 def test_round_trip_with_symbol_table(tok: DSLNativeTokenizer) -> None:
     table = SymbolTable.from_placeholders([":hero.title", ":hero.body"])
     ids = tok.encode(HERO, table=table, use_symbol_table=True)
