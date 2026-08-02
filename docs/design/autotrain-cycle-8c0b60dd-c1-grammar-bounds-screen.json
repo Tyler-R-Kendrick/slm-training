@@ -1,0 +1,44 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c1",
+  "loop_id": "continuous-openui-local",
+  "cycle_index": 1,
+  "evidence_class": "fixture",
+  "decision": "candidate_rejected_null_delta",
+  "scoreable": true,
+  "arm_order": ["control", "bounds"],
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c1-control",
+      "manifest_sha256": "6feef00629862ed69524db84e43fb7d21046f8c23e79f07964ea3dc055d55ec4",
+      "params": 1608962,
+      "steps": 21,
+      "checkpoint_sha256": "c2ba05273c48aacf76d86b19c76cff8bccae92462b111f84f808ea4cf6f7eda2",
+      "loss": 22.62193489074707,
+      "train_wall_seconds": 4.973982371000034,
+      "smoke": {"n": 3, "document_n": 3, "completed_document_n": 3, "incomplete_document_n": 0, "decode_timeout_count": 0, "parse_rate": 1.0, "binder_reference_f1": 0.6333333333333333, "meaningful_program_rate": 0.0, "structural_similarity": 0.057499999999999996, "component_type_recall": 0.0, "ast_beq_rate": 0.0, "canonical_beq_rate": 0.0, "reward_score": 0.0, "placeholder_fidelity": 0.5277777777777778, "latency_ms_p50": 1846.5}
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c1-bounds",
+      "manifest_sha256": "d5ac5a06db62fc69871266dbdf5d47ae757ccd53df7a82aeb9d1db9e2c5991f2",
+      "params": 1608962,
+      "steps": 21,
+      "checkpoint_sha256": "b040e8f48b955e9b3399512959952816133f7a8f15f9dac7083b46a131f8e155",
+      "loss": 22.62193489074707,
+      "train_wall_seconds": 4.060276964999957,
+      "smoke": {"n": 3, "document_n": 3, "completed_document_n": 3, "incomplete_document_n": 0, "decode_timeout_count": 0, "parse_rate": 1.0, "binder_reference_f1": 0.6333333333333333, "meaningful_program_rate": 0.0, "structural_similarity": 0.057499999999999996, "component_type_recall": 0.0, "ast_beq_rate": 0.0, "canonical_beq_rate": 0.0, "reward_score": 0.0, "placeholder_fidelity": 0.5277777777777778, "latency_ms_p50": 1771.3}
+    }
+  ],
+  "hypothesis": "grammar_completion_bounds reduces smoke latency_ms_p50 versus the matched control without lowering parse_rate.",
+  "deltas": {"latency_ms_p50_percent": -4.0759, "structural_similarity_percent": 0.0, "meaningful_program_rate": 0.0, "loss_percent": 0.0, "train_wall_ratio": 0.8164},
+  "ship_gates_pass": false,
+  "lean": "not_applicable:screening",
+  "next_priority": "test the distinct size-matched 'component-plan' quality hypothesis next; the completed grammar_completion_bounds arm is exhausted (parity tie, cannot be re-selected without a new preregistered hypothesis)",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "72f2b9f22475cc8367f1014a6d8a6f385e0ba1f1",
+    "code_dirty": false,
+    "components": {"harness.model_build.train": "v28", "harness.experiment_feature_flags": "v4"},
+    "stamped_at": "2026-08-02T14:36:09.501623+00:00"
+  }
+}

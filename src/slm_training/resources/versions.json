@@ -7103,6 +7103,11 @@
         {
           "version": "v3",
           "date": "2026-08-02",
+          "note": "no-bump: add honest local-loop c1 grammar_completion_bounds screen checkpoint provenance (fresh continuous-openui-local loop identity) to MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
           "note": "no-bump: add honest c1759 rejected-confirmation checkpoint provenance and restore the missing c1757 checkpoint-history row in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
         },
         {
