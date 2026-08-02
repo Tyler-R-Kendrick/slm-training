@@ -578,6 +578,89 @@ def test_literal_close_arm_is_size_matched_and_changes_only_tail_loss() -> None:
     assert control["batch_size"] == candidate["batch_size"]
 
 
+def test_literal_margin_arm_is_size_matched_and_targets_legal_close_branch() -> None:
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-20260802-c1765",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1765,
+        role="screening",
+        recommended_slug="literal-margin",
+    )
+    by_id = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    control = by_id["c20260802-c1765-control"]
+    candidate = by_id["c20260802-c1765-literal-margin"]
+
+    assert matrix["recommended_experiment_id"].endswith("-literal-margin")
+    assert control["compiler_alignment_loss_weight"] == 0.0
+    assert candidate["compiler_alignment_loss_weight"] == 1.0
+    assert candidate["compiler_alignment_margin"] == 1.0
+    assert candidate["compiler_alignment_stratified"] is True
+    assert candidate["compiler_alignment_kind_filter"] == "literal-close"
+    assert control["steps"] == candidate["steps"]
+    assert control["batch_size"] == candidate["batch_size"]
+
+
+def test_completed_literal_close_null_steers_to_literal_margin() -> None:
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-20260802-c1764",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1764,
+        role="screening",
+        recommended_slug="literal-close",
+    )
+
+    priorities = _mod._completed_candidate_priorities(
+        matrix,
+        "c20260802-c1764-literal-close",
+        resolved_infrastructure=False,
+    )
+
+    assert priorities[0].area == "model"
+    assert priorities[0].proposed_experiment_id.endswith("-literal-margin")
+    assert "literal-margin" in priorities[0].hypothesis
+
+
+def test_legacy_literal_close_matrix_steers_to_new_literal_margin() -> None:
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-20260802-c1764",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1764,
+        role="screening",
+        recommended_slug="literal-close",
+    )
+    matrix["hypotheses"] = [
+        row
+        for row in matrix["hypotheses"]
+        if not row["experiment"]["experiment_id"].endswith("-literal-margin")
+    ]
+
+    priorities = _mod._completed_candidate_priorities(
+        matrix,
+        "c20260802-c1764-literal-close",
+        resolved_infrastructure=False,
+    )
+
+    assert priorities[0].proposed_experiment_id == ("c20260802-c1764-literal-margin")
+
+
 def test_structural_screening_control_matches_recommended_head_capacity() -> None:
     matrix = _mod._matrix(
         campaign_id="continuous-loop-20260731-c1729",

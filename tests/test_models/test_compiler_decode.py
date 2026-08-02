@@ -5876,6 +5876,59 @@ def test_compiler_alignment_can_stratify_grammar_decision_kinds() -> None:
     assert metrics["compiler_alignment_grammar_rsqb_root_populated_loss"] >= 0.0
 
 
+def test_compiler_alignment_can_target_literal_close_branches_only() -> None:
+    model = _model()
+    model.config.compiler_alignment_loss_weight = 1.0
+    model.config.compiler_alignment_margin = 1.0
+    model.config.compiler_alignment_stratified = True
+    model.config.compiler_alignment_kind_filter = "literal-close"
+    record = ExampleRecord(
+        id="alignment-literal-close",
+        prompt="continuous slider",
+        openui=('root = Slider("$0", "continuous", 0, 100, 1, [40], ":slot_0")'),
+        placeholders=[":slot_0"],
+        split="train",
+        source="fixture",
+    )
+
+    loss = model.training_loss([record])
+
+    assert torch.isfinite(loss)
+    metrics = model.last_training_metrics
+    assert metrics["compiler_alignment_literal_close_filter_enabled"] == 1.0
+    assert metrics["compiler_alignment_rows"] > 0
+    assert (
+        metrics["compiler_alignment_literal_close_rows"]
+        == metrics["compiler_alignment_rows"]
+    )
+
+
+def test_literal_close_filter_excludes_string_literal_closures() -> None:
+    model = _model()
+    model.config.compiler_alignment_loss_weight = 1.0
+    model.config.compiler_alignment_stratified = True
+    model.config.compiler_alignment_kind_filter = "literal-close"
+    record = ExampleRecord(
+        id="alignment-string-close",
+        prompt="card title",
+        openui='root = TextContent(":slot_0")',
+        placeholders=[":slot_0"],
+        split="train",
+        source="fixture",
+    )
+
+    loss = model.training_loss([record])
+
+    assert torch.isfinite(loss)
+    assert model.last_training_metrics["compiler_alignment_rows"] == 0
+    assert model.last_training_metrics["compiler_alignment_literal_close_rows"] == 0
+
+
+def test_compiler_alignment_kind_filter_fails_closed() -> None:
+    with pytest.raises(ValueError, match="compiler_alignment_kind_filter"):
+        TwoTowerConfig(compiler_alignment_kind_filter="unknown")
+
+
 def test_component_inventory_supervision_trains_prompt_level_component_set() -> None:
     model = _model(component_inventory_loss_weight=1.0)
     model.train()

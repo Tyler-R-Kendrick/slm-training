@@ -528,6 +528,9 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         compiler_alignment_semantic_exhaustive=bool(
             getattr(config, "compiler_alignment_semantic_exhaustive", False)
         ),
+        compiler_alignment_kind_filter=str(
+            getattr(config, "compiler_alignment_kind_filter", "all") or "all"
+        ),
         legal_margin_mode=str(getattr(config, "legal_margin_mode", "none") or "none"),
         targeted_margin_manifest=getattr(config, "targeted_margin_manifest", None),
         targeted_margin_value=float(

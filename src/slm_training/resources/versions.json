@@ -2641,7 +2641,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v67",
+      "version": "v68",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2681,6 +2681,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v68",
+          "date": "2026-08-02",
+          "note": "Add a governed size-matched literal-margin arm that aligns only grammar-derived numeric-frame LIT_END decisions against legal byte alternatives and steer a completed literal-close null directly to it."
+        },
         {
           "version": "v67",
           "date": "2026-08-02",
@@ -9135,7 +9140,7 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v28",
+      "version": "v29",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
@@ -9143,6 +9148,11 @@
         "src/slm_training/harnesses/quality/__init__.py"
       ],
       "history": [
+        {
+          "version": "v29",
+          "date": "2026-08-02",
+          "note": "Record the compiler-alignment decision-family filter in every training recipe so targeted literal-close supervision is auditable."
+        },
         {
           "version": "v28",
           "date": "2026-08-01",
@@ -10927,7 +10937,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v289",
+      "version": "v290",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -10970,6 +10980,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v290",
+          "date": "2026-08-02",
+          "note": "Add fail-closed compiler-alignment filtering for grammar-derived numeric-frame LIT_END targets, preserving the legal candidate domain while directly training numeric closure versus legal byte continuation."
+        },
         {
           "version": "v289",
           "date": "2026-08-02",
