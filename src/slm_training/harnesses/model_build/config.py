@@ -337,6 +337,7 @@ class ModelBuildConfig:
     targeted_margin_value: float = 1.0
     targeted_margin_family_weights: tuple[tuple[str, float], ...] = ()
     component_inventory_loss_weight: float = 0.0
+    structural_aux_head_profile: str = "none"
     component_inventory_decode_weight: float | None = None
     component_plan_loss_weight: float = 0.0
     component_plan_decode_weight: float | None = None
@@ -516,8 +517,12 @@ class ModelBuildConfig:
     # SLM-212 (SDE5-05): default-off constraint-debt routing over decode paths.
     # All modes are default-off; routing only selects among existing MaskGIT /
     # constrained LTR / ASAp decode paths and never changes legal membership.
-    constraint_debt_routing_mode: str = "off"  # off | fixed_maskgit | fixed_ltr | fixed_asap | debt_router
-    constraint_debt_routing_signal: str = "D_legal"  # D_legal | D_good_proxy | legal_mass_deficit | pre_post_mask_kl
+    constraint_debt_routing_mode: str = (
+        "off"  # off | fixed_maskgit | fixed_ltr | fixed_asap | debt_router
+    )
+    constraint_debt_routing_signal: str = (
+        "D_legal"  # D_legal | D_good_proxy | legal_mass_deficit | pre_post_mask_kl
+    )
     constraint_debt_routing_threshold_high: float = 2.0
     constraint_debt_routing_threshold_low: float | None = None
     constraint_debt_routing_hysteresis: int = 1
@@ -554,9 +559,7 @@ class ModelBuildConfig:
 
         apply_evaluation_policy(self)
         if self.optimizer_name not in {"adamw", "muon_hybrid"}:
-            raise ValueError(
-                "optimizer_name must be one of: adamw, muon_hybrid"
-            )
+            raise ValueError("optimizer_name must be one of: adamw, muon_hybrid")
         # SLM-242: fail-closed numeric/schedule gate.
         try:
             validate_model_build_config(self)

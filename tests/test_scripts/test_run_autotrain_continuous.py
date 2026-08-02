@@ -348,6 +348,7 @@ def test_matrix_confirm_path_same_levers_new_seed() -> None:
             "grammar_completion_bounds": True,
             "compact_active_canvas": False,
             "component_edge_loss_weight": 1.0,
+            "structural_aux_head_profile": "component-edge",
             "steps": 81,
             "batch_size": 2,
             "train_version": "wf_smoke_v2",
@@ -365,6 +366,8 @@ def test_matrix_confirm_path_same_levers_new_seed() -> None:
     assert ctrl["grammar_completion_bounds"] is False
     assert cand["component_edge_loss_weight"] == 1.0
     assert ctrl["component_edge_loss_weight"] == 0.0
+    assert cand["structural_aux_head_profile"] == "component-edge"
+    assert ctrl["structural_aux_head_profile"] == "component-edge"
     assert cand["seed"] == ctrl["seed"] == 100_000 + 9
     assert cand["steps"] == 81
 
@@ -406,6 +409,32 @@ def test_matrix_thrash_rotation_recommends_non_bounds() -> None:
     assert "c20260731-c2-binder-topology" in ids
 
 
+def test_structural_screening_control_matches_recommended_head_capacity() -> None:
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-20260731-c1729",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=22,
+        cycle=1729,
+        role="screening",
+        recommended_slug="binder-topology",
+    )
+    by_id = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+
+    control = by_id["c20260731-c1729-control"]
+    candidate = by_id["c20260731-c1729-binder-topology"]
+    assert control["binder_topology_loss_weight"] == 0.0
+    assert candidate["binder_topology_loss_weight"] == 0.25
+    assert control["structural_aux_head_profile"] == "binder-topology"
+    assert candidate["structural_aux_head_profile"] == "binder-topology"
+
+
 def test_completed_frozen_retry_steers_to_distinct_quality_arm() -> None:
     matrix = _mod._matrix(
         campaign_id="continuous-loop-20260731-c10",
@@ -434,6 +463,80 @@ def test_completed_frozen_retry_steers_to_distinct_quality_arm() -> None:
     assert priorities[0].area == "model"
     assert priorities[0].proposed_experiment_id == "c20260731-c10-component-plan"
     assert "resolved infrastructure" in priorities[0].expected_information_gain
+
+
+def test_completed_null_steers_to_distinct_quality_arm() -> None:
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-20260731-c1729",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=22,
+        cycle=1729,
+        role="screening",
+        recommended_slug="binder-topology",
+    )
+    candidate_id = "c20260731-c1729-binder-topology"
+
+    priorities = _mod._completed_candidate_priorities(
+        matrix, candidate_id, resolved_infrastructure=False
+    )
+
+    assert priorities[0].proposed_experiment_id == "c20260731-c1729-component-plan"
+    assert "completed null" in priorities[0].expected_information_gain
+
+
+def test_predecessor_completed_null_drives_next_screening_arm(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "continuous-loop-20260731-c1729"
+    camp.mkdir(parents=True)
+    matrix = _mod._matrix(
+        campaign_id=camp.name,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=22,
+        cycle=1729,
+        role="screening",
+        recommended_slug="binder-topology",
+    )
+    candidate_id = matrix["recommended_experiment_id"]
+    (camp / "matrix-proposal.json").write_text(json.dumps(matrix))
+    (camp / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "candidate_id": candidate_id,
+                "positive": False,
+                "reasons": ["no_registered_effect"],
+            }
+        )
+    )
+    (camp / "cycle_handoff.json").write_text(
+        json.dumps(
+            {
+                "cycle_intent": "screening",
+                "priorities": [
+                    {
+                        "rank": 1,
+                        "disposition": "experiment_next",
+                        "proposed_experiment_id": candidate_id,
+                    }
+                ],
+            }
+        )
+    )
+
+    assert (
+        _mod._predecessor_priority_slug(root, camp.name, skip=set())
+        == "component-plan"
+    )
+    assert _mod._predecessor_priority_slug(
+        root, camp.name, skip={"component-plan"}
+    ) != "binder-topology"
 
 
 def test_matrix_promote_path_confirmed_knobs() -> None:
@@ -1524,17 +1627,13 @@ def test_arm_wall_budget_is_symmetric_and_reserves_orchestration() -> None:
     arm_minutes = _mod._arm_wall_minutes(3)
     expected = min(
         3.0,
-        (MAX_HARNESS_WALL_SECONDS - HARNESS_FINALIZATION_RESERVE_SECONDS)
-        / 2
-        / 60,
+        (MAX_HARNESS_WALL_SECONDS - HARNESS_FINALIZATION_RESERVE_SECONDS) / 2 / 60,
     )
     assert arm_minutes == pytest.approx(expected)
     assert _mod._arm_wall_minutes(0.5) == pytest.approx(
         min(
             0.5,
-            (MAX_HARNESS_WALL_SECONDS - HARNESS_FINALIZATION_RESERVE_SECONDS)
-            / 2
-            / 60,
+            (MAX_HARNESS_WALL_SECONDS - HARNESS_FINALIZATION_RESERVE_SECONDS) / 2 / 60,
         )
     )
     assert 2 * arm_minutes * 60 + HARNESS_FINALIZATION_RESERVE_SECONDS == (
@@ -2024,9 +2123,7 @@ def test_frozen_replay_finds_completed_train_across_retry_lineage(
         "citations": ["fixture://source"],
         "knobs": {"steps": 1, "batch_size": 1, "seed": 7},
     }
-    source_manifest = _mod._manifest(
-        source_campaign, source_experiment, "a" * 40
-    )
+    source_manifest = _mod._manifest(source_campaign, source_experiment, "a" * 40)
     source_path = source_dir / "manifests" / "source-batch1.json"
     source_path.parent.mkdir(parents=True)
     source_path.write_text(source_manifest.model_dump_json(indent=2) + "\n")
@@ -2043,15 +2140,15 @@ def test_frozen_replay_finds_completed_train_across_retry_lineage(
     retry_path.write_text(retry_manifest.model_dump_json(indent=2) + "\n")
     (retry_dir / "campaign.json").write_text(
         _mod.CampaignSpec(
-                campaign_id=retry_campaign,
-                objective="fixture replay",
-                primary_metric="smoke.parse_rate",
-                loop_id="loop-1",
-                cycle_index=2,
-                predecessor_campaign_id=source_campaign,
-                upstream_commit="b" * 40,
-                integration_commit="b" * 40,
-            ).model_dump_json(indent=2)
+            campaign_id=retry_campaign,
+            objective="fixture replay",
+            primary_metric="smoke.parse_rate",
+            loop_id="loop-1",
+            cycle_index=2,
+            predecessor_campaign_id=source_campaign,
+            upstream_commit="b" * 40,
+            integration_commit="b" * 40,
+        ).model_dump_json(indent=2)
         + "\n"
     )
     checkpoint = source_dir / "runs" / "source-batch1" / "checkpoints" / "last.pt"
@@ -2223,9 +2320,7 @@ def test_finalized_decode_timeout_routes_directly_to_runtime_repair(
     (run / "scoreboard.json").write_text(
         json.dumps(
             {
-                "evals": {
-                    "runner": {"name": "AgentV", "execution_errors": 0}
-                },
+                "evals": {"runner": {"name": "AgentV", "execution_errors": 0}},
                 "gates": {"authority": "AgentEvals assertions", "pass": False},
                 "suites": {
                     "smoke": {
@@ -2283,9 +2378,7 @@ def test_cycle_handoff_exhausts_identical_replays_into_harness_repair(
     (current / "manifests").mkdir(parents=True)
     prior.mkdir(parents=True)
     (current / "manifests" / "cand.json").write_text("{}\n")
-    (prior / "campaign.json").write_text(
-        json.dumps({"predecessor_campaign_id": None})
-    )
+    (prior / "campaign.json").write_text(json.dumps({"predecessor_campaign_id": None}))
     (prior / "cycle_handoff.json").write_text(
         json.dumps(
             {
@@ -2336,9 +2429,7 @@ def test_cycle_handoff_exhausts_identical_replays_into_harness_repair(
     prior_handoff["actions"] = [repair.model_dump(mode="json")]
     (prior / "cycle_handoff.json").write_text(json.dumps(prior_handoff))
     assert (
-        _mod._consecutive_frozen_replays(
-            root, "loop-1", "cycle-2", "retry_measurement"
-        )
+        _mod._consecutive_frozen_replays(root, "loop-1", "cycle-2", "retry_measurement")
         == 1
     )
 

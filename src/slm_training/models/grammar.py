@@ -316,13 +316,19 @@ class GrammarDecodeState:
             int(restore(state_id)) if callable(restore) else int(state_id)
         )
 
-    def _advance_completion_token(self, token_id: int) -> None:
+    def _advance_completion_token(
+        self, token_id: int, *, require_advertised: bool = True
+    ) -> None:
         session = self.completion_session
         state_id = self.completion_state_id
         if session is None or state_id is None:
             return
         child_id = session.advance(int(state_id), int(token_id))
         if child_id is None:
+            if not require_advertised:
+                self.completion_state_id = None
+                self._collect_completion_stats()
+                return
             raise RuntimeError(
                 "packed completion session rejected an advertised decode token "
                 f"{int(token_id)} at prefix {tuple(self.prefix_ids)}"
@@ -388,7 +394,9 @@ class GrammarDecodeState:
                 for token_id in extra:
                     self.prefix_ids.append(int(token_id))
                     if int(token_id) != int(tokenizer.eos_id):
-                        self._advance_completion_token(int(token_id))
+                        self._advance_completion_token(
+                            int(token_id), require_advertised=False
+                        )
                 self.prefix_ids = list(prefix_ids)
         else:
             self.prefix_ids = list(prefix_ids)
@@ -401,7 +409,13 @@ class GrammarDecodeState:
             stats.detok_ms += (time.perf_counter() - t0) * 1000.0
         return self.prefix_text
 
-    def advance_token(self, tokenizer: OpenUITokenizer, token_id: int) -> str:
+    def advance_token(
+        self,
+        tokenizer: OpenUITokenizer,
+        token_id: int,
+        *,
+        require_completion_advertised: bool = True,
+    ) -> str:
         """Append one emitted token to the cached prefix.
 
         DSL-native tokenizers advance the DFA engine by direct terminal feed
@@ -480,7 +494,10 @@ class GrammarDecodeState:
         # EOS is a terminal certificate edge, not an incremental parser
         # state. The row is complete and will not query another domain.
         if int(token_id) != int(tokenizer.eos_id):
-            self._advance_completion_token(int(token_id))
+            self._advance_completion_token(
+                int(token_id),
+                require_advertised=require_completion_advertised,
+            )
         self.clear_position_memo()
         return self.prefix_text
 
@@ -1313,15 +1330,14 @@ def pick_constrained_token(
                 return False
         if not stream:
             return True
-        # Once the DFA has admitted the candidate, the optional stream probe is
-        # redundant.  In particular, broad terminals used to call the
-        # LangCore subprocess for every candidate even when
-        # ``skip_exact_stream_probe`` was enabled, making constrained decode
-        # effectively unbounded on CPU.  Keep the name for checkpoint/API
-        # compatibility, but honor it for all DFA-admitted candidates.
-        if not (skip_exact or exact_terminals) and not _stream_probe_ok(
-            tokenizer, prefix_ids, tid, prefix_text=prefix_text
-        ):
+        # A complete compiler certificate subsumes the semantic probe. When
+        # the compiler is unavailable/partial, however, a broad identifier DFA
+        # terminal does not prove component-schema membership. Never let the
+        # performance-oriented skip widen that uncertain frontier.
+        needs_semantic_probe = compiler_candidates is None and token.isidentifier()
+        if (
+            needs_semantic_probe or not (skip_exact or exact_terminals)
+        ) and not _stream_probe_ok(tokenizer, prefix_ids, tid, prefix_text=prefix_text):
             return False
         return True
 

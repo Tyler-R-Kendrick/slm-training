@@ -1,0 +1,56 @@
+{
+  "schema": "test_cases/v1",
+  "module": "tests/test_harnesses/model_build/test_train_model_cli_decode_weights.py",
+  "case_sets": {
+    "test_train_model_cli_rejects_prohibited_marker_semantic_levers": {
+      "parameters": [
+        "flag",
+        "value"
+      ],
+      "cases": [
+        {
+          "id": "case-001",
+          "values": [
+            "--semantic-role-contract-in-context",
+            null
+          ]
+        },
+        {
+          "id": "case-002",
+          "values": [
+            "--semantic-role-decode-weight",
+            "1.0"
+          ]
+        },
+        {
+          "id": "case-003",
+          "values": [
+            "--semantic-role-schema-candidates",
+            null
+          ]
+        },
+        {
+          "id": "case-004",
+          "values": [
+            "--slot-coverage-close-decode-weight",
+            "1.0"
+          ]
+        },
+        {
+          "id": "case-005",
+          "values": [
+            "--schema-role-slot-decode-weight",
+            "1.0"
+          ]
+        },
+        {
+          "id": "case-006",
+          "values": [
+            "--semantic-plan-repeated-slot-margin-decode-weight",
+            "1.0"
+          ]
+        }
+      ]
+    }
+  }
+}

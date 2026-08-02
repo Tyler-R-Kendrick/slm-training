@@ -350,9 +350,7 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         recursive_detach_between_steps=getattr(
             config, "recursive_detach_between_steps", False
         ),
-        recursive_update_mode=getattr(
-            config, "recursive_update_mode", "current_v1"
-        ),
+        recursive_update_mode=getattr(config, "recursive_update_mode", "current_v1"),
         recursive_empty_f_mode=getattr(
             config, "recursive_empty_f_mode", "pass_through"
         ),
@@ -516,9 +514,7 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         ltr_prefix_loss_weight=float(
             getattr(config, "ltr_prefix_loss_weight", 0.0) or 0.0
         ),
-        ltr_tail_loss_weight=float(
-            getattr(config, "ltr_tail_loss_weight", 0.0) or 0.0
-        ),
+        ltr_tail_loss_weight=float(getattr(config, "ltr_tail_loss_weight", 0.0) or 0.0),
         ltr_tail_tokens=int(getattr(config, "ltr_tail_tokens", 32) or 0),
         compiler_alignment_loss_weight=float(
             getattr(config, "compiler_alignment_loss_weight", 0.0) or 0.0
@@ -542,6 +538,9 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         ),
         component_inventory_loss_weight=float(
             getattr(config, "component_inventory_loss_weight", 0.0) or 0.0
+        ),
+        structural_aux_head_profile=str(
+            getattr(config, "structural_aux_head_profile", "none") or "none"
         ),
         component_inventory_decode_weight=float(
             getattr(config, "component_inventory_decode_weight", 0.0) or 0.0
@@ -774,8 +773,7 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
             getattr(config, "abstract_plan_mode", "disabled") or "disabled"
         ),
         abstract_plan_connector_arm=str(
-            getattr(config, "abstract_plan_connector_arm", "disabled")
-            or "disabled"
+            getattr(config, "abstract_plan_connector_arm", "disabled") or "disabled"
         ),
         abstract_plan_loss_weight=float(
             getattr(config, "abstract_plan_loss_weight", 0.0) or 0.0

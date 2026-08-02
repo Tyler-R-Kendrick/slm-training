@@ -243,10 +243,16 @@ def main(argv: list[str] | None = None) -> int:
         help="Optimizer family (default: adamw).",
     )
     parser.add_argument(
-        "--muon-lr", type=float, default=None, help="Muon learning rate (default: --lr)."
+        "--muon-lr",
+        type=float,
+        default=None,
+        help="Muon learning rate (default: --lr).",
     )
     parser.add_argument(
-        "--adamw-lr", type=float, default=None, help="AdamW learning rate (default: --lr)."
+        "--adamw-lr",
+        type=float,
+        default=None,
+        help="AdamW learning rate (default: --lr).",
     )
     parser.add_argument("--weight-decay", type=float, default=0.0)
     parser.add_argument("--muon-momentum", type=float, default=0.9)
@@ -598,6 +604,19 @@ def main(argv: list[str] | None = None) -> int:
         help="Multi-label prompt-to-gold-component inventory loss weight.",
     )
     parser.add_argument(
+        "--structural-aux-head-profile",
+        choices=(
+            "none",
+            "component-plan",
+            "component-edge",
+            "component-inventory",
+            "binder-topology",
+            "component-structure",
+        ),
+        default="none",
+        help="Prebuild structural auxiliary heads for capacity-matched controls.",
+    )
+    parser.add_argument(
         "--component-inventory-decode-weight",
         type=float,
         default=0.0,
@@ -617,13 +636,28 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--abstract-plan-mode",
-        choices=("disabled", "teacher_forced", "sampled", "oracle", "random", "shuffled"),
+        choices=(
+            "disabled",
+            "teacher_forced",
+            "sampled",
+            "oracle",
+            "random",
+            "shuffled",
+        ),
         default="disabled",
         help="Default-off discrete plan head mode.",
     )
     parser.add_argument(
         "--abstract-plan-connector-arm",
-        choices=("disabled", "learned", "oracle", "detached", "empty", "random", "shuffled"),
+        choices=(
+            "disabled",
+            "learned",
+            "oracle",
+            "detached",
+            "empty",
+            "random",
+            "shuffled",
+        ),
         default="disabled",
         help="Default-off plan-conditioning connector arm.",
     )
@@ -1045,11 +1079,15 @@ def main(argv: list[str] | None = None) -> int:
         help="Default-off pairwise semantic-contrast margin objective weight.",
     )
     parser.add_argument(
-        "--semantic-contrast-margin", type=float, default=1.0,
+        "--semantic-contrast-margin",
+        type=float,
+        default=1.0,
         help="Required positive-over-negative sequence-score margin.",
     )
     parser.add_argument(
-        "--semantic-contrast-fraction", type=float, default=0.0,
+        "--semantic-contrast-fraction",
+        type=float,
+        default=0.0,
         help="Fraction of each canonical batch occupied by complete contrast pairs.",
     )
     parser.add_argument(
@@ -1504,6 +1542,7 @@ def main(argv: list[str] | None = None) -> int:
             args.compiler_alignment_semantic_exhaustive
         ),
         component_inventory_loss_weight=args.component_inventory_loss_weight,
+        structural_aux_head_profile=args.structural_aux_head_profile,
         component_inventory_decode_weight=args.component_inventory_decode_weight,
         component_plan_loss_weight=args.component_plan_loss_weight,
         component_plan_decode_weight=args.component_plan_decode_weight,
@@ -1589,9 +1628,7 @@ def main(argv: list[str] | None = None) -> int:
         root_reference_identity_decode_weight=(
             args.root_reference_identity_decode_weight
         ),
-        required_slot_margin_decode_weight=(
-            args.required_slot_margin_decode_weight
-        ),
+        required_slot_margin_decode_weight=(args.required_slot_margin_decode_weight),
         fidelity_loss_weight=args.fidelity_loss_weight,
         semantic_contrast_dir=args.semantic_contrast_dir,
         semantic_contrast_loss_weight=args.semantic_contrast_loss_weight,

@@ -547,6 +547,13 @@ def compile_commands(
                     str(knobs.component_inventory_loss_weight),
                 ]
             )
+        if knobs.structural_aux_head_profile is not None:
+            train.extend(
+                [
+                    "--structural-aux-head-profile",
+                    knobs.structural_aux_head_profile,
+                ]
+            )
         if knobs.component_inventory_decode_weight is not None:
             train.extend(
                 [
@@ -900,6 +907,9 @@ def execute_commands(
                     finished_at=utc_now(),
                     campaign_manifest_sha256=campaign_manifest_sha256,
                 )
+            trainable_params = flattened.get("track.trainable_params")
+            if trainable_params is not None:
+                metrics["trainable_params"] = trainable_params
         elif "scripts.evaluate_model" in command:
             metrics.update(flattened)
         expected_gate_rejection = _expected_gate_rejection(

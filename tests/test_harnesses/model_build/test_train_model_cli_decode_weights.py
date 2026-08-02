@@ -2,6 +2,10 @@
 
 from pathlib import Path
 
+import pytest
+
+from tests.casefiles import case_values
+
 import scripts.train_model as train_model
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 
@@ -58,14 +62,8 @@ def test_train_model_cli_threads_decode_weights_into_model_build_config(
         "--output-tokenizer",
         "choice",
         "--slot-contract-in-context",
-        "--semantic-role-contract-in-context",
         "--honest-slot-contract",
         "--slot-contract-constrained-decode",
-        "--semantic-role-decode-weight",
-        "1.0",
-        "--semantic-role-schema-candidates",
-        "--slot-coverage-close-decode-weight",
-        "2.0",
         "--schema-value-decode-weight",
         "3.0",
         "--schema-open-decode-weight",
@@ -76,8 +74,6 @@ def test_train_model_cli_threads_decode_weights_into_model_build_config(
         "5.0",
         "--schema-opaque-close-decode-weight",
         "6.0",
-        "--schema-role-slot-decode-weight",
-        "7.0",
         "--semantic-plan-decode-weight",
         "8.0",
         "--semantic-plan-margin-decode-weight",
@@ -94,8 +90,6 @@ def test_train_model_cli_threads_decode_weights_into_model_build_config(
         "14.0",
         "--semantic-plan-repeated-array-close-margin-decode-weight",
         "15.0",
-        "--semantic-plan-repeated-slot-margin-decode-weight",
-        "16.0",
         "--semantic-plan-typed-array-nonempty-margin-decode-weight",
         "17.0",
         "--semantic-plan-typed-array-item-margin-decode-weight",
@@ -108,16 +102,16 @@ def test_train_model_cli_threads_decode_weights_into_model_build_config(
 
     assert exit_code == 0
     config = captured["config"]
-    assert config.semantic_role_decode_weight == 1.0
-    assert config.semantic_role_schema_candidates is True
-    assert config.semantic_role_contract_in_context is True
-    assert config.slot_coverage_close_decode_weight == 2.0
+    assert config.semantic_role_decode_weight == 0.0
+    assert config.semantic_role_schema_candidates is False
+    assert config.semantic_role_contract_in_context is False
+    assert config.slot_coverage_close_decode_weight == 0.0
     assert config.schema_value_decode_weight == 3.0
     assert config.schema_open_decode_weight == 3.5
     assert config.schema_enum_close_decode_weight == 4.0
     assert config.schema_opaque_decode_weight == 5.0
     assert config.schema_opaque_close_decode_weight == 6.0
-    assert config.schema_role_slot_decode_weight == 7.0
+    assert config.schema_role_slot_decode_weight == 0.0
     assert config.semantic_plan_decode_weight == 8.0
     assert config.semantic_plan_margin_decode_weight == 9.0
     assert config.semantic_plan_seed_decode_weight == 10.0
@@ -126,10 +120,64 @@ def test_train_model_cli_threads_decode_weights_into_model_build_config(
     assert config.semantic_plan_root_decode_weight == 13.0
     assert config.semantic_plan_root_margin_decode_weight == 14.0
     assert config.semantic_plan_repeated_array_close_margin_decode_weight == 15.0
-    assert config.semantic_plan_repeated_slot_margin_decode_weight == 16.0
+    assert config.semantic_plan_repeated_slot_margin_decode_weight == 0.0
     assert config.semantic_plan_typed_array_nonempty_margin_decode_weight == 17.0
     assert config.semantic_plan_typed_array_item_margin_decode_weight == 18.0
     assert config.visible_reference_decode_weight == 19.0
+
+
+@pytest.mark.parametrize(
+    ("flag", "value"),
+    case_values(__file__, "test_train_model_cli_rejects_prohibited_marker_semantic_levers"),
+)
+def test_train_model_cli_rejects_prohibited_marker_semantic_levers(
+    tmp_path: Path, flag: str, value: str | None
+) -> None:
+    prohibited = [flag, value] if value is not None else [flag]
+    with pytest.raises(ValueError, match="prohibited enabled levers"):
+        train_model.main(
+            [
+                "--train-dir",
+                str(tmp_path),
+                "--run-root",
+                str(tmp_path / "runs"),
+                "--run-id",
+                "prohibited-marker-semantics",
+                "--steps",
+                "0",
+                *prohibited,
+            ]
+        )
+
+
+def test_train_model_cli_threads_structural_aux_head_profile(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured: dict[str, ModelBuildConfig] = {}
+    monkeypatch.setattr(
+        train_model,
+        "train",
+        lambda config: captured.setdefault("config", config) and {},
+    )
+
+    assert (
+        train_model.main(
+            [
+                "--train-dir",
+                str(tmp_path),
+                "--run-root",
+                str(tmp_path / "runs"),
+                "--run-id",
+                "structural-profile-wiring",
+                "--steps",
+                "0",
+                "--structural-aux-head-profile",
+                "binder-topology",
+            ]
+        )
+        == 0
+    )
+    assert captured["config"].structural_aux_head_profile == "binder-topology"
 
 
 def test_train_model_cli_decode_weights_default_to_zero_not_none(

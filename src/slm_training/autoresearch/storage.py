@@ -529,13 +529,27 @@ def loop_result_rows(
             except json.JSONDecodeError:
                 handoff = {}
         gate_rejection = _completed_gate_rejection(root, campaign, outcome)
+        params = _metric_text(outcome.metrics, "trainable_params")
+        if params == "—":
+            summary_path = (
+                Path(root)
+                / campaign.campaign_id
+                / "runs"
+                / outcome.experiment_id
+                / "train_summary.json"
+            )
+            try:
+                summary = json.loads(summary_path.read_text(encoding="utf-8"))
+                params = str(int(summary["track"]["trainable_params"]))
+            except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError):
+                params = "—"
         rows.append(
             {
                 "cycle": campaign.cycle_index,
                 "upstream": (campaign.upstream_commit or "")[:8] or "—",
                 "integrated": (campaign.integration_commit or "")[:8] or "—",
                 "experiment": outcome.experiment_id,
-                "params": _metric_text(outcome.metrics, "trainable_params"),
+                "params": params,
                 "primary": _metric_text(outcome.metrics, campaign.primary_metric),
                 "metrics": _metrics_text(
                     outcome.metrics,
@@ -842,7 +856,18 @@ def loop_priority_rows(
     }
     rows: list[dict[str, Any]] = []
     for campaign, matrix in matrices:
-        for priority in sorted(matrix.next_run_priorities, key=lambda item: item.rank):
+        handoff_path = Path(root) / campaign.campaign_id / "cycle_handoff.json"
+        priorities = matrix.next_run_priorities
+        if handoff_path.is_file():
+            try:
+                handoff = AutotrainCycleHandoffV1.model_validate_json(
+                    handoff_path.read_text(encoding="utf-8")
+                )
+            except (OSError, ValueError):
+                handoff = None
+            if handoff is not None and handoff.priorities:
+                priorities = handoff.priorities
+        for priority in sorted(priorities, key=lambda item: item.rank):
             rows.append(
                 {
                     "cycle": campaign.cycle_index,

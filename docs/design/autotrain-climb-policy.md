@@ -62,6 +62,16 @@ closed if required stop, harness, Lean, data, documentation, or merged-delivery
 evidence is absent. Partial eval scoreboards are infrastructure evidence and never
 enter model-quality comparison.
 
+Structural supervision arms also carry a `structural_aux_head_profile`. The
+recommended arm and its zero-loss control prebuild exactly the same auxiliary
+heads, so the treatment changes supervision rather than trainable capacity.
+Training parameter counts are projected into the typed outcome and terminal
+matrix; Phase A falls back to the bound train summary and applies the `EG_params`
+gate if any growth remains. A missing parameter count can no longer make a growth
+arm look size matched. After the handoff is written, the terminal matrix renders
+its post-outcome priorities. A completed null or negative therefore rotates to a
+distinct quality hypothesis instead of printing the already-executed preregistration.
+
 `measurement.max_consecutive_frozen_replays` bounds identical incomplete replay
 cycles. Exhaustion is not a model rejection: the handoff preserves the frozen
 manifest and routes a typed `repair_harness` action to

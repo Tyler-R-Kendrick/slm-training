@@ -336,6 +336,7 @@ _LEVER_KNOB_KEYS = (
     "component_edge_loss_weight",
     "component_inventory_loss_weight",
     "binder_topology_loss_weight",
+    "structural_aux_head_profile",
     "steps",
     "batch_size",
     "train_version",
@@ -386,22 +387,34 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
     (
         "component-plan",
         "Component-plan supervision improves smoke structural_similarity without lowering parse_rate or binder_reference_f1.",
-        {"component_plan_loss_weight": 1.0},
+        {
+            "component_plan_loss_weight": 1.0,
+            "structural_aux_head_profile": "component-plan",
+        },
     ),
     (
         "component-edge",
         "Component-edge supervision improves smoke structural_similarity without lowering parse_rate or binder_reference_f1.",
-        {"component_edge_loss_weight": 1.0},
+        {
+            "component_edge_loss_weight": 1.0,
+            "structural_aux_head_profile": "component-edge",
+        },
     ),
     (
         "component-inventory",
         "Component-inventory supervision improves smoke structural_similarity without lowering parse_rate or binder_reference_f1.",
-        {"component_inventory_loss_weight": 1.0},
+        {
+            "component_inventory_loss_weight": 1.0,
+            "structural_aux_head_profile": "component-inventory",
+        },
     ),
     (
         "binder-topology",
         "Low-weight binder-topology supervision improves smoke structural_similarity without lowering parse_rate or binder_reference_f1.",
-        {"binder_topology_loss_weight": 0.25},
+        {
+            "binder_topology_loss_weight": 0.25,
+            "structural_aux_head_profile": "binder-topology",
+        },
     ),
     (
         "component-structure",
@@ -409,6 +422,7 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         {
             "component_plan_loss_weight": 1.0,
             "component_edge_loss_weight": 1.0,
+            "structural_aux_head_profile": "component-structure",
         },
     ),
 )
@@ -2194,12 +2208,20 @@ def _classify_positive(
                 return None
         return None
 
+    def _train_summary_params(experiment_id: str) -> int | None:
+        summary = _read_json(camp_dir / "runs" / experiment_id / "train_summary.json")
+        value = (summary.get("track") or {}).get("trainable_params")
+        try:
+            return int(value) if value is not None else None
+        except (TypeError, ValueError):
+            return None
+
     base_params = baseline_trainable_params
     cand_params = candidate_trainable_params
     if base_params is None:
-        base_params = _params(control_outcome)
+        base_params = _params(control_outcome) or _train_summary_params(control_id)
     if cand_params is None:
-        cand_params = _params(cand_outcome)
+        cand_params = _params(cand_outcome) or _train_summary_params(candidate_id)
 
     leaf = effective_metric.split(".")[-1]
     t_mpr = _finite_metric(candidate.get("meaningful_program_rate"))
@@ -2264,6 +2286,8 @@ def _classify_positive(
     decision["reasons"] = reasons
     decision["control_id"] = control_id
     decision["candidate_id"] = candidate_id
+    decision["baseline_trainable_params"] = base_params
+    decision["candidate_trainable_params"] = cand_params
     decision["fixture_volume_gate_hits"] = fixture_only_fails
     decision["primary_metric"] = effective_metric
     return decision
@@ -2510,9 +2534,7 @@ def _consecutive_frozen_replays(
         return 0
     count = 1
     cursor = str(
-        _read_json(root / campaign_id / "campaign.json").get(
-            "predecessor_campaign_id"
-        )
+        _read_json(root / campaign_id / "campaign.json").get("predecessor_campaign_id")
         or ""
     )
     seen = {campaign_id}
@@ -2533,18 +2555,16 @@ def _consecutive_frozen_replays(
             break
         count += 1
         cursor = str(
-            _read_json(root / cursor / "campaign.json").get(
-                "predecessor_campaign_id"
-            )
+            _read_json(root / cursor / "campaign.json").get("predecessor_campaign_id")
             or ""
         )
     return count
 
 
-def _completed_retry_priorities(
-    matrix: dict[str, Any], candidate_id: str
+def _completed_candidate_priorities(
+    matrix: dict[str, Any], candidate_id: str, *, resolved_infrastructure: bool
 ) -> tuple[NextRunPriorityV1, ...]:
-    """Replace stale replay steering after a frozen measurement completes."""
+    """Replace stale steering after a candidate produces a complete result."""
 
     rows = [dict(item) for item in matrix.get("next_run_priorities") or []]
     if not rows:
@@ -2571,10 +2591,28 @@ def _completed_retry_priorities(
         (
             item
             for item in alternatives
-            if any(float((item.get("knobs") or {}).get(key) or 0) > 0 for key in quality_keys)
+            if any(
+                float((item.get("knobs") or {}).get(key) or 0) > 0
+                for key in quality_keys
+            )
         ),
         alternatives[0] if alternatives else None,
     )
+    for row in rows:
+        if (
+            row.get("disposition") == "experiment_next"
+            and str(row.get("proposed_experiment_id") or "") == candidate_id
+        ):
+            row.update(
+                {
+                    "disposition": "monitor",
+                    "proposed_experiment_id": None,
+                    "expected_information_gain": (
+                        "The completed candidate is exhausted and cannot be "
+                        "selected again without a new preregistered hypothesis."
+                    ),
+                }
+            )
     if alternative is not None:
         next_id = str(alternative["experiment_id"])
         slug = next_id.rsplit("-", 1)[-1]
@@ -2583,11 +2621,15 @@ def _completed_retry_priorities(
                 "area": "model",
                 "hypothesis": (
                     "The completed frozen replay rejects the prior arm; test "
-                    f"the distinct size-matched '{slug}' quality hypothesis next."
-                ),
+                    if resolved_infrastructure
+                    else "The completed non-positive arm is exhausted; test "
+                )
+                + f"the distinct size-matched '{slug}' quality hypothesis next.",
                 "confidence": 0.9,
                 "expected_information_gain": (
                     "Moves from resolved infrastructure attribution to model quality."
+                    if resolved_infrastructure
+                    else "Avoids rerunning a completed null while preserving matched attribution."
                 ),
                 "authority": "observed_result",
                 "disposition": "experiment_next",
@@ -2595,6 +2637,60 @@ def _completed_retry_priorities(
             }
         )
     return tuple(NextRunPriorityV1.model_validate(item) for item in rows)
+
+
+def _completed_retry_priorities(
+    matrix: dict[str, Any], candidate_id: str
+) -> tuple[NextRunPriorityV1, ...]:
+    """Compatibility wrapper for completed frozen-replay steering."""
+
+    return _completed_candidate_priorities(
+        matrix, candidate_id, resolved_infrastructure=True
+    )
+
+
+def _predecessor_priority_slug(
+    root: Path, predecessor_campaign_id: str | None, *, skip: set[str]
+) -> str | None:
+    """Resolve the predecessor's highest-priority executable screening arm."""
+
+    if not predecessor_campaign_id:
+        return None
+    camp_dir = root / predecessor_campaign_id
+    handoff_path = camp_dir / "cycle_handoff.json"
+    if not handoff_path.is_file():
+        return None
+    handoff = _read_json(handoff_path)
+    priorities = list(handoff.get("priorities") or [])
+    delivery_path = camp_dir / "sdlc_delivery.json"
+    matrix_path = camp_dir / "matrix-proposal.json"
+    if delivery_path.is_file() and matrix_path.is_file():
+        delivery = _read_json(delivery_path)
+        measurement_incomplete = any(
+            str(reason).startswith("measurement_incomplete:")
+            for reason in delivery.get("reasons") or []
+        ) or _diagnosis_target(camp_dir) == "infrastructure"
+        if (
+            handoff.get("cycle_intent") == "screening"
+            and not measurement_incomplete
+            and not delivery.get("positive")
+        ):
+            priorities = [
+                item.model_dump()
+                for item in _completed_candidate_priorities(
+                    _read_json(matrix_path),
+                    str(delivery.get("candidate_id") or ""),
+                    resolved_infrastructure=False,
+                )
+            ]
+    for priority in sorted(priorities, key=lambda item: int(item.get("rank") or 999)):
+        if priority.get("disposition") != "experiment_next":
+            continue
+        experiment_id = str(priority.get("proposed_experiment_id") or "")
+        for slug, _hypothesis, _extras in _SCREENING_ARM_BANK:
+            if experiment_id.endswith(f"-{slug}") and slug not in skip:
+                return slug
+    return None
 
 
 def _write_cycle_handoff(
@@ -2656,14 +2752,23 @@ def _write_cycle_handoff(
             *(delivery.get("reasons") or []),
         ]
     )
-    priorities = (
-        _completed_retry_priorities(matrix, candidate_id)
-        if cycle_intent == "retry_measurement" and not measurement_incomplete
-        else tuple(
+    if cycle_intent == "retry_measurement" and not measurement_incomplete:
+        priorities = _completed_candidate_priorities(
+            matrix, candidate_id, resolved_infrastructure=True
+        )
+    elif (
+        cycle_intent == "screening"
+        and not measurement_incomplete
+        and not delivery.get("positive")
+    ):
+        priorities = _completed_candidate_priorities(
+            matrix, candidate_id, resolved_infrastructure=False
+        )
+    else:
+        priorities = tuple(
             NextRunPriorityV1.model_validate(item)
             for item in matrix.get("next_run_priorities") or []
         )
-    )
     checkpoint_paths = _created_checkpoint_paths(camp_dir)
     document_reason = "persist this cycle's JSON and markdown under docs/design"
     if checkpoint_paths:
@@ -2980,26 +3085,11 @@ def _finalize_terminal_interrupted_replay(
     cycle_intent = "retry_measurement"
     primary_metric = str(campaign.get("primary_metric") or "")
     if not primary_metric:
-        raise RuntimeError(f"terminal interrupted campaign lacks primary metric: {campaign_id}")
+        raise RuntimeError(
+            f"terminal interrupted campaign lacks primary metric: {campaign_id}"
+        )
 
     _set_active_stage(root, loop_id, "recover-terminal-handoff")
-    _run(
-        [
-            sys.executable,
-            "-m",
-            "scripts.autoresearch",
-            "--root",
-            str(root),
-            "status",
-            "--loop-id",
-            loop_id,
-            "--matrix",
-            "--last",
-            "5",
-        ],
-        cwd=cwd,
-        deadline=deadline,
-    )
     delivery = _phase_a_delivery(
         cwd=cwd,
         root=root,
@@ -3025,6 +3115,23 @@ def _finalize_terminal_interrupted_replay(
         delivery=delivery,
         resolution=None,
         formal_status=_formal_preflight_status(camp_dir),
+    )
+    _run(
+        [
+            sys.executable,
+            "-m",
+            "scripts.autoresearch",
+            "--root",
+            str(root),
+            "status",
+            "--loop-id",
+            loop_id,
+            "--matrix",
+            "--last",
+            "5",
+        ],
+        cwd=cwd,
+        deadline=deadline,
     )
     print(
         f"CYCLE_RECOVERED {campaign_id} role={role} intent={cycle_intent} "
@@ -3389,6 +3496,7 @@ def _matrix(
             "component_edge_loss_weight": 0.0,
             "component_inventory_loss_weight": 0.0,
             "binder_topology_loss_weight": 0.0,
+            "structural_aux_head_profile": "none",
             # Measurement completeness: smoke-only screening + longer decode wall.
             "decode_timeout_seconds": decode_timeout,
             "eval_suites": eval_suites,
@@ -3439,6 +3547,7 @@ def _matrix(
                 "component_edge_loss_weight",
                 "component_inventory_loss_weight",
                 "binder_topology_loss_weight",
+                "structural_aux_head_profile",
                 "steps",
                 "batch_size",
                 "train_version",
@@ -3449,7 +3558,12 @@ def _matrix(
             }
         }
         promo_steps = int(promo_extra.pop("steps", steps) or steps)
-        control_knobs = knobs(steps=promo_steps)
+        control_knobs = knobs(
+            steps=promo_steps,
+            structural_aux_head_profile=str(
+                promo_extra.get("structural_aux_head_profile") or "none"
+            ),
+        )
         cand_knobs = knobs(steps=promo_steps, **promo_extra)
         candidates = [
             {
@@ -3594,6 +3708,7 @@ def _matrix(
                 "component_edge_loss_weight",
                 "component_inventory_loss_weight",
                 "binder_topology_loss_weight",
+                "structural_aux_head_profile",
                 "steps",
                 "batch_size",
                 "train_version",
@@ -3604,7 +3719,12 @@ def _matrix(
             }
         }
         confirm_steps = int(confirm_extra.pop("steps", steps) or steps)
-        control_knobs = knobs(steps=confirm_steps)
+        control_knobs = knobs(
+            steps=confirm_steps,
+            structural_aux_head_profile=str(
+                confirm_extra.get("structural_aux_head_profile") or "none"
+            ),
+        )
         # Drop lever defaults then re-apply champion levers on candidate.
         cand_knobs = knobs(steps=confirm_steps, **confirm_extra)
         # HypothesisMatrix requires ≥5 arms; only control + recommended execute.
@@ -3758,7 +3878,13 @@ def _matrix(
                 "experiment": exp(
                     f"{prefix}-control",
                     "Matched fixture control with both grammar levers off completes smoke eval under the published suite.",
-                    knobs(),
+                    knobs(
+                        structural_aux_head_profile=str(
+                            bank_by_slug[rec_slug][1].get(
+                                "structural_aux_head_profile", "none"
+                            )
+                        )
+                    ),
                     "Baseline for size-matched continuous attribution.",
                 ),
                 "evidence_uses": uses(),
@@ -4477,7 +4603,9 @@ def run_cycle(
             cycle_intent = role
             promote_levers = None
     skip_slugs = _skip_arm_slugs(queue_entries, integration_commit=integration)
-    rec_slug = _select_recommended_slug(cycle, skip=skip_slugs)
+    rec_slug = _predecessor_priority_slug(
+        root, pred, skip=skip_slugs
+    ) or _select_recommended_slug(cycle, skip=skip_slugs)
     matrix = _matrix(
         campaign_id=campaign_id,
         evidence_snapshot_id=ev["snapshot_id"],
@@ -4682,19 +4810,6 @@ def run_cycle(
         print(f"experiment {eid} exit={code}", flush=True)
 
     _set_active_stage(root, loop_id, "diagnosis-and-handoff")
-    _run(
-        [
-            *ar,
-            "status",
-            "--loop-id",
-            loop_id,
-            "--matrix",
-            "--last",
-            "5",
-        ],
-        cwd=cwd,
-        deadline=deadline,
-    )
     delivery = _phase_a_delivery(
         cwd=cwd,
         root=root,
@@ -4866,6 +4981,19 @@ def run_cycle(
         delivery=delivery,
         resolution=resolution,
         formal_status=promote_formal_status,
+    )
+    _run(
+        [
+            *ar,
+            "status",
+            "--loop-id",
+            loop_id,
+            "--matrix",
+            "--last",
+            "5",
+        ],
+        cwd=cwd,
+        deadline=deadline,
     )
     print(
         f"CYCLE_COMPLETE {campaign_id} role={role} intent={cycle_intent} "

@@ -152,6 +152,91 @@ def test_warm_start_vocab_remap_preserves_new_token_rows() -> None:
     assert remapped.tolist() == [[9.0, 9.0], [1.0, 2.0], [7.0, 7.0]]
 
 
+def _compositional_warm_start_config() -> TwoTowerConfig:
+    return TwoTowerConfig(
+        output_tokenizer="compositional",
+        grammar_constrained=False,
+        d_model=16,
+        n_heads=4,
+        context_layers=1,
+        denoiser_layers=1,
+        max_prompt_len=32,
+        max_target_len=32,
+    )
+
+
+def test_warm_start_load_merges_context_vocab_and_remaps_shared_row(
+    tmp_path: Path,
+) -> None:
+    output = OpenUITokenizer.build([HERO])
+    source_context = OpenUITokenizer.build(["old shared"])
+    target_context = OpenUITokenizer.build(["shared new"])
+    assert source_context.token_to_id["shared"] != target_context.token_to_id["shared"]
+
+    source = TwoTowerModel(
+        output,
+        config=_compositional_warm_start_config(),
+        context_tokenizer=source_context,
+    )
+    with torch.no_grad():
+        source.context.encoder.tok.weight[source_context.token_to_id["shared"]].fill_(
+            4.25
+        )
+    checkpoint = tmp_path / "source.pt"
+    source.save(checkpoint)
+
+    target = TwoTowerModel(
+        output,
+        config=_compositional_warm_start_config(),
+        context_tokenizer=target_context,
+    )
+    new_row_before = target.context.encoder.tok.weight[
+        target_context.token_to_id["new"]
+    ].detach().clone()
+    target.load(checkpoint, preserve_tokenizers=True)
+
+    assert set(target.context_tokenizer.token_to_id) == set(
+        source_context.token_to_id
+    ) | set(target_context.token_to_id)
+    shared_id = target.context_tokenizer.token_to_id["shared"]
+    torch.testing.assert_close(
+        target.context.encoder.tok.weight[shared_id],
+        torch.full_like(target.context.encoder.tok.weight[shared_id], 4.25),
+    )
+    torch.testing.assert_close(
+        target.context.encoder.tok.weight[target.context_tokenizer.token_to_id["new"]],
+        new_row_before,
+    )
+
+
+def test_warm_start_load_without_context_sidecar_uses_source_tokenizer(
+    tmp_path: Path,
+) -> None:
+    source_tokenizer = OpenUITokenizer.build(["old shared"])
+    source = TwoTowerModel(
+        source_tokenizer,
+        config=_compositional_warm_start_config(),
+        context_tokenizer=source_tokenizer,
+    )
+    checkpoint = tmp_path / "legacy.pt"
+    source.save(checkpoint)
+    assert not checkpoint.with_name(
+        checkpoint.stem + ".context.tokenizer.json"
+    ).exists()
+
+    target_context = OpenUITokenizer.build(["shared new"])
+    target = TwoTowerModel(
+        source_tokenizer,
+        config=_compositional_warm_start_config(),
+        context_tokenizer=target_context,
+    )
+    target.load(checkpoint, preserve_tokenizers=True)
+
+    assert set(target.context_tokenizer.token_to_id) == set(
+        source_tokenizer.token_to_id
+    ) | set(target_context.token_to_id)
+
+
 def test_warm_start_position_resize_copies_shared_prefix() -> None:
     source = torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
     target = torch.tensor([[9.0, 9.0], [8.0, 8.0]])
@@ -439,6 +524,38 @@ def test_training_loss_rechecks_opaque_role_safe_targets() -> None:
                 )
             ]
         )
+
+
+def test_structural_aux_profile_matches_trainable_capacity() -> None:
+    records = [
+        ExampleRecord(
+            id="a",
+            prompt="Hero",
+            openui=HERO,
+            placeholders=[":slot_0", ":slot_1"],
+            split="train",
+        )
+    ]
+    common = {
+        "d_model": 32,
+        "n_heads": 4,
+        "context_layers": 1,
+        "denoiser_layers": 1,
+        "output_tokenizer": "lexer",
+        "compiler_decode_mode": "tree",
+        "structural_aux_head_profile": "binder-topology",
+    }
+    control = TwoTowerModel.from_records(records, config=TwoTowerConfig(**common))
+    candidate = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(**common, binder_topology_loss_weight=0.25),
+    )
+
+    control_params = sum(p.numel() for p in control.trainable_parameters())
+    candidate_params = sum(p.numel() for p in candidate.trainable_parameters())
+    assert control.binder_topology_head is not None
+    assert candidate.binder_topology_head is not None
+    assert control_params == candidate_params
 
 
 def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) -> None:
