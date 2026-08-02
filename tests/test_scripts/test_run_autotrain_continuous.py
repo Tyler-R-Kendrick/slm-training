@@ -548,6 +548,34 @@ def test_matrix_thrash_rotation_recommends_non_bounds() -> None:
     assert "c20260731-c2-bounds" in ids
     assert "c20260731-c2-component-plan" in ids
     assert "c20260731-c2-binder-topology" in ids
+    assert "c20260731-c2-literal-close" in ids
+
+
+def test_literal_close_arm_is_size_matched_and_changes_only_tail_loss() -> None:
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-20260802-c1764",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1764,
+        role="screening",
+        recommended_slug="literal-close",
+    )
+    by_id = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    control = by_id["c20260802-c1764-control"]
+    candidate = by_id["c20260802-c1764-literal-close"]
+
+    assert matrix["recommended_experiment_id"].endswith("-literal-close")
+    assert control["ltr_tail_loss_weight"] == 0.0
+    assert candidate["ltr_tail_loss_weight"] == 2.0
+    assert control["steps"] == candidate["steps"]
+    assert control["batch_size"] == candidate["batch_size"]
 
 
 def test_structural_screening_control_matches_recommended_head_capacity() -> None:
@@ -3542,6 +3570,67 @@ def test_finalized_decode_timeout_routes_directly_to_runtime_repair(
     assert repair.frozen_manifest_sha256 == hashlib.sha256(b"{}\n").hexdigest()
     assert retry.frozen_manifest_sha256 == repair.frozen_manifest_sha256
     assert handoff.actions.index(repair) < handoff.actions.index(retry)
+
+
+def test_numeric_literal_close_starvation_steers_new_training_arm(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "cycle-1"
+    run = camp / "runs" / "cand"
+    run.mkdir(parents=True)
+    (camp / "manifests").mkdir()
+    (camp / "manifests" / "cand.json").write_text("{}\n")
+    traces = [
+        {
+            "record_id": "smoke-1",
+            "prefix_text": f'root = Slider("$6", "discrete", {"1" * n}',
+            "chosen_token": "B:31",
+            "legal_candidates": 12,
+        }
+        for n in range(6, 10)
+    ]
+    (run / "eval_smoke.json").write_text(
+        json.dumps(
+            {
+                "decode_timeout_document_count": 1,
+                "decode_stats": {"constrained_selection_traces": traces},
+            }
+        )
+    )
+
+    assert _mod._has_numeric_literal_close_starvation(camp, "cand")
+    handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="promotion",
+        cycle_intent="retry_measurement",
+        primary_metric="held_out.structural_similarity",
+        matrix=_priority_matrix(),
+        delivery={
+            "positive": False,
+            "candidate_id": "cand",
+            "measurement_complete": False,
+            "reasons": ["measurement_incomplete:decode_timeout"],
+            "stack_layer": False,
+        },
+        resolution=None,
+        formal_status=None,
+    )
+
+    assert handoff.priorities[0].area == "model_build"
+    assert handoff.priorities[0].proposed_experiment_id == "cand-literal-close"
+    repair = next(
+        action for action in handoff.actions if action.kind == "repair_harness"
+    )
+    assert "do not replay" in repair.reason
+    assert _mod._predecessor_priority_slug(root, "cycle-1", skip=set()) == (
+        "literal-close"
+    )
 
 
 def test_cycle_handoff_exhausts_identical_replays_into_harness_repair(
