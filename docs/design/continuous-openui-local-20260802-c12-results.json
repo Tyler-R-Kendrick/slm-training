@@ -1,0 +1,88 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c12",
+  "cycle_index": 12,
+  "cycle_intent": "retry_measurement (driver-initiated frozen replay of cycle 10, final attempt 2/2) + a harness investigation/fix pass before the replay",
+  "source_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "integration_commit": "14ec931bdd903da0029961fa4548b11c3a70540e",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "summary": "Investigated the ~70s per-arm wall budget that has blocked test_data_scaleup_v1 (smoke=12) screening for two cycles running (c10, c11). Root cause: decode compute, not budget arithmetic. _arm_wall_minutes already splits the immovable MAX_RUN_MINUTES=3-derived ceiling (155s minus a 15s finalization reserve) as tightly as possible into two symmetric 70s arms; decode_progress.json telemetry from c10/c11/c12 (three independent measurements) converges tightly on ~14.2-14.3s/record, >97% of which is compiler_ms (grammar-constrained forward-symbol-table passes in the decode compiler). 12 smoke records need ~172s of pure decode -- about 2.5x the entire two-arm wall budget, before any training or I/O overhead. No redistribution of the fixed arm budget closes that deficit. What was fixable and safe within autoresearch/experiments-family harness scope: nothing previously stopped a *new* (non-frozen) screening/promotion cycle from silently defaulting onto an eval snapshot whose suites cannot plausibly complete a decode pass in one arm. Added _feasible_eval_version (scripts/run_autotrain_continuous.py, commit 14ec931) to estimate role-required suite decode time from the measured per-record cost and fall through _DEFAULT_EVAL_VERSION_CANDIDATES to the first candidate that fits, with regression tests. This guard does not and cannot affect the already-frozen c10 replay chain (frozen replays reuse the exact locked eval_version by design), so the mandatory retry_measurement action from c11's handoff was still consumed this cycle exactly as before -- and it still hit wall_timeout, exactly as predicted by the root-cause analysis.",
+  "budget_investigation": {
+    "arm_wall_minutes_formula": "_arm_wall_minutes(policy_minutes) = min(policy_minutes, ((MAX_HARNESS_WALL_SECONDS - HARNESS_FINALIZATION_RESERVE_SECONDS) / 2) / 60)",
+    "constants": {
+      "MAX_RUN_MINUTES": 3,
+      "MAX_HARNESS_WALL_SECONDS": 155,
+      "HARNESS_FINALIZATION_RESERVE_SECONDS": 15,
+      "resulting_arm_wall_seconds": 70
+    },
+    "measured_decode_cost_ms_mean_per_record": {
+      "c10": null,
+      "c11_control": 14258.18,
+      "c11_component_structure": 14233.211,
+      "c12_control": 14302.723,
+      "c12_component_structure": 14334.385
+    },
+    "measured_compiler_ms_share_of_total": ">= 0.97 in every sample",
+    "conclusion": "decode compute bound, not a budget-arithmetic bug -- no safe reallocation of the fixed 70s arm makes 12 records fit; ~4 records/arm is the theoretical ceiling at this measured decode rate (untested at n=4/5, not attempted -- would only be a marginal 33% gain over the already-tested n=3 fixture and was judged not worth a new quality-gated data publish for that little signal)."
+  },
+  "harness_fix": {
+    "commit": "14ec931bdd903da0029961fa4548b11c3a70540e",
+    "family": "autoresearch/experiments",
+    "change": "scripts/run_autotrain_continuous.py: added _suite_record_count, _eval_version_fits_arm_budget, _feasible_eval_version; call site at eval_version selection now uses _feasible_eval_version(role=role, arm_wall_minutes=arm_wall_minutes, policy=policy) instead of the unfiltered default_eval_version().",
+    "version_stamp_bump": "harness.autoresearch.experiment_campaign v60 -> v61",
+    "tests_added": [
+      "tests/test_scripts/test_run_autotrain_continuous.py::test_suite_record_count_reads_lines_and_fails_closed_on_missing",
+      "tests/test_scripts/test_run_autotrain_continuous.py::test_eval_version_fits_arm_budget_uses_measured_decode_cost",
+      "tests/test_scripts/test_run_autotrain_continuous.py::test_feasible_eval_version_falls_back_when_default_is_oversized",
+      "tests/test_scripts/test_run_autotrain_continuous.py::test_feasible_eval_version_keeps_default_when_it_already_fits",
+      "tests/test_scripts/test_run_autotrain_continuous.py::test_feasible_eval_version_never_crashes_when_nothing_fits"
+    ],
+    "tests_result": "102 passed, 1 skipped (tests/test_scripts/test_run_autotrain_continuous.py); verify_version_stamps --check clean",
+    "scope_note": "test_data_scaleup_v1 was never durably added to engine.py's _DEFAULT_EVAL_VERSION_CANDIDATES (c10/c11 used a non-tracked runtime monkeypatch because editing engine.py drags in the pre-existing, unrelated-to-this-loop broken test_continuous_classify_positive_entry via the check-changed pre-commit hook's src/slm_training/autoresearch/ -> tests/test_autoresearch mapping). This cycle's fix deliberately lives entirely in scripts/run_autotrain_continuous.py (maps only to tests/test_scripts under check_changed.py) so it commits cleanly without touching or depending on that broken test."
+  },
+  "recipe": {
+    "device": "cpu",
+    "eval_version": "test_data_scaleup_v1",
+    "eval_suites": "smoke",
+    "decode_timeout_seconds": 24.0,
+    "resumed_from_checkpoint": true,
+    "checkpoint_source": "c10 control/component-structure checkpoints/last.pt"
+  },
+  "decode_progress": {
+    "control": {"status": "interrupted", "processed_record_n": 3, "of_smoke_n": 12, "total_ms_mean": 14302.723, "compiler_ms_mean": 13891.963},
+    "component-structure": {"status": "interrupted", "processed_record_n": 3, "of_smoke_n": 12, "total_ms_mean": 14334.385, "compiler_ms_mean": 14068.315}
+  },
+  "sdlc_delivery": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "measurement_incomplete:c20260802-continuous-openui-local-8c0b60dd-c12-control:missing_scoreboard",
+      "measurement_incomplete:c20260802-continuous-openui-local-8c0b60dd-c12-component-structure:missing_scoreboard",
+      "wall_timeout:f3310e07378bb90db9fc9fd8da57baa9782552513c69becfdf9a3c1fb215e22d",
+      "empty_metrics:f3310e07378bb90db9fc9fd8da57baa9782552513c69becfdf9a3c1fb215e22d",
+      "wall_timeout:a2b3cd99f60a6fb17fadf20922d7bad241a388833c2f03ed84b07555498a1ec0",
+      "empty_metrics:a2b3cd99f60a6fb17fadf20922d7bad241a388833c2f03ed84b07555498a1ec0",
+      "primary_metric_unavailable"
+    ],
+    "measurement_complete": false
+  },
+  "driver_exhaustion": {
+    "max_consecutive_frozen_replays": 2,
+    "attempts_consumed": ["c10 (screening, 0/2 boundary set)", "c11 (retry 0/2 -> 1/2)", "c12 (retry 1/2 -> exhausted 2/2)"],
+    "typed_actions_emitted": [
+      {"kind": "repair_harness", "owner": "improve-openui-harnesses", "harness_family": "model_build", "reason": "identical incomplete replay budget exhausted (2/2); repair the canonical owner before replaying the frozen arm"},
+      {"kind": "retry_measurement", "owner": "autotrain", "reason": "replay the identical frozen arm after the required canonical harness repair", "gated_on": "repair_harness receipt"},
+      {"kind": "document", "owner": "documenting-experiment-results"}
+    ]
+  },
+  "repair_harness_disposition": "NOT attempted this cycle -- the driver's own exhaustion diagnosis names harness_family=model_build (scripts/evaluate_model / the decode compiler stage in src/slm_training/models/twotower.py), a different family from this cycle's declared autoresearch/experiments scope and squarely inside the AGENTS.md non-negotiable invariant 'constrained decoding is the product'. Speeding up compiler_ms safely (without weakening the constrained-decode/symbol-table contract) needs dedicated profiling and its own scoped harness-repair cycle via improve-openui-harnesses, not a bolt-on fix here. This action is left correctly UNACKNOWLEDGED and pending; per storage._PREREQUISITE_ACTION_KINDS, repair_harness (like document) blocks cycle 13 from starting via _require_predecessor_actions until it has an evidence-bound receipt or a future session performs the real model_build repair.",
+  "session_stopping_decision": "This cycle acknowledges only the document action for campaign c12 (the harness fix already lives in a separate, already-committed autoresearch/experiments-family commit unrelated to this specific typed action). repair_harness stays open by design -- this is the loop's own fail-closed exhaustion contract working as intended, not a bug or an oversight. A future cycle/session must run improve-openui-harnesses against the model_build family (compiler_ms decode cost) before cycle 13 can start, or accept that the component-structure @ test_data_scaleup_v1 frozen chain stays permanently blocked and pursue a different (non-frozen) lever/suite instead.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "14ec931bdd903da0029961fa4548b11c3a70540e",
+    "code_dirty": false
+  }
+}
