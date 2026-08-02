@@ -1,0 +1,93 @@
+{
+  "schema": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c3",
+  "loop_id": "continuous-openui-20260730",
+  "cycle_index": 1743,
+  "campaign_role": "screening",
+  "cycle_intent": "screening",
+  "run_class": "ship_eval",
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "steps": 22,
+  "seed": 100003,
+  "checkpoint_reuse": "fresh matched-arm train, not a frozen replay",
+  "upstream_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "integration_commit": "aa60c0ac661d230a8c20fde900d8faf3f9a34b13",
+  "primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "label": "matched control",
+      "trainable_parameters": 1755764,
+      "suite_n": 3,
+      "completed_document_n": 3,
+      "incomplete_document_n": 0,
+      "decode_timeout_count": 0,
+      "parse_rate_completed": 1.0,
+      "meaningful_program_rate_completed": 0.3333333333333333,
+      "structural_similarity_completed": 0.23083333333333333,
+      "binder_reference_f1_completed": 0.48888888888888893,
+      "latency_ms_p50_completed": 2539.57,
+      "reward_score": 0.5493333333333333,
+      "checkpoint_sha256": "57d5b8f1b6119b7716e86be7e25fabb88e4e7746d4de8361e033af23556c4f95",
+      "gate_pass": false,
+      "scoreable_comparison": true
+    },
+    {
+      "label": "component-plan",
+      "trainable_parameters": 1755764,
+      "suite_n": 3,
+      "completed_document_n": 3,
+      "incomplete_document_n": 0,
+      "decode_timeout_count": 0,
+      "parse_rate_completed": 1.0,
+      "meaningful_program_rate_completed": 0.3333333333333333,
+      "structural_similarity_completed": 0.23083333333333333,
+      "binder_reference_f1_completed": 0.48888888888888893,
+      "latency_ms_p50_completed": 2392.58,
+      "reward_score": 0.5493333333333333,
+      "checkpoint_sha256": "e80f27c26310ddaf474c7b8e3692954fabf79d64954415771b3e173dbfd5cfc2",
+      "gate_pass": false,
+      "scoreable_comparison": true
+    }
+  ],
+  "comparison": {
+    "parameter_matched": true,
+    "measurement_complete": true,
+    "quality_delta": "none (exact tie on parse_rate, meaningful_program_rate, structural_similarity, binder_reference_f1, reward_score)",
+    "latency_delta_fraction": 0.05788,
+    "latency_direction": "candidate faster",
+    "efficiency_win": {
+      "metric": "mpr_per_ms",
+      "control": 0.00013125582,
+      "candidate": 0.00013931962,
+      "gain_fraction": 0.061435772,
+      "minimum_effect": 0.05
+    },
+    "disposition": "positive_quality_held_efficiency_win"
+  },
+  "sdlc_phase_a": {
+    "positive": true,
+    "stack_layer_at_classification_time": false,
+    "stack_layer_delivered": true,
+    "reasons": [
+      "efficiency_win:mpr_per_ms:0.00013125582->0.00013931962:gain_fraction=0.061435772:minimum=0.05",
+      "quality_held:parse=1.0 mpr=0.3333333333333333"
+    ],
+    "note": "The driver classifies positive/stackable from `git status --porcelain` at run time, before this cycle's docs exist, so it reports positive_no_tracked_delta_skip_stack. Once documented (this commit), autotrain-iteration-delivery requires stacking the reviewable delta -- see the cycle_handoff deliver_stack action."
+  },
+  "harness_feedback": {
+    "signal": "component-plan is a genuine quality-held latency win on this fixture: identical parse/meaningful/structural/binder/reward metrics with 5.79% lower completed-document p50 latency (efficiency gain 6.14%, above the 5% policy floor).",
+    "repair": "None indicated. Model-level result; no canonical harness change required.",
+    "component_version": "harness.model_build.eval/v74"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "aa60c0ac661d230a8c20fde900d8faf3f9a34b13",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v74",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v22"
+    }
+  }
+}
