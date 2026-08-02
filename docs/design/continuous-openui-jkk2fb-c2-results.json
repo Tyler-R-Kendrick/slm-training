@@ -1,0 +1,57 @@
+{
+  "schema": "autotrain_sdlc_delivery/v1",
+  "loop_id": "continuous-openui-jkk2fb",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-jkk2fb-9f2e5830-c2",
+  "cycle_index": 2,
+  "finished_at": "2026-08-02T07:42:41Z",
+  "sdlc_phase": "A",
+  "positive": false,
+  "stack_layer": false,
+  "has_tracked_delta": false,
+  "stack_action": "no_stack_layer_non_positive",
+  "agent_required": "continue loop; local commits/docs only",
+  "reasons": [
+    "wall_timeout:223de081f85bae2a33bc801117c68c5afeef0567b1f6e17595262df00819f07a",
+    "primary_metric_unavailable"
+  ],
+  "primary_metric": "smoke.structural_similarity",
+  "direction": "increase",
+  "role": "screening",
+  "upstream_commit": "62f315565318479b83e6352e1b0d75ab66011b9b",
+  "integration_commit": "b2068072b4313fb0094f6713fe81413045fc9f55",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "steps": 20,
+  "device": "cpu",
+  "control_id": "c20260802-continuous-openui-jkk2fb-9f2e5830-c2-control",
+  "candidate_id": "c20260802-continuous-openui-jkk2fb-9f2e5830-c2-component-plan",
+  "candidate_hypothesis": "component-plan head prebuilt (size-matched, +146,802 params vs c1 baseline for the head)",
+  "baseline_trainable_params": 1755764,
+  "candidate_trainable_params": 1755764,
+  "control_train_summary": {
+    "steps": 22,
+    "stopped_on": "steps",
+    "last_loss": 14.390222549438477,
+    "status": "training_completed_eval_not_reached"
+  },
+  "control_metrics": {
+    "latency_ms_p50": null,
+    "parse_rate": null,
+    "meaningful_program_rate": null,
+    "structural_similarity": null,
+    "binder_reference_f1": null
+  },
+  "candidate_metrics": {
+    "latency_ms_p50": 2088.0,
+    "parse_rate": 1.0,
+    "meaningful_program_rate": 0.0,
+    "structural_similarity": 0.0964,
+    "binder_reference_f1": 0.0
+  },
+  "candidate_ship_gates": "incomplete: AgentV SDK unavailable (npm ci not run in this checkout) failed the honest ship-gate publish step; smoke-suite metrics were captured before that step",
+  "control_ship_gates": "not_reached: control experiment hit the per-arm wall_timeout after training completed (steps=22, stopped_on=steps) but before evaluate_model ran, so no suite metrics were produced for the control arm",
+  "fixture_volume_gate_hits": 0,
+  "measurement_complete": false,
+  "honesty_mode": "fixture_or_scratch",
+  "not_a_ship_claim": true
+}
