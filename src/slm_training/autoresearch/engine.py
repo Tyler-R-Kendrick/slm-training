@@ -796,6 +796,15 @@ def execute_commands(
         interrupt_after = min(
             float(INTERRUPT_AFTER_SECONDS), max(0.001, stage_total - grace)
         )
+        if (
+            "scripts.evaluate_model" in command
+            and "--evaluation-wall-seconds" not in command
+        ):
+            evaluation_wall = max(
+                0.1,
+                interrupt_after - min(2.0, interrupt_after * 0.1),
+            )
+            command.extend(["--evaluation-wall-seconds", f"{evaluation_wall:.6f}"])
         stage_artifact = _stage_artifact_path(command, cwd=cwd)
         artifact_revision_before = _artifact_revision(stage_artifact)
         progress_artifact = _stage_progress_artifact_path(command, cwd=cwd)

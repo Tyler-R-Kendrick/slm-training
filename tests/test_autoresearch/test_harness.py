@@ -3321,6 +3321,32 @@ def test_execute_shares_one_wall_budget_across_stages(monkeypatch) -> None:
     assert outcome.wall_time_budget_seconds == 5.0
 
 
+def test_execute_passes_inner_wall_to_evaluation(monkeypatch) -> None:
+    import slm_training.autoresearch.engine as engine
+
+    calls: list[list[str]] = []
+
+    def complete(command, **_kwargs):
+        calls.append(command)
+        return subprocess.CompletedProcess(
+            command,
+            0,
+            stdout=json.dumps({"suites": {}, "gates": {"pass": False}}),
+            stderr="",
+        )
+
+    monkeypatch.setattr(engine, "run_bounded_process", complete)
+    execute_commands(
+        experiment(),
+        [["python", "-m", "scripts.evaluate_model"]],
+        timeout_seconds=30.0,
+    )
+
+    assert "--evaluation-wall-seconds" in calls[0]
+    inner_wall = float(calls[0][calls[0].index("--evaluation-wall-seconds") + 1])
+    assert 0 < inner_wall < 30.0
+
+
 def test_execute_rejects_partial_train_before_evaluation(
     tmp_path: Path, monkeypatch
 ) -> None:
@@ -3584,7 +3610,9 @@ def test_execute_keeps_typed_ship_gate_rejection_as_completed_evidence(
 
 @pytest.mark.parametrize(
     "missing_counter",
-    case_values(__file__, "test_expected_gate_rejection_requires_every_completeness_counter"),
+    case_values(
+        __file__, "test_expected_gate_rejection_requires_every_completeness_counter"
+    ),
 )
 def test_expected_gate_rejection_requires_every_completeness_counter(
     tmp_path: Path, missing_counter: str

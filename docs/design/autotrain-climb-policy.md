@@ -92,12 +92,27 @@ manifest and routes a typed `repair_harness` action to
 that canonical-owner repair is acknowledged. The exact retry stays queued behind the
 repair, whose receipt resets the consecutive count. This prevents an infinite
 unmodified timeout replay loop while retaining the exact reproduction input.
+Policy v5 sets this allowance to one: the original incomplete measurement plus
+one hash-linked, checkpoint-cached reproduction is enough to establish a
+repeatable harness failure. A second unmodified replay adds no attribution while
+spending the same evaluation wall, so repair becomes mandatory before another
+retry.
 When AgentV itself finalizes every record disposition and reports one or more typed
 internal decode timeouts, the loop does not spend that replay allowance pretending
 the supervisor stage is still incomplete. It routes immediately to canonical
 `model_build` runtime repair and queues the frozen arm behind that repair. Quality
 metrics remain incomplete and non-promotable; the finalized timeout is infrastructure
 evidence that identifies the next owner.
+
+The autoresearch executor also passes its remaining stage wall into the canonical
+model-build evaluator. The evaluator reserves finalization time and fairly
+partitions the remaining wall across unprocessed records, capped by the locked
+per-record timeout. A pathological record therefore becomes a typed internal
+timeout while later records still receive a bounded attempt; the evaluator can
+write its scoreboard and AgentV bundle before the outer supervisor interrupt.
+The effective minimum/maximum record allocations are persisted beside the suite
+metrics. This is scheduling only: it never widens a timeout, changes a gate, or
+turns an incomplete record into quality evidence.
 
 One cycle still obeys the repository hard cap. The bounded wall is partitioned into
 three equal planning shares after retaining the canonical finalization reserve: a

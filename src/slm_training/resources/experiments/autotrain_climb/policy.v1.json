@@ -39,7 +39,7 @@
     "promotion_stage_wall_minutes": 3,
     "screening_decode_timeout_seconds": 24,
     "promotion_decode_timeout_seconds": 24,
-    "max_consecutive_frozen_replays": 2,
+    "max_consecutive_frozen_replays": 1,
     "screening_suites": ["smoke"],
     "promotion_suites": ["smoke", "held_out"]
   },
