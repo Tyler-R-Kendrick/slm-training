@@ -1,0 +1,52 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c3",
+  "cycle_index": 3,
+  "source_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "integration_commit": "74e9ca9583a99a2a7fe977414471fb47b1a6ffe5",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suites": "smoke",
+    "ship_gates": true,
+    "lever": "component-plan"
+  },
+  "arms": {
+    "c3-control": {
+      "status": "completed_gate_reject",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.23083333333333333,
+        "binder_reference_f1": 0.7333333333333334,
+        "latency_ms_p50": 2846.07
+      }
+    },
+    "c3-component-plan": {
+      "status": "completed_gate_reject",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.1725,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 3021.77
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": -0.05833333333333335,
+  "conclusion": "component_plan lever regresses smoke.structural_similarity vs its matched control (0.2308 -> 0.1725, delta -0.0583) and also regresses binder_reference_f1 (0.7333 -> 0.6333) and meaningful_program_rate (0.333 -> 0.0). Non-regression check failed on binder_reference_f1. Both arms still fail insufficient_n (n=3 < 20). Clear non-positive result for this lever at this size/step count.",
+  "next_priorities": [
+    "component_plan is exhausted at this size; try the distinct size-matched component-edge hypothesis next (driver rank 1).",
+    "Keep the matched control as the size-matched baseline every cycle.",
+    "Rotate thrash recommendation across the lever bank rather than repeating bounds/component-plan alone."
+  ]
+}
