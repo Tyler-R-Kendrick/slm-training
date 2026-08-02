@@ -1,0 +1,162 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c8",
+  "cycle_index": 8,
+  "cycle_intent": "promotion",
+  "source_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "integration_commit": "0044e56b4cf70764973ad8d876059f43aa92ba86",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 22,
+    "seed": 100008,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "hypothesis": "component_inventory_loss_weight=1.0 (structural component-inventory auxiliary head, structural_aux_head_profile='component-inventory') improves held_out.structural_similarity without lowering parse_rate. Driver's hypothesizer picked its own rank-1 recommendation from cycles 6/7 (previously recommended twice but re-picked component-plan instead in cycle 7); this is the first cycle this session it was actually selected and run.",
+  "primary_metric": "held_out.structural_similarity",
+  "primary_direction": "increase",
+  "measurement_complete": true,
+  "arms": {
+    "c8-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.17416666666666666,
+        "binder_reference_f1": 0.6333333333333333,
+        "component_type_recall": 0.25,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.7653333333333334,
+        "latency_ms_p50": 1189.96
+      },
+      "held_out": {
+        "n": 5,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.09758,
+        "binder_reference_f1": 0.43714285714285717,
+        "component_type_recall": 0.1619047619047619,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "placeholder_fidelity": 0.29,
+        "reward_score": 0.6940000000000001,
+        "latency_ms_p50": 1335.91
+      },
+      "levers": {
+        "component_inventory_loss_weight": 0.0,
+        "component_inventory_decode_weight": 0.0,
+        "structural_aux_head_profile": "component-inventory"
+      },
+      "trainable_params": 1682363,
+      "last_loss": 19.956100463867188
+    },
+    "c8-component-inventory": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.17416666666666666,
+        "binder_reference_f1": 0.6333333333333333,
+        "component_type_recall": 0.25,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.7653333333333334,
+        "latency_ms_p50": 1246.61
+      },
+      "held_out": {
+        "n": 5,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.09758,
+        "binder_reference_f1": 0.43714285714285717,
+        "component_type_recall": 0.1619047619047619,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "placeholder_fidelity": 0.29,
+        "reward_score": 0.6940000000000001,
+        "latency_ms_p50": 1339.05
+      },
+      "levers": {
+        "component_inventory_loss_weight": 1.0,
+        "component_inventory_decode_weight": 0.0,
+        "structural_aux_head_profile": "component-inventory"
+      },
+      "trainable_params": 1682363,
+      "last_loss": 21.18648338317871
+    }
+  },
+  "primary_delta": 0.0,
+  "latency_delta_ms": {
+    "smoke": 56.65,
+    "held_out": 3.14
+  },
+  "gate_failures": {
+    "smoke": [
+      "insufficient_n actual=3 need>=20",
+      "meaningful_program_rate actual=0.3333333333333333 need>=0.66",
+      "structural_similarity actual=0.17416666666666666 need>=0.35",
+      "component_type_recall actual=0.25 need>=0.35",
+      "ast_beq_rate actual=0.0 need>=0.2",
+      "canonical_beq_rate actual=0.0 need>=0.1"
+    ],
+    "held_out": [
+      "insufficient_n actual=5 need>=20",
+      "meaningful_program_rate actual=0.0 need>=0.4",
+      "structural_similarity actual=0.09758 need>=0.3",
+      "component_type_recall actual=0.1619047619047619 need>=0.3",
+      "ast_beq_rate actual=0.0 need>=0.15",
+      "canonical_beq_rate actual=0.0 need>=0.08"
+    ],
+    "missing_suites": [
+      "adversarial",
+      "ood",
+      "rico_held"
+    ]
+  },
+  "conclusion": "The driver's hypothesizer picked component-inventory (component_inventory_loss_weight=1.0, structural_aux_head_profile='component-inventory') as this cycle's recommended experiment -- a genuinely untested-this-session arm, after twice recommending it as rank-1 without selecting it (cycles 6 and 7 both re-picked already-screened arms instead). Both arms trained cleanly from scratch at seed 100008 with distinct recipe values (candidate component_inventory_loss_weight=1.0 vs control 0.0; last_loss diverges as expected, 19.9561 control vs 21.1865 candidate, consistent with the added auxiliary loss term). Both produced a full AgentV ship-gate scoreboard.json (measurement_complete=true) over smoke (n=3) and held_out (n=5) suites. Every decode-facing quality metric is bit-identical between control and candidate on both suites -- parse_rate, meaningful_program_rate, structural_similarity, binder_reference_f1, component_type_recall, ast_beq_rate, canonical_beq_rate, placeholder_fidelity, reward_score all match exactly (smoke structural_similarity 0.174167=0.174167, held_out structural_similarity 0.09758=0.09758). Only latency_ms_p50 differs by a small amount (smoke +56.65ms, held_out +3.14ms candidate slower), consistent with fixture-scale timing noise rather than a real effect. Primary metric (held_out.structural_similarity) delta is 0.0 exactly -- a third bit-identical null this session (after cycle 6's component-edge and cycle 7's component-plan re-screen), reinforcing rather than changing the picture that this fixture (n=3 smoke / n=5 held_out, steps=20-22) cannot distinguish most structural aux-loss levers' effect on generated-output quality from zero at this scale. Ship gates correctly fail closed on fixture insufficient_n and every quality threshold for both arms and both suites; no gate was weakened.",
+  "sdlc_classification": {
+    "positive": false,
+    "stack_layer": false,
+    "action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260802-continuous-openui-local-8c0b60dd-c8-control",
+      "fixture_insufficient_n:c20260802-continuous-openui-local-8c0b60dd-c8-component-inventory",
+      "primary_metric_null_or_worse:held_out.structural_similarity:control=0.09758 candidate=0.09758 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "next_priorities": [
+    "The completed non-positive component-inventory arm is exhausted; test the distinct size-matched 'binder-topology' quality hypothesis next (rank 1, confidence 0.90) -- component-plan, component-edge, and component-inventory are all now spent for step-budget=20-22/n=3.",
+    "Keep the matched control as the size-matched baseline every cycle.",
+    "Rotate thrash recommendation across the lever bank (not bounds-only); the completed candidate is exhausted and cannot be selected again without a new preregistered hypothesis.",
+    "Soft ship-gate fails on fixture n never stop the continuous loop; do not weaken gates.",
+    "Confirmed champions promote under cadence; thrash only screens."
+  ],
+  "recorded_at": "2026-08-02T10:16:33.473559Z",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "0044e56b4cf70764973ad8d876059f43aa92ba86",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v74",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v286"
+    },
+    "stamped_at": "2026-08-02T10:16:32.991281Z"
+  }
+}
