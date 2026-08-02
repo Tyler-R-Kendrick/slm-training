@@ -2646,7 +2646,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v82",
+      "version": "v86",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2686,6 +2686,26 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v86",
+          "date": "2026-08-02",
+          "note": "Keep the exact content-bound measurement retry pending alongside a canonical harness-repair action so acknowledging the repair cannot silently advance to a different campaign or seed."
+        },
+        {
+          "version": "v85",
+          "date": "2026-08-02",
+          "note": "Preserve checkpoint-declared runtime-symbol levers during evaluation instead of routing unregistered config fields through the curated OpenFeature registry."
+        },
+        {
+          "version": "v84",
+          "date": "2026-08-02",
+          "note": "Carry every declared TwoTower runtime-symbol lever into evaluation through the typed feature-flag surface so matched controls preserve their actual off state."
+        },
+        {
+          "version": "v83",
+          "date": "2026-08-02",
+          "note": "Treat a complete rejected fresh-seed confirmation as terminal exhaustion of its underlying quality family so the next matrix cannot recycle the disproven arm."
+        },
         {
           "version": "v82",
           "date": "2026-08-02",
@@ -7253,6 +7273,41 @@
         {
           "version": "v3",
           "date": "2026-08-02",
+          "note": "no-bump: add honest c1783 fixture-efficiency candidate checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1782 incomplete runtime-flag harness checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1781 invalid canvas scratch checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1780 rejected component-structure scratch checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1779 rejected binder-topology scratch checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1778 rejected batch-size-one runtime checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1777 rejected component-inventory confirmation checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
           "note": "no-bump: add honest c1776 fixture-only component-inventory candidate checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
         },
         {
@@ -8799,7 +8854,7 @@
       ]
     },
     "harness.flags": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/flags/",
@@ -8808,6 +8863,11 @@
         "tests/test_flags/test_openfeature_experiments.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-02",
+          "note": "Derive checkpoint runtime override fields only from explicit CLI options, including BooleanOptionalAction negatives and DESIGN.md aliases."
+        },
         {
           "version": "v1",
           "date": "2026-07-24",
@@ -8886,7 +8946,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v75",
+      "version": "v76",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -8907,6 +8967,11 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v76",
+          "date": "2026-08-02",
+          "note": "Preserve non-explicit checkpoint runtime fields during evaluation and snapshot the effective loaded model config rather than argparse defaults."
+        },
         {
           "version": "v75",
           "date": "2026-08-02",

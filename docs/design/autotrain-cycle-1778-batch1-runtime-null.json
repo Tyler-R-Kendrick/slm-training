@@ -1,0 +1,40 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1778",
+  "cycle_index": 1778,
+  "cycle_intent": "screening",
+  "evidence_class": "fixture",
+  "decision": "rejected_quality_tie_runtime_regression",
+  "scoreable": true,
+  "new_checkpoint_created": true,
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1778-batch1",
+      "manifest_sha256": "f9406551318ad8916cd0c5166982f5d4ca087eec8ad7dd95410fa4e1112a9cc5",
+      "checkpoint_sha256": "a5743bb1969e8c8a54cac6a8b68ca3c41a9eb2d067bcb3d1d03dbda8eed98c0d",
+      "params": 1608962,
+      "train": {"device": "cpu", "steps": 22, "batch_size": 1, "seed": 101778, "last_loss": 11.114314079284668, "elapsed_wall_seconds": 2.4682746740290895},
+      "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.3333333333333333, "structural_similarity": 0.17416666666666666, "binder_reference_f1": 0.6333333333333333, "placeholder_fidelity": 0.5277777777777778, "reward_score": 0.7653333333333334, "latency_ms_p50": 1169.59}
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1778-control",
+      "manifest_sha256": "23d3d7d708cc3eec99be054b7c348251729a660ab04dda5233b3e937ed709eef",
+      "checkpoint_sha256": "37cccdccf4e0f28405c7013729d4ad2d64a73c03d36fd3830874bb324b0f1911",
+      "params": 1608962,
+      "train": {"device": "cpu", "steps": 22, "batch_size": 2, "seed": 101778, "last_loss": 9.512968063354492, "elapsed_wall_seconds": 2.3867672630003653},
+      "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.3333333333333333, "structural_similarity": 0.17416666666666666, "binder_reference_f1": 0.6333333333333333, "placeholder_fidelity": 0.5277777777777778, "reward_score": 0.7653333333333334, "latency_ms_p50": 1084.79}
+    }
+  ],
+  "comparison": {"quality_exact_tie": true, "candidate_latency_fraction_change": 0.078172, "trainable_params_matched": true},
+  "agentv": {"bundles_complete": true, "execution_errors": 0, "ship_gates_pass": false},
+  "checkpoint_policy": "local_explicit_no_sync_rejected_not_reusable_not_promoted_not_ship",
+  "lean": "not_applicable:screening",
+  "next_priority": "binder-topology",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "6fc989272bd1089ea74f50cee351f45ef25e41ea",
+    "code_dirty": false,
+    "components": {"config.levers": "v30", "harness.model_build.eval": "v75", "harness.experiment_feature_flags": "v4", "evals.meaningful_program": "2.13.0", "evals.power_protocol": "v8", "evals.scoring": "v22", "model.twotower": "v291"},
+    "stamped_at": "2026-08-02T18:09:11.604006+00:00"
+  }
+}

@@ -19,6 +19,7 @@ from slm_training.harnesses.model_build.config import ModelBuildConfig
 from slm_training.harnesses.model_build.experiment_flags import (
     apply_levers_from_mapping,
     cli_lever_overrides,
+    cli_runtime_override_fields,
 )
 
 
@@ -147,6 +148,19 @@ def test_cli_lever_overrides_do_not_treat_argparse_defaults_as_explicit() -> Non
         solver_certificate_mode = "summary"
 
     assert cli_lever_overrides(Args(), argv=()) == {}
+
+
+def test_cli_runtime_override_fields_detect_boolean_optional_and_aliases() -> None:
+    assert cli_runtime_override_fields(
+        argv=(
+            "--no-compact-active-canvas",
+            "--compiler-decode-mode",
+            "tree",
+            "--no-design-md-context",
+        )
+    ) == frozenset(
+        {"compact_active_canvas", "compiler_decode_mode", "design_md_in_context"}
+    )
 
 
 def test_unknown_lever_rejected() -> None:
