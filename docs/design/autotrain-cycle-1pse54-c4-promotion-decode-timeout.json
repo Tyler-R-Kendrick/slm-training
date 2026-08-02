@@ -1,0 +1,66 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "loop_id": "continuous-openui-1pse54",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-1pse54-c1f3ee08-c4",
+  "cycle_index": 4,
+  "cycle_role": "promotion",
+  "evidence_class": "fixture",
+  "decision": "infrastructure_failure",
+  "scoreable": false,
+  "comparison": {
+    "matched_dimensions": [
+      "train_version",
+      "steps",
+      "batch_size",
+      "seed",
+      "context_backend",
+      "parameter_count"
+    ],
+    "treatment": "component_plan_loss_weight: 0.0 (control) vs. non-zero (component-plan), both 1,755,764 trainable params",
+    "prediction_identical": null,
+    "parameter_delta": 0
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-1pse54-c1f3ee08-c4-control",
+      "params": 1755764,
+      "steps": 21,
+      "last_loss": 8.851954460144043,
+      "train_status": "complete",
+      "smoke": {"n": 3, "completed_document_n": 0, "decode_timeout_count": 3},
+      "held_out": {"n": 5, "completed_document_n": 0, "decode_timeout_count": 5}
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-1pse54-c1f3ee08-c4-component-plan",
+      "params": 1755764,
+      "steps": 21,
+      "last_loss": 12.505109786987305,
+      "train_status": "complete",
+      "smoke": {"n": 3, "completed_document_n": 0, "decode_timeout_count": 3},
+      "held_out": {"n": 5, "completed_document_n": 0, "decode_timeout_count": 5}
+    }
+  ],
+  "ship_gates_pass": false,
+  "lean": "not_applicable:no_champion",
+  "root_cause": "Both arms trained to completion, but every single document (3/3 smoke, 5/5 held_out) on both arms hit the per-document decode timeout during the promotion-role evaluation (larger held_out suite than the screening-role cycles 1-3). This is the first occurrence of this specific runtime-capacity signal in this loop; per the repeated-blocker rule it is not yet a hard block. AgentV itself ran cleanly (0 execution errors, every record finalized a disposition) -- the timeout is in the model_build decode stage, not the AgentV bridge fixed in 46fecfc.",
+  "next_priority": {
+    "area": "infrastructure",
+    "hypothesis": "Replay the exact frozen c4 control/component-plan arms after the runtime capacity is repaired or confirmed transient; do not treat 0/8 completed documents as model evidence.",
+    "required_controls": [
+      "identical_frozen_manifest",
+      "no_knob_change"
+    ]
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "5129a783d8da18f91644ebaeafce0f1d47c73eff",
+    "code_dirty": false,
+    "components": {
+      "evals.agentv": "v7",
+      "config.levers": "v30",
+      "harness.model_build.eval": "v75",
+      "harness.experiment_feature_flags": "v4"
+    },
+    "stamped_at": "2026-08-02T16:49:20Z"
+  }
+}
