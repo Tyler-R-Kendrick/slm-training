@@ -1,0 +1,64 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c1",
+  "cycle_index": 1,
+  "source_commit": "e8ad8f0da312b1a1d6d03a6a57346f2b51c195b8",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 21,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c20260802-continuous-openui-local-8c0b60dd-c1-control": {
+      "status": "measurement_incomplete",
+      "reason": "eval crashed before ship-gate publish: AgentV SDK unavailable (`node_modules/@agentv/core` not installed; npm ci had never been run in this checkout)",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 1432.71
+      },
+      "levers": {
+        "grammar_completion_bounds": false
+      }
+    },
+    "c20260802-continuous-openui-local-8c0b60dd-c1-bounds": {
+      "status": "measurement_incomplete",
+      "reason": "eval crashed before ship-gate publish: AgentV SDK unavailable (same root cause as control)",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 1267.76
+      },
+      "levers": {
+        "grammar_completion_bounds": true
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "conclusion": "Both arms trained (21 steps, CPU) and produced pre-gate smoke decode metrics, but ship-gate evaluation crashed in `publish_model_evaluation` because the AgentV SDK was never installed in this checkout (`npm ci` had not been run). structural_similarity was identical (0.0575) between control and bounds on this incomplete measurement, so no primary-metric conclusion can be drawn. Fixed by running `npm ci` at repo root, which installs `node_modules/@agentv/core`; the identical frozen arms are queued for a retry_measurement replay at evaluation only (checkpoints already exist, no retraining needed).",
+  "harness_signal": {
+    "family": "model_build",
+    "signal": "AgentV SDK unavailable in fresh checkout: `evaluate_model --ship-gates` unconditionally calls `publish_model_evaluation`, which requires `node_modules/@agentv/core` or `AGENTV_RUNNER`; a fresh `uv sync`-only checkout has no node_modules and fails closed with exit 1 mid-eval instead of at preflight.",
+    "repair": "ran `npm ci` at repo root (root `package.json` already pins `@agentv/core@4.42.4` and `agentv@4.42.4`); no source change required for this checkout. Environment setup follow-up: continuous-loop bootstrap docs should call out `npm ci` alongside `uv sync` as a prerequisite."
+  },
+  "next_priorities": [
+    "Replay the identical frozen control/bounds arms at evaluation only (train_summary + checkpoints already exist) now that AgentV SDK is installed",
+    "Do not treat structural_similarity=0.0575/0.0575 as a real null result until the replay produces complete scoreboards with ship-gate verdicts",
+    "Consider adding an explicit AgentV-availability preflight to continuous cycle bootstrap so this fails at cycle start, not mid-eval"
+  ],
+  "recorded_at": "2026-08-02T13:30:47.000000+00:00"
+}
