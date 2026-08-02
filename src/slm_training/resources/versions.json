@@ -7288,6 +7288,11 @@
         {
           "version": "v3",
           "date": "2026-08-02",
+          "note": "no-bump: add honest c1789 incomplete binder-component-plan checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
           "note": "no-bump: add honest c1788 rejected binder-arity checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
         },
         {
