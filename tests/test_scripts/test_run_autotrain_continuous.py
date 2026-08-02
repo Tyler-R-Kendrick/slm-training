@@ -567,8 +567,72 @@ def test_predecessor_completed_null_drives_next_screening_arm(tmp_path: Path) ->
     )
     assert (
         _mod._predecessor_priority_slug(root, camp.name, skip={"component-plan"})
-        != "binder-topology"
+        == "component-edge"
     )
+
+
+def test_recent_completed_nonpositive_slugs_follow_predecessor_chain(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    predecessor: str | None = None
+    for cycle, slug in ((1732, "component-plan"), (1733, "component-edge")):
+        campaign_id = f"continuous-loop-20260802-c{cycle}"
+        camp = root / campaign_id
+        matrix = _mod._matrix(
+            campaign_id=campaign_id,
+            evidence_snapshot_id="snap",
+            cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+            role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+            train_version="wf_smoke_v2",
+            eval_version="e_test",
+            steps=22,
+            cycle=cycle,
+            role="screening",
+            recommended_slug=slug,
+        )
+        candidate_id = matrix["recommended_experiment_id"]
+        camp.mkdir(parents=True)
+        (camp / "campaign.json").write_text(
+            json.dumps(
+                {
+                    "campaign_id": campaign_id,
+                    "loop_id": "loop-1",
+                    "predecessor_campaign_id": predecessor,
+                }
+            )
+        )
+        (camp / "matrix-proposal.json").write_text(json.dumps(matrix))
+        (camp / "sdlc_delivery.json").write_text(
+            json.dumps(
+                {
+                    "candidate_id": candidate_id,
+                    "cycle_intent": "screening",
+                    "positive": False,
+                    "measurement_complete": True,
+                }
+            )
+        )
+        (camp / "cycle_handoff.json").write_text(
+            json.dumps({"loop_id": "loop-1", "cycle_intent": "screening"})
+        )
+        predecessor = campaign_id
+
+    assert _mod._recent_completed_nonpositive_slugs(root, predecessor) == {
+        "component-plan",
+        "component-edge",
+    }
+    assert _mod._recent_completed_nonpositive_slugs(
+        root, predecessor, max_cycles=1
+    ) == {"component-edge"}
+
+    newest = root / str(predecessor) / "sdlc_delivery.json"
+    newest_delivery = json.loads(newest.read_text())
+    newest_delivery["measurement_complete"] = False
+    newest.write_text(json.dumps(newest_delivery))
+    assert _mod._recent_completed_nonpositive_slugs(root, predecessor) == {
+        "component-plan"
+    }
 
 
 def test_predecessor_reclassifies_stale_positive_under_current_policy(
