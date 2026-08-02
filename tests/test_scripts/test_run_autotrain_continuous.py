@@ -2172,6 +2172,69 @@ def test_cycle_handoff_marks_incomplete_measurement_for_frozen_retry(
     assert all(action.kind != "next_experiment" for action in handoff.actions)
 
 
+def test_finalized_decode_timeout_routes_directly_to_runtime_repair(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "cycle-1"
+    run = camp / "runs" / "cand"
+    run.mkdir(parents=True)
+    (camp / "manifests").mkdir()
+    (camp / "manifests" / "cand.json").write_text("{}\n")
+    (run / "scoreboard.json").write_text(
+        json.dumps(
+            {
+                "evals": {
+                    "runner": {"name": "AgentV", "execution_errors": 0}
+                },
+                "gates": {"authority": "AgentEvals assertions", "pass": False},
+                "suites": {
+                    "smoke": {
+                        "n": 3,
+                        "completed_document_n": 2,
+                        "incomplete_document_n": 1,
+                        "decode_timeout_document_count": 1,
+                    }
+                },
+            }
+        )
+    )
+
+    handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="screening",
+        cycle_intent="retry_measurement",
+        primary_metric="smoke.binder_reference_f1",
+        matrix=_priority_matrix(),
+        delivery={
+            "positive": False,
+            "candidate_id": "cand",
+            "reasons": ["measurement_incomplete:decode_timeout"],
+            "stack_layer": False,
+        },
+        resolution=None,
+        formal_status=None,
+    )
+
+    repair = next(
+        action for action in handoff.actions if action.kind == "repair_harness"
+    )
+    retry = next(
+        action for action in handoff.actions if action.kind == "retry_measurement"
+    )
+    assert repair.owner == "improve-openui-harnesses"
+    assert repair.harness_family == "model_build"
+    assert "finalized every record disposition" in repair.reason
+    assert repair.frozen_manifest_sha256 == hashlib.sha256(b"{}\n").hexdigest()
+    assert retry.frozen_manifest_sha256 == repair.frozen_manifest_sha256
+    assert handoff.actions.index(repair) < handoff.actions.index(retry)
+
+
 def test_cycle_handoff_exhausts_identical_replays_into_harness_repair(
     tmp_path: Path,
 ) -> None:

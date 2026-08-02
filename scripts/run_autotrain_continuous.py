@@ -2393,6 +2393,46 @@ def _candidate_ship_state(camp_dir: Path, candidate_id: str) -> str:
     return "ship_promoted" if authoritative and gates.get("pass") is True else "blocked"
 
 
+def _has_finalized_decode_timeout(camp_dir: Path, candidate_id: str) -> bool:
+    """True when AgentV finalized every record and typed at least one timeout."""
+
+    scoreboard = _read_json(camp_dir / "runs" / candidate_id / "scoreboard.json")
+    evals = scoreboard.get("evals")
+    runner = evals.get("runner") if isinstance(evals, dict) else None
+    gates = scoreboard.get("gates")
+    suites = scoreboard.get("suites")
+    if not (
+        isinstance(runner, dict)
+        and runner.get("name") == "AgentV"
+        and runner.get("execution_errors") == 0
+        and isinstance(gates, dict)
+        and gates.get("authority") == "AgentEvals assertions"
+        and gates.get("pass") is False
+        and isinstance(suites, dict)
+    ):
+        return False
+    for suite in suites.values():
+        if not isinstance(suite, dict):
+            continue
+        sample_n = suite.get("n")
+        completed_n = suite.get("completed_document_n")
+        incomplete_n = suite.get("incomplete_document_n")
+        timeout_n = suite.get("decode_timeout_document_count")
+        if not all(
+            isinstance(value, int)
+            for value in (sample_n, completed_n, incomplete_n, timeout_n)
+        ):
+            continue
+        if (
+            sample_n > 0
+            and timeout_n > 0
+            and completed_n + incomplete_n == sample_n
+            and timeout_n <= incomplete_n
+        ):
+            return True
+    return False
+
+
 def _primary_harness_family(camp_dir: Path) -> str:
     for path in sorted((camp_dir / "artifacts" / "outcomes").glob("*.json")):
         payload = _read_json(path)
@@ -2546,6 +2586,7 @@ def _write_cycle_handoff(
     harness_failure = climb_state == "harness_failure" or any(
         item.startswith("harness_failure:") for item in reasons
     )
+    finalized_decode_timeout = _has_finalized_decode_timeout(camp_dir, candidate_id)
     if theorem_stop:
         actions.insert(
             0,
@@ -2575,6 +2616,37 @@ def _write_cycle_handoff(
                 frozen_manifest_sha256=manifest_sha,
             ),
         )
+    elif finalized_decode_timeout:
+        manifest_path = camp_dir / "manifests" / f"{candidate_id}.json"
+        manifest_sha = (
+            hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+            if manifest_path.is_file()
+            else None
+        )
+        actions[0:0] = [
+            AutotrainActionV1(
+                kind="repair_harness",
+                owner="improve-openui-harnesses",
+                reason=(
+                    "AgentV finalized every record disposition and reported an "
+                    "internal decode timeout; repair canonical model-build runtime "
+                    "before replaying the frozen arm"
+                ),
+                evidence_ids=(evidence_id,),
+                harness_family="model_build",
+                frozen_manifest_sha256=manifest_sha,
+            ),
+            AutotrainActionV1(
+                kind="retry_measurement",
+                owner="autotrain",
+                reason=(
+                    "replay the identical frozen arm after the required canonical "
+                    "runtime repair"
+                ),
+                evidence_ids=(evidence_id,),
+                frozen_manifest_sha256=manifest_sha,
+            ),
+        ]
     elif measurement_incomplete:
         from slm_training.autoresearch.climb_policy import (
             load_climb_policy,
