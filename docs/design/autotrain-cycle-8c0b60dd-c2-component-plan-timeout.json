@@ -1,0 +1,46 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c2",
+  "loop_id": "continuous-openui-local",
+  "cycle_index": 2,
+  "evidence_class": "fixture",
+  "decision": "inconclusive_measurement_incomplete",
+  "scoreable": false,
+  "arm_order": ["component-plan", "control"],
+  "hypothesis": "A component-plan-weighted arm improves smoke.structural_similarity versus the matched control without lowering parse_rate.",
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c2-component-plan",
+      "manifest_sha256": "e7615c359c284876dfcff3e170f3ed9196379080279dce60f8dc060c2f5fc1dd",
+      "params": 1755764,
+      "steps": 22,
+      "checkpoint_sha256": "68f1ce95aa6e6401797695cc10e3f0a97d38d322cd503fbe8c2fc6d6bf903bdf",
+      "loss": 19.916019439697266,
+      "train_wall_seconds": 8.759971593000046,
+      "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.0964, "component_type_recall": 0.08333333333333333, "ast_beq_rate": 0.0, "canonical_beq_rate": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0},
+      "eval_status": "complete_gate_reject"
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c2-control",
+      "manifest_sha256": "58b5add250f3cc4eadb0ae7bc4ed73f502b6d4563ff053d7b4a5f6b6db4a0bf5",
+      "params": 1755764,
+      "steps": 22,
+      "checkpoint_sha256": "417b3ce88a30d9ddebff22dee520ec5cf07d1e51288ed2d9a7b1881423c274cc",
+      "loss": 14.390222549438477,
+      "train_wall_seconds": 4.1023223159998,
+      "smoke": null,
+      "eval_status": "wall_timeout_no_scoreboard"
+    }
+  ],
+  "deltas": null,
+  "ship_gates_pass": false,
+  "lean": "not_applicable:screening",
+  "next_priority": "replay the identical frozen control and component-plan arm (retry_measurement, frozen_manifest_sha256 e7615c359c284876dfcff3e170f3ed9196379080279dce60f8dc060c2f5fc1dd) before testing a new hypothesis; do not treat this partial run as model evidence",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "706af59145a3c5bd7afb0d9a30eb91be257c82ff",
+    "code_dirty": false,
+    "components": {"config.levers": "v30", "harness.model_build.eval": "v74", "harness.experiment_feature_flags": "v4", "evals.meaningful_program": "2.13.0", "evals.power_protocol": "v8", "evals.scoring": "v22", "model.twotower": "v289"},
+    "stamped_at": "2026-08-02T14:45:43.178814+00:00"
+  }
+}
