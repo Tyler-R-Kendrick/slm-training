@@ -2641,7 +2641,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v79",
+      "version": "v80",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2681,6 +2681,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v80",
+          "date": "2026-08-02",
+          "note": "Generalize the control-arm diagnosis from numeric literal starvation to any authoritative control-only decode timeout while preserving the one-replay model-runtime policy."
+        },
         {
           "version": "v79",
           "date": "2026-08-02",
@@ -7230,6 +7235,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: correct c1773 README provenance from numeric literal extension to the observed open nested component trajectory; SLM-228 spectral-disposition behavior is unchanged"
+        },
         {
           "version": "v3",
           "date": "2026-08-02",

@@ -3808,16 +3808,12 @@ def _write_cycle_handoff(
     control_id = str(delivery.get("control_id") or "")
     finalized_decode_timeout = _has_finalized_decode_timeout(camp_dir, candidate_id)
     control_decode_timeout = _has_finalized_decode_timeout(camp_dir, control_id)
-    control_numeric_close_starvation = bool(
-        control_id and _has_numeric_literal_close_starvation(camp_dir, control_id)
-    )
-    control_only_literal_timeout = bool(
+    control_only_model_timeout = bool(
         control_decode_timeout
-        and control_numeric_close_starvation
         and not finalized_decode_timeout
     )
     control_runtime_reproduced = bool(
-        control_only_literal_timeout and cycle_intent == "retry_measurement"
+        control_only_model_timeout and cycle_intent == "retry_measurement"
     )
     frozen_replay_count = 0
     frozen_replay_limit = 0
@@ -3899,14 +3895,14 @@ def _write_cycle_handoff(
             resolved_infrastructure=True,
             skip_slugs=skip_slugs,
         )
-    elif measurement_incomplete and control_only_literal_timeout:
+    elif measurement_incomplete and control_only_model_timeout:
         priorities = (
             NextRunPriorityV1(
                 rank=1,
                 area="model_build",
                 hypothesis=(
                     "The tail-supervised candidate completed while the matched "
-                    "control starved on numeric literal closure; replay the exact "
+                    "control entered a typed decode timeout; replay the exact "
                     "frozen pair once to test whether the runtime unblock reproduces."
                 ),
                 evidence_ids=(evidence_id,),
@@ -4012,7 +4008,7 @@ def _write_cycle_handoff(
     harness_failure = (
         climb_state == "harness_failure"
         or any(item.startswith("harness_failure:") for item in reasons)
-    ) and not (finalized_decode_timeout or control_only_literal_timeout)
+    ) and not (finalized_decode_timeout or control_only_model_timeout)
     if theorem_stop:
         actions[0:0] = [
             AutotrainActionV1(
@@ -4031,7 +4027,7 @@ def _write_cycle_handoff(
                 evidence_ids=(evidence_id,),
             ),
         ]
-    elif control_only_literal_timeout:
+    elif control_only_model_timeout:
         manifest_path = camp_dir / "manifests" / f"{candidate_id}.json"
         manifest_sha = (
             hashlib.sha256(manifest_path.read_bytes()).hexdigest()
@@ -4044,7 +4040,7 @@ def _write_cycle_handoff(
                     kind="next_experiment",
                     owner="autotrain",
                     reason=(
-                        "retire the reproduced control-only literal starvation "
+                        "retire the reproduced control-only model timeout "
                         "comparison and consume the next distinct hypothesis"
                     ),
                     evidence_ids=(evidence_id,),
@@ -4058,7 +4054,7 @@ def _write_cycle_handoff(
                     owner="autotrain",
                     reason=(
                         "replay the exact frozen pair once to reproduce the "
-                        "control-only numeric literal starvation"
+                        "control-only typed model timeout"
                     ),
                     evidence_ids=(evidence_id,),
                     frozen_manifest_sha256=manifest_sha,

@@ -3978,7 +3978,7 @@ def test_numeric_literal_close_starvation_steers_new_training_arm(
     ) == "literal-close"
 
 
-def test_control_literal_starvation_replays_without_fake_harness_repair(
+def test_control_only_model_timeout_replays_without_fake_harness_repair(
     tmp_path: Path,
 ) -> None:
     root = tmp_path / "autoresearch"

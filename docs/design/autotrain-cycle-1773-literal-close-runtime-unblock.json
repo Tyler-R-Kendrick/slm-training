@@ -27,7 +27,7 @@
       "partial_decode_telemetry": {"forwards_count_sum": 273.0, "completion_unique_states_sum": 87166.0, "completion_transition_cache_misses_sum": 87820.0, "completion_witness_states_expanded_sum": 7492.0, "completion_parser_forks_sum": 92458.0}
     }
   ],
-  "classification": {"quality_attribution": "unavailable", "runtime_signal": "candidate_unblocked_control_numeric_literal_starvation", "authority": "observed_result", "confidence": 0.95},
+  "classification": {"quality_attribution": "unavailable", "runtime_signal": "candidate_completed_control_typed_model_timeout", "authority": "observed_result", "confidence": 0.95},
   "agentv": {"bundles_complete": true, "execution_errors": 0, "ship_gates_pass": false},
   "checkpoint_policy": "local_explicit_no_sync_frozen_replay_only_not_promoted_not_ship",
   "lean": "not_applicable:screening",

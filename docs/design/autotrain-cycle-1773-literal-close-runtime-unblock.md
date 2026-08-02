@@ -2,7 +2,8 @@
 
 **Verdict:** candidate runtime unblock observed; quality comparison remains
 incomplete. The tail-supervised arm completed all three smoke records, while
-the size-matched control timed out on all three by extending numeric literals.
+the size-matched control timed out on all three along an open nested component
+trajectory.
 One exact frozen replay is required before attributing the runtime difference.
 
 | Arm | Params / train | Smoke | Decode work | Decision |
@@ -16,7 +17,7 @@ when the control has no quality metrics, and the candidate's absolute meaning,
 binder, fidelity, and reward scores are all zero.
 
 Campaign orchestration v79 now inspects both arms. A completed candidate paired
-with control-only numeric literal starvation receives one exact frozen replay
+with a control-only finalized model timeout receives one exact frozen replay
 without a false `repair_harness` obligation. If reproduced, the runtime unblock
 is recorded as model behavior and the arm is retired or advanced by its honest
 quality outcome; it cannot enter an unbounded repair loop.
