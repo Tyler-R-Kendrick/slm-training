@@ -1,0 +1,43 @@
+{
+    "schema": "continuous_autotrain_cycle_results/v1",
+    "loop_id": "continuous-openui-local",
+    "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c1",
+    "cycle_index": 1,
+    "source_commit": "528aadc4712d3f5a76d59a1ba846cdc23abed1ce",
+    "honesty": "fixture_or_scratch",
+    "not_ship_claim": true,
+    "recipe": {
+        "device": "cpu",
+        "steps": 21,
+        "context_backend": "scratch",
+        "train_version": "wf_smoke_v2",
+        "eval_version": "e938_role_safe_all_targets_v2",
+        "max_wall_minutes": 3,
+        "ship_gates": true
+    },
+    "arms": {
+        "c20260802-continuous-openui-local-8c0b60dd-c1-control": {
+            "status": "train_completed_eval_crashed",
+            "reason": "evaluate_model exited 1: RuntimeError('AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER')",
+            "smoke": {
+                "structural_similarity": 0.057499999999999996
+            }
+        },
+        "c20260802-continuous-openui-local-8c0b60dd-c1-bounds": {
+            "status": "train_completed_eval_crashed",
+            "reason": "evaluate_model exited 1: RuntimeError('AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER')",
+            "smoke": {
+                "structural_similarity": 0.057499999999999996
+            }
+        }
+    },
+    "primary_metric": "smoke.structural_similarity",
+    "primary_delta": 0.0,
+    "conclusion": "Both arms trained (21 steps, CPU) but evaluate_model crashed before producing a real scoreboard because the sandbox's npm workspace had not been bootstrapped (AgentV SDK unavailable). The 0.0575/0.0575 structural_similarity pair is a degenerate fallback, not a measured quality delta -- SDLC Phase A correctly classified this as NON_POSITIVE (null improvement) rather than a false win. Root cause fixed in-cycle: `npm ci` at repo root (run with NODE_OPTIONS unset, since the session's default NODE_OPTIONS=--import tsx is rejected by this Node build) installs the AgentV SDK the eval harness shells out to.",
+    "next_priorities": [
+        "Re-run the c1 bounds/control arms (or the queued component-plan hypothesis) now that npm ci has bootstrapped the AgentV SDK, to get a real scoreboard instead of a crash-fallback metric",
+        "Continuous-loop bootstrap should verify the AgentV SDK is installed (or set AGENTV_RUNNER) before the first evaluate_model call, so a fresh sandbox does not burn a screening cycle on an infra crash",
+        "Do not treat the 0.0575 structural_similarity pair as a real quality signal for either arm"
+    ],
+    "recorded_at": "2026-08-02T04:30:10.763327Z"
+}

@@ -6948,6 +6948,11 @@
         {
           "version": "v3",
           "date": "2026-08-02",
+          "note": "no-bump: add honest model-card provenance for two unrelated continuous-openui-local c1 scratch checkpoints (infra-crash cycle); SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
           "note": "no-bump: add honest model-card provenance for two unrelated c1730 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
         },
         {
