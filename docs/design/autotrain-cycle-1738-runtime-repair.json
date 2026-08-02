@@ -22,7 +22,8 @@
     {"variant": "persistent_official_bridge_reader", "tokens_emitted": 76, "forwards": 52, "compiler_ms": 18888.919, "states": 144711, "witnesses": 10835, "forks": 163186, "outcome": "typed_timeout", "evidence_authority": "exploratory_dirty_profile_reverted_as_neutral"},
     {"variant": "cached_semantic_tokenizer_projections", "tokens_emitted": 79, "forwards": 55, "compiler_ms": 18704.087, "states": 144781, "witnesses": 10923, "forks": 163309, "outcome": "typed_timeout", "evidence_authority": "exploratory_dirty_profile"},
     {"variant": "direct_semantic_state_and_frame_constructors", "tokens_emitted": 81, "forwards": 57, "compiler_ms": 18271.607, "states": 144814, "witnesses": 10971, "forks": 163367, "outcome": "typed_timeout", "evidence_authority": "exploratory_dirty_profile"},
-    {"variant": "shared_token_and_terminal_classification_projections", "tokens_emitted": 100, "forwards": 66, "compiler_ms": 17604.31, "states": 145039, "witnesses": 11238, "forks": 163766, "outcome": "typed_timeout", "evidence_authority": "exploratory_dirty_profile"}
+    {"variant": "shared_token_and_terminal_classification_projections", "tokens_emitted": 100, "forwards": 66, "compiler_ms": 17604.31, "states": 145039, "witnesses": 11238, "forks": 163766, "outcome": "typed_timeout", "evidence_authority": "exploratory_dirty_profile"},
+    {"variant": "shared_token_and_terminal_classification_projections_clean", "tokens_emitted": 104, "forwards": 68, "compiler_ms": 17658.979, "states": 145040, "witnesses": 11243, "forks": 163770, "outcome": "completed", "evidence_authority": "clean_commit_bound_fixture_profile"}
   ],
   "profile_signal": {
     "terminal_witness_cumulative_seconds": 23.373,
@@ -243,6 +244,47 @@
       }
     }
   },
+  "latest_clean_classification_reproduction": {
+    "run_id": "c1746-classification-cache-clean2",
+    "variant": "shared_token_and_terminal_classification_projections",
+    "evidence_authority": "clean_commit_bound_fixture_profile",
+    "document_n": 1,
+    "completed_document_n": 1,
+    "incomplete_document_n": 0,
+    "decode_timeout_document_count": 0,
+    "parse_rate": 1.0,
+    "meaningful_program_rate": 1.0,
+    "structural_similarity": 0.2529,
+    "binder_reference_f1": 1.0,
+    "latency_ms_p50": 23821.64,
+    "tokens_emitted": 104,
+    "forwards": 68,
+    "compiler_ms": 17658.979,
+    "states": 145040,
+    "witnesses": 11243,
+    "forks": 163770,
+    "outcome": "completed",
+    "agentv": "emitted_failed_as_expected_for_n1_quality_and_evidence_volume",
+    "ship_gates": "failed: insufficient n, structural similarity, AST BEq, and canonical BEq",
+    "exact_completion_tests": "146 passed",
+    "compiler_decode_tests": "226 passed",
+    "formal_validation": "Build completed successfully (2947 jobs); formal contracts build and axiom audit passed",
+    "version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "code_commit": "37e84a70b4b19e6ac4ca5de7a576a4ece2267b8e",
+      "code_dirty": false,
+      "components": {
+        "config.levers": "v30",
+        "harness.model_build.eval": "v74",
+        "harness.experiment_feature_flags": "v4",
+        "evals.meaningful_program": "2.13.0",
+        "evals.power_protocol": "v8",
+        "evals.scoring": "v22",
+        "model.twotower": "v288",
+        "dsl.completion_kernel": "v15"
+      }
+    }
+  },
   "reverted_hypotheses": [
     "cross_query_witness_subproblem_cache",
     "semantic_arena_transition_cache",
@@ -269,8 +311,8 @@
   "ship_claim": false,
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "384e4d5d288a89be8105233e0db5ae692753fe6b",
-    "code_dirty": true,
+    "code_commit": "37e84a70b4b19e6ac4ca5de7a576a4ece2267b8e",
+    "code_dirty": false,
     "components": {
       "harness.autoresearch.experiment_campaign": "v59",
       "harness.model_build.eval": "v74",

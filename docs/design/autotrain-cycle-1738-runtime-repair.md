@@ -26,6 +26,7 @@ progress, not model-quality or ship evidence.
 | direct semantic constructors (dirty) | 81 | 57 | 18,271.607 | 144,814 | 10,971 | 163,367 | typed timeout |
 | clean constructors + refreshed ranker | 83 | 59 | 18,460.255 | 144,925 | 11,077 | 163,561 | typed timeout |
 | shared classification projections (dirty) | 100 | 66 | 17,604.310 | 145,039 | 11,238 | 163,766 | typed timeout |
+| shared classification projections (clean) | 104 | 68 | 17,658.979 | 145,040 | 11,243 | 163,770 | completed |
 
 All rows use the same c1737 control checkpoint, `smoke` offset 0, one record,
 strict compiler-tree policy, CPU, and a 24-second diagnostic deadline. The
@@ -73,8 +74,10 @@ harness-telemetry repair signal.
   completion transition calculates its token kind once before handing it to
   the parser and semantic-state authorities. The dirty v15/v288 reproduction
   advances 100 certified tokens (+20.5% over the prior clean 83), performs 66
-  forwards, and lowers compiler time by 856 ms while preserving the same
-  typed timeout. This is retained runtime progress pending an immutable replay.
+  forwards, and lowers compiler time by 856 ms while preserving the same typed
+  timeout. The immutable `37e84a70` replay then completes all 104 tokens in
+  23,821.64 ms with zero runtime failures: the first completion of this frozen
+  diagnostic under the unchanged wall. Its n=1 quality still fails ship gates.
 - Repeating `SIGALRM` delivery is disarmed before timeout bookkeeping. The
   prior failure exited 142 with an uncaught second alarm; the repaired runs
   exit 0 with `decode_outcome=runtime_timeout` and complete AgentV artifacts.
@@ -121,7 +124,9 @@ MPR/ms gain because it is below the preregistered 5% minimum effect.
    only calls whose answer is already exactly implied by a certified grammar
    state; per-call reader reuse is neutral, while Node response wait remains
    material.
-2. Profile parser accept-set refresh and control-fork key construction. The
+2. Replay the frozen three-record c1745 comparison before another repair. If a
+   timeout remains, profile parser accept-set refresh and control-fork key
+   construction. The
    semantic-state interning hypothesis is already active, while the measured
    decision/token projection reuse is now implemented and exact-tested.
 3. Reduce compiler state construction cost before changing any
