@@ -3818,8 +3818,7 @@ def _write_cycle_handoff(
                 evidence_ids=(evidence_id,),
             ),
         ]
-    elif harness_failure:
-        family = _primary_harness_family(camp_dir)
+    elif numeric_close_starvation:
         manifest_path = camp_dir / "manifests" / f"{candidate_id}.json"
         manifest_sha = (
             hashlib.sha256(manifest_path.read_bytes()).hexdigest()
@@ -3835,9 +3834,26 @@ def _write_cycle_handoff(
                     "add the typed tail-weighted LTR training signal and run a new "
                     "size-matched literal-close arm; do not replay the same stalled "
                     "checkpoint"
-                    if numeric_close_starvation
-                    else "repair the canonical owner and replay the frozen arm"
                 ),
+                evidence_ids=(evidence_id,),
+                harness_family="model_build",
+                frozen_manifest_sha256=manifest_sha,
+            ),
+        )
+    elif harness_failure:
+        family = _primary_harness_family(camp_dir)
+        manifest_path = camp_dir / "manifests" / f"{candidate_id}.json"
+        manifest_sha = (
+            hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+            if manifest_path.is_file()
+            else None
+        )
+        actions.insert(
+            0,
+            AutotrainActionV1(
+                kind="repair_harness",
+                owner="improve-openui-harnesses",
+                reason="repair the canonical owner and replay the frozen arm",
                 evidence_ids=(evidence_id,),
                 harness_family=family,  # type: ignore[arg-type]
                 frozen_manifest_sha256=manifest_sha,

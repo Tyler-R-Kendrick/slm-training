@@ -3755,10 +3755,7 @@ def test_numeric_literal_close_starvation_steers_new_training_arm(
             "positive": False,
             "candidate_id": "cand",
             "measurement_complete": False,
-            "reasons": [
-                "measurement_incomplete:decode_timeout",
-                "harness_failure:cand:experiment_failed",
-            ],
+            "reasons": ["measurement_incomplete:decode_timeout"],
             "stack_layer": False,
         },
         resolution=None,
