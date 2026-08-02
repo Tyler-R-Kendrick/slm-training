@@ -20,6 +20,7 @@ progress, not model-quality or ship evidence.
 | clean committed reproduction | 64 | 43 | 19,595.679 | 144,537 | 10,548 | 162,878 | typed timeout |
 | clean direct-map reproduction | 67 | 46 | 19,427.600 | 144,567 | 10,592 | 162,933 | typed timeout |
 | clean lexer-thread reproduction | 76 | 52 | 18,930.027 | 144,711 | 10,835 | 163,186 | typed timeout |
+| persistent bridge reader (dirty) | 76 | 52 | 18,888.919 | 144,711 | 10,835 | 163,186 | typed timeout |
 
 All rows use the same c1737 control checkpoint, `smoke` offset 0, one record,
 strict compiler-tree policy, CPU, and a 24-second diagnostic deadline. The
@@ -29,7 +30,10 @@ row, are exploratory profiles from dirty working states and are not immutable
 replay authority. The two clean rows are immutable commit-bound reproductions;
 the latest `308da007` row emitted the expected failed AgentV bundle for one
 incomplete fixture record and is the authoritative profile snapshot.
-The frozen c1740 campaign manifest remains the comparison replay authority.
+The persistent-reader row is an exploratory dirty profile and was reverted:
+its progress is bit-for-bit identical to the clean lexer-thread reproduction,
+and the 41.108 ms compiler delta is noise. The frozen c1740 campaign manifest
+remains the comparison replay authority.
 The latest AgentV wrapper also reported an impossible negative SDK duration;
 that timing is excluded from every decision metric and retained as a separate
 harness-telemetry repair signal.
@@ -64,6 +68,14 @@ harness-telemetry repair signal.
 - Transferring either the final verified branch state or all intermediate
   verified branch states into the session cache changed exact candidate or
   witness ordering in differential parity tests. Both variants were reverted.
+- A cProfile run attributed 0.801 seconds of the 24-second decode wall to
+  54,307 control-parser copies, only about 3.3%; copy-on-write mutable parser
+  stacks were rejected before implementation because the maximum measured
+  upside is below the 5% campaign effect floor and the ownership risk is high.
+- Reusing one response-reader thread per persistent official bridge process
+  did not increase progress. The apparent 2.683-second bridge hotspot is Node
+  response wait, not Python thread creation, so the neutral change was
+  reverted.
 
 ## Frozen replay after repair
 
@@ -82,12 +94,13 @@ MPR/ms gain because it is below the preregistered 5% minimum effect.
 
 ## Next hypotheses
 
-1. Reduce mechanical Lark parser-state copy and allocation cost without
-   changing traversal, candidates, budgets, or cache-observable state.
-2. Batch or incrementally retain official root probes across terminal witness
-   siblings; the profile still attributes about 2.9 seconds to 189 bridge
-   probes.
-3. Reduce compiler state construction and parser-copy cost before changing any
+1. Batch official root probes across terminal witness siblings, or eliminate
+   only calls whose answer is already exactly implied by a certified grammar
+   state; per-call reader reuse is neutral, while Node response wait remains
+   material.
+2. Reduce semantic-state construction and repeated kind/surface projection
+   without changing traversal, candidates, budgets, or cache-observable state.
+3. Reduce compiler state construction cost before changing any
    timeout. The compiler consumes about 20 seconds of the 24-second wall,
    whereas neural work is roughly 3.7 seconds.
 4. Keep Lean/full formal validation in the delivery gate; no heuristic or

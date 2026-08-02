@@ -18,7 +18,8 @@
     {"variant": "callback_free_parser_configuration_sharing", "tokens_emitted": 63, "forwards": 42, "compiler_ms": 19787.817, "states": 144524, "witnesses": 10526, "forks": 162854, "outcome": "typed_timeout"},
     {"variant": "copy_on_write_fed_token_history", "tokens_emitted": 66, "forwards": 45, "compiler_ms": 19562.599, "states": 144567, "witnesses": 10592, "forks": 162933, "outcome": "typed_timeout"},
     {"variant": "copy_on_write_direct_map_cache", "tokens_emitted": 70, "forwards": 49, "compiler_ms": 19178.515, "states": 144638, "witnesses": 10696, "forks": 163061, "outcome": "typed_timeout", "evidence_authority": "exploratory_dirty_profile"},
-    {"variant": "shared_control_lexer_thread", "tokens_emitted": 72, "forwards": 50, "compiler_ms": 19036.47, "states": 144691, "witnesses": 10764, "forks": 163149, "outcome": "typed_timeout", "evidence_authority": "exploratory_dirty_profile"}
+    {"variant": "shared_control_lexer_thread", "tokens_emitted": 72, "forwards": 50, "compiler_ms": 19036.47, "states": 144691, "witnesses": 10764, "forks": 163149, "outcome": "typed_timeout", "evidence_authority": "exploratory_dirty_profile"},
+    {"variant": "persistent_official_bridge_reader", "tokens_emitted": 76, "forwards": 52, "compiler_ms": 18888.919, "states": 144711, "witnesses": 10835, "forks": 163186, "outcome": "typed_timeout", "evidence_authority": "exploratory_dirty_profile_reverted_as_neutral"}
   ],
   "profile_signal": {
     "terminal_witness_cumulative_seconds": 23.373,
@@ -26,6 +27,17 @@
     "advance_path_cumulative_seconds": 10.357,
     "official_bridge_calls": 189,
     "official_bridge_cumulative_seconds": 2.882
+  },
+  "latest_profile_signal": {
+    "run_id": "c1744-control-stack-profile",
+    "profiler": "cProfile",
+    "terminal_witness_cumulative_seconds": 23.385,
+    "control_parser_copy_calls": 54307,
+    "control_parser_copy_cumulative_seconds": 0.801,
+    "control_parser_copy_wall_fraction": 0.0334,
+    "official_bridge_calls": 131,
+    "official_bridge_cumulative_seconds": 2.683,
+    "interpretation": "parser-stack copying is below the 5% effect floor; bridge time is Node response wait rather than reader-thread creation"
   },
   "clean_reproduction": {
     "run_id": "c1741-fed-history-cow-clean-profile",
@@ -130,7 +142,9 @@
     "first_path_limited_forest",
     "closure_preferred_witness_order",
     "verified_final_branch_state_transfer",
-    "verified_intermediate_branch_state_transfer"
+    "verified_intermediate_branch_state_transfer",
+    "copy_on_write_control_parser_stacks_below_effect_floor",
+    "persistent_official_bridge_reader_neutral"
   ],
   "frozen_replay": {
     "cycle_index": 1740,
