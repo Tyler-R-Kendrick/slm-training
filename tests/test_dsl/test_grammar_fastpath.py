@@ -92,7 +92,8 @@ def test_repeated_bound_binder_reference_positions_are_prefix_aligned() -> None:
     positions = repeated_bound_binder_reference_positions(tok, ids)
     assert positions == ((ids.index(title, ids.index(title) + 1), title),)
 
-def test_exact_force_rejects_complete_forest_with_second_candidate() -> None:
+
+def test_exact_force_accepts_complete_singleton_forest() -> None:
     from slm_training.dsl.grammar.fastpath.compiler_draft import build_completion_forest
     from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
 
@@ -103,8 +104,7 @@ def test_exact_force_rejects_complete_forest_with_second_candidate() -> None:
     forest = build_completion_forest(tokenizer, prefix, state=state)
 
     assert forest.coverage == "complete"
-    assert forced in forest.candidate_ids
-    assert any(candidate != forced for candidate in forest.candidate_ids)
+    assert forest.candidate_ids == (forced,)
 
     assert (
         exact_forced_token_id(
@@ -113,7 +113,7 @@ def test_exact_force_rejects_complete_forest_with_second_candidate() -> None:
             forced_token_id=forced,
             state=state,
         )
-        is None
+        == forced
     )
 
 
@@ -591,6 +591,23 @@ def test_cached_native_masks_intersect_active_symbols() -> None:
     assert tok.sym_id(1) in cached
     assert tok.sym_id(0) not in cached
     assert cached - tok.kind_ids("sym") == uncached - tok.kind_ids("sym")
+
+
+def test_uncached_native_mask_skips_cache_fingerprint() -> None:
+    from slm_training.dsl.grammar.fastpath.token_map import allowed_id_set
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    class NoItemsDict(dict[str, int]):
+        def items(self):  # type: ignore[override]
+            raise AssertionError("uncached lookup must not build a cache fingerprint")
+
+    tok = DSLNativeTokenizer.build()
+    tok.token_to_id = NoItemsDict(tok.token_to_id)
+
+    allowed = allowed_id_set(tok, frozenset({"STRING"}))
+
+    assert allowed is not None
+    assert tok.sym_id(0) in allowed
 
 
 def test_native_string_terminal_excludes_non_string_literal_markers() -> None:

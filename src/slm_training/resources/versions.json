@@ -10574,7 +10574,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v273",
+      "version": "v274",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -10617,6 +10617,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v274",
+          "date": "2026-08-01",
+          "note": "Skip tokenizer cache-fingerprint construction for uncached exact terminal-mask lookups after the c1720 interrupt trace isolated repeated full-vocabulary sorting in completion-forest decisions"
+        },
         {
           "version": "v273",
           "date": "2026-08-01",
