@@ -1,0 +1,133 @@
+{
+  "schema": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-mpjoo9-2b5d9d52-c1",
+  "loop_id": "continuous-openui-mpjoo9-20260802",
+  "cycle_index": 1,
+  "campaign_role": "screening",
+  "cycle_intent": "screening",
+  "run_class": "fixture_scratch",
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "requested_steps": 20,
+  "actual_steps": 21,
+  "stopped_on": "steps",
+  "seed": 100001,
+  "batch_size": 2,
+  "trainable_parameters": 1608962,
+  "learning_rate": 0.0003,
+  "checkpoint_sync": "explicit no-sync scratch",
+  "upstream_commit": "20ae71ff43051edc79d2475a51848a0bd5adb7f0",
+  "integration_commit": "20ae71ff43051edc79d2475a51848a0bd5adb7f0",
+  "primary_metric": "smoke.structural_similarity",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "20ae71ff43051edc79d2475a51848a0bd5adb7f0",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v73",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v284"
+    },
+    "stamped_at": "2026-08-02T05:34:27.006526+00:00"
+  },
+  "gate_version": "openui_ship_gates_v6",
+  "arms": [
+    {
+      "label": "matched control",
+      "experiment_id": "c20260802-continuous-openui-mpjoo9-2b5d9d52-c1-control",
+      "status": "completed_gate_rejection_agentv_unavailable",
+      "training": {
+        "trainable_parameters": 1608962,
+        "last_loss": 22.62193489074707,
+        "elapsed_wall_seconds": 3.4952599090000263,
+        "checkpoint_sha256": "c2ba05273c48aacf76d86b19c76cff8bccae92462b111f84f808ea4cf6f7eda2"
+      },
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "component_type_recall": 0.0,
+        "ast_node_f1": 0.0,
+        "ast_edge_f1": 0.0,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.0,
+        "latency_ms_p50": 2275.05
+      },
+      "decode_stats": {
+        "forwards_count_sum": 11,
+        "completion_unique_states_sum": 31865,
+        "completion_witness_states_expanded_sum": 1638,
+        "completion_parser_forks_sum": 33620
+      },
+      "agentv_execution_errors": null,
+      "agentv_sdk_available": false,
+      "ship_gates_pass": false
+    },
+    {
+      "label": "bounds candidate",
+      "experiment_id": "c20260802-continuous-openui-mpjoo9-2b5d9d52-c1-bounds",
+      "status": "completed_gate_rejection_agentv_unavailable",
+      "training": {
+        "trainable_parameters": 1608962,
+        "last_loss": 22.62193489074707,
+        "elapsed_wall_seconds": 3.2750292220000006,
+        "checkpoint_sha256": "b040e8f48b955e9b3399512959952816133f7a8f15f9dac7083b46a131f8e155"
+      },
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "component_type_recall": 0.0,
+        "ast_node_f1": 0.0,
+        "ast_edge_f1": 0.0,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.0,
+        "latency_ms_p50": 2328.11
+      },
+      "decode_stats": {
+        "forwards_count_sum": 11,
+        "completion_unique_states_sum": 31865,
+        "completion_witness_states_expanded_sum": 1638,
+        "completion_parser_forks_sum": 33620
+      },
+      "agentv_execution_errors": null,
+      "agentv_sdk_available": false,
+      "ship_gates_pass": false
+    }
+  ],
+  "comparison": {
+    "parameter_matched": true,
+    "quality_delta": 0.0,
+    "latency_improvement_fraction": -0.023327,
+    "minimum_efficiency_gain_fraction": 0.05,
+    "disposition": "primary_metric_null_or_worse:smoke.structural_similarity:control=0.0575:candidate=0.0575:improvement=0.0"
+  },
+  "formal_evidence": {
+    "status": "not_applicable:screening",
+    "reason": "Lean promotion proof is required only for a confirmed champion promotion"
+  },
+  "harness_feedback": {
+    "signal": "evaluate_model --ship-gates fails with RuntimeError('AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER') on both arms in this environment; the underlying suite-level scoring (parse_rate, structural_similarity, etc.) still completes and is used for the primary-metric comparison, but the AgentV-published portion of the scoreboard (ship-gates publish step) is unavailable.",
+    "repair": "not attempted this cycle (environment blocker, requires `npm ci` / Node.js toolchain or AGENTV_RUNNER credential not present in this sandbox); deferred as a documented follow-up rather than a harness-code change, since no canonical harness family bug was reproduced -- this is a missing external runtime dependency.",
+    "repaired_next_hypothesis": "component-plan"
+  },
+  "checkpoint_documentation_required": true,
+  "checkpoint_reuse": "forbidden",
+  "ship_eligible": false,
+  "blockers": [
+    {
+      "kind": "environment",
+      "description": "AgentV SDK unavailable (Node.js/npm toolchain not installed in this sandbox); evaluate_model --ship-gates publish step raises RuntimeError on every arm.",
+      "action": "run `npm ci` in the checkout or set AGENTV_RUNNER before the next supervised cycle if AgentV-backed ship-gate publication is required; base suite scoring is unaffected."
+    }
+  ]
+}
