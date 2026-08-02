@@ -1,0 +1,58 @@
+{
+  "schema": "autotrain_measured_results/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c3",
+  "cycle_index": 1723,
+  "loop_id": "continuous-openui-20260730",
+  "run_class": "fixture_scratch",
+  "source_commit": "3c16fabfad142c0b5bea6f4bf623b89ce71790ac",
+  "source_dirty": false,
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "primary_metric": "smoke.binder_reference_f1",
+  "frozen_manifest_sha256": "dadf7da195133710c18a65eebb53381c126af2a36a482e7457c498371a20b0d3",
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c3-control",
+      "status": "stopped",
+      "training": {
+        "executed": false,
+        "source_campaign": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c2",
+        "parameter_count": 1608962
+      },
+      "suite_n": 0,
+      "metrics": {},
+      "ship_gates_pass": null,
+      "stop_reason": "evaluation wall timeout in completion_kernel._eval recursion (engine._ip_control_copy)"
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c3-canvas",
+      "status": "stopped",
+      "training": {
+        "executed": false,
+        "source_campaign": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c2",
+        "parameter_count": 1608962
+      },
+      "suite_n": 0,
+      "metrics": {},
+      "ship_gates_pass": null,
+      "stop_reason": "evaluation wall timeout in completion_kernel._eval recursion (engine._ip_control_copy)"
+    }
+  ],
+  "diagnostic_signal": {
+    "target": "infrastructure",
+    "observed_stack": "build_completion_forest -> session.terminal_witness -> completion_kernel._eval (recursed) -> advance_path -> advance -> engine.copy_control -> engine._copy -> engine._ip_control_copy -> copy.copy(parser_state.parse_conf)",
+    "authority": "observed_interrupt_trace",
+    "prior_related": "second consecutive cycle (c1722, c1723) with both arms timing out in the same completion_kernel._eval recursion family, different frames each time",
+    "disposition": "two of three strikes on this signature family; replay once more before escalating to a counted probe",
+    "claim_boundary": "not yet the three-strikes hard-block threshold; still a soft failure per the continuous-loop absolute law"
+  },
+  "disposition": {
+    "measurement_complete": false,
+    "climb_state": "inconclusive",
+    "ship_state": "blocked",
+    "promotion": "rejected_pending_complete_frozen_replay",
+    "next_run": "replay the identical frozen c1723 manifest; escalate to counted probe on a third identical-family timeout"
+  },
+  "checkpoint_documentation_required": false
+}
