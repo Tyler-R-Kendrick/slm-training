@@ -116,12 +116,17 @@ def publish_agentv_evaluation(
     ]
     if trace_id is not None:
         command.extend(("--trace-id", trace_id, "--run-id", Path(run_dir).name))
+    # Host NODE_OPTIONS may carry unrelated loader flags (e.g. --import) that
+    # make node refuse to start; AgentV needs none of them.
+    env = dict(os.environ)
+    env.pop("NODE_OPTIONS", None)
     completed = subprocess.run(
         command,
         cwd=runtime_root,
         check=False,
         capture_output=True,
         text=True,
+        env=env,
     )
     if completed.returncode:
         detail = (completed.stderr or completed.stdout).strip()

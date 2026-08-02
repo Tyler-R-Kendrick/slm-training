@@ -1794,7 +1794,7 @@
       ]
     },
     "evals.agentv": {
-      "version": "v6",
+      "version": "v7",
       "kind": "harness",
       "paths": [
         "src/slm_training/evals/agentv.py",
@@ -1802,6 +1802,11 @@
         "tests/test_evals/test_agentv.py"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-08-02",
+          "note": "Strip host NODE_OPTIONS before spawning the AgentV node runner so unrelated loader flags on the host cannot crash publish_agentv_evaluation; refresh the smoke ship-gate test fixtures with the currently-required meaningful_program_rate/ast_beq_rate/canonical_beq_rate metrics (missing since those metrics were added to the canonical policy) and correct the resulting passed-gate counts"
+        },
         {
           "version": "v6",
           "date": "2026-07-30T10:18:42-05:00",
