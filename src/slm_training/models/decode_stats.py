@@ -346,6 +346,10 @@ def collect_decode_stats(stats: DecodeStats | None = None) -> Iterator[DecodeSta
     t0 = time.perf_counter()
     try:
         yield bucket
+    except BaseException as exc:
+        if getattr(exc, "decode_stats", None) is None:
+            setattr(exc, "decode_stats", bucket)
+        raise
     finally:
         bucket.total_ms += (time.perf_counter() - t0) * 1000.0
         set_active_stats(prev)

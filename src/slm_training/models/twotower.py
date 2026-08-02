@@ -11267,16 +11267,19 @@ class TwoTowerModel(nn.Module):
                 state = states[row]
                 state.remaining_tokens = length - len(prefix)
                 with timed_ms(stats, "compiler_ms"):
-                    forest = build_completion_forest(
-                        self.tokenizer,
-                        prefix,
-                        state=state,
-                        slot_contract=contracts[row],
-                        max_path_tokens=draft_window,
-                        min_content=self._effective_min_content(contracts[row]),
-                        remaining_tokens=length - len(prefix),
-                        runtime_symbols=self._runtime_symbols_for_row(row),
-                    )
+                    try:
+                        forest = build_completion_forest(
+                            self.tokenizer,
+                            prefix,
+                            state=state,
+                            slot_contract=contracts[row],
+                            max_path_tokens=draft_window,
+                            min_content=self._effective_min_content(contracts[row]),
+                            remaining_tokens=length - len(prefix),
+                            runtime_symbols=self._runtime_symbols_for_row(row),
+                        )
+                    finally:
+                        state._collect_completion_stats()
                 forced_closure: tuple[int, ...] = ()
                 verified_solver_decode = bool(
                     getattr(self.config, "verified_solver_decode", False)

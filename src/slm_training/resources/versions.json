@@ -2561,7 +2561,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v43",
+      "version": "v45",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2598,6 +2598,16 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v45",
+          "date": "2026-08-01",
+          "note": "Keep timed-out stage telemetry fail closed for stale or invalid decode_progress artifacts and cover both rejection paths"
+        },
+        {
+          "version": "v44",
+          "date": "2026-08-01",
+          "note": "Ingest a fresh non-scoreable decode_progress artifact into timed-out experiment stage telemetry without promoting partial counters into experiment metrics"
+        },
         {
           "version": "v43",
           "date": "2026-08-01",
@@ -8363,7 +8373,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v71",
+      "version": "v73",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -8384,6 +8394,16 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v73",
+          "date": "2026-08-01",
+          "note": "Preserve the original supervisor interrupt when best-effort decode progress annotation or serialization fails"
+        },
+        {
+          "version": "v72",
+          "date": "2026-08-01",
+          "note": "Atomically persist version-stamped non-scoreable decode counters on supervisor interruption and remove the transient progress artifact after canonical evaluation completes"
+        },
         {
           "version": "v71",
           "date": "2026-07-31",
@@ -10574,7 +10594,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v274",
+      "version": "v275",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -10617,6 +10637,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v275",
+          "date": "2026-08-01",
+          "note": "Attach the active DecodeStats bucket to exceptional exits and fold completion-session deltas in a finally block so deadline interrupts retain exact grammar-work counters"
+        },
         {
           "version": "v274",
           "date": "2026-08-01",

@@ -1,6 +1,7 @@
 from slm_training.models.decode_stats import (
     DecodeStats,
     aggregate_stats,
+    collect_decode_stats,
     collect_completion_session_delta,
 )
 from slm_training.harnesses.model_build.eval_runner import _nearest_rank
@@ -30,6 +31,18 @@ def test_decode_stats_merge_counts_unconstrained_retries() -> None:
     total = DecodeStats(unconstrained_retries=1)
     total.merge(DecodeStats(unconstrained_retries=2))
     assert total.unconstrained_retries == 3
+
+
+def test_decode_stats_attaches_live_bucket_to_exception() -> None:
+    try:
+        with collect_decode_stats() as stats:
+            stats.completion_witness_states_expanded = 7
+            raise KeyboardInterrupt
+    except KeyboardInterrupt as exc:
+        assert exc.decode_stats is stats  # type: ignore[attr-defined]
+        assert exc.decode_stats.completion_witness_states_expanded == 7  # type: ignore[attr-defined]
+    else:
+        raise AssertionError("expected KeyboardInterrupt")
 
 
 def test_decode_stats_aggregates_certified_fallbacks() -> None:
