@@ -1,0 +1,76 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "loop_id": "continuous-openui-1pse54",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-1pse54-c1f3ee08-c2",
+  "cycle_index": 2,
+  "evidence_class": "fixture",
+  "decision": "infrastructure_failure",
+  "scoreable": false,
+  "comparison": {
+    "matched_dimensions": [
+      "train_version",
+      "steps",
+      "batch_size",
+      "seed",
+      "context_backend",
+      "parameter_count"
+    ],
+    "treatment": "grammar_completion_bounds: enabled (bounds) vs. disabled default was requested; evaluation never ran on either arm",
+    "prediction_identical": null,
+    "parameter_delta": 0
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-1pse54-c1f3ee08-c2-control",
+      "params": 1608962,
+      "steps": 21,
+      "batch_size": 2,
+      "seed": 100001,
+      "last_loss": 22.62193489074707,
+      "train_status": "complete",
+      "eval_status": "failed",
+      "eval_error": "AgentV SDK evaluation failed: node: --import tsx is not allowed in NODE_OPTIONS",
+      "smoke": null,
+      "held_out": null,
+      "agentv": null
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-1pse54-c1f3ee08-c2-bounds",
+      "params": 1608962,
+      "steps": 21,
+      "batch_size": 2,
+      "seed": 100001,
+      "last_loss": 22.62193489074707,
+      "train_status": "complete",
+      "eval_status": "failed",
+      "eval_error": "AgentV SDK evaluation failed: node: --import tsx is not allowed in NODE_OPTIONS",
+      "smoke": null,
+      "held_out": null,
+      "agentv": null
+    }
+  ],
+  "ship_gates_pass": false,
+  "lean": "not_applicable:no_champion",
+  "root_cause": "src/slm_training/evals/agentv.py spawned the AgentV node runner without clearing the process's inherited NODE_OPTIONS. This session's container sets NODE_OPTIONS to a value this Node build rejects (--import tsx), so scripts.evaluate_model --ship-gates failed inside publish_agentv_evaluation before any AgentEvals criterion executed, on both arms identically. Both trains completed to their declared 21 steps and wrote local no-sync checkpoints; only evaluation was blocked.",
+  "fix": "Committed 46fecfc: added _sanitized_env() to src/slm_training/evals/agentv.py (same pattern already used by src/slm_training/dsl/grammar/backends/graphql_js.py) and passed it to the AgentV subprocess.run call; bumped evals.agentv v6->v7; added a regression test; also repaired two test_agentv.py fixtures left stale by the ast_beq_rate/canonical_beq_rate ship-gate criteria that were blocking the pre-commit hook's changed-file test gate.",
+  "next_priority": {
+    "area": "infrastructure",
+    "hypothesis": "Replay the exact frozen c2 control/bounds arms with the repaired harness before evaluating any new hypothesis.",
+    "required_controls": [
+      "identical_frozen_manifest",
+      "no_knob_change"
+    ]
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "46fecfc32431db72d6f7969a1a0f33e84b364bf3",
+    "code_dirty": false,
+    "components": {
+      "evals.agentv": "v7",
+      "config.levers": "v30",
+      "harness.model_build.eval": "v75",
+      "harness.experiment_feature_flags": "v4"
+    },
+    "stamped_at": "2026-08-02T16:42:45.770093+00:00"
+  }
+}
