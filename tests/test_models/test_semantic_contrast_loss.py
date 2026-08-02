@@ -10,6 +10,7 @@ import pytest
 torch = pytest.importorskip("torch")
 
 from slm_training.dsl.schema import ExampleRecord
+from slm_training.data.contract import canonicalize_example_template_markers
 from slm_training.models.semantic_contrast_loss import (
     load_semantic_contrast_pairs,
     pairwise_margin_loss,
@@ -17,13 +18,25 @@ from slm_training.models.semantic_contrast_loss import (
 )
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 
-POSITIVE = 'root = Stack([cta])\ncta = Button(":cta.label")'
-NEGATIVE = 'root = Stack([copy])\ncopy = TextContent(":cta.label")'
+POSITIVE = 'root = Stack([cta])\ncta = Button(":external.label")'
+NEGATIVE = 'root = Stack([copy])\ncopy = TextContent(":external.label")'
 
 
 def _pair_row(*, negative_role: str = "negative") -> dict:
-    positive = ExampleRecord("positive", "Build a CTA", POSITIVE, split="train")
-    negative = ExampleRecord("negative", "Build a CTA", NEGATIVE, split="train")
+    positive = ExampleRecord(
+        "positive",
+        "Build a CTA",
+        POSITIVE,
+        split="train",
+        placeholders=[":external.label"],
+    )
+    negative = ExampleRecord(
+        "negative",
+        "Build a CTA",
+        NEGATIVE,
+        split="train",
+        placeholders=[":external.label"],
+    )
     source = "source-1"
     return {
         "pair_id": "pair-1",
@@ -63,6 +76,8 @@ def test_pair_loader_marks_complete_pair_metadata(tmp_path: Path) -> None:
     path = tmp_path / "pairs.jsonl"
     path.write_text(json.dumps(_pair_row()) + "\n")
     pair = load_semantic_contrast_pairs(path)[0]
+    assert pair.positive.openui.endswith('Button(":slot_0")')
+    assert pair.negative.openui.endswith('TextContent(":slot_0")')
     assert semantic_contrast_metadata(pair.positive) == {
         "pair_id": "pair-1",
         "family": "binding",
@@ -71,6 +86,31 @@ def test_pair_loader_marks_complete_pair_metadata(tmp_path: Path) -> None:
         "role": "positive",
     }
     assert semantic_contrast_metadata(pair.negative)["role"] == "negative"
+
+
+def test_pair_loader_preserves_shared_ordinals_when_negative_drops_slot(
+    tmp_path: Path,
+) -> None:
+    row = _pair_row()
+    row["positive"]["record"]["openui"] = (
+        'root = Stack([a, b])\na = Button(":external.a")\n'
+        'b = Button(":external.b")'
+    )
+    row["positive"]["record"]["placeholders"] = [":external.a", ":external.b"]
+    row["positive"]["record"]["prompt"] = "Use :external.a and :external.b"
+    row["negative"]["record"]["openui"] = (
+        'root = Stack([a, b])\na = Button(":slot_1.label")\n'
+        'b = Button(":slot_1.label")'
+    )
+    row["negative"]["record"]["placeholders"] = [":slot_1.label"]
+    row["negative"]["record"]["prompt"] = "Use :external.a and :external.b"
+
+    pair = load_semantic_contrast_pairs(_write_pair(tmp_path=tmp_path, row=row))[0]
+
+    assert pair.positive.placeholders == [":slot_0", ":slot_1"]
+    assert pair.negative.placeholders == [":slot_0", ":slot_1"]
+    assert pair.negative.openui.count(":slot_1") == 2
+    assert ":slot_0" not in pair.negative.openui
 
 
 def _model(records: list[ExampleRecord], **kwargs) -> TwoTowerModel:
@@ -89,8 +129,14 @@ def _model(records: list[ExampleRecord], **kwargs) -> TwoTowerModel:
 
 def test_disabled_objective_is_exact_legacy_loss(tmp_path: Path) -> None:
     raw = _pair_row()
-    positive = ExampleRecord.from_dict(raw["positive"]["record"])
-    negative = ExampleRecord.from_dict(raw["negative"]["record"])
+    positive = canonicalize_example_template_markers(
+        ExampleRecord.from_dict(raw["positive"]["record"]),
+        marker_order=[":external.label"],
+    )
+    negative = canonicalize_example_template_markers(
+        ExampleRecord.from_dict(raw["negative"]["record"]),
+        marker_order=[":external.label"],
+    )
     annotated = load_semantic_contrast_pairs(_write_pair(tmp_path=tmp_path, row=raw))[0]
     baseline = _model([positive, negative])
     disabled = _model([annotated.positive, annotated.negative], semantic_contrast_loss_weight=0.0)

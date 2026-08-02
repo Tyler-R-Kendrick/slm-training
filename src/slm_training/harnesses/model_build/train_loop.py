@@ -275,11 +275,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     contrast_fraction = float(getattr(config, "semantic_contrast_fraction", 0.0) or 0.0)
     contrast_pairs = []
     contrast_dir = getattr(config, "semantic_contrast_dir", None)
-    if contrast_weight > 0.0:
-        if contrast_dir is None:
-            raise ValueError(
-                "semantic_contrast_loss_weight requires semantic_contrast_dir"
-            )
+    if contrast_weight > 0.0 and contrast_dir is None:
+        raise ValueError("semantic_contrast_loss_weight requires semantic_contrast_dir")
+    if contrast_dir is not None:
         if not 0.0 < contrast_fraction <= 1.0:
             raise ValueError("semantic_contrast_fraction must be in (0, 1]")
         if config.batch_size < 2:

@@ -603,6 +603,26 @@ def compile_commands(
                     str(knobs.component_edge_alignment_loss_weight),
                 ]
             )
+        if knobs.semantic_contrast_dir is not None:
+            train.extend(["--semantic-contrast-dir", knobs.semantic_contrast_dir])
+        if knobs.semantic_contrast_loss_weight is not None:
+            train.extend(
+                [
+                    "--semantic-contrast-loss-weight",
+                    str(knobs.semantic_contrast_loss_weight),
+                ]
+            )
+        if knobs.semantic_contrast_margin is not None:
+            train.extend(
+                ["--semantic-contrast-margin", str(knobs.semantic_contrast_margin)]
+            )
+        if knobs.semantic_contrast_fraction is not None:
+            train.extend(
+                [
+                    "--semantic-contrast-fraction",
+                    str(knobs.semantic_contrast_fraction),
+                ]
+            )
         if knobs.component_edge_decode_weight is not None:
             train.extend(
                 [
