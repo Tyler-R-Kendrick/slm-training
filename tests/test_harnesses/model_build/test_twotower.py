@@ -190,9 +190,11 @@ def test_warm_start_load_merges_context_vocab_and_remaps_shared_row(
         config=_compositional_warm_start_config(),
         context_tokenizer=target_context,
     )
-    new_row_before = target.context.encoder.tok.weight[
-        target_context.token_to_id["new"]
-    ].detach().clone()
+    new_row_before = (
+        target.context.encoder.tok.weight[target_context.token_to_id["new"]]
+        .detach()
+        .clone()
+    )
     target.load(checkpoint, preserve_tokenizers=True)
 
     assert set(target.context_tokenizer.token_to_id) == set(
@@ -745,21 +747,9 @@ def test_optional_heads_do_not_shift_training_rng() -> None:
 
 @pytest.mark.parametrize(
     ("profile", "head_name", "weights"),
-    [
-        (
-            "binder-arity",
-            "binder_arity_head",
-            {"binder_arity_loss_weight": 1.0, "binder_arity_decode_weight": 1.0},
-        ),
-        (
-            "binder-component-plan",
-            "binder_component_plan_head",
-            {
-                "binder_component_plan_loss_weight": 1.0,
-                "binder_component_plan_decode_weight": 1.0,
-            },
-        ),
-    ],
+    case_values(
+        __file__, "test_binder_quality_profiles_make_control_capacity_match_candidate"
+    ),
 )
 def test_binder_quality_profiles_make_control_capacity_match_candidate(
     profile: str, head_name: str, weights: dict[str, float]

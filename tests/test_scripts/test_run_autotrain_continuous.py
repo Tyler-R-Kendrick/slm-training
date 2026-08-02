@@ -533,8 +533,9 @@ def test_select_recommended_slug_rotates_and_skips() -> None:
         _mod._select_recommended_slug(1, skip=all_slugs)
 
 
-def test_select_recommended_slug_prioritizes_successor_quality_after_legacy_nulls(
-) -> None:
+def test_select_recommended_slug_prioritizes_successor_quality_after_legacy_nulls() -> (
+    None
+):
     skip = {
         "component-plan",
         "component-edge",
@@ -714,20 +715,7 @@ def test_structural_screening_control_matches_recommended_head_capacity() -> Non
 
 @pytest.mark.parametrize(
     ("slug", "loss_key", "decode_key", "profile"),
-    [
-        (
-            "binder-arity",
-            "binder_arity_loss_weight",
-            "binder_arity_decode_weight",
-            "binder-arity",
-        ),
-        (
-            "binder-component-plan",
-            "binder_component_plan_loss_weight",
-            "binder_component_plan_decode_weight",
-            "binder-component-plan",
-        ),
-    ],
+    case_values(__file__, "test_binder_quality_screening_controls_are_size_matched"),
 )
 def test_binder_quality_screening_controls_are_size_matched(
     slug: str, loss_key: str, decode_key: str, profile: str
@@ -950,9 +938,7 @@ def test_completed_confirmation_that_reholds_steers_to_promotion() -> None:
 
 
 def test_queued_candidate_priorities_require_fresh_confirmation_before_lean() -> None:
-    priorities = _mod._queued_candidate_priorities(
-        "cycle-candidate", "campaign:cycle"
-    )
+    priorities = _mod._queued_candidate_priorities("cycle-candidate", "campaign:cycle")
 
     assert priorities[0].area == "evaluation"
     assert priorities[0].authority == "observed_result"
@@ -2773,9 +2759,10 @@ def test_open_champion_is_revalidated_under_current_policy(tmp_path: Path) -> No
 
     assert _mod._revalidate_open_champion_entries(root, entries) is True
     assert entries[0]["status"] == "rejected"
-    assert "source_reclassified_nonpositive_under_current_policy" in entries[0][
-        "resolve_reasons"
-    ]
+    assert (
+        "source_reclassified_nonpositive_under_current_policy"
+        in entries[0]["resolve_reasons"]
+    )
 
 
 def test_classify_positive_marks_finalized_decode_timeout_incomplete(
@@ -3427,9 +3414,7 @@ def test_cycle_handoff_separates_fixture_climb_from_ship(tmp_path: Path) -> None
 def test_cycle_handoff_routes_frozen_harness_repair(tmp_path: Path) -> None:
     root = tmp_path / "autoresearch"
     camp = root / "cycle-1"
-    head = subprocess.check_output(
-        ["git", "rev-parse", "HEAD"], text=True
-    ).strip()
+    head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
     predecessor = subprocess.check_output(
         ["git", "rev-parse", "HEAD^"], text=True
     ).strip()
@@ -3496,9 +3481,7 @@ def test_cycle_handoff_routes_frozen_harness_repair(tmp_path: Path) -> None:
     assert all(action.kind != "next_experiment" for action in handoff.actions)
 
     repair_index = handoff.actions.index(repair)
-    evidence = _mod.bind_autotrain_action_evidence(
-        root, handoff, repair, (head,)
-    )
+    evidence = _mod.bind_autotrain_action_evidence(root, handoff, repair, (head,))
     _mod.append_autotrain_action_receipt(
         root,
         _mod.AutotrainActionReceiptV1(
@@ -3693,7 +3676,9 @@ def test_terminal_interrupted_replay_finalizes_without_rerunning_arms(
     assert handoffs[0]["campaign_id"] == campaign_id
 
 
-@pytest.mark.parametrize("candidate_slug", ("batch1", "component-plan", "literal-close"))
+@pytest.mark.parametrize(
+    "candidate_slug", ("batch1", "component-plan", "literal-close")
+)
 def test_frozen_replay_preserves_recipe_and_links_current_main_successor(
     candidate_slug: str,
 ) -> None:
@@ -3719,9 +3704,7 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor(
             next(
                 row["experiment"]
                 for row in matrix["hypotheses"]
-                if row["experiment"]["experiment_id"].endswith(
-                    f"-{candidate_slug}"
-                )
+                if row["experiment"]["experiment_id"].endswith(f"-{candidate_slug}")
             )
         )
     )
@@ -4299,9 +4282,10 @@ def test_numeric_literal_close_starvation_steers_new_training_arm(
     assert _mod._predecessor_priority_slug(root, "cycle-1", skip=set()) == (
         "literal-close"
     )
-    assert _mod._predecessor_priority_slug(
-        root, "cycle-1", skip={"literal-close"}
-    ) == "literal-close"
+    assert (
+        _mod._predecessor_priority_slug(root, "cycle-1", skip={"literal-close"})
+        == "literal-close"
+    )
 
     predecessor = "cycle-1"
     for index, slug in ((2, "bounds"), (3, "confirm")):
@@ -4331,9 +4315,10 @@ def test_numeric_literal_close_starvation_steers_new_training_arm(
         )
         predecessor = f"cycle-{index}"
 
-    assert _mod._predecessor_priority_slug(
-        root, predecessor, skip={"literal-close"}
-    ) == "literal-close"
+    assert (
+        _mod._predecessor_priority_slug(root, predecessor, skip={"literal-close"})
+        == "literal-close"
+    )
     assert (
         _mod._predecessor_priority_slug(
             root,

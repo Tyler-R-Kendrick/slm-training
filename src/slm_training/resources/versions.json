@@ -2689,6 +2689,11 @@
         {
           "version": "v88",
           "date": "2026-08-02",
+          "note": "no-bump: move the binder-quality control parity parameter rows into the canonical external case resource; assertions and harness behavior are unchanged."
+        },
+        {
+          "version": "v88",
+          "date": "2026-08-02",
           "note": "Prevent predecessor priorities from reopening lineage-closed arms, apply the bounded latency tradeoff to every quality-primary win, and revalidate durable champion entries under current harness policy."
         },
         {
@@ -11285,6 +11290,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v292",
+          "date": "2026-08-02",
+          "note": "no-bump: move the binder-quality head capacity parity parameter rows into the canonical external case resource; assertions and model behavior are unchanged."
+        },
         {
           "version": "v292",
           "date": "2026-08-02",
