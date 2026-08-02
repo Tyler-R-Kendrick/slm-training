@@ -1,0 +1,154 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local-2",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local--c94ddb78-c4",
+  "cycle_index": 4,
+  "cycle_intent": "promotion/confirm -- attempt to confirm the champion_queue entry enqueued from c3's driver-tagged POSITIVE component-edge efficiency-win (source_campaign_id=c3, source_candidate_id=c3-component-edge) against a freshly matched control, per the driver's own champion-confirmation flow",
+  "predecessor_campaign_id": "continuous-loop-20260802-continuous-openui-local--c94ddb78-c3",
+  "source_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "integration_commit": "791b0a0e4aee4d5b2ea41ff82e84b387d49e06fc",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "summary": "Fourth cycle of the continuous-openui-local-2 lineage, and the first this lineage to run as a champion-confirmation (cycle_role=promotion, cycle_intent=confirm) rather than a fresh screen: c3's component-edge lever had been auto-enqueued into loops/continuous-openui-local-2/champion_queue.jsonl on the strength of the driver's own POSITIVE efficiency-win tag (this doc's own c3 report reclassified that same result NON_POSITIVE as a pure latency blip -- see continuous-openui-local-2-20260802-c3-results.md). c4 requested a matched control plus a confirm arm reusing the component-edge knobs (structural_aux_head_profile=component-edge, component_edge_loss_weight=1.0) with eval_suites=smoke,held_out under a per-experiment wall budget of ~70s (max_wall_minutes=1.1667). Both arms' training completed cleanly (steps_actual=20, stopped_on=steps, record_count=101, control last_loss=13.395, confirm last_loss=14.686), and the smoke suite (n=3) completed and scored bit-identical between arms exactly as in every prior cycle this lineage (parse_rate=1.0/1.0, meaningful_program_rate=0.3333/0.3333, structural_similarity=0.4167/0.4167, binder_reference_f1=0.9524/0.9524, ast/canonical_beq_rate=0.0/0.0, reward_score=0.936/0.936, component_type_recall=0.25/0.25, placeholder_fidelity=0.9167/0.9167; only latency differs, control p50=9946.03ms vs confirm p50=11152.92ms). However the held_out suite never finished on either arm: both `evaluate_model` stages were killed by the harness's own wall-time guard mid-suite (`error: stage exceeded wall-time limit ...`, exit_code=null, status=stopped), so no full --ship-gates scoreboard was ever written for either arm and the primary confirmatory metric (held_out.structural_similarity) has no genuine measurement this cycle -- the 0.4166666666666667 value the driver's classifier used for both control and confirm in sdlc_delivery.json/cycle_handoff.json is the completed *smoke*-suite value carried forward as a placeholder, not a held_out result, and its 0.0 'improvement' is an artifact of comparing two copies of the same unmeasured placeholder, not evidence the lever ties on held_out. This is an infrastructure timeout, not a model result: cycle_handoff.json/sdlc_delivery.json correctly flag measurement_incomplete + wall_timeout for both arms, mark measurement_complete=false, climb_state=rejected, ship_state=blocked, and emit a retry_measurement action (owner autotrain) ahead of any new hypothesis, per contracts.md's rule that an unacknowledged retry_measurement is consumed via a frozen-manifest replay before the driver proposes a new lever. positive=false, stack_layer=false, stack_action=no_stack_layer_non_positive. checkpoint_documentation_required=true (screening-note only, no roster change, no promotion -- the confirmation was never actually run to completion).",
+  "eval_feasibility_confirmation": {
+    "note": "eval_version=e938_role_safe_all_targets_v2 was selected with eval_suites=smoke,held_out (heavier than the smoke-only suites in c1-c3); both arms' training completed but the evaluate_model stage for each arm was killed by the harness wall-time guard before the held_out suite finished. decode_timeout_count=0/decode_timeout_rate=0.0 on the completed smoke portion of both arms -- the timeout is a stage-level wall-clock budget exhaustion (held_out has more documents than smoke's n=3), not a per-document decode timeout.",
+    "decode_timeout_count_control": 0,
+    "decode_timeout_count_confirm": 0,
+    "decode_timeout_rate_control": 0.0,
+    "decode_timeout_rate_confirm": 0.0,
+    "wall_timeout_control": true,
+    "wall_timeout_confirm": true,
+    "smoke_suite_completed_both_arms": true,
+    "held_out_suite_completed_either_arm": false
+  },
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "steps": 20,
+    "steps_actual": 20,
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "eval_suites": "smoke,held_out",
+    "record_count": 101,
+    "decode_timeout_seconds": 24.0,
+    "max_wall_minutes_per_experiment": 1.1666666666666667,
+    "trainable_params": {
+      "control": 1766987,
+      "confirm": 1766987
+    }
+  },
+  "hypothesis": {
+    "control": "Matched control (levers off) for confirmatory retest of a quality-held champion.",
+    "confirm": "Component-edge supervision (source: c3) holds smoke quality and improves/holds held_out.structural_similarity under a full --ship-gates scoreboard.",
+    "lever": "component_edge_decode_weight / structural_aux_head_profile=component-edge",
+    "confirm_experiment_id": "c20260802-continuous-openui-local--c94ddb78-c4-confirm",
+    "control_experiment_id": "c20260802-continuous-openui-local--c94ddb78-c4-control",
+    "endpoint": {
+      "metric": "held_out.structural_similarity",
+      "role": "primary",
+      "direction": "increase",
+      "minimum_effect": 0.01
+    },
+    "champion_queue_source": {
+      "entry_id": "champ-continuous-openui-local-2-3-0d77af2fb9002464",
+      "source_campaign_id": "continuous-loop-20260802-continuous-openui-local--c94ddb78-c3",
+      "source_candidate_id": "c20260802-continuous-openui-local--c94ddb78-c3-component-edge",
+      "source_control_id": "c20260802-continuous-openui-local--c94ddb78-c3-control",
+      "confirm_attempts": 1
+    }
+  },
+  "smoke_metrics": {
+    "n": 3,
+    "control": {
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "structural_similarity": 0.4166666666666667,
+      "binder_reference_f1": 0.9523809523809524,
+      "ast_beq_rate": 0.0,
+      "canonical_beq_rate": 0.0,
+      "reward_score": 0.9359999999999999,
+      "component_type_recall": 0.25,
+      "placeholder_fidelity": 0.9166666666666666,
+      "latency_ms_p50": 9946.03,
+      "latency_ms_p95": 12897.92
+    },
+    "confirm": {
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "structural_similarity": 0.4166666666666667,
+      "binder_reference_f1": 0.9523809523809524,
+      "ast_beq_rate": 0.0,
+      "canonical_beq_rate": 0.0,
+      "reward_score": 0.9359999999999999,
+      "component_type_recall": 0.25,
+      "placeholder_fidelity": 0.9166666666666666,
+      "latency_ms_p50": 11152.92,
+      "latency_ms_p95": 12339.89
+    },
+    "delta": {
+      "structural_similarity": 0.0,
+      "component_type_recall": 0.0,
+      "latency_ms_p50": 1206.89
+    },
+    "held_out": {
+      "status": "measurement_incomplete",
+      "note": "evaluate_model stage killed by the wall-time guard before the held_out suite completed on either arm; no scoreboard was written. No held_out metric was genuinely measured this cycle."
+    },
+    "train_loss": {
+      "control_last_loss": 13.394597053527832,
+      "confirm_last_loss": 14.68574047088623,
+      "steps_actual": 20,
+      "stopped_on": "steps"
+    }
+  },
+  "harness_signals": [],
+  "sdlc_delivery": {
+    "positive_per_driver": false,
+    "positive_per_loop_quality_policy": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "measurement_incomplete:c20260802-continuous-openui-local--c94ddb78-c4-control:missing_scoreboard",
+      "measurement_incomplete:c20260802-continuous-openui-local--c94ddb78-c4-confirm:missing_scoreboard",
+      "wall_timeout:3e160bc142d5d83191b7dc7f9b38c3438df78548b0558bf26f05221224ad3366",
+      "wall_timeout:27c833cdcdec3dab0f315660294b1b1513d4fec01480668c6f1747452f8e6d27",
+      "primary_metric_null_or_worse:held_out.structural_similarity:control=0.4166666666666667 candidate=0.4166666666666667 improvement=0.0"
+    ],
+    "measurement_complete": false,
+    "fixture_volume_gate_hits": 0,
+    "reclassification_note": "Driver and loop policy agree this cycle is NON_POSITIVE (unlike c3, where they disagreed) -- there is no efficiency-win rule in play because measurement never completed. The reported held_out.structural_similarity tie (0.4167=0.4167, improvement=0.0) is an artifact of the harness carrying forward the completed smoke value as a placeholder when held_out is missing, not a genuine held_out measurement; treat this cycle as 'no comparison happened' rather than 'a tied null on held_out.'"
+  },
+  "cycle_handoff": {
+    "climb_state": "rejected",
+    "ship_state": "blocked",
+    "actions": [
+      {"kind": "retry_measurement", "owner": "autotrain", "status": "queued", "reason": "measurement incomplete; replay the identical frozen arm (0/2 consecutive frozen replays so far)", "frozen_manifest_sha256": "d136c228a5a967e6884abdbfd2d5de46f6700bd1a110ccdd88fc772a07d30a1f"},
+      {"kind": "document", "owner": "documenting-experiment-results", "status": "completed_this_cycle"}
+    ],
+    "checkpoint_documentation_required": true,
+    "checkpoint_paths": [
+      "runs/c20260802-continuous-openui-local--c94ddb78-c4-confirm/checkpoints/last.pt",
+      "runs/c20260802-continuous-openui-local--c94ddb78-c4-control/checkpoints/last.pt"
+    ]
+  },
+  "checkpoint_disposition": "Fixture-scale confirmation-attempt checkpoints only (n=3 smoke completed, held_out never measured -- infrastructure wall-timeout, not a model result). Not promoted, not a new roster entry, champion_queue confirmation still pending (confirm_attempts=1, promote_attempts=0). MODEL_CARD.md/README updated with a screening-note history line per checkpoint_documentation_required=true, no roster change.",
+  "recommendation_for_next_cycle": [
+    "infrastructure: cycle 5 should consume the queued retry_measurement action first -- replay the identical frozen manifest (frozen_manifest_sha256=d136c228a5a967e6884abdbfd2d5de46f6700bd1a110ccdd88fc772a07d30a1f) per contracts.md rather than proposing a new lever. Consider narrowing eval_suites back to smoke-only for the retry (as c1-c3 did) or raising the per-experiment wall budget, since smoke alone completed comfortably (~10-12s of a 70s budget) while held_out pushed the evaluate_model stage over the wall-time guard on both arms.",
+    "model: no new model evidence was produced this cycle either way -- c3's component-edge lever remains an unconfirmed driver-tagged POSITIVE (reclassified NON_POSITIVE by this lineage's own quality policy) pending a completed confirm measurement. Do not treat this cycle's tied held_out numbers as a second independent null; they are an unmeasured placeholder, not data.",
+    "evaluation: e938_role_safe_all_targets_v2 remains the right snapshot; the issue this cycle is wall-clock budget for a two-suite (smoke+held_out) confirm run at the current max_wall_minutes=1.1667/experiment, not the eval snapshot choice itself.",
+    "lever bank note: with c1 (bounds, tied null), c2 (component-plan, confirmed regression), and c3 (component-edge, tied null on smoke, unconfirmed on held_out) now touched in this lineage, and the parked continuous-openui-local lineage having independently screened a largely overlapping set across 13 cycles, the untested-candidate pool for fresh single-lever screening remains thin. This cycle's infrastructure timeout does not change that audit recommendation from c3 -- it is still worth confirming before c6 whether fresh single-lever candidates remain or whether the loop should move to combination/second-order arms or invest in raising the per-experiment wall budget so held_out confirmations can complete."
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "791b0a0e4aee4d5b2ea41ff82e84b387d49e06fc",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v74",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v286"
+    }
+  }
+}

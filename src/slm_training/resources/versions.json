@@ -7038,6 +7038,11 @@
         {
           "version": "v3",
           "date": "2026-08-02",
+          "note": "no-bump: add honest model-card and README provenance for the unrelated continuous-openui-local-2 c4 component-edge champion-confirm attempt (infrastructure wall-timeout on held_out, measurement_complete=false, unconfirmed -- not a model result); SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
           "note": "no-bump: add honest model-card and README provenance for the unrelated continuous-openui-local-2 c3 component-edge latency-only tied-null screen (reclassified NON_POSITIVE from the driver's own POSITIVE efficiency-win tag); SLM-228 spectral-disposition behavior is unchanged"
         },
         {
