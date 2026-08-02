@@ -7,6 +7,12 @@ experiment starts.
 
 ## Contract
 
+Campaign-lock verification preserves the canonical digest of historical
+`ExperimentCampaignV1` payloads when later releases add optional defaulted
+fields. The compatibility projection is explicit and limited to those added
+defaults; all typed validation still runs, and any decision-bearing mutation
+continues to fail the digest check.
+
 Every governed experiment declares:
 
 - hypothesis and decision;
