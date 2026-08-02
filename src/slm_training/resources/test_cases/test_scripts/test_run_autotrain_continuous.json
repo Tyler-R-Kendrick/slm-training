@@ -32,6 +32,34 @@
           ]
         }
       ]
+    },
+    "test_binder_quality_screening_controls_are_size_matched": {
+      "parameters": [
+        "slug",
+        "loss_key",
+        "decode_key",
+        "profile"
+      ],
+      "cases": [
+        {
+          "id": "case-001",
+          "values": [
+            "binder-arity",
+            "binder_arity_loss_weight",
+            "binder_arity_decode_weight",
+            "binder-arity"
+          ]
+        },
+        {
+          "id": "case-002",
+          "values": [
+            "binder-component-plan",
+            "binder_component_plan_loss_weight",
+            "binder_component_plan_decode_weight",
+            "binder-component-plan"
+          ]
+        }
+      ]
     }
   }
 }

@@ -29,6 +29,37 @@
           ]
         }
       ]
+    },
+    "test_binder_quality_profiles_make_control_capacity_match_candidate": {
+      "parameters": [
+        "profile",
+        "head_name",
+        "weights"
+      ],
+      "cases": [
+        {
+          "id": "case-001",
+          "values": [
+            "binder-arity",
+            "binder_arity_head",
+            {
+              "binder_arity_loss_weight": 1.0,
+              "binder_arity_decode_weight": 1.0
+            }
+          ]
+        },
+        {
+          "id": "case-002",
+          "values": [
+            "binder-component-plan",
+            "binder_component_plan_head",
+            {
+              "binder_component_plan_loss_weight": 1.0,
+              "binder_component_plan_decode_weight": 1.0
+            }
+          ]
+        }
+      ]
     }
   }
 }

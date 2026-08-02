@@ -527,9 +527,23 @@ def test_select_recommended_slug_rotates_and_skips() -> None:
     assert _mod._select_recommended_slug(1729) == "binder-topology"
     # skip bounds → canvas even on cycle 1
     assert _mod._select_recommended_slug(1, skip={"bounds"}) == "canvas"
-    # all skipped → still returns rotated head
+    # all skipped fails closed rather than recycling a rejected approach
     all_slugs = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
-    assert _mod._select_recommended_slug(1, skip=all_slugs) == "bounds"
+    with pytest.raises(RuntimeError, match="screening arm bank exhausted"):
+        _mod._select_recommended_slug(1, skip=all_slugs)
+
+
+def test_select_recommended_slug_prioritizes_successor_quality_after_legacy_nulls() -> (
+    None
+):
+    skip = {
+        "component-plan",
+        "component-edge",
+        "component-inventory",
+        "binder-topology",
+        "component-structure",
+    }
+    assert _mod._select_recommended_slug(1786, skip=skip) == "binder-arity"
 
 
 def test_matrix_thrash_rotation_recommends_non_bounds() -> None:
@@ -554,6 +568,8 @@ def test_matrix_thrash_rotation_recommends_non_bounds() -> None:
     assert "c20260731-c2-bounds" in ids
     assert "c20260731-c2-component-plan" in ids
     assert "c20260731-c2-binder-topology" in ids
+    assert "c20260731-c2-binder-arity" in ids
+    assert "c20260731-c2-binder-component-plan" in ids
     assert "c20260731-c2-literal-close" in ids
 
 
@@ -697,6 +713,43 @@ def test_structural_screening_control_matches_recommended_head_capacity() -> Non
     assert candidate["compiler_decode_mode"] == "tree"
 
 
+@pytest.mark.parametrize(
+    ("slug", "loss_key", "decode_key", "profile"),
+    case_values(__file__, "test_binder_quality_screening_controls_are_size_matched"),
+)
+def test_binder_quality_screening_controls_are_size_matched(
+    slug: str, loss_key: str, decode_key: str, profile: str
+) -> None:
+    campaign_id = f"continuous-loop-20260802-{slug}"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1786,
+        role="screening",
+        recommended_slug=slug,
+    )
+    by_id = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = by_id[f"{prefix}-control"]
+    candidate = by_id[f"{prefix}-{slug}"]
+    assert control[loss_key] == 0.0
+    assert control[decode_key] == 0.0
+    assert candidate[loss_key] == 1.0
+    assert candidate[decode_key] == 1.0
+    assert control["structural_aux_head_profile"] == profile
+    assert candidate["structural_aux_head_profile"] == profile
+    assert control["compiler_decode_mode"] == "tree"
+    assert candidate["compiler_decode_mode"] == "tree"
+
+
 def test_structural_screening_arms_couple_training_to_decode() -> None:
     by_slug = {slug: extras for slug, _hypothesis, extras in _mod._SCREENING_ARM_BANK}
 
@@ -705,6 +758,8 @@ def test_structural_screening_arms_couple_training_to_decode() -> None:
         ("component-edge", "component_edge"),
         ("component-inventory", "component_inventory"),
         ("binder-topology", "binder_topology"),
+        ("binder-arity", "binder_arity"),
+        ("binder-component-plan", "binder_component_plan"),
     ):
         assert by_slug[slug][f"{prefix}_loss_weight"] > 0.0
         assert by_slug[slug][f"{prefix}_decode_weight"] > 0.0
@@ -772,7 +827,7 @@ def test_completed_null_steers_to_distinct_quality_arm() -> None:
     assert "component-plan" in priorities[0].hypothesis
 
 
-def test_completed_null_labels_runtime_successor_as_diagnostic() -> None:
+def test_completed_null_prioritizes_new_quality_objective_before_runtime() -> None:
     matrix = _mod._matrix(
         campaign_id="continuous-loop-20260802-c1735",
         evidence_snapshot_id="snap",
@@ -799,11 +854,9 @@ def test_completed_null_labels_runtime_successor_as_diagnostic() -> None:
         },
     )
 
-    assert priorities[0].area == "experiments"
-    assert priorities[0].proposed_experiment_id.endswith("-bounds")
-    assert "diagnostic" in priorities[0].hypothesis
-    assert "latency_ms_p50" in priorities[0].hypothesis
-    assert "quality hypothesis" not in priorities[0].hypothesis
+    assert priorities[0].area == "model"
+    assert priorities[0].proposed_experiment_id.endswith("-binder-arity")
+    assert "quality" in priorities[0].hypothesis
 
 
 def test_completed_confirmation_replaces_stale_preregistered_priorities() -> None:
@@ -885,9 +938,7 @@ def test_completed_confirmation_that_reholds_steers_to_promotion() -> None:
 
 
 def test_queued_candidate_priorities_require_fresh_confirmation_before_lean() -> None:
-    priorities = _mod._queued_candidate_priorities(
-        "cycle-candidate", "campaign:cycle"
-    )
+    priorities = _mod._queued_candidate_priorities("cycle-candidate", "campaign:cycle")
 
     assert priorities[0].area == "evaluation"
     assert priorities[0].authority == "observed_result"
@@ -1116,6 +1167,76 @@ def test_recent_completed_nonpositive_slugs_follow_predecessor_chain(
         "component-plan",
         "component-edge",
     }
+
+
+def test_completed_null_does_not_age_out_of_lineage_exhaustion(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    old_id = "continuous-loop-20260802-c1"
+    old = root / old_id
+    matrix = _mod._matrix(
+        campaign_id=old_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1,
+        role="screening",
+        recommended_slug="bounds",
+    )
+    old.mkdir(parents=True)
+    (old / "campaign.json").write_text(
+        json.dumps(
+            {
+                "campaign_id": old_id,
+                "loop_id": "loop-1",
+                "predecessor_campaign_id": None,
+            }
+        )
+    )
+    (old / "matrix-proposal.json").write_text(json.dumps(matrix))
+    (old / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "candidate_id": matrix["recommended_experiment_id"],
+                "cycle_intent": "screening",
+                "positive": False,
+                "measurement_complete": True,
+            }
+        )
+    )
+    (old / "cycle_handoff.json").write_text(
+        json.dumps({"loop_id": "loop-1", "cycle_intent": "screening"})
+    )
+
+    predecessor = old_id
+    for cycle in range(2, _mod._RECENT_EXHAUSTION_CYCLE_WINDOW + 4):
+        campaign_id = f"continuous-loop-20260802-c{cycle}"
+        camp = root / campaign_id
+        camp.mkdir()
+        (camp / "campaign.json").write_text(
+            json.dumps(
+                {
+                    "campaign_id": campaign_id,
+                    "loop_id": "loop-1",
+                    "predecessor_campaign_id": predecessor,
+                }
+            )
+        )
+        (camp / "cycle_handoff.json").write_text(
+            json.dumps({"loop_id": "loop-1", "cycle_intent": "screening"})
+        )
+        predecessor = campaign_id
+
+    assert "bounds" not in _mod._recent_completed_nonpositive_slugs(
+        root,
+        predecessor,
+        max_cycles=_mod._RECENT_EXHAUSTION_CYCLE_WINDOW,
+    )
+    assert "bounds" in _mod._recent_completed_nonpositive_slugs(root, predecessor)
 
 
 def test_rejected_confirmation_exhausts_its_source_quality_family(
@@ -2564,6 +2685,86 @@ def test_classify_positive_rejects_c1731_efficiency_jitter(tmp_path: Path) -> No
     )
 
 
+def test_classify_positive_rejects_quality_win_with_unbounded_latency_cost(
+    tmp_path: Path,
+) -> None:
+    camp = tmp_path / "camp"
+    for arm, similarity, latency in (
+        ("c-control", 0.13526666666666667, 1105.9),
+        ("c-steps", 0.41973333333333335, 2810.05),
+    ):
+        run = camp / "runs" / arm
+        _write_eval(
+            run / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            binder_reference_f1=0.6333333333333333,
+            meaningful_program_rate=0.3333333333333333,
+            structural_similarity=similarity,
+            latency_ms_p50=latency,
+        )
+        _write_complete_scoreboard(run, "smoke")
+
+    result = _mod._classify_positive(
+        camp_dir=camp,
+        primary_metric="smoke.structural_similarity",
+        control_id="c-control",
+        candidate_id="c-steps",
+        role="screening",
+    )
+
+    assert result["positive"] is False
+    assert result["stack_layer"] is False
+    assert any(
+        reason.startswith("primary_quality_win_rejected_latency_budget:")
+        for reason in result["reasons"]
+    )
+
+
+def test_open_champion_is_revalidated_under_current_policy(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "cycle-1"
+    for arm, similarity, latency in (
+        ("c-control", 0.13526666666666667, 1105.9),
+        ("c-steps", 0.41973333333333335, 2810.05),
+    ):
+        run = camp / "runs" / arm
+        _write_eval(
+            run / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            meaningful_program_rate=0.3333333333333333,
+            structural_similarity=similarity,
+            latency_ms_p50=latency,
+        )
+        _write_complete_scoreboard(run, "smoke")
+    (camp / "cycle_handoff.json").write_text(
+        json.dumps(
+            {
+                "cycle_role": "screening",
+                "primary_metric": "smoke.structural_similarity",
+            }
+        )
+    )
+    entries = [
+        {
+            "entry_id": "champ-1",
+            "status": "queued",
+            "source_campaign_id": camp.name,
+            "source_control_id": "c-control",
+            "source_candidate_id": "c-steps",
+            "source_role": "screening",
+        }
+    ]
+
+    assert _mod._revalidate_open_champion_entries(root, entries) is True
+    assert entries[0]["status"] == "rejected"
+    assert (
+        "source_reclassified_nonpositive_under_current_policy"
+        in entries[0]["resolve_reasons"]
+    )
+
+
 def test_classify_positive_marks_finalized_decode_timeout_incomplete(
     tmp_path: Path,
 ) -> None:
@@ -3213,9 +3414,7 @@ def test_cycle_handoff_separates_fixture_climb_from_ship(tmp_path: Path) -> None
 def test_cycle_handoff_routes_frozen_harness_repair(tmp_path: Path) -> None:
     root = tmp_path / "autoresearch"
     camp = root / "cycle-1"
-    head = subprocess.check_output(
-        ["git", "rev-parse", "HEAD"], text=True
-    ).strip()
+    head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
     predecessor = subprocess.check_output(
         ["git", "rev-parse", "HEAD^"], text=True
     ).strip()
@@ -3282,9 +3481,7 @@ def test_cycle_handoff_routes_frozen_harness_repair(tmp_path: Path) -> None:
     assert all(action.kind != "next_experiment" for action in handoff.actions)
 
     repair_index = handoff.actions.index(repair)
-    evidence = _mod.bind_autotrain_action_evidence(
-        root, handoff, repair, (head,)
-    )
+    evidence = _mod.bind_autotrain_action_evidence(root, handoff, repair, (head,))
     _mod.append_autotrain_action_receipt(
         root,
         _mod.AutotrainActionReceiptV1(
@@ -3479,7 +3676,9 @@ def test_terminal_interrupted_replay_finalizes_without_rerunning_arms(
     assert handoffs[0]["campaign_id"] == campaign_id
 
 
-@pytest.mark.parametrize("candidate_slug", ("batch1", "component-plan", "literal-close"))
+@pytest.mark.parametrize(
+    "candidate_slug", ("batch1", "component-plan", "literal-close")
+)
 def test_frozen_replay_preserves_recipe_and_links_current_main_successor(
     candidate_slug: str,
 ) -> None:
@@ -3505,9 +3704,7 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor(
             next(
                 row["experiment"]
                 for row in matrix["hypotheses"]
-                if row["experiment"]["experiment_id"].endswith(
-                    f"-{candidate_slug}"
-                )
+                if row["experiment"]["experiment_id"].endswith(f"-{candidate_slug}")
             )
         )
     )
@@ -4085,9 +4282,10 @@ def test_numeric_literal_close_starvation_steers_new_training_arm(
     assert _mod._predecessor_priority_slug(root, "cycle-1", skip=set()) == (
         "literal-close"
     )
-    assert _mod._predecessor_priority_slug(
-        root, "cycle-1", skip={"literal-close"}
-    ) == "literal-close"
+    assert (
+        _mod._predecessor_priority_slug(root, "cycle-1", skip={"literal-close"})
+        == "literal-close"
+    )
 
     predecessor = "cycle-1"
     for index, slug in ((2, "bounds"), (3, "confirm")):
@@ -4117,9 +4315,19 @@ def test_numeric_literal_close_starvation_steers_new_training_arm(
         )
         predecessor = f"cycle-{index}"
 
-    assert _mod._predecessor_priority_slug(
-        root, predecessor, skip={"literal-close"}
-    ) == "literal-close"
+    assert (
+        _mod._predecessor_priority_slug(root, predecessor, skip={"literal-close"})
+        == "literal-close"
+    )
+    assert (
+        _mod._predecessor_priority_slug(
+            root,
+            predecessor,
+            skip={"literal-close"},
+            closed={"literal-close"},
+        )
+        is None
+    )
 
 
 def test_control_only_model_timeout_replays_without_fake_harness_repair(

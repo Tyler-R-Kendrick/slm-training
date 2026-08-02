@@ -190,9 +190,11 @@ def test_warm_start_load_merges_context_vocab_and_remaps_shared_row(
         config=_compositional_warm_start_config(),
         context_tokenizer=target_context,
     )
-    new_row_before = target.context.encoder.tok.weight[
-        target_context.token_to_id["new"]
-    ].detach().clone()
+    new_row_before = (
+        target.context.encoder.tok.weight[target_context.token_to_id["new"]]
+        .detach()
+        .clone()
+    )
     target.load(checkpoint, preserve_tokenizers=True)
 
     assert set(target.context_tokenizer.token_to_id) == set(
@@ -741,6 +743,41 @@ def test_optional_heads_do_not_shift_training_rng() -> None:
     assert torch.equal(baseline, state_after(binder_topology_loss_weight=1.0))
     assert torch.equal(baseline, state_after(component_plan_loss_weight=1.0))
     assert torch.equal(baseline, state_after(abstract_plan_mode="sampled"))
+
+
+@pytest.mark.parametrize(
+    ("profile", "head_name", "weights"),
+    case_values(
+        __file__, "test_binder_quality_profiles_make_control_capacity_match_candidate"
+    ),
+)
+def test_binder_quality_profiles_make_control_capacity_match_candidate(
+    profile: str, head_name: str, weights: dict[str, float]
+) -> None:
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+
+    def model(**kwargs) -> TwoTowerModel:
+        return TwoTowerModel.from_records(
+            records,
+            config=TwoTowerConfig(
+                d_model=32,
+                n_heads=4,
+                context_layers=1,
+                denoiser_layers=1,
+                output_tokenizer="lexer",
+                structural_aux_head_profile=profile,
+                compiler_decode_mode="tree",
+                **kwargs,
+            ),
+        )
+
+    control = model()
+    candidate = model(**weights)
+    assert getattr(control, head_name) is not None
+    assert getattr(candidate, head_name) is not None
+    assert sum(parameter.numel() for parameter in control.parameters()) == sum(
+        parameter.numel() for parameter in candidate.parameters()
+    )
 
 
 def test_auxiliary_heads_do_not_change_base_optimizer_updates() -> None:

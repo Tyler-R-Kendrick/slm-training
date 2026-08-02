@@ -538,6 +538,26 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         },
     ),
     (
+        "binder-arity",
+        "Binder-arity train-and-decode coupling improves binder_reference_f1 and structural_similarity without lowering parse_rate.",
+        {
+            "binder_arity_loss_weight": 1.0,
+            "binder_arity_decode_weight": 1.0,
+            "structural_aux_head_profile": "binder-arity",
+            "compiler_decode_mode": "tree",
+        },
+    ),
+    (
+        "binder-component-plan",
+        "Binder-to-component-plan train-and-decode coupling improves binder_reference_f1 and structural_similarity without lowering parse_rate.",
+        {
+            "binder_component_plan_loss_weight": 1.0,
+            "binder_component_plan_decode_weight": 1.0,
+            "structural_aux_head_profile": "binder-component-plan",
+            "compiler_decode_mode": "tree",
+        },
+    ),
+    (
         "component-structure",
         "Joint component-plan and component-edge train-and-decode coupling improves smoke structural_similarity beyond either isolated arm.",
         {
@@ -838,6 +858,64 @@ def _recover_interrupted_champion_entries(
     return changed
 
 
+def _revalidate_open_champion_entries(
+    root: Path, entries: list[dict[str, Any]]
+) -> bool:
+    """Reject queued champions invalidated by the current harness policy.
+
+    The queue is durable while classifiers improve. Replaying an old ``positive``
+    bit would otherwise let a signal that the current harness rejects consume a
+    confirmation cycle. Incomplete source evidence remains retriable; only a
+    complete current-policy non-win is closed.
+    """
+
+    changed = False
+    for row in entries:
+        if row.get("status") not in {"queued", "confirming"}:
+            continue
+        campaign_id = str(row.get("source_campaign_id") or "")
+        control_id = str(row.get("source_control_id") or "")
+        candidate_id = str(row.get("source_candidate_id") or "")
+        camp_dir = root / campaign_id
+        if not campaign_id or not control_id or not candidate_id or not camp_dir.is_dir():
+            continue
+        handoff = _read_json(camp_dir / "cycle_handoff.json")
+        delivery = _read_json(camp_dir / "sdlc_delivery.json")
+        try:
+            current = _classify_positive(
+                camp_dir=camp_dir,
+                primary_metric=str(
+                    handoff.get("primary_metric")
+                    or delivery.get("primary_metric")
+                    or ""
+                ),
+                control_id=control_id,
+                candidate_id=candidate_id,
+                role=str(
+                    row.get("source_role")
+                    or handoff.get("cycle_role")
+                    or "screening"
+                ),
+            )
+        except (OSError, TypeError, ValueError):
+            continue
+        if not _measurement_is_complete(current) or _should_enqueue_champion(current):
+            continue
+        row["status"] = "rejected"
+        row["resolved_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        row["resolve_reasons"] = [
+            "source_reclassified_nonpositive_under_current_policy",
+            *[str(reason) for reason in current.get("reasons") or []],
+        ]
+        changed = True
+        print(
+            "CHAMPION_REVALIDATE_REJECT "
+            f"entry_id={row.get('entry_id')} campaign={campaign_id}",
+            flush=True,
+        )
+    return changed
+
+
 def _write_champion_queue(path: Path, entries: list[dict[str, Any]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + ".tmp")
@@ -889,6 +967,10 @@ def _arm_slug_from_knobs(
         return "component-edge"
     if knobs.get("component_inventory_loss_weight"):
         return "component-inventory"
+    if knobs.get("binder_component_plan_loss_weight"):
+        return "binder-component-plan"
+    if knobs.get("binder_arity_loss_weight"):
+        return "binder-arity"
     if knobs.get("binder_topology_loss_weight"):
         return "binder-topology"
     if knobs.get("grammar_completion_bounds") and knobs.get("compact_active_canvas"):
@@ -956,15 +1038,21 @@ def _recent_completed_nonpositive_slugs(
     root: Path,
     predecessor_campaign_id: str | None,
     *,
-    max_cycles: int = _RECENT_EXHAUSTION_CYCLE_WINDOW,
+    max_cycles: int | None = None,
 ) -> set[str]:
-    """Cool down complete null arms for one bounded pass through the bank."""
+    """Close complete null approaches across the loop lineage.
+
+    ``max_cycles`` remains an explicit diagnostic/test bound. Production walks
+    the content-linked lineage to its root so an old rejected approach cannot
+    become novel merely by aging out of a sliding window.
+    """
 
     cursor = predecessor_campaign_id
     seen: set[str] = set()
     exhausted: set[str] = set()
     loop_id: str | None = None
-    for _ in range(max(0, max_cycles)):
+    lineage = itertools.count() if max_cycles is None else range(max(0, max_cycles))
+    for _ in lineage:
         if not cursor or cursor in seen:
             break
         seen.add(cursor)
@@ -1022,23 +1110,46 @@ def _recent_completed_nonpositive_slugs(
 
 
 def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
-    """Rotate thrash recommendation; prefer arms not recently rejected/queued."""
-    # Evidence-triggered arms are available to typed predecessor steering but do
-    # not perturb the stable cycle-number rotation of the general screening bank.
+    """Rotate screening arms without reopening a rejected approach."""
+    # Evidence-triggered and successor quality arms do not perturb the stable
+    # cycle-number rotation of the original screening bank. They become the
+    # fail-forward path only after older approaches are closed.
+    successor_slugs = (
+        "binder-arity",
+        "binder-component-plan",
+        "literal-margin",
+        "literal-close",
+    )
+    legacy_quality_slugs = {
+        "component-plan",
+        "component-edge",
+        "component-inventory",
+        "binder-topology",
+        "component-structure",
+    }
     bank = tuple(
         row
         for row in _SCREENING_ARM_BANK
-        if row[0] not in {"literal-close", "literal-margin"}
+        if row[0] not in successor_slugs
     )
     n = len(bank)
     start = (max(1, int(cycle)) - 1) % n
     ordered = [bank[(start + i) % n][0] for i in range(n)]
     skip = skip or set()
+    if legacy_quality_slugs.issubset(skip):
+        for slug in successor_slugs:
+            if slug not in skip:
+                return slug
     for slug in ordered:
         if slug not in skip:
             return slug
-    # All skipped — still rotate so thrash is not frozen on bounds forever.
-    return ordered[0]
+    for slug in successor_slugs:
+        if slug not in skip:
+            return slug
+    raise RuntimeError(
+        "registered screening arm bank exhausted; add a distinct preregistered "
+        "quality objective instead of recycling a rejected approach"
+    )
 
 
 def _apply_arm_extras(base_steps: int, extras: dict[str, Any]) -> dict[str, Any]:
@@ -2975,6 +3086,28 @@ def _classify_positive(
         decision["positive"] = True
         decision["stack_layer"] = True
 
+    # A quality-primary gain may spend only the same bounded latency budget as
+    # the explicit meaning-quality path above. Otherwise scalar training depth
+    # can mint a structural "win" by buying 2x+ decode cost, enter the champion
+    # queue, and steer the loop away from genuinely new objectives.
+    if leaf != "latency_ms_p50" and decision.get("positive"):
+        control_latency = _finite_metric(control.get("latency_ms_p50"))
+        candidate_latency = _finite_metric(candidate.get("latency_ms_p50"))
+        if (
+            control_latency is not None
+            and candidate_latency is not None
+            and control_latency > 0
+            and candidate_latency
+            > control_latency * (1.0 + _LATENCY_REGRESSION_BUDGET)
+            and candidate_latency > control_latency + _LATENCY_REGRESSION_ABS_MS
+        ):
+            decision["positive"] = False
+            decision["stack_layer"] = False
+            reasons_pre.append(
+                "primary_quality_win_rejected_latency_budget:"
+                f"{effective_metric}:lat={control_latency}->{candidate_latency}"
+            )
+
     reasons = (
         list(reasons_pre) + list(tradeoff_reasons) + list(decision.get("reasons") or [])
     )
@@ -3372,6 +3505,8 @@ def _completed_candidate_priorities(
         "component_edge_loss_weight",
         "component_inventory_loss_weight",
         "binder_topology_loss_weight",
+        "binder_component_plan_loss_weight",
+        "binder_arity_loss_weight",
     }
     targeted_alternative = next(
         (
@@ -3694,12 +3829,22 @@ def _completed_confirmation_priorities(
 
 
 def _predecessor_priority_slug(
-    root: Path, predecessor_campaign_id: str | None, *, skip: set[str]
+    root: Path,
+    predecessor_campaign_id: str | None,
+    *,
+    skip: set[str],
+    closed: set[str] | None = None,
 ) -> str | None:
-    """Resolve the predecessor's highest-priority executable screening arm."""
+    """Resolve the predecessor's highest-priority executable screening arm.
+
+    ``skip`` contains transient funnel conflicts that strong observed evidence
+    may preserve across an interrupted confirmation/promotion. ``closed`` is
+    permanent lineage evidence: no priority is allowed to reopen those arms.
+    """
 
     if not predecessor_campaign_id:
         return None
+    closed = closed or set()
     camp_dir = root / predecessor_campaign_id
     handoff_path = camp_dir / "cycle_handoff.json"
     if not handoff_path.is_file():
@@ -3774,8 +3919,10 @@ def _predecessor_priority_slug(
             if evidence_directed_only and not evidence_directed:
                 continue
             for slug, _hypothesis, _extras in _SCREENING_ARM_BANK:
-                if experiment_id.endswith(f"-{slug}") and (
-                    slug not in skip or evidence_directed
+                if (
+                    experiment_id.endswith(f"-{slug}")
+                    and slug not in closed
+                    and (slug not in skip or evidence_directed)
                 ):
                     return slug
         return None
@@ -3804,7 +3951,7 @@ def _predecessor_priority_slug(
             list(ancestor_handoff.get("priorities") or []),
             evidence_directed_only=True,
         )
-        if observed and observed not in executed_slugs:
+        if observed and observed not in executed_slugs and observed not in closed:
             return observed
         cursor = str(
             _read_json(ancestor_dir / "campaign.json").get(
@@ -3823,8 +3970,10 @@ def _predecessor_priority_slug(
             and float(priority.get("confidence") or 0.0) >= 0.9
         )
         for slug, _hypothesis, _extras in _SCREENING_ARM_BANK:
-            if experiment_id.endswith(f"-{slug}") and (
-                slug not in skip or evidence_directed
+            if (
+                experiment_id.endswith(f"-{slug}")
+                and slug not in closed
+                and (slug not in skip or evidence_directed)
             ):
                 return slug
     return None
@@ -4934,6 +5083,10 @@ def _matrix(
             "component_inventory_decode_weight": 0.0,
             "binder_topology_loss_weight": 0.0,
             "binder_topology_decode_weight": 0.0,
+            "binder_component_plan_loss_weight": 0.0,
+            "binder_component_plan_decode_weight": 0.0,
+            "binder_arity_loss_weight": 0.0,
+            "binder_arity_decode_weight": 0.0,
             "structural_aux_head_profile": "none",
             "compiler_decode_mode": "off",
             "ltr_tail_loss_weight": 0.0,
@@ -4995,6 +5148,10 @@ def _matrix(
                 "component_inventory_decode_weight",
                 "binder_topology_loss_weight",
                 "binder_topology_decode_weight",
+                "binder_component_plan_loss_weight",
+                "binder_component_plan_decode_weight",
+                "binder_arity_loss_weight",
+                "binder_arity_decode_weight",
                 "structural_aux_head_profile",
                 "compiler_decode_mode",
                 "steps",
@@ -5175,6 +5332,10 @@ def _matrix(
                 "component_inventory_decode_weight",
                 "binder_topology_loss_weight",
                 "binder_topology_decode_weight",
+                "binder_component_plan_loss_weight",
+                "binder_component_plan_decode_weight",
+                "binder_arity_loss_weight",
+                "binder_arity_decode_weight",
                 "structural_aux_head_profile",
                 "compiler_decode_mode",
                 "steps",
@@ -5607,6 +5768,8 @@ def _manifest(
                 "component_edge_loss_weight": 0.0,
                 "component_inventory_loss_weight": 0.0,
                 "binder_topology_loss_weight": 0.0,
+                "binder_component_plan_loss_weight": 0.0,
+                "binder_arity_loss_weight": 0.0,
             },
             sort_keys=True,
         ).encode()
@@ -5846,7 +6009,8 @@ def run_cycle(
     # Pre-execution crashes do not spend bounded champion attempts. Promotion
     # heads also return to confirmed so the next promotion slot can retry.
     recovered = _recover_interrupted_champion_entries(root, queue_entries)
-    if recovered:
+    revalidated = _revalidate_open_champion_entries(root, queue_entries)
+    if recovered or revalidated:
         _write_champion_queue(queue_path, queue_entries)
     open_champion = _queue_head_open(queue_entries)
     confirmed_champion: dict[str, Any] | None = None
@@ -6188,7 +6352,10 @@ def run_cycle(
             flush=True,
         )
     rec_slug = _predecessor_priority_slug(
-        root, pred, skip=skip_slugs
+        root,
+        pred,
+        skip=skip_slugs,
+        closed=recent_exhausted,
     ) or _select_recommended_slug(cycle, skip=skip_slugs)
     matrix = _matrix(
         campaign_id=campaign_id,
