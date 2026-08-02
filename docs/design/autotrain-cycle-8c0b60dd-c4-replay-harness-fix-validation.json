@@ -1,0 +1,37 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c4",
+  "loop_id": "continuous-openui-local",
+  "cycle_index": 4,
+  "cycle_intent": "retry_measurement",
+  "evidence_class": "fixture",
+  "decision": "inconclusive_measurement_incomplete",
+  "scoreable": false,
+  "arm_order": ["component-plan", "control"],
+  "note": "Frozen replay of the c2 component-plan/control arms after the c025a649 hyphenated-slug fix (harness.autoresearch.experiment_campaign v64). The prior RuntimeError('unsupported automatic frozen replay arm: plan') no longer occurs, confirming the fix; component-plan reused c2's frozen checkpoint and completed eval unchanged. The control arm still hits a harness wall-time timeout on scripts.evaluate_model before producing a scoreboard, so the matched comparison remains incomplete -- this is a second, distinct, still-open soft timeout (now observed on c2 and c4), not a code defect.",
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c4-component-plan",
+      "manifest_sha256": "09b9c03a68894a5bdf190c89f8c0c510f7e533cb879496e68818325cae12d5c3",
+      "reused_checkpoint_from": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c2/runs/c20260802-continuous-openui-local-8c0b60dd-c2-component-plan/checkpoints/last.pt",
+      "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.0964, "latency_ms_p50": 1722.46},
+      "eval_status": "complete_gate_reject"
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c4-control",
+      "smoke": null,
+      "eval_status": "wall_timeout_no_scoreboard"
+    }
+  ],
+  "deltas": null,
+  "ship_gates_pass": false,
+  "lean": "not_applicable:screening",
+  "next_priority": "the identical wall_timeout has now recurred on 2 consecutive cycles (c2, c4) for scripts.evaluate_model on the control arm; investigate whether the harness AgentV/node cold-start cost fits inside the continuous cycle's max_wall_minutes budget before a third automatic retry",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "025a649a7d7048223c32246156cf08d44bd6323c",
+    "code_dirty": false,
+    "components": {"harness.autoresearch.experiment_campaign": "v64", "config.levers": "v30", "harness.model_build.eval": "v74", "harness.experiment_feature_flags": "v4"},
+    "stamped_at": "2026-08-02T14:51:26.652514+00:00"
+  }
+}
