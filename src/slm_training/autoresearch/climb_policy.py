@@ -44,6 +44,7 @@ __all__ = [
     "assert_cycle_cadence",
     "primary_for_role",
     "stage_wall_minutes_for_role",
+    "max_consecutive_frozen_replays",
     "decode_timeout_seconds_for_role",
     "eval_suites_for_role",
     "classify_positive_metrics",
@@ -247,6 +248,15 @@ def load_climb_policy(path: str | None = None) -> ClimbPolicy:
         raise ClimbPolicyError(
             f"{policy_path}: cadence.screening_cycles_per_promotion must be >= 1"
         )
+    max_replays = int(
+        _require_mapping(payload, "measurement", policy_path).get(
+            "max_consecutive_frozen_replays", 2
+        )
+    )
+    if max_replays < 1:
+        raise ClimbPolicyError(
+            f"{policy_path}: measurement.max_consecutive_frozen_replays must be >= 1"
+        )
     return ClimbPolicy(
         path=policy_path.resolve(),
         schema=schema,
@@ -281,6 +291,17 @@ def stage_wall_minutes_for_role(policy: ClimbPolicy, role: str) -> int:
             f"measurement.{key} must be in [1, {MAX_RUN_MINUTES}], got {minutes}"
         )
     return minutes
+
+
+def max_consecutive_frozen_replays(policy: ClimbPolicy) -> int:
+    """Bound identical incomplete replays before canonical harness repair."""
+
+    value = int(policy.measurement.get("max_consecutive_frozen_replays", 2))
+    if value < 1:
+        raise ClimbPolicyError(
+            "measurement.max_consecutive_frozen_replays must be >= 1"
+        )
+    return value
 
 
 def decode_timeout_seconds_for_role(policy: ClimbPolicy, role: str) -> float:
