@@ -454,6 +454,20 @@ def test_fork_fed_history_detaches_on_commit() -> None:
     assert branch._fed_tokens is not source._fed_tokens
 
 
+def test_fork_direct_map_cache_detaches_on_new_tokenizer() -> None:
+    first = _tok()
+    source = OpenUIIncrementalEngine()
+    source.reset()
+    assert source._direct_map(first) is not None
+    branch = source.copy_control()
+    assert source._direct_map_cache is branch._direct_map_cache
+
+    second = _tok()
+    assert branch._direct_map(second) is not None
+    assert source._direct_map_cache is not branch._direct_map_cache
+    assert id(second) not in source._direct_map_cache
+
+
 def test_decode_state_append_path_uses_direct_feed() -> None:
     """GrammarDecodeState.advance_token commits via direct feed: zero full
     syncs after ``reset`` and grammar state identical to the text baseline."""

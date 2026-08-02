@@ -161,6 +161,7 @@ class OpenUIIncrementalEngine:
         # (a) a hit re-verifies identity and (b) the strong reference keeps
         # the id from being recycled while the entry lives.
         self._direct_map_cache: dict[int, tuple[object, dict | None]] = {}
+        self._direct_map_cache_shared = False
         self._full_syncs = 0
         self._incremental_advances = 0
         self._copy_probes = 0
@@ -554,6 +555,9 @@ class OpenUIIncrementalEngine:
             if mapping is None:
                 mapping = dsl_direct_terminal_map(tokenizer, self._parser.terminals)
             entry = (tokenizer, mapping)
+            if self._direct_map_cache_shared:
+                self._direct_map_cache = dict(self._direct_map_cache)
+                self._direct_map_cache_shared = False
             self._direct_map_cache[key] = entry
         return entry[1]
 
@@ -949,7 +953,12 @@ class OpenUIIncrementalEngine:
         fork._tail = self._tail
         fork._frame = self._frame
         fork._fingerprint = self._fingerprint
-        fork._direct_map_cache = dict(self._direct_map_cache)
+        # The verified tokenizer map is read-only on the hot fork path. Share
+        # it until a fork sees a different tokenizer, then detach before the
+        # cache insert. This avoids one dict allocation per parser fork.
+        fork._direct_map_cache = self._direct_map_cache
+        self._direct_map_cache_shared = True
+        fork._direct_map_cache_shared = True
         fork._full_syncs = 0
         fork._incremental_advances = 0
         fork._copy_probes = 0
