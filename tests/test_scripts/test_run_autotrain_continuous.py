@@ -2115,6 +2115,126 @@ def test_driver_requires_room_for_both_arms_before_starting(
         )
 
 
+def _write_smoke_suite(root: Path, eval_version: str, suite: str, n: int) -> None:
+    suite_dir = root / "outputs" / "data" / "eval" / eval_version / "suites" / suite
+    suite_dir.mkdir(parents=True, exist_ok=True)
+    lines = "\n".join(f'{{"id": "rec_{i}"}}' for i in range(n))
+    (suite_dir / "records.jsonl").write_text(lines + "\n" if n else "", encoding="utf-8")
+
+
+def test_suite_record_count_reads_lines_and_fails_closed_on_missing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from slm_training.data.store import DataStore
+
+    monkeypatch.chdir(tmp_path)
+    _write_smoke_suite(tmp_path, "vX", "smoke", 5)
+    store = DataStore()
+    assert _mod._suite_record_count(store, "vX", "smoke") == 5
+    assert _mod._suite_record_count(store, "vX", "held_out") is None
+
+
+def test_eval_version_fits_arm_budget_uses_measured_decode_cost(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    # 3 records * 14.3s ~= 43s, well inside a 70s arm minus 13s overhead (57s).
+    _write_smoke_suite(tmp_path, "small", "smoke", 3)
+    # 12 records * 14.3s ~= 172s, nowhere close to a 70s arm.
+    _write_smoke_suite(tmp_path, "big", "smoke", 12)
+    arm_wall_minutes = 70.0 / 60
+
+    assert _mod._eval_version_fits_arm_budget(
+        "small", suites=("smoke",), arm_wall_minutes=arm_wall_minutes
+    )
+    assert not _mod._eval_version_fits_arm_budget(
+        "big", suites=("smoke",), arm_wall_minutes=arm_wall_minutes
+    )
+    # Missing suite fails closed rather than silently passing.
+    assert not _mod._eval_version_fits_arm_budget(
+        "missing", suites=("smoke",), arm_wall_minutes=arm_wall_minutes
+    )
+
+
+def test_feasible_eval_version_falls_back_when_default_is_oversized(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Regression: cycle 10-11 measured ~14.2s/record CPU decode cost, so a
+    smoke=12 snapshot cannot complete a full decode pass within one ~70s
+    continuous-loop arm no matter how the fixed wall budget is sliced. A
+    *new* screening cycle must never silently default onto an eval snapshot
+    this oversized; it should fall through to a smaller candidate that fits.
+    """
+
+    monkeypatch.chdir(tmp_path)
+    oversized, fits = _mod._DEFAULT_EVAL_VERSION_CANDIDATES[0], (
+        _mod._DEFAULT_EVAL_VERSION_CANDIDATES[1]
+    )
+    _write_smoke_suite(tmp_path, oversized, "smoke", 12)
+    _write_smoke_suite(tmp_path, fits, "smoke", 3)
+    monkeypatch.setattr(_mod, "default_eval_version", lambda: oversized)
+
+    class _Policy:
+        pass
+
+    from slm_training.autoresearch import climb_policy as _climb_policy
+
+    monkeypatch.setattr(
+        _climb_policy, "eval_suites_for_role", lambda policy, role: ("smoke",)
+    )
+
+    chosen = _mod._feasible_eval_version(
+        role="screening", arm_wall_minutes=70.0 / 60, policy=_Policy()
+    )
+    assert chosen == fits
+
+
+def test_feasible_eval_version_keeps_default_when_it_already_fits(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    default = _mod._DEFAULT_EVAL_VERSION_CANDIDATES[0]
+    _write_smoke_suite(tmp_path, default, "smoke", 3)
+    monkeypatch.setattr(_mod, "default_eval_version", lambda: default)
+
+    class _Policy:
+        pass
+
+    from slm_training.autoresearch import climb_policy as _climb_policy
+
+    monkeypatch.setattr(
+        _climb_policy, "eval_suites_for_role", lambda policy, role: ("smoke",)
+    )
+
+    chosen = _mod._feasible_eval_version(
+        role="screening", arm_wall_minutes=70.0 / 60, policy=_Policy()
+    )
+    assert chosen == default
+
+
+def test_feasible_eval_version_never_crashes_when_nothing_fits(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    default = _mod._DEFAULT_EVAL_VERSION_CANDIDATES[0]
+    _write_smoke_suite(tmp_path, default, "smoke", 999)
+    monkeypatch.setattr(_mod, "default_eval_version", lambda: default)
+
+    class _Policy:
+        pass
+
+    from slm_training.autoresearch import climb_policy as _climb_policy
+
+    monkeypatch.setattr(
+        _climb_policy, "eval_suites_for_role", lambda policy, role: ("smoke",)
+    )
+
+    chosen = _mod._feasible_eval_version(
+        role="screening", arm_wall_minutes=70.0 / 60, policy=_Policy()
+    )
+    assert chosen == default
+
+
 def test_supervised_cli_runs_exactly_one_agent_owned_cycle(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

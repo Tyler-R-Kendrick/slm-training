@@ -34,7 +34,10 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from slm_training.autoresearch.engine import default_eval_version
+from slm_training.autoresearch.engine import (
+    _DEFAULT_EVAL_VERSION_CANDIDATES,
+    default_eval_version,
+)
 from slm_training.autoresearch.experiment_campaign import (
     ArtifactRequirementV1,
     CampaignArmV1,
@@ -181,6 +184,96 @@ def _arm_wall_minutes(policy_minutes: float) -> float:
     ) / 2
     symmetric_minutes = arm_seconds / 60
     return min(float(policy_minutes), symmetric_minutes)
+
+
+# Cycle-12 diagnostic (continuous-openui-local, 2026-08-02): the per-arm wall
+# budget was never the bottleneck against ``test_data_scaleup_v1``
+# (smoke=12) -- decode itself is. Two consecutive frozen-replay attempts
+# (cycles 10-11) measured constrained decode at ~14.2s/record on this
+# CPU sandbox (``decode_progress.json.decode_stats``, dominated by
+# ``compiler_ms`` grammar-forward-symbol-table passes), and only
+# 2-3 of 12 smoke records completed before each ~70s arm hit
+# ``_arm_wall_minutes``. No redistribution of the fixed, MAX_RUN_MINUTES-
+# derived arm budget closes a ~5x compute deficit. What *is* fixable: never
+# let a *new* (non-frozen) screening/promotion cycle silently default onto
+# an eval snapshot whose suites cannot plausibly complete a full decode pass
+# in one arm, the way ``test_data_scaleup_v1`` would if it were ever added
+# to ``_DEFAULT_EVAL_VERSION_CANDIDATES``. See
+# docs/design/continuous-openui-local-20260802-c12-results.md.
+_MEASURED_DECODE_SECONDS_PER_RECORD = 14.3
+_ARM_NON_DECODE_OVERHEAD_SECONDS = 13.0
+
+
+def _suite_record_count(store: Any, eval_version: str, suite: str) -> int | None:
+    """Count non-blank lines in a published eval snapshot's suite file.
+
+    Returns ``None`` when the suite file is missing so callers fail closed
+    (treat it as not fitting) rather than silently skipping a broken suite.
+    """
+
+    path = store.resolve_path("eval", eval_version) / "suites" / suite / "records.jsonl"
+    if not path.is_file():
+        return None
+    return sum(1 for line in path.read_text(encoding="utf-8").splitlines() if line.strip())
+
+
+def _eval_version_fits_arm_budget(
+    eval_version: str, *, suites: tuple[str, ...], arm_wall_minutes: float
+) -> bool:
+    """Conservative decode-feasibility gate for one continuous decision arm.
+
+    Estimates total decode wall time for ``suites`` from the measured
+    per-record decode cost and compares it against the arm's wall budget
+    minus training/I-O overhead. This is deliberately conservative (a
+    same-order-of-magnitude estimate, not a live timing model) -- it exists
+    to stop a *new* hypothesis from locking onto a suite that structurally
+    cannot complete, not to precisely predict wall time.
+    """
+
+    from slm_training.data.store import DataStore
+
+    store = DataStore()
+    total_records = 0
+    for suite in suites:
+        n = _suite_record_count(store, eval_version, suite)
+        if n is None:
+            return False
+        total_records += n
+    budget_seconds = arm_wall_minutes * 60 - _ARM_NON_DECODE_OVERHEAD_SECONDS
+    return total_records * _MEASURED_DECODE_SECONDS_PER_RECORD <= budget_seconds
+
+
+def _feasible_eval_version(
+    *, role: str, arm_wall_minutes: float, policy: Any
+) -> str:
+    """Prefer a published eval snapshot this cycle's arm budget can finish.
+
+    Starts from ``default_eval_version()``'s unfiltered choice; if that
+    snapshot's role-required suites do not fit the estimated decode budget,
+    searches the same ordered ``_DEFAULT_EVAL_VERSION_CANDIDATES`` list
+    (read-only -- this never mutates ``engine``'s registration point) for
+    the first candidate that does fit. Never raises and never returns
+    nothing: an eval snapshot that fits nowhere in the candidate list still
+    falls back to the original default, so a ``measurement_incomplete``
+    outcome stays an honest, informative result instead of a hard crash.
+    """
+
+    from slm_training.autoresearch.climb_policy import eval_suites_for_role
+
+    suites = eval_suites_for_role(policy, role)
+    default_choice = default_eval_version()
+    if _eval_version_fits_arm_budget(
+        default_choice, suites=suites, arm_wall_minutes=arm_wall_minutes
+    ):
+        return default_choice
+    for name in _DEFAULT_EVAL_VERSION_CANDIDATES:
+        if name == default_choice:
+            continue
+        if _eval_version_fits_arm_budget(
+            name, suites=suites, arm_wall_minutes=arm_wall_minutes
+        ):
+            return name
+    return default_choice
 
 
 def _require_symmetric_arm_budget(
@@ -4811,7 +4904,9 @@ def run_cycle(
     }
     if trace_paths:
         role_citations["prior_trace"] = trace_paths[0]
-    eval_version = default_eval_version()
+    eval_version = _feasible_eval_version(
+        role=role, arm_wall_minutes=arm_wall_minutes, policy=policy
+    )
     # Load predecessor matrix feedback when continuous lineage requires a successor matrix.
     feedback: list[dict] = []
     previous_matrix_id = None

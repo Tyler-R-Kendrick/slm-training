@@ -2601,7 +2601,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v60",
+      "version": "v61",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2641,6 +2641,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v61",
+          "date": "2026-08-02",
+          "note": "Cycle-12 diagnostic (continuous-openui-local): cycles 10-11 measured constrained decode at ~14.2s/record on CPU (compiler-dominated grammar forward-symbol-table passes), so `test_data_scaleup_v1` (smoke=12) cannot complete a full decode pass within one ~70s continuous-loop arm no matter how the fixed MAX_RUN_MINUTES-derived budget is sliced -- decode compute, not budget arithmetic, is the bottleneck. Added `_feasible_eval_version` (scripts/run_autotrain_continuous.py): before locking a *new* (non-frozen) screening/promotion matrix, estimate role-required suite decode time from a measured per-record cost and fall through `_DEFAULT_EVAL_VERSION_CANDIDATES` (read-only) to the first candidate that fits, instead of silently defaulting onto an oversized snapshot. Frozen-replay chains are unaffected (they replay the exact locked recipe by design)."
+        },
         {
           "version": "v60",
           "date": "2026-08-02",
