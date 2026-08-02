@@ -331,6 +331,7 @@ class ModelBuildConfig:
     compiler_alignment_margin: float = 0.0
     compiler_alignment_stratified: bool = False
     compiler_alignment_semantic_exhaustive: bool = False
+    compiler_alignment_kind_filter: str = "all"
     # SLM-164: confusion-targeted legal-sibling contrast margin (default-off).
     legal_margin_mode: str = "none"
     targeted_margin_manifest: Path | None = None
@@ -569,6 +570,10 @@ class ModelBuildConfig:
         apply_evaluation_policy(self)
         if self.optimizer_name not in {"adamw", "muon_hybrid"}:
             raise ValueError("optimizer_name must be one of: adamw, muon_hybrid")
+        if self.compiler_alignment_kind_filter not in {"all", "literal-close"}:
+            raise ValueError(
+                "compiler_alignment_kind_filter must be one of: all, literal-close"
+            )
         # SLM-242: fail-closed numeric/schedule gate.
         try:
             validate_model_build_config(self)

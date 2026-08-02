@@ -434,6 +434,10 @@ _RETRYABLE_PROMOTE_STATUSES = frozenset(
 # knobs (seed, decode_timeout, eval_suites) are re-sampled from role policy.
 _LEVER_KNOB_KEYS = (
     "ltr_tail_loss_weight",
+    "compiler_alignment_loss_weight",
+    "compiler_alignment_margin",
+    "compiler_alignment_stratified",
+    "compiler_alignment_kind_filter",
     "grammar_completion_bounds",
     "compact_active_canvas",
     "component_plan_loss_weight",
@@ -549,6 +553,16 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         "literal-close",
         "Tail-weighted LTR supervision reduces legal literal-termination starvation without lowering parse_rate or binder_reference_f1.",
         {"ltr_tail_loss_weight": 2.0},
+    ),
+    (
+        "literal-margin",
+        "Grammar-derived LIT_END alignment makes legal literal closure outrank legal byte continuation without lowering parse_rate or binder_reference_f1.",
+        {
+            "compiler_alignment_loss_weight": 1.0,
+            "compiler_alignment_margin": 1.0,
+            "compiler_alignment_stratified": True,
+            "compiler_alignment_kind_filter": "literal-close",
+        },
     ),
 )
 _RECENT_EXHAUSTION_CYCLE_WINDOW = len(_SCREENING_ARM_BANK)
@@ -858,6 +872,11 @@ def _arm_slug_from_knobs(
     knobs: dict[str, Any], *, candidate_id: str = ""
 ) -> str | None:
     """Map knobs / candidate id to thrash arm slug."""
+    if (
+        knobs.get("compiler_alignment_loss_weight")
+        and knobs.get("compiler_alignment_kind_filter") == "literal-close"
+    ):
+        return "literal-margin"
     if knobs.get("ltr_tail_loss_weight"):
         return "literal-close"
     if knobs.get("component_plan_loss_weight") and knobs.get(
@@ -992,7 +1011,11 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
     """Rotate thrash recommendation; prefer arms not recently rejected/queued."""
     # Evidence-triggered arms are available to typed predecessor steering but do
     # not perturb the stable cycle-number rotation of the general screening bank.
-    bank = tuple(row for row in _SCREENING_ARM_BANK if row[0] != "literal-close")
+    bank = tuple(
+        row
+        for row in _SCREENING_ARM_BANK
+        if row[0] not in {"literal-close", "literal-margin"}
+    )
     n = len(bank)
     start = (max(1, int(cycle)) - 1) % n
     ordered = [bank[(start + i) % n][0] for i in range(n)]
@@ -3320,13 +3343,52 @@ def _completed_candidate_priorities(
         and not str(item.get("experiment_id")).endswith("-control")
     ]
     skip_slugs = skip_slugs or set()
+    candidate_knobs = next(
+        (
+            dict(item.get("knobs") or {})
+            for item in experiments
+            if str(item.get("experiment_id") or "") == candidate_id
+        ),
+        {},
+    )
+    candidate_slug = _arm_slug_from_knobs(candidate_knobs, candidate_id=candidate_id)
     quality_keys = {
+        "compiler_alignment_loss_weight",
         "component_plan_loss_weight",
         "component_edge_loss_weight",
         "component_inventory_loss_weight",
         "binder_topology_loss_weight",
     }
-    alternative = next(
+    targeted_alternative = next(
+        (
+            item
+            for item in alternatives
+            if candidate_slug == "literal-close"
+            and _arm_slug_from_knobs(
+                dict(item.get("knobs") or {}),
+                candidate_id=str(item.get("experiment_id") or ""),
+            )
+            == "literal-margin"
+            and "literal-margin" not in skip_slugs
+        ),
+        None,
+    )
+    if (
+        targeted_alternative is None
+        and candidate_slug == "literal-close"
+        and "literal-margin" not in skip_slugs
+    ):
+        literal_margin = next(
+            row for row in _SCREENING_ARM_BANK if row[0] == "literal-margin"
+        )
+        targeted_alternative = {
+            "experiment_id": (
+                candidate_id.removesuffix("literal-close") + "literal-margin"
+            ),
+            "hypothesis": literal_margin[1],
+            "knobs": literal_margin[2],
+        }
+    alternative = targeted_alternative or next(
         (
             item
             for item in alternatives
@@ -3341,6 +3403,11 @@ def _completed_candidate_priorities(
                 )
                 not in skip_slugs
             )
+            and _arm_slug_from_knobs(
+                dict(item.get("knobs") or {}),
+                candidate_id=str(item.get("experiment_id") or ""),
+            )
+            != "literal-margin"
         ),
         next(
             (
@@ -4580,6 +4647,10 @@ def _matrix(
             "structural_aux_head_profile": "none",
             "compiler_decode_mode": "off",
             "ltr_tail_loss_weight": 0.0,
+            "compiler_alignment_loss_weight": 0.0,
+            "compiler_alignment_margin": 0.0,
+            "compiler_alignment_stratified": False,
+            "compiler_alignment_kind_filter": "all",
             # Measurement completeness: smoke-only screening + longer decode wall.
             "decode_timeout_seconds": decode_timeout,
             "eval_suites": eval_suites,
@@ -4644,6 +4715,10 @@ def _matrix(
                 "local_files_only",
                 "output_tokenizer",
                 "ltr_tail_loss_weight",
+                "compiler_alignment_loss_weight",
+                "compiler_alignment_margin",
+                "compiler_alignment_stratified",
+                "compiler_alignment_kind_filter",
             }
         }
         promo_steps = int(promo_extra.pop("steps", steps) or steps)
@@ -4820,6 +4895,10 @@ def _matrix(
                 "local_files_only",
                 "output_tokenizer",
                 "ltr_tail_loss_weight",
+                "compiler_alignment_loss_weight",
+                "compiler_alignment_margin",
+                "compiler_alignment_stratified",
+                "compiler_alignment_kind_filter",
             }
         }
         confirm_steps = int(confirm_extra.pop("steps", steps) or steps)

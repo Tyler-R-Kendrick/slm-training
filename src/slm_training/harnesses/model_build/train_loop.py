@@ -1383,6 +1383,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "compiler_alignment_semantic_exhaustive": bool(
                 getattr(config, "compiler_alignment_semantic_exhaustive", False)
             ),
+            "compiler_alignment_kind_filter": str(
+                getattr(config, "compiler_alignment_kind_filter", "all") or "all"
+            ),
             "component_inventory_loss_weight": getattr(
                 config, "component_inventory_loss_weight", 0.0
             ),

@@ -549,6 +549,13 @@ def compile_commands(
             train.append("--compiler-alignment-stratified")
         if knobs.compiler_alignment_semantic_exhaustive:
             train.append("--compiler-alignment-semantic-exhaustive")
+        if knobs.compiler_alignment_kind_filter is not None:
+            train.extend(
+                [
+                    "--compiler-alignment-kind-filter",
+                    knobs.compiler_alignment_kind_filter,
+                ]
+            )
         if knobs.component_inventory_loss_weight is not None:
             train.extend(
                 [

@@ -369,6 +369,10 @@ class TwoTowerConfig:
     compiler_alignment_margin: float = 0.0
     compiler_alignment_stratified: bool = False
     compiler_alignment_semantic_exhaustive: bool = False
+    # Limit compiler alignment to a grammar-derived branch family.  The
+    # literal-close arm teaches numeric-frame LIT_END against the *legal* byte
+    # alternatives; it never changes the constrained domain used at decode time.
+    compiler_alignment_kind_filter: str = "all"
     # SLM-164: confusion-targeted legal-sibling contrast margin (default-off).
     legal_margin_mode: str = "none"
     targeted_margin_manifest: Path | None = None
@@ -773,6 +777,10 @@ class TwoTowerConfig:
                 "structural_aux_head_profile="
                 f"{self.structural_aux_head_profile!r} is not one of "
                 f"{STRUCTURAL_AUX_HEAD_PROFILES!r}"
+            )
+        if self.compiler_alignment_kind_filter not in {"all", "literal-close"}:
+            raise ValueError(
+                "compiler_alignment_kind_filter must be one of: all, literal-close"
             )
         repair_modes = {
             "recursive_update_mode": (
@@ -3662,6 +3670,9 @@ class TwoTowerModel(nn.Module):
             semantic_exhaustive = bool(
                 getattr(self.config, "compiler_alignment_semantic_exhaustive", False)
             )
+            kind_filter = str(
+                getattr(self.config, "compiler_alignment_kind_filter", "all") or "all"
+            )
             aligned_canvases: list[torch.Tensor] = []
             aligned_targets: list[int] = []
             aligned_positions: list[int] = []
@@ -3683,6 +3694,26 @@ class TwoTowerModel(nn.Module):
                         slot_contract=list(contract_key),
                     )
                     self._compiler_decision_cache[key] = decisions
+                if not decisions:
+                    continue
+                if kind_filter == "literal-close":
+                    numeric_close_positions: set[int] = set()
+                    open_frame: str | None = None
+                    for position, token_id in enumerate(target_key):
+                        token = str(
+                            self.tokenizer.id_to_token.get(int(token_id), "")
+                        )
+                        if token in {"LIT_NUM", "LIT_STR"}:
+                            open_frame = token
+                        elif token == "LIT_END":
+                            if open_frame == "LIT_NUM":
+                                numeric_close_positions.add(position)
+                            open_frame = None
+                    decisions = tuple(
+                        decision
+                        for decision in decisions
+                        if int(decision.position) in numeric_close_positions
+                    )
                 if not decisions:
                     continue
                 if stratified:
@@ -3801,6 +3832,14 @@ class TwoTowerModel(nn.Module):
                 kind_losses = {}
             self.last_training_metrics = {
                 "compiler_alignment_rows": aligned_rows,
+                "compiler_alignment_literal_close_filter_enabled": float(
+                    kind_filter == "literal-close"
+                ),
+                "compiler_alignment_literal_close_rows": sum(
+                    1
+                    for target in aligned_targets
+                    if str(self.tokenizer.id_to_token.get(int(target), "")) == "LIT_END"
+                ),
                 "compiler_alignment_loss": (
                     float(alignment_loss.detach().cpu()) if aligned_canvases else 0.0
                 ),

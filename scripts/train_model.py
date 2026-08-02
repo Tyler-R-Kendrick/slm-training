@@ -598,6 +598,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Align every grammar-derived AST-role decision; stratify structural states.",
     )
     parser.add_argument(
+        "--compiler-alignment-kind-filter",
+        choices=("all", "literal-close"),
+        default="all",
+        help="Restrict compiler alignment to all branches or numeric-frame gold LIT_END branches.",
+    )
+    parser.add_argument(
         "--component-inventory-loss-weight",
         type=float,
         default=0.0,
@@ -1541,6 +1547,7 @@ def main(argv: list[str] | None = None) -> int:
         compiler_alignment_semantic_exhaustive=(
             args.compiler_alignment_semantic_exhaustive
         ),
+        compiler_alignment_kind_filter=args.compiler_alignment_kind_filter,
         component_inventory_loss_weight=args.component_inventory_loss_weight,
         structural_aux_head_profile=args.structural_aux_head_profile,
         component_inventory_decode_weight=args.component_inventory_decode_weight,

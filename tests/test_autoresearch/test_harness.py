@@ -3055,6 +3055,7 @@ def test_compile_resolves_canonical_published_train_version() -> None:
             compiler_alignment_margin=1.0,
             compiler_alignment_stratified=True,
             compiler_alignment_semantic_exhaustive=True,
+            compiler_alignment_kind_filter="literal-close",
             component_inventory_loss_weight=1.0,
             component_inventory_decode_weight=0.75,
             component_plan_loss_weight=1.25,
@@ -3095,6 +3096,10 @@ def test_compile_resolves_canonical_published_train_version() -> None:
     assert "--compiler-alignment-stratified" in commands[0]
     assert commands[0][commands[0].index("--compiler-alignment-margin") + 1] == "1.0"
     assert "--compiler-alignment-semantic-exhaustive" in commands[0]
+    assert (
+        commands[0][commands[0].index("--compiler-alignment-kind-filter") + 1]
+        == "literal-close"
+    )
     assert (
         commands[0][commands[0].index("--component-inventory-loss-weight") + 1] == "1.0"
     )
