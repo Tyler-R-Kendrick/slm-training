@@ -1,0 +1,44 @@
+{
+  "schema": "autotrain_measured_results/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c4",
+  "cycle_index": 1726,
+  "loop_id": "continuous-openui-local",
+  "run_class": "fixture_scratch",
+  "source_commit": "412737c1a5efd8dd9d5d24df1e5a1c9c5bb555d1",
+  "source_dirty": false,
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "primary_metric": "held_out.structural_similarity",
+  "predecessor_campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c3",
+  "frozen_manifest_sha256": "6acffe8d5cc4e13e9bafd106f085334030254022383a82a72cc942722eb53acf",
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c4-control",
+      "status": "wall_timeout",
+      "training": {"executed": true, "steps": 21, "record_count": 101, "last_loss": 8.851954460144043, "elapsed_wall_seconds": 3.77, "parameter_count": 1608962},
+      "suites": ["smoke", "held_out"],
+      "metrics": {},
+      "ship_gates_pass": null,
+      "claim_boundary": "held_out suite evaluation did not finish inside the repository-wide MAX_RUN_MINUTES=3 wall cap; no metrics of any kind were captured for this arm, including smoke"
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c4-steps",
+      "status": "wall_timeout_partial",
+      "training": {"executed": true, "steps": 42, "record_count": 101, "last_loss": 8.08824634552002, "elapsed_wall_seconds": 4.97, "parameter_count": 1608962},
+      "suites": ["smoke", "held_out"],
+      "metrics": {"parse_rate": 1.0, "meaningful_program_rate": 0.3333333333333333, "binder_reference_f1": 0.8222222222222223, "structural_similarity": 0.51, "latency_ms_p50": 11662.32},
+      "primary_metric_available": false,
+      "ship_gates_pass": null,
+      "claim_boundary": "smoke suite finished (best smoke result in this loop so far: first non-zero meaningful_program_rate, highest binder F1/structural_similarity), but held_out (the declared primary-metric suite this promotion-role cycle) did not finish inside the wall cap, so held_out.structural_similarity is unavailable and no promotion decision can be made from this run"
+    }
+  ],
+  "hypothesis": "Doubling steps without levers only raises cost and does not improve unit decode latency.",
+  "disposition": {"measurement_complete": false, "climb_state": "inconclusive", "ship_state": "blocked", "promotion": "rejected_pending_complete_frozen_replay", "next_run": "replay the identical frozen arm; the pending retry_measurement action is consumed automatically by the next supervised cycle"},
+  "checkpoint_documentation_required": true,
+  "checkpoint_paths": [
+    "runs/c20260802-continuous-openui-local-8c0b60dd-c4-control/checkpoints/last.pt",
+    "runs/c20260802-continuous-openui-local-8c0b60dd-c4-steps/checkpoints/last.pt"
+  ],
+  "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "412737c1a5efd8dd9d5d24df1e5a1c9c5bb555d1", "code_dirty": false, "components": {"harness.model_build.eval": "v73", "harness.model_build.train": "v27", "harness.experiment_feature_flags": "v3", "model.twotower": "v275"}}
+}
