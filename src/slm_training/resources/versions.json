@@ -7253,6 +7253,11 @@
         {
           "version": "v3",
           "date": "2026-08-02",
+          "note": "no-bump: add honest c1779 rejected binder-topology scratch checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
           "note": "no-bump: add honest c1778 rejected batch-size-one runtime checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
         },
         {

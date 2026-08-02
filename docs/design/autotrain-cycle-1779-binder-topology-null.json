@@ -1,0 +1,40 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1779",
+  "cycle_index": 1779,
+  "cycle_intent": "screening",
+  "evidence_class": "fixture",
+  "decision": "rejected_quality_tie_runtime_regression",
+  "scoreable": true,
+  "new_checkpoint_created": true,
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1779-binder-topology",
+      "manifest_sha256": "91b73c615ed83a9dd71cc273a10858bbe8930bd180514c520b14b38700bf5711",
+      "checkpoint_sha256": "4a90f117731276bbeb534a0a1626a921741082c69dc4cbe0befbc0efc9477459",
+      "params": 2137346,
+      "train": {"device": "cpu", "steps": 20, "batch_size": 2, "seed": 101779, "last_loss": 14.68722915649414, "elapsed_wall_seconds": 6.264868489000946},
+      "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.1175, "binder_reference_f1": 0.8222222222222223, "placeholder_fidelity": 0.7222222222222222, "reward_score": 0.31233333333333335, "latency_ms_p50": 1480.73}
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1779-control",
+      "manifest_sha256": "9a26edfcc9f0812fd6c5931d9564efd301364e1207660b124429eea91da6ab20",
+      "checkpoint_sha256": "bfe5726e9ae6b2aceee8720d175eead04ed05c85a56cf05e2625d4b207c40cb7",
+      "params": 2137346,
+      "train": {"device": "cpu", "steps": 20, "batch_size": 2, "seed": 101779, "last_loss": 14.68722915649414, "elapsed_wall_seconds": 2.648110384994652},
+      "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.1175, "binder_reference_f1": 0.8222222222222223, "placeholder_fidelity": 0.7222222222222222, "reward_score": 0.31233333333333335, "latency_ms_p50": 1426.49}
+    }
+  ],
+  "comparison": {"quality_exact_tie": true, "candidate_latency_fraction_change": 0.038023, "candidate_train_wall_fraction_change": 1.365488, "trainable_params_matched": true},
+  "agentv": {"bundles_complete": true, "execution_errors": 0, "ship_gates_pass": false},
+  "checkpoint_policy": "local_explicit_no_sync_rejected_not_reusable_not_promoted_not_ship",
+  "lean": "not_applicable:screening",
+  "next_priority": "component-structure",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "c06d6b0d4be9a2bea77c995977ecb92b97360589",
+    "code_dirty": false,
+    "components": {"config.levers": "v30", "harness.model_build.eval": "v75", "harness.experiment_feature_flags": "v4", "evals.meaningful_program": "2.13.0", "evals.power_protocol": "v8", "evals.scoring": "v22", "model.twotower": "v291"},
+    "stamped_at": "2026-08-02T18:14:05.180759+00:00"
+  }
+}
