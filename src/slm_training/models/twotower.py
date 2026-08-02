@@ -137,6 +137,8 @@ STRUCTURAL_AUX_HEAD_PROFILES = (
     "component-edge",
     "component-inventory",
     "binder-topology",
+    "binder-arity",
+    "binder-component-plan",
     "component-structure",
 )
 _PLAN_CONNECTOR_ARMS: tuple[str, ...] = tuple(arm.value for arm in PlanConnectorArm)
@@ -1748,7 +1750,10 @@ class TwoTowerModel(nn.Module):
         except (AttributeError, TypeError, ValueError):
             binder_plan_ids = ()
         binder_plan_enabled = (
-            float(getattr(self.config, "binder_component_plan_loss_weight", 0.0) or 0.0)
+            aux_profile == "binder-component-plan"
+            or float(
+                getattr(self.config, "binder_component_plan_loss_weight", 0.0) or 0.0
+            )
             > 0.0
             or float(
                 getattr(self.config, "binder_component_plan_decode_weight", 0.0) or 0.0
@@ -1785,7 +1790,9 @@ class TwoTowerModel(nn.Module):
             else None
         )
         binder_arity_enabled = (
-            float(getattr(self.config, "binder_arity_loss_weight", 0.0) or 0.0) > 0.0
+            aux_profile == "binder-arity"
+            or float(getattr(self.config, "binder_arity_loss_weight", 0.0) or 0.0)
+            > 0.0
             or float(getattr(self.config, "binder_arity_decode_weight", 0.0) or 0.0)
             > 0.0
         )

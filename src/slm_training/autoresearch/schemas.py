@@ -508,6 +508,8 @@ class ExperimentKnobs(StrictModel):
             "component-edge",
             "component-inventory",
             "binder-topology",
+            "binder-arity",
+            "binder-component-plan",
             "component-structure",
         ]
         | None

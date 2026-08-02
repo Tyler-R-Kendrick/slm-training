@@ -2646,7 +2646,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v86",
+      "version": "v87",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2686,6 +2686,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v87",
+          "date": "2026-08-02",
+          "note": "Make rejected screening approaches lineage-wide exclusions, fail closed when the registered bank is exhausted, and add size-matched binder-arity and binder-component-plan quality objectives instead of recycling old runtime arms."
+        },
         {
           "version": "v86",
           "date": "2026-08-02",
@@ -7273,6 +7278,11 @@
         {
           "version": "v3",
           "date": "2026-08-02",
+          "note": "no-bump: add honest c1785 recycled-bounds null checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
           "note": "no-bump: add honest c1784 component-plan confirmation rejection checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
         },
         {
@@ -11222,7 +11232,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v291",
+      "version": "v292",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -11265,6 +11275,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v292",
+          "date": "2026-08-02",
+          "note": "Add binder-arity and binder-component-plan structural auxiliary profiles so matched controls instantiate the same head capacity as new train-and-decode quality arms."
+        },
         {
           "version": "v291",
           "date": "2026-08-02",

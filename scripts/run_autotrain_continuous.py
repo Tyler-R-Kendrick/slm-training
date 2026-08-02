@@ -538,6 +538,26 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         },
     ),
     (
+        "binder-arity",
+        "Binder-arity train-and-decode coupling improves binder_reference_f1 and structural_similarity without lowering parse_rate.",
+        {
+            "binder_arity_loss_weight": 1.0,
+            "binder_arity_decode_weight": 1.0,
+            "structural_aux_head_profile": "binder-arity",
+            "compiler_decode_mode": "tree",
+        },
+    ),
+    (
+        "binder-component-plan",
+        "Binder-to-component-plan train-and-decode coupling improves binder_reference_f1 and structural_similarity without lowering parse_rate.",
+        {
+            "binder_component_plan_loss_weight": 1.0,
+            "binder_component_plan_decode_weight": 1.0,
+            "structural_aux_head_profile": "binder-component-plan",
+            "compiler_decode_mode": "tree",
+        },
+    ),
+    (
         "component-structure",
         "Joint component-plan and component-edge train-and-decode coupling improves smoke structural_similarity beyond either isolated arm.",
         {
@@ -889,6 +909,10 @@ def _arm_slug_from_knobs(
         return "component-edge"
     if knobs.get("component_inventory_loss_weight"):
         return "component-inventory"
+    if knobs.get("binder_component_plan_loss_weight"):
+        return "binder-component-plan"
+    if knobs.get("binder_arity_loss_weight"):
+        return "binder-arity"
     if knobs.get("binder_topology_loss_weight"):
         return "binder-topology"
     if knobs.get("grammar_completion_bounds") and knobs.get("compact_active_canvas"):
@@ -956,15 +980,21 @@ def _recent_completed_nonpositive_slugs(
     root: Path,
     predecessor_campaign_id: str | None,
     *,
-    max_cycles: int = _RECENT_EXHAUSTION_CYCLE_WINDOW,
+    max_cycles: int | None = None,
 ) -> set[str]:
-    """Cool down complete null arms for one bounded pass through the bank."""
+    """Close complete null approaches across the loop lineage.
+
+    ``max_cycles`` remains an explicit diagnostic/test bound. Production walks
+    the content-linked lineage to its root so an old rejected approach cannot
+    become novel merely by aging out of a sliding window.
+    """
 
     cursor = predecessor_campaign_id
     seen: set[str] = set()
     exhausted: set[str] = set()
     loop_id: str | None = None
-    for _ in range(max(0, max_cycles)):
+    lineage = itertools.count() if max_cycles is None else range(max(0, max_cycles))
+    for _ in lineage:
         if not cursor or cursor in seen:
             break
         seen.add(cursor)
@@ -1022,23 +1052,46 @@ def _recent_completed_nonpositive_slugs(
 
 
 def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
-    """Rotate thrash recommendation; prefer arms not recently rejected/queued."""
-    # Evidence-triggered arms are available to typed predecessor steering but do
-    # not perturb the stable cycle-number rotation of the general screening bank.
+    """Rotate screening arms without reopening a rejected approach."""
+    # Evidence-triggered and successor quality arms do not perturb the stable
+    # cycle-number rotation of the original screening bank. They become the
+    # fail-forward path only after older approaches are closed.
+    successor_slugs = (
+        "binder-arity",
+        "binder-component-plan",
+        "literal-margin",
+        "literal-close",
+    )
+    legacy_quality_slugs = {
+        "component-plan",
+        "component-edge",
+        "component-inventory",
+        "binder-topology",
+        "component-structure",
+    }
     bank = tuple(
         row
         for row in _SCREENING_ARM_BANK
-        if row[0] not in {"literal-close", "literal-margin"}
+        if row[0] not in successor_slugs
     )
     n = len(bank)
     start = (max(1, int(cycle)) - 1) % n
     ordered = [bank[(start + i) % n][0] for i in range(n)]
     skip = skip or set()
+    if legacy_quality_slugs.issubset(skip):
+        for slug in successor_slugs:
+            if slug not in skip:
+                return slug
     for slug in ordered:
         if slug not in skip:
             return slug
-    # All skipped — still rotate so thrash is not frozen on bounds forever.
-    return ordered[0]
+    for slug in successor_slugs:
+        if slug not in skip:
+            return slug
+    raise RuntimeError(
+        "registered screening arm bank exhausted; add a distinct preregistered "
+        "quality objective instead of recycling a rejected approach"
+    )
 
 
 def _apply_arm_extras(base_steps: int, extras: dict[str, Any]) -> dict[str, Any]:
@@ -3372,6 +3425,8 @@ def _completed_candidate_priorities(
         "component_edge_loss_weight",
         "component_inventory_loss_weight",
         "binder_topology_loss_weight",
+        "binder_component_plan_loss_weight",
+        "binder_arity_loss_weight",
     }
     targeted_alternative = next(
         (
@@ -4934,6 +4989,10 @@ def _matrix(
             "component_inventory_decode_weight": 0.0,
             "binder_topology_loss_weight": 0.0,
             "binder_topology_decode_weight": 0.0,
+            "binder_component_plan_loss_weight": 0.0,
+            "binder_component_plan_decode_weight": 0.0,
+            "binder_arity_loss_weight": 0.0,
+            "binder_arity_decode_weight": 0.0,
             "structural_aux_head_profile": "none",
             "compiler_decode_mode": "off",
             "ltr_tail_loss_weight": 0.0,
@@ -4995,6 +5054,10 @@ def _matrix(
                 "component_inventory_decode_weight",
                 "binder_topology_loss_weight",
                 "binder_topology_decode_weight",
+                "binder_component_plan_loss_weight",
+                "binder_component_plan_decode_weight",
+                "binder_arity_loss_weight",
+                "binder_arity_decode_weight",
                 "structural_aux_head_profile",
                 "compiler_decode_mode",
                 "steps",
@@ -5175,6 +5238,10 @@ def _matrix(
                 "component_inventory_decode_weight",
                 "binder_topology_loss_weight",
                 "binder_topology_decode_weight",
+                "binder_component_plan_loss_weight",
+                "binder_component_plan_decode_weight",
+                "binder_arity_loss_weight",
+                "binder_arity_decode_weight",
                 "structural_aux_head_profile",
                 "compiler_decode_mode",
                 "steps",
@@ -5607,6 +5674,8 @@ def _manifest(
                 "component_edge_loss_weight": 0.0,
                 "component_inventory_loss_weight": 0.0,
                 "binder_topology_loss_weight": 0.0,
+                "binder_component_plan_loss_weight": 0.0,
+                "binder_arity_loss_weight": 0.0,
             },
             sort_keys=True,
         ).encode()

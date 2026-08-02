@@ -527,9 +527,22 @@ def test_select_recommended_slug_rotates_and_skips() -> None:
     assert _mod._select_recommended_slug(1729) == "binder-topology"
     # skip bounds → canvas even on cycle 1
     assert _mod._select_recommended_slug(1, skip={"bounds"}) == "canvas"
-    # all skipped → still returns rotated head
+    # all skipped fails closed rather than recycling a rejected approach
     all_slugs = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
-    assert _mod._select_recommended_slug(1, skip=all_slugs) == "bounds"
+    with pytest.raises(RuntimeError, match="screening arm bank exhausted"):
+        _mod._select_recommended_slug(1, skip=all_slugs)
+
+
+def test_select_recommended_slug_prioritizes_successor_quality_after_legacy_nulls(
+) -> None:
+    skip = {
+        "component-plan",
+        "component-edge",
+        "component-inventory",
+        "binder-topology",
+        "component-structure",
+    }
+    assert _mod._select_recommended_slug(1786, skip=skip) == "binder-arity"
 
 
 def test_matrix_thrash_rotation_recommends_non_bounds() -> None:
@@ -554,6 +567,8 @@ def test_matrix_thrash_rotation_recommends_non_bounds() -> None:
     assert "c20260731-c2-bounds" in ids
     assert "c20260731-c2-component-plan" in ids
     assert "c20260731-c2-binder-topology" in ids
+    assert "c20260731-c2-binder-arity" in ids
+    assert "c20260731-c2-binder-component-plan" in ids
     assert "c20260731-c2-literal-close" in ids
 
 
@@ -697,6 +712,56 @@ def test_structural_screening_control_matches_recommended_head_capacity() -> Non
     assert candidate["compiler_decode_mode"] == "tree"
 
 
+@pytest.mark.parametrize(
+    ("slug", "loss_key", "decode_key", "profile"),
+    [
+        (
+            "binder-arity",
+            "binder_arity_loss_weight",
+            "binder_arity_decode_weight",
+            "binder-arity",
+        ),
+        (
+            "binder-component-plan",
+            "binder_component_plan_loss_weight",
+            "binder_component_plan_decode_weight",
+            "binder-component-plan",
+        ),
+    ],
+)
+def test_binder_quality_screening_controls_are_size_matched(
+    slug: str, loss_key: str, decode_key: str, profile: str
+) -> None:
+    campaign_id = f"continuous-loop-20260802-{slug}"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1786,
+        role="screening",
+        recommended_slug=slug,
+    )
+    by_id = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = by_id[f"{prefix}-control"]
+    candidate = by_id[f"{prefix}-{slug}"]
+    assert control[loss_key] == 0.0
+    assert control[decode_key] == 0.0
+    assert candidate[loss_key] == 1.0
+    assert candidate[decode_key] == 1.0
+    assert control["structural_aux_head_profile"] == profile
+    assert candidate["structural_aux_head_profile"] == profile
+    assert control["compiler_decode_mode"] == "tree"
+    assert candidate["compiler_decode_mode"] == "tree"
+
+
 def test_structural_screening_arms_couple_training_to_decode() -> None:
     by_slug = {slug: extras for slug, _hypothesis, extras in _mod._SCREENING_ARM_BANK}
 
@@ -705,6 +770,8 @@ def test_structural_screening_arms_couple_training_to_decode() -> None:
         ("component-edge", "component_edge"),
         ("component-inventory", "component_inventory"),
         ("binder-topology", "binder_topology"),
+        ("binder-arity", "binder_arity"),
+        ("binder-component-plan", "binder_component_plan"),
     ):
         assert by_slug[slug][f"{prefix}_loss_weight"] > 0.0
         assert by_slug[slug][f"{prefix}_decode_weight"] > 0.0
@@ -772,7 +839,7 @@ def test_completed_null_steers_to_distinct_quality_arm() -> None:
     assert "component-plan" in priorities[0].hypothesis
 
 
-def test_completed_null_labels_runtime_successor_as_diagnostic() -> None:
+def test_completed_null_prioritizes_new_quality_objective_before_runtime() -> None:
     matrix = _mod._matrix(
         campaign_id="continuous-loop-20260802-c1735",
         evidence_snapshot_id="snap",
@@ -799,11 +866,9 @@ def test_completed_null_labels_runtime_successor_as_diagnostic() -> None:
         },
     )
 
-    assert priorities[0].area == "experiments"
-    assert priorities[0].proposed_experiment_id.endswith("-bounds")
-    assert "diagnostic" in priorities[0].hypothesis
-    assert "latency_ms_p50" in priorities[0].hypothesis
-    assert "quality hypothesis" not in priorities[0].hypothesis
+    assert priorities[0].area == "model"
+    assert priorities[0].proposed_experiment_id.endswith("-binder-arity")
+    assert "quality" in priorities[0].hypothesis
 
 
 def test_completed_confirmation_replaces_stale_preregistered_priorities() -> None:
@@ -1116,6 +1181,76 @@ def test_recent_completed_nonpositive_slugs_follow_predecessor_chain(
         "component-plan",
         "component-edge",
     }
+
+
+def test_completed_null_does_not_age_out_of_lineage_exhaustion(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    old_id = "continuous-loop-20260802-c1"
+    old = root / old_id
+    matrix = _mod._matrix(
+        campaign_id=old_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1,
+        role="screening",
+        recommended_slug="bounds",
+    )
+    old.mkdir(parents=True)
+    (old / "campaign.json").write_text(
+        json.dumps(
+            {
+                "campaign_id": old_id,
+                "loop_id": "loop-1",
+                "predecessor_campaign_id": None,
+            }
+        )
+    )
+    (old / "matrix-proposal.json").write_text(json.dumps(matrix))
+    (old / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "candidate_id": matrix["recommended_experiment_id"],
+                "cycle_intent": "screening",
+                "positive": False,
+                "measurement_complete": True,
+            }
+        )
+    )
+    (old / "cycle_handoff.json").write_text(
+        json.dumps({"loop_id": "loop-1", "cycle_intent": "screening"})
+    )
+
+    predecessor = old_id
+    for cycle in range(2, _mod._RECENT_EXHAUSTION_CYCLE_WINDOW + 4):
+        campaign_id = f"continuous-loop-20260802-c{cycle}"
+        camp = root / campaign_id
+        camp.mkdir()
+        (camp / "campaign.json").write_text(
+            json.dumps(
+                {
+                    "campaign_id": campaign_id,
+                    "loop_id": "loop-1",
+                    "predecessor_campaign_id": predecessor,
+                }
+            )
+        )
+        (camp / "cycle_handoff.json").write_text(
+            json.dumps({"loop_id": "loop-1", "cycle_intent": "screening"})
+        )
+        predecessor = campaign_id
+
+    assert "bounds" not in _mod._recent_completed_nonpositive_slugs(
+        root,
+        predecessor,
+        max_cycles=_mod._RECENT_EXHAUSTION_CYCLE_WINDOW,
+    )
+    assert "bounds" in _mod._recent_completed_nonpositive_slugs(root, predecessor)
 
 
 def test_rejected_confirmation_exhausts_its_source_quality_family(
