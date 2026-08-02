@@ -3208,6 +3208,12 @@ def test_execute_resolves_truncated_train_stdout_from_canonical_summary(
         "stopped_on": "steps",
         "checkpoint": str(checkpoint),
         "track": {"trainable_params": 12345},
+        "version_stamp": {
+            "stamp_schema": "version_stamp/v1",
+            "code_commit": "a" * 40,
+            "code_dirty": False,
+            "components": {},
+        },
         "large_payload": "x" * 100_000,
     }
     evaluation = {
@@ -3626,6 +3632,24 @@ def test_compile_action_alias_knobs() -> None:
     assert (
         train[train.index("--action-description-name-mode") + 1]
         == "alias_aware_description"
+    )
+
+
+def test_compile_structural_aux_head_profile() -> None:
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            steps=2,
+            structural_aux_head_profile="binder-topology",
+        )
+    )
+    train = next(
+        command
+        for command in compile_commands(campaign(), spec)
+        if "scripts.train_model" in command
+    )
+    assert (
+        train[train.index("--structural-aux-head-profile") + 1]
+        == "binder-topology"
     )
 
 

@@ -534,6 +534,9 @@ def test_predecessor_completed_null_drives_next_screening_arm(tmp_path: Path) ->
         _mod._predecessor_priority_slug(root, camp.name, skip=set())
         == "component-plan"
     )
+    assert _mod._predecessor_priority_slug(
+        root, camp.name, skip={"component-plan"}
+    ) != "binder-topology"
 
 
 def test_matrix_promote_path_confirmed_knobs() -> None:

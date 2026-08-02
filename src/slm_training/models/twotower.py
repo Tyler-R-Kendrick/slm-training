@@ -745,11 +745,6 @@ class TwoTowerConfig:
             validate_twotower_config(self)
         except NumericValidationError as exc:
             raise ValueError(str(exc)) from exc
-        if not self.symbol_anonymization:
-            raise ValueError(
-                "symbol_anonymization=False is prohibited: surface identifiers "
-                "cannot be model-facing scoring or grammar authority"
-            )
         unsupported = [
             name
             for name in (

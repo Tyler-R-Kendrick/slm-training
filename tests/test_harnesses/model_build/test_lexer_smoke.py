@@ -83,8 +83,8 @@ def test_lexer_from_records_builds_dual_tokenizers(tmp_path: Path) -> None:
     assert float(loss.detach()) >= 0.0
 
 
-def test_surface_identifier_arm_is_prohibited() -> None:
-    """Surface identifiers are not an admissible template-marker channel."""
+def test_surface_identifier_arm_is_diagnostic_only() -> None:
+    """E282 remains available only as an unconstrained diagnostic control."""
     import pytest
 
     base = dict(
@@ -98,8 +98,18 @@ def test_surface_identifier_arm_is_prohibited() -> None:
         max_prompt_len=64,
         max_target_len=160,
     )
-    with pytest.raises(ValueError, match="symbol_anonymization=False is prohibited"):
-        TwoTowerConfig(symbol_anonymization=False, **base)
+    diagnostic = TwoTowerConfig(symbol_anonymization=False, **base)
+    assert diagnostic.symbol_anonymization is False
+
+    with pytest.raises(ValueError, match="incompatible with grammar_constrained"):
+        TwoTowerModel.from_records(
+            [ExampleRecord(id="surface", prompt="Hero", openui=HERO, split="train")],
+            config=TwoTowerConfig(
+                symbol_anonymization=False,
+                **{**base, "grammar_constrained": True},
+            ),
+            device="cpu",
+        )
 
 
 def test_lexer_train_eval_smoke(tmp_path: Path) -> None:

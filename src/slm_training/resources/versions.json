@@ -2571,7 +2571,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v50",
+      "version": "v51",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2595,6 +2595,9 @@
         "docs/design/autoresearch-autotraining.md",
         "docs/design/experiment-campaign-governance.md",
         "docs/design/autotrain-climb-policy.md",
+        "docs/design/autotrain-cycle-1729-binder-topology-capacity-audit.json",
+        "docs/design/autotrain-cycle-1729-binder-topology-capacity-audit.md",
+        "docs/design/adversarial-review.md",
         "docs/design/authoritative-credit-one-shot-agent-prompt.md",
         "tests/test_autoresearch/test_experiment_campaign.py",
         "tests/test_autoresearch/test_hillclimb.py",
@@ -2608,6 +2611,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v51",
+          "date": "2026-08-01",
+          "note": "Remove every stale executable priority for a completed candidate and register the c1729 capacity-audit evidence under the continuous-campaign component."
+        },
         {
           "version": "v50",
           "date": "2026-08-01",
@@ -10644,7 +10652,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v283",
+      "version": "v284",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -10687,6 +10695,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v284",
+          "date": "2026-08-01",
+          "note": "Restore the registered E282 surface-identifier diagnostic arm while retaining fail-closed constrained, macro, and non-absolute restrictions; add direct tokenizer-preserving warm-start coverage."
+        },
         {
           "version": "v283",
           "date": "2026-08-01",

@@ -2598,6 +2598,21 @@ def _completed_candidate_priorities(
         ),
         alternatives[0] if alternatives else None,
     )
+    for row in rows:
+        if (
+            row.get("disposition") == "experiment_next"
+            and str(row.get("proposed_experiment_id") or "") == candidate_id
+        ):
+            row.update(
+                {
+                    "disposition": "monitor",
+                    "proposed_experiment_id": None,
+                    "expected_information_gain": (
+                        "The completed candidate is exhausted and cannot be "
+                        "selected again without a new preregistered hypothesis."
+                    ),
+                }
+            )
     if alternative is not None:
         next_id = str(alternative["experiment_id"])
         slug = next_id.rsplit("-", 1)[-1]

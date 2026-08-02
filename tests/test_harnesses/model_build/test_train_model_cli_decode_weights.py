@@ -124,9 +124,21 @@ def test_train_model_cli_threads_decode_weights_into_model_build_config(
     assert config.visible_reference_decode_weight == 19.0
 
 
+@pytest.mark.parametrize(
+    ("flag", "value"),
+    [
+        ("--semantic-role-contract-in-context", None),
+        ("--semantic-role-decode-weight", "1.0"),
+        ("--semantic-role-schema-candidates", None),
+        ("--slot-coverage-close-decode-weight", "1.0"),
+        ("--schema-role-slot-decode-weight", "1.0"),
+        ("--semantic-plan-repeated-slot-margin-decode-weight", "1.0"),
+    ],
+)
 def test_train_model_cli_rejects_prohibited_marker_semantic_levers(
-    tmp_path: Path,
+    tmp_path: Path, flag: str, value: str | None
 ) -> None:
+    prohibited = [flag, value] if value is not None else [flag]
     with pytest.raises(ValueError, match="prohibited enabled levers"):
         train_model.main(
             [
@@ -138,10 +150,39 @@ def test_train_model_cli_rejects_prohibited_marker_semantic_levers(
                 "prohibited-marker-semantics",
                 "--steps",
                 "0",
-                "--semantic-role-decode-weight",
-                "1.0",
+                *prohibited,
             ]
         )
+
+
+def test_train_model_cli_threads_structural_aux_head_profile(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured: dict[str, ModelBuildConfig] = {}
+    monkeypatch.setattr(
+        train_model,
+        "train",
+        lambda config: captured.setdefault("config", config) and {},
+    )
+
+    assert (
+        train_model.main(
+            [
+                "--train-dir",
+                str(tmp_path),
+                "--run-root",
+                str(tmp_path / "runs"),
+                "--run-id",
+                "structural-profile-wiring",
+                "--steps",
+                "0",
+                "--structural-aux-head-profile",
+                "binder-topology",
+            ]
+        )
+        == 0
+    )
+    assert captured["config"].structural_aux_head_profile == "binder-topology"
 
 
 def test_train_model_cli_decode_weights_default_to_zero_not_none(
