@@ -1202,6 +1202,33 @@ def test_component_token_arm_is_size_matched_and_replayable() -> None:
     assert "component_token_loss_weight" in _mod._LEVER_KNOB_KEYS
 
 
+def test_structure_token_arm_is_size_matched_and_replayable() -> None:
+    campaign_id = "continuous-loop-20260802-c1806"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1806,
+        role="screening",
+        recommended_slug="structure-token",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-structure-token"]
+    assert control["structure_token_loss_weight"] == 0.0
+    assert candidate["structure_token_loss_weight"] == 1.0
+    assert _mod._arm_slug_from_knobs(candidate) == "structure-token"
+    assert "structure_token_loss_weight" in _mod._LEVER_KNOB_KEYS
+
+
 def test_completed_frozen_retry_steers_to_distinct_quality_arm() -> None:
     matrix = _mod._matrix(
         campaign_id="continuous-loop-20260731-c10",

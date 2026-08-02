@@ -578,6 +578,13 @@ def compile_commands(
                     str(knobs.component_token_loss_weight),
                 ]
             )
+        if knobs.structure_token_loss_weight is not None:
+            train.extend(
+                [
+                    "--structure-token-loss-weight",
+                    str(knobs.structure_token_loss_weight),
+                ]
+            )
         if knobs.structural_aux_head_profile is not None:
             train.extend(
                 [

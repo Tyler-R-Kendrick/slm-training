@@ -136,6 +136,15 @@ use `--compiler openai`, whose default is `gpt-5.6-sol` with `store=False`.
 
 ## Closed loop
 
+The c1805 exact frozen replay reproduced the c1804 control-only typed decode
+timeout. Component-token weighting is therefore a runtime-specific unblock,
+but its `.081733` structure and `7186.02` ms p50 fail absolute quality and
+latency expectations. The arm is retired. Campaign harness v105 adds a
+zero-parameter, size-matched `STRUCT`-token reconstruction successor with
+typed loss attribution; it targets scaffold formation without changing the
+grammar domain or constrained decoder. See
+[`autotrain-cycle-1805-component-token-rejected.md`](autotrain-cycle-1805-component-token-rejected.md).
+
 The c1804 component-token screen is incomplete because the matched control
 timed out on all three smoke records. Candidate-only gains in component recall,
 meaningful-program rate, binder F1, and fidelity are non-attributable; its low
