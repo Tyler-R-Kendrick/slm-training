@@ -1724,7 +1724,7 @@
       ]
     },
     "evals.agentv": {
-      "version": "v6",
+      "version": "v7",
       "kind": "harness",
       "paths": [
         "src/slm_training/evals/agentv.py",
@@ -1732,6 +1732,11 @@
         "tests/test_evals/test_agentv.py"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-08-02",
+          "note": "Clear NODE_OPTIONS before spawning the AgentV node runner so a session-injected --import tsx entry cannot kill eval publication (mirrors src/slm_training/dsl/grammar/backends/graphql_js.py)"
+        },
         {
           "version": "v6",
           "date": "2026-07-30T10:18:42-05:00",
