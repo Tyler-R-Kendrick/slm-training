@@ -1,0 +1,134 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c9",
+  "cycle_index": 9,
+  "cycle_intent": "screening",
+  "source_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "integration_commit": "81275113842abf26ddf0e0427a3c1a337d108aa5",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 40,
+    "seed": 100009,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "scale_escalation": "steps doubled from the prior 5 cycles' 20-22 to 40, per this cycle's diagnostic scale-investigation step; no larger published smoke/held_out eval snapshot exists in src/slm_training/resources/data/eval/ (every published snapshot -- e763, e827, e842, e938 -- has identical suite_counts smoke=3/held_out=5/adversarial=4/ood=4, only rico_held differs; e938 is already the largest by rico_held). Cycle 8's from-scratch arm pair used ~19s wall of a ~70s per-arm harness budget (27% utilization), so steps=40 was judged safely within MAX_RUN_MINUTES without a separate timing dry-run; the real cycle confirmed this (whole campaign 10:23:58Z-10:24:29Z, ~31s, well under the 180s cap, stopped_on='steps' not a timeout for either arm)."
+  },
+  "hypothesis": "Low-weight binder-topology supervision (binder_topology_loss_weight=0.25, structural_aux_head_profile='binder-topology') improves smoke structural_similarity without lowering parse_rate or binder_reference_f1. Driver's hypothesizer selected this fresh-this-session arm (rank-1 recommendation carried over from cycle 8's next-run priorities) after component-plan, component-edge, and component-inventory were all exhausted in cycles 5-8.",
+  "primary_metric": "smoke.structural_similarity",
+  "primary_direction": "increase",
+  "measurement_complete": true,
+  "cycle_role": "screening",
+  "note_role": "This is a screening-role cycle (smoke suite only, n=3); held_out/adversarial/ood/rico_held are missing_suite at this role, unlike cycle 8's promotion role which ran smoke+held_out. The steps escalation (20-22 -> 40) applies regardless of role and is directly comparable across cycles on the smoke suite.",
+  "arms": {
+    "c9-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.51,
+        "binder_reference_f1": 0.8222222222222223,
+        "component_type_recall": 0.25,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "placeholder_fidelity": 0.7222222222222222,
+        "reward_score": 0.8656666666666667,
+        "latency_ms_p50": 5614.17
+      },
+      "levers": {
+        "binder_topology_loss_weight": 0.0,
+        "binder_topology_decode_weight": 0.0,
+        "structural_aux_head_profile": "binder-topology"
+      },
+      "trainable_params": 2137346,
+      "steps": 40,
+      "stopped_on": "steps",
+      "last_loss": 6.802424430847168
+    },
+    "c9-binder-topology": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.51,
+        "binder_reference_f1": 0.8222222222222223,
+        "component_type_recall": 0.25,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "placeholder_fidelity": 0.7222222222222222,
+        "reward_score": 0.8656666666666667,
+        "latency_ms_p50": 5999.52
+      },
+      "levers": {
+        "binder_topology_loss_weight": 0.25,
+        "binder_topology_decode_weight": 0.0,
+        "structural_aux_head_profile": "binder-topology"
+      },
+      "trainable_params": 2137346,
+      "steps": 40,
+      "stopped_on": "steps",
+      "last_loss": 6.833415508270264
+    }
+  },
+  "primary_delta": 0.0,
+  "latency_delta_ms": {
+    "smoke": 385.35
+  },
+  "gate_failures": {
+    "smoke": [
+      "insufficient_n actual=3 need>=20",
+      "meaningful_program_rate actual=0.3333333333333333 need>=0.66",
+      "component_type_recall actual=0.25 need>=0.35",
+      "ast_beq_rate actual=0.0 need>=0.2",
+      "canonical_beq_rate actual=0.0 need>=0.1"
+    ],
+    "missing_suites": [
+      "held_out",
+      "adversarial",
+      "ood",
+      "rico_held"
+    ]
+  },
+  "conclusion": "This cycle ran a bounded diagnostic scale-investigation step before selecting an experiment: no published eval snapshot exceeds smoke=3/held_out=5 (checked e763, e827, e842, e938 -- all identical on these two suites), so smoke/held_out n could not be escalated without inventing a new fixture (out of scope). --steps was escalated from the prior 5 cycles' 20-22 to 40 (2x), which the harness completed cleanly (stopped_on='steps' both arms, whole campaign ~31s wall, comfortably inside the 180s MAX_RUN_MINUTES cap and the ~70s-per-arm harness budget). Training loss did diverge measurably between arms at this step count (control last_loss=6.8024, candidate last_loss=6.8334, consistent with the added binder-topology auxiliary loss term), proving the escalated-steps run was not a no-op. Despite that, every decode-facing quality metric on the smoke suite is still bit-identical between control and candidate: parse_rate, meaningful_program_rate, structural_similarity, binder_reference_f1, component_type_recall, ast_beq_rate, canonical_beq_rate, placeholder_fidelity, reward_score all match exactly (structural_similarity 0.51=0.51). Only latency_ms_p50 differs (+385.35ms, candidate slower), consistent with fixture-scale timing noise. Primary metric (smoke.structural_similarity) delta is 0.0 exactly -- a fourth consecutive bit-identical null this session (after cycle 6 component-edge, cycle 7 component-plan re-screen, cycle 8 component-inventory), and the first at 2x training steps. This directly answers the orchestrating session's key open question from cycle 8: escalating --steps within the wall cap does NOT reveal a non-null decode-facing signal for these structural aux-loss levers at n=3; the bottleneck is eval suite size (n), not training duration. Ship gates correctly fail closed on fixture insufficient_n and remaining quality thresholds; no gate was weakened.",
+  "sdlc_classification": {
+    "positive": false,
+    "stack_layer": false,
+    "action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260802-continuous-openui-local-8c0b60dd-c9-control",
+      "fixture_insufficient_n:c20260802-continuous-openui-local-8c0b60dd-c9-binder-topology",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.51 candidate=0.51 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "next_priorities": [
+    "The completed non-positive binder-topology arm is exhausted; test the distinct size-matched 'component-structure' quality hypothesis next (rank 1, confidence 0.90).",
+    "Keep the matched control as the size-matched baseline every cycle.",
+    "Rotate thrash recommendation across the lever bank (not bounds-only); the completed candidate is exhausted and cannot be selected again without a new preregistered hypothesis.",
+    "Soft ship-gate fails on fixture n never stop the continuous loop; do not weaken gates.",
+    "Confirmed champions promote under cadence; thrash only screens."
+  ],
+  "recorded_at": "2026-08-02T10:24:29.187838Z",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "81275113842abf26ddf0e0427a3c1a337d108aa5",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v74",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v286"
+    },
+    "stamped_at": "2026-08-02T10:23:54.646294+00:00"
+  }
+}
