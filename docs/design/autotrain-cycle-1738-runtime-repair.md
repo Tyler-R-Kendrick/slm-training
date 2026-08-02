@@ -18,6 +18,14 @@ progress, not model-quality or ship evidence.
 | copy-on-write direct-map cache | 70 | 49 | 19,178.515 | 144,638 | 10,696 | 163,061 | typed timeout |
 | shared control lexer thread | 72 | 50 | 19,036.470 | 144,691 | 10,764 | 163,149 | typed timeout |
 | clean committed reproduction | 64 | 43 | 19,595.679 | 144,537 | 10,548 | 162,878 | typed timeout |
+| clean direct-map reproduction | 67 | 46 | 19,427.600 | 144,567 | 10,592 | 162,933 | typed timeout |
+| clean lexer-thread reproduction | 76 | 52 | 18,930.027 | 144,711 | 10,835 | 163,186 | typed timeout |
+| persistent bridge reader (dirty) | 76 | 52 | 18,888.919 | 144,711 | 10,835 | 163,186 | typed timeout |
+| cached semantic projections (dirty) | 79 | 55 | 18,704.087 | 144,781 | 10,923 | 163,309 | typed timeout |
+| clean semantic-projection reproduction | 79 | 55 | 18,816.261 | 144,780 | 10,921 | 163,306 | typed timeout |
+| direct semantic constructors (dirty) | 81 | 57 | 18,271.607 | 144,814 | 10,971 | 163,367 | typed timeout |
+| clean constructors + refreshed ranker | 83 | 59 | 18,460.255 | 144,925 | 11,077 | 163,561 | typed timeout |
+| shared classification projections (dirty) | 100 | 66 | 17,604.310 | 145,039 | 11,238 | 163,766 | typed timeout |
 
 All rows use the same c1737 control checkpoint, `smoke` offset 0, one record,
 strict compiler-tree policy, CPU, and a 24-second diagnostic deadline. The
@@ -43,6 +51,24 @@ The frozen c1740 campaign manifest remains the comparison replay authority.
 - Parser forks also share append-only fed-token histories until the first
   branch-local terminal commit, when both buffers detach before mutation. The
   ownership regression test and exact domain-parity suite remain green.
+- Semantic transitions cache tokenizer identity, kind, and special-id
+  projections with weak identity guards. Proxy/deep-copy identity cannot reuse
+  another tokenizer's cache, and timeout exceptions still propagate. The
+  clean v13 profile advances three additional certified tokens and forwards
+  under the unchanged wall.
+- Hot immutable semantic states and delimiter frames now use explicit
+  constructors instead of reflective `dataclasses.replace`; every field and
+  interning key remains identical. The required latest-contract cleanup also
+  refreshed stale opaque-ID assertions and rebuilt the committed train-only
+  speculative ranker. The clean row therefore measures the integrated v14 +
+  v287 runtime, while the dirty 81-token row isolates the constructor repair.
+- Compiler terminal kinds and surface pieces now use tokenizer-identity-scoped
+  projection caches, component filters reuse the canonical kind-id set, and a
+  completion transition calculates its token kind once before handing it to
+  the parser and semantic-state authorities. The dirty v15/v288 reproduction
+  advances 100 certified tokens (+20.5% over the prior clean 83), performs 66
+  forwards, and lowers compiler time by 856 ms while preserving the same
+  typed timeout. This is retained runtime progress pending an immutable replay.
 - Repeating `SIGALRM` delivery is disarmed before timeout bookkeeping. The
   prior failure exited 142 with an uncaught second alarm; the repaired runs
   exit 0 with `decode_outcome=runtime_timeout` and complete AgentV artifacts.
@@ -77,12 +103,14 @@ MPR/ms gain because it is below the preregistered 5% minimum effect.
 
 ## Next hypotheses
 
-1. Reduce mechanical Lark parser-state copy and allocation cost without
-   changing traversal, candidates, budgets, or cache-observable state.
-2. Batch or incrementally retain official root probes across terminal witness
-   siblings; the profile still attributes about 2.9 seconds to 189 bridge
-   probes.
-3. Reduce compiler state construction and parser-copy cost before changing any
+1. Batch official root probes across terminal witness siblings, or eliminate
+   only calls whose answer is already exactly implied by a certified grammar
+   state; per-call reader reuse is neutral, while Node response wait remains
+   material.
+2. Profile parser accept-set refresh and control-fork key construction. The
+   semantic-state interning hypothesis is already active, while the measured
+   decision/token projection reuse is now implemented and exact-tested.
+3. Reduce compiler state construction cost before changing any
    timeout. The compiler consumes about 20 seconds of the 24-second wall,
    whereas neural work is roughly 3.7 seconds.
 4. Keep Lean/full formal validation in the delivery gate; no heuristic or

@@ -669,6 +669,7 @@ class OpenUIIncrementalEngine:
         *,
         _macro_seen: frozenset[int] = frozenset(),
         _restore_on_reject: bool = True,
+        _token_kind=None,
     ) -> bool | None:
         """Feed one DSL-native token id directly as its Lark terminal.
 
@@ -692,12 +693,14 @@ class OpenUIIncrementalEngine:
             # BOS/EOS/PAD/MASK are never fed as source terminals (decode
             # drops them; EOS acceptability is queried via next_terminals).
             return True
-        try:
-            kind = tokenizer.kind_of(tid)
-        except (TimeoutError, KeyboardInterrupt):
-            raise
-        except Exception:
-            return None
+        kind = _token_kind
+        if kind is None:
+            try:
+                kind = tokenizer.kind_of(tid)
+            except (TimeoutError, KeyboardInterrupt):
+                raise
+            except Exception:
+                return None
         from slm_training.models.dsl_tokenizer import TokenKind
 
         if kind is TokenKind.SPECIAL:  # <unk> and friends: never fed

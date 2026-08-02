@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import weakref
 from collections import Counter
 from dataclasses import dataclass
 from enum import Enum
@@ -202,17 +203,33 @@ def unresolved_binder_reference_pieces(
 
 def _semantic_kind(tokenizer: Any, token_id: int) -> str:
     tid = int(token_id)
-    cache = getattr(tokenizer, "_compiler_semantic_kind_cache", None)
-    if isinstance(cache, dict) and tid in cache:
+    cached = getattr(tokenizer, "_compiler_semantic_kind_cache", None)
+    cache = (
+        cached[1]
+        if isinstance(cached, tuple)
+        and len(cached) == 2
+        and callable(cached[0])
+        and cached[0]() is tokenizer
+        and isinstance(cached[1], dict)
+        else None
+    )
+    if cache is not None and tid in cache:
         return str(cache[tid])
     kind_of = getattr(tokenizer, "kind_of", None)
     if callable(kind_of):
         try:
             raw_kind = kind_of(tid)
             kind = str(getattr(raw_kind, "value", raw_kind))
-            if not isinstance(cache, dict):
+            if cache is None:
                 cache = {}
-                setattr(tokenizer, "_compiler_semantic_kind_cache", cache)
+                try:
+                    setattr(
+                        tokenizer,
+                        "_compiler_semantic_kind_cache",
+                        (weakref.ref(tokenizer), cache),
+                    )
+                except (AttributeError, TypeError):
+                    return kind
             cache[tid] = kind
             return kind
         except (TimeoutError, KeyboardInterrupt):
@@ -228,10 +245,14 @@ def _semantic_kind(tokenizer: Any, token_id: int) -> str:
         kind = "symbol"
     else:
         kind = "structural"
-    if not isinstance(cache, dict):
+    if cache is None:
         cache = {}
         try:
-            setattr(tokenizer, "_compiler_semantic_kind_cache", cache)
+            setattr(
+                tokenizer,
+                "_compiler_semantic_kind_cache",
+                (weakref.ref(tokenizer), cache),
+            )
         except (AttributeError, TypeError):
             return kind
     cache[tid] = kind
@@ -247,19 +268,54 @@ def _grammar_terminal_kind(
     semantic_state: Any | None = None,
 ) -> str:
     """Classify structural choices by the active Lark terminal."""
-    semantic = _semantic_kind(tokenizer, token_id)
-    if semantic not in {"struct", "structural"}:
-        return semantic
-    matches = [
-        terminal
-        for terminal in terminals
-        if token_id
-        in (allowed_id_set(tokenizer, frozenset({terminal})) or set())
-    ]
-    if not matches:
-        return semantic
-    terminal = min(matches)
-    kind = f"grammar_{terminal.lower().strip('_').replace('$', 'end_')}"
+    tid = int(token_id)
+    cached = getattr(tokenizer, "_compiler_terminal_kind_cache", None)
+    cache = (
+        cached[1]
+        if isinstance(cached, tuple)
+        and len(cached) == 2
+        and callable(cached[0])
+        and cached[0]() is tokenizer
+        and isinstance(cached[1], dict)
+        else None
+    )
+    key = (tid, terminals)
+    projection = cache.get(key) if cache is not None else None
+    if projection is None:
+        semantic = _semantic_kind(tokenizer, tid)
+        terminal = None
+        kind = semantic
+        if semantic in {"struct", "structural"}:
+            matches = [
+                candidate_terminal
+                for candidate_terminal in terminals
+                if tid
+                in (
+                    allowed_id_set(
+                        tokenizer, frozenset({candidate_terminal})
+                    )
+                    or set()
+                )
+            ]
+            if matches:
+                terminal = min(matches)
+                kind = (
+                    f"grammar_{terminal.lower().strip('_').replace('$', 'end_')}"
+                )
+        projection = (kind, terminal)
+        if cache is None:
+            cache = {}
+            try:
+                setattr(
+                    tokenizer,
+                    "_compiler_terminal_kind_cache",
+                    (weakref.ref(tokenizer), cache),
+                )
+            except (AttributeError, TypeError):
+                cache = None
+        if cache is not None:
+            cache[key] = projection
+    kind, terminal = projection
     if terminal == "RSQB":
         if semantic_state is not None:
             from slm_training.dsl.grammar.fastpath import semantic_state as _ss
@@ -1914,6 +1970,25 @@ def _build_openui_completion_forest_direct(
 
     terminals = engine.next_terminals()
     candidates = allowed_id_set(tokenizer, terminals) or set()
+    kind_ids = getattr(tokenizer, "kind_ids", None)
+    try:
+        component_ids = (
+            set(int(token_id) for token_id in kind_ids("component"))
+            if callable(kind_ids)
+            else {
+                int(token_id)
+                for token_id in candidates
+                if _semantic_kind(tokenizer, token_id) == "component"
+            }
+        )
+    except (TimeoutError, KeyboardInterrupt):
+        raise
+    except Exception:  # noqa: BLE001
+        component_ids = {
+            int(token_id)
+            for token_id in candidates
+            if _semantic_kind(tokenizer, token_id) == "component"
+        }
     before_stage = _snapshot()
     if prefix_ids and tokenizer.id_to_token.get(int(prefix_ids[-1])) == "NL":
         newline_id = tokenizer.token_to_id.get("NL")
@@ -1985,7 +2060,7 @@ def _build_openui_completion_forest_direct(
         candidates = {
             token_id
             for token_id in candidates
-            if _semantic_kind(tokenizer, token_id) != "component"
+            if token_id not in component_ids
             or _token_piece(tokenizer, token_id) in component_names
         }
         active_containers = sum(
@@ -1996,7 +2071,7 @@ def _build_openui_completion_forest_direct(
             candidates = {
                 token_id
                 for token_id in candidates
-                if _semantic_kind(tokenizer, token_id) != "component"
+                if token_id not in component_ids
                 or not _schema_component_accepts_components(
                     _token_piece(tokenizer, token_id), schema
                 )
@@ -2025,7 +2100,7 @@ def _build_openui_completion_forest_direct(
                 token_id
                 for token_id in candidates
                 if (
-                    _semantic_kind(tokenizer, token_id) == "component"
+                    token_id in component_ids
                     and _token_piece(tokenizer, token_id) in slot_components
                 )
                 or token_id in typed_binders
@@ -2049,7 +2124,7 @@ def _build_openui_completion_forest_direct(
             candidates = {
                 token_id
                 for token_id in candidates
-                if _semantic_kind(tokenizer, token_id) != "component"
+                if token_id not in component_ids
                 or _token_piece(tokenizer, token_id) in required_components
             }
             _record_excluded(
@@ -2065,7 +2140,7 @@ def _build_openui_completion_forest_direct(
             candidates = {
                 token_id
                 for token_id in candidates
-                if _semantic_kind(tokenizer, token_id) != "component"
+                if token_id not in component_ids
                 or not _component_requires_available_content(
                     _token_piece(tokenizer, token_id)
                 )
@@ -2325,7 +2400,7 @@ def _build_openui_completion_forest_direct(
                 token_id
                 for token_id in candidates
                 if (
-                    _semantic_kind(tokenizer, token_id) != "component"
+                    token_id not in component_ids
                     or _token_piece(tokenizer, token_id) in array_item_components
                 )
                 and (
@@ -2458,7 +2533,7 @@ def _build_openui_completion_forest_direct(
         candidates = {
             token_id
             for token_id in candidates
-            if _semantic_kind(tokenizer, token_id) == "component"
+            if token_id in component_ids
         }
         _record_excluded(
             ConstraintStage.SCHEMA, "declaration_value_requires_component", before_stage

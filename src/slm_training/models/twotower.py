@@ -13316,16 +13316,28 @@ class TwoTowerModel(nn.Module):
                 for i in range(len(prompts))
             ]
         if use_contract_decode:
-            if slot_contracts is not None:
-                self._slot_contracts = [list(c) if c else None for c in slot_contracts]
-            else:
-                self._slot_contracts = []
-                for i, prompt in enumerate(prompts):
-                    gold = golds[i] if golds else None
-                    dm = design_mds[i] if design_mds else None
-                    self._slot_contracts.append(
-                        self._resolve_slot_contract(prompt, gold, dm)
-                    )
+            self._slot_contracts = []
+            for i, prompt in enumerate(prompts):
+                gold = golds[i] if golds else None
+                dm = design_mds[i] if design_mds else None
+                supplied = (
+                    slot_contracts[i]
+                    if slot_contracts is not None and i < len(slot_contracts)
+                    else None
+                )
+                visible = None
+                if honest and not opaque_slot_projection:
+                    try:
+                        visible = self._resolve_slot_contract(prompt, gold, dm)
+                    except ValueError:
+                        # External/legacy marker names are realization data,
+                        # not model identity. An explicit canonical request
+                        # contract remains authoritative; without one, fail.
+                        if supplied is None:
+                            raise
+                self._slot_contracts.append(
+                    list(visible or supplied) if visible or supplied else None
+                )
         else:
             self._slot_contracts = None
         if not use_contract_decode:

@@ -7,6 +7,7 @@ scan) and the V5 lexer-native ``DSLNativeTokenizer`` (exact kind metadata).
 from __future__ import annotations
 
 import re
+import weakref
 from typing import Any
 
 from slm_training.models.tokenizer import OpenUITokenizer
@@ -54,23 +55,35 @@ def decode_prefix(tokenizer: OpenUITokenizer, token_ids: list[int]) -> str:
 def token_surface_piece(tokenizer: OpenUITokenizer, token_id: int) -> str:
     """Decode one token into the source fragment consumed by grammar state."""
     tid = int(token_id)
+    cache = getattr(tokenizer, "_grammar_surface_piece_cache", None)
+    owner = getattr(tokenizer, "_grammar_surface_piece_cache_owner", None)
+    cache_owned = (
+        isinstance(cache, dict)
+        and callable(owner)
+        and owner() is tokenizer
+    )
+    if cache_owned and tid in cache:
+        return str(cache[tid])
     kind_of = getattr(tokenizer, "kind_of", None)
     kind = getattr(kind_of(tid), "value", "") if callable(kind_of) else ""
     cacheable = kind != "macro"
-    cache = getattr(tokenizer, "_grammar_surface_piece_cache", None)
-    if cacheable and isinstance(cache, dict) and tid in cache:
-        return str(cache[tid])
 
     def _remember(piece: str) -> str:
-        nonlocal cache
+        nonlocal cache, cache_owned
         if not cacheable:
             return piece
-        if not isinstance(cache, dict):
+        if not cache_owned:
             cache = {}
             try:
                 setattr(tokenizer, "_grammar_surface_piece_cache", cache)
+                setattr(
+                    tokenizer,
+                    "_grammar_surface_piece_cache_owner",
+                    weakref.ref(tokenizer),
+                )
             except (AttributeError, TypeError):
                 return piece
+            cache_owned = True
         cache[tid] = piece
         return piece
 
