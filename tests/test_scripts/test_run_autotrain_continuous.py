@@ -3978,6 +3978,96 @@ def test_numeric_literal_close_starvation_steers_new_training_arm(
     ) == "literal-close"
 
 
+def test_control_literal_starvation_replays_without_fake_harness_repair(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "cycle-1"
+    control = camp / "runs" / "control"
+    candidate = camp / "runs" / "literal-close"
+    control.mkdir(parents=True)
+    candidate.mkdir(parents=True)
+    (camp / "manifests").mkdir()
+    (camp / "manifests" / "literal-close.json").write_text("{}\n")
+    traces = [
+        {
+            "record_id": "smoke-1",
+            "prefix_text": f'root = Slider("$6", "discrete", {"1" * n}',
+            "chosen_token": "B:31",
+            "legal_candidates": 12,
+        }
+        for n in range(6, 10)
+    ]
+    (control / "eval_smoke.json").write_text(
+        json.dumps(
+            {
+                "n": 1,
+                "completed_document_n": 0,
+                "incomplete_document_n": 1,
+                "decode_timeout_document_count": 1,
+                "decode_stats": {"constrained_selection_traces": traces},
+            }
+        )
+    )
+    (control / "scoreboard.json").write_text(
+        json.dumps(
+            {
+                "evals": {
+                    "runner": {
+                        "name": "AgentV",
+                        "execution_errors": 0,
+                    }
+                },
+                "gates": {"authority": "AgentEvals assertions", "pass": False},
+                "suites": {
+                    "smoke": {
+                        "n": 1,
+                        "completed_document_n": 0,
+                        "incomplete_document_n": 1,
+                        "decode_timeout_document_count": 1,
+                    }
+                },
+            }
+        )
+    )
+    (candidate / "eval_smoke.json").write_text(
+        json.dumps(
+            {
+                "n": 1,
+                "completed_document_n": 1,
+                "incomplete_document_n": 0,
+                "decode_timeout_document_count": 0,
+            }
+        )
+    )
+
+    handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="screening",
+        cycle_intent="screening",
+        primary_metric="smoke.structural_similarity",
+        matrix=_priority_matrix(),
+        delivery={
+            "positive": False,
+            "control_id": "control",
+            "candidate_id": "literal-close",
+            "measurement_complete": False,
+            "reasons": ["harness_failure:control:experiment_failed"],
+        },
+        resolution=None,
+        formal_status=None,
+    )
+
+    assert any(action.kind == "retry_measurement" for action in handoff.actions)
+    assert all(action.kind != "repair_harness" for action in handoff.actions)
+    assert "tail-supervised candidate completed" in handoff.priorities[0].hypothesis
+
+
 def test_cycle_handoff_exhausts_identical_replays_into_harness_repair(
     tmp_path: Path,
 ) -> None:

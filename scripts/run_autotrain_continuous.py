@@ -3805,7 +3805,20 @@ def _write_cycle_handoff(
         or diagnosis_target == "infrastructure"
     )
     candidate_id = str(delivery.get("candidate_id") or "")
+    control_id = str(delivery.get("control_id") or "")
     finalized_decode_timeout = _has_finalized_decode_timeout(camp_dir, candidate_id)
+    control_decode_timeout = _has_finalized_decode_timeout(camp_dir, control_id)
+    control_numeric_close_starvation = bool(
+        control_id and _has_numeric_literal_close_starvation(camp_dir, control_id)
+    )
+    control_only_literal_timeout = bool(
+        control_decode_timeout
+        and control_numeric_close_starvation
+        and not finalized_decode_timeout
+    )
+    control_runtime_reproduced = bool(
+        control_only_literal_timeout and cycle_intent == "retry_measurement"
+    )
     frozen_replay_count = 0
     frozen_replay_limit = 0
     if finalized_decode_timeout:
@@ -3833,7 +3846,7 @@ def _write_cycle_handoff(
         climb_state = "inconclusive"
     elif status in {"rejected", "promotion_failed"}:
         climb_state = "rejected"
-    elif runtime_arm_rejected:
+    elif runtime_arm_rejected or control_runtime_reproduced:
         # A candidate-only timeout reproduced by the exact frozen checkpoint
         # while its matched control completes is a decisive runtime rejection
         # of this model arm.  Quality remains unavailable, but the loop must not
@@ -3874,6 +3887,38 @@ def _write_cycle_handoff(
             candidate_id,
             resolved_infrastructure=True,
             skip_slugs=skip_slugs,
+        )
+    elif control_runtime_reproduced:
+        reasons += (
+            f"control_runtime_rejected_after_frozen_replay:{control_id}",
+            f"candidate_runtime_unblock_reproduced:{candidate_id}",
+        )
+        priorities = _completed_candidate_priorities(
+            matrix,
+            candidate_id,
+            resolved_infrastructure=True,
+            skip_slugs=skip_slugs,
+        )
+    elif measurement_incomplete and control_only_literal_timeout:
+        priorities = (
+            NextRunPriorityV1(
+                rank=1,
+                area="model_build",
+                hypothesis=(
+                    "The tail-supervised candidate completed while the matched "
+                    "control starved on numeric literal closure; replay the exact "
+                    "frozen pair once to test whether the runtime unblock reproduces."
+                ),
+                evidence_ids=(evidence_id,),
+                confidence=0.95,
+                expected_information_gain=(
+                    "Distinguishes a causal termination-supervision runtime effect "
+                    "from a one-run timing artifact without inventing control quality."
+                ),
+                authority="observed_result",
+                disposition="experiment_next",
+                proposed_experiment_id=candidate_id,
+            ),
         )
     elif measurement_incomplete and numeric_close_starvation:
         priorities = (
@@ -3967,7 +4012,7 @@ def _write_cycle_handoff(
     harness_failure = (
         climb_state == "harness_failure"
         or any(item.startswith("harness_failure:") for item in reasons)
-    ) and not finalized_decode_timeout
+    ) and not (finalized_decode_timeout or control_only_literal_timeout)
     if theorem_stop:
         actions[0:0] = [
             AutotrainActionV1(
@@ -3986,6 +4031,39 @@ def _write_cycle_handoff(
                 evidence_ids=(evidence_id,),
             ),
         ]
+    elif control_only_literal_timeout:
+        manifest_path = camp_dir / "manifests" / f"{candidate_id}.json"
+        manifest_sha = (
+            hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+            if manifest_path.is_file()
+            else None
+        )
+        if control_runtime_reproduced:
+            actions.append(
+                AutotrainActionV1(
+                    kind="next_experiment",
+                    owner="autotrain",
+                    reason=(
+                        "retire the reproduced control-only literal starvation "
+                        "comparison and consume the next distinct hypothesis"
+                    ),
+                    evidence_ids=(evidence_id,),
+                )
+            )
+        else:
+            actions.insert(
+                0,
+                AutotrainActionV1(
+                    kind="retry_measurement",
+                    owner="autotrain",
+                    reason=(
+                        "replay the exact frozen pair once to reproduce the "
+                        "control-only numeric literal starvation"
+                    ),
+                    evidence_ids=(evidence_id,),
+                    frozen_manifest_sha256=manifest_sha,
+                ),
+            )
     elif numeric_close_starvation:
         # The canonical model-build harness already owns the typed
         # ltr_tail_loss_weight lever and the size-matched literal-close arm.
