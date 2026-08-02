@@ -4,6 +4,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.casefiles import case_values
+
 import scripts.train_model as train_model
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 
@@ -126,14 +128,7 @@ def test_train_model_cli_threads_decode_weights_into_model_build_config(
 
 @pytest.mark.parametrize(
     ("flag", "value"),
-    [
-        ("--semantic-role-contract-in-context", None),
-        ("--semantic-role-decode-weight", "1.0"),
-        ("--semantic-role-schema-candidates", None),
-        ("--slot-coverage-close-decode-weight", "1.0"),
-        ("--schema-role-slot-decode-weight", "1.0"),
-        ("--semantic-plan-repeated-slot-margin-decode-weight", "1.0"),
-    ],
+    case_values(__file__, "test_train_model_cli_rejects_prohibited_marker_semantic_levers"),
 )
 def test_train_model_cli_rejects_prohibited_marker_semantic_levers(
     tmp_path: Path, flag: str, value: str | None
