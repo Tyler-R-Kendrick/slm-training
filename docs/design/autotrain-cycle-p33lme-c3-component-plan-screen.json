@@ -1,0 +1,123 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "run_class": "continuous_autotrain_cycle",
+  "loop_id": "continuous-openui-p33lme",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-p33lme-489d3aa7-c3",
+  "predecessor_campaign_id": "continuous-loop-20260802-continuous-openui-p33lme-489d3aa7-c2",
+  "cycle_index": 3,
+  "cycle_role": "screening",
+  "cycle_intent": "screening",
+  "upstream_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "integration_commit": "165a1e4351e140b49849c2c4ead2a5c981bd9c84",
+  "primary_metric": "smoke.structural_similarity",
+  "direction": "increase",
+  "control_id": "c20260802-continuous-openui-p33lme-489d3aa7-c3-control",
+  "candidate_id": "c20260802-continuous-openui-p33lme-489d3aa7-c3-component-plan",
+  "hypothesis": "The size-matched component-plan structural aux head (component_plan_loss_weight active, structural_aux_head_profile=component-plan) improves smoke.structural_similarity over the matched control with grammar/aux heads off, at equal trainable-parameter count.",
+  "knobs": {
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "steps": 20,
+    "batch_size": 2,
+    "seed": 100003,
+    "context_backend": "scratch",
+    "sync_checkpoints": false,
+    "local_files_only": true,
+    "eval_suites": "smoke",
+    "control_component_plan_loss_weight": 0.0,
+    "candidate_component_plan_loss_weight": "active (structural_aux_head_profile=component-plan)"
+  },
+  "measurement": {
+    "control_metrics": {
+      "latency_ms_p50": 3057.79,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "structural_similarity": 0.23083333333333333,
+      "binder_reference_f1": 0.7333333333333334
+    },
+    "candidate_metrics": {
+      "latency_ms_p50": 3257.47,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "structural_similarity": 0.1725,
+      "binder_reference_f1": 0.6333333333333333
+    },
+    "n": 3,
+    "baseline_trainable_params": 1755764,
+    "candidate_trainable_params": 1755764,
+    "size_matched": true,
+    "primary_metric_delta": {
+      "control": 0.23083333333333333,
+      "candidate": 0.1725,
+      "improvement": -0.05833333333333335,
+      "direction_met": false
+    },
+    "latency_delta_pct": 6.53,
+    "gates": {
+      "authority": "AgentEvals assertions",
+      "pass": false,
+      "failures": [
+        "smoke:insufficient_n actual=3 need>=20",
+        "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+        "smoke:structural_similarity actual=0.1725 need>=0.35",
+        "smoke:component_type_recall actual=0.0 need>=0.35",
+        "smoke:ast_beq_rate actual=0.0 need>=0.2",
+        "smoke:canonical_beq_rate actual=0.0 need>=0.1",
+        "held_out:missing_suite",
+        "adversarial:missing_suite",
+        "ood:missing_suite",
+        "rico_held:missing_suite"
+      ],
+      "expected_gate_rejection": true,
+      "runner": "AgentV",
+      "execution_errors": 0
+    }
+  },
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260802-continuous-openui-p33lme-489d3aa7-c3-control",
+      "fixture_insufficient_n:c20260802-continuous-openui-p33lme-489d3aa7-c3-component-plan",
+      "non_regression_fail:binder_reference_f1:0.7333333333333334->0.6333333333333333",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.23083333333333333 candidate=0.1725 improvement=-0.05833333333333335",
+      "fixture_insufficient_n_alone"
+    ],
+    "policy_sha256": "c1580671ef01bc2a04f857d59edcec423b05e0e2c012a18c5f60616ad0803994",
+    "policy_version": "v4"
+  },
+  "checkpoints": {
+    "checkpoint_documentation_required": true,
+    "checkpoint_paths": [
+      "runs/c20260802-continuous-openui-p33lme-489d3aa7-c3-component-plan/checkpoints/last.pt",
+      "runs/c20260802-continuous-openui-p33lme-489d3aa7-c3-control/checkpoints/last.pt"
+    ],
+    "location": "outputs/autoresearch/continuous-loop-20260802-continuous-openui-p33lme-489d3aa7-c3/runs/ (local, explicit no-sync)",
+    "disposition": "rejected; never reuse, promote, sync, or ship",
+    "model_card_updated": true,
+    "readme_updated": true
+  },
+  "priorities": [
+    {
+      "schema_version": "NextRunPriorityV1",
+      "rank": 1,
+      "area": "model",
+      "hypothesis": "The completed non-positive component-plan arm is exhausted; test the distinct size-matched 'component-edge' quality hypothesis next.",
+      "authority": "observed_result",
+      "confidence": 0.9,
+      "disposition": "experiment_next",
+      "proposed_experiment_id": "c20260802-continuous-openui-p33lme-489d3aa7-c3-component-edge"
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "165a1e4351e140b49849c2c4ead2a5c981bd9c84",
+    "code_dirty": false,
+    "components": {
+      "evals.agentv": "v7"
+    },
+    "stamped_at": "2026-08-02T11:46:22.795131Z"
+  },
+  "no_bump": "No metric/gate/harness/matrix file changed this cycle (model-hypothesis-only screening run); no version_stamp component bump required."
+}

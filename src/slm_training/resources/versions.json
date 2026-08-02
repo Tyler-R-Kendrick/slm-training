@@ -7023,6 +7023,11 @@
         {
           "version": "v3",
           "date": "2026-08-02",
+          "note": "no-bump: add honest model-card and README provenance for two unrelated rejected continuous-openui-p33lme c3 scratch checkpoints (component-plan aux-head screen, regresses matched control); SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
           "note": "no-bump: add honest model-card and README provenance for two unrelated incomplete continuous-openui-p33lme c1 scratch checkpoints (AgentV NODE_OPTIONS repair screen); SLM-228 spectral-disposition behavior is unchanged"
         },
         {
