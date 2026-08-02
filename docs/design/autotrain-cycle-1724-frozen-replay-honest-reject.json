@@ -1,0 +1,60 @@
+{
+  "schema": "autotrain_measured_results/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 1724,
+  "loop_id": "continuous-openui-local",
+  "run_class": "fixture_scratch",
+  "source_commit": "42e873ea0c11aefe5409b52d02a5a5ef22aeb771",
+  "source_dirty": false,
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "primary_metric": "smoke.binder_reference_f1",
+  "predecessor_campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c1",
+  "frozen_replay_of": "e0a794d1b80bcfee1caaaa77b3e03b113007c75f9aa18422efb48a09f489efd3",
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c2-control",
+      "status": "completed_gate_rejection",
+      "training": {"executed": true, "steps": 21, "parameter_count": 1608962},
+      "suite": "smoke",
+      "suite_n": 3,
+      "metrics": {"parse_rate": 1.0, "meaningful_program_rate": 0.0, "binder_reference_f1": 0.6333333333333333, "structural_similarity": 0.0575, "latency_ms_p50": 2882.67},
+      "ship_gates_pass": false,
+      "expected_gate_rejection": true,
+      "claim_boundary": "smoke-only fixture; missing held_out/adversarial/ood/rico_held suites; insufficient_n at 3 vs required 20"
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c2-bounds",
+      "status": "completed_gate_rejection",
+      "training": {"executed": true, "steps": 21, "parameter_count": 1608962},
+      "suite": "smoke",
+      "suite_n": 3,
+      "metrics": {"parse_rate": 1.0, "meaningful_program_rate": 0.0, "binder_reference_f1": 0.6333333333333333, "structural_similarity": 0.0575, "latency_ms_p50": 2784.73},
+      "ship_gates_pass": false,
+      "expected_gate_rejection": true,
+      "claim_boundary": "same as control; identical config_sha256 to control this cycle, so zero measured lever delta is expected, not a regression"
+    }
+  ],
+  "ship_gate_failures": [
+    "smoke:insufficient_n actual=3 need>=20",
+    "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+    "smoke:structural_similarity actual=0.0575 need>=0.35",
+    "smoke:component_type_recall actual=0.0 need>=0.35",
+    "smoke:ast_beq_rate actual=0.0 need>=0.2",
+    "smoke:canonical_beq_rate actual=0.0 need>=0.1",
+    "smoke:reward_score actual=0.0 need>=0.3",
+    "held_out:missing_suite",
+    "adversarial:missing_suite",
+    "ood:missing_suite",
+    "rico_held:missing_suite"
+  ],
+  "harness_repair_confirmed": {
+    "component": "src/slm_training/evals/agentv.py:_agentv_runtime",
+    "verification": "AgentV SDK resolved from node_modules/@agentv/core; scoreboard.json published with runner.execution_errors=0; frozen replay of cycle 1723's manifest now measures complete instead of crashing",
+    "prior_doc": "autotrain-cycle-1723-agentv-checkout-gap.md"
+  },
+  "disposition": {"measurement_complete": true, "climb_state": "rejected", "ship_state": "blocked", "promotion": "not_promoted_fixture_scale_only", "next_run": "propose a bounds/canvas arm with a config_sha256 that actually differs from control; keep smoke-scale honest-reject cadence"},
+  "checkpoint_documentation_required": false,
+  "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "42e873ea0c11aefe5409b52d02a5a5ef22aeb771", "code_dirty": false, "components": {"harness.model_build.eval": "v73", "harness.model_build.train": "v27", "harness.experiment_feature_flags": "v3", "model.twotower": "v275"}, "stamped_at": "2026-08-02T01:39:01.277290Z"}
+}
