@@ -1,0 +1,133 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local-2",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local--c94ddb78-c2",
+  "cycle_index": 2,
+  "cycle_intent": "screening -- run the driver's own rank-1 next-run priority from cycle 1 (component-plan) against a freshly matched control",
+  "predecessor_campaign_id": "continuous-loop-20260802-continuous-openui-local--c94ddb78-c1",
+  "source_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "integration_commit": "c42a9a637e48d22502f8c4f18617362dfe724cc4",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "summary": "Second cycle of the continuous-openui-local-2 lineage. The driver's own rank-1 next-run priority from cycle 1 -- test the untested 'component-plan' lever (component_plan_loss_weight) -- was selected as-is (no forced override), exactly as the task scoped. eval_version=e938_role_safe_all_targets_v2 (smoke, n=3) was again picked automatically via _feasible_eval_version; both arms completed with zero decode timeouts. Unlike cycle 1's bit-identical bounds null, this cycle produced a genuine, large primary-metric move: structural_similarity fell from 0.32667 (control) to 0.0964 (candidate), a -0.2303 regression, with component_type_recall also falling (0.16667 -> 0.08333) and binder_reference_f1 flat at 0.0 on both arms. Training loss diverged as expected between arms (control last_loss=14.390, candidate last_loss=19.916, both steps=22/stopped_on=steps), confirming the lever was genuinely exercised, not a config no-op. latency_ms_p50 dropped sharply from control (12582.04ms) to candidate (1319.82ms), but that latency swing is not attributable to the lever alone -- the control arm's own p50 (12.58s) is far outside this lineage's prior control latencies (~1.3-1.6s in cycle 1), consistent with local CPU-sandbox host contention rather than a real recipe effect, so latency is not used as supporting evidence for this classification. The primary signal is the structural_similarity regression, which the classifier correctly scores as a null-or-worse primary metric move -- not positive. Ship gates reject both arms on fixture_insufficient_n (n=3 < 20) and quality thresholds as expected at this scale -- honest fixture-scope evidence, not a ship claim.",
+  "eval_feasibility_confirmation": {
+    "note": "_feasible_eval_version again selected eval_version=e938_role_safe_all_targets_v2 (smoke, n=3) automatically; both arms completed with zero wall_timeout / zero decode_timeout_count, consistent with cycle 1.",
+    "decode_timeout_count_control": 0,
+    "decode_timeout_count_candidate": 0,
+    "decode_timeout_rate_control": 0.0,
+    "decode_timeout_rate_candidate": 0.0
+  },
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "steps": 20,
+    "steps_actual": 22,
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "eval_suites": "smoke",
+    "seed": 100002,
+    "trainable_params": {
+      "control": 1755764,
+      "component_plan": 1755764
+    }
+  },
+  "hypothesis": {
+    "control": "Matched fixture control with both grammar levers off completes smoke eval under the published suite.",
+    "candidate": "Component-plan supervision improves smoke structural_similarity without lowering parse_rate or binder_reference_f1.",
+    "lever": "component_plan_loss_weight",
+    "candidate_experiment_id": "c20260802-continuous-openui-local--c94ddb78-c2-component-plan",
+    "control_experiment_id": "c20260802-continuous-openui-local--c94ddb78-c2-control",
+    "endpoint": {
+      "metric": "smoke.structural_similarity",
+      "role": "primary",
+      "direction": "increase",
+      "minimum_effect": 0.01
+    }
+  },
+  "smoke_metrics": {
+    "n": 3,
+    "control": {
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "structural_similarity": 0.32666666666666666,
+      "binder_reference_f1": 0.0,
+      "ast_beq_rate": 0.0,
+      "canonical_beq_rate": 0.0,
+      "reward_score": 0.0,
+      "component_type_recall": 0.16666666666666666,
+      "placeholder_fidelity": 0.0,
+      "latency_ms_p50": 12582.04,
+      "latency_ms_p95": 14336.07
+    },
+    "candidate": {
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "structural_similarity": 0.0964,
+      "binder_reference_f1": 0.0,
+      "ast_beq_rate": 0.0,
+      "canonical_beq_rate": 0.0,
+      "reward_score": 0.0,
+      "component_type_recall": 0.08333333333333333,
+      "placeholder_fidelity": 0.0,
+      "latency_ms_p50": 1319.82,
+      "latency_ms_p95": 1356.65
+    },
+    "delta": {
+      "structural_similarity": -0.23026666666666668,
+      "component_type_recall": -0.08333333333333331,
+      "latency_ms_p50": -11262.22
+    },
+    "train_loss": {
+      "control_last_loss": 14.390222549438477,
+      "candidate_last_loss": 19.916019439697266,
+      "steps_actual": 22,
+      "stopped_on": "steps"
+    }
+  },
+  "harness_signals": [],
+  "sdlc_delivery": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260802-continuous-openui-local--c94ddb78-c2-control",
+      "fixture_insufficient_n:c20260802-continuous-openui-local--c94ddb78-c2-component-plan",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.32666666666666666 candidate=0.0964 improvement=-0.23026666666666668",
+      "fixture_insufficient_n_alone"
+    ],
+    "measurement_complete": true,
+    "fixture_volume_gate_hits": 2
+  },
+  "cycle_handoff": {
+    "climb_state": "rejected",
+    "ship_state": "blocked",
+    "actions": [
+      {"kind": "document", "owner": "documenting-experiment-results", "status": "completed_this_cycle"},
+      {"kind": "next_experiment", "owner": "autotrain", "status": "queued", "proposed_experiment_id": "c20260802-continuous-openui-local--c94ddb78-c2-component-edge"}
+    ],
+    "checkpoint_documentation_required": true,
+    "checkpoint_paths": [
+      "runs/c20260802-continuous-openui-local--c94ddb78-c2-component-plan/checkpoints/last.pt",
+      "runs/c20260802-continuous-openui-local--c94ddb78-c2-control/checkpoints/last.pt"
+    ]
+  },
+  "checkpoint_disposition": "Fixture-scale screening checkpoints only (n=3, steps=22, non-positive -- confirmed structural_similarity regression). Not promoted, not a new roster entry. MODEL_CARD.md/README updated with a screening-note history line per checkpoint_documentation_required=true, no roster change.",
+  "recommendation_for_next_cycle": [
+    "model: run the 'component-edge' candidate next (driver's own rank-1 priority) -- distinct untested lever in the remaining _SCREENING_ARM_BANK, avoids repeating the just-rejected 'component-plan' regression.",
+    "evaluation: keep e938_role_safe_all_targets_v2 (smoke, n=3) as the fixed matched suite for this lineage; do not retarget test_data_scaleup_v1 here -- that stays the separately tracked decode-compiler follow-up owned by the continuous-openui-local lineage / PR #1307.",
+    "infrastructure: no repair_harness signal this cycle -- _feasible_eval_version worked exactly as designed, zero decode timeouts on both arms. Note the control arm's outlier latency_ms_p50 (12.58s vs ~1.3-1.6s in cycle 1) as sandbox host-contention noise to watch for, not a recipe regression -- do not use latency deltas from this cycle as supporting evidence for any classification."
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "c42a9a637e48d22502f8c4f18617362dfe724cc4",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v74",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v286"
+    }
+  }
+}
