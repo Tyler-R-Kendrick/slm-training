@@ -1,0 +1,94 @@
+{
+  "schema": "autotrain_measured_results/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c1",
+  "cycle_index": 1741,
+  "loop_id": "continuous-openui-local",
+  "loop_cycle_index": 1,
+  "run_class": "fixture_scratch",
+  "source_commit": "ab2a0216eca510e1ebada9beda81d8824b60bc31",
+  "source_dirty": false,
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "primary_metric": "smoke.structural_similarity",
+  "frozen_manifest_sha256": "3c9fc6142c72c5e4ec83428f52fef128cf557f922c0ae31d50aee47497b66633",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "ab2a0216eca510e1ebada9beda81d8824b60bc31",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v74",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v287"
+    }
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c1-control",
+      "status": "incomplete_missing_scoreboard",
+      "training": {
+        "executed": true,
+        "parameter_count": 1608962,
+        "steps": 21,
+        "device": "cpu"
+      },
+      "suite": "smoke",
+      "suite_n": 3,
+      "metrics": {
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "latency_ms_p50": 1467.53
+      },
+      "ship_gates_pass": null,
+      "failure": "RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER",
+      "claim_boundary": "smoke-suite decode metrics complete; ship-gates scoreboard missing due to environment defect, not a model result"
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c1-bounds",
+      "status": "incomplete_missing_scoreboard",
+      "training": {
+        "executed": true,
+        "parameter_count": 1608962,
+        "steps": 21,
+        "device": "cpu"
+      },
+      "suite": "smoke",
+      "suite_n": 3,
+      "metrics": {
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "latency_ms_p50": 1536.93
+      },
+      "ship_gates_pass": null,
+      "failure": "RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER",
+      "claim_boundary": "smoke-suite decode metrics complete; ship-gates scoreboard missing due to environment defect, not a model result"
+    }
+  ],
+  "root_cause": {
+    "category": "checkout_bootstrap",
+    "harness_family": null,
+    "description": "Fresh container checkout had not run `npm ci`, so node_modules/@agentv/core was absent, and the container default NODE_OPTIONS=\"--import tsx\" broke node/npm invocation outright until unset.",
+    "repair": [
+      "env -u NODE_OPTIONS npm ci",
+      "export NODE_OPTIONS=\"\" for shells driving run_autotrain_continuous / evaluate_model subprocesses"
+    ],
+    "code_change_required": false
+  },
+  "climb_state": "inconclusive",
+  "ship_state": "blocked",
+  "positive": false,
+  "stack_layer": false,
+  "checkpoint_promoted": false,
+  "next_priorities": [
+    "Replay the identical frozen control/bounds arms now that the AgentV SDK is installed and NODE_OPTIONS is clean; require a complete scoreboard.json with gates before any model disposition.",
+    "Do not treat the identical 0.0575/0.0575 structural-similarity pair as a measured null-effect model result."
+  ]
+}
