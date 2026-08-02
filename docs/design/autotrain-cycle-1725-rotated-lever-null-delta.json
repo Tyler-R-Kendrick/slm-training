@@ -1,0 +1,58 @@
+{
+  "schema": "autotrain_measured_results/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c3",
+  "cycle_index": 1725,
+  "loop_id": "continuous-openui-local",
+  "run_class": "fixture_scratch",
+  "source_commit": "988a6c86e5cbf9e04a4f8b556fee2ea3d6bf47f6",
+  "source_dirty": false,
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "primary_metric": "smoke.binder_reference_f1",
+  "predecessor_campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c2",
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c3-control",
+      "status": "completed_gate_rejection",
+      "training": {"executed": true, "steps": 20, "record_count": 101, "last_loss": 15.29759407043457, "parameter_count": 1608962},
+      "config_sha256": "595a7cb60497cdde71ece28a0ecac4237d02bb3789b8435000396e839a5d8236",
+      "checkpoint_sha256": "bb603c2c93cb39411c8ac68bc653a5a6ec011ea4be5b759b9a7a3815b9f3fdfa",
+      "suite": "smoke",
+      "suite_n": 3,
+      "metrics": {"parse_rate": 1.0, "meaningful_program_rate": 0.0, "binder_reference_f1": 0.7222222222222222, "structural_similarity": 0.1725, "latency_ms_p50": 7284.5},
+      "ship_gates_pass": false,
+      "expected_gate_rejection": true,
+      "claim_boundary": "smoke-only fixture; insufficient_n at 3 vs required 20; missing held_out/adversarial/ood/rico_held suites"
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c3-both",
+      "status": "completed_gate_rejection",
+      "training": {"executed": true, "steps": 20, "record_count": 101, "last_loss": 15.29759407043457, "parameter_count": 1608962},
+      "config_sha256": "534d4581930bc8a8b2e4404a29894fb860c807907c76f38969ee6052f8c46313",
+      "checkpoint_sha256": "33c62bd38e504827686626b8083c1b8368584210ed283b79fbddce455f9ce9be",
+      "suite": "smoke",
+      "suite_n": 3,
+      "metrics": {"parse_rate": 1.0, "meaningful_program_rate": 0.0, "binder_reference_f1": 0.7222222222222222, "structural_similarity": 0.1725, "latency_ms_p50": 7051.83},
+      "ship_gates_pass": false,
+      "expected_gate_rejection": true,
+      "claim_boundary": "genuinely distinct config_sha256 from control this cycle (unlike c1723/c1724's config-identical replay pair), but the smoke-scale metrics landed on the same values anyway; not evidence the lever is inert, just underpowered at n=3"
+    }
+  ],
+  "ship_gate_failures": [
+    "smoke:insufficient_n actual=3 need>=20",
+    "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+    "smoke:structural_similarity actual=0.1725 need>=0.35",
+    "held_out:missing_suite",
+    "adversarial:missing_suite",
+    "ood:missing_suite",
+    "rico_held:missing_suite"
+  ],
+  "disposition": {"measurement_complete": true, "climb_state": "rejected", "ship_state": "blocked", "promotion": "not_promoted_fixture_scale_only", "next_run": "re-propose the same rotated lever at a size-matched, higher-n suite before drawing an inert-lever conclusion"},
+  "checkpoint_documentation_required": true,
+  "checkpoint_paths": [
+    "runs/c20260802-continuous-openui-local-8c0b60dd-c3-control/checkpoints/last.pt",
+    "runs/c20260802-continuous-openui-local-8c0b60dd-c3-both/checkpoints/last.pt"
+  ],
+  "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "988a6c86e5cbf9e04a4f8b556fee2ea3d6bf47f6", "code_dirty": false, "components": {"harness.model_build.eval": "v73", "harness.model_build.train": "v27", "harness.experiment_feature_flags": "v3", "model.twotower": "v275"}}
+}

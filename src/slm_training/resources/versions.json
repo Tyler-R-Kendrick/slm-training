@@ -6904,6 +6904,11 @@
       "history": [
         {
           "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest model-card provenance for the unrelated autotrain c1725 rotated-lever scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
           "date": "2026-08-01",
           "note": "no-bump: add honest model-card provenance for the unrelated c1717 control scratch checkpoint; SLM-228 spectral-disposition behavior is unchanged"
         },
