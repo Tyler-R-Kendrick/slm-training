@@ -2641,7 +2641,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v63",
+      "version": "v64",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2681,6 +2681,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v64",
+          "date": "2026-08-02",
+          "note": "Replace stale preregistration-time confirmation priorities with outcome-conditioned promotion or rejection steering, including explicit loss-quality divergence and diagnostic-only runtime successors."
+        },
         {
           "version": "v63",
           "date": "2026-08-02",
@@ -7120,6 +7125,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1759 rejected-confirmation checkpoint provenance and restore the missing c1757 checkpoint-history row in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
         {
           "version": "v3",
           "date": "2026-08-02",

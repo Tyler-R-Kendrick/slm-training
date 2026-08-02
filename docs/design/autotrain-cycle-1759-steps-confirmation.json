@@ -1,0 +1,42 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1759",
+  "cycle_index": 1759,
+  "evidence_class": "fixture",
+  "decision": "candidate_rejected_on_confirmation",
+  "scoreable": true,
+  "arm_order": ["control", "confirm"],
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1759-control",
+      "manifest_sha256": "9a4ec89a69c10d37390724b6fb845e5578aa7927e3d47bcb80cf87ea0cbf903f",
+      "params": 1608962,
+      "steps": 22,
+      "checkpoint_sha256": "66af1bbde1075bc94923e9147da01d63372db8a9a3bd362a70c052f30fb9e011",
+      "loss": 20.656557083129883,
+      "train_wall_seconds": 3.140689200023189,
+      "smoke": {"n": 3, "document_n": 3, "completed_document_n": 3, "incomplete_document_n": 0, "decode_timeout_count": 0, "parse_rate": 1.0, "binder_reference_f1": 0.6333333333333333, "meaningful_program_rate": 0.3333333333333333, "structural_similarity": 0.17416666666666666, "component_type_recall": 0.25, "ast_node_f1": 0.2619047619047619, "ast_edge_f1": 0.0, "latency_ms_p50": 1362.47}
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1759-confirm",
+      "manifest_sha256": "681a71353eb8ff44e8f22ad695a3df5c6b42c5df6a7e6d947a4f71b13e1e6753",
+      "params": 1608962,
+      "steps": 44,
+      "checkpoint_sha256": "a1fcbc8166bce6969eb8231603d4fde60835222763cdf5bb661a406664dfa50e",
+      "loss": 4.751494884490967,
+      "train_wall_seconds": 4.677511410031002,
+      "smoke": {"n": 3, "document_n": 3, "completed_document_n": 3, "incomplete_document_n": 0, "decode_timeout_count": 0, "parse_rate": 1.0, "binder_reference_f1": 0.6333333333333333, "meaningful_program_rate": 0.0, "structural_similarity": 0.057499999999999996, "component_type_recall": 0.0, "ast_node_f1": 0.0, "ast_edge_f1": 0.0, "latency_ms_p50": 3195.06}
+    }
+  ],
+  "deltas": {"latency_percent": 134.5050, "structural_similarity_percent": -66.9856, "meaningful_program_rate": -0.3333333333333333, "loss_percent": -76.9976, "train_wall_ratio": 1.4893},
+  "ship_gates_pass": false,
+  "lean": "not_applicable:confirmation",
+  "next_priority": "exhaust doubled-steps fingerprint and test a distinct size-matched quality-targeted objective",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "5be43cb55a04c40518dba0e7ffb5bcac7f390ca3",
+    "code_dirty": false,
+    "components": {"config.levers": "v30", "harness.model_build.eval": "v74", "harness.experiment_feature_flags": "v4", "evals.meaningful_program": "2.13.0", "evals.power_protocol": "v8", "evals.scoring": "v22", "model.twotower": "v289"},
+    "stamped_at": "2026-08-02T13:50:10.083041+00:00"
+  }
+}

@@ -28,6 +28,15 @@ treatment and violate distinct-matrix validation. A crash before any
 `experiment_started` event releases the reserved confirm/promote attempt; actual
 measurements still consume the bounded attempt.
 
+Confirmation steering is outcome-conditioned. Once the confirm arm finishes,
+the handoff replaces preregistration-time claims with the observed disposition:
+a re-held champion advances to promotion, while a rejected fingerprint is
+exhausted and its quality/loss divergence becomes the next hypothesis signal.
+The result matrix may nominate a non-exhausted runtime arm to keep the bounded
+loop executable, but labels it diagnostic and separately prioritizes a new
+size-matched quality-targeted objective. It never repeats the falsified
+confirmation claim as next-run guidance.
+
 The terminal dashboard calls a loop `RUNNING` only when the host can see the
 driver process. An absent driver is `DEAD` (or preserves an explicit `BLOCKED`
 state); stale persisted `RUNNING` text cannot override process truth.

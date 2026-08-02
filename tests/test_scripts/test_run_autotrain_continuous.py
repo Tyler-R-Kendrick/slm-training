@@ -697,6 +697,84 @@ def test_completed_null_labels_runtime_successor_as_diagnostic() -> None:
     assert "quality hypothesis" not in priorities[0].hypothesis
 
 
+def test_completed_confirmation_replaces_stale_preregistered_priorities() -> None:
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-20260802-c1759",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1759,
+        role="screening",
+        confirm_levers={"steps": 44, "batch_size": 2},
+        confirm_control_levers={"steps": 22, "batch_size": 2},
+    )
+    candidate_id = matrix["recommended_experiment_id"]
+
+    priorities = _mod._completed_confirmation_priorities(
+        matrix,
+        candidate_id,
+        {
+            "positive": False,
+            "primary_metric": "smoke.structural_similarity",
+            "control_metrics": {
+                "smoke.structural_similarity": 0.17416666666666666,
+                "meaningful_program_rate": 1 / 3,
+            },
+            "candidate_metrics": {
+                "smoke.structural_similarity": 0.0575,
+                "meaningful_program_rate": 0.0,
+            },
+        },
+        {"status": "rejected"},
+    )
+
+    assert "rejected the champion fingerprint" in priorities[0].hypothesis
+    assert "0.17416666666666666->0.0575" in priorities[0].hypothesis
+    assert priorities[0].proposed_experiment_id is None
+    assert all(
+        priority.proposed_experiment_id != candidate_id for priority in priorities
+    )
+    executable = [
+        priority for priority in priorities if priority.disposition == "experiment_next"
+    ]
+    assert len(executable) == 1
+    assert executable[0].area == "experiments"
+    assert executable[0].proposed_experiment_id.endswith("-batch1")
+    assert "runtime diagnostic" in executable[0].hypothesis
+
+
+def test_completed_confirmation_that_reholds_steers_to_promotion() -> None:
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-20260802-c1760",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1760,
+        role="screening",
+        confirm_levers={"steps": 44, "batch_size": 2},
+        confirm_control_levers={"steps": 22, "batch_size": 2},
+    )
+    candidate_id = matrix["recommended_experiment_id"]
+
+    priorities = _mod._completed_confirmation_priorities(
+        matrix,
+        candidate_id,
+        {"positive": True},
+        {"status": "confirmed"},
+    )
+
+    assert priorities[0].area == "promotion"
+    assert priorities[0].disposition == "experiment_next"
+    assert priorities[0].proposed_experiment_id == candidate_id
+    assert "re-held" in priorities[0].hypothesis
+
+
 def test_predecessor_completed_null_drives_next_screening_arm(tmp_path: Path) -> None:
     root = tmp_path / "autoresearch"
     camp = root / "continuous-loop-20260731-c1729"
@@ -759,6 +837,74 @@ def test_predecessor_completed_null_drives_next_screening_arm(tmp_path: Path) ->
         _mod._predecessor_priority_slug(root, camp.name, skip={"component-plan"})
         == "component-edge"
     )
+
+
+def test_predecessor_rejected_confirmation_uses_outcome_conditioned_successor(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "continuous-loop-20260802-c1759"
+    camp.mkdir(parents=True)
+    matrix = _mod._matrix(
+        campaign_id=camp.name,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1759,
+        role="screening",
+        confirm_levers={"steps": 44, "batch_size": 2},
+        confirm_control_levers={"steps": 22, "batch_size": 2},
+    )
+    control_id = matrix["hypotheses"][0]["experiment"]["experiment_id"]
+    candidate_id = matrix["recommended_experiment_id"]
+    for arm, structure, meaning, latency in (
+        (control_id, 0.17416666666666666, 1 / 3, 1362.47),
+        (candidate_id, 0.0575, 0.0, 3195.06),
+    ):
+        run = camp / "runs" / arm
+        _write_eval(
+            run / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            meaningful_program_rate=meaning,
+            structural_similarity=structure,
+            latency_ms_p50=latency,
+        )
+        _write_complete_scoreboard(run, "smoke")
+    (camp / "matrix-proposal.json").write_text(json.dumps(matrix))
+    (camp / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "control_id": control_id,
+                "candidate_id": candidate_id,
+                "positive": False,
+                "primary_metric": "smoke.structural_similarity",
+                "measurement_complete": True,
+                "control_metrics": {
+                    "smoke.structural_similarity": 0.17416666666666666,
+                    "meaningful_program_rate": 1 / 3,
+                },
+                "candidate_metrics": {
+                    "smoke.structural_similarity": 0.0575,
+                    "meaningful_program_rate": 0.0,
+                },
+            }
+        )
+    )
+    (camp / "cycle_handoff.json").write_text(
+        json.dumps(
+            {
+                "cycle_intent": "confirm",
+                "climb_state": "rejected",
+                "priorities": matrix["next_run_priorities"],
+            }
+        )
+    )
+
+    assert _mod._predecessor_priority_slug(root, camp.name, skip=set()) == "batch1"
 
 
 def test_recent_completed_nonpositive_slugs_follow_predecessor_chain(
