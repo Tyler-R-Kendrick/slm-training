@@ -136,6 +136,13 @@ use `--compiler openai`, whose default is `gpt-5.6-sol` with `store=False`.
 
 ## Closed loop
 
+The c1803 screening result rejects `ltr_prefix_loss_weight=1`: it ties every
+smoke quality metric and worsens p50 by 174.21 ms. Campaign harness v104 adds
+direct component-token reconstruction weighting plus per-step component,
+prefix, and non-component CE/count attribution, targeting observed component
+recall .16667 without changing capacity or constrained decode authority. See
+[`autotrain-cycle-1803-scaffold-prefix-null.md`](autotrain-cycle-1803-scaffold-prefix-null.md).
+
 The c1802 screening result rejects `design_md_dropout=.25`: against its
 size-matched control it reduced smoke structure `.174167→.096400`, component
 recall `.25→.0833`, and meaningful-program rate `.3333→0`. Campaign harness

@@ -429,6 +429,41 @@ def test_model_build_config_threads_ltr_tail_controls() -> None:
     assert (config.ltr_tail_loss_weight, config.ltr_tail_tokens) == (1.25, 2)
 
 
+def test_component_token_weight_changes_loss_and_emits_attribution() -> None:
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+    base = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            seed=7,
+            component_token_loss_weight=0.0,
+        ),
+        device="cpu",
+    )
+    weighted = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            seed=7,
+            component_token_loss_weight=1.0,
+        ),
+        device="cpu",
+    )
+
+    base_loss = base.training_loss(records)
+    weighted_loss = weighted.training_loss(records)
+
+    assert weighted.last_training_metrics["token_loss_component_count"] > 0
+    assert weighted.last_training_metrics["token_loss_component_mean_ce"] is not None
+    assert weighted_loss > base_loss
+
+
 def test_checkpoint_rejects_missing_trainable_weights(tmp_path: Path) -> None:
     records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
     model = TwoTowerModel.from_records(

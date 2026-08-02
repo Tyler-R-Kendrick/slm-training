@@ -564,6 +564,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Extra weight for the first three LTR positions (root/early structure).",
     )
     parser.add_argument(
+        "--component-token-loss-weight",
+        type=float,
+        default=0.0,
+        help="Extra reconstruction weight for component-type output tokens.",
+    )
+    parser.add_argument(
         "--ltr-tail-loss-weight",
         type=float,
         default=0.0,
@@ -1547,6 +1553,7 @@ def main(argv: list[str] | None = None) -> int:
         emit_record_nll=bool(args.emit_record_nll),
         ltr_loss_weight=args.ltr_loss_weight,
         ltr_prefix_loss_weight=args.ltr_prefix_loss_weight,
+        component_token_loss_weight=args.component_token_loss_weight,
         ltr_tail_loss_weight=args.ltr_tail_loss_weight,
         ltr_tail_tokens=args.ltr_tail_tokens,
         compiler_alignment_loss_weight=args.compiler_alignment_loss_weight,

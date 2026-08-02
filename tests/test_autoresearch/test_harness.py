@@ -2139,6 +2139,20 @@ def test_compile_commands_routes_typed_ltr_prefix_training_lever() -> None:
     assert train[train.index("--ltr-prefix-loss-weight") + 1] == "1.0"
 
 
+def test_compile_commands_routes_typed_component_token_training_lever() -> None:
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            train_version="wf_smoke_v2",
+            steps=20,
+            component_token_loss_weight=1.0,
+        )
+    )
+
+    commands = compile_commands(campaign(), spec)
+    train = next(command for command in commands if "scripts.train_model" in command)
+    assert train[train.index("--component-token-loss-weight") + 1] == "1.0"
+
+
 def test_campaign_loop_lineage_is_strict() -> None:
     first = CampaignSpec(
         campaign_id="cycle-1",
