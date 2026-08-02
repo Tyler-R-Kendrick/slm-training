@@ -40,12 +40,26 @@ are not direct speed ratios.
   or slower and were reverted.
 - Closure-preferred witness order changed the exact parity outcome and was
   reverted immediately. Search order remains authoritative.
+- Transferring either the final verified branch state or all intermediate
+  verified branch states into the session cache changed exact candidate or
+  witness ordering in differential parity tests. Both variants were reverted.
+
+## Frozen replay after repair
+
+| Cycle | Arm | Complete | Timeout | p50 incl. incomplete | Forwards | States | Outcome |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| c1739 | matched control | 2/3 | 1 | 20,108.53 ms | 118 | 310,372 | incomplete |
+| c1739 | compact canvas | 2/3 | 1 | 19,685.63 ms | 119 | 313,492 | incomplete |
+
+This replay confirms that the accepted repairs preserve typed evidence and
+increase exact progress, but remain insufficient to make the authoritative
+comparison scoreable. The corrected SDLC classifier reports the cycle as
+non-positive.
 
 ## Next hypotheses
 
-1. Remove duplicate exact parser/semantic branch advancement between forest
-   verification and witness `advance_path` by transferring a verified branch
-   state, with full differential parity tests.
+1. Reduce mechanical Lark parser-state copy and allocation cost without
+   changing traversal, candidates, budgets, or cache-observable state.
 2. Batch or incrementally retain official root probes across terminal witness
    siblings; the profile still attributes about 2.9 seconds to 189 bridge
    probes.
@@ -57,4 +71,3 @@ are not direct speed ratios.
 
 Machine-readable evidence is in
 [`autotrain-cycle-1738-runtime-repair.json`](autotrain-cycle-1738-runtime-repair.json).
-

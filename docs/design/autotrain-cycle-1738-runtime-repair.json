@@ -26,8 +26,19 @@
     "cross_query_witness_subproblem_cache",
     "semantic_arena_transition_cache",
     "first_path_limited_forest",
-    "closure_preferred_witness_order"
+    "closure_preferred_witness_order",
+    "verified_final_branch_state_transfer",
+    "verified_intermediate_branch_state_transfer"
   ],
+  "frozen_replay": {
+    "cycle_index": 1739,
+    "measurement_complete": false,
+    "arms": [
+      {"label": "matched_control", "completed_document_n": 2, "incomplete_document_n": 1, "latency_ms_p50_including_incomplete": 20108.53, "forwards": 118, "states": 310372},
+      {"label": "compact_canvas", "completed_document_n": 2, "incomplete_document_n": 1, "latency_ms_p50_including_incomplete": 19685.63, "forwards": 119, "states": 313492}
+    ],
+    "classifier_positive": false
+  },
   "disposition": "retain_exact_repairs_continue_runtime_hypothesis_loop",
   "model_quality_claim": false,
   "ship_claim": false,
