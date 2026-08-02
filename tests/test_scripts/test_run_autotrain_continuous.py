@@ -326,8 +326,10 @@ def test_champion_queue_enqueue_dedup_and_confirm_resolve(tmp_path: Path) -> Non
     # Confirm success → confirmed
     confirm_delivery = {
         "positive": True,
+        "measurement_complete": True,
+        "primary_metric": "smoke.meaningful_program_rate",
         "reasons": [
-            "quality_metric_win:meaningful_program_rate:0.5->1.0:lat=9000->8500",
+            "primary_metric_win:smoke.meaningful_program_rate:0.5->1.0:improvement=0.5",
             "quality_held:parse=1.0 mpr=1.0",
         ],
     }
@@ -374,6 +376,85 @@ def test_champion_confirm_reject_without_quality(tmp_path: Path) -> None:
     )
     assert resolved is not None
     assert resolved["status"] == "rejected"
+
+
+def test_champion_confirm_rejects_efficiency_when_primary_regresses(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-quality-regression"
+    entry = {
+        "schema": _mod._CHAMPION_QUEUE_SCHEMA,
+        "entry_id": "champ-quality-regression",
+        "status": "confirming",
+        "knobs": {"fidelity_loss_weight": 1.5},
+        "knobs_fingerprint": "quality-regression",
+    }
+    _mod._write_champion_queue(_mod._champion_queue_path(root, loop_id), [entry])
+    delivery = {
+        "positive": True,
+        "measurement_complete": True,
+        "primary_metric": "smoke.structural_similarity",
+        "reasons": [
+            "efficiency_win:mpr_per_ms:0.00006->0.00014:gain_fraction=1.1:minimum=0.05",
+            "quality_held:parse=1.0 mpr=0.3333333333333333",
+            "non_regression_fail:binder_reference_f1:0.95->0.63",
+            "primary_metric_null_or_worse:smoke.structural_similarity:control=0.4575 candidate=0.4458 improvement=-0.0117",
+        ],
+    }
+
+    resolved = _mod._resolve_confirm_result(
+        root=root,
+        loop_id=loop_id,
+        entry=entry,
+        delivery=delivery,
+        campaign_id="c-confirm-regression",
+        cycle_index=4,
+    )
+
+    assert resolved is not None
+    assert resolved["status"] == "rejected"
+    assert (
+        "confirmation_rejected:primary_quality_not_reheld"
+        in resolved["resolve_reasons"]
+    )
+
+
+def test_revalidate_confirmed_champion_rejects_historical_false_positive(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    campaign_id = "continuous-loop-c-confirm"
+    camp = root / campaign_id
+    camp.mkdir(parents=True)
+    (camp / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "positive": True,
+                "measurement_complete": True,
+                "primary_metric": "smoke.structural_similarity",
+                "reasons": [
+                    "efficiency_win:mpr_per_ms:0.00006->0.00014:gain_fraction=1.1:minimum=0.05",
+                    "quality_held:parse=1.0 mpr=0.3333333333333333",
+                    "primary_metric_null_or_worse:smoke.structural_similarity:control=0.45 candidate=0.44 improvement=-0.01",
+                ],
+            }
+        )
+    )
+    entries = [
+        {
+            "schema": _mod._CHAMPION_QUEUE_SCHEMA,
+            "entry_id": "champ-false-confirm",
+            "status": "confirmed",
+            "confirm_campaign_id": campaign_id,
+        }
+    ]
+
+    assert _mod._revalidate_confirmed_champion_entries(root, entries) is True
+    assert entries[0]["status"] == "rejected"
+    assert entries[0]["resolve_reasons"][0] == (
+        "confirmation_reclassified_nonpositive_under_current_policy"
+    )
 
 
 def test_matrix_confirm_path_same_levers_new_seed() -> None:
@@ -823,9 +904,12 @@ def test_fidelity_screening_arm_is_size_matched_training_objective() -> None:
 
     assert knobs[f"{prefix}-control"]["fidelity_loss_weight"] == 0.5
     assert knobs[f"{prefix}-fidelity"]["fidelity_loss_weight"] == 1.5
-    assert _mod._arm_slug_from_knobs(
-        knobs[f"{prefix}-fidelity"], candidate_id=f"{prefix}-fidelity"
-    ) == "fidelity"
+    assert (
+        _mod._arm_slug_from_knobs(
+            knobs[f"{prefix}-fidelity"], candidate_id=f"{prefix}-fidelity"
+        )
+        == "fidelity"
+    )
 
 
 def test_completed_frozen_retry_steers_to_distinct_quality_arm() -> None:
@@ -992,6 +1076,40 @@ def test_completed_confirmation_that_reholds_steers_to_promotion() -> None:
     assert "re-held" in priorities[0].hypothesis
 
 
+def test_completed_confirmation_uses_resolution_not_raw_positive() -> None:
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-20260802-c1761",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1761,
+        role="screening",
+        confirm_levers={"fidelity_loss_weight": 1.5},
+        confirm_control_levers={"fidelity_loss_weight": 0.5},
+    )
+    candidate_id = matrix["recommended_experiment_id"]
+
+    priorities = _mod._completed_confirmation_priorities(
+        matrix,
+        candidate_id,
+        {
+            "positive": True,
+            "primary_metric": "smoke.structural_similarity",
+            "control_metrics": {"smoke.structural_similarity": 0.45},
+            "candidate_metrics": {"smoke.structural_similarity": 0.44},
+        },
+        {"status": "rejected"},
+    )
+
+    assert priorities[0].area != "promotion"
+    assert all(
+        priority.proposed_experiment_id != candidate_id for priority in priorities
+    )
+
+
 def test_queued_candidate_priorities_require_fresh_confirmation_before_lean() -> None:
     priorities = _mod._queued_candidate_priorities("cycle-candidate", "campaign:cycle")
 
@@ -1111,7 +1229,7 @@ def test_predecessor_rejected_confirmation_uses_outcome_conditioned_successor(
             {
                 "control_id": control_id,
                 "candidate_id": candidate_id,
-                "positive": False,
+                "positive": True,
                 "primary_metric": "smoke.structural_similarity",
                 "measurement_complete": True,
                 "control_metrics": {
@@ -1129,7 +1247,8 @@ def test_predecessor_rejected_confirmation_uses_outcome_conditioned_successor(
         json.dumps(
             {
                 "cycle_intent": "confirm",
-                "climb_state": "rejected",
+                "cycle_role": "screening",
+                "climb_state": "champion_confirmed",
                 "priorities": matrix["next_run_priorities"],
             }
         )
