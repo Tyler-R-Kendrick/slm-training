@@ -1134,8 +1134,10 @@ def evaluate(
                 getattr(getattr(plugin, "config", None), "generate_batch_size", 8) or 8
             ),
         )
-    if callable(generate_with_stats):
-        batch_size = 1
+    # Prefer the production batch API when a plugin exposes both interfaces.
+    # collect_decode_stats() retains row-tagged evidence for the batch path;
+    # merely exposing the legacy single-record stats method must not disable
+    # I4 row compaction and force sequential decode.
 
     def _eval_schema() -> str | None:
         if not getattr(config, "schema_in_context", False):
@@ -1239,6 +1241,7 @@ def evaluate(
     # None when the plugin exposes no stats) so every scored record can be
     # classified into the decode-outcome taxonomy.
     chunk_decode_meta: list[dict[str, Any]] = []
+    decode_chunk_sizes: list[int] = []
     processed_record_n = 0
     effective_decode_timeouts: list[float] = []
 
@@ -1253,6 +1256,7 @@ def evaluate(
         decode running for minutes past ``decode_timeout_seconds``.
         """
         nonlocal decode_timeout_count, processed_record_n
+        decode_chunk_sizes.append(len(chunk))
         requested_seconds = float(getattr(config, "decode_timeout_seconds", 0) or 0)
         remaining_record_n = (
             int(evaluation_remaining_records[0])
@@ -1907,6 +1911,9 @@ def evaluate(
         "effective_decode_timeout_seconds_max": (
             max(effective_decode_timeouts) if effective_decode_timeouts else None
         ),
+        "decode_batch_size_configured": batch_size,
+        "decode_batch_size_max": max(decode_chunk_sizes) if decode_chunk_sizes else 0,
+        "decode_chunk_n": len(decode_chunk_sizes),
         # Persist the effective decode policy beside every scoreboard.  This
         # is essential for comparing historical runs: checkpoint defaults and
         # CLI diagnostic overrides can materially change quality and timeout

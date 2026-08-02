@@ -936,6 +936,12 @@ def _prepare_reused_training(
             raise ValueError(f"training reuse recipe mismatch: {key}")
     if int(summary.get("steps") or -1) != expected_recipe["steps_requested"]:
         raise ValueError("training reuse summary has incomplete steps")
+    try:
+        trainable_params = int((summary.get("track") or {})["trainable_params"])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError("training reuse summary requires trainable_params") from exc
+    if trainable_params < 1:
+        raise ValueError("training reuse trainable_params must be positive")
 
     checkpoint = Path(str(summary.get("checkpoint") or "")).resolve()
     checkpoint_root = (source_run / "checkpoints").resolve()
@@ -964,6 +970,7 @@ def _prepare_reused_training(
         ).hexdigest(),
         "checkpoint": str(checkpoint),
         "checkpoint_sha256": sha256_file(checkpoint),
+        "trainable_params": trainable_params,
         "manifest_lineage": [
             {"path": str(path), "sha256": digest} for path, _manifest, digest in lineage
         ],
@@ -1098,8 +1105,11 @@ def cmd_run(args: argparse.Namespace) -> int:
         campaign_manifest_sha256=lock.manifest_sha256,
     )
     if reuse_receipt is not None:
+        metrics = dict(outcome.metrics)
+        metrics["trainable_params"] = float(reuse_receipt["trainable_params"])
         outcome = outcome.model_copy(
             update={
+                "metrics": metrics,
                 "stage_telemetry": (reuse_receipt, *outcome.stage_telemetry),
             }
         )

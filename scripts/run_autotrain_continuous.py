@@ -4192,6 +4192,9 @@ def _write_cycle_handoff(
     control_id = str(delivery.get("control_id") or "")
     finalized_decode_timeout = _has_finalized_decode_timeout(camp_dir, candidate_id)
     control_decode_timeout = _has_finalized_decode_timeout(camp_dir, control_id)
+    candidate_only_model_timeout = bool(
+        finalized_decode_timeout and not control_decode_timeout
+    )
     control_only_model_timeout = bool(
         control_decode_timeout
         and not finalized_decode_timeout
@@ -4212,7 +4215,7 @@ def _write_cycle_handoff(
         )
         frozen_replay_limit = max_consecutive_frozen_replays(load_climb_policy())
     runtime_arm_rejected = bool(
-        finalized_decode_timeout
+        candidate_only_model_timeout
         and cycle_intent == "retry_measurement"
         and frozen_replay_count >= frozen_replay_limit
     )
