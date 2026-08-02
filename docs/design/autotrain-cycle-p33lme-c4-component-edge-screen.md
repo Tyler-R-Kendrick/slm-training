@@ -74,13 +74,65 @@ measurement exists. Recorded in `docs/MODEL_CARD.md` and the README
 model-card summary per the model-card duty
 (`checkpoint_documentation_required=true` in this cycle's handoff).
 
+## Replay attempt: a real harness bug found and fixed, one budget limit remains
+
+Consuming the queued `retry_measurement` action surfaced a genuine,
+reproducible bug in the driver itself, not the model or eval harness:
+`_apply_frozen_replay` derived the arm slug from the frozen candidate's
+experiment id via `old_candidate_id.rsplit("-", 1)[-1]` — splitting on only
+the *last* hyphen. Every multi-word arm in `_SCREENING_ARM_BANK`
+(`component-plan`, `component-edge`, `component-inventory`,
+`binder-topology`, `component-structure`) contains a hyphen itself, so
+`...-c4-component-edge` truncated to `edge` and the automatic frozen-replay
+path failed closed immediately with `RuntimeError: unsupported automatic
+frozen replay arm: edge` — the queued retry could not even attempt
+evaluation. Fixed in commit `359b01c7d85eeaf3961d96d0d89cbf9f7731b907`
+(`scripts/run_autotrain_continuous.py`, `harness.autoresearch
+.experiment_campaign` v59→v60) by matching the full candidate id against
+known arm-bank suffixes (longest first) instead of blindly splitting on the
+last hyphen. Regression test
+`test_apply_frozen_replay_supports_hyphenated_arm_slugs` reproduces the
+exact original error on the pre-fix code and passes after the fix; the
+full `test_run_autotrain_continuous.py` suite (97 cases) still passes.
+
+Replaying the identical frozen arm after the fix (successor campaign
+`continuous-loop-20260802-continuous-openui-p33lme-489d3aa7-c6`, predecessor
+chain c4→c5→c6, reusing both c4 checkpoints via `--reuse-train-run` /
+`FROZEN_TRAIN_REUSE`, no retraining) confirms the fix works — the driver no
+longer crashes and correctly resumes at evaluation. However, both arms'
+`evaluate_model --ship-gates` stage hit the **same wall-time budget**
+(`max_wall_minutes=1.1666666666666667`, i.e. ~70s per arm) again and still
+produced no `scoreboard.json`. This is a **separate, distinct** issue from
+the arm-slug bug: the `smoke,held_out` two-suite decode workload for this
+`promotion`-role cycle (8 records total at up to 24s decode timeout each) is
+inherently too large for the ~70s per-arm stage budget the continuous driver
+currently allocates, independent of whether training is skipped. Per
+repository law, a timed-out run is never evidence, so this remains
+**measurement-incomplete / non-positive** even after the fix — the arm-slug
+bug is real and worth fixing on its own merits (and unblocks the
+`retry_measurement` mechanism generally for any future hyphenated-slug arm),
+but it does not, by itself, make this cycle's model comparison positive.
+
+This exhausts one of `measurement.max_consecutive_frozen_replays`
+(`retry_measurement (1/2)` per c6's handoff); a further identical retry is
+still available automatically but is expected to hit the same per-arm
+budget deterministically. Flagged for a future session as a distinct
+infra follow-up: either raise the per-arm evaluation wall-minutes budget
+for `promotion`-role two-suite cycles, or split `smoke`/`held_out` into
+separately budgeted stages, without weakening `MAX_RUN_MINUTES` or any ship
+gate.
+
 ## Next step
 
-Rank-1 `NextRunPriorityV1`: replay the exact frozen `c4` control and
-`component-edge` arms at the evaluation stage (resume-at-evaluation, not
-retrain) before testing a new hypothesis. This is queued as the immediate
-successor action for the next supervised invocation of this loop, not a new
-c5 model hypothesis.
+Rank-1 `NextRunPriorityV1` (per c6's handoff): replay the exact frozen `c4`
+control and `component-edge` arms at the evaluation stage again, or route
+the wall-timeout pattern through `improve-openui-harnesses` as a typed
+`HarnessSignalV1` (family `autoresearch`) for a budget/staging fix, before
+testing a new hypothesis. This is queued as the immediate successor action
+for the next supervised invocation of this loop, not a new c5 model
+hypothesis — c4's model hypothesis (`component-edge`) itself remains
+unexecuted evidence-wise and is still the next thing to measure once the
+budget issue is addressed.
 
 Machine-readable evidence is in
 [`autotrain-cycle-p33lme-c4-component-edge-screen.json`](autotrain-cycle-p33lme-c4-component-edge-screen.json).

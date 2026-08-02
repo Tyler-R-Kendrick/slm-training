@@ -103,6 +103,31 @@
       "proposed_experiment_id": "c20260802-continuous-openui-p33lme-489d3aa7-c4-component-edge"
     }
   ],
+  "replay_attempt": {
+    "harness_bug_found_and_fixed": {
+      "description": "_apply_frozen_replay derived the arm slug via old_candidate_id.rsplit('-', 1)[-1], truncating hyphenated arm slugs (component-plan, component-edge, component-inventory, binder-topology, component-structure) to their last token; the retry_measurement action failed closed immediately with RuntimeError before any evaluation could run.",
+      "fix_commit": "359b01c7d85eeaf3961d96d0d89cbf9f7731b907",
+      "component_bumped": "harness.autoresearch.experiment_campaign v59->v60",
+      "regression_test": "tests/test_scripts/test_run_autotrain_continuous.py::test_apply_frozen_replay_supports_hyphenated_arm_slugs",
+      "confirmed_red_on_old_code": true,
+      "confirmed_green_after_fix": true,
+      "full_suite_result": "96 passed, 1 skipped (test_run_autotrain_continuous.py)"
+    },
+    "post_fix_replay": {
+      "successor_campaign_chain": [
+        "continuous-loop-20260802-continuous-openui-p33lme-489d3aa7-c4",
+        "continuous-loop-20260802-continuous-openui-p33lme-489d3aa7-c5",
+        "continuous-loop-20260802-continuous-openui-p33lme-489d3aa7-c6"
+      ],
+      "train_reused": true,
+      "train_reuse_evidence": "FROZEN_TRAIN_REUSE log lines for both control and component-edge, --reuse-train-run pointed at c4 checkpoints",
+      "outcome": "measurement still incomplete: both arms hit the same evaluate_model wall-time budget (max_wall_minutes=1.1666666666666667) as c4, producing wall_timeout + empty_metrics + measurement_incomplete for both control and component-edge",
+      "distinct_from_slug_bug": true,
+      "classification": "non-positive (driver CYCLE_COMPLETE positive=False, stack_layer=False, action=no_stack_layer_non_positive)",
+      "retries_used": "1/2 (measurement.max_consecutive_frozen_replays)"
+    },
+    "next_flagged_issue": "smoke,held_out two-suite promotion-role decode workload (8 records, up to 24s decode timeout each) exceeds the ~70s per-arm evaluate_model wall-time budget even with training skipped; needs a budget or staging fix (not attempted this cycle to avoid touching MAX_RUN_MINUTES-derived budgets or gates without further analysis)"
+  },
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
     "code_commit": "5441b2037451127d52967db8a98d6af09a99176a",
