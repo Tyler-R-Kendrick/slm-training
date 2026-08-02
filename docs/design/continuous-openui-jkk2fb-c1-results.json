@@ -1,0 +1,51 @@
+{
+  "schema": "autotrain_sdlc_delivery/v1",
+  "loop_id": "continuous-openui-jkk2fb",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-jkk2fb-9f2e5830-c1",
+  "cycle_index": 1,
+  "finished_at": "2026-08-02T07:36:48Z",
+  "sdlc_phase": "A",
+  "positive": false,
+  "stack_layer": false,
+  "has_tracked_delta": false,
+  "stack_action": "no_stack_layer_non_positive",
+  "agent_required": "continue loop; local commits/docs only",
+  "reasons": [
+    "primary_metric_null_or_worse:smoke.structural_similarity:control=0.0575 candidate=0.0575 improvement=0.0"
+  ],
+  "primary_metric": "smoke.structural_similarity",
+  "direction": "increase",
+  "role": "screening",
+  "upstream_commit": "62f315565318479b83e6352e1b0d75ab66011b9b",
+  "integration_commit": "62f315565318479b83e6352e1b0d75ab66011b9b",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "steps": 20,
+  "device": "cpu",
+  "control_id": "c20260802-continuous-openui-jkk2fb-9f2e5830-c1-control",
+  "candidate_id": "c20260802-continuous-openui-jkk2fb-9f2e5830-c1-bounds",
+  "candidate_lever": "grammar_completion_bounds=True",
+  "baseline_trainable_params": 1608962,
+  "candidate_trainable_params": 1608962,
+  "control_metrics": {
+    "latency_ms_p50": 2469.22,
+    "parse_rate": 1.0,
+    "meaningful_program_rate": 0.0,
+    "structural_similarity": 0.0575,
+    "binder_reference_f1": 0.6333333333333333
+  },
+  "candidate_metrics": {
+    "latency_ms_p50": 2380.3,
+    "parse_rate": 1.0,
+    "meaningful_program_rate": 0.0,
+    "structural_similarity": 0.0575,
+    "binder_reference_f1": 0.6333333333333333
+  },
+  "primary_delta_ms": -88.92,
+  "smoke_suite_n": 3,
+  "ship_gates": "incomplete: AgentV SDK unavailable (npm ci not run in this checkout) failed the honest ship-gate publish step on both arms; smoke-suite metrics themselves were captured before that step",
+  "fixture_volume_gate_hits": 0,
+  "measurement_complete": true,
+  "honesty_mode": "fixture_or_scratch",
+  "not_a_ship_claim": true
+}
