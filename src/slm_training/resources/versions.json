@@ -1146,7 +1146,7 @@
       ]
     },
     "dsl.completion_kernel": {
-      "version": "v7",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/grammar/fastpath/engine.py",
@@ -1173,6 +1173,11 @@
         "docs/design/adr-constrained-diffusion-topology-split.md"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-08-02",
+          "note": "Share immutable callback-free Lark parser configuration across descendant control-only completion forks while retaining fork-local stacks and lexer threads."
+        },
         {
           "version": "v7",
           "date": "2026-08-02",

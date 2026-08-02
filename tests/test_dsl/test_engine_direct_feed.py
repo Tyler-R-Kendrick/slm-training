@@ -410,6 +410,23 @@ def test_disposable_fork_rejection_skips_redundant_snapshot() -> None:
     assert source.next_terminals() == source_terminals
 
 
+def test_control_fork_reuses_callback_free_parser_configuration() -> None:
+    """Only mutable parser state is copied after callbacks are suppressed."""
+    source = OpenUIIncrementalEngine()
+    source.reset()
+    control = source.copy_control()
+    descendant = control.copy()
+
+    source_conf = source._ip.parser_state.parse_conf
+    control_conf = control._ip.parser_state.parse_conf
+    descendant_conf = descendant._ip.parser_state.parse_conf
+    assert control_conf is not source_conf
+    assert control_conf.callbacks == {}
+    assert descendant_conf is control_conf
+    assert descendant._ip.parser_state.state_stack is not control._ip.parser_state.state_stack
+    assert descendant._ip.lexer_thread is not control._ip.lexer_thread
+
+
 def test_decode_state_append_path_uses_direct_feed() -> None:
     """GrammarDecodeState.advance_token commits via direct feed: zero full
     syncs after ``reset`` and grammar state identical to the text baseline."""

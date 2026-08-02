@@ -877,8 +877,16 @@ class OpenUIIncrementalEngine:
 
         interactive = self._ip
         parser_state = interactive.parser_state
-        parse_conf = _shallow_copy(parser_state.parse_conf)
-        parse_conf.callbacks = {}
+        parse_conf = parser_state.parse_conf
+        if parse_conf.callbacks:
+            # The first semantic -> control fork must detach and suppress tree
+            # callbacks. Descendant control-only forks can share that immutable
+            # callback-free parser configuration; only their mutable stacks and
+            # lexer threads need copying. Exact traversal and reductions are
+            # unchanged, while the completion forest avoids one allocation per
+            # parser fork.
+            parse_conf = _shallow_copy(parse_conf)
+            parse_conf.callbacks = {}
         # Reductions require one stack value per shifted state, but callbacks
         # are disabled, so immutable ``None`` placeholders are sufficient.
         cloned_state = type(parser_state)(
