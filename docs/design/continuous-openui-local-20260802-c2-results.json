@@ -1,0 +1,78 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 2,
+  "source_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "integration_commit": "b51ba33e253b45484bbfc5d9deefa40f228bdd12",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "replay_of": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c1",
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suites": "smoke",
+    "ship_gates": true
+  },
+  "arms": {
+    "c2-control": {
+      "status": "completed_gate_reject",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 1232.53
+      },
+      "gate_failures": [
+        "smoke:insufficient_n actual=3 need>=20",
+        "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+        "smoke:structural_similarity actual=0.057499999999999996 need>=0.35",
+        "smoke:component_type_recall actual=0.0 need>=0.35",
+        "smoke:ast_beq_rate actual=0.0 need>=0.2",
+        "smoke:canonical_beq_rate actual=0.0 need>=0.1",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "held_out:missing_suite",
+        "adversarial:missing_suite",
+        "ood:missing_suite",
+        "rico_held:missing_suite"
+      ]
+    },
+    "c2-bounds": {
+      "status": "completed_gate_reject",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 1243.8
+      },
+      "gate_failures": [
+        "smoke:insufficient_n actual=3 need>=20",
+        "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+        "smoke:structural_similarity actual=0.057499999999999996 need>=0.35",
+        "smoke:component_type_recall actual=0.0 need>=0.35",
+        "smoke:ast_beq_rate actual=0.0 need>=0.2",
+        "smoke:canonical_beq_rate actual=0.0 need>=0.1",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "held_out:missing_suite",
+        "adversarial:missing_suite",
+        "ood:missing_suite",
+        "rico_held:missing_suite"
+      ]
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "conclusion": "Frozen replay of cycle c1's identical control/bounds arms after fixing the missing AgentV npm deps. Both arms now complete and produce a full scoreboard.json (executable unblocking confirmed), but honest ship gates correctly reject both on this 3-example smoke fixture (insufficient_n vs need>=20, meaningful_program_rate 0.0, structural_similarity 0.0575 vs need>=0.35). Primary metric delta is 0.0 -- grammar_completion_bounds shows no smoke-quality or latency advantage at 20-21 steps. Not positive: fixture insufficient_n + null primary delta.",
+  "next_priorities": [
+    "Per the driver's own next-run priority: the completed frozen replay rejects the prior arm; test the distinct size-matched 'component-plan' quality hypothesis next (c20260802-continuous-openui-local-8c0b60dd-c2-component-plan).",
+    "Keep the matched control as the size-matched baseline every cycle.",
+    "Soft ship-gate fails on fixture n never stop the continuous loop; continue to cycle 3."
+  ]
+}
