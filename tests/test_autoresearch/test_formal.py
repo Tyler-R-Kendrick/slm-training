@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import hashlib
+import os
+import shutil
 import subprocess
 import sys
 import time
@@ -44,6 +46,90 @@ from slm_training.levers import MAX_RUN_MINUTES
 from slm_training.lineage.records import canonical_json
 
 ROOT = Path(__file__).resolve().parents[2]
+LEVERPROOF_MAKEFILE = ROOT / "src/leverproof_lean/Makefile"
+
+
+def _make_proofs(
+    cwd: Path,
+    *,
+    lake: Path = Path("/bin/true"),
+    path: str | None = None,
+    rg: str | None = None,
+) -> subprocess.CompletedProcess[str]:
+    make = shutil.which("make")
+    assert make is not None
+    env = dict(os.environ)
+    if path is not None:
+        env["PATH"] = path
+    command = [make, "-f", str(LEVERPROOF_MAKEFILE), "proofs", f"LAKE={lake}"]
+    if rg is not None:
+        command.append(f"RG={rg}")
+    return subprocess.run(
+        command,
+        cwd=cwd,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def test_leverproof_source_audit_requires_a_search_tool(tmp_path: Path) -> None:
+    empty_bin = tmp_path / "bin"
+    empty_bin.mkdir()
+
+    result = _make_proofs(tmp_path, path=str(empty_bin))
+
+    assert result.returncode != 0
+    assert "proof source audit requires rg or grep" in result.stderr
+
+
+def test_leverproof_source_audit_falls_back_to_grep(tmp_path: Path) -> None:
+    result = _make_proofs(tmp_path, rg="missing-rg-for-test")
+
+    assert result.returncode == 0
+
+
+def test_leverproof_source_audit_fails_on_rg_error(tmp_path: Path) -> None:
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    rg = fake_bin / "rg"
+    rg.write_text("#!/bin/sh\nexit 2\n", encoding="utf-8")
+    rg.chmod(0o755)
+
+    result = _make_proofs(tmp_path, path=str(fake_bin))
+
+    assert result.returncode != 0
+    assert "proof source audit failed (rg exit 2)" in result.stderr
+
+
+def test_leverproof_source_audit_rejects_explicit_sorry_ax(tmp_path: Path) -> None:
+    (tmp_path / "Escape.lean").write_text(
+        'def forbiddenProofEscape := "sorryAx"\n', encoding="utf-8"
+    )
+
+    result = _make_proofs(tmp_path)
+
+    assert result.returncode != 0
+    assert "forbidden proof escape found" in result.stderr
+
+
+def test_leverproof_theorem_audit_rejects_sorry_ax_output(tmp_path: Path) -> None:
+    lake = tmp_path / "lake"
+    lake.write_text(
+        "#!/bin/sh\n"
+        'if [ "$1" = "env" ]; then\n'
+        '  echo "proof depends on axioms: [sorryAx]"\n'
+        "fi\n"
+        "exit 0\n",
+        encoding="utf-8",
+    )
+    lake.chmod(0o755)
+
+    result = _make_proofs(tmp_path, lake=lake)
+
+    assert result.returncode != 0
+    assert "theorem audit found sorryAx" in result.stderr
 
 
 def test_formal_timeout_reaps_lean_process_tree(tmp_path: Path) -> None:
@@ -178,10 +264,17 @@ def _manifest(
 
 
 def _successful_lean(
-    command: list[str], *, cwd: Path, timeout_seconds: float
+    command: list[str],
+    *,
+    cwd: Path,
+    timeout_seconds: float,
+    on_start=None,
+    on_heartbeat=None,
 ) -> subprocess.CompletedProcess[str]:
     del cwd
     del timeout_seconds
+    del on_start
+    del on_heartbeat
     stdout = "Lean (version 4.30.0)" if "--version" in command else "build passed"
     return subprocess.CompletedProcess(command, 0, stdout=stdout, stderr="")
 
@@ -277,9 +370,16 @@ def test_metric_preflight_uses_mathlib_free_leverproof(
     calls: list[tuple[list[str], Path]] = []
 
     def successful(
-        command: list[str], *, cwd: Path, timeout_seconds: float
+        command: list[str],
+        *,
+        cwd: Path,
+        timeout_seconds: float,
+        on_start=None,
+        on_heartbeat=None,
     ) -> subprocess.CompletedProcess[str]:
         del timeout_seconds
+        del on_start
+        del on_heartbeat
         calls.append((command, cwd))
         stdout = "Lean (version 4.30.0)" if "--version" in command else "passed"
         return subprocess.CompletedProcess(command, 0, stdout=stdout, stderr="")
@@ -301,6 +401,52 @@ def test_metric_preflight_uses_mathlib_free_leverproof(
     )
     assert preflight.mathlib_version == "none"
     assert preflight.status == "proved"
+
+
+def test_formal_preflight_forwards_liveness_callbacks(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    starts: list[int] = []
+    heartbeats: list[int] = []
+    forwarded: list[tuple[object, object]] = []
+
+    def successful(
+        command: list[str],
+        *,
+        cwd: Path,
+        timeout_seconds: float,
+        on_start=None,
+        on_heartbeat=None,
+    ) -> subprocess.CompletedProcess[str]:
+        del cwd
+        del timeout_seconds
+        forwarded.append((on_start, on_heartbeat))
+        assert on_start is not None
+        assert on_heartbeat is not None
+        on_start(321)
+        on_heartbeat(321)
+        stdout = "Lean (version 4.30.0)" if "--version" in command else "passed"
+        return subprocess.CompletedProcess(command, 0, stdout=stdout, stderr="")
+
+    monkeypatch.setattr("slm_training.autoresearch.formal._run", successful)
+    claim = FormalClaimV1(
+        template_id="metrics.structural_similarity_monotone",
+        claim="Nondecreasing jaccard and depth components cannot reduce the proxy.",
+        policy="required",
+    )
+
+    preflight, _ = run_formal_preflight(
+        "formal-campaign",
+        _experiment(claim),
+        claim,
+        on_start=starts.append,
+        on_heartbeat=heartbeats.append,
+    )
+
+    assert preflight.status == "proved"
+    assert forwarded
+    assert starts == [321, 321]
+    assert heartbeats == [321, 321]
 
 
 def test_sff_preflights_resolve_through_canonical_formal_registry() -> None:

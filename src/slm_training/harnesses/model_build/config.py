@@ -540,6 +540,11 @@ class ModelBuildConfig:
     encoder_ops_conditioning: bool = False
 
     def __post_init__(self) -> None:
+        if self.eval_shards != 1:
+            raise ValueError(
+                "eval_shards must be 1 until deterministic shard execution and "
+                "exact metric/AgentV aggregation are implemented"
+            )
         if self.grammar_constrained is False:
             raise ValueError(
                 "grammar_constrained=False is unsafe for OpenUI generation"

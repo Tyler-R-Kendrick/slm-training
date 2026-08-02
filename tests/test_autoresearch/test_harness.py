@@ -9,6 +9,8 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+
+from tests.casefiles import case_values
 from pydantic import ValidationError
 
 from slm_training.autoresearch.engine import (
@@ -47,6 +49,7 @@ from slm_training.autoresearch.rl_gate import (
     write_rl_readiness,
 )
 from slm_training.autoresearch.schemas import (
+    AutotrainActionReceiptV1,
     AutotrainActionV1,
     AutotrainCycleHandoffV1,
     CampaignBudget,
@@ -72,6 +75,8 @@ from slm_training.autoresearch.schemas import (
 from slm_training.autoresearch.storage import (
     CampaignStore,
     _lean_text,
+    append_autotrain_action_receipt,
+    autotrain_action_sha256,
     pending_autotrain_actions,
     pending_autotrain_execution_actions,
     render_loop_result_matrix,
@@ -116,6 +121,36 @@ def campaign() -> CampaignSpec:
         primary_metric="held_out.structural_similarity",
         researcher_mode="fixture",
     )
+
+
+def _complete_gate_scoreboard(root: Path) -> dict[str, object]:
+    root.mkdir(parents=True, exist_ok=True)
+    spec = root / "model.eval.jsonl"
+    index = root / "index.jsonl"
+    spec.write_text('{"id":"smoke"}\n', encoding="utf-8")
+    index.write_text('{"id":"smoke","scores":[]}\n', encoding="utf-8")
+    return {
+        "suites": {
+            "smoke": {
+                "n": 3,
+                "document_n": 3,
+                "completed_document_n": 3,
+                "incomplete_document_n": 0,
+                "decode_timeout_count": 0,
+                "parse_rate": 1.0,
+            }
+        },
+        "evals": {
+            "format": "AgentEvals JSONL",
+            "authority": "AgentEvals assertions",
+            "criteria": {"total": 1, "passed": 0, "failed": 1},
+            "runner": {"name": "AgentV", "execution_errors": 0},
+            "summary": {"total": 1, "executionErrors": 0},
+            "spec": str(spec),
+            "artifacts": {"indexPath": str(index)},
+        },
+        "gates": {"authority": "AgentEvals assertions", "pass": False},
+    }
 
 
 def experiment_campaign(**overrides) -> ExperimentCampaignV1:
@@ -1312,6 +1347,22 @@ def test_ack_action_receipt_closes_predecessor_prerequisite(tmp_path: Path) -> N
         action.kind for _, action in pending_autotrain_execution_actions(root, handoff)
     ] == ["next_experiment"]
 
+    append_autotrain_action_receipt(
+        root,
+        AutotrainActionReceiptV1(
+            loop_id="loop-1",
+            campaign_id=campaign_id,
+            action_index=0,
+            action_sha256=autotrain_action_sha256(handoff.actions[0]),
+            action_kind="document",
+            status="completed",
+            evidence_uris=("docs/design/autoresearch-autotraining.md",),
+        ),
+    )
+    assert [action.kind for _, action in pending_autotrain_actions(root, handoff)] == [
+        "document"
+    ]
+
     invalid_args = build_parser().parse_args(
         [
             "--root",
@@ -1347,6 +1398,21 @@ def test_ack_action_receipt_closes_predecessor_prerequisite(tmp_path: Path) -> N
     )
     assert args.func(args) == 0
     assert pending_autotrain_actions(root, handoff) == ()
+    receipt_rows = [
+        json.loads(row)
+        for row in (root / "loops" / "loop-1" / "action_receipts.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
+    ]
+    assert receipt_rows[-1]["evidence"] == [
+        {
+            "uri": "docs/design/autoresearch-autotraining.md",
+            "kind": "repo_file",
+            "sha256": hashlib.sha256(
+                Path("docs/design/autoresearch-autotraining.md").read_bytes()
+            ).hexdigest(),
+        }
+    ]
     assert [
         action.kind for _, action in pending_autotrain_execution_actions(root, handoff)
     ] == ["next_experiment"]
@@ -1366,6 +1432,108 @@ def test_ack_action_receipt_closes_predecessor_prerequisite(tmp_path: Path) -> N
     assert [
         action.kind for _, action in pending_autotrain_actions(root, stopped_handoff)
     ] == ["stop_campaign"]
+    handoff_path.write_text(stopped_handoff.model_dump_json(indent=2) + "\n")
+    invalid_stop = build_parser().parse_args(
+        [
+            "--root",
+            str(root),
+            "ack-action",
+            "--loop-id",
+            "loop-1",
+            "--campaign-id",
+            campaign_id,
+            "--action-index",
+            "0",
+            "--evidence",
+            "docs/design/autoresearch-autotraining.md",
+        ]
+    )
+    with pytest.raises(ValueError, match="campaign artifact"):
+        invalid_stop.func(invalid_stop)
+
+    theorem_artifact = root / campaign_id / "artifacts" / "formal" / "result.json"
+    theorem_artifact.parent.mkdir(parents=True)
+    theorem_artifact.write_text('{"status":"disproved"}\n', encoding="utf-8")
+    stop_args = build_parser().parse_args(
+        [
+            "--root",
+            str(root),
+            "ack-action",
+            "--loop-id",
+            "loop-1",
+            "--campaign-id",
+            campaign_id,
+            "--action-index",
+            "0",
+            "--evidence",
+            "artifacts/formal/result.json",
+        ]
+    )
+    assert stop_args.func(stop_args) == 0
+    assert pending_autotrain_actions(root, stopped_handoff) == ()
+    theorem_artifact.write_text('{"status":"changed"}\n', encoding="utf-8")
+    assert [
+        action.kind for _, action in pending_autotrain_actions(root, stopped_handoff)
+    ] == ["stop_campaign"]
+
+
+def test_theorem_band_miss_stops_and_requires_formal_repair(tmp_path: Path) -> None:
+    from scripts import run_autotrain_continuous as driver
+    from scripts.autoresearch import build_parser
+
+    root = tmp_path / "autoresearch"
+    (root / "cycle-1").mkdir(parents=True)
+    handoff = driver._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="screening",
+        cycle_intent="screening",
+        primary_metric="smoke.parse_rate",
+        matrix={"next_run_priorities": []},
+        delivery={
+            "positive": False,
+            "candidate_id": "",
+            "measurement_complete": True,
+            "reasons": ["theorem_backed_band_miss:invalid_grammar_count"],
+        },
+        resolution=None,
+        formal_status=None,
+    )
+
+    assert [action.kind for action in handoff.actions[:3]] == [
+        "stop_campaign",
+        "repair_formal",
+        "document",
+    ]
+    assert {action.owner for action in handoff.actions[:2]} == {"improve-lean-optimums"}
+    assert [action.kind for _, action in pending_autotrain_actions(root, handoff)] == [
+        "stop_campaign",
+        "repair_formal",
+        "document",
+    ]
+    formal_artifact = root / "cycle-1" / "formal-result.json"
+    formal_artifact.write_text('{"status":"disproved"}\n', encoding="utf-8")
+    repair_args = build_parser().parse_args(
+        [
+            "--root",
+            str(root),
+            "ack-action",
+            "--loop-id",
+            "loop-1",
+            "--campaign-id",
+            "cycle-1",
+            "--action-index",
+            "1",
+            "--evidence",
+            "formal-result.json",
+        ]
+    )
+    with pytest.raises(ValueError, match="repair_formal evidence must be a Git commit"):
+        repair_args.func(repair_args)
 
 
 def test_dynamic_symbol_source_manifest_is_complete() -> None:
@@ -2539,6 +2707,11 @@ def test_loop_result_matrix_is_derived_from_verified_campaign_chain(
         campaign_id="cycle-1",
         status="completed",
         metrics={
+            "held_out.n": 3,
+            "held_out.document_n": 3,
+            "held_out.completed_document_n": 3,
+            "held_out.incomplete_document_n": 0,
+            "held_out.decode_timeout_count": 0,
             "held_out.structural_similarity": 0.75,
             "trainable_params": 1234,
             "ship_gates_pass": 1,
@@ -2569,9 +2742,10 @@ def test_loop_result_matrix_is_derived_from_verified_campaign_chain(
 
     matrix = render_loop_result_matrix(tmp_path, "loop-1")
     assert "Liveness" in matrix
+    assert "| 1 | cccccccc | dddddddd | hyp-0 | 1234 | 0.75 |" in matrix
     assert (
-        "| 1 | cccccccc | dddddddd | hyp-0 | 1234 | 0.75 | — | — | pass | complete | none | fixture | — | blocked | completed |"
-    ) in matrix
+        "| — | pass | complete | none | fixture | — | blocked | completed |" in matrix
+    )
     assert len(matrix.encode("utf-8")) < 64 * 1024
 
 
@@ -2646,8 +2820,10 @@ def test_loop_result_matrix_projects_complete_gate_rejection(
         exit_code=exit_code,
         metrics={
             "smoke.n": 3,
+            "smoke.document_n": 3,
             "smoke.completed_document_n": 3,
             "smoke.incomplete_document_n": 0,
+            "smoke.decode_timeout_count": 0,
             "smoke.parse_rate": 1,
         },
     )
@@ -2660,28 +2836,14 @@ def test_loop_result_matrix_projects_complete_gate_rejection(
     )
     run_dir = store.root / "runs" / outcome.experiment_id
     run_dir.mkdir(parents=True)
-    (run_dir / "scoreboard.json").write_text(
-        json.dumps(
-            {
-                "run_id": outcome.experiment_id,
-                "gates": {
-                    "authority": "AgentEvals assertions",
-                    "pass": False,
-                },
-                "evals": {
-                    "runner": {
-                        "name": "AgentV",
-                        "execution_errors": 0,
-                    }
-                },
-                "suites": {"smoke": {"n": 3, "parse_rate": 1}},
-                "version_stamp": {
-                    "code_commit": commit,
-                    "code_dirty": False,
-                },
-            }
-        )
+    scoreboard = _complete_gate_scoreboard(run_dir / "agentv")
+    scoreboard.update(
+        {
+            "run_id": outcome.experiment_id,
+            "version_stamp": {"code_commit": commit, "code_dirty": False},
+        }
     )
+    (run_dir / "scoreboard.json").write_text(json.dumps(scoreboard))
 
     rendered = render_loop_result_matrix(tmp_path, "loop-1")
     assert "| fail | complete (gate reject) |" in rendered
@@ -3251,12 +3413,8 @@ def test_execute_resolves_truncated_train_stdout_from_canonical_summary(
         },
         "large_payload": "x" * 100_000,
     }
-    evaluation = {
-        "suites": {"smoke": {"n": 3, "parse_rate": 1.0}},
-        "evals": {"runner": {"name": "AgentV", "execution_errors": 0}},
-        "gates": {"pass": False},
-        "large_payload": "y" * 100_000,
-    }
+    evaluation = _complete_gate_scoreboard(run_dir / "agentv")
+    evaluation["large_payload"] = "y" * 100_000
     replies = iter(
         (
             subprocess.CompletedProcess([], 0, stdout='"tail":"truncated"}', stderr=""),
@@ -3381,6 +3539,7 @@ def test_execute_keeps_typed_ship_gate_rejection_as_completed_evidence(
 
     checkpoint = tmp_path / "last.pt"
     checkpoint.write_bytes(b"checkpoint")
+    evaluation = _complete_gate_scoreboard(tmp_path / "agentv")
     replies = iter(
         (
             subprocess.CompletedProcess(
@@ -3398,13 +3557,7 @@ def test_execute_keeps_typed_ship_gate_rejection_as_completed_evidence(
             subprocess.CompletedProcess(
                 [],
                 8,
-                stdout=json.dumps(
-                    {
-                        "suites": {"smoke": {"n": 3, "parse_rate": 1.0}},
-                        "evals": {"runner": {"name": "AgentV", "execution_errors": 0}},
-                        "gates": {"pass": False},
-                    }
-                ),
+                stdout=json.dumps(evaluation),
                 stderr="",
             ),
         )
@@ -3427,6 +3580,47 @@ def test_execute_keeps_typed_ship_gate_rejection_as_completed_evidence(
     assert outcome.stage_telemetry[-1]["expected_gate_rejection"] is True
 
 
+@pytest.mark.parametrize(
+    "missing_counter",
+    case_values(__file__, "test_expected_gate_rejection_requires_every_completeness_counter"),
+)
+def test_expected_gate_rejection_requires_every_completeness_counter(
+    tmp_path: Path, missing_counter: str
+) -> None:
+    from slm_training.autoresearch.engine import _expected_gate_rejection
+
+    scoreboard = _complete_gate_scoreboard(tmp_path / "agentv")
+    del scoreboard["suites"]["smoke"][missing_counter]  # type: ignore[index]
+
+    assert not _expected_gate_rejection(
+        ["python", "-m", "scripts.evaluate_model", "--ship-gates"],
+        8,
+        scoreboard,
+        artifact_root=tmp_path,
+    )
+
+
+@pytest.mark.parametrize("missing_binding", ("spec", "indexPath"))
+def test_expected_gate_rejection_requires_agentv_artifact_bindings(
+    tmp_path: Path, missing_binding: str
+) -> None:
+    from slm_training.autoresearch.engine import _expected_gate_rejection
+
+    scoreboard = _complete_gate_scoreboard(tmp_path / "agentv")
+    evals = scoreboard["evals"]  # type: ignore[assignment]
+    if missing_binding == "spec":
+        del evals["spec"]
+    else:
+        del evals["artifacts"][missing_binding]
+
+    assert not _expected_gate_rejection(
+        ["python", "-m", "scripts.evaluate_model", "--ship-gates"],
+        8,
+        scoreboard,
+        artifact_root=tmp_path,
+    )
+
+
 def test_execute_rejects_partial_ship_gate_scoreboard(
     tmp_path: Path, monkeypatch
 ) -> None:
@@ -3434,6 +3628,14 @@ def test_execute_rejects_partial_ship_gate_scoreboard(
 
     checkpoint = tmp_path / "last.pt"
     checkpoint.write_bytes(b"checkpoint")
+    evaluation = _complete_gate_scoreboard(tmp_path / "agentv")
+    evaluation["suites"]["smoke"].update(  # type: ignore[index]
+        {
+            "completed_document_n": 1,
+            "incomplete_document_n": 2,
+            "decode_timeout_count": 2,
+        }
+    )
     replies = iter(
         (
             subprocess.CompletedProcess(
@@ -3451,20 +3653,7 @@ def test_execute_rejects_partial_ship_gate_scoreboard(
             subprocess.CompletedProcess(
                 [],
                 8,
-                stdout=json.dumps(
-                    {
-                        "suites": {
-                            "smoke": {
-                                "n": 3,
-                                "completed_document_n": 1,
-                                "incomplete_document_n": 2,
-                                "decode_timeout_count": 2,
-                            }
-                        },
-                        "evals": {"runner": {"name": "AgentV", "execution_errors": 0}},
-                        "gates": {"pass": False},
-                    }
-                ),
+                stdout=json.dumps(evaluation),
                 stderr="",
             ),
         )
@@ -3494,6 +3683,7 @@ def test_decode_timeout_scoreboard_routes_to_infrastructure() -> None:
             status="completed",
             metrics={
                 "suites.smoke.n": 3,
+                "suites.smoke.document_n": 3,
                 "suites.smoke.completed_document_n": 0,
                 "suites.smoke.decode_timeout_count": 3,
                 "gates.pass": 0,
@@ -3505,7 +3695,7 @@ def test_decode_timeout_scoreboard_routes_to_infrastructure() -> None:
     assert "model attribution is unavailable" in diagnosis.evidence[0]
 
 
-def test_gate_failure_diagnosis_does_not_claim_unmeasured_improvement() -> None:
+def test_gate_failure_diagnosis_rejects_missing_completeness_counters() -> None:
     diagnosis = diagnose_outcome(
         ExperimentOutcome(
             experiment_id="quality-null",
@@ -3515,10 +3705,8 @@ def test_gate_failure_diagnosis_does_not_claim_unmeasured_improvement() -> None:
         )
     )
 
-    assert diagnosis.target == "model"
-    assert "completed locally" in diagnosis.evidence[0]
-    assert "improved" not in diagnosis.evidence[0]
-    assert "matched control" in diagnosis.recommended_actions[0]
+    assert diagnosis.target == "infrastructure"
+    assert "model attribution is unavailable" in diagnosis.evidence[0]
 
 
 def test_partial_decode_scoreboard_routes_to_infrastructure() -> None:
@@ -3529,6 +3717,7 @@ def test_partial_decode_scoreboard_routes_to_infrastructure() -> None:
             status="completed",
             metrics={
                 "suites.smoke.n": 3,
+                "suites.smoke.document_n": 3,
                 "suites.smoke.completed_document_n": 1,
                 "suites.smoke.incomplete_document_n": 2,
                 "gates.pass": 0,
