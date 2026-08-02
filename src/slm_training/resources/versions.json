@@ -2697,6 +2697,11 @@
           "note": "Detect finalized numeric-literal termination starvation, expose the existing size-matched LTR tail-loss lever to governed campaigns, and steer the next cycle to a new constrained literal-close arm instead of replaying the stalled checkpoint."
         },
         {
+          "version": "v68",
+          "date": "2026-08-02",
+          "note": "Add a governed size-matched literal-margin arm that aligns only grammar-derived numeric-frame LIT_END decisions against legal byte alternatives and steer a completed literal-close null directly to it."
+        },
+        {
           "version": "v67",
           "date": "2026-08-02",
           "note": "Detect finalized numeric-literal termination starvation, expose the existing size-matched LTR tail-loss lever to governed campaigns, and steer the next cycle to a new constrained literal-close arm instead of replaying the stalled checkpoint."
