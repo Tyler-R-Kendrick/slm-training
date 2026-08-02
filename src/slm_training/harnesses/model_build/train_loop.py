@@ -1518,6 +1518,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "root_reference_identity_decode_weight": getattr(
                 config, "root_reference_identity_decode_weight", 0.0
             ),
+            "symbol_boundary_loss_weight": getattr(
+                config, "symbol_boundary_loss_weight", 0.0
+            ),
             "fuse_ltr_loss": bool(getattr(config, "fuse_ltr_loss", True)),
             "fidelity_loss_weight": getattr(config, "fidelity_loss_weight", 0.0),
             "fastpath_aux_weight": getattr(config, "fastpath_aux_weight", 0.0),

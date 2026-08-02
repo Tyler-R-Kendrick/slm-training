@@ -161,6 +161,7 @@ def test_lexer_train_eval_smoke(tmp_path: Path) -> None:
         factorized_embeddings=True,
         mask_pattern="mixed",
         symbol_slot_augmentation=True,
+        symbol_boundary_loss_weight=1.0,
         remask_span="statement",
         telemetry=False,
     )
@@ -170,6 +171,7 @@ def test_lexer_train_eval_smoke(tmp_path: Path) -> None:
     assert summary["recipe"]["runtime_symbol_features"] == "none"
     assert summary["recipe"]["semantic_candidate_masks"] is False
     assert summary["recipe"]["constraint_graph_mode"] == "off"
+    assert summary["recipe"]["symbol_boundary_loss_weight"] == 1.0
     ckpt = Path(summary["checkpoint"])
     assert ckpt.is_file()
     assert ckpt.with_suffix(".tokenizer.json").is_file()

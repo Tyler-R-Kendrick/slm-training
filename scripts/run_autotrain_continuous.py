@@ -453,6 +453,7 @@ _LEVER_KNOB_KEYS = (
     "binder_component_plan_decode_weight",
     "binder_arity_loss_weight",
     "binder_arity_decode_weight",
+    "symbol_boundary_loss_weight",
     "fidelity_loss_weight",
     "semantic_contrast_dir",
     "semantic_contrast_loss_weight",
@@ -601,6 +602,11 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         "mixed-mask",
         "Mixed random and structured corruption better matches iterative denoising and improves structural_similarity without lowering parse_rate or binder_reference_f1.",
         {"mask_pattern": "mixed"},
+    ),
+    (
+        "symbol-boundary",
+        "Extra supervision on opaque-symbol tokens and their immediate boundaries improves structural_similarity and binder_reference_f1 without lowering parse_rate.",
+        {"symbol_boundary_loss_weight": 1.0},
     ),
     (
         "component-structure",
@@ -1050,6 +1056,8 @@ def _arm_slug_from_knobs(
         return "slot-augmentation"
     if knobs.get("mask_pattern") == "mixed":
         return "mixed-mask"
+    if knobs.get("symbol_boundary_loss_weight"):
+        return "symbol-boundary"
     if knobs.get("component_edge_loss_weight"):
         return "component-edge"
     if knobs.get("component_inventory_loss_weight"):
@@ -1240,6 +1248,7 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
         "semantic-contrast",
         "slot-augmentation",
         "mixed-mask",
+        "symbol-boundary",
     )
     legacy_quality_slugs = {
         "component-plan",
@@ -3687,6 +3696,7 @@ def _completed_candidate_priorities(
         "binder_topology_loss_weight",
         "binder_component_plan_loss_weight",
         "binder_arity_loss_weight",
+        "symbol_boundary_loss_weight",
     }
     def has_quality_objective(knobs: dict[str, Any]) -> bool:
         return any(float(knobs.get(key) or 0) > 0 for key in quality_keys) or (
@@ -5316,6 +5326,7 @@ def _matrix(
             "semantic_contrast_loss_weight": 0.0,
             "symbol_slot_augmentation": False,
             "mask_pattern": "random",
+            "symbol_boundary_loss_weight": 0.0,
             "structural_aux_head_profile": "none",
             "compiler_decode_mode": "off",
             "ltr_tail_loss_weight": 0.0,
@@ -5389,6 +5400,7 @@ def _matrix(
                 "semantic_contrast_fraction",
                 "symbol_slot_augmentation",
                 "mask_pattern",
+                "symbol_boundary_loss_weight",
                 "structural_aux_head_profile",
                 "compiler_decode_mode",
                 "steps",
@@ -5581,6 +5593,7 @@ def _matrix(
                 "semantic_contrast_fraction",
                 "symbol_slot_augmentation",
                 "mask_pattern",
+                "symbol_boundary_loss_weight",
                 "structural_aux_head_profile",
                 "compiler_decode_mode",
                 "steps",
@@ -6035,6 +6048,9 @@ def _manifest(
                 "binder_arity_loss_weight": 0.0,
                 "fidelity_loss_weight": 0.5,
                 "semantic_contrast_loss_weight": 0.0,
+                "symbol_slot_augmentation": False,
+                "mask_pattern": "random",
+                "symbol_boundary_loss_weight": 0.0,
             },
             sort_keys=True,
         ).encode()

@@ -3376,6 +3376,7 @@ def test_compile_resolves_canonical_published_train_version() -> None:
             binder_topology_decode_weight=0.4,
             binder_arity_loss_weight=1.2,
             binder_arity_decode_weight=0.3,
+            symbol_boundary_loss_weight=1.0,
             fidelity_loss_weight=1.5,
             semantic_contrast_dir="resources/contrast",
             semantic_contrast_loss_weight=0.25,
@@ -3443,6 +3444,9 @@ def test_compile_resolves_canonical_published_train_version() -> None:
     )
     assert commands[0][commands[0].index("--binder-arity-loss-weight") + 1] == "1.2"
     assert commands[0][commands[0].index("--binder-arity-decode-weight") + 1] == "0.3"
+    assert commands[0][commands[0].index("--symbol-boundary-loss-weight") + 1] == (
+        "1.0"
+    )
     assert commands[0][commands[0].index("--fidelity-loss-weight") + 1] == "1.5"
     assert commands[0][commands[0].index("--semantic-contrast-dir") + 1] == (
         "resources/contrast"
