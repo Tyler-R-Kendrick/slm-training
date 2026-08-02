@@ -265,7 +265,10 @@ successors are exhausted, the continuous bank advances to
 `symbol_slot_augmentation=true`. That arm permutes request-local slots and
 alpha-renames binders during training against an otherwise identical `false`
 control. It is parameter-size matched, remains grammar constrained, and tests
-opaque-symbol generalization without introducing surface-name features.
+opaque-symbol generalization without introducing surface-name features. If that
+approach is rejected, `mask_pattern=mixed` is the next registered same-size
+training-method arm against explicit `random`; it changes corruption exposure,
+not deterministic decode legality.
 
 ### Program experiments route through this loop (G1, SLM-46)
 

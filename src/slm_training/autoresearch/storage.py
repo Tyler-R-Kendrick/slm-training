@@ -702,7 +702,10 @@ def loop_result_rows(
                 "integrated": (campaign.integration_commit or "")[:8] or "—",
                 "experiment": outcome.experiment_id,
                 "params": params,
-                "primary": _outcome_metric_text(outcome, campaign.primary_metric),
+                "primary": _outcome_metric_text(
+                    outcome,
+                    str(handoff.get("primary_metric") or campaign.primary_metric),
+                ),
                 "metrics": _metrics_text(
                     outcome.metrics,
                     outcome.data_metrics,

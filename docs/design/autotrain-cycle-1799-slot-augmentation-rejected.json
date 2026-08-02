@@ -1,0 +1,115 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1799",
+  "cycle_index": 1799,
+  "cycle_intent": "screening",
+  "evidence_class": "fixture",
+  "decision": "reject_slot_augmentation_approach",
+  "scoreable": true,
+  "new_checkpoint_created": true,
+  "upstream_commit": "f9bd228807cb05687de485ff159c975a864411fe",
+  "integration_commit": "6b1bb300dba0ccb4cd9b80bb2d8162a966db5893",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1799-control",
+      "trainable_params": 1608962,
+      "checkpoint_sha256": "51f71d3dca8ea8a98737bab707789e5b0505a81b01f76ac2eafb830a7ef730f2",
+      "symbol_slot_augmentation": false,
+      "steps": 24,
+      "seed": 101799,
+      "batch_size": 2,
+      "last_loss": 16.15545082092285,
+      "train_wall_seconds": 2.609298788011074,
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 3,
+        "incomplete_document_n": 0,
+        "decode_timeout_count": 0,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.13749999999999998,
+        "binder_reference_f1": 0.8222222222222223,
+        "component_type_recall": 0.0,
+        "placeholder_fidelity": 0.7222222222222222,
+        "reward_score": 0.0,
+        "latency_ms_p50": 5086.88,
+        "decode_batch_size_configured": 16,
+        "decode_batch_size_max": 3,
+        "decode_chunk_n": 1
+      }
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1799-slot-augmentation",
+      "trainable_params": 1608962,
+      "checkpoint_sha256": "108bfc6b2c26c4dd5afab574c19e54246e67d114a2d0abaa95f1a36897673a3a",
+      "symbol_slot_augmentation": true,
+      "steps": 24,
+      "seed": 101799,
+      "batch_size": 2,
+      "last_loss": 18.68528938293457,
+      "train_wall_seconds": 3.008061710977927,
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 3,
+        "incomplete_document_n": 0,
+        "decode_timeout_count": 0,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "component_type_recall": 0.0,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.0,
+        "latency_ms_p50": 1004.31,
+        "decode_batch_size_configured": 16,
+        "decode_batch_size_max": 3,
+        "decode_chunk_n": 1
+      }
+    }
+  ],
+  "comparison": {
+    "attributable": true,
+    "parameter_delta": 0,
+    "structural_similarity_delta": -0.07999999999999999,
+    "binder_reference_f1_delta": -0.18888888888888888,
+    "placeholder_fidelity_delta": -0.19444444444444442,
+    "latency_ms_p50_delta": -4082.57,
+    "decision_authority": "smoke.structural_similarity_with_binder_non_regression"
+  },
+  "reporting_repairs": [
+    {
+      "component": "harness.autoresearch.experiment_campaign",
+      "repaired_version": "v99",
+      "defect": "screening handoff retained an unevaluated held-out suite prefix"
+    },
+    {
+      "component": "harness.model_build.train",
+      "repaired_version": "v31",
+      "defect": "train summary recipe omitted dynamic-symbol and corruption knobs"
+    }
+  ],
+  "agentv": {
+    "bundles_complete": true,
+    "execution_errors": 0,
+    "ship_gates_pass": false
+  },
+  "checkpoint_policy": "local_explicit_no_sync_rejected_not_reusable_not_promoted_not_ship",
+  "lean": "not_applicable:screening",
+  "next_priority": "size_matched_mixed_mask_corruption",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "6b1bb300dba0ccb4cd9b80bb2d8162a966db5893",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v77",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v294"
+    },
+    "stamped_at": "2026-08-02T22:24:46.798072+00:00"
+  }
+}

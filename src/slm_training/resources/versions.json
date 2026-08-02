@@ -2646,7 +2646,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v98",
+      "version": "v99",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2686,6 +2686,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v99",
+          "date": "2026-08-02",
+          "note": "Bind screening primary projection to its actually evaluated suite and add a size-matched mixed-corruption successor after slot augmentation exhausted."
+        },
         {
           "version": "v98",
           "date": "2026-08-02",
@@ -7338,6 +7343,11 @@
         {
           "version": "v3",
           "date": "2026-08-02",
+          "note": "no-bump: add honest c1799 rejected slot-augmentation checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
           "note": "no-bump: add honest c1796 incomplete semantic-contrast checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
         },
         {
@@ -9540,7 +9550,7 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v30",
+      "version": "v31",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
@@ -9548,6 +9558,11 @@
         "src/slm_training/harnesses/quality/__init__.py"
       ],
       "history": [
+        {
+          "version": "v31",
+          "date": "2026-08-02",
+          "note": "Record corruption pattern, runtime symbol features, slot augmentation, semantic masks, and constraint-graph mode in every training recipe."
+        },
         {
           "version": "v30",
           "date": "2026-08-02",
