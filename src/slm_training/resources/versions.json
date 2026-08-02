@@ -2689,6 +2689,11 @@
         {
           "version": "v104",
           "date": "2026-08-02",
+          "note": "no-bump: record c1804 incomplete component-token fixture evidence and its exact frozen replay requirement; campaign behavior is unchanged"
+        },
+        {
+          "version": "v104",
+          "date": "2026-08-02",
           "note": "Add direct component-token reconstruction weighting and per-step token-family loss attribution after prefix supervision was null."
         },
         {
@@ -7365,6 +7370,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1804 incomplete component-token checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
         {
           "version": "v3",
           "date": "2026-08-02",
