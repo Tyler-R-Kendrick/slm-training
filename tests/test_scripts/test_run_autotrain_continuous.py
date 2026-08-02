@@ -1477,13 +1477,29 @@ def test_cycle_deadline_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_arm_wall_budget_is_symmetric_and_reserves_orchestration() -> None:
-    from slm_training.levers import MAX_HARNESS_WALL_SECONDS
+    from slm_training.levers import (
+        HARNESS_FINALIZATION_RESERVE_SECONDS,
+        MAX_HARNESS_WALL_SECONDS,
+    )
 
     arm_minutes = _mod._arm_wall_minutes(3)
-    expected = min(3.0, MAX_HARNESS_WALL_SECONDS / 3 / 60)
+    expected = min(
+        3.0,
+        (MAX_HARNESS_WALL_SECONDS - HARNESS_FINALIZATION_RESERVE_SECONDS)
+        / 2
+        / 60,
+    )
     assert arm_minutes == pytest.approx(expected)
     assert _mod._arm_wall_minutes(0.5) == pytest.approx(
-        min(0.5, MAX_HARNESS_WALL_SECONDS / 3 / 60)
+        min(
+            0.5,
+            (MAX_HARNESS_WALL_SECONDS - HARNESS_FINALIZATION_RESERVE_SECONDS)
+            / 2
+            / 60,
+        )
+    )
+    assert 2 * arm_minutes * 60 + HARNESS_FINALIZATION_RESERVE_SECONDS == (
+        MAX_HARNESS_WALL_SECONDS
     )
 
 
