@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -174,13 +175,15 @@ def test_reward_harness_error_is_counted_not_scored(
 
 
 def test_measured_metrics_report_defined_counts_and_fallbacks(tmp_path: Path) -> None:
-    metrics = evaluate(_smoke_config(tmp_path), model=_EchoGoldModel(), publish_agentv=False)
+    config = _smoke_config(tmp_path)
+    metrics = evaluate(config, model=_EchoGoldModel(), publish_agentv=False)
     assert metrics["parse_rate"] == 1.0
     assert metrics["contract_precision"] == 1.0
     assert metrics["metric_defined_n"]["contract_precision"] == 1
     # generate_batch_requests collects decode stats → measured zero fallbacks.
     assert metrics["fallback_count"] == 0
     assert metrics["empty_prediction_count"] == 0
+    assert not (config.run_dir / "decode_progress.json").exists()
     # Default policy is grammar-constrained → syntax metrics are labeled as
     # decoder-guaranteed; the slot contract is not injected by default.
     assert "parse_rate" in metrics["decoder_guaranteed"]
@@ -346,6 +349,38 @@ def test_all_timeouts_leave_quality_rates_unmeasured(tmp_path: Path) -> None:
     # Runtime completeness metrics still report the wall.
     assert metrics["latency_ms_p50_including_incomplete"] is not None
     assert metrics["decode_timeout_count"] == 1
+
+
+def test_supervisor_interrupt_persists_non_scoreable_decode_progress(
+    tmp_path: Path,
+) -> None:
+    from slm_training.models.decode_stats import get_active_stats
+
+    config = _smoke_config(tmp_path)
+    config.decode_timeout_seconds = 1
+
+    class InterruptedBatchModel:
+        def generate_batch_requests(self, requests, **_kwargs):
+            assert requests
+            stats = get_active_stats()
+            assert stats is not None
+            stats.completion_witness_states_expanded = 11
+            stats.completion_edges_built = 13
+            raise KeyboardInterrupt
+
+    with pytest.raises(KeyboardInterrupt):
+        evaluate(config, model=InterruptedBatchModel(), publish_agentv=False)
+
+    progress = json.loads((config.run_dir / "decode_progress.json").read_text())
+    assert progress["schema_version"] == "DecodeProgressV1"
+    assert progress["status"] == "interrupted"
+    assert progress["measurement_complete"] is False
+    assert progress["scoreable"] is False
+    assert progress["processed_record_n"] == 0
+    assert progress["active_record_ids"]
+    assert progress["decode_stats"]["completion_witness_states_expanded_sum"] == 11
+    assert progress["decode_stats"]["completion_edges_built_sum"] == 13
+    assert progress["version_stamp"]["stamp_schema"] == "version_stamp/v1"
 
 
 def test_agentv_single_suite_publishes_one_case() -> None:

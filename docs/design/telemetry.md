@@ -119,6 +119,25 @@ accepted from already-computed logits remain `accepted_run_tokens`; they are not
 reported as no-forward proof decisions. Binding evidence contains keys, slot ids,
 digests, and byte counts but never raw caller content.
 
+## Interrupt-safe decode progress
+
+When the bounded-process supervisor interrupts an evaluation, the model-build
+evaluator atomically writes `<run-root>/<id>/decode_progress.json`.
+`DecodeProgressV1` is a bounded, version-stamped diagnostic sidecar with
+processed-record count, active record ids, and the aggregate `DecodeStats` observed
+so far. It is explicitly
+`measurement_complete=false` and `scoreable=false`: neither autotrain nor promotion
+may treat its counters as quality or performance results. A successful canonical
+`eval_<suite>.json` write removes the transient sidecar.
+
+If the bounded-process supervisor interrupts the evaluator, the active stats bucket
+is attached to the exception, completion-session deltas are folded in `finally`, and
+the sidecar is refreshed before the interrupt propagates. Autoresearch copies only a
+fresh sidecar into `stage_telemetry[].partial_output`; stale files are rejected by
+revision, and malformed, scoreable, complete, or wrong-run payloads are ignored.
+This preserves grammar-work and prefill counters for diagnosis while the experiment
+outcome remains stopped and metric-empty.
+
 ## Decode-stats solver work metrics (VSS1-04 / SLM-64)
 
 The verified solver's per-decode work is measured on the existing

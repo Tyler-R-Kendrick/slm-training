@@ -8,6 +8,7 @@ import math
 import platform
 import re
 import signal
+import sys
 import time
 from dataclasses import fields
 from datetime import UTC, datetime
@@ -45,12 +46,14 @@ from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
 )
 from slm_training.models.decode_stats import (
+    DecodeStats,
+    aggregate_stats,
     check_decode_deadline,
     clear_decode_deadline,
     collect_decode_stats,
     set_decode_deadline,
 )
-from slm_training.versioning import component_version
+from slm_training.versioning import build_version_stamp, component_version
 
 _COMPONENT_RE = re.compile(r"\b([A-Z][A-Za-z0-9]*)\s*\(")
 _LANGSMITH_METRIC_KEYS = (
@@ -66,6 +69,38 @@ _LANGSMITH_METRIC_KEYS = (
     "decode_timeout_count",
     "decode_timeout_rate",
 )
+
+
+def _persist_decode_progress(
+    config: ModelBuildConfig,
+    *,
+    status: str,
+    processed_record_n: int,
+    active_chunk: list[ExampleRecord],
+    stats_rows: list[DecodeStats],
+    version_stamp: dict[str, Any],
+) -> Path:
+    """Atomically persist non-scoreable decode work before a supervisor stop."""
+    run_dir = config.run_dir
+    run_dir.mkdir(parents=True, exist_ok=True)
+    path = run_dir / "decode_progress.json"
+    tmp = run_dir / "decode_progress.json.tmp"
+    payload = {
+        "schema_version": "DecodeProgressV1",
+        "run_id": config.run_id,
+        "suite": config.suite,
+        "status": status,
+        "measurement_complete": False,
+        "scoreable": False,
+        "processed_record_n": int(processed_record_n),
+        "active_record_ids": [record.id for record in active_chunk],
+        "decode_stats": aggregate_stats(stats_rows),
+        "version_stamp": version_stamp,
+        "recorded_at": datetime.now(UTC).isoformat(),
+    }
+    tmp.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    tmp.replace(path)
+    return path
 
 
 def _evaluation_version_components(config: ModelBuildConfig) -> tuple[str, ...]:
@@ -953,6 +988,9 @@ def evaluate(
         target_length=canvas_cap,
     )
     harness_provenance_ref = harness_provenance_id(harness_provenance)
+    progress_version_stamp = build_version_stamp(
+        *_evaluation_version_components(config)
+    )
     cache_key = None
     cache_dependencies: dict[str, Any] = {}
     if cache is not None and cache.config.mode is not EvalCacheMode.OFF:
@@ -1004,6 +1042,7 @@ def evaluate(
                     (run_dir / "eval.json").write_text(
                         json.dumps(cached_metrics, indent=2) + "\n", encoding="utf-8"
                     )
+                (run_dir / "decode_progress.json").unlink(missing_ok=True)
                 return cached_metrics
 
     batch_size = 1
@@ -1126,6 +1165,7 @@ def evaluate(
     # None when the plugin exposes no stats) so every scored record can be
     # classified into the decode-outcome taxonomy.
     chunk_decode_meta: list[dict[str, Any]] = []
+    processed_record_n = 0
 
     def _generate_chunk(
         chunk: list[ExampleRecord],
@@ -1137,10 +1177,11 @@ def evaluate(
         one-shot timeout swallowed by bare ``except Exception`` cannot leave
         decode running for minutes past ``decode_timeout_seconds``.
         """
-        nonlocal decode_timeout_count
+        nonlocal decode_timeout_count, processed_record_n
         seconds = float(getattr(config, "decode_timeout_seconds", 0) or 0)
 
         def _run(timed_out: bool) -> tuple[list[str], list[dict[str, Any]]]:
+            nonlocal processed_record_n
             stats_before = len(decode_stats_rows)
             # Re-check at chunk entry so deadline is live even without LTR hooks.
             if not timed_out:
@@ -1150,10 +1191,41 @@ def evaluate(
                 decode_stats_rows[-1] if len(decode_stats_rows) > stats_before else None
             )
             chunk_decode_meta.append({"timed_out": timed_out, "stats": stats})
+            processed_record_n += len(chunk)
             return result
 
+        def _persist_interrupted(exc: KeyboardInterrupt) -> None:
+            stats = getattr(exc, "decode_stats", None)
+            if isinstance(stats, DecodeStats):
+                _annotate_decode_trace_records(stats, chunk)
+            partial_rows = [
+                row for row in decode_stats_rows if isinstance(row, DecodeStats)
+            ]
+            if isinstance(stats, DecodeStats) and all(
+                stats is not row for row in partial_rows
+            ):
+                partial_rows.append(stats)
+            try:
+                _persist_decode_progress(
+                    config,
+                    status="interrupted",
+                    processed_record_n=processed_record_n,
+                    active_chunk=chunk,
+                    stats_rows=partial_rows,
+                    version_stamp=progress_version_stamp,
+                )
+            except OSError as progress_error:
+                print(
+                    f"decode progress persistence failed: {progress_error}",
+                    file=sys.stderr,
+                )
+
         if seconds <= 0:
-            return _run(timed_out=False)
+            try:
+                return _run(timed_out=False)
+            except KeyboardInterrupt as exc:
+                _persist_interrupted(exc)
+                raise
 
         set_decode_deadline(seconds)
         use_alarm = hasattr(signal, "setitimer") and hasattr(signal, "SIGALRM")
@@ -1176,7 +1248,13 @@ def evaluate(
                 decode_stats_rows.append(stats)
             chunk_decode_meta.append({"timed_out": True, "stats": stats})
             decode_timeout_count += len(chunk)
+            processed_record_n += len(chunk)
             return ["" for _ in chunk], []
+        except KeyboardInterrupt as exc:
+            if use_alarm:
+                signal.setitimer(signal.ITIMER_REAL, 0)
+            _persist_interrupted(exc)
+            raise
         finally:
             if use_alarm:
                 signal.setitimer(signal.ITIMER_REAL, 0)
@@ -2051,11 +2129,7 @@ def evaluate(
     run_dir.mkdir(parents=True, exist_ok=True)
     save_snapshot(run_dir, flag_snapshot)
     suite_path = run_dir / f"eval_{config.suite}.json"
-    from slm_training.versioning import build_version_stamp
-
-    metrics["version_stamp"] = build_version_stamp(
-        *_evaluation_version_components(config)
-    )
+    metrics["version_stamp"] = progress_version_stamp
     metrics["output"] = str(suite_path)
     if publish_agentv:
         if config.suite in DEFAULT_SHIP_GATES:
@@ -2087,6 +2161,7 @@ def evaluate(
     suite_path.write_text(payload, encoding="utf-8")
     if config.suite == "smoke":
         (run_dir / "eval.json").write_text(payload, encoding="utf-8")
+    (run_dir / "decode_progress.json").unlink(missing_ok=True)
     if publish_agentv:
         _record_langsmith_evaluation(
             config,

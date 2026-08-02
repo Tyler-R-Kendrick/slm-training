@@ -786,6 +786,8 @@ def execute_commands(
         )
         stage_artifact = _stage_artifact_path(command, cwd=cwd)
         artifact_revision_before = _artifact_revision(stage_artifact)
+        progress_artifact = _stage_progress_artifact_path(command, cwd=cwd)
+        progress_revision_before = _artifact_revision(progress_artifact)
         completed = run_bounded_process(
             command,
             cwd=cwd,
@@ -793,17 +795,29 @@ def execute_commands(
             kill_grace_seconds=grace,
         )
         if getattr(completed, "timed_out", False):
-            stages.append(
-                {
-                    "command": command,
-                    "timed_out": True,
-                    "interrupted": getattr(completed, "interrupted", False),
-                    "killed": getattr(completed, "killed", False),
-                    "process_outcome": completed.outcome.value,
-                    "stdout": completed.stdout,
-                    "stderr": completed.stderr,
-                }
-            )
+            stage: dict[str, object] = {
+                "command": command,
+                "timed_out": True,
+                "interrupted": getattr(completed, "interrupted", False),
+                "killed": getattr(completed, "killed", False),
+                "process_outcome": completed.outcome.value,
+                "stdout": completed.stdout,
+                "stderr": completed.stderr,
+                "measurement_complete": False,
+            }
+            partial = _read_changed_json(progress_artifact, progress_revision_before)
+            run_id = _command_value(command, "--run-id")
+            if (
+                isinstance(partial, dict)
+                and progress_artifact is not None
+                and partial.get("schema_version") == "DecodeProgressV1"
+                and partial.get("run_id") == run_id
+                and partial.get("measurement_complete") is False
+                and partial.get("scoreable") is False
+            ):
+                stage["partial_output"] = partial
+                stage["partial_output_source"] = str(progress_artifact)
+            stages.append(stage)
             return ExperimentOutcome(
                 experiment_id=experiment.experiment_id,
                 campaign_id=experiment.campaign_id,
@@ -955,6 +969,33 @@ def _stage_artifact_path(command: list[str], *, cwd: Path | str) -> Path | None:
     if not root.is_absolute():
         root = Path(cwd) / root
     return root / run_id / artifact_name
+
+
+def _stage_progress_artifact_path(
+    command: list[str], *, cwd: Path | str
+) -> Path | None:
+    if "scripts.evaluate_model" not in command:
+        return None
+    run_root = _command_value(command, "--run-root")
+    run_id = _command_value(command, "--run-id")
+    if run_root is None or run_id is None:
+        return None
+    root = Path(run_root)
+    if not root.is_absolute():
+        root = Path(cwd) / root
+    return root / run_id / "decode_progress.json"
+
+
+def _read_changed_json(
+    path: Path | None, revision_before: tuple[int, int] | None
+) -> object | None:
+    revision_after = _artifact_revision(path)
+    if path is None or revision_after is None or revision_after == revision_before:
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
 
 
 def _artifact_revision(path: Path | None) -> tuple[int, int] | None:

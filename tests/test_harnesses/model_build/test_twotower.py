@@ -61,6 +61,66 @@ def test_tokenize_preserves_placeholders_and_whitespace() -> None:
     assert "Card" in tokens
 
 
+def test_compiler_timeout_folds_live_completion_session_stats(monkeypatch) -> None:
+    from slm_training.dsl.grammar.fastpath import compiler_draft
+    from slm_training.models.decode_stats import collect_decode_stats, get_active_stats
+
+    class State:
+        completion_batch_cache = None
+        remaining_tokens = None
+        collected = 0
+
+        def _collect_completion_stats(self) -> None:
+            self.collected += 1
+            stats = get_active_stats()
+            assert stats is not None
+            stats.completion_witness_states_expanded = 17
+
+    state = State()
+
+    class Model:
+        config = type(
+            "Config",
+            (),
+            {
+                "compiler_search_mode": "greedy",
+                "grammar_draft_window": 8,
+                "slot_contract_constrained_decode": False,
+            },
+        )()
+        tokenizer = type("Tokenizer", (), {"bos_id": 1})()
+        _slot_contracts = None
+
+        def _speculative_ranker(self):
+            return None
+
+        def _new_grammar_states(self, _batch_size):
+            return [state]
+
+        def _effective_min_content(self, _contract):
+            return 0
+
+        def _runtime_symbols_for_row(self, _row):
+            return ()
+
+    def interrupt(*_args, **_kwargs):
+        raise TimeoutError("deadline")
+
+    monkeypatch.setattr(compiler_draft, "build_completion_forest", interrupt)
+    with collect_decode_stats() as stats:
+        with pytest.raises(TimeoutError, match="deadline"):
+            TwoTowerModel._compiler_ltr_decode_batch(
+                Model(),
+                torch.zeros((1, 1, 1)),
+                torch.zeros((1, 1), dtype=torch.bool),
+                8,
+                mode="tree",
+            )
+
+    assert state.collected == 1
+    assert stats.completion_witness_states_expanded == 17
+
+
 def test_tokenizer_roundtrip() -> None:
     tok = OpenUITokenizer.build([HERO, CTA, "Hero card layout"])
     encoded = tok.encode(HERO)
