@@ -4147,8 +4147,7 @@ def _write_cycle_handoff(
             if manifest_path.is_file()
             else None
         )
-        actions.insert(
-            0,
+        actions[0:0] = [
             AutotrainActionV1(
                 kind="repair_harness",
                 owner="improve-openui-harnesses",
@@ -4157,7 +4156,17 @@ def _write_cycle_handoff(
                 harness_family=family,  # type: ignore[arg-type]
                 frozen_manifest_sha256=manifest_sha,
             ),
-        )
+            AutotrainActionV1(
+                kind="retry_measurement",
+                owner="autotrain",
+                reason=(
+                    "replay the identical frozen arm after the required canonical "
+                    "harness repair"
+                ),
+                evidence_ids=(evidence_id,),
+                frozen_manifest_sha256=manifest_sha,
+            ),
+        ]
     elif finalized_decode_timeout:
         manifest_path = camp_dir / "manifests" / f"{candidate_id}.json"
         manifest_sha = (

@@ -2646,7 +2646,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v85",
+      "version": "v86",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2686,6 +2686,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v86",
+          "date": "2026-08-02",
+          "note": "Keep the exact content-bound measurement retry pending alongside a canonical harness-repair action so acknowledging the repair cannot silently advance to a different campaign or seed."
+        },
         {
           "version": "v85",
           "date": "2026-08-02",
@@ -7265,6 +7270,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1783 fixture-efficiency candidate checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
         {
           "version": "v3",
           "date": "2026-08-02",

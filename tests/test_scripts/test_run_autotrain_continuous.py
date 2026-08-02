@@ -3213,6 +3213,12 @@ def test_cycle_handoff_separates_fixture_climb_from_ship(tmp_path: Path) -> None
 def test_cycle_handoff_routes_frozen_harness_repair(tmp_path: Path) -> None:
     root = tmp_path / "autoresearch"
     camp = root / "cycle-1"
+    head = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], text=True
+    ).strip()
+    predecessor = subprocess.check_output(
+        ["git", "rev-parse", "HEAD^"], text=True
+    ).strip()
     (camp / "artifacts" / "outcomes").mkdir(parents=True)
     (camp / "artifacts" / "outcomes" / "outcome.json").write_text(
         json.dumps(
@@ -3227,14 +3233,29 @@ def test_cycle_handoff_routes_frozen_harness_repair(tmp_path: Path) -> None:
         )
     )
     (camp / "manifests").mkdir()
-    (camp / "manifests" / "cand.json").write_text("{}\n")
+    experiment = {
+        "experiment_id": "cand",
+        "campaign_id": "cycle-1",
+        "hypothesis": "A frozen harness failure remains replayable after repair.",
+        "rationale": "Repair and measurement are independent obligations.",
+        "expected_effect": "The same content-bound manifest is replayed.",
+        "falsification_criteria": ["The retry disappears after repair."],
+        "stop_conditions": ["Stop after the bounded replay."],
+        "citations": ["fixture://repair-replay"],
+        "knobs": {"steps": 1},
+    }
+    manifest_path = camp / "manifests" / "cand.json"
+    manifest_path.write_text(
+        _mod._manifest("cycle-1", experiment, predecessor).model_dump_json(indent=2)
+        + "\n"
+    )
     handoff = _mod._write_cycle_handoff(
         root=root,
         loop_id="loop-1",
         campaign_id="cycle-1",
         cycle_index=1,
-        upstream_commit="a" * 40,
-        integration_commit="b" * 40,
+        upstream_commit=predecessor,
+        integration_commit=predecessor,
         role="promotion",
         cycle_intent="promote",
         primary_metric="held_out.structural_similarity",
@@ -3253,7 +3274,36 @@ def test_cycle_handoff_routes_frozen_harness_repair(tmp_path: Path) -> None:
     assert repair.owner == "improve-openui-harnesses"
     assert repair.harness_family == "model_build"
     assert repair.frozen_manifest_sha256 is not None
+    retry = handoff.actions[1]
+    assert retry.kind == "retry_measurement"
+    assert retry.owner == "autotrain"
+    assert retry.frozen_manifest_sha256 == repair.frozen_manifest_sha256
+    assert "identical frozen arm" in retry.reason
     assert all(action.kind != "next_experiment" for action in handoff.actions)
+
+    repair_index = handoff.actions.index(repair)
+    evidence = _mod.bind_autotrain_action_evidence(
+        root, handoff, repair, (head,)
+    )
+    _mod.append_autotrain_action_receipt(
+        root,
+        _mod.AutotrainActionReceiptV1(
+            loop_id="loop-1",
+            campaign_id="cycle-1",
+            action_index=repair_index,
+            action_sha256=_mod.autotrain_action_sha256(repair),
+            action_kind=repair.kind,
+            status="completed",
+            evidence_uris=(head,),
+            evidence=evidence,
+        ),
+    )
+    assert all(
+        action.kind != "repair_harness"
+        for _, action in _mod.pending_autotrain_actions(root, handoff)
+    )
+    pending_execution = _mod.pending_autotrain_execution_actions(root, handoff)
+    assert pending_execution == ((handoff.actions.index(retry), retry),)
 
 
 def test_repeated_cycle_failure_blocks_on_third_identical_error(tmp_path: Path) -> None:
