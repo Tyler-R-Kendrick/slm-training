@@ -1,0 +1,63 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c3",
+  "cycle_index": 3,
+  "source_commit": "2500b717855d32ee82836d9807d0a7a2a570951b",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "cycle_intent": "retry_measurement",
+  "recipe": {
+    "device": "cpu",
+    "steps": 21,
+    "batch_size": 2,
+    "seed": 100001,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "note": "frozen replay of cycle 1's control/bounds checkpoints, run after the NODE_OPTIONS harness fix in 14ddf5e"
+  },
+  "arms": {
+    "c3-control": {
+      "status": "measurement_complete",
+      "levers": {"grammar_completion_bounds": false, "compact_active_canvas": false},
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0575,
+        "binder_reference_f1": 0.6333333333333333,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 1537.27
+      },
+      "gates": "reject (insufficient_n=3<20 and quality thresholds); expected on a 21-step fixture"
+    },
+    "c3-bounds": {
+      "status": "measurement_complete",
+      "levers": {"grammar_completion_bounds": true, "compact_active_canvas": false},
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0575,
+        "binder_reference_f1": 0.6333333333333333,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 1624.73
+      },
+      "gates": "reject (same as control)"
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "conclusion": "First complete AgentV-backed measurement for this loop lineage. grammar_completion_bounds is an exact quality tie with the matched control (parse 1.0, meaningful 0.0, structural_similarity 0.0575, binder F1 0.6333 on both arms) and is 5.68% slower on smoke p50 (1624.73 vs 1537.27 ms). Ship gates correctly reject both arms on fixture n=3 (<20) and quality thresholds; this is expected for a 21-step screening fixture, not a promotion signal. Rejected: bounds is a pure regression here (no quality upside, latency downside).",
+  "next_priorities": [
+    "Do not carry grammar_completion_bounds forward as a positive lever from this recipe",
+    "Test the size-matched component-plan hypothesis next per the driver's ranked priorities",
+    "Do not promote or ship either checkpoint; both remain screening-scale fixture artifacts"
+  ],
+  "recorded_at": "2026-08-02T15:46:43Z"
+}
