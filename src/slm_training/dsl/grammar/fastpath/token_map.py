@@ -54,12 +54,17 @@ def decode_prefix(tokenizer: OpenUITokenizer, token_ids: list[int]) -> str:
 def token_surface_piece(tokenizer: OpenUITokenizer, token_id: int) -> str:
     """Decode one token into the source fragment consumed by grammar state."""
     tid = int(token_id)
+    kind_of = getattr(tokenizer, "kind_of", None)
+    kind = getattr(kind_of(tid), "value", "") if callable(kind_of) else ""
+    cacheable = kind != "macro"
     cache = getattr(tokenizer, "_grammar_surface_piece_cache", None)
-    if isinstance(cache, dict) and tid in cache:
+    if cacheable and isinstance(cache, dict) and tid in cache:
         return str(cache[tid])
 
     def _remember(piece: str) -> str:
         nonlocal cache
+        if not cacheable:
+            return piece
         if not isinstance(cache, dict):
             cache = {}
             try:
@@ -88,8 +93,6 @@ def token_surface_piece(tokenizer: OpenUITokenizer, token_id: int) -> str:
             return _remember(chr(int(raw[2:], 16)))
         except ValueError:
             return _remember(raw)
-    kind_of = getattr(tokenizer, "kind_of", None)
-    kind = getattr(kind_of(tid), "value", "") if callable(kind_of) else ""
     if kind in {"sym", "bind", "state", "lit", "macro"} or not raw:
         decoded = tokenizer.decode([tid])
         if decoded:

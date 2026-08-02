@@ -2226,31 +2226,58 @@ def _classify_positive(
 
     reasons_pre: list[str] = []
     for run_id in (control_id, candidate_id):
-        scoreboard = _read_json(camp_dir / "runs" / run_id / "scoreboard.json")
+        scoreboard_path = camp_dir / "runs" / run_id / "scoreboard.json"
+        if not scoreboard_path.is_file():
+            reasons_pre.append(f"measurement_incomplete:{run_id}:missing_scoreboard")
+            continue
+        scoreboard = _read_json(scoreboard_path)
         suites = scoreboard.get("suites")
         if isinstance(suites, dict):
+            if any(not isinstance(suite, dict) for suite in suites.values()):
+                reasons_pre.append(f"measurement_incomplete:{run_id}:invalid_suites")
+                continue
             suite_rows = list(suites.items())
         elif isinstance(suites, list):
+            if any(not isinstance(suite, dict) for suite in suites):
+                reasons_pre.append(f"measurement_incomplete:{run_id}:invalid_suites")
+                continue
             suite_rows = [
                 (str(suite.get("suite") or index), suite)
                 for index, suite in enumerate(suites)
-                if isinstance(suite, dict)
             ]
         else:
+            reasons_pre.append(f"measurement_incomplete:{run_id}:invalid_suites")
+            continue
+        if not suite_rows:
+            reasons_pre.append(f"measurement_incomplete:{run_id}:empty_suites")
             continue
         for suite_name, suite in suite_rows:
+            total_n = suite.get("document_n", suite.get("n"))
+            completed_n = suite.get("completed_document_n")
             incomplete_n = suite.get("incomplete_document_n")
             timeout_n = suite.get("decode_timeout_document_count")
-            if not isinstance(timeout_n, int):
+            if type(timeout_n) is not int:
                 timeout_n = suite.get("decode_timeout_count")
-            if (isinstance(incomplete_n, int) and incomplete_n > 0) or (
-                isinstance(timeout_n, int) and timeout_n > 0
+            counts = (total_n, completed_n, incomplete_n, timeout_n)
+            if (
+                any(type(value) is not int or value < 0 for value in counts)
+                or completed_n + incomplete_n != total_n
+                or timeout_n > incomplete_n
             ):
                 reasons_pre.append(
                     "measurement_incomplete:"
+                    f"{run_id}:{suite_name}:invalid_counts:"
+                    f"document_n={total_n}:completed_document_n={completed_n}:"
+                    f"incomplete_document_n={incomplete_n}:"
+                    f"decode_timeout_count={timeout_n}"
+                )
+                continue
+            if incomplete_n > 0 or timeout_n > 0:
+                reasons_pre.append(
+                    "measurement_incomplete:"
                     f"{run_id}:{suite_name}:"
-                    f"incomplete_document_n={incomplete_n or 0}:"
-                    f"decode_timeout_count={timeout_n or 0}"
+                    f"incomplete_document_n={incomplete_n}:"
+                    f"decode_timeout_count={timeout_n}"
                 )
     outcomes = list((camp_dir / "artifacts" / "outcomes").glob("*.json"))
     for path in outcomes:

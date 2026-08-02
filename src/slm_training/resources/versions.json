@@ -1146,7 +1146,7 @@
       ]
     },
     "dsl.completion_kernel": {
-      "version": "v9",
+      "version": "v10",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/grammar/fastpath/engine.py",
@@ -1173,6 +1173,11 @@
         "docs/design/adr-constrained-diffusion-topology-split.md"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-08-02",
+          "note": "Keep mutable macro expansions out of the token surface cache and cover the expansion-table mutation boundary with exact direct-feed regression evidence."
+        },
         {
           "version": "v9",
           "date": "2026-08-02",
@@ -2591,7 +2596,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v58",
+      "version": "v59",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2631,6 +2636,16 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v59",
+          "date": "2026-08-02",
+          "note": "no-bump: move the invalid and empty scoreboard parameter table into the canonical external test-case resource; assertions and harness behavior are unchanged."
+        },
+        {
+          "version": "v59",
+          "date": "2026-08-02",
+          "note": "Fail closed before positive classification when either arm lacks a scoreboard, has invalid or empty suites, or reports inconsistent document and timeout counts."
+        },
         {
           "version": "v58",
           "date": "2026-08-02",
@@ -10762,7 +10777,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v285",
+      "version": "v286",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -10805,6 +10820,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v286",
+          "date": "2026-08-02",
+          "note": "Decode mutable macro token surfaces from the live expansion table instead of retaining stale per-token cached text."
+        },
         {
           "version": "v285",
           "date": "2026-08-02",

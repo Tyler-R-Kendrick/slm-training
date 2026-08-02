@@ -87,5 +87,17 @@
   },
   "checkpoint_documentation_required": true,
   "checkpoint_reuse": "frozen replay only",
-  "ship_eligible": false
+  "ship_eligible": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "e43d05633dca9919762392f8f9485924f20902d3",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v56",
+      "harness.model_build.eval": "v73",
+      "evals.meaningful_program": "2.13.0",
+      "model.twotower": "v284",
+      "dsl.completion_kernel": "v6"
+    }
+  }
 }

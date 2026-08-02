@@ -9,6 +9,7 @@
   "eval_limit": 1,
   "eval_offset": 0,
   "decode_timeout_seconds": 24,
+  "evidence_authority": "exploratory_dirty_profiles_with_clean_latest_reproduction",
   "profiles": [
     {"variant": "cold_setup_separated", "tokens_emitted": 37, "forwards": 26, "compiler_ms": 21396.637, "states": 128093, "witnesses": 9060, "forks": 145179, "outcome": "typed_timeout"},
     {"variant": "immutable_semantic_hash", "tokens_emitted": 50, "forwards": 36, "compiler_ms": 20457.3, "states": 132384, "witnesses": 9679, "forks": 149955, "outcome": "typed_timeout"},
@@ -23,6 +24,38 @@
     "advance_path_cumulative_seconds": 10.357,
     "official_bridge_calls": 189,
     "official_bridge_cumulative_seconds": 2.882
+  },
+  "clean_reproduction": {
+    "run_id": "c1741-fed-history-cow-clean-profile",
+    "variant": "copy_on_write_fed_token_history",
+    "evidence_authority": "clean_commit_bound_fixture_profile",
+    "document_n": 1,
+    "completed_document_n": 0,
+    "incomplete_document_n": 1,
+    "decode_timeout_document_count": 1,
+    "tokens_emitted": 64,
+    "forwards": 43,
+    "compiler_ms": 19595.679,
+    "states": 144537,
+    "witnesses": 10548,
+    "forks": 162878,
+    "outcome": "typed_timeout",
+    "agentv": "emitted_failed_as_expected_for_incomplete_fixture",
+    "version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "code_commit": "b8b1bda6a6e638363f96e09f51024abf5831a760",
+      "code_dirty": false,
+      "components": {
+        "config.levers": "v30",
+        "harness.model_build.eval": "v74",
+        "harness.experiment_feature_flags": "v4",
+        "evals.meaningful_program": "2.13.0",
+        "evals.power_protocol": "v8",
+        "evals.scoring": "v22",
+        "model.twotower": "v285"
+      },
+      "stamped_at": "2026-08-02T07:52:07.578011+00:00"
+    }
   },
   "reverted_hypotheses": [
     "cross_query_witness_subproblem_cache",
@@ -48,13 +81,13 @@
   "ship_claim": false,
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "1a196a2a79466a29b93670306180bbc10772897f",
-    "code_dirty": true,
+    "code_commit": "b8b1bda6a6e638363f96e09f51024abf5831a760",
+    "code_dirty": false,
     "components": {
       "harness.autoresearch.experiment_campaign": "v58",
       "harness.model_build.eval": "v74",
       "model.twotower": "v285",
-      "dsl.completion_kernel": "v7",
+      "dsl.completion_kernel": "v9",
       "dsl.symbolic_surface": "v5"
     }
   }

@@ -263,6 +263,17 @@ def test_macro_expansion_feeds_iteratively() -> None:
     assert engine.parser_state_key() == key
 
 
+def test_macro_surface_piece_tracks_mutable_expansion_table() -> None:
+    tok = _tok()
+    macro_id = tok.macro_id(0)
+    before = token_surface_piece(tok, macro_id)
+    tok.set_macro_expansions([["Card", "(", ")"]])
+    after = token_surface_piece(tok, macro_id)
+    assert after == tok.decode([macro_id])
+    assert after != before
+    assert macro_id not in getattr(tok, "_grammar_surface_piece_cache", {})
+
+
 def test_mutually_recursive_macro_expansion_fails_closed() -> None:
     tok = _tok()
     tok.macro_expansions = (("<MACRO_1>", "Card"), ("<MACRO_0>", "("))
