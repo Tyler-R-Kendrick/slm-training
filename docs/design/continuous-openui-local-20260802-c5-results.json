@@ -1,0 +1,101 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c5",
+  "cycle_index": 5,
+  "cycle_intent": "retry_measurement",
+  "source_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "integration_commit": "56fb65a7e6a458d6a470bd2104c2486144784293",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "seed": 100003,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "replay_of": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c3",
+  "replay_reason": "c3's ship-gate scoreboard.json never wrote for either arm because the local sandbox's ambient NODE_OPTIONS=\"--import tsx\" blocked the AgentV publish subprocess (recurrence of the cycle 1/2 blocker). A first automatic retry attempt (would-be campaign c4) then crashed on a harness bug (_apply_frozen_replay truncated the hyphenated 'component-plan' slug to 'plan' via rsplit); fixed in scripts/run_autotrain_continuous.py (commit 56fb65a7) and replayed here as the identical frozen control/candidate arm, reusing c3's already-completed train stage (evaluation-only replay, no new checkpoint).",
+  "primary_metric": "smoke.structural_similarity",
+  "primary_direction": "increase",
+  "measurement_complete": true,
+  "arms": {
+    "c5-control": {
+      "status": "completed_eval_gates_failed",
+      "reused_checkpoint_from": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c3",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.23083333333333333,
+        "binder_reference_f1": 0.7333333333333334,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 3486.09
+      },
+      "levers": {
+        "component_plan_loss_weight": 0.0,
+        "component_plan_decode_weight": 0.0
+      }
+    },
+    "c5-component-plan": {
+      "status": "completed_eval_gates_failed",
+      "reused_checkpoint_from": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c3",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.1725,
+        "binder_reference_f1": 0.6333333333333333,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 3363.32
+      },
+      "levers": {
+        "component_plan_loss_weight": 1.0,
+        "structural_aux_head_profile": "component-plan"
+      }
+    }
+  },
+  "primary_delta": -0.05833333333333335,
+  "latency_delta_ms": -122.77000000000044,
+  "gate_failures": {
+    "smoke": [
+      "insufficient_n actual=3 need>=20",
+      "meaningful_program_rate actual=0.0 need>=0.66",
+      "structural_similarity actual=0.1725 need>=0.35",
+      "component_type_recall actual=0.0 need>=0.35",
+      "ast_beq_rate actual=0.0 need>=0.2",
+      "canonical_beq_rate actual=0.0 need>=0.1"
+    ],
+    "missing_suites": [
+      "held_out",
+      "adversarial",
+      "ood",
+      "rico_held"
+    ]
+  },
+  "conclusion": "Frozen replay of the c3 control/component-plan arm now completes a full AgentV ship-gate scoreboard for both arms (measurement_complete=true). The component-plan candidate is a genuine regression versus the matched control: structural_similarity 0.2308->0.1725 (delta -0.0583, wrong direction for a primary metric that should increase), binder_reference_f1 0.7333->0.6333, and meaningful_program_rate 0.3333->0.0. Latency is 122.8ms faster on the candidate but that is irrelevant given the quality regression. Ship gates correctly fail closed on fixture n=3 (<20) and every quality threshold for both arms. This confirms (rather than merely infers) the cycle 3 partial-diagnostic direction: component_plan_loss_weight=1.0 with structural_aux_head_profile=\"component-plan\" hurts smoke quality at this size/step budget and is rejected for this recipe.",
+  "sdlc_classification": {
+    "positive": false,
+    "stack_layer": false,
+    "action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260802-continuous-openui-local-8c0b60dd-c5-control",
+      "fixture_insufficient_n:c20260802-continuous-openui-local-8c0b60dd-c5-component-plan",
+      "non_regression_fail:binder_reference_f1:0.7333333333333334->0.6333333333333333",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.23083333333333333 candidate=0.1725 improvement=-0.05833333333333335",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "next_priorities": [
+    "Test the distinct size-matched 'component-edge' quality hypothesis next (component-plan is now rejected for this recipe -- a confirmed quality regression, not merely exhausted).",
+    "Keep the matched control as the size-matched baseline every cycle.",
+    "Soft ship-gate fails on fixture n never stop the continuous loop; do not weaken gates."
+  ],
+  "recorded_at": "2026-08-02T09:56:47.274403Z"
+}

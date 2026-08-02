@@ -50,6 +50,27 @@ Measurement is incomplete (no full ship-gate scoreboard for either arm), so this
 2. **model:** do not accept or reject the `component-plan` hypothesis on this partial diagnostic; wait for the completed replay.
 3. **evaluation:** keep ship gates honest and fail-closed on fixture `n` / missing suites.
 
+## Addendum: replay attempt (cycle 4) crashed on a harness bug, fixed and replayed as cycle 5
+
+The first automatic `retry_measurement` attempt (would-be campaign `...-c4`) crashed
+before producing any scoreboard with `RuntimeError: unsupported automatic frozen
+replay arm: plan`. Root cause: `scripts.run_autotrain_continuous._apply_frozen_replay`
+recovered the screening-bank arm slug from the frozen experiment id via
+`rsplit("-", 1)[-1]`, which only keeps the token after the *last* hyphen — for
+`...-c3-component-plan` that yields `"plan"`, which is not a bank member (half of
+`_SCREENING_ARM_BANK`'s slugs are hyphenated: `component-plan`, `component-edge`,
+`component-inventory`, `binder-topology`, `component-structure`). This reproduced on
+the frozen input and named exactly one canonical family (`autoresearch`), so it was
+routed through `improve-openui-harnesses`: fixed in `scripts/run_autotrain_continuous.py`
+(commit `56fb65a7e6a458d6a470bd2104c2486144784293`) by recovering the slug from the
+known source-campaign prefix (falling back to the longest matching bank slug by
+suffix), with two new regression tests
+(`test_frozen_replay_resolves_hyphenated_arm_slug`,
+`test_screening_arm_slug_prefers_source_campaign_prefix`) and a `harness.autoresearch.experiment_campaign`
+v59→v60 bump. The identical frozen arm was then replayed successfully as campaign
+`continuous-loop-20260802-continuous-openui-local-8c0b60dd-c5` — see
+[cycle 5 results](continuous-openui-local-20260802-c5-results.md).
+
 ## Artifacts
 
 - Campaign: `outputs/autoresearch/continuous-loop-20260802-continuous-openui-local-8c0b60dd-c3/`
@@ -57,4 +78,4 @@ Measurement is incomplete (no full ship-gate scoreboard for either arm), so this
 - Handoff: `.../cycle_handoff.json`
 - SDLC delivery: `.../sdlc_delivery.json`
 - JSON twin: `continuous-openui-local-20260802-c3-results.json`
-- Followed by the frozen replay: [cycle 4 results](continuous-openui-local-20260802-c4-results.md)
+- Followed by the frozen replay: [cycle 5 results](continuous-openui-local-20260802-c5-results.md)

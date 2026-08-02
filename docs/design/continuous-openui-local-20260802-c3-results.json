@@ -83,5 +83,15 @@
     "model: component-plan's partial-diagnostic structural_similarity (-0.058) and binder_reference_f1 regression are not yet evidence either way until the full ship-gate scoreboard completes; do not reject or accept the hypothesis on this incomplete measurement.",
     "evaluation: keep ship gates honest and fail-closed on fixture n / missing suites."
   ],
+  "addendum": {
+    "replay_attempt_c4_crashed": {
+      "error": "RuntimeError: unsupported automatic frozen replay arm: plan",
+      "root_cause": "_apply_frozen_replay recovered the screening-bank slug via rsplit('-', 1)[-1], truncating hyphenated bank slugs like 'component-plan' to 'plan'.",
+      "harness_family": "autoresearch",
+      "fix_commit": "56fb65a7e6a458d6a470bd2104c2486144784293",
+      "fix_component_bump": "harness.autoresearch.experiment_campaign v59->v60",
+      "replayed_as": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c5"
+    }
+  },
   "recorded_at": "2026-08-02T09:47:18.476953Z"
 }
