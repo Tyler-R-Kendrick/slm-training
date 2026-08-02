@@ -2631,7 +2631,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v59",
+      "version": "v60",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2671,6 +2671,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v60",
+          "date": "2026-08-02",
+          "note": "Couple structural auxiliary screening losses to their trained legal-candidate decode rankers and retain decode weights through confirmation and promotion after three loss-only quality nulls"
+        },
         {
           "version": "v59",
           "date": "2026-08-02",

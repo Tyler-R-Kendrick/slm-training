@@ -464,8 +464,31 @@ def test_structural_screening_control_matches_recommended_head_capacity() -> Non
     candidate = by_id["c20260731-c1729-binder-topology"]
     assert control["binder_topology_loss_weight"] == 0.0
     assert candidate["binder_topology_loss_weight"] == 0.25
+    assert control["binder_topology_decode_weight"] == 0.0
+    assert candidate["binder_topology_decode_weight"] == 1.0
     assert control["structural_aux_head_profile"] == "binder-topology"
     assert candidate["structural_aux_head_profile"] == "binder-topology"
+
+
+def test_structural_screening_arms_couple_training_to_decode() -> None:
+    by_slug = {
+        slug: extras for slug, _hypothesis, extras in _mod._SCREENING_ARM_BANK
+    }
+
+    for slug, prefix in (
+        ("component-plan", "component_plan"),
+        ("component-edge", "component_edge"),
+        ("component-inventory", "component_inventory"),
+        ("binder-topology", "binder_topology"),
+    ):
+        assert by_slug[slug][f"{prefix}_loss_weight"] > 0.0
+        assert by_slug[slug][f"{prefix}_decode_weight"] > 0.0
+
+    joint = by_slug["component-structure"]
+    assert joint["component_plan_loss_weight"] > 0.0
+    assert joint["component_plan_decode_weight"] > 0.0
+    assert joint["component_edge_loss_weight"] > 0.0
+    assert joint["component_edge_decode_weight"] > 0.0
 
 
 def test_completed_frozen_retry_steers_to_distinct_quality_arm() -> None:

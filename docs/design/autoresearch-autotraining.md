@@ -220,6 +220,15 @@ Conversely, `evaluate_model --ship-gates` exit 8 is a completed negative result 
 when a nonempty, complete suite scoreboard and error-free AgentV runner record
 accompany the typed failed gate.
 
+Structural screening arms couple learning to inference. Component-plan,
+component-edge, component-inventory, binder-topology, and their joint arm set
+both the preregistered auxiliary loss and its matching model-ranking decode
+weight; the size-matched control prebuilds the same head with both weights zero.
+This follows three complete loss-only nulls where targets and auxiliary learning
+signals were present but the trained head was not directly consumed at decode.
+The decode weight may rank only grammar-legal candidates and never weakens I6.
+Champion fingerprints retain both weights through confirmation and promotion.
+
 ### Program experiments route through this loop (G1, SLM-46)
 
 The DSL diffusion research program (tracks A-G) has no parallel ad-hoc loop:
