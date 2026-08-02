@@ -7018,6 +7018,11 @@
         {
           "version": "v3",
           "date": "2026-08-02",
+          "note": "no-bump: add honest model-card and README provenance for three unrelated continuous-openui-local c1-c3 scratch checkpoints (AgentV-blocked screen, its frozen replay, and a rejected component-plan screen); SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
           "note": "no-bump: add honest model-card and README provenance for two unrelated incomplete c1737 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
         },
         {
