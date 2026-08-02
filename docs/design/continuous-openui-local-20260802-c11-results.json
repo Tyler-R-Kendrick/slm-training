@@ -1,0 +1,46 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c11",
+  "cycle_index": 11,
+  "cycle_intent": "retry_measurement (driver-initiated frozen replay of cycle 10, not a new hypothesis)",
+  "source_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "integration_commit": "b0550d1a040dd30ef492ea0ef5dd7990e7753eb9",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "summary": "After acknowledging cycle 10's document action, the driver was invoked once more (still via the same non-tracked eval-version monkeypatch launcher used for c10) intending to probe the local-only smoke=6 reduced-scope snapshot. Instead, the driver's own pending retry_measurement action (kind=retry_measurement, owner=autotrain, from c10's handoff) took priority: it replayed the IDENTICAL frozen c10 spec against test_data_scaleup_v1 (smoke=12), resuming from c10's saved checkpoint (--checkpoint .../c10-*/checkpoints/last.pt) rather than starting a fresh hypothesis. The smoke6 probe was never exercised because frozen replay reuses the original locked eval_version from the frozen manifest, bypassing default_eval_version() entirely.",
+  "outcome": "measurement_incomplete again -- both arms' evaluate_model stage again hit the ~70s per-arm wall-time budget. Checkpoint resume saved train time and let decode progress slightly further (processed_record_n=3 of 12 for both arms, vs 2 of 12 in cycle 10) but nowhere close to completing n=12 within one cycle.",
+  "recipe": {
+    "device": "cpu",
+    "eval_version": "test_data_scaleup_v1",
+    "eval_suites": "smoke",
+    "decode_timeout_seconds": 24.0,
+    "resumed_from_checkpoint": true
+  },
+  "decode_progress": {
+    "control": {"status": "interrupted", "processed_record_n": 3, "of_smoke_n": 12},
+    "component-structure": {"status": "interrupted", "processed_record_n": 3, "of_smoke_n": 12}
+  },
+  "sdlc_delivery": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "measurement_incomplete:c20260802-continuous-openui-local-8c0b60dd-c11-control:missing_scoreboard",
+      "measurement_incomplete:c20260802-continuous-openui-local-8c0b60dd-c11-component-structure:missing_scoreboard",
+      "wall_timeout:955f460ba4...",
+      "empty_metrics:955f460ba4...",
+      "wall_timeout:281473ce7e...",
+      "empty_metrics:281473ce7e...",
+      "primary_metric_unavailable"
+    ],
+    "measurement_complete": false
+  },
+  "driver_next_action_pending": "handoff.actions[0] kind=retry_measurement, reason='measurement incomplete; replay the identical frozen arm (1/2)' -- a second automatic retry is queued by the driver itself",
+  "session_stopping_decision": "This session stops here rather than continuing to cycle 12. Two consecutive frozen-replay attempts at smoke=12 (cycles 10 and 11) both hit the same structural wall-time ceiling, with only marginal progress from checkpoint reuse (2/12 -> 3/12 records decoded per arm). This confirms the finding is not a one-off fluke: n=12 genuinely does not fit the harness's current per-arm wall budget on CPU, even across repeated attempts with warm checkpoints. Further automatic retries would consume more session budget for the same already-established conclusion, and the driver's own retry_measurement action (not a new hypothesis) does not exercise the locally-built smoke=6 probe at all -- so continuing to invoke the driver blind would not even test the reduced-scope idea. That requires either clearing/expiring the retry_measurement action (out of this cycle's scope to force) or a future cycle explicitly starting a *fresh* (non-frozen) campaign.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "b0550d1a040dd30ef492ea0ef5dd7990e7753eb9",
+    "code_dirty": false
+  }
+}
