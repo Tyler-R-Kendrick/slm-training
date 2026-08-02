@@ -14,7 +14,8 @@
     {"variant": "immutable_semantic_hash", "tokens_emitted": 50, "forwards": 36, "compiler_ms": 20457.3, "states": 132384, "witnesses": 9679, "forks": 149955, "outcome": "typed_timeout"},
     {"variant": "minimal_official_root_projection", "tokens_emitted": 56, "forwards": 38, "compiler_ms": 20197.334, "states": 144422, "witnesses": 10368, "forks": 162666, "outcome": "typed_timeout"},
     {"variant": "persistent_official_streaming_root_probe", "tokens_emitted": 59, "forwards": 39, "compiler_ms": 20059.013, "states": 144470, "witnesses": 10438, "forks": 162754, "outcome": "typed_timeout"},
-    {"variant": "callback_free_parser_configuration_sharing", "tokens_emitted": 63, "forwards": 42, "compiler_ms": 19787.817, "states": 144524, "witnesses": 10526, "forks": 162854, "outcome": "typed_timeout"}
+    {"variant": "callback_free_parser_configuration_sharing", "tokens_emitted": 63, "forwards": 42, "compiler_ms": 19787.817, "states": 144524, "witnesses": 10526, "forks": 162854, "outcome": "typed_timeout"},
+    {"variant": "copy_on_write_fed_token_history", "tokens_emitted": 66, "forwards": 45, "compiler_ms": 19562.599, "states": 144567, "witnesses": 10592, "forks": 162933, "outcome": "typed_timeout"}
   ],
   "profile_signal": {
     "terminal_witness_cumulative_seconds": 23.373,

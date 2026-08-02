@@ -427,6 +427,22 @@ def test_control_fork_reuses_callback_free_parser_configuration() -> None:
     assert descendant._ip.lexer_thread is not control._ip.lexer_thread
 
 
+def test_fork_fed_history_detaches_on_commit() -> None:
+    """Append-only token history is shared until either fork mutates it."""
+    tok = _tok()
+    source = OpenUIIncrementalEngine()
+    source.reset()
+    assert source.feed_token_id(tok, tok.token_to_id["<BIND_0>"]) is True
+    branch = source.copy_control()
+
+    assert branch._fed_tokens is source._fed_tokens
+    assert branch._fed_lark is source._fed_lark
+    source_history = list(source._fed_tokens)
+    assert branch.feed_token_id(tok, tok.token_to_id["="]) is True
+    assert source._fed_tokens == source_history
+    assert branch._fed_tokens is not source._fed_tokens
+
+
 def test_decode_state_append_path_uses_direct_feed() -> None:
     """GrammarDecodeState.advance_token commits via direct feed: zero full
     syncs after ``reset`` and grammar state identical to the text baseline."""

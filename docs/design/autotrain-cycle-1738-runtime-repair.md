@@ -14,6 +14,7 @@ progress, not model-quality or ship evidence.
 | minimal official root projection | 56 | 38 | 20,197.334 | 144,422 | 10,368 | 162,666 | typed timeout |
 | persistent official streaming root probe | 59 | 39 | 20,059.013 | 144,470 | 10,438 | 162,754 | typed timeout |
 | callback-free parser configuration sharing | 63 | 42 | 19,787.817 | 144,524 | 10,526 | 162,854 | typed timeout |
+| copy-on-write fed-token history | 66 | 45 | 19,562.599 | 144,567 | 10,592 | 162,933 | typed timeout |
 
 All rows use the same c1737 control checkpoint, `smoke` offset 0, one record,
 strict compiler-tree policy, CPU, and a 24-second diagnostic deadline. The
@@ -31,6 +32,9 @@ are not direct speed ratios.
 - Descendant control-only Lark forks share their immutable callback-free parse
   configuration while retaining fork-local state/value stacks and lexer
   threads. This changes allocation only; exact domain parity remains green.
+- Parser forks also share append-only fed-token histories until the first
+  branch-local terminal commit, when both buffers detach before mutation. The
+  ownership regression test and exact domain-parity suite remain green.
 - Repeating `SIGALRM` delivery is disarmed before timeout bookkeeping. The
   prior failure exited 142 with an uncaught second alarm; the repaired runs
   exit 0 with `decode_outcome=runtime_timeout` and complete AgentV artifacts.

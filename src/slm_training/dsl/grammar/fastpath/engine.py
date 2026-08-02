@@ -146,6 +146,7 @@ class OpenUIIncrementalEngine:
         # entire lex of ``_prefix`` (no trim / EOF cut).  Enables the
         # suffix-lex fast path in ``advance_checked``.
         self._fed_lark: list | None = []
+        self._fed_buffers_shared = False
         self._tail_clean = True
         # Open framed literal as (kind, body), kind in {"str", "num"}.
         # Explicit state: a pending frame determines all future feed
@@ -199,6 +200,7 @@ class OpenUIIncrementalEngine:
         self._fed_token_count = 0
         self._fed_tokens = []
         self._fed_lark = []
+        self._fed_buffers_shared = False
         self._tail_clean = True
         self._frame = None
         self._tail = ""
@@ -279,6 +281,7 @@ class OpenUIIncrementalEngine:
             self._ip = self._ip_control_copy()
         self._fed_token_count = 0
         self._fed_tokens = []
+        self._fed_buffers_shared = False
         tokens, trimmed = self._lex_tokens_report(prefix)
         if tokens is None:
             self._accepts = frozenset()
@@ -301,6 +304,7 @@ class OpenUIIncrementalEngine:
         except UnexpectedEOF:
             self._fed_tokens = self._token_keys(tokens[: self._fed_token_count])
         self._fed_lark = list(tokens[: self._fed_token_count])
+        self._fed_buffers_shared = False
         self._tail_clean = not trimmed and self._fed_token_count == len(tokens)
         self._tail = (
             prefix[tokens[self._fed_token_count - 1].end_pos :]
@@ -337,6 +341,7 @@ class OpenUIIncrementalEngine:
         self._prefix = prefix
         self._incremental_advances += 1
         self._fed_lark = list(tokens[: self._fed_token_count])
+        self._fed_buffers_shared = False
         self._tail_clean = not trimmed and self._fed_token_count == len(tokens)
         self._tail = (
             prefix[tokens[self._fed_token_count - 1].end_pos :]
@@ -474,6 +479,7 @@ class OpenUIIncrementalEngine:
                     tail = suffix_text
             self._fed_tokens = self._token_keys(fed)
             self._fed_lark = fed
+            self._fed_buffers_shared = False
             self._tail_clean = tail_clean
             self._tail = tail
             self._prefix = new_prefix
@@ -585,6 +591,7 @@ class OpenUIIncrementalEngine:
             self._tail,
             self._frame,
         ) = snap
+        self._fed_buffers_shared = False
 
     def _append_piece(self, piece: str) -> None:
         """Append ``piece`` to ``_prefix``, separating against lexeme gluing.
@@ -634,6 +641,11 @@ class OpenUIIncrementalEngine:
             self._fed_token_count += 1
         self._append_piece(piece)
         self._tail = ""  # a directly fed piece is consumed fully
+        if self._fed_buffers_shared:
+            self._fed_tokens = list(self._fed_tokens)
+            if self._fed_lark is not None:
+                self._fed_lark = list(self._fed_lark)
+            self._fed_buffers_shared = False
         self._fed_tokens.append((term, value))
         if self._fed_lark is not None:
             self._fed_lark.append(token)
@@ -926,8 +938,13 @@ class OpenUIIncrementalEngine:
             else None
         )
         fork._fed_token_count = self._fed_token_count
-        fork._fed_tokens = list(self._fed_tokens)
-        fork._fed_lark = list(self._fed_lark) if self._fed_lark is not None else None
+        # Forks are overwhelmingly read-only probes. Share the append-only fed
+        # history and detach it only when either engine commits a terminal;
+        # parser stacks and lexer threads remain independently copied above.
+        fork._fed_tokens = self._fed_tokens
+        fork._fed_lark = self._fed_lark
+        self._fed_buffers_shared = True
+        fork._fed_buffers_shared = True
         fork._tail_clean = self._tail_clean
         fork._tail = self._tail
         fork._frame = self._frame

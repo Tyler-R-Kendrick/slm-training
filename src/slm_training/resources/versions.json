@@ -1146,7 +1146,7 @@
       ]
     },
     "dsl.completion_kernel": {
-      "version": "v8",
+      "version": "v9",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/grammar/fastpath/engine.py",
@@ -1173,6 +1173,11 @@
         "docs/design/adr-constrained-diffusion-topology-split.md"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-08-02",
+          "note": "Share append-only fed-token histories across completion parser forks and detach both buffers before the first branch-local terminal commit."
+        },
         {
           "version": "v8",
           "date": "2026-08-02",
