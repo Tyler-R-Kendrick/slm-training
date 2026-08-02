@@ -2561,6 +2561,94 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor() -> No
         _mod._require_automatic_replayable(formal_manifest)
 
 
+def test_frozen_replay_resolves_hyphenated_arm_slug() -> None:
+    """Regression: a naive rsplit("-", 1) truncated multi-hyphen bank slugs.
+
+    ``component-plan``, ``component-edge``, ``component-inventory``,
+    ``binder-topology``, and ``component-structure`` are all
+    ``_SCREENING_ARM_BANK`` slugs containing a hyphen. Recovering the slug
+    from the experiment id must not silently degrade to the trailing token
+    after the last hyphen (e.g. "plan" instead of "component-plan"), which
+    is not a bank member and previously raised
+    ``RuntimeError: unsupported automatic frozen replay arm``.
+    """
+    old_campaign = "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c3"
+    new_campaign = "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c4"
+    matrix = _mod._matrix(
+        campaign_id=new_campaign,
+        evidence_snapshot_id="snapshot-1",
+        cites=["docs/design/autoresearch-autotraining.md"],
+        role_citations={
+            "research": "docs/design/autoresearch-autotraining.md",
+            "prior_result": "docs/design/autoresearch-autotraining.md",
+        },
+        train_version="wf_smoke_v2",
+        eval_version="e938_role_safe_all_targets_v2",
+        steps=20,
+        cycle=4,
+        recommended_slug="component-plan",
+    )
+    old_control = json.loads(json.dumps(matrix["hypotheses"][0]["experiment"]))
+    old_candidate = json.loads(
+        json.dumps(
+            next(
+                row["experiment"]
+                for row in matrix["hypotheses"]
+                if row["experiment"]["experiment_id"].endswith("-component-plan")
+            )
+        )
+    )
+    old_control.update(
+        experiment_id="c20260802-continuous-openui-local-8c0b60dd-c3-control",
+        campaign_id=old_campaign,
+    )
+    old_candidate.update(
+        experiment_id="c20260802-continuous-openui-local-8c0b60dd-c3-component-plan",
+        campaign_id=old_campaign,
+    )
+    old_commit = "a" * 40
+    control_manifest = _mod._manifest(old_campaign, old_control, old_commit)
+    candidate_manifest = _mod._manifest(old_campaign, old_candidate, old_commit)
+    replay = {
+        "source_campaign_id": old_campaign,
+        "control": {
+            "experiment": old_control,
+            "manifest": control_manifest,
+            "manifest_sha256": "b" * 64,
+        },
+        "candidate": {
+            "experiment": old_candidate,
+            "manifest": candidate_manifest,
+            "manifest_sha256": "c" * 64,
+        },
+    }
+
+    replay_manifests = _mod._apply_frozen_replay(matrix, replay, new_campaign)
+    assert set(replay_manifests) == {
+        "c20260802-continuous-openui-local-8c0b60dd-c4-control",
+        "c20260802-continuous-openui-local-8c0b60dd-c4-component-plan",
+    }
+    assert (
+        matrix["recommended_experiment_id"]
+        == "c20260802-continuous-openui-local-8c0b60dd-c4-component-plan"
+    )
+
+
+def test_screening_arm_slug_prefers_source_campaign_prefix() -> None:
+    experiment_id = "c20260802-continuous-openui-local-8c0b60dd-c3-component-plan"
+    assert (
+        _mod._screening_arm_slug(
+            experiment_id,
+            "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c3",
+        )
+        == "component-plan"
+    )
+    # Fallback path (no source campaign id available) still resolves via the
+    # longest matching bank slug rather than the naive trailing token.
+    assert _mod._screening_arm_slug(experiment_id, None) == "component-plan"
+    assert _mod._screening_arm_slug("c-prefix-cycle-1-batch1", None) == "batch1"
+
+
 def test_frozen_replay_finds_completed_train_across_retry_lineage(
     tmp_path: Path,
 ) -> None:

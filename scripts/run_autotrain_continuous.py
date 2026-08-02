@@ -3437,6 +3437,7 @@ def _load_frozen_replay(
         "handoff": handoff,
         "action_index": action_index,
         "action": action,
+        "source_campaign_id": predecessor_campaign_id,
         "candidate": {
             "experiment": _experiment_artifact(
                 camp_dir, candidate_manifest.experiment_id
@@ -3511,12 +3512,40 @@ def _completed_frozen_train_source(
         current_path, current_manifest = _manifest_with_sha(current_dir, replay_sha)
 
 
+def _screening_arm_slug(
+    experiment_id: str, source_campaign_id: str | None
+) -> str:
+    """Recover the ``_SCREENING_ARM_BANK`` slug from a frozen experiment id.
+
+    Experiment ids are ``f"{prefix}-{slug}"`` where ``prefix`` is the source
+    campaign id transformed by ``campaign_id.replace("continuous-loop-", "c")``
+    and ``slug`` may itself contain hyphens (e.g. ``"component-plan"``). A
+    naive ``rsplit("-", 1)`` only recovers the trailing token after the last
+    hyphen, which silently truncates every multi-hyphen bank slug (e.g.
+    ``"component-plan"`` -> ``"plan"``, an unknown slug). Prefer stripping the
+    known campaign prefix; fall back to the longest known bank slug that is a
+    trailing suffix when the prefix is unavailable.
+    """
+
+    if source_campaign_id is not None:
+        prefix = source_campaign_id.replace("continuous-loop-", "c")
+        marker = f"{prefix}-"
+        if experiment_id.startswith(marker):
+            return experiment_id[len(marker) :]
+    for bank_slug, _hypothesis, _extras in sorted(
+        _SCREENING_ARM_BANK, key=lambda item: len(item[0]), reverse=True
+    ):
+        if experiment_id.endswith(f"-{bank_slug}"):
+            return bank_slug
+    return experiment_id.rsplit("-", 1)[-1]
+
+
 def _apply_frozen_replay(
     matrix: dict[str, Any], replay: dict[str, Any], campaign_id: str
 ) -> dict[str, dict[str, Any]]:
     prefix = campaign_id.replace("continuous-loop-", "c")
     old_candidate_id = str(replay["candidate"]["experiment"]["experiment_id"])
-    slug = old_candidate_id.rsplit("-", 1)[-1]
+    slug = _screening_arm_slug(old_candidate_id, replay.get("source_campaign_id"))
     if slug not in {item[0] for item in _SCREENING_ARM_BANK}:
         raise RuntimeError(f"unsupported automatic frozen replay arm: {slug}")
     new_ids = {"control": f"{prefix}-control", "candidate": f"{prefix}-{slug}"}
