@@ -520,6 +520,18 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
     ),
 )
 _RECENT_EXHAUSTION_CYCLE_WINDOW = len(_SCREENING_ARM_BANK)
+# Champion-queue matrices (Change C/D) name their recommended arm "-confirm" or
+# "-promote" instead of a `_SCREENING_ARM_BANK` slug (see the `if promote_levers:`
+# / `elif confirm_levers:` branches of `_matrix`). A frozen measurement retry of
+# one of those arms must recognize the slug even though it is not in the bank —
+# see `_apply_frozen_replay` and the `frozen_slug` pre-pass in
+# `run_supervised_cycle` (cycle-5, continuous-openui-local-2, 2026-08-02): the
+# first automatic replay of a champion-confirmation cycle's `retry_measurement`
+# crashed with ``unsupported automatic frozen replay arm: confirm`` because the
+# successor matrix was built via the generic thrash-rotation branch (no
+# confirm/promote levers set for a bare replay), so it never contained a
+# "-confirm" arm for `_apply_frozen_replay` to patch.
+_CHAMPION_QUEUE_REPLAY_SLUGS = ("confirm", "promote")
 
 
 def _finite_metric(value: object) -> float | None:
@@ -3633,13 +3645,56 @@ def _screening_arm_slug(
     return experiment_id.rsplit("-", 1)[-1]
 
 
+def _frozen_replay_champion_levers(
+    replay: dict[str, Any],
+) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
+    """Levers to rebuild a champion-queue matrix for a frozen replay.
+
+    Champion-queue matrices (Change C/D) name their recommended arm
+    "-confirm" or "-promote" instead of a `_SCREENING_ARM_BANK` slug (the
+    `if promote_levers:` / `elif confirm_levers:` branches of `_matrix`). A
+    frozen `retry_measurement` of one of those arms must rebuild the
+    successor matrix through that same branch, or the generic
+    thrash-rotation matrix never contains a "-confirm"/"-promote" experiment
+    id for `_apply_frozen_replay` to patch onto (cycle-5,
+    continuous-openui-local-2, 2026-08-02: the first automatic replay of a
+    champion-confirmation cycle's `retry_measurement` crashed with
+    ``unsupported automatic frozen replay arm: confirm`` before this).
+    `_apply_frozen_replay` overwrites every knob afterwards, so this only
+    needs to shape the matrix, not exactly reproduce the frozen recipe.
+
+    Returns ``(confirm_levers, promote_levers)``; both ``None`` when the
+    frozen candidate is an ordinary `_SCREENING_ARM_BANK` arm.
+    """
+
+    frozen_slug = _screening_arm_slug(
+        str(replay["candidate"]["experiment"]["experiment_id"]),
+        replay.get("source_campaign_id"),
+    )
+    if frozen_slug not in _CHAMPION_QUEUE_REPLAY_SLUGS:
+        return None, None
+    frozen_knobs = replay["candidate"]["experiment"].get("knobs") or {}
+    levers = _lever_knobs(frozen_knobs)
+    if not levers:
+        raise RuntimeError(
+            f"frozen replay of a champion-{frozen_slug} arm has no lever "
+            f"knobs to rebuild the successor matrix: {frozen_knobs!r}"
+        )
+    if frozen_slug == "confirm":
+        return levers, None
+    return None, levers
+
+
 def _apply_frozen_replay(
     matrix: dict[str, Any], replay: dict[str, Any], campaign_id: str
 ) -> dict[str, dict[str, Any]]:
     prefix = campaign_id.replace("continuous-loop-", "c")
     old_candidate_id = str(replay["candidate"]["experiment"]["experiment_id"])
     slug = _screening_arm_slug(old_candidate_id, replay.get("source_campaign_id"))
-    if slug not in {item[0] for item in _SCREENING_ARM_BANK}:
+    known_slugs = {item[0] for item in _SCREENING_ARM_BANK} | set(
+        _CHAMPION_QUEUE_REPLAY_SLUGS
+    )
+    if slug not in known_slugs:
         raise RuntimeError(f"unsupported automatic frozen replay arm: {slug}")
     new_ids = {"control": f"{prefix}-control", "candidate": f"{prefix}-{slug}"}
     for role, new_id in new_ids.items():
@@ -4963,6 +5018,14 @@ def run_cycle(
             promoting_champion = None
             cycle_intent = role
             promote_levers = None
+    if replay is not None:
+        replay_confirm_levers, replay_promote_levers = _frozen_replay_champion_levers(
+            replay
+        )
+        if replay_confirm_levers is not None:
+            confirm_levers = replay_confirm_levers
+        if replay_promote_levers is not None:
+            promote_levers = replay_promote_levers
     recent_exhausted = _recent_completed_nonpositive_slugs(root, pred)
     skip_slugs = (
         _skip_arm_slugs(queue_entries, integration_commit=integration)

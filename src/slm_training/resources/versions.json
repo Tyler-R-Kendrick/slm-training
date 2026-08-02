@@ -2601,7 +2601,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v61",
+      "version": "v62",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2641,6 +2641,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v62",
+          "date": "2026-08-02",
+          "note": "Cycle-5 diagnostic (continuous-openui-local-2): the queued retry_measurement for c4's champion-confirmation cycle (cycle_role=promotion, cycle_intent=confirm, held_out wall-timeout) crashed with 'unsupported automatic frozen replay arm: confirm' -- the champion-queue arms named '-confirm'/'-promote' (Change C/D, `if promote_levers:` / `elif confirm_levers:` branches of `_matrix`) are not `_SCREENING_ARM_BANK` slugs, and the frozen-replay successor matrix was built through the generic thrash-rotation branch, which never contains a '-confirm'/'-promote' experiment id for `_apply_frozen_replay` to patch. Added `_frozen_replay_champion_levers` (scripts/run_autotrain_continuous.py): recovers the frozen candidate's champion-queue slug and, for 'confirm'/'promote', rebuilds `confirm_levers`/`promote_levers` from the frozen candidate's own lever knobs so the successor matrix is built through the same branch that produced the original arm; `_apply_frozen_replay` now also accepts these two slugs (`_CHAMPION_QUEUE_REPLAY_SLUGS`). Fails closed with a clear RuntimeError if the frozen candidate carries no recognizable lever knobs. Investigated the held_out wall-timeout itself separately: measured decode cost (~11s/record, decode_progress.json) makes promotion's smoke+held_out (8 records) genuinely decode-compute-bound against the fixed ~70s two-arm split of MAX_RUN_MINUTES=3 -- the same class of problem as the parked continuous-openui-local lineage's test_data_scaleup_v1 finding (v61 history), not a budget-sizing bug; no fix attempted there (see docs/design/continuous-openui-local-2-20260802-c5-results.md)."
+        },
         {
           "version": "v61",
           "date": "2026-08-02",

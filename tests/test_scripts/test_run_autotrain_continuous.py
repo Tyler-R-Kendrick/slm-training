@@ -2754,6 +2754,173 @@ def test_frozen_replay_resolves_hyphenated_arm_slug() -> None:
     )
 
 
+def test_frozen_replay_champion_levers_ignores_bank_slug_candidates() -> None:
+    """A frozen replay of an ordinary `_SCREENING_ARM_BANK` arm needs no levers."""
+    replay = {
+        "source_campaign_id": "continuous-loop-20260802-loop-aaaaaaaa-c3",
+        "candidate": {
+            "experiment": {
+                "experiment_id": "c20260802-loop-aaaaaaaa-c3-component-plan",
+                "knobs": {"component_plan_loss_weight": 1.0},
+            }
+        },
+    }
+    assert _mod._frozen_replay_champion_levers(replay) == (None, None)
+
+
+def test_frozen_replay_champion_levers_recovers_confirm_and_promote() -> None:
+    """Regression (cycle-5, continuous-openui-local-2, 2026-08-02).
+
+    The champion-queue "-confirm"/"-promote" arms are not `_SCREENING_ARM_BANK`
+    slugs, so a frozen `retry_measurement` of one previously crashed with
+    ``RuntimeError: unsupported automatic frozen replay arm: confirm`` -- the
+    successor matrix, built via the generic thrash-rotation branch, never
+    contained a "-confirm" experiment id for `_apply_frozen_replay` to patch.
+    """
+    frozen_knobs = {
+        "component_edge_loss_weight": 1.0,
+        "structural_aux_head_profile": "component-edge",
+        "steps": 20,
+        "seed": 100005,
+    }
+    confirm_replay = {
+        "source_campaign_id": "continuous-loop-20260802-loop-aaaaaaaa-c4",
+        "candidate": {
+            "experiment": {
+                "experiment_id": "c20260802-loop-aaaaaaaa-c4-confirm",
+                "knobs": frozen_knobs,
+            }
+        },
+    }
+    confirm_levers, promote_levers = _mod._frozen_replay_champion_levers(
+        confirm_replay
+    )
+    assert promote_levers is None
+    assert confirm_levers == _mod._lever_knobs(frozen_knobs)
+    assert confirm_levers  # non-empty: the guard below only fires when empty
+
+    promote_replay = {
+        "source_campaign_id": "continuous-loop-20260802-loop-aaaaaaaa-c5",
+        "candidate": {
+            "experiment": {
+                "experiment_id": "c20260802-loop-aaaaaaaa-c5-promote",
+                "knobs": frozen_knobs,
+            }
+        },
+    }
+    confirm_levers, promote_levers = _mod._frozen_replay_champion_levers(
+        promote_replay
+    )
+    assert confirm_levers is None
+    assert promote_levers == _mod._lever_knobs(frozen_knobs)
+
+
+def test_frozen_replay_champion_levers_fails_closed_on_empty_knobs() -> None:
+    replay = {
+        "source_campaign_id": "continuous-loop-20260802-loop-aaaaaaaa-c4",
+        "candidate": {
+            "experiment": {
+                "experiment_id": "c20260802-loop-aaaaaaaa-c4-confirm",
+                "knobs": {"seed": 1},  # no _LEVER_KNOB_KEYS entries
+            }
+        },
+    }
+    with pytest.raises(RuntimeError, match="no lever knobs"):
+        _mod._frozen_replay_champion_levers(replay)
+
+
+def test_frozen_replay_resolves_champion_confirm_arm() -> None:
+    """End-to-end: rebuilding a "-confirm" successor matrix must not raise
+    ``unsupported automatic frozen replay arm: confirm`` and must patch the
+    frozen recipe onto the rebuilt "-confirm" arm.
+    """
+    old_campaign = "continuous-loop-20260802-continuous-openui-local-c94ddb78-c4"
+    new_campaign = "continuous-loop-20260802-continuous-openui-local-c94ddb78-c5"
+    frozen_confirm_levers = {
+        "component_edge_loss_weight": 1.0,
+        "structural_aux_head_profile": "component-edge",
+    }
+    old_matrix = _mod._matrix(
+        campaign_id=old_campaign,
+        evidence_snapshot_id="snapshot-1",
+        cites=["docs/design/autoresearch-autotraining.md"],
+        role_citations={
+            "research": "docs/design/autoresearch-autotraining.md",
+            "prior_result": "docs/design/autoresearch-autotraining.md",
+        },
+        train_version="wf_smoke_v2",
+        eval_version="e938_role_safe_all_targets_v2",
+        steps=20,
+        cycle=4,
+        role="promotion",
+        confirm_levers=frozen_confirm_levers,
+    )
+    old_candidate = json.loads(
+        json.dumps(
+            next(
+                row["experiment"]
+                for row in old_matrix["hypotheses"]
+                if row["experiment"]["experiment_id"].endswith("-confirm")
+            )
+        )
+    )
+    old_control = json.loads(json.dumps(old_matrix["hypotheses"][0]["experiment"]))
+    old_commit = "a" * 40
+    control_manifest = _mod._manifest(old_campaign, old_control, old_commit)
+    candidate_manifest = _mod._manifest(old_campaign, old_candidate, old_commit)
+    replay = {
+        "source_campaign_id": old_campaign,
+        "control": {
+            "experiment": old_control,
+            "manifest": control_manifest,
+            "manifest_sha256": "b" * 64,
+        },
+        "candidate": {
+            "experiment": old_candidate,
+            "manifest": candidate_manifest,
+            "manifest_sha256": "c" * 64,
+        },
+    }
+
+    confirm_levers, promote_levers = _mod._frozen_replay_champion_levers(replay)
+    assert promote_levers is None
+    assert confirm_levers
+
+    new_matrix = _mod._matrix(
+        campaign_id=new_campaign,
+        evidence_snapshot_id="snapshot-2",
+        cites=["docs/design/autoresearch-autotraining.md"],
+        role_citations={
+            "research": "docs/design/autoresearch-autotraining.md",
+            "prior_result": "docs/design/autoresearch-autotraining.md",
+        },
+        train_version="wf_smoke_v2",
+        eval_version="e938_role_safe_all_targets_v2",
+        steps=20,
+        cycle=5,
+        role="promotion",
+        confirm_levers=confirm_levers,
+    )
+
+    replay_manifests = _mod._apply_frozen_replay(new_matrix, replay, new_campaign)
+    assert set(replay_manifests) == {
+        "c20260802-continuous-openui-local-c94ddb78-c5-control",
+        "c20260802-continuous-openui-local-c94ddb78-c5-confirm",
+    }
+    assert (
+        new_matrix["recommended_experiment_id"]
+        == "c20260802-continuous-openui-local-c94ddb78-c5-confirm"
+    )
+    recommended = next(
+        row["experiment"]
+        for row in new_matrix["hypotheses"]
+        if row["experiment"]["experiment_id"]
+        == new_matrix["recommended_experiment_id"]
+    )
+    assert recommended["knobs"] == old_candidate["knobs"]
+    _mod.HypothesisMatrix.model_validate(new_matrix)
+
+
 def test_screening_arm_slug_prefers_source_campaign_prefix() -> None:
     experiment_id = "c20260802-continuous-openui-local-8c0b60dd-c3-component-plan"
     assert (
