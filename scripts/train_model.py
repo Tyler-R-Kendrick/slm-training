@@ -570,6 +570,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Extra reconstruction weight for component-type output tokens.",
     )
     parser.add_argument(
+        "--structure-token-loss-weight",
+        type=float,
+        default=0.0,
+        help="Extra reconstruction weight for grammar STRUCT output tokens.",
+    )
+    parser.add_argument(
         "--ltr-tail-loss-weight",
         type=float,
         default=0.0,
@@ -1554,6 +1560,7 @@ def main(argv: list[str] | None = None) -> int:
         ltr_loss_weight=args.ltr_loss_weight,
         ltr_prefix_loss_weight=args.ltr_prefix_loss_weight,
         component_token_loss_weight=args.component_token_loss_weight,
+        structure_token_loss_weight=args.structure_token_loss_weight,
         ltr_tail_loss_weight=args.ltr_tail_loss_weight,
         ltr_tail_tokens=args.ltr_tail_tokens,
         compiler_alignment_loss_weight=args.compiler_alignment_loss_weight,

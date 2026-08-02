@@ -1386,6 +1386,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "component_token_loss_weight": getattr(
                 config, "component_token_loss_weight", 0.0
             ),
+            "structure_token_loss_weight": getattr(
+                config, "structure_token_loss_weight", 0.0
+            ),
             "ltr_tail_loss_weight": getattr(config, "ltr_tail_loss_weight", 0.0),
             "ltr_tail_tokens": getattr(config, "ltr_tail_tokens", 0),
             "compiler_alignment_loss_weight": getattr(

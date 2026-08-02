@@ -435,6 +435,7 @@ _RETRYABLE_PROMOTE_STATUSES = frozenset(
 _LEVER_KNOB_KEYS = (
     "ltr_prefix_loss_weight",
     "component_token_loss_weight",
+    "structure_token_loss_weight",
     "ltr_tail_loss_weight",
     "compiler_alignment_loss_weight",
     "compiler_alignment_margin",
@@ -625,6 +626,11 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         "component-token",
         "Direct component-token reconstruction weighting improves component_type_recall and structural_similarity without lowering parse_rate or binder_reference_f1.",
         {"component_token_loss_weight": 1.0},
+    ),
+    (
+        "structure-token",
+        "Direct grammar STRUCT-token reconstruction weighting repairs scaffold formation and structural_similarity without lowering parse_rate or binder_reference_f1.",
+        {"structure_token_loss_weight": 1.0},
     ),
     (
         "component-structure",
@@ -1064,6 +1070,8 @@ def _arm_slug_from_knobs(
         return "scaffold-prefix"
     if knobs.get("component_token_loss_weight"):
         return "component-token"
+    if knobs.get("structure_token_loss_weight"):
+        return "structure-token"
     if knobs.get("component_plan_loss_weight") and knobs.get(
         "component_edge_loss_weight"
     ):
@@ -1276,6 +1284,7 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
         "design-dropout",
         "scaffold-prefix",
         "component-token",
+        "structure-token",
     )
     legacy_quality_slugs = {
         "component-plan",
@@ -3728,6 +3737,7 @@ def _completed_candidate_priorities(
         "design_md_dropout",
         "ltr_prefix_loss_weight",
         "component_token_loss_weight",
+        "structure_token_loss_weight",
     }
     def has_quality_objective(knobs: dict[str, Any]) -> bool:
         return any(float(knobs.get(key) or 0) > 0 for key in quality_keys) or (
@@ -5380,6 +5390,7 @@ def _matrix(
             "design_md_dropout": 0.0,
             "ltr_prefix_loss_weight": 0.0,
             "component_token_loss_weight": 0.0,
+            "structure_token_loss_weight": 0.0,
             "structural_aux_head_profile": "none",
             "compiler_decode_mode": "off",
             "ltr_tail_loss_weight": 0.0,
@@ -5457,6 +5468,7 @@ def _matrix(
                 "design_md_dropout",
                 "ltr_prefix_loss_weight",
                 "component_token_loss_weight",
+                "structure_token_loss_weight",
                 "structural_aux_head_profile",
                 "compiler_decode_mode",
                 "steps",
@@ -5653,6 +5665,7 @@ def _matrix(
                 "design_md_dropout",
                 "ltr_prefix_loss_weight",
                 "component_token_loss_weight",
+                "structure_token_loss_weight",
                 "structural_aux_head_profile",
                 "compiler_decode_mode",
                 "steps",
@@ -6113,6 +6126,7 @@ def _manifest(
                 "design_md_dropout": 0.0,
                 "ltr_prefix_loss_weight": 0.0,
                 "component_token_loss_weight": 0.0,
+                "structure_token_loss_weight": 0.0,
             },
             sort_keys=True,
         ).encode()

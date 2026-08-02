@@ -367,6 +367,9 @@ class TwoTowerConfig:
     # Extra reconstruction weight on component-type tokens. Zero-parameter;
     # the same token-family mask also feeds train-only loss attribution.
     component_token_loss_weight: float = 0.0
+    # Extra reconstruction weight on grammar STRUCT tokens. Zero-parameter;
+    # this is distinct from component identity and never changes legality.
+    structure_token_loss_weight: float = 0.0
     # Extra weight on the final real LTR tokens (default-off).
     ltr_tail_loss_weight: float = 0.0
     ltr_tail_tokens: int = 32
@@ -3321,9 +3324,13 @@ class TwoTowerModel(nn.Module):
                     weights = weights + (tail_w * tail.reshape(-1).float())
             kind_ids = getattr(self.tokenizer, "kind_ids", None)
             component_ids = set(kind_ids("component")) if callable(kind_ids) else set()
+            structure_ids = set(kind_ids("struct")) if callable(kind_ids) else set()
             component_positions = torch.zeros_like(target_ids, dtype=torch.bool)
             for token_id in component_ids:
                 component_positions |= target_ids.eq(int(token_id))
+            structure_positions = torch.zeros_like(target_ids, dtype=torch.bool)
+            for token_id in structure_ids:
+                structure_positions |= target_ids.eq(int(token_id))
             component_w = float(
                 getattr(self.config, "component_token_loss_weight", 0.0) or 0.0
             )
@@ -3335,6 +3342,18 @@ class TwoTowerModel(nn.Module):
             if component_w > 0.0 and component_positions.any():
                 weights = weights + (
                     component_w * component_positions.reshape(-1).float()
+                )
+            structure_w = float(
+                getattr(self.config, "structure_token_loss_weight", 0.0) or 0.0
+            )
+            if structure_w > 0.0 and not structure_ids:
+                raise ValueError(
+                    "structure_token_loss_weight requires a tokenizer with "
+                    "typed structure token ids"
+                )
+            if structure_w > 0.0 and structure_positions.any():
+                weights = weights + (
+                    structure_w * structure_positions.reshape(-1).float()
                 )
             if mdlm_row_w is not None:
                 # Broadcast per-row MDLM 1/t weights onto token positions.
@@ -3363,10 +3382,12 @@ class TwoTowerModel(nn.Module):
                 )
                 mask_flat = mask_flat & token_rows.repeat_interleave(target_ids.size(1))
             component_flat = component_positions.reshape(-1) & mask_flat
+            structure_flat = structure_positions.reshape(-1) & mask_flat
             prefix_flat = prefix_positions.reshape(-1) & mask_flat
             other_flat = mask_flat & ~component_positions.reshape(-1)
             for family, selected in (
                 ("component", component_flat),
+                ("structure", structure_flat),
                 ("prefix", prefix_flat),
                 ("non_component", other_flat),
             ):

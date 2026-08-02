@@ -2646,7 +2646,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v104",
+      "version": "v105",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2686,6 +2686,16 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v105",
+          "date": "2026-08-02",
+          "note": "Add a size-matched grammar STRUCT-token reconstruction arm and typed structure loss attribution after component-token weighting reproduced only a runtime-specific unblock."
+        },
+        {
+          "version": "v104",
+          "date": "2026-08-02",
+          "note": "no-bump: record c1804 incomplete component-token fixture evidence and its exact frozen replay requirement; campaign behavior is unchanged"
+        },
         {
           "version": "v104",
           "date": "2026-08-02",
@@ -7368,6 +7378,16 @@
         {
           "version": "v3",
           "date": "2026-08-02",
+          "note": "no-bump: record the c1805 frozen component-token replay disposition in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1804 incomplete component-token checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
           "note": "no-bump: add honest c1803 rejected scaffold-prefix checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
         },
         {
@@ -9595,7 +9615,7 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v34",
+      "version": "v35",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
@@ -9603,6 +9623,11 @@
         "src/slm_training/harnesses/quality/__init__.py"
       ],
       "history": [
+        {
+          "version": "v35",
+          "date": "2026-08-02",
+          "note": "Persist the grammar STRUCT-token objective weight and typed structure loss attribution in training evidence."
+        },
         {
           "version": "v34",
           "date": "2026-08-02",
@@ -11422,7 +11447,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v296",
+      "version": "v297",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -11465,6 +11490,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v297",
+          "date": "2026-08-02",
+          "note": "Add zero-parameter grammar STRUCT-token reconstruction weighting with raw structure-family CE attribution."
+        },
         {
           "version": "v296",
           "date": "2026-08-02",
