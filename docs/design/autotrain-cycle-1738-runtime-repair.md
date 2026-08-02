@@ -17,16 +17,20 @@ progress, not model-quality or ship evidence.
 | copy-on-write fed-token history | 66 | 45 | 19,562.599 | 144,567 | 10,592 | 162,933 | typed timeout |
 | copy-on-write direct-map cache | 70 | 49 | 19,178.515 | 144,638 | 10,696 | 163,061 | typed timeout |
 | clean committed reproduction | 64 | 43 | 19,595.679 | 144,537 | 10,548 | 162,878 | typed timeout |
+| clean direct-map reproduction | 67 | 46 | 19,427.600 | 144,567 | 10,592 | 162,933 | typed timeout |
 
 All rows use the same c1737 control checkpoint, `smoke` offset 0, one record,
 strict compiler-tree policy, CPU, and a 24-second diagnostic deadline. The
 later rows traverse more of the same deterministic output, so raw state totals
 are not direct speed ratios. The implementation rows, including the direct-map
 row, are exploratory profiles from dirty working states and are not immutable
-replay authority. The clean row is
-the clean `b8b1bda6` reproduction; it emitted the expected failed AgentV bundle
-for one incomplete fixture record and is the authoritative profile snapshot.
+replay authority. The two clean rows are immutable commit-bound reproductions;
+the latest `4222fb8e` row emitted the expected failed AgentV bundle for one
+incomplete fixture record and is the authoritative profile snapshot.
 The frozen c1740 campaign manifest remains the comparison replay authority.
+The latest AgentV wrapper also reported an impossible negative SDK duration;
+that timing is excluded from every decision metric and retained as a separate
+harness-telemetry repair signal.
 
 ## What changed
 

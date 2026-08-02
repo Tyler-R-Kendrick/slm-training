@@ -58,6 +58,39 @@
       "stamped_at": "2026-08-02T07:52:07.578011+00:00"
     }
   },
+  "latest_clean_reproduction": {
+    "run_id": "c1742-direct-map-cow-clean-profile",
+    "variant": "copy_on_write_direct_map_cache",
+    "evidence_authority": "clean_commit_bound_fixture_profile",
+    "document_n": 1,
+    "completed_document_n": 0,
+    "incomplete_document_n": 1,
+    "decode_timeout_document_count": 1,
+    "tokens_emitted": 67,
+    "forwards": 46,
+    "compiler_ms": 19427.6,
+    "states": 144567,
+    "witnesses": 10592,
+    "forks": 162933,
+    "outcome": "typed_timeout",
+    "agentv": "emitted_failed_as_expected_for_incomplete_fixture",
+    "agentv_telemetry_warning": "negative SDK durationMs observed and excluded from every decision metric",
+    "version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "code_commit": "4222fb8e51a0076b7450e7abc348e58901eb78e4",
+      "code_dirty": false,
+      "components": {
+        "config.levers": "v30",
+        "harness.model_build.eval": "v74",
+        "harness.experiment_feature_flags": "v4",
+        "evals.meaningful_program": "2.13.0",
+        "evals.power_protocol": "v8",
+        "evals.scoring": "v22",
+        "model.twotower": "v286"
+      },
+      "stamped_at": "2026-08-02T08:17:42.368053+00:00"
+    }
+  },
   "reverted_hypotheses": [
     "cross_query_witness_subproblem_cache",
     "semantic_arena_transition_cache",
@@ -82,13 +115,13 @@
   "ship_claim": false,
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "b8b1bda6a6e638363f96e09f51024abf5831a760",
+    "code_commit": "4222fb8e51a0076b7450e7abc348e58901eb78e4",
     "code_dirty": false,
     "components": {
-      "harness.autoresearch.experiment_campaign": "v58",
+      "harness.autoresearch.experiment_campaign": "v59",
       "harness.model_build.eval": "v74",
-      "model.twotower": "v285",
-      "dsl.completion_kernel": "v9",
+      "model.twotower": "v286",
+      "dsl.completion_kernel": "v11",
       "dsl.symbolic_surface": "v5"
     }
   }
