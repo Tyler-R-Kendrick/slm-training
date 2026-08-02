@@ -7023,6 +7023,11 @@
         {
           "version": "v3",
           "date": "2026-08-02",
+          "note": "no-bump: add honest model-card and README provenance for the unrelated continuous-openui-local c7 component-plan re-screen null result; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
           "note": "no-bump: add honest model-card and README provenance for the unrelated continuous-openui-local c6 component-edge null screen; SLM-228 spectral-disposition behavior is unchanged"
         },
         {

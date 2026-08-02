@@ -1,0 +1,125 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c7",
+  "cycle_index": 7,
+  "cycle_intent": "screening",
+  "source_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "integration_commit": "4f64a4b14f6d03b2bdcc226d763ae26273dff747",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "seed": 100007,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "hypothesis": "component_plan_loss_weight=1.0 (structural component-plan auxiliary supervision), re-selected by the driver's own hypothesizer despite cycle 5's confirmed rejection at a different seed/recipe instance; run to a fresh size-matched control/candidate pair rather than a frozen replay.",
+  "primary_metric": "smoke.structural_similarity",
+  "primary_direction": "increase",
+  "measurement_complete": true,
+  "arms": {
+    "c7-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "component_type_recall": 0.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.0,
+        "latency_ms_p50": 1602.13
+      },
+      "levers": {
+        "component_plan_loss_weight": 0.0,
+        "component_plan_decode_weight": 0.0
+      },
+      "trainable_params": 1755764,
+      "last_loss": 15.12857437133789
+    },
+    "c7-component-plan": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "component_type_recall": 0.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.0,
+        "latency_ms_p50": 1383.81
+      },
+      "levers": {
+        "component_plan_loss_weight": 1.0,
+        "component_plan_decode_weight": 0.0
+      },
+      "trainable_params": 1755764,
+      "last_loss": 18.172775268554688
+    }
+  },
+  "primary_delta": 0.0,
+  "latency_delta_ms": -218.32,
+  "gate_failures": {
+    "smoke": [
+      "insufficient_n actual=3 need>=20",
+      "meaningful_program_rate actual=0.0 need>=0.66",
+      "structural_similarity actual=0.0575 need>=0.35",
+      "component_type_recall actual=0.0 need>=0.35",
+      "ast_beq_rate actual=0 need>=0.2",
+      "canonical_beq_rate actual=0 need>=0.1",
+      "reward_score actual=0.0 need>=0.3"
+    ],
+    "missing_suites": [
+      "held_out",
+      "adversarial",
+      "ood",
+      "rico_held"
+    ]
+  },
+  "conclusion": "The driver's hypothesizer re-selected component-plan (component_plan_loss_weight=1.0) as this cycle's recommended experiment -- the same lever family confirmed as a genuine regression in cycle 5, but here run as a fresh from-scratch control/candidate pair (seed 100007, distinct from c5's frozen replay of c3's checkpoints) rather than a replay. Both arms trained cleanly with distinct recipe/config (candidate component_plan_loss_weight=1.0 vs control 0.0; last_loss diverges as expected, 15.1286 control vs 18.1728 candidate) and both produced a full AgentV ship-gate scoreboard.json (measurement_complete=true). Every decode-facing smoke metric -- parse_rate, meaningful_program_rate, structural_similarity, binder_reference_f1, component_type_recall, ast_beq_rate, canonical_beq_rate, placeholder_fidelity, reward_score -- is bit-identical between control and candidate; only latency_ms_p50 differs (1602.13 -> 1383.81, candidate faster this time). At n=3 smoke fixture scale and 20 training steps, this instance of component_plan_loss_weight=1.0 produced zero measurable change in generated-output quality: primary_delta=0.0 exactly -- a genuine null result at this seed, not a repeat of cycle 5's measured regression (which used a different seed/checkpoint lineage via frozen replay). This does not overturn cycle 5's confirmed rejection; it shows the effect is seed/lineage-sensitive and not reliably reproducible as a positive signal at this fixture scale. Ship gates correctly fail closed on fixture n=3 (<20) and every quality threshold for both arms; no gate was weakened.",
+  "sdlc_classification": {
+    "positive": false,
+    "stack_layer": false,
+    "action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260802-continuous-openui-local-8c0b60dd-c7-component-plan",
+      "fixture_insufficient_n:c20260802-continuous-openui-local-8c0b60dd-c7-control",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.057499999999999996 candidate=0.057499999999999996 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "next_priorities": [
+    "The completed non-positive component-plan arm is exhausted again at this recipe; test the distinct size-matched 'component-inventory' quality hypothesis next (rank 1, confidence 0.90) rather than reselecting component-plan or component-edge, both now spent for step-budget=20/n=3.",
+    "Keep the matched control as the size-matched baseline every cycle.",
+    "Rotate thrash recommendation across the lever bank (not bounds-only).",
+    "Soft ship-gate fails on fixture n never stop the continuous loop; do not weaken gates.",
+    "Confirmed champions promote under cadence; thrash only screens."
+  ],
+  "recorded_at": "2026-08-02T10:10:11.984760Z",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "4f64a4b14f6d03b2bdcc226d763ae26273dff747",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v74",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v286"
+    },
+    "stamped_at": "2026-08-02T10:10:10.381665+00:00"
+  }
+}
