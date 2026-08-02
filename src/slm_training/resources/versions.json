@@ -1156,7 +1156,7 @@
       ]
     },
     "dsl.completion_kernel": {
-      "version": "v15",
+      "version": "v16",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/grammar/fastpath/engine.py",
@@ -1183,6 +1183,11 @@
         "docs/design/adr-constrained-diffusion-topology-split.md"
       ],
       "history": [
+        {
+          "version": "v16",
+          "date": "2026-08-02",
+          "note": "Snapshot the already-integer LALR state stack directly for exact interning and accepts memo keys, removing redundant per-element integer coercion."
+        },
         {
           "version": "v15",
           "date": "2026-08-02",
@@ -1316,7 +1321,7 @@
       ]
     },
     "dsl.operators.registry": {
-      "version": "v11",
+      "version": "v12",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/registry.py",
@@ -1324,6 +1329,11 @@
         "tests/test_dsl/test_operator_registry.py"
       ],
       "history": [
+        {
+          "version": "v12",
+          "date": "2026-08-02",
+          "note": "Treat empty pack-owned tree-edit inventories as unavailable in filled_slots, matching their fail-closed DslPack contract and dashboard capability reporting."
+        },
         {
           "version": "v11",
           "date": "2026-07-29",
@@ -9607,6 +9617,11 @@
         "docs/design/dsh0-08-foundation-disposition-20260723.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-02",
+          "note": "no-bump: refresh the pinned pack source hash after fail-closed capability reporting changed; staged symbolic-surface behavior is unchanged"
+        },
         {
           "version": "v2",
           "date": "2026-08-02",

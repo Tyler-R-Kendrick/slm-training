@@ -251,10 +251,7 @@ class OpenUIIncrementalEngine:
             self._accepts = frozenset()
             return
         try:
-            stack = tuple(
-                int(state)
-                for state in getattr(self._ip.parser_state, "state_stack", ())
-            )
+            stack = tuple(getattr(self._ip.parser_state, "state_stack", ()))
             key = (self._fingerprint, stack)
             cached = _ACCEPTS_MEMO.get(key)
             if cached is None:
@@ -505,11 +502,7 @@ class OpenUIIncrementalEngine:
         depends on it. Whitespace-only tails are behaviorally inert and are
         normalized away so states reached via different spacing intern equal.
         """
-        stack = (
-            tuple(int(s) for s in self._ip.parser_state.state_stack)
-            if self._ip is not None
-            else ()
-        )
+        stack = tuple(self._ip.parser_state.state_stack) if self._ip is not None else ()
         tail = self._pending_tail()
         tail = tail if tail.strip() else ""
         frame = tuple(self._frame) if self._frame is not None else None

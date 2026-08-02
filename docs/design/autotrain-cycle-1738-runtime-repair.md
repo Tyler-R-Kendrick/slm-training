@@ -26,6 +26,12 @@ progress, not model-quality or ship evidence.
 | direct semantic constructors (dirty) | 81 | 57 | 18,271.607 | 144,814 | 10,971 | 163,367 | typed timeout |
 | clean constructors + refreshed ranker | 83 | 59 | 18,460.255 | 144,925 | 11,077 | 163,561 | typed timeout |
 | shared classification projections (dirty) | 100 | 66 | 17,604.310 | 145,039 | 11,238 | 163,766 | typed timeout |
+| shared classification projections (clean) | 104 | 68 | 17,658.979 | 145,040 | 11,243 | 163,770 | completed |
+| cached parser-stack projection, ship bundle (dirty, reverted) | 85 | 61 | 18,057.511 | 145,008 | 11,163 | 163,707 | typed timeout |
+| cached parser-stack projection, smoke replay (dirty, reverted) | 93 | 64 | 17,907.274 | 145,035 | 11,225 | 163,757 | typed timeout |
+| cached parser-stack projection, cProfile (dirty, reverted) | 7 | 4 | 23,534.799 | 30,785 | 1,006 | 31,895 | typed timeout |
+| direct integer-stack tuple (dirty) | 104 | 68 | 17,439.288 | 145,040 | 11,243 | 163,770 | completed |
+| direct integer-stack tuple, cProfile (dirty) | 10 | 5 | 23,378.588 | 34,164 | — | — | typed timeout |
 
 All rows use the same c1737 control checkpoint, `smoke` offset 0, one record,
 strict compiler-tree policy, CPU, and a 24-second diagnostic deadline. The
@@ -67,8 +73,18 @@ The frozen c1740 campaign manifest remains the comparison replay authority.
   completion transition calculates its token kind once before handing it to
   the parser and semantic-state authorities. The dirty v15/v288 reproduction
   advances 100 certified tokens (+20.5% over the prior clean 83), performs 66
-  forwards, and lowers compiler time by 856 ms while preserving the same
-  typed timeout. This is retained runtime progress pending an immutable replay.
+  forwards, and lowers compiler time by 856 ms while preserving the same typed
+  timeout. The immutable `37e84a70` replay then completes all 104 tokens in
+  23,821.64 ms with zero runtime failures: the first completion of this frozen
+  diagnostic under the unchanged wall. Its n=1 quality still fails ship gates.
+- Lark's LALR stack already contains integer states, so exact interning and
+  accepts-memo keys now snapshot it directly instead of coercing every element
+  through two generators. The dirty non-profiled replay completed all 104
+  tokens in 23,663.19 ms with identical forwards/states/witnesses/forks and
+  17,439.288 compiler ms. Under cProfile, combined accept-refresh/state-key
+  time fell from 3.796 seconds to 1.872 seconds while the candidate traversed
+  more states. This is retained as completion-kernel v16; it changes no legal
+  domain, proof order, or authority.
 - Repeating `SIGALRM` delivery is disarmed before timeout bookkeeping. The
   prior failure exited 142 with an uncaught second alarm; the repaired runs
   exit 0 with `decode_outcome=runtime_timeout` and complete AgentV artifacts.
@@ -115,6 +131,18 @@ MPR/ms gain because it is below the preregistered 5% minimum effect.
    whereas neural work is roughly 3.7 seconds.
 4. Keep Lean/full formal validation in the delivery gate; no heuristic or
    incomplete proof may widen a legal domain.
+
+The v16 candidate passed 146 exact completion/artifact tests, 226 compiler
+decode tests, the 26-job LeverProof build/test, the 2,947-job formal contract
+build and axiom audit, decode-invariant verification, agent-surface parity,
+version-stamp checks, and repository policy before commit. The full changed-test
+gate then exposed a stale capability report: empty pack-owned tree-edit
+inventories were listed as filled. `DslPack.filled_slots()` now treats those
+documented empty sentinels as unavailable (operators registry v12); all 25
+latent/builtin pack regressions pass. The gate also refreshed the committed
+pack source digest and moved a legacy pack E2E from forbidden unconstrained
+generation onto the production constrained path; neither safety check is
+bypassed.
 
 Machine-readable evidence is in
 [`autotrain-cycle-1738-runtime-repair.json`](autotrain-cycle-1738-runtime-repair.json).
