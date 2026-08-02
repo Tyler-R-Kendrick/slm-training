@@ -894,6 +894,7 @@ class OpenUIIncrementalEngine:
         interactive = self._ip
         parser_state = interactive.parser_state
         parse_conf = parser_state.parse_conf
+        share_lexer_thread = not bool(parse_conf.callbacks)
         if parse_conf.callbacks:
             # The first semantic -> control fork must detach and suppress tree
             # callbacks. Descendant control-only forks can share that immutable
@@ -914,7 +915,11 @@ class OpenUIIncrementalEngine:
         return type(interactive)(
             interactive.parser,
             cloned_state,
-            _shallow_copy(interactive.lexer_thread),
+            (
+                interactive.lexer_thread
+                if share_lexer_thread
+                else _shallow_copy(interactive.lexer_thread)
+            ),
         )
 
     def _copy(self, *, control_only: bool) -> "OpenUIIncrementalEngine":

@@ -422,7 +422,7 @@ def test_disposable_fork_rejection_skips_redundant_snapshot() -> None:
 
 
 def test_control_fork_reuses_callback_free_parser_configuration() -> None:
-    """Only mutable parser state is copied after callbacks are suppressed."""
+    """Only feed-mutated parser stacks copy after callbacks are suppressed."""
     source = OpenUIIncrementalEngine()
     source.reset()
     control = source.copy_control()
@@ -435,7 +435,8 @@ def test_control_fork_reuses_callback_free_parser_configuration() -> None:
     assert control_conf.callbacks == {}
     assert descendant_conf is control_conf
     assert descendant._ip.parser_state.state_stack is not control._ip.parser_state.state_stack
-    assert descendant._ip.lexer_thread is not control._ip.lexer_thread
+    assert control._ip.lexer_thread is not source._ip.lexer_thread
+    assert descendant._ip.lexer_thread is control._ip.lexer_thread
 
 
 def test_fork_fed_history_detaches_on_commit() -> None:
