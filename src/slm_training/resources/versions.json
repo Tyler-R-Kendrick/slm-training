@@ -2606,7 +2606,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v60",
+      "version": "v61",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2646,6 +2646,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v61",
+          "date": "2026-08-02",
+          "note": "Fix _apply_frozen_replay slug recovery: a single-hyphen rsplit truncated multi-word _SCREENING_ARM_BANK slugs (component-plan, component-edge, component-inventory, binder-topology, component-structure), so any frozen-replay retry_measurement for those arms crashed with 'unsupported automatic frozen replay arm'. Match against known bank slugs (longest-first suffix match) instead."
+        },
         {
           "version": "v60",
           "date": "2026-08-02",
