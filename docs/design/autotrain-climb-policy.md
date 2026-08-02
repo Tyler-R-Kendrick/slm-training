@@ -28,6 +28,7 @@ numbers/inventory without re-authoring classifiers.
 - **Synthesis loop** action filenames and fail-closed SFT (still enforced in `hillclimb`)
 - **I10 rung gates** (enabled and fail-closed, with durable prior-rung evidence)
 - **Command walls** (screening, promotion, and Lean obey `MAX_RUN_MINUTES`)
+- **Frozen replay limit** (identical incomplete replays before harness repair)
 
 ## Runtime wiring
 
@@ -60,6 +61,14 @@ evidence resolves to an existing artifact or commit. A theorem-backed
 closed if required stop, harness, Lean, data, documentation, or merged-delivery
 evidence is absent. Partial eval scoreboards are infrastructure evidence and never
 enter model-quality comparison.
+
+`measurement.max_consecutive_frozen_replays` bounds identical incomplete replay
+cycles. Exhaustion is not a model rejection: the handoff preserves the frozen
+manifest and routes a typed `repair_harness` action to
+`improve-openui-harnesses`. The next automatic cycle remains receipt-blocked until
+that canonical-owner repair is acknowledged. The exact retry stays queued behind the
+repair, whose receipt resets the consecutive count. This prevents an infinite
+unmodified timeout replay loop while retaining the exact reproduction input.
 
 One cycle still obeys the repository hard cap. Control and candidate receive equal
 wall shares, with a third share reserved for research, status, and durable handoff;

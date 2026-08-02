@@ -2561,7 +2561,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v45",
+      "version": "v46",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2598,6 +2598,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v46",
+          "date": "2026-08-01",
+          "note": "Bound consecutive frozen measurement replays and route exhaustion into a typed canonical harness repair without rejecting the model or losing the manifest digest"
+        },
         {
           "version": "v45",
           "date": "2026-08-01",

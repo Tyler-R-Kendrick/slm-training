@@ -111,6 +111,13 @@ remains in the strict campaign lineage. A previously written gap is recoverable 
 through one unique chain of initialized-only campaigns; completed or ambiguous gaps
 fail closed. Frozen manifests with formal obligations fail closed until a fresh Lean
 preflight is produced; old proof evidence is never carried across commits implicitly.
+Identical incomplete replay cycles are bounded by
+`measurement.max_consecutive_frozen_replays`. Exhaustion preserves the frozen
+manifest digest, emits a typed `repair_harness` action, and blocks another automatic
+replay until the canonical harness repair has an evidence-bound receipt. The exact
+`retry_measurement` remains queued behind that prerequisite, and the repair receipt
+resets the consecutive-replay count. It never turns a timeout into a negative model
+result.
 If the newest crashed frozen-replay campaign already has verified
 `experiment_finished` events for both diagnostic decision arms, the next supervised
 invocation gets latest and then finishes its status, Phase A, and typed handoff from

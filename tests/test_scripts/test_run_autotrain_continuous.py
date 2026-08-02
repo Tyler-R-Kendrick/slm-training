@@ -136,6 +136,7 @@ def test_climb_policy_measurement_helpers() -> None:
         decode_timeout_seconds_for_role,
         eval_suites_for_role,
         load_climb_policy,
+        max_consecutive_frozen_replays,
         stage_wall_minutes_for_role,
     )
 
@@ -143,6 +144,7 @@ def test_climb_policy_measurement_helpers() -> None:
     assert stage_wall_minutes_for_role(policy, "screening") == 3
     assert decode_timeout_seconds_for_role(policy, "screening") >= 20
     assert eval_suites_for_role(policy, "screening") == ("smoke",)
+    assert max_consecutive_frozen_replays(policy) == 2
 
 
 def test_run_metrics_loads_screening_quality_primary(tmp_path: Path) -> None:
@@ -2152,6 +2154,75 @@ def test_cycle_handoff_marks_incomplete_measurement_for_frozen_retry(
     )
     assert retry.frozen_manifest_sha256 == hashlib.sha256(b"{}\n").hexdigest()
     assert all(action.kind != "next_experiment" for action in handoff.actions)
+
+
+def test_cycle_handoff_exhausts_identical_replays_into_harness_repair(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    prior = root / "cycle-1"
+    current = root / "cycle-2"
+    (current / "manifests").mkdir(parents=True)
+    prior.mkdir(parents=True)
+    (current / "manifests" / "cand.json").write_text("{}\n")
+    (prior / "campaign.json").write_text(
+        json.dumps({"predecessor_campaign_id": None})
+    )
+    (prior / "cycle_handoff.json").write_text(
+        json.dumps(
+            {
+                "loop_id": "loop-1",
+                "campaign_id": "cycle-1",
+                "cycle_intent": "retry_measurement",
+            }
+        )
+    )
+    (current / "campaign.json").write_text(
+        json.dumps({"predecessor_campaign_id": "cycle-1"})
+    )
+
+    handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-2",
+        cycle_index=2,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="screening",
+        cycle_intent="retry_measurement",
+        primary_metric="smoke.binder_reference_f1",
+        matrix=_priority_matrix(),
+        delivery={
+            "positive": False,
+            "candidate_id": "cand",
+            "reasons": ["measurement_incomplete:no_smoke_metrics"],
+            "stack_layer": False,
+        },
+        resolution=None,
+        formal_status=None,
+    )
+
+    repair = next(
+        action for action in handoff.actions if action.kind == "repair_harness"
+    )
+    assert repair.owner == "improve-openui-harnesses"
+    assert repair.frozen_manifest_sha256 == hashlib.sha256(b"{}\n").hexdigest()
+    assert "(2/2)" in repair.reason
+    retry = next(
+        action for action in handoff.actions if action.kind == "retry_measurement"
+    )
+    assert retry.frozen_manifest_sha256 == repair.frozen_manifest_sha256
+    assert handoff.actions.index(repair) < handoff.actions.index(retry)
+
+    prior_handoff = json.loads((prior / "cycle_handoff.json").read_text())
+    prior_handoff["actions"] = [repair.model_dump(mode="json")]
+    (prior / "cycle_handoff.json").write_text(json.dumps(prior_handoff))
+    assert (
+        _mod._consecutive_frozen_replays(
+            root, "loop-1", "cycle-2", "retry_measurement"
+        )
+        == 1
+    )
 
 
 def test_causal_family_saturates_per_integrated_code() -> None:

@@ -2423,6 +2423,46 @@ def _created_checkpoint_paths(camp_dir: Path) -> tuple[str, ...]:
     )
 
 
+def _consecutive_frozen_replays(
+    root: Path, loop_id: str, campaign_id: str, cycle_intent: str
+) -> int:
+    """Count the current and immediately preceding frozen replay cycles."""
+
+    if cycle_intent != "retry_measurement":
+        return 0
+    count = 1
+    cursor = str(
+        _read_json(root / campaign_id / "campaign.json").get(
+            "predecessor_campaign_id"
+        )
+        or ""
+    )
+    seen = {campaign_id}
+    while cursor and cursor not in seen:
+        seen.add(cursor)
+        handoff = _read_json(root / cursor / "cycle_handoff.json")
+        if (
+            handoff.get("loop_id") != loop_id
+            or handoff.get("campaign_id") != cursor
+            or handoff.get("cycle_intent") != "retry_measurement"
+        ):
+            break
+        if any(
+            action.get("kind") == "repair_harness"
+            for action in handoff.get("actions") or []
+            if isinstance(action, dict)
+        ):
+            break
+        count += 1
+        cursor = str(
+            _read_json(root / cursor / "campaign.json").get(
+                "predecessor_campaign_id"
+            )
+            or ""
+        )
+    return count
+
+
 def _write_cycle_handoff(
     *,
     root: Path,
@@ -2533,22 +2573,60 @@ def _write_cycle_handoff(
             ),
         )
     elif measurement_incomplete:
+        from slm_training.autoresearch.climb_policy import (
+            load_climb_policy,
+            max_consecutive_frozen_replays,
+        )
+
         manifest_path = camp_dir / "manifests" / f"{candidate_id}.json"
         manifest_sha = (
             hashlib.sha256(manifest_path.read_bytes()).hexdigest()
             if manifest_path.is_file()
             else None
         )
-        actions.insert(
-            0,
-            AutotrainActionV1(
-                kind="retry_measurement",
-                owner="autotrain",
-                reason="measurement incomplete; replay the identical frozen arm",
-                evidence_ids=(evidence_id,),
-                frozen_manifest_sha256=manifest_sha,
-            ),
+        replay_count = _consecutive_frozen_replays(
+            root, loop_id, campaign_id, cycle_intent
         )
+        replay_limit = max_consecutive_frozen_replays(load_climb_policy())
+        if replay_count >= replay_limit:
+            actions[0:0] = [
+                AutotrainActionV1(
+                    kind="repair_harness",
+                    owner="improve-openui-harnesses",
+                    reason=(
+                        "identical incomplete replay budget exhausted "
+                        f"({replay_count}/{replay_limit}); repair the canonical "
+                        "owner before replaying the frozen arm"
+                    ),
+                    evidence_ids=(evidence_id,),
+                    harness_family=_primary_harness_family(camp_dir),  # type: ignore[arg-type]
+                    frozen_manifest_sha256=manifest_sha,
+                ),
+                AutotrainActionV1(
+                    kind="retry_measurement",
+                    owner="autotrain",
+                    reason=(
+                        "replay the identical frozen arm after the required "
+                        "canonical harness repair"
+                    ),
+                    evidence_ids=(evidence_id,),
+                    frozen_manifest_sha256=manifest_sha,
+                ),
+            ]
+        else:
+            actions.insert(
+                0,
+                AutotrainActionV1(
+                    kind="retry_measurement",
+                    owner="autotrain",
+                    reason=(
+                        "measurement incomplete; replay the identical frozen arm "
+                        f"({replay_count}/{replay_limit})"
+                    ),
+                    evidence_ids=(evidence_id,),
+                    frozen_manifest_sha256=manifest_sha,
+                ),
+            )
     elif assumption_miss or (formal_status is not None and formal_status != "proved"):
         actions.insert(
             0,
