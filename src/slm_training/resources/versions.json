@@ -2601,7 +2601,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v59",
+      "version": "v60",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2641,6 +2641,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v60",
+          "date": "2026-08-02",
+          "note": "Fix _apply_frozen_replay arm-slug resolution: it split the candidate experiment id on the last hyphen, truncating hyphenated arm slugs (component-plan, component-edge, component-inventory, binder-topology, component-structure) to their last token and failing closed with 'unsupported automatic frozen replay arm'. Resolve the slug by matching known arm-bank suffixes (longest first) instead."
+        },
         {
           "version": "v59",
           "date": "2026-08-02",

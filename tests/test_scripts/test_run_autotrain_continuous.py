@@ -2561,6 +2561,77 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor() -> No
         _mod._require_automatic_replayable(formal_manifest)
 
 
+def test_apply_frozen_replay_supports_hyphenated_arm_slugs() -> None:
+    """Regression: `component-edge`/`component-plan`/etc. contain a hyphen,
+    so a naive rsplit("-", 1) on the candidate id truncates the slug to its
+    last token (e.g. "edge") and automatic frozen replay fails closed with
+    `unsupported automatic frozen replay arm`. The slug must be resolved by
+    matching known arm-bank suffixes, not by splitting on the last hyphen."""
+    old_campaign = "continuous-loop-20260802-loop-489d3aa7-c4"
+    new_campaign = "continuous-loop-20260802-loop-489d3aa7-c5"
+    matrix = _mod._matrix(
+        campaign_id=new_campaign,
+        evidence_snapshot_id="snapshot-1",
+        cites=["docs/design/autoresearch-autotraining.md"],
+        role_citations={
+            "research": "docs/design/autoresearch-autotraining.md",
+            "prior_result": "docs/design/autoresearch-autotraining.md",
+        },
+        train_version="wf_smoke_v2",
+        eval_version="e938_role_safe_all_targets_v2",
+        steps=21,
+        cycle=1,
+        recommended_slug="component-edge",
+    )
+    old_control = json.loads(json.dumps(matrix["hypotheses"][0]["experiment"]))
+    old_candidate = json.loads(
+        json.dumps(
+            next(
+                row["experiment"]
+                for row in matrix["hypotheses"]
+                if row["experiment"]["experiment_id"].endswith("-component-edge")
+            )
+        )
+    )
+    old_control.update(
+        experiment_id="c20260802-loop-489d3aa7-c4-control",
+        campaign_id=old_campaign,
+    )
+    old_candidate.update(
+        experiment_id="c20260802-loop-489d3aa7-c4-component-edge",
+        campaign_id=old_campaign,
+    )
+    old_commit = "a" * 40
+    control_manifest = _mod._manifest(old_campaign, old_control, old_commit)
+    candidate_manifest = _mod._manifest(old_campaign, old_candidate, old_commit)
+    replay = {
+        "control": {
+            "experiment": old_control,
+            "manifest": control_manifest,
+            "manifest_sha256": "b" * 64,
+        },
+        "candidate": {
+            "experiment": old_candidate,
+            "manifest": candidate_manifest,
+            "manifest_sha256": "c" * 64,
+        },
+    }
+
+    replay_manifests = _mod._apply_frozen_replay(matrix, replay, new_campaign)
+
+    assert matrix["recommended_experiment_id"] == "c20260802-loop-489d3aa7-c5-component-edge"
+    assert set(replay_manifests) == {
+        "c20260802-loop-489d3aa7-c5-control",
+        "c20260802-loop-489d3aa7-c5-component-edge",
+    }
+    recommended = next(
+        row["experiment"]
+        for row in matrix["hypotheses"]
+        if row["experiment"]["experiment_id"] == matrix["recommended_experiment_id"]
+    )
+    assert recommended["knobs"] == old_candidate["knobs"]
+
+
 def test_frozen_replay_finds_completed_train_across_retry_lineage(
     tmp_path: Path,
 ) -> None:

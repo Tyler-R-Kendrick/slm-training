@@ -3516,9 +3516,24 @@ def _apply_frozen_replay(
 ) -> dict[str, dict[str, Any]]:
     prefix = campaign_id.replace("continuous-loop-", "c")
     old_candidate_id = str(replay["candidate"]["experiment"]["experiment_id"])
-    slug = old_candidate_id.rsplit("-", 1)[-1]
-    if slug not in {item[0] for item in _SCREENING_ARM_BANK}:
-        raise RuntimeError(f"unsupported automatic frozen replay arm: {slug}")
+    # Match against the known arm bank by suffix rather than splitting on the
+    # last hyphen: several arm slugs (component-plan, component-edge,
+    # component-inventory, binder-topology, component-structure) contain a
+    # hyphen themselves, so a naive rsplit("-", 1) truncates them (e.g.
+    # "component-edge" -> "edge") and this whole automatic replay path fails
+    # closed with "unsupported automatic frozen replay arm". Check longest
+    # slugs first so a multi-word slug always wins over any shorter one that
+    # happens to also match as a suffix.
+    known_slugs = sorted(
+        (item[0] for item in _SCREENING_ARM_BANK), key=len, reverse=True
+    )
+    slug = next(
+        (s for s in known_slugs if old_candidate_id.endswith(f"-{s}")), None
+    )
+    if slug is None:
+        raise RuntimeError(
+            f"unsupported automatic frozen replay arm: {old_candidate_id}"
+        )
     new_ids = {"control": f"{prefix}-control", "candidate": f"{prefix}-{slug}"}
     for role, new_id in new_ids.items():
         target = next(
