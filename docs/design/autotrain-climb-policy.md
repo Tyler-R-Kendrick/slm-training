@@ -71,12 +71,15 @@ repair, whose receipt resets the consecutive count. This prevents an infinite
 unmodified timeout replay loop while retaining the exact reproduction input.
 
 One cycle still obeys the repository hard cap. Control and candidate receive equal
-wall shares, with a third share reserved for research, status, and durable handoff;
-decision-bearing evaluation remains serialized so CPU contention cannot invalidate
-latency attribution. Scratch one-shot arms keep the serving checkpoint but skip the
-unused full optimizer/RNG state. A long-lived unsupervised driver that integrates a
-new HEAD re-executes itself before creating a campaign, preventing stale imported
-policy constants from poisoning later cycles.
+wall shares after retaining the canonical finalization reserve. Before either arm
+starts, the driver proves both full shares plus that reserve fit in the remaining
+cycle wall; otherwise it fails closed instead of giving the second arm less time.
+This avoids stranding orchestration time that a complete multi-record evaluation
+needs while keeping decision-bearing evaluation serialized so CPU contention cannot
+invalidate latency attribution. Scratch one-shot arms keep the serving checkpoint
+but skip the unused full optimizer/RNG state. A long-lived unsupervised driver that
+integrates a new HEAD re-executes itself before creating a campaign, preventing stale
+imported policy constants from poisoning later cycles.
 
 ## Champion queue (continuous learning path)
 
