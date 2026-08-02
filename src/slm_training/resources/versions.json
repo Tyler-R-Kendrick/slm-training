@@ -7243,6 +7243,11 @@
         {
           "version": "v3",
           "date": "2026-08-02",
+          "note": "no-bump: add honest c1775 rejected component-edge scratch checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
           "note": "no-bump: correct c1773 README provenance from numeric literal extension to the observed open nested component trajectory; SLM-228 spectral-disposition behavior is unchanged"
         },
         {
