@@ -2702,6 +2702,16 @@
           "note": "Preserve matched-control recipes for champion confirmation and promotion, including steps-only candidates, and reclaim attempts that fail before experiment execution starts."
         },
         {
+          "version": "v65",
+          "date": "2026-08-02",
+          "note": "Pass the remaining experiment-stage wall into model-build evaluation so it can finalize typed per-record outcomes before the outer supervisor interrupt."
+        },
+        {
+          "version": "v64",
+          "date": "2026-08-02",
+          "note": "Require canonical harness repair after one hash-linked cached reproduction of an incomplete measurement instead of spending a second identical replay wall."
+        },
+        {
           "version": "v63",
           "date": "2026-08-02",
           "note": "Replace stale preregistration-time confirmation priorities with outcome-conditioned promotion or rejection steering, including explicit loss-quality divergence and diagnostic-only runtime successors."
