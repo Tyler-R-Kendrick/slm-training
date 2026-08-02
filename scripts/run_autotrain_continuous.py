@@ -1976,6 +1976,7 @@ def _classify_metric_tradeoff(
     control: dict[str, float | None],
     candidate: dict[str, float | None],
     primary_metric: str,
+    minimum_efficiency_gain_fraction: float,
 ) -> tuple[bool, list[str]]:
     """Score control vs candidate with quality/latency tradeoffs.
 
@@ -2081,9 +2082,25 @@ def _classify_metric_tradeoff(
     ):
         c_eff = c_mpr / c_lat
         t_eff = t_mpr / t_lat
-        if t_eff > c_eff + _EPS:
+        efficiency_gain_fraction = (t_eff / c_eff - 1.0) if c_eff > 0 else None
+        if (
+            efficiency_gain_fraction is not None
+            and efficiency_gain_fraction + _EPS
+            >= minimum_efficiency_gain_fraction
+        ):
             positive = True
-            reasons.append(f"efficiency_win:mpr_per_ms:{c_eff:.8g}->{t_eff:.8g}")
+            reasons.append(
+                f"efficiency_win:mpr_per_ms:{c_eff:.8g}->{t_eff:.8g}:"
+                f"gain_fraction={efficiency_gain_fraction:.8g}:"
+                f"minimum={minimum_efficiency_gain_fraction:.8g}"
+            )
+        elif efficiency_gain_fraction is not None and efficiency_gain_fraction > _EPS:
+            reasons.append(
+                f"efficiency_win_rejected_min_effect:mpr_per_ms:"
+                f"{c_eff:.8g}->{t_eff:.8g}:"
+                f"gain_fraction={efficiency_gain_fraction:.8g}<"
+                f"{minimum_efficiency_gain_fraction:.8g}"
+            )
 
     return positive, reasons
 
@@ -2178,6 +2195,9 @@ def _classify_positive(
         control=control,
         candidate=candidate,
         primary_metric=effective_metric,
+        minimum_efficiency_gain_fraction=float(
+            policy.positive_classification["minimum_efficiency_gain_fraction"]
+        ),
     )
 
     control_outcome = next(

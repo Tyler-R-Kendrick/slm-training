@@ -24,7 +24,7 @@ numbers/inventory without re-authoring classifiers.
 - **Cadence** `screening_cycles_per_promotion` (default 3 screening : 1 promotion)
 - **Exhausted identity fields** (claim class, train/eval version, primary, direction, data digest)
 - **Recipe-tweak knobs** + null cap → regime-transition pressure
-- **Phase A positive rules** (fixture `n` alone, executable unblock, size-match / EG_params)
+- **Phase A positive rules** (fixture `n` alone, executable unblock, size-match / EG_params, minimum efficiency effect)
 - **Synthesis loop** action filenames and fail-closed SFT (still enforced in `hillclimb`)
 - **I10 rung gates** (enabled and fail-closed, with durable prior-rung evidence)
 - **Command walls** (screening, promotion, and Lean obey `MAX_RUN_MINUTES`)
@@ -71,6 +71,15 @@ gate if any growth remains. A missing parameter count can no longer make a growt
 arm look size matched. After the handoff is written, the terminal matrix renders
 its post-outcome priorities. A completed null or negative therefore rotates to a
 distinct quality hypothesis instead of printing the already-executed preregistration.
+
+Policy v4 adds `positive_classification.minimum_efficiency_gain_fraction=0.05`.
+An efficiency-only screen must improve meaningful-programs per millisecond by at
+least 5%; smaller positive deltas are typed as
+`efficiency_win_rejected_min_effect` and cannot override the structural primary's
+minimum effect. c1730's 15.25% screen triggered a new-seed replication, while
+c1731 collapsed to 0.66% with identical quality and is rejected. This prevents
+CPU jitter from minting positive delivery layers or repeatedly steering the same
+exhausted model arm.
 
 `measurement.max_consecutive_frozen_replays` bounds identical incomplete replay
 cycles. Exhaustion is not a model rejection: the handoff preserves the frozen
@@ -181,6 +190,7 @@ Structural similarity already has the Mathlib-free LeverProof monotonicity theor
 used by promotion; screening remains fixture evidence and cannot bypass the full
 promotion proof, multi-seed, or ship gates. A completed frozen replay also rewrites
 its stale infrastructure priority to the next distinct model-quality arm.
+Policy v4 retains those quality rules and adds the minimum efficiency effect above.
 
 ## Content digest
 
