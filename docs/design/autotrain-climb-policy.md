@@ -19,7 +19,7 @@ numbers/inventory without re-authoring classifiers.
 
 ## What is externalized
 
-- **Screening primary** (binding/reference quality fallback, increase) + non-regression leaves
+- **Screening primary** (`smoke.structural_similarity`, increase) + parse and binder-reference non-regression
 - **Promotion primary** (held-out quality, increase, locked eval / multi-seed flags)
 - **Cadence** `screening_cycles_per_promotion` (default 3 screening : 1 promotion)
 - **Exhausted identity fields** (claim class, train/eval version, primary, direction, data digest)
@@ -97,7 +97,7 @@ so sticky knobs get a confirmatory retest before more thrash.
 | --- | --- |
 | Ledger | `outputs/autoresearch/loops/<loop_id>/champion_queue.jsonl` |
 | Schema | `autotrain_champion_queue/v1` |
-| Enqueue | Phase A `positive` **and** quality signal (`quality_held:` / `quality_metric_win:`) on any thrash lever (`bounds` / `canvas` / `both` / `steps` / `batch1`) — not pure matched control |
+| Enqueue | Phase A `positive` **and** quality signal (`quality_held:` / `quality_metric_win:`) on any registered screening lever — not pure matched control |
 | Confirm | Next cycle matrix is control + `-confirm` — **same levers, new seed** (cadence role/suites unchanged); max **2** confirm attempts then `rejected` |
 | Promote | On **promotion cadence**, a `confirmed` head becomes control + `-promote` under promotion suites/seeds |
 | Dedup | Same open lever fingerprint is not re-enqueued; fingerprint excludes cycle-local `steps` jitter. A causal family saturates after two terminal attempts on the same integrated code and reopens only after code identity changes. |
@@ -156,10 +156,21 @@ a cost/non-regression signal; the screening primary is quality.
 ## Thrash rotation (matrix diversity)
 
 Screening (and promotion-without-confirmed) matrices include the full lever
-bank (`bounds`, `canvas`, `both`, `steps`, `batch1`) and **rotate**
-`recommended_experiment_id` by cycle index. Arms recently in the champion
-queue are deprioritized, and saturated causal families are skipped until the
-integrated code changes.
+bank and **rotate** `recommended_experiment_id` by cycle index. Alongside the
+historical runtime/recipe controls, the bank includes size-matched structural
+supervision arms for component plan, component edges, component inventory,
+binder topology, and joint component structure. These change loss attribution,
+not model capacity. Arms recently in the champion queue are deprioritized, and
+saturated causal families are skipped until the integrated code changes.
+
+Policy v3 replaces the saturated `smoke.binder_reference_f1` screening primary
+with `smoke.structural_similarity` and requires both parse rate and binder F1 not
+to regress. c1728 measured binder F1 at 1.0 in both arms while structure differed
+by 0.2099, proving the prior primary could not rank the observed quality failure.
+Structural similarity already has the Mathlib-free LeverProof monotonicity theorem
+used by promotion; screening remains fixture evidence and cannot bypass the full
+promotion proof, multi-seed, or ship gates. A completed frozen replay also rewrites
+its stale infrastructure priority to the next distinct model-quality arm.
 
 ## Content digest
 

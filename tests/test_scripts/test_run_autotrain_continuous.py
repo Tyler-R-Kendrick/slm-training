@@ -347,6 +347,7 @@ def test_matrix_confirm_path_same_levers_new_seed() -> None:
         confirm_levers={
             "grammar_completion_bounds": True,
             "compact_active_canvas": False,
+            "component_edge_loss_weight": 1.0,
             "steps": 81,
             "batch_size": 2,
             "train_version": "wf_smoke_v2",
@@ -362,6 +363,8 @@ def test_matrix_confirm_path_same_levers_new_seed() -> None:
     ctrl = matrix["hypotheses"][0]["experiment"]["knobs"]
     assert cand["grammar_completion_bounds"] is True
     assert ctrl["grammar_completion_bounds"] is False
+    assert cand["component_edge_loss_weight"] == 1.0
+    assert ctrl["component_edge_loss_weight"] == 0.0
     assert cand["seed"] == ctrl["seed"] == 100_000 + 9
     assert cand["steps"] == 81
 
@@ -371,6 +374,7 @@ def test_select_recommended_slug_rotates_and_skips() -> None:
     assert _mod._select_recommended_slug(1) == "bounds"
     assert _mod._select_recommended_slug(2) == "canvas"
     assert _mod._select_recommended_slug(3) == "both"
+    assert _mod._select_recommended_slug(1729) == "binder-topology"
     # skip bounds → canvas even on cycle 1
     assert _mod._select_recommended_slug(1, skip={"bounds"}) == "canvas"
     # all skipped → still returns rotated head
@@ -398,6 +402,38 @@ def test_matrix_thrash_rotation_recommends_non_bounds() -> None:
     ids = [h["experiment"]["experiment_id"] for h in matrix["hypotheses"]]
     assert "c20260731-c2-batch1" in ids
     assert "c20260731-c2-bounds" in ids
+    assert "c20260731-c2-component-plan" in ids
+    assert "c20260731-c2-binder-topology" in ids
+
+
+def test_completed_frozen_retry_steers_to_distinct_quality_arm() -> None:
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-20260731-c10",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=80,
+        cycle=10,
+        role="screening",
+        recommended_slug="batch1",
+    )
+    candidate_id = "c20260731-c10-batch1"
+    matrix["next_run_priorities"][0].update(
+        {
+            "area": "infrastructure",
+            "hypothesis": "The repaired harness completes the frozen replay.",
+            "authority": "observed_result",
+            "proposed_experiment_id": candidate_id,
+        }
+    )
+
+    priorities = _mod._completed_retry_priorities(matrix, candidate_id)
+
+    assert priorities[0].area == "model"
+    assert priorities[0].proposed_experiment_id == "c20260731-c10-component-plan"
+    assert "resolved infrastructure" in priorities[0].expected_information_gain
 
 
 def test_matrix_promote_path_confirmed_knobs() -> None:
@@ -1150,11 +1186,14 @@ def test_skip_arm_slugs_only_while_open() -> None:
     assert "canvas" in skip
 
 
-def test_is_champion_lever_includes_steps_and_batch1() -> None:
+def test_is_champion_lever_includes_training_and_decode_arms() -> None:
     assert _mod._is_champion_lever(
         {"grammar_completion_bounds": True}, candidate_id="x-bounds"
     )
     assert _mod._is_champion_lever({"batch_size": 1}, candidate_id="x-batch1")
+    assert _mod._is_champion_lever(
+        {"component_edge_loss_weight": 1.0}, candidate_id="x-component-edge"
+    )
     assert _mod._is_champion_lever(
         {
             "grammar_completion_bounds": False,
