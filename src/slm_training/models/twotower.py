@@ -5882,18 +5882,25 @@ class TwoTowerModel(nn.Module):
             if token_id not in component_ids:
                 continue
             if kind == "component_root":
-                bias[position] = weight * logits[0, token_id]
+                # The plan head is auxiliary and can be poorly calibrated on a
+                # short or early-stopped train.  Its raw root logits and
+                # Poisson rates are unbounded; adding them directly lets this
+                # heuristic dominate the base model indefinitely (for example,
+                # repeatedly extending a legal variadic component until the
+                # decode deadline).  Keep the configured weight as the maximum
+                # authority of the heuristic while preserving sign and order.
+                bias[position] = weight * torch.tanh(logits[0, token_id])
             elif kind == "component_bound":
                 remaining = (
                     F.softplus(logits[1, token_id]) - emitted_bound.get(token_id, 0)
                 ).clamp_min(1e-4)
-                bias[position] = weight * remaining.log()
+                bias[position] = weight * torch.tanh(remaining.log())
             elif kind == "component_root_or_bound":
                 remaining = (
                     F.softplus(logits[1, token_id]) - emitted_bound.get(token_id, 0)
                 ).clamp_min(1e-4)
-                bias[position] = weight * torch.logaddexp(
-                    logits[0, token_id], remaining.log()
+                bias[position] = weight * torch.tanh(
+                    torch.logaddexp(logits[0, token_id], remaining.log())
                 )
         return bias
 

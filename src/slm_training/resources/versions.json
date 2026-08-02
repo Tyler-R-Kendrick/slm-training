@@ -2641,7 +2641,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v72",
+      "version": "v73",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2681,6 +2681,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v73",
+          "date": "2026-08-02",
+          "note": "Report exhausted finalized-timeout replay budgets explicitly and require a canonical runtime repair before one more content-bound validation replay."
+        },
         {
           "version": "v72",
           "date": "2026-08-02",
@@ -11062,7 +11067,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v290",
+      "version": "v291",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -11105,6 +11110,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v291",
+          "date": "2026-08-02",
+          "note": "Bound component-plan root and Poisson-count decode biases by their configured weight so a poorly calibrated auxiliary head cannot dominate legal closure choices until timeout."
+        },
         {
           "version": "v290",
           "date": "2026-08-02",

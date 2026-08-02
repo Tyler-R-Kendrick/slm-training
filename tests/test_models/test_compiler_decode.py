@@ -6047,11 +6047,45 @@ def test_component_plan_bias_is_role_conditioned_and_count_aware() -> None:
         ("component_bound", "component_bound"),
     )
 
-    assert root_bias is not None and root_bias.tolist() == [0.0, 6.0]
+    assert root_bias is not None
+    assert root_bias[0].item() == 0.0
+    assert 0.0 < root_bias[1].item() <= 2.0
     assert bound_bias_before is not None
     assert bound_bias_after is not None
     assert bound_bias_before[1] > bound_bias_before[0]
     assert bound_bias_after[1] < bound_bias_before[1]
+    assert root_bias.abs().max().item() <= 2.0
+    assert bound_bias_before.abs().max().item() <= 2.0
+    assert bound_bias_after.abs().max().item() <= 2.0
+
+
+def test_component_plan_bias_bounds_untrained_extreme_logits() -> None:
+    model = _model(
+        component_plan_loss_weight=1.0,
+        component_plan_decode_weight=1.0,
+    )
+    assert model.component_plan_head is not None
+    tokenizer = model.tokenizer
+    stack = tokenizer.token_to_id["Stack"]
+    button = tokenizer.token_to_id["Button"]
+    with torch.no_grad():
+        model.component_plan_head.weight.zero_()
+        model.component_plan_head.bias.zero_()
+        vocab = tokenizer.vocab_size
+        model.component_plan_head.bias[stack] = 1_000.0
+        model.component_plan_head.bias[vocab + button] = 1_000.0
+    ctx, ctx_pad = model._encode_context(["stack with a button"])
+
+    bias = model._component_plan_bias(
+        ctx,
+        ctx_pad,
+        [stack],
+        (stack, button),
+        ("component_root", "component_bound"),
+    )
+
+    assert bias is not None
+    assert bias.abs().max().item() <= 1.0
 
 
 def test_component_edges_come_from_ast_and_partial_reference_graph() -> None:

@@ -3931,20 +3931,40 @@ def _write_cycle_handoff(
             ),
         )
     elif finalized_decode_timeout:
+        from slm_training.autoresearch.climb_policy import (
+            load_climb_policy,
+            max_consecutive_frozen_replays,
+        )
+
         manifest_path = camp_dir / "manifests" / f"{candidate_id}.json"
         manifest_sha = (
             hashlib.sha256(manifest_path.read_bytes()).hexdigest()
             if manifest_path.is_file()
             else None
         )
+        replay_count = _consecutive_frozen_replays(
+            root, loop_id, campaign_id, cycle_intent
+        )
+        replay_limit = max_consecutive_frozen_replays(load_climb_policy())
+        replay_exhausted = replay_count >= replay_limit
         actions[0:0] = [
             AutotrainActionV1(
                 kind="repair_harness",
                 owner="improve-openui-harnesses",
                 reason=(
-                    "AgentV finalized every record disposition and reported an "
-                    "internal decode timeout; repair canonical model-build runtime "
-                    "before replaying the frozen arm"
+                    (
+                        "identical finalized-timeout replay budget exhausted "
+                        f"({replay_count}/{replay_limit}); "
+                    )
+                    if replay_exhausted
+                    else (
+                        "AgentV finalized every record disposition and reported an "
+                        "internal decode timeout; "
+                    )
+                )
+                + (
+                    "repair canonical model-build runtime before replaying the "
+                    "frozen arm"
                 ),
                 evidence_ids=(evidence_id,),
                 harness_family="model_build",
@@ -3954,8 +3974,13 @@ def _write_cycle_handoff(
                 kind="retry_measurement",
                 owner="autotrain",
                 reason=(
-                    "replay the identical frozen arm after the required canonical "
-                    "runtime repair"
+                    "validate the repaired canonical runtime with the identical "
+                    "frozen arm"
+                    if replay_exhausted
+                    else (
+                        "replay the identical frozen arm after the required "
+                        "canonical runtime repair"
+                    )
                 ),
                 evidence_ids=(evidence_id,),
                 frozen_manifest_sha256=manifest_sha,
