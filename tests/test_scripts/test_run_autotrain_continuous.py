@@ -646,6 +646,9 @@ def test_select_recommended_slug_prioritizes_successor_quality_after_legacy_null
     skip.add("mixed-mask")
     assert _mod._select_recommended_slug(1798, skip=skip) == "symbol-boundary"
 
+    skip.add("symbol-boundary")
+    assert _mod._select_recommended_slug(1799, skip=skip) == "design-dropout"
+
 
 def test_confirmation_bypasses_exhausted_screening_selector() -> None:
     all_slugs = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
@@ -1116,6 +1119,33 @@ def test_completed_candidate_projects_new_arm_missing_from_frozen_matrix() -> No
 
     assert priorities[0].proposed_experiment_id == "c20260802-c1800-symbol-boundary"
     assert "symbol-boundary" in priorities[0].hypothesis
+
+
+def test_design_dropout_arm_is_size_matched_and_replayable() -> None:
+    campaign_id = "continuous-loop-20260802-c1802"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1802,
+        role="screening",
+        recommended_slug="design-dropout",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-design-dropout"]
+    assert control["design_md_dropout"] == 0.0
+    assert candidate["design_md_dropout"] == 0.25
+    assert _mod._arm_slug_from_knobs(candidate) == "design-dropout"
+    assert "design_md_dropout" in _mod._LEVER_KNOB_KEYS
 
 
 def test_completed_frozen_retry_steers_to_distinct_quality_arm() -> None:

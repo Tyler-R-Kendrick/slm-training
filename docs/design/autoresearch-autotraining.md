@@ -272,6 +272,9 @@ not deterministic decode legality. A null or rejected mixed-mask arm advances
 to `symbol_boundary_loss_weight=1` against zero. That objective reweights the
 existing output-token CE at opaque-symbol positions and their immediate
 neighbors, adds no head or parameters, and does not affect the grammar oracle.
+If boundary supervision is null, the next arm uses deterministic
+`design_md_dropout=0.25` against zero to test scaffold-context reliance without
+changing model size or constrained decode authority.
 
 ### Program experiments route through this loop (G1, SLM-46)
 

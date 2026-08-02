@@ -2646,7 +2646,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v101",
+      "version": "v102",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2686,6 +2686,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v102",
+          "date": "2026-08-02",
+          "note": "Add a zero-parameter deterministic DESIGN.md context-dropout arm after symbol-boundary supervision was null."
+        },
         {
           "version": "v101",
           "date": "2026-08-02",
@@ -7350,6 +7355,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1801 rejected symbol-boundary checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
         {
           "version": "v3",
           "date": "2026-08-02",
