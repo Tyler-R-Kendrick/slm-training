@@ -702,7 +702,7 @@ def loop_result_rows(
                 "integrated": (campaign.integration_commit or "")[:8] or "—",
                 "experiment": outcome.experiment_id,
                 "params": params,
-                "primary": _metric_text(outcome.metrics, campaign.primary_metric),
+                "primary": _outcome_metric_text(outcome, campaign.primary_metric),
                 "metrics": _metrics_text(
                     outcome.metrics,
                     outcome.data_metrics,
@@ -787,6 +787,32 @@ def _reused_training_params(outcome: ExperimentOutcome) -> str:
             and summary_params > 0
         ):
             return str(summary_params)
+    return "—"
+
+
+def _outcome_metric_text(outcome: ExperimentOutcome, name: str) -> str:
+    """Read a primary from flattened metrics or its content-bound stage payload."""
+
+    value = _metric_text(outcome.metrics, name)
+    if value != "—":
+        return value
+    parts = name.split(".", maxsplit=1)
+    if len(parts) != 2:
+        return "—"
+    suite, metric = parts
+    for stage in reversed(outcome.stage_telemetry):
+        parsed = stage.get("parsed_output")
+        if not isinstance(parsed, dict):
+            continue
+        suites = parsed.get("suites")
+        suite_metrics = suites.get(suite) if isinstance(suites, dict) else None
+        candidate = (
+            suite_metrics.get(metric) if isinstance(suite_metrics, dict) else None
+        )
+        if isinstance(candidate, bool):
+            return f"{float(candidate):g}"
+        if isinstance(candidate, (int, float)):
+            return f"{candidate:g}"
     return "—"
 
 

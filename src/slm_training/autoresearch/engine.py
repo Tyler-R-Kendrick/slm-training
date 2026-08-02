@@ -931,6 +931,7 @@ def execute_commands(
             artifact_revision_before=artifact_revision_before,
         )
         flattened = _numeric_metrics(parsed) if parsed is not None else {}
+        flattened.update(_suite_headline_metrics(parsed))
         if "scripts.build_train_data" in command:
             data_metrics.update(flattened)
         elif "scripts.train_model" in command and completed.returncode == 0:
@@ -1182,6 +1183,23 @@ def _numeric_metrics(value: object, prefix: str = "") -> dict[str, float]:
                 result[name] = float(child)
             elif len(result) < 300:
                 result.update(_numeric_metrics(child, name))
+    return result
+
+
+def _suite_headline_metrics(value: object) -> dict[str, float]:
+    """Extract every suite headline without traversing verbose suite details."""
+
+    if not isinstance(value, dict) or not isinstance(value.get("suites"), dict):
+        return {}
+    result: dict[str, float] = {}
+    for suite, metrics in value["suites"].items():
+        if not isinstance(metrics, dict):
+            continue
+        for name, metric in metrics.items():
+            if isinstance(metric, bool):
+                result[f"suites.{suite}.{name}"] = float(metric)
+            elif isinstance(metric, (int, float)):
+                result[f"suites.{suite}.{name}"] = float(metric)
     return result
 
 

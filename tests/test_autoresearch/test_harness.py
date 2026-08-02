@@ -2824,7 +2824,7 @@ def test_loop_result_matrix_recovers_content_bound_reused_params(
     campaign = CampaignSpec(
         campaign_id="cycle-reuse",
         objective="Render the frozen checkpoint size in the result matrix.",
-        primary_metric="smoke.parse_rate",
+        primary_metric="held_out.structural_similarity",
         loop_id="loop-1",
         cycle_index=1,
         upstream_commit="c" * 40,
@@ -2842,7 +2842,7 @@ def test_loop_result_matrix_recovers_content_bound_reused_params(
         experiment_id="replay",
         campaign_id=campaign.campaign_id,
         status="completed",
-        metrics={"smoke.parse_rate": 1.0},
+        metrics={},
         stage_telemetry=(
             {
                 "stage_kind": "reused_training",
@@ -2850,6 +2850,11 @@ def test_loop_result_matrix_recovers_content_bound_reused_params(
                 "source_train_summary_sha256": hashlib.sha256(
                     summary_path.read_bytes()
                 ).hexdigest(),
+            },
+            {
+                "parsed_output": {
+                    "suites": {"held_out": {"structural_similarity": 0.75}}
+                }
             },
         ),
     )
@@ -2862,13 +2867,13 @@ def test_loop_result_matrix_recovers_content_bound_reused_params(
     )
 
     rendered = render_loop_result_matrix(tmp_path, "loop-1")
-    assert "| replay | 1608962 | 1 |" in rendered
+    assert "| replay | 1608962 | 0.75 |" in rendered
 
     summary_path.write_text(
         json.dumps({"track": {"trainable_params": 9_999_999}}),
         encoding="utf-8",
     )
-    assert "| replay | — | 1 |" in render_loop_result_matrix(tmp_path, "loop-1")
+    assert "| replay | — | 0.75 |" in render_loop_result_matrix(tmp_path, "loop-1")
 
 
 def test_loop_result_matrix_marks_timeout_measurement_incomplete(
@@ -3772,6 +3777,17 @@ def test_execute_resolves_truncated_train_stdout_from_canonical_summary(
         "large_payload": "x" * 100_000,
     }
     evaluation = _complete_gate_scoreboard(run_dir / "agentv")
+    evaluation["suites"]["smoke"]["task_scoreboard"] = {
+        f"verbose_{index}": float(index) for index in range(350)
+    }
+    evaluation["suites"]["held_out"] = {
+        "n": 5,
+        "document_n": 5,
+        "completed_document_n": 5,
+        "incomplete_document_n": 0,
+        "decode_timeout_count": 0,
+        "structural_similarity": 0.8,
+    }
     evaluation["large_payload"] = "y" * 100_000
     replies = iter(
         (
@@ -3831,6 +3847,7 @@ def test_execute_resolves_truncated_train_stdout_from_canonical_summary(
 
     assert outcome.status == "completed"
     assert outcome.metrics["trainable_params"] == 12345
+    assert outcome.metrics["suites.held_out.structural_similarity"] == 0.8
     assert outcome.stage_telemetry[0]["parsed_output_source"] == str(
         run_dir / "train_summary.json"
     )
