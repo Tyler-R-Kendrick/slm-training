@@ -32,6 +32,7 @@ progress, not model-quality or ship evidence.
 | cached parser-stack projection, cProfile (dirty, reverted) | 7 | 4 | 23,534.799 | 30,785 | 1,006 | 31,895 | typed timeout |
 | direct integer-stack tuple (dirty) | 104 | 68 | 17,439.288 | 145,040 | 11,243 | 163,770 | completed |
 | direct integer-stack tuple, cProfile (dirty) | 10 | 5 | 23,378.588 | 34,164 | — | — | typed timeout |
+| direct integer-stack tuple (clean) | 104 | 68 | 17,510.887 | 145,040 | 11,243 | 163,770 | completed |
 
 All rows use the same c1737 control checkpoint, `smoke` offset 0, one record,
 strict compiler-tree policy, CPU, and a 24-second diagnostic deadline. The
@@ -106,7 +107,11 @@ model-quality evidence.
   17,439.288 compiler ms. Under cProfile, combined accept-refresh/state-key
   time fell from 3.796 seconds to 1.872 seconds while the candidate traversed
   more states. This is retained as completion-kernel v16; it changes no legal
-  domain, proof order, or authority.
+  domain, proof order, or authority. The immutable `af754d029` replay retained
+  identical exact work and lowered compiler time by 148.092 ms versus clean
+  v15, while total latency was 22.79 ms slower (23,844.43 vs 23,821.64).
+  Therefore the wall-clock effect is neutral/noisy and no broad throughput
+  claim is made.
 - Repeating `SIGALRM` delivery is disarmed before timeout bookkeeping. The
   prior failure exited 142 with an uncaught second alarm; the repaired runs
   exit 0 with `decode_outcome=runtime_timeout` and complete AgentV artifacts.

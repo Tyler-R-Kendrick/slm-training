@@ -120,6 +120,45 @@
       }
     }
   },
+  "latest_clean_stack_tuple_reproduction": {
+    "run_id": "c1747-stack-tuple-clean",
+    "variant": "direct_integer_stack_tuple",
+    "evidence_authority": "clean_commit_bound_fixture_profile",
+    "document_n": 1,
+    "completed_document_n": 1,
+    "incomplete_document_n": 0,
+    "decode_timeout_document_count": 0,
+    "parse_rate": 1.0,
+    "meaningful_program_rate": 1.0,
+    "structural_similarity": 0.2529,
+    "binder_reference_f1": 1.0,
+    "latency_ms_p50": 23844.43,
+    "tokens_emitted": 104,
+    "forwards": 68,
+    "compiler_ms": 17510.887,
+    "states": 145040,
+    "witnesses": 11243,
+    "forks": 163770,
+    "outcome": "completed",
+    "agentv": "emitted_failed_as_expected_for_n1_quality_and_evidence_volume",
+    "ship_gates": "not run for this focused fixture replay",
+    "comparison_to_clean_v15": {
+      "compiler_ms_delta": -148.092,
+      "latency_ms_p50_delta": 22.79,
+      "disposition": "targeted_profiled_cost_reduction_with_neutral_noisy_end_to_end_wall"
+    },
+    "version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "code_commit": "af754d029868fcf0bcc35644b0b0de5e35c65c4d",
+      "code_dirty": false,
+      "components": {
+        "harness.model_build.eval": "v74",
+        "model.twotower": "v288",
+        "dsl.completion_kernel": "v16",
+        "dsl.operators.registry": "v12"
+      }
+    }
+  },
   "clean_reproduction": {
     "run_id": "c1741-fed-history-cow-clean-profile",
     "variant": "copy_on_write_fed_token_history",
