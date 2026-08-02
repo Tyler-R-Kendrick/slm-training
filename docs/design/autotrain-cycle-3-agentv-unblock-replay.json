@@ -1,0 +1,86 @@
+{
+  "schema": "autotrain_measured_results/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202608-75a7803e-c3",
+  "cycle_index": 3,
+  "loop_id": "continuous-openui-20260802-local",
+  "run_class": "fixture_scratch",
+  "source_commit": "a9fcdf30604ac87cd69382705670db03c46629ab",
+  "source_dirty": false,
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "primary_metric": "smoke.binder_reference_f1",
+  "frozen_replay_of": "continuous-loop-20260802-continuous-openui-202608-75a7803e-c2",
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202608-75a7803e-c3-control",
+      "status": "completed_gate_rejection",
+      "expected_gate_rejection": true,
+      "training": {"executed": true, "parameter_count": 1608962},
+      "suite": "smoke",
+      "suite_n": 3,
+      "metrics": {
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0575
+      },
+      "ship_gates_pass": false,
+      "ship_gate_failures": [
+        "smoke:insufficient_n actual=3 need>=20",
+        "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+        "smoke:structural_similarity actual=0.0575 need>=0.35",
+        "smoke:component_type_recall actual=0.0 need>=0.35",
+        "smoke:ast_beq_rate actual=0.0 need>=0.2",
+        "smoke:canonical_beq_rate actual=0.0 need>=0.1",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "held_out:missing_suite",
+        "adversarial:missing_suite",
+        "ood:missing_suite",
+        "rico_held:missing_suite"
+      ]
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202608-75a7803e-c3-bounds",
+      "status": "completed_gate_rejection",
+      "expected_gate_rejection": true,
+      "training": {"executed": true, "parameter_count": 1608962},
+      "suite": "smoke",
+      "suite_n": 3,
+      "metrics": {
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0575
+      },
+      "ship_gates_pass": false,
+      "ship_gate_failures_same_as": "control"
+    }
+  ],
+  "primary_metric_comparison": {
+    "control": 0.6333333333333333,
+    "candidate": 0.6333333333333333,
+    "improvement": 0.0
+  },
+  "sdlc_phase_a": {
+    "driver_classification": "NON_POSITIVE (reasons: fixture_insufficient_n, primary_metric_null_or_worse)",
+    "agent_classification": "positive: executable_unblocking",
+    "positive": true,
+    "positive_category": "executable_unblocking",
+    "rationale": "The driver's automatic classifier only checks primary-metric wins and ship-quality wins; it has no signal for 'a prior hard crash now completes.' Per autotrain-iteration-delivery.md category 3, this cycle is the required replay-proof: the identical frozen c2 manifests (source_commit a14c8767..., campaign continuous-loop-20260802-continuous-openui-202608-75a7803e-c2) hard-crashed both arms with an unrecoverable RuntimeError (AgentV SDK unavailable, then a NODE_OPTIONS rejection). After the c1/c2 infrastructure repairs (torch install; NODE_OPTIONS sanitization in commit ca15f5c, evals.agentv v6->v7), this cycle replays those exact frozen manifests and both arms complete end-to-end with real, honestly-computed scoreboards (expected_gate_rejection=true; the fixture n=3 ship-gate rejection is the correct, expected outcome for smoke-scale fixture data, not an infrastructure failure). No primary-metric win is claimed -- control and candidate are the same reused checkpoint (0.0 delta) -- only that the harness is unblocked.",
+    "stack_layer": true,
+    "stack_layer_ref": "claude/great-dirac-ptxx92 (PR #1292), commits 561ecb6 (c1 torch doc), ca15f5c (AgentV NODE_OPTIONS fix), a9fcdf3 (c2 doc), and this cycle's doc"
+  },
+  "honesty": "fixture/scratch measurement; ship gates correctly reject on evidence volume (n=3<20) and quality thresholds; no ship or production claim. This doc's positive claim is scoped strictly to 'the AgentV harness is unblocked and replay-proven,' not to any model quality result.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "a9fcdf30604ac87cd69382705670db03c46629ab",
+    "code_dirty": false,
+    "components": {
+      "evals.agentv": "v7",
+      "harness.model_build.eval": "v73",
+      "harness.autoresearch.experiment_campaign": "v48"
+    },
+    "stamped_at": "2026-08-02T02:45:24Z"
+  }
+}
