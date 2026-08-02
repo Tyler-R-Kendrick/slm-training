@@ -1,0 +1,37 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 2,
+  "source_commit": "5ff93f378a68adafd0da8442549501b3e7ccda41",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "cycle_intent": "retry_measurement",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "note": "frozen replay: control/bounds training reused from cycle 1's checkpoints (FROZEN_TRAIN_REUSE); only evaluation re-ran"
+  },
+  "arms": {
+    "c2-control": {
+      "status": "measurement_incomplete",
+      "reused_checkpoint": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c1/runs/c20260802-continuous-openui-local-8c0b60dd-c1-control/checkpoints/last.pt",
+      "reason": "evaluate_model.py --ship-gates crashed inside publish_model_evaluation with 'AgentV SDK evaluation failed: node: --import tsx is not allowed in NODE_OPTIONS' before this cycle's harness fix landed"
+    },
+    "c2-bounds": {
+      "status": "measurement_incomplete",
+      "reason": "same NODE_OPTIONS crash as control"
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "conclusion": "Cycle 2 is the frozen replay of cycle 1's control/bounds arms, run before the harness fix. It reproduced the exact same node crash cycle 1 hit downstream of AgentV publish (this time surfacing because npm ci had already installed @agentv/core, exposing the underlying NODE_OPTIONS incompatibility directly rather than the earlier 'SDK unavailable' path-not-found error), which exhausted the consecutive-incomplete-replay budget and raised a typed repair_harness action (harness_family=model_build). Repaired in commit 14ddf5e2e8a15e9056171d49e5e57f9e8c7a0020: publish_agentv_evaluation now strips NODE_OPTIONS from the subprocess env before spawning node. Two stale ship-gate test fixtures (missing meaningful_program_rate/ast_beq_rate/canonical_beq_rate) were refreshed in the same commit. The next cycle replays these identical frozen arms again with the fix in place.",
+  "next_priorities": [
+    "Replay the identical frozen c2-control/c2-bounds arms now that NODE_OPTIONS is stripped for the AgentV subprocess",
+    "Do not promote or ship either checkpoint; both remain screening-scale fixture artifacts",
+    "Keep RL locked; ship gates stay honest on fixture n"
+  ],
+  "recorded_at": "2026-08-02T15:38:33Z"
+}
