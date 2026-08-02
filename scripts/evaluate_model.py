@@ -19,6 +19,7 @@ from slm_training.harnesses.model_build.experiment_flags import (
     apply_levers_from_mapping,
     assignments_payload,
     cli_lever_overrides,
+    cli_runtime_override_fields,
 )
 from slm_training.harnesses.model_build.eval_policy import (
     EVALUATION_POLICIES,
@@ -762,6 +763,7 @@ def main(argv: list[str] | None = None) -> int:
         or ("ship_eval" if args.ship_gates else "scratch_matrix"),
         run_root=args.run_root,
         run_id=args.run_id,
+        runtime_override_fields=cli_runtime_override_fields(argv=argv),
         model_name=args.model,
         device=args.device,
         seed=int(args.seed),
@@ -890,6 +892,11 @@ def main(argv: list[str] | None = None) -> int:
         config, flag_assignments = apply_levers_from_environ(
             config, overrides=lever_overrides
         )
+    config.runtime_override_fields = frozenset(
+        set(config.runtime_override_fields or ())
+        | set(lever_overrides)
+        | {assignment.flag_key for assignment in flag_assignments}
+    )
 
     if args.check_decode_feasibility and config.test_dir is not None:
         from slm_training.harnesses.model_build.decode_feasibility import (

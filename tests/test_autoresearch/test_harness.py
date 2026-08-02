@@ -4064,14 +4064,7 @@ def test_compile_dynamic_symbol_campaign_uses_typed_flags() -> None:
     assert "--semantic-candidate-masks" in train
     assert "--grammar-equivalence-cache" in train
     assert "--no-compact-active-canvas" in train
-    assert json.loads(evaluate[evaluate.index("--flags-json") + 1]) == {
-        "compact_active_canvas": False,
-        "constraint_graph_mode": "hybrid",
-        "grammar_equivalence_cache": True,
-        "runtime_symbol_features": "role_gated",
-        "semantic_candidate_masks": True,
-        "symbol_slot_augmentation": True,
-    }
+    assert "--flags-json" not in evaluate
 
 
 def test_rl_readiness_is_fail_closed() -> None:

@@ -763,15 +763,6 @@ def compile_commands(
             evaluate.append("--slot-contract-in-context")
         if knobs.design_md_context is False:
             evaluate.append("--no-design-md-context")
-        runtime_flags = {
-            field: getattr(knobs, field)
-            for field in _TWOTOWER_RUNTIME_FLAG_FIELDS
-            if getattr(knobs, field) is not None
-        }
-        if runtime_flags:
-            evaluate.extend(
-                ["--flags-json", json.dumps(runtime_flags, sort_keys=True)]
-            )
     return commands
 
 

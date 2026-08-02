@@ -917,7 +917,6 @@ def evaluate(
 ) -> dict:
     from slm_training.harnesses.model_build.feature_flags import resolve, save_snapshot
 
-    config, flag_snapshot = resolve(config, phase="evaluation")
     generation_overrides = dict(generation_overrides or {})
     _seed_eval_rng(int(getattr(config, "seed", 0) or 0))
     if config.test_dir is None:
@@ -965,6 +964,14 @@ def evaluate(
         )
         loaded_checkpoint = ckpt
         checkpoint_sha256 = _sha256_file(ckpt)
+
+    plugin_config = getattr(plugin, "config", None)
+    allowed_overrides = config.runtime_override_fields
+    if plugin_config is not None and allowed_overrides is not None:
+        for item in fields(config):
+            if item.name not in allowed_overrides and hasattr(plugin_config, item.name):
+                setattr(config, item.name, getattr(plugin_config, item.name))
+    config, flag_snapshot = resolve(config, phase="evaluation")
 
     # V7 decode telemetry: reset per-suite so forwards/hit-rate are suite-local.
     spec_stats = getattr(plugin, "speculative_stats", None)

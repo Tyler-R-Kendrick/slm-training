@@ -1,0 +1,41 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1782",
+  "cycle_index": 1782,
+  "cycle_intent": "screening",
+  "evidence_class": "fixture",
+  "decision": "incomplete_evaluation_runtime_flag_registry_failure",
+  "scoreable": false,
+  "new_checkpoint_created": true,
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1782-component-plan",
+      "manifest_sha256": "698fd883d70022d0f85c4890ef25da70a897c590d3e94e22c391f5cdf474427a",
+      "checkpoint_sha256": "87377fff93c5227d17b97da405447a545251fd07c50f05ab87d93a183c158428",
+      "params": 1755764,
+      "train": {"device": "cpu", "steps": 20, "batch_size": 2, "seed": 101782, "last_loss": 17.889495849609375, "elapsed_wall_seconds": 5.852333532006014},
+      "evaluation": {"status": "failed_before_scoreboard", "error_type": "unknown_experiment_lever_flag", "metrics": null}
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1782-control",
+      "manifest_sha256": "f010cca9ab8f3b073faadfed43566a2d4e00e03a0919ab5476d354a189ad74be",
+      "checkpoint_sha256": "9fea4a15f86e98e85086f92ac80ec26e3ec597d10eb3c55bf01b47c378926564",
+      "params": 1755764,
+      "train": {"device": "cpu", "steps": 20, "batch_size": 2, "seed": 101782, "last_loss": 14.164534568786621, "elapsed_wall_seconds": 2.1154554079985246},
+      "evaluation": {"status": "failed_before_scoreboard", "error_type": "unknown_experiment_lever_flag", "metrics": null}
+    }
+  ],
+  "comparison": {"quality": null, "latency": null, "measurement_integrity": "failed", "trainable_params_matched": true},
+  "harness_repair": {"components": {"harness.autoresearch.experiment_campaign": "v85", "harness.flags": "v2", "harness.model_build.eval": "v76"}, "change": "explicit_cli_runtime_override_allowlist_and_effective_checkpoint_snapshot"},
+  "agentv": {"bundles_complete": false, "execution_errors": null, "ship_gates_pass": null},
+  "checkpoint_policy": "local_explicit_no_sync_exact_frozen_replay_only_not_promoted_not_ship",
+  "lean": "not_applicable:screening",
+  "next_priority": "exact_frozen_replay_c1782_after_harness_repair",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "18d87586638e99d197d5bf3c8c56e5c128dcea56",
+    "code_dirty": false,
+    "components": {"harness.model_build.train": "v29", "harness.experiment_feature_flags": "v4"},
+    "stamped_at": "2026-08-02T18:32:26.151943+00:00"
+  }
+}
