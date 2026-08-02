@@ -858,6 +858,64 @@ def _recover_interrupted_champion_entries(
     return changed
 
 
+def _revalidate_open_champion_entries(
+    root: Path, entries: list[dict[str, Any]]
+) -> bool:
+    """Reject queued champions invalidated by the current harness policy.
+
+    The queue is durable while classifiers improve. Replaying an old ``positive``
+    bit would otherwise let a signal that the current harness rejects consume a
+    confirmation cycle. Incomplete source evidence remains retriable; only a
+    complete current-policy non-win is closed.
+    """
+
+    changed = False
+    for row in entries:
+        if row.get("status") not in {"queued", "confirming"}:
+            continue
+        campaign_id = str(row.get("source_campaign_id") or "")
+        control_id = str(row.get("source_control_id") or "")
+        candidate_id = str(row.get("source_candidate_id") or "")
+        camp_dir = root / campaign_id
+        if not campaign_id or not control_id or not candidate_id or not camp_dir.is_dir():
+            continue
+        handoff = _read_json(camp_dir / "cycle_handoff.json")
+        delivery = _read_json(camp_dir / "sdlc_delivery.json")
+        try:
+            current = _classify_positive(
+                camp_dir=camp_dir,
+                primary_metric=str(
+                    handoff.get("primary_metric")
+                    or delivery.get("primary_metric")
+                    or ""
+                ),
+                control_id=control_id,
+                candidate_id=candidate_id,
+                role=str(
+                    row.get("source_role")
+                    or handoff.get("cycle_role")
+                    or "screening"
+                ),
+            )
+        except (OSError, TypeError, ValueError):
+            continue
+        if not _measurement_is_complete(current) or _should_enqueue_champion(current):
+            continue
+        row["status"] = "rejected"
+        row["resolved_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        row["resolve_reasons"] = [
+            "source_reclassified_nonpositive_under_current_policy",
+            *[str(reason) for reason in current.get("reasons") or []],
+        ]
+        changed = True
+        print(
+            "CHAMPION_REVALIDATE_REJECT "
+            f"entry_id={row.get('entry_id')} campaign={campaign_id}",
+            flush=True,
+        )
+    return changed
+
+
 def _write_champion_queue(path: Path, entries: list[dict[str, Any]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + ".tmp")
@@ -3028,6 +3086,28 @@ def _classify_positive(
         decision["positive"] = True
         decision["stack_layer"] = True
 
+    # A quality-primary gain may spend only the same bounded latency budget as
+    # the explicit meaning-quality path above. Otherwise scalar training depth
+    # can mint a structural "win" by buying 2x+ decode cost, enter the champion
+    # queue, and steer the loop away from genuinely new objectives.
+    if leaf != "latency_ms_p50" and decision.get("positive"):
+        control_latency = _finite_metric(control.get("latency_ms_p50"))
+        candidate_latency = _finite_metric(candidate.get("latency_ms_p50"))
+        if (
+            control_latency is not None
+            and candidate_latency is not None
+            and control_latency > 0
+            and candidate_latency
+            > control_latency * (1.0 + _LATENCY_REGRESSION_BUDGET)
+            and candidate_latency > control_latency + _LATENCY_REGRESSION_ABS_MS
+        ):
+            decision["positive"] = False
+            decision["stack_layer"] = False
+            reasons_pre.append(
+                "primary_quality_win_rejected_latency_budget:"
+                f"{effective_metric}:lat={control_latency}->{candidate_latency}"
+            )
+
     reasons = (
         list(reasons_pre) + list(tradeoff_reasons) + list(decision.get("reasons") or [])
     )
@@ -3749,12 +3829,22 @@ def _completed_confirmation_priorities(
 
 
 def _predecessor_priority_slug(
-    root: Path, predecessor_campaign_id: str | None, *, skip: set[str]
+    root: Path,
+    predecessor_campaign_id: str | None,
+    *,
+    skip: set[str],
+    closed: set[str] | None = None,
 ) -> str | None:
-    """Resolve the predecessor's highest-priority executable screening arm."""
+    """Resolve the predecessor's highest-priority executable screening arm.
+
+    ``skip`` contains transient funnel conflicts that strong observed evidence
+    may preserve across an interrupted confirmation/promotion. ``closed`` is
+    permanent lineage evidence: no priority is allowed to reopen those arms.
+    """
 
     if not predecessor_campaign_id:
         return None
+    closed = closed or set()
     camp_dir = root / predecessor_campaign_id
     handoff_path = camp_dir / "cycle_handoff.json"
     if not handoff_path.is_file():
@@ -3829,8 +3919,10 @@ def _predecessor_priority_slug(
             if evidence_directed_only and not evidence_directed:
                 continue
             for slug, _hypothesis, _extras in _SCREENING_ARM_BANK:
-                if experiment_id.endswith(f"-{slug}") and (
-                    slug not in skip or evidence_directed
+                if (
+                    experiment_id.endswith(f"-{slug}")
+                    and slug not in closed
+                    and (slug not in skip or evidence_directed)
                 ):
                     return slug
         return None
@@ -3859,7 +3951,7 @@ def _predecessor_priority_slug(
             list(ancestor_handoff.get("priorities") or []),
             evidence_directed_only=True,
         )
-        if observed and observed not in executed_slugs:
+        if observed and observed not in executed_slugs and observed not in closed:
             return observed
         cursor = str(
             _read_json(ancestor_dir / "campaign.json").get(
@@ -3878,8 +3970,10 @@ def _predecessor_priority_slug(
             and float(priority.get("confidence") or 0.0) >= 0.9
         )
         for slug, _hypothesis, _extras in _SCREENING_ARM_BANK:
-            if experiment_id.endswith(f"-{slug}") and (
-                slug not in skip or evidence_directed
+            if (
+                experiment_id.endswith(f"-{slug}")
+                and slug not in closed
+                and (slug not in skip or evidence_directed)
             ):
                 return slug
     return None
@@ -5915,7 +6009,8 @@ def run_cycle(
     # Pre-execution crashes do not spend bounded champion attempts. Promotion
     # heads also return to confirmed so the next promotion slot can retry.
     recovered = _recover_interrupted_champion_entries(root, queue_entries)
-    if recovered:
+    revalidated = _revalidate_open_champion_entries(root, queue_entries)
+    if recovered or revalidated:
         _write_champion_queue(queue_path, queue_entries)
     open_champion = _queue_head_open(queue_entries)
     confirmed_champion: dict[str, Any] | None = None
@@ -6257,7 +6352,10 @@ def run_cycle(
             flush=True,
         )
     rec_slug = _predecessor_priority_slug(
-        root, pred, skip=skip_slugs
+        root,
+        pred,
+        skip=skip_slugs,
+        closed=recent_exhausted,
     ) or _select_recommended_slug(cycle, skip=skip_slugs)
     matrix = _matrix(
         campaign_id=campaign_id,

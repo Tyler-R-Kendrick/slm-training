@@ -2699,6 +2699,85 @@ def test_classify_positive_rejects_c1731_efficiency_jitter(tmp_path: Path) -> No
     )
 
 
+def test_classify_positive_rejects_quality_win_with_unbounded_latency_cost(
+    tmp_path: Path,
+) -> None:
+    camp = tmp_path / "camp"
+    for arm, similarity, latency in (
+        ("c-control", 0.13526666666666667, 1105.9),
+        ("c-steps", 0.41973333333333335, 2810.05),
+    ):
+        run = camp / "runs" / arm
+        _write_eval(
+            run / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            binder_reference_f1=0.6333333333333333,
+            meaningful_program_rate=0.3333333333333333,
+            structural_similarity=similarity,
+            latency_ms_p50=latency,
+        )
+        _write_complete_scoreboard(run, "smoke")
+
+    result = _mod._classify_positive(
+        camp_dir=camp,
+        primary_metric="smoke.structural_similarity",
+        control_id="c-control",
+        candidate_id="c-steps",
+        role="screening",
+    )
+
+    assert result["positive"] is False
+    assert result["stack_layer"] is False
+    assert any(
+        reason.startswith("primary_quality_win_rejected_latency_budget:")
+        for reason in result["reasons"]
+    )
+
+
+def test_open_champion_is_revalidated_under_current_policy(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "cycle-1"
+    for arm, similarity, latency in (
+        ("c-control", 0.13526666666666667, 1105.9),
+        ("c-steps", 0.41973333333333335, 2810.05),
+    ):
+        run = camp / "runs" / arm
+        _write_eval(
+            run / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            meaningful_program_rate=0.3333333333333333,
+            structural_similarity=similarity,
+            latency_ms_p50=latency,
+        )
+        _write_complete_scoreboard(run, "smoke")
+    (camp / "cycle_handoff.json").write_text(
+        json.dumps(
+            {
+                "cycle_role": "screening",
+                "primary_metric": "smoke.structural_similarity",
+            }
+        )
+    )
+    entries = [
+        {
+            "entry_id": "champ-1",
+            "status": "queued",
+            "source_campaign_id": camp.name,
+            "source_control_id": "c-control",
+            "source_candidate_id": "c-steps",
+            "source_role": "screening",
+        }
+    ]
+
+    assert _mod._revalidate_open_champion_entries(root, entries) is True
+    assert entries[0]["status"] == "rejected"
+    assert "source_reclassified_nonpositive_under_current_policy" in entries[0][
+        "resolve_reasons"
+    ]
+
+
 def test_classify_positive_marks_finalized_decode_timeout_incomplete(
     tmp_path: Path,
 ) -> None:
@@ -4255,6 +4334,15 @@ def test_numeric_literal_close_starvation_steers_new_training_arm(
     assert _mod._predecessor_priority_slug(
         root, predecessor, skip={"literal-close"}
     ) == "literal-close"
+    assert (
+        _mod._predecessor_priority_slug(
+            root,
+            predecessor,
+            skip={"literal-close"},
+            closed={"literal-close"},
+        )
+        is None
+    )
 
 
 def test_control_only_model_timeout_replays_without_fake_harness_repair(
