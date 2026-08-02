@@ -1,14 +1,19 @@
 {
   "schema": "autotrain_climb_policy/v1",
-  "version": "v2",
+  "version": "v3",
   "description": "High-volatility continuous autotrain hill-climb policy. Harness/driver code loads this artifact; change metrics, cadence, caps, and identity fields here without re-authoring classifiers.",
   "screening_primary": {
-    "metric": "smoke.binder_reference_f1",
+    "metric": "smoke.structural_similarity",
     "direction": "increase",
-    "minimum_effect": 0.0,
+    "minimum_effect": 0.01,
     "require_non_regression_metrics": [
       {
         "metric_leaf": "parse_rate",
+        "direction": "increase",
+        "minimum_effect": 0.0
+      },
+      {
+        "metric_leaf": "binder_reference_f1",
         "direction": "increase",
         "minimum_effect": 0.0
       }

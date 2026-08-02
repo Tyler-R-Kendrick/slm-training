@@ -160,6 +160,32 @@ python -m scripts.evaluate_model \
   --ship-gates
 ```
 
+## 2026-08-01 — continuous screening primary audit
+
+c1728 completed a size-matched frozen batch-size replay with parse rate and
+binder-reference F1 both equal to 1.0 in both arms, while structural similarity
+fell from 0.3656 to 0.1557. The prior screening primary,
+`smoke.binder_reference_f1`, was therefore saturated and would classify a large
+observed structure regression as a primary tie.
+
+Autotrain climb policy v3 uses `smoke.structural_similarity` with minimum effect
+0.01 as the screening primary, while parse rate and binder-reference F1 are
+explicit non-regression metrics. This does not weaken ship gates: screening is
+still a three-record fixture control, promotion still requires the held-out
+structural primary, multi-seed and Lean/LeverProof evidence, and ship still
+requires all authoritative AgentEvals suites and sample floors. The new screening
+arms activate existing structural loss heads without changing parameter count.
+
+Adversarial checks:
+
+- A syntactically valid but structurally empty output cannot win on parse alone.
+- A structure gain that damages binder correctness cannot enqueue a champion.
+- A larger model cannot win because every new arm is parameter-size matched.
+- Decode legality, deterministic singleton bypass, and fail-closed certification
+  are unchanged; only the learned ranking loss changes.
+- Latency remains a reported cost and can reject an otherwise marginal result,
+  but it is no longer mistaken for the quality objective.
+
 ## 2026-07-18 — measurement-honesty remediation (policy delta)
 
 Full audit + fixes: `measurement-honesty-remediation-20260718.md`. Gate-policy

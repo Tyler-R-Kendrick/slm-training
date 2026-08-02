@@ -2571,7 +2571,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v48",
+      "version": "v49",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2608,6 +2608,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v49",
+          "date": "2026-08-01",
+          "note": "Use structural similarity as the non-saturated screening primary, add size-matched structural supervision arms, and replace stale infrastructure replay priorities after complete measurement."
+        },
         {
           "version": "v48",
           "date": "2026-08-01",

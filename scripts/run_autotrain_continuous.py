@@ -332,6 +332,10 @@ _RETRYABLE_PROMOTE_STATUSES = frozenset(
 _LEVER_KNOB_KEYS = (
     "grammar_completion_bounds",
     "compact_active_canvas",
+    "component_plan_loss_weight",
+    "component_edge_loss_weight",
+    "component_inventory_loss_weight",
+    "binder_topology_loss_weight",
     "steps",
     "batch_size",
     "train_version",
@@ -378,6 +382,34 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         "batch1",
         "Halving batch_size changes smoke latency vs matched control without lowering parse_rate.",
         {"batch_size": 1},
+    ),
+    (
+        "component-plan",
+        "Component-plan supervision improves smoke structural_similarity without lowering parse_rate or binder_reference_f1.",
+        {"component_plan_loss_weight": 1.0},
+    ),
+    (
+        "component-edge",
+        "Component-edge supervision improves smoke structural_similarity without lowering parse_rate or binder_reference_f1.",
+        {"component_edge_loss_weight": 1.0},
+    ),
+    (
+        "component-inventory",
+        "Component-inventory supervision improves smoke structural_similarity without lowering parse_rate or binder_reference_f1.",
+        {"component_inventory_loss_weight": 1.0},
+    ),
+    (
+        "binder-topology",
+        "Low-weight binder-topology supervision improves smoke structural_similarity without lowering parse_rate or binder_reference_f1.",
+        {"binder_topology_loss_weight": 0.25},
+    ),
+    (
+        "component-structure",
+        "Joint component-plan and component-edge supervision improves smoke structural_similarity beyond either isolated loss.",
+        {
+            "component_plan_loss_weight": 1.0,
+            "component_edge_loss_weight": 1.0,
+        },
     ),
 )
 
@@ -641,6 +673,18 @@ def _arm_slug_from_knobs(
     knobs: dict[str, Any], *, candidate_id: str = ""
 ) -> str | None:
     """Map knobs / candidate id to thrash arm slug."""
+    if knobs.get("component_plan_loss_weight") and knobs.get(
+        "component_edge_loss_weight"
+    ):
+        return "component-structure"
+    if knobs.get("component_plan_loss_weight"):
+        return "component-plan"
+    if knobs.get("component_edge_loss_weight"):
+        return "component-edge"
+    if knobs.get("component_inventory_loss_weight"):
+        return "component-inventory"
+    if knobs.get("binder_topology_loss_weight"):
+        return "binder-topology"
     if knobs.get("grammar_completion_bounds") and knobs.get("compact_active_canvas"):
         return "both"
     if knobs.get("grammar_completion_bounds"):
@@ -753,16 +797,7 @@ def _should_enqueue_champion(delivery: dict[str, Any]) -> bool:
 
 def _is_champion_lever(knobs: dict[str, Any], *, candidate_id: str = "") -> bool:
     """True when knobs encode a thrash arm (not pure matched control)."""
-    if knobs.get("grammar_completion_bounds") or knobs.get("compact_active_canvas"):
-        return True
-    if knobs.get("batch_size") == 1:
-        return True
-    cid = candidate_id or ""
-    if cid.endswith("-steps") or "-steps" in cid:
-        return True
-    if cid.endswith("-batch1") or "-batch1" in cid:
-        return True
-    return False
+    return _arm_slug_from_knobs(knobs, candidate_id=candidate_id) is not None
 
 
 def _load_experiment_knobs(camp_dir: Path, experiment_id: str) -> dict[str, Any]:
@@ -2506,6 +2541,62 @@ def _consecutive_frozen_replays(
     return count
 
 
+def _completed_retry_priorities(
+    matrix: dict[str, Any], candidate_id: str
+) -> tuple[NextRunPriorityV1, ...]:
+    """Replace stale replay steering after a frozen measurement completes."""
+
+    rows = [dict(item) for item in matrix.get("next_run_priorities") or []]
+    if not rows:
+        return ()
+    experiments = [
+        item.get("experiment") or {}
+        for item in matrix.get("hypotheses") or []
+        if isinstance(item, dict)
+    ]
+    alternatives = [
+        item
+        for item in experiments
+        if str(item.get("experiment_id") or "")
+        and str(item.get("experiment_id")) != candidate_id
+        and not str(item.get("experiment_id")).endswith("-control")
+    ]
+    quality_keys = {
+        "component_plan_loss_weight",
+        "component_edge_loss_weight",
+        "component_inventory_loss_weight",
+        "binder_topology_loss_weight",
+    }
+    alternative = next(
+        (
+            item
+            for item in alternatives
+            if any(float((item.get("knobs") or {}).get(key) or 0) > 0 for key in quality_keys)
+        ),
+        alternatives[0] if alternatives else None,
+    )
+    if alternative is not None:
+        next_id = str(alternative["experiment_id"])
+        slug = next_id.rsplit("-", 1)[-1]
+        rows[0].update(
+            {
+                "area": "model",
+                "hypothesis": (
+                    "The completed frozen replay rejects the prior arm; test "
+                    f"the distinct size-matched '{slug}' quality hypothesis next."
+                ),
+                "confidence": 0.9,
+                "expected_information_gain": (
+                    "Moves from resolved infrastructure attribution to model quality."
+                ),
+                "authority": "observed_result",
+                "disposition": "experiment_next",
+                "proposed_experiment_id": next_id,
+            }
+        )
+    return tuple(NextRunPriorityV1.model_validate(item) for item in rows)
+
+
 def _write_cycle_handoff(
     *,
     root: Path,
@@ -2565,9 +2656,13 @@ def _write_cycle_handoff(
             *(delivery.get("reasons") or []),
         ]
     )
-    priorities = tuple(
-        NextRunPriorityV1.model_validate(item)
-        for item in matrix.get("next_run_priorities") or []
+    priorities = (
+        _completed_retry_priorities(matrix, candidate_id)
+        if cycle_intent == "retry_measurement" and not measurement_incomplete
+        else tuple(
+            NextRunPriorityV1.model_validate(item)
+            for item in matrix.get("next_run_priorities") or []
+        )
     )
     checkpoint_paths = _created_checkpoint_paths(camp_dir)
     document_reason = "persist this cycle's JSON and markdown under docs/design"
@@ -3290,6 +3385,10 @@ def _matrix(
             "local_files_only": True,
             "grammar_completion_bounds": False,
             "compact_active_canvas": False,
+            "component_plan_loss_weight": 0.0,
+            "component_edge_loss_weight": 0.0,
+            "component_inventory_loss_weight": 0.0,
+            "binder_topology_loss_weight": 0.0,
             # Measurement completeness: smoke-only screening + longer decode wall.
             "decode_timeout_seconds": decode_timeout,
             "eval_suites": eval_suites,
@@ -3336,6 +3435,10 @@ def _matrix(
             in {
                 "grammar_completion_bounds",
                 "compact_active_canvas",
+                "component_plan_loss_weight",
+                "component_edge_loss_weight",
+                "component_inventory_loss_weight",
+                "binder_topology_loss_weight",
                 "steps",
                 "batch_size",
                 "train_version",
@@ -3487,6 +3590,10 @@ def _matrix(
             in {
                 "grammar_completion_bounds",
                 "compact_active_canvas",
+                "component_plan_loss_weight",
+                "component_edge_loss_weight",
+                "component_inventory_loss_weight",
+                "binder_topology_loss_weight",
                 "steps",
                 "batch_size",
                 "train_version",
@@ -3871,7 +3978,7 @@ def _manifest(
         controls = (
             CampaignControlV1(
                 control_id="matched-control",
-                description="Matched fixture baseline with grammar levers off.",
+                description="Matched fixture baseline with the tested lever off.",
                 kind="negative",
             ),
         )
@@ -3887,6 +3994,10 @@ def _manifest(
                 **knobs,
                 "grammar_completion_bounds": False,
                 "compact_active_canvas": False,
+                "component_plan_loss_weight": 0.0,
+                "component_edge_loss_weight": 0.0,
+                "component_inventory_loss_weight": 0.0,
+                "binder_topology_loss_weight": 0.0,
             },
             sort_keys=True,
         ).encode()

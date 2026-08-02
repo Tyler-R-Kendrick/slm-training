@@ -34,7 +34,11 @@ def test_load_climb_policy_has_volatile_fields_and_digest() -> None:
     assert policy.schema == "autotrain_climb_policy/v1"
     assert policy.version
     assert len(policy.sha256) == 64
-    assert policy.screening_primary["metric"]
+    assert policy.screening_primary["metric"] == "smoke.structural_similarity"
+    assert {
+        item["metric_leaf"]
+        for item in policy.screening_primary["require_non_regression_metrics"]
+    } == {"parse_rate", "binder_reference_f1"}
     assert policy.promotion_primary["metric"]
     assert policy.promotion_dispose["require_primary_win"] is True
     assert policy.cadence["screening_cycles_per_promotion"]
@@ -101,22 +105,38 @@ def test_cycle_cadence_screening_then_promotion() -> None:
 
 def test_classify_positive_screening_quality_win_and_regression() -> None:
     policy = load_climb_policy()
-    # Screening primary is the current binding/reference quality fallback.
+    # Structure is the primary; parse and binder correctness must not regress.
     win = classify_positive_metrics(
         policy,
         role="screening",
-        control_metrics={"binder_reference_f1": 0.4, "parse_rate": 1.0},
-        candidate_metrics={"binder_reference_f1": 0.6, "parse_rate": 1.0},
+        control_metrics={
+            "structural_similarity": 0.4,
+            "binder_reference_f1": 1.0,
+            "parse_rate": 1.0,
+        },
+        candidate_metrics={
+            "structural_similarity": 0.6,
+            "binder_reference_f1": 1.0,
+            "parse_rate": 1.0,
+        },
     )
     assert win["positive"] is True
     assert any(r.startswith("primary_metric_win") for r in win["reasons"])
 
-    # Lower quality is not positive.
+    # Lower structure is not positive.
     bad = classify_positive_metrics(
         policy,
         role="screening",
-        control_metrics={"binder_reference_f1": 0.6, "parse_rate": 1.0},
-        candidate_metrics={"binder_reference_f1": 0.4, "parse_rate": 1.0},
+        control_metrics={
+            "structural_similarity": 0.6,
+            "binder_reference_f1": 1.0,
+            "parse_rate": 1.0,
+        },
+        candidate_metrics={
+            "structural_similarity": 0.4,
+            "binder_reference_f1": 1.0,
+            "parse_rate": 1.0,
+        },
     )
     assert bad["positive"] is False
     assert any("null_or_worse" in r for r in bad["reasons"])
@@ -127,8 +147,16 @@ def test_classify_positive_capacity_growth_without_eg_params() -> None:
     result = classify_positive_metrics(
         policy,
         role="screening",
-        control_metrics={"binder_reference_f1": 0.4, "parse_rate": 1.0},
-        candidate_metrics={"binder_reference_f1": 0.6, "parse_rate": 1.0},
+        control_metrics={
+            "structural_similarity": 0.4,
+            "binder_reference_f1": 1.0,
+            "parse_rate": 1.0,
+        },
+        candidate_metrics={
+            "structural_similarity": 0.6,
+            "binder_reference_f1": 1.0,
+            "parse_rate": 1.0,
+        },
         baseline_trainable_params=1_000_000,
         candidate_trainable_params=2_000_000,
         eg_params_by_seed=None,
@@ -142,8 +170,16 @@ def test_classify_positive_capacity_growth_with_eg_params() -> None:
     result = classify_positive_metrics(
         policy,
         role="screening",
-        control_metrics={"binder_reference_f1": 0.4, "parse_rate": 1.0},
-        candidate_metrics={"binder_reference_f1": 0.6, "parse_rate": 1.0},
+        control_metrics={
+            "structural_similarity": 0.4,
+            "binder_reference_f1": 1.0,
+            "parse_rate": 1.0,
+        },
+        candidate_metrics={
+            "structural_similarity": 0.6,
+            "binder_reference_f1": 1.0,
+            "parse_rate": 1.0,
+        },
         baseline_trainable_params=1_000_000,
         candidate_trainable_params=2_000_000,
         eg_params_by_seed=(1.2, 1.3),
