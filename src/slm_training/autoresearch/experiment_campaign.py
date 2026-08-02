@@ -44,6 +44,10 @@ _PROMOTION_ARTIFACT_KINDS = frozenset(
 _CREDIT_ARTIFACT_KINDS = frozenset(
     {"observation_table", "analysis_plan", "credit_report"}
 )
+_LEGACY_DIGEST_DEFAULTS = {
+    "replicate_ledger_schema": None,
+    "replicate_seed_floor": None,
+}
 
 
 def _unique(values: tuple[str, ...], label: str) -> None:
@@ -340,11 +344,16 @@ class CampaignLockV1(StrictModel):
 
     @model_validator(mode="after")
     def verify_digest(self) -> CampaignLockV1:
-        validated = ExperimentCampaignV1.model_validate(
-            self.manifest.model_dump(mode="json")
-        )
-        actual = campaign_manifest_sha256(validated)
-        if actual != self.manifest_sha256:
+        payload = self.manifest.model_dump(mode="json")
+        actual = _campaign_payload_sha256(payload)
+        if actual == self.manifest_sha256:
+            return self
+
+        legacy_payload = dict(payload)
+        for field, default in _LEGACY_DIGEST_DEFAULTS.items():
+            if legacy_payload.get(field) == default:
+                legacy_payload.pop(field, None)
+        if _campaign_payload_sha256(legacy_payload) != self.manifest_sha256:
             raise ValueError("campaign manifest digest mismatch")
         return self
 
@@ -413,9 +422,12 @@ class HolmResultV1(StrictModel):
         return self
 
 
-def campaign_manifest_sha256(manifest: ExperimentCampaignV1) -> str:
-    payload = manifest.model_dump(mode="json")
+def _campaign_payload_sha256(payload: dict[str, Any]) -> str:
     return hashlib.sha256(canonical_json(payload).encode("utf-8")).hexdigest()
+
+
+def campaign_manifest_sha256(manifest: ExperimentCampaignV1) -> str:
+    return _campaign_payload_sha256(manifest.model_dump(mode="json"))
 
 
 def load_ap001_certification(path: Path | None) -> AP001CertificationV1 | None:
