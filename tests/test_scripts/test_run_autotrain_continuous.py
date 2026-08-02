@@ -393,7 +393,9 @@ def test_matrix_confirm_path_same_levers_new_seed() -> None:
             "grammar_completion_bounds": True,
             "compact_active_canvas": False,
             "component_edge_loss_weight": 1.0,
+            "component_edge_decode_weight": 1.0,
             "structural_aux_head_profile": "component-edge",
+            "compiler_decode_mode": "tree",
             "steps": 81,
             "batch_size": 2,
             "train_version": "wf_smoke_v2",
@@ -417,8 +419,12 @@ def test_matrix_confirm_path_same_levers_new_seed() -> None:
     assert ctrl["grammar_completion_bounds"] is False
     assert cand["component_edge_loss_weight"] == 1.0
     assert ctrl["component_edge_loss_weight"] == 0.0
+    assert cand["component_edge_decode_weight"] == 1.0
+    assert ctrl["component_edge_decode_weight"] == 0.0
     assert cand["structural_aux_head_profile"] == "component-edge"
     assert ctrl["structural_aux_head_profile"] == "component-edge"
+    assert cand["compiler_decode_mode"] == "tree"
+    assert ctrl["compiler_decode_mode"] == "tree"
     assert cand["seed"] == ctrl["seed"] == 100_000 + 9
     assert cand["steps"] == 81
     assert ctrl["steps"] == 80
@@ -683,8 +689,33 @@ def test_structural_screening_control_matches_recommended_head_capacity() -> Non
     candidate = by_id["c20260731-c1729-binder-topology"]
     assert control["binder_topology_loss_weight"] == 0.0
     assert candidate["binder_topology_loss_weight"] == 0.25
+    assert control["binder_topology_decode_weight"] == 0.0
+    assert candidate["binder_topology_decode_weight"] == 1.0
     assert control["structural_aux_head_profile"] == "binder-topology"
     assert candidate["structural_aux_head_profile"] == "binder-topology"
+    assert control["compiler_decode_mode"] == "tree"
+    assert candidate["compiler_decode_mode"] == "tree"
+
+
+def test_structural_screening_arms_couple_training_to_decode() -> None:
+    by_slug = {slug: extras for slug, _hypothesis, extras in _mod._SCREENING_ARM_BANK}
+
+    for slug, prefix in (
+        ("component-plan", "component_plan"),
+        ("component-edge", "component_edge"),
+        ("component-inventory", "component_inventory"),
+        ("binder-topology", "binder_topology"),
+    ):
+        assert by_slug[slug][f"{prefix}_loss_weight"] > 0.0
+        assert by_slug[slug][f"{prefix}_decode_weight"] > 0.0
+        assert by_slug[slug]["compiler_decode_mode"] == "tree"
+
+    joint = by_slug["component-structure"]
+    assert joint["component_plan_loss_weight"] > 0.0
+    assert joint["component_plan_decode_weight"] > 0.0
+    assert joint["component_edge_loss_weight"] > 0.0
+    assert joint["component_edge_decode_weight"] > 0.0
+    assert joint["compiler_decode_mode"] == "tree"
 
 
 def test_completed_frozen_retry_steers_to_distinct_quality_arm() -> None:
@@ -2547,6 +2578,46 @@ def test_classify_positive_rejects_missing_scoreboards(tmp_path: Path) -> None:
     }.issubset(result["reasons"])
 
 
+def test_classify_positive_routes_failed_outcome_to_harness_repair(
+    tmp_path: Path,
+) -> None:
+    camp = tmp_path / "camp"
+    for arm, similarity in (("c-control", 0.2), ("c-candidate", 0.4)):
+        run = camp / "runs" / arm
+        _write_eval(
+            run / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            meaningful_program_rate=1.0,
+            structural_similarity=similarity,
+            latency_ms_p50=1000.0,
+        )
+        _write_complete_scoreboard(run, "smoke")
+    outcomes = camp / "artifacts" / "outcomes"
+    outcomes.mkdir(parents=True)
+    (outcomes / "candidate.json").write_text(
+        json.dumps(
+            {
+                "experiment_id": "c-candidate",
+                "status": "failed",
+                "metrics": {},
+                "error": "lever_capability_compatibility: unsupported lever",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = _mod._classify_positive(
+        camp_dir=camp,
+        primary_metric="smoke.structural_similarity",
+        control_id="c-control",
+        candidate_id="c-candidate",
+    )
+
+    assert result["positive"] is False
+    assert "harness_failure:c-candidate:experiment_failed" in result["reasons"]
+
+
 @pytest.mark.parametrize(
     ("suites", "reason"),
     case_values(__file__, "test_classify_positive_rejects_invalid_or_empty_suites"),
@@ -3264,7 +3335,10 @@ def test_terminal_interrupted_replay_finalizes_without_rerunning_arms(
     assert handoffs[0]["campaign_id"] == campaign_id
 
 
-def test_frozen_replay_preserves_recipe_and_links_current_main_successor() -> None:
+@pytest.mark.parametrize("candidate_slug", ("batch1", "component-plan", "literal-close"))
+def test_frozen_replay_preserves_recipe_and_links_current_main_successor(
+    candidate_slug: str,
+) -> None:
     old_campaign = "continuous-loop-20260801-loop-12345678-c1710"
     new_campaign = "continuous-loop-20260801-loop-12345678-c1712"
     matrix = _mod._matrix(
@@ -3279,7 +3353,7 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor() -> No
         eval_version="e938_role_safe_all_targets_v2",
         steps=22,
         cycle=1712,
-        recommended_slug="batch1",
+        recommended_slug=candidate_slug,
     )
     old_control = json.loads(json.dumps(matrix["hypotheses"][0]["experiment"]))
     old_candidate = json.loads(
@@ -3287,7 +3361,9 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor() -> No
             next(
                 row["experiment"]
                 for row in matrix["hypotheses"]
-                if row["experiment"]["experiment_id"].endswith("-batch1")
+                if row["experiment"]["experiment_id"].endswith(
+                    f"-{candidate_slug}"
+                )
             )
         )
     )
@@ -3296,7 +3372,7 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor() -> No
         campaign_id=old_campaign,
     )
     old_candidate.update(
-        experiment_id="c20260801-loop-12345678-c1710-batch1",
+        experiment_id=f"c20260801-loop-12345678-c1710-{candidate_slug}",
         campaign_id=old_campaign,
     )
     old_control["knobs"].update(steps=80, seed=101710, batch_size=2)
@@ -3357,7 +3433,8 @@ def test_frozen_replay_finds_completed_train_across_retry_lineage(
 ) -> None:
     root = tmp_path / "autoresearch"
     source_campaign = "cycle-1"
-    retry_campaign = "cycle-2"
+    initialized_only_campaign = "cycle-2"
+    retry_campaign = "cycle-3"
     source_dir = root / source_campaign
     retry_dir = root / retry_campaign
     source_experiment = {
@@ -3386,14 +3463,29 @@ def test_frozen_replay_finds_completed_train_across_retry_lineage(
     retry_path = retry_dir / "manifests" / "retry-batch1.json"
     retry_path.parent.mkdir(parents=True)
     retry_path.write_text(retry_manifest.model_dump_json(indent=2) + "\n")
+    initialized_only_dir = root / initialized_only_campaign
+    initialized_only_dir.mkdir(parents=True)
+    (initialized_only_dir / "campaign.json").write_text(
+        _mod.CampaignSpec(
+            campaign_id=initialized_only_campaign,
+            objective="initialized recovery gap",
+            primary_metric="smoke.parse_rate",
+            loop_id="loop-1",
+            cycle_index=2,
+            predecessor_campaign_id=source_campaign,
+            upstream_commit="b" * 40,
+            integration_commit="b" * 40,
+        ).model_dump_json(indent=2)
+        + "\n"
+    )
     (retry_dir / "campaign.json").write_text(
         _mod.CampaignSpec(
             campaign_id=retry_campaign,
             objective="fixture replay",
             primary_metric="smoke.parse_rate",
             loop_id="loop-1",
-            cycle_index=2,
-            predecessor_campaign_id=source_campaign,
+            cycle_index=3,
+            predecessor_campaign_id=initialized_only_campaign,
             upstream_commit="b" * 40,
             integration_commit="b" * 40,
         ).model_dump_json(indent=2)
@@ -3460,6 +3552,75 @@ def test_digestless_frozen_retry_does_not_stall_cycle(
         "FROZEN_REPLAY_SKIP reason=missing_frozen_manifest_sha256"
         in capsys.readouterr().out
     )
+
+
+def test_invalid_frozen_configuration_is_not_replayed(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = tmp_path / "autoresearch"
+    campaign_id = "cycle-invalid"
+    camp = root / campaign_id
+    experiment = {
+        "experiment_id": "candidate-invalid",
+        "campaign_id": campaign_id,
+        "hypothesis": "A compiler-path lever requires its decode companion.",
+        "rationale": "The exact frozen recipe is intentionally invalid.",
+        "expected_effect": "Proposal validation prevents execution.",
+        "falsification_criteria": ["The invalid arm reaches training."],
+        "stop_conditions": ["Stop at capability validation."],
+        "citations": ["fixture://invalid"],
+        "knobs": {
+            "steps": 1,
+            "binder_topology_decode_weight": 1.0,
+            "compiler_decode_mode": "off",
+        },
+    }
+    manifest = _mod._manifest(campaign_id, experiment, "a" * 40)
+    manifest_path = camp / "manifests" / "candidate-invalid.json"
+    manifest_path.parent.mkdir(parents=True)
+    manifest_path.write_text(manifest.model_dump_json(indent=2) + "\n")
+    digest = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+    handoff = _mod.AutotrainCycleHandoffV1(
+        loop_id="loop-1",
+        campaign_id=campaign_id,
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        cycle_role="screening",
+        cycle_intent="screening",
+        evidence_class="fixture",
+        climb_state="harness_failure",
+        ship_state="blocked",
+        primary_metric="smoke.parse_rate",
+        actions=(
+            _mod.AutotrainActionV1(
+                kind="retry_measurement",
+                owner="autotrain",
+                reason="retry the frozen incomplete arm",
+                evidence_ids=(f"campaign:{campaign_id}",),
+                frozen_manifest_sha256=digest,
+            ),
+        ),
+    )
+    (camp / "cycle_handoff.json").write_text(handoff.model_dump_json(indent=2) + "\n")
+    outcomes = camp / "artifacts" / "outcomes"
+    outcomes.mkdir(parents=True)
+    (outcomes / "candidate.json").write_text(
+        json.dumps(
+            {
+                "experiment_id": "candidate-invalid",
+                "status": "failed",
+                "metrics": {},
+                "error": "lever_capability_compatibility: unsupported enabled levers",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert _mod._load_frozen_replay(root, "loop-1", campaign_id) is None
+    output = capsys.readouterr().out
+    assert "FROZEN_REPLAY_SKIP reason=nonreplayable_configuration" in output
+    assert "detail=lever_capability_compatibility" in output
 
 
 def test_measurement_completion_requires_both_arm_metrics_and_no_soft_failure() -> None:
@@ -3628,13 +3789,16 @@ def test_finalized_decode_timeout_routes_directly_to_runtime_repair(
         upstream_commit="a" * 40,
         integration_commit="b" * 40,
         role="screening",
-        cycle_intent="retry_measurement",
+        cycle_intent="screening",
         primary_metric="smoke.binder_reference_f1",
         matrix=_priority_matrix(),
         delivery={
             "positive": False,
             "candidate_id": "cand",
-            "reasons": ["measurement_incomplete:decode_timeout"],
+            "reasons": [
+                "measurement_incomplete:decode_timeout",
+                "harness_failure:cand:experiment_failed",
+            ],
             "stack_layer": False,
         },
         resolution=None,
@@ -3653,6 +3817,66 @@ def test_finalized_decode_timeout_routes_directly_to_runtime_repair(
     assert repair.frozen_manifest_sha256 == hashlib.sha256(b"{}\n").hexdigest()
     assert retry.frozen_manifest_sha256 == repair.frozen_manifest_sha256
     assert handoff.actions.index(repair) < handoff.actions.index(retry)
+
+
+def test_replayed_finalized_decode_timeout_rejects_runtime_arm(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "cycle-2"
+    run = camp / "runs" / "cand"
+    run.mkdir(parents=True)
+    (camp / "manifests").mkdir()
+    (camp / "campaign.json").write_text(
+        json.dumps({"predecessor_campaign_id": "cycle-1"})
+    )
+    (camp / "manifests" / "cand.json").write_text("{}\n")
+    (run / "scoreboard.json").write_text(
+        json.dumps(
+            {
+                "evals": {"runner": {"name": "AgentV", "execution_errors": 0}},
+                "gates": {"authority": "AgentEvals assertions", "pass": False},
+                "suites": {
+                    "smoke": {
+                        "n": 3,
+                        "completed_document_n": 0,
+                        "incomplete_document_n": 3,
+                        "decode_timeout_document_count": 3,
+                    }
+                },
+            }
+        )
+    )
+
+    handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-2",
+        cycle_index=2,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="screening",
+        cycle_intent="retry_measurement",
+        primary_metric="smoke.binder_reference_f1",
+        matrix=_priority_matrix(),
+        delivery={
+            "positive": False,
+            "candidate_id": "cand",
+            "reasons": [
+                "measurement_incomplete:decode_timeout",
+                "harness_failure:cand:experiment_failed",
+            ],
+            "stack_layer": False,
+        },
+        resolution=None,
+        formal_status=None,
+    )
+
+    assert handoff.climb_state == "rejected"
+    assert any("candidate_runtime_rejected" in reason for reason in handoff.reasons)
+    assert all(action.kind != "repair_harness" for action in handoff.actions)
+    assert all(action.kind != "retry_measurement" for action in handoff.actions)
+    assert any(action.kind == "next_experiment" for action in handoff.actions)
 
 
 def test_numeric_literal_close_starvation_steers_new_training_arm(
@@ -3707,13 +3931,19 @@ def test_numeric_literal_close_starvation_steers_new_training_arm(
 
     assert handoff.priorities[0].area == "model_build"
     assert handoff.priorities[0].proposed_experiment_id == "cand-literal-close"
-    repair = next(
-        action for action in handoff.actions if action.kind == "repair_harness"
+    successor = next(
+        action for action in handoff.actions if action.kind == "next_experiment"
     )
-    assert "do not replay" in repair.reason
+    assert successor.owner == "autotrain"
+    assert "registered typed tail-weighted LTR signal" in successor.reason
+    assert "do not replay" in successor.reason
+    assert all(action.kind != "repair_harness" for action in handoff.actions)
     assert _mod._predecessor_priority_slug(root, "cycle-1", skip=set()) == (
         "literal-close"
     )
+    assert _mod._predecessor_priority_slug(
+        root, "cycle-1", skip={"literal-close"}
+    ) == "literal-close"
 
 
 def test_cycle_handoff_exhausts_identical_replays_into_harness_repair(

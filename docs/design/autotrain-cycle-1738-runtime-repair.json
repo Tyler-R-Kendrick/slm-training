@@ -120,6 +120,45 @@
       }
     }
   },
+  "latest_clean_stack_tuple_reproduction": {
+    "run_id": "c1747-stack-tuple-clean",
+    "variant": "direct_integer_stack_tuple",
+    "evidence_authority": "clean_commit_bound_fixture_profile",
+    "document_n": 1,
+    "completed_document_n": 1,
+    "incomplete_document_n": 0,
+    "decode_timeout_document_count": 0,
+    "parse_rate": 1.0,
+    "meaningful_program_rate": 1.0,
+    "structural_similarity": 0.2529,
+    "binder_reference_f1": 1.0,
+    "latency_ms_p50": 23844.43,
+    "tokens_emitted": 104,
+    "forwards": 68,
+    "compiler_ms": 17510.887,
+    "states": 145040,
+    "witnesses": 11243,
+    "forks": 163770,
+    "outcome": "completed",
+    "agentv": "emitted_failed_as_expected_for_n1_quality_and_evidence_volume",
+    "ship_gates": "not run for this focused fixture replay",
+    "comparison_to_clean_v15": {
+      "compiler_ms_delta": -148.092,
+      "latency_ms_p50_delta": 22.79,
+      "disposition": "targeted_profiled_cost_reduction_with_neutral_noisy_end_to_end_wall"
+    },
+    "version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "code_commit": "af754d029868fcf0bcc35644b0b0de5e35c65c4d",
+      "code_dirty": false,
+      "components": {
+        "harness.model_build.eval": "v74",
+        "model.twotower": "v288",
+        "dsl.completion_kernel": "v16",
+        "dsl.operators.registry": "v12"
+      }
+    }
+  },
   "clean_reproduction": {
     "run_id": "c1741-fed-history-cow-clean-profile",
     "variant": "copy_on_write_fed_token_history",
@@ -320,13 +359,57 @@
       }
     }
   },
+  "latest_clean_classification_reproduction": {
+    "run_id": "c1746-classification-cache-clean2",
+    "variant": "shared_token_and_terminal_classification_projections",
+    "evidence_authority": "clean_commit_bound_fixture_profile",
+    "document_n": 1,
+    "completed_document_n": 1,
+    "incomplete_document_n": 0,
+    "decode_timeout_document_count": 0,
+    "parse_rate": 1.0,
+    "meaningful_program_rate": 1.0,
+    "structural_similarity": 0.2529,
+    "binder_reference_f1": 1.0,
+    "latency_ms_p50": 23821.64,
+    "tokens_emitted": 104,
+    "forwards": 68,
+    "compiler_ms": 17658.979,
+    "states": 145040,
+    "witnesses": 11243,
+    "forks": 163770,
+    "outcome": "completed",
+    "agentv": "emitted_failed_as_expected_for_n1_quality_and_evidence_volume",
+    "ship_gates": "failed: insufficient n, structural similarity, AST BEq, and canonical BEq",
+    "exact_completion_tests": "146 passed",
+    "compiler_decode_tests": "226 passed",
+    "formal_validation": "Build completed successfully (2947 jobs); formal contracts build and axiom audit passed",
+    "version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "code_commit": "37e84a70b4b19e6ac4ca5de7a576a4ece2267b8e",
+      "code_dirty": false,
+      "components": {
+        "config.levers": "v30",
+        "harness.model_build.eval": "v74",
+        "harness.experiment_feature_flags": "v4",
+        "evals.meaningful_program": "2.13.0",
+        "evals.power_protocol": "v8",
+        "evals.scoring": "v22",
+        "model.twotower": "v288",
+        "dsl.completion_kernel": "v15"
+      }
+    }
+  },
   "reverted_hypotheses": [
     "cross_query_witness_subproblem_cache",
     "semantic_arena_transition_cache",
     "first_path_limited_forest",
     "closure_preferred_witness_order",
     "verified_final_branch_state_transfer",
-    "verified_intermediate_branch_state_transfer"
+    "verified_intermediate_branch_state_transfer",
+    "copy_on_write_control_parser_stacks_below_effect_floor",
+    "persistent_official_bridge_reader_neutral",
+    "cached_parser_stack_projection_slower"
   ],
   "frozen_replay": {
     "cycle_index": 1740,
@@ -344,10 +427,10 @@
   "ship_claim": false,
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "384e4d5d288a89be8105233e0db5ae692753fe6b",
-    "code_dirty": true,
+    "code_commit": "37e84a70b4b19e6ac4ca5de7a576a4ece2267b8e",
+    "code_dirty": false,
     "components": {
-      "harness.autoresearch.experiment_campaign": "v58",
+      "harness.autoresearch.experiment_campaign": "v59",
       "harness.model_build.eval": "v74",
       "model.twotower": "v288",
       "dsl.completion_kernel": "v15",

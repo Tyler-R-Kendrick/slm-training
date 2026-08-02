@@ -665,6 +665,8 @@ def loop_result_rows(
                 handoff = json.loads(handoff_path.read_text(encoding="utf-8"))
             except json.JSONDecodeError:
                 handoff = {}
+        runtime_rejected_candidate = _runtime_rejected_candidate(handoff)
+        runtime_rejected = runtime_rejected_candidate == outcome.experiment_id
         gate_rejection = _completed_gate_rejection(root, campaign, outcome)
         params = _metric_text(outcome.metrics, "trainable_params")
         if params == "—":
@@ -701,15 +703,27 @@ def loop_result_rows(
                 "lean": _lean_text(optimum, handoff),
                 "gates": "fail" if gate_rejection else _gate_text(outcome.metrics),
                 "measurement": (
-                    "complete (gate reject)"
-                    if gate_rejection
-                    else _measurement_text(outcome)
+                    "complete (runtime reject)"
+                    if runtime_rejected
+                    else (
+                        "complete (gate reject)"
+                        if gate_rejection
+                        else _measurement_text(outcome)
+                    )
                 ),
-                "diagnosis": diagnosis.target if diagnosis is not None else "—",
+                "diagnosis": (
+                    "model_runtime"
+                    if runtime_rejected
+                    else diagnosis.target if diagnosis is not None else "—"
+                ),
                 "evidence_class": handoff.get("evidence_class", "fixture"),
                 "climb": handoff.get("climb_state", "—"),
                 "ship": handoff.get("ship_state", "blocked"),
-                "status": "completed" if gate_rejection else outcome.status,
+                "status": (
+                    "rejected"
+                    if runtime_rejected
+                    else "completed" if gate_rejection else outcome.status
+                ),
                 "campaign_id": campaign.campaign_id,
             }
         )
@@ -720,6 +734,18 @@ def loop_result_rows(
             str(row["campaign_id"]),
             str(row["experiment"]),
         ),
+    )
+
+
+def _runtime_rejected_candidate(handoff: dict[str, Any]) -> str | None:
+    prefix = "candidate_runtime_rejected_after_frozen_replay:"
+    return next(
+        (
+            str(reason)[len(prefix) :]
+            for reason in handoff.get("reasons") or []
+            if str(reason).startswith(prefix)
+        ),
+        None,
     )
 
 
@@ -892,7 +918,34 @@ def loop_diagnostic_rows(
         outcome = run["outcome"]
         diagnosis = run["diagnosis"]
         feedback = run["feedback"]
-        if diagnosis is not None:
+        handoff_path = Path(root) / campaign.campaign_id / "cycle_handoff.json"
+        handoff: dict[str, Any] = {}
+        if handoff_path.is_file():
+            try:
+                handoff = json.loads(handoff_path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                handoff = {}
+        runtime_rejected_candidate = _runtime_rejected_candidate(handoff)
+        runtime_rejected = runtime_rejected_candidate == outcome.experiment_id
+        if runtime_rejected:
+            rows.append(
+                {
+                    "cycle": campaign.cycle_index,
+                    "source": "frozen_replay",
+                    "area": "model_runtime",
+                    "signal": (
+                        "candidate-only decode timeout reproduced while the "
+                        "matched control completed"
+                    ),
+                    "authority": "reproduced",
+                    "confidence": "1.00",
+                    "disposition": "retire arm; test a distinct hypothesis",
+                    "evidence": f"campaign:{campaign.campaign_id}",
+                }
+            )
+        if diagnosis is not None and not (
+            runtime_rejected and diagnosis.target == "infrastructure"
+        ):
             rows.append(
                 {
                     "cycle": campaign.cycle_index,

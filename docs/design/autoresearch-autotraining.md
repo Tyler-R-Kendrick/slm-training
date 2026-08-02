@@ -53,6 +53,10 @@ The successor refuses to initialize while predecessor theorem-stop, harness, Lea
 data, docs, or delivery prerequisites remain unacknowledged. Execution/steering actions
 (`retry_measurement`, `next_experiment`, `monitor`) remain part of the next-cycle
 control flow rather than circular prerequisites.
+A finalized AgentV decode timeout outranks the evaluator's generic non-zero process
+exit when actions are routed: the handoff emits the canonical runtime repair first
+and retains the content-bound `retry_measurement` behind it. A repair receipt can
+therefore unblock, but never silently consume, the required frozen replay.
 
 Frozen retries cross code updates through a governed successor, never by weakening
 the current-main check. The successor copies the prior control/candidate recipe and
@@ -63,6 +67,9 @@ acknowledged. A crashed campaign without a handoff remains append-only provenanc
 but cannot shadow the latest completed execution/retry authority. It remains in the
 strict campaign lineage; an already-written gap is recovered only through one unique
 chain of initialized-only campaigns, while completed or ambiguous gaps fail closed.
+Replay arm identity is resolved by longest registered suffix, so hyphenated canonical
+arms such as `component-plan` and `literal-close` cannot be truncated into an
+unsupported last word.
 Replay manifests carrying Lean formal obligations require a fresh formal preflight
 and otherwise fail closed.
 Lineage validation is shared by status and feedback traversal so those surfaces cannot
@@ -245,6 +252,15 @@ decode timeouts; document counts reconcile with no incomplete or timed-out rows;
 and the failed gate binds error-free AgentV summary/criteria plus existing
 AgentEvals spec and result-index artifacts.
 
+Structural screening arms couple learning to inference. Component-plan,
+component-edge, component-inventory, binder-topology, and their joint arm set
+both the preregistered auxiliary loss and its matching model-ranking decode
+weight; the size-matched control prebuilds the same head with both weights zero.
+This follows three complete loss-only nulls where targets and auxiliary learning
+signals were present but the trained head was not directly consumed at decode.
+The decode weight may rank only grammar-legal candidates and never weakens I6.
+Champion fingerprints retain both weights through confirmation and promotion.
+
 ### Program experiments route through this loop (G1, SLM-46)
 
 The DSL diffusion research program (tracks A-G) has no parallel ad-hoc loop:
@@ -425,6 +441,17 @@ frozen input can diagnose `target=harness`, and it must identify one canonical
 harness family. The controller repairs that shared owner through
 `improve-openui-harnesses`, then replays the identical model/data arm. This keeps
 harness improvement attributable instead of allowing a model and judge to co-adapt.
+An experiment outcome whose process status is `failed` is routed immediately to
+`harness_failure` rather than being hidden inside a generic incomplete-measurement
+retry. Frozen recipes rejected by the capability gate are immutable negative
+evidence and are not replayed; the next cycle preregisters a valid successor.
+
+Structural auxiliary screening arms couple each trained loss to its legal-candidate
+decode ranker. Their lexer compiler-path companion is `compiler_decode_mode=tree`,
+which is bound into both train and evaluation commands and copied to the
+size-matched control. Confirmatory and promotion manifests retain the same compiler
+mode. The compatibility validator remains fail-closed for any arm missing that
+companion.
 
 Lean optimum feedback crosses the same campaign boundary. A theorem-backed miss
 stops the contradicted campaign and leaves the persistent outer goal in

@@ -517,6 +517,10 @@ def compile_commands(
             train.extend(["--output-tokenizer", knobs.output_tokenizer])
         elif any(getattr(knobs, field) is not None for field in symbol_fields):
             train.extend(["--output-tokenizer", "lexer"])
+        if knobs.compiler_decode_mode:
+            train.extend(["--compiler-decode-mode", knobs.compiler_decode_mode])
+            if knobs.compiler_decode_mode != "off":
+                train.append("--grammar-ltr-primary")
         # DSL diffusion program levers (G1): typed knob -> bounded flag only.
         if knobs.mask_pattern:
             train.extend(["--mask-pattern", knobs.mask_pattern])

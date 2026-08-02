@@ -441,10 +441,15 @@ _LEVER_KNOB_KEYS = (
     "grammar_completion_bounds",
     "compact_active_canvas",
     "component_plan_loss_weight",
+    "component_plan_decode_weight",
     "component_edge_loss_weight",
+    "component_edge_decode_weight",
     "component_inventory_loss_weight",
+    "component_inventory_decode_weight",
     "binder_topology_loss_weight",
+    "binder_topology_decode_weight",
     "structural_aux_head_profile",
+    "compiler_decode_mode",
     "steps",
     "batch_size",
     "train_version",
@@ -494,43 +499,54 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
     ),
     (
         "component-plan",
-        "Component-plan supervision improves smoke structural_similarity without lowering parse_rate or binder_reference_f1.",
+        "Component-plan train-and-decode coupling improves smoke structural_similarity without lowering parse_rate or binder_reference_f1.",
         {
             "component_plan_loss_weight": 1.0,
+            "component_plan_decode_weight": 1.0,
             "structural_aux_head_profile": "component-plan",
+            "compiler_decode_mode": "tree",
         },
     ),
     (
         "component-edge",
-        "Component-edge supervision improves smoke structural_similarity without lowering parse_rate or binder_reference_f1.",
+        "Component-edge train-and-decode coupling improves smoke structural_similarity without lowering parse_rate or binder_reference_f1.",
         {
             "component_edge_loss_weight": 1.0,
+            "component_edge_decode_weight": 1.0,
             "structural_aux_head_profile": "component-edge",
+            "compiler_decode_mode": "tree",
         },
     ),
     (
         "component-inventory",
-        "Component-inventory supervision improves smoke structural_similarity without lowering parse_rate or binder_reference_f1.",
+        "Component-inventory train-and-decode coupling improves smoke structural_similarity without lowering parse_rate or binder_reference_f1.",
         {
             "component_inventory_loss_weight": 1.0,
+            "component_inventory_decode_weight": 1.0,
             "structural_aux_head_profile": "component-inventory",
+            "compiler_decode_mode": "tree",
         },
     ),
     (
         "binder-topology",
-        "Low-weight binder-topology supervision improves smoke structural_similarity without lowering parse_rate or binder_reference_f1.",
+        "Low-weight binder-topology train-and-decode coupling improves smoke structural_similarity without lowering parse_rate or binder_reference_f1.",
         {
             "binder_topology_loss_weight": 0.25,
+            "binder_topology_decode_weight": 1.0,
             "structural_aux_head_profile": "binder-topology",
+            "compiler_decode_mode": "tree",
         },
     ),
     (
         "component-structure",
-        "Joint component-plan and component-edge supervision improves smoke structural_similarity beyond either isolated loss.",
+        "Joint component-plan and component-edge train-and-decode coupling improves smoke structural_similarity beyond either isolated arm.",
         {
             "component_plan_loss_weight": 1.0,
+            "component_plan_decode_weight": 1.0,
             "component_edge_loss_weight": 1.0,
+            "component_edge_decode_weight": 1.0,
             "structural_aux_head_profile": "component-structure",
+            "compiler_decode_mode": "tree",
         },
     ),
     (
@@ -2821,6 +2837,12 @@ def _classify_positive(
     outcomes = list((camp_dir / "artifacts" / "outcomes").glob("*.json"))
     for path in outcomes:
         out = _read_json(path)
+        experiment_id = str(out.get("experiment_id") or path.stem)
+        if (
+            experiment_id in {control_id, candidate_id}
+            and out.get("status") == "failed"
+        ):
+            reasons_pre.append(f"harness_failure:{experiment_id}:experiment_failed")
         err = str(out.get("error") or "")
         if "wall-time" in err or "wall time" in err.lower():
             reasons_pre.append(f"wall_timeout:{path.stem}")
@@ -3628,6 +3650,11 @@ def _predecessor_priority_slug(
         return None
     handoff = _read_json(handoff_path)
     priorities = list(handoff.get("priorities") or [])
+    has_explicit_successor = any(
+        action.get("kind") == "next_experiment"
+        for action in handoff.get("actions") or []
+        if isinstance(action, dict)
+    )
     delivery_path = camp_dir / "sdlc_delivery.json"
     matrix_path = camp_dir / "matrix-proposal.json"
     if delivery_path.is_file() and matrix_path.is_file():
@@ -3680,8 +3707,15 @@ def _predecessor_priority_slug(
         if priority.get("disposition") != "experiment_next":
             continue
         experiment_id = str(priority.get("proposed_experiment_id") or "")
+        evidence_directed = bool(
+            has_explicit_successor
+            and priority.get("authority") == "observed_result"
+            and float(priority.get("confidence") or 0.0) >= 0.9
+        )
         for slug, _hypothesis, _extras in _SCREENING_ARM_BANK:
-            if experiment_id.endswith(f"-{slug}") and slug not in skip:
+            if experiment_id.endswith(f"-{slug}") and (
+                slug not in skip or evidence_directed
+            ):
                 return slug
     return None
 
@@ -3716,6 +3750,25 @@ def _write_cycle_handoff(
         )
         or diagnosis_target == "infrastructure"
     )
+    candidate_id = str(delivery.get("candidate_id") or "")
+    finalized_decode_timeout = _has_finalized_decode_timeout(camp_dir, candidate_id)
+    frozen_replay_count = 0
+    frozen_replay_limit = 0
+    if finalized_decode_timeout:
+        from slm_training.autoresearch.climb_policy import (
+            load_climb_policy,
+            max_consecutive_frozen_replays,
+        )
+
+        frozen_replay_count = _consecutive_frozen_replays(
+            root, loop_id, campaign_id, cycle_intent
+        )
+        frozen_replay_limit = max_consecutive_frozen_replays(load_climb_policy())
+    runtime_arm_rejected = bool(
+        finalized_decode_timeout
+        and cycle_intent == "retry_measurement"
+        and frozen_replay_count >= frozen_replay_limit
+    )
     if status in {"promoted", "climb_accepted"}:
         climb_state = "climb_accepted"
     elif status == "confirmed":
@@ -3726,6 +3779,12 @@ def _write_cycle_handoff(
         climb_state = "inconclusive"
     elif status in {"rejected", "promotion_failed"}:
         climb_state = "rejected"
+    elif runtime_arm_rejected:
+        # A candidate-only timeout reproduced by the exact frozen checkpoint
+        # while its matched control completes is a decisive runtime rejection
+        # of this model arm.  Quality remains unavailable, but the loop must not
+        # misroute the same trajectory into an unbounded harness-repair cycle.
+        climb_state = "rejected"
     elif measurement_incomplete:
         climb_state = "inconclusive"
     elif delivery.get("positive"):
@@ -3733,7 +3792,6 @@ def _write_cycle_handoff(
     else:
         climb_state = "rejected"
 
-    candidate_id = str(delivery.get("candidate_id") or "")
     numeric_close_starvation = bool(
         candidate_id and _has_numeric_literal_close_starvation(camp_dir, candidate_id)
     )
@@ -3755,7 +3813,15 @@ def _write_cycle_handoff(
             ),
         ]
     )
-    if measurement_incomplete and numeric_close_starvation:
+    if runtime_arm_rejected:
+        reasons += (f"candidate_runtime_rejected_after_frozen_replay:{candidate_id}",)
+        priorities = _completed_candidate_priorities(
+            matrix,
+            candidate_id,
+            resolved_infrastructure=True,
+            skip_slugs=skip_slugs,
+        )
+    elif measurement_incomplete and numeric_close_starvation:
         priorities = (
             NextRunPriorityV1(
                 rank=1,
@@ -3841,10 +3907,13 @@ def _write_cycle_handoff(
     ]
     theorem_stop = any("theorem_backed_band_miss" in item for item in reasons)
     assumption_miss = any("assumption_backed_band_miss" in item for item in reasons)
-    harness_failure = climb_state == "harness_failure" or any(
-        item.startswith("harness_failure:") for item in reasons
-    )
-    finalized_decode_timeout = _has_finalized_decode_timeout(camp_dir, candidate_id)
+    # A finalized AgentV timeout is more specific than the evaluate process's
+    # generic non-zero exit. Preserve both repair and content-bound retry actions
+    # so acknowledging the repair cannot make the required replay unreachable.
+    harness_failure = (
+        climb_state == "harness_failure"
+        or any(item.startswith("harness_failure:") for item in reasons)
+    ) and not finalized_decode_timeout
     if theorem_stop:
         actions[0:0] = [
             AutotrainActionV1(
@@ -3864,25 +3933,20 @@ def _write_cycle_handoff(
             ),
         ]
     elif numeric_close_starvation:
-        manifest_path = camp_dir / "manifests" / f"{candidate_id}.json"
-        manifest_sha = (
-            hashlib.sha256(manifest_path.read_bytes()).hexdigest()
-            if manifest_path.is_file()
-            else None
-        )
-        actions.insert(
-            0,
+        # The canonical model-build harness already owns the typed
+        # ltr_tail_loss_weight lever and the size-matched literal-close arm.
+        # This diagnosis therefore needs a fresh experiment, not a repair
+        # receipt that falsely claims the signal is missing.
+        actions.append(
             AutotrainActionV1(
-                kind="repair_harness",
-                owner="improve-openui-harnesses",
+                kind="next_experiment",
+                owner="autotrain",
                 reason=(
-                    "add the typed tail-weighted LTR training signal and run a new "
+                    "run the registered typed tail-weighted LTR signal as a new "
                     "size-matched literal-close arm; do not replay the same stalled "
                     "checkpoint"
                 ),
                 evidence_ids=(evidence_id,),
-                harness_family="model_build",
-                frozen_manifest_sha256=manifest_sha,
             ),
         )
     elif harness_failure:
@@ -3911,14 +3975,30 @@ def _write_cycle_handoff(
             if manifest_path.is_file()
             else None
         )
-        actions[0:0] = [
+        if runtime_arm_rejected:
+            actions.append(
+                AutotrainActionV1(
+                    kind="next_experiment",
+                    owner="autotrain",
+                    reason=(
+                        "retire the candidate-only runtime rejection and consume "
+                        "the next distinct ranked hypothesis"
+                    ),
+                    evidence_ids=(evidence_id,),
+                )
+            )
+        else:
+            actions[0:0] = [
             AutotrainActionV1(
                 kind="repair_harness",
                 owner="improve-openui-harnesses",
                 reason=(
                     "AgentV finalized every record disposition and reported an "
-                    "internal decode timeout; repair canonical model-build runtime "
-                    "before replaying the frozen arm"
+                    "internal decode timeout; "
+                )
+                + (
+                    "repair canonical model-build runtime before replaying the "
+                    "frozen arm"
                 ),
                 evidence_ids=(evidence_id,),
                 harness_family="model_build",
@@ -3928,13 +4008,13 @@ def _write_cycle_handoff(
                 kind="retry_measurement",
                 owner="autotrain",
                 reason=(
-                    "replay the identical frozen arm after the required canonical "
-                    "runtime repair"
+                    "replay the identical frozen arm after the required "
+                    "canonical runtime repair"
                 ),
                 evidence_ids=(evidence_id,),
                 frozen_manifest_sha256=manifest_sha,
             ),
-        ]
+            ]
     elif measurement_incomplete:
         from slm_training.autoresearch.climb_policy import (
             load_climb_policy,
@@ -4259,6 +4339,24 @@ def _require_automatic_replayable(manifest: ExperimentCampaignV1) -> None:
         )
 
 
+def _nonreplayable_configuration_failure(
+    camp_dir: Path, experiment_id: str
+) -> str | None:
+    """Identify frozen arms whose exact configuration cannot reach execution."""
+
+    for path in (camp_dir / "artifacts" / "outcomes").glob("*.json"):
+        outcome = _read_json(path)
+        if (
+            outcome.get("experiment_id") != experiment_id
+            or outcome.get("status") != "failed"
+        ):
+            continue
+        error = str(outcome.get("error") or "")
+        if "lever_capability_compatibility" in error:
+            return "lever_capability_compatibility"
+    return None
+
+
 def _load_frozen_replay(
     root: Path, loop_id: str, predecessor_campaign_id: str | None
 ) -> dict[str, Any] | None:
@@ -4291,6 +4389,17 @@ def _load_frozen_replay(
     candidate_path, candidate_manifest = _manifest_with_sha(
         camp_dir, action.frozen_manifest_sha256
     )
+    nonreplayable = _nonreplayable_configuration_failure(
+        camp_dir, candidate_manifest.experiment_id
+    )
+    if nonreplayable:
+        print(
+            "FROZEN_REPLAY_SKIP reason=nonreplayable_configuration "
+            f"detail={nonreplayable} campaign={predecessor_campaign_id} "
+            f"action_index={action_index}",
+            flush=True,
+        )
+        return None
     _require_automatic_replayable(candidate_manifest)
     matrix = json.loads((camp_dir / "matrix-proposal.json").read_text(encoding="utf-8"))
     control_id = str(matrix["hypotheses"][0]["experiment"]["experiment_id"])
@@ -4375,8 +4484,29 @@ def _completed_frozen_train_source(
         predecessor_id = campaign.predecessor_campaign_id
         if predecessor_id is None:
             return None
-        current_dir = root / predecessor_id
-        current_path, current_manifest = _manifest_with_sha(current_dir, replay_sha)
+        predecessor_seen: set[str] = set()
+        while predecessor_id is not None:
+            if predecessor_id in predecessor_seen:
+                raise RuntimeError("frozen campaign predecessor lineage contains a cycle")
+            predecessor_seen.add(predecessor_id)
+            current_dir = root / predecessor_id
+            try:
+                current_path, current_manifest = _manifest_with_sha(
+                    current_dir, replay_sha
+                )
+                break
+            except RuntimeError as exc:
+                if not str(exc).startswith("frozen replay manifest is missing:"):
+                    raise
+                predecessor_campaign_path = current_dir / "campaign.json"
+                if not predecessor_campaign_path.is_file():
+                    raise
+                predecessor_campaign = CampaignSpec.model_validate_json(
+                    predecessor_campaign_path.read_text(encoding="utf-8")
+                )
+                predecessor_id = predecessor_campaign.predecessor_campaign_id
+        else:
+            raise RuntimeError(f"frozen replay manifest is missing: {replay_sha}")
 
 
 def _apply_frozen_replay(
@@ -4384,9 +4514,21 @@ def _apply_frozen_replay(
 ) -> dict[str, dict[str, Any]]:
     prefix = campaign_id.replace("continuous-loop-", "c")
     old_candidate_id = str(replay["candidate"]["experiment"]["experiment_id"])
-    slug = old_candidate_id.rsplit("-", 1)[-1]
-    if slug not in {item[0] for item in _SCREENING_ARM_BANK}:
-        raise RuntimeError(f"unsupported automatic frozen replay arm: {slug}")
+    registered_slugs = sorted(
+        (item[0] for item in _SCREENING_ARM_BANK), key=len, reverse=True
+    )
+    slug = next(
+        (
+            registered
+            for registered in registered_slugs
+            if old_candidate_id.endswith(f"-{registered}")
+        ),
+        None,
+    )
+    if slug is None:
+        raise RuntimeError(
+            f"unsupported automatic frozen replay arm: {old_candidate_id}"
+        )
     new_ids = {"control": f"{prefix}-control", "candidate": f"{prefix}-{slug}"}
     for role, new_id in new_ids.items():
         target = next(
@@ -4586,10 +4728,15 @@ def _matrix(
             "grammar_completion_bounds": False,
             "compact_active_canvas": False,
             "component_plan_loss_weight": 0.0,
+            "component_plan_decode_weight": 0.0,
             "component_edge_loss_weight": 0.0,
+            "component_edge_decode_weight": 0.0,
             "component_inventory_loss_weight": 0.0,
+            "component_inventory_decode_weight": 0.0,
             "binder_topology_loss_weight": 0.0,
+            "binder_topology_decode_weight": 0.0,
             "structural_aux_head_profile": "none",
+            "compiler_decode_mode": "off",
             "ltr_tail_loss_weight": 0.0,
             "compiler_alignment_loss_weight": 0.0,
             "compiler_alignment_margin": 0.0,
@@ -4642,10 +4789,15 @@ def _matrix(
                 "grammar_completion_bounds",
                 "compact_active_canvas",
                 "component_plan_loss_weight",
+                "component_plan_decode_weight",
                 "component_edge_loss_weight",
+                "component_edge_decode_weight",
                 "component_inventory_loss_weight",
+                "component_inventory_decode_weight",
                 "binder_topology_loss_weight",
+                "binder_topology_decode_weight",
                 "structural_aux_head_profile",
+                "compiler_decode_mode",
                 "steps",
                 "batch_size",
                 "train_version",
@@ -4670,6 +4822,10 @@ def _matrix(
         control_extra.setdefault(
             "structural_aux_head_profile",
             str(promo_extra.get("structural_aux_head_profile") or "none"),
+        )
+        control_extra.setdefault(
+            "compiler_decode_mode",
+            str(promo_extra.get("compiler_decode_mode") or "off"),
         )
         control_knobs = knobs(steps=control_steps, **control_extra)
         cand_knobs = knobs(steps=promo_steps, **promo_extra)
@@ -4813,10 +4969,15 @@ def _matrix(
                 "grammar_completion_bounds",
                 "compact_active_canvas",
                 "component_plan_loss_weight",
+                "component_plan_decode_weight",
                 "component_edge_loss_weight",
+                "component_edge_decode_weight",
                 "component_inventory_loss_weight",
+                "component_inventory_decode_weight",
                 "binder_topology_loss_weight",
+                "binder_topology_decode_weight",
                 "structural_aux_head_profile",
+                "compiler_decode_mode",
                 "steps",
                 "batch_size",
                 "train_version",
@@ -4841,6 +5002,10 @@ def _matrix(
         control_extra.setdefault(
             "structural_aux_head_profile",
             str(confirm_extra.get("structural_aux_head_profile") or "none"),
+        )
+        control_extra.setdefault(
+            "compiler_decode_mode",
+            str(confirm_extra.get("compiler_decode_mode") or "off"),
         )
         control_knobs = knobs(steps=control_steps, **control_extra)
         # Drop lever defaults then re-apply champion levers on candidate.
@@ -5001,7 +5166,10 @@ def _matrix(
                             bank_by_slug[rec_slug][1].get(
                                 "structural_aux_head_profile", "none"
                             )
-                        )
+                        ),
+                        compiler_decode_mode=str(
+                            bank_by_slug[rec_slug][1].get("compiler_decode_mode", "off")
+                        ),
                     ),
                     "Baseline for size-matched continuous attribution.",
                 ),

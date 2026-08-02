@@ -2899,6 +2899,89 @@ def test_loop_result_matrix_marks_partial_measurement_incomplete(
     assert "incomplete" in render_loop_result_matrix(tmp_path, "loop-1")
 
 
+def test_loop_result_matrix_relabels_reproduced_candidate_runtime_rejection(
+    tmp_path: Path,
+) -> None:
+    campaign = CampaignSpec(
+        campaign_id="cycle-runtime-reject",
+        objective="Retire a candidate-only frozen runtime failure.",
+        primary_metric="smoke.structural_similarity",
+        loop_id="loop-1",
+        cycle_index=1,
+        upstream_commit="c" * 40,
+        integration_commit="d" * 40,
+    )
+    store = CampaignStore(campaign.campaign_id, tmp_path)
+    store.initialize(campaign)
+    outcome = ExperimentOutcome(
+        experiment_id="candidate",
+        campaign_id=campaign.campaign_id,
+        status="failed",
+        exit_code=2,
+        metrics={
+            "smoke.n": 3,
+            "smoke.completed_document_n": 0,
+            "smoke.incomplete_document_n": 3,
+            "smoke.decode_timeout_count": 3,
+        },
+    )
+    artifact = store.write_artifact("outcomes", outcome)
+    store.append_event(
+        "experiment_finished",
+        experiment_id=outcome.experiment_id,
+        status=outcome.status,
+        artifact_sha256=artifact.stem,
+    )
+    diagnosis = Diagnosis(
+        experiment_id=outcome.experiment_id,
+        target="infrastructure",
+        confidence=0.95,
+        evidence=("measurement incomplete",),
+        recommended_actions=("retry frozen arm",),
+    )
+    artifact = store.write_artifact("diagnoses", diagnosis)
+    store.append_event(
+        "outcome_diagnosed",
+        experiment_id=outcome.experiment_id,
+        status="infrastructure",
+        artifact_sha256=artifact.stem,
+    )
+    handoff = AutotrainCycleHandoffV1(
+        loop_id="loop-1",
+        campaign_id=campaign.campaign_id,
+        cycle_index=1,
+        upstream_commit="c" * 40,
+        integration_commit="d" * 40,
+        cycle_role="screening",
+        cycle_intent="retry_measurement",
+        evidence_class="fixture",
+        climb_state="rejected",
+        ship_state="blocked",
+        primary_metric="smoke.structural_similarity",
+        reasons=(
+            "candidate_runtime_rejected_after_frozen_replay:candidate",
+        ),
+        actions=(
+            AutotrainActionV1(
+                kind="next_experiment",
+                owner="autotrain",
+                reason="Retire the runtime-rejected arm.",
+                evidence_ids=("campaign:cycle-runtime-reject",),
+            ),
+        ),
+    )
+    (store.root / "cycle_handoff.json").write_text(
+        handoff.model_dump_json(indent=2) + "\n"
+    )
+
+    rendered = render_loop_result_matrix(tmp_path, "loop-1")
+
+    assert "complete (runtime reject)" in rendered
+    assert "model_runtime" in rendered
+    assert "candidate-only decode timeout reproduced" in rendered
+    assert "retry frozen arm" not in rendered
+
+
 def test_loop_tables_surface_lean_authority_and_stop_priority(tmp_path: Path) -> None:
     loop_campaign = CampaignSpec(
         campaign_id="cycle-1",
@@ -3131,6 +3214,8 @@ def test_compile_resolves_canonical_published_train_version() -> None:
     )
     assert commands[0][commands[0].index("--binder-arity-loss-weight") + 1] == "1.2"
     assert commands[0][commands[0].index("--binder-arity-decode-weight") + 1] == "0.3"
+    assert commands[0][commands[0].index("--compiler-decode-mode") + 1] == "tree"
+    assert "--grammar-ltr-primary" in commands[0]
     assert "--schema-in-context" in commands[0]
     assert "--slot-contract-in-context" in commands[0]
     assert "--no-design-md-context" in commands[0]

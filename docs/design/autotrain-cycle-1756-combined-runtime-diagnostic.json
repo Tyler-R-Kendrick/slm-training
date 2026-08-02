@@ -1,0 +1,48 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1756",
+  "cycle_index": 1756,
+  "evidence_class": "fixture",
+  "decision": "rejected_cross_suite_efficiency_null",
+  "scoreable": true,
+  "arm_order": ["both", "control"],
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1756-control",
+      "manifest_sha256": "96164071e26b8dab4351772fe9059cc27bc2ce9169f15433bfe66f24b8fb539d",
+      "params": 1608962,
+      "checkpoint_sha256": "65fd1b039ec75603a08b45f85582b296353e89296d40d2ac8680da4d5592d97f",
+      "loss": 12.522554397583008,
+      "train_wall_seconds": 3.899538610014133,
+      "suites": {
+        "smoke": {"n": 3, "completed_document_n": 3, "decode_timeout_count": 0, "parse_rate": 1.0, "binder_reference_f1": 0.6333333333333333, "meaningful_program_rate": 0.3333333333333333, "structural_similarity": 0.13526666666666667, "component_type_recall": 0.16666666666666666, "latency_ms_p50": 1284.48},
+        "held_out": {"n": 5, "completed_document_n": 5, "decode_timeout_count": 0, "parse_rate": 1.0, "binder_reference_f1": 0.43714285714285717, "meaningful_program_rate": 0.2, "structural_similarity": 0.1069, "component_type_recall": 0.12857142857142856, "latency_ms_p50": 1205.19}
+      }
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1756-both",
+      "manifest_sha256": "16e5a94fe6aa8e4491561a46c75bd17179e9bf25469911f88951271020935274",
+      "params": 1608962,
+      "checkpoint_sha256": "3c5845d960dc0706eb313696bd5cd87b9e4f1ad19642e86d22e8b71ef7700610",
+      "loss": 12.522554397583008,
+      "train_wall_seconds": 2.796223099983763,
+      "grammar_completion_bounds": true,
+      "compact_active_canvas": true,
+      "suites": {
+        "smoke": {"n": 3, "completed_document_n": 3, "decode_timeout_count": 0, "parse_rate": 1.0, "binder_reference_f1": 0.6333333333333333, "meaningful_program_rate": 0.3333333333333333, "structural_similarity": 0.13526666666666667, "component_type_recall": 0.16666666666666666, "latency_ms_p50": 1260.02},
+        "held_out": {"n": 5, "completed_document_n": 5, "decode_timeout_count": 0, "parse_rate": 1.0, "binder_reference_f1": 0.43714285714285717, "meaningful_program_rate": 0.2, "structural_similarity": 0.1069, "component_type_recall": 0.12857142857142856, "latency_ms_p50": 1299.04}
+      }
+    }
+  ],
+  "deltas": {"quality": 0.0, "smoke_latency_percent": -1.9043, "held_out_latency_percent": 7.7872, "train_wall_ratio": 0.7171},
+  "ship_gates_pass": false,
+  "lean": "not_applicable:no_champion",
+  "next_priority": "size-matched steps diagnostic",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "b1cf30553ad40f54a59573b41170567b5335330b",
+    "code_dirty": false,
+    "components": {"config.levers": "v30", "harness.model_build.eval": "v74", "harness.experiment_feature_flags": "v4", "evals.meaningful_program": "2.13.0", "evals.power_protocol": "v8", "evals.scoring": "v22", "model.twotower": "v288"},
+    "stamped_at": "2026-08-02T12:50:04.543417+00:00"
+  }
+}

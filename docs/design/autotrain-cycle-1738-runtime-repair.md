@@ -32,16 +32,39 @@ progress, not model-quality or ship evidence.
 | cached parser-stack projection, cProfile (dirty, reverted) | 7 | 4 | 23,534.799 | 30,785 | 1,006 | 31,895 | typed timeout |
 | direct integer-stack tuple (dirty) | 104 | 68 | 17,439.288 | 145,040 | 11,243 | 163,770 | completed |
 | direct integer-stack tuple, cProfile (dirty) | 10 | 5 | 23,378.588 | 34,164 | — | — | typed timeout |
+| direct integer-stack tuple (clean) | 104 | 68 | 17,510.887 | 145,040 | 11,243 | 163,770 | completed |
 
 All rows use the same c1737 control checkpoint, `smoke` offset 0, one record,
 strict compiler-tree policy, CPU, and a 24-second diagnostic deadline. The
 later rows traverse more of the same deterministic output, so raw state totals
 are not direct speed ratios. The implementation rows, including the direct-map
 row, are exploratory profiles from dirty working states and are not immutable
-replay authority. The clean row is
-the clean `b8b1bda6` reproduction; it emitted the expected failed AgentV bundle
-for one incomplete fixture record and is the authoritative profile snapshot.
-The frozen c1740 campaign manifest remains the comparison replay authority.
+replay authority. The clean rows are immutable commit-bound reproductions; the
+latest `163e7402` row emitted the expected failed AgentV bundle for one
+incomplete fixture record and is the authoritative profile snapshot.
+The persistent-reader row is an exploratory dirty profile and was reverted:
+its progress is bit-for-bit identical to the clean lexer-thread reproduction,
+and the 41.108 ms compiler delta is noise. The frozen c1740 campaign manifest
+remains the comparison replay authority.
+The latest AgentV wrapper also reported an impossible negative SDK duration;
+that timing is excluded from every decision metric and retained as a separate
+harness-telemetry repair signal.
+
+The rejected parser-stack candidate also executed the complete diagnostic
+ship bundle before it was reverted:
+
+| Suite | Complete | Timeout | p50 incl. incomplete | Parse | Meaningful | Structure | Tokens | Forwards | Compiler ms |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| smoke | 0/1 | 1 | 24,001.91 | — | — | — | 85 | 61 | 18,057.511 |
+| held_out | 0/1 | 1 | 24,001.33 | — | — | — | 71 | 50 | 19,240.073 |
+| adversarial | 1/1 | 0 | 8,312.93 | 1.0 | 1.0 | 0.14 | 76 | 40 | 4,775.345 |
+| ood | 0/1 | 1 | 24,000.79 | — | — | — | 71 | 50 | 19,154.074 |
+| rico_held | 0/1 | 1 | 24,001.45 | — | — | — | 71 | 50 | 19,145.331 |
+
+This is a diagnostic n=1 bundle: AgentV emitted five failed evaluations with
+zero execution errors, and ship gates failed on evidence volume, incomplete
+measurements, runtime timeouts, and adversarial quality. It is not ship or
+model-quality evidence.
 
 ## What changed
 
@@ -84,7 +107,11 @@ The frozen c1740 campaign manifest remains the comparison replay authority.
   17,439.288 compiler ms. Under cProfile, combined accept-refresh/state-key
   time fell from 3.796 seconds to 1.872 seconds while the candidate traversed
   more states. This is retained as completion-kernel v16; it changes no legal
-  domain, proof order, or authority.
+  domain, proof order, or authority. The immutable `af754d029` replay retained
+  identical exact work and lowered compiler time by 148.092 ms versus clean
+  v15, while total latency was 22.79 ms slower (23,844.43 vs 23,821.64).
+  Therefore the wall-clock effect is neutral/noisy and no broad throughput
+  claim is made.
 - Repeating `SIGALRM` delivery is disarmed before timeout bookkeeping. The
   prior failure exited 142 with an uncaught second alarm; the repaired runs
   exit 0 with `decode_outcome=runtime_timeout` and complete AgentV artifacts.
@@ -101,6 +128,21 @@ The frozen c1740 campaign manifest remains the comparison replay authority.
 - Transferring either the final verified branch state or all intermediate
   verified branch states into the session cache changed exact candidate or
   witness ordering in differential parity tests. Both variants were reverted.
+- A cProfile run attributed 0.801 seconds of the 24-second decode wall to
+  54,307 control-parser copies, only about 3.3%; copy-on-write mutable parser
+  stacks were rejected before implementation because the maximum measured
+  upside is below the 5% campaign effect floor and the ownership risk is high.
+- Reusing one response-reader thread per persistent official bridge process
+  did not increase progress. The apparent 2.683-second bridge hotspot is Node
+  response wait, not Python thread creation, so the neutral change was
+  reverted.
+- Caching the immutable LALR stack projection between state interning and
+  accept-set lookup was slower and was reverted. Under cProfile, the new
+  helper ran 68,854 times; combined `parser_state_key` plus `_refresh_accepts`
+  cumulative time increased from about 3.485 seconds to 3.929 seconds. Two
+  non-profiled dirty reproductions also timed out at 85 and 93 tokens, versus
+  the prior clean 104-token completion. The result is negative harness
+  evidence, not a completion-kernel version change.
 
 ## Frozen replay after repair
 
@@ -123,9 +165,9 @@ MPR/ms gain because it is below the preregistered 5% minimum effect.
    only calls whose answer is already exactly implied by a certified grammar
    state; per-call reader reuse is neutral, while Node response wait remains
    material.
-2. Profile parser accept-set refresh and control-fork key construction. The
-   semantic-state interning hypothesis is already active, while the measured
-   decision/token projection reuse is now implemented and exact-tested.
+2. Replay the frozen three-record comparison after a different measured
+   repair. Parser-stack projection caching is now rejected; focus instead on
+   work avoided before parser forks or on exact batched official root probes.
 3. Reduce compiler state construction cost before changing any
    timeout. The compiler consumes about 20 seconds of the 24-second wall,
    whereas neural work is roughly 3.7 seconds.
