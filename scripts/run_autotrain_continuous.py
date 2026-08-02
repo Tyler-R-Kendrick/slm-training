@@ -1187,6 +1187,21 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
     )
 
 
+def _select_cycle_slug(
+    cycle: int,
+    *,
+    predecessor_priority: str | None,
+    skip: set[str],
+    has_confirm_levers: bool,
+    has_promote_levers: bool,
+) -> str | None:
+    """Select only for screening; confirm/promote carry frozen recipes."""
+
+    if has_confirm_levers or has_promote_levers:
+        return None
+    return predecessor_priority or _select_recommended_slug(cycle, skip=skip)
+
+
 def _apply_arm_extras(base_steps: int, extras: dict[str, Any]) -> dict[str, Any]:
     """Materialize arm knob extras (handles _steps_factor)."""
     out = {k: v for k, v in extras.items() if not str(k).startswith("_")}
@@ -6390,12 +6405,18 @@ def run_cycle(
             "RECENT_EXHAUSTION skip=" + ",".join(sorted(recent_exhausted)),
             flush=True,
         )
-    rec_slug = _predecessor_priority_slug(
-        root,
-        pred,
+    rec_slug = _select_cycle_slug(
+        cycle,
+        predecessor_priority=_predecessor_priority_slug(
+            root,
+            pred,
+            skip=skip_slugs,
+            closed=recent_exhausted,
+        ),
         skip=skip_slugs,
-        closed=recent_exhausted,
-    ) or _select_recommended_slug(cycle, skip=skip_slugs)
+        has_confirm_levers=confirm_levers is not None,
+        has_promote_levers=promote_levers is not None,
+    )
     matrix = _matrix(
         campaign_id=campaign_id,
         evidence_snapshot_id=ev["snapshot_id"],

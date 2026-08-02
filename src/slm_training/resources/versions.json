@@ -2646,7 +2646,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v89",
+      "version": "v90",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2686,6 +2686,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v90",
+          "date": "2026-08-02",
+          "note": "Bypass the exhausted screening-arm selector for confirmation and promotion cycles, whose exact recipes already come from the champion queue."
+        },
         {
           "version": "v89",
           "date": "2026-08-02",
