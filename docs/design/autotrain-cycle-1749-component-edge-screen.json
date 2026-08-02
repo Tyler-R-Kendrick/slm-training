@@ -1,0 +1,124 @@
+{
+  "schema": "autotrain_measured_results/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1749",
+  "cycle_index": 1749,
+  "loop_id": "continuous-openui-20260730",
+  "run_class": "fixture_scratch",
+  "source_commit": "2db8db323ab856e2736f61232ec3c329a81c87ff",
+  "source_dirty": false,
+  "upstream_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "steps": 22,
+  "batch_size": 2,
+  "seed": 101749,
+  "campaign_role": "screening",
+  "primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1749-control",
+      "status": "completed_gate_rejection",
+      "manifest_sha256": "a5c09b9864cf621b4a9e41c5b1cd7d7afd470da73bc45bdf08adf294c7d14f63",
+      "training": {
+        "trainable_parameters": 1766987,
+        "structural_aux_head_profile": "component-edge",
+        "component_edge_loss_weight": 0.0,
+        "last_loss": 14.42061996459961,
+        "elapsed_wall_seconds": 2.8949315900099464,
+        "checkpoint_sha256": "a40040ce886c8ec8efc14ee45f765fbc2da54050e32580498ea07e350ce42a70"
+      },
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 3,
+        "decode_timeout_count": 0,
+        "fallback_count": 0,
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.17416666666666666,
+        "component_type_recall": 0.25,
+        "ast_node_f1": 0.2619047619047619,
+        "ast_edge_f1": 0.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 1130.21
+      },
+      "agentv_execution_errors": 0,
+      "ship_gates_pass": false
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1749-component-edge",
+      "status": "completed_quality_null",
+      "manifest_sha256": "5bdbdd85c4938066ad0ba9e387050ef246f33d2076597098d0e497fb3878ac12",
+      "training": {
+        "trainable_parameters": 1766987,
+        "structural_aux_head_profile": "component-edge",
+        "component_edge_loss_weight": 1.0,
+        "last_loss": 15.477783203125,
+        "elapsed_wall_seconds": 3.353320629976224,
+        "checkpoint_sha256": "f4bbee590686f4faec0937e2414b60b4e7502af7a34f7452220bbedd545aa556"
+      },
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 3,
+        "decode_timeout_count": 0,
+        "fallback_count": 0,
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.17416666666666666,
+        "component_type_recall": 0.25,
+        "ast_node_f1": 0.2619047619047619,
+        "ast_edge_f1": 0.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 1121.26
+      },
+      "agentv_execution_errors": 0,
+      "ship_gates_pass": false
+    }
+  ],
+  "comparison": {
+    "measurement_complete": true,
+    "size_matched": true,
+    "trainable_parameter_delta": 0,
+    "smoke_quality_delta": 0.0,
+    "latency_reduction_fraction": 0.007918174142,
+    "candidate_training_wall_ratio": 1.158342, 
+    "disposition": "rejected_exact_quality_null_efficiency_below_floor"
+  },
+  "harness_feedback": {
+    "family": "model_and_eval",
+    "signals": [
+      "component_edge_exact_quality_null",
+      "efficiency_gain_below_5_percent_floor",
+      "candidate_loss_and_training_wall_worse",
+      "component_plan_and_edge_auxiliary_losses_have_not_changed_decoded_quality"
+    ],
+    "next_priority": "size_matched_component_inventory_then_auxiliary_target_gradient_and_decode_consumption_audit"
+  },
+  "formal_evidence": {
+    "formal_preflight_status": "not_applicable:screening",
+    "promotion_requirement": "actual champion promotion requires locked expectations, proved mathlib-free LeverProof preflight, and replayed metric_certificate/v2"
+  },
+  "checkpoint_documentation_required": true,
+  "checkpoint_sync": "explicit no-sync scratch",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "2db8db323ab856e2736f61232ec3c329a81c87ff",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v74",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v288",
+      "dsl.completion_kernel": "v16",
+      "gates.ship": "openui_ship_gates_v6"
+    },
+    "stamped_at": "2026-08-02T10:34:57.405320+00:00"
+  }
+}
