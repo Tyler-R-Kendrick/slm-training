@@ -1,0 +1,84 @@
+{
+  "schema": "autotrain_measured_results/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1751",
+  "cycle_index": 1751,
+  "loop_id": "continuous-openui-20260730",
+  "run_class": "fixture_scratch_incomplete",
+  "source_commit": "1b1cfe0222a33b23629e25230137828ae9a3fde9",
+  "source_dirty": false,
+  "upstream_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "campaign_role": "screening",
+  "measurement_complete": false,
+  "scoreable": false,
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1751-control",
+      "status": "incomplete_stage_timeout",
+      "manifest_sha256": "fb6687812bf177677503937748d7b603a36dc2f342ea9daab662ac5698b5b45c",
+      "training": {
+        "steps": 24,
+        "trainable_parameters": 2137346,
+        "last_loss": 12.230836868286133,
+        "elapsed_wall_seconds": 2.81130674702581,
+        "checkpoint_sha256": "c181b5c92e8acf3ca24caead255a05735f3f1035c6c7fc49f6f496e3bc72007e"
+      },
+      "non_scoreable_progress": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.06583333333333334,
+        "component_type_recall": 0.08333333333333333,
+        "latency_ms_p50": 21157.21
+      }
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1751-binder-topology",
+      "status": "failed_pretrain_configuration",
+      "manifest_sha256": "5cfbf242f0d4a0627e6d8f1ee7e26b00cd2de9ec460c6f444314ffb1186ee8b3",
+      "training": {
+        "binder_topology_loss_weight": 0.25,
+        "binder_topology_decode_weight": 1.0,
+        "compiler_decode_mode": null,
+        "checkpoint_created": false
+      },
+      "failure": "lever_capability_compatibility: unsupported enabled levers: binder_topology_decode_weight"
+    }
+  ],
+  "comparison": {
+    "available": false,
+    "reason": "control stage timed out and candidate failed before training"
+  },
+  "harness_feedback": {
+    "family": "autoresearch_screening",
+    "signals": [
+      "compiler_path_decode_lever_missing_tree_companion",
+      "matched_control_missing_companion_mode",
+      "failed_experiment_misclassified_as_generic_retry",
+      "control_stage_timeout"
+    ],
+    "repair": "bind and size-match compiler_decode_mode=tree for coupled structural arms; route failed outcomes to immediate repair_harness",
+    "frozen_manifest_disposition": "immutable_invalid_approach_no_identical_replay"
+  },
+  "formal_evidence": {
+    "formal_preflight_status": "not_applicable:screening",
+    "promotion_requirement": "actual champion promotion requires locked expectations, proved mathlib-free LeverProof preflight, and replayed metric_certificate/v2"
+  },
+  "checkpoint_documentation_required": true,
+  "checkpoint_sync": "explicit no-sync scratch",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "1b1cfe0222a33b23629e25230137828ae9a3fde9",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v60",
+      "harness.model_build.eval": "v74",
+      "harness.model_build.train": "v28",
+      "model.twotower": "v288",
+      "dsl.completion_kernel": "v16"
+    },
+    "stamped_at": "2026-08-02T10:49:10.137819+00:00"
+  }
+}
