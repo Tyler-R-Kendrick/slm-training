@@ -18,7 +18,7 @@ their checkpoints rather than retraining) to complete the measurement that
 cycle 1 left incomplete. Both arms crashed again at evaluation, this time
 with a more specific error now that `npm ci` had installed `@agentv/core`:
 
-```
+```text
 RuntimeError: AgentV SDK evaluation failed: node: --import tsx is not allowed in NODE_OPTIONS
 ```
 
