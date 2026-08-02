@@ -3931,10 +3931,13 @@ def test_numeric_literal_close_starvation_steers_new_training_arm(
 
     assert handoff.priorities[0].area == "model_build"
     assert handoff.priorities[0].proposed_experiment_id == "cand-literal-close"
-    repair = next(
-        action for action in handoff.actions if action.kind == "repair_harness"
+    successor = next(
+        action for action in handoff.actions if action.kind == "next_experiment"
     )
-    assert "do not replay" in repair.reason
+    assert successor.owner == "autotrain"
+    assert "registered typed tail-weighted LTR signal" in successor.reason
+    assert "do not replay" in successor.reason
+    assert all(action.kind != "repair_harness" for action in handoff.actions)
     assert _mod._predecessor_priority_slug(root, "cycle-1", skip=set()) == (
         "literal-close"
     )

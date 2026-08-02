@@ -3921,25 +3921,20 @@ def _write_cycle_handoff(
             ),
         ]
     elif numeric_close_starvation:
-        manifest_path = camp_dir / "manifests" / f"{candidate_id}.json"
-        manifest_sha = (
-            hashlib.sha256(manifest_path.read_bytes()).hexdigest()
-            if manifest_path.is_file()
-            else None
-        )
-        actions.insert(
-            0,
+        # The canonical model-build harness already owns the typed
+        # ltr_tail_loss_weight lever and the size-matched literal-close arm.
+        # This diagnosis therefore needs a fresh experiment, not a repair
+        # receipt that falsely claims the signal is missing.
+        actions.append(
             AutotrainActionV1(
-                kind="repair_harness",
-                owner="improve-openui-harnesses",
+                kind="next_experiment",
+                owner="autotrain",
                 reason=(
-                    "add the typed tail-weighted LTR training signal and run a new "
+                    "run the registered typed tail-weighted LTR signal as a new "
                     "size-matched literal-close arm; do not replay the same stalled "
                     "checkpoint"
                 ),
                 evidence_ids=(evidence_id,),
-                harness_family="model_build",
-                frozen_manifest_sha256=manifest_sha,
             ),
         )
     elif harness_failure:
