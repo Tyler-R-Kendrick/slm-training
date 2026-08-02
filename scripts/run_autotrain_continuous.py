@@ -458,6 +458,7 @@ _LEVER_KNOB_KEYS = (
     "semantic_contrast_loss_weight",
     "semantic_contrast_margin",
     "semantic_contrast_fraction",
+    "symbol_slot_augmentation",
     "structural_aux_head_profile",
     "compiler_decode_mode",
     "steps",
@@ -589,6 +590,11 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
             "semantic_contrast_margin": 1.0,
             "semantic_contrast_fraction": 0.5,
         },
+    ),
+    (
+        "slot-augmentation",
+        "Request-local slot permutation and alpha-renaming augmentation improves held-out binder_reference_f1 and structural_similarity without lowering parse_rate.",
+        {"symbol_slot_augmentation": True},
     ),
     (
         "component-structure",
@@ -1034,6 +1040,8 @@ def _arm_slug_from_knobs(
         return "edge-alignment"
     if knobs.get("semantic_contrast_loss_weight"):
         return "semantic-contrast"
+    if knobs.get("symbol_slot_augmentation"):
+        return "slot-augmentation"
     if knobs.get("component_edge_loss_weight"):
         return "component-edge"
     if knobs.get("component_inventory_loss_weight"):
@@ -1222,6 +1230,7 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
         "fidelity",
         "edge-alignment",
         "semantic-contrast",
+        "slot-augmentation",
     )
     legacy_quality_slugs = {
         "component-plan",
@@ -3664,6 +3673,7 @@ def _completed_candidate_priorities(
         "component_edge_loss_weight",
         "component_edge_alignment_loss_weight",
         "semantic_contrast_loss_weight",
+        "symbol_slot_augmentation",
         "component_inventory_loss_weight",
         "binder_topology_loss_weight",
         "binder_component_plan_loss_weight",
@@ -5295,6 +5305,7 @@ def _matrix(
             "binder_arity_decode_weight": 0.0,
             "fidelity_loss_weight": 0.5,
             "semantic_contrast_loss_weight": 0.0,
+            "symbol_slot_augmentation": False,
             "structural_aux_head_profile": "none",
             "compiler_decode_mode": "off",
             "ltr_tail_loss_weight": 0.0,
@@ -5366,6 +5377,7 @@ def _matrix(
                 "semantic_contrast_loss_weight",
                 "semantic_contrast_margin",
                 "semantic_contrast_fraction",
+                "symbol_slot_augmentation",
                 "structural_aux_head_profile",
                 "compiler_decode_mode",
                 "steps",
@@ -5556,6 +5568,7 @@ def _matrix(
                 "semantic_contrast_loss_weight",
                 "semantic_contrast_margin",
                 "semantic_contrast_fraction",
+                "symbol_slot_augmentation",
                 "structural_aux_head_profile",
                 "compiler_decode_mode",
                 "steps",

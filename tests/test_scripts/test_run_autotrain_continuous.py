@@ -637,6 +637,9 @@ def test_select_recommended_slug_prioritizes_successor_quality_after_legacy_null
     skip.add("edge-alignment")
     assert _mod._select_recommended_slug(1795, skip=skip) == "semantic-contrast"
 
+    skip.add("semantic-contrast")
+    assert _mod._select_recommended_slug(1796, skip=skip) == "slot-augmentation"
+
 
 def test_confirmation_bypasses_exhausted_screening_selector() -> None:
     all_slugs = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
@@ -980,6 +983,34 @@ def test_semantic_contrast_arm_matches_pair_exposure_and_changes_only_weight() -
     ):
         assert control[key] == candidate[key]
     assert _mod._arm_slug_from_knobs(candidate) == "semantic-contrast"
+
+
+def test_slot_augmentation_arm_is_size_matched_and_replayable() -> None:
+    campaign_id = "continuous-loop-20260802-c1799"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1799,
+        role="screening",
+        recommended_slug="slot-augmentation",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-slot-augmentation"]
+
+    assert control["symbol_slot_augmentation"] is False
+    assert candidate["symbol_slot_augmentation"] is True
+    assert _mod._arm_slug_from_knobs(candidate) == "slot-augmentation"
+    assert "symbol_slot_augmentation" in _mod._LEVER_KNOB_KEYS
 
 
 def test_completed_frozen_retry_steers_to_distinct_quality_arm() -> None:

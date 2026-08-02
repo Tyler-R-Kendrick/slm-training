@@ -260,6 +260,12 @@ This follows three complete loss-only nulls where targets and auxiliary learning
 signals were present but the trained head was not directly consumed at decode.
 The decode weight may rank only grammar-legal candidates and never weakens I6.
 Champion fingerprints retain both weights through confirmation and promotion.
+After those registered quality families and their later binder/fidelity/alignment
+successors are exhausted, the continuous bank advances to
+`symbol_slot_augmentation=true`. That arm permutes request-local slots and
+alpha-renames binders during training against an otherwise identical `false`
+control. It is parameter-size matched, remains grammar constrained, and tests
+opaque-symbol generalization without introducing surface-name features.
 
 ### Program experiments route through this loop (G1, SLM-46)
 

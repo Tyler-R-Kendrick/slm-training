@@ -35,7 +35,10 @@ content-addressed stage payload. The corrected c1798 terminal matrix now shows
 Lean is `not_applicable:retry_measurement`: no candidate reached confirmation
 or promotion, so no promotion preflight was authorized. The next priority is a
 new preregistered, size-matched quality objective; the registered quality-arm
-bank is exhausted and must not recycle this rejected approach.
+bank is exhausted and must not recycle this rejected approach. Campaign harness
+v98 registers the next distinct arm: request-local slot permutation and
+alpha-renaming augmentation against an identical `false` control. It changes no
+parameter count and directly tests opaque-symbol generalization.
 
 Machine evidence:
 [`autotrain-cycle-1798-semantic-contrast-replay-rejected.json`](autotrain-cycle-1798-semantic-contrast-replay-rejected.json).
