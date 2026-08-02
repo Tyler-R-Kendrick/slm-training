@@ -6973,6 +6973,11 @@
         {
           "version": "v3",
           "date": "2026-08-02",
+          "note": "no-bump: add honest model-card and README provenance for two unrelated c1737 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
           "note": "no-bump: add honest model-card and README provenance for two unrelated c1736 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
         },
         {

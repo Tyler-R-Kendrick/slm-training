@@ -1,0 +1,119 @@
+{
+  "schema": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c2",
+  "loop_id": "continuous-openui-20260730",
+  "cycle_index": 1737,
+  "campaign_role": "screening",
+  "cycle_intent": "screening",
+  "run_class": "fixture_scratch",
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "steps": 22,
+  "seed": 100001,
+  "batch_size": 2,
+  "checkpoint_sync": "explicit no-sync scratch",
+  "upstream_commit": "62f315565318479b83e6352e1b0d75ab66011b9b",
+  "integration_commit": "a4ce8e3a3ecbd1ab7a8b0b94887b603fc5c5f346",
+  "primary_metric": "smoke.structural_similarity",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "a4ce8e3a3ecbd1ab7a8b0b94887b603fc5c5f346",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v73",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v284"
+    },
+    "stamped_at": "2026-08-02T06:49:27.569662+00:00"
+  },
+  "gate_version": "openui_ship_gates_v6",
+  "arms": [
+    {
+      "label": "matched control",
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c2-control",
+      "hypothesis": "component_plan_loss_weight=1.0 improves smoke structural_similarity without lowering parse_rate or binder_reference_f1, versus the matched control.",
+      "component_plan_loss_weight": 0.0,
+      "last_loss": 14.390222549438477,
+      "training_wall_seconds": 3.872863988000063,
+      "checkpoint_sha256": "417b3ce88a30d9ddebff22dee520ec5cf07d1e51288ed2d9a7b1881423c274cc",
+      "smoke": "measurement_incomplete: decode wall-cap interrupted eval after 2/3 records (MAX_RUN_MINUTES applies per-command; CPU compiler-tree decode did not finish scoring the smoke suite in the cap)",
+      "ship_gates_pass": null
+    },
+    {
+      "label": "component-plan loss 1.0",
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c2-component-plan",
+      "hypothesis": "component_plan_loss_weight=1.0 improves smoke structural_similarity without lowering parse_rate or binder_reference_f1, versus the matched control.",
+      "component_plan_loss_weight": 1.0,
+      "last_loss": 19.916019439697266,
+      "training_wall_seconds": 9.32236642099997,
+      "checkpoint_sha256": "68f1ce95aa6e6401797695cc10e3f0a97d38d322cd503fbe8c2fc6d6bf903bdf",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0964,
+        "component_type_recall": 0.08333333333333333,
+        "ast_node_f1": 0.09523809523809523,
+        "ast_edge_f1": 0.0,
+        "placeholder_fidelity": 0.0,
+        "reward_score": 0.0,
+        "latency_ms_p50": 2878.71
+      },
+      "decode_stats": {
+        "forwards_count_sum": 15,
+        "completion_unique_states_sum": 31114,
+        "completion_witness_states_expanded_sum": 878,
+        "completion_parser_forks_sum": 32127
+      },
+      "ship_gates_pass": false,
+      "gate_failures": [
+        "smoke:insufficient_n actual=3 need>=20",
+        "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+        "smoke:structural_similarity actual=0.0964 need>=0.35",
+        "smoke:component_type_recall actual=0.08333333333333333 need>=0.35",
+        "smoke:ast_beq_rate actual=0.0 need>=0.2",
+        "smoke:canonical_beq_rate actual=0.0 need>=0.1",
+        "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "held_out:missing_suite",
+        "adversarial:missing_suite",
+        "ood:missing_suite",
+        "rico_held:missing_suite"
+      ]
+    }
+  ],
+  "comparison": {
+    "primary_metric_control": null,
+    "primary_metric_candidate": 0.0964,
+    "disposition": "measurement_incomplete_no_valid_comparison"
+  },
+  "formal_evidence": {
+    "status": "not_applicable:screening",
+    "reason": "Lean promotion proof is required only for a confirmed champion promotion"
+  },
+  "sdlc_phase_a_reasons": [
+    "wall_timeout:control decode interrupted at 2/3 smoke records under MAX_RUN_MINUTES",
+    "fixture_insufficient_n:component-plan smoke n=3",
+    "executable_unblock_rejected_low_mpr:mpr=0.0",
+    "primary_metric_unavailable",
+    "fixture_insufficient_n_alone"
+  ],
+  "harness_signal": {
+    "signal": "The matched control's smoke-suite CPU decode (compiler_tree mode) did not finish within the per-command MAX_RUN_MINUTES cap in this session's environment, so no primary_metric comparison was possible even though the candidate arm completed and honestly failed ship gates.",
+    "repair": "none applied this cycle; the harness already treats a wall-timeout as a soft, non-terminal signal per the continuous-loop rules and moves to the next screening arm rather than retrying the same interrupted measurement.",
+    "repaired_next_area": "model",
+    "repaired_next_hypothesis": "component-edge (standalone) improves smoke structural_similarity without lowering parse_rate or binder_reference_f1, versus the matched control"
+  },
+  "checkpoint_documentation_required": true,
+  "checkpoint_paths": [
+    "runs/c20260802-continuous-openui-202607-98199209-c2-component-plan/checkpoints/last.pt",
+    "runs/c20260802-continuous-openui-202607-98199209-c2-control/checkpoints/last.pt"
+  ],
+  "checkpoint_reuse": "forbidden",
+  "ship_eligible": false
+}
