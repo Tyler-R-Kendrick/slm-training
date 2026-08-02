@@ -1,0 +1,71 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c3",
+  "cycle_index": 3,
+  "cycle_intent": "retry_measurement",
+  "evidence_class": "fixture",
+  "decision": "harness_defect_repaired",
+  "scoreable": false,
+  "comparison": {
+    "matched_dimensions": [
+      "train_version",
+      "steps",
+      "batch_size",
+      "seed",
+      "context_backend",
+      "decode_policy"
+    ],
+    "treatment": "n/a (frozen replay of cycle 2's control/bounds arms; checkpoints reused via FROZEN_TRAIN_REUSE, only evaluation re-ran)",
+    "prediction_identical": null,
+    "parameter_delta": null
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c3-control",
+      "status": "failed",
+      "training": "reused",
+      "trainable_params": 1608962,
+      "error": "RuntimeError: AgentV SDK evaluation failed: node: --import tsx is not allowed in NODE_OPTIONS",
+      "measurement": "incomplete",
+      "smoke": null,
+      "held_out": null,
+      "agentv": null
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c3-bounds",
+      "status": "failed",
+      "training": "reused",
+      "trainable_params": 1608962,
+      "error": "RuntimeError: AgentV SDK evaluation failed: node: --import tsx is not allowed in NODE_OPTIONS",
+      "measurement": "incomplete",
+      "smoke": null,
+      "held_out": null,
+      "agentv": null
+    }
+  ],
+  "ship_gates_pass": false,
+  "lean": "not_applicable:screening",
+  "root_cause": "src/slm_training/evals/agentv.py:publish_agentv_evaluation spawned `node scripts/run_agentv_eval.mjs` inheriting the parent process's full environment. This scheduled session's host NODE_OPTIONS carries an unrelated tsx loader flag (`--import tsx` plus `--max-old-space-size=8192`), which this pinned Node build refuses to start under. Cycle 2's repair (npm ci) installed the AgentV SDK checkout but did not touch this subprocess's environment, so the very next stage hit this distinct, later failure. This IS a genuine canonical harness defect (harness_family=model_build), not an environment-bootstrap gap: the same NODE_OPTIONS-sanitization pattern was already applied to a different Node bridge in this repo (src/slm_training/dsl/grammar/backends/graphql_js.py:_sanitized_env, already merged in main) but had never been mirrored onto the AgentV runner.",
+  "fix": "Added `_sanitized_node_env()` to src/slm_training/evals/agentv.py, mirroring the existing graphql_js._sanitized_env() pattern, and passed it as the AgentV subprocess `env=`. Added a regression test (test_agentv_sanitizes_node_options_for_the_runner_subprocess) asserting the spawned subprocess env has NODE_OPTIONS cleared even when the parent process sets it. Bumped evals.agentv to v7 in versions.json with a history entry. `pytest tests/test_evals/test_agentv.py` (8/8 passed); full `tests/test_evals/` shows the same 5 error / pre-existing-failure baseline with and without this change (67 failed on unmodified HEAD vs 64 failed with this fix staged - failures are unrelated pre-existing repo debt, not caused by this change).",
+  "fix_commit": "f8abb9d794559fc89812d32aeeea288a0ee730b4",
+  "next_priority": {
+    "area": "infrastructure",
+    "hypothesis": "The measurement is incomplete; replay the exact frozen control and candidate arms now that the AgentV subprocess NODE_OPTIONS defect is repaired.",
+    "required_controls": [
+      "identical_frozen_manifest",
+      "no_knob_change"
+    ]
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "f8abb9d794559fc89812d32aeeea288a0ee730b4",
+    "code_dirty": false,
+    "components": {
+      "evals.agentv": "v7",
+      "harness.model_build.eval": "v77",
+      "harness.experiment_feature_flags": "v4"
+    },
+    "stamped_at": "2026-08-02T23:40:56.525430+00:00"
+  }
+}
