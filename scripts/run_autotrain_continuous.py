@@ -3355,6 +3355,147 @@ def _completed_retry_priorities(
     )
 
 
+def _completed_confirmation_priorities(
+    matrix: dict[str, Any],
+    candidate_id: str,
+    delivery: dict[str, Any],
+    resolution: dict[str, Any] | None,
+) -> tuple[NextRunPriorityV1, ...]:
+    """Replace confirm-time hypotheses with observed successor steering."""
+
+    rows = [dict(item) for item in matrix.get("next_run_priorities") or []]
+    if not rows:
+        return ()
+    for row in rows:
+        if row.get("disposition") == "experiment_next":
+            row["disposition"] = "monitor"
+            row["proposed_experiment_id"] = None
+
+    status = str((resolution or {}).get("status") or "")
+    confirmed = status == "confirmed" or bool(delivery.get("positive"))
+    if confirmed:
+        rows[0].update(
+            {
+                "area": "promotion",
+                "hypothesis": (
+                    "The champion re-held on confirmation; test the exact matched "
+                    "recipes under the next promotion suite and Lean preflight."
+                ),
+                "confidence": 0.9,
+                "expected_information_gain": (
+                    "Separates a repeatable fixture signal from held-out and formal "
+                    "promotion evidence."
+                ),
+                "authority": "observed_result",
+                "disposition": "experiment_next",
+                "proposed_experiment_id": candidate_id,
+            }
+        )
+        return tuple(NextRunPriorityV1.model_validate(item) for item in rows)
+
+    control = dict(delivery.get("control_metrics") or {})
+    candidate = dict(delivery.get("candidate_metrics") or {})
+    primary = str(delivery.get("primary_metric") or "primary metric")
+    control_primary = control.get(primary)
+    candidate_primary = candidate.get(primary)
+    if control_primary is None and "." in primary:
+        control_primary = control.get(primary.split(".", 1)[1])
+        candidate_primary = candidate.get(primary.split(".", 1)[1])
+    meaning_before = control.get("meaningful_program_rate")
+    meaning_after = candidate.get("meaningful_program_rate")
+    observed = (
+        f"{primary} {control_primary!r}->{candidate_primary!r}; "
+        f"meaningful_program_rate {meaning_before!r}->{meaning_after!r}"
+    )
+    future_batch_id = (
+        candidate_id[: -len("-confirm")] + "-batch1"
+        if candidate_id.endswith("-confirm")
+        else f"{candidate_id}-batch1"
+    )
+    replacements = (
+        {
+            "area": "model",
+            "hypothesis": (
+                "Fresh-seed confirmation rejected the champion fingerprint "
+                f"({observed}). Exhaust it and test a distinct size-matched "
+                "quality-targeted objective instead of spending more scalar steps."
+            ),
+            "confidence": 0.95,
+            "expected_information_gain": (
+                "Tests objective alignment against certified structural quality "
+                "rather than treating lower token loss as model progress."
+            ),
+            "authority": "observed_result",
+            "disposition": "monitor",
+            "proposed_experiment_id": None,
+        },
+        {
+            "area": "evaluation",
+            "hypothesis": (
+                "Training loss and certified program quality diverged on the "
+                "confirmation; retain loss as a diagnostic, not a promotion proxy."
+            ),
+            "confidence": 0.9,
+            "expected_information_gain": (
+                "Prevents optimization progress from masking regressions in meaning, "
+                "structure, recall, or latency."
+            ),
+            "authority": "observed_result",
+            "disposition": "monitor",
+            "proposed_experiment_id": None,
+        },
+        {
+            "area": "experiments",
+            "hypothesis": (
+                "Run the next non-exhausted batch-size arm only as a runtime "
+                "diagnostic while a new quality-targeted objective is preregistered."
+            ),
+            "confidence": 0.65,
+            "expected_information_gain": (
+                "Keeps the bounded loop executable without mislabeling a throughput "
+                "lever as a model-quality hypothesis."
+            ),
+            "authority": "speculative",
+            "disposition": "experiment_next",
+            "proposed_experiment_id": future_batch_id,
+        },
+        {
+            "area": "infrastructure",
+            "hypothesis": (
+                "Exact source-control reconstruction and pre-execution attempt "
+                "recovery succeeded; preserve both as campaign provenance."
+            ),
+            "confidence": 0.95,
+            "expected_information_gain": (
+                "Maintains attributable control-versus-candidate recipes across "
+                "confirmation and promotion."
+            ),
+            "authority": "reproduced_harness_signal",
+            "disposition": "monitor",
+            "proposed_experiment_id": None,
+        },
+        {
+            "area": "model_build",
+            "hypothesis": (
+                "Recent registered quality families are exhausted; prioritize a "
+                "new preregistered structural or meaningful-quality objective before "
+                "recycling them."
+            ),
+            "confidence": 0.75,
+            "expected_information_gain": (
+                "Tests a new causal training mechanism instead of repeating a closed "
+                "approach or weakening a gate."
+            ),
+            "authority": "speculative",
+            "disposition": "monitor",
+            "proposed_experiment_id": None,
+        },
+    )
+    for row, replacement in zip(rows, replacements, strict=False):
+        row.update(replacement)
+    return tuple(NextRunPriorityV1.model_validate(item) for item in rows)
+
+
 def _predecessor_priority_slug(
     root: Path, predecessor_campaign_id: str | None, *, skip: set[str]
 ) -> str | None:
@@ -3398,6 +3539,22 @@ def _predecessor_priority_slug(
                     str(delivery.get("candidate_id") or ""),
                     resolved_infrastructure=False,
                     skip_slugs=skip,
+                )
+            ]
+        elif handoff.get("cycle_intent") == "confirm" and not measurement_incomplete:
+            priorities = [
+                item.model_dump()
+                for item in _completed_confirmation_priorities(
+                    _read_json(matrix_path),
+                    str(delivery.get("candidate_id") or ""),
+                    delivery,
+                    {
+                        "status": (
+                            "confirmed"
+                            if handoff.get("climb_state") == "champion_confirmed"
+                            else "rejected"
+                        )
+                    },
                 )
             ]
     for priority in sorted(priorities, key=lambda item: int(item.get("rank") or 999)):
@@ -3502,6 +3659,13 @@ def _write_cycle_handoff(
             candidate_id,
             resolved_infrastructure=True,
             skip_slugs=skip_slugs,
+        )
+    elif cycle_intent == "confirm":
+        priorities = _completed_confirmation_priorities(
+            matrix,
+            candidate_id,
+            delivery,
+            resolution,
         )
     elif (
         cycle_intent in {"screening", "promotion"}
