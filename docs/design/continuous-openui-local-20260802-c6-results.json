@@ -1,0 +1,123 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c6",
+  "cycle_index": 6,
+  "cycle_intent": "screening",
+  "source_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "integration_commit": "ada0f31464d9d0b64ab47bb34706c09ed664b536",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "seed": 100006,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "hypothesis": "component_edge_loss_weight=1.0 (structural component-edge auxiliary supervision) improves smoke structural_similarity without lowering parse_rate, per cycle 5's rank-1 next-priority handoff (component-plan is rejected for this recipe).",
+  "primary_metric": "smoke.structural_similarity",
+  "primary_direction": "increase",
+  "measurement_complete": true,
+  "arms": {
+    "c6-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0964,
+        "binder_reference_f1": 0.8222222222222223,
+        "component_type_recall": 0.08333333333333333,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "placeholder_fidelity": 0.7222222222222222,
+        "reward_score": 0.8236666666666667,
+        "latency_ms_p50": 1451.38
+      },
+      "levers": {
+        "component_edge_loss_weight": 0.0,
+        "component_edge_decode_weight": 0.0
+      },
+      "trainable_params": 1766987,
+      "last_loss": 13.719684600830078
+    },
+    "c6-component-edge": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0964,
+        "binder_reference_f1": 0.8222222222222223,
+        "component_type_recall": 0.08333333333333333,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "placeholder_fidelity": 0.7222222222222222,
+        "reward_score": 0.8236666666666667,
+        "latency_ms_p50": 1825.79
+      },
+      "levers": {
+        "component_edge_loss_weight": 1.0,
+        "component_edge_alignment_loss_weight": 0.0
+      },
+      "trainable_params": 1766987,
+      "last_loss": 14.803119659423828
+    }
+  },
+  "primary_delta": 0.0,
+  "latency_delta_ms": 374.41,
+  "gate_failures": {
+    "smoke": [
+      "insufficient_n actual=3 need>=20",
+      "meaningful_program_rate actual=0.0 need>=0.66",
+      "structural_similarity actual=0.0964 need>=0.35",
+      "component_type_recall actual=0.08333333333333333 need>=0.35",
+      "ast_beq_rate actual=0 need>=0.2",
+      "canonical_beq_rate actual=0 need>=0.1"
+    ],
+    "missing_suites": [
+      "held_out",
+      "adversarial",
+      "ood",
+      "rico_held"
+    ]
+  },
+  "conclusion": "Both arms trained cleanly (config_sha256 differs: candidate applies component_edge_loss_weight=1.0, control keeps it at 0.0; train loss diverges as expected, 13.7196 control vs 14.8031 candidate, from the added auxiliary loss term) and both produced a full AgentV ship-gate scoreboard.json (measurement_complete=true). Every decode-facing smoke metric -- parse_rate, meaningful_program_rate, structural_similarity, binder_reference_f1, component_type_recall, ast_beq_rate, canonical_beq_rate, placeholder_fidelity, reward_score -- is bit-identical between control and candidate; only latency_ms_p50 differs (1451.38 -> 1825.79, candidate slower, likely the extra aux-head forward cost). At n=3 smoke fixture scale and 20 training steps, component_edge_loss_weight=1.0 produced zero measurable change in generated output quality: primary_delta=0.0 exactly. This is a genuine null result, not a regression (unlike cycle 5's component-plan, which moved structural_similarity the wrong direction) -- the component-edge hypothesis is neither confirmed nor rejected by this screen, only shown to have no detectable effect at this size/step budget. Ship gates correctly fail closed on fixture n=3 (<20) and every quality threshold for both arms; no gate was weakened.",
+  "sdlc_classification": {
+    "positive": false,
+    "stack_layer": false,
+    "action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260802-continuous-openui-local-8c0b60dd-c6-component-edge",
+      "fixture_insufficient_n:c20260802-continuous-openui-local-8c0b60dd-c6-control",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.0964 candidate=0.0964 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "next_priorities": [
+    "The completed non-positive component-edge arm is exhausted at this recipe; test the distinct size-matched 'component-plan' hypothesis lineage again only with a materially different recipe (different loss weight or step budget), or rotate to an untested lever from the screening bank -- component-edge and component-plan are both now spent for step-budget=20/n=3.",
+    "Keep the matched control as the size-matched baseline every cycle.",
+    "Soft ship-gate fails on fixture n never stop the continuous loop; do not weaken gates.",
+    "Consider raising steps or fixture n for the next component-edge/component-plan retry so a real effect (if any) is distinguishable from fixture-scale noise -- a bit-identical decode output across two different trained checkpoints at n=3/steps=20 suggests this screen is under-powered to detect any but a large effect."
+  ],
+  "recorded_at": "2026-08-02T10:04:17.958909Z",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "ada0f31464d9d0b64ab47bb34706c09ed664b536",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v74",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v286"
+    },
+    "stamped_at": "2026-08-02T10:03:57.720614+00:00"
+  }
+}
