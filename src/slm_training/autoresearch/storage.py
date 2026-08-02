@@ -561,7 +561,7 @@ def loop_result_rows(
                         "gates.pass",
                     },
                 ),
-                "lean": _lean_text(optimum),
+                "lean": _lean_text(optimum, handoff),
                 "gates": "fail" if gate_rejection else _gate_text(outcome.metrics),
                 "measurement": (
                     "complete (gate reject)"
@@ -591,11 +591,11 @@ def _completed_gate_rejection(
     campaign: CampaignSpec,
     outcome: ExperimentOutcome,
 ) -> bool:
-    """Project a legacy exit-8 outcome from its complete canonical scoreboard."""
+    """Project a complete canonical AgentV gate rejection."""
 
     if (
-        outcome.status != "failed"
-        or outcome.exit_code != 8
+        outcome.status not in {"completed", "failed"}
+        or (outcome.status == "failed" and outcome.exit_code != 8)
         or evaluation_measurement_incomplete(outcome.metrics)
     ):
         return False
@@ -990,7 +990,7 @@ def render_loop_result_matrix(
     if recorded_state == "RUNNING" and not _pid_exists(driver_pid):
         recorded_state = "DEAD"
     heartbeat = str(state.get("heartbeat_at") or "—")
-    if heartbeat != "—" and recorded_state not in {"BLOCKED", "DEAD"}:
+    if heartbeat != "—" and recorded_state == "RUNNING":
         try:
             stamp = datetime.fromisoformat(heartbeat.replace("Z", "+00:00"))
             age = (datetime.now(timezone.utc) - stamp).total_seconds()
@@ -1159,8 +1159,16 @@ def _metrics_text(
     return ", ".join(values) or "—"
 
 
-def _lean_text(optimum: Any | None) -> str:
+def _lean_text(optimum: Any | None, handoff: dict[str, Any] | None = None) -> str:
     if optimum is None:
+        handoff = handoff or {}
+        formal_status = handoff.get("formal_status")
+        if formal_status:
+            return str(formal_status)
+        if handoff.get("cycle_role") == "promotion":
+            return "not_applicable:no_champion"
+        if handoff.get("cycle_role") == "screening":
+            return "not_applicable:screening"
         return "—"
     if not optimum.breaches:
         return optimum.policy

@@ -1199,8 +1199,12 @@ def diagnose_outcome(outcome: ExperimentOutcome) -> Diagnosis:
         _metric(metrics, "ship_gates_pass", "gates.pass", "pass", default=0)
     ):
         target = "model"
-        evidence.append("experiment improved locally but still fails honest ship gates")
-        actions.append("continue SFT or architecture experiments; keep RL locked")
+        evidence.append(
+            "experiment completed locally but still fails honest ship gates"
+        )
+        actions.append(
+            "compare against the matched control; continue model experiments; keep RL locked"
+        )
         confidence = 0.75
     else:
         target = "none"

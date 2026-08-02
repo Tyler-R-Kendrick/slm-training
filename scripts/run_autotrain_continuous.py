@@ -2085,8 +2085,7 @@ def _classify_metric_tradeoff(
         efficiency_gain_fraction = (t_eff / c_eff - 1.0) if c_eff > 0 else None
         if (
             efficiency_gain_fraction is not None
-            and efficiency_gain_fraction + _EPS
-            >= minimum_efficiency_gain_fraction
+            and efficiency_gain_fraction + _EPS >= minimum_efficiency_gain_fraction
         ):
             positive = True
             reasons.append(
@@ -2094,6 +2093,7 @@ def _classify_metric_tradeoff(
                 f"gain_fraction={efficiency_gain_fraction:.8g}:"
                 f"minimum={minimum_efficiency_gain_fraction:.8g}"
             )
+            reasons.append(f"quality_held:parse={t_pr} mpr={t_mpr}")
         elif efficiency_gain_fraction is not None and efficiency_gain_fraction > _EPS:
             reasons.append(
                 f"efficiency_win_rejected_min_effect:mpr_per_ms:"
@@ -2635,7 +2635,12 @@ def _completed_candidate_priorities(
             )
     if alternative is not None:
         next_id = str(alternative["experiment_id"])
-        slug = next_id.rsplit("-", 1)[-1]
+        slug = (
+            _arm_slug_from_knobs(
+                dict(alternative.get("knobs") or {}), candidate_id=next_id
+            )
+            or next_id.rsplit("-", 1)[-1]
+        )
         rows[0].update(
             {
                 "area": "model",
@@ -2686,14 +2691,24 @@ def _predecessor_priority_slug(
     matrix_path = camp_dir / "matrix-proposal.json"
     if delivery_path.is_file() and matrix_path.is_file():
         delivery = _read_json(delivery_path)
-        measurement_incomplete = any(
-            str(reason).startswith("measurement_incomplete:")
-            for reason in delivery.get("reasons") or []
-        ) or _diagnosis_target(camp_dir) == "infrastructure"
+        current = _classify_positive(
+            camp_dir=camp_dir,
+            primary_metric=str(handoff.get("primary_metric") or ""),
+            control_id=str(delivery.get("control_id") or ""),
+            candidate_id=str(delivery.get("candidate_id") or ""),
+            role=str(handoff.get("cycle_role") or "screening"),
+        )
+        measurement_incomplete = (
+            any(
+                str(reason).startswith("measurement_incomplete:")
+                for reason in current.get("reasons") or []
+            )
+            or _diagnosis_target(camp_dir) == "infrastructure"
+        )
         if (
-            handoff.get("cycle_intent") == "screening"
+            handoff.get("cycle_intent") in {"screening", "promotion"}
             and not measurement_incomplete
-            and not delivery.get("positive")
+            and not current.get("positive")
         ):
             priorities = [
                 item.model_dump()
@@ -2777,7 +2792,7 @@ def _write_cycle_handoff(
             matrix, candidate_id, resolved_infrastructure=True
         )
     elif (
-        cycle_intent == "screening"
+        cycle_intent in {"screening", "promotion"}
         and not measurement_incomplete
         and not delivery.get("positive")
     ):
@@ -4232,6 +4247,24 @@ def _manifest(
     )
 
 
+def _effective_primary_metric(
+    *,
+    role: str,
+    policy_metric: str,
+    requested_metric: str,
+    replay_metric: str | None = None,
+) -> str:
+    effective = replay_metric or policy_metric
+    if (
+        replay_metric is None
+        and role == "screening"
+        and requested_metric
+        and requested_metric.split(".")[-1] == effective.split(".")[-1]
+    ):
+        return requested_metric
+    return effective
+
+
 def run_cycle(
     *,
     cwd: Path,
@@ -4352,18 +4385,14 @@ def run_cycle(
             claim_class=claim_for_role,
         )
     role_primary = primary_for_role(policy, role)
-    # Screening uses policy screening primary; promotion uses held-out quality.
-    # CLI primary_metric overrides only when it matches the role leaf (compat).
-    effective_primary = (
-        str(replay["handoff"].primary_metric)
-        if replay is not None
-        else str(role_primary["metric"])
+    # Screening may preserve a same-leaf CLI suite override for compatibility.
+    # Promotion always uses the policy-owned held-out endpoint.
+    effective_primary = _effective_primary_metric(
+        role=role,
+        policy_metric=str(role_primary["metric"]),
+        requested_metric=primary_metric,
+        replay_metric=(str(replay["handoff"].primary_metric) if replay else None),
     )
-    if (
-        primary_metric
-        and primary_metric.split(".")[-1] == effective_primary.split(".")[-1]
-    ):
-        effective_primary = primary_metric
     campaign_id = _campaign_id(loop_id, cycle)
     _write_loop_state(
         root,

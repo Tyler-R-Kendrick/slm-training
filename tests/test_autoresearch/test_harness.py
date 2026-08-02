@@ -71,10 +71,38 @@ from slm_training.autoresearch.schemas import (
 )
 from slm_training.autoresearch.storage import (
     CampaignStore,
+    _lean_text,
     pending_autotrain_actions,
     pending_autotrain_execution_actions,
     render_loop_result_matrix,
 )
+
+
+def test_result_matrix_explains_lean_applicability() -> None:
+    assert _lean_text(None, {"cycle_role": "screening"}) == ("not_applicable:screening")
+    assert _lean_text(None, {"cycle_role": "promotion"}) == (
+        "not_applicable:no_champion"
+    )
+    assert _lean_text(None, {"formal_status": "proved"}) == "proved"
+
+
+def test_idle_loop_does_not_become_stale_from_old_heartbeat(tmp_path: Path) -> None:
+    state_dir = tmp_path / "loops" / "loop-1"
+    state_dir.mkdir(parents=True)
+    (state_dir / "state.json").write_text(
+        json.dumps(
+            {
+                "state": "IDLE",
+                "phase": "between_cycles",
+                "cycle_index": 1,
+                "heartbeat_at": "2000-01-01T00:00:00Z",
+            }
+        )
+    )
+
+    assert "| IDLE | between_cycles | 1 |" in render_loop_result_matrix(
+        tmp_path, "loop-1"
+    )
 
 
 def campaign() -> CampaignSpec:
@@ -2589,8 +2617,11 @@ def test_loop_result_matrix_marks_timeout_measurement_incomplete(
     assert "| incomplete | infrastructure |" in rendered
 
 
-def test_loop_result_matrix_projects_complete_exit8_gate_rejection(
-    tmp_path: Path,
+@pytest.mark.parametrize(
+    ("outcome_status", "exit_code"), (("failed", 8), ("completed", 0))
+)
+def test_loop_result_matrix_projects_complete_gate_rejection(
+    tmp_path: Path, outcome_status: str, exit_code: int
 ) -> None:
     commit = "d" * 40
     campaign = CampaignSpec(
@@ -2607,8 +2638,8 @@ def test_loop_result_matrix_projects_complete_exit8_gate_rejection(
     outcome = ExperimentOutcome(
         experiment_id="control",
         campaign_id=campaign.campaign_id,
-        status="failed",
-        exit_code=8,
+        status=outcome_status,
+        exit_code=exit_code,
         metrics={
             "smoke.n": 3,
             "smoke.completed_document_n": 3,
@@ -3470,6 +3501,22 @@ def test_decode_timeout_scoreboard_routes_to_infrastructure() -> None:
     assert "model attribution is unavailable" in diagnosis.evidence[0]
 
 
+def test_gate_failure_diagnosis_does_not_claim_unmeasured_improvement() -> None:
+    diagnosis = diagnose_outcome(
+        ExperimentOutcome(
+            experiment_id="quality-null",
+            campaign_id="continuous-loop",
+            status="completed",
+            metrics={"suites.smoke.parse_rate": 1, "gates.pass": 0},
+        )
+    )
+
+    assert diagnosis.target == "model"
+    assert "completed locally" in diagnosis.evidence[0]
+    assert "improved" not in diagnosis.evidence[0]
+    assert "matched control" in diagnosis.recommended_actions[0]
+
+
 def test_partial_decode_scoreboard_routes_to_infrastructure() -> None:
     diagnosis = diagnose_outcome(
         ExperimentOutcome(
@@ -3647,10 +3694,7 @@ def test_compile_structural_aux_head_profile() -> None:
         for command in compile_commands(campaign(), spec)
         if "scripts.train_model" in command
     )
-    assert (
-        train[train.index("--structural-aux-head-profile") + 1]
-        == "binder-topology"
-    )
+    assert train[train.index("--structural-aux-head-profile") + 1] == "binder-topology"
 
 
 def test_default_eval_version_resolves_published_smoke_suite() -> None:
