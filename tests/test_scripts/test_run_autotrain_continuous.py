@@ -631,6 +631,9 @@ def test_select_recommended_slug_prioritizes_successor_quality_after_legacy_null
     )
     assert _mod._select_recommended_slug(1791, skip=skip) == "fidelity"
 
+    skip.add("fidelity")
+    assert _mod._select_recommended_slug(1794, skip=skip) == "edge-alignment"
+
 
 def test_confirmation_bypasses_exhausted_screening_selector() -> None:
     all_slugs = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
@@ -910,6 +913,35 @@ def test_fidelity_screening_arm_is_size_matched_training_objective() -> None:
         )
         == "fidelity"
     )
+
+
+def test_edge_alignment_arm_is_size_matched_training_objective() -> None:
+    campaign_id = "continuous-loop-20260802-c1794"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1794,
+        role="screening",
+        recommended_slug="edge-alignment",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-edge-alignment"]
+
+    assert control["component_edge_alignment_loss_weight"] == 0.0
+    assert candidate["component_edge_alignment_loss_weight"] == 1.0
+    assert control["structural_aux_head_profile"] == "component-edge"
+    assert candidate["structural_aux_head_profile"] == "component-edge"
+    assert _mod._arm_slug_from_knobs(candidate) == "edge-alignment"
 
 
 def test_completed_frozen_retry_steers_to_distinct_quality_arm() -> None:
