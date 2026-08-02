@@ -15,6 +15,7 @@ from slm_training.harnesses.model_build import eval_runner
 from slm_training.harnesses.model_build.eval_runner import (
     _contract_precision,
     _contract_recall,
+    _effective_record_decode_timeout,
     _placeholder_fidelity,
     _placeholder_fidelity_normalized,
     _placeholder_validity,
@@ -24,6 +25,36 @@ from slm_training.harnesses.model_build.eval_runner import (
 )
 
 _GOLD = 'root = Stack([cta])\ncta = Button(":slot_0")'
+
+
+def test_eval_wall_fairly_caps_each_remaining_record() -> None:
+    assert _effective_record_decode_timeout(
+        24.0,
+        evaluation_deadline=100.0,
+        remaining_record_n=8,
+        chunk_record_n=1,
+        now=60.0,
+    ) == pytest.approx(4.75)
+    assert (
+        _effective_record_decode_timeout(
+            3.0,
+            evaluation_deadline=100.0,
+            remaining_record_n=8,
+            chunk_record_n=1,
+            now=60.0,
+        )
+        == 3.0
+    )
+    assert (
+        _effective_record_decode_timeout(
+            24.0,
+            evaluation_deadline=None,
+            remaining_record_n=8,
+            chunk_record_n=1,
+            now=60.0,
+        )
+        == 24.0
+    )
 
 
 def _record(**overrides: object) -> ExampleRecord:
@@ -48,9 +79,10 @@ def test_decode_trace_annotation_preserves_eval_record_identity() -> None:
 
     eval_runner._annotate_decode_trace_records(stats, records)
 
-    assert [
-        trace["record_id"] for trace in stats.constrained_selection_traces
-    ] == ["held-a", "held-b"]
+    assert [trace["record_id"] for trace in stats.constrained_selection_traces] == [
+        "held-a",
+        "held-b",
+    ]
 
 
 def test_temporal_decode_evidence_is_per_record_and_excludes_terminal_fields() -> None:
@@ -165,7 +197,9 @@ def test_reward_harness_error_is_counted_not_scored(
         raise RuntimeError("reward harness broke")
 
     monkeypatch.setattr(eval_runner, "_reward_for_prediction", _boom)
-    metrics = evaluate(_smoke_config(tmp_path), model=_EchoGoldModel(), publish_agentv=False)
+    metrics = evaluate(
+        _smoke_config(tmp_path), model=_EchoGoldModel(), publish_agentv=False
+    )
     assert metrics["reward_error_count"] == 1
     assert metrics["reward_score"] is None
     assert metrics["metric_defined_n"]["reward_score"] == 0
@@ -475,6 +509,5 @@ def test_agentv_single_suite_publishes_one_case() -> None:
     # Raw metrics, not a precomputed pass boolean, reach AgentEvals.
     assert "pass" not in cases[0]
     assert all(
-        "missing_suite" not in criterion["id"]
-        for criterion in cases[0]["assertions"]
+        "missing_suite" not in criterion["id"] for criterion in cases[0]["assertions"]
     )

@@ -462,6 +462,10 @@ class ModelBuildConfig:
     generate_max_attempts: int = 3
     # Diagnostic per-record generation timeout; None/0 preserves unlimited eval.
     decode_timeout_seconds: float | None = None
+    # Optional cumulative evaluator wall. When set, the runner partitions the
+    # remaining wall across unprocessed records so it can persist a complete
+    # scoreboard before its supervising process interrupts the stage.
+    evaluation_wall_seconds: float | None = None
     grammar_finalize_on_last_attempt_only: bool = False
     # Decode invariant I6 (docs/design/decode-invariants.md): diagnostic-only.
     allow_unconstrained_fallback: bool = False

@@ -2641,7 +2641,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v63",
+      "version": "v65",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2681,6 +2681,16 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v65",
+          "date": "2026-08-02",
+          "note": "Pass the remaining experiment-stage wall into model-build evaluation so it can finalize typed per-record outcomes before the outer supervisor interrupt."
+        },
+        {
+          "version": "v64",
+          "date": "2026-08-02",
+          "note": "Require canonical harness repair after one hash-linked cached reproduction of an incomplete measurement instead of spending a second identical replay wall."
+        },
         {
           "version": "v63",
           "date": "2026-08-02",
@@ -7103,6 +7113,11 @@
         {
           "version": "v3",
           "date": "2026-08-02",
+          "note": "no-bump: add honest c1760 incomplete-measurement checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
           "note": "no-bump: add honest c1759 rejected-confirmation checkpoint provenance and restore the missing c1757 checkpoint-history row in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
         },
         {
@@ -8636,7 +8651,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v74",
+      "version": "v75",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -8657,6 +8672,11 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v75",
+          "date": "2026-08-02",
+          "note": "Partition an optional cumulative evaluation wall across remaining records, reserve scoreboard finalization time, and persist the effective timeout allocation range."
+        },
         {
           "version": "v74",
           "date": "2026-08-02",
@@ -10935,6 +10955,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v289",
+          "date": "2026-08-02",
+          "note": "no-bump: add an eval-only cumulative wall field to ModelBuildConfig; TwoTower architecture, training, legal domains, and ranking are unchanged."
+        },
         {
           "version": "v289",
           "date": "2026-08-02",
