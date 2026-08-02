@@ -215,6 +215,7 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "compiler_alignment_margin",
         "compiler_alignment_stratified",
         "compiler_alignment_semantic_exhaustive",
+        "compiler_alignment_kind_filter",
         "component_inventory_loss_weight",
         "structural_aux_head_profile",
         "component_inventory_decode_weight",
@@ -498,6 +499,7 @@ class ExperimentKnobs(StrictModel):
     compiler_alignment_margin: float | None = Field(default=None, ge=0, le=20)
     compiler_alignment_stratified: bool | None = None
     compiler_alignment_semantic_exhaustive: bool | None = None
+    compiler_alignment_kind_filter: Literal["all", "literal-close"] | None = None
     component_inventory_loss_weight: float | None = Field(default=None, ge=0, le=20)
     structural_aux_head_profile: (
         Literal[
