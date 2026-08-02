@@ -30,7 +30,9 @@ alter deterministic decode legality. The same repair also makes campaign-lock
 control fingerprints explicitly reset slot augmentation, mask pattern, and
 boundary weight, preventing a candidate lock from describing its treatment as
 the negative control. Train harness v32 records the boundary weight; TwoTower
-v295 exposes it through the canonical CLI/compiler.
+v295 exposes it through the canonical CLI/compiler. Campaign harness v101 also
+projects that new current arm into the between-run priority view when the
+predecessor's immutable matrix predates the arm.
 
 Next priority: test symbol-boundary supervision at identical size, seed policy,
 and smoke evaluation. If it is null or harmful, inspect per-token boundary loss

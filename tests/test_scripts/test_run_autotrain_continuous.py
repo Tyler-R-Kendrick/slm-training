@@ -1084,6 +1084,40 @@ def test_symbol_boundary_arm_is_size_matched_and_replayable() -> None:
     assert arm_shas["control"] != arm_shas["candidate"]
 
 
+def test_completed_candidate_projects_new_arm_missing_from_frozen_matrix() -> None:
+    campaign_id = "continuous-loop-20260802-c1800"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1800,
+        role="screening",
+        recommended_slug="mixed-mask",
+    )
+    matrix["hypotheses"] = [
+        row
+        for row in matrix["hypotheses"]
+        if not row["experiment"]["experiment_id"].endswith("-symbol-boundary")
+    ]
+    candidate_id = "c20260802-c1800-mixed-mask"
+    skip = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
+    skip.difference_update({"mixed-mask", "symbol-boundary"})
+
+    priorities = _mod._completed_candidate_priorities(
+        matrix,
+        candidate_id,
+        resolved_infrastructure=False,
+        skip_slugs=skip,
+    )
+
+    assert priorities[0].proposed_experiment_id == "c20260802-c1800-symbol-boundary"
+    assert "symbol-boundary" in priorities[0].hypothesis
+
+
 def test_completed_frozen_retry_steers_to_distinct_quality_arm() -> None:
     matrix = _mod._matrix(
         campaign_id="continuous-loop-20260731-c10",

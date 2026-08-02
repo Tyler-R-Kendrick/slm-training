@@ -3675,6 +3675,7 @@ def _completed_candidate_priorities(
         and str(item.get("experiment_id")) != candidate_id
         and not str(item.get("experiment_id")).endswith("-control")
     ]
+    has_lineage_skip = skip_slugs is not None
     skip_slugs = skip_slugs or set()
     candidate_knobs = next(
         (
@@ -3763,6 +3764,25 @@ def _completed_candidate_priorities(
             None,
         ),
     )
+    if alternative is None and has_lineage_skip:
+        successor_skip = set(skip_slugs)
+        if candidate_slug:
+            successor_skip.add(candidate_slug)
+        try:
+            successor_slug = _select_recommended_slug(1, skip=successor_skip)
+        except RuntimeError:
+            successor_slug = ""
+        if successor_slug:
+            successor = next(
+                row for row in _SCREENING_ARM_BANK if row[0] == successor_slug
+            )
+            alternative = {
+                "experiment_id": (
+                    candidate_id.removesuffix(candidate_slug or "") + successor_slug
+                ),
+                "hypothesis": successor[1],
+                "knobs": successor[2],
+            }
     for row in rows:
         if row.get("disposition") == "experiment_next" and (
             str(row.get("proposed_experiment_id") or "") == candidate_id
