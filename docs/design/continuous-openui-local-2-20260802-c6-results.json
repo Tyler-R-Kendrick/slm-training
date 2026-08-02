@@ -1,0 +1,144 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local-2",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local--c94ddb78-c6",
+  "cycle_index": 6,
+  "cycle_intent": "promotion/retry_measurement -- automatic frozen-manifest replay (attempt 1/2) of c4's champion-confirmation measurement (component-edge vs matched control), consumed ahead of any new hypothesis per contracts.md",
+  "predecessor_campaign_id": "continuous-loop-20260802-continuous-openui-local--c94ddb78-c4",
+  "replay_of_manifest_sha256": "d136c228a5a967e6884abdbfd2d5de46f6700bd1a110ccdd88fc772a07d30a1f",
+  "source_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "integration_commit": "90021cad314162099f2b3d80389e1b7c0287ba04",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "summary": "Fifth working cycle of the continuous-openui-local-2 lineage (driver cycle_index=6; an initialized-only cycle-5 attempt against pre-fix code crashed before campaign completion -- see harness_signals below -- and does not count as this lineage's cycle 5 per contracts.md's 'initialized-only/crashed campaign does not replace the latest completed handoff' rule). This session's job was the queued retry_measurement for c4's champion-confirmation cycle (held_out wall-timeout, frozen_manifest_sha256=d136c228a5a967e6884abdbfd2d5de46f6700bd1a110ccdd88fc772a07d30a1f). The first invocation of the supervised driver against the unmodified repo crashed immediately with RuntimeError('unsupported automatic frozen replay arm: confirm') before running any train/eval subprocess: the champion-queue '-confirm'/'-promote' arms (Change C/D) are not `_SCREENING_ARM_BANK` slugs, and the frozen-replay successor matrix was built through the generic thrash-rotation branch, which never contained a '-confirm' experiment id for `_apply_frozen_replay` to patch onto -- this is the first cycle in this lineage to attempt a frozen replay of a confirmation cycle, so the gap was previously unexercised. Fixed with `_frozen_replay_champion_levers` (scripts/run_autotrain_continuous.py, commit 90021cad314162099f2b3d80389e1b7c0287ba04): recovers the frozen candidate's champion-queue slug and rebuilds confirm_levers/promote_levers from the frozen candidate's own lever knobs so the successor matrix is built through the same branch that produced the original arm; `_apply_frozen_replay` now also accepts 'confirm'/'promote' as known replay slugs. 4 new regression tests added; full tests/test_scripts/test_run_autotrain_continuous.py suite (106 passed, 1 skipped) and verify_version_stamps --check both clean before commit. After the fix, the retry re-ran cleanly: it correctly reused c4's completed training checkpoints (no train_summary.json written this cycle; evaluate_model invoked with --checkpoint pointing at c4's runs) and only re-ran evaluate_model, exactly matching contracts.md's 'training completed but evaluation did not -> frozen replay resumes at evaluation instead of retraining' rule. Both arms' smoke suite (n=3) completed and scored bit-identical again (parse_rate=1.0/1.0, meaningful_program_rate=0.3333/0.3333, structural_similarity=0.4167/0.4167, binder_reference_f1=0.9524/0.9524; latency control p50=9779.53ms vs confirm p50=10369.86ms). held_out again did not finish on either arm: `decode_progress.json` shows both arms interrupted mid-suite with processed_record_n=3 of 5 (measurement_complete=false, ~7.2-7.4s/record mean this attempt), so the evaluate_model stage was killed by the harness wall-time guard a second time, structurally identical to c4's timeout. This confirms the harness crash and the wall-timeout are two independent, now-separated findings: the crash is fixed and verified resolved; the wall-timeout is reproduced honestly and is not a code defect -- it is decode-compute-bound (see eval_feasibility_confirmation below), the same class of problem as the parked continuous-openui-local lineage's test_data_scaleup_v1 finding, just triggered at a smaller record count (8 vs 12) because promotion's smoke+held_out combination is close to 2x over the fixed ~70s two-arm-split budget regardless of which record set is chosen (all four `_DEFAULT_EVAL_VERSION_CANDIDATES` snapshots carry the same held_out=5/smoke=3 suite sizes). No fix was attempted for the wall-timeout itself: MAX_RUN_MINUTES is a fixed architecture invariant, `_arm_wall_minutes`'s symmetric two-arm split is already at that ceiling for both screening and promotion roles (stage_wall_minutes_for_role returns the same MAX_RUN_MINUTES-clamped value for both), and the existing `_feasible_eval_version`/`_eval_version_fits_arm_budget` guard (added for the parked lineage's finding) already correctly identifies that no candidate eval snapshot fits promotion's suite requirement and by design falls back to an honest measurement_incomplete rather than blocking a fresh cycle -- there is no smaller held_out suite to substitute (all candidates carry held_out=5) and shrinking it would weaken the ship gate's held-out sample size, which is out of scope. Positive=false, stack_layer=false, stack_action=no_stack_layer_non_positive (the code fix is a harness-repair delta, tracked separately from model-positive classification -- see recommendation below on whether to push it).",
+  "harness_signals": [
+    {
+      "kind": "driver_crash",
+      "area": "autoresearch",
+      "signal": "RuntimeError('unsupported automatic frozen replay arm: confirm') raised by _apply_frozen_replay before any train/eval subprocess ran, on the first (pre-fix) invocation of the queued retry_measurement for c4's champion-confirmation cycle.",
+      "authority": "observed",
+      "confidence": 1.0,
+      "disposition": "repaired",
+      "evidence": "scripts/run_autotrain_continuous.py commit 90021cad314162099f2b3d80389e1b7c0287ba04 (_frozen_replay_champion_levers + _CHAMPION_QUEUE_REPLAY_SLUGS); tests/test_scripts/test_run_autotrain_continuous.py new regression tests: test_frozen_replay_champion_levers_ignores_bank_slug_candidates, test_frozen_replay_champion_levers_recovers_confirm_and_promote, test_frozen_replay_champion_levers_fails_closed_on_empty_knobs, test_frozen_replay_resolves_champion_confirm_arm"
+    }
+  ],
+  "eval_feasibility_confirmation": {
+    "note": "eval_version=e938_role_safe_all_targets_v2, eval_suites=smoke,held_out (8 records total: smoke=3, held_out=5). decode_progress.json for both arms shows measurement_complete=false, status=interrupted, processed_record_n=3/5 on held_out, mean total_ms per held_out record ~7.2-7.4s this attempt (~11s/record measured on c4's attempt -- consistent order of magnitude, some variance). All four snapshots in _DEFAULT_EVAL_VERSION_CANDIDATES (e938_role_safe_all_targets_v2, e842_harness_owned_slots_v1, e827_target_slots_only_v4, e763_symbol_only_eval_r2_20260722) carry identical smoke=3/held_out=5 suite sizes, so `_feasible_eval_version`'s candidate search cannot find one that fits promotion's suites within the ~70s arm budget minus overhead -- it correctly falls back to the default per its documented design rather than raising, which is why this is an honest measurement_incomplete rather than a hard failure. This is a decode-compute-bound structural limit given MAX_RUN_MINUTES=3, not a budget-sizing bug: stage_wall_minutes_for_role returns the policy-max (3, clamped to MAX_RUN_MINUTES) for both screening and promotion roles, and _arm_wall_minutes's symmetric two-arm split off MAX_HARNESS_WALL_SECONDS already dominates that value for both roles alike, so there is no slack to reallocate toward promotion's larger suite set without either violating MAX_RUN_MINUTES or reducing to fewer than the required 1-control/1-candidate arms.",
+    "decode_timeout_count_control": 0,
+    "decode_timeout_count_confirm": 0,
+    "wall_timeout_control": true,
+    "wall_timeout_confirm": true,
+    "smoke_suite_completed_both_arms": true,
+    "held_out_suite_completed_either_arm": false,
+    "held_out_records_processed_before_interrupt": {"control": 3, "confirm": 3, "of_n": 5}
+  },
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "steps": 20,
+    "steps_actual": 20,
+    "training_reused_from": "continuous-loop-20260802-continuous-openui-local--c94ddb78-c4 (frozen checkpoint replay; no retraining this cycle, per contracts.md evaluation-only resume)",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "eval_suites": "smoke,held_out",
+    "decode_timeout_seconds": 24.0,
+    "max_wall_minutes_per_experiment": 1.1666666666666667,
+    "checkpoint_reused": [
+      "runs/c20260802-continuous-openui-local--c94ddb78-c4-confirm/checkpoints/last.pt",
+      "runs/c20260802-continuous-openui-local--c94ddb78-c4-control/checkpoints/last.pt"
+    ]
+  },
+  "hypothesis": {
+    "control": "Matched control (levers off) for confirmatory retest of a quality-held champion.",
+    "confirm": "Component-edge supervision (source: c3) holds smoke quality and improves/holds held_out.structural_similarity under a full --ship-gates scoreboard.",
+    "lever": "component_edge_decode_weight / structural_aux_head_profile=component-edge",
+    "confirm_experiment_id": "c20260802-continuous-openui-local--c94ddb78-c6-confirm",
+    "control_experiment_id": "c20260802-continuous-openui-local--c94ddb78-c6-control",
+    "endpoint": {
+      "metric": "held_out.structural_similarity",
+      "role": "primary",
+      "direction": "increase",
+      "minimum_effect": 0.01
+    },
+    "champion_queue_source": {
+      "entry_id": "champ-continuous-openui-local-2-3-0d77af2fb9002464",
+      "source_campaign_id": "continuous-loop-20260802-continuous-openui-local--c94ddb78-c3",
+      "source_candidate_id": "c20260802-continuous-openui-local--c94ddb78-c3-component-edge",
+      "queue_status": "rejected (resolved at c4 completion, 2026-08-02T12:05:26Z, confirm_attempts=1, promote_attempts=0 -- this session's retry_measurement replayed the frozen c4 manifest and did not re-touch the champion queue, since open_champion is forced None on the retry_measurement path)"
+    }
+  },
+  "smoke_metrics": {
+    "n": 3,
+    "control": {
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "structural_similarity": 0.4166666666666667,
+      "binder_reference_f1": 0.9523809523809524,
+      "latency_ms_p50": 9779.53
+    },
+    "confirm": {
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "structural_similarity": 0.4166666666666667,
+      "binder_reference_f1": 0.9523809523809524,
+      "latency_ms_p50": 10369.86
+    },
+    "delta": {
+      "structural_similarity": 0.0,
+      "latency_ms_p50": 590.33
+    },
+    "held_out": {
+      "status": "measurement_incomplete",
+      "note": "evaluate_model stage killed by the wall-time guard before the held_out suite completed on either arm (3/5 records processed each); no scoreboard was written. No genuine held_out metric was measured this cycle, same as c4."
+    }
+  },
+  "sdlc_delivery": {
+    "positive_per_driver": false,
+    "positive_per_loop_quality_policy": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "measurement_incomplete:c20260802-continuous-openui-local--c94ddb78-c6-control:missing_scoreboard",
+      "measurement_incomplete:c20260802-continuous-openui-local--c94ddb78-c6-confirm:missing_scoreboard",
+      "wall_timeout:7f71efd9c329ecb07c163cff63c32957e40b6da19f05d86d2e628d3c619e7c62",
+      "empty_metrics:7f71efd9c329ecb07c163cff63c32957e40b6da19f05d86d2e628d3c619e7c62",
+      "wall_timeout:a809089ef399ccf0f751c57d2bb2b5b592e6043961c153683edd702c2bb1e25b",
+      "empty_metrics:a809089ef399ccf0f751c57d2bb2b5b592e6043961c153683edd702c2bb1e25b",
+      "primary_metric_null_or_worse:held_out.structural_similarity:control=0.4166666666666667 candidate=0.4166666666666667 improvement=0.0"
+    ],
+    "measurement_complete": false,
+    "fixture_volume_gate_hits": 0,
+    "reclassification_note": "Same reading as c4: the reported held_out.structural_similarity tie (0.4167=0.4167, improvement=0.0) is the completed smoke value carried forward as a placeholder, not a genuine held_out measurement. Treat this cycle as 'no comparison happened' on the model question; the code-level question (does the frozen-replay driver crash?) is answered and fixed."
+  },
+  "cycle_handoff": {
+    "climb_state": "inconclusive",
+    "ship_state": "blocked",
+    "actions": [
+      {"kind": "retry_measurement", "owner": "autotrain", "status": "queued_for_next_cycle", "reason": "measurement incomplete; replay the identical frozen arm (1/2 consecutive frozen replays so far)", "frozen_manifest_sha256": "a28fd1fe59a94f1a2a70c8fc78fed660e66c1da85e79d1bcfad0cb96c4f322c2"},
+      {"kind": "document", "owner": "documenting-experiment-results", "status": "completed_this_cycle"}
+    ],
+    "checkpoint_documentation_required": false,
+    "checkpoint_paths": []
+  },
+  "checkpoint_disposition": "No new checkpoints this cycle (training reused from c4; only evaluate_model re-ran). checkpoint_documentation_required=false -- c4's MODEL_CARD/README entry already covers these checkpoint paths.",
+  "recommendation_for_next_cycle": [
+    "infrastructure: one more automatic retry_measurement (2/2) is queued for the same frozen manifest (d136c228a5a967e6884abdbfd2d5de46f6700bd1a110ccdd88fc772a07d30a1f). Given the timeout reproduced identically after the driver bug fix (with training now free, i.e. the best-case scenario for this recipe), the second attempt is very unlikely to complete held_out either -- expect it to reach measurement.max_consecutive_frozen_replays=2 and trigger the typed repair_harness handoff action per contracts.md. That repair_harness action should NOT be answered by further budget-arithmetic changes: this cycle's investigation established the timeout is decode-compute-bound, not a budget-sizing defect, so there is no legitimate code-level repair available within the fixed MAX_RUN_MINUTES invariant. The honest disposition is to acknowledge the repair_harness action with this cycle's and c4's evidence (decode_progress.json, _feasible_eval_version's fallback design note) as the reason no further automatic replay is possible, and let the loop naturally fall through to a fresh cycle once the receipt is recorded.",
+    "policy: consider whether promotion/confirm cycle roles should structurally exclude held_out from continuous CPU-sandbox screening (i.e. only run held_out under a larger, explicitly-authorized compute budget outside the continuous loop's MAX_RUN_MINUTES cap) rather than repeatedly re-discovering the same decode-compute-bound timeout on every champion confirmation. This is a policy/architecture question for the loop owner, not something this session should force -- policy.v1.json's promotion_suites=[smoke, held_out] is an explicit choice, not a bug.",
+    "model: c3's component-edge lever remains unconfirmed on held_out and its champion-queue entry is now rejected (confirm_attempts=1, resolved at c4). No new model evidence was produced this cycle. Do not re-enqueue component-edge without a plan for how its held_out confirmation could actually complete.",
+    "lineage-wide: with continuous-openui-local-2's screening pool (c1 bounds, c2 component-plan, c3 component-edge) largely overlapping the parked continuous-openui-local lineage's 13-cycle screen, and this lineage's only promotion-role attempt (c4/c6) now twice blocked on the same structural held_out timeout, continued single-lever screening cycles in this lineage are low marginal value. Recommend the loop shift focus toward either (a) the decode-compiler investigation itself (the actual bottleneck behind both lineages' timeouts), or (b) a bottom-up SDLC review/closeout of accumulated non-positive evidence across both lineages, rather than generating more screening cycles that cannot reach a confirmed promotion under the current suite/budget combination."
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "90021cad314162099f2b3d80389e1b7c0287ba04",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v74",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v286",
+      "harness.autoresearch.experiment_campaign": "v62"
+    }
+  }
+}
