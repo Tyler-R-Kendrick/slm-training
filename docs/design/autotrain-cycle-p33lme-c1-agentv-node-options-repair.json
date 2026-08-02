@@ -1,0 +1,108 @@
+{
+  "schema": "autotrain_runtime_repair/v1",
+  "run_class": "continuous_autotrain_cycle",
+  "loop_id": "continuous-openui-p33lme",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-p33lme-489d3aa7-c1",
+  "cycle_index": 1,
+  "cycle_role": "screening",
+  "cycle_intent": "screening",
+  "upstream_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "integration_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "primary_metric": "smoke.structural_similarity",
+  "direction": "increase",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "steps": 20,
+  "device": "cpu",
+  "control_id": "c20260802-continuous-openui-p33lme-489d3aa7-c1-control",
+  "candidate_id": "c20260802-continuous-openui-p33lme-489d3aa7-c1-bounds",
+  "baseline_trainable_params": 1608962,
+  "candidate_trainable_params": 1608962,
+  "harness_signal": {
+    "signal_type": "HarnessSignalV1",
+    "family": "model_build",
+    "component": "evals.agentv",
+    "owner_module": "src/slm_training/evals/agentv.py",
+    "reproduced_error": "RuntimeError: AgentV SDK evaluation failed: node: --import tsx is not allowed in NODE_OPTIONS",
+    "observed_command": [
+      "python", "-m", "scripts.evaluate_model", "--test-dir",
+      "e938_role_safe_all_targets_v2", "--ship-gates", "--honest-slot-contract",
+      "--slot-contract-constrained-decode", "--train-version", "wf_smoke_v2",
+      "--suites", "smoke", "--decode-timeout-seconds", "24.0", "--local-files-only"
+    ],
+    "exit_code": 1,
+    "decode_outcome": "completed_document_n=3/3, but the AgentV SDK publish step raised before scoreboard.json was written",
+    "root_cause": "publish_agentv_evaluation spawned node via subprocess.run without clearing an inherited NODE_OPTIONS; this session's environment injects NODE_OPTIONS=\"--import tsx\" ... --max-old-space-size=8192, which this Node 22 build rejects with exit 9 on every invocation, not only for the missing-SDK path",
+    "npm_ci_needed": true,
+    "npm_ci_result": "added 267 packages (node_modules/@agentv/core resolved after npm ci; was previously absent in this checkout)"
+  },
+  "repair": {
+    "commit": "a82eea405548cea5fcc486c3332823e2e3b008cf",
+    "files": [
+      "src/slm_training/evals/agentv.py",
+      "tests/test_evals/test_agentv.py",
+      "src/slm_training/resources/versions.json"
+    ],
+    "change": "Added _sanitized_env() in src/slm_training/evals/agentv.py mirroring the existing graphql-js bridge guard (src/slm_training/dsl/grammar/backends/graphql_js.py::_sanitized_env); publish_agentv_evaluation now passes env=_sanitized_env() to subprocess.run so the node child process always gets NODE_OPTIONS=\"\".",
+    "secondary_fix": "Two pre-existing test_agentv.py fixtures (test_model_ship_cases_fail_closed_on_missing_suites, test_agentv_model_bundle_cannot_pass_a_smoke_only_run) had drifted from the current smoke ship-gate policy, which now also gates ast_beq_rate and canonical_beq_rate; fixtures were missing those fields, producing stale actual=None assertions unrelated to the metric under test. Added exact_match/canonical_beq_rate to the fixture suites and corrected the expected passed count (7 -> 9) for the fully-passing-smoke scenario. No gate was weakened; the fixture now honestly supplies every gated field.",
+    "component_bump": {
+      "component": "evals.agentv",
+      "from": "v6",
+      "to": "v7"
+    },
+    "regression_test": "test_agentv_runner_sanitizes_inherited_node_options"
+  },
+  "cycle_outcome": {
+    "positive": false,
+    "stack_layer": false,
+    "action": "no_stack_layer_non_positive",
+    "reasons": [
+      "measurement_incomplete:c20260802-continuous-openui-p33lme-489d3aa7-c1-control:missing_scoreboard",
+      "measurement_incomplete:c20260802-continuous-openui-p33lme-489d3aa7-c1-bounds:missing_scoreboard",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.0575 candidate=0.0575 improvement=0.0"
+    ],
+    "control_metrics": {
+      "latency_ms_p50": 1281.78,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "structural_similarity": 0.0575,
+      "binder_reference_f1": 0.6333333333333333
+    },
+    "candidate_metrics": {
+      "latency_ms_p50": 1345.59,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "structural_similarity": 0.0575,
+      "binder_reference_f1": 0.6333333333333333
+    },
+    "policy_sha256": "c1580671ef01bc2a04f857d59edcec423b05e0e2c012a18c5f60616ad0803994",
+    "policy_version": "v4"
+  },
+  "priorities": [
+    {
+      "schema_version": "NextRunPriorityV1",
+      "rank": 1,
+      "area": "infrastructure",
+      "hypothesis": "The measurement is incomplete; replay the exact frozen control and candidate before testing a new hypothesis.",
+      "evidence_ids": [
+        "campaign:continuous-loop-20260802-continuous-openui-p33lme-489d3aa7-c1"
+      ],
+      "confidence": 0.95,
+      "expected_information_gain": "Completes the preregistered comparison without treating partial train or decode telemetry as model evidence.",
+      "authority": "observed_result",
+      "disposition": "experiment_next",
+      "proposed_experiment_id": "c20260802-continuous-openui-p33lme-489d3aa7-c1-bounds"
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "a82eea405548cea5fcc486c3332823e2e3b008cf",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.train": "v28",
+      "harness.experiment_feature_flags": "v4",
+      "evals.agentv": "v7"
+    },
+    "stamped_at": "2026-08-02T11:35:36+00:00"
+  }
+}
