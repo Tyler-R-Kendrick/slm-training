@@ -1794,7 +1794,7 @@
       ]
     },
     "evals.agentv": {
-      "version": "v6",
+      "version": "v7",
       "kind": "harness",
       "paths": [
         "src/slm_training/evals/agentv.py",
@@ -1802,6 +1802,11 @@
         "tests/test_evals/test_agentv.py"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-08-02T18:31:44+00:00",
+          "note": "fix(evals.agentv): sanitize NODE_OPTIONS on the node runner subprocess (mirrors dsl/grammar/backends/graphql_js.py's _sanitized_env), unblocking continuous-loop evaluation in fresh containers whose session environment injects an incompatible NODE_OPTIONS (e.g. --import tsx), which previously raised exit 9 and failed publish_agentv_evaluation closed; added a regression test. Also repaired pre-existing test debt: the smoke-suite fixtures in test_model_ship_cases_fail_closed_on_missing_suites and test_agentv_model_bundle_cannot_pass_a_smoke_only_run predated the ast_beq_rate/canonical_beq_rate additions to _REQUIRED_METRICS and asserted stale pass/fail counts; supplied the now-required metrics and corrected the expected counts (no gate/threshold change)."
+        },
         {
           "version": "v6",
           "date": "2026-07-30T10:18:42-05:00",
