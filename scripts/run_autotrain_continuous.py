@@ -3500,6 +3500,48 @@ def _completed_candidate_priorities(
     return tuple(NextRunPriorityV1.model_validate(item) for item in rows)
 
 
+def _queued_candidate_priorities(
+    candidate_id: str, evidence_id: str
+) -> tuple[NextRunPriorityV1, ...]:
+    """Project the real successor after a screening candidate enters the queue."""
+
+    return (
+        NextRunPriorityV1(
+            rank=1,
+            area="evaluation",
+            hypothesis=(
+                "Confirm the fixture candidate on a fresh seed with the exact "
+                "size-matched treatment and control recipes before promotion."
+            ),
+            evidence_ids=(evidence_id,),
+            confidence=0.95,
+            expected_information_gain=(
+                "Tests whether the held-out quality gain reproduces while exposing "
+                "the observed binder and latency tradeoffs."
+            ),
+            authority="observed_result",
+            disposition="experiment_next",
+            proposed_experiment_id=f"{candidate_id}-fresh-confirmation",
+        ),
+        NextRunPriorityV1(
+            rank=2,
+            area="lean_model",
+            hypothesis=(
+                "Keep promotion formal preflight locked until fresh confirmation "
+                "establishes a champion."
+            ),
+            evidence_ids=(evidence_id,),
+            confidence=1.0,
+            expected_information_gain=(
+                "Prevents screening evidence from bypassing theorem-backed "
+                "promotion obligations."
+            ),
+            authority="lean_assumption",
+            disposition="monitor",
+        ),
+    )
+
+
 def _completed_retry_priorities(
     matrix: dict[str, Any], candidate_id: str
 ) -> tuple[NextRunPriorityV1, ...]:
@@ -3997,6 +4039,12 @@ def _write_cycle_handoff(
             resolved_infrastructure=False,
             skip_slugs=skip_slugs,
         )
+    elif (
+        cycle_intent in {"screening", "promotion"}
+        and not measurement_incomplete
+        and delivery.get("positive")
+    ):
+        priorities = _queued_candidate_priorities(candidate_id, evidence_id)
     else:
         priorities = tuple(
             NextRunPriorityV1.model_validate(item)

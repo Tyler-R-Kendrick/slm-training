@@ -884,6 +884,22 @@ def test_completed_confirmation_that_reholds_steers_to_promotion() -> None:
     assert "re-held" in priorities[0].hypothesis
 
 
+def test_queued_candidate_priorities_require_fresh_confirmation_before_lean() -> None:
+    priorities = _mod._queued_candidate_priorities(
+        "cycle-candidate", "campaign:cycle"
+    )
+
+    assert priorities[0].area == "evaluation"
+    assert priorities[0].authority == "observed_result"
+    assert priorities[0].proposed_experiment_id == (
+        "cycle-candidate-fresh-confirmation"
+    )
+    assert "fresh seed" in priorities[0].hypothesis
+    assert priorities[1].area == "lean_model"
+    assert priorities[1].authority == "lean_assumption"
+    assert "until fresh confirmation" in priorities[1].hypothesis
+
+
 def test_predecessor_completed_null_drives_next_screening_arm(tmp_path: Path) -> None:
     root = tmp_path / "autoresearch"
     camp = root / "continuous-loop-20260731-c1729"

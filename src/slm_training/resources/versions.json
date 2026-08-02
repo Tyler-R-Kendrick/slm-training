@@ -2641,7 +2641,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v81",
+      "version": "v82",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2681,6 +2681,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v82",
+          "date": "2026-08-02",
+          "note": "Replace stale preregistered priorities after a fixture candidate is queued with an explicit fresh-seed confirmation action and a visible Lean promotion-preflight lock."
+        },
         {
           "version": "v81",
           "date": "2026-08-02",
@@ -7240,6 +7245,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1776 fixture-only component-inventory candidate checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
         {
           "version": "v3",
           "date": "2026-08-02",
