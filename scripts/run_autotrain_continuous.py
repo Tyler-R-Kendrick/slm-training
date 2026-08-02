@@ -978,6 +978,17 @@ def _recent_completed_nonpositive_slugs(
         elif campaign_loop and campaign_loop != loop_id:
             break
         candidate_id = str(delivery.get("candidate_id") or "")
+        handoff_reasons = {str(item) for item in handoff.get("reasons") or []}
+        runtime_terminal = bool(
+            handoff.get("climb_state") == "rejected"
+            and candidate_id
+            and (
+                f"candidate_runtime_rejected_after_frozen_replay:{candidate_id}"
+                in handoff_reasons
+                or f"candidate_runtime_unblock_reproduced:{candidate_id}"
+                in handoff_reasons
+            )
+        )
         intent = str(
             delivery.get("cycle_intent")
             or handoff.get("cycle_intent")
@@ -986,9 +997,12 @@ def _recent_completed_nonpositive_slugs(
         )
         if (
             candidate_id
-            and intent in {"screening", "promotion"}
             and delivery.get("positive") is False
-            and delivery.get("measurement_complete") is True
+            and (delivery.get("measurement_complete") is True or runtime_terminal)
+            and (
+                intent in {"screening", "promotion"}
+                or runtime_terminal
+            )
         ):
             matrix = _read_json(camp_dir / "matrix-proposal.json")
             knobs = next(

@@ -665,8 +665,14 @@ def loop_result_rows(
                 handoff = json.loads(handoff_path.read_text(encoding="utf-8"))
             except json.JSONDecodeError:
                 handoff = {}
-        runtime_rejected_candidate = _runtime_rejected_candidate(handoff)
-        runtime_rejected = runtime_rejected_candidate == outcome.experiment_id
+        runtime_disposition = _runtime_replay_disposition(
+            handoff, outcome.experiment_id
+        )
+        runtime_rejected = runtime_disposition in {
+            "candidate_rejected",
+            "control_rejected",
+        }
+        runtime_unblock = runtime_disposition == "candidate_unblock"
         gate_rejection = _completed_gate_rejection(root, campaign, outcome)
         params = _metric_text(outcome.metrics, "trainable_params")
         if params == "—":
@@ -706,23 +712,31 @@ def loop_result_rows(
                     "complete (runtime reject)"
                     if runtime_rejected
                     else (
-                        "complete (gate reject)"
-                        if gate_rejection
-                        else _measurement_text(outcome)
+                        "complete (runtime unblock; quality reject)"
+                        if runtime_unblock
+                        else (
+                            "complete (gate reject)"
+                            if gate_rejection
+                            else _measurement_text(outcome)
+                        )
                     )
                 ),
                 "diagnosis": (
                     "model_runtime"
-                    if runtime_rejected
-                    else diagnosis.target if diagnosis is not None else "—"
+                    if runtime_rejected or runtime_unblock
+                    else diagnosis.target
+                    if diagnosis is not None
+                    else "—"
                 ),
                 "evidence_class": handoff.get("evidence_class", "fixture"),
                 "climb": handoff.get("climb_state", "—"),
                 "ship": handoff.get("ship_state", "blocked"),
                 "status": (
                     "rejected"
-                    if runtime_rejected
-                    else "completed" if gate_rejection else outcome.status
+                    if runtime_rejected or runtime_unblock
+                    else "completed"
+                    if gate_rejection
+                    else outcome.status
                 ),
                 "campaign_id": campaign.campaign_id,
             }
@@ -737,16 +751,22 @@ def loop_result_rows(
     )
 
 
-def _runtime_rejected_candidate(handoff: dict[str, Any]) -> str | None:
-    prefix = "candidate_runtime_rejected_after_frozen_replay:"
-    return next(
-        (
-            str(reason)[len(prefix) :]
-            for reason in handoff.get("reasons") or []
-            if str(reason).startswith(prefix)
-        ),
-        None,
+def _runtime_replay_disposition(
+    handoff: dict[str, Any], experiment_id: str
+) -> str | None:
+    """Return the authoritative frozen-replay disposition for one arm."""
+
+    prefixes = (
+        ("candidate_runtime_rejected_after_frozen_replay:", "candidate_rejected"),
+        ("control_runtime_rejected_after_frozen_replay:", "control_rejected"),
+        ("candidate_runtime_unblock_reproduced:", "candidate_unblock"),
     )
+    for reason in handoff.get("reasons") or []:
+        text = str(reason)
+        for prefix, disposition in prefixes:
+            if text == f"{prefix}{experiment_id}":
+                return disposition
+    return None
 
 
 def _completed_gate_rejection(
@@ -925,18 +945,31 @@ def loop_diagnostic_rows(
                 handoff = json.loads(handoff_path.read_text(encoding="utf-8"))
             except json.JSONDecodeError:
                 handoff = {}
-        runtime_rejected_candidate = _runtime_rejected_candidate(handoff)
-        runtime_rejected = runtime_rejected_candidate == outcome.experiment_id
-        if runtime_rejected:
+        runtime_disposition = _runtime_replay_disposition(
+            handoff, outcome.experiment_id
+        )
+        runtime_rejected = runtime_disposition in {
+            "candidate_rejected",
+            "control_rejected",
+        }
+        runtime_unblock = runtime_disposition == "candidate_unblock"
+        if runtime_rejected or runtime_unblock:
+            signal = (
+                "candidate completed while the matched control decode timeout "
+                "reproduced; absolute candidate quality rejected"
+                if runtime_unblock
+                else "candidate-only decode timeout reproduced while the matched "
+                "control completed"
+                if runtime_disposition == "candidate_rejected"
+                else "control-only decode timeout reproduced while the matched "
+                "candidate completed"
+            )
             rows.append(
                 {
                     "cycle": campaign.cycle_index,
                     "source": "frozen_replay",
                     "area": "model_runtime",
-                    "signal": (
-                        "candidate-only decode timeout reproduced while the "
-                        "matched control completed"
-                    ),
+                    "signal": signal,
                     "authority": "reproduced",
                     "confidence": "1.00",
                     "disposition": "retire arm; test a distinct hypothesis",
@@ -944,7 +977,8 @@ def loop_diagnostic_rows(
                 }
             )
         if diagnosis is not None and not (
-            runtime_rejected and diagnosis.target == "infrastructure"
+            (runtime_rejected or runtime_unblock)
+            and diagnosis.target == "infrastructure"
         ):
             rows.append(
                 {
@@ -1363,6 +1397,8 @@ def _lean_text(optimum: Any | None, handoff: dict[str, Any] | None = None) -> st
             return str(formal_status)
         if handoff.get("cycle_intent") == "confirm":
             return "not_applicable:confirmation"
+        if handoff.get("cycle_intent") == "retry_measurement":
+            return "not_applicable:retry_measurement"
         if handoff.get("cycle_role") == "promotion":
             return "not_applicable:no_champion"
         if handoff.get("cycle_role") == "screening":

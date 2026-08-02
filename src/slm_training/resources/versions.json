@@ -2641,7 +2641,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v80",
+      "version": "v81",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2681,6 +2681,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v81",
+          "date": "2026-08-02",
+          "note": "Project both sides of a reproduced control-only timeout as model-runtime evidence, label the completing candidate as an absolute-quality rejection, and exhaust terminal runtime-rejected arms before choosing the next hypothesis."
+        },
         {
           "version": "v80",
           "date": "2026-08-02",

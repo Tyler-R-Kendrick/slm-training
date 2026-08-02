@@ -1079,6 +1079,28 @@ def test_recent_completed_nonpositive_slugs_follow_predecessor_chain(
         "component-plan"
     }
 
+    newest_delivery = json.loads(newest.read_text())
+    candidate_id = newest_delivery["candidate_id"]
+    newest_delivery["cycle_intent"] = "retry_measurement"
+    newest.write_text(json.dumps(newest_delivery))
+    (root / str(predecessor) / "cycle_handoff.json").write_text(
+        json.dumps(
+            {
+                "loop_id": "loop-1",
+                "cycle_intent": "screening",
+                "climb_state": "rejected",
+                "reasons": [
+                    f"candidate_runtime_unblock_reproduced:{candidate_id}",
+                    "control_runtime_rejected_after_frozen_replay:control",
+                ],
+            }
+        )
+    )
+    assert _mod._recent_completed_nonpositive_slugs(root, predecessor) == {
+        "component-plan",
+        "component-edge",
+    }
+
 
 def test_predecessor_reclassifies_stale_positive_under_current_policy(
     tmp_path: Path,
