@@ -694,7 +694,7 @@ def loop_result_rows(
                 summary = json.loads(summary_path.read_text(encoding="utf-8"))
                 params = str(int(summary["track"]["trainable_params"]))
             except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError):
-                params = "—"
+                params = _reused_training_params(outcome)
         rows.append(
             {
                 "cycle": campaign.cycle_index,
@@ -756,6 +756,38 @@ def loop_result_rows(
             str(row["experiment"]),
         ),
     )
+
+
+def _reused_training_params(outcome: ExperimentOutcome) -> str:
+    """Recover content-bound parameter evidence from a frozen training reuse."""
+
+    for stage in outcome.stage_telemetry:
+        if stage.get("stage_kind") != "reused_training":
+            continue
+        params = stage.get("trainable_params")
+        if isinstance(params, int) and not isinstance(params, bool) and params > 0:
+            return str(params)
+        summary_path = stage.get("source_train_summary")
+        expected_sha = stage.get("source_train_summary_sha256")
+        if not isinstance(summary_path, str) or not isinstance(expected_sha, str):
+            continue
+        try:
+            raw = Path(summary_path).read_bytes()
+        except OSError:
+            continue
+        if hashlib.sha256(raw).hexdigest() != expected_sha:
+            continue
+        try:
+            summary_params = json.loads(raw)["track"]["trainable_params"]
+        except (KeyError, TypeError, json.JSONDecodeError):
+            continue
+        if (
+            isinstance(summary_params, int)
+            and not isinstance(summary_params, bool)
+            and summary_params > 0
+        ):
+            return str(summary_params)
+    return "—"
 
 
 def _project_confirmation_queue_status(

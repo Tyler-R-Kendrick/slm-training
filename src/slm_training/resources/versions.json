@@ -2646,7 +2646,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v95",
+      "version": "v96",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2686,6 +2686,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v96",
+          "date": "2026-08-02",
+          "note": "Recover historical frozen-replay parameter counts only from content-bound source train summaries so the terminal result matrix preserves size evidence."
+        },
         {
           "version": "v95",
           "date": "2026-08-02",

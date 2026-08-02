@@ -31,7 +31,10 @@ arm can be rejected and carries the source trainable-parameter count into
 reused outcomes. Eval harness v77 restores I4 batched request execution even
 when single-record stats are also available; `collect_decode_stats` retains
 row-tagged evidence, and each scoreboard now discloses configured/max batch
-size and chunk count.
+size and chunk count. Campaign harness v96 also restores the historical c1797
+parameter cells in the terminal matrix from the source train summary only when
+its recorded SHA-256 still matches; missing or changed source evidence remains
+`—` rather than silently trusting a path.
 
 Next priority: replay the exact pair once under eval v77 after the canonical
 repair. A complete result may be compared. If both arms remain incomplete,
