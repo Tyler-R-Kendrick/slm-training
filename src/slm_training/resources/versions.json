@@ -1809,6 +1809,11 @@
         },
         {
           "version": "v6",
+          "date": "2026-08-02",
+          "note": "no-bump: refresh stale smoke-suite test fixtures with ast_beq_rate/canonical_beq_rate so test_agentv.py matches the already-shipped v6 gate policy; no harness behavior change"
+        },
+        {
+          "version": "v6",
           "date": "2026-07-30T10:18:42-05:00",
           "note": "Publish supplied suite reachability as raw AgentEvals actual-equals-one assertions in the canonical model ship-gate cases"
         },
