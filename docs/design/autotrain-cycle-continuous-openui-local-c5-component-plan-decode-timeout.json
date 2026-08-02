@@ -1,0 +1,77 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c5",
+  "cycle_index": 5,
+  "cycle_intent": "screening",
+  "evidence_class": "fixture",
+  "decision": "decode_timeout_soft_failure",
+  "scoreable": false,
+  "comparison": {
+    "matched_dimensions": [
+      "train_version",
+      "steps",
+      "batch_size",
+      "seed",
+      "context_backend"
+    ],
+    "treatment": "component_plan quality hypothesis (component_plan_decode_weight=1.0, compiler_decode_mode=tree, grammar_constrained) vs control (compiler_decode_mode=off)",
+    "prediction_identical": null,
+    "parameter_delta": null
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c5-control",
+      "status": "completed",
+      "trainable_params": 1755760,
+      "measurement": "complete",
+      "gate_result": "reject",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "structural_similarity": 0.04306666666666667,
+        "meaningful_program_rate": 0.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "binder_reference_f1": 0.8222222222222222,
+        "latency_ms_p50": 4316.26
+      }
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c5-component-plan",
+      "status": "failed",
+      "trainable_params": 1755760,
+      "measurement": "incomplete",
+      "completed_document_n": 0,
+      "incomplete_document_n": 3,
+      "decode_timeout_count": 3,
+      "evaluation_wall_seconds": 29.015976,
+      "effective_decode_timeout_seconds": 24.0,
+      "reason": "All 3 fixture documents hit the per-document decode timeout (24s) inside the 29s evaluation wall budget; compiler_decode_mode=tree with component_plan_decode_weight=1.0 (grammar-constrained tree decode + generate_max_attempts=3) is substantially more expensive per token than the compiler_decode_mode=off baseline used by cycles 1-4, and this sandboxed CPU host cannot complete even one full grammar-constrained decode inside the shared wall budget at this screening scale."
+    }
+  ],
+  "ship_gates_pass": false,
+  "lean": "not_applicable:screening",
+  "root_cause": "Not a harness code defect. compiler_decode_mode=tree + component_plan_decode_weight=1.0 (grammar-constrained tree decode with generate_max_attempts=3) is a fundamentally more expensive decode path than the compiler_decode_mode=off random-mask baseline every prior cycle in this loop instance used. On this session's CPU-only sandbox host, MAX_RUN_MINUTES=3 caps the whole experiment, leaving only ~29s of evaluation wall budget for n=3 documents against a 24s per-document decode timeout -- not enough headroom for tree-constrained decode to complete even one document. This matches the documented soft-failure class ('ship gates fail on fixture n, null lever deltas, timeouts never stop the loop') rather than a repairable bug: no stack trace, no exception, no incorrect output -- the decode path is simply slower than the available wall budget at this hardware/knob combination.",
+  "fix": "No code change. This is a knob/scale mismatch (expensive constrained-decode candidate vs a wall-capped CPU fixture screen), not a canonical harness defect. Per continuous.md's self-heal guidance ('change knobs and re-run' when evidence does not name a canonical harness family), the correct response is to not re-select compiler_decode_mode=tree candidates at this wall cap on this host, and to route the next hypothesis toward the driver's own next-ranked priority (grammar_completion_bounds/control-style knobs already proven to complete inside the wall budget) rather than retrying the identical timing-bound arm.",
+  "next_priority": {
+    "area": "model",
+    "hypothesis": "Prefer compiler_decode_mode=off (or otherwise wall-budget-compatible) candidates for CPU-sandboxed screening cycles; reserve compiler_decode_mode=tree component-plan comparisons for hosts/wall caps that can complete at least one full grammar-constrained decode.",
+    "required_controls": [
+      "decode_timeout_seconds >= observed CPU tree-decode latency, or",
+      "evaluation_wall_seconds budget increased for tree-mode arms, or",
+      "compiler_decode_mode=off substituted for the next screening candidate"
+    ]
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "6bceec6848f4ec25fed86c7be09d363dd31dc19b",
+    "code_dirty": false,
+    "components": {
+      "evals.agentv": "v7",
+      "harness.model_build.eval": "v77",
+      "harness.experiment_feature_flags": "v4"
+    },
+    "stamped_at": "2026-08-02T23:47:06.891156+00:00"
+  }
+}
