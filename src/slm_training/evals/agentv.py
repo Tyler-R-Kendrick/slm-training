@@ -12,6 +12,14 @@ from typing import Any, Sequence
 from slm_training.bridge_utils import checkout_roots
 
 
+def _sanitized_env() -> dict[str, str]:
+    # Session environments may inject NODE_OPTIONS entries (e.g. --import tsx)
+    # that this Node build rejects, silently killing the AgentV subprocess.
+    env = dict(os.environ)
+    env["NODE_OPTIONS"] = ""
+    return env
+
+
 def _agentv_runtime(repo_root: Path) -> tuple[Path, Path]:
     """Resolve the pinned SDK from this checkout or its Git common checkout."""
     override = os.getenv("AGENTV_RUNNER")
@@ -122,6 +130,7 @@ def publish_agentv_evaluation(
         check=False,
         capture_output=True,
         text=True,
+        env=_sanitized_env(),
     )
     if completed.returncode:
         detail = (completed.stderr or completed.stdout).strip()

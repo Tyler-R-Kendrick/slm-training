@@ -1794,7 +1794,7 @@
       ]
     },
     "evals.agentv": {
-      "version": "v6",
+      "version": "v7",
       "kind": "harness",
       "paths": [
         "src/slm_training/evals/agentv.py",
@@ -1802,6 +1802,11 @@
         "tests/test_evals/test_agentv.py"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-08-02T16:36:00+00:00",
+          "note": "Clear inherited NODE_OPTIONS before spawning the AgentV node subprocess (matches the graphql_js.py _sanitized_env() pattern) so session-injected entries like --import tsx no longer crash the eval bridge with exit 9; added a regression test asserting the child env carries NODE_OPTIONS=\"\". Also repaired two stale test_agentv.py fixtures that predated the ast_beq_rate/canonical_beq_rate ship-gate criteria: their smoke suite dicts omitted those keys, so model_ship_gate_cases synthesized extra missing-metric failures unrelated to the assertions under test; added the two keys with passing values and updated the expected passed/failed counts."
+        },
         {
           "version": "v6",
           "date": "2026-07-30T10:18:42-05:00",
