@@ -22,6 +22,9 @@ numbers/inventory without re-authoring classifiers.
 - **Screening primary** (`smoke.structural_similarity`, increase) + parse and binder-reference non-regression
 - **Promotion primary** (held-out quality, increase, locked eval / multi-seed flags)
 - **Cadence** `screening_cycles_per_promotion` (default 3 screening : 1 promotion)
+- **Empty promotion slots** fall back to smoke-only screening when the policy
+  requires a prior screening win; cadence never grants held-out access to a
+  fresh rotating arm
 - **Exhausted identity fields** (claim class, train/eval version, primary, direction, data digest)
 - **Recipe-tweak knobs** + null cap → regime-transition pressure
 - **Phase A positive rules** (fixture `n` alone, executable unblock, size-match / EG_params, minimum efficiency effect)
@@ -145,6 +148,7 @@ so sticky knobs get a confirmatory retest before more thrash.
 | Enqueue | Phase A `positive` **and** quality signal (`quality_held:` / `quality_metric_win:`) on any registered screening lever — not pure matched control |
 | Confirm | Next cycle matrix is control + `-confirm` — **same levers, new seed** (cadence role/suites unchanged); max **2** confirm attempts then `rejected` |
 | Promote | On **promotion cadence**, a `confirmed` head becomes control + `-promote` under promotion suites/seeds |
+| Empty promotion slot | With no queued/confirmed prior screening winner, execute a diagnostic smoke-only screening cycle; do not select a fresh arm on held-out data |
 | Dedup | Same open lever fingerprint is not re-enqueued; fingerprint excludes cycle-local `steps` jitter. A causal family saturates after two terminal attempts on the same integrated code and reopens only after code identity changes. |
 
 ### Proof driver (promote authorization)

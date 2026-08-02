@@ -14,6 +14,7 @@ from slm_training.autoresearch.climb_policy import (
     classify_positive_metrics,
     climb_policy_content_digest,
     cycle_role_for_index,
+    eval_suites_for_role,
     is_recipe_tweak_knobs,
     load_climb_policy,
     load_loop_exhausted_ledger,
@@ -93,6 +94,22 @@ def test_cycle_cadence_screening_then_promotion() -> None:
         assert_cycle_cadence(policy, cycle_index=i, claimed_role="screening")
     assert cycle_role_for_index(policy, n + 1) == "promotion"
     assert_cycle_cadence(policy, cycle_index=n + 1, claimed_role="promotion")
+    fallback_role = assert_cycle_cadence(
+        policy,
+        cycle_index=n + 1,
+        claimed_role="screening",
+        claim_class="diagnostic",
+        promotion_target_available=False,
+    )
+    assert fallback_role == "screening"
+    assert eval_suites_for_role(policy, fallback_role) == ("smoke",)
+    with pytest.raises(HillClimbError, match="cadence violation"):
+        assert_cycle_cadence(
+            policy,
+            cycle_index=n + 1,
+            claimed_role="screening",
+            promotion_target_available=True,
+        )
     with pytest.raises(HillClimbError, match="cadence violation"):
         assert_cycle_cadence(policy, cycle_index=1, claimed_role="promotion")
     with pytest.raises(HillClimbError, match="promotion-role"):

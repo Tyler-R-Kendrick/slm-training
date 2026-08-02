@@ -3544,6 +3544,24 @@ def test_arm_wall_budget_is_symmetric_and_reserves_orchestration() -> None:
     assert reserved < MAX_HARNESS_WALL_SECONDS
 
 
+def test_empty_promotion_slot_falls_back_but_frozen_replay_does_not() -> None:
+    args = {
+        "cadence_role": "promotion",
+        "promotion_target_available": False,
+        "prior_screening_win_required": True,
+    }
+    assert _mod._empty_promotion_slot_falls_back(replay=None, **args)
+    assert not _mod._empty_promotion_slot_falls_back(replay=object(), **args)
+    assert not _mod._empty_promotion_slot_falls_back(
+        replay=None,
+        **{**args, "promotion_target_available": True},
+    )
+    assert not _mod._empty_promotion_slot_falls_back(
+        replay=None,
+        **{**args, "cadence_role": "screening"},
+    )
+
+
 def test_formal_budget_reserves_two_full_arms_and_finalization(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

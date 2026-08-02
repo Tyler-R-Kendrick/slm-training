@@ -6119,6 +6119,23 @@ def _effective_primary_metric(
     return effective
 
 
+def _empty_promotion_slot_falls_back(
+    *,
+    cadence_role: str,
+    replay: object | None,
+    promotion_target_available: bool,
+    prior_screening_win_required: bool,
+) -> bool:
+    """Keep fresh hypotheses out of promotion suites and held-out selection."""
+
+    return (
+        replay is None
+        and cadence_role == "promotion"
+        and not promotion_target_available
+        and prior_screening_win_required
+    )
+
+
 def run_cycle(
     *,
     cwd: Path,
@@ -6135,6 +6152,7 @@ def run_cycle(
     from slm_training.autoresearch.climb_policy import (
         assert_cycle_cadence,
         cycle_role_for_index,
+        eval_suites_for_role,
         load_climb_policy,
         primary_for_role,
         stage_wall_minutes_for_role,
@@ -6232,15 +6250,15 @@ def run_cycle(
         _load_frozen_replay(root, loop_id, pred) if require_action_receipts else None
     )
     cycle = idx + 1
-    role = (
+    cadence_role = (
         str(replay["handoff"].cycle_role)
         if replay is not None
         else cycle_role_for_index(policy, cycle)
     )
-    arm_wall_minutes = _arm_wall_minutes(stage_wall_minutes_for_role(policy, role))
     # Champion queue: confirm open heads; promote confirmed heads on promotion
-    # cadence; otherwise thrash with rotated levers (Change B/C). Cadence role
-    # stays screening|promotion for suites/claim_class legality.
+    # cadence; otherwise keep rotating screening levers. A promotion cadence
+    # slot is an opportunity, not authority to expose a fresh arm to held-out
+    # suites before it has a prior screening win.
     queue_path = _champion_queue_path(root, loop_id)
     queue_entries = _load_champion_queue(queue_path)
     # Pre-execution crashes do not spend bounded champion attempts. Promotion
@@ -6255,59 +6273,23 @@ def run_cycle(
     open_champion = _queue_head_open(queue_entries)
     confirmed_champion: dict[str, Any] | None = None
     promoting_champion: dict[str, Any] | None = None
+    role = cadence_role
     if replay is not None:
         open_champion = None
         cycle_intent = "retry_measurement"
     elif open_champion is not None:
         cycle_intent = "confirm"
-    elif role == "promotion":
+    elif cadence_role == "promotion":
         confirmed_champion = _queue_head_confirmed(queue_entries)
         if confirmed_champion is not None:
             cycle_intent = "promote"
             promoting_champion = confirmed_champion
         else:
-            # No confirmed champion — still run promotion measurement suite but
-            # thrash with rotation (policy: prefer prior screening win).
-            cycle_intent = "promotion"
+            role = "screening"
+            cycle_intent = "screening"
     else:
         cycle_intent = "screening"
-    claim_for_role = (
-        str(policy.defaults.get("claim_class_promotion") or "promotion_candidate")
-        if role == "promotion"
-        else str(policy.defaults.get("claim_class_screening") or "diagnostic")
-    )
-    if replay is None:
-        assert_cycle_cadence(
-            policy,
-            cycle_index=cycle,
-            claimed_role=role,
-            claim_class=claim_for_role,
-        )
-    role_primary = primary_for_role(policy, role)
-    # Screening may preserve a same-leaf CLI suite override for compatibility.
-    # Promotion always uses the policy-owned held-out endpoint.
-    effective_primary = _effective_primary_metric(
-        role=role,
-        policy_metric=str(role_primary["metric"]),
-        requested_metric=primary_metric,
-        replay_metric=(str(replay["handoff"].primary_metric) if replay else None),
-    )
     campaign_id = _campaign_id(loop_id, cycle)
-    _write_loop_state(
-        root,
-        AutotrainLoopStateV1(
-            loop_id=loop_id,
-            state="RUNNING",
-            phase="running",
-            active_campaign_id=campaign_id,
-            last_completed_campaign_id=pred,
-            cycle_index=cycle,
-            next_action="run bounded campaign",
-            pid=os.getpid(),
-            active_stage="orchestration",
-            integration_commit=integration,
-        ),
-    )
     if open_champion is not None:
         attempts = _bump_champion_attempt(
             root=root,
@@ -6390,6 +6372,60 @@ def run_cycle(
                 f"attempt={attempts}/{_MAX_PROMOTE_ATTEMPTS} campaign={campaign_id}",
                 flush=True,
             )
+    promotion_target_available = bool(open_champion or promoting_champion)
+    if _empty_promotion_slot_falls_back(
+        cadence_role=cadence_role,
+        replay=replay,
+        promotion_target_available=promotion_target_available,
+        prior_screening_win_required=bool(
+            policy.cadence.get("promotion_requires_prior_screening_win", True)
+        ),
+    ):
+        role = "screening"
+        cycle_intent = "screening"
+        print(
+            "PROMOTION_SLOT_FALLBACK reason=no_prior_screening_winner "
+            f"cycle={cycle} suites={','.join(eval_suites_for_role(policy, role))}",
+            flush=True,
+        )
+    arm_wall_minutes = _arm_wall_minutes(stage_wall_minutes_for_role(policy, role))
+    claim_for_role = (
+        str(policy.defaults.get("claim_class_promotion") or "promotion_candidate")
+        if role == "promotion"
+        else str(policy.defaults.get("claim_class_screening") or "diagnostic")
+    )
+    if replay is None:
+        assert_cycle_cadence(
+            policy,
+            cycle_index=cycle,
+            claimed_role=role,
+            claim_class=claim_for_role,
+            promotion_target_available=promotion_target_available,
+        )
+    role_primary = primary_for_role(policy, role)
+    # Screening may preserve a same-leaf CLI suite override for compatibility.
+    # Promotion always uses the policy-owned held-out endpoint.
+    effective_primary = _effective_primary_metric(
+        role=role,
+        policy_metric=str(role_primary["metric"]),
+        requested_metric=primary_metric,
+        replay_metric=(str(replay["handoff"].primary_metric) if replay else None),
+    )
+    _write_loop_state(
+        root,
+        AutotrainLoopStateV1(
+            loop_id=loop_id,
+            state="RUNNING",
+            phase="running",
+            active_campaign_id=campaign_id,
+            last_completed_campaign_id=pred,
+            cycle_index=cycle,
+            next_action="run bounded campaign",
+            pid=os.getpid(),
+            active_stage="orchestration",
+            integration_commit=integration,
+        ),
+    )
     py = sys.executable
     ar = [py, "-m", "scripts.autoresearch", "--root", str(root)]
     if cycle_intent == "retry_measurement":
