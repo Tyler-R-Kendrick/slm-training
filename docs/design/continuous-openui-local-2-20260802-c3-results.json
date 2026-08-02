@@ -1,0 +1,139 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local-2",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local--c94ddb78-c3",
+  "cycle_index": 3,
+  "cycle_intent": "screening -- run the driver's own rank-1 next-run priority from cycle 2 (component-edge) against a freshly matched control",
+  "predecessor_campaign_id": "continuous-loop-20260802-continuous-openui-local--c94ddb78-c2",
+  "source_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "integration_commit": "0bbdbb6cf0c027153dc8ee38dae6bf0de2e36f6b",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "summary": "Third cycle of the continuous-openui-local-2 lineage. The driver's own rank-1 next-run priority from cycle 2 -- test the untested 'component-edge' lever (component_edge_decode_weight / structural_aux_head_profile=component-edge) -- was selected as-is (no forced override), exactly as the task scoped; the recommended_experiment_id in the hypothesis matrix was component-edge and the driver picked it. eval_version=e938_role_safe_all_targets_v2 (smoke, n=3) was again picked automatically via _feasible_eval_version; both arms completed with zero decode timeouts. Training loss diverged between arms (control last_loss=15.298, candidate last_loss=16.483, both steps=20/stopped_on=steps, record_count=101), confirming the lever was genuinely exercised at the loss level. However every single smoke quality metric came back bit-identical between control and candidate: parse_rate=1.0/1.0, meaningful_program_rate=0.3333/0.3333, structural_similarity=0.230833/0.230833, binder_reference_f1=0.7333/0.7333, ast_beq_rate=0.0/0.0, canonical_beq_rate=0.0/0.0, reward_score=0.8407/0.8407, component_type_recall=0.1667/0.1667, placeholder_fidelity=0.6389/0.6389. Only latency_ms_p50 moved (control=3733.40ms, candidate=3284.41ms, -448.99ms / -12.0%). The driver's own classifier scored this as an 'efficiency_win' (mpr_per_ms gain_fraction=0.1367 >= minimum=0.05) with quality held (parse=1.0, mpr=0.3333 == 1/3 floor) and tagged sdlc_delivery.positive=true, but also independently flagged primary_metric_null_or_worse (structural_similarity improvement=0.0, a tied null, not a genuine gain) and fixture_insufficient_n_alone (n=3). Because every quality metric without exception is bit-identical between arms and the primary endpoint moved by exactly 0.0, this cycle is treated as a pure latency blip per the loop's own quality-aware policy (a latency-only change with no quality movement is not a positive result), overriding the driver's own POSITIVE tag for reporting/classification purposes -- consistent with the driver's own decision to skip a stack layer (stack_layer=false) either way. Ship gates reject both arms on fixture_insufficient_n (n=3 < 20) and quality thresholds as expected at this scale -- honest fixture-scope evidence, not a ship claim.",
+  "eval_feasibility_confirmation": {
+    "note": "_feasible_eval_version again selected eval_version=e938_role_safe_all_targets_v2 (smoke, n=3) automatically; both arms completed with zero wall_timeout / zero decode_timeout_count, consistent with cycles 1-2.",
+    "decode_timeout_count_control": 0,
+    "decode_timeout_count_candidate": 0,
+    "decode_timeout_rate_control": 0.0,
+    "decode_timeout_rate_candidate": 0.0
+  },
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "steps": 20,
+    "steps_actual": 20,
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "eval_suites": "smoke",
+    "record_count": 101,
+    "trainable_params": {
+      "control": 1766987,
+      "component_edge": 1766987
+    }
+  },
+  "hypothesis": {
+    "control": "Matched fixture control with both grammar levers off completes smoke eval under the published suite.",
+    "candidate": "Component-edge supervision improves smoke structural_similarity without lowering parse_rate or binder_reference_f1.",
+    "lever": "component_edge_decode_weight / structural_aux_head_profile=component-edge",
+    "candidate_experiment_id": "c20260802-continuous-openui-local--c94ddb78-c3-component-edge",
+    "control_experiment_id": "c20260802-continuous-openui-local--c94ddb78-c3-control",
+    "endpoint": {
+      "metric": "smoke.structural_similarity",
+      "role": "primary",
+      "direction": "increase",
+      "minimum_effect": 0.01
+    }
+  },
+  "smoke_metrics": {
+    "n": 3,
+    "control": {
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "structural_similarity": 0.23083333333333333,
+      "binder_reference_f1": 0.7333333333333334,
+      "ast_beq_rate": 0.0,
+      "canonical_beq_rate": 0.0,
+      "reward_score": 0.8406666666666666,
+      "component_type_recall": 0.16666666666666666,
+      "placeholder_fidelity": 0.6388888888888888,
+      "latency_ms_p50": 3733.4,
+      "latency_ms_p95": 3735.64
+    },
+    "candidate": {
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "structural_similarity": 0.23083333333333333,
+      "binder_reference_f1": 0.7333333333333334,
+      "ast_beq_rate": 0.0,
+      "canonical_beq_rate": 0.0,
+      "reward_score": 0.8406666666666666,
+      "component_type_recall": 0.16666666666666666,
+      "placeholder_fidelity": 0.6388888888888888,
+      "latency_ms_p50": 3284.41,
+      "latency_ms_p95": 3851.11
+    },
+    "delta": {
+      "structural_similarity": 0.0,
+      "component_type_recall": 0.0,
+      "latency_ms_p50": -448.99
+    },
+    "train_loss": {
+      "control_last_loss": 15.29759407043457,
+      "candidate_last_loss": 16.483308792114258,
+      "steps_actual": 20,
+      "stopped_on": "steps"
+    }
+  },
+  "harness_signals": [],
+  "sdlc_delivery": {
+    "positive_per_driver": true,
+    "positive_per_loop_quality_policy": false,
+    "stack_layer": false,
+    "stack_action": "positive_no_tracked_delta_skip_stack",
+    "reasons": [
+      "fixture_insufficient_n:c20260802-continuous-openui-local--c94ddb78-c3-component-edge",
+      "fixture_insufficient_n:c20260802-continuous-openui-local--c94ddb78-c3-control",
+      "efficiency_win:mpr_per_ms:8.928412e-05->0.00010148956:gain_fraction=0.1367034:minimum=0.05",
+      "quality_held:parse=1.0 mpr=0.3333333333333333",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.23083333333333333 candidate=0.23083333333333333 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ],
+    "measurement_complete": true,
+    "fixture_volume_gate_hits": 2,
+    "reclassification_note": "Driver classifier tagged this POSITIVE via the latency/mpr efficiency-win rule (mpr held at exactly 1/3, gain_fraction 0.1367 >= 0.05 minimum). Loop-level reporting treats it as NON_POSITIVE because it is a pure latency blip: every quality metric (parse_rate, meaningful_program_rate, structural_similarity, binder_reference_f1, ast_beq_rate, canonical_beq_rate, reward_score, component_type_recall, placeholder_fidelity) is bit-identical between arms and the primary endpoint moved by exactly 0.0. No stack layer either way (stack_layer=false in both readings)."
+  },
+  "cycle_handoff": {
+    "climb_state": "candidate_queued",
+    "ship_state": "blocked",
+    "actions": [
+      {"kind": "document", "owner": "documenting-experiment-results", "status": "completed_this_cycle"},
+      {"kind": "next_experiment", "owner": "autotrain", "status": "queued", "proposed_experiment_id": "c20260802-continuous-openui-local--c94ddb78-c3-component-edge"},
+      {"kind": "deliver_stack", "owner": "sdlc", "status": "not_applicable_non_positive", "note": "No tracked code/docs delta beyond this cycle's docs; reclassified NON_POSITIVE per loop quality policy -- no stack layer opened, matching the driver's own stack_layer=false."}
+    ],
+    "checkpoint_documentation_required": true,
+    "checkpoint_paths": [
+      "runs/c20260802-continuous-openui-local--c94ddb78-c3-component-edge/checkpoints/last.pt",
+      "runs/c20260802-continuous-openui-local--c94ddb78-c3-control/checkpoints/last.pt"
+    ]
+  },
+  "checkpoint_disposition": "Fixture-scale screening checkpoints only (n=3, steps=20, latency-only tied null -- not a quality win). Not promoted, not a new roster entry. MODEL_CARD.md/README updated with a screening-note history line per checkpoint_documentation_required=true, no roster change.",
+  "recommendation_for_next_cycle": [
+    "model: two of the driver's top-priority levers this lineage (component-plan c2, component-edge c3) are now screened -- one confirmed regression, one tied null. Rotate to a genuinely untested lever from the remaining _SCREENING_ARM_BANK (e.g. bounds/canvas/both/steps/batch1/component-inventory/binder-topology/component-structure) for cycle 4 rather than re-running either.",
+    "evaluation: keep e938_role_safe_all_targets_v2 (smoke, n=3) as the fixed matched suite for this lineage; do not retarget test_data_scaleup_v1 here -- that stays the separately tracked decode-compiler follow-up owned by the continuous-openui-local lineage / PR #1307.",
+    "infrastructure: no repair_harness signal this cycle -- _feasible_eval_version worked exactly as designed, zero decode timeouts on both arms, and this time latency was well within lineage norms on both sides (unlike cycle 2's control-arm outlier) -- no host-contention flag needed.",
+    "lever bank note: with cycle-1 bounds (tied null), cycle-2 component-plan (confirmed regression, cross-lineage confirmed), and cycle-3 component-edge (tied null) now screened in this lineage, and the parked continuous-openui-local lineage having independently screened a largely overlapping set across 13 cycles, the untested-candidate pool for single-lever screening arms is visibly thinning across both lineages combined -- worth a driver-level audit of _SCREENING_ARM_BANK coverage before cycle 5 to confirm fresh candidates remain versus needing combination/second-order arms."
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "0bbdbb6cf0c027153dc8ee38dae6bf0de2e36f6b",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v74",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v286"
+    }
+  }
+}
