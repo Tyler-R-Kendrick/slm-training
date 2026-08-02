@@ -175,13 +175,30 @@ def _next_ordinal() -> int:
 
 
 def _tokenizer_key(tokenizer: Any) -> int:
+    cached = getattr(tokenizer, "_semantic_state_tokenizer_key", None)
+    if (
+        isinstance(cached, tuple)
+        and len(cached) == 2
+        and callable(cached[0])
+        and cached[0]() is tokenizer
+    ):
+        return int(cached[1])
     try:
         ordinal = _TOKENIZER_WEAK.get(tokenizer)
         if ordinal is None:
             ordinal = _next_ordinal()
             _TOKENIZER_WEAK[tokenizer] = ordinal
-        return int(ordinal)
-    except TypeError:  # not weak-referenceable — fall back to identity
+        ordinal = int(ordinal)
+        try:
+            setattr(
+                tokenizer,
+                "_semantic_state_tokenizer_key",
+                (weakref.ref(tokenizer), ordinal),
+            )
+        except (AttributeError, TypeError):
+            pass
+        return ordinal
+    except TypeError:  # unhashable/not weak-referenceable — fall back to identity
         entry = _TOKENIZER_ORDINALS.get(id(tokenizer))
         if entry is None or entry[0] is not tokenizer:
             if len(_TOKENIZER_ORDINALS) >= _TOKENIZER_ORDINALS_CAP:
@@ -190,7 +207,16 @@ def _tokenizer_key(tokenizer: Any) -> int:
                 _TOKENIZER_ORDINALS.clear()
             entry = (tokenizer, _next_ordinal())
             _TOKENIZER_ORDINALS[id(tokenizer)] = entry
-        return int(entry[1])
+        ordinal = int(entry[1])
+        try:
+            setattr(
+                tokenizer,
+                "_semantic_state_tokenizer_key",
+                (weakref.ref(tokenizer), ordinal),
+            )
+        except (AttributeError, TypeError):
+            pass
+        return ordinal
 
 
 @dataclass(frozen=True)
@@ -322,15 +348,67 @@ def initial_state(
 
 
 def _kind_of(tokenizer: Any, token_id: int) -> str:
+    tid = int(token_id)
+    cached = getattr(tokenizer, "_semantic_state_kind_cache", None)
+    cache = (
+        cached[1]
+        if isinstance(cached, tuple)
+        and len(cached) == 2
+        and callable(cached[0])
+        and cached[0]() is tokenizer
+        and isinstance(cached[1], dict)
+        else None
+    )
+    if cache is not None and tid in cache:
+        return str(cache[tid])
     kind_of = getattr(tokenizer, "kind_of", None)
     if callable(kind_of):
         try:
-            return str(getattr(kind_of(token_id), "value", ""))
+            kind = str(getattr(kind_of(tid), "value", ""))
         except (TimeoutError, KeyboardInterrupt):
             raise
         except Exception:  # noqa: BLE001
-            return ""
-    return ""
+            kind = ""
+    else:
+        kind = ""
+    if cache is None:
+        cache = {}
+        try:
+            setattr(
+                tokenizer,
+                "_semantic_state_kind_cache",
+                (weakref.ref(tokenizer), cache),
+            )
+        except (AttributeError, TypeError):
+            return kind
+    cache[tid] = kind
+    return kind
+
+
+def _special_ids(tokenizer: Any) -> frozenset[int]:
+    cached = getattr(tokenizer, "_semantic_state_special_ids", None)
+    if (
+        isinstance(cached, tuple)
+        and len(cached) == 2
+        and callable(cached[0])
+        and cached[0]() is tokenizer
+        and isinstance(cached[1], frozenset)
+    ):
+        return cached[1]
+    ids = frozenset(
+        int(getattr(tokenizer, name))
+        for name in ("pad_id", "bos_id", "eos_id", "mask_id", "unk_id")
+        if getattr(tokenizer, name, None) is not None
+    )
+    try:
+        setattr(
+            tokenizer,
+            "_semantic_state_special_ids",
+            (weakref.ref(tokenizer), ids),
+        )
+    except (AttributeError, TypeError):
+        pass
+    return ids
 
 
 def _expanded_macro_ids(
@@ -423,11 +501,19 @@ def _intersect_requirement(
 
 
 def _commit_string_arg(frame: CallFrame) -> CallFrame:
+    str_args = frame.str_args
     if frame.cur_is_str and frame.cur_str is not None:
         entry = (frame.separators, frame.cur_str)
-        if entry not in frame.str_args:
-            frame = replace(frame, str_args=(*frame.str_args, entry))
-    return replace(frame, cur_str=None, cur_is_str=False)
+        if entry not in str_args:
+            str_args = (*str_args, entry)
+    return CallFrame(
+        component=frame.component,
+        separators=frame.separators,
+        started=frame.started,
+        str_args=str_args,
+        cur_str=None,
+        cur_is_str=False,
+    )
 
 
 def _mark_started(stack: tuple[Frame, ...]) -> tuple[Frame, ...]:
@@ -437,9 +523,22 @@ def _mark_started(stack: tuple[Frame, ...]) -> tuple[Frame, ...]:
     top = stack[-1]
     if isinstance(top, CallFrame):
         # A second content token in the same argument voids bare-string status.
-        top = replace(top, started=True, cur_is_str=top.cur_is_str and not top.started)
+        top = CallFrame(
+            component=top.component,
+            separators=top.separators,
+            started=True,
+            str_args=top.str_args,
+            cur_str=top.cur_str,
+            cur_is_str=top.cur_is_str and not top.started,
+        )
+    elif isinstance(top, ArrayFrame):
+        top = ArrayFrame(
+            separators=top.separators,
+            started=True,
+            direct_refs=top.direct_refs,
+        )
     else:
-        top = replace(top, started=True)
+        top = BraceFrame(started=True)
     return (*stack[:-1], top)
 
 
@@ -480,6 +579,7 @@ def advance(
     *,
     arena: SemanticArena | None = None,
     _macro_seen: frozenset[int] = frozenset(),
+    _token_kind: str | None = None,
 ) -> SemanticState:
     """Advance ``state`` by one token; pure, interned, no-op-stable.
 
@@ -491,7 +591,8 @@ def advance(
     tid = int(token_id)
     if state.tokenizer_key != _tokenizer_key(tokenizer):
         raise ValueError("semantic state is bound to a different tokenizer")
-    if _kind_of(tokenizer, tid) == "macro":
+    kind = _kind_of(tokenizer, tid) if _token_kind is None else str(_token_kind)
+    if kind == "macro":
         expanded = _expanded_macro_ids(tokenizer, tid, _macro_seen)
         if expanded is None:
             return state
@@ -506,18 +607,11 @@ def advance(
                 _macro_seen=_macro_seen | {tid},
             )
         return current
-    specials = {
-        int(getattr(tokenizer, name))
-        for name in ("pad_id", "bos_id", "eos_id", "mask_id", "unk_id")
-        if getattr(tokenizer, name, None) is not None
-    }
-    if tid in specials:
+    if tid in _special_ids(tokenizer):
         return state
     raw = str(getattr(tokenizer, "id_to_token", {}).get(tid, ""))
     if raw in {"", "COMMENT", "WS_INLINE"}:
         return state
-    kind = _kind_of(tokenizer, tid)
-
     declared = state.declared_mask
     referenced = state.referenced_mask
     active = state.active_slot
@@ -654,11 +748,22 @@ def advance(
             top = stack[-1]
             if isinstance(top, CallFrame):
                 top = _commit_string_arg(top)
-                top = replace(top, separators=top.separators + 1, started=False)
+                top = CallFrame(
+                    component=top.component,
+                    separators=top.separators + 1,
+                    started=False,
+                    str_args=top.str_args,
+                    cur_str=top.cur_str,
+                    cur_is_str=top.cur_is_str,
+                )
             elif isinstance(top, ArrayFrame):
-                top = replace(top, separators=top.separators + 1, started=False)
+                top = ArrayFrame(
+                    separators=top.separators + 1,
+                    started=False,
+                    direct_refs=top.direct_refs,
+                )
             else:
-                top = replace(top, started=False)
+                top = BraceFrame(started=False)
             stack = (*stack[:-1], top)
     elif raw in {"LIT_STR", "LIT_NUM"} and not literal_kind:
         literal_kind = raw
@@ -666,7 +771,14 @@ def advance(
         if raw == "LIT_STR" and stack and isinstance(stack[-1], CallFrame):
             top = stack[-1]
             if not top.started:
-                top = replace(top, cur_is_str=True, cur_str="")
+                top = CallFrame(
+                    component=top.component,
+                    separators=top.separators,
+                    started=top.started,
+                    str_args=top.str_args,
+                    cur_str="",
+                    cur_is_str=True,
+                )
                 stack = (*stack[:-1], top)
         # LIT_STR renders as a quote (parser-visible progress); LIT_NUM
         # renders as nothing until its first byte arrives.
@@ -680,7 +792,14 @@ def advance(
         if literal_kind == "LIT_STR" and stack and isinstance(stack[-1], CallFrame):
             top = stack[-1]
             if top.cur_is_str:
-                top = replace(top, cur_str=literal_body)
+                top = CallFrame(
+                    component=top.component,
+                    separators=top.separators,
+                    started=top.started,
+                    str_args=top.str_args,
+                    cur_str=literal_body,
+                    cur_is_str=top.cur_is_str,
+                )
                 stack = (*stack[:-1], top)
         literal_kind = ""
         literal_body = ""
@@ -697,7 +816,11 @@ def advance(
             slot = int(slot)
             if stack and isinstance(stack[-1], ArrayFrame):
                 top = stack[-1]
-                top = replace(top, direct_refs=top.direct_refs | (1 << slot))
+                top = ArrayFrame(
+                    separators=top.separators,
+                    started=top.started,
+                    direct_refs=top.direct_refs | (1 << slot),
+                )
                 SCOPE_COUNTERS["scope_bitset_updates"] += 1
                 stack = (*stack[:-1], top)
             if schema is not None:
@@ -722,12 +845,28 @@ def advance(
                 if len(piece) >= 2 and piece.startswith('"') and piece.endswith('"')
                 else piece
             )
-            top = replace(stack[-1], cur_str=value, cur_is_str=True)
+            prior = stack[-1]
+            top = CallFrame(
+                component=prior.component,
+                separators=prior.separators,
+                started=prior.started,
+                str_args=prior.str_args,
+                cur_str=value,
+                cur_is_str=True,
+            )
             stack = (*stack[:-1], top)
         stack = _mark_started(stack)
     elif kind == "lit" and raw.startswith("STR:"):
         if stack and isinstance(stack[-1], CallFrame) and not stack[-1].started:
-            top = replace(stack[-1], cur_str=raw[4:], cur_is_str=True)
+            prior = stack[-1]
+            top = CallFrame(
+                component=prior.component,
+                separators=prior.separators,
+                started=prior.started,
+                str_args=prior.str_args,
+                cur_str=raw[4:],
+                cur_is_str=True,
+            )
             stack = (*stack[:-1], top)
         stack = _mark_started(stack)
     elif raw.startswith("B:"):
@@ -735,8 +874,8 @@ def advance(
     else:
         stack = _mark_started(stack)
 
-    new = replace(
-        state,
+    new = SemanticState(
+        tokenizer_key=state.tokenizer_key,
         declared_mask=declared,
         referenced_mask=referenced,
         active_slot=active,

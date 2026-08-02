@@ -119,6 +119,32 @@ def test_mutually_recursive_macro_expansion_is_semantic_noop(
     assert ss.advance(initial, tok.macro_id(0), tok, schema=schema) is initial
 
 
+def test_semantic_state_caches_frozen_tokenizer_projections(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    tok = DSLNativeTokenizer.build()
+    calls = 0
+    original = tok.kind_of
+
+    def _kind_of(token_id: int):
+        nonlocal calls
+        calls += 1
+        return original(token_id)
+
+    monkeypatch.setattr(tok, "kind_of", _kind_of)
+    initial = ss.initial_state(tok)
+    root_id = tok.bind_id(0)
+    ss.advance(initial, root_id, tok)
+    ss.advance(initial, root_id, tok)
+    assert calls == 1
+
+    cached_key = tok._semantic_state_tokenizer_key
+    assert cached_key[0]() is tok
+    other = DSLNativeTokenizer.build()
+    other._semantic_state_tokenizer_key = cached_key
+    assert ss.initial_state(other).tokenizer_key != initial.tokenizer_key
+
+
 def _slots_to_ids(tok: DSLNativeTokenizer, slots) -> set[int]:
     return {int(tok.bind_id(slot)) for slot in slots}
 

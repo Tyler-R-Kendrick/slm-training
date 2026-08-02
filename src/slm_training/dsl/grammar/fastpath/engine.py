@@ -161,6 +161,7 @@ class OpenUIIncrementalEngine:
         # (a) a hit re-verifies identity and (b) the strong reference keeps
         # the id from being recycled while the entry lives.
         self._direct_map_cache: dict[int, tuple[object, dict | None]] = {}
+        self._direct_map_cache_shared = False
         self._full_syncs = 0
         self._incremental_advances = 0
         self._copy_probes = 0
@@ -250,10 +251,7 @@ class OpenUIIncrementalEngine:
             self._accepts = frozenset()
             return
         try:
-            stack = tuple(
-                int(state)
-                for state in getattr(self._ip.parser_state, "state_stack", ())
-            )
+            stack = tuple(getattr(self._ip.parser_state, "state_stack", ()))
             key = (self._fingerprint, stack)
             cached = _ACCEPTS_MEMO.get(key)
             if cached is None:
@@ -504,11 +502,7 @@ class OpenUIIncrementalEngine:
         depends on it. Whitespace-only tails are behaviorally inert and are
         normalized away so states reached via different spacing intern equal.
         """
-        stack = (
-            tuple(int(s) for s in self._ip.parser_state.state_stack)
-            if self._ip is not None
-            else ()
-        )
+        stack = tuple(self._ip.parser_state.state_stack) if self._ip is not None else ()
         tail = self._pending_tail()
         tail = tail if tail.strip() else ""
         frame = tuple(self._frame) if self._frame is not None else None
@@ -554,6 +548,9 @@ class OpenUIIncrementalEngine:
             if mapping is None:
                 mapping = dsl_direct_terminal_map(tokenizer, self._parser.terminals)
             entry = (tokenizer, mapping)
+            if self._direct_map_cache_shared:
+                self._direct_map_cache = dict(self._direct_map_cache)
+                self._direct_map_cache_shared = False
             self._direct_map_cache[key] = entry
         return entry[1]
 
@@ -665,6 +662,7 @@ class OpenUIIncrementalEngine:
         *,
         _macro_seen: frozenset[int] = frozenset(),
         _restore_on_reject: bool = True,
+        _token_kind=None,
     ) -> bool | None:
         """Feed one DSL-native token id directly as its Lark terminal.
 
@@ -688,12 +686,14 @@ class OpenUIIncrementalEngine:
             # BOS/EOS/PAD/MASK are never fed as source terminals (decode
             # drops them; EOS acceptability is queried via next_terminals).
             return True
-        try:
-            kind = tokenizer.kind_of(tid)
-        except (TimeoutError, KeyboardInterrupt):
-            raise
-        except Exception:
-            return None
+        kind = _token_kind
+        if kind is None:
+            try:
+                kind = tokenizer.kind_of(tid)
+            except (TimeoutError, KeyboardInterrupt):
+                raise
+            except Exception:
+                return None
         from slm_training.models.dsl_tokenizer import TokenKind
 
         if kind is TokenKind.SPECIAL:  # <unk> and friends: never fed
@@ -890,6 +890,7 @@ class OpenUIIncrementalEngine:
         interactive = self._ip
         parser_state = interactive.parser_state
         parse_conf = parser_state.parse_conf
+        share_lexer_thread = not bool(parse_conf.callbacks)
         if parse_conf.callbacks:
             # The first semantic -> control fork must detach and suppress tree
             # callbacks. Descendant control-only forks can share that immutable
@@ -910,7 +911,11 @@ class OpenUIIncrementalEngine:
         return type(interactive)(
             interactive.parser,
             cloned_state,
-            _shallow_copy(interactive.lexer_thread),
+            (
+                interactive.lexer_thread
+                if share_lexer_thread
+                else _shallow_copy(interactive.lexer_thread)
+            ),
         )
 
     def _copy(self, *, control_only: bool) -> "OpenUIIncrementalEngine":
@@ -949,7 +954,12 @@ class OpenUIIncrementalEngine:
         fork._tail = self._tail
         fork._frame = self._frame
         fork._fingerprint = self._fingerprint
-        fork._direct_map_cache = dict(self._direct_map_cache)
+        # The verified tokenizer map is read-only on the hot fork path. Share
+        # it until a fork sees a different tokenizer, then detach before the
+        # cache insert. This avoids one dict allocation per parser fork.
+        fork._direct_map_cache = self._direct_map_cache
+        self._direct_map_cache_shared = True
+        fork._direct_map_cache_shared = True
         fork._full_syncs = 0
         fork._incremental_advances = 0
         fork._copy_probes = 0

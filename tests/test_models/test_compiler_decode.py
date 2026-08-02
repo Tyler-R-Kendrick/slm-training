@@ -4750,6 +4750,41 @@ def test_projection_with_features_accepts_sliced_hidden() -> None:
         denoiser.project(hidden3[0, 2])
 
 
+def test_compiler_kind_projection_caches_are_tokenizer_identity_scoped() -> None:
+    """A proxy/deep copy must never inherit another tokenizer's authority."""
+    from slm_training.dsl.grammar.fastpath import compiler_draft
+
+    tokenizer = DSLNativeTokenizer.build()
+    component_id = int(tokenizer.token_to_id["Stack"])
+    equals_id = int(tokenizer.token_to_id["="])
+    assert compiler_draft._semantic_kind(tokenizer, component_id) == "component"
+    assert (
+        compiler_draft._grammar_terminal_kind(tokenizer, equals_id, ("EQUAL",))
+        == "grammar_equal"
+    )
+
+    class _ProjectionProxy:
+        def __init__(self, inner: DSLNativeTokenizer) -> None:
+            self._inner = inner
+
+        def __getattr__(self, name: str):
+            return getattr(self._inner, name)
+
+        def kind_of(self, token_id: int) -> str:
+            if int(token_id) in {component_id, equals_id}:
+                return "structural" if int(token_id) == component_id else "component"
+            return str(self._inner.kind_of(token_id).value)
+
+    proxy = _ProjectionProxy(tokenizer)
+    assert compiler_draft._semantic_kind(proxy, component_id) == "structural"
+    assert (
+        compiler_draft._grammar_terminal_kind(proxy, equals_id, ("EQUAL",))
+        == "component"
+    )
+    assert proxy._compiler_semantic_kind_cache[0]() is proxy
+    assert proxy._compiler_terminal_kind_cache[0]() is proxy
+
+
 def test_completion_forest_uses_active_binder_and_symbol_spaces(monkeypatch) -> None:
     from slm_training.dsl.grammar.fastpath import compiler_draft
 
@@ -6656,6 +6691,18 @@ def test_runtime_feature_table_uses_resolved_honest_slot_contract(monkeypatch) -
     )
 
     assert captured[-1] == [":slot_0"]
+    model._generate_batch_once(
+        ["Card"],
+        grammar_constrained=True,
+        slot_contracts=[[":slot_1"]],
+    )
+    assert captured[-1] == [":slot_1"]
+    model._generate_batch_once(
+        ["Card for :legacy.title"],
+        grammar_constrained=True,
+        slot_contracts=[[":slot_2"]],
+    )
+    assert captured[-1] == [":slot_2"]
 
 
 def test_compiler_decode_reserves_room_beyond_predicted_length(monkeypatch) -> None:
