@@ -2641,7 +2641,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v83",
+      "version": "v84",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2681,6 +2681,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v84",
+          "date": "2026-08-02",
+          "note": "Carry every declared TwoTower runtime-symbol lever into evaluation through the typed feature-flag surface so matched controls preserve their actual off state."
+        },
         {
           "version": "v83",
           "date": "2026-08-02",
@@ -7250,6 +7255,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1781 invalid canvas scratch checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
         {
           "version": "v3",
           "date": "2026-08-02",

@@ -4052,10 +4052,10 @@ def test_compile_dynamic_symbol_campaign_uses_typed_flags() -> None:
             compact_active_canvas=False,
         )
     )
-    train = next(
-        command
-        for command in compile_commands(campaign(), spec)
-        if "scripts.train_model" in command
+    commands = compile_commands(campaign(), spec)
+    train = next(command for command in commands if "scripts.train_model" in command)
+    evaluate = next(
+        command for command in commands if "scripts.evaluate_model" in command
     )
     assert train[train.index("--output-tokenizer") + 1] == "lexer"
     assert train[train.index("--runtime-symbol-features") + 1] == "role_gated"
@@ -4064,6 +4064,14 @@ def test_compile_dynamic_symbol_campaign_uses_typed_flags() -> None:
     assert "--semantic-candidate-masks" in train
     assert "--grammar-equivalence-cache" in train
     assert "--no-compact-active-canvas" in train
+    assert json.loads(evaluate[evaluate.index("--flags-json") + 1]) == {
+        "compact_active_canvas": False,
+        "constraint_graph_mode": "hybrid",
+        "grammar_equivalence_cache": True,
+        "runtime_symbol_features": "role_gated",
+        "semantic_candidate_masks": True,
+        "symbol_slot_augmentation": True,
+    }
 
 
 def test_rl_readiness_is_fail_closed() -> None:

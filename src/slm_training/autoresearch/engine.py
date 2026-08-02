@@ -60,6 +60,17 @@ _DEFAULT_EVAL_VERSION_CANDIDATES = (
 
 _EVALUATION_POSTPROCESS_RESERVE_SECONDS = 5.0
 
+_TWOTOWER_RUNTIME_FLAG_FIELDS = (
+    "runtime_symbol_features",
+    "symbol_slot_augmentation",
+    "semantic_candidate_masks",
+    "constraint_graph_mode",
+    "grammar_completion_bounds",
+    "grammar_equivalence_cache",
+    "grammar_active_symbol_bitsets",
+    "compact_active_canvas",
+)
+
 
 def default_eval_version() -> str:
     """Return a published eval snapshot that has a smoke suite on disk."""
@@ -503,19 +514,12 @@ def compile_commands(
             if value is not None:
                 train.extend([f"--{flag}", str(value)])
     if campaign.track == "twotower":
-        symbol_fields = {
-            "runtime_symbol_features",
-            "symbol_slot_augmentation",
-            "semantic_candidate_masks",
-            "constraint_graph_mode",
-            "grammar_completion_bounds",
-            "grammar_equivalence_cache",
-            "grammar_active_symbol_bitsets",
-            "compact_active_canvas",
-        }
         if knobs.output_tokenizer:
             train.extend(["--output-tokenizer", knobs.output_tokenizer])
-        elif any(getattr(knobs, field) is not None for field in symbol_fields):
+        elif any(
+            getattr(knobs, field) is not None
+            for field in _TWOTOWER_RUNTIME_FLAG_FIELDS
+        ):
             train.extend(["--output-tokenizer", "lexer"])
         if knobs.compiler_decode_mode:
             train.extend(["--compiler-decode-mode", knobs.compiler_decode_mode])
@@ -759,6 +763,15 @@ def compile_commands(
             evaluate.append("--slot-contract-in-context")
         if knobs.design_md_context is False:
             evaluate.append("--no-design-md-context")
+        runtime_flags = {
+            field: getattr(knobs, field)
+            for field in _TWOTOWER_RUNTIME_FLAG_FIELDS
+            if getattr(knobs, field) is not None
+        }
+        if runtime_flags:
+            evaluate.extend(
+                ["--flags-json", json.dumps(runtime_flags, sort_keys=True)]
+            )
     return commands
 
 
