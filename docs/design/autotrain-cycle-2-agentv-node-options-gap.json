@@ -1,0 +1,74 @@
+{
+  "schema": "autotrain_measured_results/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202608-75a7803e-c2",
+  "cycle_index": 2,
+  "loop_id": "continuous-openui-20260802-local",
+  "run_class": "fixture_scratch",
+  "source_commit": "38dbfc3ceeb271ae10ea5ba0cf74d667be729608",
+  "source_dirty": false,
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "primary_metric": "smoke.binder_reference_f1",
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202608-75a7803e-c2-control",
+      "status": "failed",
+      "training": {"executed": true, "parameter_count": 1608962},
+      "campaign_manifest_sha256": "6072c985af74c4ed94cba36d8db9c20d3ca2b8fa21b8bb15ab91172d3340d61a",
+      "metrics": {},
+      "failure_sequence": [
+        "RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER (node_modules not yet installed)",
+        "after `npm ci`: RuntimeError: AgentV SDK evaluation failed: node: --import tsx is not allowed in NODE_OPTIONS"
+      ]
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202608-75a7803e-c2-bounds",
+      "status": "failed",
+      "training": {"executed": true, "parameter_count": 1608962},
+      "campaign_manifest_sha256": "291e31ffc551d8fb85a3ec2d6950a8923dd8fe33dc0c09388039390895a893e3",
+      "metrics": {},
+      "failure_sequence": [
+        "Identical to control: AgentV SDK unavailable, then NODE_OPTIONS rejection after npm ci."
+      ]
+    }
+  ],
+  "diagnosis": {
+    "area": "infrastructure",
+    "signals": [
+      {
+        "signal": "RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER",
+        "cause": "environment_gap: fresh container had no node_modules; `npm ci` installs the pinned @agentv/core@4.42.4 SDK per package-lock.json.",
+        "repair": "npm ci (local, no code change)"
+      },
+      {
+        "signal": "RuntimeError: AgentV SDK evaluation failed: node: --import tsx is not allowed in NODE_OPTIONS",
+        "cause": "harness_bug: src/slm_training/evals/agentv.py publish_agentv_evaluation spawned the node runner via subprocess.run(...) with no env= override, inheriting this session's NODE_OPTIONS='--import tsx' ... which Node rejects. Same class of bug already fixed once for the graphql-js bridge (src/slm_training/dsl/grammar/backends/graphql_js.py:46-51).",
+        "harness_family": "model_build",
+        "repair": "commit ca15f5c on claude/great-dirac-ptxx92 (PR #1292): added _sanitized_env() to src/slm_training/evals/agentv.py and pass env=_sanitized_env() to the AgentV subprocess.run call; evals.agentv v6 -> v7. Also repaired two stale fixtures in tests/test_evals/test_agentv.py that predated the BEq ship-gate metrics (ast_beq_rate, canonical_beq_rate, meaningful_program_rate) added to openui_ship_gates_v6.json, uncovered while re-running the touched test file (test_model_ship_cases_fail_closed_on_missing_suites, test_agentv_model_bundle_cannot_pass_a_smoke_only_run)."
+      }
+    ]
+  },
+  "sdlc_phase_a": {
+    "positive": false,
+    "reasons": [
+      "empty_metrics:control",
+      "empty_metrics:bounds",
+      "primary_metric_unavailable"
+    ],
+    "stack_layer": false,
+    "note": "The AgentV NODE_OPTIONS repair is an executable-unblocking candidate (SDLC positive-result category 3), but only becomes positive once the identical frozen c2 arms replay to a usable scoreboard in cycle 3. This cycle documents the repair; cycle 3 documents the replay-proof."
+  },
+  "honesty": "environment_probe + harness repair; no model measurement produced this cycle; no checkpoint or ship claim",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "ca15f5c",
+    "code_dirty": false,
+    "components": {
+      "evals.agentv": "v7",
+      "harness.autoresearch.experiment_campaign": "v48",
+      "harness.model_build.eval": "v73"
+    },
+    "stamped_at": "2026-08-02T02:38:00Z"
+  }
+}
