@@ -1,0 +1,125 @@
+{
+  "schema": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1",
+  "loop_id": "continuous-openui-20260730",
+  "cycle_index": 1736,
+  "campaign_role": "screening",
+  "cycle_intent": "screening",
+  "run_class": "fixture_scratch",
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "steps": 21,
+  "seed": 100001,
+  "batch_size": 2,
+  "checkpoint_sync": "explicit no-sync scratch",
+  "upstream_commit": "62f315565318479b83e6352e1b0d75ab66011b9b",
+  "integration_commit": "62f315565318479b83e6352e1b0d75ab66011b9b",
+  "primary_metric": "smoke.structural_similarity",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "62f315565318479b83e6352e1b0d75ab66011b9b",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v73",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v284"
+    },
+    "stamped_at": "2026-08-02T06:36:21.641711+00:00"
+  },
+  "gate_version": "openui_ship_gates_v6",
+  "arms": [
+    {
+      "label": "matched control",
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1-control",
+      "hypothesis": "grammar_completion_bounds reduces smoke latency_ms_p50 versus the matched control without lowering parse_rate.",
+      "grammar_completion_bounds": false,
+      "last_loss": 22.62193489074707,
+      "training_wall_seconds": 4.181277288000047,
+      "checkpoint_sha256": "c2ba05273c48aacf76d86b19c76cff8bccae92462b111f84f808ea4cf6f7eda2",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "component_type_recall": 0.0,
+        "ast_node_f1": 0.0,
+        "ast_edge_f1": 0.0,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.0,
+        "latency_ms_p50": 2429.84
+      },
+      "decode_stats": {
+        "forwards_count_sum": 11,
+        "completion_unique_states_sum": 31865,
+        "completion_witness_states_expanded_sum": 1638,
+        "completion_parser_forks_sum": 33620
+      },
+      "agentv_publish": "unavailable_at_first_attempt_recovered_via_npm_ci",
+      "ship_gates_pass": false
+    },
+    {
+      "label": "grammar_completion_bounds",
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1-bounds",
+      "hypothesis": "grammar_completion_bounds reduces smoke latency_ms_p50 versus the matched control without lowering parse_rate.",
+      "grammar_completion_bounds": true,
+      "last_loss": 22.62193489074707,
+      "training_wall_seconds": 3.8724705800000265,
+      "checkpoint_sha256": "b040e8f48b955e9b3399512959952816133f7a8f15f9dac7083b46a131f8e155",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "component_type_recall": 0.0,
+        "ast_node_f1": 0.0,
+        "ast_edge_f1": 0.0,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.0,
+        "latency_ms_p50": 2394.46
+      },
+      "decode_stats": {
+        "forwards_count_sum": 11,
+        "completion_unique_states_sum": 31865,
+        "completion_witness_states_expanded_sum": 1638,
+        "completion_parser_forks_sum": 33620
+      },
+      "agentv_publish": "unavailable_at_first_attempt_recovered_via_npm_ci",
+      "ship_gates_pass": false
+    }
+  ],
+  "comparison": {
+    "primary_metric_control": 0.057499999999999996,
+    "primary_metric_candidate": 0.057499999999999996,
+    "primary_metric_improvement": 0.0,
+    "meaningful_program_rate_control": 0.0,
+    "meaningful_program_rate_candidate": 0.0,
+    "latency_ms_p50_control": 2429.84,
+    "latency_ms_p50_candidate": 2394.46,
+    "latency_improvement_fraction": 0.014566,
+    "disposition": "primary_metric_null_latency_win_disqualified_by_mpr_floor"
+  },
+  "formal_evidence": {
+    "status": "not_applicable:screening",
+    "reason": "Lean promotion proof is required only for a confirmed champion promotion"
+  },
+  "harness_signal": {
+    "signal": "AgentV SDK was unavailable in this session's checkout (node_modules absent), causing scripts.evaluate_model to exit 2 after the smoke suite already scored both arms",
+    "repair": "ran `npm ci` (NODE_OPTIONS=--import tsx had to be unset first; npm's internal node invocation rejects --import in NODE_OPTIONS) to install @agentv/core, then replayed the identical arms",
+    "repair_scope": "environment/session provisioning, not a canonical harness code change; not stack-eligible on its own",
+    "repaired_next_area": "experiments",
+    "repaired_next_hypothesis": "component-plan (standalone, not joint with component-edge) improves smoke structural_similarity without lowering parse_rate or binder_reference_f1"
+  },
+  "checkpoint_documentation_required": true,
+  "checkpoint_paths": [
+    "runs/c20260802-continuous-openui-202607-98199209-c1-bounds/checkpoints/last.pt",
+    "runs/c20260802-continuous-openui-202607-98199209-c1-control/checkpoints/last.pt"
+  ],
+  "checkpoint_reuse": "forbidden",
+  "ship_eligible": false
+}
