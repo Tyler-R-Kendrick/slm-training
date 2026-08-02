@@ -2641,7 +2641,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v63",
+      "version": "v64",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2681,6 +2681,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v64",
+          "date": "2026-08-02",
+          "note": "Fix _apply_frozen_replay slug resolution: a blind rsplit('-', 1) truncated multi-hyphen screening-arm slugs (e.g. component-plan -> plan), raising 'unsupported automatic frozen replay arm' and blocking retry_measurement for every hyphenated arm in _SCREENING_ARM_BANK. Match the longest known slug that is a hyphen-bounded suffix instead."
+        },
         {
           "version": "v63",
           "date": "2026-08-02",

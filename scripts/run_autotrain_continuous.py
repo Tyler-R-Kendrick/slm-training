@@ -4218,9 +4218,19 @@ def _apply_frozen_replay(
 ) -> dict[str, dict[str, Any]]:
     prefix = campaign_id.replace("continuous-loop-", "c")
     old_candidate_id = str(replay["candidate"]["experiment"]["experiment_id"])
-    slug = old_candidate_id.rsplit("-", 1)[-1]
-    if slug not in {item[0] for item in _SCREENING_ARM_BANK}:
-        raise RuntimeError(f"unsupported automatic frozen replay arm: {slug}")
+    # Slugs may themselves contain hyphens (e.g. "component-plan"), so a
+    # blind rsplit("-", 1) truncates them (yielding "plan"). Match the
+    # longest known slug that is a hyphen-bounded suffix instead.
+    known_slugs = sorted(
+        (item[0] for item in _SCREENING_ARM_BANK), key=len, reverse=True
+    )
+    slug = next(
+        (s for s in known_slugs if old_candidate_id.endswith(f"-{s}")), None
+    )
+    if slug is None:
+        raise RuntimeError(
+            f"unsupported automatic frozen replay arm: {old_candidate_id}"
+        )
     new_ids = {"control": f"{prefix}-control", "candidate": f"{prefix}-{slug}"}
     for role, new_id in new_ids.items():
         target = next(

@@ -3241,6 +3241,72 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor() -> No
         _mod._require_automatic_replayable(formal_manifest)
 
 
+def test_frozen_replay_resolves_hyphenated_slug() -> None:
+    # Regression: old_candidate_id.rsplit("-", 1)[-1] used to truncate a
+    # multi-hyphen slug like "component-plan" down to just "plan", which
+    # is not a registered arm and raised "unsupported automatic frozen
+    # replay arm: plan" even though "component-plan" is a valid screening
+    # arm. https://github.com/Tyler-R-Kendrick/slm-training
+    old_campaign = "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c2"
+    new_campaign = "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c3"
+    matrix = _mod._matrix(
+        campaign_id=new_campaign,
+        evidence_snapshot_id="snapshot-1",
+        cites=["docs/design/autoresearch-autotraining.md"],
+        role_citations={
+            "research": "docs/design/autoresearch-autotraining.md",
+            "prior_result": "docs/design/autoresearch-autotraining.md",
+        },
+        train_version="wf_smoke_v2",
+        eval_version="e938_role_safe_all_targets_v2",
+        steps=22,
+        cycle=2,
+        recommended_slug="component-plan",
+    )
+    old_control = json.loads(json.dumps(matrix["hypotheses"][0]["experiment"]))
+    old_candidate = json.loads(
+        json.dumps(
+            next(
+                row["experiment"]
+                for row in matrix["hypotheses"]
+                if row["experiment"]["experiment_id"].endswith("-component-plan")
+            )
+        )
+    )
+    old_control.update(
+        experiment_id=f"{old_campaign}-control".replace("continuous-loop-", "c"),
+        campaign_id=old_campaign,
+    )
+    old_candidate.update(
+        experiment_id=f"{old_campaign}-component-plan".replace(
+            "continuous-loop-", "c"
+        ),
+        campaign_id=old_campaign,
+    )
+    old_commit = "a" * 40
+    control_manifest = _mod._manifest(old_campaign, old_control, old_commit)
+    candidate_manifest = _mod._manifest(old_campaign, old_candidate, old_commit)
+    replay = {
+        "control": {
+            "experiment": old_control,
+            "manifest": control_manifest,
+            "manifest_sha256": "b" * 64,
+        },
+        "candidate": {
+            "experiment": old_candidate,
+            "manifest": candidate_manifest,
+            "manifest_sha256": "c" * 64,
+        },
+    }
+
+    replay_manifests = _mod._apply_frozen_replay(matrix, replay, new_campaign)
+    assert matrix["recommended_experiment_id"].endswith("-component-plan")
+    assert set(replay_manifests) == {
+        matrix["recommended_experiment_id"],
+        f"{new_campaign.replace('continuous-loop-', 'c')}-control",
+    }
+
+
 def test_frozen_replay_finds_completed_train_across_retry_lineage(
     tmp_path: Path,
 ) -> None:
