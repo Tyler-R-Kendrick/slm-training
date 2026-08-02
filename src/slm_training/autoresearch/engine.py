@@ -58,6 +58,8 @@ _DEFAULT_EVAL_VERSION_CANDIDATES = (
     "e763_symbol_only_eval_r2_20260722",
 )
 
+_EVALUATION_POSTPROCESS_RESERVE_SECONDS = 5.0
+
 
 def default_eval_version() -> str:
     """Return a published eval snapshot that has a smoke suite on disk."""
@@ -800,9 +802,13 @@ def execute_commands(
             "scripts.evaluate_model" in command
             and "--evaluation-wall-seconds" not in command
         ):
+            postprocess_reserve = min(
+                _EVALUATION_POSTPROCESS_RESERVE_SECONDS,
+                interrupt_after * 0.2,
+            )
             evaluation_wall = max(
                 0.1,
-                interrupt_after - min(2.0, interrupt_after * 0.1),
+                interrupt_after - postprocess_reserve,
             )
             command.extend(["--evaluation-wall-seconds", f"{evaluation_wall:.6f}"])
         stage_artifact = _stage_artifact_path(command, cwd=cwd)
