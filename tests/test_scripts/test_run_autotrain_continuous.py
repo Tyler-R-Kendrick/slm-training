@@ -3774,7 +3774,10 @@ def test_finalized_decode_timeout_routes_directly_to_runtime_repair(
         delivery={
             "positive": False,
             "candidate_id": "cand",
-            "reasons": ["measurement_incomplete:decode_timeout"],
+            "reasons": [
+                "measurement_incomplete:decode_timeout",
+                "harness_failure:cand:experiment_failed",
+            ],
             "stack_layer": False,
         },
         resolution=None,

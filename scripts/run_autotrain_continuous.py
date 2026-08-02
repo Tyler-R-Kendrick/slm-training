@@ -3863,10 +3863,14 @@ def _write_cycle_handoff(
     ]
     theorem_stop = any("theorem_backed_band_miss" in item for item in reasons)
     assumption_miss = any("assumption_backed_band_miss" in item for item in reasons)
-    harness_failure = climb_state == "harness_failure" or any(
-        item.startswith("harness_failure:") for item in reasons
-    )
     finalized_decode_timeout = _has_finalized_decode_timeout(camp_dir, candidate_id)
+    # A finalized AgentV timeout is more specific than the evaluate process's
+    # generic non-zero exit. Preserve both repair and content-bound retry actions
+    # so acknowledging the repair cannot make the required replay unreachable.
+    harness_failure = (
+        climb_state == "harness_failure"
+        or any(item.startswith("harness_failure:") for item in reasons)
+    ) and not finalized_decode_timeout
     if theorem_stop:
         actions[0:0] = [
             AutotrainActionV1(

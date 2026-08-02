@@ -53,6 +53,10 @@ The successor refuses to initialize while predecessor theorem-stop, harness, Lea
 data, docs, or delivery prerequisites remain unacknowledged. Execution/steering actions
 (`retry_measurement`, `next_experiment`, `monitor`) remain part of the next-cycle
 control flow rather than circular prerequisites.
+A finalized AgentV decode timeout outranks the evaluator's generic non-zero process
+exit when actions are routed: the handoff emits the canonical runtime repair first
+and retains the content-bound `retry_measurement` behind it. A repair receipt can
+therefore unblock, but never silently consume, the required frozen replay.
 
 Frozen retries cross code updates through a governed successor, never by weakening
 the current-main check. The successor copies the prior control/candidate recipe and

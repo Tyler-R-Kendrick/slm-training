@@ -2641,7 +2641,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v70",
+      "version": "v71",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2681,6 +2681,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v71",
+          "date": "2026-08-02",
+          "note": "Route finalized AgentV decode timeouts ahead of generic failed-process attribution so handoffs retain both the required runtime repair and the content-bound frozen retry."
+        },
         {
           "version": "v70",
           "date": "2026-08-02",
