@@ -2646,7 +2646,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v92",
+      "version": "v93",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2686,6 +2686,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v93",
+          "date": "2026-08-02",
+          "note": "Project confirmation rows from the authoritative champion queue, route exhausted banks to typed harness expansion, and add a causally matched semantic-contrast successor with identical pair exposure in both arms."
+        },
         {
           "version": "v92",
           "date": "2026-08-02",
@@ -7308,6 +7313,11 @@
         {
           "version": "v3",
           "date": "2026-08-02",
+          "note": "no-bump: add honest c1795 rejected edge-alignment checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
           "note": "no-bump: add honest c1793 rejected placeholder-fidelity confirmation checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
         },
         {
@@ -8262,7 +8272,7 @@
       ]
     },
     "harness.experiments.slm292_semantic_contrast_objective": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm292_semantic_contrast_objective.py",
@@ -8272,6 +8282,11 @@
         "docs/design/iter-slm292-semantic-contrast-objective-20260725.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-02",
+          "note": "Make semantic-contrast controls pair-exposure matched and project historical external marker aliases through one shared opaque ordinal codec before model training."
+        },
         {
           "version": "v1",
           "date": "2026-07-25",
@@ -9490,7 +9505,7 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v29",
+      "version": "v30",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
@@ -9498,6 +9513,11 @@
         "src/slm_training/harnesses/quality/__init__.py"
       ],
       "history": [
+        {
+          "version": "v30",
+          "date": "2026-08-02",
+          "note": "Allow declared semantic-contrast pair exposure with zero contrast weight so matched controls differ from treatment only in the objective weight."
+        },
         {
           "version": "v29",
           "date": "2026-08-02",
@@ -11287,7 +11307,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v293",
+      "version": "v294",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -11330,6 +11350,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v294",
+          "date": "2026-08-02",
+          "note": "Project legacy semantic-contrast pair sides through one shared opaque slot codec before model use, preserving pair identity while enforcing output contract v2."
+        },
         {
           "version": "v293",
           "date": "2026-08-02",

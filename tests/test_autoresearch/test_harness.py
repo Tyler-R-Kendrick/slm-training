@@ -76,6 +76,7 @@ from slm_training.autoresearch.storage import (
     CampaignStore,
     _lean_text,
     _markdown_cell,
+    _project_confirmation_queue_status,
     append_autotrain_action_receipt,
     autotrain_action_sha256,
     pending_autotrain_actions,
@@ -105,7 +106,46 @@ def test_result_matrix_explains_lean_applicability() -> None:
         None,
         {"cycle_intent": "confirm", "cycle_role": "promotion"},
     ) == ("not_applicable:confirmation")
+    assert _lean_text(
+        None,
+        {
+            "cycle_intent": "confirm",
+            "cycle_role": "promotion",
+            "climb_state": "rejected",
+        },
+    ) == ("not_applicable:confirmation_rejected")
     assert _lean_text(None, {"formal_status": "proved"}) == "proved"
+
+
+def test_confirmation_matrix_projects_authoritative_queue_rejection(
+    tmp_path: Path,
+) -> None:
+    queue = tmp_path / "loops" / "loop-1" / "champion_queue.jsonl"
+    queue.parent.mkdir(parents=True)
+    queue.write_text(
+        json.dumps(
+            {
+                "confirm_campaign_id": "cycle-confirm",
+                "status": "rejected",
+            }
+        )
+        + "\n"
+    )
+
+    projected = _project_confirmation_queue_status(
+        tmp_path,
+        "loop-1",
+        "cycle-confirm",
+        {
+            "cycle_intent": "confirm",
+            "climb_state": "champion_confirmed",
+            "formal_status": "not_applicable:confirmation",
+        },
+    )
+
+    assert projected["climb_state"] == "rejected"
+    assert projected["formal_status"] == "not_applicable:confirmation_rejected"
+    assert _lean_text(None, projected) == "not_applicable:confirmation_rejected"
 
 
 def test_idle_loop_does_not_become_stale_from_old_heartbeat(tmp_path: Path) -> None:
@@ -3267,6 +3307,10 @@ def test_compile_resolves_canonical_published_train_version() -> None:
             binder_arity_loss_weight=1.2,
             binder_arity_decode_weight=0.3,
             fidelity_loss_weight=1.5,
+            semantic_contrast_dir="resources/contrast",
+            semantic_contrast_loss_weight=0.25,
+            semantic_contrast_margin=1.0,
+            semantic_contrast_fraction=0.5,
             compiler_decode_mode="tree",
             compiler_search_mode="ptrm",
             compiler_search_trigger="stagnation",
@@ -3330,6 +3374,16 @@ def test_compile_resolves_canonical_published_train_version() -> None:
     assert commands[0][commands[0].index("--binder-arity-loss-weight") + 1] == "1.2"
     assert commands[0][commands[0].index("--binder-arity-decode-weight") + 1] == "0.3"
     assert commands[0][commands[0].index("--fidelity-loss-weight") + 1] == "1.5"
+    assert commands[0][commands[0].index("--semantic-contrast-dir") + 1] == (
+        "resources/contrast"
+    )
+    assert commands[0][commands[0].index("--semantic-contrast-loss-weight") + 1] == (
+        "0.25"
+    )
+    assert commands[0][commands[0].index("--semantic-contrast-margin") + 1] == "1.0"
+    assert commands[0][commands[0].index("--semantic-contrast-fraction") + 1] == (
+        "0.5"
+    )
     assert commands[0][commands[0].index("--compiler-decode-mode") + 1] == "tree"
     assert "--grammar-ltr-primary" in commands[0]
     assert "--schema-in-context" in commands[0]

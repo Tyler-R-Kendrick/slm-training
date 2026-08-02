@@ -454,6 +454,10 @@ _LEVER_KNOB_KEYS = (
     "binder_arity_loss_weight",
     "binder_arity_decode_weight",
     "fidelity_loss_weight",
+    "semantic_contrast_dir",
+    "semantic_contrast_loss_weight",
+    "semantic_contrast_margin",
+    "semantic_contrast_fraction",
     "structural_aux_head_profile",
     "compiler_decode_mode",
     "steps",
@@ -574,6 +578,16 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         {
             "component_edge_alignment_loss_weight": 1.0,
             "structural_aux_head_profile": "component-edge",
+        },
+    ),
+    (
+        "semantic-contrast",
+        "Hard-valid semantic-contrast margin supervision improves structural_similarity and binder_reference_f1 without lowering parse_rate.",
+        {
+            "semantic_contrast_dir": "src/slm_training/resources/data/eval/openui_hard_valid_v1",
+            "semantic_contrast_loss_weight": 0.25,
+            "semantic_contrast_margin": 1.0,
+            "semantic_contrast_fraction": 0.5,
         },
     ),
     (
@@ -1018,6 +1032,8 @@ def _arm_slug_from_knobs(
         return "component-plan"
     if knobs.get("component_edge_alignment_loss_weight"):
         return "edge-alignment"
+    if knobs.get("semantic_contrast_loss_weight"):
+        return "semantic-contrast"
     if knobs.get("component_edge_loss_weight"):
         return "component-edge"
     if knobs.get("component_inventory_loss_weight"):
@@ -1205,6 +1221,7 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
         "literal-close",
         "fidelity",
         "edge-alignment",
+        "semantic-contrast",
     )
     legacy_quality_slugs = {
         "component-plan",
@@ -3646,6 +3663,7 @@ def _completed_candidate_priorities(
         "component_plan_loss_weight",
         "component_edge_loss_weight",
         "component_edge_alignment_loss_weight",
+        "semantic_contrast_loss_weight",
         "component_inventory_loss_weight",
         "binder_topology_loss_weight",
         "binder_component_plan_loss_weight",
@@ -3717,9 +3735,9 @@ def _completed_candidate_priorities(
         ),
     )
     for row in rows:
-        if (
-            row.get("disposition") == "experiment_next"
-            and str(row.get("proposed_experiment_id") or "") == candidate_id
+        if row.get("disposition") == "experiment_next" and (
+            str(row.get("proposed_experiment_id") or "") == candidate_id
+            or alternative is None
         ):
             row.update(
                 {
@@ -3773,6 +3791,25 @@ def _completed_candidate_priorities(
                 "authority": "observed_result",
                 "disposition": "experiment_next",
                 "proposed_experiment_id": next_id,
+            }
+        )
+    else:
+        rows[0].update(
+            {
+                "area": "model_build",
+                "hypothesis": (
+                    "The registered quality-arm bank is exhausted; preregister "
+                    "and wire a distinct size-matched quality objective before "
+                    "another screening run."
+                ),
+                "confidence": 0.95,
+                "expected_information_gain": (
+                    "Prevents control recycling and creates a genuinely new "
+                    "training signal for the next bounded comparison."
+                ),
+                "authority": "observed_result",
+                "disposition": "monitor",
+                "proposed_experiment_id": None,
             }
         )
     return tuple(NextRunPriorityV1.model_validate(item) for item in rows)
@@ -4584,6 +4621,29 @@ def _write_cycle_handoff(
                 evidence_ids=(evidence_id,),
             ),
         )
+    elif (
+        cycle_intent in {"screening", "promotion"}
+        and not measurement_incomplete
+        and not delivery.get("positive")
+        and not any(
+            priority.disposition == "experiment_next"
+            and priority.proposed_experiment_id
+            for priority in priorities
+        )
+    ):
+        actions.insert(
+            0,
+            AutotrainActionV1(
+                kind="repair_harness",
+                owner="improve-openui-harnesses",
+                reason=(
+                    "registered quality-arm bank exhausted; preregister and wire "
+                    "a distinct size-matched model-build objective before the next run"
+                ),
+                evidence_ids=(evidence_id,),
+                harness_family="model_build",
+            ),
+        )
     else:
         actions.append(
             AutotrainActionV1(
@@ -5231,6 +5291,7 @@ def _matrix(
             "binder_arity_loss_weight": 0.0,
             "binder_arity_decode_weight": 0.0,
             "fidelity_loss_weight": 0.5,
+            "semantic_contrast_loss_weight": 0.0,
             "structural_aux_head_profile": "none",
             "compiler_decode_mode": "off",
             "ltr_tail_loss_weight": 0.0,
@@ -5298,6 +5359,10 @@ def _matrix(
                 "binder_arity_loss_weight",
                 "binder_arity_decode_weight",
                 "fidelity_loss_weight",
+                "semantic_contrast_dir",
+                "semantic_contrast_loss_weight",
+                "semantic_contrast_margin",
+                "semantic_contrast_fraction",
                 "structural_aux_head_profile",
                 "compiler_decode_mode",
                 "steps",
@@ -5484,6 +5549,10 @@ def _matrix(
                 "binder_arity_loss_weight",
                 "binder_arity_decode_weight",
                 "fidelity_loss_weight",
+                "semantic_contrast_dir",
+                "semantic_contrast_loss_weight",
+                "semantic_contrast_margin",
+                "semantic_contrast_fraction",
                 "structural_aux_head_profile",
                 "compiler_decode_mode",
                 "steps",
@@ -5677,6 +5746,23 @@ def _matrix(
                         ),
                         compiler_decode_mode=str(
                             bank_by_slug[rec_slug][1].get("compiler_decode_mode", "off")
+                        ),
+                        **(
+                            {
+                                key: value
+                                for key, value in bank_by_slug[rec_slug][1].items()
+                                if key
+                                in {
+                                    "semantic_contrast_dir",
+                                    "semantic_contrast_margin",
+                                    "semantic_contrast_fraction",
+                                }
+                            }
+                            | (
+                                {"semantic_contrast_loss_weight": 0.0}
+                                if rec_slug == "semantic-contrast"
+                                else {}
+                            )
                         ),
                     ),
                     "Baseline for size-matched continuous attribution.",
@@ -5920,6 +6006,7 @@ def _manifest(
                 "binder_component_plan_loss_weight": 0.0,
                 "binder_arity_loss_weight": 0.0,
                 "fidelity_loss_weight": 0.5,
+                "semantic_contrast_loss_weight": 0.0,
             },
             sort_keys=True,
         ).encode()

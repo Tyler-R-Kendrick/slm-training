@@ -634,6 +634,9 @@ def test_select_recommended_slug_prioritizes_successor_quality_after_legacy_null
     skip.add("fidelity")
     assert _mod._select_recommended_slug(1794, skip=skip) == "edge-alignment"
 
+    skip.add("edge-alignment")
+    assert _mod._select_recommended_slug(1795, skip=skip) == "semantic-contrast"
+
 
 def test_confirmation_bypasses_exhausted_screening_selector() -> None:
     all_slugs = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
@@ -944,6 +947,41 @@ def test_edge_alignment_arm_is_size_matched_training_objective() -> None:
     assert _mod._arm_slug_from_knobs(candidate) == "edge-alignment"
 
 
+def test_semantic_contrast_arm_matches_pair_exposure_and_changes_only_weight() -> None:
+    campaign_id = "continuous-loop-20260802-c1796"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1796,
+        role="screening",
+        recommended_slug="semantic-contrast",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-semantic-contrast"]
+
+    assert control["semantic_contrast_loss_weight"] == 0.0
+    assert candidate["semantic_contrast_loss_weight"] == 0.25
+    for key in (
+        "semantic_contrast_dir",
+        "semantic_contrast_margin",
+        "semantic_contrast_fraction",
+        "steps",
+        "batch_size",
+    ):
+        assert control[key] == candidate[key]
+    assert _mod._arm_slug_from_knobs(candidate) == "semantic-contrast"
+
+
 def test_completed_frozen_retry_steers_to_distinct_quality_arm() -> None:
     matrix = _mod._matrix(
         campaign_id="continuous-loop-20260731-c10",
@@ -996,6 +1034,42 @@ def test_completed_null_steers_to_distinct_quality_arm() -> None:
     assert priorities[0].proposed_experiment_id == "c20260731-c1729-component-plan"
     assert "completed null" in priorities[0].expected_information_gain
     assert "component-plan" in priorities[0].hypothesis
+
+
+def test_completed_null_with_exhausted_bank_requires_harness_expansion() -> None:
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-20260802-c1795",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=21,
+        cycle=1795,
+        role="screening",
+        recommended_slug="edge-alignment",
+    )
+    candidate_id = matrix["recommended_experiment_id"]
+    matrix["hypotheses"] = [
+        row
+        for row in matrix["hypotheses"]
+        if row["experiment"]["experiment_id"] in {
+            candidate_id,
+            "c20260802-c1795-control",
+        }
+    ]
+
+    priorities = _mod._completed_candidate_priorities(
+        matrix,
+        candidate_id,
+        resolved_infrastructure=False,
+    )
+
+    assert priorities[0].area == "model_build"
+    assert priorities[0].disposition == "monitor"
+    assert priorities[0].proposed_experiment_id is None
+    assert all(row.disposition != "experiment_next" for row in priorities)
+    assert "preregister" in priorities[0].hypothesis
 
 
 def test_completed_null_prioritizes_new_quality_objective_before_runtime() -> None:
@@ -3680,6 +3754,40 @@ def test_cycle_handoff_separates_fixture_climb_from_ship(tmp_path: Path) -> None
     }
     state = json.loads((root / "loops" / "loop-1" / "state.json").read_text())
     assert state["phase"] == "between_cycles"
+
+
+def test_cycle_handoff_routes_exhausted_bank_to_model_build_repair(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    (root / "cycle-exhausted").mkdir(parents=True)
+    handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-exhausted",
+        cycle_index=1795,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="screening",
+        cycle_intent="screening",
+        primary_metric="held_out.structural_similarity",
+        matrix=_priority_matrix(),
+        delivery={
+            "positive": False,
+            "candidate_id": "edge-alignment",
+            "control_id": "control",
+            "reasons": ["primary_metric_not_improved"],
+        },
+        resolution=None,
+        formal_status="proved",
+    )
+
+    repair = next(action for action in handoff.actions if action.kind == "repair_harness")
+    assert repair.owner == "improve-openui-harnesses"
+    assert repair.harness_family == "model_build"
+    assert "quality-arm bank exhausted" in repair.reason
+    assert all(action.kind != "next_experiment" for action in handoff.actions)
+    assert handoff.priorities[0].disposition == "monitor"
 
 
 def test_cycle_handoff_routes_frozen_harness_repair(tmp_path: Path) -> None:

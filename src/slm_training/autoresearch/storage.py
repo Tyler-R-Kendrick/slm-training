@@ -666,6 +666,12 @@ def loop_result_rows(
                 handoff = json.loads(handoff_path.read_text(encoding="utf-8"))
             except json.JSONDecodeError:
                 handoff = {}
+        handoff = _project_confirmation_queue_status(
+            root,
+            loop_id,
+            campaign.campaign_id,
+            handoff,
+        )
         runtime_disposition = _runtime_replay_disposition(
             handoff, outcome.experiment_id
         )
@@ -750,6 +756,50 @@ def loop_result_rows(
             str(row["experiment"]),
         ),
     )
+
+
+def _project_confirmation_queue_status(
+    root: Path | str,
+    loop_id: str,
+    campaign_id: str,
+    handoff: dict[str, Any],
+) -> dict[str, Any]:
+    """Overlay a historical confirmation row with its authoritative queue state."""
+
+    if handoff.get("cycle_intent") != "confirm":
+        return handoff
+    queue_path = Path(root) / "loops" / loop_id / "champion_queue.jsonl"
+    if not queue_path.is_file():
+        return handoff
+    status: str | None = None
+    for line in queue_path.read_text(encoding="utf-8").splitlines():
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if (
+            isinstance(row, dict)
+            and row.get("confirm_campaign_id") == campaign_id
+        ):
+            status = str(row.get("status") or "") or None
+    if status is None:
+        return handoff
+    projected = dict(handoff)
+    if status == "rejected":
+        projected["climb_state"] = "rejected"
+        projected["formal_status"] = "not_applicable:confirmation_rejected"
+    elif status == "harness_failure":
+        projected["climb_state"] = "harness_failure"
+        projected["formal_status"] = "not_applicable:confirmation_harness_failure"
+    elif status in {
+        "confirmed",
+        "promoting",
+        "promotion_inconclusive",
+        "promotion_failed",
+        "climb_accepted",
+    }:
+        projected["climb_state"] = "champion_confirmed"
+    return projected
 
 
 def _runtime_replay_disposition(
@@ -1393,6 +1443,11 @@ def _metrics_text(
 def _lean_text(optimum: Any | None, handoff: dict[str, Any] | None = None) -> str:
     if optimum is None:
         handoff = handoff or {}
+        if (
+            handoff.get("cycle_intent") == "confirm"
+            and handoff.get("climb_state") == "rejected"
+        ):
+            return "not_applicable:confirmation_rejected"
         formal_status = handoff.get("formal_status")
         if formal_status:
             return str(formal_status)
