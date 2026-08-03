@@ -151,3 +151,16 @@ the c1851 fixture gain does not transfer to this coupled objective; current
 prevention is weak/overfit supervision plus an underpowered `n=3` evaluation,
 not Lean or a training crash. The loop remains fail-closed and routes another
 distinct, size-matched hypothesis rather than promoting capacity.
+
+## c1853 learning-status update
+
+c1853 tested a different hierarchical objective coupling slot ownership to the
+component inventory head. It produced a complete null: both arms had structure
+`.115`, MPR/recall/binder/fidelity/reward `0`, and exact AST/canonical rates
+`0`. The candidate used `77,916` additional parameters (`+4.84%`) and raised
+p50 latency `856 -> 902 ms` with no token/forward reduction. This is the
+strongest current evidence that the blocker is not failure to update weights,
+but inadequate target/data coverage and auxiliary objectives that add capacity
+without transferring capability; the fixture remains only `n=3`. Capacity
+growth is therefore blocked by the parameter-efficiency law and the loop keeps
+the matched control while seeking a data/target-oriented, size-matched arm.
