@@ -1,8 +1,8 @@
 {
   "schema_version": "autotrain_measured_result/v1",
   "campaign_id": "autotrain-c1822-freshseed-confirmation-20260803",
-  "cycle_index": 1,
-  "decision": "fresh_seed_confirmation_failed",
+  "cycle_index": 2,
+  "decision": "fresh_seed_confirmation_failed_2_of_2",
   "evidence_class": "fixture_screening",
   "formal_status": "not_applicable:retry_measurement",
   "version_stamp": {
@@ -25,76 +25,53 @@
     "context_backend": "scratch",
     "train_version": "wf_smoke_v2",
     "steps": 20,
-    "seed": 202603,
-    "decode_timeout_seconds": 25.0,
     "predecessor_campaign": "docs/design/autotrain-cycle-1822-compiler-decision-token-positive.json",
-    "predecessor_seed": 101821,
     "sync_checkpoints": false,
     "suites": ["smoke"],
     "suite_n": {"smoke": 3},
     "honesty_mode": "fixture_screening"
   },
-  "arms": [
+  "seed_sweep": [
     {
-      "experiment_id": "autotrain_c1822_freshseed_control",
-      "trainable_params": 1608962,
-      "compiler_decision_token_loss_weight": 0.0,
-      "checkpoint_sha256": "e3d863d5e14b8621fc71a29c8138d8fadef515b750e7118a4dffe2e15fcd456c",
-      "suites": {
-        "smoke": {
-          "n": 3,
-          "parse_rate": 1.0,
-          "meaningful_program_rate": 0.0,
-          "structural_similarity": 0.22999999999999998,
-          "component_type_recall": 0.0,
-          "binder_reference_f1": 0.0,
-          "placeholder_fidelity": 0.0,
-          "reward_score": 0.0,
-          "ast_beq_rate": 0.0,
-          "canonical_beq_rate": 0.0,
-          "latency_ms_p50": 15429.78,
-          "decode_timeout_count": 0,
-          "failure_breakdown": {"no_placeholders": 3}
-        }
-      }
+      "seed": 101821,
+      "source": "docs/design/autotrain-cycle-1822-compiler-decision-token-positive.json",
+      "decode_timeout_seconds": 12.0,
+      "control": {"meaningful_program_rate": 0.0, "structural_similarity": 0.052366666666666666, "component_type_recall": 0.08333333333333333, "binder_reference_f1": 1.0, "placeholder_fidelity": 1.0, "reward_score": 0.941, "latency_ms_p50": 14011.85},
+      "candidate": {"meaningful_program_rate": 0.6666666666666666, "structural_similarity": 0.14623333333333333, "component_type_recall": 0.3333333333333333, "binder_reference_f1": 1.0, "placeholder_fidelity": 1.0, "reward_score": 0.945, "latency_ms_p50": 12386.03},
+      "mpr_effect": 0.6666666666666666,
+      "verdict": "positive_screen"
     },
     {
-      "experiment_id": "autotrain_c1822_freshseed_candidate",
-      "trainable_params": 1608962,
-      "compiler_decision_token_loss_weight": 1.0,
-      "checkpoint_sha256": "1e14fd2530b04b674428828602cced5422a785bfea04a60600db1a823b1dabea",
-      "suites": {
-        "smoke": {
-          "n": 3,
-          "parse_rate": 1.0,
-          "meaningful_program_rate": 0.0,
-          "structural_similarity": 0.26416666666666666,
-          "component_type_recall": 0.25,
-          "binder_reference_f1": 0.0,
-          "placeholder_fidelity": 0.0,
-          "reward_score": 0.0,
-          "ast_beq_rate": 0.0,
-          "canonical_beq_rate": 0.0,
-          "latency_ms_p50": 4924.95,
-          "decode_timeout_count": 0,
-          "failure_breakdown": {"no_placeholders": 3}
-        }
-      }
+      "seed": 202603,
+      "source": "docs/design/autotrain-c1822-freshseed-confirmation-20260803.md (cycle 1)",
+      "decode_timeout_seconds": 25.0,
+      "control": {"meaningful_program_rate": 0.0, "structural_similarity": 0.22999999999999998, "component_type_recall": 0.0, "binder_reference_f1": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0, "latency_ms_p50": 15429.78},
+      "candidate": {"meaningful_program_rate": 0.0, "structural_similarity": 0.26416666666666666, "component_type_recall": 0.25, "binder_reference_f1": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0, "latency_ms_p50": 4924.95},
+      "mpr_effect": 0.0,
+      "verdict": "null"
+    },
+    {
+      "seed": 417729,
+      "source": "this cycle",
+      "decode_timeout_seconds": 40.0,
+      "control": {"meaningful_program_rate": 0.0, "structural_similarity": 0.057499999999999996, "component_type_recall": 0.0, "binder_reference_f1": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0, "latency_ms_p50": 1790.91},
+      "candidate": {"meaningful_program_rate": 0.0, "structural_similarity": 0.1338, "component_type_recall": 0.0, "binder_reference_f1": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0, "latency_ms_p50": 37253.69},
+      "mpr_effect": 0.0,
+      "verdict": "null",
+      "checkpoint_sha256": {"control": "recorded in outputs/runs/autotrain_c1822_seed3_control (not committed)", "candidate": "recorded in outputs/runs/autotrain_c1822_seed3_candidate (not committed)"}
     }
   ],
-  "primary_effect": 0.03416666666666668,
-  "mpr_effect": 0.0,
-  "component_type_recall_effect": 0.25,
-  "reward_effect": 0.0,
-  "latency_improvement_fraction": 0.680815280580799,
+  "mpr_effect_positive_seed_count": 1,
+  "mpr_effect_null_seed_count": 2,
+  "latency_direction_reversed_across_seeds": true,
   "ship_gates_pass": false,
   "measurement_complete": true,
   "sdlc_phase_a": "non_positive",
-  "sdlc_phase_a_reason": "mpr_effect is 0.0 (candidate below the ~1/3 mpr floor required for a latency-budget win to count as positive); primary/component_recall/latency deltas favor the candidate but reward_score and binder_reference_f1 are 0.0 on both arms at this seed, so the c1822 screening win does not reproduce",
+  "sdlc_phase_a_reason": "2 of 3 seeds show mpr_effect=0.0; the one positive seed (c1822's original 101821) does not reproduce on either fresh seed tried, and the p50-latency direction itself reverses between the two fresh seeds (candidate -68% at seed 202603, +1980% at seed 417729), consistent with n=3-document CPU-decode noise rather than a real compiler_decision_token_loss_weight effect at this fixture scale",
   "next_hypothesis": {
-    "kind": "additional_seed_or_larger_suite",
+    "kind": "reject_or_scale_up",
     "authority": "observed_result",
-    "confidence": 0.4,
-    "statement": "compiler-decision-token showed a real MPR/component-recall win at seed=101821 (c1822) but a null MPR effect at seed=202603 on the same 3-document smoke suite; do not promote on either single-seed result. Either run 2+ more seeds to establish whether c1822's win was seed noise on an n=3 fixture, or move this arm to a larger held-out suite where a single seed's parse variance carries less weight."
+    "confidence": 0.75,
+    "statement": "Do not queue further single-seed confirmations of compiler-decision-token on the wf_smoke_v2 n=3 smoke suite -- 2 of 3 seeds are null and latency direction is not stable across seeds, so this suite is underpowered for this arm. Either (a) treat compiler-decision-token as not-yet-established and stop spending cycles on it at this fixture scale, or (b) if the harness owner wants to keep investigating, move straight to a larger held-out suite (20+ documents, per c1822's own honesty caveat) instead of more n=3 single-seed smoke runs."
   }
 }

@@ -1,4 +1,4 @@
-# Autotrain: c1822 compiler-decision-token fresh-seed confirmation (not reproduced)
+# Autotrain: c1822 compiler-decision-token fresh-seed confirmation (2 of 3 seeds null)
 
 **Honesty:** `fixture_screening`. **Not ship.**
 
@@ -55,8 +55,49 @@ seeds before treating either c1822 or this cycle as decisive, or move this
 arm off the 3-document smoke fixture where a single seed's parse variance
 dominates every rate metric.
 
+## Cycle 2: a third seed (417729)
+
+Same recipe, a second fresh seed run in the same scheduled session
+(`--decode-timeout-seconds 40`; candidate needed the higher budget after a
+first attempt at `25` timed out on all 3 documents — CPU decode speed is
+noisy run-to-run in this sandbox, see below).
+
+| Arm | Params | Structural | MPR | Component recall | Binder F1 | Fidelity | Reward | p50 ms |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| control | 1,608,962 | .0575 | 0 | 0 | 0 | 0 | 0 | 1790.91 |
+| compiler-decision token | 1,608,962 | .1338 | 0 | 0 | 0 | 0 | 0 | 37253.69 |
+
+`meaningful_program_rate` is `0` for both arms again (`failure_breakdown:
+{"no_placeholders": 3}` on both, same as seed 202603). This time
+`component_type_recall` is also `0` for both (unlike seed 202603, where the
+candidate led by `.25`), and the **latency direction reverses**: at seed
+202603 the candidate was 68% faster; at seed 417729 the candidate is ~20x
+*slower* (37.3s vs 1.8s p50). That reversal is strong evidence the p50 gap is
+CPU/decode-length noise on this sandbox, not a stable property of
+`compiler_decision_token_loss_weight`.
+
+## Verdict across all 3 seeds
+
+| Seed | Source | MPR effect | Verdict |
+| --- | --- | ---: | --- |
+| 101821 | c1822 (original) | `.6667` | positive screen |
+| 202603 | this PR, cycle 1 | `0` | null |
+| 417729 | this PR, cycle 2 | `0` | null |
+
+**2 of 3 seeds are null.** Combined with the reversed latency direction
+between the two fresh seeds, the evidence now points to c1822's original
+result being noise on the `wf_smoke_v2` `n=3`-document smoke suite rather
+than a real, reproducible effect of `compiler_decision_token_loss_weight`.
+**Recommendation: stop queuing single-seed `n=3` smoke confirmations of this
+arm.** Either treat `compiler-decision-token` as not-yet-established and move
+on, or (if still worth investigating) jump straight to a larger held-out
+suite (20+ documents) instead of more 3-document single-seed runs, per
+c1822's own honesty caveat that the smoke suite is too small for a real
+claim either way.
+
 Machine evidence:
-[`autotrain-c1822-freshseed-confirmation-20260803.json`](autotrain-c1822-freshseed-confirmation-20260803.json).
+[`autotrain-c1822-freshseed-confirmation-20260803.json`](autotrain-c1822-freshseed-confirmation-20260803.json)
+(`seed_sweep` covers all 3 seeds).
 
 Environment: fresh `.venv` (`python3.12 -m venv`, `pip install -e ".[dev]"`,
 `torch==2.5.1+cu124`) plus `NODE_OPTIONS= npm ci` (a sandbox-global
