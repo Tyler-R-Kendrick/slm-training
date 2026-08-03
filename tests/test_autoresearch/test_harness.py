@@ -83,6 +83,7 @@ from slm_training.autoresearch.storage import (
     _markdown_cell,
     _metrics_text,
     _project_confirmation_queue_status,
+    _retry_measurement_evidence_is_complete,
     _run_exposure_text,
     append_autotrain_action_receipt,
     autotrain_loop_state_lock,
@@ -1789,6 +1790,92 @@ def test_loop_state_lock_is_shared_across_writers(tmp_path: Path) -> None:
     finally:
         fcntl.flock(competing_fd, fcntl.LOCK_UN)
         os.close(competing_fd)
+
+
+def test_retry_receipt_requires_complete_predecessor_bound_pair(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    campaign_id = "cycle-1"
+    action = AutotrainActionV1(
+        kind="retry_measurement",
+        owner="autotrain",
+        reason="Replay the incomplete matched pair.",
+        evidence_ids=(f"campaign:{campaign_id}",),
+        frozen_manifest_sha256="a" * 64,
+    )
+    handoff = AutotrainCycleHandoffV1(
+        loop_id="loop-1",
+        campaign_id=campaign_id,
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        cycle_role="screening",
+        cycle_intent="retry_measurement",
+        evidence_class="fixture",
+        climb_state="inconclusive",
+        ship_state="blocked",
+        primary_metric="smoke.parse_rate",
+        actions=(action,),
+    )
+    successor = root / campaign_id / "successor"
+    manifests = successor / "manifests"
+    manifests.mkdir(parents=True)
+    (successor / "campaign.json").write_text(
+        json.dumps(
+            {
+                "campaign_id": "cycle-2",
+                "loop_id": "loop-1",
+                "predecessor_campaign_id": campaign_id,
+            }
+        ),
+        encoding="utf-8",
+    )
+    (successor / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "schema": "autotrain_sdlc_delivery/v1",
+                "campaign_id": "cycle-2",
+                "loop_id": "loop-1",
+                "measurement_complete": True,
+                "arm_order": ["control", "candidate"],
+            }
+        ),
+        encoding="utf-8",
+    )
+    for arm in ("control", "candidate"):
+        (manifests / f"{arm}.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": "ExperimentCampaignV1",
+                    "campaign_id": "cycle-2",
+                    "experiment_id": arm,
+                }
+            ),
+            encoding="utf-8",
+        )
+    evidence = tuple(
+        f"successor/{name}"
+        for name in (
+            "campaign.json",
+            "sdlc_delivery.json",
+            "manifests/control.json",
+            "manifests/candidate.json",
+        )
+    )
+    receipt = AutotrainActionReceiptV1(
+        loop_id="loop-1",
+        campaign_id=campaign_id,
+        action_index=0,
+        action_sha256=autotrain_action_sha256(action),
+        action_kind=action.kind,
+        status="completed",
+        evidence_uris=evidence,
+    )
+    assert _retry_measurement_evidence_is_complete(root, handoff, receipt)
+    assert not _retry_measurement_evidence_is_complete(
+        root,
+        handoff,
+        receipt.model_copy(update={"evidence_uris": ("successor/campaign.json",)}),
+    )
 
 
 def test_theorem_band_miss_stops_and_requires_formal_repair(tmp_path: Path) -> None:

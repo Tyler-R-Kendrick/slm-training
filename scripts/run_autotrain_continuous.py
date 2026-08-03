@@ -8054,6 +8054,11 @@ def run_cycle(
     ):
         evidence = (
             str(
+                (camp_dir / "campaign.json").relative_to(cwd)
+                if (camp_dir / "campaign.json").is_relative_to(cwd)
+                else camp_dir / "campaign.json"
+            ),
+            str(
                 (camp_dir / "sdlc_delivery.json").relative_to(cwd)
                 if (camp_dir / "sdlc_delivery.json").is_relative_to(cwd)
                 else camp_dir / "sdlc_delivery.json"

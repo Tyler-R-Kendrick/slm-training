@@ -301,7 +301,77 @@ def _receipt_satisfies_action(
         )
     except (OSError, subprocess.SubprocessError, ValueError):
         return False
-    return current == receipt.evidence
+    if current != receipt.evidence:
+        return False
+    if action.kind not in _EXECUTION_ACTION_KINDS:
+        return True
+    if action.kind != "retry_measurement":
+        return False
+    return _retry_measurement_evidence_is_complete(root, handoff, receipt)
+
+
+def _retry_measurement_evidence_is_complete(
+    root: Path | str,
+    handoff: AutotrainCycleHandoffV1,
+    receipt: AutotrainActionReceiptV1,
+) -> bool:
+    """Require a complete, predecessor-bound successor pair for retry completion."""
+
+    campaign_root = (Path(root) / handoff.campaign_id).resolve()
+    repo_root = _REPO_ROOT.resolve()
+
+    def resolve(uri: str) -> Path | None:
+        for base in (campaign_root, repo_root):
+            path = (base / uri).resolve()
+            if path.is_file() and path.is_relative_to(base):
+                return path
+        return None
+
+    paths = tuple(resolve(uri) for uri in receipt.evidence_uris)
+    if any(path is None for path in paths):
+        return False
+    evidence_paths = tuple(path for path in paths if path is not None)
+    campaign_paths = tuple(path for path in evidence_paths if path.name == "campaign.json")
+    delivery_paths = tuple(path for path in evidence_paths if path.name == "sdlc_delivery.json")
+    manifest_paths = tuple(
+        path for path in evidence_paths if path.suffix == ".json" and path.parent.name == "manifests"
+    )
+    if len(campaign_paths) != 1 or len(delivery_paths) != 1 or len(manifest_paths) != 2:
+        return False
+    campaign_path = campaign_paths[0]
+    delivery_path = delivery_paths[0]
+    if campaign_path.parent != delivery_path.parent or any(
+        path.parent.parent != delivery_path.parent for path in manifest_paths
+    ):
+        return False
+    try:
+        campaign = json.loads(campaign_path.read_text(encoding="utf-8"))
+        delivery = json.loads(delivery_path.read_text(encoding="utf-8"))
+        manifests = tuple(json.loads(path.read_text(encoding="utf-8")) for path in manifest_paths)
+    except (OSError, json.JSONDecodeError):
+        return False
+    successor_id = delivery.get("campaign_id")
+    arm_order = delivery.get("arm_order")
+    if (
+        delivery.get("schema") != "autotrain_sdlc_delivery/v1"
+        or delivery.get("measurement_complete") is not True
+        or delivery.get("loop_id") != handoff.loop_id
+        or not isinstance(successor_id, str)
+        or successor_id == handoff.campaign_id
+        or not isinstance(arm_order, list)
+        or len(arm_order) != 2
+        or len(set(arm_order)) != 2
+        or campaign.get("campaign_id") != successor_id
+        or campaign.get("loop_id") != handoff.loop_id
+        or campaign.get("predecessor_campaign_id") != handoff.campaign_id
+    ):
+        return False
+    return {path.stem for path in manifest_paths} == set(arm_order) and all(
+        manifest.get("schema_version") == "ExperimentCampaignV1"
+        and manifest.get("campaign_id") == successor_id
+        and manifest.get("experiment_id") in arm_order
+        for manifest in manifests
+    )
 
 
 def _pending_autotrain_actions(
