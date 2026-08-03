@@ -1,0 +1,69 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c5",
+  "cycle_index": 5,
+  "evidence_class": "fixture",
+  "decision": "dual_arm_decode_timeout_unresolved_requires_repair",
+  "scoreable": false,
+  "new_checkpoint_created": true,
+  "upstream_commit": "72fdffaf054efee2f3dccc4bab0ca97c111072e1",
+  "integration_commit": "72fdffaf054efee2f3dccc4bab0ca97c111072e1",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c5-control",
+      "trainable_params": 1755760,
+      "checkpoint_sha256": "769e7d4615ef31ab65456aa91e1fbd7792fe7fc91202c6ef0eb7f4386db78a66",
+      "seed": 100005,
+      "status": "trained_eval_incomplete",
+      "smoke_n": 3,
+      "decode_timeout_document_count": 3,
+      "effective_decode_timeout_seconds_max": 24.0
+    },
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c5-confirm",
+      "trainable_params": 1755760,
+      "checkpoint_sha256": "6d9ff92f32ca3c5861e0c6532036b6e58ac874ff14d18570399308fb073b9fe4",
+      "seed": 100005,
+      "status": "trained_eval_incomplete",
+      "smoke_n": 3,
+      "decode_timeout_document_count": 3,
+      "effective_decode_timeout_seconds_max": 23.43212903599988
+    }
+  ],
+  "comparison": {
+    "attributable": false
+  },
+  "agentv": {
+    "bundles_complete": true,
+    "execution_errors": 0,
+    "ship_gates_pass": false
+  },
+  "checkpoint_policy": "local_explicit_no_sync_not_reusable_not_promoted_not_ship_eval_incomplete",
+  "lean": "not_applicable:confirmation_rejected",
+  "investigation": {
+    "summary": "All 3/3 smoke records finalized inside a typed decode timeout for BOTH the control and confirm arms at this fresh seed (100005), at the same 1,755,760-param size that decoded successfully in ~6.5-7.2s per arm one cycle earlier (c4, different seed). Verified _effective_record_decode_timeout (src/slm_training/harnesses/model_build/eval_runner.py:884) allocates a fair, budget-aware per-record share and is already covered by tests/test_harnesses/model_build/test_eval_metric_semantics.py::test_eval_wall_fairly_caps_each_remaining_record -- no defect found there. Confirmed tests/test_scripts/test_run_autotrain_continuous.py::test_replayed_dual_arm_timeouts_remain_inconclusive_and_require_repair intentionally locks in that a symmetric (both-arm) finalized decode timeout must stay climb_state=inconclusive and keep demanding repair_harness rather than silently retiring to a new hypothesis -- a routing change to auto-retire dual-arm timeouts was drafted, found to violate this existing contract, and reverted (not shipped).",
+    "root_cause": "unresolved: either (a) seed-dependent worst-case decode/parser behavior for this candidate size at seed 100005, or (b) this sandbox's per-run CPU throughput plus the campaign's per-experiment wall budget leaves too little decode headroom at 1,755,760 params. Not distinguished in this session.",
+    "not_a_fix": "No code change was made; the driver's existing dual-arm-timeout contract (require repair, never auto-retire) was verified intact.",
+    "recommended_next_step": "Replay the identical frozen -confirm arm (retry_measurement, already queued) to test whether the timeout reproduces at the same seed; if it reproduces twice, profile compiler-tree decode specifically for seed 100005 at this param count in a dedicated follow-up session."
+  },
+  "next_priority": "replay the identical frozen confirm arm; if reproduced, hand off to improve-openui-harnesses for compiler-tree decode profiling at seed 100005",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "72fdffaf054efee2f3dccc4bab0ca97c111072e1",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v77",
+      "harness.model_build.train": "v36",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "evals.agentv": "v7",
+      "model.twotower": "v300",
+      "dsl.symbolic_surface": "v6"
+    },
+    "stamped_at": "2026-08-03T01:21:05.188262Z"
+  }
+}
