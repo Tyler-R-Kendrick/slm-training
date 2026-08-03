@@ -67,6 +67,7 @@ from slm_training.autoresearch.schemas import (
 from slm_training.autoresearch.storage import (
     CampaignStore,
     append_autotrain_action_receipt,
+    autotrain_action_is_execution,
     autotrain_action_sha256,
     bind_autotrain_action_evidence,
     loop_result_rows,
@@ -1651,6 +1652,11 @@ def cmd_ack_action(args: argparse.Namespace) -> int:
     if args.action_index < 0 or args.action_index >= len(handoff.actions):
         raise ValueError("--action-index is outside the handoff action list")
     action = handoff.actions[args.action_index]
+    if args.status == "completed" and autotrain_action_is_execution(action):
+        raise ValueError(
+            f"{action.kind} completion is continuous-driver-owned; "
+            "operators may only record status=blocked"
+        )
     evidence_uris = tuple(args.evidence)
     evidence = bind_autotrain_action_evidence(
         args.root,

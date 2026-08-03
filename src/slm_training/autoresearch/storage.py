@@ -9,9 +9,10 @@ import json
 import os
 import subprocess
 import tempfile
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 from pydantic import BaseModel
 
@@ -72,22 +73,44 @@ def autotrain_action_sha256(action: AutotrainActionV1) -> str:
     return _sha(action.model_dump(mode="json"))
 
 
+def autotrain_action_is_execution(action: AutotrainActionV1) -> bool:
+    """Return whether only the continuous driver may complete this action."""
+
+    return action.kind in _EXECUTION_ACTION_KINDS
+
+
+@contextmanager
+def autotrain_loop_state_lock(root: Path | str, loop_id: str) -> Iterator[None]:
+    """Serialize short-lived state writes and receipt reconciliation per loop."""
+
+    path = Path(root) / "loops" / loop_id / "state.lock"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lock_fd = os.open(path, os.O_CREAT | os.O_RDWR, 0o644)
+    try:
+        fcntl.flock(lock_fd, fcntl.LOCK_EX)
+        yield
+    finally:
+        fcntl.flock(lock_fd, fcntl.LOCK_UN)
+        os.close(lock_fd)
+
+
 def append_autotrain_action_receipt(
     root: Path | str, receipt: AutotrainActionReceiptV1
 ) -> Path:
     path = Path(root) / "loops" / receipt.loop_id / "action_receipts.jsonl"
     path.parent.mkdir(parents=True, exist_ok=True)
-    lock_fd = os.open(path.with_suffix(".lock"), os.O_CREAT | os.O_RDWR, 0o644)
-    try:
-        fcntl.flock(lock_fd, fcntl.LOCK_EX)
-        with path.open("a", encoding="utf-8") as stream:
-            stream.write(receipt.model_dump_json() + "\n")
-            stream.flush()
-            os.fsync(stream.fileno())
-    finally:
-        fcntl.flock(lock_fd, fcntl.LOCK_UN)
-        os.close(lock_fd)
-    _refresh_loop_state_after_receipt(Path(root), receipt)
+    with autotrain_loop_state_lock(root, receipt.loop_id):
+        lock_fd = os.open(path.with_suffix(".lock"), os.O_CREAT | os.O_RDWR, 0o644)
+        try:
+            fcntl.flock(lock_fd, fcntl.LOCK_EX)
+            with path.open("a", encoding="utf-8") as stream:
+                stream.write(receipt.model_dump_json() + "\n")
+                stream.flush()
+                os.fsync(stream.fileno())
+        finally:
+            fcntl.flock(lock_fd, fcntl.LOCK_UN)
+            os.close(lock_fd)
+        _refresh_loop_state_after_receipt(Path(root), receipt)
     return path
 
 

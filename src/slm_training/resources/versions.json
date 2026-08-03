@@ -2661,7 +2661,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v157",
+      "version": "v159",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2701,6 +2701,16 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v159",
+          "date": "2026-08-03",
+          "note": "Serialize receipt and driver state reconciliation, keep blocked execution work pending, and reserve completion receipts for the continuous driver."
+        },
+        {
+          "version": "v158",
+          "date": "2026-08-03",
+          "note": "Fail closed when continuous promotion lacks canonical raw LeverProof resource samples and bind band assessments to per-example metric observations instead of synthetic aggregates."
+        },
         {
           "version": "v157",
           "date": "2026-08-03",
@@ -10487,6 +10497,11 @@
         "docs/design/ldi3-04-remine-intervene-campaign-report-20260718.json"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-08-03",
+          "note": "no-bump: restrict continuous-loop execution-action receipts and serialize its state updates; preference remine campaign behavior is unchanged"
+        },
         {
           "version": "v4",
           "date": "2026-08-03",

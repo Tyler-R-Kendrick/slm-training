@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import fcntl
 import hashlib
 import json
+import os
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
@@ -83,6 +85,7 @@ from slm_training.autoresearch.storage import (
     _project_confirmation_queue_status,
     _run_exposure_text,
     append_autotrain_action_receipt,
+    autotrain_loop_state_lock,
     autotrain_action_sha256,
     bind_autotrain_action_evidence,
     pending_autotrain_actions,
@@ -1570,6 +1573,46 @@ def test_ack_action_receipt_closes_predecessor_prerequisite(tmp_path: Path) -> N
         action.kind for _, action in pending_autotrain_execution_actions(root, handoff)
     ] == ["next_experiment"]
 
+    driver_owned_args = build_parser().parse_args(
+        [
+            "--root",
+            str(root),
+            "ack-action",
+            "--loop-id",
+            "loop-1",
+            "--campaign-id",
+            campaign_id,
+            "--action-index",
+            "1",
+            "--evidence",
+            "docs/design/autoresearch-autotraining.md",
+        ]
+    )
+    with pytest.raises(ValueError, match="continuous-driver-owned"):
+        driver_owned_args.func(driver_owned_args)
+
+    blocked_args = build_parser().parse_args(
+        [
+            "--root",
+            str(root),
+            "ack-action",
+            "--loop-id",
+            "loop-1",
+            "--campaign-id",
+            campaign_id,
+            "--action-index",
+            "1",
+            "--status",
+            "blocked",
+            "--evidence",
+            "docs/design/autoresearch-autotraining.md",
+        ]
+    )
+    assert blocked_args.func(blocked_args) == 0
+    assert [
+        action.kind for _, action in pending_autotrain_execution_actions(root, handoff)
+    ] == ["next_experiment"]
+
     append_autotrain_action_receipt(
         root,
         AutotrainActionReceiptV1(
@@ -1726,6 +1769,26 @@ def test_ack_action_receipt_closes_predecessor_prerequisite(tmp_path: Path) -> N
     assert [
         action.kind for _, action in pending_autotrain_actions(root, stopped_handoff)
     ] == ["stop_campaign"]
+
+
+def test_loop_state_lock_is_shared_across_writers(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    lock_path = root / "loops" / "loop-1" / "state.lock"
+
+    with autotrain_loop_state_lock(root, "loop-1"):
+        competing_fd = os.open(lock_path, os.O_RDWR)
+        try:
+            with pytest.raises(BlockingIOError):
+                fcntl.flock(competing_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        finally:
+            os.close(competing_fd)
+
+    competing_fd = os.open(lock_path, os.O_RDWR)
+    try:
+        fcntl.flock(competing_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    finally:
+        fcntl.flock(competing_fd, fcntl.LOCK_UN)
+        os.close(competing_fd)
 
 
 def test_theorem_band_miss_stops_and_requires_formal_repair(tmp_path: Path) -> None:
