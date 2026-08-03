@@ -1,0 +1,66 @@
+{
+    "schema": "continuous_autotrain_cycle_results/v1",
+    "loop_id": "continuous-openui-local",
+    "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c2",
+    "cycle_index": 2,
+    "source_commit": "6c623c64eda034da09164da8a9247d9832ddd4ba",
+    "honesty": "fixture_or_scratch",
+    "not_ship_claim": true,
+    "recipe": {
+        "device": "cpu",
+        "steps": 22,
+        "train_version": "wf_smoke_v2",
+        "eval_version": "e938_role_safe_all_targets_v2",
+        "max_wall_minutes": 1.1666666666666667,
+        "ship_gates": true,
+        "seed": 100002,
+        "trainable_params": 1755764
+    },
+    "arms": {
+        "c2-control": {
+            "status": "completed_eval_gates_failed",
+            "checkpoint_sha256": "6abf57d4898e8fe7cb1dace959d3ce5fec463f816b3686c99ad18abf6db3512b",
+            "last_loss": 14.390223503112793,
+            "smoke": {
+                "n": 3,
+                "parse_rate": 1.0,
+                "meaningful_program_rate": 0.0,
+                "structural_similarity": 0.32666666666666666,
+                "binder_reference_f1": 0.0,
+                "latency_ms_p50": 15875.48
+            }
+        },
+        "c2-component-plan": {
+            "status": "completed_eval_gates_failed",
+            "checkpoint_sha256": "20e573b14e3216132d27101e98f5c49dfe634acd0101b2ce18b5f9f0f8a8e741",
+            "last_loss": 19.91602325439453,
+            "smoke": {
+                "n": 3,
+                "parse_rate": 1.0,
+                "meaningful_program_rate": 0.0,
+                "structural_similarity": 0.38280000000000003,
+                "binder_reference_f1": 0.0,
+                "latency_ms_p50": 13317.56
+            }
+        }
+    },
+    "primary_metric": "smoke.structural_similarity",
+    "primary_delta": 0.05613333333333337,
+    "sdlc_phase_a": {
+        "positive": true,
+        "stack_layer": false,
+        "stack_action": "positive_no_tracked_delta_skip_stack",
+        "agent_required": "metric win recorded; no code/docs delta beyond this documentation — skip gh-stack layer; open a normal reviewable PR to land docs; continue loop",
+        "reasons": [
+            "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c2-control",
+            "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c2-component-plan",
+            "primary_metric_win:smoke.structural_similarity:0.32666666666666666->0.38280000000000003:improvement=0.05613333333333337"
+        ]
+    },
+    "conclusion": "Continuous-openui-local loop, cycle 2 (scheduled session sk4t9p, branch claude/great-dirac-j34ebs): 'component-plan' beats its size-matched control on the declared primary at this seed (100002) -- structural_similarity 0.32667 -> 0.38280, improvement +0.05613 -- byte-identical to four prior independently-run sessions' measurements of the identical hypothesis (PR #1369, autotrain-cycle-c4-component-plan-efficiency-win.md, PR #1376, PR #1378). Checkpoint SHAs (control 6abf57d4...db3512b, component-plan 20e573b1...f0f8a8e741) are byte-identical to the prior j48f8u session, confirming the fixture effect is deterministic and reproducible across intervening harness commits. meaningful_program_rate stays 0 on both arms and binder_reference_f1 reads 0 on both arms this cycle. Ship gates fail as expected (fixture_insufficient_n, n=3 vs required 20). SDLC Phase A classifies POSITIVE (primary_metric_win) but the automated classifier flags positive_no_tracked_delta_skip_stack because this cycle re-ran the identical recipe with no new code/harness diff of its own -- per sdlc autotrain-iteration-delivery, documenting a positive result is itself the reviewable delta, matching how all four prior reproductions of this exact hypothesis were delivered.",
+    "next_priorities": [
+        "Confirm the fixture candidate on a fresh seed with the exact size-matched treatment and control recipes before promotion (rank 1, confidence 0.95).",
+        "Keep promotion formal preflight locked until fresh confirmation establishes a champion (rank 2, confidence 1.0, lean_assumption)."
+    ],
+    "recorded_at": "2026-08-03T11:35:53Z"
+}
