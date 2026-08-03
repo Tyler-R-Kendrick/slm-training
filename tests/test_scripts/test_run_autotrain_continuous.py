@@ -872,6 +872,38 @@ def test_select_recommended_slug_prioritizes_successor_quality_after_legacy_null
     skip.add("symbol-boundary")
     assert _mod._select_recommended_slug(1799, skip=skip) == "design-dropout"
 
+    skip.add("design-dropout")
+    assert _mod._select_recommended_slug(1800, skip=skip) == "scaffold-prefix"
+    skip.add("scaffold-prefix")
+    assert _mod._select_recommended_slug(1801, skip=skip) == "scaffold-prefix-structure"
+    skip.add("scaffold-prefix-structure")
+    assert _mod._select_recommended_slug(1802, skip=skip) == "scaffold-prefix-tail"
+    skip.add("scaffold-prefix-tail")
+    assert _mod._select_recommended_slug(1803, skip=skip) == "component-token"
+    skip.add("component-token")
+    assert _mod._select_recommended_slug(1804, skip=skip) == "component-token-prefix"
+
+
+def test_new_successor_arm_slug_mapping() -> None:
+    assert (
+        _mod._arm_slug_from_knobs(
+            {"ltr_prefix_loss_weight": 1.0, "structure_token_loss_weight": 1.0}
+        )
+        == "scaffold-prefix-structure"
+    )
+    assert (
+        _mod._arm_slug_from_knobs(
+            {"ltr_prefix_loss_weight": 1.0, "ltr_tail_loss_weight": 1.0}
+        )
+        == "scaffold-prefix-tail"
+    )
+    assert (
+        _mod._arm_slug_from_knobs(
+            {"component_token_loss_weight": 1.0, "ltr_prefix_loss_weight": 1.0}
+        )
+        == "component-token-prefix"
+    )
+
 
 def test_confirmation_bypasses_exhausted_screening_selector() -> None:
     all_slugs = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
@@ -3195,7 +3227,10 @@ def test_resolve_promotion_harness_failure_not_model_reject(tmp_path: Path) -> N
     assert resolved["status"] != "rejected"
     rows = _mod._load_champion_queue(path)
     assert rows[0]["status"] == "harness_failure"
-    assert int(rows[0].get("promote_attempts") or 0) == 0
+    # Harness failures consume promote_attempts (no refund) so stuck
+    # deadline_reserve loops cannot block thrash forever.
+    assert int(rows[0].get("promote_attempts") or 0) == 1
+    assert rows[0].get("last_harness_failure") is True
     head = _mod._queue_head_confirmed(rows)
     assert head is not None and head["entry_id"] == "champ-hf-1"
     ledger = (root / "loops" / loop / "learning_certificate_ledger.jsonl").read_text()
@@ -5188,8 +5223,35 @@ def test_post_planning_budget_is_rebalanced_symmetrically(
     )
 
     assert fitted * 60 == pytest.approx(
-        (remaining - HARNESS_FINALIZATION_RESERVE_SECONDS) / 2
+        (
+            remaining
+            - HARNESS_FINALIZATION_RESERVE_SECONDS
+            - _mod._ARM_BUDGET_SCHEDULE_MARGIN_SECONDS
+        )
+        / 2
     )
+
+
+def test_fit_arm_budget_leaves_margin_so_deadline_check_passes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Regression: promote arms skipped when remaining ≈ required by μs."""
+    from slm_training.levers import HARNESS_FINALIZATION_RESERVE_SECONDS
+
+    now = 1000.0
+    monkeypatch.setattr(_mod.time, "monotonic", lambda: now)
+    remaining = 160.0
+    deadline = now + remaining
+    fitted = _mod._fit_symmetric_arm_budget(
+        deadline=deadline,
+        arm_count=2,
+        requested_arm_wall_minutes=3.0,
+    )
+    # Simulate a few μs of wall time between fit and execute check.
+    monkeypatch.setattr(_mod.time, "monotonic", lambda: now + 1e-4)
+    remaining_after = max(0.0, deadline - _mod.time.monotonic())
+    required = 2 * fitted * 60.0 + HARNESS_FINALIZATION_RESERVE_SECONDS
+    assert remaining_after + 1e-3 >= required
 
 
 def test_completed_formal_lane_returns_unused_time_to_matched_arms() -> None:
