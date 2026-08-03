@@ -725,6 +725,11 @@ def test_select_recommended_slug_rotates_and_skips() -> None:
     assert _mod._select_recommended_slug(
         1824, skip=all_slugs - {"compiler-decision-margin"}
     ) == "compiler-decision-margin"
+    assert _mod._select_recommended_slug(
+        1841,
+        skip=all_slugs
+        - {"capacity-aware-semantic-exhaustive-compiler-decision-margin"},
+    ) == "capacity-aware-semantic-exhaustive-compiler-decision-margin"
 
 
 def test_select_recommended_slug_prioritizes_successor_quality_after_legacy_nulls() -> (
@@ -1636,6 +1641,43 @@ def test_capacity_aware_tail_margin_isolates_closure_treatment() -> None:
     assert _mod._arm_slug_from_knobs(candidate) == (
         "capacity-aware-tail-compiler-decision-margin"
     )
+    HypothesisMatrix.model_validate(matrix)
+
+
+def test_capacity_aware_semantic_exhaustive_isolates_decision_coverage() -> None:
+    campaign_id = "continuous-loop-20260803-c1841"
+    slug = "capacity-aware-semantic-exhaustive-compiler-decision-margin"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1841,
+        role="screening",
+        recommended_slug=slug,
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-{slug}"]
+    for key in (
+        "compiler_alignment_loss_weight",
+        "compiler_alignment_margin",
+        "compiler_alignment_stratified",
+        "compiler_alignment_kind_filter",
+        "mixture_sampling_policy",
+    ):
+        assert candidate[key] == control[key]
+    assert not control.get("compiler_alignment_semantic_exhaustive", False)
+    assert candidate["compiler_alignment_semantic_exhaustive"] is True
+    assert f"{prefix}-capacity-aware-compiler-decision-margin" not in knobs
+    assert _mod._arm_slug_from_knobs(candidate) == slug
     HypothesisMatrix.model_validate(matrix)
 
 

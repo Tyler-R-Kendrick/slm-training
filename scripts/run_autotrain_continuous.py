@@ -762,6 +762,18 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         },
     ),
     (
+        "capacity-aware-semantic-exhaustive-compiler-decision-margin",
+        "Exhaustive grammar-oracle supervision over every semantic compiler decision improves exact AST and canonical agreement on top of capacity-aware all-family alignment without lowering guarded OpenUI quality.",
+        {
+            "compiler_alignment_loss_weight": 1.0,
+            "compiler_alignment_margin": 1.0,
+            "compiler_alignment_stratified": True,
+            "compiler_alignment_semantic_exhaustive": True,
+            "compiler_alignment_kind_filter": "all",
+            "mixture_sampling_policy": "capacity_aware",
+        },
+    ),
+    (
         "structure-token",
         "Direct grammar STRUCT-token reconstruction weighting repairs scaffold formation and structural_similarity without lowering parse_rate or binder_reference_f1.",
         {"structure_token_loss_weight": 1.0},
@@ -1243,6 +1255,13 @@ def _arm_slug_from_knobs(
         knobs.get("compiler_alignment_loss_weight")
         and knobs.get("compiler_alignment_kind_filter") == "all"
         and knobs.get("mixture_sampling_policy") == "capacity_aware"
+        and knobs.get("compiler_alignment_semantic_exhaustive")
+    ):
+        return "capacity-aware-semantic-exhaustive-compiler-decision-margin"
+    if (
+        knobs.get("compiler_alignment_loss_weight")
+        and knobs.get("compiler_alignment_kind_filter") == "all"
+        and knobs.get("mixture_sampling_policy") == "capacity_aware"
         and knobs.get("ltr_tail_loss_weight")
     ):
         return "capacity-aware-tail-compiler-decision-margin"
@@ -1531,6 +1550,7 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
         "wide-draft-compiler-decision-margin",
         "capacity-aware-compiler-decision-margin",
         "capacity-aware-tail-compiler-decision-margin",
+        "capacity-aware-semantic-exhaustive-compiler-decision-margin",
         "structure-token",
         "typed-family-balance",
         "container-close",
@@ -6472,6 +6492,9 @@ def _matrix(
             "wide-draft-compiler-decision-margin": "grammar_draft_window",
             "capacity-aware-compiler-decision-margin": "mixture_sampling_policy",
             "capacity-aware-tail-compiler-decision-margin": "ltr_tail_loss_weight",
+            "capacity-aware-semantic-exhaustive-compiler-decision-margin": (
+                "compiler_alignment_semantic_exhaustive"
+            ),
         }.get(rec_slug)
         if treatment_key is not None:
             control_extra = {
@@ -6481,7 +6504,11 @@ def _matrix(
             }
         precursor_slug = (
             "capacity-aware-compiler-decision-margin"
-            if rec_slug == "capacity-aware-tail-compiler-decision-margin"
+            if rec_slug
+            in {
+                "capacity-aware-tail-compiler-decision-margin",
+                "capacity-aware-semantic-exhaustive-compiler-decision-margin",
+            }
             else "compiler-decision-margin"
         )
         candidates = [

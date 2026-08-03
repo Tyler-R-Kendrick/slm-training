@@ -33,6 +33,14 @@ training objective changes learned behavior; it does not establish a useful or
 shippable model. Promotion now requires the registered held-out suites and Lean
 formal preflight. See [c1838 measured results](autotrain-cycle-1838-capacity-aware-tail-confirmed.md).
 
+c1839 then produced a third-seed exact quality/work null with +3.8% candidate
+latency, so the tail objective is seed-sensitive and closed for further
+screening. Its successor is a preregistered, size-matched capacity-aware
+semantic-exhaustive compiler-alignment arm: it changes only whether every
+semantic compiler decision is supervised, targeting the still-zero exact AST
+and canonical rates without changing parameters, decoding legality, or gates.
+See [c1839 measured results](autotrain-cycle-1839-capacity-aware-tail-null.md).
+
 ---
 
 ## Failure baseline (`twotower_v1_ship`)

@@ -52,20 +52,24 @@ def test_replace_mode_uses_opaque_ordinal_features() -> None:
     table = SymbolTable.from_placeholders(
         [":slot_0", ":slot_1"], max_slots=model.tokenizer.sym_slots
     )
-    features = model._runtime_feature_tensor([table])
-    assert features is not None
-    weight = model.denoiser.tok.weight
-    for slot, _surface in enumerate(table.placeholders):
-        token_id = model.tokenizer.sym_id(slot)
-        delta = features[0, token_id]
-        assert torch.any(delta != 0), "replace mode must write a delta"
-        effective = weight[token_id] + delta
-        byte_ids = model.tokenizer._encode_bytes(
-            f"content:{slot} role:external_entity"
-        )
-        composed = weight.index_select(0, torch.tensor(byte_ids)).mean(0)
-        assert torch.allclose(effective, composed, atol=1e-6)
-    model.denoiser.set_runtime_symbol_features(None)
+    model._opaque_slot_projection_active = True
+    try:
+        features = model._runtime_feature_tensor([table])
+        assert features is not None
+        weight = model.denoiser.tok.weight
+        for slot, _surface in enumerate(table.placeholders):
+            token_id = model.tokenizer.sym_id(slot)
+            delta = features[0, token_id]
+            assert torch.any(delta != 0), "replace mode must write a delta"
+            effective = weight[token_id] + delta
+            byte_ids = model.tokenizer._encode_bytes(
+                f"content:{slot} role:external_entity"
+            )
+            composed = weight.index_select(0, torch.tensor(byte_ids)).mean(0)
+            assert torch.allclose(effective, composed, atol=1e-6)
+    finally:
+        model._opaque_slot_projection_active = False
+        model.denoiser.set_runtime_symbol_features(None)
 
 
 def test_marker_embedding_depends_on_ordinal() -> None:
@@ -97,13 +101,15 @@ def test_slot_component_texts_use_opaque_ordinals() -> None:
         model._opaque_slot_projection_active = False
 
 
-def test_context_rejects_named_marker_contracts() -> None:
+def test_opaque_context_omits_named_marker_contracts() -> None:
     model = _model("none")
     model.config.slot_contract_in_context = True
-    with pytest.raises(ValueError, match="opaque :slot_<ordinal>"):
-        model._context_prompts(
-            ["Use :hero.title"], slot_contracts=[[":hero.title"]]
-        )
+    opaque = model._context_prompts(
+        ["Use the hero title"],
+        slot_contracts=[[":hero.title"]],
+        opaque_slot_projection=True,
+    )
+    assert ":hero.title" not in opaque[0]
     canonical = model._context_prompts(
         ["Use :slot_0 then :slot_1"],
         slot_contracts=[[":slot_0", ":slot_1"]],
@@ -146,7 +152,7 @@ def test_replace_mode_trains_and_decodes() -> None:
         loss.backward()
         optimizer.step()
         assert float(loss.item()) == float(loss.item())  # finite
-    out = model.generate("Hero 0", grammar_constrained=False)
+    out = model.generate("Hero 0")
     assert isinstance(out, str)
 
 

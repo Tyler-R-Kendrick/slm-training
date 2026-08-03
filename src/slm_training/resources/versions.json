@@ -2656,7 +2656,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v136",
+      "version": "v137",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2696,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v137",
+          "date": "2026-08-03",
+          "note": "Add a distinct size-matched capacity-aware semantic-exhaustive compiler-alignment objective after the registered screening bank was exhausted, isolating decision coverage without changing model size or decode authority."
+        },
         {
           "version": "v136",
           "date": "2026-08-03",
@@ -5437,6 +5442,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-08-03",
+          "note": "no-bump: regenerate the unchanged inconclusive gate against the current AgentV owner hash; thresholds and gate behavior are unchanged"
+        },
+        {
+          "version": "v1",
           "date": "2026-08-01",
           "note": "no-bump: regenerate the unchanged inconclusive gate after updating its embedded harness component identities"
         },
@@ -6956,6 +6966,11 @@
         {
           "version": "v1",
           "date": "2026-08-03",
+          "note": "no-bump: append c1839 null evidence and its successor objective to the shared quality matrix without changing the SLM-197 scorer or experiment."
+        },
+        {
+          "version": "v1",
+          "date": "2026-08-03",
           "note": "no-bump: append c1838 fixture-confirmation evidence to the shared quality matrix without changing the SLM-197 scorer or experiment."
         },
         {
@@ -7555,6 +7570,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1839 scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
         {
           "version": "v3",
           "date": "2026-08-03",
