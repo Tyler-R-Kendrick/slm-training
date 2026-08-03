@@ -270,3 +270,14 @@ remaining supervisor/evaluation-budget problem for slow control arms even
 after cooperative compiler deadlines: the next action is an exact frozen
 control/candidate replay, not another model hypothesis. Lean remains outside
 this screening claim.
+
+## c1863 confirmation closeout
+
+c1863 completed the fresh-seed matched replay and rejected the semantic-
+contrast/compiler-margin fingerprint. Structure improved `.1742 → .2899`,
+but MPR held at `.333`, recall at `.25`, and exact AST/canonical stayed `0`.
+The candidate multiplied p50 latency `909 → 4875 ms`, tokens `30 → 137`,
+forwards `5 → 35`, and compiler time `2293 → 12193 ms`. This is a narrow
+fixture signal with a severe cost tradeoff, not a high-quality learning result.
+The fingerprint is exhausted; prioritize broader semantic/exact supervision
+and a new size-matched objective. Lean remains outside this screening claim.
