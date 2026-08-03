@@ -1,0 +1,63 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c3",
+  "cycle_index": 3,
+  "cycle_intent": "retry_measurement",
+  "source_commit": "e82964bf",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "seed": 100002,
+    "frozen_manifest_sha256": "20c9c189fceeab669459efd9c190bfdc7e3aadb69a59f435d907022b7094189a",
+    "note": "Frozen train reuse (no retraining) from c2's checkpoints; eval-only replay of the identical arm."
+  },
+  "arms": {
+    "c3-control": {
+      "status": "completed_eval_gates_failed",
+      "checkpoint_sha256": "6abf57d4898e8fe7cb1dace959d3ce5fec463f816b3686c99ad18abf6db3512b",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.32666666666666666,
+        "component_type_recall": 0.16666666666666666,
+        "binder_reference_f1": 0.0,
+        "placeholder_fidelity": 0.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "reward_score": 0.0,
+        "latency_ms_p50": 17781.18
+      }
+    },
+    "c3-component-plan": {
+      "status": "eval_timeout_no_scoreboard",
+      "checkpoint_sha256": "20e573b14e3216132d27101e98f5c49dfe634acd0101b2ce18b5f9f0f8a8e741",
+      "smoke": null
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "harness repair required before further automatic replay (exhaustion of consecutive frozen-replay budget)",
+    "reasons": [
+      "measurement_incomplete:c20260803-continuous-openui-local-8c0b60dd-c3-component-plan:missing_scoreboard",
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c3-control",
+      "consecutive_frozen_replay_exhausted:frozen_manifest_sha256=20c9c189fceeab669459efd9c190bfdc7e3aadb69a59f435d907022b7094189a"
+    ]
+  },
+  "conclusion": "Second consecutive identical frozen-replay attempt (eval-only, reusing c2's trained checkpoints) of the component-plan-vs-control comparison. Control's eval fully completed this time (3/3 documents, structural_similarity=0.32667, byte-for-byte matching every prior independent session's control measurement) but component-plan again timed out mid-decode with no scoreboard, exhausting measurement.max_consecutive_frozen_replays. Per continuous.md, this correctly triggered a typed repair_harness action (harness_family=model_build) blocking further automatic replay rather than silently retrying forever or fabricating a negative model result from a timeout. Root cause diagnosed and fixed in commit 071560ee9da5918f6b15ff71b7c6b4a66bb7265f: the driver's per-arm eval-stage wall budget (_fit_symmetric_arm_budget) split the fixed cycle wall budget evenly across arms regardless of compiler_decode_mode, starving the tree-mode component-plan arm (~35.7s/document measured) while the off-mode control (fast decode) finished comfortably. Added _fit_decode_weighted_arm_budgets to reallocate the same total pool by decode-mode wall cost (tree gets 4x the off-mode share) and wired it into both the child --experiment-wall-seconds argument and the outer _arm_execution_deadline stage-kill deadline (which was still using the old uniform value). Added regression tests proving a tree-mode arm now receives a larger allocation than an off-mode arm from the same pool, and that same-mode arms still split evenly. MAX_RUN_MINUTES and the overall cycle deadline are unchanged.",
+  "next_priorities": [
+    "retry_measurement: replay the identical frozen component-plan arm now that the eval-stage budget scales by decode mode; the repair receipt resets the consecutive-replay count",
+    "component-plan is already independently reproduced positive 3 times on other hosts (#1369, #1376, #1378); this replay is corroboration, not the original discovery"
+  ],
+  "recorded_at": "2026-08-03T12:52:31Z"
+}
