@@ -137,3 +137,17 @@ and production suites absent, this is a narrow fixture learning signal, not a
 quality or ship result. The c1851 matrix therefore classifies the candidate as
 `NON_POSITIVE` and routes a distinct, size-matched objective; it must not be
 replayed as a positive arm or used to justify capacity growth.
+
+## c1852 learning-status update
+
+c1852 executed the distinct slot-component/fidelity coupling with a matched
+control. The treatment was a complete null on every guarded quality metric:
+structure `.1742/.1742`, MPR `.333/.333`, recall `.25/.25`, binder F1
+`.633/.633`, fidelity `.528/.528`, reward `.765/.765`, and exact AST/canonical
+rates `0/0`. It added `4,515` parameters, doubled training loss
+(`12.00 -> 24.16`), increased tokens `21 -> 30`, forwards `4 -> 5`, compiler
+time `2361 -> 2440 ms`, and p50 latency `910 -> 966 ms`. This confirms that
+the c1851 fixture gain does not transfer to this coupled objective; current
+prevention is weak/overfit supervision plus an underpowered `n=3` evaluation,
+not Lean or a training crash. The loop remains fail-closed and routes another
+distinct, size-matched hypothesis rather than promoting capacity.
