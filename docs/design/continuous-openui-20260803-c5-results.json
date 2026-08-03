@@ -1,0 +1,70 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c5",
+  "cycle_index": 5,
+  "source_commit": "318492c5",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "seed": 100005
+  },
+  "cycle_intent": "screening",
+  "arms": {
+    "c5-control": {
+      "trainable_params": 1766992,
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.04306666666666666,
+        "component_type_recall": 0.0,
+        "binder_reference_f1": 0.8222222222222223,
+        "placeholder_fidelity": 0.7222222222222222,
+        "latency_ms_p50": 4852.35
+      }
+    },
+    "c5-component-edge": {
+      "trainable_params": 1766992,
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.04306666666666666,
+        "component_type_recall": 0.0,
+        "binder_reference_f1": 0.8222222222222223,
+        "placeholder_fidelity": 0.7222222222222222,
+        "latency_ms_p50": 4539.33
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "document only -- no stacked PR for a non-positive cycle",
+    "reasons": [
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c5-control",
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c5-component-edge",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.04306666666666666 candidate=0.04306666666666666 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "conclusion": "Continuous-openui-local loop, cycle 5: 'component-edge' arm (1,766,992 trainable params, seed 100005) vs its matched control. Every declared quality metric ties exactly (parse_rate=1.0, meaningful_program_rate=0, structural_similarity=.04307, component_type_recall=0, binder_reference_f1=.82222, placeholder_fidelity=.72222 on both arms) -- only p50 latency differs slightly (4852.35ms -> 4539.33ms) and is not large enough or paired with any quality delta to register as a scored win. Non-positive: primary_metric_null_or_worse. Ship gates fail as expected (insufficient_n=3, missing held_out/adversarial/ood/rico_held). Checkpoints are local scratch (sync_checkpoints=false), never reusable/promotable/syncable/shippable; no MODEL_CARD change, consistent with prior cycles in this loop.",
+  "next_priorities": [
+    "The completed non-positive arm is exhausted; test the distinct size-matched 'component-inventory' quality hypothesis next (rank 1, confidence 0.90)",
+    "Keep the matched control as the size-matched baseline every cycle (rank 2, confidence 0.70)",
+    "Soft ship-gate fails on fixture n never stop the continuous loop (rank 4, confidence 0.80)"
+  ],
+  "recorded_at": "2026-08-03T06:55:05Z"
+}
