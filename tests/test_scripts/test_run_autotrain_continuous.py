@@ -5784,6 +5784,51 @@ def test_invalid_frozen_configuration_is_not_replayed(
     assert "detail=lever_capability_compatibility" in output
 
 
+def test_reserved_runtime_owner_failure_is_not_replayed(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = tmp_path / "autoresearch"
+    campaign_id = "cycle-runtime-owner"
+    camp = root / campaign_id
+    experiment = {
+        "experiment_id": "candidate-runtime-owner",
+        "campaign_id": campaign_id,
+        "hypothesis": "A reserved owner must not be replayed before implementation.",
+        "rationale": "The exact frozen recipe reached the model constructor.",
+        "expected_effect": "The owner is either implemented or skipped fail-closed.",
+        "falsification_criteria": ["The reserved owner silently runs."],
+        "stop_conditions": ["Stop at runtime-owner validation."],
+        "citations": ["fixture://runtime-owner"],
+        "knobs": {"steps": 1, "binder_slot_ownership_decode_weight": 1.0},
+    }
+    manifest = _mod._manifest(campaign_id, experiment, "a" * 40)
+    manifest_path = camp / "manifests" / "candidate-runtime-owner.json"
+    manifest_path.parent.mkdir(parents=True)
+    manifest_path.write_text(manifest.model_dump_json(indent=2) + "\n")
+    digest = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+    handoff = _mod.AutotrainCycleHandoffV1(
+        loop_id="loop-1",
+        campaign_id=campaign_id,
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        cycle_role="screening",
+        cycle_intent="screening",
+        evidence_class="fixture",
+        climb_state="harness_failure",
+        ship_state="blocked",
+        primary_metric="smoke.parse_rate",
+        actions=(_mod.AutotrainActionV1(kind="retry_measurement", owner="autotrain", reason="retry", evidence_ids=(f"campaign:{campaign_id}",), frozen_manifest_sha256=digest),),
+    )
+    (camp / "cycle_handoff.json").write_text(handoff.model_dump_json(indent=2) + "\n")
+    outcomes = camp / "artifacts" / "outcomes"
+    outcomes.mkdir(parents=True)
+    (outcomes / "candidate.json").write_text(json.dumps({"experiment_id": "candidate-runtime-owner", "status": "failed", "metrics": {}, "error": "unsupported compiler auxiliary lever(s); no runtime owner is implemented"}), encoding="utf-8")
+
+    assert _mod._load_frozen_replay(root, "loop-1", campaign_id) is None
+    assert "nonreplayable_configuration" in capsys.readouterr().out
+
+
 def test_measurement_completion_requires_both_arm_metrics_and_no_soft_failure() -> None:
     complete = {
         "control_metrics": {"parse_rate": 1.0},

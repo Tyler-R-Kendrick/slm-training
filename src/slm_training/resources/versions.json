@@ -2656,7 +2656,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v146",
+      "version": "v147",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2696,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v147",
+          "date": "2026-08-03",
+          "note": "Classify reserved runtime-owner failures as non-replayable so the supervised loop skips impossible frozen recipes and advances to the implemented slot-component successor instead of aborting."
+        },
         {
           "version": "v146",
           "date": "2026-08-03",

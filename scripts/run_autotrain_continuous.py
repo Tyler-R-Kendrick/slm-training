@@ -5702,7 +5702,11 @@ def _nonreplayable_configuration_failure(
         ):
             continue
         error = str(outcome.get("error") or "")
-        if "lever_capability_compatibility" in error:
+        if (
+            "lever_capability_compatibility" in error
+            or "unsupported compiler auxiliary lever" in error
+            or "no runtime owner is implemented" in error
+        ):
             return "lever_capability_compatibility"
     return None
 
