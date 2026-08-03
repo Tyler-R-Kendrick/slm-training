@@ -1,0 +1,66 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c1",
+  "cycle_index": 1,
+  "evidence_class": "fixture",
+  "decision": "infrastructure_failure_not_a_model_result",
+  "scoreable": false,
+  "new_checkpoint_created": true,
+  "upstream_commit": "2c4debec7a426036f26159bd7340fce2cbe6411a",
+  "integration_commit": "2c4debec7a426036f26159bd7340fce2cbe6411a",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c1-control",
+      "steps": 21,
+      "last_loss": 22.621936798095703,
+      "checkpoint_sha256": "d2f2dc4b2d43876ad4ce3751aa64d271cf7818b76201214a6ce2f8f8c557e44b",
+      "status": "trained_eval_failed",
+      "failure_stage": "evaluate_model",
+      "failure_reason": "RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER",
+      "smoke": null
+    },
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c1-bounds",
+      "steps": 21,
+      "last_loss": 22.621936798095703,
+      "checkpoint_sha256": "eb81529a4473ef2be232e86958fcb74ed110f590541e19a7b8efba025b224a2f",
+      "status": "trained_eval_failed",
+      "failure_stage": "evaluate_model",
+      "failure_reason": "RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER",
+      "smoke": null
+    }
+  ],
+  "comparison": {
+    "attributable": false
+  },
+  "agentv": {
+    "bundles_complete": false,
+    "execution_errors": 2,
+    "ship_gates_pass": false
+  },
+  "checkpoint_policy": "local_explicit_no_sync_not_reusable_not_promoted_not_ship_eval_incomplete",
+  "lean": "not_applicable:screening",
+  "harness_repair": {
+    "harness_family": "model_build",
+    "diagnosis": "This container's checkout never ran scripts/setup_dev_env.sh, so node_modules/@agentv/core was absent. The evaluate_model.py --ship-gates crash this produces (RuntimeError: AgentV SDK is unavailable) is the same infra failure documented in docs/design/autotrain-cycle-c2-agentv-missing-infra-failure.md; the NODE_OPTIONS/sanitized_node_env repair from commit 72fdffaf054efee2f3dccc4bab0ca97c111072e1 was already in the codebase and did not need to change. The repeat cost a full wall-capped cycle (both arms trained to completion, then both failed identically at eval) because nothing checked for the SDK before spending the budget.",
+    "fix_commits": [],
+    "fix_summary": "Ran scripts/setup_dev_env.sh's steps (python3.12 venv + editable install + `env -u NODE_OPTIONS npm ci`) to restore the missing node_modules/@agentv/core in this container, then added a preflight guard so the next occurrence fails in <1s instead of burning a cycle: scripts/run_autotrain_continuous.py:missing_dev_env_prerequisites() checks node_modules/@agentv/core across checkout_roots() before acquiring the driver lock and exits 2 with `DEV_ENV_PREREQUISITES_MISSING agentv_sdk; run scripts/setup_dev_env.sh` when absent.",
+    "regression_tests": [
+      "tests/test_scripts/test_run_autotrain_continuous.py::test_missing_dev_env_prerequisites_flags_absent_agentv_sdk",
+      "tests/test_scripts/test_run_autotrain_continuous.py::test_missing_dev_env_prerequisites_clear_when_agentv_sdk_present"
+    ]
+  },
+  "next_priority": "replay identical frozen arm (retry_measurement) now that the AgentV SDK is installed and the preflight guard confirms it before spending cycle budget",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "2c4debec7a426036f26159bd7340fce2cbe6411a",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v171",
+      "harness.model_build.train": "v42",
+      "harness.experiment_feature_flags": "v4"
+    },
+    "stamped_at": "2026-08-03T19:35:05.079519Z"
+  }
+}

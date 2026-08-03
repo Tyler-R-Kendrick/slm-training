@@ -68,6 +68,7 @@ from slm_training.autoresearch.storage import (
     pending_autotrain_actions,
     pending_autotrain_execution_actions,
 )
+from slm_training.bridge_utils import checkout_roots
 from slm_training.harness_core.bounded_process import (
     BoundedProcessResult,
     ProcessOutcome,
@@ -100,6 +101,26 @@ _CERTIFICATE_SCHEMA_V2 = "metric_certificate/v2"
 _PROMOTE_FORMAL_TIMEOUT_S = float(MAX_RUN_SECONDS)
 _FORMAL_TIMEOUT_STATUSES = frozenset({"timed_out"})
 _DRIVER_LOCK_BASENAME = "driver.lock"
+
+
+def missing_dev_env_prerequisites(root: Path | None = None) -> tuple[str, ...]:
+    """Return unmet run-time deps (e.g. AgentV SDK) before spending a cycle.
+
+    A checkout that never ran ``scripts/setup_dev_env.sh`` trains both arms
+    successfully and only then crashes in ``evaluate_model.py --ship-gates``
+    (``AgentV SDK is unavailable``), burning the whole cycle wall on a result
+    that can never be scored. Checking first turns that into an instant,
+    actionable failure instead of a wasted ``harness_failure`` cycle.
+
+    Resolves against the real repository checkout (anchored on this
+    package's location), not the driver process's working directory, so it
+    still finds an installed SDK when a caller runs from elsewhere.
+    """
+    has_agentv_sdk = any(
+        (candidate / "node_modules" / "@agentv" / "core" / "package.json").is_file()
+        for candidate in checkout_roots(root)
+    )
+    return () if has_agentv_sdk else ("agentv_sdk",)
 
 
 class _CodeUpdated(RuntimeError):
@@ -8693,6 +8714,15 @@ def main(argv: list[str] | None = None) -> int:
     cwd = Path.cwd()
     root = args.root if args.root.is_absolute() else cwd / args.root
     root.mkdir(parents=True, exist_ok=True)
+    missing = missing_dev_env_prerequisites()
+    if missing:
+        print(
+            "DEV_ENV_PREREQUISITES_MISSING "
+            f"{','.join(missing)}; run scripts/setup_dev_env.sh (npm ci) "
+            "before starting a cycle",
+            flush=True,
+        )
+        return 2
     try:
         code_sha = _git(
             "rev-parse",

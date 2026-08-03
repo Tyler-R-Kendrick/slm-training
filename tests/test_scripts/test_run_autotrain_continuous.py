@@ -23,7 +23,23 @@ _mod = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(_mod)
 
 _classify_metric_tradeoff = _mod._classify_metric_tradeoff
+_missing_dev_env_prerequisites = _mod.missing_dev_env_prerequisites
 _PRIMARY = "smoke.latency_ms_p50"
+
+
+def test_missing_dev_env_prerequisites_flags_absent_agentv_sdk(
+    tmp_path: Path,
+) -> None:
+    assert _missing_dev_env_prerequisites(tmp_path) == ("agentv_sdk",)
+
+
+def test_missing_dev_env_prerequisites_clear_when_agentv_sdk_present(
+    tmp_path: Path,
+) -> None:
+    sdk_pkg = tmp_path / "node_modules" / "@agentv" / "core" / "package.json"
+    sdk_pkg.parent.mkdir(parents=True)
+    sdk_pkg.write_text("{}")
+    assert _missing_dev_env_prerequisites(tmp_path) == ()
 
 
 def _classify(
