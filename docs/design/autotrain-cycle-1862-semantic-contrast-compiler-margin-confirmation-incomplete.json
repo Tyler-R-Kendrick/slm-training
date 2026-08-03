@@ -1,0 +1,88 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-202607-98199209-c1862",
+  "decision": "confirmation_inconclusive_control_missing_scoreboard",
+  "claim_class": "fixture_screening",
+  "formal": {"status": "not_applicable:confirmation"},
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "seed": 101862,
+    "batch_size": 2,
+    "num_threads": 1,
+    "context_backend": "scratch",
+    "suite": "smoke",
+    "suite_n": 3,
+    "trainable_params": {"control": 1608962, "candidate": 1608962},
+    "sync_checkpoints": false,
+    "candidate_lever": "semantic_contrast_loss_weight=.25 + compiler_alignment_loss_weight=1.0",
+    "code_commit": "755bac22b3ae1e525bea085fbcc30465dfc4ae96",
+    "model_component": "model.twotower:v306"
+  },
+  "arms": {
+    "control": {
+      "status": "incomplete",
+      "metrics": {},
+      "failure": "bounded control process interrupted before scoreboard"
+    },
+    "candidate": {
+      "status": "complete_gate_reject",
+      "checkpoint_sha256": "25b8ae004e95b33b45491cf85833646f78215c522775b39e8f90d645773d4d19",
+      "metrics": {
+        "parse_rate": 1.0,
+        "structural_similarity": 0.41973333333333335,
+        "meaningful_program_rate": 0.3333333333333333,
+        "component_type_recall": 0.16666666666666666,
+        "binder_reference_f1": 0.6333333333333333,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.7953333333333333,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 1820.94,
+        "tokens_emitted_mean": 48.0,
+        "forwards_count_mean": 10.0,
+        "compiler_ms_mean": 4585.077,
+        "decode_timeout_count": 0
+      }
+    }
+  },
+  "effects": {
+    "structural_similarity_delta": null,
+    "meaningful_program_rate_delta": null,
+    "latency_fraction": null,
+    "tokens_fraction": null,
+    "forwards_fraction": null,
+    "params_fraction": 0.0
+  },
+  "ship": {
+    "eligible": false,
+    "failures": [
+      "matched control missing scoreboard",
+      "smoke n=3<20",
+      "MPR .333<.66",
+      "component recall .167<.35",
+      "AST/canonical exact rates 0",
+      "held-out/adversarial/OOD/RICO suites missing"
+    ]
+  },
+  "learning_interpretation": "confirmation unavailable; candidate-only fixture score cannot establish a treatment effect",
+  "successor": {
+    "experiment_slug": "replay exact c1862 control and candidate",
+    "next_action": "complete the matched control before any new hypothesis"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "755bac22b3ae1e525bea085fbcc30465dfc4ae96",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v80",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v306"
+    },
+    "stamped_at": "2026-08-03T09:47:03Z"
+  }
+}

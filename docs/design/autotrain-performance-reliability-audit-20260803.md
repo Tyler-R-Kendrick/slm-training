@@ -258,3 +258,15 @@ blocker is target/data coverage and semantic transfer, not Lean, model size,
 or a runtime timeout. Next priority is a distinct size-matched quality
 objective evaluated on the full ladder; the loop keeps the matched control and
 does not recycle the rejected arm.
+
+## c1862 confirmation closeout
+
+c1862 attempted a fresh-seed confirmation of c1861. The candidate reached
+structure `.4197` with MPR `.333`, component recall `.167`, exact
+AST/canonical `0`, and p50 `1821 ms`, but the matched control again failed to
+write a scoreboard before the bounded stage ended. The fresh candidate-only
+score is therefore inconclusive and cannot confirm c1861. This exposes a
+remaining supervisor/evaluation-budget problem for slow control arms even
+after cooperative compiler deadlines: the next action is an exact frozen
+control/candidate replay, not another model hypothesis. Lean remains outside
+this screening claim.
