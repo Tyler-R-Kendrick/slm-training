@@ -123,3 +123,17 @@ still completed (`structural_similarity=.0575`, binder F1 `.8222`, fidelity
 `.7222`, `n=3`), but the candidate produced no model artifact. Commit
 `fb9093314` routes the next distinct objective to the implemented
 `slot-component-coverage` owner; c1849 remains infrastructure evidence only.
+
+## c1851 learning-status update
+
+c1851 is the first executable measurement of that repaired owner. The
+slot-component treatment improved meaningful-program rate (`0 -> .667`),
+component recall (`0 -> .3333`), and held binder F1/fidelity at `1.0`, while
+structural similarity rose only `.1425 -> .1767`. It also raised training loss
+(`20.9509 -> 22.5437`), parameters (`+4,520`), tokens (`+16.3%`), forwards
+(`+12.8%`), compiler time (`19.5 -> 23.4 s`), and p50 latency
+(`7400 -> 8771 ms`). With smoke `n=3`, exact AST/canonical agreement at zero,
+and production suites absent, this is a narrow fixture learning signal, not a
+quality or ship result. The c1851 matrix therefore classifies the candidate as
+`NON_POSITIVE` and routes a distinct, size-matched objective; it must not be
+replayed as a positive arm or used to justify capacity growth.
