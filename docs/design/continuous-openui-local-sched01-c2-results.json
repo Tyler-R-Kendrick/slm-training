@@ -43,8 +43,8 @@
   "primary_delta": 0.05613333333333337,
   "sdlc_phase_a": {
     "positive": true,
-    "stack_layer": false,
-    "stack_action": "positive_no_tracked_delta_skip_stack",
+    "stack_layer": true,
+    "stack_action": "deliver_stack_after_documentation",
     "agent_required": "document, then open/update a stacked PR for the positive result",
     "reasons": [
       "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c2-control",
