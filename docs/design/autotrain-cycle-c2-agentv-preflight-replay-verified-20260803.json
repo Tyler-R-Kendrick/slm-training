@@ -1,0 +1,77 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 2,
+  "cycle_intent": "retry_measurement",
+  "evidence_class": "fixture",
+  "decision": "harness_repair_verified_frozen_arm_rejected",
+  "scoreable": true,
+  "new_checkpoint_created": false,
+  "upstream_commit": "2c4debec7a426036f26159bd7340fce2cbe6411a",
+  "integration_commit": "9c58f8416d1c56b19d32a2bbf1166ff60cfea854",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c2-control",
+      "checkpoint_sha256": "d2f2dc4b2d43876ad4ce3751aa64d271cf7818b76201214a6ce2f8f8c557e44b",
+      "status": "trained_and_evaluated",
+      "smoke": {
+        "structural_similarity": 0.057499999999999996,
+        "meaningful_program_rate": 0.0,
+        "component_type_recall": 0.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "reward_score": 0.0,
+        "n": 3
+      },
+      "gates_pass": false
+    },
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c2-bounds",
+      "checkpoint_sha256": "eb81529a4473ef2be232e86958fcb74ed110f590541e19a7b8efba025b224a2f",
+      "status": "trained_and_evaluated",
+      "smoke": {
+        "structural_similarity": 0.057499999999999996,
+        "meaningful_program_rate": 0.0,
+        "component_type_recall": 0.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "reward_score": 0.0,
+        "n": 3
+      },
+      "gates_pass": false
+    }
+  ],
+  "comparison": {
+    "attributable": true,
+    "primary_metric_delta": 0.0,
+    "verdict": "exact_tie"
+  },
+  "agentv": {
+    "bundles_complete": true,
+    "execution_errors": 0,
+    "ship_gates_pass": false
+  },
+  "checkpoint_policy": "local_explicit_no_sync_not_reusable_not_promoted_not_ship_eval_incomplete_reused_frozen_checkpoints",
+  "lean": "not_applicable:screening",
+  "harness_repair_confirmation": {
+    "prior_incident": "docs/design/autotrain-cycle-c1-agentv-missing-infra-preflight-20260803.md",
+    "fix_commit": "9c58f8416d1c56b19d32a2bbf1166ff60cfea854",
+    "outcome": "Both arms trained/evaluated end to end (exit=0) with real scoreboards and AgentEvals bundles complete (0 execution errors); the c1 AgentV SDK harness failure is confirmed repaired. This is the proven executable unblock — no code changes required in this cycle, the frozen-arm replay is the receipt."
+  },
+  "sdlc_classification": "non_positive",
+  "sdlc_reason": "fixture_insufficient_n_alone: control vs bounds are an exact tie on structural_similarity (0.0575 both, n=3 below the >=20 gate floor); ship gates fail on evidence volume, not a quality regression. No stack layer for this classification alone.",
+  "next_priority": "rank-1 successor: test the distinct size-matched 'component-plan' quality hypothesis (c20260803-continuous-openui-local-8c0b60dd-c2-component-plan)",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "9c58f8416d1c56b19d32a2bbf1166ff60cfea854",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v171",
+      "harness.model_build.train": "v42",
+      "harness.experiment_feature_flags": "v4",
+      "evals.agentv": "v7"
+    },
+    "stamped_at": "2026-08-03T19:45:44.622819Z"
+  }
+}
