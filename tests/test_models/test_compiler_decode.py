@@ -5951,6 +5951,33 @@ def test_compiler_alignment_can_target_container_close_branches_only() -> None:
     )
 
 
+def test_container_close_alignment_preserves_typed_family_metrics() -> None:
+    model = _model()
+    model.config.typed_family_balance_loss_weight = 0.25
+    model.config.compiler_alignment_loss_weight = 1.0
+    model.config.compiler_alignment_margin = 1.0
+    model.config.compiler_alignment_stratified = True
+    model.config.compiler_alignment_kind_filter = "container-close"
+    record = ExampleRecord(
+        id="alignment-balanced-container-close",
+        prompt="stack two labels",
+        openui='root = Stack([TextContent(":slot_0"), TextContent(":slot_1")])',
+        placeholders=[":slot_0", ":slot_1"],
+        split="train",
+        source="fixture",
+    )
+
+    loss = model.training_loss([record])
+
+    assert torch.isfinite(loss)
+    metrics = model.last_training_metrics
+    assert metrics["typed_family_balance_active_families"] == 2
+    assert metrics["typed_family_balance_aux_loss"] > 0
+    assert metrics["token_loss_component_count"] > 0
+    assert metrics["token_loss_structure_count"] > 0
+    assert metrics["compiler_alignment_container_close_rows"] > 0
+
+
 def test_compiler_alignment_kind_filter_fails_closed() -> None:
     with pytest.raises(ValueError, match="compiler_alignment_kind_filter"):
         TwoTowerConfig(compiler_alignment_kind_filter="unknown")
