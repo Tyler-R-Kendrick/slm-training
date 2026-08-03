@@ -105,3 +105,14 @@ matched control, and expand beyond `n=3` before any capability claim. The
 cacheless-preloaded-model fix is now covered by `harness.model_build.eval` v79;
 no matched-CPU parallelism is justified until a wall/CPU/memory parity
 benchmark demonstrates a win.
+
+## c1848 harness-repair update
+
+The first c1848 attempt made the new binder-slot-ownership training signal
+visible to the campaign compiler, but its decode weight was rejected by the
+model capability gate because the arm omitted `compiler_decode_mode=tree`.
+That is a genuine harness wiring gap, not evidence against the model: the
+matched control completed, while the candidate never reached training. Commit
+`d876037b5` adds the required tree capability and regression coverage; the
+supervisor has acknowledged the repair and must replay the frozen c1848 arm
+before interpreting quality metrics.
