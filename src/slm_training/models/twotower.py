@@ -14964,10 +14964,44 @@ class TwoTowerModel(nn.Module):
                     ids[0, t] = self.tokenizer.mask_id
                     unknown[0, t] = True
                 if rec is not None and remask:
+                    # E61: the stream checker identifies the first hard-error
+                    # tokens.  The suffix from the containing statement is a
+                    # conservative dependency closure: later statements may
+                    # consume this binder, while the verified prefix is frozen.
+                    frontier = set(int(t) for t in remask)
+                    try:
+                        starts = []
+                        for t in remask:
+                            span = self.tokenizer.spanning_statement(
+                                ids[0].tolist(), int(t)
+                            )
+                            starts.append(span[0] if span is not None else int(t))
+                        first = min(starts)
+                        frontier.update(
+                            t
+                            for t in range(first, length)
+                            if int(ids[0, t].item()) != self.tokenizer.pad_id
+                        )
+                    except (AttributeError, TypeError, ValueError):
+                        first = min(int(t) for t in remask)
+                        frontier.update(range(first, length))
+                    protected = sorted(
+                        t
+                        for t in range(1, first)
+                        if not bool(unknown[0, t].item())
+                    )
                     step_remasks.append(
                         {
                             "positions": [int(t) for t in remask],
                             "reason": "grammar_stream",
+                            "conflict_slice": {
+                                "stage": "grammar",
+                                "failing_node_ids": [int(t) for t in remask],
+                                "dependency_frontier": sorted(frontier),
+                                "protected_node_ids": protected,
+                                "completeness_class": "SOUND_OVERAPPROX",
+                                "source_provenance": "maskgit.stream_check",
+                            },
                         }
                     )
             else:

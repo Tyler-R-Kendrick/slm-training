@@ -18,7 +18,9 @@ Downward integration is planned for this repo.
 
 **ID collision note:** Matrix IDs **E50–E55** are taken by the shipped **V6**
 CoRe / T2M / slot-trust / honest-champion levers. Remaining assessment gaps
-are reserved as **E60–E65** (proposed). Do not reuse E50–E55 for new meanings.
+are reserved as **E60–E65**. All six now have canonical wiring; no row has a
+positive model-quality result merely because its substrate exists. Do not reuse
+E50–E55 for new meanings.
 
 ---
 
@@ -89,25 +91,25 @@ entropy, grammar legality, and CoRe support-drop** — still not by a localized
 
 ---
 
-## 4. Real gaps → proposed levers (E60+)
+## 4. Wired levers awaiting matched quality results (E60+)
 
-These assessment recommendations still map cleanly onto OpenUI generation and
-are **not** fully implemented. IDs **E60–E65** are reserved (docs only until
-code lands). Do **not** reuse E50–E55.
+These assessment recommendations map cleanly onto OpenUI generation. Their
+fail-closed substrate is implemented, but each remains non-promotable until its
+own preregistered matched campaign produces authoritative evidence. Do **not**
+reuse E50–E55.
 
 | Proposed ID | Gap | Why it matters here | Suggested shape |
 | --- | --- | --- | --- |
-| **E60** | Differential validation | `OpenUIHybridBackend` **falls back** lang-core ↔ Lark; it does not dual-parse or quarantine disagreement → verifier monoculture | Parse with both backends when available; on disagreement, quarantine sample from train/eval claims; log disagreement rate as a reliability metric |
-| **E61** | Failure-cone remasking | Remask is score-/CoRe-based, not error-localized | On first hard parse / stream error at span `k`, remask `k` plus structural dependents (containing statement, binder refs, child list); freeze verified spans outside the cone |
+| **E60** | Differential validation | **Wired:** G2 runs lang-core + Lark when both are available and quarantines one-sided accepts or structural-AST disagreement | Run the matched corpus/eval reliability campaign; no model-quality claim yet |
+| **E61** | Failure-cone remasking | **Wired:** MaskGIT stream failures emit a sound-overapprox suffix dependency slice; repair SFT admits only exact/sound slices and freezes the certified prefix | Compare localized cone repair against suffix/full remask under matched budgets |
 | **E62** | Minimal hard negatives | **Wired and P13-verified:** the deterministic `data/corrupt` taxonomy emits verified clean-target repair rows across lexical, grammar, schema, reference-graph, dataflow, and patch failures; the integrated corpus contains the `corruption_repair` family and passes the final verifier | Use [`data/corrupt`](../../src/slm_training/data/corrupt/) cases for repair / preference / RL inputs; ambiguous repairs carry multiple accepted targets and are excluded from exact-repair claims; [P13 evidence](data-synthesis.md) |
-| **E63** | Calibration / abstention | Trust gate is BCE-trained but not calibrated for selective decode | ECE / Brier on gate; selective accuracy vs coverage; abstain or escalate to best-of-N / longer remask when gate is unreliable |
-| **E64** | Trajectory-aligned diffusion RL | E55 / GRPO-lite still score final strings; schedule mismatch remains | Collect on-policy intermediate MaskGIT states; label with grammar + reward; prefer MDPO / d1-style objectives over AR PPO/GRPO imports |
-| **E65** | Schema-level generalization | Held-out instances ≠ held-out component schemas | Leave-one-schema-family-out; symbol rename / reordered decls; use `toy-layout` backend as a deliberately alien grammar for transfer stress |
+| **E63** | Calibration / abstention | **Wired:** held-out trust-gate calibration emits Brier/ECE and a maximum-coverage selective-risk threshold; no safe point means abstain | Run threshold-vs-fixed matched decode evaluation |
+| **E64** | Trajectory-aligned diffusion RL | **Wired:** intermediate MaskGIT actions are replayed on exact recorded supports; missing support/log-probs fail closed; reward-variance and sampled KL controls are active | Run only after the frozen RL-readiness report approves the tranche |
+| **E65** | Schema-level generalization | **Wired:** unseen families, leave-family-out counts, binder rename, declaration reorder, and alternate-pack validation are emitted by the generalization evaluator | Populate locked schema-family and `toy-layout` model-eval suites |
 
-Priority intuition (not a schedule): **E60** and **E61** are the highest
-reliability leverage relative to another generic SFT round; **E62** cleans
-credit assignment; **E63–E65** harden claims before calling the system
-“schema-general.”
+Priority remains evidence-driven: first measure E60 reliability and E61 localized
+repair, then use E62 supervision, E63 calibration, E64 trajectory optimization,
+and E65 transfer slices. Wiring status never substitutes for a measured win.
 
 ---
 
@@ -133,7 +135,7 @@ policy + DESIGN.md lint**, not on a planner.
 
 | Threat (assessment) | Failure mode here | Defense today / needed |
 | --- | --- | --- |
-| **Verifier monoculture** | One parser quirk poisons train labels and eval | Need **E60** differential validation; today hybrid is fallback-only |
+| **Verifier monoculture** | One parser quirk poisons train labels and eval | **E60** paired admission now quarantines disagreement; monitor its measured rate |
 | **Parser exploitation** | Model learns to pass a buggy acceptor | Fuzz OpenUI strings; keep lang-core as primary authority; quarantine on backend disagreement |
 | **Single-reference bias** | Alternate valid layouts penalized | Multi-plan positives via preference pairs / best-of-N; score with `composite_reward`, not exact string match |
 | **Locally valid wandering** | Legal but intent-irrelevant trees | Fidelity / inventory contract (E35); human thumbs; still weak on open-ended intent |
@@ -141,7 +143,7 @@ policy + DESIGN.md lint**, not on a planner.
 | **Oscillatory repair** | Same spans flip forever | Remask budgets (E33); add repair memory / decreasing remask budget if oscillation appears |
 | **Reasoning rationalization** | Prose justifies an invalid tree | We already forbid prose as the substrate; keep explanations (if any) rendered *from* the verified program |
 | **Reward hacking** | Model exploits reward / lint quirks | Structure-only eval path ([structure-only-eval.md](structure-only-eval.md)); adversarial suites; do not credit gold DESIGN.md lint at ship time |
-| **Domain-schema memorization** | Strong on known components, collapse on new schemas | Need **E65**; `toy-layout` is the ready held-out grammar |
+| **Domain-schema memorization** | Strong on known components, collapse on new schemas | **E65** evaluator is wired; locked model-transfer evidence is still required |
 
 ---
 
@@ -181,7 +183,7 @@ Ablation ladder for attributing gains (mirror the assessment, OpenUI-flavored):
 | **V5** | DSL-native / lexer tokenizer (E40–E46) | Stronger typed executable representation |
 | **V6** | CoRe remask (E50), T2M (E51), slot-aware trust (E52), honest champion (E53), grammar-honest (E54), process (E55) | Stronger revision policy; **not** differential validation or failure-cone remask |
 | **V7** | Speculative denoising (E70–E75) | Stability signals, dependency clusters, ordered cluster verify, survival head, successor cache — see [speculative-denoising.md](speculative-denoising.md) |
-| **Proposed** | E60–E65 above | Remaining verifier-guided gaps from the assessment |
+| **Wired, unmeasured** | E60–E65 above | Canonical substrates landed; matched model-quality campaigns remain open |
 
 E34 (latent MoE critics) remains deferred research-grade; see
 [research-correction-critics.md](research-correction-critics.md). Prefer

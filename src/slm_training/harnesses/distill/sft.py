@@ -13,6 +13,7 @@ import torch.nn.functional as F
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.models.twotower import TwoTowerModel, _pad_batch
 from slm_training.runtime.telemetry import CycleTelemetry, bind_telemetry, timed
+from slm_training.harnesses.distill.repair import extract_failure_cone
 
 
 @dataclass
@@ -94,6 +95,39 @@ def trajectory_action_loss(
     return torch.stack(losses).mean()
 
 
+def failure_cone_action_loss(
+    model: TwoTowerModel,
+    trace: dict[str, Any],
+) -> torch.Tensor | None:
+    """Train only verifier-authorized repair positions; freeze verified spans."""
+    prompt = str((trace.get("meta") or {}).get("prompt") or "")
+    if not prompt:
+        return None
+    losses: list[torch.Tensor] = []
+    ctx, ctx_pad = model._encode_context([prompt], cache_keys=None)
+    for cone in extract_failure_cone(trace):
+        if not cone.get("authorized"):
+            continue
+        canvas = list(cone["canvas"])
+        target = list(cone["target_canvas"])
+        noisy = _pad_batch([canvas], model.tokenizer.pad_id, device=model.device_name)
+        logits = model.denoiser(
+            noisy, ctx, pad_id=model.tokenizer.pad_id, ctx_pad_mask=ctx_pad
+        )
+        log_probs = F.log_softmax(logits.float(), dim=-1)
+        for pos in cone["cone_positions"]:
+            pos = int(pos)
+            if pos <= 0 or pos >= len(target) or pos >= log_probs.size(1):
+                continue
+            token_id = int(target[pos])
+            if token_id == model.tokenizer.pad_id:
+                continue
+            losses.append(-log_probs[0, pos, token_id])
+    if not losses:
+        return None
+    return torch.stack(losses).mean()
+
+
 def train_self_distill(
     model: TwoTowerModel,
     traces: list[dict[str, Any]],
@@ -104,7 +138,14 @@ def train_self_distill(
 ) -> dict[str, Any]:
     """L = L_final + λ_traj · L_next_action + λ_anchor · L_anchor."""
     cfg = config or DistillSFTConfig()
-    distill_records = traces_to_records(traces)
+    repair_traces = [
+        trace
+        for trace in traces
+        if any(cone.get("authorized") for cone in extract_failure_cone(trace))
+    ]
+    repair_ids = {id(trace) for trace in repair_traces}
+    success_traces = [trace for trace in traces if id(trace) not in repair_ids]
+    distill_records = traces_to_records(success_traces)
     if not distill_records and not traces:
         raise ValueError("no distill traces/records")
     out_dir = Path(out_dir) if out_dir else Path("outputs/runs/self_distill")
@@ -145,12 +186,18 @@ def train_self_distill(
                 with timed("final_loss"):
                     loss_terms.append(model.training_loss(batch))
             # Trajectory action loss.
-            if traces and cfg.lambda_traj > 0:
-                trace = traces[rng.randrange(len(traces))]
+            if success_traces and cfg.lambda_traj > 0:
+                trace = success_traces[rng.randrange(len(success_traces))]
                 with timed("traj_loss"):
                     traj = trajectory_action_loss(model, trace)
                 if traj is not None:
                     loss_terms.append(cfg.lambda_traj * traj)
+            if repair_traces and cfg.lambda_traj > 0:
+                trace = repair_traces[rng.randrange(len(repair_traces))]
+                with timed("failure_cone_loss"):
+                    repair = failure_cone_action_loss(model, trace)
+                if repair is not None:
+                    loss_terms.append(cfg.lambda_traj * repair)
             # Anchor mix.
             if anchor_records and cfg.lambda_anchor > 0:
                 abatch = [
@@ -175,6 +222,7 @@ def train_self_distill(
         "steps": cfg.steps,
         "n_traces": len(traces),
         "n_distill_records": len(distill_records),
+        "n_repair_traces": len(repair_traces),
         "n_anchor_records": len(anchor_records),
         "lambda_traj": cfg.lambda_traj,
         "lambda_anchor": cfg.lambda_anchor,

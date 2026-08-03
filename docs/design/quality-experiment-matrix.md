@@ -3270,8 +3270,8 @@ score increase. Evidence:
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
-[verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
-E60–E61 and E63–E65 remain proposed.
+[verifier-guided-repair.md](verifier-guided-repair.md). **E60–E65 are wired but
+unmeasured**: implementation is not a positive model-quality result.
 The inner-loop prerequisites (deterministic denoising-NLL suites, token
 budgets, full-state resume, source-family manifests, decode trajectory
 store) plus the P1–P3 staged plan (mixture search, scaling ladders,
@@ -3282,12 +3282,12 @@ self-distillation, trajectory RL) are in
 
 | ID | Approach | Primary lever | Status |
 | --- | --- | --- | --- |
-| E60 | Differential validation | Dual lang-core + Lark parse; quarantine disagreement | proposed |
-| E61 | Failure-cone remask | Remask first hard error + structural dependents | proposed |
+| E60 | Differential validation | Dual lang-core + Lark parse; quarantine disagreement | wired; matched result pending |
+| E61 | Failure-cone remask | Sound verifier slice; localized loss freezes certified prefix | wired; matched result pending |
 | E62 | Minimal hard negatives | `data/corrupt` verified invalid→clean repair taxonomy; wiring only, no quality result yet | wired |
-| E63 | Gate calibration | ECE / selective accuracy / abstention on `FastPathGate` | proposed |
-| E64 | Trajectory-aligned RL | MDPO/d1-style on intermediate MaskGIT states | proposed |
-| E65 | Schema generalization | Held-out schemas / rename / `toy-layout` transfer | proposed |
+| E63 | Gate calibration | Held-out Brier/ECE/selective-risk threshold on `FastPathGate` | wired; matched result pending |
+| E64 | Trajectory-aligned RL | Exact-support intermediate MaskGIT objective; readiness-gated | wired; matched result pending |
+| E65 | Schema generalization | Held-out families / rename / reorder / alternate grammar | wired; locked model suite pending |
 
 ## LDI (local decision interventions) index
 

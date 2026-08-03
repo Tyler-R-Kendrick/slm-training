@@ -1048,6 +1048,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 "constraint_rescue_gap"
             ),
             "bits_per_char": broad.get("bits_per_char"),
+            "by_family": broad.get("by_family") or {},
             "base_suite": base_suite,
             "seen_target_tokens": seen_target_tokens,
             "ts": datetime.now(timezone.utc).isoformat(),
