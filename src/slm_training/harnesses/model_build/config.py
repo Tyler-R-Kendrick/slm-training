@@ -578,10 +578,11 @@ class ModelBuildConfig:
             "all",
             "literal-close",
             "container-close",
+            "component-edge",
         }:
             raise ValueError(
                 "compiler_alignment_kind_filter must be one of: all, "
-                "literal-close, container-close"
+                "literal-close, container-close, component-edge"
             )
         # SLM-242: fail-closed numeric/schedule gate.
         try:
