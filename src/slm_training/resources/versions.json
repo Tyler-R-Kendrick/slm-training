@@ -2656,7 +2656,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v121",
+      "version": "v122",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2696,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v122",
+          "date": "2026-08-03",
+          "note": "Preserve c1824's high-quality margin arm as the control for an isolated deterministic completion-bounds latency treatment and surface emitted-token, forward, prefill, and canvas costs in terminal matrices."
+        },
         {
           "version": "v121",
           "date": "2026-08-02",
@@ -7470,6 +7475,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1824 quality-cost scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
         {
           "version": "v3",
           "date": "2026-08-03",

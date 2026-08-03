@@ -14,6 +14,7 @@ from tests.casefiles import case_values
 from pydantic import ValidationError
 
 from slm_training.autoresearch.engine import (
+    _suite_headline_metrics,
     compile_commands,
     create_hypothesis_feedback,
     diagnose_outcome,
@@ -91,6 +92,33 @@ def test_result_matrix_cells_collapse_and_bound_verbose_diagnostics() -> None:
     assert "\n" not in rendered
     assert len(rendered) <= 240
     assert rendered.endswith("...")
+
+
+def test_suite_headlines_keep_decode_cost_signals_for_result_matrix() -> None:
+    metrics = _suite_headline_metrics(
+        {
+            "suites": {
+                "smoke": {
+                    "structural_similarity": 0.48,
+                    "decode_stats": {
+                        "forwards_count_mean": 15.0,
+                        "tokens_emitted_mean": 61.0,
+                        "compiler_prefill_tokens_mean": 8448.0,
+                        "canvas_tokens_mean": 3840.0,
+                        "verbose_trace": ["not a headline"],
+                    },
+                }
+            }
+        }
+    )
+
+    assert metrics == {
+        "suites.smoke.structural_similarity": 0.48,
+        "suites.smoke.forwards_count_mean": 15.0,
+        "suites.smoke.tokens_emitted_mean": 61.0,
+        "suites.smoke.compiler_prefill_tokens_mean": 8448.0,
+        "suites.smoke.canvas_tokens_mean": 3840.0,
+    }
 
 
 def test_result_matrix_explains_lean_applicability() -> None:

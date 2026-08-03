@@ -1481,6 +1481,10 @@ def _metrics_text(
         "binder_reference_f1",
         "parse_rate",
         "latency_ms_p50",
+        "forwards_count_mean",
+        "tokens_emitted_mean",
+        "compiler_prefill_tokens_mean",
+        "canvas_tokens_mean",
         "ast_beq_rate",
         "canonical_beq_rate",
     }

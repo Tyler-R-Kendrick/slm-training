@@ -218,6 +218,15 @@ a zero-parameter stratified alignment objective over every compiler-decision
 family. It optimizes only the gold-versus-legal-sibling ranking already consumed
 by constrained decode; grammar authority and legal candidate domains are
 unchanged.
+Cycle c1824 validates the direct legal-choice signal but exposes its cost: the
+all-family margin arm raises fixture structure `.13527→.4811`, MPR
+`.3333→.6667`, recall `.1667→.4167`, binder F1 `.6333→.8222`, and fidelity
+`.5278→.7222`, while emitted tokens rise `21→61`, forwards `4→15`, and p50
+latency `973→3902` ms. The fixed quality-primary latency budget rejects the arm.
+Campaign harness v122 preserves the margin recipe in both successor arms and
+isolates deterministic completion bounds as the candidate treatment. It also
+surfaces token, forward, prefill, and canvas costs in the terminal result table
+so future quality/cost failures steer from their actual mechanism.
 
 The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
 confirmed a champion, c1812 was the next protected promotion slot, and the

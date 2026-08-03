@@ -1240,6 +1240,12 @@ def _suite_headline_metrics(value: object) -> dict[str, float]:
     if not isinstance(value, dict) or not isinstance(value.get("suites"), dict):
         return {}
     result: dict[str, float] = {}
+    decode_headlines = (
+        "forwards_count_mean",
+        "tokens_emitted_mean",
+        "compiler_prefill_tokens_mean",
+        "canvas_tokens_mean",
+    )
     for suite, metrics in value["suites"].items():
         if not isinstance(metrics, dict):
             continue
@@ -1248,6 +1254,12 @@ def _suite_headline_metrics(value: object) -> dict[str, float]:
                 result[f"suites.{suite}.{name}"] = float(metric)
             elif isinstance(metric, (int, float)):
                 result[f"suites.{suite}.{name}"] = float(metric)
+        decode_stats = metrics.get("decode_stats")
+        if isinstance(decode_stats, dict):
+            for name in decode_headlines:
+                metric = decode_stats.get(name)
+                if isinstance(metric, (int, float)) and not isinstance(metric, bool):
+                    result[f"suites.{suite}.{name}"] = float(metric)
     return result
 
 

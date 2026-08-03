@@ -680,6 +680,17 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         },
     ),
     (
+        "bounded-compiler-decision-margin",
+        "Deterministic completion bounds reduce the all-family compiler-decision margin arm's forwards and latency while preserving its structural quality.",
+        {
+            "compiler_alignment_loss_weight": 1.0,
+            "compiler_alignment_margin": 1.0,
+            "compiler_alignment_stratified": True,
+            "compiler_alignment_kind_filter": "all",
+            "grammar_completion_bounds": True,
+        },
+    ),
+    (
         "structure-token",
         "Direct grammar STRUCT-token reconstruction weighting repairs scaffold formation and structural_similarity without lowering parse_rate or binder_reference_f1.",
         {"structure_token_loss_weight": 1.0},
@@ -1138,6 +1149,12 @@ def _arm_slug_from_knobs(
 ) -> str | None:
     """Map knobs / candidate id to thrash arm slug."""
     if (
+        knobs.get("compiler_alignment_loss_weight")
+        and knobs.get("compiler_alignment_kind_filter") == "all"
+        and knobs.get("grammar_completion_bounds")
+    ):
+        return "bounded-compiler-decision-margin"
+    if (
         knobs.get("typed_family_balance_loss_weight")
         and knobs.get("compiler_alignment_loss_weight")
         and knobs.get("compiler_alignment_kind_filter") == "container-close"
@@ -1392,6 +1409,7 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
         "component-edge-token",
         "component-edge-margin",
         "compiler-decision-token",
+        "bounded-compiler-decision-margin",
         "structure-token",
         "typed-family-balance",
         "container-close",
@@ -6199,6 +6217,13 @@ def _matrix(
         }
         if rec_slug not in bank_by_slug:
             rec_slug = _SCREENING_ARM_BANK[0][0]
+        control_extra: dict[str, Any] = {}
+        if rec_slug == "bounded-compiler-decision-margin":
+            control_extra = {
+                key: value
+                for key, value in bank_by_slug[rec_slug][1].items()
+                if key != "grammar_completion_bounds"
+            }
         candidates = [
             {
                 "experiment": exp(
@@ -6230,8 +6255,14 @@ def _matrix(
                                 else {}
                             )
                         ),
+                        **control_extra,
                     ),
-                    "Baseline for size-matched continuous attribution.",
+                    (
+                        "All-family margin control for isolated completion-bounds "
+                        "attribution."
+                        if rec_slug == "bounded-compiler-decision-margin"
+                        else "Baseline for size-matched continuous attribution."
+                    ),
                 ),
                 "evidence_uses": uses(),
                 "novelty": novelty(0, "matched control with published eval"),
