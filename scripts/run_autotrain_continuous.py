@@ -7944,29 +7944,15 @@ def run_cycle(
     if trace_paths:
         role_citations["prior_trace"] = trace_paths[0]
     eval_version = default_eval_version()
-    # Load predecessor matrix feedback when continuous lineage requires a successor matrix.
+    # Load predecessor matrix feedback only for confirm/promote successors.
+    # Thrash bank rotation is NOT a diagnosis successor of the last handoff
+    # campaign: continuous pred is last *handoff* campaign, while hypothesize
+    # walks full loop lineage and may bind a different formed matrix (e.g.
+    # incomplete next cycle with partial feedback). Binding handoff feedback
+    # into thrash matrices causes:
+    #   agent hypothesis matrix conflicts with supplied feedback ids
     feedback: list[dict] = []
     previous_matrix_id = None
-    if pred:
-        pred_dir = root / pred
-        mats = sorted(
-            (pred_dir / "artifacts" / "hypothesis_matrices").glob("*.json"),
-            key=lambda path: path.stat().st_mtime_ns,
-        )
-        if mats:
-            previous_matrix_id = json.loads(mats[-1].read_text(encoding="utf-8")).get(
-                "matrix_id"
-            )
-        fbs = sorted(
-            (pred_dir / "artifacts" / "hypothesizer_feedback").glob("*.json"),
-            key=lambda path: path.stat().st_mtime_ns,
-        )
-        feedback = [json.loads(path.read_text(encoding="utf-8")) for path in fbs]
-        # only terminal feedback for the latest predecessor matrix
-        if previous_matrix_id:
-            feedback = [
-                item for item in feedback if item.get("matrix_id") == previous_matrix_id
-            ]
     confirm_levers = None
     confirm_control_levers = None
     promote_levers = None
@@ -8026,6 +8012,32 @@ def run_cycle(
             "RECENT_EXHAUSTION skip=" + ",".join(sorted(recent_exhausted)),
             flush=True,
         )
+    # Confirm/promote/replay matrices may acknowledge handoff-predecessor
+    # feedback. Thrash must not — see comment above (lineage ≠ handoff pred).
+    bind_pred_feedback = (
+        confirm_levers is not None
+        or promote_levers is not None
+        or replay is not None
+    )
+    if bind_pred_feedback and pred:
+        pred_dir = root / pred
+        mats = sorted(
+            (pred_dir / "artifacts" / "hypothesis_matrices").glob("*.json"),
+            key=lambda path: path.stat().st_mtime_ns,
+        )
+        if mats:
+            previous_matrix_id = json.loads(mats[-1].read_text(encoding="utf-8")).get(
+                "matrix_id"
+            )
+        fbs = sorted(
+            (pred_dir / "artifacts" / "hypothesizer_feedback").glob("*.json"),
+            key=lambda path: path.stat().st_mtime_ns,
+        )
+        feedback = [json.loads(path.read_text(encoding="utf-8")) for path in fbs]
+        if previous_matrix_id:
+            feedback = [
+                item for item in feedback if item.get("matrix_id") == previous_matrix_id
+            ]
     rec_slug = _select_cycle_slug(
         cycle,
         predecessor_priority=_predecessor_priority_slug(
@@ -8047,8 +8059,8 @@ def run_cycle(
         eval_version=eval_version,
         steps=steps,
         cycle=cycle,
-        feedback=feedback or None,
-        previous_matrix_id=previous_matrix_id,
+        feedback=(feedback or None) if bind_pred_feedback else None,
+        previous_matrix_id=previous_matrix_id if bind_pred_feedback else None,
         role=role,
         policy=policy,
         confirm_levers=confirm_levers,
@@ -8075,20 +8087,20 @@ def run_cycle(
             f"THRASH_ROTATE cycle={cycle} recommended={rec_slug} skip={sorted(skip_slugs)}",
             flush=True,
         )
-    # Thrash bank rotation is authoritative; drop orphan feedback bindings so
-    # agent hypothesize accepts the pre-built matrix when lineage feedback is empty.
+    # Defense in depth: thrash matrices never carry feedback/predecessor binds.
+    # AgentHypothesisProvider rebinds from live loop lineage on hypothesize.
     if (
         promote_levers is None
         and confirm_levers is None
-        and not feedback
-        and matrix.get("feedback_ids")
+        and replay is None
+        and (matrix.get("feedback_ids") or matrix.get("predecessor_matrix_id"))
     ):
         matrix = dict(matrix)
-        matrix.pop("feedback_ids", None)
+        stripped_ids = list(matrix.pop("feedback_ids", None) or [])
         matrix.pop("predecessor_matrix_id", None)
         print(
-            "THRASH_MATRIX_STRIP_STALE_FEEDBACK "
-            f"campaign={campaign_id} (no live predecessor feedback)",
+            "THRASH_MATRIX_STRIP_FEEDBACK "
+            f"campaign={campaign_id} stripped_ids={stripped_ids}",
             flush=True,
         )
     HypothesisMatrix.model_validate(matrix)

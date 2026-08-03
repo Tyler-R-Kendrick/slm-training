@@ -44,7 +44,8 @@ Use incomplete rate + p95 arm times to recompute the thrash_timing policy (versi
 After decode/steps fit, residual incomplete causes were **not** wall:
 
 1. **`semantic-contrast` train invariant:** `batch_size >= 3` required; thrash defaulted to 2 → every contrast arm failed train. Bank extras + knobs() now force `batch_size >= 3` when contrast loss > 0.
-2. **Agent hypothesize feedback conflict:** thrash matrices carried stale `feedback_ids` from distant ancestors while live lineage feedback was empty → `agent hypothesis matrix conflicts with supplied feedback ids`. Driver strips orphan feedback bindings when no live feedback exists.
+2. **Agent hypothesize feedback conflict (empty lineage):** thrash matrices carried stale `feedback_ids` while live lineage feedback was empty → strip orphan binds.
+3. **Agent hypothesize feedback conflict (handoff ≠ lineage):** continuous `pred` is the last **handoff** campaign; hypothesize walks **full loop lineage** and may bind a different formed matrix (e.g. incomplete next cycle with partial feedback). Pinning handoff `feedback_ids` into thrash matrices aborts with `agent hypothesis matrix conflicts with supplied feedback ids` even when both sides are non-empty. **Thrash never binds predecessor feedback** — only confirm/promote/replay do. `AgentHypothesisProvider` rebinds from live lineage.
 
 ## Non-goals
 

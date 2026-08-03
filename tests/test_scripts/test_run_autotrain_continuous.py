@@ -7068,11 +7068,81 @@ def test_thrash_matrix_strips_stale_feedback_when_no_live_feedback(
         previous_matrix_id="old-m1",
     )
     assert matrix.get("feedback_ids") == ["feedback-stale"]
-    # No live feedback → strip before validate/write (driver path).
-    feedback: list = []
-    if not feedback and matrix.get("feedback_ids"):
+    # Driver thrash path always strips feedback binds (handoff pred ≠ lineage).
+    promote_levers = None
+    confirm_levers = None
+    replay = None
+    if (
+        promote_levers is None
+        and confirm_levers is None
+        and replay is None
+        and (matrix.get("feedback_ids") or matrix.get("predecessor_matrix_id"))
+    ):
         matrix = dict(matrix)
         matrix.pop("feedback_ids", None)
         matrix.pop("predecessor_matrix_id", None)
     HypothesisMatrix.model_validate(matrix)
     assert "feedback_ids" not in matrix
+    assert "predecessor_matrix_id" not in matrix
+
+
+def test_thrash_does_not_bind_handoff_pred_feedback_ids(tmp_path: Path) -> None:
+    """Thrash must not pin handoff-pred feedback; hypothesize rebinds lineage.
+
+    Continuous pred is the last *handoff* campaign, while hypothesize walks
+    full loop lineage and may select a different formed matrix (e.g. incomplete
+    successor with partial feedback). Pinning handoff ids aborts thrash with
+    'agent hypothesis matrix conflicts with supplied feedback ids'.
+    """
+    from slm_training.autoresearch.providers import AgentHypothesisProvider
+    from slm_training.autoresearch.schemas import (
+        CampaignSpec,
+        EvidenceSnapshot,
+        HypothesisFeedback,
+        HypothesisMatrix,
+    )
+
+    # Thrash build path: no feedback passed (bind_pred_feedback=False).
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-fb-c2",
+        evidence_snapshot_id="snap-c2",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=40,
+        cycle=2,
+        role="screening",
+        recommended_slug="semantic-contrast",
+        feedback=None,
+        previous_matrix_id=None,
+    )
+    assert not matrix.get("feedback_ids")
+    assert not matrix.get("predecessor_matrix_id")
+    validated = HypothesisMatrix.model_validate(matrix)
+
+    # Live lineage feedback differs from handoff-pred ids thrash used to bind.
+    # Empty matrix feedback_ids lets AgentHypothesisProvider rebind safely.
+    live = HypothesisFeedback(
+        feedback_id="feedback-abcdef0123456789",
+        campaign_id="lineage-camp",
+        matrix_id="lineage-m1",
+        experiment_id="exp-control",
+        hypothesis="A sufficiently detailed lineage diagnosis hypothesis.",
+        knob_signature='{"steps": 40}',
+        outcome_status="stopped",
+        diagnosis_target="infrastructure",
+        diagnosis_evidence=("Lineage arm finished without dual-arm scoreboard.",),
+        recommended_actions=("Rotate thrash under fitted decode budget.",),
+    )
+    path = tmp_path / "thrash-matrix.json"
+    path.write_text(validated.model_dump_json(), encoding="utf-8")
+    camp = CampaignSpec(
+        campaign_id="continuous-loop-fb-c2",
+        objective="Size-matched thrash under wall cap.",
+        primary_metric="smoke.structural_similarity",
+    )
+    evidence = EvidenceSnapshot(snapshot_id="snap-c2", roots=("outputs",), items=())
+    result = AgentHypothesisProvider(path).propose(camp, evidence, [], (live,))
+    assert result.matrix.feedback_ids == (live.feedback_id,)
+    assert result.matrix.predecessor_matrix_id == live.matrix_id

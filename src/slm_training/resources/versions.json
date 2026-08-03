@@ -2683,7 +2683,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v169",
+      "version": "v170",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2723,6 +2723,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v170",
+          "date": "2026-08-03",
+          "note": "Thrash never binds handoff-pred feedback_ids (handoff pred ≠ hypothesize lineage); only confirm/promote/replay bind; fixes CYCLE_ERROR conflicts with supplied feedback ids after incomplete successor"
+        },
         {
           "version": "v169",
           "date": "2026-08-03",
