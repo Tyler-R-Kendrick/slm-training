@@ -637,6 +637,9 @@ def test_select_recommended_slug_rotates_and_skips() -> None:
     assert _mod._select_recommended_slug(
         1818, skip=all_slugs - {"component-edge-margin"}
     ) == "component-edge-margin"
+    assert _mod._select_recommended_slug(
+        1821, skip=all_slugs - {"compiler-decision-token"}
+    ) == "compiler-decision-token"
 
 
 def test_select_recommended_slug_prioritizes_successor_quality_after_legacy_nulls() -> (
@@ -1307,6 +1310,33 @@ def test_component_edge_margin_arm_is_size_matched_and_replayable() -> None:
     assert candidate["compiler_alignment_margin"] == 1.0
     assert candidate["compiler_alignment_kind_filter"] == "component-edge"
     assert _mod._arm_slug_from_knobs(candidate) == "component-edge-margin"
+
+
+def test_compiler_decision_token_arm_is_dense_and_size_matched() -> None:
+    campaign_id = "continuous-loop-20260803-c1821"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1821,
+        role="screening",
+        recommended_slug="compiler-decision-token",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-compiler-decision-token"]
+    assert control["compiler_decision_token_loss_weight"] == 0.0
+    assert candidate["compiler_decision_token_loss_weight"] == 1.0
+    assert _mod._arm_slug_from_knobs(candidate) == "compiler-decision-token"
+    assert "compiler_decision_token_loss_weight" in _mod._LEVER_KNOB_KEYS
 
 
 def test_typed_family_balance_arm_is_size_matched_and_replayable() -> None:
@@ -4008,26 +4038,54 @@ def test_cycle_deadline_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
         _mod._remaining_timeout(9.0)
 
 
-def test_arm_wall_budget_is_symmetric_and_reserves_orchestration() -> None:
+def test_arm_wall_budget_accounts_for_formal_stage_and_reserves_orchestration() -> None:
     from slm_training.levers import (
         HARNESS_FINALIZATION_RESERVE_SECONDS,
         MAX_HARNESS_WALL_SECONDS,
     )
 
-    arm_minutes = _mod._arm_wall_minutes(3)
-    expected = min(
+    promotion_minutes = _mod._arm_wall_minutes(3, formal_required=True)
+    promotion_expected = min(
         3.0,
         (MAX_HARNESS_WALL_SECONDS - HARNESS_FINALIZATION_RESERVE_SECONDS) / 3 / 60,
     )
-    assert arm_minutes == pytest.approx(expected)
-    assert _mod._arm_wall_minutes(0.5) == pytest.approx(
+    assert promotion_minutes == pytest.approx(promotion_expected)
+    assert _mod._arm_wall_minutes(0.5, formal_required=True) == pytest.approx(
         min(
             0.5,
             (MAX_HARNESS_WALL_SECONDS - HARNESS_FINALIZATION_RESERVE_SECONDS) / 3 / 60,
         )
     )
-    reserved = 2 * arm_minutes * 60 + HARNESS_FINALIZATION_RESERVE_SECONDS
-    assert reserved < MAX_HARNESS_WALL_SECONDS
+    screening_minutes = _mod._arm_wall_minutes(3, formal_required=False)
+    screening_expected = min(
+        3.0,
+        (MAX_HARNESS_WALL_SECONDS - HARNESS_FINALIZATION_RESERVE_SECONDS) / 2 / 60,
+    )
+    assert screening_minutes == pytest.approx(screening_expected)
+    assert screening_minutes > promotion_minutes
+    reserved = 2 * screening_minutes * 60 + HARNESS_FINALIZATION_RESERVE_SECONDS
+    assert reserved == pytest.approx(MAX_HARNESS_WALL_SECONDS)
+
+
+def test_confirmation_during_promotion_cadence_uses_two_arm_budget() -> None:
+    formal_required = _mod._formal_lane_required(cycle_intent="confirm", replay=None)
+
+    assert formal_required is False
+    assert _mod._arm_wall_minutes(3, formal_required=formal_required) > (
+        _mod._arm_wall_minutes(3, formal_required=True)
+    )
+
+
+def test_frozen_formal_replay_retains_formal_lane() -> None:
+    replay = {
+        "control": {"manifest": SimpleNamespace(formal_obligations=())},
+        "candidate": {"manifest": SimpleNamespace(formal_obligations=(object(),))},
+    }
+
+    assert _mod._formal_lane_required(
+        cycle_intent="retry_measurement", replay=replay
+    )
+    assert _mod._formal_lane_required(cycle_intent="promote", replay=None)
 
 
 def test_empty_promotion_slot_falls_back_but_frozen_replay_does_not() -> None:

@@ -1389,6 +1389,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "component_edge_token_loss_weight": getattr(
                 config, "component_edge_token_loss_weight", 0.0
             ),
+            "compiler_decision_token_loss_weight": getattr(
+                config, "compiler_decision_token_loss_weight", 0.0
+            ),
             "structure_token_loss_weight": getattr(
                 config, "structure_token_loss_weight", 0.0
             ),

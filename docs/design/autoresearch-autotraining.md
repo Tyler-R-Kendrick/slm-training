@@ -188,6 +188,27 @@ and regressing both structural similarity and protected binder F1. Campaign
 harness v117 forbids that ratio from overriding a regressed MPR, the role-owned
 quality primary, or any required non-regression metric. Such cycles remain
 useful runtime evidence but cannot enter the champion queue.
+After v117 correctly exhausted c1819, c1820 stopped before experiment formation
+because the quality-arm bank had no distinct successor. Campaign harness v118
+opens `compiler-decision-token`: ordinary reconstruction CE is reweighted at
+every gold position where the deterministic compiler exposes a legal branch.
+This directly tests the observed coverage hypothesis—two or three component-edge
+rows may be too sparse—without adding parameters, decoder scores, or legal
+authority. Typed decision counts and mean CE make achieved density measurable.
+Cycle c1821 activated that objective on 34 final-step decision rows, but both
+three-document production batches exhausted one shared 24-second wall and left
+all quality metrics unmeasured. Eval harness v78 makes the documented timeout
+truly per record by scaling a batch wall with its record count, still capped by
+the cumulative evaluator deadline. Campaign harness v119 also stops reserving
+a promotion-only Lean execution lane during screening; promotion continues to
+reserve and execute formal preflight. The exact c1821 arms replay before any
+new model hypothesis.
+The c1822 exact replay completes both arms under those repairs. The dense
+decision-token arm improves smoke structure `.05237→.14623`, meaningful rate
+`0→.6667`, component recall `.0833→.3333`, and p50 latency by 11.6%, with
+parse, binder F1, and fidelity held. This is a three-document screening signal,
+not ship evidence: equality remains zero and the unchanged absolute gates fail.
+The recipe therefore enters fresh-seed confirmation, not promotion or RL.
 
 The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
 confirmed a champion, c1812 was the next protected promotion slot, and the

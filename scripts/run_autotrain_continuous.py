@@ -242,14 +242,30 @@ def _raise_for_bounded_result(result: BoundedProcessResult) -> None:
         )
 
 
-def _arm_wall_minutes(policy_minutes: float) -> float:
-    """Give formal + both decision arms equal room and retain finalization."""
+def _arm_wall_minutes(policy_minutes: float, *, formal_required: bool) -> float:
+    """Give required stages equal room while retaining finalization."""
 
+    stage_count = 3 if formal_required else 2
     arm_seconds = (
         float(MAX_HARNESS_WALL_SECONDS) - HARNESS_FINALIZATION_RESERVE_SECONDS
-    ) / 3
+    ) / stage_count
     symmetric_minutes = arm_seconds / 60
     return min(float(policy_minutes), symmetric_minutes)
+
+
+def _formal_lane_required(
+    *, cycle_intent: str, replay: dict[str, Any] | None
+) -> bool:
+    """Reserve formal time only for work whose locked plan requires it."""
+
+    if cycle_intent == "promote":
+        return True
+    if replay is None:
+        return False
+    return any(
+        bool(replay[arm]["manifest"].formal_obligations)
+        for arm in ("control", "candidate")
+    )
 
 
 def _require_symmetric_arm_budget(
@@ -439,6 +455,7 @@ _LEVER_KNOB_KEYS = (
     "ltr_prefix_loss_weight",
     "component_token_loss_weight",
     "component_edge_token_loss_weight",
+    "compiler_decision_token_loss_weight",
     "structure_token_loss_weight",
     "typed_family_balance_loss_weight",
     "ltr_tail_loss_weight",
@@ -646,6 +663,11 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
             "compiler_alignment_stratified": True,
             "compiler_alignment_kind_filter": "component-edge",
         },
+    ),
+    (
+        "compiler-decision-token",
+        "Dense reconstruction weighting at every deterministic compiler decision improves meaningful OpenUI structure without lowering parse_rate or binder_reference_f1.",
+        {"compiler_decision_token_loss_weight": 1.0},
     ),
     (
         "structure-token",
@@ -1134,6 +1156,8 @@ def _arm_slug_from_knobs(
         return "component-token"
     if knobs.get("component_edge_token_loss_weight"):
         return "component-edge-token"
+    if knobs.get("compiler_decision_token_loss_weight"):
+        return "compiler-decision-token"
     if knobs.get("structure_token_loss_weight"):
         return "structure-token"
     if knobs.get("typed_family_balance_loss_weight"):
@@ -1352,6 +1376,7 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
         "component-token",
         "component-edge-token",
         "component-edge-margin",
+        "compiler-decision-token",
         "structure-token",
         "typed-family-balance",
         "container-close",
@@ -3852,6 +3877,7 @@ def _completed_candidate_priorities(
         "ltr_prefix_loss_weight",
         "component_token_loss_weight",
         "component_edge_token_loss_weight",
+        "compiler_decision_token_loss_weight",
         "structure_token_loss_weight",
         "typed_family_balance_loss_weight",
     }
@@ -5675,6 +5701,7 @@ def _matrix(
             "ltr_prefix_loss_weight": 0.0,
             "component_token_loss_weight": 0.0,
             "component_edge_token_loss_weight": 0.0,
+            "compiler_decision_token_loss_weight": 0.0,
             "structure_token_loss_weight": 0.0,
             "typed_family_balance_loss_weight": 0.0,
             "structural_aux_head_profile": "none",
@@ -5755,6 +5782,7 @@ def _matrix(
                 "ltr_prefix_loss_weight",
                 "component_token_loss_weight",
                 "component_edge_token_loss_weight",
+                "compiler_decision_token_loss_weight",
                 "structure_token_loss_weight",
                 "typed_family_balance_loss_weight",
                 "structural_aux_head_profile",
@@ -5954,6 +5982,7 @@ def _matrix(
                 "ltr_prefix_loss_weight",
                 "component_token_loss_weight",
                 "component_edge_token_loss_weight",
+                "compiler_decision_token_loss_weight",
                 "structure_token_loss_weight",
                 "typed_family_balance_loss_weight",
                 "structural_aux_head_profile",
@@ -6417,6 +6446,7 @@ def _manifest(
                 "ltr_prefix_loss_weight": 0.0,
                 "component_token_loss_weight": 0.0,
                 "component_edge_token_loss_weight": 0.0,
+                "compiler_decision_token_loss_weight": 0.0,
                 "structure_token_loss_weight": 0.0,
                 "typed_family_balance_loss_weight": 0.0,
             },
@@ -6828,7 +6858,13 @@ def run_cycle(
             f"cycle={cycle} suites={','.join(eval_suites_for_role(policy, role))}",
             flush=True,
         )
-    arm_wall_minutes = _arm_wall_minutes(stage_wall_minutes_for_role(policy, role))
+    arm_wall_minutes = _arm_wall_minutes(
+        stage_wall_minutes_for_role(policy, role),
+        formal_required=_formal_lane_required(
+            cycle_intent=cycle_intent,
+            replay=replay,
+        ),
+    )
     claim_for_role = (
         str(policy.defaults.get("claim_class_promotion") or "promotion_candidate")
         if role == "promotion"

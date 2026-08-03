@@ -889,10 +889,11 @@ def _effective_record_decode_timeout(
     chunk_record_n: int,
     now: float | None = None,
 ) -> float:
-    """Allocate a fair, bounded record share from the cumulative eval wall."""
+    """Allocate a fair, bounded wall-time budget for one decode chunk."""
 
+    requested_chunk_seconds = requested_seconds * max(1, int(chunk_record_n))
     if evaluation_deadline is None:
-        return requested_seconds
+        return requested_chunk_seconds
     current = time.monotonic() if now is None else float(now)
     usable = max(
         0.05,
@@ -900,7 +901,7 @@ def _effective_record_decode_timeout(
     )
     fair_share = usable * max(1, int(chunk_record_n)) / max(1, int(remaining_record_n))
     if requested_seconds > 0:
-        fair_share = min(float(requested_seconds), fair_share)
+        fair_share = min(requested_chunk_seconds, fair_share)
     return max(0.05, fair_share)
 
 

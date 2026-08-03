@@ -2656,7 +2656,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v117",
+      "version": "v120",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2696,26 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v120",
+          "date": "2026-08-02",
+          "note": "Reserve a third formal lane from actual promote intent or frozen manifest obligations, allowing confirmation during promotion cadence to retain the full symmetric two-arm budget."
+        },
+        {
+          "version": "v119",
+          "date": "2026-08-03",
+          "note": "no-bump: document the c1822 exact-replay fixture result and fresh-seed confirmation disposition; campaign behavior is unchanged"
+        },
+        {
+          "version": "v119",
+          "date": "2026-08-02",
+          "note": "Allocate screening wall time across its two executed arms while promotion retains the third Lean preflight lane, so not-applicable formal work cannot starve measurement."
+        },
+        {
+          "version": "v118",
+          "date": "2026-08-02",
+          "note": "Add a zero-parameter dense compiler-decision token reconstruction arm after c1817 and c1819 showed that component-edge objectives cover only two or three final-step rows."
+        },
         {
           "version": "v117",
           "date": "2026-08-02",
@@ -7448,6 +7468,16 @@
         {
           "version": "v3",
           "date": "2026-08-03",
+          "note": "no-bump: record honest c1822 fixture-positive replay provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1821 measurement-incomplete scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
           "note": "no-bump: record honest c1819 rejected component-edge-margin checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
         },
         {
@@ -9261,7 +9291,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v77",
+      "version": "v78",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -9282,6 +9312,16 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v78",
+          "date": "2026-08-02",
+          "note": "no-bump: clarify that the scaled timeout is a whole decode-chunk budget; evaluation behavior is unchanged."
+        },
+        {
+          "version": "v78",
+          "date": "2026-08-02",
+          "note": "Honor the documented per-record decode timeout for production batches by scaling the chunk wall with its record count while remaining bounded by any cumulative evaluation wall."
+        },
         {
           "version": "v77",
           "date": "2026-08-02",
@@ -9740,7 +9780,7 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v37",
+      "version": "v38",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
@@ -9748,6 +9788,11 @@
         "src/slm_training/harnesses/quality/__init__.py"
       ],
       "history": [
+        {
+          "version": "v38",
+          "date": "2026-08-02",
+          "note": "Persist the dense compiler-decision token objective weight and decision-position loss attribution in training evidence."
+        },
         {
           "version": "v37",
           "date": "2026-08-03",
@@ -11587,7 +11632,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v303",
+      "version": "v304",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -11630,6 +11675,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v304",
+          "date": "2026-08-02",
+          "note": "Add zero-parameter reconstruction weighting and typed CE attribution at every gold compiler decision position."
+        },
         {
           "version": "v303",
           "date": "2026-08-02",
