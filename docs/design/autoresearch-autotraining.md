@@ -182,6 +182,12 @@ objective over deterministic `component_bound` decisions. It trains the gold
 child component to outrank the other compiler-legal component siblings by the
 declared margin. The filter changes neither the candidate domain nor decode
 authority, and its typed row telemetry makes an inactive objective fail visibly.
+The completed c1819 frozen replay exposed a classification gap rather than a
+model win: the candidate was faster enough to improve MPR/ms while halving MPR
+and regressing both structural similarity and protected binder F1. Campaign
+harness v117 forbids that ratio from overriding a regressed MPR, the role-owned
+quality primary, or any required non-regression metric. Such cycles remain
+useful runtime evidence but cannot enter the champion queue.
 
 The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
 confirmed a champion, c1812 was the next protected promotion slot, and the

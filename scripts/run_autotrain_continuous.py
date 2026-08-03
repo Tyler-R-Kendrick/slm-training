@@ -3131,7 +3131,12 @@ def _classify_metric_tradeoff(
         c_eff = c_mpr / c_lat
         t_eff = t_mpr / t_lat
         efficiency_gain_fraction = (t_eff / c_eff - 1.0) if c_eff > 0 else None
-        if (
+        if not mpr_held and t_eff > c_eff + _EPS:
+            reasons.append(
+                "efficiency_win_rejected_mpr_regression:"
+                f"mpr={c_mpr}->{t_mpr}:mpr_per_ms={c_eff:.8g}->{t_eff:.8g}"
+            )
+        elif (
             efficiency_gain_fraction is not None
             and efficiency_gain_fraction + _EPS >= minimum_efficiency_gain_fraction
         ):
@@ -3423,6 +3428,17 @@ def _classify_positive(
     reasons = (
         list(reasons_pre) + list(tradeoff_reasons) + list(decision.get("reasons") or [])
     )
+    # An efficiency ratio cannot override the role-owned quality primary or
+    # its protected non-regression metrics. Otherwise halving meaningful output
+    # while becoming much faster can be mislabeled as a quality-positive screen.
+    if leaf != "latency_ms_p50" and any(
+        str(reason).startswith(
+            ("primary_metric_null_or_worse:", "non_regression_fail:")
+        )
+        for reason in reasons
+    ):
+        decision["positive"] = False
+        decision["stack_layer"] = False
     if not any(
         reason.startswith(prefix)
         for reason in reasons

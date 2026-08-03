@@ -123,6 +123,25 @@ def test_efficiency_win_counts_when_faster_with_same_mpr() -> None:
     assert any(r.startswith("quality_held:") for r in reasons)
 
 
+def test_efficiency_win_rejects_mpr_regression_above_floor() -> None:
+    control, candidate = _arms(
+        c_lat=3772.85,
+        t_lat=1074.57,
+        c_mpr=0.6666666666666666,
+        t_mpr=0.3333333333333333,
+    )
+
+    positive, reasons = _classify(
+        control=control, candidate=candidate, primary_metric=_PRIMARY
+    )
+
+    assert positive is False
+    assert any(
+        reason.startswith("efficiency_win_rejected_mpr_regression:")
+        for reason in reasons
+    )
+
+
 def test_efficiency_micro_win_is_rejected_as_noise() -> None:
     control, candidate = _arms(
         c_lat=3453.06,
@@ -3443,6 +3462,45 @@ def test_classify_positive_rejects_c1731_efficiency_jitter(tmp_path: Path) -> No
     assert result["positive"] is False
     assert any(
         reason.startswith("efficiency_win_rejected_min_effect:")
+        for reason in result["reasons"]
+    )
+
+
+def test_classify_positive_rejects_c1819_quality_regression(tmp_path: Path) -> None:
+    camp = tmp_path / "camp"
+    rows = (
+        ("c-control", 3772.85, 0.6666666666666666, 0.40443333333333337, 0.9523809523809524),
+        ("c-candidate", 1074.57, 0.3333333333333333, 0.17416666666666666, 0.6333333333333333),
+    )
+    for arm, latency, mpr, similarity, binder_f1 in rows:
+        run = camp / "runs" / arm
+        _write_eval(
+            run / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            binder_reference_f1=binder_f1,
+            meaningful_program_rate=mpr,
+            structural_similarity=similarity,
+            latency_ms_p50=latency,
+        )
+        _write_complete_scoreboard(run, "smoke")
+
+    result = _mod._classify_positive(
+        camp_dir=camp,
+        primary_metric="smoke.structural_similarity",
+        control_id="c-control",
+        candidate_id="c-candidate",
+        role="screening",
+    )
+
+    assert result["positive"] is False
+    assert result["stack_layer"] is False
+    assert any(
+        reason.startswith("efficiency_win_rejected_mpr_regression:")
+        for reason in result["reasons"]
+    )
+    assert any(
+        reason.startswith("non_regression_fail:binder_reference_f1:")
         for reason in result["reasons"]
     )
 
