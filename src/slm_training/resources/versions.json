@@ -2646,7 +2646,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v105",
+      "version": "v106",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2686,6 +2686,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v106",
+          "date": "2026-08-03",
+          "note": "Add a zero-parameter count-normalized component and STRUCT family-mean objective after direct STRUCT weighting exposed a cross-family CE tradeoff."
+        },
         {
           "version": "v105",
           "date": "2026-08-02",
@@ -7377,6 +7382,11 @@
       "history": [
         {
           "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1806 rejected STRUCT-token checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
           "date": "2026-08-02",
           "note": "no-bump: record the c1805 frozen component-token replay disposition in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
         },
@@ -9615,7 +9625,7 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v35",
+      "version": "v36",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
@@ -9623,6 +9633,11 @@
         "src/slm_training/harnesses/quality/__init__.py"
       ],
       "history": [
+        {
+          "version": "v36",
+          "date": "2026-08-03",
+          "note": "Persist the typed family-balance objective weight and active-family auxiliary attribution in training evidence."
+        },
         {
           "version": "v35",
           "date": "2026-08-02",
@@ -11447,7 +11462,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v297",
+      "version": "v298",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -11490,6 +11505,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v298",
+          "date": "2026-08-03",
+          "note": "Add a zero-parameter count-normalized auxiliary with equal component and STRUCT family-mean contribution."
+        },
         {
           "version": "v297",
           "date": "2026-08-02",

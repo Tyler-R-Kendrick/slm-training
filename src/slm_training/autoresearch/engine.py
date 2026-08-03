@@ -585,6 +585,13 @@ def compile_commands(
                     str(knobs.structure_token_loss_weight),
                 ]
             )
+        if knobs.typed_family_balance_loss_weight is not None:
+            train.extend(
+                [
+                    "--typed-family-balance-loss-weight",
+                    str(knobs.typed_family_balance_loss_weight),
+                ]
+            )
         if knobs.structural_aux_head_profile is not None:
             train.extend(
                 [

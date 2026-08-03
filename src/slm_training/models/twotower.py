@@ -370,6 +370,9 @@ class TwoTowerConfig:
     # Extra reconstruction weight on grammar STRUCT tokens. Zero-parameter;
     # this is distinct from component identity and never changes legality.
     structure_token_loss_weight: float = 0.0
+    # Count-normalized auxiliary over component and STRUCT token-family means.
+    # Zero-parameter and train-only; it never changes the legal decode domain.
+    typed_family_balance_loss_weight: float = 0.0
     # Extra weight on the final real LTR tokens (default-off).
     ltr_tail_loss_weight: float = 0.0
     ltr_tail_tokens: int = 32
@@ -3355,6 +3358,14 @@ class TwoTowerModel(nn.Module):
                 weights = weights + (
                     structure_w * structure_positions.reshape(-1).float()
                 )
+            balance_w = float(
+                getattr(self.config, "typed_family_balance_loss_weight", 0.0) or 0.0
+            )
+            if balance_w > 0.0 and (not component_ids or not structure_ids):
+                raise ValueError(
+                    "typed_family_balance_loss_weight requires a tokenizer with "
+                    "typed component and structure token ids"
+                )
             if mdlm_row_w is not None:
                 # Broadcast per-row MDLM 1/t weights onto token positions.
                 seq = target_ids.size(1)
@@ -3396,7 +3407,21 @@ class TwoTowerModel(nn.Module):
                 self.last_training_metrics[f"token_loss_{family}_mean_ce"] = (
                     float(ce[selected].mean().detach().cpu()) if count else None
                 )
-            mask_loss = (ce * weights)[mask_flat].mean()
+            balance_terms = [
+                ce[selected].mean()
+                for selected in (component_flat, structure_flat)
+                if selected.any()
+            ]
+            balance_aux = ce.new_zeros(())
+            if balance_w > 0.0 and len(balance_terms) == 2:
+                balance_aux = balance_w * torch.stack(balance_terms).mean()
+            self.last_training_metrics["typed_family_balance_active_families"] = len(
+                balance_terms
+            )
+            self.last_training_metrics["typed_family_balance_aux_loss"] = float(
+                balance_aux.detach().cpu()
+            )
+            mask_loss = (ce * weights)[mask_flat].mean() + balance_aux
             # Diagnostic only: preserve per-record masked token loss without
             # changing the scalar objective or its gradient reduction.
             row_values = (ce * weights).reshape(target_ids.shape)
