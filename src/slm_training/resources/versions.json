@@ -2683,7 +2683,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v168",
+      "version": "v169",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2723,6 +2723,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v169",
+          "date": "2026-08-03",
+          "note": "Thrash executable: semantic-contrast batch_size>=3; strip stale matrix feedback_ids when lineage feedback empty (agent hypothesize no longer abort thrash)"
+        },
         {
           "version": "v168",
           "date": "2026-08-03",

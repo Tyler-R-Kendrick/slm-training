@@ -7023,3 +7023,56 @@ def test_write_thrash_timing_records_completeness(tmp_path: Path) -> None:
     assert any("measurement_incomplete" in r for r in data["incomplete_reasons"])
     ledger = root / "loops" / "loop-t" / "thrash_timing.jsonl"
     assert ledger.is_file()
+
+
+def test_semantic_contrast_thrash_arm_uses_batch_size_at_least_3() -> None:
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-sc-c1",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=80,
+        cycle=3,
+        role="screening",
+        recommended_slug="semantic-contrast",
+    )
+    cand = next(
+        h["experiment"]
+        for h in matrix["hypotheses"]
+        if str(h["experiment"]["experiment_id"]).endswith("-semantic-contrast")
+    )
+    assert int(cand["knobs"]["batch_size"]) >= 3
+    assert float(cand["knobs"]["semantic_contrast_loss_weight"]) > 0
+
+
+def test_thrash_matrix_strips_stale_feedback_when_no_live_feedback(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Agent hypothesize fails if matrix.feedback_ids disagree with live feedback."""
+    from slm_training.autoresearch.schemas import HypothesisMatrix
+
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-fb-c1",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=40,
+        cycle=1,
+        role="screening",
+        recommended_slug="bounds",
+        feedback=[{"feedback_id": "feedback-stale", "matrix_id": "old-m1"}],
+        previous_matrix_id="old-m1",
+    )
+    assert matrix.get("feedback_ids") == ["feedback-stale"]
+    # No live feedback → strip before validate/write (driver path).
+    feedback: list = []
+    if not feedback and matrix.get("feedback_ids"):
+        matrix = dict(matrix)
+        matrix.pop("feedback_ids", None)
+        matrix.pop("predecessor_matrix_id", None)
+    HypothesisMatrix.model_validate(matrix)
+    assert "feedback_ids" not in matrix

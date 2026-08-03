@@ -39,6 +39,13 @@ Each cycle writes `thrash_timing.json` + appends `loops/<loop>/thrash_timing.jso
 
 Use incomplete rate + p95 arm times to recompute the thrash_timing policy (version bump), not vibes.
 
+## Follow-up fixes (executable thrash)
+
+After decode/steps fit, residual incomplete causes were **not** wall:
+
+1. **`semantic-contrast` train invariant:** `batch_size >= 3` required; thrash defaulted to 2 → every contrast arm failed train. Bank extras + knobs() now force `batch_size >= 3` when contrast loss > 0.
+2. **Agent hypothesize feedback conflict:** thrash matrices carried stale `feedback_ids` from distant ancestors while live lineage feedback was empty → `agent hypothesis matrix conflicts with supplied feedback ids`. Driver strips orphan feedback bindings when no live feedback exists.
+
 ## Non-goals
 
 - Raising `MAX_RUN_MINUTES` as default thrash fix  
