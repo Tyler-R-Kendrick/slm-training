@@ -1056,7 +1056,21 @@ def evaluate(
     )
     cache_key = None
     cache_dependencies: dict[str, Any] = {}
-    if cache is not None and cache.config.mode is not EvalCacheMode.OFF:
+    cache_bypass_reason: str | None = None
+    # A preloaded model is mutable (the training loop evaluates the live
+    # weights before saving the next checkpoint).  Without an explicit
+    # checkpoint digest, a suite cache key would be shared by unrelated model
+    # states and could replay stale quality as if the current arm had learned.
+    # Fail closed: recompute rather than infer identity from architecture-only
+    # metadata.  Checkpoint-backed evaluation retains the normal cache path.
+    if (
+        model is not None
+        and checkpoint_sha256 is None
+        and cache is not None
+        and cache.config.mode is not EvalCacheMode.OFF
+    ):
+        cache_bypass_reason = "preloaded_model_without_checkpoint_identity"
+    elif cache is not None and cache.config.mode is not EvalCacheMode.OFF:
         try:
             component_versions = {
                 cid: component_version(cid)
@@ -2252,6 +2266,8 @@ def evaluate(
             "placeholder_validity",
         ]
     metrics["decoder_guaranteed"] = decoder_guaranteed
+    if cache_bypass_reason is not None:
+        metrics["cache_bypass_reason"] = cache_bypass_reason
 
     run_dir = config.run_dir
     run_dir.mkdir(parents=True, exist_ok=True)

@@ -9511,7 +9511,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v78",
+      "version": "v79",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -9533,6 +9533,11 @@
       ],
       "history": [
         {
+          "version": "v79",
+          "date": "2026-08-03",
+          "note": "Fail closed on suite-cache reuse for mutable preloaded models without a checkpoint identity; expose the bypass reason for attribution."
+        },
+    {
           "version": "v78",
           "date": "2026-08-02",
           "note": "no-bump: clarify that the scaled timeout is a whole decode-chunk budget; evaluation behavior is unchanged."

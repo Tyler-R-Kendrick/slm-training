@@ -21,6 +21,7 @@ from slm_training.harnesses.model_build.data import (
     load_suite_records,
     load_train_records,
 )
+from slm_training.harness_core.eval_cache import EvalCache, EvalCacheConfig, EvalCacheMode
 from slm_training.harnesses.model_build.eval_runner import (
     _effective_evaluation_policy,
     _is_meaningful_program,
@@ -892,6 +893,49 @@ def test_evaluate_suites_scoreboard(
     assert loaded["checkpoint_source"] == "checkpoint"
     assert loaded["suites"]["smoke"]["checkpoint_sha256"] == loaded["checkpoint_sha256"]
     assert (tmp_path / "runs" / "gates" / "scoreboard.json").exists()
+
+
+def test_preloaded_model_never_replays_checkpointless_eval_cache(
+    tmp_path: Path,
+) -> None:
+    """A live training model has no stable cache identity; recompute it."""
+    train_dir = tmp_path / "train"
+    test_dir = tmp_path / "test"
+    train_dir.mkdir()
+    (test_dir / "suites" / "smoke").mkdir(parents=True)
+    record = ExampleRecord(
+        id="cache-live-1",
+        prompt="Hero",
+        openui='root = TextContent(":slot_0")',
+        placeholders=[":slot_0"],
+        split="smoke",
+        meta={"suite": "smoke"},
+    )
+    write_jsonl(train_dir / "records.jsonl", [record])
+    write_jsonl(test_dir / "suites" / "smoke" / "records.jsonl", [record])
+    config = ModelBuildConfig(
+        train_dir=train_dir,
+        test_dir=test_dir,
+        suite="smoke",
+        run_root=tmp_path / "runs",
+        run_id="cache-live",
+        model_name="stub",
+    )
+    model = StubModel(seed=0)
+    cache = EvalCache(
+        EvalCacheConfig(mode=EvalCacheMode.READ_WRITE, root=tmp_path / "cache")
+    )
+
+    first = evaluate(config, model=model, cache=cache, publish_agentv=False)
+    assert first["cache_bypass_reason"] == "preloaded_model_without_checkpoint_identity"
+    assert not first.get("cache_replay", False)
+
+    # A second call must execute again even though the cache is writable and
+    # the dataset/policy are otherwise identical.
+    config.run_id = "cache-live-second"
+    second = evaluate(config, model=model, cache=cache, publish_agentv=False)
+    assert second["cache_bypass_reason"] == "preloaded_model_without_checkpoint_identity"
+    assert not second.get("cache_replay", False)
 
 
 def test_evaluate_supports_single_record_generation_with_stats(tmp_path: Path) -> None:
