@@ -20,6 +20,7 @@ from slm_training.autoresearch.schemas import (
     AutotrainActionReceiptV1,
     AutotrainActionV1,
     AutotrainCycleHandoffV1,
+    AutotrainLoopStateV1,
     CampaignSpec,
     Diagnosis,
     ExperimentOutcome,
@@ -86,7 +87,68 @@ def append_autotrain_action_receipt(
     finally:
         fcntl.flock(lock_fd, fcntl.LOCK_UN)
         os.close(lock_fd)
+    _refresh_loop_state_after_receipt(Path(root), receipt)
     return path
+
+
+def _refresh_loop_state_after_receipt(
+    root: Path, receipt: AutotrainActionReceiptV1
+) -> None:
+    """Keep the human-facing loop state aligned with durable action receipts.
+
+    Handoffs and receipts are the authority for gating, but ``state.json`` is
+    what operators see in the result matrix.  Without this reconciliation an
+    acknowledged prerequisite remains displayed as the next action until the
+    next campaign rewrites the state, which makes a healthy loop look stuck.
+    Only an idle/between-cycle state for the acknowledged campaign is updated;
+    an active driver owns its running state and must not be clobbered.
+    """
+
+    handoff_path = root / receipt.campaign_id / "cycle_handoff.json"
+    state_path = root / "loops" / receipt.loop_id / "state.json"
+    if not handoff_path.is_file() or not state_path.is_file():
+        return
+    try:
+        handoff = AutotrainCycleHandoffV1.model_validate_json(
+            handoff_path.read_text(encoding="utf-8")
+        )
+        state = AutotrainLoopStateV1.model_validate_json(
+            state_path.read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        return
+    if handoff.loop_id != receipt.loop_id or handoff.campaign_id != receipt.campaign_id:
+        return
+    if state.active_campaign_id is not None or state.state == "RUNNING":
+        return
+
+    pending_required = pending_autotrain_actions(root, handoff)
+    if pending_required:
+        next_action = pending_required[0][1].kind
+    else:
+        pending_execution = pending_autotrain_execution_actions(root, handoff)
+        next_action = (
+            pending_execution[0][1].kind
+            if pending_execution
+            else "run bounded campaign"
+        )
+    updated = state.model_copy(
+        update={
+            "state": "IDLE",
+            "phase": "between_cycles",
+            "next_action": next_action,
+            "heartbeat_at": utc_now(),
+        }
+    )
+    tmp = state_path.with_suffix(".json.tmp")
+    try:
+        tmp.write_text(updated.model_dump_json(indent=2) + "\n", encoding="utf-8")
+        tmp.replace(state_path)
+    except OSError:
+        try:
+            tmp.unlink()
+        except OSError:
+            pass
 
 
 def _git(*args: str) -> subprocess.CompletedProcess[bytes]:

@@ -2656,7 +2656,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v152",
+      "version": "v153",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2696,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v153",
+          "date": "2026-08-03",
+          "note": "Refresh idle loop liveness state from content-bound action receipts so result matrices show the actual next action between campaigns."
+        },
         {
           "version": "v152",
           "date": "2026-08-03",

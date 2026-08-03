@@ -54,6 +54,7 @@ from slm_training.autoresearch.schemas import (
     AutotrainActionReceiptV1,
     AutotrainActionV1,
     AutotrainCycleHandoffV1,
+    AutotrainLoopStateV1,
     CampaignBudget,
     CampaignSpec,
     CategoricalNoveltyAudit,
@@ -1549,6 +1550,19 @@ def test_ack_action_receipt_closes_predecessor_prerequisite(tmp_path: Path) -> N
     handoff_path = root / campaign_id / "cycle_handoff.json"
     handoff_path.parent.mkdir(parents=True)
     handoff_path.write_text(handoff.model_dump_json(indent=2) + "\n")
+    state_path = root / "loops" / "loop-1" / "state.json"
+    state_path.parent.mkdir(parents=True)
+    state_path.write_text(
+        AutotrainLoopStateV1(
+            loop_id="loop-1",
+            state="IDLE",
+            phase="between_cycles",
+            last_completed_campaign_id=campaign_id,
+            cycle_index=1,
+            next_action="document",
+        ).model_dump_json(indent=2)
+        + "\n"
+    )
     assert [action.kind for _, action in pending_autotrain_actions(root, handoff)] == [
         "document"
     ]
@@ -1607,6 +1621,11 @@ def test_ack_action_receipt_closes_predecessor_prerequisite(tmp_path: Path) -> N
     )
     assert args.func(args) == 0
     assert pending_autotrain_actions(root, handoff) == ()
+    refreshed_state = AutotrainLoopStateV1.model_validate_json(
+        state_path.read_text(encoding="utf-8")
+    )
+    assert refreshed_state.next_action == "next_experiment"
+    assert refreshed_state.phase == "between_cycles"
     receipt_rows = [
         json.loads(row)
         for row in (root / "loops" / "loop-1" / "action_receipts.jsonl")
