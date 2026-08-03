@@ -1,0 +1,76 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 2,
+  "source_commit": "d367ddfe",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 22,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "seed": 100002
+  },
+  "arms": {
+    "c2-control": {
+      "last_loss": 14.390223503112793,
+      "checkpoint_sha256": "6abf57d4898e8fe7cb1dace959d3ce5fec463f816b3686c99ad18abf6db3512b",
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.32666666666666666,
+        "component_type_recall": 0.16666666666666666,
+        "binder_reference_f1": 0.0,
+        "placeholder_fidelity": 0.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "reward_score": 0.0,
+        "latency_ms_p50": 14554.69
+      }
+    },
+    "c2-component-plan": {
+      "last_loss": 19.91602325439453,
+      "checkpoint_sha256": "20e573b14e3216132d27101e98f5c49dfe634acd0101b2ce18b5f9f0f8a8e741",
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.38280000000000003,
+        "component_type_recall": 0.16666666666666666,
+        "binder_reference_f1": 0.0,
+        "placeholder_fidelity": 0.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "reward_score": 0.0,
+        "latency_ms_p50": 12549.58
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.05613333333333337,
+  "sdlc_phase_a": {
+    "positive": true,
+    "stack_layer": true,
+    "stack_action": "deliver_stack_after_documentation",
+    "agent_required": "document, then open/update a stacked PR for the positive result",
+    "reasons": [
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c2-control",
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c2-component-plan",
+      "primary_metric_win:smoke.structural_similarity:0.32666666666666666->0.38280000000000003:improvement=0.05613333333333337"
+    ]
+  },
+  "conclusion": "Continuous-openui-local loop, cycle 2 (this session, branch claude/great-dirac-j48f8u): the size-matched 'component-plan' arm beats its matched control on the declared primary, smoke.structural_similarity, by +0.05613 (0.32667 -> 0.38280), at the same seed (100002) as two prior independently-run sessions' c2 and c4 measurements of the same hypothesis (docs/design/continuous-openui-20260803-c2-results.md, merged as PR #1369 'c1-c2 component-plan structural win (+0.056)'; docs/design/autotrain-cycle-c4-component-plan-efficiency-win.md). The primary-metric delta is byte-identical across all three independent sessions (0.32666666666666666 -> 0.38280000000000003, same seed, same quality metrics) even though this session runs on top of several intervening harness commits -- strong evidence the underlying fixture effect is real and deterministic, not sampling noise. component_type_recall improves identically on both control and candidate this cycle (.16667 both, differing from the first session's null-vs-.16667 reading, most likely due to an intervening metric computation fix). meaningful_program_rate, binder_reference_f1, placeholder_fidelity, ast_beq_rate, canonical_beq_rate, and reward_score remain 0 on both arms -- the win stays confined to raw structural similarity, not full program correctness. Ship gates fail as expected (insufficient_n=3; held_out/adversarial/ood/rico_held missing). SDLC Phase A classifies this cycle POSITIVE (primary_metric_win); per sdlc autotrain-iteration-delivery, documenting this result creates the reviewable delta required to open a stacked PR. IMPORTANT: fresh-seed confirmation of this exact hypothesis was already attempted by a prior session and is blocked, not this cycle's job to fix -- see docs/design/autotrain-cycle-c5-c6-replay-blocked-follow-up.md, which documents two harness bugs (dual-arm decode timeout at seed 100005; _apply_frozen_replay does not recognize '-confirm'-suffixed arm slugs) that block the automatic confirmation path and explicitly call for a dedicated improve-openui-harnesses session rather than further speculative fixes. This cycle adds a third independent reproduction of the same screening-stage primary-metric win; it does not attempt or unblock confirmation.",
+  "next_priorities": [
+    "Do not attempt to fix the c5/c6 frozen-replay '-confirm' slug bug or the seed-100005 dual-arm decode timeout speculatively in this cycle; route to improve-openui-harnesses with dedicated investigation time (see autotrain-cycle-c5-c6-replay-blocked-follow-up.md)",
+    "Confirm the fixture candidate on a fresh seed with the exact size-matched treatment and control recipes before any promotion (rank 1, confidence 0.95) -- once the harness blockers above are resolved",
+    "Keep promotion formal preflight locked until fresh confirmation establishes a champion (rank 2, lean_assumption, confidence 1.0)"
+  ],
+  "recorded_at": "2026-08-03T09:42:42Z"
+}

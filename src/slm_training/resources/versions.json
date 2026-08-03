@@ -7558,6 +7558,16 @@
         {
           "version": "v3",
           "date": "2026-08-03",
+          "note": "no-bump: record honest continuous-openui-local 8c0b60dd-c2 (session j48f8u) component-plan reproduction checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest continuous-openui-local 8c0b60dd-c1 (session j48f8u) exact-tie checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
           "note": "no-bump: record honest c1838 confirmed scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
         },
         {
