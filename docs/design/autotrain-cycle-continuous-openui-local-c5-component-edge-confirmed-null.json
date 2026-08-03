@@ -1,0 +1,83 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "cycle": 5,
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c5",
+  "experiment": "component-edge",
+  "claim_class": "fixture_screen",
+  "status": "rejected",
+  "measurement_complete": true,
+  "predecessor_campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c4",
+  "replay_of_frozen_manifest_sha256": "912b622ccda9e867a37fc5bb6ccc4c0d50d3fbfd80a5404691dbbd50759a8fa0",
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "backend": "scratch TwoTower",
+    "matrix_set": "continuous-openui-local",
+    "honesty_mode": "grammar_constrained_strict_compiler_tree",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite_n": {"smoke": 3, "held_out": 0, "adversarial": 0, "ood": 0, "rico_held": 0}
+  },
+  "arms": {
+    "control": {
+      "id": "c20260803-continuous-openui-local-8c0b60dd-c5-control",
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "structural_similarity": 0.4166666666666667,
+      "binder_reference_f1": 0.9523809523809524,
+      "component_type_recall": 0.25,
+      "latency_ms_p50": 23578.0,
+      "decode_timeout_count": 0,
+      "exit": 0
+    },
+    "candidate": {
+      "id": "c20260803-continuous-openui-local-8c0b60dd-c5-component-edge",
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "structural_similarity": 0.4166666666666667,
+      "binder_reference_f1": 0.9523809523809524,
+      "component_type_recall": 0.25,
+      "latency_ms_p50": 23620.0,
+      "decode_timeout_count": 0,
+      "exit": 0
+    }
+  },
+  "gates": {
+    "pass": false,
+    "failures": [
+      "smoke:insufficient_n",
+      "smoke:meaningful_program_rate",
+      "smoke:component_type_recall",
+      "smoke:ast_beq_rate",
+      "smoke:canonical_beq_rate",
+      "held_out:missing_suite",
+      "adversarial:missing_suite",
+      "ood:missing_suite",
+      "rico_held:missing_suite"
+    ]
+  },
+  "signals": {
+    "attribution": "identical frozen control/component-edge pair replayed after the c4 control decode-timeout; this time BOTH arms complete with an exact quality tie (structure .4167, binder F1 .9524, MPR .3333, recall .25) and zero decode timeouts. This confirms the c4 control timeout was a one-run CPU timing artifact on this shared host, not a reproducible executable blocker -- no harness lane opened.",
+    "prevention": ["fixture n=3", "quality-identical arms with a null primary-metric delta are not positive regardless of raw quality level"],
+    "next_priorities": [
+      "test the distinct size-matched component-plan quality hypothesis next (this exact arm pair is now exhausted)",
+      "keep the matched control every cycle"
+    ]
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "fe58c813ffb6fda238e908bf64441265d451db49",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v84",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v23",
+      "model.twotower": "v308"
+    },
+    "stamped_at": "2026-08-03T23:48:44Z"
+  }
+}
