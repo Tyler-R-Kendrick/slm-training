@@ -1,0 +1,82 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c3",
+  "cycle_index": 3,
+  "source_commit": "d5b0c318",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "cycle_intent": "confirm",
+  "champion_fingerprint": "champ-continuous-openui-local-2-e19bda467f7df6df",
+  "champion_status": "rejected",
+  "recipe": {
+    "device": "cpu",
+    "steps": 22,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "seed": 100003
+  },
+  "arms": {
+    "c3-control": {
+      "last_loss": 19.145715713500977,
+      "checkpoint_sha256": "dc2fd9612acef956801f533d0a22ed4f841578360598232fff44982e99182d66",
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.23083333333333333,
+        "component_type_recall": 0.16666666666666666,
+        "binder_reference_f1": 0.48888888888888893,
+        "placeholder_fidelity": 0.38888888888888884,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "reward_score": 0.5493333333333333,
+        "latency_ms_p50": 4127.14
+      }
+    },
+    "c3-confirm": {
+      "last_loss": 23.074419021606445,
+      "checkpoint_sha256": "22523819eaaa80e69d0651ceb76f71029c8e6ebbdf74074738a7a419016bf824",
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.23083333333333333,
+        "component_type_recall": 0.16666666666666666,
+        "binder_reference_f1": 0.26666666666666666,
+        "placeholder_fidelity": 0.2222222222222222,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "reward_score": 0.283,
+        "latency_ms_p50": 4024.1
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "local commits + docs only; no new stack layer",
+    "reasons": [
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c3-control",
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c3-confirm",
+      "efficiency_win_rejected_min_effect:mpr_per_ms:8.076618e-05->8.2834257e-05:gain_fraction=0.025605726<0.05",
+      "non_regression_fail:binder_reference_f1:0.48888888888888893->0.26666666666666666",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.23083333333333333 candidate=0.23083333333333333 improvement=0.0",
+      "confirmation_rejected:primary_quality_not_reheld"
+    ]
+  },
+  "conclusion": "Continuous-openui-local loop, cycle 3 (this session, branch claude/great-dirac-j48f8u): the driver automatically ran the fresh-seed confirmation (seed 100003) of the champion candidate queued by this session's own cycle 2 (champ-continuous-openui-local-2-e19bda467f7df6df, the 'component-plan' primary-metric win documented in continuous-openui-local-j48f8u-c2-results.md). The confirmation is REJECTED: at the fresh seed, control and confirm arms tie exactly on structural_similarity (0.23083 both, improvement=0), and the confirm arm actually regresses binder_reference_f1 (0.48889 -> 0.26667) and placeholder_fidelity (0.38889 -> 0.22222) and reward_score (0.54933 -> 0.283) relative to its own control -- a non-regression failure, not just a null. meaningful_program_rate ties at 0.3333 on both arms. This directly falsifies this session's c2 screening win as a robust effect: the structural_similarity delta observed at seed 100002 (+0.05613, matching two other independent sessions' identical measurements) does not reproduce at a fresh seed and the candidate recipe actively regresses other quality metrics here. This is consistent with the c4-lineage champion (a similar but not identical component-plan candidate from a different prior session) which is separately blocked pending harness repair rather than confirmed -- both lines of evidence now point the same direction: this fixture-scale component-plan effect is not a robust quality improvement. Ship gates fail as expected. SDLC Phase A classifies this cycle NON_POSITIVE; no stacked PR layer opened.",
+  "next_priorities": [
+    "Champion fingerprint champ-continuous-openui-local-2-e19bda467f7df6df is now rejected/exhausted -- do not re-select it without a new preregistered hypothesis (rank 1, confidence 0.95)",
+    "Retain training loss as a diagnostic only, not a promotion proxy -- loss and certified structural quality diverged on this confirmation (rank 2, confidence 0.90)",
+    "Test a distinct size-matched quality-targeted objective next rather than recycling the same component-plan family (rank 5, confidence 0.75)"
+  ],
+  "recorded_at": "2026-08-03T09:53:08Z"
+}
