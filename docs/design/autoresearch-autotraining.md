@@ -70,8 +70,13 @@ chain of initialized-only campaigns, while completed or ambiguous gaps fail clos
 Replay arm identity is resolved by longest registered suffix, so hyphenated canonical
 arms such as `component-plan` and `literal-close` cannot be truncated into an
 unsupported last word.
-Replay manifests carrying Lean formal obligations require a fresh formal preflight
-and otherwise fail closed.
+Replay manifests carrying Lean formal obligations never inherit the source proof
+digest. The successor is first materialized without obligations, runs and validates
+a fresh current-campaign Lean preflight, then restores the frozen obligation
+templates and policies under current campaign/experiment IDs bound only to the
+new proof digest before hypothesis authorization or execution. An unproved or
+timed-out preflight leaves both arms
+unexecuted and fails closed.
 Lineage validation is shared by status and feedback traversal so those surfaces cannot
 disagree about an initialized-only gap. When the newest handoff-less frozen replay
 already has verified terminal events for both diagnostic matrix decision arms, the
@@ -135,6 +140,35 @@ two-pass OpenAI provider remains for compatibility; new external-researcher runs
 use `--compiler openai`, whose default is `gpt-5.6-sol` with `store=False`.
 
 ## Closed loop
+
+The c1812 frozen-promotion replay exposed a formal-ordering gap: the loader saw
+the source manifest's required Lean obligation and rejected the replay before a
+successor campaign could create the mandated fresh proof. Campaign harness v110
+allows the governed frozen recipe to load, strips the stale proof binding from
+the current-main successor, regenerates and validates the Lean preflight, and
+rebinds the unchanged formal claim policy before hypothesis authorization or arm
+execution. This repairs orchestration only; it does not reuse proof evidence,
+weaken the formal gate, or change the frozen model/eval recipes.
+The same replay also exposed an identity gap before execution: governed
+screening retries resolve registered arm suffixes, but promotion candidates use
+the canonical `-promote` identity. Campaign harness v111 maps that identity onto the
+matrix's authorized candidate slot before restoring the exact frozen experiment;
+unknown non-promotion suffixes still fail closed.
+Campaign harness v112 also copies the frozen experiment's formal claims alongside
+its knobs and requires current-campaign candidate metrics before declaring a
+control-only timeout replay terminal. A derived handoff produced by the earlier
+bug is deterministically refreshed to `inconclusive` with the frozen retry still
+queued; source-campaign candidate metrics cannot satisfy the current replay.
+Campaign harness v113 closes the historical-replay edge case where the immediate
+predecessor was itself created by the pre-v112 bug and therefore contains an empty
+claim list. The loader recovers each claim only from its typed, content-bound formal
+preflight artifact, verifies campaign, experiment, obligation, template, policy,
+status, and recomputed obligation identity, then carries that exact claim into the
+fresh-proof successor. Missing or inconsistent proof evidence fails closed.
+Campaign harness v114 also corrects the successor binding itself: obligation IDs
+are campaign- and experiment-scoped, so a replay must recompute them for the current
+successor rather than copy the predecessor ID. The fresh preflight's recomputed ID,
+the authorized experiment claim, and the successor manifest must now agree exactly.
 
 The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
 confirmed a champion, c1812 was the next protected promotion slot, and the

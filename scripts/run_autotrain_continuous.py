@@ -44,6 +44,7 @@ from slm_training.autoresearch.experiment_campaign import (
     ExperimentCampaignV1,
     MultiplicityFamilyV1,
 )
+from slm_training.autoresearch.formal import formal_obligation_id
 from slm_training.autoresearch.schemas import (
     AutotrainActionReceiptV1,
     AutotrainActionV1,
@@ -51,7 +52,9 @@ from slm_training.autoresearch.schemas import (
     AutotrainLoopStateV1,
     CampaignBudget,
     CampaignSpec,
+    FormalClaimV1,
     FormalObligationV1,
+    FormalPreflightV1,
     HypothesisMatrix,
     NextRunPriorityV1,
     utc_now,
@@ -4360,7 +4363,9 @@ def _write_cycle_handoff(
         and not finalized_decode_timeout
     )
     control_runtime_reproduced = bool(
-        control_only_model_timeout and cycle_intent == "retry_measurement"
+        control_only_model_timeout
+        and cycle_intent == "retry_measurement"
+        and _run_has_usable_metrics(camp_dir, candidate_id)
     )
     frozen_replay_count = 0
     frozen_replay_limit = 0
@@ -4864,6 +4869,57 @@ def _write_cycle_handoff(
     return handoff
 
 
+def _refresh_incomplete_replay_handoff(
+    root: Path, loop_id: str, campaign_id: str | None
+) -> bool:
+    """Repair a derived terminal handoff when its current candidate never scored."""
+
+    if not campaign_id:
+        return False
+    camp_dir = root / campaign_id
+    handoff_path = camp_dir / "cycle_handoff.json"
+    if not handoff_path.is_file():
+        return False
+    handoff = AutotrainCycleHandoffV1.model_validate_json(
+        handoff_path.read_text(encoding="utf-8")
+    )
+    if handoff.loop_id != loop_id or handoff.cycle_intent != "retry_measurement":
+        return False
+    terminal = any(
+        reason.startswith("candidate_runtime_unblock_reproduced:")
+        for reason in handoff.reasons
+    )
+    delivery = _read_json(camp_dir / "sdlc_delivery.json")
+    candidate_id = str(delivery.get("candidate_id") or "")
+    if not terminal or _run_has_usable_metrics(camp_dir, candidate_id):
+        return False
+    campaign = CampaignSpec.model_validate_json(
+        (camp_dir / "campaign.json").read_text(encoding="utf-8")
+    )
+    matrix = _read_json(camp_dir / "matrix-proposal.json")
+    _write_cycle_handoff(
+        root=root,
+        loop_id=loop_id,
+        campaign_id=campaign_id,
+        cycle_index=campaign.cycle_index,
+        upstream_commit=str(campaign.upstream_commit),
+        integration_commit=str(campaign.integration_commit),
+        role=handoff.cycle_role,
+        cycle_intent=handoff.cycle_intent,
+        primary_metric=handoff.primary_metric,
+        matrix=matrix,
+        delivery=delivery,
+        resolution=None,
+        formal_status=_formal_preflight_status(camp_dir),
+    )
+    print(
+        "REPLAY_HANDOFF_REFRESH "
+        f"campaign={campaign_id} reason=current_candidate_missing_metrics",
+        flush=True,
+    )
+    return True
+
+
 def _latest_cycle(root: Path, loop_id: str) -> tuple[int, str | None]:
     campaigns = sorted(root.glob("*/campaign.json"))
     best_idx = 0
@@ -5045,11 +5101,56 @@ def _manifest_with_sha(
     raise RuntimeError(f"frozen replay manifest is missing: {digest}")
 
 
-def _require_automatic_replayable(manifest: ExperimentCampaignV1) -> None:
-    if manifest.formal_obligations:
-        raise RuntimeError(
-            "frozen replay with formal obligations requires a fresh Lean preflight"
+def _restore_frozen_formal_claims(
+    camp_dir: Path,
+    experiment: dict[str, Any],
+    manifest: ExperimentCampaignV1,
+) -> None:
+    """Recover claims omitted by an older replay from its proved artifacts."""
+
+    if experiment.get("formal_claims") or not manifest.formal_obligations:
+        return
+    claims: list[dict[str, str]] = []
+    for obligation in manifest.formal_obligations:
+        path = (
+            camp_dir
+            / "artifacts"
+            / "formal_preflights"
+            / f"{obligation.preflight_sha256}.json"
         )
+        if not path.is_file():
+            raise RuntimeError(
+                "frozen replay formal preflight is missing: "
+                f"{obligation.preflight_sha256}"
+            )
+        preflight = FormalPreflightV1.model_validate_json(
+            path.read_text(encoding="utf-8")
+        )
+        claim = FormalClaimV1(
+            template_id=preflight.template_id,
+            claim=preflight.claim,
+            policy=preflight.policy,
+        )
+        if (
+            preflight.campaign_id != manifest.campaign_id
+            or preflight.experiment_id != manifest.experiment_id
+            or preflight.template_id != obligation.template_id
+            or preflight.policy != obligation.policy
+            or (
+                claim.policy == "required"
+                and preflight.status != "proved"
+            )
+            or formal_obligation_id(
+                manifest.campaign_id, manifest.experiment_id, claim
+            )
+            != preflight.obligation_id
+        ):
+            raise RuntimeError(
+                "frozen replay formal claim recovery mismatch: "
+                f"{obligation.obligation_id}"
+            )
+        claims.append(claim.model_dump())
+    experiment["formal_claims"] = claims
 
 
 def _nonreplayable_configuration_failure(
@@ -5113,7 +5214,6 @@ def _load_frozen_replay(
             flush=True,
         )
         return None
-    _require_automatic_replayable(candidate_manifest)
     matrix = json.loads((camp_dir / "matrix-proposal.json").read_text(encoding="utf-8"))
     control_id = str(matrix["hypotheses"][0]["experiment"]["experiment_id"])
     control_path = camp_dir / "manifests" / f"{control_id}.json"
@@ -5122,7 +5222,6 @@ def _load_frozen_replay(
     control_manifest = ExperimentCampaignV1.model_validate_json(
         control_path.read_text(encoding="utf-8")
     )
-    _require_automatic_replayable(control_manifest)
     replay = {
         "handoff": handoff,
         "action_index": action_index,
@@ -5144,6 +5243,9 @@ def _load_frozen_replay(
     }
     for role in ("control", "candidate"):
         item = replay[role]
+        _restore_frozen_formal_claims(
+            camp_dir, item["experiment"], item["manifest"]
+        )
         item["train_reuse"] = _completed_frozen_train_source(
             root=root,
             campaign_dir=camp_dir,
@@ -5238,11 +5340,44 @@ def _apply_frozen_replay(
         ),
         None,
     )
+    promotion_replay = old_candidate_id.endswith("-promote")
+    if promotion_replay:
+        slug = "promote"
     if slug is None:
         raise RuntimeError(
             f"unsupported automatic frozen replay arm: {old_candidate_id}"
         )
     new_ids = {"control": f"{prefix}-control", "candidate": f"{prefix}-{slug}"}
+    if promotion_replay:
+        frozen_fingerprint = _knobs_fingerprint(
+            _lever_knobs(replay["candidate"]["experiment"].get("knobs") or {})
+        )
+        candidate_target = next(
+            (
+                item["experiment"]
+                for item in matrix["hypotheses"]
+                if _knobs_fingerprint(
+                    _lever_knobs(item["experiment"].get("knobs") or {})
+                )
+                == frozen_fingerprint
+            ),
+            None,
+        ) or next(
+            (
+                item["experiment"]
+                for item in matrix["hypotheses"]
+                if item["experiment"]["experiment_id"]
+                == matrix["recommended_experiment_id"]
+            ),
+            None,
+        )
+        if candidate_target is None:
+            raise RuntimeError("frozen promotion replay target is absent from matrix")
+        previous_target_id = str(candidate_target["experiment_id"])
+        candidate_target["experiment_id"] = new_ids["candidate"]
+        for priority in matrix["next_run_priorities"]:
+            if priority.get("proposed_experiment_id") == previous_target_id:
+                priority["proposed_experiment_id"] = new_ids["candidate"]
     for role, new_id in new_ids.items():
         target = next(
             (
@@ -5262,8 +5397,9 @@ def _apply_frozen_replay(
             "falsification_criteria",
             "stop_conditions",
             "knobs",
+            "formal_claims",
         ):
-            target[key] = frozen[key]
+            target[key] = frozen.get(key, []) if key == "formal_claims" else frozen[key]
     matrix["recommended_experiment_id"] = new_ids["candidate"]
     matrix["selection_rationale"] = (
         "Current-main successor replay of the incomplete frozen measurement; "
@@ -5302,9 +5438,44 @@ def _replay_successor_manifest(
             "replay_reason": (
                 "Current-main successor after an infrastructure-incomplete measurement."
             ),
+            # A proof is commit- and experiment-bound. Never carry the source
+            # campaign's proof digest into a current-main successor.
+            "formal_obligations": (),
         }
     )
     return ExperimentCampaignV1.model_validate(successor.model_dump(mode="json"))
+
+
+def _bind_fresh_replay_formal_preflight(
+    successor: ExperimentCampaignV1,
+    frozen: ExperimentCampaignV1,
+    *,
+    preflight_sha256: str,
+    formal_claims: list[dict[str, str]],
+) -> ExperimentCampaignV1:
+    """Bind frozen claim policy to current identities and the fresh proof."""
+
+    claims = tuple(FormalClaimV1.model_validate(claim) for claim in formal_claims)
+    expected = sorted(
+        (obligation.template_id, obligation.policy)
+        for obligation in frozen.formal_obligations
+    )
+    actual = sorted((claim.template_id, claim.policy) for claim in claims)
+    if actual != expected:
+        raise RuntimeError("frozen replay formal claim policy mismatch")
+    obligations = tuple(
+        FormalObligationV1(
+            obligation_id=formal_obligation_id(
+                successor.campaign_id, successor.experiment_id, claim
+            ),
+            template_id=claim.template_id,
+            policy=claim.policy,
+            preflight_sha256=preflight_sha256,
+        )
+        for claim in claims
+    )
+    rebound = successor.model_copy(update={"formal_obligations": obligations})
+    return ExperimentCampaignV1.model_validate(rebound.model_dump(mode="json"))
 
 
 def _campaign_id(loop_id: str, cycle: int, *, date: str | None = None) -> str:
@@ -6445,6 +6616,8 @@ def run_cycle(
     idx, pred = _latest_cycle(root, loop_id)
     lineage_pred = _campaign_at_cycle(root, loop_id, idx)
     if require_action_receipts:
+        _refresh_incomplete_replay_handoff(root, loop_id, pred)
+    if require_action_receipts:
         _require_predecessor_actions(root, loop_id, pred)
     replay = (
         _load_frozen_replay(root, loop_id, pred) if require_action_receipts else None
@@ -6908,6 +7081,57 @@ def run_cycle(
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(successor.model_dump_json(indent=2) + "\n", encoding="utf-8")
         replay_manifest_paths[eid] = path
+    promote_formal_status: str | None = None
+    promote_preflight_sha: str | None = None
+    replay_formal_required = any(
+        bool(item["manifest"].formal_obligations)
+        for item in replay_manifests.values()
+    )
+    if replay_formal_required:
+        replay_arm_count = len(replay_manifest_paths)
+        _require_symmetric_arm_budget(
+            deadline=deadline,
+            arm_count=replay_arm_count,
+            arm_wall_minutes=arm_wall_minutes,
+        )
+        formal_budget = _promotion_formal_budget_seconds(
+            deadline=deadline,
+            arm_count=replay_arm_count,
+            arm_wall_minutes=arm_wall_minutes,
+        )
+        promote_formal_status, promote_preflight_sha = ensure_promote_formal_preflight(
+            camp_dir=camp_dir,
+            campaign_id=campaign_id,
+            experiment_id=str(matrix["recommended_experiment_id"]),
+            run_lean=True,
+            timeout_seconds=formal_budget,
+            root=root,
+            loop_id=loop_id,
+        )
+        print(
+            f"REPLAY_FORMAL_PREFLIGHT status={promote_formal_status} "
+            f"sha={promote_preflight_sha} campaign={campaign_id}",
+            flush=True,
+        )
+        if promote_formal_status == "proved" and promote_preflight_sha:
+            for eid, frozen_replay in replay_manifests.items():
+                if not frozen_replay["manifest"].formal_obligations:
+                    continue
+                path = replay_manifest_paths[eid]
+                successor = ExperimentCampaignV1.model_validate_json(
+                    path.read_text(encoding="utf-8")
+                )
+                rebound = _bind_fresh_replay_formal_preflight(
+                    successor,
+                    frozen_replay["manifest"],
+                    preflight_sha256=promote_preflight_sha,
+                    formal_claims=list(
+                        frozen_replay["experiment"].get("formal_claims") or []
+                    ),
+                )
+                path.write_text(
+                    rebound.model_dump_json(indent=2) + "\n", encoding="utf-8"
+                )
     hypothesize_cmd = [
         *ar,
         "hypothesize",
@@ -6953,8 +7177,6 @@ def run_cycle(
     scheduled_order = list(order)
     arm_count = len({eid for eid in order if eid in by_id})
     # Promote path: formal preflight must be proved before train executes.
-    promote_formal_status: str | None = None
-    promote_preflight_sha: str | None = None
     if cycle_intent == "promote" and promoting_champion is not None:
         _require_symmetric_arm_budget(
             deadline=deadline,
@@ -6995,6 +7217,20 @@ def run_cycle(
                 flush=True,
             )
             order = []
+    elif replay_formal_required and (
+        promote_formal_status != "proved" or not promote_preflight_sha
+    ):
+        kind = (
+            "TIMEOUT_INCONCLUSIVE"
+            if _formal_status_is_timeout(promote_formal_status)
+            else "BLOCK"
+        )
+        print(
+            f"REPLAY_FORMAL_{kind} skip_execute "
+            f"status={promote_formal_status}",
+            flush=True,
+        )
+        order = []
 
     arm_count = len({eid for eid in order if eid in by_id})
     if arm_count:

@@ -4529,8 +4529,161 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor(
         formal_preflight_sha256="e" * 64,
     )
     assert formal_manifest.formal_obligations
-    with pytest.raises(RuntimeError, match="fresh Lean preflight"):
-        _mod._require_automatic_replayable(formal_manifest)
+    formal_successor = _mod._replay_successor_manifest(
+        formal_manifest,
+        frozen_manifest_sha256="f" * 64,
+        campaign_id=new_campaign,
+        experiment_id="new-promote",
+        integration_commit=current_commit,
+    )
+    assert formal_successor.formal_obligations == ()
+    rebound = _mod._bind_fresh_replay_formal_preflight(
+        formal_successor,
+        formal_manifest,
+        preflight_sha256="1" * 64,
+        formal_claims=[_mod.promote_formal_claim_dict()],
+    )
+    assert len(rebound.formal_obligations) == 1
+    assert rebound.formal_obligations[0].preflight_sha256 == "1" * 64
+    assert (
+        rebound.formal_obligations[0].template_id
+        == formal_manifest.formal_obligations[0].template_id
+    )
+    assert rebound.formal_obligations[0].obligation_id == _mod.formal_obligation_id(
+        new_campaign,
+        "new-promote",
+        _mod.FormalClaimV1(**_mod.promote_formal_claim_dict()),
+    )
+    assert (
+        rebound.formal_obligations[0].obligation_id
+        != formal_manifest.formal_obligations[0].obligation_id
+    )
+    promote_experiment = json.loads(json.dumps(old_control))
+    promote_experiment["experiment_id"] = (
+        "c20260801-loop-12345678-c1710-promote"
+    )
+    promote_experiment["hypothesis"] = (
+        "Promotion retest of confirmed champion levers under held-out suites."
+    )
+    promote_experiment["formal_claims"] = [_mod.promote_formal_claim_dict()]
+    promote_experiment["knobs"].update(
+        typed_family_balance_loss_weight=0.25,
+        compiler_alignment_loss_weight=1.0,
+        compiler_alignment_margin=1.0,
+        compiler_alignment_kind_filter="container-close",
+        compiler_alignment_stratified=True,
+    )
+    promote_manifest = _mod._manifest(
+        old_campaign,
+        promote_experiment,
+        old_commit,
+        role="promotion",
+        cycle_intent="promote",
+        formal_preflight_sha256="e" * 64,
+    )
+    promotion_replay = {
+        "control": replay["control"],
+        "candidate": {
+            "experiment": promote_experiment,
+            "manifest": promote_manifest,
+            "manifest_sha256": "f" * 64,
+        },
+    }
+    promotion_matrix = _mod._matrix(
+        campaign_id=new_campaign,
+        evidence_snapshot_id="snapshot-2",
+        cites=["docs/design/autoresearch-autotraining.md"],
+        role_citations={
+            "research": "docs/design/autoresearch-autotraining.md",
+            "prior_result": "docs/design/autoresearch-autotraining.md",
+        },
+        train_version="wf_smoke_v2",
+        eval_version="e938_role_safe_all_targets_v2",
+        steps=22,
+        cycle=1712,
+        role="promotion",
+        recommended_slug="batch1",
+    )
+    applied = _mod._apply_frozen_replay(
+        promotion_matrix, promotion_replay, new_campaign
+    )
+    assert promotion_matrix["recommended_experiment_id"].endswith("-promote")
+    assert promotion_matrix["recommended_experiment_id"] in applied
+    promoted = next(
+        item["experiment"]
+        for item in promotion_matrix["hypotheses"]
+        if item["experiment"]["experiment_id"]
+        == promotion_matrix["recommended_experiment_id"]
+    )
+    assert promoted["knobs"] == promote_experiment["knobs"]
+    assert promoted["formal_claims"] == promote_experiment["formal_claims"]
+
+
+def test_frozen_replay_restores_omitted_formal_claim_from_proved_artifact(
+    tmp_path: Path,
+) -> None:
+    campaign_id = "continuous-loop-20260801-loop-12345678-c1714"
+    experiment_id = "c20260801-loop-12345678-c1714-promote"
+    experiment = {
+        "experiment_id": experiment_id,
+        "campaign_id": campaign_id,
+        "hypothesis": "Replay a promotion candidate with a governed proof.",
+        "rationale": "The historic replay omitted the experiment claim.",
+        "expected_effect": "The proof-bound frozen candidate reaches evaluation.",
+        "falsification_criteria": ["Formal claim recovery fails closed."],
+        "stop_conditions": ["Stop after the bounded evaluation."],
+        "citations": ["fixture://formal-replay"],
+        "knobs": {"steps": 1, "batch_size": 1, "seed": 7},
+        "formal_claims": [],
+    }
+    preflight_sha = "e" * 64
+    manifest = _mod._manifest(
+        campaign_id,
+        experiment,
+        "a" * 40,
+        role="promotion",
+        cycle_intent="promote",
+        formal_preflight_sha256=preflight_sha,
+    )
+    obligation = manifest.formal_obligations[0]
+    manifest = manifest.model_copy(
+        update={
+            "formal_obligations": (
+                obligation.model_copy(update={"obligation_id": "formal-" + "0" * 16}),
+            )
+        }
+    )
+    claim = _mod.FormalClaimV1(**_mod.promote_formal_claim_dict())
+    current_obligation_id = _mod.formal_obligation_id(
+        campaign_id, experiment_id, claim
+    )
+    preflight = _mod.FormalPreflightV1(
+        campaign_id=campaign_id,
+        experiment_id=experiment_id,
+        obligation_id=current_obligation_id,
+        template_id=claim.template_id,
+        template_version="v1",
+        claim=claim.claim,
+        policy=claim.policy,
+        status="proved",
+        evidence_scope="universal",
+        theorem="structuralSimilarity_monotone",
+        proof_target="Structural similarity monotonicity",
+        source_digests={"Main.lean": "1" * 64},
+        proof_sha256="2" * 64,
+        lean_version="v4.20.0",
+        mathlib_version="fixture",
+        build_output_sha256="3" * 64,
+        duration_seconds=0.1,
+    )
+    camp_dir = tmp_path / campaign_id
+    artifact = camp_dir / "artifacts" / "formal_preflights" / f"{preflight_sha}.json"
+    artifact.parent.mkdir(parents=True)
+    artifact.write_text(preflight.model_dump_json(indent=2) + "\n")
+
+    _mod._restore_frozen_formal_claims(camp_dir, experiment, manifest)
+
+    assert experiment["formal_claims"] == [claim.model_dump()]
 
 
 def test_frozen_replay_finds_completed_train_across_retry_lineage(
@@ -5247,6 +5400,36 @@ def test_control_only_model_timeout_replays_without_fake_harness_repair(
     assert any(action.kind == "retry_measurement" for action in handoff.actions)
     assert all(action.kind != "repair_harness" for action in handoff.actions)
     assert "tail-supervised candidate completed" in handoff.priorities[0].hypothesis
+
+    replay_handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="promotion",
+        cycle_intent="retry_measurement",
+        primary_metric="held_out.structural_similarity",
+        matrix=_priority_matrix(),
+        delivery={
+            "positive": False,
+            "control_id": "control",
+            "candidate_id": "literal-close",
+            "measurement_complete": False,
+            "reasons": ["measurement_incomplete:literal-close:missing_scoreboard"],
+        },
+        resolution=None,
+        formal_status="proved",
+    )
+    assert replay_handoff.climb_state == "inconclusive"
+    assert not any(
+        reason.startswith("candidate_runtime_unblock_reproduced:")
+        for reason in replay_handoff.reasons
+    )
+    assert any(
+        action.kind == "retry_measurement" for action in replay_handoff.actions
+    )
 
 
 def test_cycle_handoff_exhausts_identical_replays_into_harness_repair(
