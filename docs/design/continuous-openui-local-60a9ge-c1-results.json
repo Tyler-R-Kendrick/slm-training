@@ -1,0 +1,53 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c1",
+  "cycle_index": 1,
+  "evidence_class": "fixture",
+  "decision": "infrastructure_failure_not_a_model_result",
+  "scoreable": false,
+  "new_checkpoint_created": false,
+  "upstream_commit": "2c4debec7a426036f26159bd7340fce2cbe6411a",
+  "integration_commit": "2c4debec7a426036f26159bd7340fce2cbe6411a",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c1-control",
+      "status": "failed",
+      "exit_code": 1,
+      "failure_stage": "train_model",
+      "failure_reason": "RuntimeError: torch is not installed in this environment (fresh sandbox .venv had not yet run scripts/setup_dev_env.sh)",
+      "smoke": null
+    },
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c1-bounds",
+      "status": "failed",
+      "exit_code": 1,
+      "failure_stage": "train_model",
+      "failure_reason": "RuntimeError: torch is not installed in this environment (fresh sandbox .venv had not yet run scripts/setup_dev_env.sh)",
+      "smoke": null
+    }
+  ],
+  "comparison": {
+    "attributable": false
+  },
+  "agentv": {
+    "bundles_complete": false,
+    "execution_errors": 2,
+    "ship_gates_pass": false
+  },
+  "checkpoint_policy": "no_checkpoint_created_infrastructure_failure",
+  "lean": "not_applicable:screening",
+  "harness_repair": {
+    "harness_family": "model_build",
+    "diagnosis": "This session's ephemeral container had a fresh Python 3.12 venv that had not yet run scripts/setup_dev_env.sh, so torch was absent. detect_device() already fails closed with an actionable RuntimeError pointing at scripts/setup_dev_env.sh (fixed previously in commit 72fdffa, PR #1360, already on origin/main at this cycle's upstream_commit) -- no new code change was required.",
+    "fix_commit": "72fdffa",
+    "fix_summary": "Pre-existing fix already merged: detect_device() raises an actionable RuntimeError naming scripts/setup_dev_env.sh when torch is missing, instead of a bare traceback. This cycle's repair was operational only: ran scripts/setup_dev_env.sh to bootstrap .venv (torch==2.5.1+cpu + pinned deps) in this container.",
+    "regression_test": "tests/test_runtime/accel/test_accel.py::test_detect_device_missing_torch_raises_actionable_error"
+  },
+  "next_priority": "replay identical frozen arm (retry_measurement) now that .venv is bootstrapped with torch",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "2c4debec7a426036f26159bd7340fce2cbe6411a",
+    "code_dirty": false
+  }
+}
