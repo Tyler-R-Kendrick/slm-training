@@ -339,6 +339,20 @@ def test_stream_filter_propagates_a_decode_deadline(monkeypatch) -> None:
         )
 
 
+def test_stream_filter_propagates_dfa_deadline(monkeypatch) -> None:
+    class Engine:
+        def set_prefix(self, _text: str) -> bool:
+            raise TimeoutError("dfa deadline")
+
+    monkeypatch.setattr(grammar, "stream_check", lambda *_args, **_kwargs: type(
+        "Status", (), {"hard_error": False}
+    )())
+    monkeypatch.setattr(grammar, "_dfa_engine", lambda: Engine())
+    tokenizer = type("Tokenizer", (), {"decode": lambda *_args: "root"})()
+    with pytest.raises(TimeoutError, match="dfa deadline"):
+        grammar.filter_ids_by_stream(tokenizer, [0], [0])
+
+
 def test_bridge_uses_matching_git_common_checkout_dependencies(
     tmp_path, monkeypatch
 ) -> None:
