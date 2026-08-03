@@ -8982,7 +8982,7 @@
       ]
     },
     "harness.experiments.slm292_semantic_contrast_objective": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm292_semantic_contrast_objective.py",
@@ -8992,6 +8992,11 @@
         "docs/design/iter-slm292-semantic-contrast-objective-20260725.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "Require zero-weight controls and positive-weight treatments to use identical pair records and reconstruction masks, leaving only the semantic margin coefficient as the treatment difference."
+        },
         {
           "version": "v2",
           "date": "2026-08-02",
@@ -10250,7 +10255,7 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v39",
+      "version": "v41",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
@@ -10258,6 +10263,16 @@
         "src/slm_training/harnesses/quality/__init__.py"
       ],
       "history": [
+        {
+          "version": "v41",
+          "date": "2026-08-03",
+          "note": "Load declared semantic-contrast pairs for zero-weight controls as well as treatments so both arms realize the same sampled records and CE supervision."
+        },
+        {
+          "version": "v40",
+          "date": "2026-08-03",
+          "note": "Do not validate or load semantic-contrast sources when the objective weight is zero, so matched controls with candidate metadata remain runnable."
+        },
         {
           "version": "v39",
           "date": "2026-08-03",
@@ -12127,7 +12142,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v306",
+      "version": "v307",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -12170,6 +12185,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v307",
+          "date": "2026-08-03",
+          "note": "Exclude annotated contrast-negative rows from reconstruction CE independently of auxiliary weight and persist the realized CE mask identity, making matched semantic-contrast arms attributable."
+        },
         {
           "version": "v306",
           "date": "2026-08-03",

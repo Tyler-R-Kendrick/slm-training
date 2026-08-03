@@ -3431,23 +3431,41 @@ class TwoTowerModel(nn.Module):
             contrast_weight = float(
                 getattr(self.config, "semantic_contrast_loss_weight", 0.0) or 0.0
             )
-            if contrast_weight > 0.0:
-                from slm_training.models.semantic_contrast_loss import (
-                    semantic_contrast_metadata,
-                )
+            from slm_training.models.semantic_contrast_loss import (
+                semantic_contrast_metadata,
+            )
 
-                # Negative sides are score-only: their token CE would train the
-                # very corruption that the pairwise objective must reject.
-                token_rows = torch.as_tensor(
-                    [
-                        semantic_contrast_metadata(record) is None
-                        or semantic_contrast_metadata(record)["role"] != "negative"
-                        for record in batch
-                    ],
-                    device=target_ids.device,
-                    dtype=torch.bool,
-                )
-                mask_flat = mask_flat & token_rows.repeat_interleave(target_ids.size(1))
+            # Pair negatives are score-only in both the zero-weight control and
+            # the treatment.  Conditioning this mask on the auxiliary weight
+            # changes the base reconstruction objective between arms and makes
+            # a nominally matched contrast experiment unattributable.
+            contrast_metadata = [semantic_contrast_metadata(record) for record in batch]
+            token_rows = torch.as_tensor(
+                [
+                    meta is None or meta["role"] != "negative"
+                    for meta in contrast_metadata
+                ],
+                device=target_ids.device,
+                dtype=torch.bool,
+            )
+            mask_flat = mask_flat & token_rows.repeat_interleave(target_ids.size(1))
+            self.last_training_metrics.update(
+                {
+                    "semantic_contrast_ce_negative_rows_excluded": int(
+                        (~token_rows).sum().detach().cpu()
+                    ),
+                    "semantic_contrast_ce_scored_tokens": int(
+                        mask_flat.sum().detach().cpu()
+                    ),
+                    "semantic_contrast_ce_mask_sha256": hashlib.sha256(
+                        bytes(
+                            mask_flat.detach()
+                            .to(device="cpu", dtype=torch.uint8)
+                            .tolist()
+                        )
+                    ).hexdigest(),
+                }
+            )
             component_flat = component_positions.reshape(-1) & mask_flat
             edge_token_flat = edge_token_positions.reshape(-1) & mask_flat
             decision_token_flat = decision_token_positions.reshape(-1) & mask_flat
@@ -3485,7 +3503,7 @@ class TwoTowerModel(nn.Module):
             # Diagnostic only: preserve per-record masked token loss without
             # changing the scalar objective or its gradient reduction.
             row_values = (ce * weights).reshape(target_ids.shape)
-            row_mask = predict_mask
+            row_mask = mask_flat.reshape_as(predict_mask)
             row_counts = row_mask.sum(dim=1).clamp_min(1)
             self._last_example_token_losses = (
                 ((row_values * row_mask).sum(dim=1) / row_counts)

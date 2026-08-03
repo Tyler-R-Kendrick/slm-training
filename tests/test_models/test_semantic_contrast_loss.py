@@ -127,29 +127,48 @@ def _model(records: list[ExampleRecord], **kwargs) -> TwoTowerModel:
     )
 
 
-def test_disabled_objective_is_exact_legacy_loss(tmp_path: Path) -> None:
+def test_zero_weight_control_matches_candidate_reconstruction_mask(
+    tmp_path: Path,
+) -> None:
     raw = _pair_row()
-    positive = canonicalize_example_template_markers(
+    base = canonicalize_example_template_markers(
         ExampleRecord.from_dict(raw["positive"]["record"]),
         marker_order=[":external.label"],
     )
-    negative = canonicalize_example_template_markers(
-        ExampleRecord.from_dict(raw["negative"]["record"]),
-        marker_order=[":external.label"],
+    pair = load_semantic_contrast_pairs(_write_pair(tmp_path=tmp_path, row=raw))[0]
+    batch = [base, pair.positive, pair.negative]
+    torch.manual_seed(17)
+    control = _model(batch, semantic_contrast_loss_weight=0.0)
+    torch.manual_seed(17)
+    candidate = _model(
+        batch,
+        semantic_contrast_loss_weight=0.5,
+        semantic_contrast_margin=1.0,
     )
-    annotated = load_semantic_contrast_pairs(_write_pair(tmp_path=tmp_path, row=raw))[0]
-    baseline = _model([positive, negative])
-    disabled = _model([annotated.positive, annotated.negative], semantic_contrast_loss_weight=0.0)
-    rng_state = baseline._rng.getstate()
+    rng_state = control._rng.getstate()
     torch.manual_seed(41)
-    expected = baseline.training_loss([positive, negative])
-    baseline._rng.setstate(rng_state)
-    disabled._rng.setstate(rng_state)
+    control_loss = control.training_loss(batch)
+    candidate._rng.setstate(rng_state)
     torch.manual_seed(41)
-    actual = disabled.training_loss([annotated.positive, annotated.negative])
-    assert torch.equal(expected, actual)
-    assert disabled.last_training_metrics["semantic_contrast_loss"] == 0.0
-    assert disabled.last_training_metrics["semantic_contrast_pairs"] == 0
+    candidate_loss = candidate.training_loss(batch)
+
+    control_metrics = control.last_training_metrics
+    candidate_metrics = candidate.last_training_metrics
+    assert control_metrics["primary_final_reconstruction_loss"] == pytest.approx(
+        candidate_metrics["primary_final_reconstruction_loss"]
+    )
+    for key in (
+        "semantic_contrast_ce_negative_rows_excluded",
+        "semantic_contrast_ce_scored_tokens",
+        "semantic_contrast_ce_mask_sha256",
+    ):
+        assert control_metrics[key] == candidate_metrics[key]
+    assert control_metrics["semantic_contrast_ce_negative_rows_excluded"] == 1
+    assert control_metrics["semantic_contrast_loss"] == 0.0
+    assert candidate_metrics["semantic_contrast_pairs"] == 1
+    assert float(candidate_loss - control_loss) == pytest.approx(
+        0.5 * candidate_metrics["semantic_contrast_loss"], abs=2e-6
+    )
 
 
 def _write_pair(*, tmp_path: Path, row: dict) -> Path:
