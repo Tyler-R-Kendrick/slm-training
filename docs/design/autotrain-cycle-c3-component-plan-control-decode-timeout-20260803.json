@@ -1,0 +1,56 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c3",
+  "cycle_index": 3,
+  "cycle_intent": "screening",
+  "evidence_class": "fixture",
+  "decision": "control_decode_timeout_measurement_incomplete",
+  "scoreable": false,
+  "new_checkpoint_created": true,
+  "upstream_commit": "9c58f8416d1c56b19d32a2bbf1166ff60cfea854",
+  "integration_commit": "9c58f8416d1c56b19d32a2bbf1166ff60cfea854",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c3-control",
+      "steps": 20,
+      "last_loss": 15.297592163085938,
+      "checkpoint_sha256": "07b25357518790d929d897aea2c2c7af8eb189db4ca0230d5a20d0e5362043e0",
+      "status": "trained_eval_measurement_incomplete",
+      "failure_stage": "evaluate_model",
+      "failure_reason": "smoke:incomplete_document_n=3:decode_timeout_count=3 (all 3 smoke documents decoded past the 8s screening timeout)",
+      "smoke": null
+    },
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c3-component-plan",
+      "steps": 20,
+      "last_loss": 19.40652084350586,
+      "checkpoint_sha256": "8e25e2a03425a2ba032d126782720a5afe6d8f05268b3802ade74197810752c0",
+      "status": "trained_and_evaluated",
+      "smoke": {
+        "meaningful_program_rate": 0.0,
+        "n": 3
+      },
+      "gates_pass": false
+    }
+  ],
+  "comparison": {
+    "attributable": false
+  },
+  "checkpoint_policy": "local_explicit_no_sync_not_reusable_not_promoted_not_ship_eval_incomplete",
+  "lean": "not_applicable:screening",
+  "sdlc_classification": "non_positive",
+  "sdlc_reason": "measurement_incomplete (control decode timeouts) + fixture_insufficient_n on both arms + executable_unblock_rejected_low_mpr (mpr=0.0 on component-plan); primary metric unavailable because control never produced a comparable smoke score. A single timeout is a soft failure per the continuous-loop contract — not a repeat/hard blocker.",
+  "next_priority": "retry_measurement: replay the exact frozen control/component-plan pair once to see whether the decode timeout reproduces or was noise",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "9c58f8416d1c56b19d32a2bbf1166ff60cfea854",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v171",
+      "harness.model_build.train": "v42",
+      "harness.experiment_feature_flags": "v4",
+      "evals.agentv": "v7"
+    }
+  }
+}
