@@ -291,6 +291,19 @@ def _fit_symmetric_arm_budget(
     return min(float(requested_arm_wall_minutes), usable / arm_count / 60)
 
 
+def _post_formal_arm_budget_request(
+    *,
+    policy_minutes: float,
+    initial_arm_wall_minutes: float,
+    formal_completed: bool,
+) -> float:
+    """Return unused formal-lane time to the matched decision arms."""
+
+    if formal_completed:
+        return float(policy_minutes)
+    return float(initial_arm_wall_minutes)
+
+
 def _arm_execution_deadline(
     *, cycle_deadline: float, arm_wall_minutes: float
 ) -> float:
@@ -7233,12 +7246,13 @@ def run_cycle(
             f"cycle={cycle} suites={','.join(eval_suites_for_role(policy, role))}",
             flush=True,
         )
+    formal_lane_required = _formal_lane_required(
+        cycle_intent=cycle_intent,
+        replay=replay,
+    )
     arm_wall_minutes = _arm_wall_minutes(
         stage_wall_minutes_for_role(policy, role),
-        formal_required=_formal_lane_required(
-            cycle_intent=cycle_intent,
-            replay=replay,
-        ),
+        formal_required=formal_lane_required,
     )
     claim_for_role = (
         str(policy.defaults.get("claim_class_promotion") or "promotion_candidate")
@@ -7692,7 +7706,13 @@ def run_cycle(
 
     arm_count = len({eid for eid in order if eid in by_id})
     if arm_count:
-        requested_arm_wall_minutes = arm_wall_minutes
+        requested_arm_wall_minutes = _post_formal_arm_budget_request(
+            policy_minutes=stage_wall_minutes_for_role(policy, role),
+            initial_arm_wall_minutes=arm_wall_minutes,
+            formal_completed=(
+                formal_lane_required and promote_formal_status == "proved"
+            ),
+        )
         arm_wall_minutes = _fit_symmetric_arm_budget(
             deadline=deadline,
             arm_count=arm_count,

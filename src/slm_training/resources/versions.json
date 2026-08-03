@@ -2656,7 +2656,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v137",
+      "version": "v138",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2696,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v138",
+          "date": "2026-08-03",
+          "note": "Return unused proved-formal preflight time symmetrically to promotion decision arms while preserving the canonical finalization reserve and hard run cap."
+        },
         {
           "version": "v137",
           "date": "2026-08-03",
@@ -7570,6 +7575,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1840 incomplete promotion checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
         {
           "version": "v3",
           "date": "2026-08-03",

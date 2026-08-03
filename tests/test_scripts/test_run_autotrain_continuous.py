@@ -4603,6 +4603,21 @@ def test_post_planning_budget_is_rebalanced_symmetrically(
     )
 
 
+def test_completed_formal_lane_returns_unused_time_to_matched_arms() -> None:
+    initial = _mod._arm_wall_minutes(3, formal_required=True)
+
+    assert _mod._post_formal_arm_budget_request(
+        policy_minutes=3,
+        initial_arm_wall_minutes=initial,
+        formal_completed=True,
+    ) == pytest.approx(3.0)
+    assert _mod._post_formal_arm_budget_request(
+        policy_minutes=3,
+        initial_arm_wall_minutes=initial,
+        formal_completed=False,
+    ) == pytest.approx(initial)
+
+
 def test_arm_execution_deadline_preserves_finalization_reserve(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
