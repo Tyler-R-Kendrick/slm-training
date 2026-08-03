@@ -1,0 +1,107 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1806",
+  "cycle_index": 1806,
+  "evidence_class": "fixture",
+  "decision": "reject_primary_quality_and_latency_regression",
+  "scoreable": true,
+  "new_checkpoint_created": true,
+  "upstream_commit": "c2f9a54474d3ad7e3f7db2233ebd34fd9c8eb7af",
+  "integration_commit": "2874d675a8140f885fa361efd034e88e47aada56",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1806-control",
+      "trainable_params": 1608962,
+      "checkpoint_sha256": "d0b5c4cf5d0c8dadad83f84461fe2b7ed313034d2883e08d921f81d0048f22ae",
+      "structure_token_loss_weight": 0.0,
+      "steps": 20,
+      "seed": 101806,
+      "last_loss": 21.998340606689453,
+      "train_wall_seconds": 2.686708004970569,
+      "token_loss_attribution": {
+        "component_count": 13,
+        "component_mean_ce": 23.63718605041504,
+        "structure_count": 61,
+        "structure_mean_ce": 6.393209934234619,
+        "prefix_count": 2,
+        "prefix_mean_ce": 0.27800071239471436,
+        "non_component_count": 97,
+        "non_component_mean_ce": 10.349254608154297
+      },
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.1725,
+        "binder_reference_f1": 0.6333333333333333,
+        "component_type_recall": 0.0,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.8073333333333332,
+        "latency_ms_p50": 2425.58
+      }
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1806-structure-token",
+      "trainable_params": 1608962,
+      "checkpoint_sha256": "689ce69cfb6eb9f8a9b84c95473e4596ecc13ad1784c66ee74683a9d01c14c80",
+      "structure_token_loss_weight": 1.0,
+      "steps": 20,
+      "seed": 101806,
+      "last_loss": 24.828948974609375,
+      "train_wall_seconds": 2.4570208670338616,
+      "token_loss_attribution": {
+        "component_count": 13,
+        "component_mean_ce": 26.228599548339844,
+        "structure_count": 61,
+        "structure_mean_ce": 5.639820098876953,
+        "prefix_count": 2,
+        "prefix_mean_ce": 0.10723653435707092,
+        "non_component_count": 97,
+        "non_component_mean_ce": 10.057672500610352
+      },
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.13749999999999998,
+        "binder_reference_f1": 0.8222222222222223,
+        "component_type_recall": 0.0,
+        "placeholder_fidelity": 0.7222222222222222,
+        "reward_score": 0.8826666666666667,
+        "latency_ms_p50": 7651.84
+      }
+    }
+  ],
+  "comparison": {
+    "attributable": true,
+    "parameter_delta": 0,
+    "structural_similarity_delta": -0.035,
+    "latency_ms_p50_delta": 5226.26,
+    "structure_mean_ce_delta": -0.753389835357666,
+    "component_mean_ce_delta": 2.5914134979248047
+  },
+  "agentv": {
+    "bundles_complete": true,
+    "execution_errors": 0,
+    "ship_gates_pass": false
+  },
+  "checkpoint_policy": "local_explicit_no_sync_rejected_not_reusable_not_promoted_not_ship",
+  "lean": "not_applicable:screening",
+  "next_priority": "typed-family-balance",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "2874d675a8140f885fa361efd034e88e47aada56",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v77",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v297"
+    },
+    "stamped_at": "2026-08-03T00:02:27.028384+00:00"
+  }
+}

@@ -130,6 +130,19 @@ def test_structure_token_weight_overrides_resumed_checkpoint() -> None:
     assert model.config.structure_token_loss_weight == 1.0
 
 
+def test_typed_family_balance_weight_overrides_resumed_checkpoint() -> None:
+    model = SimpleNamespace(
+        config=SimpleNamespace(typed_family_balance_loss_weight=0.0)
+    )
+    config = ModelBuildConfig(
+        train_dir=Path("."), typed_family_balance_loss_weight=0.25
+    )
+
+    apply_runtime_overrides(model, config)
+
+    assert model.config.typed_family_balance_loss_weight == 0.25
+
+
 def test_explicit_runtime_override_fields_preserve_unrelated_checkpoint_config() -> None:
     model = SimpleNamespace(
         config=SimpleNamespace(

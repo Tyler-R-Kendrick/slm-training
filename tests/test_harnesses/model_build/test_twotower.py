@@ -499,6 +499,44 @@ def test_structure_token_weight_changes_loss_and_emits_attribution() -> None:
     assert weighted_loss > base_loss
 
 
+def test_typed_family_balance_is_count_normalized_and_zero_parameter() -> None:
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+    base = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            seed=7,
+            typed_family_balance_loss_weight=0.0,
+        ),
+        device="cpu",
+    )
+    balanced = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            seed=7,
+            typed_family_balance_loss_weight=0.25,
+        ),
+        device="cpu",
+    )
+
+    base_params = sum(parameter.numel() for parameter in base.parameters())
+    balanced_params = sum(parameter.numel() for parameter in balanced.parameters())
+    base_loss = base.training_loss(records)
+    balanced_loss = balanced.training_loss(records)
+
+    assert base_params == balanced_params
+    assert balanced.last_training_metrics["typed_family_balance_active_families"] == 2
+    assert balanced.last_training_metrics["typed_family_balance_aux_loss"] > 0
+    assert balanced_loss > base_loss
+
+
 def test_checkpoint_rejects_missing_trainable_weights(tmp_path: Path) -> None:
     records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
     model = TwoTowerModel.from_records(

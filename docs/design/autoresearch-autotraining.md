@@ -136,6 +136,14 @@ use `--compiler openai`, whose default is `gpt-5.6-sol` with `store=False`.
 
 ## Closed loop
 
+The c1806 screen rejects direct grammar `STRUCT`-token weighting: it lowers
+typed structure CE but regresses smoke structure and raises p50 more than 3x.
+Attribution shows component CE worsens while the 61-token structure family
+improves, exposing a count-imbalance tradeoff. Campaign harness v106 adds a
+zero-parameter, count-normalized component/`STRUCT` family-mean auxiliary as
+the distinct successor; legality and constrained decoding are unchanged. See
+[`autotrain-cycle-1806-structure-token-rejected.md`](autotrain-cycle-1806-structure-token-rejected.md).
+
 The c1805 exact frozen replay reproduced the c1804 control-only typed decode
 timeout. Component-token weighting is therefore a runtime-specific unblock,
 but its `.081733` structure and `7186.02` ms p50 fail absolute quality and
