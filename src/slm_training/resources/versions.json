@@ -12,7 +12,7 @@
   ],
   "components": {
     "formal.leverproof": {
-      "version": "v10",
+      "version": "v11",
       "kind": "harness",
       "paths": [
         "src/leverproof_lean/",
@@ -25,6 +25,11 @@
         "src/leverproof_lean/Test/Proofs.lean"
       ],
       "history": [
+        {
+          "version": "v11",
+          "date": "2026-08-03",
+          "note": "Route LeverProof certificate checks through the canonical bounded process-group runner and shared project lock; timeout and launch failures remain fail-closed."
+        },
         {
           "version": "v10",
           "date": "2026-08-02",
@@ -2661,7 +2666,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v162",
+      "version": "v165",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2701,6 +2706,21 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v165",
+          "date": "2026-08-03",
+          "note": "Bind exact paired decision arms to the hypothesis matrix event chain before execution; result overlays prefer this binding over legacy handoff arm-order text."
+        },
+        {
+          "version": "v164",
+          "date": "2026-08-03",
+          "note": "Render paired campaigns fail-closed: missing arm_order members become explicit harness-incomplete rows instead of completed model evidence."
+        },
+        {
+          "version": "v163",
+          "date": "2026-08-03",
+          "note": "Bind Phase A to matrix control/candidate ids and emit durable arm_skipped deadline events so dynamic successors and incomplete pairs remain explicit in the result matrix."
+        },
         {
           "version": "v162",
           "date": "2026-08-03",
@@ -3654,7 +3674,7 @@
       ]
     },
     "harness.autoresearch.formal": {
-      "version": "v10",
+      "version": "v14",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/formal.py",
@@ -3665,6 +3685,26 @@
         ".github/workflows/ci.yml"
       ],
       "history": [
+        {
+          "version": "v14",
+          "date": "2026-08-03",
+          "note": "Keep the standalone formal-contract verifier dependency-light in Lean CI while preserving the canonical process-group cap and Lake project lock."
+        },
+        {
+          "version": "v13",
+          "date": "2026-08-03",
+          "note": "Serialize project-wide formal checks with the shared Lake lock and preserve lock-wait provenance while maintaining recursive source coverage."
+        },
+        {
+          "version": "v12",
+          "date": "2026-08-03",
+          "note": "Recursively bind nested Lean sources and executable identities into formal project checks so imported proof changes or toolchain replacement cannot reuse stale success."
+        },
+        {
+          "version": "v11",
+          "date": "2026-08-03",
+          "note": "Bind the process-local Lean project-check digest to every Test/*.json fixture consumed by the proof runner, preventing stale successful checks after fixture changes."
+        },
         {
           "version": "v10",
           "date": "2026-08-03",
@@ -4058,7 +4098,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v145",
+      "version": "v146",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
@@ -4070,6 +4110,11 @@
         "tests/test_harnesses/experiments/test_locked_manifest_digest_threading.py"
       ],
       "history": [
+        {
+          "version": "v146",
+          "date": "2026-08-03",
+          "note": "Route LeverProof certificate replay through the canonical bounded process-group runner and project lock; timeout and launch failures remain fail-closed."
+        },
         {
           "version": "v145",
           "date": "2026-07-31",
@@ -5600,6 +5645,11 @@
         "docs/design/semantic-floor-gate-v1.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-03",
+          "note": "no-bump: refresh the committed inconclusive gate narrative and owner hash; thresholds and gate behavior are unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-08-03",
@@ -7733,6 +7783,16 @@
         {
           "version": "v3",
           "date": "2026-08-03",
+          "note": "no-bump: record the c2 component-plan fixture screen and queued confirmation in the model card and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record the c1 bounds screen scratch checkpoints in the model card and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
           "note": "no-bump: record c1863's rejected confirmation result in the model card and README; SLM-228 behavior is unchanged."
         },
         {
@@ -8972,7 +9032,7 @@
       ]
     },
     "harness.experiments.slm292_semantic_contrast_objective": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm292_semantic_contrast_objective.py",
@@ -8982,6 +9042,11 @@
         "docs/design/iter-slm292-semantic-contrast-objective-20260725.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "Require zero-weight controls and positive-weight treatments to use identical pair records and reconstruction masks, leaving only the semantic margin coefficient as the treatment difference."
+        },
         {
           "version": "v2",
           "date": "2026-08-02",
@@ -9731,7 +9796,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v82",
+      "version": "v84",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -9752,6 +9817,16 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v84",
+          "date": "2026-08-03",
+          "note": "Resolve complete checkpoint-backed suite cache hits from conservative checkpoint-bundle, request, data, and component identity before model construction; incomplete measurements remain non-cacheable."
+        },
+        {
+          "version": "v83",
+          "date": "2026-08-03",
+          "note": "Separate observed batched request latency from amortized throughput and sanitize suite-cache replays so runtime telemetry and provenance are never reused as current measurements."
+        },
         {
           "version": "v82",
           "date": "2026-08-03",
@@ -10240,7 +10315,7 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v39",
+      "version": "v41",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
@@ -10248,6 +10323,16 @@
         "src/slm_training/harnesses/quality/__init__.py"
       ],
       "history": [
+        {
+          "version": "v41",
+          "date": "2026-08-03",
+          "note": "Load declared semantic-contrast pairs for zero-weight controls as well as treatments so both arms realize the same sampled records and CE supervision."
+        },
+        {
+          "version": "v40",
+          "date": "2026-08-03",
+          "note": "Do not validate or load semantic-contrast sources when the objective weight is zero, so matched controls with candidate metadata remain runnable."
+        },
         {
           "version": "v39",
           "date": "2026-08-03",
@@ -11247,7 +11332,7 @@
       ]
     },
     "matrix.perf": {
-      "version": "v8",
+      "version": "v9",
       "kind": "matrix",
       "paths": [
         "scripts/run_perf_matrix.py",
@@ -11258,6 +11343,11 @@
         "docs/design/runtime-performance.md"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-08-03",
+          "note": "Document observed batched request latency separately from amortized throughput and prohibit stale runtime cache telemetry from performance interpretation."
+        },
         {
           "version": "v8",
           "date": "2026-07-30",
@@ -12117,7 +12207,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v306",
+      "version": "v307",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -12160,6 +12250,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v307",
+          "date": "2026-08-03",
+          "note": "Exclude annotated contrast-negative rows from reconstruction CE independently of auxiliary weight and persist the realized CE mask identity, making matched semantic-contrast arms attributable."
+        },
         {
           "version": "v306",
           "date": "2026-08-03",
@@ -14190,7 +14285,7 @@
       ]
     },
     "evals.ecosystem_tier_scoreboard": {
-      "version": "v1",
+      "version": "v2",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/ecosystem_tier_scoreboard.py",
@@ -14199,6 +14294,11 @@
         "docs/design/ecosystem-tier-scoreboard.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-03",
+          "note": "Route diagnostic Lean probes through the bounded process-group runner and shared project lock; timeout and build failures remain unknown/error."
+        },
         {
           "version": "v1",
           "date": "2026-07-30",
@@ -14221,7 +14321,7 @@
       ]
     },
     "formal.objects": {
-      "version": "v1",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/formal/__init__.py",
@@ -14232,6 +14332,16 @@
         "docs/design/formal-objects-multi-prover.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "Add a process-shared Lake project lock and reusable bounded formal command adapter so every Lean checker reaps descendants under the canonical cap."
+        },
+        {
+          "version": "v2",
+          "date": "2026-08-03",
+          "note": "Route optional Lean kernel audits through the canonical bounded process-group runner and clamp caller timeouts to the repository hard cap so Lake/Lean descendants are reaped fail-closed."
+        },
         {
           "version": "v1",
           "date": "2026-07-31",
@@ -14277,7 +14387,7 @@
       ]
     },
     "harness.experiments.anti_e237_semantic_factor_frontier": {
-      "version": "v10",
+      "version": "v11",
       "kind": "harness",
       "paths": [
         "src/slm_training/data/progspec/semantic_evidence.py",
@@ -14317,6 +14427,11 @@
         "src/slm_training/resources/experiments/semantic_factor_frontier/formal_preflights/sff_role-shuffle-membership.json"
       ],
       "history": [
+        {
+          "version": "v11",
+          "date": "2026-08-03",
+          "note": "Bound SFF Lean proof regeneration and version probes, serialize project builds, and validate committed proof digests fail-closed."
+        },
         {
           "version": "v10",
           "date": "2026-08-01",

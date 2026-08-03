@@ -3580,6 +3580,52 @@ def test_loop_result_matrix_marks_partial_measurement_incomplete(
     assert "incomplete" in render_loop_result_matrix(tmp_path, "loop-1")
 
 
+def test_loop_result_matrix_marks_missing_paired_arm_as_harness_incomplete(
+    tmp_path: Path,
+) -> None:
+    campaign = CampaignSpec(
+        campaign_id="cycle-missing-arm",
+        objective="Never present a one-arm campaign as model evidence.",
+        primary_metric="smoke.parse_rate",
+        loop_id="loop-1",
+        cycle_index=1,
+        upstream_commit="c" * 40,
+        integration_commit="d" * 40,
+    )
+    store = CampaignStore(campaign.campaign_id, tmp_path)
+    store.initialize(campaign)
+    outcome = ExperimentOutcome(
+        experiment_id="candidate",
+        campaign_id=campaign.campaign_id,
+        status="completed",
+        metrics={"smoke.n": 3, "smoke.parse_rate": 0.5},
+    )
+    artifact = store.write_artifact("outcomes", outcome)
+    store.append_event(
+        "experiment_finished",
+        experiment_id=outcome.experiment_id,
+        status=outcome.status,
+        artifact_sha256=artifact.stem,
+    )
+    (tmp_path / campaign.campaign_id / "cycle_handoff.json").write_text(
+        json.dumps(
+            {
+                "primary_metric": "smoke.parse_rate",
+                "reasons": ["arm_order:control,candidate"],
+                "evidence_class": "fixture",
+                "climb_state": "rejected",
+                "ship_state": "blocked",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    rendered = render_loop_result_matrix(tmp_path, "loop-1")
+    assert "incomplete (campaign arm missing)" in rendered
+    assert "incomplete (arm not run)" in rendered
+    assert "| control |" in rendered
+
+
 def test_loop_result_matrix_relabels_reproduced_candidate_runtime_rejection(
     tmp_path: Path,
 ) -> None:

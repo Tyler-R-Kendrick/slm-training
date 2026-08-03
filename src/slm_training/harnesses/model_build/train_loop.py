@@ -275,6 +275,10 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     contrast_fraction = float(getattr(config, "semantic_contrast_fraction", 0.0) or 0.0)
     contrast_pairs = []
     contrast_dir = getattr(config, "semantic_contrast_dir", None)
+    # A matched control retains the candidate's contrast source and sampling
+    # recipe while setting only the auxiliary coefficient to zero.  Loading
+    # the pairs in both arms keeps realized records and reconstruction masks
+    # identical, so the margin term is the sole treatment difference.
     if contrast_weight > 0.0 and contrast_dir is None:
         raise ValueError("semantic_contrast_loss_weight requires semantic_contrast_dir")
     if contrast_dir is not None:

@@ -11,8 +11,6 @@ scores, or let ecosystem inventory growth green a core formal preflight.
 from __future__ import annotations
 
 import json
-import subprocess
-import time
 from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any
@@ -25,6 +23,12 @@ from slm_training.dsl.ecosystem_tier import (
     formal_module_partition,
     inventory_snapshot,
     split_generation_metrics,
+)
+from slm_training.formal.checkers import (
+    FormalProjectLock,
+    ProcessOutcome,
+    formal_process_budget,
+    run_formal_process,
 )
 from slm_training.levers import MAX_RUN_SECONDS
 from slm_training.versioning import build_version_stamp
@@ -115,21 +119,30 @@ def probe_lean_formal_statuses(
     this probe only separates tier *modules* after a successful package build.
     """
 
-    deadline = time.monotonic() + (
-        float(timeout_s) if timeout_s is not None else min(120.0, MAX_RUN_SECONDS - 1)
+    total, _interrupt_after, _grace = formal_process_budget(
+        timeout_s if timeout_s is not None else min(120.0, MAX_RUN_SECONDS - 1)
     )
-    remaining = max(1.0, deadline - time.monotonic())
     try:
-        subprocess.run(
-            ["lake", "build", "LeverProofLean"],
-            cwd=LEAN_ROOT,
-            check=True,
-            capture_output=True,
-            text=True,
-            timeout=remaining,
-        )
-    except (OSError, subprocess.SubprocessError) as exc:
+        with FormalProjectLock(LEAN_ROOT, timeout_seconds=total) as lock:
+            result = run_formal_process(
+                ["lake", "build", "LeverProofLean"],
+                cwd=LEAN_ROOT,
+                timeout_seconds=max(0.001, total - lock.wait_seconds),
+            )
+    except TimeoutError as exc:
         status = f"error:{type(exc).__name__}"
+        return {
+            **{m: status for m in CORE_FORMAL_MODULES},
+            **{m: status for m in ECOSYSTEM_FORMAL_MODULES},
+        }
+    if result.timed_out:
+        status = "error:TimeoutExpired"
+        return {
+            **{m: status for m in CORE_FORMAL_MODULES},
+            **{m: status for m in ECOSYSTEM_FORMAL_MODULES},
+        }
+    if result.outcome is ProcessOutcome.LAUNCH_FAILED or result.returncode:
+        status = "error:CalledProcessError"
         return {
             **{m: status for m in CORE_FORMAL_MODULES},
             **{m: status for m in ECOSYSTEM_FORMAL_MODULES},

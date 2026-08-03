@@ -153,6 +153,20 @@ def test_progress_heartbeat_disabled_by_env_and_without_trace(
     assert summary["steps"] == 4
 
 
+def test_zero_weight_semantic_contrast_still_requires_pair_source(
+    train_dir: Path, tmp_path: Path
+) -> None:
+    """Matched controls must realize the candidate's exact pair exposure."""
+
+    config = _cfg(train_dir, tmp_path, "contrast_control")
+    config.semantic_contrast_dir = train_dir
+    config.semantic_contrast_loss_weight = 0.0
+    config.semantic_contrast_fraction = 0.5
+    config.batch_size = 3
+    with pytest.raises(FileNotFoundError, match="pairs.jsonl"):
+        train(config)
+
+
 def test_heartbeat_failure_never_aborts_training(
     train_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

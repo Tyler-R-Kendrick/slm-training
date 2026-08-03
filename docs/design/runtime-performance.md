@@ -9,6 +9,22 @@ only be compared after calculation.
 
 Measured on `twotower_v1_ship` (CPU, scratch context, LTR primary).
 
+### Evaluation latency and cache boundary (2026-08-03)
+
+For batched evaluation, `latency_ms_p50/p95` now mean the observed request
+completion wall for the batch (every request completes when its batch returns).
+The separate `decode_amortized_ms_per_record_p50/p95` and
+`decode_records_per_second` fields are throughput signals and must not be used
+as request-latency budgets. Per-record details carry both values and the batch
+size. This distinction is required for honest comparisons when batch size or
+the final short batch changes.
+
+Suite-cache hits replay only deterministic prediction/quality evidence. Timing,
+timeouts, decoder initialization, code provenance, version stamps, and AgentV
+paths are rebuilt (or explicitly marked `cache_not_measured`) for the current
+run. Incomplete or manifest-unidentified evaluations are not written to the
+suite cache and cannot satisfy a performance gate through replay.
+
 ## Hotspots
 
 | Path | Before (initial) | After round 1 | After round 2 |

@@ -25,6 +25,7 @@ from slm_training.autoresearch.experiment_campaign import (
 from slm_training.autoresearch.formal import (
     FORMAL_TEMPLATES,
     LEVERPROOF_ROOT,
+    _proof_paths,
     _run as _run_formal,
     bind_preflight,
     check_formal_trace,
@@ -85,6 +86,38 @@ def test_leverproof_source_audit_requires_a_search_tool(tmp_path: Path) -> None:
 
     assert result.returncode != 0
     assert "proof source audit requires rg or grep" in result.stderr
+
+
+def test_leverproof_project_digest_includes_runtime_json_fixtures() -> None:
+    labels = {
+        label
+        for label, _path in _proof_paths(FORMAL_TEMPLATES["sff.advisory-keys-legal"])
+    }
+    assert "Test/resource.json" in labels
+    assert "Test/success-before-params.json" in labels
+    assert "Test/bands.json" in labels
+
+
+def test_project_paths_recurse_nested_lean_sources(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    nested = tmp_path / "LeverProofLean" / "Nested"
+    nested.mkdir(parents=True)
+    (nested / "Imported.lean").write_text("namespace Nested\nend Nested\n")
+    nested_test = tmp_path / "Test" / "fixtures"
+    nested_test.mkdir(parents=True)
+    (nested_test / "extra.json").write_text("{}\n")
+    monkeypatch.setattr(
+        "slm_training.autoresearch.formal._lean_root", lambda _template: tmp_path
+    )
+
+    labels = {
+        label
+        for label, _path in _proof_paths(FORMAL_TEMPLATES["sff.advisory-keys-legal"])
+    }
+
+    assert "LeverProofLean/Nested/Imported.lean" in labels
+    assert "Test/fixtures/extra.json" in labels
 
 
 def test_leverproof_source_audit_falls_back_to_grep(tmp_path: Path) -> None:

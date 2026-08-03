@@ -393,7 +393,7 @@
     }
   ],
   "evidence_cutoff": "2026-07-21T04:15:30.006965Z",
-  "gate_hash": "f25071623d6ab52e9af533a2c074c3ff9a2d0980da03be00d8a176075e7f978e",
+  "gate_hash": "0333bd4bc0a898b499cb08ad5123d7267672ae7a27d095c69b94e83df4402318",
   "generated_at": "2026-07-23T07:03:22.541155Z",
   "legacy_meaning_v1_by_suite": {},
   "metric_versions": {
@@ -448,7 +448,7 @@
     "code_commit": "c74ceb7601f5e8b9dea960970d5313cc2ace2f40",
     "code_dirty": true,
     "components": {
-      "harness.experiments": "v145",
+      "harness.experiments": "v146",
       "harness.experiments.semantic_floor_gate": "v1"
     },
     "stamp_schema": "version_stamp/v1",

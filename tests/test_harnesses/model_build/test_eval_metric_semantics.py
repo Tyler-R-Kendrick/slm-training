@@ -14,6 +14,7 @@ from slm_training.evals.agentv import model_ship_gate_cases
 from slm_training.harnesses.model_build import ModelBuildConfig
 from slm_training.harnesses.model_build import eval_runner
 from slm_training.harnesses.model_build.eval_runner import (
+    _cache_replay_payload,
     _contract_precision,
     _contract_recall,
     _effective_record_decode_timeout,
@@ -26,6 +27,37 @@ from slm_training.harnesses.model_build.eval_runner import (
 )
 
 _GOLD = 'root = Stack([cta])\ncta = Button(":slot_0")'
+
+
+def test_cache_replay_does_not_reuse_runtime_telemetry(tmp_path: Path) -> None:
+    config = _smoke_config(tmp_path)
+    replay = _cache_replay_payload(
+        {
+            "parse_rate": 1.0,
+            "latency_ms_p50": 999.0,
+            "decode_timeout_count": 3,
+            "evaluated_at": "stale",
+            "code_git_sha": "old",
+            "details": [
+                {
+                    "id": "r1",
+                    "latency_ms": 999.0,
+                    "request_completion_latency_ms": 999.0,
+                    "amortized_batch_latency_ms": 99.0,
+                }
+            ],
+        },
+        config=config,
+        suite_path=config.run_dir / "eval_smoke.json",
+        version_stamp={"code_commit": "current"},
+    )
+    assert replay["parse_rate"] == 1.0
+    assert replay["latency_ms_p50"] is None
+    assert replay["decode_timeout_count"] is None
+    assert replay["runtime_measurement_source"] == "cache_not_measured"
+    assert replay["evaluated_at"] != "stale"
+    assert replay["code_git_sha"] != "old"
+    assert "latency_ms" not in replay["details"][0]
 
 
 def test_eval_wall_fairly_caps_each_remaining_record() -> None:
@@ -217,6 +249,16 @@ def test_dual_interface_model_keeps_batched_decode_and_stats(tmp_path: Path) -> 
     assert metrics["decode_batch_size_configured"] == 8
     assert metrics["decode_batch_size_max"] == 3
     assert metrics["decode_chunk_n"] == 1
+    # Request latency is the observed batch wall; amortized latency is a
+    # separate throughput signal and must not be conflated with it.
+    assert metrics["decode_batch_wall_ms_p50"] == pytest.approx(
+        metrics["latency_ms_p50"]
+    )
+    assert metrics["decode_amortized_ms_per_record_p50"] is not None
+    assert metrics["decode_records_per_second"] is not None
+    assert metrics["details"][0]["request_completion_latency_ms"] >= metrics[
+        "details"
+    ][0]["amortized_batch_latency_ms"]
 
 
 def test_empty_suite_aggregates_to_none_not_zero(tmp_path: Path) -> None:

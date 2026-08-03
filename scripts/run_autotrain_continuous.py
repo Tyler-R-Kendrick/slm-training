@@ -349,6 +349,52 @@ def _counterbalanced_arm_order(
     return order
 
 
+def _bind_expected_arms(
+    *,
+    root: Path,
+    campaign_id: str,
+    matrix_path: Path,
+    control_id: str,
+    candidate_id: str,
+    arm_order: Sequence[str],
+) -> dict[str, Any]:
+    """Bind the exact paired decision arms before execution starts.
+
+    The matrix and handoff are human-facing projections; this event is the
+    append-only authority used to distinguish an unstarted arm from a model
+    result when a bounded cycle runs out of wall time.
+    """
+
+    expected = (str(control_id), str(candidate_id))
+    if not all(expected) or len(set(expected)) != 2:
+        raise ValueError("decision arms must contain distinct control/candidate ids")
+    order = tuple(str(item) for item in arm_order)
+    if set(order) != set(expected) or len(order) != len(expected):
+        raise ValueError("arm order must contain exactly the bound decision arms")
+    matrix_payload = json.loads(matrix_path.read_text(encoding="utf-8"))
+    matrix_id = str(matrix_payload.get("matrix_id") or "")
+    if not matrix_id:
+        raise ValueError("hypothesis matrix is missing matrix_id")
+    detail = {
+        "matrix_id": matrix_id,
+        "matrix_sha256": hashlib.sha256(matrix_path.read_bytes()).hexdigest(),
+        "expected_arm_ids": list(expected),
+        "arm_order": list(order),
+    }
+    store = CampaignStore(campaign_id, root)
+    for event in reversed(store.verify_event_chain()):
+        if event.get("event_type") != "decision_arms_bound":
+            continue
+        if event.get("detail") != detail:
+            raise RuntimeError("decision arm binding already exists with different content")
+        return event
+    return store.append_event(
+        "decision_arms_bound",
+        status="bound",
+        detail=detail,
+    )
+
+
 def _read_json(path: Path) -> dict[str, Any]:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
@@ -4086,6 +4132,10 @@ def _phase_a_delivery(
     arm_order: list[str] | None = None,
     arm_seed: int | None = None,
     deadline: float | None = None,
+    control_id: str | None = None,
+    candidate_id: str | None = None,
+    arm_exits: Mapping[str, int] | None = None,
+    arm_skipped: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Record SDLC Phase A decision; never open stacked PR for non-positive."""
     from slm_training.autoresearch.climb_policy import (
@@ -4095,14 +4145,19 @@ def _phase_a_delivery(
 
     policy = load_climb_policy()
     camp_dir = root / campaign_id
-    # Infer control / candidate ids from manifests or runs
+    # Prefer the exact matrix identities supplied by the driver.  Filename
+    # heuristics are retained only for legacy callers and must never relabel a
+    # dynamic successor arm.
     man_dir = camp_dir / "manifests"
-    control_run = None
-    candidate_run = None
+    control_run = control_id
+    candidate_run = candidate_id
     if man_dir.exists():
         for path in sorted(man_dir.glob("*.json")):
             eid = path.stem
-            if eid.endswith("-control") or eid.endswith("_control"):
+            if (
+                control_run is None
+                and (eid.endswith("-control") or eid.endswith("_control"))
+            ):
                 control_run = eid
             elif any(
                 token in eid
@@ -4213,6 +4268,8 @@ def _phase_a_delivery(
         "agent_required": agent_required,
         "arm_order": list(arm_order or []),
         "arm_seed": arm_seed,
+        "arm_exits": dict(arm_exits or {}),
+        "arm_skipped": dict(arm_skipped or {}),
         **{k: v for k, v in decision.items() if k not in {"positive", "stack_layer"}},
     }
     out_path = camp_dir / "sdlc_delivery.json"
@@ -4242,7 +4299,8 @@ def _phase_a_delivery(
         f"- action: `{record['stack_action']}`\n"
         f"- reasons: {', '.join(record.get('reasons') or [])}\n"
         f"- control: `{control_run}` metrics={record.get('control_metrics')}\n"
-        f"- candidate: `{candidate_run}` metrics={record.get('candidate_metrics')}\n\n"
+        f"- candidate: `{candidate_run}` metrics={record.get('candidate_metrics')}\n"
+        f"- skipped arms: `{record.get('arm_skipped')}`\n\n"
         "Non-positive cycles do not open stacked PRs "
         "(sdlc autotrain-iteration-delivery).\n"
     )
@@ -5700,6 +5758,8 @@ def _finalize_terminal_interrupted_replay(
         role=role,
         cycle_intent=cycle_intent,
         deadline=deadline,
+        control_id=control,
+        candidate_id=candidate,
     )
     _write_cycle_handoff(
         root=root,
@@ -7866,6 +7926,14 @@ def run_cycle(
         promotion_replicate_index=promotion_replicate_index,
     )
     scheduled_order = list(order)
+    _bind_expected_arms(
+        root=root,
+        campaign_id=campaign_id,
+        matrix_path=matrix_path,
+        control_id=control_eid,
+        candidate_id=candidate_eid,
+        arm_order=scheduled_order,
+    )
     arm_count = len({eid for eid in order if eid in by_id})
     # Promote path: formal preflight must be proved before train executes.
     if cycle_intent == "promote" and promoting_champion is not None:
@@ -7947,9 +8015,50 @@ def run_cycle(
             )
     seen: set[str] = set()
     arm_exits: dict[str, int] = {}
+    arm_skipped: dict[str, dict[str, Any]] = {}
     for eid in order:
         if eid in seen or eid not in by_id:
             continue
+        pending = []
+        pending_seen: set[str] = set()
+        for pending_id in order:
+            if pending_id in seen or pending_id not in by_id or pending_id in pending_seen:
+                continue
+            pending_seen.add(pending_id)
+            pending.append(pending_id)
+        remaining_seconds = max(0.0, deadline - time.monotonic())
+        required_seconds = (
+            len(pending) * arm_wall_minutes * 60.0
+            + HARNESS_FINALIZATION_RESERVE_SECONDS
+        )
+        if remaining_seconds < required_seconds:
+            reason = "deadline_reserve"
+            store = CampaignStore(campaign_id, root)
+            for skipped_index, skipped_id in enumerate(pending):
+                detail = {
+                    "arm_id": skipped_id,
+                    "order_index": order.index(skipped_id),
+                    "reason": reason,
+                    "remaining_seconds": remaining_seconds,
+                    "required_seconds": required_seconds,
+                    "deadline": deadline,
+                    "pending_arm_count": len(pending),
+                    "skipped_index": skipped_index,
+                }
+                store.append_event(
+                    "arm_skipped",
+                    experiment_id=skipped_id,
+                    status="not_started",
+                    detail=detail,
+                )
+                arm_skipped[skipped_id] = detail
+            print(
+                "ARM_SKIPPED "
+                f"reason={reason} pending={len(pending)} "
+                f"remaining_s={remaining_seconds:.3f} required_s={required_seconds:.3f}",
+                flush=True,
+            )
+            break
         seen.add(eid)
         exp = json.loads(by_id[eid].read_text(encoding="utf-8"))
         is_promote_arm = cycle_intent == "promote" and (
@@ -8045,7 +8154,18 @@ def run_cycle(
         arm_order=scheduled_order,
         arm_seed=arm_seed,
         deadline=deadline,
+        control_id=control_eid,
+        candidate_id=candidate_eid,
+        arm_exits=arm_exits,
+        arm_skipped=arm_skipped,
     )
+    # Keep execution completeness explicit in the handoff/result matrix.  A
+    # missing arm is a typed scheduling event, never an inferred model reject.
+    delivery = {
+        **delivery,
+        "arm_exits": arm_exits,
+        "arm_skipped": arm_skipped,
+    }
     if (
         replay is not None
         and set(arm_exits) == set(replay_manifests)

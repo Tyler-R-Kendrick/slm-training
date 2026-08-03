@@ -929,6 +929,83 @@ def loop_result_rows(
                 "campaign_id": campaign.campaign_id,
             }
         )
+    # A campaign is a paired decision, not a collection of independently
+    # completed rows.  Older drivers can finish one arm and still write a
+    # handoff whose ``arm_order`` names both expected experiments.  Overlay
+    # that durable expectation so a candidate-only/control-only run cannot be
+    # rendered as completed model evidence.
+    by_campaign: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        by_campaign.setdefault(str(row["campaign_id"]), []).append(row)
+    for campaign in loop_campaigns(Path(root), loop_id, last=last):
+        handoff_path = Path(root) / campaign.campaign_id / "cycle_handoff.json"
+        if not handoff_path.is_file():
+            continue
+        try:
+            handoff = json.loads(handoff_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        expected: tuple[str, ...] = ()
+        # Prefer the append-only execution binding.  The handoff arm_order
+        # reason remains a compatibility fallback for campaigns created before
+        # decision_arms_bound was introduced.
+        events = CampaignStore(campaign.campaign_id, Path(root)).verify_event_chain()
+        for event in reversed(events):
+            if event.get("event_type") != "decision_arms_bound":
+                continue
+            detail = event.get("detail")
+            bound = detail.get("expected_arm_ids") if isinstance(detail, dict) else None
+            if (
+                isinstance(bound, list)
+                and len(bound) == 2
+                and all(isinstance(item, str) and item for item in bound)
+                and len(set(bound)) == 2
+            ):
+                expected = tuple(bound)
+            break
+        for reason in handoff.get("reasons", ()) or ():
+            if expected:
+                break
+            text = str(reason)
+            if text.startswith("arm_order:"):
+                expected = tuple(
+                    item.strip() for item in text.removeprefix("arm_order:").split(",")
+                    if item.strip()
+                )
+                break
+        if not expected:
+            continue
+        actual = {str(row["experiment"]) for row in by_campaign.get(campaign.campaign_id, ())}
+        missing = tuple(item for item in expected if item not in actual)
+        if not missing:
+            continue
+        for row in by_campaign.get(campaign.campaign_id, ()):
+            row["measurement"] = "incomplete (campaign arm missing)"
+            row["diagnosis"] = "harness"
+            row["status"] = "incomplete"
+            row["ship"] = "blocked"
+        for experiment_id in missing:
+            rows.append(
+                {
+                    "cycle": campaign.cycle_index,
+                    "upstream": (campaign.upstream_commit or "")[:8] or "—",
+                    "integrated": (campaign.integration_commit or "")[:8] or "—",
+                    "experiment": experiment_id,
+                    "params": "—",
+                    "exposure": "—",
+                    "primary": "—",
+                    "metrics": "arm not executed",
+                    "lean": "—",
+                    "gates": "not evaluated",
+                    "measurement": "incomplete (arm not run)",
+                    "diagnosis": "harness",
+                    "evidence_class": handoff.get("evidence_class", "fixture"),
+                    "climb": handoff.get("climb_state", "—"),
+                    "ship": handoff.get("ship_state", "blocked"),
+                    "status": "incomplete",
+                    "campaign_id": campaign.campaign_id,
+                }
+            )
     return sorted(
         rows,
         key=lambda row: (

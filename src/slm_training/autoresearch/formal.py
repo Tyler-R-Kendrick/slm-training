@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import shutil
 import subprocess
 import time
 from collections.abc import Callable
@@ -26,6 +27,7 @@ from slm_training.autoresearch.schemas import (
     FormalProofStatus,
     FormalTraceStepV1,
 )
+from slm_training.formal.checkers import FormalProjectLock
 from slm_training.harness_core.bounded_process import (
     ProcessOutcome,
     run_bounded_process,
@@ -55,6 +57,7 @@ class _ProjectChecks:
     version: subprocess.CompletedProcess[str]
     output: str
     proof_total: bool
+    project_lock_wait_seconds: float
 
 
 # ``cmd formalize`` can carry several claims for the same pinned Lean project.
@@ -326,7 +329,11 @@ def _proof_paths(template: FormalTemplate) -> tuple[tuple[str, Path], ...]:
             "Test/run.sh",
             *(
                 str(path.relative_to(root))
-                for path in sorted((root / "LeverProofLean").glob("*.lean"))
+                for path in sorted((root / "Test").rglob("*.json"))
+            ),
+            *(
+                str(path.relative_to(root))
+                for path in sorted((root / "LeverProofLean").rglob("*.lean"))
             ),
         )
         return (
@@ -341,7 +348,7 @@ def _proof_paths(template: FormalTemplate) -> tuple[tuple[str, Path], ...]:
         ("OpenUIProofs.lean", root / "OpenUIProofs.lean"),
         *(
             (str(path.relative_to(root)), path)
-            for path in sorted((root / "OpenUIProofs").glob("*.lean"))
+            for path in sorted((root / "OpenUIProofs").rglob("*.lean"))
         ),
     )
 
@@ -392,10 +399,10 @@ def _proof_sources_are_total(template: FormalTemplate) -> bool:
     root = _lean_root(template)
     paths = (
         (root / "LeverProofLean.lean",)
-        + tuple(sorted((root / "LeverProofLean").glob("*.lean")))
+        + tuple(sorted((root / "LeverProofLean").rglob("*.lean")))
         if template.lean_project == "leverproof"
         else (root / "OpenUIProofs.lean",)
-        + tuple(sorted((root / "OpenUIProofs").glob("*.lean")))
+        + tuple(sorted((root / "OpenUIProofs").rglob("*.lean")))
     )
     return not any(_FORBIDDEN_PROOF_TOKENS.search(path.read_text()) for path in paths)
 
@@ -467,56 +474,79 @@ def _project_checks(
     authority.
     """
 
-    key = (str(_lean_root(template).resolve()), _project_digest(template), _run)
+    runtime_identity = tuple(
+        (
+            name,
+            str(path := shutil.which(name) or "missing"),
+            (
+                (Path(path).stat().st_size, Path(path).stat().st_mtime_ns)
+                if path != "missing" and Path(path).is_file()
+                else None
+            ),
+        )
+        for name in ("lake", "lean", "make")
+    )
+    key = (
+        str(_lean_root(template).resolve()),
+        _project_digest(template),
+        runtime_identity,
+        _run,
+    )
     cached = _PROJECT_CHECK_CACHE.get(key)
     if cached is not None:
         return cached
 
     lean_root = _lean_root(template)
-    build_command = (
-        ["make", "test"]
-        if template.lean_project == "leverproof"
-        else ["lake", "build", "OpenUIProofs"]
-    )
-    build = _run(
-        build_command,
-        cwd=lean_root,
-        timeout_seconds=remaining(),
-        on_start=on_start,
-        on_heartbeat=on_heartbeat,
-    )
-    build_timed_out = _is_timeout_result(build)
-    audit = (
-        subprocess.CompletedProcess([], 0, "", "")
-        if template.lean_project == "leverproof" and build.returncode == 0
-        else _run(
-            ["lake", "env", "lean", "OpenUIProofs/Axioms.lean"],
+    with FormalProjectLock(lean_root, timeout_seconds=remaining()) as lock:
+        build_command = (
+            ["make", "test"]
+            if template.lean_project == "leverproof"
+            else ["lake", "build", "OpenUIProofs"]
+        )
+        build = _run(
+            build_command,
             cwd=lean_root,
             timeout_seconds=remaining(),
             on_start=on_start,
             on_heartbeat=on_heartbeat,
         )
-        if build.returncode == 0
-        else subprocess.CompletedProcess(
-            [],
-            124 if build_timed_out else build.returncode,
-            "",
-            build.stderr or ("build timed out" if build_timed_out else "build failed"),
+        build_timed_out = _is_timeout_result(build)
+        audit = (
+            subprocess.CompletedProcess([], 0, "", "")
+            if template.lean_project == "leverproof" and build.returncode == 0
+            else _run(
+                ["lake", "env", "lean", "OpenUIProofs/Axioms.lean"],
+                cwd=lean_root,
+                timeout_seconds=remaining(),
+                on_start=on_start,
+                on_heartbeat=on_heartbeat,
+            )
+            if build.returncode == 0
+            else subprocess.CompletedProcess(
+                [],
+                124 if build_timed_out else build.returncode,
+                "",
+                build.stderr
+                or ("build timed out" if build_timed_out else "build failed"),
+            )
         )
-    )
-    audit_timed_out = build_timed_out or _is_timeout_result(audit)
-    version = (
-        _run(
-            ["lake", "env", "lean", "--version"],
-            cwd=lean_root,
-            timeout_seconds=min(remaining(), 30.0),
-            on_start=on_start,
-            on_heartbeat=on_heartbeat,
+        audit_timed_out = build_timed_out or _is_timeout_result(audit)
+        version = (
+            _run(
+                ["lake", "env", "lean", "--version"],
+                cwd=lean_root,
+                timeout_seconds=min(remaining(), 30.0),
+                on_start=on_start,
+                on_heartbeat=on_heartbeat,
+            )
+            if build.returncode == 0 and audit.returncode == 0
+            else subprocess.CompletedProcess([], 1, "", "proof audit failed")
         )
-        if build.returncode == 0 and audit.returncode == 0
-        else subprocess.CompletedProcess([], 1, "", "proof audit failed")
+        lock_wait_seconds = lock.wait_seconds
+    output = (
+        f"project_lock_wait_seconds={lock_wait_seconds:.6f}\n"
+        f"{build.stdout}\n{build.stderr}\n{audit.stdout}\n{audit.stderr}"
     )
-    output = f"{build.stdout}\n{build.stderr}\n{audit.stdout}\n{audit.stderr}"
     proof_total = _proof_sources_are_total(template)
     result = _ProjectChecks(
         build=build,
@@ -524,6 +554,7 @@ def _project_checks(
         version=version,
         output=output,
         proof_total=proof_total,
+        project_lock_wait_seconds=lock_wait_seconds,
     )
     if (
         build.returncode == 0

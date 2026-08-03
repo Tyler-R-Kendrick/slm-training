@@ -281,3 +281,24 @@ forwards `5 → 35`, and compiler time `2293 → 12193 ms`. This is a narrow
 fixture signal with a severe cost tradeoff, not a high-quality learning result.
 The fingerprint is exhausted; prioritize broader semantic/exact supervision
 and a new size-matched objective. Lean remains outside this screening claim.
+
+## Current second-pass audit (c2, 2026-08-03)
+
+The c2 component-plan screen produced a matched fixture structural delta
+(`.3267 -> .3828`) but still had meaningful-program, AST/canonical, fidelity,
+reward, and component-recall failures. It is a confirmation candidate, not a
+ship or learning-generalization result. The model card and README record the
+checkpoint paths and explicit local no-sync status in
+[`autotrain-cycle-20260803-c2-component-plan-screen.md`](autotrain-cycle-20260803-c2-component-plan-screen.md).
+
+The original one-shot packet above is not sufficient as a completion claim for
+all formal surfaces. The second-pass owner packets are:
+
+| owner | remaining risk | acceptance evidence |
+|---|---|---|
+| `improve-lean-optimums` | raw subprocess calls in SFF, formal-contract, metric, and ecosystem adapters can outlive the cap; shared Lake builds can race; nested imports can evade scans | every adapter uses the canonical bounded process-group contract; recursive source/digest tests; inter-process build-lock test; live-tool absence reports `unknown` rather than `proved` |
+| `improve-openui-harnesses` | full-cache hits currently follow checkpoint model construction; atomic batch aborts can discard row-level work | cache-hit construction regression; typed row-outcome/unknown-abort tests; runtime telemetry never reused |
+| `autotrain` | paired-arm evidence must remain campaign-level under partial scheduling; matched CPU arms must not contend | expected-arm binding and explicit missing-arm matrix rows; serialized matched-arm benchmark or isolated-worker parity evidence |
+
+Until those acceptance artifacts and a fresh-seed confirmation exist, the loop
+must continue to classify c2 as fixture-only and keep promotion/RL locked.
