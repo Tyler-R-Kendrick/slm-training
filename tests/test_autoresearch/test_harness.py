@@ -77,6 +77,7 @@ from slm_training.autoresearch.storage import (
     CampaignStore,
     _lean_text,
     _markdown_cell,
+    _metrics_text,
     _project_confirmation_queue_status,
     append_autotrain_action_receipt,
     autotrain_action_sha256,
@@ -105,6 +106,9 @@ def test_suite_headlines_keep_decode_cost_signals_for_result_matrix() -> None:
                         "tokens_emitted_mean": 61.0,
                         "compiler_prefill_tokens_mean": 8448.0,
                         "canvas_tokens_mean": 3840.0,
+                        "compiler_ms_mean": 27100.0,
+                        "completion_shared_domain_hits_mean": 149.0,
+                        "completion_shared_domain_misses_mean": 0.0,
                         "verbose_trace": ["not a headline"],
                     },
                 }
@@ -118,7 +122,32 @@ def test_suite_headlines_keep_decode_cost_signals_for_result_matrix() -> None:
         "suites.smoke.tokens_emitted_mean": 61.0,
         "suites.smoke.compiler_prefill_tokens_mean": 8448.0,
         "suites.smoke.canvas_tokens_mean": 3840.0,
+        "suites.smoke.compiler_ms_mean": 27100.0,
+        "suites.smoke.completion_shared_domain_hits_mean": 149.0,
+        "suites.smoke.completion_shared_domain_misses_mean": 0.0,
     }
+
+
+def test_result_matrix_orders_quality_then_runtime_mechanism() -> None:
+    rendered = _metrics_text(
+        {
+            "suites.smoke.ast_beq_rate": 0.0,
+            "suites.smoke.compiler_ms_mean": 27100.0,
+            "suites.smoke.forwards_count_mean": 51.0,
+            "suites.smoke.latency_ms_p50": 11719.0,
+            "suites.smoke.meaningful_program_rate": 0.666667,
+            "suites.smoke.structural_similarity": 0.3439,
+            "suites.smoke.tokens_emitted_mean": 201.0,
+        },
+        {},
+        omit=set(),
+    )
+
+    assert rendered.startswith(
+        "suites.smoke.meaningful_program_rate=0.666667, "
+        "suites.smoke.structural_similarity=0.3439"
+    )
+    assert rendered.index("latency_ms_p50") < rendered.index("compiler_ms_mean")
 
 
 def test_result_matrix_explains_lean_applicability() -> None:

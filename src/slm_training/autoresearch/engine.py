@@ -1245,6 +1245,9 @@ def _suite_headline_metrics(value: object) -> dict[str, float]:
         "tokens_emitted_mean",
         "compiler_prefill_tokens_mean",
         "canvas_tokens_mean",
+        "compiler_ms_mean",
+        "completion_shared_domain_hits_mean",
+        "completion_shared_domain_misses_mean",
     )
     for suite, metrics in value["suites"].items():
         if not isinstance(metrics, dict):

@@ -1423,6 +1423,41 @@ def test_bounded_compiler_decision_margin_isolates_runtime_treatment() -> None:
     HypothesisMatrix.model_validate(matrix)
 
 
+def test_cached_compiler_decision_margin_isolates_runtime_treatment() -> None:
+    campaign_id = "continuous-loop-20260803-c1827"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1827,
+        role="screening",
+        recommended_slug="cached-compiler-decision-margin",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-cached-compiler-decision-margin"]
+    for key in (
+        "compiler_alignment_loss_weight",
+        "compiler_alignment_margin",
+        "compiler_alignment_stratified",
+        "compiler_alignment_kind_filter",
+    ):
+        assert candidate[key] == control[key]
+    assert control["grammar_equivalence_cache"] is False
+    assert candidate["grammar_equivalence_cache"] is True
+    assert f"{prefix}-compiler-decision-margin" not in knobs
+    assert _mod._arm_slug_from_knobs(candidate) == "cached-compiler-decision-margin"
+    HypothesisMatrix.model_validate(matrix)
+
+
 def test_frozen_screening_retry_preserves_champion_enqueue_semantics() -> None:
     replay = {"handoff": SimpleNamespace(cycle_role="screening")}
 

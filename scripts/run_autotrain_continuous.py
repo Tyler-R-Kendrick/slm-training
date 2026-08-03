@@ -691,6 +691,17 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         },
     ),
     (
+        "cached-compiler-decision-margin",
+        "Completion-domain equivalence caching reduces compiler time for the all-family compiler-decision margin arm while preserving its structural quality.",
+        {
+            "compiler_alignment_loss_weight": 1.0,
+            "compiler_alignment_margin": 1.0,
+            "compiler_alignment_stratified": True,
+            "compiler_alignment_kind_filter": "all",
+            "grammar_equivalence_cache": True,
+        },
+    ),
+    (
         "structure-token",
         "Direct grammar STRUCT-token reconstruction weighting repairs scaffold formation and structural_similarity without lowering parse_rate or binder_reference_f1.",
         {"structure_token_loss_weight": 1.0},
@@ -1151,6 +1162,12 @@ def _arm_slug_from_knobs(
     if (
         knobs.get("compiler_alignment_loss_weight")
         and knobs.get("compiler_alignment_kind_filter") == "all"
+        and knobs.get("grammar_equivalence_cache")
+    ):
+        return "cached-compiler-decision-margin"
+    if (
+        knobs.get("compiler_alignment_loss_weight")
+        and knobs.get("compiler_alignment_kind_filter") == "all"
         and knobs.get("grammar_completion_bounds")
     ):
         return "bounded-compiler-decision-margin"
@@ -1410,6 +1427,7 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
         "component-edge-margin",
         "compiler-decision-token",
         "bounded-compiler-decision-margin",
+        "cached-compiler-decision-margin",
         "structure-token",
         "typed-family-balance",
         "container-close",
@@ -5730,6 +5748,7 @@ def _matrix(
             "sync_checkpoints": False,
             "local_files_only": True,
             "grammar_completion_bounds": False,
+            "grammar_equivalence_cache": False,
             "compact_active_canvas": False,
             "component_plan_loss_weight": 0.0,
             "component_plan_decode_weight": 0.0,
@@ -6218,11 +6237,15 @@ def _matrix(
         if rec_slug not in bank_by_slug:
             rec_slug = _SCREENING_ARM_BANK[0][0]
         control_extra: dict[str, Any] = {}
-        if rec_slug == "bounded-compiler-decision-margin":
+        treatment_key = {
+            "bounded-compiler-decision-margin": "grammar_completion_bounds",
+            "cached-compiler-decision-margin": "grammar_equivalence_cache",
+        }.get(rec_slug)
+        if treatment_key is not None:
             control_extra = {
                 key: value
                 for key, value in bank_by_slug[rec_slug][1].items()
-                if key != "grammar_completion_bounds"
+                if key != treatment_key
             }
         candidates = [
             {
@@ -6258,9 +6281,9 @@ def _matrix(
                         **control_extra,
                     ),
                     (
-                        "All-family margin control for isolated completion-bounds "
-                        "attribution."
-                        if rec_slug == "bounded-compiler-decision-margin"
+                        "All-family margin control for isolated "
+                        f"{treatment_key} attribution."
+                        if treatment_key is not None
                         else "Baseline for size-matched continuous attribution."
                     ),
                 ),
@@ -6270,7 +6293,7 @@ def _matrix(
         ]
         for i, (slug, hyp, extras) in enumerate(_SCREENING_ARM_BANK, start=1):
             if (
-                rec_slug == "bounded-compiler-decision-margin"
+                treatment_key is not None
                 and slug == "compiler-decision-margin"
             ):
                 # The matched control is exactly this precursor arm. Emitting it

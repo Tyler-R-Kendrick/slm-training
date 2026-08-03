@@ -227,6 +227,13 @@ Campaign harness v122 preserves the margin recipe in both successor arms and
 isolates deterministic completion bounds as the candidate treatment. It also
 surfaces token, forward, prefill, and canvas costs in the terminal result table
 so future quality/cost failures steer from their actual mechanism.
+Cycle c1826 rejects that treatment on the strict compiler-tree path: bounded and
+unbounded arms are identical on quality, 201 emitted tokens, 51 forwards, 28,928
+prefill tokens, and 13,056 canvas tokens, while both completion-bound counters
+remain zero. Campaign v124 therefore targets the observed 27.3-second compiler
+cost with the existing completion-domain equivalence cache instead. It also
+orders terminal headlines as quality, latency, tokens, forwards, compiler time,
+and cache activity, keeping causal signals visible before cell truncation.
 
 The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
 confirmed a champion, c1812 was the next protected promotion slot, and the

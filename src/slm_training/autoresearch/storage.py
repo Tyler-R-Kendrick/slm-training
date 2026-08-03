@@ -1474,29 +1474,35 @@ def _metrics_text(
     def omitted(name: str) -> bool:
         return any(name == item or name.endswith(f".{item}") for item in omit)
 
-    allow = {
-        "n",
+    priority = (
         "meaningful_program_rate",
         "structural_similarity",
         "binder_reference_f1",
-        "parse_rate",
         "latency_ms_p50",
-        "forwards_count_mean",
         "tokens_emitted_mean",
+        "forwards_count_mean",
+        "compiler_ms_mean",
+        "completion_shared_domain_hits_mean",
+        "completion_shared_domain_misses_mean",
         "compiler_prefill_tokens_mean",
         "canvas_tokens_mean",
+        "n",
+        "parse_rate",
         "ast_beq_rate",
         "canonical_beq_rate",
-    }
+    )
+    allow = set(priority)
 
     def allowed(name: str) -> bool:
         return name.split(".")[-1] in allow
 
-    values = [
-        f"{name}={value:g}"
-        for name, value in sorted(metrics.items())
-        if not omitted(name) and allowed(name)
-    ]
+    values = []
+    for suffix in priority:
+        values.extend(
+            f"{name}={value:g}"
+            for name, value in sorted(metrics.items())
+            if name.split(".")[-1] == suffix and not omitted(name)
+        )
     values.extend(
         f"data.{name}={value:g}"
         for name, value in sorted(data_metrics.items())
