@@ -26,6 +26,16 @@ _classify_metric_tradeoff = _mod._classify_metric_tradeoff
 _PRIMARY = "smoke.latency_ms_p50"
 
 
+@pytest.fixture(autouse=True)
+def _clear_dynamic_thrash_bank_cache() -> None:
+    """Isolate loop-local self-heal thrash arms across tests."""
+    _mod._DYNAMIC_THRASH_ARMS.clear()
+    _mod._DYNAMIC_THRASH_LOADED_FOR = None
+    yield
+    _mod._DYNAMIC_THRASH_ARMS.clear()
+    _mod._DYNAMIC_THRASH_LOADED_FOR = None
+
+
 def _classify(
     *,
     control: dict[str, float | None],
@@ -5806,6 +5816,45 @@ def test_repeated_cycle_failure_blocks_on_third_identical_error(tmp_path: Path) 
     state = json.loads((root / "loops" / "loop-1" / "state.json").read_text())
     assert state["state"] == "BLOCKED"
     assert state["blocker_count"] == 3
+
+
+def test_self_heal_thrash_bank_composes_successors(tmp_path: Path) -> None:
+    """Bank exhaust must self-heal by composing size-matched thrash arms."""
+    _mod._DYNAMIC_THRASH_ARMS.clear()
+    _mod._DYNAMIC_THRASH_LOADED_FOR = None
+    root = tmp_path / "ar"
+    loop = "L"
+    closed = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
+    assert _mod._self_heal_thrash_bank_exhaust(
+        root, loop, closed=closed, skip=set()
+    )
+    assert _mod._DYNAMIC_THRASH_ARMS
+    path = _mod._dynamic_thrash_arms_path(root, loop)
+    assert path.is_file()
+    # Newly composed arms are selectable.
+    slug = _mod._select_recommended_slug(1, skip=closed)
+    assert slug.startswith("compose-")
+    # Slug mapping preserves dynamic identity through knobs.
+    extras = dict(_mod._DYNAMIC_THRASH_ARMS[0][2])
+    assert _mod._arm_slug_from_knobs(extras) == _mod._DYNAMIC_THRASH_ARMS[0][0]
+
+
+def test_self_heal_cycle_error_recovers_bank_exhaust(tmp_path: Path) -> None:
+    _mod._DYNAMIC_THRASH_ARMS.clear()
+    _mod._DYNAMIC_THRASH_LOADED_FOR = None
+    root = tmp_path / "ar"
+    loop = "L"
+    kind = _mod._self_heal_cycle_error(
+        root=root,
+        loop_id=loop,
+        exc=RuntimeError(_mod._BANK_EXHAUST_MSG),
+        integration_commit="abc",
+    )
+    assert kind == "thrash_bank_compose"
+    _mod._clear_loop_blocker(root, loop, reason=kind)
+    state = json.loads((root / "loops" / loop / "state.json").read_text())
+    assert state["state"] == "IDLE"
+    assert state["blocker_count"] == 0
 
 
 def test_repeated_timeouts_remain_soft_and_never_block(tmp_path: Path) -> None:

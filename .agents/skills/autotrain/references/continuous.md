@@ -15,15 +15,25 @@ persistence is the host goal and the append-only campaign event chains.
    **immediately start the next cycle** in the same turn (or the next agent
    step without user input when the host supports autonomous continuation /
    persistent goals).
-3. **Self-heal failures.** Path errors, missing suites, dirty trees, merge
-   conflicts, bad matrices, and failed gates are inputs to the next cycle — not
-   reasons to yield. Repair when evidence names a canonical harness family;
-   otherwise change knobs and re-run.
+3. **Self-heal failures in the pipeline.** Path errors, missing suites, dirty
+   trees, merge conflicts, bad matrices, failed gates, **thrash bank exhaust**,
+   harness incompletes, and feedback identity races are inputs to the next
+   cycle — not reasons to yield or wait for a human re-prompt. The continuous
+   driver must recover in-process when it can:
+   - thrash bank multi-seed exhaust → compose size-matched successors under
+     `loops/<id>/dynamic_thrash_arms.jsonl` (`SELF_HEAL_BANK_EXHAUST`)
+   - causal CAP emptying multi-seed-open arms → `THRASH_CAUSAL_CAP_RELAX`
+   - harness-blocked champions after tip change → rearm promote
+   - startup `BLOCKED` with a healable fingerprint → clear blocker and continue
+   Repair named harness families via owner skills when evidence requires code
+   change; otherwise change knobs and re-run. **Do not** wait for the user to
+   say “diagnose and restart.”
 4. **Stop only when blocked.** Report `blocked` only after the same hard
    blocker has failed **three consecutive cycles** with no new information
-   (e.g. missing credentials the agent cannot obtain, theorem contradiction
-   unrepaired after three formal attempts). Soft failures (ship gates fail on
-   fixture n, null lever deltas, timeouts) **never** stop the loop.
+   **and** in-pipeline self-heal could not recover (e.g. missing credentials the
+   agent cannot obtain, theorem contradiction unrepaired after three formal
+   attempts). Soft failures (ship gates fail on fixture n, null lever deltas,
+   timeouts, healable bank exhaust) **never** stop the loop.
 5. **Remote compute is opt-in.** No paid GPU, remote job, or HF write unless
    the user already granted that authority in this session.
 6. **Code delivery is not local-only, but stack layers are selective.** While

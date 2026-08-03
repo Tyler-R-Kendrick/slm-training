@@ -1215,7 +1215,6 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         },
     ),
 )
-_RECENT_EXHAUSTION_CYCLE_WINDOW = len(_SCREENING_ARM_BANK)
 # Permanent thrash-arm closure requires this many *distinct seeds* of complete
 # non-positive measurement. A single fixture-noise null must not close the
 # approach forever (aligns with climb recipe_null_cap / promotion min_seeds).
@@ -1224,6 +1223,24 @@ _BANK_EXHAUST_MSG = (
     "registered screening arm bank exhausted; add a distinct preregistered "
     "quality objective instead of recycling a rejected approach"
 )
+# Loop-local thrash successors synthesized when the static bank is multi-seed
+# exhausted. Persistent under loops/<id>/dynamic_thrash_arms.jsonl so the
+# continuous driver self-heals without a human re-prompt.
+_DYNAMIC_THRASH_ARMS: list[tuple[str, str, dict[str, Any]]] = []
+_DYNAMIC_THRASH_LOADED_FOR: str | None = None
+_THRASH_COMPOSE_ATOMS: tuple[tuple[str, Any], ...] = (
+    ("ltr_tail_loss_weight", 2.0),
+    ("ltr_prefix_loss_weight", 1.0),
+    ("structure_token_loss_weight", 1.0),
+    ("component_token_loss_weight", 1.0),
+    ("symbol_boundary_loss_weight", 1.0),
+    ("typed_family_balance_loss_weight", 0.25),
+    ("design_md_dropout", 0.25),
+    ("compiler_decision_token_loss_weight", 1.0),
+    ("grammar_completion_bounds", True),
+    ("compact_active_canvas", True),
+)
+_SELF_HEAL_BANK_BATCH = 5
 
 
 def _finite_metric(value: object) -> float | None:
@@ -1243,8 +1260,251 @@ def _champion_queue_path(root: Path, loop_id: str) -> Path:
     return root / "loops" / loop_id / "champion_queue.jsonl"
 
 
+def _dynamic_thrash_arms_path(root: Path, loop_id: str) -> Path:
+    return root / "loops" / loop_id / "dynamic_thrash_arms.jsonl"
+
+
 def _driver_lock_path(root: Path, loop_id: str) -> Path:
     return root / "loops" / loop_id / _DRIVER_LOCK_BASENAME
+
+
+def _all_screening_arm_bank() -> tuple[tuple[str, str, dict[str, Any]], ...]:
+    """Static preregistered bank plus loop-local self-heal successors."""
+    if not _DYNAMIC_THRASH_ARMS:
+        return _SCREENING_ARM_BANK
+    return _SCREENING_ARM_BANK + tuple(_DYNAMIC_THRASH_ARMS)
+
+
+def _recent_exhaustion_cycle_window() -> int:
+    return max(len(_SCREENING_ARM_BANK), len(_all_screening_arm_bank()), 1)
+
+
+# Back-compat alias for tests that walked the static bank length.
+_RECENT_EXHAUSTION_CYCLE_WINDOW = len(_SCREENING_ARM_BANK)
+
+
+def _short_lever_token(key: str) -> str:
+    token = key.replace("_loss_weight", "").replace("_weight", "").replace("_", "-")
+    return token[:24]
+
+
+def _compose_atom_extras(key: str, value: Any) -> dict[str, Any]:
+    extras: dict[str, Any] = {key: value}
+    if key == "semantic_contrast_loss_weight":
+        extras.update(
+            {
+                "semantic_contrast_dir": (
+                    "src/slm_training/resources/data/eval/openui_hard_valid_v1"
+                ),
+                "semantic_contrast_margin": 1.0,
+                "semantic_contrast_fraction": 0.5,
+                "batch_size": 3,
+            }
+        )
+    return extras
+
+
+def _load_dynamic_thrash_arms(root: Path, loop_id: str) -> None:
+    """Load loop-local thrash successors into the process bank cache."""
+    global _DYNAMIC_THRASH_LOADED_FOR, _DYNAMIC_THRASH_ARMS
+    key = f"{root.resolve()}::{loop_id}"
+    if _DYNAMIC_THRASH_LOADED_FOR == key:
+        return
+    path = _dynamic_thrash_arms_path(root, loop_id)
+    loaded: list[tuple[str, str, dict[str, Any]]] = []
+    if path.is_file():
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(row, dict):
+                continue
+            slug = str(row.get("slug") or "")
+            hyp = str(row.get("hypothesis") or "")
+            extras = row.get("extras") if isinstance(row.get("extras"), dict) else {}
+            if slug and hyp:
+                extras = dict(extras)
+                extras["_thrash_slug"] = slug
+                loaded.append((slug, hyp, extras))
+    _DYNAMIC_THRASH_ARMS = loaded
+    _DYNAMIC_THRASH_LOADED_FOR = key
+
+
+def _append_dynamic_thrash_arms(
+    root: Path,
+    loop_id: str,
+    arms: list[tuple[str, str, dict[str, Any]]],
+) -> None:
+    if not arms:
+        return
+    path = _dynamic_thrash_arms_path(root, loop_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as fh:
+        for slug, hyp, extras in arms:
+            payload = {
+                "schema": "autotrain_dynamic_thrash_arm/v1",
+                "slug": slug,
+                "hypothesis": hyp,
+                "extras": {k: v for k, v in extras.items() if not str(k).startswith("_")},
+                "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            }
+            fh.write(json.dumps(payload, sort_keys=True) + "\n")
+            live = dict(extras)
+            live["_thrash_slug"] = slug
+            _DYNAMIC_THRASH_ARMS.append((slug, hyp, live))
+
+
+def _synthesize_thrash_arms(
+    *,
+    known_slugs: set[str],
+    closed: set[str],
+    batch: int = _SELF_HEAL_BANK_BATCH,
+) -> list[tuple[str, str, dict[str, Any]]]:
+    """Compose size-matched thrash successors from lever atoms (self-heal).
+
+    Does not recycle multi-seed-closed slugs. Each arm is a distinct preregistered
+    (for this loop) quality objective under dynamic_thrash_arms.jsonl.
+    """
+    out: list[tuple[str, str, dict[str, Any]]] = []
+    atoms = list(_THRASH_COMPOSE_ATOMS)
+    for i, (k1, v1) in enumerate(atoms):
+        for k2, v2 in atoms[i + 1 :]:
+            if k1 == k2:
+                continue
+            slug = f"compose-{_short_lever_token(k1)}-{_short_lever_token(k2)}"
+            if slug in known_slugs or slug in closed:
+                continue
+            extras = {**_compose_atom_extras(k1, v1), **_compose_atom_extras(k2, v2)}
+            extras["_thrash_slug"] = slug
+            # Contrast needs batch>=3; other pairs stay size-matched defaults.
+            if extras.get("semantic_contrast_loss_weight") and int(
+                extras.get("batch_size") or 0
+            ) < 3:
+                extras["batch_size"] = 3
+            hyp = (
+                f"Joint {k1}={v1!r} with {k2}={v2!r} improves smoke "
+                f"structural_similarity without lowering parse_rate "
+                f"(loop self-heal thrash successor {slug})."
+            )
+            out.append((slug, hyp, extras))
+            if len(out) >= max(1, int(batch)):
+                return out
+    return out
+
+
+def _self_heal_thrash_bank_exhaust(
+    root: Path,
+    loop_id: str,
+    *,
+    closed: set[str],
+    skip: set[str],
+) -> bool:
+    """Ensure thrash can continue after static bank multi-seed exhaust.
+
+    Returns True when at least one new open arm is available after heal.
+    """
+    _load_dynamic_thrash_arms(root, loop_id)
+    bank = _all_screening_arm_bank()
+    known = {slug for slug, _, _ in bank}
+    open_now = {slug for slug, _, _ in bank if slug not in closed and slug not in skip}
+    if open_now:
+        return True
+    synthesized = _synthesize_thrash_arms(
+        known_slugs=known | closed | skip, closed=closed
+    )
+    if not synthesized:
+        print(
+            "SELF_HEAL_BANK_EXHAUST exhausted "
+            "reason=no_untried_size_matched_compose_pairs",
+            flush=True,
+        )
+        return False
+    _append_dynamic_thrash_arms(root, loop_id, synthesized)
+    print(
+        "SELF_HEAL_BANK_EXHAUST "
+        f"added={[slug for slug, _, _ in synthesized]} "
+        "reason=static_bank_multi_seed_exhausted_compose_successors",
+        flush=True,
+    )
+    open_after = {
+        slug
+        for slug, _, _ in _all_screening_arm_bank()
+        if slug not in closed and slug not in skip
+    }
+    return bool(open_after)
+
+
+def _self_heal_cycle_error(
+    *,
+    root: Path,
+    loop_id: str,
+    exc: BaseException,
+    integration_commit: str | None = None,
+) -> str | None:
+    """Attempt in-pipeline recovery for known continuous blockers.
+
+    Returns a heal kind string on success (caller should continue the loop),
+    or None when the error remains hard.
+    """
+    message = str(exc)
+    # Bank exhaust: synthesize thrash successors and/or rearm harness heads.
+    if _BANK_EXHAUST_MSG in message or "screening arm bank exhausted" in message:
+        pred = _latest_cycle(root, loop_id)[1]
+        closed = _recent_completed_nonpositive_slugs(root, pred)
+        entries = _load_champion_queue(_champion_queue_path(root, loop_id))
+        if integration_commit:
+            _reopen_harness_blocked_champions(
+                root, entries, integration_commit=integration_commit
+            )
+            _write_champion_queue(_champion_queue_path(root, loop_id), entries)
+        skip = _skip_arm_slugs(
+            entries, integration_commit=integration_commit, include_causal_cap=False
+        )
+        if _self_heal_thrash_bank_exhaust(
+            root, loop_id, closed=closed, skip=skip | closed
+        ):
+            return "thrash_bank_compose"
+        if _queue_head_confirmed(entries) is not None:
+            return "promote_head_available"
+        return None
+    if "conflicts with supplied feedback" in message:
+        # Tip already strips thrash feedback; treat as soft and continue.
+        return "feedback_conflict_soft"
+    if "campaign already exists with different spec" in message:
+        return "campaign_identity_soft"
+    return None
+
+
+def _clear_loop_blocker(root: Path, loop_id: str, *, reason: str) -> None:
+    """Return loop state to runnable after a successful self-heal."""
+    path = _loop_state_path(root, loop_id)
+    cycle_index = 0
+    if path.is_file():
+        try:
+            prev = AutotrainLoopStateV1.model_validate_json(
+                path.read_text(encoding="utf-8")
+            )
+            cycle_index = int(prev.cycle_index or 0)
+        except (OSError, ValueError):
+            pass
+    _write_loop_state(
+        root,
+        AutotrainLoopStateV1(
+            loop_id=loop_id,
+            state="IDLE",
+            phase="between_cycles",
+            cycle_index=cycle_index,
+            next_action=f"continue_after_self_heal:{reason}",
+            blocker_fingerprint=None,
+            blocker_count=0,
+            pid=os.getpid(),
+            heartbeat_at=utc_now(),
+        ),
+    )
+    print(f"SELF_HEAL_CLEAR_BLOCKER reason={reason}", flush=True)
 
 
 def _loop_state_path(root: Path, loop_id: str) -> Path:
@@ -1804,6 +2064,8 @@ def _arm_slug_from_knobs(
     knobs: dict[str, Any], *, candidate_id: str = ""
 ) -> str | None:
     """Map knobs / candidate id to thrash arm slug."""
+    if knobs.get("_thrash_slug"):
+        return str(knobs["_thrash_slug"])
     if knobs.get("constraint_graph_mode") == "grammar":
         return "constraint-graph"
     if knobs.get("slot_contract_in_context"):
@@ -2087,7 +2349,7 @@ def _skip_arm_slugs(
 
 
 def _thrash_bank_open_slugs(closed: set[str]) -> set[str]:
-    return {slug for slug, _, _ in _SCREENING_ARM_BANK if slug not in closed}
+    return {slug for slug, _, _ in _all_screening_arm_bank() if slug not in closed}
 
 
 def _arm_close_min_null_seeds(policy: Any | None = None) -> int:
@@ -2321,10 +2583,15 @@ def _select_recommended_slug(
         "binder-topology",
         "component-structure",
     }
-    bank = tuple(row for row in _SCREENING_ARM_BANK if row[0] not in successor_slugs)
+    full_bank = _all_screening_arm_bank()
+    bank = tuple(row for row in full_bank if row[0] not in successor_slugs)
     n = len(bank)
-    start = (max(1, int(cycle)) - 1) % n
-    ordered = [bank[(start + i) % n][0] for i in range(n)]
+    if n == 0:
+        # Dynamic-only bank: rotate full effective bank.
+        bank = full_bank
+        n = len(bank)
+    start = (max(1, int(cycle)) - 1) % max(n, 1)
+    ordered = [bank[(start + i) % n][0] for i in range(n)] if n else []
     skip = skip or set()
     if legacy_quality_slugs.issubset(skip):
         for slug in successor_slugs:
@@ -2335,6 +2602,10 @@ def _select_recommended_slug(
             return slug
     for slug in successor_slugs:
         if slug not in skip:
+            return slug
+    # Self-heal thrash successors (compose-*) live in the full bank after static.
+    for slug, _, _ in full_bank:
+        if slug not in skip and slug.startswith("compose-"):
             return slug
     raise RuntimeError(_BANK_EXHAUST_MSG)
 
@@ -5482,7 +5753,7 @@ def _predecessor_priority_slug(
             )
             if evidence_directed_only and not evidence_directed:
                 continue
-            for slug, _hypothesis, _extras in _SCREENING_ARM_BANK:
+            for slug, _hypothesis, _extras in _all_screening_arm_bank():
                 if (
                     experiment_id.endswith(f"-{slug}")
                     and slug not in closed
@@ -5497,7 +5768,7 @@ def _predecessor_priority_slug(
     executed_slugs: set[str] = set()
     cursor: str | None = predecessor_campaign_id
     seen: set[str] = set()
-    for _ in range(_RECENT_EXHAUSTION_CYCLE_WINDOW):
+    for _ in range(_recent_exhaustion_cycle_window()):
         if not cursor or cursor in seen:
             break
         seen.add(cursor)
@@ -5531,7 +5802,7 @@ def _predecessor_priority_slug(
             and priority.get("authority") == "observed_result"
             and float(priority.get("confidence") or 0.0) >= 0.9
         )
-        for slug, _hypothesis, _extras in _SCREENING_ARM_BANK:
+        for slug, _hypothesis, _extras in _all_screening_arm_bank():
             if (
                 experiment_id.endswith(f"-{slug}")
                 and slug not in closed
@@ -6555,7 +6826,7 @@ def _apply_frozen_replay(
     prefix = campaign_id.replace("continuous-loop-", "c")
     old_candidate_id = str(replay["candidate"]["experiment"]["experiment_id"])
     registered_slugs = sorted(
-        (item[0] for item in _SCREENING_ARM_BANK), key=len, reverse=True
+        (item[0] for item in _all_screening_arm_bank()), key=len, reverse=True
     )
     slug = next(
         (
@@ -7280,10 +7551,10 @@ def _matrix(
             cycle, skip=skip_slugs
         )
         bank_by_slug = {
-            slug: (hyp, extras) for slug, hyp, extras in _SCREENING_ARM_BANK
+            slug: (hyp, extras) for slug, hyp, extras in _all_screening_arm_bank()
         }
         if rec_slug not in bank_by_slug:
-            rec_slug = _SCREENING_ARM_BANK[0][0]
+            rec_slug = _all_screening_arm_bank()[0][0]
         control_extra: dict[str, Any] = {}
         treatment_key = {
             "bounded-compiler-decision-margin": "grammar_completion_bounds",
@@ -7370,7 +7641,7 @@ def _matrix(
                 "novelty": novelty(0, "matched control with published eval"),
             }
         ]
-        for i, (slug, hyp, extras) in enumerate(_SCREENING_ARM_BANK, start=1):
+        for i, (slug, hyp, extras) in enumerate(_all_screening_arm_bank(), start=1):
             if treatment_key is not None and slug == precursor_slug:
                 # The matched control is exactly this precursor arm. Emitting it
                 # again would violate the preregistration contract's distinct-
@@ -7913,6 +8184,7 @@ def run_cycle(
     ):
         _write_champion_queue(queue_path, queue_entries)
     replayed_confirmation = _confirmation_replay_entry(queue_entries, replay)
+    _load_dynamic_thrash_arms(root, loop_id)
     recent_exhausted = _recent_completed_nonpositive_slugs(root, pred)
     skip_slugs = (
         _skip_arm_slugs(queue_entries, integration_commit=integration)
@@ -7990,18 +8262,28 @@ def run_cycle(
             if _BANK_EXHAUST_MSG not in str(exc):
                 raise
             retry_head = _queue_head_confirmed(queue_entries)
-            if retry_head is None:
+            if retry_head is not None:
+                promoting_champion = retry_head
+                cycle_intent = "promote"
+                role = "promotion"
+                print(
+                    "BANK_EXHAUST_PROMOTE_FALLBACK "
+                    f"entry_id={retry_head.get('entry_id')} "
+                    f"status={retry_head.get('status')} "
+                    "reason=retryable_promote_head_while_thrash_bank_empty",
+                    flush=True,
+                )
+            elif _self_heal_thrash_bank_exhaust(
+                root,
+                loop_id,
+                closed=recent_exhausted,
+                skip=skip_slugs,
+            ):
+                # Dynamic thrash successors now in the process bank — continue
+                # screening without a human re-prompt.
+                _select_recommended_slug(cycle, skip=skip_slugs)
+            else:
                 raise
-            promoting_champion = retry_head
-            cycle_intent = "promote"
-            role = "promotion"
-            print(
-                "BANK_EXHAUST_PROMOTE_FALLBACK "
-                f"entry_id={retry_head.get('entry_id')} "
-                f"status={retry_head.get('status')} "
-                "reason=retryable_promote_head_while_thrash_bank_empty",
-                flush=True,
-            )
     campaign_id = _campaign_id(loop_id, cycle)
     if open_champion is not None:
         attempts = _bump_champion_attempt(
@@ -9078,6 +9360,37 @@ def main(argv: list[str] | None = None) -> int:
     except RuntimeError as exc:
         print(str(exc), flush=True)
         return 2
+    # Startup self-heal: clear recoverable BLOCKED state without human prompt.
+    try:
+        state_path = _loop_state_path(root, args.loop_id)
+        if state_path.is_file():
+            prior = AutotrainLoopStateV1.model_validate_json(
+                state_path.read_text(encoding="utf-8")
+            )
+            if prior.state == "BLOCKED":
+                heal = _self_heal_cycle_error(
+                    root=root,
+                    loop_id=args.loop_id,
+                    exc=RuntimeError(
+                        str(prior.next_action or "blocked")
+                        + ":"
+                        + str(prior.blocker_fingerprint or "")
+                    ),
+                    integration_commit=code_sha,
+                )
+                # Always attempt bank compose when blocked — fingerprint alone
+                # may not embed the bank-exhaust message text.
+                _load_dynamic_thrash_arms(root, args.loop_id)
+                pred = _latest_cycle(root, args.loop_id)[1]
+                closed = _recent_completed_nonpositive_slugs(root, pred)
+                if _self_heal_thrash_bank_exhaust(
+                    root, args.loop_id, closed=closed, skip=closed
+                ):
+                    heal = heal or "thrash_bank_compose_startup"
+                if heal:
+                    _clear_loop_blocker(root, args.loop_id, reason=str(heal))
+    except Exception as startup_exc:  # noqa: BLE001 — never abort startup heal
+        print(f"SELF_HEAL_STARTUP_WARN {startup_exc!r}", flush=True)
     if args.supervised and args.max_cycles not in {0, 1}:
         parser.error("--supervised runs exactly one bounded cycle")
     passes = (
@@ -9113,6 +9426,19 @@ def main(argv: list[str] | None = None) -> int:
             except Exception as exc:  # noqa: BLE001 - continuous must self-heal next pass
                 print(f"CYCLE_ERROR {exc!r}", flush=True)
                 cycle_index, _ = _latest_cycle(root, args.loop_id)
+                # In-pipeline heal first — bank exhaust / soft identity races
+                # must not require a human re-prompt to continue learning.
+                heal_kind = _self_heal_cycle_error(
+                    root=root,
+                    loop_id=args.loop_id,
+                    exc=exc,
+                    integration_commit=code_sha,
+                )
+                if heal_kind:
+                    _clear_loop_blocker(root, args.loop_id, reason=heal_kind)
+                    print(f"SELF_HEAL continue kind={heal_kind}", flush=True)
+                    time.sleep(1)
+                    continue
                 count = _record_cycle_failure(
                     root=root,
                     loop_id=args.loop_id,
@@ -9120,8 +9446,26 @@ def main(argv: list[str] | None = None) -> int:
                     cycle_index=cycle_index,
                 )
                 # A supervised invocation returns control immediately. Legacy
-                # unbounded mode stops only at the typed repeated-blocker rule.
+                # unbounded mode stops only at the typed repeated-blocker rule
+                # after self-heal could not recover.
                 if args.supervised or "dirty" in str(exc).lower() or count >= 3:
+                    # Last-chance heal on third hard block (e.g. bank exhaust
+                    # fingerprint) before yielding to the host agent.
+                    if count >= 3 and not args.supervised:
+                        last = _self_heal_cycle_error(
+                            root=root,
+                            loop_id=args.loop_id,
+                            exc=exc,
+                            integration_commit=code_sha,
+                        )
+                        if last:
+                            _clear_loop_blocker(root, args.loop_id, reason=str(last))
+                            print(
+                                f"SELF_HEAL after_hard_block kind={last}",
+                                flush=True,
+                            )
+                            time.sleep(1)
+                            continue
                     return 2
                 time.sleep(1)
                 continue
