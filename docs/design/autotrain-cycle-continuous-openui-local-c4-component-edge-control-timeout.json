@@ -1,0 +1,78 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "cycle": 4,
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c4",
+  "experiment": "component-edge",
+  "claim_class": "fixture_screen",
+  "status": "infra_incomplete",
+  "measurement_complete": false,
+  "frozen_manifest_sha256": "912b622ccda9e867a37fc5bb6ccc4c0d50d3fbfd80a5404691dbbd50759a8fa0",
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "backend": "scratch TwoTower",
+    "matrix_set": "continuous-openui-local",
+    "honesty_mode": "grammar_constrained_strict_compiler_tree",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "decode_timeout_seconds": 8.0,
+    "suite_n": {"smoke": 3, "held_out": 0, "adversarial": 0, "ood": 0, "rico_held": 0}
+  },
+  "arms": {
+    "control": {
+      "id": "c20260803-continuous-openui-local-8c0b60dd-c4-control",
+      "trainable_params": 1766987,
+      "parse_rate": null,
+      "meaningful_program_rate": null,
+      "structural_similarity": null,
+      "binder_reference_f1": null,
+      "latency_ms_p50": null,
+      "decode_timeout_count": 3,
+      "incomplete_document_n": 3,
+      "exit": 2
+    },
+    "candidate": {
+      "id": "c20260803-continuous-openui-local-8c0b60dd-c4-component-edge",
+      "trainable_params": 1766987,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "structural_similarity": 0.4166666666666667,
+      "binder_reference_f1": 0.9523809523809524,
+      "latency_ms_p50": 23366.0,
+      "exit": 0
+    }
+  },
+  "gates": {
+    "pass": null,
+    "failures": ["no_scoreboard:control_decode_timeout"]
+  },
+  "signals": {
+    "attribution": "size-matched pair (1,766,987 params both arms). component-edge candidate completed a full scoreboard (structure .4167, binder F1 .9524, MPR .3333 -- the best raw quality numbers seen in this loop so far), but the matched control hit 3/3 typed per-document decode timeouts (decode_timeout_seconds=8.0) at ~23s p50 wall, so no scoreboard exists for it and no model comparison is authorized. This is a measurement_incomplete/harness_failure, not a primary-metric result -- primary_metric_unavailable.",
+    "prevention": [
+      "fixture n=3, control produced 0 scoreable documents",
+      "candidate's strong raw numbers cannot be attributed without a completed matched control",
+      "decode_timeout_count=3 suggests the fixed 8s per-document decode budget is marginal at this CPU/step count; distinguish a runtime timing artifact from a reproducible executable-unblock effect before trusting it"
+    ],
+    "next_priorities": [
+      "replay the exact frozen control/component-edge pair once to test whether the control timeout reproduces",
+      "if it reproduces, treat the completed per-record timeout as complete evidence and open a harness lane for the decode-timeout budget, not a new model hypothesis",
+      "if it does not reproduce, treat as a one-run CPU timing artifact and keep the candidate's completed scoreboard as informative but non-comparative"
+    ]
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "4af1d6260c7a2b7b36a6d50e09e9fb4716bcb18b",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v84",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v23",
+      "model.twotower": "v308"
+    },
+    "stamped_at": "2026-08-03T23:45:06Z"
+  }
+}
