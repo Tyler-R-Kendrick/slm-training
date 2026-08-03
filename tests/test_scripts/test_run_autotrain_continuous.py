@@ -5141,6 +5141,53 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor(
     assert promoted["knobs"] == promote_experiment["knobs"]
     assert promoted["formal_claims"] == promote_experiment["formal_claims"]
 
+    confirm_experiment = json.loads(json.dumps(old_candidate))
+    confirm_experiment["experiment_id"] = (
+        "c20260801-loop-12345678-c1710-confirm"
+    )
+    confirm_manifest = _mod._manifest(
+        old_campaign,
+        confirm_experiment,
+        old_commit,
+        role="screening",
+        cycle_intent="confirm",
+    )
+    confirmation_replay = {
+        "control": replay["control"],
+        "candidate": {
+            "experiment": confirm_experiment,
+            "manifest": confirm_manifest,
+            "manifest_sha256": "1" * 64,
+        },
+    }
+    confirmation_matrix = _mod._matrix(
+        campaign_id=new_campaign,
+        evidence_snapshot_id="snapshot-3",
+        cites=["docs/design/autoresearch-autotraining.md"],
+        role_citations={
+            "research": "docs/design/autoresearch-autotraining.md",
+            "prior_result": "docs/design/autoresearch-autotraining.md",
+        },
+        train_version="wf_smoke_v2",
+        eval_version="e938_role_safe_all_targets_v2",
+        steps=22,
+        cycle=1712,
+        role="screening",
+        recommended_slug="batch1",
+    )
+    applied = _mod._apply_frozen_replay(
+        confirmation_matrix, confirmation_replay, new_campaign
+    )
+    assert confirmation_matrix["recommended_experiment_id"].endswith("-confirm")
+    confirmed = next(
+        item["experiment"]
+        for item in confirmation_matrix["hypotheses"]
+        if item["experiment"]["experiment_id"]
+        == confirmation_matrix["recommended_experiment_id"]
+    )
+    assert confirmed["knobs"] == confirm_experiment["knobs"]
+    assert confirmation_matrix["recommended_experiment_id"] in applied
+
 
 def test_frozen_replay_restores_omitted_formal_claim_from_proved_artifact(
     tmp_path: Path,

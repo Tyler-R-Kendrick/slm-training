@@ -2656,7 +2656,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v134",
+      "version": "v135",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2696,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v135",
+          "date": "2026-08-03",
+          "note": "Replay typed frozen confirmation arms by recovering their registered lever identity from knobs, preserving the frozen screening manifest while continuing to reject unknown arm kinds."
+        },
         {
           "version": "v134",
           "date": "2026-08-03",

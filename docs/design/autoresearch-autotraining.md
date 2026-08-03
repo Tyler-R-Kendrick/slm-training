@@ -320,6 +320,13 @@ CPUs, 12--14 runnable workers, and up to 95% user CPU while each tiny scratch
 process configured an 11-thread Torch pool. Campaign v134 therefore pins only
 scratch-context train/eval children to one OpenMP/MKL thread, symmetrically.
 GPU/full-context campaigns and the frozen model/data/eval recipes are unchanged.
+Cycle c1837 selected c1836's exact retry action but stopped after research
+because frozen replay dispatch recognized registered screening slugs and
+promotion arms, not the typed `-confirm` identity assigned by the champion
+queue. Campaign v135 admits only that confirmation identity, recovers its
+registered lever family from the frozen knobs, and rewrites the matching matrix
+member before restoring the exact frozen recipe. Unknown replay arms still
+fail closed; the screening manifest digest remains the replay authority.
 
 The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
 confirmed a champion, c1812 was the next protected promotion slot, and the

@@ -5597,18 +5597,35 @@ def _apply_frozen_replay(
         None,
     )
     promotion_replay = old_candidate_id.endswith("-promote")
+    confirmation_replay = old_candidate_id.endswith("-confirm")
     if promotion_replay:
         slug = "promote"
+    elif confirmation_replay:
+        slug = "confirm"
     if slug is None:
         raise RuntimeError(
             f"unsupported automatic frozen replay arm: {old_candidate_id}"
         )
     new_ids = {"control": f"{prefix}-control", "candidate": f"{prefix}-{slug}"}
-    if promotion_replay:
+    if promotion_replay or confirmation_replay:
+        frozen_knobs = replay["candidate"]["experiment"].get("knobs") or {}
         frozen_fingerprint = _knobs_fingerprint(
-            _lever_knobs(replay["candidate"]["experiment"].get("knobs") or {})
+            _lever_knobs(frozen_knobs)
+        )
+        source_slug = (
+            _arm_slug_from_knobs(frozen_knobs, candidate_id=old_candidate_id)
+            if confirmation_replay
+            else None
         )
         candidate_target = next(
+            (
+                item["experiment"]
+                for item in matrix["hypotheses"]
+                if source_slug
+                and item["experiment"]["experiment_id"].endswith(f"-{source_slug}")
+            ),
+            None,
+        ) or next(
             (
                 item["experiment"]
                 for item in matrix["hypotheses"]
@@ -5628,7 +5645,8 @@ def _apply_frozen_replay(
             None,
         )
         if candidate_target is None:
-            raise RuntimeError("frozen promotion replay target is absent from matrix")
+            kind = "promotion" if promotion_replay else "confirmation"
+            raise RuntimeError(f"frozen {kind} replay target is absent from matrix")
         previous_target_id = str(candidate_target["experiment_id"])
         candidate_target["experiment_id"] = new_ids["candidate"]
         for priority in matrix["next_run_priorities"]:
