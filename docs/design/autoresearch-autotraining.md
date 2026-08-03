@@ -136,6 +136,15 @@ use `--compiler openai`, whose default is `gpt-5.6-sol` with `store=False`.
 
 ## Closed loop
 
+The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
+confirmed a champion, c1812 was the next protected promotion slot, and the
+intervening screening bank was exhausted. The driver failed instead of waiting
+usefully. Campaign harness v109 preserves the promotion cadence and held-out
+suite boundary by spending that otherwise-empty slot on a second fresh-seed
+confirmation of the same size-matched recipes. It never promotes early and
+never recycles a rejected arm. See
+[`autotrain-cycle-1811-promotion-wait-harness-failure.md`](autotrain-cycle-1811-promotion-wait-harness-failure.md).
+
 The c1808 container-close screen is an exact quality null: both arms emit the
 same 36 tokens with seven forwards and score `.3225` structural similarity,
 while all meaningful, binder, component, fidelity, and reward metrics remain
