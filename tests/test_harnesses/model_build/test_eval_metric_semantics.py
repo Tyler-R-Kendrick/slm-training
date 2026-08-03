@@ -56,6 +56,26 @@ def test_eval_wall_fairly_caps_each_remaining_record() -> None:
         )
         == 24.0
     )
+    assert (
+        _effective_record_decode_timeout(
+            24.0,
+            evaluation_deadline=None,
+            remaining_record_n=3,
+            chunk_record_n=3,
+            now=60.0,
+        )
+        == 72.0
+    )
+    assert (
+        _effective_record_decode_timeout(
+            3.0,
+            evaluation_deadline=100.0,
+            remaining_record_n=8,
+            chunk_record_n=2,
+            now=60.0,
+        )
+        == 6.0
+    )
 
 
 def _record(**overrides: object) -> ExampleRecord:

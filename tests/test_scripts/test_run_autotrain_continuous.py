@@ -4038,26 +4038,33 @@ def test_cycle_deadline_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
         _mod._remaining_timeout(9.0)
 
 
-def test_arm_wall_budget_is_symmetric_and_reserves_orchestration() -> None:
+def test_arm_wall_budget_accounts_for_formal_stage_and_reserves_orchestration() -> None:
     from slm_training.levers import (
         HARNESS_FINALIZATION_RESERVE_SECONDS,
         MAX_HARNESS_WALL_SECONDS,
     )
 
-    arm_minutes = _mod._arm_wall_minutes(3)
-    expected = min(
+    promotion_minutes = _mod._arm_wall_minutes(3, formal_required=True)
+    promotion_expected = min(
         3.0,
         (MAX_HARNESS_WALL_SECONDS - HARNESS_FINALIZATION_RESERVE_SECONDS) / 3 / 60,
     )
-    assert arm_minutes == pytest.approx(expected)
-    assert _mod._arm_wall_minutes(0.5) == pytest.approx(
+    assert promotion_minutes == pytest.approx(promotion_expected)
+    assert _mod._arm_wall_minutes(0.5, formal_required=True) == pytest.approx(
         min(
             0.5,
             (MAX_HARNESS_WALL_SECONDS - HARNESS_FINALIZATION_RESERVE_SECONDS) / 3 / 60,
         )
     )
-    reserved = 2 * arm_minutes * 60 + HARNESS_FINALIZATION_RESERVE_SECONDS
-    assert reserved < MAX_HARNESS_WALL_SECONDS
+    screening_minutes = _mod._arm_wall_minutes(3, formal_required=False)
+    screening_expected = min(
+        3.0,
+        (MAX_HARNESS_WALL_SECONDS - HARNESS_FINALIZATION_RESERVE_SECONDS) / 2 / 60,
+    )
+    assert screening_minutes == pytest.approx(screening_expected)
+    assert screening_minutes > promotion_minutes
+    reserved = 2 * screening_minutes * 60 + HARNESS_FINALIZATION_RESERVE_SECONDS
+    assert reserved == pytest.approx(MAX_HARNESS_WALL_SECONDS)
 
 
 def test_empty_promotion_slot_falls_back_but_frozen_replay_does_not() -> None:

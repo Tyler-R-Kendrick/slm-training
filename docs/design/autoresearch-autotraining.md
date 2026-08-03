@@ -195,6 +195,14 @@ every gold position where the deterministic compiler exposes a legal branch.
 This directly tests the observed coverage hypothesis—two or three component-edge
 rows may be too sparse—without adding parameters, decoder scores, or legal
 authority. Typed decision counts and mean CE make achieved density measurable.
+Cycle c1821 activated that objective on 34 final-step decision rows, but both
+three-document production batches exhausted one shared 24-second wall and left
+all quality metrics unmeasured. Eval harness v78 makes the documented timeout
+truly per record by scaling a batch wall with its record count, still capped by
+the cumulative evaluator deadline. Campaign harness v119 also stops reserving
+a promotion-only Lean execution lane during screening; promotion continues to
+reserve and execute formal preflight. The exact c1821 arms replay before any
+new model hypothesis.
 
 The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
 confirmed a champion, c1812 was the next protected promotion slot, and the

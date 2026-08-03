@@ -242,12 +242,13 @@ def _raise_for_bounded_result(result: BoundedProcessResult) -> None:
         )
 
 
-def _arm_wall_minutes(policy_minutes: float) -> float:
-    """Give formal + both decision arms equal room and retain finalization."""
+def _arm_wall_minutes(policy_minutes: float, *, formal_required: bool) -> float:
+    """Give required stages equal room while retaining finalization."""
 
+    stage_count = 3 if formal_required else 2
     arm_seconds = (
         float(MAX_HARNESS_WALL_SECONDS) - HARNESS_FINALIZATION_RESERVE_SECONDS
-    ) / 3
+    ) / stage_count
     symmetric_minutes = arm_seconds / 60
     return min(float(policy_minutes), symmetric_minutes)
 
@@ -6842,7 +6843,10 @@ def run_cycle(
             f"cycle={cycle} suites={','.join(eval_suites_for_role(policy, role))}",
             flush=True,
         )
-    arm_wall_minutes = _arm_wall_minutes(stage_wall_minutes_for_role(policy, role))
+    arm_wall_minutes = _arm_wall_minutes(
+        stage_wall_minutes_for_role(policy, role),
+        formal_required=role == "promotion",
+    )
     claim_for_role = (
         str(policy.defaults.get("claim_class_promotion") or "promotion_candidate")
         if role == "promotion"

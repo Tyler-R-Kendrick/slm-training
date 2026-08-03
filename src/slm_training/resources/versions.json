@@ -2656,7 +2656,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v118",
+      "version": "v119",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2696,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v119",
+          "date": "2026-08-02",
+          "note": "Allocate screening wall time across its two executed arms while promotion retains the third Lean preflight lane, so not-applicable formal work cannot starve measurement."
+        },
         {
           "version": "v118",
           "date": "2026-08-02",
@@ -7453,6 +7458,11 @@
         {
           "version": "v3",
           "date": "2026-08-03",
+          "note": "no-bump: record honest c1821 measurement-incomplete scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
           "note": "no-bump: record honest c1819 rejected component-edge-margin checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
         },
         {
@@ -9266,7 +9276,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v77",
+      "version": "v78",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -9287,6 +9297,11 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v78",
+          "date": "2026-08-02",
+          "note": "Honor the documented per-record decode timeout for production batches by scaling the chunk wall with its record count while remaining bounded by any cumulative evaluation wall."
+        },
         {
           "version": "v77",
           "date": "2026-08-02",
