@@ -1284,6 +1284,36 @@ def test_container_close_arm_is_size_matched_and_targets_legal_close_branch() ->
     assert _mod._arm_slug_from_knobs(candidate) == "container-close"
 
 
+def test_balanced_container_close_arm_combines_quality_and_close_objectives() -> None:
+    campaign_id = "continuous-loop-20260803-c1809"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1809,
+        role="screening",
+        recommended_slug="balanced-container-close",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-balanced-container-close"]
+    assert control["typed_family_balance_loss_weight"] == 0.0
+    assert control["compiler_alignment_loss_weight"] == 0.0
+    assert candidate["typed_family_balance_loss_weight"] == 0.25
+    assert candidate["compiler_alignment_loss_weight"] == 1.0
+    assert candidate["compiler_alignment_margin"] == 1.0
+    assert candidate["compiler_alignment_kind_filter"] == "container-close"
+    assert _mod._arm_slug_from_knobs(candidate) == "balanced-container-close"
+
+
 def test_completed_frozen_retry_steers_to_distinct_quality_arm() -> None:
     matrix = _mod._matrix(
         campaign_id="continuous-loop-20260731-c10",
