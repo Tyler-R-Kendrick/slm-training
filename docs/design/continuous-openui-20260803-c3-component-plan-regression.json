@@ -1,0 +1,108 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "loop_id": "continuous-openui-20260803",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-202608-fa9f9cf7-c3",
+  "cycle_index": 3,
+  "cycle_intent": "screening",
+  "evidence_class": "fixture",
+  "decision": "rejected_quality_regression",
+  "scoreable": true,
+  "new_checkpoint_created": true,
+  "upstream_commit": "a290ad299fde4c7c1c57596887cff3e304ab4c7e",
+  "integration_commit": "5d11635c29fe52c5c67c44611feadd294873c95a",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "control": {
+      "experiment_id": "c20260803-continuous-openui-202608-fa9f9cf7-c3-control",
+      "trainable_params": 1755760,
+      "steps": 20,
+      "last_loss": 15.29759407043457,
+      "checkpoint_sha256": "30b43c75b963777f59981b35dda2bb2ae17633281cb77f92701d05e0eecd9274",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.23083333333333333,
+        "component_type_recall": 0.16666666666666666,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "binder_reference_f1": 0.7333333333333334,
+        "placeholder_fidelity": 0.6388888888888888,
+        "reward_score": 0.8406666666666666,
+        "latency_ms_p50": 3988.5
+      },
+      "ship_gates_pass": false
+    },
+    "component-plan": {
+      "experiment_id": "c20260803-continuous-openui-202608-fa9f9cf7-c3-component-plan",
+      "trainable_params": 1755760,
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.1725,
+        "component_type_recall": 0.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.8073333333333332,
+        "latency_ms_p50": 3801.13
+      },
+      "checkpoint_sha256": "058f3226a753926c8cdf3e74d3243f195e6807402259cf2333f2a69ac1562c5d",
+      "ship_gates_pass": false
+    }
+  },
+  "comparison": {
+    "attributable": true,
+    "primary_delta": -0.05833333333333335,
+    "verdict": "component-plan regresses structural_similarity .2308->.1725, meaningful_program_rate .3333->0, binder_reference_f1 .7333->.6333, component_type_recall .1667->0; only latency improves (3988.50->3801.13ms), which does not offset the quality loss"
+  },
+  "agentv": {
+    "bundles_complete": true,
+    "execution_errors": 0,
+    "ship_gates_pass": false
+  },
+  "checkpoint_policy": "local_explicit_no_sync_not_reusable_not_promoted_not_ship",
+  "lean": "not_applicable:screening",
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260803-continuous-openui-202608-fa9f9cf7-c3-control",
+      "fixture_insufficient_n:c20260803-continuous-openui-202608-fa9f9cf7-c3-component-plan",
+      "non_regression_fail:binder_reference_f1:0.7333333333333334->0.6333333333333333",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.23083333333333333 candidate=0.1725 improvement=-0.05833333333333335",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "next_priority": "test the distinct size-matched component-edge quality hypothesis (c3-component-edge) per the ranked matrix, keeping the matched control every cycle",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "5d11635c29fe52c5c67c44611feadd294873c95a",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v77",
+      "harness.model_build.train": "v36",
+      "harness.experiment_feature_flags": "v4",
+      "harness.autoresearch.experiment_campaign": "v110",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "evals.agentv": "v8",
+      "model.twotower": "v299",
+      "dsl.symbolic_surface": "v6"
+    },
+    "stamped_at": "2026-08-03T01:45:13.423754Z"
+  }
+}
