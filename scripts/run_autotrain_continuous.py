@@ -638,6 +638,16 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         {"component_edge_token_loss_weight": 1.0},
     ),
     (
+        "component-edge-margin",
+        "Grammar-oracle component-edge alignment makes the gold child component outrank other legal component choices without lowering parse_rate or binder_reference_f1.",
+        {
+            "compiler_alignment_loss_weight": 1.0,
+            "compiler_alignment_margin": 1.0,
+            "compiler_alignment_stratified": True,
+            "compiler_alignment_kind_filter": "component-edge",
+        },
+    ),
+    (
         "structure-token",
         "Direct grammar STRUCT-token reconstruction weighting repairs scaffold formation and structural_similarity without lowering parse_rate or binder_reference_f1.",
         {"structure_token_loss_weight": 1.0},
@@ -1111,6 +1121,11 @@ def _arm_slug_from_knobs(
         and knobs.get("compiler_alignment_kind_filter") == "container-close"
     ):
         return "container-close"
+    if (
+        knobs.get("compiler_alignment_loss_weight")
+        and knobs.get("compiler_alignment_kind_filter") == "component-edge"
+    ):
+        return "component-edge-margin"
     if knobs.get("ltr_tail_loss_weight"):
         return "literal-close"
     if knobs.get("ltr_prefix_loss_weight"):
@@ -1336,6 +1351,7 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
         "scaffold-prefix",
         "component-token",
         "component-edge-token",
+        "component-edge-margin",
         "structure-token",
         "typed-family-balance",
         "container-close",

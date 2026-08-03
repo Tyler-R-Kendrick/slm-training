@@ -513,7 +513,7 @@ class ExperimentKnobs(StrictModel):
     compiler_alignment_stratified: bool | None = None
     compiler_alignment_semantic_exhaustive: bool | None = None
     compiler_alignment_kind_filter: (
-        Literal["all", "literal-close", "container-close"] | None
+        Literal["all", "literal-close", "container-close", "component-edge"] | None
     ) = None
     component_inventory_loss_weight: float | None = Field(default=None, ge=0, le=20)
     component_token_loss_weight: float | None = Field(default=None, ge=0, le=20)

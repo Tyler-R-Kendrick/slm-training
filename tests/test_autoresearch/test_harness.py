@@ -2215,6 +2215,26 @@ def test_compile_commands_routes_container_close_alignment_filter() -> None:
     )
 
 
+def test_compile_commands_routes_component_edge_alignment_filter() -> None:
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            train_version="wf_smoke_v2",
+            steps=20,
+            compiler_alignment_loss_weight=1.0,
+            compiler_alignment_margin=1.0,
+            compiler_alignment_stratified=True,
+            compiler_alignment_kind_filter="component-edge",
+        )
+    )
+
+    commands = compile_commands(campaign(), spec)
+    train = next(command for command in commands if "scripts.train_model" in command)
+    assert (
+        train[train.index("--compiler-alignment-kind-filter") + 1]
+        == "component-edge"
+    )
+
+
 def test_campaign_loop_lineage_is_strict() -> None:
     first = CampaignSpec(
         campaign_id="cycle-1",

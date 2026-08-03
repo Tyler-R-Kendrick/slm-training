@@ -2656,7 +2656,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v115",
+      "version": "v116",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2696,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v116",
+          "date": "2026-08-02",
+          "note": "Add a zero-parameter component-edge margin arm that aligns gold compiler component-bound choices against their legal siblings after direct edge-token reconstruction was a quality null."
+        },
         {
           "version": "v115",
           "date": "2026-08-03",
@@ -11567,7 +11572,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v301",
+      "version": "v302",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -11610,6 +11615,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v302",
+          "date": "2026-08-02",
+          "note": "Allow compiler alignment to target only deterministic component-bound branch decisions and report typed component-edge row telemetry."
+        },
         {
           "version": "v301",
           "date": "2026-08-03",

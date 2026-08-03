@@ -5978,6 +5978,34 @@ def test_container_close_alignment_preserves_typed_family_metrics() -> None:
     assert metrics["compiler_alignment_container_close_rows"] > 0
 
 
+def test_compiler_alignment_can_target_component_edges_only() -> None:
+    model = _model()
+    model.config.compiler_alignment_loss_weight = 1.0
+    model.config.compiler_alignment_margin = 1.0
+    model.config.compiler_alignment_stratified = True
+    model.config.compiler_alignment_kind_filter = "component-edge"
+    record = ExampleRecord(
+        id="alignment-component-edge",
+        prompt="card with a title",
+        openui='root = Card([title])\ntitle = TextContent(":slot_0")',
+        placeholders=[":slot_0"],
+        split="train",
+        source="fixture",
+    )
+
+    loss = model.training_loss([record])
+
+    assert torch.isfinite(loss)
+    metrics = model.last_training_metrics
+    assert metrics["compiler_alignment_component_edge_filter_enabled"] == 1.0
+    assert metrics["compiler_alignment_rows"] > 0
+    assert (
+        metrics["compiler_alignment_component_edge_rows"]
+        == metrics["compiler_alignment_rows"]
+    )
+    assert metrics["compiler_alignment_candidate_count_mean"] > 1.0
+
+
 def test_compiler_alignment_kind_filter_fails_closed() -> None:
     with pytest.raises(ValueError, match="compiler_alignment_kind_filter"):
         TwoTowerConfig(compiler_alignment_kind_filter="unknown")

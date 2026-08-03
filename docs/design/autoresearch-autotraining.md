@@ -175,6 +175,13 @@ meaningful-program quality, campaign harness v115 opens a distinct size-matched 
 in the gold target, and the ordinary reconstruction CE is reweighted only at those
 positions. The arm adds no parameters, detached head, decoder score, or legal authority;
 it reports its own position count and mean CE for causal attribution.
+The c1817 edge-token arm activated on its intended rows but reproduced the
+control's meaningful-program outputs and missed the efficiency floor. Campaign
+harness v116 therefore opens `component-edge-margin`: a distinct zero-parameter
+objective over deterministic `component_bound` decisions. It trains the gold
+child component to outrank the other compiler-legal component siblings by the
+declared margin. The filter changes neither the candidate domain nor decode
+authority, and its typed row telemetry makes an inactive objective fail visibly.
 
 The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
 confirmed a champion, c1812 was the next protected promotion slot, and the

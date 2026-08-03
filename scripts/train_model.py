@@ -623,9 +623,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--compiler-alignment-kind-filter",
-        choices=("all", "literal-close", "container-close"),
+        choices=("all", "literal-close", "container-close", "component-edge"),
         default="all",
-        help="Restrict compiler alignment to all branches or numeric-frame gold LIT_END branches.",
+        help=(
+            "Restrict compiler alignment to all branches, numeric-frame gold "
+            "LIT_END branches, legal container closes, or component-bound edges."
+        ),
     )
     parser.add_argument(
         "--component-inventory-loss-weight",

@@ -796,10 +796,11 @@ class TwoTowerConfig:
             "all",
             "literal-close",
             "container-close",
+            "component-edge",
         }:
             raise ValueError(
                 "compiler_alignment_kind_filter must be one of: all, "
-                "literal-close, container-close"
+                "literal-close, container-close, component-edge"
             )
         repair_modes = {
             "recursive_update_mode": (
@@ -3856,6 +3857,12 @@ class TwoTowerModel(nn.Module):
                             for candidate in decision.candidate_ids
                         )
                     )
+                elif kind_filter == "component-edge":
+                    decisions = tuple(
+                        decision
+                        for decision in decisions
+                        if decision.kind == "component_bound"
+                    )
                 if not decisions:
                     continue
                 if stratified:
@@ -3980,6 +3987,9 @@ class TwoTowerModel(nn.Module):
                 "compiler_alignment_container_close_filter_enabled": float(
                     kind_filter == "container-close"
                 ),
+                "compiler_alignment_component_edge_filter_enabled": float(
+                    kind_filter == "component-edge"
+                ),
                 "compiler_alignment_literal_close_rows": sum(
                     1
                     for target in aligned_targets
@@ -3990,6 +4000,9 @@ class TwoTowerModel(nn.Module):
                     for target in aligned_targets
                     if str(self.tokenizer.id_to_token.get(int(target), ""))
                     in {")", "]"}
+                ),
+                "compiler_alignment_component_edge_rows": sum(
+                    1 for kind in aligned_kinds if kind == "component_bound"
                 ),
                 "compiler_alignment_loss": (
                     float(alignment_loss.detach().cpu()) if aligned_canvases else 0.0
