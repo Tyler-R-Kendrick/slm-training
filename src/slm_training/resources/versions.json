@@ -2683,7 +2683,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v173",
+      "version": "v174",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2723,6 +2723,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v174",
+          "date": "2026-08-03",
+          "note": "Continuous self-heal: compose dynamic thrash arms on bank exhaust, clear BLOCKED on healable errors, continue loop without human re-prompt; continuous skill law updated"
+        },
         {
           "version": "v173",
           "date": "2026-08-03",
