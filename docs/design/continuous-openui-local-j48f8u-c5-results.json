@@ -1,0 +1,77 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c5",
+  "cycle_index": 5,
+  "source_commit": "a3a2c861",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 22,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "seed": 100005
+  },
+  "arms": {
+    "c5-control": {
+      "last_loss": 12.99944019317627,
+      "checkpoint_sha256": "29be9c13f29475f7ea8d0213873eac0061bdfde4345e0890d9bf7e238be640d2",
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.04306666666666666,
+        "component_type_recall": 0.0,
+        "binder_reference_f1": 0.8222222222222223,
+        "placeholder_fidelity": 0.7222222222222222,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "reward_score": 0.31033333333333335,
+        "latency_ms_p50": 6389.24
+      }
+    },
+    "c5-component-edge": {
+      "last_loss": 13.980084419250488,
+      "checkpoint_sha256": "23d794ca0ef56734f267003119cd3cd946de75fcec4fe3fa5c8b027819b13890",
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.04306666666666666,
+        "component_type_recall": 0.0,
+        "binder_reference_f1": 0.8222222222222223,
+        "placeholder_fidelity": 0.7222222222222222,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "reward_score": 0.31033333333333335,
+        "latency_ms_p50": 6971.96
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "local commits + docs only; no new stack layer",
+    "reasons": [
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c5-control",
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c5-component-edge",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.04306666666666666 candidate=0.04306666666666666 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "conclusion": "Continuous-openui-local loop, cycle 5 (this session, branch claude/great-dirac-j48f8u): the 'component-edge' arm (1,766,990 params) ties its size-matched control exactly on every smoke quality metric at seed 100005 (structural_similarity=.04307, binder_reference_f1=.82222, placeholder_fidelity=.72222, reward_score=.31033, all identical to 5 decimal places) despite a higher training loss (13.980 vs 12.999) and 583ms slower p50 (6971.96 vs 6389.24). Note: seed 100005 is the same seed flagged in autotrain-cycle-c5-dual-arm-decode-timeout-unresolved.md as causing a dual-arm decode timeout for a different, larger candidate family (1,755,760 params, 'confirm' suffix) in a prior session; this cycle's smaller 'component-edge' arm (1,766,990 params) completed cleanly with no timeout, so that timeout pathology is specific to the other candidate/params combination, not this seed generally. Ship gates fail as expected (insufficient_n=3; held_out/adversarial/ood/rico_held missing). SDLC Phase A classifies this cycle NON_POSITIVE (null primary-metric delta); no stacked PR layer opened.",
+  "next_priorities": [
+    "Test the distinct size-matched 'component-inventory' quality hypothesis next rather than re-running the now-exhausted component-edge knob (rank 1, confidence 0.90)",
+    "Keep the matched control as the size-matched baseline every cycle (rank 2, confidence 0.70)",
+    "Rotate thrash recommendation across the lever bank rather than a single knob family (rank 3, confidence 0.65)"
+  ],
+  "recorded_at": "2026-08-03T10:00:31Z"
+}
