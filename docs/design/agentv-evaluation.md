@@ -67,6 +67,17 @@ python -m scripts.evaluate_model --run-id <id> --ship-gates
 npm run agentv -- dashboard
 ```
 
+`node_modules/` is gitignored, so every fresh checkout starts without the
+pinned AgentV SDK; `evaluate_model.py --ship-gates` fails closed with `AgentV
+SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER` until
+`npm ci` has been run (repo root, and `src/apps/openui_bridge` for the DSL
+bridge used by `lang_core.parse`). This has been independently rediscovered
+across many prior sessions (see e.g. `iter-e616-object-frame-slot-bias-*`,
+`var3-02-turn-disposition-*`). `scripts/ensure_node_toolchain.sh` makes the
+install idempotent and unsets an ambient `NODE_OPTIONS=--import tsx` some
+sandboxes export (which otherwise breaks plain `npm ci`); run it once per
+fresh checkout before the first eval or DSL-parse call.
+
 The Python command automatically creates:
 
 ```text

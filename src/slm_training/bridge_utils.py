@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import queue
 import subprocess
 import threading
@@ -22,6 +23,20 @@ def repo_root() -> Path:
             return candidate
     # Fallback: src/slm_training → repo (package root's parent's parent).
     return here.parents[1]
+
+
+def node_subprocess_env() -> dict[str, str]:
+    """Environment for spawning a ``node`` child with ambient flags stripped.
+
+    Some sandboxes export ``NODE_OPTIONS`` (e.g. ``--import tsx`` for an
+    unrelated JS project) that current Node releases reject outright for
+    child processes, so every bridge/AgentV invocation would fail even with
+    dependencies installed. None of our Node bridges need inherited
+    ``NODE_OPTIONS``.
+    """
+    env = dict(os.environ)
+    env.pop("NODE_OPTIONS", None)
+    return env
 
 
 def checkout_roots(root: Path | None = None) -> tuple[Path, ...]:

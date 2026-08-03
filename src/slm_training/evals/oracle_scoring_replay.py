@@ -15,7 +15,7 @@ import re
 from dataclasses import asdict, dataclass, field
 from typing import Any, Iterable
 
-from slm_training.data.contract import GenerationRequest
+from slm_training.data.contract import GenerationRequest, project_template_markers
 from slm_training.dsl.parser import validate
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.evals.meaningful_program import binding_aware_meaningful_v2
@@ -334,6 +334,12 @@ _EXCLUDED_ARCHETYPE_IDS = frozenset({"button"})
 def build_fixture_records() -> list[ExampleRecord]:
     """Return ExampleRecord fixtures matching ``metric_gaming._archetypes``.
 
+    Archetypes declare human-readable dotted marker names (e.g.
+    ``:card.title``); persisted records require opaque ``:slot_<n>``
+    identities, so every marker is projected through the same
+    ``project_template_markers`` codec ``MetricGamingCase`` already applies
+    to the same archetypes.
+
     The ``button`` archetype is excluded because its exact-gold positive
     currently fails ``binding_aware_meaningful_v2`` with
     ``placeholder_semantic_role_mismatch`` on this branch.  Keeping it out of
@@ -344,12 +350,13 @@ def build_fixture_records() -> list[ExampleRecord]:
         if arch["id"] in _EXCLUDED_ARCHETYPE_IDS:
             continue
         slots = tuple(str(s) for s in arch.get("slot_contract", ()))
+        canonical = [f":slot_{index}" for index in range(len(slots))]
         records.append(
             ExampleRecord(
                 id=str(arch["id"]),
-                prompt=str(arch["prompt"]),
-                openui=str(arch["positive"]),
-                placeholders=list(slots),
+                prompt=project_template_markers(str(arch["prompt"]), slots) or "",
+                openui=project_template_markers(str(arch["positive"]), slots) or "",
+                placeholders=canonical,
                 split="adversarial",
                 source="oracle_scoring_replay_fixture",
             )

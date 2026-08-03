@@ -1737,6 +1737,11 @@
       "history": [
         {
           "version": "v5",
+          "date": "2026-08-03",
+          "note": "no-bump: spawn the lang-core bridge subprocess with NODE_OPTIONS stripped from its environment so an ambient sandbox value (e.g. --import tsx) can no longer break every parse/validate call; identical parser authority and ParseError behavior otherwise."
+        },
+        {
+          "version": "v5",
           "date": "2026-08-02",
           "note": "Project root-presence probes through a cached official lang-core bridge result while retaining identical parser authority and fail-closed ParseError behavior."
         },
@@ -1802,6 +1807,11 @@
         "tests/test_evals/test_agentv.py"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-08-03",
+          "note": "no-bump: spawn the AgentV SDK subprocess with NODE_OPTIONS stripped from its environment so an ambient sandbox value (e.g. --import tsx) can no longer break publication; same command, spec, and gate policy otherwise."
+        },
         {
           "version": "v6",
           "date": "2026-08-02",
@@ -5155,6 +5165,11 @@
         "docs/design/semantic-floor-gate-v1.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-03",
+          "note": "no-bump: regenerate the unchanged inconclusive gate after evals.agentv's NODE_OPTIONS-sanitizing subprocess fix changed agentv_owner_sha256; same verdict and embedded component identities otherwise"
+        },
         {
           "version": "v1",
           "date": "2026-08-01",
@@ -9591,7 +9606,7 @@
       ]
     },
     "harness.oracle_scoring_replay": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/evals/oracle_scoring_replay.py",
@@ -9602,6 +9617,11 @@
         "docs/design/iter-slm260-oracle-scoring-replay-20260724.json"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-03",
+          "note": "build_fixture_records() now projects each archetype's human-readable dotted slot_contract markers (e.g. :card.title) through project_template_markers into opaque :slot_<n> identities before constructing ExampleRecord, matching the codec MetricGamingCase already applies to the same archetypes. Previously every non-excluded archetype failed assert_canonical_template_markers at record-construction time, so the fixture set was unusable; card/slider/switch/tabs/callout/image_block are restored (button stays excluded, unchanged reason)."
+        },
         {
           "version": "v1",
           "date": "2026-07-24",
