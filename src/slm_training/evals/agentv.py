@@ -10,6 +10,34 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from slm_training.bridge_utils import checkout_roots, sanitized_node_env
+from slm_training.levers import MAX_RUN_SECONDS
+
+
+def _bootstrap_agentv_sdk(root: Path, runner: Path) -> bool:
+    """One bounded, offline-safe ``npm ci`` attempt to provision the pinned SDK.
+
+    Fresh clones/containers (every continuous-autotrain session runs in one)
+    never ship ``node_modules``; a human is not present to run ``npm ci``
+    first, so a hard failure here repeatedly blocks the unattended loop on the
+    identical, already-documented gap (``docs/design`` c1/c2 infra findings).
+    Bootstrap once instead of failing; any error still falls through to the
+    original actionable message.
+    """
+    if not (root / "package-lock.json").is_file():
+        return False
+    try:
+        subprocess.run(
+            ["npm", "ci"],
+            cwd=root,
+            env=sanitized_node_env(),
+            check=True,
+            capture_output=True,
+            timeout=MAX_RUN_SECONDS,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    sdk = root / "node_modules" / "@agentv" / "core" / "package.json"
+    return runner.is_file() and sdk.is_file()
 
 
 def _agentv_runtime(repo_root: Path) -> tuple[Path, Path]:
@@ -28,6 +56,8 @@ def _agentv_runtime(repo_root: Path) -> tuple[Path, Path]:
         )
         sdk = root / "node_modules" / "@agentv" / "core" / "package.json"
         if runner.is_file() and sdk.is_file():
+            return runner, root
+        if _bootstrap_agentv_sdk(root, runner):
             return runner, root
     raise RuntimeError(
         "AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER"

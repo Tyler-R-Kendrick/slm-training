@@ -36,6 +36,51 @@ def test_agentv_runtime_uses_git_common_checkout_for_worktree_sdk(
     assert _agentv_runtime(worktree) == (runner, common_root)
 
 
+def test_agentv_runtime_bootstraps_missing_sdk_via_npm_ci(
+    tmp_path, monkeypatch
+) -> None:
+    root = tmp_path / "repo"
+    runner = root / "scripts/run_agentv_eval.mjs"
+    sdk = root / "node_modules/@agentv/core/package.json"
+    runner.parent.mkdir(parents=True)
+    (root / "package-lock.json").write_text("{}")
+    monkeypatch.delenv("AGENTV_RUNNER", raising=False)
+    monkeypatch.setattr(agentv_module, "checkout_roots", lambda repo: (repo,))
+    runner.write_text("// runner")
+
+    captured = {}
+
+    def fake_run(command, **kwargs):
+        captured["command"] = command
+        captured["cwd"] = kwargs.get("cwd")
+        captured["env"] = kwargs.get("env")
+        sdk.parent.mkdir(parents=True, exist_ok=True)
+        sdk.write_text("{}")
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setenv("NODE_OPTIONS", "--import tsx")
+    monkeypatch.setattr(agentv_module.subprocess, "run", fake_run)
+
+    assert _agentv_runtime(root) == (runner, root)
+    assert captured["command"] == ["npm", "ci"]
+    assert captured["cwd"] == root
+    assert captured["env"]["NODE_OPTIONS"] == ""
+
+
+def test_agentv_runtime_raises_actionable_error_when_bootstrap_cannot_help(
+    tmp_path, monkeypatch
+) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+    monkeypatch.delenv("AGENTV_RUNNER", raising=False)
+    monkeypatch.setattr(agentv_module, "checkout_roots", lambda repo: (repo,))
+
+    import pytest
+
+    with pytest.raises(RuntimeError, match="AgentV SDK is unavailable"):
+        _agentv_runtime(root)
+
+
 def test_model_ship_cases_fail_closed_on_missing_suites() -> None:
     cases = model_ship_gate_cases(
         {

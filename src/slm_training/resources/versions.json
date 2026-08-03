@@ -1816,7 +1816,7 @@
       ]
     },
     "evals.agentv": {
-      "version": "v7",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "src/slm_training/evals/agentv.py",
@@ -1824,6 +1824,11 @@
         "tests/test_evals/test_agentv.py"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-08-03",
+          "note": "Self-heal a missing AgentV SDK: _agentv_runtime now runs one bounded, sanitized-env npm ci in the checkout when node_modules/@agentv/core is absent (fresh clones/containers never ship it), instead of hard-failing every unattended continuous-autotrain cycle on the same already-documented infra gap. Falls through to the original actionable RuntimeError if bootstrap cannot resolve the SDK."
+        },
         {
           "version": "v7",
           "date": "2026-08-03",
