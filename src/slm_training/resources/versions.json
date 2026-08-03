@@ -2656,7 +2656,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v149",
+      "version": "v150",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2696,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v150",
+          "date": "2026-08-03",
+          "note": "Add a data-oriented slot-component exposure-cap successor after c1853 so the loop tests target coverage rather than stacking auxiliary heads."
+        },
         {
           "version": "v149",
           "date": "2026-08-03",

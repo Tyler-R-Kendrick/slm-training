@@ -825,6 +825,7 @@ def test_select_recommended_slug_prioritizes_successor_quality_after_legacy_null
             "slot-component-coverage",
             "slot-component-fidelity-coupling",
             "slot-component-inventory-coupling",
+            "slot-component-exposure-cap",
             "literal-margin",
             "literal-close",
         }
@@ -1909,6 +1910,20 @@ def test_slot_component_inventory_coupling_is_distinct_follow_on() -> None:
 
     skip = set(by_slug) - {slug}
     assert _mod._select_recommended_slug(1902, skip=skip) == slug
+
+
+def test_slot_component_exposure_cap_is_distinct_data_successor() -> None:
+    slug = "slot-component-exposure-cap"
+    by_slug = {name: extras for name, _hypothesis, extras in _mod._SCREENING_ARM_BANK}
+    knobs = by_slug[slug]
+    assert knobs["slot_component_loss_weight"] == 1.0
+    assert knobs["mixture_sampling_policy"] == "exposure_targeted"
+    assert knobs["mixture_per_template_cap"] == 2
+    assert knobs["compiler_decode_mode"] == "tree"
+    assert _mod._arm_slug_from_knobs(knobs) == slug
+
+    skip = set(by_slug) - {slug}
+    assert _mod._select_recommended_slug(1903, skip=skip) == slug
 
 
 def test_frozen_screening_retry_preserves_champion_enqueue_semantics() -> None:

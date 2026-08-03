@@ -677,6 +677,17 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         },
     ),
     (
+        "slot-component-exposure-cap",
+        "Targeted rare-component exposure with a per-template cap plus implemented slot-component supervision improves component_type_recall and structural_similarity without buying capacity.",
+        {
+            "slot_component_loss_weight": 1.0,
+            "slot_component_decode_weight": 1.0,
+            "mixture_sampling_policy": "exposure_targeted",
+            "mixture_per_template_cap": 2,
+            "compiler_decode_mode": "tree",
+        },
+    ),
+    (
         "fidelity",
         "Stronger placeholder-fidelity supervision improves binder_reference_f1 and structural_similarity without lowering parse_rate.",
         {"fidelity_loss_weight": 1.5},
@@ -1420,6 +1431,12 @@ def _arm_slug_from_knobs(
         and knobs.get("compiler_alignment_semantic_exhaustive")
     ):
         return "exposure-targeted-semantic-exhaustive-compiler-decision-margin"
+    if (
+        knobs.get("slot_component_loss_weight")
+        and knobs.get("mixture_sampling_policy") == "exposure_targeted"
+        and knobs.get("mixture_per_template_cap")
+    ):
+        return "slot-component-exposure-cap"
     if knobs.get("slot_component_loss_weight") and knobs.get("component_inventory_loss_weight"):
         return "slot-component-inventory-coupling"
     if knobs.get("slot_component_loss_weight") and float(knobs.get("fidelity_loss_weight") or 0.5) != 0.5:
@@ -1723,6 +1740,7 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
         "slot-component-coverage",
         "slot-component-fidelity-coupling",
         "slot-component-inventory-coupling",
+        "slot-component-exposure-cap",
         "literal-margin",
         "literal-close",
         "fidelity",
