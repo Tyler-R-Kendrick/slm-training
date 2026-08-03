@@ -787,6 +787,19 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         },
     ),
     (
+        "capacity-aware-semantic-exhaustive-structure-token-margin",
+        "Direct STRUCT-token reconstruction counterbalances semantic-exhaustive compression and improves scaffold quality while retaining its reduced decode work.",
+        {
+            "compiler_alignment_loss_weight": 1.0,
+            "compiler_alignment_margin": 1.0,
+            "compiler_alignment_stratified": True,
+            "compiler_alignment_semantic_exhaustive": True,
+            "compiler_alignment_kind_filter": "all",
+            "mixture_sampling_policy": "capacity_aware",
+            "structure_token_loss_weight": 1.0,
+        },
+    ),
+    (
         "structure-token",
         "Direct grammar STRUCT-token reconstruction weighting repairs scaffold formation and structural_similarity without lowering parse_rate or binder_reference_f1.",
         {"structure_token_loss_weight": 1.0},
@@ -1269,6 +1282,14 @@ def _arm_slug_from_knobs(
         and knobs.get("compiler_alignment_kind_filter") == "all"
         and knobs.get("mixture_sampling_policy") == "capacity_aware"
         and knobs.get("compiler_alignment_semantic_exhaustive")
+        and knobs.get("structure_token_loss_weight")
+    ):
+        return "capacity-aware-semantic-exhaustive-structure-token-margin"
+    if (
+        knobs.get("compiler_alignment_loss_weight")
+        and knobs.get("compiler_alignment_kind_filter") == "all"
+        and knobs.get("mixture_sampling_policy") == "capacity_aware"
+        and knobs.get("compiler_alignment_semantic_exhaustive")
     ):
         return "capacity-aware-semantic-exhaustive-compiler-decision-margin"
     if (
@@ -1564,6 +1585,7 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
         "capacity-aware-compiler-decision-margin",
         "capacity-aware-tail-compiler-decision-margin",
         "capacity-aware-semantic-exhaustive-compiler-decision-margin",
+        "capacity-aware-semantic-exhaustive-structure-token-margin",
         "structure-token",
         "typed-family-balance",
         "container-close",
@@ -6508,6 +6530,9 @@ def _matrix(
             "capacity-aware-semantic-exhaustive-compiler-decision-margin": (
                 "compiler_alignment_semantic_exhaustive"
             ),
+            "capacity-aware-semantic-exhaustive-structure-token-margin": (
+                "structure_token_loss_weight"
+            ),
         }.get(rec_slug)
         if treatment_key is not None:
             control_extra = {
@@ -6515,15 +6540,17 @@ def _matrix(
                 for key, value in bank_by_slug[rec_slug][1].items()
                 if key != treatment_key
             }
-        precursor_slug = (
-            "capacity-aware-compiler-decision-margin"
-            if rec_slug
-            in {
-                "capacity-aware-tail-compiler-decision-margin",
-                "capacity-aware-semantic-exhaustive-compiler-decision-margin",
-            }
-            else "compiler-decision-margin"
-        )
+        if rec_slug == "capacity-aware-semantic-exhaustive-structure-token-margin":
+            precursor_slug = (
+                "capacity-aware-semantic-exhaustive-compiler-decision-margin"
+            )
+        elif rec_slug in {
+            "capacity-aware-tail-compiler-decision-margin",
+            "capacity-aware-semantic-exhaustive-compiler-decision-margin",
+        }:
+            precursor_slug = "capacity-aware-compiler-decision-margin"
+        else:
+            precursor_slug = "compiler-decision-margin"
         candidates = [
             {
                 "experiment": exp(

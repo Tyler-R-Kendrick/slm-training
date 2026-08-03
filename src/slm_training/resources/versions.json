@@ -2656,7 +2656,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v138",
+      "version": "v139",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2696,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v139",
+          "date": "2026-08-03",
+          "note": "Add a size-matched semantic-exhaustive plus STRUCT-token objective that tests scaffold-quality recovery after exhaustive supervision reduced decode work without improving quality."
+        },
         {
           "version": "v138",
           "date": "2026-08-03",
@@ -7575,6 +7580,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1842 semantic-exhaustive scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
         {
           "version": "v3",
           "date": "2026-08-03",

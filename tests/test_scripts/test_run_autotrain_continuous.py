@@ -1681,6 +1681,47 @@ def test_capacity_aware_semantic_exhaustive_isolates_decision_coverage() -> None
     HypothesisMatrix.model_validate(matrix)
 
 
+def test_semantic_exhaustive_structure_token_isolates_scaffold_recovery() -> None:
+    campaign_id = "continuous-loop-20260803-c1843"
+    slug = "capacity-aware-semantic-exhaustive-structure-token-margin"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1843,
+        role="screening",
+        recommended_slug=slug,
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-{slug}"]
+    for key in (
+        "compiler_alignment_loss_weight",
+        "compiler_alignment_margin",
+        "compiler_alignment_stratified",
+        "compiler_alignment_semantic_exhaustive",
+        "compiler_alignment_kind_filter",
+        "mixture_sampling_policy",
+    ):
+        assert candidate[key] == control[key]
+    assert control["structure_token_loss_weight"] == 0.0
+    assert candidate["structure_token_loss_weight"] == 1.0
+    assert (
+        f"{prefix}-capacity-aware-semantic-exhaustive-compiler-decision-margin"
+        not in knobs
+    )
+    assert _mod._arm_slug_from_knobs(candidate) == slug
+    HypothesisMatrix.model_validate(matrix)
+
+
 def test_frozen_screening_retry_preserves_champion_enqueue_semantics() -> None:
     replay = {"handoff": SimpleNamespace(cycle_role="screening")}
 
