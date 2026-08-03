@@ -326,6 +326,10 @@ def _proof_paths(template: FormalTemplate) -> tuple[tuple[str, Path], ...]:
             "Test/run.sh",
             *(
                 str(path.relative_to(root))
+                for path in sorted((root / "Test").glob("*.json"))
+            ),
+            *(
+                str(path.relative_to(root))
                 for path in sorted((root / "LeverProofLean").glob("*.lean"))
             ),
         )

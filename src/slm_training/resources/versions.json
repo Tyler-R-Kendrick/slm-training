@@ -2661,7 +2661,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v162",
+      "version": "v163",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2701,6 +2701,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v163",
+          "date": "2026-08-03",
+          "note": "Bind Phase A to matrix control/candidate ids and emit durable arm_skipped deadline events so dynamic successors and incomplete pairs remain explicit in the result matrix."
+        },
         {
           "version": "v162",
           "date": "2026-08-03",
@@ -3654,7 +3659,7 @@
       ]
     },
     "harness.autoresearch.formal": {
-      "version": "v10",
+      "version": "v11",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/formal.py",
@@ -3665,6 +3670,11 @@
         ".github/workflows/ci.yml"
       ],
       "history": [
+        {
+          "version": "v11",
+          "date": "2026-08-03",
+          "note": "Bind the process-local Lean project-check digest to every Test/*.json fixture consumed by the proof runner, preventing stale successful checks after fixture changes."
+        },
         {
           "version": "v10",
           "date": "2026-08-03",

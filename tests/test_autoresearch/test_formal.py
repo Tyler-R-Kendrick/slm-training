@@ -25,6 +25,7 @@ from slm_training.autoresearch.experiment_campaign import (
 from slm_training.autoresearch.formal import (
     FORMAL_TEMPLATES,
     LEVERPROOF_ROOT,
+    _proof_paths,
     _run as _run_formal,
     bind_preflight,
     check_formal_trace,
@@ -85,6 +86,16 @@ def test_leverproof_source_audit_requires_a_search_tool(tmp_path: Path) -> None:
 
     assert result.returncode != 0
     assert "proof source audit requires rg or grep" in result.stderr
+
+
+def test_leverproof_project_digest_includes_runtime_json_fixtures() -> None:
+    labels = {
+        label
+        for label, _path in _proof_paths(FORMAL_TEMPLATES["sff.advisory-keys-legal"])
+    }
+    assert "Test/resource.json" in labels
+    assert "Test/success-before-params.json" in labels
+    assert "Test/bands.json" in labels
 
 
 def test_leverproof_source_audit_falls_back_to_grep(tmp_path: Path) -> None:

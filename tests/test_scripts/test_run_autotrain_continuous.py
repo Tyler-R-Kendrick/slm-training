@@ -4902,6 +4902,34 @@ def test_counterbalanced_arm_order_alternates_without_relabeling() -> None:
     assert set(first) == set(second) == {"control", "candidate"}
 
 
+def test_phase_a_uses_explicit_dynamic_arm_ids_and_records_skips(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    camp = tmp_path / "campaign-dynamic"
+    camp.mkdir()
+    skipped = {
+        "successor-dose-3": {
+            "reason": "deadline_reserve",
+            "remaining_seconds": 1.0,
+            "required_seconds": 10.0,
+        }
+    }
+    monkeypatch.setattr(_mod, "_git", lambda *args, **kwargs: "")
+    delivery = _mod._phase_a_delivery(
+        cwd=tmp_path,
+        root=tmp_path,
+        loop_id="loop",
+        campaign_id="campaign-dynamic",
+        primary_metric="smoke.latency_ms_p50",
+        control_id="matrix-control",
+        candidate_id="successor-dose-3",
+        arm_skipped=skipped,
+    )
+    assert delivery["control_id"] == "matrix-control"
+    assert delivery["candidate_id"] == "successor-dose-3"
+    assert delivery["arm_skipped"] == skipped
+
+
 def test_promotion_order_uses_replicate_index_when_cadence_has_same_parity() -> None:
     first = _mod._counterbalanced_arm_order(
         "control",
