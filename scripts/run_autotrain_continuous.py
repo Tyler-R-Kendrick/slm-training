@@ -724,6 +724,18 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         },
     ),
     (
+        "capacity-aware-tail-compiler-decision-margin",
+        "Tail-weighted scaffold supervision preserves the capacity-aware all-family margin arm's quality gain while reducing runaway legal continuation, emitted tokens, forwards, and latency.",
+        {
+            "compiler_alignment_loss_weight": 1.0,
+            "compiler_alignment_margin": 1.0,
+            "compiler_alignment_stratified": True,
+            "compiler_alignment_kind_filter": "all",
+            "mixture_sampling_policy": "capacity_aware",
+            "ltr_tail_loss_weight": 1.0,
+        },
+    ),
+    (
         "structure-token",
         "Direct grammar STRUCT-token reconstruction weighting repairs scaffold formation and structural_similarity without lowering parse_rate or binder_reference_f1.",
         {"structure_token_loss_weight": 1.0},
@@ -1185,6 +1197,13 @@ def _arm_slug_from_knobs(
         knobs.get("compiler_alignment_loss_weight")
         and knobs.get("compiler_alignment_kind_filter") == "all"
         and knobs.get("mixture_sampling_policy") == "capacity_aware"
+        and knobs.get("ltr_tail_loss_weight")
+    ):
+        return "capacity-aware-tail-compiler-decision-margin"
+    if (
+        knobs.get("compiler_alignment_loss_weight")
+        and knobs.get("compiler_alignment_kind_filter") == "all"
+        and knobs.get("mixture_sampling_policy") == "capacity_aware"
     ):
         return "capacity-aware-compiler-decision-margin"
     if (
@@ -1464,6 +1483,7 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
         "cached-compiler-decision-margin",
         "wide-draft-compiler-decision-margin",
         "capacity-aware-compiler-decision-margin",
+        "capacity-aware-tail-compiler-decision-margin",
         "structure-token",
         "typed-family-balance",
         "container-close",
@@ -6279,6 +6299,7 @@ def _matrix(
             "cached-compiler-decision-margin": "grammar_equivalence_cache",
             "wide-draft-compiler-decision-margin": "grammar_draft_window",
             "capacity-aware-compiler-decision-margin": "mixture_sampling_policy",
+            "capacity-aware-tail-compiler-decision-margin": "ltr_tail_loss_weight",
         }.get(rec_slug)
         if treatment_key is not None:
             control_extra = {
@@ -6286,6 +6307,11 @@ def _matrix(
                 for key, value in bank_by_slug[rec_slug][1].items()
                 if key != treatment_key
             }
+        precursor_slug = (
+            "capacity-aware-compiler-decision-margin"
+            if rec_slug == "capacity-aware-tail-compiler-decision-margin"
+            else "compiler-decision-margin"
+        )
         candidates = [
             {
                 "experiment": exp(
@@ -6333,7 +6359,7 @@ def _matrix(
         for i, (slug, hyp, extras) in enumerate(_SCREENING_ARM_BANK, start=1):
             if (
                 treatment_key is not None
-                and slug == "compiler-decision-margin"
+                and slug == precursor_slug
             ):
                 # The matched control is exactly this precursor arm. Emitting it
                 # again would violate the preregistration contract's distinct-

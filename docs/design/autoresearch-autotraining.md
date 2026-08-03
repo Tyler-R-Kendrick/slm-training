@@ -248,6 +248,16 @@ isolates the canonical `capacity_aware` mixture sampler against the default
 `with_replacement` precursor. The next screen asks whether greater effective
 exposure improves guarded OpenUI quality without changing corpus, parameters,
 legal authority, or model capacity.
+Cycle c1829 validates the data-distribution signal: capacity-aware sampling
+raises effective records `24.82→32.27`, structure `.41973→.5300`, MPR
+`.3333→.6667`, recall `.1667→.4167`, binder F1 `.6333→.8222`, and fidelity
+`.5278→.7222` at identical parameter count. It is not promoted because richer
+legal output also raises tokens `54→75`, forwards `9→13`, and p50
+`2839→4680` ms. Campaign v127 makes effective/unique/repeat exposure a canonical
+terminal result column and adds a capacity-aware tail-supervision successor.
+That arm retains the quality-producing sampler and all-family margin while
+testing whether late scaffold/close-token supervision controls continuation
+cost; the raw latency budget remains authoritative.
 
 The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
 confirmed a champion, c1812 was the next protected promotion slot, and the
