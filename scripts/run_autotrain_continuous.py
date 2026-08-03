@@ -529,6 +529,7 @@ _LEVER_KNOB_KEYS = (
     "slot_component_loss_weight",
     "slot_component_decode_weight",
     "slot_contract_in_context",
+    "constraint_graph_mode",
     "symbol_boundary_loss_weight",
     "design_md_dropout",
     "fidelity_loss_weight",
@@ -693,6 +694,14 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         "Providing the canonical slot contract in context improves component_type_recall, placeholder_fidelity, and structural_similarity without weakening constrained decoding or increasing model size.",
         {
             "slot_contract_in_context": True,
+            "compiler_decode_mode": "tree",
+        },
+    ),
+    (
+        "constraint-graph",
+        "Grammar constraint-graph conditioning improves structural_similarity and meaningful-program rate at fixed model size while preserving fail-closed constrained decoding.",
+        {
+            "constraint_graph_mode": "grammar",
             "compiler_decode_mode": "tree",
         },
     ),
@@ -1433,6 +1442,8 @@ def _arm_slug_from_knobs(
     knobs: dict[str, Any], *, candidate_id: str = ""
 ) -> str | None:
     """Map knobs / candidate id to thrash arm slug."""
+    if knobs.get("constraint_graph_mode") == "grammar":
+        return "constraint-graph"
     if knobs.get("slot_contract_in_context"):
         return "slot-contract-context"
     if (
@@ -1753,6 +1764,7 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
         "slot-component-inventory-coupling",
         "slot-component-exposure-cap",
         "slot-contract-context",
+        "constraint-graph",
         "literal-margin",
         "literal-close",
         "fidelity",
@@ -4404,9 +4416,18 @@ def _completed_candidate_priorities(
         "structure_token_loss_weight",
         "typed_family_balance_loss_weight",
         "slot_contract_in_context",
+        "constraint_graph_mode",
     }
+
     def has_quality_objective(knobs: dict[str, Any]) -> bool:
-        return any(float(knobs.get(key) or 0) > 0 for key in quality_keys) or (
+        def active(value: Any) -> bool:
+            if value is None or value is False:
+                return False
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                return value > 0
+            return True
+
+        return any(active(knobs.get(key)) for key in quality_keys) or (
             float(knobs.get("fidelity_loss_weight") or 0.5) != 0.5
         ) or str(knobs.get("mask_pattern") or "random") != "random"
 

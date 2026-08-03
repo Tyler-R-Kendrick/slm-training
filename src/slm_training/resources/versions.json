@@ -2656,7 +2656,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v154",
+      "version": "v155",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2696,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v155",
+          "date": "2026-08-03",
+          "note": "Add a second distinct constraint-graph quality arm after slot-contract-context replay exhaustion so continuous screening has a registered implemented successor."
+        },
         {
           "version": "v154",
           "date": "2026-08-03",

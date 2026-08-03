@@ -807,6 +807,9 @@ def test_select_recommended_slug_rotates_and_skips() -> None:
     assert _mod._select_recommended_slug(
         1856, skip=all_slugs - {"slot-contract-context"}
     ) == "slot-contract-context"
+    assert _mod._select_recommended_slug(
+        1858, skip=all_slugs - {"constraint-graph"}
+    ) == "constraint-graph"
 
 
 def test_select_recommended_slug_prioritizes_successor_quality_after_legacy_nulls() -> (
@@ -830,6 +833,7 @@ def test_select_recommended_slug_prioritizes_successor_quality_after_legacy_null
             "slot-component-inventory-coupling",
             "slot-component-exposure-cap",
             "slot-contract-context",
+            "constraint-graph",
             "literal-margin",
             "literal-close",
         }
