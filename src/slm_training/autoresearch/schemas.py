@@ -299,6 +299,7 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "grammar_equivalence_cache",
         "grammar_active_symbol_bitsets",
         "compact_active_canvas",
+        "grammar_draft_window",
         "decode_timeout_seconds",
         "eval_suites",
         "action_embedding_init",
@@ -603,6 +604,7 @@ class ExperimentKnobs(StrictModel):
     grammar_equivalence_cache: bool | None = None
     grammar_active_symbol_bitsets: bool | None = None
     compact_active_canvas: bool | None = None
+    grammar_draft_window: int | None = Field(default=None, ge=1, le=64)
     # Continuous measurement knobs (screening smoke-only + decode budget).
     decode_timeout_seconds: float | None = Field(default=None, gt=0, le=600)
     eval_suites: str | None = Field(

@@ -12,6 +12,7 @@ from types import SimpleNamespace
 import pytest
 
 from tests.casefiles import case_values
+from slm_training.autoresearch.schemas import HypothesisMatrix
 
 _SCRIPT = (
     Path(__file__).resolve().parents[2] / "scripts" / "run_autotrain_continuous.py"
@@ -267,6 +268,20 @@ def test_should_enqueue_champion_requires_quality_held() -> None:
             "positive": True,
             "reasons": ["primary_metric_win:smoke.latency_ms_p50:10000->8000"],
             "candidate_id": "c1-bounds",
+            "control_id": "c1-control",
+        }
+    )
+    # A declared quality primary win already is quality evidence when the
+    # classifier reports no protected-metric regression.
+    assert _mod._should_enqueue_champion(
+        {
+            "positive": True,
+            "measurement_complete": True,
+            "primary_metric": "smoke.structural_similarity",
+            "reasons": [
+                "primary_metric_win:smoke.structural_similarity:0.05->0.14"
+            ],
+            "candidate_id": "c1-compiler-decision-token",
             "control_id": "c1-control",
         }
     )
@@ -624,7 +639,7 @@ def test_select_recommended_slug_rotates_and_skips() -> None:
     assert _mod._select_recommended_slug(1) == "bounds"
     assert _mod._select_recommended_slug(2) == "canvas"
     assert _mod._select_recommended_slug(3) == "both"
-    assert _mod._select_recommended_slug(1729) == "binder-topology"
+    assert _mod._select_recommended_slug(1729) == "canvas"
     # skip bounds → canvas even on cycle 1
     assert _mod._select_recommended_slug(1, skip={"bounds"}) == "canvas"
     # all skipped fails closed rather than recycling a rejected approach
@@ -640,6 +655,9 @@ def test_select_recommended_slug_rotates_and_skips() -> None:
     assert _mod._select_recommended_slug(
         1821, skip=all_slugs - {"compiler-decision-token"}
     ) == "compiler-decision-token"
+    assert _mod._select_recommended_slug(
+        1824, skip=all_slugs - {"compiler-decision-margin"}
+    ) == "compiler-decision-margin"
 
 
 def test_select_recommended_slug_prioritizes_successor_quality_after_legacy_nulls() -> (
@@ -1337,6 +1355,233 @@ def test_compiler_decision_token_arm_is_dense_and_size_matched() -> None:
     assert candidate["compiler_decision_token_loss_weight"] == 1.0
     assert _mod._arm_slug_from_knobs(candidate) == "compiler-decision-token"
     assert "compiler_decision_token_loss_weight" in _mod._LEVER_KNOB_KEYS
+
+
+def test_compiler_decision_margin_arm_is_size_matched_and_replayable() -> None:
+    campaign_id = "continuous-loop-20260803-c1824"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1824,
+        role="screening",
+        recommended_slug="compiler-decision-margin",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-compiler-decision-margin"]
+    assert control["compiler_alignment_loss_weight"] == 0.0
+    assert candidate["compiler_alignment_loss_weight"] == 1.0
+    assert candidate["compiler_alignment_margin"] == 1.0
+    assert candidate["compiler_alignment_stratified"] is True
+    assert candidate["compiler_alignment_kind_filter"] == "all"
+    assert _mod._arm_slug_from_knobs(candidate) == "compiler-decision-margin"
+
+
+def test_bounded_compiler_decision_margin_isolates_runtime_treatment() -> None:
+    campaign_id = "continuous-loop-20260803-c1825"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1825,
+        role="screening",
+        recommended_slug="bounded-compiler-decision-margin",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-bounded-compiler-decision-margin"]
+    for key in (
+        "compiler_alignment_loss_weight",
+        "compiler_alignment_margin",
+        "compiler_alignment_stratified",
+        "compiler_alignment_kind_filter",
+    ):
+        assert candidate[key] == control[key]
+    assert control["grammar_completion_bounds"] is False
+    assert candidate["grammar_completion_bounds"] is True
+    assert _mod._arm_slug_from_knobs(candidate) == (
+        "bounded-compiler-decision-margin"
+    )
+    assert f"{prefix}-compiler-decision-margin" not in knobs
+    HypothesisMatrix.model_validate(matrix)
+
+
+def test_cached_compiler_decision_margin_isolates_runtime_treatment() -> None:
+    campaign_id = "continuous-loop-20260803-c1827"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1827,
+        role="screening",
+        recommended_slug="cached-compiler-decision-margin",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-cached-compiler-decision-margin"]
+    for key in (
+        "compiler_alignment_loss_weight",
+        "compiler_alignment_margin",
+        "compiler_alignment_stratified",
+        "compiler_alignment_kind_filter",
+    ):
+        assert candidate[key] == control[key]
+    assert control["grammar_equivalence_cache"] is False
+    assert candidate["grammar_equivalence_cache"] is True
+    assert f"{prefix}-compiler-decision-margin" not in knobs
+    assert _mod._arm_slug_from_knobs(candidate) == "cached-compiler-decision-margin"
+    HypothesisMatrix.model_validate(matrix)
+
+
+def test_wide_draft_compiler_decision_margin_isolates_runtime_treatment() -> None:
+    campaign_id = "continuous-loop-20260803-c1828"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1828,
+        role="screening",
+        recommended_slug="wide-draft-compiler-decision-margin",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-wide-draft-compiler-decision-margin"]
+    for key in (
+        "compiler_alignment_loss_weight",
+        "compiler_alignment_margin",
+        "compiler_alignment_stratified",
+        "compiler_alignment_kind_filter",
+    ):
+        assert candidate[key] == control[key]
+    assert control["grammar_draft_window"] == 8
+    assert candidate["grammar_draft_window"] == 16
+    assert f"{prefix}-compiler-decision-margin" not in knobs
+    assert _mod._arm_slug_from_knobs(candidate) == (
+        "wide-draft-compiler-decision-margin"
+    )
+    HypothesisMatrix.model_validate(matrix)
+
+
+def test_capacity_aware_compiler_decision_margin_isolates_sampler_treatment() -> None:
+    campaign_id = "continuous-loop-20260803-c1829"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1829,
+        role="screening",
+        recommended_slug="capacity-aware-compiler-decision-margin",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-capacity-aware-compiler-decision-margin"]
+    for key in (
+        "compiler_alignment_loss_weight",
+        "compiler_alignment_margin",
+        "compiler_alignment_stratified",
+        "compiler_alignment_kind_filter",
+    ):
+        assert candidate[key] == control[key]
+    assert control.get("mixture_sampling_policy") is None
+    assert candidate["mixture_sampling_policy"] == "capacity_aware"
+    assert f"{prefix}-compiler-decision-margin" not in knobs
+    assert _mod._arm_slug_from_knobs(candidate) == (
+        "capacity-aware-compiler-decision-margin"
+    )
+    HypothesisMatrix.model_validate(matrix)
+
+
+def test_capacity_aware_tail_margin_isolates_closure_treatment() -> None:
+    campaign_id = "continuous-loop-20260803-c1830"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1830,
+        role="screening",
+        recommended_slug="capacity-aware-tail-compiler-decision-margin",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[
+        f"{prefix}-capacity-aware-tail-compiler-decision-margin"
+    ]
+    for key in (
+        "compiler_alignment_loss_weight",
+        "compiler_alignment_margin",
+        "compiler_alignment_stratified",
+        "compiler_alignment_kind_filter",
+        "mixture_sampling_policy",
+    ):
+        assert candidate[key] == control[key]
+    assert control["ltr_tail_loss_weight"] == 0.0
+    assert candidate["ltr_tail_loss_weight"] == 1.0
+    assert f"{prefix}-capacity-aware-compiler-decision-margin" not in knobs
+    assert _mod._arm_slug_from_knobs(candidate) == (
+        "capacity-aware-tail-compiler-decision-margin"
+    )
+    HypothesisMatrix.model_validate(matrix)
+
+
+def test_frozen_screening_retry_preserves_champion_enqueue_semantics() -> None:
+    replay = {"handoff": SimpleNamespace(cycle_role="screening")}
+
+    assert _mod._screening_enqueue_allowed(
+        cycle_intent="retry_measurement", replay=replay
+    )
+    assert not _mod._screening_enqueue_allowed(
+        cycle_intent="retry_measurement",
+        replay={"handoff": SimpleNamespace(cycle_role="promotion")},
+    )
 
 
 def test_typed_family_balance_arm_is_size_matched_and_replayable() -> None:

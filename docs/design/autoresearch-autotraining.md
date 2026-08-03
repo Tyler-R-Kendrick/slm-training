@@ -209,6 +209,63 @@ decision-token arm improves smoke structure `.05237→.14623`, meaningful rate
 parse, binder F1, and fidelity held. This is a three-document screening signal,
 not ship evidence: equality remains zero and the unchanged absolute gates fail.
 The recipe therefore enters fresh-seed confirmation, not promotion or RL.
+Cycle c1823 repeats the same size-matched recipe at seed 101823 and falsifies
+that screening effect: both arms score `.0575` structure, zero meaningful rate,
+zero component recall, `.48889` binder F1, `.38889` fidelity, and zero reward;
+the candidate is also 0.92% slower. Campaign harness v121 closes the queue
+bookkeeping gap exposed by the replay path and opens `compiler-decision-margin`,
+a zero-parameter stratified alignment objective over every compiler-decision
+family. It optimizes only the gold-versus-legal-sibling ranking already consumed
+by constrained decode; grammar authority and legal candidate domains are
+unchanged.
+Cycle c1824 validates the direct legal-choice signal but exposes its cost: the
+all-family margin arm raises fixture structure `.13527→.4811`, MPR
+`.3333→.6667`, recall `.1667→.4167`, binder F1 `.6333→.8222`, and fidelity
+`.5278→.7222`, while emitted tokens rise `21→61`, forwards `4→15`, and p50
+latency `973→3902` ms. The fixed quality-primary latency budget rejects the arm.
+Campaign harness v122 preserves the margin recipe in both successor arms and
+isolates deterministic completion bounds as the candidate treatment. It also
+surfaces token, forward, prefill, and canvas costs in the terminal result table
+so future quality/cost failures steer from their actual mechanism.
+Cycle c1826 rejects that treatment on the strict compiler-tree path: bounded and
+unbounded arms are identical on quality, 201 emitted tokens, 51 forwards, 28,928
+prefill tokens, and 13,056 canvas tokens, while both completion-bound counters
+remain zero. Campaign v124 therefore targets the observed 27.3-second compiler
+cost with the existing completion-domain equivalence cache instead. It also
+orders terminal headlines as quality, latency, tokens, forwards, compiler time,
+and cache activity, keeping causal signals visible before cell truncation.
+Cycle c1827 then shows that equivalence cache is active but has no reusable
+request-domain hits: quality and work are exact matches, while the 0.67% p50
+gain is below the 5% floor. Campaign v125 adds a typed, eval-bound compiler
+draft-window arm (`8→16`) to test whether longer grammar-certified spans can
+amortize the dominant completion-forest work without altering legal authority.
+Cycle c1828 rejects that draft-width treatment: quality, tokens, forwards,
+prefill, canvas, and completion states are identical, its 0.97% p50 delta is
+below the 5% floor, and compiler time is 0.71% worse. Training telemetry instead
+shows only 23.84 effective records across 42 draws, with one record repeated
+four times. Campaign v126 therefore keeps the all-family margin recipe and
+isolates the canonical `capacity_aware` mixture sampler against the default
+`with_replacement` precursor. The next screen asks whether greater effective
+exposure improves guarded OpenUI quality without changing corpus, parameters,
+legal authority, or model capacity.
+Cycle c1829 validates the data-distribution signal: capacity-aware sampling
+raises effective records `24.82→32.27`, structure `.41973→.5300`, MPR
+`.3333→.6667`, recall `.1667→.4167`, binder F1 `.6333→.8222`, and fidelity
+`.5278→.7222` at identical parameter count. It is not promoted because richer
+legal output also raises tokens `54→75`, forwards `9→13`, and p50
+`2839→4680` ms. Campaign v127 makes effective/unique/repeat exposure a canonical
+terminal result column and adds a capacity-aware tail-supervision successor.
+That arm retains the quality-producing sampler and all-family margin while
+testing whether late scaffold/close-token supervision controls continuation
+cost; the raw latency budget remains authoritative.
+Cycle c1830 is a bounded fixture positive for that interaction at matched
+capacity-aware exposure: tail supervision raises structure `.35057→.40333`,
+binder F1 `.7222→.8222`, fidelity `.6111→.7222`, and reward
+`.8443→.8777`, while tokens fall `104→99` and forwards `23→22`. P50 rises
+6.1%, inside the screening budget, and MPR/recall hold. The champion queue now
+requires an exact fresh-seed confirmation before any promotion or Lean formal
+preflight; `n=3`, zero AST/canonical equality, and missing production suites
+remain hard blockers.
 
 The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
 confirmed a champion, c1812 was the next protected promotion slot, and the

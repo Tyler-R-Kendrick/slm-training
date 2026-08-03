@@ -681,6 +681,9 @@ def loop_result_rows(
         }
         runtime_unblock = runtime_disposition == "candidate_unblock"
         gate_rejection = _completed_gate_rejection(root, campaign, outcome)
+        exposure = _run_exposure_text(
+            root, campaign.campaign_id, outcome.experiment_id
+        )
         params = _metric_text(outcome.metrics, "trainable_params")
         if params == "—":
             summary_path = (
@@ -702,6 +705,7 @@ def loop_result_rows(
                 "integrated": (campaign.integration_commit or "")[:8] or "—",
                 "experiment": outcome.experiment_id,
                 "params": params,
+                "exposure": exposure,
                 "primary": _outcome_metric_text(
                     outcome,
                     str(handoff.get("primary_metric") or campaign.primary_metric),
@@ -759,6 +763,28 @@ def loop_result_rows(
             str(row["experiment"]),
         ),
     )
+
+
+def _run_exposure_text(
+    root: Path | str, campaign_id: str, experiment_id: str
+) -> str:
+    """Render compact effective-sampling evidence from the canonical insight."""
+    path = (
+        Path(root)
+        / campaign_id
+        / "runs"
+        / experiment_id
+        / "run_insights.json"
+    )
+    try:
+        exposure = json.loads(path.read_text(encoding="utf-8"))["data_exposure"]
+        effective = float(exposure["effective_records"])
+        unique = int(exposure["unique_records"])
+        draws = int(exposure["total_draws"])
+        repeat = int(exposure["max_repeat"])
+    except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError):
+        return "—"
+    return f"eff={effective:g} unique={unique}/{draws} repeat={repeat}"
 
 
 def _reused_training_params(outcome: ExperimentOutcome) -> str:
@@ -1288,6 +1314,7 @@ def render_loop_result_matrix(
         ("integrated", "Integrated"),
         ("experiment", "Experiment"),
         ("params", "Params"),
+        ("exposure", "Exposure"),
         ("primary", "Primary"),
         ("metrics", "Metrics"),
         ("lean", "Lean bands"),
@@ -1474,25 +1501,35 @@ def _metrics_text(
     def omitted(name: str) -> bool:
         return any(name == item or name.endswith(f".{item}") for item in omit)
 
-    allow = {
-        "n",
+    priority = (
         "meaningful_program_rate",
         "structural_similarity",
         "binder_reference_f1",
-        "parse_rate",
         "latency_ms_p50",
+        "tokens_emitted_mean",
+        "forwards_count_mean",
+        "compiler_ms_mean",
+        "completion_shared_domain_hits_mean",
+        "completion_shared_domain_misses_mean",
+        "compiler_prefill_tokens_mean",
+        "canvas_tokens_mean",
+        "n",
+        "parse_rate",
         "ast_beq_rate",
         "canonical_beq_rate",
-    }
+    )
+    allow = set(priority)
 
     def allowed(name: str) -> bool:
         return name.split(".")[-1] in allow
 
-    values = [
-        f"{name}={value:g}"
-        for name, value in sorted(metrics.items())
-        if not omitted(name) and allowed(name)
-    ]
+    values = []
+    for suffix in priority:
+        values.extend(
+            f"{name}={value:g}"
+            for name, value in sorted(metrics.items())
+            if name.split(".")[-1] == suffix and not omitted(name)
+        )
     values.extend(
         f"data.{name}={value:g}"
         for name, value in sorted(data_metrics.items())
