@@ -1,0 +1,126 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1830",
+  "decision": "queue_fresh_seed_confirmation",
+  "claim_class": "fixture_screening",
+  "formal": {
+    "status": "not_applicable:screening",
+    "reason": "Formal promotion preflight remains locked until exact fresh-seed confirmation."
+  },
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "steps": 20,
+    "seed": 101830,
+    "batch_size": 2,
+    "context_backend": "scratch",
+    "suite": "smoke",
+    "suite_n": 3,
+    "sync_checkpoints": false
+  },
+  "arms": {
+    "control": {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1830-control",
+      "trainable_params": 1608962,
+      "mixture_sampling_policy": "capacity_aware",
+      "ltr_tail_loss_weight": 0.0,
+      "last_loss": 21.004072189331055,
+      "train_wall_seconds": 12.119426052027848,
+      "checkpoint_sha256": "420d3e8abe538edb54dd551a3177ed35c8ee934147ce20042d5d795903158b0b",
+      "effective_records": 27.59,
+      "unique_records": 32,
+      "total_draws": 40,
+      "max_repeat": 3,
+      "metrics": {
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.3505666666666667,
+        "component_type_recall": 0.25,
+        "binder_reference_f1": 0.7222222222222222,
+        "placeholder_fidelity": 0.611111111111111,
+        "reward_score": 0.8443333333333333,
+        "parse_rate": 1.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 6047.96,
+        "tokens_emitted_mean": 104.0,
+        "forwards_count_mean": 23.0,
+        "compiler_ms_mean": 14495.194,
+        "compiler_prefill_tokens_mean": 14336.0,
+        "canvas_tokens_mean": 5888.0
+      }
+    },
+    "candidate": {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1830-capacity-aware-tail-compiler-decision-margin",
+      "trainable_params": 1608962,
+      "mixture_sampling_policy": "capacity_aware",
+      "ltr_tail_loss_weight": 1.0,
+      "last_loss": 25.05529022216797,
+      "train_wall_seconds": 10.910204892978072,
+      "checkpoint_sha256": "a4e8d9726cdd41a3ac134c1bbf35725830dd57cda4324a9ffdef0a07cccafcd1",
+      "effective_records": 27.59,
+      "unique_records": 32,
+      "total_draws": 40,
+      "max_repeat": 3,
+      "metrics": {
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.4033333333333333,
+        "component_type_recall": 0.25,
+        "binder_reference_f1": 0.8222222222222223,
+        "placeholder_fidelity": 0.7222222222222222,
+        "reward_score": 0.8776666666666667,
+        "parse_rate": 1.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 6417.56,
+        "tokens_emitted_mean": 99.0,
+        "forwards_count_mean": 22.0,
+        "compiler_ms_mean": 15536.733,
+        "compiler_prefill_tokens_mean": 14336.0,
+        "canvas_tokens_mean": 5632.0
+      }
+    }
+  },
+  "effects": {
+    "structural_similarity": 0.05276666666666663,
+    "meaningful_program_rate": 0.0,
+    "component_type_recall": 0.0,
+    "binder_reference_f1": 0.10000000000000009,
+    "placeholder_fidelity": 0.11111111111111116,
+    "reward_score": 0.03333333333333344,
+    "latency_regression_fraction": 0.0611115,
+    "compiler_time_regression_fraction": 0.0718541,
+    "tokens_emitted_fraction": -0.0480769,
+    "forwards_count_fraction": -0.0434783
+  },
+  "ship": {
+    "eligible": false,
+    "failures": [
+      "smoke n=3<20",
+      "meaningful_program_rate<0.66",
+      "component_type_recall<0.35",
+      "ast_beq_rate=0",
+      "canonical_beq_rate=0",
+      "held_out missing",
+      "adversarial missing",
+      "ood missing",
+      "rico_held missing",
+      "fresh-seed confirmation pending"
+    ]
+  },
+  "next_hypothesis": "Replay the exact capacity-aware tail-supervision candidate and matched capacity-aware control on a fresh seed; require quality non-regression and bounded cost before any promotion preflight.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "d57ffd96e1d665afb36b5a1a90a76c4b8c9f989b",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v78",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v304"
+    },
+    "stamped_at": "2026-08-03T04:24:01.492392+00:00"
+  }
+}

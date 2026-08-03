@@ -258,6 +258,14 @@ terminal result column and adds a capacity-aware tail-supervision successor.
 That arm retains the quality-producing sampler and all-family margin while
 testing whether late scaffold/close-token supervision controls continuation
 cost; the raw latency budget remains authoritative.
+Cycle c1830 is a bounded fixture positive for that interaction at matched
+capacity-aware exposure: tail supervision raises structure `.35057→.40333`,
+binder F1 `.7222→.8222`, fidelity `.6111→.7222`, and reward
+`.8443→.8777`, while tokens fall `104→99` and forwards `23→22`. P50 rises
+6.1%, inside the screening budget, and MPR/recall hold. The champion queue now
+requires an exact fresh-seed confirmation before any promotion or Lean formal
+preflight; `n=3`, zero AST/canonical equality, and missing production suites
+remain hard blockers.
 
 The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
 confirmed a champion, c1812 was the next protected promotion slot, and the

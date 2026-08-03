@@ -2699,6 +2699,11 @@
         {
           "version": "v127",
           "date": "2026-08-03",
+          "note": "no-bump: record the c1830 capacity-aware tail fixture positive and confirmation requirement; campaign behavior is unchanged"
+        },
+        {
+          "version": "v127",
+          "date": "2026-08-03",
           "note": "After c1829 tied higher effective exposure to guarded quality and excess continuation cost, surface exposure in the terminal matrix and add a size-matched capacity-aware tail-supervision successor."
         },
         {
@@ -7500,6 +7505,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1830 capacity-aware tail scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
         {
           "version": "v3",
           "date": "2026-08-03",
