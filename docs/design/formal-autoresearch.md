@@ -46,11 +46,13 @@ Autoresearch uses two pinned Lean 4.30.0 projects. The promotion-critical
 Mathlib-free `src/leverproof_lean/` package via `make test`; that same bounded
 run builds the certificate checker used later in promotion. The remaining
 templates stay in `src/slm_training/formal/lean/` with Mathlib `v4.30.0`.
-Every formal command runs in its own bounded process group; a timeout interrupts
-and, after the canonical grace, kills and reaps Lake/Lean descendants before the
-typed timeout result is returned. Process start and heartbeat callbacks expose the
-group leader to the continuous-loop state, so liveness and recovery include Lean
-rather than treating proof execution as an opaque pause.
+Canonical autoresearch formal commands run in their own bounded process group; a
+timeout interrupts and, after the canonical grace, kills and reaps Lake/Lean
+descendants before the typed timeout result is returned. The project digest is
+recursive over nested Lean sources and includes executable identity, so imported
+proof edits or toolchain replacement cannot reuse stale success. Standalone
+diagnostic adapters are not promotion authority and must report unknown when
+their local Lean/Lake toolchain is unavailable (as on hosts without `lake`).
 The same canonical template registry includes the six Semantic Factor Frontier
 `AdvisoryResidual` obligations. Their proof digests bind the individual theorem and
 declared source set, so a cached SFF artifact is validated by the normal formal

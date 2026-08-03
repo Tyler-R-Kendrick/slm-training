@@ -70,6 +70,100 @@ _LANGSMITH_METRIC_KEYS = (
     "decode_timeout_rate",
 )
 
+# A suite cache stores deterministic predictions/quality evidence, never host
+# runtime observations.  Replaying timing, timeout, initialization, or
+# provenance fields would make a transient slow host (or an old checkout) look
+# like a current measurement and could incorrectly satisfy a perf gate.
+_CACHE_RUNTIME_KEYS = frozenset(
+    {
+        "latency_ms_p50",
+        "latency_ms_p95",
+        "latency_ms_p50_including_incomplete",
+        "latency_ms_p95_including_incomplete",
+        "decode_batch_wall_ms_p50",
+        "decode_batch_wall_ms_p95",
+        "decode_amortized_ms_per_record_p50",
+        "decode_amortized_ms_per_record_p95",
+        "decode_records_per_second",
+        "completed_latency_n",
+        "incomplete_latency_n",
+        "decode_timeout_count",
+        "decode_timeout_document_count",
+        "decode_timeout_document_n",
+        "decode_timeout_rate",
+        "decode_initialization_ms",
+        "decode_stats",
+        "evaluated_at",
+        "code_git_sha",
+        "code_dirty",
+        "agentv",
+        "output",
+        "version_stamp",
+    }
+)
+
+
+def _cache_replay_payload(
+    payload: dict[str, Any],
+    *,
+    config: ModelBuildConfig,
+    suite_path: Path,
+    version_stamp: dict[str, Any],
+) -> dict[str, Any]:
+    """Project cached quality evidence into a fresh, non-runtime envelope."""
+    replay = dict(payload)
+    for key in _CACHE_RUNTIME_KEYS:
+        replay.pop(key, None)
+    # Preserve the metric names for consumers, but make the absence of a new
+    # runtime observation explicit rather than silently dropping the fields.
+    for key in (
+        "latency_ms_p50",
+        "latency_ms_p95",
+        "latency_ms_p50_including_incomplete",
+        "latency_ms_p95_including_incomplete",
+        "decode_batch_wall_ms_p50",
+        "decode_batch_wall_ms_p95",
+        "decode_amortized_ms_per_record_p50",
+        "decode_amortized_ms_per_record_p95",
+        "decode_records_per_second",
+        "decode_timeout_count",
+        "decode_timeout_document_count",
+        "decode_timeout_document_n",
+        "decode_timeout_rate",
+        "decode_initialization_ms",
+        "decode_stats",
+    ):
+        replay[key] = None
+    details = []
+    for row in replay.get("details", []) or []:
+        if not isinstance(row, dict):
+            continue
+        detail = dict(row)
+        for key in (
+            "latency_ms",
+            "request_completion_latency_ms",
+            "amortized_batch_latency_ms",
+            "batch_size",
+            "temporal_decode_evidence",
+        ):
+            detail.pop(key, None)
+        details.append(detail)
+    if "details" in replay:
+        replay["details"] = details
+    replay.update(
+        {
+            "output": str(suite_path),
+            "cache_replay": True,
+            "cache_runtime_metrics_available": False,
+            "runtime_measurement_source": "cache_not_measured",
+            "evaluated_at": datetime.now(UTC).isoformat(),
+            "code_git_sha": _git_sha(),
+            "code_dirty": _git_dirty(),
+            "version_stamp": version_stamp,
+        }
+    )
+    return replay
+
 
 def _persist_decode_progress(
     config: ModelBuildConfig,
@@ -1105,53 +1199,71 @@ def evaluate(
         except Exception:  # noqa: BLE001 - missing version identity forbids reuse
             cache_bypass_reason = "component_version_unavailable"
         else:
-            cache_dependencies = {
-                "checkpoint_sha256": checkpoint_sha256,
-                "eval_data_manifest_sha": eval_data_manifest_sha,
-                "eval_suite_manifest_sha": eval_suite_manifest_sha,
-                "suite_limit": suite_limit,
-                "suite_offset": suite_offset,
-                "evaluation_policy": evaluation_policy,
-                "generation_overrides": generation_overrides,
-                "component_versions": component_versions,
-            }
-            cache_key = suite_result_key(
-                suite=config.suite,
-                checkpoint_sha256=checkpoint_sha256,
-                eval_data_manifest_sha=eval_data_manifest_sha,
-                eval_suite_manifest_sha=eval_suite_manifest_sha,
-                eval_limit=suite_limit,
-                evaluation_policy=evaluation_policy,
-                component_versions=component_versions,
-                extra={
-                    "eval_offset": suite_offset,
+            if not eval_data_manifest_sha or not eval_suite_manifest_sha:
+                cache_bypass_reason = "eval_manifest_unavailable"
+                cache_dependencies = {}
+                cache_key = None
+            else:
+                cache_dependencies = {
+                    "checkpoint_sha256": checkpoint_sha256,
+                    "eval_data_manifest_sha": eval_data_manifest_sha,
+                    "eval_suite_manifest_sha": eval_suite_manifest_sha,
+                    "suite_limit": suite_limit,
+                    "suite_offset": suite_offset,
+                    "evaluation_policy": evaluation_policy,
                     "generation_overrides": generation_overrides,
-                },
-            )
-            if cache.config.mode in (EvalCacheMode.READ, EvalCacheMode.READ_WRITE):
-                cached_metrics = cache.get(cache_key)
-                if cached_metrics is not None:
-                    # Replay: keep predictions/metrics byte-identical, but update
-                    # the output path to the current run directory.
-                    run_dir = config.run_dir
-                    run_dir.mkdir(parents=True, exist_ok=True)
-                    suite_path = run_dir / f"eval_{config.suite}.json"
-                    cached_metrics = dict(cached_metrics)
-                    cached_metrics["output"] = str(suite_path)
-                    cached_metrics["cache_replay"] = True
-                    suite_path.write_text(
-                        json.dumps(cached_metrics, indent=2) + "\n", encoding="utf-8"
-                    )
-                    if config.suite == "smoke":
-                        (run_dir / "eval.json").write_text(
+                    "component_versions": component_versions,
+                }
+                cache_key = suite_result_key(
+                    suite=config.suite,
+                    checkpoint_sha256=checkpoint_sha256,
+                    eval_data_manifest_sha=eval_data_manifest_sha,
+                    eval_suite_manifest_sha=eval_suite_manifest_sha,
+                    eval_limit=suite_limit,
+                    evaluation_policy=evaluation_policy,
+                    component_versions=component_versions,
+                    extra={
+                        "eval_offset": suite_offset,
+                        "generation_overrides": generation_overrides,
+                    },
+                )
+                if cache.config.mode in (EvalCacheMode.READ, EvalCacheMode.READ_WRITE):
+                    cached_metrics = cache.get(cache_key)
+                    if cached_metrics is not None:
+                        # Replay only deterministic quality evidence. Runtime
+                        # telemetry and provenance are rebuilt for this run.
+                        run_dir = config.run_dir
+                        run_dir.mkdir(parents=True, exist_ok=True)
+                        suite_path = run_dir / f"eval_{config.suite}.json"
+                        cached_metrics = _cache_replay_payload(
+                            cached_metrics,
+                            config=config,
+                            suite_path=suite_path,
+                            version_stamp=progress_version_stamp,
+                        )
+                        save_snapshot(run_dir, flag_snapshot)
+                        if publish_agentv and config.suite in DEFAULT_SHIP_GATES:
+                            from slm_training.evals.agentv import publish_model_evaluation
+
+                            cached_metrics["agentv"] = publish_model_evaluation(
+                                run_dir,
+                                {config.suite: cached_metrics},
+                                include_missing_suites=False,
+                            )
+                            cached_metrics["agentv"]["suites_run"] = [config.suite]
+                        suite_path.write_text(
                             json.dumps(cached_metrics, indent=2) + "\n", encoding="utf-8"
                         )
-                    if evaluation_remaining_records is not None:
-                        evaluation_remaining_records[0] = max(
-                            0, evaluation_remaining_records[0] - len(records)
-                        )
-                    (run_dir / "decode_progress.json").unlink(missing_ok=True)
-                    return cached_metrics
+                        if config.suite == "smoke":
+                            (run_dir / "eval.json").write_text(
+                                json.dumps(cached_metrics, indent=2) + "\n", encoding="utf-8"
+                            )
+                        if evaluation_remaining_records is not None:
+                            evaluation_remaining_records[0] = max(
+                                0, evaluation_remaining_records[0] - len(records)
+                            )
+                        (run_dir / "decode_progress.json").unlink(missing_ok=True)
+                        return cached_metrics
 
     batch_size = 1
     generate_batch_requests = getattr(plugin, "generate_batch_requests", None)
@@ -1809,6 +1921,11 @@ def evaluate(
         )
 
     incomplete_latencies: list[float] = []
+    # Keep request completion latency separate from the amortized share of a
+    # batched decode.  The latter is useful for throughput accounting but is
+    # not an observed request latency (all requests complete when the batch
+    # returns).
+    amortized_latencies: list[float] = []
     if batch_size > 1 and (
         callable(generate_batch_requests) or callable(generate_batch)
     ):
@@ -1822,11 +1939,16 @@ def evaluate(
             per = elapsed / max(1, len(chunk))
             for index, (record, pred) in enumerate(zip(chunk, preds)):
                 if timed_out:
-                    incomplete_latencies.append(per)
+                    incomplete_latencies.append(elapsed)
                 else:
-                    latencies.append(per)
+                    latencies.append(elapsed)
+                amortized_latencies.append(per)
                 evidence = evidence_rows[index] if index < len(evidence_rows) else None
-                _score_one(record, pred, per, evidence, chunk_meta)
+                _score_one(record, pred, elapsed, evidence, chunk_meta)
+                if details:
+                    details[-1]["request_completion_latency_ms"] = round(elapsed, 2)
+                    details[-1]["amortized_batch_latency_ms"] = round(per, 2)
+                    details[-1]["batch_size"] = len(chunk)
     else:
         for record in records:
             t0 = time.perf_counter()
@@ -1839,6 +1961,7 @@ def evaluate(
                 incomplete_latencies.append(elapsed_ms)
             else:
                 latencies.append(elapsed_ms)
+            amortized_latencies.append(elapsed_ms)
             _score_one(
                 record,
                 pred,
@@ -1846,6 +1969,10 @@ def evaluate(
                 evidence_rows[0] if evidence_rows else None,
                 chunk_meta,
             )
+            if details:
+                details[-1]["request_completion_latency_ms"] = round(elapsed_ms, 2)
+                details[-1]["amortized_batch_latency_ms"] = round(elapsed_ms, 2)
+                details[-1]["batch_size"] = 1
 
     # Primary latency percentiles are completed attempts only so a budget wall
     # does not look like "slow but finishing" quality. Timeout walls stay under
@@ -1857,6 +1984,9 @@ def evaluate(
     p95 = _nearest_rank(lat_sorted, 0.95)
     p50_all = _nearest_rank(all_lat_sorted, 0.50)
     p95_all = _nearest_rank(all_lat_sorted, 0.95)
+    amortized_sorted = sorted(amortized_latencies)
+    amortized_p50 = _nearest_rank(amortized_sorted, 0.50)
+    amortized_p95 = _nearest_rank(amortized_sorted, 0.95)
     gold_design_mean = (
         sum(gold_design_scores) / len(gold_design_scores)
         if gold_design_scores
@@ -2059,6 +2189,17 @@ def evaluate(
         ),
         "latency_ms_p95_including_incomplete": (
             round(p95_all, 2) if p95_all is not None else None
+        ),
+        "decode_batch_wall_ms_p50": round(p50, 2) if p50 is not None else None,
+        "decode_batch_wall_ms_p95": round(p95, 2) if p95 is not None else None,
+        "decode_amortized_ms_per_record_p50": (
+            round(amortized_p50, 2) if amortized_p50 is not None else None
+        ),
+        "decode_amortized_ms_per_record_p95": (
+            round(amortized_p95, 2) if amortized_p95 is not None else None
+        ),
+        "decode_records_per_second": (
+            (1000.0 / amortized_p50) if amortized_p50 and amortized_p50 > 0 else None
         ),
         "completed_latency_n": len(latencies),
         "incomplete_latency_n": len(incomplete_latencies),
@@ -2327,6 +2468,10 @@ def evaluate(
             EvalCacheMode.READ_WRITE,
             EvalCacheMode.REFRESH,
         )
+        and not metrics.get("incomplete_document_n")
+        and metrics.get("eval_data_manifest_sha")
+        and metrics.get("eval_suite_manifest_sha")
+        and metrics.get("cache_bypass_reason") is None
     ):
         try:
             cache.put(cache_key, metrics, dependencies=cache_dependencies)

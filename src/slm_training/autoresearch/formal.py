@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import shutil
 import subprocess
 import time
 from collections.abc import Callable
@@ -326,11 +327,11 @@ def _proof_paths(template: FormalTemplate) -> tuple[tuple[str, Path], ...]:
             "Test/run.sh",
             *(
                 str(path.relative_to(root))
-                for path in sorted((root / "Test").glob("*.json"))
+                for path in sorted((root / "Test").rglob("*.json"))
             ),
             *(
                 str(path.relative_to(root))
-                for path in sorted((root / "LeverProofLean").glob("*.lean"))
+                for path in sorted((root / "LeverProofLean").rglob("*.lean"))
             ),
         )
         return (
@@ -345,7 +346,7 @@ def _proof_paths(template: FormalTemplate) -> tuple[tuple[str, Path], ...]:
         ("OpenUIProofs.lean", root / "OpenUIProofs.lean"),
         *(
             (str(path.relative_to(root)), path)
-            for path in sorted((root / "OpenUIProofs").glob("*.lean"))
+            for path in sorted((root / "OpenUIProofs").rglob("*.lean"))
         ),
     )
 
@@ -396,10 +397,10 @@ def _proof_sources_are_total(template: FormalTemplate) -> bool:
     root = _lean_root(template)
     paths = (
         (root / "LeverProofLean.lean",)
-        + tuple(sorted((root / "LeverProofLean").glob("*.lean")))
+        + tuple(sorted((root / "LeverProofLean").rglob("*.lean")))
         if template.lean_project == "leverproof"
         else (root / "OpenUIProofs.lean",)
-        + tuple(sorted((root / "OpenUIProofs").glob("*.lean")))
+        + tuple(sorted((root / "OpenUIProofs").rglob("*.lean")))
     )
     return not any(_FORBIDDEN_PROOF_TOKENS.search(path.read_text()) for path in paths)
 
@@ -471,7 +472,24 @@ def _project_checks(
     authority.
     """
 
-    key = (str(_lean_root(template).resolve()), _project_digest(template), _run)
+    runtime_identity = tuple(
+        (
+            name,
+            str(path := shutil.which(name) or "missing"),
+            (
+                (Path(path).stat().st_size, Path(path).stat().st_mtime_ns)
+                if path != "missing" and Path(path).is_file()
+                else None
+            ),
+        )
+        for name in ("lake", "lean", "make")
+    )
+    key = (
+        str(_lean_root(template).resolve()),
+        _project_digest(template),
+        runtime_identity,
+        _run,
+    )
     cached = _PROJECT_CHECK_CACHE.get(key)
     if cached is not None:
         return cached

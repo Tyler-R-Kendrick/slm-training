@@ -2661,7 +2661,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v163",
+      "version": "v164",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2701,6 +2701,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v164",
+          "date": "2026-08-03",
+          "note": "Render paired campaigns fail-closed: missing arm_order members become explicit harness-incomplete rows instead of completed model evidence."
+        },
         {
           "version": "v163",
           "date": "2026-08-03",
@@ -3659,7 +3664,7 @@
       ]
     },
     "harness.autoresearch.formal": {
-      "version": "v11",
+      "version": "v12",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/formal.py",
@@ -3670,6 +3675,11 @@
         ".github/workflows/ci.yml"
       ],
       "history": [
+        {
+          "version": "v12",
+          "date": "2026-08-03",
+          "note": "Recursively bind nested Lean sources and executable identities into formal project checks so imported proof changes or toolchain replacement cannot reuse stale success."
+        },
         {
           "version": "v11",
           "date": "2026-08-03",
@@ -9751,7 +9761,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v82",
+      "version": "v83",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -9772,6 +9782,11 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v83",
+          "date": "2026-08-03",
+          "note": "Separate observed batched request latency from amortized throughput and sanitize suite-cache replays so runtime telemetry and provenance are never reused as current measurements."
+        },
         {
           "version": "v82",
           "date": "2026-08-03",
@@ -11277,7 +11292,7 @@
       ]
     },
     "matrix.perf": {
-      "version": "v8",
+      "version": "v9",
       "kind": "matrix",
       "paths": [
         "scripts/run_perf_matrix.py",
@@ -11288,6 +11303,11 @@
         "docs/design/runtime-performance.md"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-08-03",
+          "note": "Document observed batched request latency separately from amortized throughput and prohibit stale runtime cache telemetry from performance interpretation."
+        },
         {
           "version": "v8",
           "date": "2026-07-30",
