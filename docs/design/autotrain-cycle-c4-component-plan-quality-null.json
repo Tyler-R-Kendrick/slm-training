@@ -1,0 +1,74 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c4",
+  "cycle_index": 4,
+  "cycle_intent": "screening",
+  "predecessor_campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c3",
+  "evidence_class": "fixture",
+  "decision": "quality_null_not_ship",
+  "scoreable": true,
+  "new_checkpoint_created": true,
+  "upstream_commit": "86e481cb10fd1bb503eb0fc8528ee278da2337e6",
+  "integration_commit": "65bdd7b1d6364c8a56192ac55309587f3a4b29af",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c4-control",
+      "trainable_params": 1755764,
+      "checkpoint_sha256": "0f1cb67a6cb1842c69cad0b1169b7cbe7c00884ba3490740f3eabaccf7c34dc9",
+      "status": "trained_evaluated_gate_rejected",
+      "smoke": {
+        "n": 3,
+        "structural_similarity": 0.4166666666666667,
+        "meaningful_program_rate": 0.3333333333333333,
+        "component_type_recall": 0.25,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0
+      },
+      "gate_pass": false
+    },
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c4-component-plan",
+      "trainable_params": 1755764,
+      "checkpoint_sha256": "4c5f57eaab0e0a9e52602b308e2b5d0b8df2beadd5dd5a5f6a20ad005231940a",
+      "status": "trained_evaluated_gate_rejected",
+      "smoke": {
+        "n": 3,
+        "structural_similarity": 0.4166666666666667,
+        "meaningful_program_rate": 0.3333333333333333,
+        "component_type_recall": 0.25,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0
+      },
+      "gate_pass": false
+    }
+  ],
+  "comparison": {
+    "attributable": false,
+    "primary_metric_delta": 0.0,
+    "note": "component-plan candidate ties control exactly on every smoke metric at this fixture scale (wf_smoke_v2, 22 steps, n=3)."
+  },
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "reasons": [
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c4-control",
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c4-component-plan",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.4166666666666667 candidate=0.4166666666666667 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "checkpoint_policy": "local_explicit_no_sync_not_reusable_not_promoted_not_ship_eval_incomplete",
+  "lean": "not_applicable:screening",
+  "next_priority": "test the distinct size-matched 'component-edge' quality hypothesis per the driver's ranked successor priorities",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "65bdd7b1d6364c8a56192ac55309587f3a4b29af",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.train": "v42",
+      "harness.experiment_feature_flags": "v4"
+    },
+    "stamped_at": "2026-08-03T14:42:39Z"
+  }
+}
