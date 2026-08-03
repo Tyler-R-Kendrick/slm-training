@@ -1,0 +1,87 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "loop_id": "continuous-openui-20260803",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-202608-fa9f9cf7-c1",
+  "cycle_index": 1,
+  "evidence_class": "fixture",
+  "decision": "infrastructure_failure_not_a_model_result",
+  "scoreable": false,
+  "new_checkpoint_created": true,
+  "upstream_commit": "72fdffaf054efee2f3dccc4bab0ca97c111072e1",
+  "integration_commit": "72fdffaf054efee2f3dccc4bab0ca97c111072e1",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "recipe": {
+    "device": "cpu",
+    "steps": 21,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260803-continuous-openui-202608-fa9f9cf7-c1-control",
+      "trainable_params": 1608962,
+      "steps": 21,
+      "last_loss": 22.62193489074707,
+      "train_wall_seconds": 4.119283941000049,
+      "checkpoint_sha256": "f2fe8f5aae98c7178747c5f3b926d00c3d9c1d49ce607c54224b5526000b81b2",
+      "status": "trained_eval_failed",
+      "failure_stage": "evaluate_model",
+      "failure_reason": "RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER",
+      "smoke": null
+    },
+    {
+      "experiment_id": "c20260803-continuous-openui-202608-fa9f9cf7-c1-bounds",
+      "trainable_params": 1608962,
+      "steps": 21,
+      "last_loss": 22.62193489074707,
+      "train_wall_seconds": 3.724273439000001,
+      "checkpoint_sha256": "2c1749c65f4c4fba890aef4b00981a52825aecfd73e0117f0739f26ae1742f64",
+      "status": "trained_eval_failed",
+      "failure_stage": "evaluate_model",
+      "failure_reason": "RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER",
+      "smoke": null
+    }
+  ],
+  "comparison": {
+    "attributable": false
+  },
+  "agentv": {
+    "bundles_complete": false,
+    "execution_errors": 2,
+    "ship_gates_pass": false
+  },
+  "checkpoint_policy": "local_explicit_no_sync_not_reusable_not_promoted_not_ship_eval_incomplete",
+  "lean": "not_applicable:screening",
+  "harness_repair": {
+    "harness_family": "model_build",
+    "diagnosis": "This session's fresh sandbox checkout (a new remote execution container, distinct from the sandbox that produced the 2026-08-03 c1/c2 torch/NODE_OPTIONS fixes already on main) had never run `npm ci`, so evaluate_model.py --ship-gates crashed in publish_model_evaluation with the same 'AgentV SDK is unavailable' error the c2 doc already covers -- but only after both arms had already spent their full training wall (4.12s and 3.72s of the ~180s cycle cap). `npm ci` itself failed once with 'node: --import tsx is not allowed in NODE_OPTIONS' because the host shell exports a NODE_OPTIONS this Node build rejects for the npm process itself (a different exposure than the already-fixed bridge_utils.sanitized_node_env() subprocess spawns, which only sanitize env for node processes *launched by* Python); `env -u NODE_OPTIONS npm ci` (the exact invocation scripts/setup_dev_env.sh already uses) succeeded. The remaining gap: the continuous driver only discovered the missing SDK after training, misspending wall budget and giving `harness_failure:...:experiment_failed` per arm instead of a single fast, correctly-attributed preflight failure.",
+    "fix_commit": "41dfe6d90c4023175e37f8c68d001107bcff2168",
+    "fix_summary": "Added slm_training.evals.agentv.ensure_agentv_available(repo_root) -- a thin, testable wrapper around the existing _agentv_runtime() resolution -- and call it at the top of scripts.run_autotrain_continuous.run_cycle() before git sync, so a cold checkout missing the AgentV SDK fails in milliseconds with the existing actionable 'run npm ci' message instead of after a full wasted train step. No change to _agentv_runtime()'s resolution logic or the NODE_OPTIONS sanitization landed in the prior cycle; this is a preflight-timing fix only.",
+    "regression_tests": [
+      "tests/test_evals/test_agentv.py::test_ensure_agentv_available_raises_actionable_error_when_sdk_missing",
+      "tests/test_evals/test_agentv.py::test_ensure_agentv_available_succeeds_when_sdk_present"
+    ]
+  },
+  "next_priority": "replay identical frozen arm (retry_measurement) now that the AgentV SDK is installed in this sandbox and the driver preflights it before spending training wall",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "41dfe6d90c4023175e37f8c68d001107bcff2168",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v77",
+      "harness.model_build.train": "v36",
+      "harness.experiment_feature_flags": "v4",
+      "harness.autoresearch.experiment_campaign": "v110",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "evals.agentv": "v8",
+      "model.twotower": "v299",
+      "dsl.symbolic_surface": "v6"
+    },
+    "stamped_at": "2026-08-03T01:34:06.957393Z"
+  }
+}
