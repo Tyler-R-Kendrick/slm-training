@@ -946,7 +946,26 @@ def loop_result_rows(
         except (OSError, json.JSONDecodeError):
             continue
         expected: tuple[str, ...] = ()
+        # Prefer the append-only execution binding.  The handoff arm_order
+        # reason remains a compatibility fallback for campaigns created before
+        # decision_arms_bound was introduced.
+        events = CampaignStore(campaign.campaign_id, Path(root)).verify_event_chain()
+        for event in reversed(events):
+            if event.get("event_type") != "decision_arms_bound":
+                continue
+            detail = event.get("detail")
+            bound = detail.get("expected_arm_ids") if isinstance(detail, dict) else None
+            if (
+                isinstance(bound, list)
+                and len(bound) == 2
+                and all(isinstance(item, str) and item for item in bound)
+                and len(set(bound)) == 2
+            ):
+                expected = tuple(bound)
+            break
         for reason in handoff.get("reasons", ()) or ():
+            if expected:
+                break
             text = str(reason)
             if text.startswith("arm_order:"):
                 expected = tuple(

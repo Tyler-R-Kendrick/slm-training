@@ -349,6 +349,52 @@ def _counterbalanced_arm_order(
     return order
 
 
+def _bind_expected_arms(
+    *,
+    root: Path,
+    campaign_id: str,
+    matrix_path: Path,
+    control_id: str,
+    candidate_id: str,
+    arm_order: Sequence[str],
+) -> dict[str, Any]:
+    """Bind the exact paired decision arms before execution starts.
+
+    The matrix and handoff are human-facing projections; this event is the
+    append-only authority used to distinguish an unstarted arm from a model
+    result when a bounded cycle runs out of wall time.
+    """
+
+    expected = (str(control_id), str(candidate_id))
+    if not all(expected) or len(set(expected)) != 2:
+        raise ValueError("decision arms must contain distinct control/candidate ids")
+    order = tuple(str(item) for item in arm_order)
+    if set(order) != set(expected) or len(order) != len(expected):
+        raise ValueError("arm order must contain exactly the bound decision arms")
+    matrix_payload = json.loads(matrix_path.read_text(encoding="utf-8"))
+    matrix_id = str(matrix_payload.get("matrix_id") or "")
+    if not matrix_id:
+        raise ValueError("hypothesis matrix is missing matrix_id")
+    detail = {
+        "matrix_id": matrix_id,
+        "matrix_sha256": hashlib.sha256(matrix_path.read_bytes()).hexdigest(),
+        "expected_arm_ids": list(expected),
+        "arm_order": list(order),
+    }
+    store = CampaignStore(campaign_id, root)
+    for event in reversed(store.verify_event_chain()):
+        if event.get("event_type") != "decision_arms_bound":
+            continue
+        if event.get("detail") != detail:
+            raise RuntimeError("decision arm binding already exists with different content")
+        return event
+    return store.append_event(
+        "decision_arms_bound",
+        status="bound",
+        detail=detail,
+    )
+
+
 def _read_json(path: Path) -> dict[str, Any]:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
@@ -7880,6 +7926,14 @@ def run_cycle(
         promotion_replicate_index=promotion_replicate_index,
     )
     scheduled_order = list(order)
+    _bind_expected_arms(
+        root=root,
+        campaign_id=campaign_id,
+        matrix_path=matrix_path,
+        control_id=control_eid,
+        candidate_id=candidate_eid,
+        arm_order=scheduled_order,
+    )
     arm_count = len({eid for eid in order if eid in by_id})
     # Promote path: formal preflight must be proved before train executes.
     if cycle_intent == "promote" and promoting_champion is not None:

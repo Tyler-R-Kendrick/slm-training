@@ -2661,7 +2661,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v164",
+      "version": "v165",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2701,6 +2701,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v165",
+          "date": "2026-08-03",
+          "note": "Bind exact paired decision arms to the hypothesis matrix event chain before execution; result overlays prefer this binding over legacy handoff arm-order text."
+        },
         {
           "version": "v164",
           "date": "2026-08-03",

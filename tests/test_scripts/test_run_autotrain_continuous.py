@@ -4930,6 +4930,43 @@ def test_phase_a_uses_explicit_dynamic_arm_ids_and_records_skips(
     assert delivery["arm_skipped"] == skipped
 
 
+def test_expected_arm_binding_is_append_only_and_content_bound(tmp_path: Path) -> None:
+    campaign_id = "campaign-arm-binding"
+    campaign = _mod.CampaignSpec(
+        campaign_id=campaign_id,
+        objective="Bind both decision arms before execution.",
+        primary_metric="smoke.parse_rate",
+        loop_id="loop-arm-binding",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+    )
+    _mod.CampaignStore(campaign_id, tmp_path).initialize(campaign)
+    matrix_path = tmp_path / campaign_id / "matrix-proposal.json"
+    matrix_path.write_text(json.dumps({"matrix_id": "matrix-1"}), encoding="utf-8")
+    event = _mod._bind_expected_arms(
+        root=tmp_path,
+        campaign_id=campaign_id,
+        matrix_path=matrix_path,
+        control_id="matrix-control",
+        candidate_id="successor-dose-3",
+        arm_order=("successor-dose-3", "matrix-control"),
+    )
+    assert event["event_type"] == "decision_arms_bound"
+    assert event["detail"]["expected_arm_ids"] == [
+        "matrix-control",
+        "successor-dose-3",
+    ]
+    assert _mod._bind_expected_arms(
+        root=tmp_path,
+        campaign_id=campaign_id,
+        matrix_path=matrix_path,
+        control_id="matrix-control",
+        candidate_id="successor-dose-3",
+        arm_order=("successor-dose-3", "matrix-control"),
+    )["event_id"] == event["event_id"]
+
+
 def test_promotion_order_uses_replicate_index_when_cadence_has_same_parity() -> None:
     first = _mod._counterbalanced_arm_order(
         "control",
