@@ -2683,7 +2683,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v165",
+      "version": "v166",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2723,6 +2723,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v166",
+          "date": "2026-08-03",
+          "note": "Continuous screening bank exhaustion fail-forwards via screening_regime_epoch reopen (new seed offset + regime knob) instead of hard-blocking after 3 cycle failures"
+        },
         {
           "version": "v165",
           "date": "2026-08-03",

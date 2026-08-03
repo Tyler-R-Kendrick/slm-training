@@ -781,6 +781,11 @@ def test_select_recommended_slug_rotates_and_skips() -> None:
     all_slugs = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
     with pytest.raises(RuntimeError, match="screening arm bank exhausted"):
         _mod._select_recommended_slug(1, skip=all_slugs)
+    # Continuous fail-forward: reopen under a new regime rather than hard-stop
+    reopened = _mod._select_recommended_slug(
+        1, skip=all_slugs, allow_regime_reopen=True
+    )
+    assert reopened in {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
     assert (
         _mod._select_recommended_slug(1817, skip=all_slugs - {"component-edge-token"})
         == "component-edge-token"
@@ -892,6 +897,113 @@ def test_confirmation_bypasses_exhausted_screening_selector() -> None:
             has_confirm_levers=False,
             has_promote_levers=False,
         )
+    # Continuous path reopens rather than dying.
+    assert (
+        _mod._select_cycle_slug(
+            1792,
+            predecessor_priority=None,
+            skip=all_slugs,
+            has_confirm_levers=False,
+            has_promote_levers=False,
+            allow_regime_reopen=True,
+        )
+        is not None
+    )
+
+
+def test_screening_regime_reopen_bumps_epoch(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-regime"
+    all_slugs = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
+    assert _mod._load_screening_regime_epoch(root, loop_id) == 0
+    slug, epoch, transitioned = _mod._select_screening_slug_with_regime(
+        root=root,
+        loop_id=loop_id,
+        cycle=1892,
+        skip=all_slugs,
+        predecessor_priority=None,
+    )
+    assert transitioned is True
+    assert epoch == 1
+    assert slug in all_slugs
+    assert _mod._load_screening_regime_epoch(root, loop_id) == 1
+    # Second full-bank close under the new epoch bumps again.
+    slug2, epoch2, transitioned2 = _mod._select_screening_slug_with_regime(
+        root=root,
+        loop_id=loop_id,
+        cycle=1893,
+        skip=all_slugs,
+        predecessor_priority=None,
+    )
+    assert transitioned2 is True
+    assert epoch2 == 2
+    assert slug2 in all_slugs
+
+
+def test_nonpositive_exhaustion_is_regime_scoped(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-epoch-scope"
+    camp_id = "continuous-loop-c1"
+    camp = root / camp_id
+    camp.mkdir(parents=True)
+    (camp / "campaign.json").write_text(
+        json.dumps({"campaign_id": camp_id, "loop_id": loop_id})
+    )
+    (camp / "cycle_handoff.json").write_text(
+        json.dumps({"loop_id": loop_id, "cycle_intent": "screening"})
+    )
+    (camp / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "candidate_id": f"{camp_id}-bounds",
+                "control_id": f"{camp_id}-control",
+                "cycle_intent": "screening",
+                "positive": False,
+                "measurement_complete": True,
+            }
+        )
+    )
+    (camp / "matrix-proposal.json").write_text(
+        json.dumps(
+            {
+                "hypotheses": [
+                    {
+                        "experiment": {
+                            "experiment_id": f"{camp_id}-bounds",
+                            "knobs": {
+                                "grammar_completion_bounds": True,
+                                "screening_regime_epoch": 0,
+                            },
+                        }
+                    }
+                ]
+            }
+        )
+    )
+    # Epoch 0: bounds is closed.
+    assert "bounds" in _mod._recent_completed_nonpositive_slugs(
+        root, camp_id, regime_epoch=0
+    )
+    # Epoch 1: same lineage arm is not closed (new regime identity).
+    assert "bounds" not in _mod._recent_completed_nonpositive_slugs(
+        root, camp_id, regime_epoch=1
+    )
+
+
+def test_bank_exhaust_failure_is_soft_not_hard_block(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-soft-exhaust"
+    count = _mod._record_cycle_failure(
+        root=root,
+        loop_id=loop_id,
+        exc=RuntimeError(_mod._BANK_EXHAUST_MSG),
+        cycle_index=1890,
+    )
+    assert count == 0
+    state = json.loads(
+        (root / "loops" / loop_id / "state.json").read_text(encoding="utf-8")
+    )
+    assert state["state"] != "BLOCKED"
 
 
 def test_matrix_thrash_rotation_recommends_non_bounds() -> None:
