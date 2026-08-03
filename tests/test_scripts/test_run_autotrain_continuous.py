@@ -4529,8 +4529,25 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor(
         formal_preflight_sha256="e" * 64,
     )
     assert formal_manifest.formal_obligations
-    with pytest.raises(RuntimeError, match="fresh Lean preflight"):
-        _mod._require_automatic_replayable(formal_manifest)
+    formal_successor = _mod._replay_successor_manifest(
+        formal_manifest,
+        frozen_manifest_sha256="f" * 64,
+        campaign_id=new_campaign,
+        experiment_id="new-promote",
+        integration_commit=current_commit,
+    )
+    assert formal_successor.formal_obligations == ()
+    rebound = _mod._bind_fresh_replay_formal_preflight(
+        formal_successor,
+        formal_manifest,
+        preflight_sha256="1" * 64,
+    )
+    assert len(rebound.formal_obligations) == 1
+    assert rebound.formal_obligations[0].preflight_sha256 == "1" * 64
+    assert (
+        rebound.formal_obligations[0].template_id
+        == formal_manifest.formal_obligations[0].template_id
+    )
 
 
 def test_frozen_replay_finds_completed_train_across_retry_lineage(

@@ -70,8 +70,12 @@ chain of initialized-only campaigns, while completed or ambiguous gaps fail clos
 Replay arm identity is resolved by longest registered suffix, so hyphenated canonical
 arms such as `component-plan` and `literal-close` cannot be truncated into an
 unsupported last word.
-Replay manifests carrying Lean formal obligations require a fresh formal preflight
-and otherwise fail closed.
+Replay manifests carrying Lean formal obligations never inherit the source proof
+digest. The successor is first materialized without obligations, runs and validates
+a fresh current-campaign Lean preflight, then restores the frozen obligation IDs,
+templates, and policies bound only to the new proof digest before hypothesis
+authorization or execution. An unproved or timed-out preflight leaves both arms
+unexecuted and fails closed.
 Lineage validation is shared by status and feedback traversal so those surfaces cannot
 disagree about an initialized-only gap. When the newest handoff-less frozen replay
 already has verified terminal events for both diagnostic matrix decision arms, the
@@ -135,6 +139,15 @@ two-pass OpenAI provider remains for compatibility; new external-researcher runs
 use `--compiler openai`, whose default is `gpt-5.6-sol` with `store=False`.
 
 ## Closed loop
+
+The c1812 frozen-promotion replay exposed a formal-ordering gap: the loader saw
+the source manifest's required Lean obligation and rejected the replay before a
+successor campaign could create the mandated fresh proof. Campaign harness v110
+allows the governed frozen recipe to load, strips the stale proof binding from
+the current-main successor, regenerates and validates the Lean preflight, and
+rebinds the unchanged formal obligation before hypothesis authorization or arm
+execution. This repairs orchestration only; it does not reuse proof evidence,
+weaken the formal gate, or change the frozen model/eval recipes.
 
 The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
 confirmed a champion, c1812 was the next protected promotion slot, and the

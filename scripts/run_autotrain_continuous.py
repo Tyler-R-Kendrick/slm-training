@@ -5045,13 +5045,6 @@ def _manifest_with_sha(
     raise RuntimeError(f"frozen replay manifest is missing: {digest}")
 
 
-def _require_automatic_replayable(manifest: ExperimentCampaignV1) -> None:
-    if manifest.formal_obligations:
-        raise RuntimeError(
-            "frozen replay with formal obligations requires a fresh Lean preflight"
-        )
-
-
 def _nonreplayable_configuration_failure(
     camp_dir: Path, experiment_id: str
 ) -> str | None:
@@ -5113,7 +5106,6 @@ def _load_frozen_replay(
             flush=True,
         )
         return None
-    _require_automatic_replayable(candidate_manifest)
     matrix = json.loads((camp_dir / "matrix-proposal.json").read_text(encoding="utf-8"))
     control_id = str(matrix["hypotheses"][0]["experiment"]["experiment_id"])
     control_path = camp_dir / "manifests" / f"{control_id}.json"
@@ -5122,7 +5114,6 @@ def _load_frozen_replay(
     control_manifest = ExperimentCampaignV1.model_validate_json(
         control_path.read_text(encoding="utf-8")
     )
-    _require_automatic_replayable(control_manifest)
     replay = {
         "handoff": handoff,
         "action_index": action_index,
@@ -5302,9 +5293,28 @@ def _replay_successor_manifest(
             "replay_reason": (
                 "Current-main successor after an infrastructure-incomplete measurement."
             ),
+            # A proof is commit- and experiment-bound. Never carry the source
+            # campaign's proof digest into a current-main successor.
+            "formal_obligations": (),
         }
     )
     return ExperimentCampaignV1.model_validate(successor.model_dump(mode="json"))
+
+
+def _bind_fresh_replay_formal_preflight(
+    successor: ExperimentCampaignV1,
+    frozen: ExperimentCampaignV1,
+    *,
+    preflight_sha256: str,
+) -> ExperimentCampaignV1:
+    """Restore frozen formal obligations with only the fresh proof digest."""
+
+    obligations = tuple(
+        obligation.model_copy(update={"preflight_sha256": preflight_sha256})
+        for obligation in frozen.formal_obligations
+    )
+    rebound = successor.model_copy(update={"formal_obligations": obligations})
+    return ExperimentCampaignV1.model_validate(rebound.model_dump(mode="json"))
 
 
 def _campaign_id(loop_id: str, cycle: int, *, date: str | None = None) -> str:
@@ -6908,6 +6918,54 @@ def run_cycle(
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(successor.model_dump_json(indent=2) + "\n", encoding="utf-8")
         replay_manifest_paths[eid] = path
+    promote_formal_status: str | None = None
+    promote_preflight_sha: str | None = None
+    replay_formal_required = any(
+        bool(item["manifest"].formal_obligations)
+        for item in replay_manifests.values()
+    )
+    if replay_formal_required:
+        replay_arm_count = len(replay_manifest_paths)
+        _require_symmetric_arm_budget(
+            deadline=deadline,
+            arm_count=replay_arm_count,
+            arm_wall_minutes=arm_wall_minutes,
+        )
+        formal_budget = _promotion_formal_budget_seconds(
+            deadline=deadline,
+            arm_count=replay_arm_count,
+            arm_wall_minutes=arm_wall_minutes,
+        )
+        promote_formal_status, promote_preflight_sha = ensure_promote_formal_preflight(
+            camp_dir=camp_dir,
+            campaign_id=campaign_id,
+            experiment_id=str(matrix["recommended_experiment_id"]),
+            run_lean=True,
+            timeout_seconds=formal_budget,
+            root=root,
+            loop_id=loop_id,
+        )
+        print(
+            f"REPLAY_FORMAL_PREFLIGHT status={promote_formal_status} "
+            f"sha={promote_preflight_sha} campaign={campaign_id}",
+            flush=True,
+        )
+        if promote_formal_status == "proved" and promote_preflight_sha:
+            for eid, frozen_replay in replay_manifests.items():
+                if not frozen_replay["manifest"].formal_obligations:
+                    continue
+                path = replay_manifest_paths[eid]
+                successor = ExperimentCampaignV1.model_validate_json(
+                    path.read_text(encoding="utf-8")
+                )
+                rebound = _bind_fresh_replay_formal_preflight(
+                    successor,
+                    frozen_replay["manifest"],
+                    preflight_sha256=promote_preflight_sha,
+                )
+                path.write_text(
+                    rebound.model_dump_json(indent=2) + "\n", encoding="utf-8"
+                )
     hypothesize_cmd = [
         *ar,
         "hypothesize",
@@ -6953,8 +7011,6 @@ def run_cycle(
     scheduled_order = list(order)
     arm_count = len({eid for eid in order if eid in by_id})
     # Promote path: formal preflight must be proved before train executes.
-    promote_formal_status: str | None = None
-    promote_preflight_sha: str | None = None
     if cycle_intent == "promote" and promoting_champion is not None:
         _require_symmetric_arm_budget(
             deadline=deadline,
@@ -6995,6 +7051,20 @@ def run_cycle(
                 flush=True,
             )
             order = []
+    elif replay_formal_required and (
+        promote_formal_status != "proved" or not promote_preflight_sha
+    ):
+        kind = (
+            "TIMEOUT_INCONCLUSIVE"
+            if _formal_status_is_timeout(promote_formal_status)
+            else "BLOCK"
+        )
+        print(
+            f"REPLAY_FORMAL_{kind} skip_execute "
+            f"status={promote_formal_status}",
+            flush=True,
+        )
+        order = []
 
     arm_count = len({eid for eid in order if eid in by_id})
     if arm_count:

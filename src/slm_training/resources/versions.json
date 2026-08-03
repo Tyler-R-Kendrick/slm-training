@@ -2646,7 +2646,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v109",
+      "version": "v110",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2686,6 +2686,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v110",
+          "date": "2026-08-03",
+          "note": "Regenerate and validate a fresh Lean preflight before authorizing or executing a current-main frozen promotion replay; never carry the source proof digest into its successor manifest."
+        },
         {
           "version": "v109",
           "date": "2026-08-03",
