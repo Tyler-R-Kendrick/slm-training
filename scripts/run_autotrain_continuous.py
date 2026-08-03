@@ -702,6 +702,17 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         },
     ),
     (
+        "wide-draft-compiler-decision-margin",
+        "A wider certified compiler draft window amortizes completion-forest construction and neural ranking while preserving the all-family margin arm's structural quality.",
+        {
+            "compiler_alignment_loss_weight": 1.0,
+            "compiler_alignment_margin": 1.0,
+            "compiler_alignment_stratified": True,
+            "compiler_alignment_kind_filter": "all",
+            "grammar_draft_window": 16,
+        },
+    ),
+    (
         "structure-token",
         "Direct grammar STRUCT-token reconstruction weighting repairs scaffold formation and structural_similarity without lowering parse_rate or binder_reference_f1.",
         {"structure_token_loss_weight": 1.0},
@@ -1162,6 +1173,12 @@ def _arm_slug_from_knobs(
     if (
         knobs.get("compiler_alignment_loss_weight")
         and knobs.get("compiler_alignment_kind_filter") == "all"
+        and int(knobs.get("grammar_draft_window") or 8) > 8
+    ):
+        return "wide-draft-compiler-decision-margin"
+    if (
+        knobs.get("compiler_alignment_loss_weight")
+        and knobs.get("compiler_alignment_kind_filter") == "all"
         and knobs.get("grammar_equivalence_cache")
     ):
         return "cached-compiler-decision-margin"
@@ -1428,6 +1445,7 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
         "compiler-decision-token",
         "bounded-compiler-decision-margin",
         "cached-compiler-decision-margin",
+        "wide-draft-compiler-decision-margin",
         "structure-token",
         "typed-family-balance",
         "container-close",
@@ -5749,6 +5767,7 @@ def _matrix(
             "local_files_only": True,
             "grammar_completion_bounds": False,
             "grammar_equivalence_cache": False,
+            "grammar_draft_window": 8,
             "compact_active_canvas": False,
             "component_plan_loss_weight": 0.0,
             "component_plan_decode_weight": 0.0,
@@ -6240,6 +6259,7 @@ def _matrix(
         treatment_key = {
             "bounded-compiler-decision-margin": "grammar_completion_bounds",
             "cached-compiler-decision-margin": "grammar_equivalence_cache",
+            "wide-draft-compiler-decision-margin": "grammar_draft_window",
         }.get(rec_slug)
         if treatment_key is not None:
             control_extra = {

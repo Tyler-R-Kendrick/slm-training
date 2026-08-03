@@ -2656,7 +2656,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v124",
+      "version": "v125",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2696,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v125",
+          "date": "2026-08-03",
+          "note": "After c1827 found no reusable compiler-tree equivalence-cache hits, add a typed certified draft-window arm that can amortize completion-forest construction without changing model size or grammar authority."
+        },
         {
           "version": "v124",
           "date": "2026-08-03",
@@ -7485,6 +7490,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1827 compiler-cache null scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
         {
           "version": "v3",
           "date": "2026-08-03",

@@ -69,6 +69,7 @@ _TWOTOWER_RUNTIME_FLAG_FIELDS = (
     "grammar_equivalence_cache",
     "grammar_active_symbol_bitsets",
     "compact_active_canvas",
+    "grammar_draft_window",
 )
 
 
@@ -814,6 +815,10 @@ def compile_commands(
             evaluate.extend(["--compiler-decode-mode", knobs.compiler_decode_mode])
             if knobs.compiler_decode_mode != "off":
                 evaluate.append("--grammar-ltr-primary")
+        if knobs.grammar_draft_window is not None:
+            evaluate.extend(
+                ["--grammar-draft-window", str(knobs.grammar_draft_window)]
+            )
         for name in (
             "compiler_search_mode",
             "compiler_search_trigger",

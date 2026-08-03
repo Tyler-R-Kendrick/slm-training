@@ -4384,6 +4384,7 @@ def test_compile_dynamic_symbol_campaign_uses_typed_flags() -> None:
             constraint_graph_mode="hybrid",
             grammar_equivalence_cache=True,
             compact_active_canvas=False,
+            grammar_draft_window=16,
         )
     )
     commands = compile_commands(campaign(), spec)
@@ -4398,6 +4399,7 @@ def test_compile_dynamic_symbol_campaign_uses_typed_flags() -> None:
     assert "--semantic-candidate-masks" in train
     assert "--grammar-equivalence-cache" in train
     assert "--no-compact-active-canvas" in train
+    assert evaluate[evaluate.index("--grammar-draft-window") + 1] == "16"
     assert "--flags-json" not in evaluate
 
 

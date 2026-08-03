@@ -234,6 +234,11 @@ remain zero. Campaign v124 therefore targets the observed 27.3-second compiler
 cost with the existing completion-domain equivalence cache instead. It also
 orders terminal headlines as quality, latency, tokens, forwards, compiler time,
 and cache activity, keeping causal signals visible before cell truncation.
+Cycle c1827 then shows that equivalence cache is active but has no reusable
+request-domain hits: quality and work are exact matches, while the 0.67% p50
+gain is below the 5% floor. Campaign v125 adds a typed, eval-bound compiler
+draft-window arm (`8→16`) to test whether longer grammar-certified spans can
+amortize the dominant completion-forest work without altering legal authority.
 
 The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
 confirmed a champion, c1812 was the next protected promotion slot, and the
