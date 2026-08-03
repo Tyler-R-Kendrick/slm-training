@@ -7603,6 +7603,11 @@
         {
           "version": "v3",
           "date": "2026-08-03",
+          "note": "no-bump: record honest c1847 semantic-exhaustive successor checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
           "note": "no-bump: record honest c1846 exposure-targeted quality-cost checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
         },
         {

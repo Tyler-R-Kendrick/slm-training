@@ -88,3 +88,20 @@ fixture-only until the full held-out ladder is available. If the successor is
 null again, route the five Lean diagnosis lanes rather than recycling the
 quality-arm bank.
 
+## c1847 result update
+
+c1847 supplied that successor and falsified the hoped-for quality/cost tradeoff
+on the screening fixture. Semantic-exhaustive supervision raised structural
+similarity (`.2383 -> .3225`) and cut emitted tokens (`130 -> 60`), forwards
+(`28 -> 11`), and p50 latency (`6886 -> 2811 ms`), but binder F1 (`.9524 ->
+.8222`), fidelity (`.9167 -> .7222`), reward (`.9360 -> .8657`), and training
+loss (`22.6143 -> 23.4322`) regressed. Meaningful-program rate and exact
+AST/canonical matches stayed at zero. Both arms are therefore rejected fixture
+screening results; this is an objective tradeoff, not evidence that Lean,
+parallelism, or caching prevented learning.
+
+The next cycle must use a distinct preregistered quality objective, retain the
+matched control, and expand beyond `n=3` before any capability claim. The
+cacheless-preloaded-model fix is now covered by `harness.model_build.eval` v79;
+no matched-CPU parallelism is justified until a wall/CPU/memory parity
+benchmark demonstrates a win.
