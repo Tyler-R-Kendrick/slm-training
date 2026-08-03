@@ -403,6 +403,7 @@ def test_champion_confirm_reject_without_quality(tmp_path: Path) -> None:
         entry=entry,
         delivery={
             "positive": True,
+            "measurement_complete": True,
             "reasons": ["primary_metric_win:smoke.latency_ms_p50:10000->9000"],
         },
         campaign_id="c-confirm",
@@ -410,6 +411,37 @@ def test_champion_confirm_reject_without_quality(tmp_path: Path) -> None:
     )
     assert resolved is not None
     assert resolved["status"] == "rejected"
+
+
+def test_champion_incomplete_confirmation_stays_retryable(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-incomplete-confirm"
+    entry = {
+        "schema": _mod._CHAMPION_QUEUE_SCHEMA,
+        "entry_id": "champ-incomplete",
+        "status": "confirming",
+        "knobs": {"ltr_tail_loss_weight": 1.0},
+        "knobs_fingerprint": "incomplete",
+    }
+    _mod._write_champion_queue(_mod._champion_queue_path(root, loop_id), [entry])
+
+    resolved = _mod._resolve_confirm_result(
+        root=root,
+        loop_id=loop_id,
+        entry=entry,
+        delivery={
+            "positive": False,
+            "measurement_complete": False,
+            "reasons": ["measurement_incomplete:control:missing_scoreboard"],
+        },
+        campaign_id="c-incomplete",
+        cycle_index=5,
+    )
+
+    assert resolved is not None
+    assert resolved["status"] == "confirmation_inconclusive"
+    assert "resolved_at" not in resolved
+    assert _mod._queue_head_open([resolved]) == resolved
 
 
 def test_champion_confirm_rejects_efficiency_when_primary_regresses(
@@ -632,6 +664,41 @@ def test_started_champion_measurement_keeps_attempt_spent(tmp_path: Path) -> Non
     assert _mod._recover_interrupted_champion_entries(root, [entry])
     assert entry["status"] == "confirming"
     assert entry["confirm_attempts"] == 1
+
+
+def test_historical_incomplete_confirmation_is_reopened(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    campaign = root / "c-incomplete"
+    campaign.mkdir(parents=True)
+    (campaign / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "measurement_complete": False,
+                "reasons": ["measurement_incomplete:control:missing_scoreboard"],
+            }
+        ),
+        encoding="utf-8",
+    )
+    entry = {
+        "status": "rejected",
+        "confirm_campaign_id": "c-incomplete",
+        "resolved_at": "2026-08-03T00:00:00Z",
+    }
+
+    assert _mod._recover_interrupted_champion_entries(root, [entry])
+    assert entry["status"] == "confirmation_inconclusive"
+    assert "resolved_at" not in entry
+
+
+def test_confirmation_never_inherits_promotion_role() -> None:
+    assert (
+        _mod._role_with_confirmation_boundary("promotion", confirming=True)
+        == "screening"
+    )
+    assert (
+        _mod._role_with_confirmation_boundary("promotion", confirming=False)
+        == "promotion"
+    )
 
 
 def test_select_recommended_slug_rotates_and_skips() -> None:

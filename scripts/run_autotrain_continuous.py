@@ -457,6 +457,7 @@ _CHAMPION_STATUSES = frozenset(
     {
         "queued",
         "confirming",
+        "confirmation_inconclusive",
         "confirmed",
         "rejected",
         "skipped_duplicate",
@@ -1067,10 +1068,26 @@ def _campaign_started_experiment(root: Path, campaign_id: object) -> bool:
 def _recover_interrupted_champion_entries(
     root: Path, entries: list[dict[str, Any]]
 ) -> bool:
-    """Release pre-execution attempts and restore interrupted promotion heads."""
+    """Release interrupted attempts and reopen incomplete confirmations."""
     changed = False
     for row in entries:
         status = row.get("status")
+        if status == "rejected":
+            campaign_id = str(row.get("confirm_campaign_id") or "")
+            delivery_path = root / campaign_id / "sdlc_delivery.json"
+            if not campaign_id or not delivery_path.is_file():
+                continue
+            delivery = _read_json(delivery_path)
+            if delivery.get("measurement_complete") is not False:
+                continue
+            row["status"] = "confirmation_inconclusive"
+            row["last_harness_failure_at"] = time.strftime(
+                "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
+            )
+            row["resolve_reasons"] = list(delivery.get("reasons") or [])
+            row.pop("resolved_at", None)
+            changed = True
+            continue
         if status not in {"confirming", "promoting"}:
             continue
         # _update_champion_status records the currently reserved campaign in
@@ -1196,7 +1213,11 @@ def _write_champion_queue(path: Path, entries: list[dict[str, Any]]) -> None:
 def _queue_head_open(entries: list[dict[str, Any]]) -> dict[str, Any] | None:
     """First entry still awaiting confirmatory retest (queued or in-flight)."""
     for row in entries:
-        if row.get("status") in {"queued", "confirming"}:
+        if row.get("status") in {
+            "queued",
+            "confirming",
+            "confirmation_inconclusive",
+        }:
             return row
     return None
 
@@ -1360,6 +1381,7 @@ def _skip_arm_slugs(
         if row.get("status") not in {
             "queued",
             "confirming",
+            "confirmation_inconclusive",
             "confirmed",
             "promoting",
             "promotion_inconclusive",
@@ -1819,7 +1841,11 @@ def _update_champion_status(
         }:
             row["resolved_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
             row["resolve_reasons"] = list(resolve_reasons or [])
-        elif status in {"promotion_inconclusive", "harness_failure"}:
+        elif status in {
+            "confirmation_inconclusive",
+            "promotion_inconclusive",
+            "harness_failure",
+        }:
             # Capture reasons but keep the head retriable (no permanent resolve).
             stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
             if status == "promotion_inconclusive":
@@ -1851,6 +1877,17 @@ def _resolve_confirm_result(
 ) -> dict[str, Any] | None:
     """Mark confirmatory retest confirmed (quality re-holds) or rejected."""
     reasons = list(delivery.get("reasons") or [])
+    if delivery.get("measurement_complete") is not True:
+        reasons.append("confirmation_inconclusive:measurement_incomplete")
+        return _update_champion_status(
+            root=root,
+            loop_id=loop_id,
+            entry_id=str(entry["entry_id"]),
+            status="confirmation_inconclusive",
+            confirm_campaign_id=campaign_id,
+            confirm_cycle_index=cycle_index,
+            resolve_reasons=reasons,
+        )
     ok = _confirmation_quality_reheld(delivery)
     if not ok:
         reasons.append("confirmation_rejected:primary_quality_not_reheld")
@@ -6769,6 +6806,14 @@ def _empty_promotion_slot_falls_back(
     )
 
 
+def _role_with_confirmation_boundary(
+    cadence_role: str, *, confirming: bool
+) -> str:
+    """Keep unconfirmed champions on screening endpoints and suites."""
+
+    return "screening" if confirming else cadence_role
+
+
 def run_cycle(
     *,
     cwd: Path,
@@ -6913,7 +6958,10 @@ def run_cycle(
     open_champion = _queue_head_open(queue_entries)
     confirmed_champion: dict[str, Any] | None = None
     promoting_champion: dict[str, Any] | None = None
-    role = cadence_role
+    role = _role_with_confirmation_boundary(
+        cadence_role,
+        confirming=replay is None and open_champion is not None,
+    )
     if replay is not None:
         open_champion = None
         cycle_intent = "retry_measurement"

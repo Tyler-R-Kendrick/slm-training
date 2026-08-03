@@ -274,6 +274,15 @@ so neither arm started. Campaign v128 fits equal arm deadlines to actual
 post-planning time while retaining the 15-second finalization reserve and the
 unchanged canonical cap. The exact confirmation remains queued; this timeout
 does not confirm or reject the c1830 learning signal.
+Cycle c1832 passed the new symmetric reservation and started both arms, then
+exposed a separate ladder violation: because the cycle index was a promotion
+slot, the unconfirmed champion inherited `smoke,held_out` instead of replaying
+its smoke screen. The tail candidate trained 20 steps but timed out all 3 smoke
+documents; the control reached only step 2, so neither scoreboard nor AgentV
+evidence exists. Campaign v129 pins every confirmation to screening endpoints
+regardless of cadence and represents incomplete confirmation as retryable
+`confirmation_inconclusive`. Held-out suites and Lean/formal remain closed until
+a complete fresh-seed screening confirmation succeeds.
 
 The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
 confirmed a champion, c1812 was the next protected promotion slot, and the

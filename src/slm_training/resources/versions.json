@@ -2656,7 +2656,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v128",
+      "version": "v129",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2696,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v129",
+          "date": "2026-08-03",
+          "note": "Keep champion confirmation on screening endpoints regardless of cadence, and classify incomplete confirmations as retryable rather than model rejection."
+        },
         {
           "version": "v128",
           "date": "2026-08-03",
@@ -7510,6 +7515,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1832 incomplete scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
         {
           "version": "v3",
           "date": "2026-08-03",
