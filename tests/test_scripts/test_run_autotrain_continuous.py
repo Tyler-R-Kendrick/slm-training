@@ -5892,12 +5892,68 @@ def test_self_heal_thrash_bank_composes_successors(tmp_path: Path) -> None:
     assert _mod._DYNAMIC_THRASH_ARMS
     path = _mod._dynamic_thrash_arms_path(root, loop)
     assert path.is_file()
-    # Newly composed arms are selectable.
+    # Newly composed arms are selectable and signature-unique vs static bank.
+    static_sigs = {
+        _mod._thrash_lever_signature(ex) for _, _, ex in _mod._SCREENING_ARM_BANK
+    }
+    for slug, _, extras in _mod._DYNAMIC_THRASH_ARMS:
+        assert slug.startswith("compose-")
+        assert _mod._thrash_lever_signature(extras) not in static_sigs
     slug = _mod._select_recommended_slug(1, skip=closed)
     assert slug.startswith("compose-")
-    # Slug mapping preserves dynamic identity through knobs.
     extras = dict(_mod._DYNAMIC_THRASH_ARMS[0][2])
     assert _mod._arm_slug_from_knobs(extras) == _mod._DYNAMIC_THRASH_ARMS[0][0]
+
+
+def test_thrash_matrix_dedupes_compose_vs_static_knob_signatures() -> None:
+    """Matrix must not fail HypothesisMatrix when compose collides with static."""
+    from slm_training.autoresearch.schemas import HypothesisMatrix
+
+    _mod._DYNAMIC_THRASH_ARMS.clear()
+    # Deliberate collision: same levers as scaffold-prefix-tail.
+    _mod._DYNAMIC_THRASH_ARMS.append(
+        (
+            "compose-ltr-tail-ltr-prefix",
+            "Duplicate of scaffold-prefix-tail levers for collision test.",
+            {
+                "ltr_tail_loss_weight": 1.0,
+                "ltr_prefix_loss_weight": 1.0,
+                "_thrash_slug": "compose-ltr-tail-ltr-prefix",
+            },
+        )
+    )
+    # Also add a unique compose arm that must survive.
+    _mod._DYNAMIC_THRASH_ARMS.append(
+        (
+            "compose-ltr-prefix-compiler-decision-token",
+            "Unique prefix plus compiler-decision token thrash successor.",
+            {
+                "ltr_prefix_loss_weight": 1.0,
+                "compiler_decision_token_loss_weight": 1.0,
+                "_thrash_slug": "compose-ltr-prefix-compiler-decision-token",
+            },
+        )
+    )
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-dedupe-c1",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=40,
+        cycle=1,
+        role="screening",
+        recommended_slug="compose-ltr-tail-ltr-prefix",
+    )
+    HypothesisMatrix.model_validate(matrix)
+    ids = [
+        h["experiment"]["experiment_id"] for h in matrix["hypotheses"]
+    ]
+    assert not any(i.endswith("compose-ltr-tail-ltr-prefix") for i in ids)
+    assert any(i.endswith("compose-ltr-prefix-compiler-decision-token") for i in ids)
+    # Recommended retargets to a real hypothesis id.
+    assert matrix["recommended_experiment_id"] in ids
 
 
 def test_self_heal_cycle_error_recovers_bank_exhaust(tmp_path: Path) -> None:

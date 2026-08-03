@@ -2683,7 +2683,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v175",
+      "version": "v176",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2723,6 +2723,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v176",
+          "date": "2026-08-03",
+          "note": "Compose thrash arms must not collide with static knob signatures; matrix emission dedupes; self-heal rewrites dynamic_thrash_arms on ValidationError"
+        },
         {
           "version": "v175",
           "date": "2026-08-03",
