@@ -1,0 +1,66 @@
+{
+    "schema": "continuous_autotrain_cycle_results/v1",
+    "loop_id": "continuous-openui-local",
+    "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c1",
+    "cycle_index": 1,
+    "source_commit": "318492c5",
+    "honesty": "fixture_or_scratch",
+    "not_ship_claim": true,
+    "note": "Second ephemeral container for 2026-08-03. Local outputs/autoresearch state from the earlier container (which produced continuous-openui-20260803-c1-results.md / -c2-results.md, now merged in #1370) was not available here, so the driver's local cycle counter restarted at c1 and re-derived the same deterministic campaign_id string (hash of loop_id only, no container/session component). This is a genuinely new measurement at a newer upstream commit (318492c5, post-#1370), not a re-post of the earlier file -- see continuous-openui-20260803-c1-results.md for the original c1.",
+    "recipe": {
+        "device": "cpu",
+        "steps": 20,
+        "train_version": "wf_smoke_v2",
+        "eval_version": "e938_role_safe_all_targets_v2",
+        "max_wall_minutes": 3,
+        "ship_gates": true,
+        "seed": 100001
+    },
+    "arms": {
+        "c1-control": {
+            "trainable_params": 1608962,
+            "status": "completed_eval_gates_failed",
+            "smoke": {
+                "n": 3,
+                "parse_rate": 1.0,
+                "meaningful_program_rate": 0.0,
+                "structural_similarity": 0.057499999999999996,
+                "binder_reference_f1": 0.6333333333333333,
+                "latency_ms_p50": 1152.14
+            }
+        },
+        "c1-bounds": {
+            "trainable_params": 1608962,
+            "status": "completed_eval_gates_failed",
+            "smoke": {
+                "n": 3,
+                "parse_rate": 1.0,
+                "meaningful_program_rate": 0.0,
+                "structural_similarity": 0.057499999999999996,
+                "binder_reference_f1": 0.6333333333333333,
+                "latency_ms_p50": 1155.13
+            }
+        }
+    },
+    "primary_metric": "smoke.structural_similarity",
+    "primary_delta": 0.0,
+    "sdlc_phase_a": {
+        "positive": false,
+        "stack_layer": false,
+        "stack_action": "no_stack_layer_non_positive",
+        "agent_required": "continue loop; local commits/docs only",
+        "reasons": [
+            "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c1-control",
+            "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c1-bounds",
+            "primary_metric_null_or_worse:smoke.structural_similarity:control=0.057499999999999996 candidate=0.057499999999999996 improvement=0.0",
+            "fixture_insufficient_n_alone"
+        ]
+    },
+    "conclusion": "Independent re-measurement of the 'bounds' vs matched-control hypothesis at upstream commit 318492c5 (current main tip, post PR #1370) reproduces the same exact tie on the primary (structural_similarity=0.0575 both arms, 1,608,962 matched params, meaningful_program_rate=0.0, binder_reference_f1=0.6333 both arms) already found and documented in the original continuous-openui-20260803-c1-results.md cycle at base commit e1f5e4f0. Only p50 latency differs slightly between the two container runs (1152.14/1155.13ms here vs 1200.65/1021.45ms there), consistent with non-deterministic wall-clock timing noise on a metric that is not the declared primary. This corroborates (does not newly establish) that the 'bounds' knob has no measurable structural effect at this fixture scale and remains exhausted without a new hypothesis. Ship gates fail as expected (insufficient_n, missing held_out/adversarial/ood/rico_held suites).",
+    "next_priorities": [
+        "component-plan quality hypothesis is next in the ranked matrix (c20260803-continuous-openui-local-8c0b60dd-c1-component-plan) per the driver's speculative priorities -- already independently confirmed positive once in continuous-openui-20260803-c2-results.md and pending fresh-seed confirmation",
+        "Keep the matched control as the size-matched baseline every cycle",
+        "Do not re-run the exhausted 'bounds' arm again without a new preregistered hypothesis"
+    ],
+    "recorded_at": "2026-08-03T07:31:18Z"
+}
