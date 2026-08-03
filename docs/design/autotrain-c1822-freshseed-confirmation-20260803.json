@@ -1,0 +1,100 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "autotrain-c1822-freshseed-confirmation-20260803",
+  "cycle_index": 1,
+  "decision": "fresh_seed_confirmation_failed",
+  "evidence_class": "fixture_screening",
+  "formal_status": "not_applicable:retry_measurement",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "e1f5e4f04944a211f7afa56540131175b94ebd1e",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v78",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v304"
+    },
+    "stamped_at": "2026-08-03T03:47:54.145054+00:00"
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "steps": 20,
+    "seed": 202603,
+    "decode_timeout_seconds": 25.0,
+    "predecessor_campaign": "docs/design/autotrain-cycle-1822-compiler-decision-token-positive.json",
+    "predecessor_seed": 101821,
+    "sync_checkpoints": false,
+    "suites": ["smoke"],
+    "suite_n": {"smoke": 3},
+    "honesty_mode": "fixture_screening"
+  },
+  "arms": [
+    {
+      "experiment_id": "autotrain_c1822_freshseed_control",
+      "trainable_params": 1608962,
+      "compiler_decision_token_loss_weight": 0.0,
+      "checkpoint_sha256": "e3d863d5e14b8621fc71a29c8138d8fadef515b750e7118a4dffe2e15fcd456c",
+      "suites": {
+        "smoke": {
+          "n": 3,
+          "parse_rate": 1.0,
+          "meaningful_program_rate": 0.0,
+          "structural_similarity": 0.22999999999999998,
+          "component_type_recall": 0.0,
+          "binder_reference_f1": 0.0,
+          "placeholder_fidelity": 0.0,
+          "reward_score": 0.0,
+          "ast_beq_rate": 0.0,
+          "canonical_beq_rate": 0.0,
+          "latency_ms_p50": 15429.78,
+          "decode_timeout_count": 0,
+          "failure_breakdown": {"no_placeholders": 3}
+        }
+      }
+    },
+    {
+      "experiment_id": "autotrain_c1822_freshseed_candidate",
+      "trainable_params": 1608962,
+      "compiler_decision_token_loss_weight": 1.0,
+      "checkpoint_sha256": "1e14fd2530b04b674428828602cced5422a785bfea04a60600db1a823b1dabea",
+      "suites": {
+        "smoke": {
+          "n": 3,
+          "parse_rate": 1.0,
+          "meaningful_program_rate": 0.0,
+          "structural_similarity": 0.26416666666666666,
+          "component_type_recall": 0.25,
+          "binder_reference_f1": 0.0,
+          "placeholder_fidelity": 0.0,
+          "reward_score": 0.0,
+          "ast_beq_rate": 0.0,
+          "canonical_beq_rate": 0.0,
+          "latency_ms_p50": 4924.95,
+          "decode_timeout_count": 0,
+          "failure_breakdown": {"no_placeholders": 3}
+        }
+      }
+    }
+  ],
+  "primary_effect": 0.03416666666666668,
+  "mpr_effect": 0.0,
+  "component_type_recall_effect": 0.25,
+  "reward_effect": 0.0,
+  "latency_improvement_fraction": 0.680815280580799,
+  "ship_gates_pass": false,
+  "measurement_complete": true,
+  "sdlc_phase_a": "non_positive",
+  "sdlc_phase_a_reason": "mpr_effect is 0.0 (candidate below the ~1/3 mpr floor required for a latency-budget win to count as positive); primary/component_recall/latency deltas favor the candidate but reward_score and binder_reference_f1 are 0.0 on both arms at this seed, so the c1822 screening win does not reproduce",
+  "next_hypothesis": {
+    "kind": "additional_seed_or_larger_suite",
+    "authority": "observed_result",
+    "confidence": 0.4,
+    "statement": "compiler-decision-token showed a real MPR/component-recall win at seed=101821 (c1822) but a null MPR effect at seed=202603 on the same 3-document smoke suite; do not promote on either single-seed result. Either run 2+ more seeds to establish whether c1822's win was seed noise on an n=3 fixture, or move this arm to a larger held-out suite where a single seed's parse variance carries less weight."
+  }
+}
