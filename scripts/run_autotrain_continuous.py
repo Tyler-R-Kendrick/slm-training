@@ -400,6 +400,13 @@ def _require_symmetric_arm_budget(
         raise subprocess.TimeoutExpired("symmetric decision-arm budget", required)
 
 
+# Leave schedule margin after fit so the fit→execute deadline check cannot
+# fail from monotonic clock drift or float round-trip (observed: remaining
+# 159.788399 < required 159.788414 → both promote arms skipped as
+# deadline_reserve with zero runs).
+_ARM_BUDGET_SCHEDULE_MARGIN_SECONDS = 0.25
+
+
 def _fit_symmetric_arm_budget(
     *, deadline: float, arm_count: int, requested_arm_wall_minutes: float
 ) -> float:
@@ -408,7 +415,11 @@ def _fit_symmetric_arm_budget(
     if arm_count <= 0:
         raise ValueError("arm_count must be positive")
     remaining = _remaining_timeout(deadline)
-    usable = remaining - HARNESS_FINALIZATION_RESERVE_SECONDS
+    usable = (
+        remaining
+        - HARNESS_FINALIZATION_RESERVE_SECONDS
+        - _ARM_BUDGET_SCHEDULE_MARGIN_SECONDS
+    )
     if usable <= 0:
         raise subprocess.TimeoutExpired("symmetric decision-arm budget", remaining)
     return min(float(requested_arm_wall_minutes), usable / arm_count / 60)
@@ -939,9 +950,33 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         {"ltr_prefix_loss_weight": 1.0},
     ),
     (
+        "scaffold-prefix-structure",
+        "Prefix-weighted LTR plus STRUCT-token reconstruction couples early scaffold formation to grammar structure tokens without lowering parse_rate or binder_reference_f1.",
+        {
+            "ltr_prefix_loss_weight": 1.0,
+            "structure_token_loss_weight": 1.0,
+        },
+    ),
+    (
+        "scaffold-prefix-tail",
+        "Prefix- and tail-weighted LTR jointly improve early scaffold formation and legal termination without lowering parse_rate or binder_reference_f1.",
+        {
+            "ltr_prefix_loss_weight": 1.0,
+            "ltr_tail_loss_weight": 1.0,
+        },
+    ),
+    (
         "component-token",
         "Direct component-token reconstruction weighting improves component_type_recall and structural_similarity without lowering parse_rate or binder_reference_f1.",
         {"component_token_loss_weight": 1.0},
+    ),
+    (
+        "component-token-prefix",
+        "Joint component-token and prefix-LTR weighting improves component recall while stabilizing early scaffold formation without lowering parse_rate.",
+        {
+            "component_token_loss_weight": 1.0,
+            "ltr_prefix_loss_weight": 1.0,
+        },
     ),
     (
         "component-edge-token",
@@ -1777,6 +1812,12 @@ def _arm_slug_from_knobs(
         and knobs.get("compiler_alignment_kind_filter") == "all"
     ):
         return "compiler-decision-margin"
+    if knobs.get("ltr_prefix_loss_weight") and knobs.get("ltr_tail_loss_weight"):
+        return "scaffold-prefix-tail"
+    if knobs.get("ltr_prefix_loss_weight") and knobs.get("structure_token_loss_weight"):
+        return "scaffold-prefix-structure"
+    if knobs.get("component_token_loss_weight") and knobs.get("ltr_prefix_loss_weight"):
+        return "component-token-prefix"
     if knobs.get("ltr_tail_loss_weight"):
         return "literal-close"
     if knobs.get("ltr_prefix_loss_weight"):
@@ -2070,7 +2111,10 @@ def _select_recommended_slug(
         "symbol-boundary",
         "design-dropout",
         "scaffold-prefix",
+        "scaffold-prefix-structure",
+        "scaffold-prefix-tail",
         "component-token",
+        "component-token-prefix",
         "component-edge-token",
         "component-edge-margin",
         "compiler-decision-token",
@@ -3838,21 +3882,18 @@ def _resolve_promotion_result(
                 )
                 row["last_arm_order"] = delivery.get("arm_order")
                 row["last_arm_seed"] = delivery.get("arm_seed")
-                # Incomplete formal / harness: not a decisive promote attempt.
-                if (
-                    status in {"promotion_inconclusive", "harness_failure"}
-                    or disposition.get("timeout")
-                    or disposition.get("harness_failure")
-                ):
+                # Formal wall timeouts are incomplete measurement — refund the
+                # attempt so promote can retry. Harness failures (including
+                # deadline_reserve / missing_promote_run) still consume the
+                # attempt budget so a stuck harness cannot block thrash forever
+                # by refunding to promote_attempts=0 on every cycle.
+                if status == "promotion_inconclusive" or disposition.get("timeout"):
                     attempts = int(row.get("promote_attempts") or 0)
                     row["promote_attempts"] = max(0, attempts - 1)
-                    if status == "promotion_inconclusive" or disposition.get("timeout"):
-                        row["last_formal_timeout"] = True
-                        row["last_formal_timeout_wall_s"] = _PROMOTE_FORMAL_TIMEOUT_S
-                    if status == "harness_failure" or disposition.get(
-                        "harness_failure"
-                    ):
-                        row["last_harness_failure"] = True
+                    row["last_formal_timeout"] = True
+                    row["last_formal_timeout_wall_s"] = _PROMOTE_FORMAL_TIMEOUT_S
+                if status == "harness_failure" or disposition.get("harness_failure"):
+                    row["last_harness_failure"] = True
                 break
         _write_champion_queue(path, entries)
         print(
@@ -7676,6 +7717,30 @@ def run_cycle(
             )
         else:
             cycle_intent = "screening"
+    # When multi-seed thrash bank is empty but a retryable promote head still
+    # exists (confirmed / promotion_inconclusive / harness_failure), do not hard
+    # block the loop — spend a promote slot. Observed: scaffold-prefix was the
+    # only open thrash arm, held in harness_failure by deadline_reserve skips,
+    # and every screening cycle raised bank-exhausted.
+    if cycle_intent == "screening" and promoting_champion is None:
+        try:
+            _select_recommended_slug(cycle, skip=skip_slugs)
+        except RuntimeError as exc:
+            if _BANK_EXHAUST_MSG not in str(exc):
+                raise
+            retry_head = _queue_head_confirmed(queue_entries)
+            if retry_head is None:
+                raise
+            promoting_champion = retry_head
+            cycle_intent = "promote"
+            role = "promotion"
+            print(
+                "BANK_EXHAUST_PROMOTE_FALLBACK "
+                f"entry_id={retry_head.get('entry_id')} "
+                f"status={retry_head.get('status')} "
+                "reason=retryable_promote_head_while_thrash_bank_empty",
+                flush=True,
+            )
     campaign_id = _campaign_id(loop_id, cycle)
     if open_champion is not None:
         attempts = _bump_champion_attempt(
@@ -8317,7 +8382,9 @@ def run_cycle(
             len(pending) * arm_wall_minutes * 60.0
             + HARNESS_FINALIZATION_RESERVE_SECONDS
         )
-        if remaining_seconds < required_seconds:
+        # Epsilon after schedule-margin fit: never skip when remaining is
+        # within float/clock noise of the reserved budget.
+        if remaining_seconds + 1e-3 < required_seconds:
             reason = "deadline_reserve"
             store = CampaignStore(campaign_id, root)
             for skipped_index, skipped_id in enumerate(pending):
