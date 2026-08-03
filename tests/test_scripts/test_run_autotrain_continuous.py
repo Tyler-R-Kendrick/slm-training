@@ -1874,6 +1874,7 @@ def test_binder_slot_ownership_is_registered_as_distinct_quality_successor() -> 
     knobs = by_slug[slug]
     assert knobs["binder_slot_ownership_loss_weight"] == 1.0
     assert knobs["binder_slot_ownership_decode_weight"] == 1.0
+    assert knobs["compiler_decode_mode"] == "tree"
     assert _mod._arm_slug_from_knobs(knobs) == slug
 
     skip = set(by_slug) - {slug}

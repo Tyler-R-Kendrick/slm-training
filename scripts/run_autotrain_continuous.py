@@ -652,6 +652,7 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         {
             "binder_slot_ownership_loss_weight": 1.0,
             "binder_slot_ownership_decode_weight": 1.0,
+            "compiler_decode_mode": "tree",
         },
     ),
     (
