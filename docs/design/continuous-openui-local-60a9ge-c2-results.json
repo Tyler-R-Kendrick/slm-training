@@ -1,0 +1,79 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 2,
+  "source_commit": "95bbfecf4158a04f2bc970cdd2ad9213f9a1d717",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 21,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "seed": 100001,
+    "trainable_params": 1608960
+  },
+  "arms": {
+    "c2-control": {
+      "trainable_params": 1608960,
+      "last_loss": 22.621936798095703,
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "component_type_recall": 0.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "placeholder_fidelity": 0.5277777777777778,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "reward_score": 0.0,
+        "latency_ms_p50": 4046.13
+      }
+    },
+    "c2-bounds": {
+      "trainable_params": 1608960,
+      "last_loss": 22.621936798095703,
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "component_type_recall": 0.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "placeholder_fidelity": 0.5277777777777778,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "reward_score": 0.0,
+        "latency_ms_p50": 4280.03
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "local commits + docs only; no new stack layer",
+    "reasons": [
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c2-control",
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c2-bounds",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.057499999999999996 candidate=0.057499999999999996 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "conclusion": "Continuous-openui-local loop (session 60a9ge), cycle 2: this is the frozen-replay retry of cycle 1's -bounds vs -control arm, now executing to completion after the venv bootstrap gap was closed. Both arms tie exactly on every quality metric (structural_similarity=.0575, meaningful_program_rate=0, component_type_recall=0, binder_reference_f1=.63333, placeholder_fidelity=.52778, ast_beq_rate=0, canonical_beq_rate=0, reward_score=0), identical training loss (22.6219) and identical params (1,608,960). Unlike a prior same-day session where bounds decoded faster, here bounds is slower (4280.03ms p50 vs control 4046.13ms), so there is no latency win either -- this cycle is a clean null result on every axis. Ship gates fail as expected on fixture scale: insufficient_n (n=3, need>=20) plus every quality threshold. SDLC Phase A classifies NON_POSITIVE (fixture insufficient_n + null primary-metric delta + no latency offset); no stacked PR layer opened.",
+  "next_priorities": [
+    "Test the distinct size-matched 'component-plan' quality hypothesis next (rank 1, confidence 0.90) instead of re-running the now twice-exhausted 'bounds' arm",
+    "Keep the matched control as the size-matched baseline every cycle (rank 2, confidence 0.70)",
+    "Rotate thrash recommendation across the lever bank rather than bounds-only (rank 3, confidence 0.65)",
+    "Soft ship-gate fails on fixture n never stop the continuous loop (rank 4, confidence 0.80)"
+  ],
+  "recorded_at": "2026-08-03T20:34:15Z"
+}
