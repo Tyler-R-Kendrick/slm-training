@@ -18,18 +18,26 @@ available. Non-positive — no stacked PR.
 ## Why this is not treated as a new harness bug
 
 This campaign's per-experiment wall budget is `max_wall_minutes≈1.1667`
-(~70s), most of which is consumed by AgentV/Node bridge startup, leaving
-little headroom for decode. The control hypothesis for this cycle
-specifically was **"both grammar levers off"** — an unconstrained-decode
-diagnostic arm. Per `AGENTS.md`'s decode invariants, unconstrained arms are
-diagnostic controls only, never defaults, and are expected to be slower
-(potentially much slower) than constrained decoding. That the *control* arm
-(not just the candidate) times out here is consistent with that expectation
-rather than a new regression. The same "AgentV decode timeout under a tight
-wall budget" pattern already recurs across many prior cycles (e.g.
-`autotrain-cycle-1821`, `-1796`, `-1770`, `-1766`, `-1751` in
-`docs/MODEL_CARD.md`), so no speculative code fix is applied here without a
-reproduced code-level defect.
+(~70s) — verified from code (`_arm_wall_minutes()` in
+`scripts/run_autotrain_continuous.py`, see below), not from a profiling
+measurement. **What consumed that budget is not directly measured**: no
+per-stage timing breakdown (Node/AgentV bridge startup vs. per-record
+decode) was captured for this run, so attributing the timeout specifically
+to bridge startup vs. decode search is a plausible reading of the code
+paths, not an established cause. What *is* established: the control
+hypothesis for this cycle was **"both grammar levers off"** — an
+unconstrained-decode diagnostic arm. Per `AGENTS.md`'s decode invariants,
+unconstrained arms are diagnostic controls only, never defaults, and are
+expected to be slower (potentially much slower) than constrained decoding;
+`screening_decode_timeout_seconds` defaults to 24s/record, so 3 smoke
+records alone can plausibly approach or exceed the 70s arm budget. That the
+*control* arm (not just the candidate) times out here is consistent with
+that expectation rather than a new regression, but a dedicated harness
+reproduction with per-stage timing capture would be needed to confirm the
+exact cause. The same "AgentV decode timeout under a tight wall budget"
+pattern already recurs across many prior cycles (e.g. `autotrain-cycle-1821`,
+`-1796`, `-1770`, `-1766`, `-1751` in `docs/MODEL_CARD.md`), so no
+speculative code fix is applied here without a reproduced code-level defect.
 
 ## Open handoff actions
 
