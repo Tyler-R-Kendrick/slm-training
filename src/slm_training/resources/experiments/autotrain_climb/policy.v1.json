@@ -68,6 +68,10 @@
     "max_nulls_per_family": 2,
     "require_regime_transition_after_cap": true
   },
+  "screening_arm_closure": {
+    "min_complete_null_seeds": 2,
+    "description": "Permanent thrash-arm bank close requires this many distinct seeds of complete non-positive measurement. One fixture-noise null never closes the approach."
+  },
   "positive_classification": {
     "allow_executable_unblock": true,
     "fixture_insufficient_n_alone_not_positive": true,

@@ -1010,12 +1010,10 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
     ),
 )
 _RECENT_EXHAUSTION_CYCLE_WINDOW = len(_SCREENING_ARM_BANK)
-# Loop-local epoch that reopens the thrash bank after every registered arm has
-# a complete non-positive measurement under the current regime. Same slug under
-# a new epoch is a distinct approach (new seed offset + regime knob), not a
-# silent recycle of a rejected approach.
-_SCREENING_REGIME_BASENAME = "screening_regime.json"
-_SCREENING_REGIME_SCHEMA = "autotrain_screening_regime/v1"
+# Permanent thrash-arm closure requires this many *distinct seeds* of complete
+# non-positive measurement. A single fixture-noise null must not close the
+# approach forever (aligns with climb recipe_null_cap / promotion min_seeds).
+_DEFAULT_ARM_CLOSE_MIN_NULL_SEEDS = 2
 _BANK_EXHAUST_MSG = (
     "registered screening arm bank exhausted; add a distinct preregistered "
     "quality objective instead of recycling a rejected approach"
@@ -1157,10 +1155,6 @@ def _record_cycle_failure(
     soft = isinstance(exc, (subprocess.TimeoutExpired, TimeoutError, ConnectionError))
     if isinstance(exc, subprocess.CalledProcessError):
         soft = bool(exc.cmd and list(exc.cmd)[:2] == ["git", "fetch"])
-    # Bank exhaust is a fail-forward signal (regime reopen). Never hard-block
-    # the continuous loop on residual raises of this message.
-    if isinstance(exc, RuntimeError) and _BANK_EXHAUST_MSG in message:
-        soft = True
     count = 0 if soft else 1
     if not soft:
         for row in reversed(previous):
@@ -1762,50 +1756,25 @@ def _skip_arm_slugs(
     return skip
 
 
-def _screening_regime_path(root: Path, loop_id: str) -> Path:
-    return root / "loops" / loop_id / _SCREENING_REGIME_BASENAME
-
-
-def _load_screening_regime_epoch(root: Path, loop_id: str) -> int:
-    data = _read_json(_screening_regime_path(root, loop_id))
+def _arm_close_min_null_seeds(policy: Any | None = None) -> int:
+    """Distinct complete-null seeds required before a thrash arm is closed."""
     try:
-        epoch = int(data.get("epoch") or 0)
-    except (TypeError, ValueError):
-        epoch = 0
-    return max(0, epoch)
+        from slm_training.autoresearch.climb_policy import load_climb_policy
 
-
-def _save_screening_regime_epoch(
-    root: Path,
-    loop_id: str,
-    epoch: int,
-    *,
-    reason: str,
-    reopened_slug: str | None = None,
-) -> int:
-    """Persist regime epoch after a full-bank exhaust reopen."""
-    path = _screening_regime_path(root, loop_id)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    payload = {
-        "schema": _SCREENING_REGIME_SCHEMA,
-        "loop_id": loop_id,
-        "epoch": int(epoch),
-        "reason": reason,
-        "reopened_slug": reopened_slug,
-        "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-    }
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    tmp.replace(path)
-    return int(epoch)
-
-
-def _knob_screening_regime_epoch(knobs: dict[str, Any]) -> int:
-    raw = knobs.get("screening_regime_epoch")
-    try:
-        return max(0, int(raw or 0))
-    except (TypeError, ValueError):
-        return 0
+        pol = policy if policy is not None else load_climb_policy()
+        payload = getattr(pol, "payload", None) or {}
+        block = (
+            payload.get("screening_arm_closure") if isinstance(payload, dict) else None
+        )
+        if isinstance(block, dict) and block.get("min_complete_null_seeds") is not None:
+            return max(1, int(block["min_complete_null_seeds"]))
+        # Align with recipe_null_cap when screening_arm_closure is absent.
+        cap = payload.get("recipe_null_cap") if isinstance(payload, dict) else None
+        if isinstance(cap, dict) and cap.get("max_nulls_per_family") is not None:
+            return max(1, int(cap["max_nulls_per_family"]))
+    except Exception:  # noqa: BLE001 — fail closed to default
+        pass
+    return _DEFAULT_ARM_CLOSE_MIN_NULL_SEEDS
 
 
 def _recent_completed_nonpositive_slugs(
@@ -1813,39 +1782,54 @@ def _recent_completed_nonpositive_slugs(
     predecessor_campaign_id: str | None,
     *,
     max_cycles: int | None = None,
-    regime_epoch: int | None = None,
+    min_null_seeds: int | None = None,
 ) -> set[str]:
-    """Close complete null approaches under the active screening regime.
+    """Close thrash approaches only after multi-seed complete non-positives.
 
     ``max_cycles`` remains an explicit diagnostic/test bound. Production walks
-    the content-linked lineage to its root so an old rejected approach cannot
-    become novel merely by aging out of a sliding window *within the same
-    regime epoch*. A bumped ``screening_regime_epoch`` is a fail-forward
-    regime transition that reopens the thrash bank with a new identity
-    (epoch knob + seed offset), never a silent recycle of the same approach.
+    the content-linked lineage to its root so aging alone never reopens an
+    approach. A **single** complete non-positive is not enough to close the
+    arm: fixture n is noisy, and climb policy already requires multi-seed
+    evidence before treating a family as recipe-null exhausted
+    (``recipe_null_cap.max_nulls_per_family``, default 2).
+
+    A complete **positive** after nulls clears the null-seed tally for that
+    slug (the approach is not permanently dead if it later wins).
     """
 
+    required = (
+        max(1, int(min_null_seeds))
+        if min_null_seeds is not None
+        else _arm_close_min_null_seeds()
+    )
     cursor = predecessor_campaign_id
     seen: set[str] = set()
-    exhausted: set[str] = set()
+    # slug -> set of seeds with complete non-positive (since last positive)
+    null_seeds: dict[str, set[int | None]] = {}
     loop_id: str | None = None
-    active_epoch = 0 if regime_epoch is None else max(0, int(regime_epoch))
     lineage = itertools.count() if max_cycles is None else range(max(0, max_cycles))
+    # Collect tip→root chain then process oldest-first for positive-reset.
+    chain: list[str] = []
     for _ in lineage:
         if not cursor or cursor in seen:
             break
         seen.add(cursor)
+        chain.append(cursor)
         camp_dir = root / cursor
         campaign = _read_json(camp_dir / "campaign.json")
         handoff = _read_json(camp_dir / "cycle_handoff.json")
-        delivery = _read_json(camp_dir / "sdlc_delivery.json")
         campaign_loop = str(campaign.get("loop_id") or handoff.get("loop_id") or "")
         if loop_id is None:
             loop_id = campaign_loop or None
-            if regime_epoch is None and loop_id:
-                active_epoch = _load_screening_regime_epoch(root, loop_id)
         elif campaign_loop and campaign_loop != loop_id:
+            chain.pop()
             break
+        cursor = str(campaign.get("predecessor_campaign_id") or "")
+
+    for camp_id in reversed(chain):
+        camp_dir = root / camp_id
+        handoff = _read_json(camp_dir / "cycle_handoff.json")
+        delivery = _read_json(camp_dir / "sdlc_delivery.json")
         candidate_id = str(delivery.get("candidate_id") or "")
         handoff_reasons = {str(item) for item in handoff.get("reasons") or []}
         runtime_terminal = bool(
@@ -1891,50 +1875,51 @@ def _recent_completed_nonpositive_slugs(
                     if intent == "confirm"
                     else current_decision.get("positive")
                 )
-        if (
-            candidate_id
-            and stored_positive is False
-            and (delivery.get("measurement_complete") is True or runtime_terminal)
-            and (
-                intent in {"screening", "promotion", "confirm", "retry_measurement"}
-                or runtime_terminal
-            )
-        ):
-            matrix = _read_json(camp_dir / "matrix-proposal.json")
-            knobs = next(
-                (
-                    dict((item.get("experiment") or {}).get("knobs") or {})
-                    for item in matrix.get("hypotheses") or []
-                    if str((item.get("experiment") or {}).get("experiment_id") or "")
-                    == candidate_id
-                ),
-                {},
-            )
-            # Only close the slug under the active regime epoch. Pre-epoch
-            # campaigns (missing knob) count as epoch 0.
-            if _knob_screening_regime_epoch(knobs) != active_epoch:
-                cursor = str(campaign.get("predecessor_campaign_id") or "")
-                continue
-            slug = _arm_slug_from_knobs(knobs, candidate_id=candidate_id)
-            if slug:
-                exhausted.add(slug)
-        cursor = str(campaign.get("predecessor_campaign_id") or "")
-    return exhausted
+        complete_enough = (
+            delivery.get("measurement_complete") is True or runtime_terminal
+        )
+        intent_ok = (
+            intent in {"screening", "promotion", "confirm", "retry_measurement"}
+            or runtime_terminal
+        )
+        if not (candidate_id and complete_enough and intent_ok):
+            continue
+        if stored_positive is not True and stored_positive is not False:
+            continue
+        matrix = _read_json(camp_dir / "matrix-proposal.json")
+        knobs = next(
+            (
+                dict((item.get("experiment") or {}).get("knobs") or {})
+                for item in matrix.get("hypotheses") or []
+                if str((item.get("experiment") or {}).get("experiment_id") or "")
+                == candidate_id
+            ),
+            {},
+        )
+        slug = _arm_slug_from_knobs(knobs, candidate_id=candidate_id)
+        if not slug:
+            continue
+        seed_raw = knobs.get("seed")
+        try:
+            seed: int | None = int(seed_raw) if seed_raw is not None else None
+        except (TypeError, ValueError):
+            seed = None
+        if stored_positive is True:
+            # Win re-opens the approach; clear prior null tally for this slug.
+            null_seeds[slug] = set()
+            continue
+        null_seeds.setdefault(slug, set()).add(seed)
+
+    return {
+        slug for slug, seeds in null_seeds.items() if len(seeds) >= required
+    }
 
 
 def _select_recommended_slug(
     cycle: int,
     skip: set[str] | None = None,
-    *,
-    allow_regime_reopen: bool = False,
 ) -> str:
-    """Rotate screening arms without reopening a rejected approach.
-
-    When every registered arm is closed under the active regime and
-    ``allow_regime_reopen`` is true, return the cycle-rotated bank arm so the
-    caller can bump ``screening_regime_epoch`` and fail forward. Raising is
-    reserved for unit tests and callers that refuse regime transitions.
-    """
+    """Rotate screening arms without reopening a multi-seed-closed approach."""
     # Evidence-triggered and successor quality arms do not perturb the stable
     # cycle-number rotation of the original screening bank. They become the
     # fail-forward path only after older approaches are closed.
@@ -1998,51 +1983,7 @@ def _select_recommended_slug(
     for slug in successor_slugs:
         if slug not in skip:
             return slug
-    if allow_regime_reopen:
-        # Fail-forward: reopen the cycle-rotated bank arm under a new regime.
-        return ordered[0] if ordered else _SCREENING_ARM_BANK[0][0]
     raise RuntimeError(_BANK_EXHAUST_MSG)
-
-
-def _select_screening_slug_with_regime(
-    *,
-    root: Path,
-    loop_id: str,
-    cycle: int,
-    skip: set[str],
-    predecessor_priority: str | None,
-) -> tuple[str, int, bool]:
-    """Pick a screening slug, bumping regime epoch when the bank is closed.
-
-    Returns ``(slug, regime_epoch, did_transition)``.
-    """
-    epoch = _load_screening_regime_epoch(root, loop_id)
-    # Prefer an evidence-directed predecessor slug that is still open.
-    if predecessor_priority and predecessor_priority not in skip:
-        return predecessor_priority, epoch, False
-    try:
-        slug = _select_recommended_slug(cycle, skip=skip, allow_regime_reopen=False)
-        return slug, epoch, False
-    except RuntimeError:
-        new_epoch = epoch + 1
-        # Fail-forward: reopen thrash rotation under a new regime epoch.
-        # Confirm/promote paths win earlier in the cycle planner, so empty
-        # thrash skip is safe here.
-        slug = _select_recommended_slug(cycle, skip=set(), allow_regime_reopen=True)
-        _save_screening_regime_epoch(
-            root,
-            loop_id,
-            new_epoch,
-            reason="screening_arm_bank_exhausted",
-            reopened_slug=slug,
-        )
-        print(
-            "SCREENING_REGIME_TRANSITION "
-            f"epoch={epoch}->{new_epoch} reopen={slug} "
-            f"closed_arms={len(skip)}",
-            flush=True,
-        )
-        return slug, new_epoch, True
 
 
 def _repeat_confirm_while_waiting_for_promotion(
@@ -2079,7 +2020,6 @@ def _select_cycle_slug(
     skip: set[str],
     has_confirm_levers: bool,
     has_promote_levers: bool,
-    allow_regime_reopen: bool = False,
 ) -> str | None:
     """Select only for screening; confirm/promote carry frozen recipes."""
 
@@ -2087,9 +2027,7 @@ def _select_cycle_slug(
         return None
     if predecessor_priority and predecessor_priority not in skip:
         return predecessor_priority
-    return _select_recommended_slug(
-        cycle, skip=skip, allow_regime_reopen=allow_regime_reopen
-    )
+    return _select_recommended_slug(cycle, skip=skip)
 
 
 def _apply_arm_extras(base_steps: int, extras: dict[str, Any]) -> dict[str, Any]:
@@ -6418,7 +6356,6 @@ def _matrix(
     promote_control_levers: dict[str, Any] | None = None,
     recommended_slug: str | None = None,
     skip_slugs: set[str] | None = None,
-    screening_regime_epoch: int = 0,
 ) -> dict:
     from slm_training.autoresearch.climb_policy import (
         decode_timeout_seconds_for_role,
@@ -6430,10 +6367,10 @@ def _matrix(
     prior = role_citations.get("prior_result") or (
         cites[1] if len(cites) > 1 else cites[0]
     )
-    regime_epoch = max(0, int(screening_regime_epoch or 0))
     # Unique seed per cycle — (cycle*17)%50 only yields 50 seeds and thrash-rejects.
-    # Regime epoch shifts the seed so a reopened bank arm is a distinct approach.
-    seed = 100_000 + int(cycle) + regime_epoch * 10_007
+    # Distinct seeds are required so multi-seed approach closure can re-test a
+    # once-null arm on a new seed before permanent bank close.
+    seed = 100_000 + int(cycle)
     steps = steps + (cycle % 3)  # slight variation avoids knob-signature collision
     pol = policy or load_climb_policy()
     decode_timeout = decode_timeout_seconds_for_role(pol, role)
@@ -6490,7 +6427,6 @@ def _matrix(
             "steps": steps,
             "batch_size": 2,
             "seed": seed,
-            "screening_regime_epoch": regime_epoch,
             "context_backend": "scratch",
             "sync_checkpoints": False,
             "local_files_only": True,
@@ -6880,10 +6816,8 @@ def _matrix(
         }
     else:
         # Change B: rotate recommended thrash arm; full bank always present.
-        # Continuous cycle planner already resolved regime reopen; matrix path
-        # still fail-forwards if called directly with a fully closed skip set.
         rec_slug = recommended_slug or _select_recommended_slug(
-            cycle, skip=skip_slugs, allow_regime_reopen=True
+            cycle, skip=skip_slugs
         )
         bank_by_slug = {
             slug: (hyp, extras) for slug, hyp, extras in _SCREENING_ARM_BANK
@@ -7512,10 +7446,7 @@ def run_cycle(
     ):
         _write_champion_queue(queue_path, queue_entries)
     replayed_confirmation = _confirmation_replay_entry(queue_entries, replay)
-    screening_regime_epoch = _load_screening_regime_epoch(root, loop_id)
-    recent_exhausted = _recent_completed_nonpositive_slugs(
-        root, pred, regime_epoch=screening_regime_epoch
-    )
+    recent_exhausted = _recent_completed_nonpositive_slugs(root, pred)
     skip_slugs = (
         _skip_arm_slugs(queue_entries, integration_commit=integration)
         | recent_exhausted
@@ -7908,31 +7839,18 @@ def run_cycle(
             "RECENT_EXHAUSTION skip=" + ",".join(sorted(recent_exhausted)),
             flush=True,
         )
-    pred_priority = _predecessor_priority_slug(
-        root,
-        pred,
+    rec_slug = _select_cycle_slug(
+        cycle,
+        predecessor_priority=_predecessor_priority_slug(
+            root,
+            pred,
+            skip=skip_slugs,
+            closed=recent_exhausted,
+        ),
         skip=skip_slugs,
-        closed=recent_exhausted,
+        has_confirm_levers=confirm_levers is not None,
+        has_promote_levers=promote_levers is not None,
     )
-    regime_transitioned = False
-    if promote_levers is None and confirm_levers is None:
-        rec_slug, screening_regime_epoch, regime_transitioned = (
-            _select_screening_slug_with_regime(
-                root=root,
-                loop_id=loop_id,
-                cycle=cycle,
-                skip=skip_slugs,
-                predecessor_priority=pred_priority,
-            )
-        )
-        if regime_transitioned:
-            # Lineage non-positives from the previous epoch no longer apply.
-            recent_exhausted = set()
-            skip_slugs = _skip_arm_slugs(
-                queue_entries, integration_commit=integration
-            )
-    else:
-        rec_slug = None
     matrix = _matrix(
         campaign_id=campaign_id,
         evidence_snapshot_id=ev["snapshot_id"],
@@ -7954,7 +7872,6 @@ def run_cycle(
         if promote_levers is None and confirm_levers is None
         else None,
         skip_slugs=skip_slugs,
-        screening_regime_epoch=screening_regime_epoch,
     )
     replay_manifests: dict[str, dict[str, Any]] = {}
     if replay is not None:

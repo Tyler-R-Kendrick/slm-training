@@ -1,37 +1,29 @@
-# Continuous screening bank: regime reopen (2026-08-03)
+# Continuous screening bank: multi-seed close (not regime recycle)
 
-## Problem
+## Problem (real)
 
-After every registered thrash arm had a complete non-positive measurement in
-lineage, `_select_recommended_slug` raised:
+The thrash bank hit "exhausted" after **one complete non-positive per arm**.
+On the live loop that permanently closed **~47/47** arms; under a
+**2-distinct-seed** rule only **~3** arms would close. Fixture n is noisy, so
+single-null permanent close is false approach death — not honest anti-thrash.
 
-```text
-registered screening arm bank exhausted; add a distinct preregistered quality
-objective instead of recycling a rejected approach
-```
-
-Three consecutive copies of that error hard-blocked the continuous driver
-(`state=BLOCKED`, `blocker_count=3`) even though the goal (improve fixture
-quality under the wall) remained open.
+A later "regime epoch reopen" papered over that by re-running the same closed
+slugs with a cosmetic epoch knob. That **hid** bank exhaust instead of fixing
+closure policy.
 
 ## Fix
 
-Fail-forward with a **screening regime epoch**:
+1. **Permanent arm close** requires `screening_arm_closure.min_complete_null_seeds`
+   (default **2**, aligned with `recipe_null_cap.max_nulls_per_family`).
+2. Distinct `seed` values count; same seed re-run does not double-count.
+3. A complete **positive** clears the null-seed tally for that slug.
+4. **Removed** screening_regime_epoch bank reopen as a fail-forward path.
+5. True multi-seed full-bank exhaust still raises
+   `registered screening arm bank exhausted…` — that means add a **new
+   preregistered** quality objective, not recycle rejects.
 
-1. Non-positive thrash closures are scoped to `screening_regime_epoch` on arm knobs.
-2. When the active epoch has no open bank arm, continuous bumps
-   `loops/<loop_id>/screening_regime.json` (`epoch += 1`), reopens thrash
-   rotation, and logs `SCREENING_REGIME_TRANSITION`.
-3. Reopened matrices carry `screening_regime_epoch` and a seed offset
-   (`+ epoch * 10007`) so the approach identity changes — not a silent
-   recycle of the same rejected approach (I14).
-4. Residual bank-exhaust `RuntimeError`s are recorded as **soft** failures and
-   never alone put the loop in `BLOCKED`.
+## What this is not
 
-Confirm/promote frozen recipes are unchanged and still outrank thrash.
-
-## Non-goals
-
-- Weakening ship gates or promotion effect gates
-- Claiming ship L3 from continuous thrash
-- Deleting lineage evidence of prior nulls (audit remains; only epoch-scoped skip)
+- Not ship-gate weakening
+- Not vacuous promote reopen
+- Not silent recycle of multi-seed-closed approaches
