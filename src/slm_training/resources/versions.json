@@ -7618,6 +7618,11 @@
         {
           "version": "v3",
           "date": "2026-08-03",
+          "note": "no-bump: record honest c1849 incomplete slot-owner runtime-gap checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
           "note": "no-bump: record honest c1848 incomplete binder-slot-ownership harness-repair checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
         },
         {

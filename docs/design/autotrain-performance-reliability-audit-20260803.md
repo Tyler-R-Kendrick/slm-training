@@ -116,3 +116,10 @@ matched control completed, while the candidate never reached training. Commit
 `d876037b5` adds the required tree capability and regression coverage; the
 supervisor has acknowledged the repair and must replay the frozen c1848 arm
 before interpreting quality metrics.
+
+c1849 reached the model constructor and exposed the next fail-closed boundary:
+the reserved binder-slot ownership fields have no runtime owner. The control
+still completed (`structural_similarity=.0575`, binder F1 `.8222`, fidelity
+`.7222`, `n=3`), but the candidate produced no model artifact. Commit
+`fb9093314` routes the next distinct objective to the implemented
+`slot-component-coverage` owner; c1849 remains infrastructure evidence only.
