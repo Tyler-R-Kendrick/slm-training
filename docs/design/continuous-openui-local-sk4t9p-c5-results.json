@@ -1,0 +1,68 @@
+{
+    "schema": "continuous_autotrain_cycle_results/v1",
+    "loop_id": "continuous-openui-local",
+    "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c5",
+    "cycle_index": 5,
+    "cycle_intent": "confirm",
+    "source_commit": "23fc0b3db8685300d972467719d3672a53c85dad",
+    "honesty": "fixture_or_scratch",
+    "not_ship_claim": true,
+    "recipe": {
+        "device": "cpu",
+        "train_version": "wf_smoke_v2",
+        "eval_version": "e938_role_safe_all_targets_v2",
+        "ship_gates": true,
+        "seed": 100005,
+        "trainable_params": 1755764
+    },
+    "arms": {
+        "c5-control": {
+            "status": "completed_eval_gates_failed",
+            "checkpoint_sha256": "95073bc31df8fa4e98ac6ec45af542e689d3ebb7b3b25181575265cbd1a3712d",
+            "smoke": {
+                "n": 3,
+                "parse_rate": 1.0,
+                "meaningful_program_rate": 0.0,
+                "structural_similarity": 0.04306666666666666,
+                "binder_reference_f1": 0.8222222222222223,
+                "latency_ms_p50": 6947.6
+            }
+        },
+        "c5-confirm": {
+            "status": "training_completed_evaluation_incomplete_decode_timeout",
+            "checkpoint_sha256": "38392edb708e170d2272b3051dc1db47a38dd86d1fd50c1080a3b7549f4b9c59",
+            "smoke": {
+                "n": 3,
+                "decode_timeout_count": 3,
+                "parse_rate": null,
+                "meaningful_program_rate": null,
+                "structural_similarity": null,
+                "binder_reference_f1": null
+            }
+        }
+    },
+    "primary_metric": "smoke.structural_similarity",
+    "primary_delta": null,
+    "sdlc_phase_a": {
+        "positive": false,
+        "stack_layer": false,
+        "stack_action": "no_stack_layer_non_positive",
+        "agent_required": "continue loop; local commits/docs only",
+        "reasons": [
+            "measurement_incomplete:c20260803-continuous-openui-local-8c0b60dd-c5-confirm:smoke:incomplete_document_n=3:decode_timeout_count=3",
+            "harness_failure:c20260803-continuous-openui-local-8c0b60dd-c5-confirm:experiment_failed",
+            "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c5-control",
+            "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c5-confirm",
+            "primary_metric_unavailable",
+            "fixture_insufficient_n_alone",
+            "confirmation_rejected:primary_quality_not_reheld"
+        ]
+    },
+    "champion_status": "confirmation_inconclusive",
+    "conclusion": "Continuous-openui-local loop, cycle 5 (scheduled session sk4t9p): the driver's own queued fresh-seed confirmation of the component-plan champion (seed 100005, size-matched control/confirm, 1,755,764 params both) trained both arms to completion (both checkpoints exist on disk), but the 'confirm' arm's AgentV evaluation hit 3 decode timeouts (decode_timeout_count=3) and never produced smoke quality metrics. This is the same seed-100005 dual-arm decode timeout with an undetermined root cause first documented in autotrain-cycle-c5-c6-replay-blocked-follow-up.md and explicitly deferred by every prior continuous-openui-local session (ts5ofk, j48f8u) pending a dedicated improve-openui-harnesses investigation. SDLC Phase A classifies NON_POSITIVE (measurement_incomplete + harness_failure, harness_family=model_build); the driver's cycle_handoff.json emits a repair_harness action naming model_build as the owning family. This cycle does not attempt that repair -- it only reproduces the same known blocker a further time, now confirmed to persist even after the unrelated hypothesize-feedback-race fix landed this session (harness_family=autoresearch, a different family).",
+    "next_priorities": [
+        "Do not speculatively re-attempt the seed-100005 dual-arm decode timeout; it requires a dedicated improve-openui-harnesses session against harness_family=model_build (frozen_manifest_sha256 6ee028aa...cc83e7b).",
+        "Once repaired: replay the identical frozen c5-confirm arm (proposed_experiment_id c20260803-continuous-openui-local-8c0b60dd-c5-confirm) before any new model hypothesis."
+    ],
+    "recorded_at": "2026-08-03T11:55:06Z"
+}
