@@ -2683,7 +2683,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v166",
+      "version": "v167",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2723,6 +2723,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v167",
+          "date": "2026-08-03",
+          "note": "Thrash-arm permanent close requires min 2 distinct complete-null seeds (not one fixture null); remove regime-epoch recycle of closed approaches"
+        },
         {
           "version": "v166",
           "date": "2026-08-03",

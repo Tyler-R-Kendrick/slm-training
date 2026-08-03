@@ -512,8 +512,8 @@ class ExperimentKnobs(StrictModel):
     ltr_prefix_loss_weight: float | None = Field(default=None, ge=0, le=20)
     ltr_tail_loss_weight: float | None = Field(default=None, ge=0, le=20)
     seed: int | None = Field(default=None, ge=0)
-    # Continuous thrash identity: bumps when the screening arm bank is fully
-    # closed so reopen is a regime transition (new approach), not a recycle.
+    # Historical continuous field (regime-epoch reopen was removed). Accepted
+    # read-only for old matrices; not used for thrash identity or bank close.
     screening_regime_epoch: int | None = Field(default=None, ge=0, le=1_000_000)
     context_backend: Literal["scratch", "hf"] | None = None
     output_tokenizer: Literal["compositional", "lexer"] | None = None

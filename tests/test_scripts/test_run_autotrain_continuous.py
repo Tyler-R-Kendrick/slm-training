@@ -781,11 +781,6 @@ def test_select_recommended_slug_rotates_and_skips() -> None:
     all_slugs = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
     with pytest.raises(RuntimeError, match="screening arm bank exhausted"):
         _mod._select_recommended_slug(1, skip=all_slugs)
-    # Continuous fail-forward: reopen under a new regime rather than hard-stop
-    reopened = _mod._select_recommended_slug(
-        1, skip=all_slugs, allow_regime_reopen=True
-    )
-    assert reopened in {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
     assert (
         _mod._select_recommended_slug(1817, skip=all_slugs - {"component-edge-token"})
         == "component-edge-token"
@@ -897,71 +892,55 @@ def test_confirmation_bypasses_exhausted_screening_selector() -> None:
             has_confirm_levers=False,
             has_promote_levers=False,
         )
-    # Continuous path reopens rather than dying.
-    assert (
-        _mod._select_cycle_slug(
-            1792,
-            predecessor_priority=None,
-            skip=all_slugs,
-            has_confirm_levers=False,
-            has_promote_levers=False,
-            allow_regime_reopen=True,
-        )
-        is not None
-    )
 
 
-def test_screening_regime_reopen_bumps_epoch(tmp_path: Path) -> None:
-    root = tmp_path / "autoresearch"
-    loop_id = "loop-regime"
-    all_slugs = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
-    assert _mod._load_screening_regime_epoch(root, loop_id) == 0
-    slug, epoch, transitioned = _mod._select_screening_slug_with_regime(
-        root=root,
-        loop_id=loop_id,
-        cycle=1892,
-        skip=all_slugs,
-        predecessor_priority=None,
-    )
-    assert transitioned is True
-    assert epoch == 1
-    assert slug in all_slugs
-    assert _mod._load_screening_regime_epoch(root, loop_id) == 1
-    # Second full-bank close under the new epoch bumps again.
-    slug2, epoch2, transitioned2 = _mod._select_screening_slug_with_regime(
-        root=root,
-        loop_id=loop_id,
-        cycle=1893,
-        skip=all_slugs,
-        predecessor_priority=None,
-    )
-    assert transitioned2 is True
-    assert epoch2 == 2
-    assert slug2 in all_slugs
-
-
-def test_nonpositive_exhaustion_is_regime_scoped(tmp_path: Path) -> None:
-    root = tmp_path / "autoresearch"
-    loop_id = "loop-epoch-scope"
-    camp_id = "continuous-loop-c1"
+def _write_screening_null_camp(
+    root: Path,
+    *,
+    camp_id: str,
+    loop_id: str,
+    slug: str,
+    seed: int,
+    predecessor: str | None,
+    positive: bool = False,
+    knobs_extra: dict | None = None,
+) -> None:
     camp = root / camp_id
-    camp.mkdir(parents=True)
+    camp.mkdir(parents=True, exist_ok=True)
+    knobs = {
+        "grammar_completion_bounds": slug == "bounds",
+        "compact_active_canvas": slug == "canvas",
+        "seed": seed,
+        **(knobs_extra or {}),
+    }
+    if slug == "both":
+        knobs["grammar_completion_bounds"] = True
+        knobs["compact_active_canvas"] = True
     (camp / "campaign.json").write_text(
-        json.dumps({"campaign_id": camp_id, "loop_id": loop_id})
+        json.dumps(
+            {
+                "campaign_id": camp_id,
+                "loop_id": loop_id,
+                "predecessor_campaign_id": predecessor,
+            }
+        ),
+        encoding="utf-8",
     )
     (camp / "cycle_handoff.json").write_text(
-        json.dumps({"loop_id": loop_id, "cycle_intent": "screening"})
+        json.dumps({"loop_id": loop_id, "cycle_intent": "screening"}),
+        encoding="utf-8",
     )
     (camp / "sdlc_delivery.json").write_text(
         json.dumps(
             {
-                "candidate_id": f"{camp_id}-bounds",
+                "candidate_id": f"{camp_id}-{slug}",
                 "control_id": f"{camp_id}-control",
                 "cycle_intent": "screening",
-                "positive": False,
+                "positive": positive,
                 "measurement_complete": True,
             }
-        )
+        ),
+        encoding="utf-8",
     )
     (camp / "matrix-proposal.json").write_text(
         json.dumps(
@@ -969,41 +948,98 @@ def test_nonpositive_exhaustion_is_regime_scoped(tmp_path: Path) -> None:
                 "hypotheses": [
                     {
                         "experiment": {
-                            "experiment_id": f"{camp_id}-bounds",
-                            "knobs": {
-                                "grammar_completion_bounds": True,
-                                "screening_regime_epoch": 0,
-                            },
+                            "experiment_id": f"{camp_id}-{slug}",
+                            "knobs": knobs,
                         }
                     }
                 ]
             }
-        )
-    )
-    # Epoch 0: bounds is closed.
-    assert "bounds" in _mod._recent_completed_nonpositive_slugs(
-        root, camp_id, regime_epoch=0
-    )
-    # Epoch 1: same lineage arm is not closed (new regime identity).
-    assert "bounds" not in _mod._recent_completed_nonpositive_slugs(
-        root, camp_id, regime_epoch=1
+        ),
+        encoding="utf-8",
     )
 
 
-def test_bank_exhaust_failure_is_soft_not_hard_block(tmp_path: Path) -> None:
+def test_single_complete_null_does_not_close_arm(tmp_path: Path) -> None:
+    """Fixture-noise single-seed null must not permanent-close the thrash arm."""
     root = tmp_path / "autoresearch"
-    loop_id = "loop-soft-exhaust"
-    count = _mod._record_cycle_failure(
-        root=root,
+    loop_id = "loop-ms"
+    _write_screening_null_camp(
+        root,
+        camp_id="c1",
         loop_id=loop_id,
-        exc=RuntimeError(_mod._BANK_EXHAUST_MSG),
-        cycle_index=1890,
+        slug="bounds",
+        seed=100_001,
+        predecessor=None,
+        positive=False,
     )
-    assert count == 0
-    state = json.loads(
-        (root / "loops" / loop_id / "state.json").read_text(encoding="utf-8")
+    assert "bounds" not in _mod._recent_completed_nonpositive_slugs(
+        root, "c1", min_null_seeds=2
     )
-    assert state["state"] != "BLOCKED"
+    # Still selectable for a second-seed retest.
+    assert _mod._select_recommended_slug(1, skip=set()) == "bounds"
+
+
+def test_two_distinct_seed_nulls_close_arm(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-ms2"
+    _write_screening_null_camp(
+        root,
+        camp_id="c1",
+        loop_id=loop_id,
+        slug="bounds",
+        seed=100_001,
+        predecessor=None,
+    )
+    _write_screening_null_camp(
+        root,
+        camp_id="c2",
+        loop_id=loop_id,
+        slug="bounds",
+        seed=100_002,
+        predecessor="c1",
+    )
+    closed = _mod._recent_completed_nonpositive_slugs(
+        root, "c2", min_null_seeds=2
+    )
+    assert "bounds" in closed
+    # Other arms remain open.
+    assert _mod._select_recommended_slug(1, skip=closed) != "bounds"
+
+
+def test_positive_clears_prior_null_tally(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-ms3"
+    _write_screening_null_camp(
+        root,
+        camp_id="c1",
+        loop_id=loop_id,
+        slug="bounds",
+        seed=1,
+        predecessor=None,
+        positive=False,
+    )
+    _write_screening_null_camp(
+        root,
+        camp_id="c2",
+        loop_id=loop_id,
+        slug="bounds",
+        seed=2,
+        predecessor="c1",
+        positive=True,
+    )
+    # After a win, one later null is not enough to re-close.
+    _write_screening_null_camp(
+        root,
+        camp_id="c3",
+        loop_id=loop_id,
+        slug="bounds",
+        seed=3,
+        predecessor="c2",
+        positive=False,
+    )
+    assert "bounds" not in _mod._recent_completed_nonpositive_slugs(
+        root, "c3", min_null_seeds=2
+    )
 
 
 def test_matrix_thrash_rotation_recommends_non_bounds() -> None:
@@ -2655,13 +2691,16 @@ def test_recent_completed_nonpositive_slugs_follow_predecessor_chain(
         )
         predecessor = campaign_id
 
-    assert _mod._recent_completed_nonpositive_slugs(root, predecessor) == {
+    # Lineage mechanics tests use min_null_seeds=1; production default is 2.
+    assert _mod._recent_completed_nonpositive_slugs(
+        root, predecessor, min_null_seeds=1
+    ) == {
         "component-plan",
         "component-edge",
     }
 
     assert _mod._recent_completed_nonpositive_slugs(
-        root, predecessor, max_cycles=1
+        root, predecessor, max_cycles=1, min_null_seeds=1
     ) == {"component-edge"}
 
     newest = root / str(predecessor) / "sdlc_delivery.json"
@@ -2671,7 +2710,9 @@ def test_recent_completed_nonpositive_slugs_follow_predecessor_chain(
     (root / str(predecessor) / "cycle_handoff.json").write_text(
         json.dumps({"loop_id": "loop-1", "cycle_intent": "retry_measurement"})
     )
-    assert _mod._recent_completed_nonpositive_slugs(root, predecessor) == {
+    assert _mod._recent_completed_nonpositive_slugs(
+        root, predecessor, min_null_seeds=1
+    ) == {
         "component-plan",
         "component-edge",
     }
@@ -2679,7 +2720,9 @@ def test_recent_completed_nonpositive_slugs_follow_predecessor_chain(
     newest_delivery = json.loads(newest.read_text())
     newest_delivery["measurement_complete"] = False
     newest.write_text(json.dumps(newest_delivery))
-    assert _mod._recent_completed_nonpositive_slugs(root, predecessor) == {
+    assert _mod._recent_completed_nonpositive_slugs(
+        root, predecessor, min_null_seeds=1
+    ) == {
         "component-plan"
     }
 
@@ -2700,7 +2743,9 @@ def test_recent_completed_nonpositive_slugs_follow_predecessor_chain(
             }
         )
     )
-    assert _mod._recent_completed_nonpositive_slugs(root, predecessor) == {
+    assert _mod._recent_completed_nonpositive_slugs(
+        root, predecessor, min_null_seeds=1
+    ) == {
         "component-plan",
         "component-edge",
     }
@@ -2756,7 +2801,9 @@ def test_recent_completed_nonpositive_slugs_reclassifies_stale_positive(
         },
     )
 
-    assert _mod._recent_completed_nonpositive_slugs(root, campaign_id) == {"steps"}
+    assert _mod._recent_completed_nonpositive_slugs(
+        root, campaign_id, min_null_seeds=1
+    ) == {"steps"}
 
 
 def test_completed_null_does_not_age_out_of_lineage_exhaustion(
@@ -2825,8 +2872,15 @@ def test_completed_null_does_not_age_out_of_lineage_exhaustion(
         root,
         predecessor,
         max_cycles=_mod._RECENT_EXHAUSTION_CYCLE_WINDOW,
+        min_null_seeds=1,
     )
-    assert "bounds" in _mod._recent_completed_nonpositive_slugs(root, predecessor)
+    assert "bounds" in _mod._recent_completed_nonpositive_slugs(
+        root, predecessor, min_null_seeds=1
+    )
+    # Production default (2 seeds) does not close on a single complete null.
+    assert "bounds" not in _mod._recent_completed_nonpositive_slugs(
+        root, predecessor, min_null_seeds=2
+    )
 
 
 def test_rejected_confirmation_exhausts_its_source_quality_family(
@@ -2880,9 +2934,12 @@ def test_rejected_confirmation_exhausts_its_source_quality_family(
         )
     )
 
-    assert _mod._recent_completed_nonpositive_slugs(root, campaign_id) == {
-        "component-inventory"
-    }
+    assert _mod._recent_completed_nonpositive_slugs(
+        root, campaign_id, min_null_seeds=1
+    ) == {"component-inventory"}
+    assert _mod._recent_completed_nonpositive_slugs(
+        root, campaign_id, min_null_seeds=2
+    ) == set()
 
 
 def test_predecessor_reclassifies_stale_positive_under_current_policy(
