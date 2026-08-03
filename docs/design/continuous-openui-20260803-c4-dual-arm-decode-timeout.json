@@ -1,0 +1,83 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "loop_id": "continuous-openui-20260803",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-202608-fa9f9cf7-c4",
+  "cycle_index": 4,
+  "cycle_intent": "screening",
+  "evidence_class": "fixture",
+  "decision": "infrastructure_failure_not_a_model_result_repair_still_required",
+  "scoreable": false,
+  "new_checkpoint_created": true,
+  "upstream_commit": "5d5b2882ad18301526e96e68a5a8613d02518ef7",
+  "integration_commit": "10b801215d138cae245d753ae36dbbeedacc6bc8",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "hypothesis": "component-edge"
+  },
+  "arms": {
+    "control": {
+      "experiment_id": "c20260803-continuous-openui-202608-fa9f9cf7-c4-control",
+      "trainable_params": 1766990,
+      "checkpoint_sha256": "eec4db4aee20524d447f1218eb3eb2b436a6b2c930a88484f3acbcfc670dc21f",
+      "status": "trained_eval_incomplete",
+      "failure_stage": "evaluate_model",
+      "decode_timeout_document_count": 3,
+      "effective_decode_timeout_seconds_max": 24.0,
+      "smoke_n": 3,
+      "smoke": null
+    },
+    "component-edge": {
+      "experiment_id": "c20260803-continuous-openui-202608-fa9f9cf7-c4-component-edge",
+      "trainable_params": 1766990,
+      "checkpoint_sha256": "7ccbad8634927febe031d268e4f19a7441224113a525c2b3b3e33d0515398051",
+      "status": "trained_eval_incomplete",
+      "failure_stage": "evaluate_model",
+      "decode_timeout_document_count": 3,
+      "effective_decode_timeout_seconds_max": 24.0,
+      "smoke_n": 3,
+      "smoke": null
+    }
+  },
+  "comparison": {
+    "attributable": false
+  },
+  "agentv": {
+    "bundles_complete": false,
+    "execution_errors": 0,
+    "decode_timeouts": 6,
+    "ship_gates_pass": false
+  },
+  "checkpoint_policy": "local_explicit_no_sync_not_reusable_not_promoted_not_ship_eval_incomplete",
+  "lean": "not_applicable:screening",
+  "related_evidence": {
+    "cross_loop_precedent": "The same dual-arm (both control and candidate) finalized-decode-timeout signature was independently documented the same day in a different loop lineage (continuous-openui-local-8c0b60dd, cycle c5, 1,755,760 params, seed 100005) -- see docs/design/autotrain-cycle-c5-dual-arm-decode-timeout-unresolved.md and docs/design/autotrain-cycle-c5-c6-replay-blocked-follow-up.md. That session ruled out a defect in the per-record decode-timeout allocator, drafted then correctly reverted an auto-retire routing change (it would have violated tests/test_scripts/test_run_autotrain_continuous.py::test_replayed_dual_arm_timeouts_remain_inconclusive_and_require_repair), and left root cause unresolved between (a) seed-dependent decode pathology and (b) sandbox CPU throughput vs. per-experiment wall-budget headroom at ~1.7-1.8M params.",
+    "new_data_point": "This cycle reproduces the identical dual-arm timeout signature (decode_timeout_document_count=3 on both arms, 24.0s effective timeout) in a distinct loop lineage, distinct campaign, distinct params (1,766,990 vs 1,755,760), and no shared seed -- this weighs against hypothesis (a) seed-specific pathology and toward hypothesis (b) sandbox compute headroom at this model-size band, since two independent sandboxes/loops hit the same symmetric failure at similar (but not identical) sizes on the same day."
+  },
+  "action_taken": "Declined to attempt a speculative repair. The existing regression test intentionally keeps a dual-arm finalized timeout inconclusive and demanding real repair rather than silent retirement; this session did not have the scope for the compiler-tree decode profiling both blockers' docs call for. No repair_harness commit was fabricated to unblock automatic replay.",
+  "next_priority": "hand off to improve-openui-harnesses for dedicated compiler-tree decode profiling at the ~1.7-1.8M param band under this sandbox's CPU/wall-budget constraints, per the c5/c6 follow-up doc's recommendation -- do not keep auto-retrying this campaign's frozen arm without that investigation",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "10b801215d138cae245d753ae36dbbeedacc6bc8",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v77",
+      "harness.model_build.train": "v36",
+      "harness.experiment_feature_flags": "v4",
+      "harness.autoresearch.experiment_campaign": "v110",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "evals.agentv": "v8",
+      "model.twotower": "v299",
+      "dsl.symbolic_surface": "v6"
+    },
+    "stamped_at": "2026-08-03T01:49:50.800588Z"
+  }
+}
