@@ -1,0 +1,68 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c6",
+  "cycle_index": 6,
+  "evidence_class": "fixture",
+  "decision": "infrastructure_failure_not_a_model_result",
+  "scoreable": false,
+  "new_checkpoint_created": false,
+  "upstream_commit": "2c4debec7a426036f26159bd7340fce2cbe6411a",
+  "integration_commit": "27f545d3973eee1d7d515a8b0f93ccaae8cc2e98",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c6-control",
+      "status": "completed_train_eval_incomplete",
+      "trainable_params": 1766990,
+      "failure_stage": "evaluate_model",
+      "failure_reason": "smoke:decode_timeout_count=3 of 3 documents (3rd consecutive cycle); compiler_ms_mean=23218.7ms"
+    },
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c6-component-edge",
+      "status": "completed_train_eval_incomplete",
+      "trainable_params": 1766990,
+      "failure_stage": "evaluate_model",
+      "failure_reason": "smoke:decode_timeout_count=3 of 3 documents (3rd consecutive cycle); compiler_ms_mean=23056.4ms"
+    }
+  ],
+  "comparison": {
+    "attributable": false
+  },
+  "thrash_timing": {
+    "arm_wall_seconds": 70.0,
+    "min_train_floor_seconds": 20.0,
+    "eval_overhead_seconds": 8.0,
+    "configured_decode_timeout_seconds": 8.0,
+    "wall_fit_max_decode_seconds": 14.0,
+    "clamp_bound": false,
+    "observed_p95_compiler_ms": 23812.8,
+    "note": "configured_decode_timeout_seconds (8s) is the binding constraint (clamp_bound=false, i.e. the wall-fit ceiling of 14s is not what's limiting -- the policy-configured 8s is). Even the 14s wall-fit ceiling would be insufficient: observed compile cost is consistently ~23-24s across cycles 4-6, and 3 docs x 23s = 69s alone would consume the entire 70s arm wall, leaving no room for the 20s train floor + 8s overhead. This recipe/host pairing cannot fit inside the arm wall by raising the timeout knob alone without violating the repository's MAX_RUN_MINUTES cap."
+  },
+  "repeated_blocker": {
+    "cycles": [4, 5, 6],
+    "identical_signal": "smoke:decode_timeout_count=3 on both arms, ~23-24s mean compiler time vs 8s configured timeout",
+    "disposition": "repeated_hard_blocker_after_three_consecutive_cycles",
+    "action": "escalate to improve-openui-harnesses for a real thrash-timing/recipe recalibration decision (not a docs-only patch); pausing further automatic frozen-replay/retry of this exact arm on this host"
+  },
+  "agentv": {
+    "bundles_complete": false,
+    "execution_errors": 0,
+    "ship_gates_pass": false
+  },
+  "checkpoint_policy": "no_new_checkpoint_frozen_replay",
+  "lean": "not_applicable:retry_measurement",
+  "harness_repair": {
+    "harness_family": "model_build",
+    "status": "blocked_pending_recalibration_decision",
+    "diagnosis": "Confirmed for the third consecutive cycle (4, 5, 6): both control and component-edge arms hit smoke:decode_timeout_count=3 with ~23-24s mean compiler time against the policy-configured screening_decode_timeout_seconds=8 (src/slm_training/resources/experiments/autotrain_climb/policy.v1.json). The wall-fit ceiling (14s, from a 70s arm wall minus the 20s train floor and 8s overhead) would still be insufficient for the observed ~23-24s per-document cost, so this is not fixable by bumping the timeout knob alone -- 3 docs at that rate already exceed the full 70s arm wall, which would require either a larger arm wall (conflicts with the repo's MAX_RUN_MINUTES=3 hard cap) or a cheaper eval recipe for CPU-only screening hosts. This is a genuine thrash-timing recalibration question, not a docs-only self-heal, so it is not being resolved with a sham repair receipt here.",
+    "fix_commit": null,
+    "fix_summary": "No repair applied this cycle. Recorded as blocked pending a real improve-openui-harnesses recalibration (e.g. a distinct, cheaper screening recipe/decode-mode for CPU-only hosts, or documented acceptance that this compiler-tree-heavy recipe is GPU-only for screening). Acknowledged action-index 0 with status=blocked rather than completed to avoid falsely resetting the frozen-replay exhaustion counter a second time.",
+    "regression_test": null
+  },
+  "next_priority": "route to improve-openui-harnesses for a thrash-timing recalibration decision before any further automatic retry of this exact arm/recipe pairing on CPU-only hosts",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "27f545d3973eee1d7d515a8b0f93ccaae8cc2e98",
+    "code_dirty": false
+  }
+}
