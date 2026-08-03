@@ -242,3 +242,19 @@ The immediate prevention is measurement reliability: replay both frozen arms
 under the same bounded stage before changing the objective. After that replay,
 the quality blocker to investigate is target/data supervision that can move
 exact AST agreement, not another capacity increase or a Lean relaxation.
+
+## c1861 frozen replay closeout
+
+c1861 replayed the exact c1860 control and candidate after the compiler-tree
+deadline repair. Both scoreboards completed with zero decode timeouts, proving
+the prior control interruption was a harness reliability issue rather than a
+training failure. The candidate then showed a matched fixture improvement:
+structure `.0575 → .2742`, MPR `0 → .333`, component recall `0 → .333`, and
+p50 `16759 → 3626 ms`, with identical `1,608,962` parameters. This is a
+narrow learning signal only: smoke `n=3`, exact AST/canonical rates `0`, MPR
+and recall below gates, and all held-out/adversarial/OOD/RICO suites missing.
+The candidate is therefore rejected for ship and not promoted. The remaining
+blocker is target/data coverage and semantic transfer, not Lean, model size,
+or a runtime timeout. Next priority is a distinct size-matched quality
+objective evaluated on the full ladder; the loop keeps the matched control and
+does not recycle the rejected arm.
