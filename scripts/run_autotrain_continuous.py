@@ -304,11 +304,25 @@ def _post_formal_arm_budget_request(
 
 
 def _arm_execution_deadline(*, cycle_deadline: float, arm_wall_minutes: float) -> float:
-    """Cap one arm without spending the cycle's finalization reserve."""
+    """Cap the wrapping ``autoresearch run`` CLI process for one arm.
+
+    ``arm_wall_minutes * 60`` is also passed to the CLI as
+    ``--experiment-wall-seconds``, its own internal budget for the grandchild
+    train/eval subprocess. Giving the *outer* supervisor an identical deadline
+    races the CLI's own post-processing (writing the terminal
+    ``experiment_finished`` event, diagnosis, and ``hypothesizer_feedback``
+    artifact) against the outer SIGINT: whenever the grandchild consumes close
+    to its full allotment, the outer interrupt can fire before the CLI
+    finishes recording feedback, starving the next cycle's ``hypothesize``
+    step of required predecessor feedback (it fails closed with "latest
+    hypothesis matrix has no terminal feedback"). Reuse KILL_GRACE_SECONDS as
+    the CLI's finalize-and-write headroom, still capped by the cycle's own
+    finalization reserve.
+    """
 
     return min(
         cycle_deadline - HARNESS_FINALIZATION_RESERVE_SECONDS,
-        time.monotonic() + arm_wall_minutes * 60,
+        time.monotonic() + arm_wall_minutes * 60 + KILL_GRACE_SECONDS,
     )
 
 

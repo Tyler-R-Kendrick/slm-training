@@ -4987,7 +4987,7 @@ def test_formal_campaign_ceiling_allows_dynamic_reclaimed_arm_share() -> None:
 def test_arm_execution_deadline_preserves_finalization_reserve(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from slm_training.levers import HARNESS_FINALIZATION_RESERVE_SECONDS
+    from slm_training.levers import HARNESS_FINALIZATION_RESERVE_SECONDS, KILL_GRACE_SECONDS
 
     monkeypatch.setattr(_mod.time, "monotonic", lambda: 10.0)
     cycle_deadline = 100.0
@@ -4997,7 +4997,35 @@ def test_arm_execution_deadline_preserves_finalization_reserve(
     ) == pytest.approx(cycle_deadline - HARNESS_FINALIZATION_RESERVE_SECONDS)
     assert _mod._arm_execution_deadline(
         cycle_deadline=cycle_deadline, arm_wall_minutes=0.5
-    ) == pytest.approx(40.0)
+    ) == pytest.approx(40.0 + KILL_GRACE_SECONDS)
+
+
+def test_arm_execution_deadline_outlives_experiment_wall_seconds_budget(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The wrapping CLI's outer deadline must exceed --experiment-wall-seconds.
+
+    Regression for a starved cycle N+1 `hypothesize` call: when the grandchild
+    training subprocess consumes its full ``--experiment-wall-seconds``
+    allotment, the CLI still needs wall-clock room afterward to write the
+    terminal `experiment_finished`/diagnosis/`hypothesizer_feedback`
+    artifacts before the outer supervisor's SIGINT lands. An outer deadline
+    identical to the inner budget leaves zero such room and can silently drop
+    the predecessor feedback that `hypothesize` requires to form a successor
+    matrix (see `continuous-openui-local-sk4t9p-c3` cycle_error).
+    """
+    from slm_training.levers import KILL_GRACE_SECONDS
+
+    monkeypatch.setattr(_mod.time, "monotonic", lambda: 0.0)
+    arm_wall_minutes = 1.0
+    experiment_wall_seconds = arm_wall_minutes * 60
+
+    deadline = _mod._arm_execution_deadline(
+        cycle_deadline=10_000.0, arm_wall_minutes=arm_wall_minutes
+    )
+
+    assert deadline > experiment_wall_seconds
+    assert deadline == pytest.approx(experiment_wall_seconds + KILL_GRACE_SECONDS)
 
 
 def test_supervised_cli_runs_exactly_one_agent_owned_cycle(

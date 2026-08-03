@@ -1,0 +1,17 @@
+{
+    "schema": "autotrain_harness_repair_results/v1",
+    "loop_id": "continuous-openui-local",
+    "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c3",
+    "cycle_index": 3,
+    "source_commit": "9a3eb272350573fd1b8f4e0bfe77eeb4320dc36d",
+    "harness_family": "autoresearch",
+    "signal": "CYCLE_ERROR ValueError: latest hypothesis matrix has no terminal feedback; run a matrix member before forming its successor",
+    "root_cause": "scripts/run_autotrain_continuous.py:_arm_execution_deadline gave the wrapping `autoresearch run` CLI process an outer-supervision deadline identical to the `--experiment-wall-seconds` value it also passes to the CLI as the grandchild train/eval subprocess's own inner budget. Whenever an arm's grandchild subprocess consumed close to its full inner allotment, the CLI had zero wall-clock room left to write its terminal experiment_finished/diagnosis/hypothesizer_feedback artifacts before the outer SIGINT (delivered by run_bounded_process's own interrupt-then-kill supervision) landed mid-postprocessing. Both c2 arms (control, component-plan) hit this: their events.jsonl show experiment_started with no matching experiment_finished, and artifacts/hypothesizer_feedback/ is empty, even though the underlying training and evaluation completed on disk (scoreboard.json, checkpoints, and gates.json are all complete and were used by the SDLC Phase A classifier, which reads disk artifacts directly rather than the CLI's in-process events). Cycle 3's hypothesize call requires the immediate predecessor's (c2) hypothesizer_feedback to form a successor matrix and fails closed.",
+    "fix_commit": null,
+    "fix_description": "Reuse KILL_GRACE_SECONDS (10s) as headroom added to _arm_execution_deadline's outer deadline, on top of arm_wall_minutes*60, while leaving the --experiment-wall-seconds argument passed to the CLI unchanged (so the grandchild's own training/eval budget is unaffected). The outer deadline is still capped by cycle_deadline - HARNESS_FINALIZATION_RESERVE_SECONDS, so the fix cannot exceed the cycle's own wall cap.",
+    "regression_test": "tests/test_scripts/test_run_autotrain_continuous.py::test_arm_execution_deadline_outlives_experiment_wall_seconds_budget (new) and test_arm_execution_deadline_preserves_finalization_reserve (updated expectation)",
+    "replay_required": true,
+    "replay_status": "c2 (component-plan vs control, seed 100002) already has complete, honest fixture evidence on disk (scoreboard.json + checkpoints for both arms, byte-identical to four prior independent sessions) despite the missing hypothesizer_feedback artifact -- this is an incomplete infrastructure record, not a model or measurement failure. c3 (fresh-seed confirmation of the same hypothesis) is queued as the next cycle after this repair lands.",
+    "not_ship_claim": true,
+    "recorded_at": "2026-08-03T11:45:00Z"
+}
