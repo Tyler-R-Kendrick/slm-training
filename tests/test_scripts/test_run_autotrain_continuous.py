@@ -5038,6 +5038,42 @@ def test_cycle_handoff_separates_fixture_climb_from_ship(tmp_path: Path) -> None
     assert state["phase"] == "between_cycles"
 
 
+def test_predecessor_without_stack_delta_does_not_block_on_deliver_stack(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "cycle-1"
+    camp.mkdir(parents=True)
+    (camp / "cycle_handoff.json").write_text(
+        json.dumps(
+            {
+                "schema_version": "AutotrainCycleHandoffV1",
+                "loop_id": "loop-1",
+                "campaign_id": "cycle-1",
+                "cycle_index": 1,
+                "upstream_commit": "a" * 40,
+                "integration_commit": "b" * 40,
+                "cycle_role": "screening",
+                "cycle_intent": "screening",
+                "evidence_class": "fixture",
+                "climb_state": "candidate_queued",
+                "ship_state": "blocked",
+                "primary_metric": "smoke.structural_similarity",
+                "actions": [
+                    {
+                        "kind": "deliver_stack",
+                        "owner": "sdlc",
+                        "reason": "stale",
+                        "evidence_ids": ["campaign:cycle-1"],
+                    }
+                ],
+            }
+        )
+    )
+    (camp / "sdlc_delivery.json").write_text(json.dumps({"stack_layer": False}))
+    _mod._require_predecessor_actions(root, "loop-1", "cycle-1")
+
+
 def test_cycle_handoff_routes_exhausted_bank_to_model_build_repair(
     tmp_path: Path,
 ) -> None:

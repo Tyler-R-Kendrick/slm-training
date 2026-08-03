@@ -6116,6 +6116,12 @@ def _require_predecessor_actions(
     if handoff.loop_id != loop_id or handoff.campaign_id != predecessor_campaign_id:
         raise RuntimeError("predecessor handoff identity does not match loop lineage")
     pending = pending_autotrain_actions(root, handoff)
+    delivery = _read_json(root / predecessor_campaign_id / "sdlc_delivery.json")
+    if delivery.get("stack_layer") is False:
+        # Historical positive fixture handoffs emitted deliver_stack even when
+        # Phase A had no tracked delta. That action is not executable and must
+        # not block the next experiment; the handoff writer now omits it.
+        pending = tuple((index, action) for index, action in pending if action.kind != "deliver_stack")
     if pending:
         detail = ", ".join(f"{index}:{action.kind}" for index, action in pending)
         raise RuntimeError(
