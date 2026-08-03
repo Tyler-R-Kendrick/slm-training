@@ -1,0 +1,55 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 2,
+  "source_commit": "f877fc65",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 22,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "seed": 100002,
+    "compiler_decode_mode": "tree",
+    "component_plan_loss_weight": 1.0
+  },
+  "arms": {
+    "c2-control": {
+      "status": "training_complete_eval_timeout",
+      "checkpoint_sha256": "6abf57d4898e8fe7cb1dace959d3ce5fec463f816b3686c99ad18abf6db3512b",
+      "last_loss": 14.390223503112793,
+      "smoke": null
+    },
+    "c2-component-plan": {
+      "status": "training_complete_eval_timeout",
+      "checkpoint_sha256": "20e573b14e3216132d27101e98f5c49dfe634acd0101b2ce18b5f9f0f8a8e741",
+      "last_loss": 19.91602325439453,
+      "smoke": null
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "continue loop; local commits/docs only; retry_measurement queued",
+    "reasons": [
+      "measurement_incomplete:c20260803-continuous-openui-local-8c0b60dd-c2-control:missing_scoreboard",
+      "measurement_incomplete:c20260803-continuous-openui-local-8c0b60dd-c2-component-plan:missing_scoreboard",
+      "primary_metric_unavailable",
+      "decode_timeout:compiler_decode_mode=tree:~35.7s per document measured on this host, 3 documents exceed the per-experiment wall budget"
+    ]
+  },
+  "conclusion": "Both arms of the 'component-plan' hypothesis (session n8vwtq) trained to completion -- checkpoints are byte-identical to the j48f8u session's independently-reproduced c2 (control sha256 6abf57d4...db3512b, component-plan sha256 20e573b1...f0f8a8e741; the same hypothesis positively reproduced 3 times in PRs #1369, #1376, #1378) -- but honest ship-gate evaluation did not complete on this session's host. compiler_decode_mode=tree's constrained decode measures ~35.7s per smoke document on this CPU (decode_progress.json: compiler_ms_mean=34716, total_ms_mean=35714 for the first of 3 documents), so 3 documents exceed the per-experiment wall budget mid-decode (decode_progress.status=interrupted, processed_record_n=0/3 for both arms). This is a soft, host-speed-dependent timeout, not a model or harness defect -- per continuous.md 'Soft failures... timeouts... never stop the loop.' No new scoreboard, no comparison, no stack layer. retry_measurement is queued to replay the identical frozen arm; MAX_RUN_MINUTES is not weakened to work around this -- the existing byte-identical training result from three prior sessions already establishes the model-side reproduction, so this cycle does not gate the known positive finding, it only fails to independently re-confirm it via ship-gate eval on this particular host.",
+  "next_priorities": [
+    "retry_measurement: replay the identical frozen c2 arms; if decode timeout recurs on this host across the configured max-consecutive-frozen-replay bound, the driver will emit a repair_harness action against model_build for eval wall-budget scaling by decode mode -- do not weaken MAX_RUN_MINUTES to force a pass",
+    "The component-plan positive finding is already independently reproduced 3 times on other hosts (#1369, #1376, #1378); this cycle's byte-identical checkpoints are further (unscored) corroboration on the training side only",
+    "Do not conflate a host-speed eval timeout with a null or negative model result"
+  ],
+  "recorded_at": "2026-08-03T12:46:43Z"
+}
