@@ -14,4 +14,7 @@ python -m pip install \
   "PyYAML>=6,<7" "onnxruntime>=1.18,<2"
 python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.5.1+cpu"
 
+# AgentV SDK for evaluate_model.py --ship-gates (scripts/run_agentv_eval.mjs).
+env -u NODE_OPTIONS npm ci
+
 echo "Ready: source .venv/bin/activate"

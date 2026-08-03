@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -72,6 +73,28 @@ def test_parse_has_root_caches_false_results(monkeypatch: pytest.MonkeyPatch) ->
     assert lang_core.parse_has_root(source) is False
     assert lang_core.parse_has_root(source) is False
     assert calls == [{"op": "parse_has_root", "source": source}]
+
+
+def test_invoke_once_clears_host_node_options(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    cli = tmp_path / "cli.mjs"
+    cli.write_text("// fixture")
+    (cli.parent / "node_modules" / "@openuidev" / "lang-core").mkdir(parents=True)
+    monkeypatch.setattr(lang_core, "_node_bin", lambda: "node")
+    monkeypatch.setattr(lang_core, "_bridge_cli", lambda: cli)
+    monkeypatch.setenv("NODE_OPTIONS", "--import tsx")
+    captured: dict[str, object] = {}
+
+    def fake_run(command, **kwargs):
+        captured["env"] = kwargs.get("env")
+        return SimpleNamespace(returncode=0, stdout=json.dumps({"ok": True}), stderr="")
+
+    monkeypatch.setattr(lang_core.subprocess, "run", fake_run)
+
+    lang_core._invoke_once({"op": "validate", "source": "root = TextContent(':x')"})
+
+    assert captured["env"]["NODE_OPTIONS"] == ""
 
 
 def test_contract_id_changes_when_surface_changes() -> None:
