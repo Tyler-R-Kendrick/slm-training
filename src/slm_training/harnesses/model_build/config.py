@@ -573,9 +573,14 @@ class ModelBuildConfig:
         apply_evaluation_policy(self)
         if self.optimizer_name not in {"adamw", "muon_hybrid"}:
             raise ValueError("optimizer_name must be one of: adamw, muon_hybrid")
-        if self.compiler_alignment_kind_filter not in {"all", "literal-close"}:
+        if self.compiler_alignment_kind_filter not in {
+            "all",
+            "literal-close",
+            "container-close",
+        }:
             raise ValueError(
-                "compiler_alignment_kind_filter must be one of: all, literal-close"
+                "compiler_alignment_kind_filter must be one of: all, "
+                "literal-close, container-close"
             )
         # SLM-242: fail-closed numeric/schedule gate.
         try:

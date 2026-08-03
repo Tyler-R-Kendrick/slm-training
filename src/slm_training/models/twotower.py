@@ -789,9 +789,14 @@ class TwoTowerConfig:
                 f"{self.structural_aux_head_profile!r} is not one of "
                 f"{STRUCTURAL_AUX_HEAD_PROFILES!r}"
             )
-        if self.compiler_alignment_kind_filter not in {"all", "literal-close"}:
+        if self.compiler_alignment_kind_filter not in {
+            "all",
+            "literal-close",
+            "container-close",
+        }:
             raise ValueError(
-                "compiler_alignment_kind_filter must be one of: all, literal-close"
+                "compiler_alignment_kind_filter must be one of: all, "
+                "literal-close, container-close"
             )
         repair_modes = {
             "recursive_update_mode": (
@@ -3800,6 +3805,22 @@ class TwoTowerModel(nn.Module):
                         for decision in decisions
                         if int(decision.position) in numeric_close_positions
                     )
+                elif kind_filter == "container-close":
+                    decisions = tuple(
+                        decision
+                        for decision in decisions
+                        if str(
+                            self.tokenizer.id_to_token.get(
+                                int(target_key[int(decision.position)]), ""
+                            )
+                        )
+                        in {")", "]"}
+                        and any(
+                            str(self.tokenizer.id_to_token.get(int(candidate), ""))
+                            == ","
+                            for candidate in decision.candidate_ids
+                        )
+                    )
                 if not decisions:
                     continue
                 if stratified:
@@ -3921,10 +3942,19 @@ class TwoTowerModel(nn.Module):
                 "compiler_alignment_literal_close_filter_enabled": float(
                     kind_filter == "literal-close"
                 ),
+                "compiler_alignment_container_close_filter_enabled": float(
+                    kind_filter == "container-close"
+                ),
                 "compiler_alignment_literal_close_rows": sum(
                     1
                     for target in aligned_targets
                     if str(self.tokenizer.id_to_token.get(int(target), "")) == "LIT_END"
+                ),
+                "compiler_alignment_container_close_rows": sum(
+                    1
+                    for target in aligned_targets
+                    if str(self.tokenizer.id_to_token.get(int(target), ""))
+                    in {")", "]"}
                 ),
                 "compiler_alignment_loss": (
                     float(alignment_loss.detach().cpu()) if aligned_canvases else 0.0

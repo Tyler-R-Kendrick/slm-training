@@ -2181,6 +2181,26 @@ def test_compile_commands_routes_typed_family_balance_training_lever() -> None:
     assert train[train.index("--typed-family-balance-loss-weight") + 1] == "0.25"
 
 
+def test_compile_commands_routes_container_close_alignment_filter() -> None:
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            train_version="wf_smoke_v2",
+            steps=20,
+            compiler_alignment_loss_weight=1.0,
+            compiler_alignment_margin=1.0,
+            compiler_alignment_stratified=True,
+            compiler_alignment_kind_filter="container-close",
+        )
+    )
+
+    commands = compile_commands(campaign(), spec)
+    train = next(command for command in commands if "scripts.train_model" in command)
+    assert (
+        train[train.index("--compiler-alignment-kind-filter") + 1]
+        == "container-close"
+    )
+
+
 def test_campaign_loop_lineage_is_strict() -> None:
     first = CampaignSpec(
         campaign_id="cycle-1",

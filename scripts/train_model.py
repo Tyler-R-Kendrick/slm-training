@@ -617,7 +617,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--compiler-alignment-kind-filter",
-        choices=("all", "literal-close"),
+        choices=("all", "literal-close", "container-close"),
         default="all",
         help="Restrict compiler alignment to all branches or numeric-frame gold LIT_END branches.",
     )

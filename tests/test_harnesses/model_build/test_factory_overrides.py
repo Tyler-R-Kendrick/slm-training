@@ -259,6 +259,18 @@ def test_compiler_alignment_kind_filter_reaches_twotower_config() -> None:
     assert runtime.compiler_alignment_kind_filter == "literal-close"
 
 
+def test_container_close_alignment_filter_reaches_twotower_config() -> None:
+    config = ModelBuildConfig(
+        train_dir=Path("."),
+        compiler_alignment_loss_weight=1.0,
+        compiler_alignment_kind_filter="container-close",
+    )
+
+    runtime = _twotower_config_from_build(config)
+
+    assert runtime.compiler_alignment_kind_filter == "container-close"
+
+
 def test_model_build_rejects_unknown_compiler_alignment_kind_filter() -> None:
     with pytest.raises(ValueError, match="compiler_alignment_kind_filter"):
         ModelBuildConfig(train_dir=Path("."), compiler_alignment_kind_filter="unknown")
