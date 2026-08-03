@@ -174,8 +174,12 @@ AgentEvals verdict:
 | `ship_promoted` | Full authoritative AgentEvals gates, suite/sample floors, rung evidence, parameter efficiency, and publication evidence | No (ship authority) |
 | `promotion_failed` | Complete measurement; null primary, cert/policy miss, or formal unproved (non-timeout) model/proof/effect reject | Limited |
 | `promotion_inconclusive` | Formal **timeout** — incomplete measurement | Yes |
-| **`harness_failure`** | Matrix membership, execute abort, missing promote run, cert incomplete **because candidate never ran** — **not a model result** | Yes |
+| **`harness_failure`** | Matrix membership, execute abort, missing promote run, deadline_reserve skip, cert incomplete **because candidate never ran** — **not a model result**; never permanently invalidates the approach; rearm after integration/harness fix | **Yes (always after harness fix)** |
 | `rejected` | Confirm retest quality fail | No (confirm path) |
+
+Harness incompletes **refund** promote attempts and **must not** be converted to
+`promotion_failed` by attempt caps. See
+[`autotrain-harness-incomplete-not-invalid-20260803.md`](autotrain-harness-incomplete-not-invalid-20260803.md).
 
 Learning events append to
 `loops/<loop_id>/learning_certificate_ledger.jsonl`. Screening thrash may still

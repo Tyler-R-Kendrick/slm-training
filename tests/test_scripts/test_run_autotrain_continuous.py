@@ -3227,14 +3227,138 @@ def test_resolve_promotion_harness_failure_not_model_reject(tmp_path: Path) -> N
     assert resolved["status"] != "rejected"
     rows = _mod._load_champion_queue(path)
     assert rows[0]["status"] == "harness_failure"
-    # Harness failures consume promote_attempts (no refund) so stuck
-    # deadline_reserve loops cannot block thrash forever.
-    assert int(rows[0].get("promote_attempts") or 0) == 1
+    # Harness incompletes refund promote_attempts — not a model reject spend.
+    assert int(rows[0].get("promote_attempts") or 0) == 0
     assert rows[0].get("last_harness_failure") is True
     head = _mod._queue_head_confirmed(rows)
     assert head is not None and head["entry_id"] == "champ-hf-1"
     ledger = (root / "loops" / loop / "learning_certificate_ledger.jsonl").read_text()
     assert "harness_failure" in ledger
+
+
+def test_harness_incomplete_reasons_are_not_model_rejects() -> None:
+    assert _mod._reason_is_harness_incomplete("harness_failure:missing_promote_run")
+    assert _mod._reason_is_harness_incomplete(
+        "measurement_incomplete:x:missing_scoreboard"
+    )
+    assert not _mod._reason_is_harness_incomplete(
+        "primary_metric_null_or_worse:smoke.structural_similarity"
+    )
+    assert _mod._reasons_are_harness_incomplete_only(
+        [
+            "harness_failure:missing_promote_run",
+            "measurement_incomplete:c-control:missing_scoreboard",
+            "promote_attempts_exceeded:3>2",
+        ]
+    )
+    assert not _mod._reasons_are_harness_incomplete_only(
+        [
+            "harness_failure:missing_promote_run",
+            "primary_metric_null_or_worse:ss",
+        ]
+    )
+
+
+def test_reopen_harness_blocked_champion_after_integration_change(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "ar"
+    entries = [
+        {
+            "entry_id": "champ-hf-park",
+            "status": "harness_failure",
+            "promote_attempts": 0,
+            "last_harness_failure": True,
+            "harness_failure_integration_commit": "aaa111",
+            "resolve_reasons": [
+                "harness_failure:missing_promote_run",
+                "promote_harness_parked:incomplete_not_model_reject",
+            ],
+            "knobs": {"ltr_prefix_loss_weight": 1.0},
+        },
+        {
+            "entry_id": "champ-model-fail",
+            "status": "promotion_failed",
+            "resolve_reasons": [
+                "primary_metric_null_or_worse:smoke.structural_similarity"
+            ],
+            "harness_failure_integration_commit": "aaa111",
+            "knobs": {"mask_pattern": "mixed"},
+        },
+    ]
+    assert _mod._reopen_harness_blocked_champions(
+        root, entries, integration_commit="bbb222"
+    )
+    by = {e["entry_id"]: e for e in entries}
+    assert by["champ-hf-park"]["status"] == "confirmed"
+    assert by["champ-hf-park"]["promote_attempts"] == 0
+    assert "harness_retry_after_integration_change" in by["champ-hf-park"]["resolve_reasons"]
+    # Model reject stays terminal.
+    assert by["champ-model-fail"]["status"] == "promotion_failed"
+
+
+def test_thrash_close_ignores_harness_incomplete_nulls(tmp_path: Path) -> None:
+    root = tmp_path / "ar"
+    loop = "L"
+    # Two complete harness-incomplete "nulls" must not close the arm.
+    for i, seed in enumerate((7, 8)):
+        camp = root / f"c-hf-{i}"
+        camp.mkdir(parents=True)
+        (camp / "campaign.json").write_text(
+            __import__("json").dumps(
+                {
+                    "campaign_id": camp.name,
+                    "loop_id": loop,
+                    "cycle_index": i + 1,
+                    "predecessor_campaign_id": None if i == 0 else f"c-hf-{i-1}",
+                }
+            ),
+            encoding="utf-8",
+        )
+        (camp / "sdlc_delivery.json").write_text(
+            __import__("json").dumps(
+                {
+                    "candidate_id": f"{camp.name}-scaffold-prefix",
+                    "control_id": f"{camp.name}-control",
+                    "measurement_complete": True,
+                    "positive": False,
+                    "cycle_intent": "screening",
+                    "harness_failure": True,
+                    "reasons": ["harness_failure:missing_promote_run"],
+                }
+            ),
+            encoding="utf-8",
+        )
+        (camp / "cycle_handoff.json").write_text(
+            __import__("json").dumps(
+                {
+                    "loop_id": loop,
+                    "reasons": ["harness_failure:missing_promote_run"],
+                    "cycle_intent": "screening",
+                }
+            ),
+            encoding="utf-8",
+        )
+        (camp / "matrix-proposal.json").write_text(
+            __import__("json").dumps(
+                {
+                    "hypotheses": [
+                        {
+                            "experiment": {
+                                "experiment_id": f"{camp.name}-scaffold-prefix",
+                                "knobs": {
+                                    "ltr_prefix_loss_weight": 1.0,
+                                    "seed": seed,
+                                },
+                            }
+                        }
+                    ]
+                }
+            ),
+            encoding="utf-8",
+        )
+    closed = _mod._recent_completed_nonpositive_slugs(root, "c-hf-1", min_null_seeds=2)
+    assert "scaffold-prefix" not in closed
 
 
 def test_resolve_promotion_phase_a_alone_cannot_promote(tmp_path: Path) -> None:

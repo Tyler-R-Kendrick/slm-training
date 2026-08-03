@@ -1455,6 +1455,66 @@ def _campaign_started_experiment(root: Path, campaign_id: object) -> bool:
     return False
 
 
+def _reopen_harness_blocked_champions(
+    root: Path,
+    entries: list[dict[str, Any]],
+    *,
+    integration_commit: str | None,
+) -> bool:
+    """Rearm harness-blocked champions after a harness/code fix.
+
+    General pattern: harness/infra incompletes never permanently invalidate an
+    experiment. When the integrated tip changes, retry the same champion
+    recipe under the fixed harness. Model rejects stay terminal.
+    """
+    if not integration_commit:
+        return False
+    changed = False
+    for row in entries:
+        status = str(row.get("status") or "")
+        reasons = row.get("resolve_reasons") or []
+        harness_blocked = status == "harness_failure" or (
+            status == "promotion_failed"
+            and (
+                row.get("last_harness_failure")
+                or _reasons_are_harness_incomplete_only(reasons)
+            )
+        )
+        if not harness_blocked:
+            continue
+        failed_on = str(row.get("harness_failure_integration_commit") or "")
+        # First time we see a harness park without a stamp: treat as blocked on
+        # current tip until a later tip arrives.
+        if not failed_on:
+            row["harness_failure_integration_commit"] = integration_commit
+            changed = True
+            continue
+        if failed_on == integration_commit:
+            continue
+        prior = status
+        row["status"] = "confirmed"
+        row["promote_attempts"] = 0
+        row["last_harness_failure"] = False
+        row.pop("last_harness_failure_at", None)
+        row.pop("resolved_at", None)
+        row["resolve_reasons"] = [
+            "harness_retry_after_integration_change",
+            f"prior_status:{prior}",
+            f"failed_on:{failed_on}",
+            f"retry_on:{integration_commit}",
+            *[str(r) for r in reasons if str(r).startswith("harness_failure:")],
+        ]
+        row["harness_failure_integration_commit"] = integration_commit
+        changed = True
+        print(
+            "CHAMPION_HARNESS_RETRY "
+            f"entry_id={row.get('entry_id')} prior={prior} "
+            f"failed_on={failed_on[:12]} retry_on={integration_commit[:12]}",
+            flush=True,
+        )
+    return changed
+
+
 def _recover_interrupted_champion_entries(
     root: Path, entries: list[dict[str, Any]]
 ) -> bool:
@@ -1897,6 +1957,9 @@ def _skip_arm_slugs(
             and row.get("source_integration_commit") == integration_commit
             and row.get("status")
             in {"rejected", "promotion_failed", "climb_accepted", "promoted"}
+            # Harness-only terminal outcomes are not model rejects — do not
+            # permanently saturate the thrash family for this integration.
+            and not _reasons_are_harness_incomplete_only(row.get("resolve_reasons"))
         ):
             terminal_counts[slug] = terminal_counts.get(slug, 0) + 1
         # Only skip arms currently in the funnel (not terminal failures).
@@ -2072,6 +2135,17 @@ def _recent_completed_nonpositive_slugs(
             seed: int | None = int(seed_raw) if seed_raw is not None else None
         except (TypeError, ValueError):
             seed = None
+        # Incomplete / harness outcomes never close a thrash approach — even if
+        # a buggy delivery marked measurement_complete or positive=False.
+        if any(
+            _reason_is_harness_incomplete(item) for item in handoff_reasons
+        ) or any(
+            _reason_is_harness_incomplete(item)
+            for item in (delivery.get("reasons") or [])
+        ):
+            continue
+        if delivery.get("harness_failure") is True:
+            continue
         if stored_positive is True:
             # Win re-opens the approach; clear prior null tally for this slug.
             null_seeds[slug] = set()
@@ -3342,6 +3416,43 @@ def _run_has_usable_metrics(camp_dir: Path, run_id: str) -> bool:
     )
 
 
+# Reasons that mean "process/infra incomplete" — never a model reject and never
+# permanent approach death. After a harness fix (new integration commit), retry.
+_HARNESS_INCOMPLETE_REASON_PREFIXES: tuple[str, ...] = (
+    "harness_failure:",
+    "measurement_incomplete:",
+    "promote_cert_incomplete_metrics:",
+    "promote_cert_missing_run_ids",
+    "formal_preflight_timed_out:",
+    "measurement_incomplete:formal_timeout",
+    "promote_harness_parked:",
+    "promote_attempts_paused:",
+    "harness_retry_after_integration_change",
+    "promote_attempts_exceeded:",  # only counted as non-model when paired w/ harness
+)
+
+
+def _reason_is_harness_incomplete(reason: object) -> bool:
+    text = str(reason or "")
+    if not text:
+        return False
+    return any(text.startswith(prefix) for prefix in _HARNESS_INCOMPLETE_REASON_PREFIXES)
+
+
+def _reasons_are_harness_incomplete_only(reasons: object) -> bool:
+    """True when every reason is harness/infra incomplete (no model reject signal)."""
+    if not isinstance(reasons, (list, tuple)) or not reasons:
+        return False
+    texts = [str(item) for item in reasons if str(item or "").strip()]
+    if not texts:
+        return False
+    # Attempt-cap alone is only non-model when the rest are harness incomplete.
+    non_cap = [t for t in texts if not t.startswith("promote_attempts_exceeded:")]
+    if not non_cap:
+        return True
+    return all(_reason_is_harness_incomplete(t) for t in non_cap)
+
+
 def detect_promote_harness_failure(
     *,
     camp_dir: Path,
@@ -3882,18 +3993,34 @@ def _resolve_promotion_result(
                 )
                 row["last_arm_order"] = delivery.get("arm_order")
                 row["last_arm_seed"] = delivery.get("arm_seed")
-                # Formal wall timeouts are incomplete measurement — refund the
-                # attempt so promote can retry. Harness failures (including
-                # deadline_reserve / missing_promote_run) still consume the
-                # attempt budget so a stuck harness cannot block thrash forever
-                # by refunding to promote_attempts=0 on every cycle.
-                if status == "promotion_inconclusive" or disposition.get("timeout"):
+                # Incomplete measurement is never a spent promote attempt.
+                # Formal timeouts and harness failures (deadline_reserve,
+                # missing_promote_run, cert incomplete because arms never ran)
+                # refund so the approach stays valid and can be retried after a
+                # harness fix — never permanently invalidated as a model reject.
+                if (
+                    status in {"promotion_inconclusive", "harness_failure"}
+                    or disposition.get("timeout")
+                    or disposition.get("harness_failure")
+                ):
                     attempts = int(row.get("promote_attempts") or 0)
                     row["promote_attempts"] = max(0, attempts - 1)
-                    row["last_formal_timeout"] = True
-                    row["last_formal_timeout_wall_s"] = _PROMOTE_FORMAL_TIMEOUT_S
-                if status == "harness_failure" or disposition.get("harness_failure"):
-                    row["last_harness_failure"] = True
+                    if status == "promotion_inconclusive" or disposition.get("timeout"):
+                        row["last_formal_timeout"] = True
+                        row["last_formal_timeout_wall_s"] = _PROMOTE_FORMAL_TIMEOUT_S
+                    if status == "harness_failure" or disposition.get(
+                        "harness_failure"
+                    ):
+                        row["last_harness_failure"] = True
+                        # Stamp integration so a later code/harness fix reopens.
+                        camp_meta = _read_json(camp_dir / "campaign.json")
+                        tip = (
+                            camp_meta.get("integration_commit")
+                            or delivery.get("integration_commit")
+                            or row.get("source_integration_commit")
+                        )
+                        if tip:
+                            row["harness_failure_integration_commit"] = str(tip)
                 break
         _write_champion_queue(path, entries)
         print(
@@ -7661,6 +7788,9 @@ def run_cycle(
     recipes_refreshed = _refresh_champion_source_recipes(root, queue_entries)
     reconciled_replays = _reconcile_completed_confirmation_replays(root, queue_entries)
     recovered = _recover_interrupted_champion_entries(root, queue_entries)
+    harness_rearmed = _reopen_harness_blocked_champions(
+        root, queue_entries, integration_commit=integration
+    )
     revalidated = _revalidate_open_champion_entries(root, queue_entries)
     confirmations_revalidated = _revalidate_confirmed_champion_entries(
         root, queue_entries
@@ -7669,6 +7799,7 @@ def run_cycle(
         recipes_refreshed
         or reconciled_replays
         or recovered
+        or harness_rearmed
         or revalidated
         or confirmations_revalidated
     ):
@@ -7791,22 +7922,63 @@ def run_cycle(
             field="promote_attempts",
         )
         if attempts > _MAX_PROMOTE_ATTEMPTS:
-            _update_champion_status(
-                root=root,
-                loop_id=loop_id,
-                entry_id=str(promoting_champion["entry_id"]),
-                status="promotion_failed",
-                confirm_campaign_id=campaign_id,
-                confirm_cycle_index=cycle,
-                resolve_reasons=[
-                    f"promote_attempts_exceeded:{attempts}>{_MAX_PROMOTE_ATTEMPTS}"
-                ],
+            # Harness-blocked heads are never model-invalidated by attempt caps.
+            # Park as harness_failure (retry after harness fix); only complete
+            # measurement rejects may become promotion_failed.
+            prior_reasons = list(promoting_champion.get("resolve_reasons") or [])
+            harness_blocked = bool(
+                promoting_champion.get("last_harness_failure")
+                or promoting_champion.get("status") == "harness_failure"
+                or _reasons_are_harness_incomplete_only(prior_reasons)
             )
-            print(
-                f"CHAMPION_PROMOTE_DROP entry_id={promoting_champion.get('entry_id')} "
-                f"attempts={attempts} max={_MAX_PROMOTE_ATTEMPTS}",
-                flush=True,
-            )
+            if harness_blocked:
+                _update_champion_status(
+                    root=root,
+                    loop_id=loop_id,
+                    entry_id=str(promoting_champion["entry_id"]),
+                    status="harness_failure",
+                    confirm_campaign_id=campaign_id,
+                    confirm_cycle_index=cycle,
+                    resolve_reasons=[
+                        "promote_harness_parked:incomplete_not_model_reject",
+                        f"promote_attempts_paused:{attempts}>{_MAX_PROMOTE_ATTEMPTS}",
+                        *prior_reasons,
+                    ],
+                )
+                # Reset attempt budget so a later integration change can retry.
+                path = _champion_queue_path(root, loop_id)
+                entries = _load_champion_queue(path)
+                for row in entries:
+                    if row.get("entry_id") == promoting_champion.get("entry_id"):
+                        row["promote_attempts"] = 0
+                        row["last_harness_failure"] = True
+                        row["harness_failure_integration_commit"] = integration
+                        break
+                _write_champion_queue(path, entries)
+                print(
+                    "CHAMPION_PROMOTE_HARNESS_PARK "
+                    f"entry_id={promoting_champion.get('entry_id')} "
+                    f"attempts={attempts} max={_MAX_PROMOTE_ATTEMPTS} "
+                    "(incomplete — not a model reject; retry after harness fix)",
+                    flush=True,
+                )
+            else:
+                _update_champion_status(
+                    root=root,
+                    loop_id=loop_id,
+                    entry_id=str(promoting_champion["entry_id"]),
+                    status="promotion_failed",
+                    confirm_campaign_id=campaign_id,
+                    confirm_cycle_index=cycle,
+                    resolve_reasons=[
+                        f"promote_attempts_exceeded:{attempts}>{_MAX_PROMOTE_ATTEMPTS}"
+                    ],
+                )
+                print(
+                    f"CHAMPION_PROMOTE_DROP entry_id={promoting_champion.get('entry_id')} "
+                    f"attempts={attempts} max={_MAX_PROMOTE_ATTEMPTS}",
+                    flush=True,
+                )
             promoting_champion = None
             cycle_intent = role
         else:
