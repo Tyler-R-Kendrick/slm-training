@@ -290,6 +290,51 @@ def _fit_symmetric_arm_budget(
     return min(float(requested_arm_wall_minutes), usable / arm_count / 60)
 
 
+# Tree-mode constrained decode measures roughly an order of magnitude slower
+# per document than off-mode on CPU hosts (docs/design/continuous-openui-
+# local-n8vwtq-c2-results.md: ~35.7s/document tree vs a few seconds/document
+# off). Splitting the fixed wall budget evenly starves tree-mode arms while
+# off-mode arms finish with time to spare.
+_DECODE_MODE_WALL_WEIGHT: dict[str, float] = {
+    "tree": 4.0,
+    "off": 1.0,
+}
+
+
+def _decode_mode_wall_weight(decode_mode: str | None) -> float:
+    """Relative eval-stage wall-clock cost of a compiler decode mode."""
+
+    return _DECODE_MODE_WALL_WEIGHT.get(str(decode_mode or "off"), 1.0)
+
+
+def _fit_decode_weighted_arm_budgets(
+    *,
+    deadline: float,
+    requested_arm_wall_minutes: float,
+    arm_decode_modes: dict[str, str | None],
+) -> dict[str, float]:
+    """Reallocate the symmetric per-arm budget by decode-mode wall cost.
+
+    The total allocated wall time never exceeds the pool
+    `_fit_symmetric_arm_budget` would have used for the same arm count and
+    request; only the split across arms changes.
+    """
+
+    arm_count = len(arm_decode_modes)
+    if arm_count <= 0:
+        raise ValueError("arm_decode_modes must be non-empty")
+    remaining = _remaining_timeout(deadline)
+    usable = remaining - HARNESS_FINALIZATION_RESERVE_SECONDS
+    if usable <= 0:
+        raise subprocess.TimeoutExpired("symmetric decision-arm budget", remaining)
+    pool_minutes = min(float(requested_arm_wall_minutes) * arm_count, usable / 60)
+    weights = {
+        eid: _decode_mode_wall_weight(mode) for eid, mode in arm_decode_modes.items()
+    }
+    total_weight = sum(weights.values())
+    return {eid: pool_minutes * weight / total_weight for eid, weight in weights.items()}
+
+
 def _post_formal_arm_budget_request(
     *,
     policy_minutes: float,
@@ -7923,6 +7968,7 @@ def run_cycle(
         order = []
 
     arm_count = len({eid for eid in order if eid in by_id})
+    arm_wall_minutes_by_eid: dict[str, float] = {}
     if arm_count:
         requested_arm_wall_minutes = _post_formal_arm_budget_request(
             policy_minutes=stage_wall_minutes_for_role(policy, role),
@@ -7943,6 +7989,26 @@ def run_cycle(
                 f"effective_s={arm_wall_minutes * 60:.3f} "
                 f"arms={arm_count} "
                 f"finalization_reserve_s={HARNESS_FINALIZATION_RESERVE_SECONDS}",
+                flush=True,
+            )
+        arm_decode_modes = {
+            eid: (
+                json.loads(by_id[eid].read_text(encoding="utf-8")).get("knobs") or {}
+            ).get("compiler_decode_mode")
+            for eid in {e for e in order if e in by_id}
+        }
+        arm_wall_minutes_by_eid = _fit_decode_weighted_arm_budgets(
+            deadline=deadline,
+            requested_arm_wall_minutes=requested_arm_wall_minutes,
+            arm_decode_modes=arm_decode_modes,
+        )
+        if len({round(v, 6) for v in arm_wall_minutes_by_eid.values()}) > 1:
+            print(
+                "ARM_BUDGET_DECODE_WEIGHTED "
+                + " ".join(
+                    f"{eid}={minutes * 60:.3f}s"
+                    for eid, minutes in sorted(arm_wall_minutes_by_eid.items())
+                ),
                 flush=True,
             )
     seen: set[str] = set()
@@ -7973,6 +8039,7 @@ def run_cycle(
             man_path.parent.mkdir(parents=True, exist_ok=True)
             man_path.write_text(man.model_dump_json(indent=2) + "\n", encoding="utf-8")
         # soft-fail: ship gates may fail on fixture n
+        eid_wall_minutes = arm_wall_minutes_by_eid.get(eid, arm_wall_minutes)
         cmd = [
             *ar,
             "run",
@@ -7984,7 +8051,7 @@ def run_cycle(
             str(man_path),
             "--execute",
             "--experiment-wall-seconds",
-            f"{arm_wall_minutes * 60:.6f}",
+            f"{eid_wall_minutes * 60:.6f}",
         ]
         reuse = replay_manifests.get(eid, {}).get("train_reuse")
         if reuse is not None:
@@ -8004,7 +8071,7 @@ def run_cycle(
             cwd=cwd,
             deadline=_arm_execution_deadline(
                 cycle_deadline=deadline,
-                arm_wall_minutes=arm_wall_minutes,
+                arm_wall_minutes=eid_wall_minutes,
             ),
             root=root,
             loop_id=loop_id,

@@ -2661,7 +2661,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v162",
+      "version": "v163",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2701,6 +2701,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v163",
+          "date": "2026-08-03",
+          "note": "Scale the per-arm eval-stage wall budget by compiler_decode_mode instead of splitting it symmetrically: tree-mode constrained decode measures ~4x the wall cost of off-mode per document on CPU hosts, so an even split starved the tree-mode arm before it could write a scoreboard (reproduced twice as a model_build harness_signal in campaign continuous-loop-20260803-continuous-openui-local-8c0b60dd-c2/c3). Also fixed the outer stage-execution deadline to use the same per-arm allocation instead of the old uniform value."
+        },
         {
           "version": "v162",
           "date": "2026-08-03",

@@ -4956,6 +4956,47 @@ def test_post_planning_budget_is_rebalanced_symmetrically(
     )
 
 
+def test_decode_weighted_arm_budget_gives_tree_mode_more_wall_time(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Tree-mode constrained decode costs far more wall time per document than
+    off-mode on CPU hosts; a fixed symmetric split starves the tree-mode arm
+    before it can write a scoreboard (docs/design/continuous-openui-local-
+    n8vwtq-c2-results.md). The eval-stage budget must scale by decode mode
+    instead of splitting evenly."""
+
+    from slm_training.levers import HARNESS_FINALIZATION_RESERVE_SECONDS
+
+    monkeypatch.setattr(_mod.time, "monotonic", lambda: 10.0)
+    remaining = 149.0
+    fitted = _mod._fit_decode_weighted_arm_budgets(
+        deadline=10.0 + remaining,
+        requested_arm_wall_minutes=70 / 60,
+        arm_decode_modes={"control": "off", "component-plan": "tree"},
+    )
+
+    pool_seconds = remaining - HARNESS_FINALIZATION_RESERVE_SECONDS
+    assert fitted["component-plan"] > fitted["control"]
+    assert fitted["control"] * 60 == pytest.approx(pool_seconds / 5)
+    assert fitted["component-plan"] * 60 == pytest.approx(pool_seconds * 4 / 5)
+    # Total allocated time never exceeds the same symmetric-budget pool.
+    assert sum(fitted.values()) * 60 == pytest.approx(pool_seconds)
+
+
+def test_decode_weighted_arm_budget_is_symmetric_when_modes_match(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(_mod.time, "monotonic", lambda: 10.0)
+    remaining = 149.0
+    fitted = _mod._fit_decode_weighted_arm_budgets(
+        deadline=10.0 + remaining,
+        requested_arm_wall_minutes=70 / 60,
+        arm_decode_modes={"control": "off", "bounds": "off"},
+    )
+
+    assert fitted["control"] == pytest.approx(fitted["bounds"])
+
+
 def test_completed_formal_lane_returns_unused_time_to_matched_arms() -> None:
     initial = _mod._arm_wall_minutes(3, formal_required=True)
 
