@@ -2683,7 +2683,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v171",
+      "version": "v172",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2723,6 +2723,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v172",
+          "date": "2026-08-03",
+          "note": "Harness/infra incompletes never invalidate experiments: refund promote attempts, park not promotion_failed on attempt cap, rearm after integration fix, thrash multi-seed close ignores harness-only outcomes"
+        },
         {
           "version": "v171",
           "date": "2026-08-03",
