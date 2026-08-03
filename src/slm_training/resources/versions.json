@@ -2656,7 +2656,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v122",
+      "version": "v123",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2696,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v123",
+          "date": "2026-08-03",
+          "note": "Deduplicate the bounded compiler-decision-margin matrix by using its identical unbounded precursor as the matched control instead of emitting that knob signature twice."
+        },
         {
           "version": "v122",
           "date": "2026-08-03",

@@ -6269,6 +6269,14 @@ def _matrix(
             }
         ]
         for i, (slug, hyp, extras) in enumerate(_SCREENING_ARM_BANK, start=1):
+            if (
+                rec_slug == "bounded-compiler-decision-margin"
+                and slug == "compiler-decision-margin"
+            ):
+                # The matched control is exactly this precursor arm. Emitting it
+                # again would violate the preregistration contract's distinct-
+                # knob-signature requirement without adding information.
+                continue
             arm_extra = _apply_arm_extras(steps, extras)
             candidates.append(
                 {

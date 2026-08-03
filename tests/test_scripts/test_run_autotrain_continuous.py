@@ -12,6 +12,7 @@ from types import SimpleNamespace
 import pytest
 
 from tests.casefiles import case_values
+from slm_training.autoresearch.schemas import HypothesisMatrix
 
 _SCRIPT = (
     Path(__file__).resolve().parents[2] / "scripts" / "run_autotrain_continuous.py"
@@ -1418,6 +1419,8 @@ def test_bounded_compiler_decision_margin_isolates_runtime_treatment() -> None:
     assert _mod._arm_slug_from_knobs(candidate) == (
         "bounded-compiler-decision-margin"
     )
+    assert f"{prefix}-compiler-decision-margin" not in knobs
+    HypothesisMatrix.model_validate(matrix)
 
 
 def test_frozen_screening_retry_preserves_champion_enqueue_semantics() -> None:
