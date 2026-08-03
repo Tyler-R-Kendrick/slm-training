@@ -203,6 +203,12 @@ the cumulative evaluator deadline. Campaign harness v119 also stops reserving
 a promotion-only Lean execution lane during screening; promotion continues to
 reserve and execute formal preflight. The exact c1821 arms replay before any
 new model hypothesis.
+The c1822 exact replay completes both arms under those repairs. The dense
+decision-token arm improves smoke structure `.05237→.14623`, meaningful rate
+`0→.6667`, component recall `.0833→.3333`, and p50 latency by 11.6%, with
+parse, binder F1, and fidelity held. This is a three-document screening signal,
+not ship evidence: equality remains zero and the unchanged absolute gates fail.
+The recipe therefore enters fresh-seed confirmation, not promotion or RL.
 
 The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
 confirmed a champion, c1812 was the next protected promotion slot, and the
