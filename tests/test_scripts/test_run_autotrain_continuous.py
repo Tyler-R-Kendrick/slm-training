@@ -196,7 +196,9 @@ def test_climb_policy_measurement_helpers() -> None:
 
     policy = load_climb_policy()
     assert stage_wall_minutes_for_role(policy, "screening") == 3
-    assert decode_timeout_seconds_for_role(policy, "screening") >= 20
+    # Screening decode is thrash-calibrated (fits n×decode under ~70s arm wall).
+    assert 1.0 <= decode_timeout_seconds_for_role(policy, "screening") <= 12.0
+    assert decode_timeout_seconds_for_role(policy, "promotion") >= 20
     assert eval_suites_for_role(policy, "screening") == ("smoke",)
     assert max_consecutive_frozen_replays(policy) == 1
 
@@ -6958,3 +6960,66 @@ def test_resolve_promotion_formal_timeout_refunds_attempt_and_stays_retriable(
     line = ledger.read_text(encoding="utf-8").strip().splitlines()[-1]
     assert "promotion_inconclusive" in line
     assert "timed_out" in line
+
+
+def test_fit_screening_decode_fits_arm_wall() -> None:
+    """n×decode + train floor must not exceed the symmetric arm wall."""
+    from slm_training.autoresearch.climb_policy import load_climb_policy
+
+    policy = load_climb_policy()
+    fitted, meta = _mod._fit_screening_decode_timeout_seconds(policy)
+    arm = float(meta["arm_wall_seconds"])
+    n = int(meta["smoke_n"])
+    train = float(meta["min_train_floor_seconds"])
+    overhead = float(meta["eval_overhead_seconds"])
+    assert fitted * n + train + overhead <= arm + 1e-6
+    assert fitted <= 12.0  # thrash-calibrated, not ship 24s
+
+
+def test_screening_matrix_uses_fitted_decode_and_thrash_steps() -> None:
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-timing-c1",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=80,
+        cycle=4,
+        role="screening",
+        recommended_slug="bounds",
+    )
+    cand = next(
+        h["experiment"]
+        for h in matrix["hypotheses"]
+        if str(h["experiment"]["experiment_id"]).endswith("-bounds")
+    )
+    knobs = cand["knobs"]
+    assert float(knobs["decode_timeout_seconds"]) <= 10.0
+    assert int(knobs["steps"]) <= 43  # thrash cap 40 + cycle%3
+
+
+def test_write_thrash_timing_records_completeness(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "c-time"
+    camp.mkdir(parents=True)
+    path = _mod._write_thrash_timing(
+        camp,
+        loop_id="loop-t",
+        campaign_id="c-time",
+        cycle_index=9,
+        role="screening",
+        measurement_complete=False,
+        arm_wall_seconds=70.0,
+        decode_fit={"fitted_decode_timeout_seconds": 8.0},
+        reasons=["measurement_incomplete:x:missing_scoreboard", "empty_metrics:y"],
+        control_metrics={"structural_similarity": None},
+        candidate_metrics={},
+    )
+    assert path.is_file()
+    data = json.loads(path.read_text(encoding="utf-8"))
+    assert data["schema"] == "thrash_timing/v1"
+    assert data["complete"] is False
+    assert any("measurement_incomplete" in r for r in data["incomplete_reasons"])
+    ledger = root / "loops" / "loop-t" / "thrash_timing.jsonl"
+    assert ledger.is_file()
