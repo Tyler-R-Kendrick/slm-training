@@ -1,0 +1,70 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c6",
+  "cycle_index": 6,
+  "source_commit": "318492c5",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "seed": 100006
+  },
+  "cycle_intent": "screening",
+  "arms": {
+    "c6-control": {
+      "trainable_params": 1682360,
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0964,
+        "component_type_recall": 0.08333333333333333,
+        "binder_reference_f1": 0.8222222222222223,
+        "placeholder_fidelity": 0.7222222222222222,
+        "latency_ms_p50": 1164.64
+      }
+    },
+    "c6-component-inventory": {
+      "trainable_params": 1682360,
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0964,
+        "component_type_recall": 0.08333333333333333,
+        "binder_reference_f1": 0.8222222222222223,
+        "placeholder_fidelity": 0.7222222222222222,
+        "latency_ms_p50": 1119.8
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "document only -- no stacked PR for a non-positive cycle",
+    "reasons": [
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c6-component-inventory",
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c6-control",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.0964 candidate=0.0964 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "conclusion": "Continuous-openui-local loop, cycle 6: 'component-inventory' arm (1,682,360 trainable params, seed 100006) vs its matched control. Every declared quality metric ties exactly (parse_rate=1.0, meaningful_program_rate=0, structural_similarity=.0964, component_type_recall=.08333, binder_reference_f1=.82222, placeholder_fidelity=.72222 on both arms) -- only p50 latency differs slightly (1164.64ms -> 1119.8ms) and does not register a scored win. Non-positive: primary_metric_null_or_worse. This is the fourth screening arm this loop has tried against the wf_smoke_v2/steps=20 recipe (after bounds, component-plan-confirm, component-edge) to tie exactly on the primary; the screening bank at this recipe is increasingly exhausted and the next cycle should prioritize a new preregistered quality-targeted objective rather than rotating through more size-matched knob levers at the same steps/seed cadence. Ship gates fail as expected (insufficient_n=3, missing held_out/adversarial/ood/rico_held). Checkpoints are local scratch (sync_checkpoints=false), never reusable/promotable/syncable/shippable; no MODEL_CARD change.",
+  "next_priorities": [
+    "Prioritize a new preregistered structural or meaningful-quality objective before recycling more exhausted size-matched knob arms at this recipe.",
+    "Keep the matched control as the size-matched baseline every cycle.",
+    "Soft ship-gate fails on fixture n never stop the continuous loop."
+  ],
+  "recorded_at": "2026-08-03T06:57:00Z"
+}
