@@ -804,6 +804,9 @@ def test_select_recommended_slug_rotates_and_skips() -> None:
         skip=all_slugs
         - {"capacity-aware-semantic-exhaustive-compiler-decision-margin"},
     ) == "capacity-aware-semantic-exhaustive-compiler-decision-margin"
+    assert _mod._select_recommended_slug(
+        1856, skip=all_slugs - {"slot-contract-context"}
+    ) == "slot-contract-context"
 
 
 def test_select_recommended_slug_prioritizes_successor_quality_after_legacy_nulls() -> (
@@ -826,6 +829,7 @@ def test_select_recommended_slug_prioritizes_successor_quality_after_legacy_null
             "slot-component-fidelity-coupling",
             "slot-component-inventory-coupling",
             "slot-component-exposure-cap",
+            "slot-contract-context",
             "literal-margin",
             "literal-close",
         }

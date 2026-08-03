@@ -528,6 +528,7 @@ _LEVER_KNOB_KEYS = (
     "binder_arity_decode_weight",
     "slot_component_loss_weight",
     "slot_component_decode_weight",
+    "slot_contract_in_context",
     "symbol_boundary_loss_weight",
     "design_md_dropout",
     "fidelity_loss_weight",
@@ -684,6 +685,14 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
             "slot_component_decode_weight": 1.0,
             "mixture_sampling_policy": "exposure_targeted",
             "mixture_per_template_cap": 2,
+            "compiler_decode_mode": "tree",
+        },
+    ),
+    (
+        "slot-contract-context",
+        "Providing the canonical slot contract in context improves component_type_recall, placeholder_fidelity, and structural_similarity without weakening constrained decoding or increasing model size.",
+        {
+            "slot_contract_in_context": True,
             "compiler_decode_mode": "tree",
         },
     ),
@@ -1424,6 +1433,8 @@ def _arm_slug_from_knobs(
     knobs: dict[str, Any], *, candidate_id: str = ""
 ) -> str | None:
     """Map knobs / candidate id to thrash arm slug."""
+    if knobs.get("slot_contract_in_context"):
+        return "slot-contract-context"
     if (
         knobs.get("compiler_alignment_loss_weight")
         and knobs.get("compiler_alignment_kind_filter") == "all"
@@ -1741,6 +1752,7 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
         "slot-component-fidelity-coupling",
         "slot-component-inventory-coupling",
         "slot-component-exposure-cap",
+        "slot-contract-context",
         "literal-margin",
         "literal-close",
         "fidelity",
@@ -4391,6 +4403,7 @@ def _completed_candidate_priorities(
         "compiler_decision_token_loss_weight",
         "structure_token_loss_weight",
         "typed_family_balance_loss_weight",
+        "slot_contract_in_context",
     }
     def has_quality_objective(knobs: dict[str, Any]) -> bool:
         return any(float(knobs.get(key) or 0) > 0 for key in quality_keys) or (
