@@ -670,6 +670,72 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         {"compiler_decision_token_loss_weight": 1.0},
     ),
     (
+        "compiler-decision-margin",
+        "Grammar-oracle alignment across every compiler-decision family makes each gold legal branch outrank its legal siblings without lowering parse_rate or binder_reference_f1.",
+        {
+            "compiler_alignment_loss_weight": 1.0,
+            "compiler_alignment_margin": 1.0,
+            "compiler_alignment_stratified": True,
+            "compiler_alignment_kind_filter": "all",
+        },
+    ),
+    (
+        "bounded-compiler-decision-margin",
+        "Deterministic completion bounds reduce the all-family compiler-decision margin arm's forwards and latency while preserving its structural quality.",
+        {
+            "compiler_alignment_loss_weight": 1.0,
+            "compiler_alignment_margin": 1.0,
+            "compiler_alignment_stratified": True,
+            "compiler_alignment_kind_filter": "all",
+            "grammar_completion_bounds": True,
+        },
+    ),
+    (
+        "cached-compiler-decision-margin",
+        "Completion-domain equivalence caching reduces compiler time for the all-family compiler-decision margin arm while preserving its structural quality.",
+        {
+            "compiler_alignment_loss_weight": 1.0,
+            "compiler_alignment_margin": 1.0,
+            "compiler_alignment_stratified": True,
+            "compiler_alignment_kind_filter": "all",
+            "grammar_equivalence_cache": True,
+        },
+    ),
+    (
+        "wide-draft-compiler-decision-margin",
+        "A wider certified compiler draft window amortizes completion-forest construction and neural ranking while preserving the all-family margin arm's structural quality.",
+        {
+            "compiler_alignment_loss_weight": 1.0,
+            "compiler_alignment_margin": 1.0,
+            "compiler_alignment_stratified": True,
+            "compiler_alignment_kind_filter": "all",
+            "grammar_draft_window": 16,
+        },
+    ),
+    (
+        "capacity-aware-compiler-decision-margin",
+        "Capacity-aware online mixture sampling reduces concentrated record repeats and raises effective training exposure for the all-family compiler-decision margin arm without lowering guarded OpenUI quality.",
+        {
+            "compiler_alignment_loss_weight": 1.0,
+            "compiler_alignment_margin": 1.0,
+            "compiler_alignment_stratified": True,
+            "compiler_alignment_kind_filter": "all",
+            "mixture_sampling_policy": "capacity_aware",
+        },
+    ),
+    (
+        "capacity-aware-tail-compiler-decision-margin",
+        "Tail-weighted scaffold supervision preserves the capacity-aware all-family margin arm's quality gain while reducing runaway legal continuation, emitted tokens, forwards, and latency.",
+        {
+            "compiler_alignment_loss_weight": 1.0,
+            "compiler_alignment_margin": 1.0,
+            "compiler_alignment_stratified": True,
+            "compiler_alignment_kind_filter": "all",
+            "mixture_sampling_policy": "capacity_aware",
+            "ltr_tail_loss_weight": 1.0,
+        },
+    ),
+    (
         "structure-token",
         "Direct grammar STRUCT-token reconstruction weighting repairs scaffold formation and structural_similarity without lowering parse_rate or binder_reference_f1.",
         {"structure_token_loss_weight": 1.0},
@@ -1128,6 +1194,37 @@ def _arm_slug_from_knobs(
 ) -> str | None:
     """Map knobs / candidate id to thrash arm slug."""
     if (
+        knobs.get("compiler_alignment_loss_weight")
+        and knobs.get("compiler_alignment_kind_filter") == "all"
+        and knobs.get("mixture_sampling_policy") == "capacity_aware"
+        and knobs.get("ltr_tail_loss_weight")
+    ):
+        return "capacity-aware-tail-compiler-decision-margin"
+    if (
+        knobs.get("compiler_alignment_loss_weight")
+        and knobs.get("compiler_alignment_kind_filter") == "all"
+        and knobs.get("mixture_sampling_policy") == "capacity_aware"
+    ):
+        return "capacity-aware-compiler-decision-margin"
+    if (
+        knobs.get("compiler_alignment_loss_weight")
+        and knobs.get("compiler_alignment_kind_filter") == "all"
+        and int(knobs.get("grammar_draft_window") or 8) > 8
+    ):
+        return "wide-draft-compiler-decision-margin"
+    if (
+        knobs.get("compiler_alignment_loss_weight")
+        and knobs.get("compiler_alignment_kind_filter") == "all"
+        and knobs.get("grammar_equivalence_cache")
+    ):
+        return "cached-compiler-decision-margin"
+    if (
+        knobs.get("compiler_alignment_loss_weight")
+        and knobs.get("compiler_alignment_kind_filter") == "all"
+        and knobs.get("grammar_completion_bounds")
+    ):
+        return "bounded-compiler-decision-margin"
+    if (
         knobs.get("typed_family_balance_loss_weight")
         and knobs.get("compiler_alignment_loss_weight")
         and knobs.get("compiler_alignment_kind_filter") == "container-close"
@@ -1148,6 +1245,11 @@ def _arm_slug_from_knobs(
         and knobs.get("compiler_alignment_kind_filter") == "component-edge"
     ):
         return "component-edge-margin"
+    if (
+        knobs.get("compiler_alignment_loss_weight")
+        and knobs.get("compiler_alignment_kind_filter") == "all"
+    ):
+        return "compiler-decision-margin"
     if knobs.get("ltr_tail_loss_weight"):
         return "literal-close"
     if knobs.get("ltr_prefix_loss_weight"):
@@ -1377,6 +1479,11 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
         "component-edge-token",
         "component-edge-margin",
         "compiler-decision-token",
+        "bounded-compiler-decision-margin",
+        "cached-compiler-decision-margin",
+        "wide-draft-compiler-decision-margin",
+        "capacity-aware-compiler-decision-margin",
+        "capacity-aware-tail-compiler-decision-margin",
         "structure-token",
         "typed-family-balance",
         "container-close",
@@ -1511,6 +1618,9 @@ def _should_enqueue_champion(delivery: dict[str, Any]) -> bool:
     if not delivery.get("positive"):
         return False
     reasons = list(delivery.get("reasons") or [])
+    primary_leaf = str(delivery.get("primary_metric") or "").rsplit(".", 1)[-1]
+    if primary_leaf != "latency_ms_p50" and _confirmation_quality_reheld(delivery):
+        return True
     if _quality_held_reasons(reasons):
         return True
     # Efficiency / primary latency win only when quality_held co-tagged.
@@ -1520,6 +1630,20 @@ def _should_enqueue_champion(delivery: dict[str, Any]) -> bool:
     ):
         return _quality_held_reasons(reasons)
     return False
+
+
+def _screening_enqueue_allowed(
+    *, cycle_intent: str, replay: dict[str, Any] | None
+) -> bool:
+    """Preserve screening queue semantics across an exact frozen retry."""
+
+    if cycle_intent in {"screening", "promotion"}:
+        return True
+    return bool(
+        cycle_intent == "retry_measurement"
+        and replay is not None
+        and replay["handoff"].cycle_role == "screening"
+    )
 
 
 def _is_champion_lever(knobs: dict[str, Any], *, candidate_id: str = "") -> bool:
@@ -4470,8 +4594,10 @@ def _write_cycle_handoff(
         climb_state = "rejected"
     elif measurement_incomplete:
         climb_state = "inconclusive"
-    elif delivery.get("positive"):
+    elif resolution is not None and resolution.get("status") == "queued":
         climb_state = "candidate_queued"
+    elif delivery.get("positive"):
+        climb_state = "inconclusive"
     else:
         climb_state = "rejected"
 
@@ -5678,6 +5804,8 @@ def _matrix(
             "sync_checkpoints": False,
             "local_files_only": True,
             "grammar_completion_bounds": False,
+            "grammar_equivalence_cache": False,
+            "grammar_draft_window": 8,
             "compact_active_canvas": False,
             "component_plan_loss_weight": 0.0,
             "component_plan_decode_weight": 0.0,
@@ -6165,6 +6293,25 @@ def _matrix(
         }
         if rec_slug not in bank_by_slug:
             rec_slug = _SCREENING_ARM_BANK[0][0]
+        control_extra: dict[str, Any] = {}
+        treatment_key = {
+            "bounded-compiler-decision-margin": "grammar_completion_bounds",
+            "cached-compiler-decision-margin": "grammar_equivalence_cache",
+            "wide-draft-compiler-decision-margin": "grammar_draft_window",
+            "capacity-aware-compiler-decision-margin": "mixture_sampling_policy",
+            "capacity-aware-tail-compiler-decision-margin": "ltr_tail_loss_weight",
+        }.get(rec_slug)
+        if treatment_key is not None:
+            control_extra = {
+                key: value
+                for key, value in bank_by_slug[rec_slug][1].items()
+                if key != treatment_key
+            }
+        precursor_slug = (
+            "capacity-aware-compiler-decision-margin"
+            if rec_slug == "capacity-aware-tail-compiler-decision-margin"
+            else "compiler-decision-margin"
+        )
         candidates = [
             {
                 "experiment": exp(
@@ -6196,14 +6343,28 @@ def _matrix(
                                 else {}
                             )
                         ),
+                        **control_extra,
                     ),
-                    "Baseline for size-matched continuous attribution.",
+                    (
+                        "All-family margin control for isolated "
+                        f"{treatment_key} attribution."
+                        if treatment_key is not None
+                        else "Baseline for size-matched continuous attribution."
+                    ),
                 ),
                 "evidence_uses": uses(),
                 "novelty": novelty(0, "matched control with published eval"),
             }
         ]
         for i, (slug, hyp, extras) in enumerate(_SCREENING_ARM_BANK, start=1):
+            if (
+                treatment_key is not None
+                and slug == precursor_slug
+            ):
+                # The matched control is exactly this precursor arm. Emitting it
+                # again would violate the preregistration contract's distinct-
+                # knob-signature requirement without adding information.
+                continue
             arm_extra = _apply_arm_extras(steps, extras)
             candidates.append(
                 {
@@ -7565,7 +7726,7 @@ def run_cycle(
         )
     else:
         # Only screening thrash quality-held wins enqueue (not promotion thrash noise).
-        if cycle_intent in {"screening", "promotion"}:
+        if _screening_enqueue_allowed(cycle_intent=cycle_intent, replay=replay):
             resolution = _enqueue_champion(
                 root=root,
                 loop_id=loop_id,

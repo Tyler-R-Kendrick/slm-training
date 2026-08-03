@@ -2656,7 +2656,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v120",
+      "version": "v127",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2696,46 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v127",
+          "date": "2026-08-03",
+          "note": "no-bump: record the c1830 capacity-aware tail fixture positive and confirmation requirement; campaign behavior is unchanged"
+        },
+        {
+          "version": "v127",
+          "date": "2026-08-03",
+          "note": "After c1829 tied higher effective exposure to guarded quality and excess continuation cost, surface exposure in the terminal matrix and add a size-matched capacity-aware tail-supervision successor."
+        },
+        {
+          "version": "v126",
+          "date": "2026-08-03",
+          "note": "After c1828 found compiler draft width quality- and work-null, add a size-matched capacity-aware mixture-sampling arm to test the observed low effective-record exposure without changing corpus or model capacity."
+        },
+        {
+          "version": "v125",
+          "date": "2026-08-03",
+          "note": "After c1827 found no reusable compiler-tree equivalence-cache hits, add a typed certified draft-window arm that can amortize completion-forest construction without changing model size or grammar authority."
+        },
+        {
+          "version": "v124",
+          "date": "2026-08-03",
+          "note": "After c1826 showed completion bounds were inert in compiler-tree evaluation, add a size-matched completion-domain cache arm and order terminal metrics by quality then runtime mechanism."
+        },
+        {
+          "version": "v123",
+          "date": "2026-08-03",
+          "note": "Deduplicate the bounded compiler-decision-margin matrix by using its identical unbounded precursor as the matched control instead of emitting that knob signature twice."
+        },
+        {
+          "version": "v122",
+          "date": "2026-08-03",
+          "note": "Preserve c1824's high-quality margin arm as the control for an isolated deterministic completion-bounds latency treatment and surface emitted-token, forward, prefill, and canvas costs in terminal matrices."
+        },
+        {
+          "version": "v121",
+          "date": "2026-08-02",
+          "note": "After the c1823 fresh-seed null, add an all-family compiler-decision legal-margin arm and preserve honest champion queue semantics across exact frozen screening retries."
+        },
         {
           "version": "v120",
           "date": "2026-08-02",
@@ -7465,6 +7505,41 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1830 capacity-aware tail scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1829 capacity-aware quality-cost scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1828 wide-draft null scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1827 compiler-cache null scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1826 bounded-margin null scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1824 quality-cost scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1823 fresh-seed-null scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
         {
           "version": "v3",
           "date": "2026-08-03",
