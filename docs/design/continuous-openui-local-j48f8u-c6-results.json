@@ -1,0 +1,77 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c6",
+  "cycle_index": 6,
+  "source_commit": "e9b3a0cc",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "seed": 100006
+  },
+  "arms": {
+    "c6-control": {
+      "last_loss": 13.719684600830078,
+      "checkpoint_sha256": "926f4c1ef7ef1f3b0de68f44c6cdd4a27b925381ed1bf1df128114f404e65eb7",
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0964,
+        "component_type_recall": 0.08333333333333333,
+        "binder_reference_f1": 0.8222222222222223,
+        "placeholder_fidelity": 0.7222222222222222,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "reward_score": 0.8236666666666667,
+        "latency_ms_p50": 1417.29
+      }
+    },
+    "c6-component-inventory": {
+      "last_loss": 14.913249969482422,
+      "checkpoint_sha256": "f5c0581e8e29119b9270622cf02088b0fae099d36c5f6e9a56a38c772cb7e36f",
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0964,
+        "component_type_recall": 0.08333333333333333,
+        "binder_reference_f1": 0.8222222222222223,
+        "placeholder_fidelity": 0.7222222222222222,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "reward_score": 0.8236666666666667,
+        "latency_ms_p50": 1464.53
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "local commits + docs only; no new stack layer",
+    "reasons": [
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c6-component-inventory",
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c6-control",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.0964 candidate=0.0964 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "conclusion": "Continuous-openui-local loop, cycle 6 (this session, branch claude/great-dirac-j48f8u): the 'component-inventory' arm (1,682,360 params) ties its size-matched control exactly on every smoke quality metric at seed 100006 (structural_similarity=.0964, component_type_recall=.08333, binder_reference_f1=.82222, placeholder_fidelity=.72222, reward_score=.82367, all identical to 5 decimal places) despite a higher training loss (14.913 vs 13.720) and a slightly slower p50 (1464.53 vs 1417.29ms). This is the sixth cycle this session and the fourth exact-tie result (c1, c4, c5, c6), reinforcing the c3/c4/c5 pattern that training loss differences on this fixture do not translate into certified structural-quality differences at eval time. Ship gates fail as expected (insufficient_n=3; held_out/adversarial/ood/rico_held missing). SDLC Phase A classifies this cycle NON_POSITIVE (null primary-metric delta); no stacked PR layer opened.",
+  "next_priorities": [
+    "Test the distinct size-matched 'binder-topology' quality hypothesis next rather than re-running the now-exhausted component-inventory knob (rank 1, confidence 0.90)",
+    "Keep the matched control as the size-matched baseline every cycle (rank 2, confidence 0.70)",
+    "Rotate thrash recommendation across the lever bank rather than a single knob family (rank 3, confidence 0.65)"
+  ],
+  "recorded_at": "2026-08-03T10:03:42Z"
+}
