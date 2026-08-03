@@ -1,0 +1,30 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "loop_id": "continuous-openui-local-b",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local--a8257b0d-c2",
+  "cycle_index": 2,
+  "decision": "harness_failure_decode_timeout_reproduced_independent_lineage",
+  "evidence_class": "fixture",
+  "cycle_role": "screening",
+  "primary_metric": "smoke.structural_similarity",
+  "reasons": [
+    "measurement_incomplete:c20260803-continuous-openui-local--a8257b0d-c2-control:smoke:incomplete_document_n=3:decode_timeout_count=3",
+    "measurement_incomplete:c20260803-continuous-openui-local--a8257b0d-c2-component-plan:smoke:incomplete_document_n=3:decode_timeout_count=3",
+    "primary_metric_unavailable"
+  ],
+  "cross_lineage_comparison": {
+    "continuous-openui-local": {
+      "c1_seed_100001": "completed_3_of_3_both_arms",
+      "c2_seed_100002": "timed_out_3_of_3_both_arms"
+    },
+    "continuous-openui-local-b": {
+      "c1_seed_100001": "completed_3_of_3_both_arms",
+      "c2_seed_100002": "timed_out_3_of_3_both_arms"
+    },
+    "conclusion": "cycle-index-derived seed 100002 is reproducibly pathological for this recipe under the governed 24s screening decode timeout, independent of loop lineage or arm hypothesis"
+  },
+  "decision_rationale": "repeated_hard_blocker_two_independent_lineages_no_new_information",
+  "handoff_action_status": {
+    "repair_harness": "blocked"
+  }
+}
