@@ -169,6 +169,12 @@ Campaign harness v114 also corrects the successor binding itself: obligation IDs
 are campaign- and experiment-scoped, so a replay must recompute them for the current
 successor rather than copy the predecessor ID. The fresh preflight's recomputed ID,
 the authorized experiment claim, and the successor manifest must now agree exactly.
+After c1816 terminally reproduced a completion-loss runtime unblock at low absolute
+meaningful-program quality, campaign harness v115 opens a distinct size-matched arm:
+`component-edge-token`. The deterministic compiler marks non-root component positions
+in the gold target, and the ordinary reconstruction CE is reweighted only at those
+positions. The arm adds no parameters, detached head, decoder score, or legal authority;
+it reports its own position count and mean CE for causal attribution.
 
 The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
 confirmed a champion, c1812 was the next protected promotion slot, and the

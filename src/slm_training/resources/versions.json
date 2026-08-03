@@ -2656,7 +2656,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v114",
+      "version": "v115",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2696,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v115",
+          "date": "2026-08-03",
+          "note": "Add a zero-parameter component-edge token reconstruction arm after completion-oriented losses produced a reproducible runtime unblock but low absolute meaningful-program quality."
+        },
         {
           "version": "v114",
           "date": "2026-08-03",
@@ -9710,7 +9715,7 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v36",
+      "version": "v37",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
@@ -9718,6 +9723,11 @@
         "src/slm_training/harnesses/quality/__init__.py"
       ],
       "history": [
+        {
+          "version": "v37",
+          "date": "2026-08-03",
+          "note": "Persist component-edge token objective weight and edge-position loss attribution in training evidence."
+        },
         {
           "version": "v36",
           "date": "2026-08-03",
@@ -11552,7 +11562,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v300",
+      "version": "v301",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -11595,6 +11605,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v301",
+          "date": "2026-08-03",
+          "note": "Add zero-parameter reconstruction weighting at deterministic compiler-derived non-root component edges with typed train-only attribution."
+        },
         {
           "version": "v300",
           "date": "2026-08-03",

@@ -218,6 +218,7 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "compiler_alignment_kind_filter",
         "component_inventory_loss_weight",
         "component_token_loss_weight",
+        "component_edge_token_loss_weight",
         "structure_token_loss_weight",
         "typed_family_balance_loss_weight",
         "structural_aux_head_profile",
@@ -516,6 +517,9 @@ class ExperimentKnobs(StrictModel):
     ) = None
     component_inventory_loss_weight: float | None = Field(default=None, ge=0, le=20)
     component_token_loss_weight: float | None = Field(default=None, ge=0, le=20)
+    component_edge_token_loss_weight: float | None = Field(
+        default=None, ge=0, le=20
+    )
     structure_token_loss_weight: float | None = Field(default=None, ge=0, le=20)
     typed_family_balance_loss_weight: float | None = Field(default=None, ge=0, le=20)
     structural_aux_head_profile: (

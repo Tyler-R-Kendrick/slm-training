@@ -72,6 +72,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "ltr_tail_loss_weight",
         "ltr_tail_tokens",
         "component_token_loss_weight",
+        "component_edge_token_loss_weight",
         "structure_token_loss_weight",
         "typed_family_balance_loss_weight",
         "gen_steps",
@@ -522,6 +523,9 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         ),
         component_token_loss_weight=float(
             getattr(config, "component_token_loss_weight", 0.0) or 0.0
+        ),
+        component_edge_token_loss_weight=float(
+            getattr(config, "component_edge_token_loss_weight", 0.0) or 0.0
         ),
         structure_token_loss_weight=float(
             getattr(config, "structure_token_loss_weight", 0.0) or 0.0
