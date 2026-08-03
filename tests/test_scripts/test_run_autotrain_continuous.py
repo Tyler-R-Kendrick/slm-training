@@ -819,7 +819,13 @@ def test_select_recommended_slug_prioritizes_successor_quality_after_legacy_null
     assert _mod._select_recommended_slug(1786, skip=skip) == "binder-arity"
 
     skip.update(
-        {"binder-arity", "binder-component-plan", "literal-margin", "literal-close"}
+        {
+            "binder-arity",
+            "binder-component-plan",
+            "binder-slot-ownership",
+            "literal-margin",
+            "literal-close",
+        }
     )
     assert _mod._select_recommended_slug(1791, skip=skip) == "fidelity"
 
@@ -1860,6 +1866,18 @@ def test_exposure_targeted_semantic_exhaustive_isolates_compression() -> None:
     assert candidate["compiler_alignment_semantic_exhaustive"] is True
     assert _mod._arm_slug_from_knobs(candidate) == slug
     HypothesisMatrix.model_validate(matrix)
+
+
+def test_binder_slot_ownership_is_registered_as_distinct_quality_successor() -> None:
+    slug = "binder-slot-ownership"
+    by_slug = {name: extras for name, _hypothesis, extras in _mod._SCREENING_ARM_BANK}
+    knobs = by_slug[slug]
+    assert knobs["binder_slot_ownership_loss_weight"] == 1.0
+    assert knobs["binder_slot_ownership_decode_weight"] == 1.0
+    assert _mod._arm_slug_from_knobs(knobs) == slug
+
+    skip = set(by_slug) - {slug}
+    assert _mod._select_recommended_slug(1900, skip=skip) == slug
 
 
 def test_frozen_screening_retry_preserves_champion_enqueue_semantics() -> None:

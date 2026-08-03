@@ -2656,7 +2656,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v143",
+      "version": "v144",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2696,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v144",
+          "date": "2026-08-03",
+          "note": "Wire a distinct binder-slot-ownership training/decode successor after the c1847 quality-arm exhaustion so the supervised loop can continue without recycling rejected objectives."
+        },
         {
           "version": "v143",
           "date": "2026-08-03",

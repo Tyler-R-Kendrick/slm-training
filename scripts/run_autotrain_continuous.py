@@ -526,6 +526,8 @@ _LEVER_KNOB_KEYS = (
     "binder_component_plan_decode_weight",
     "binder_arity_loss_weight",
     "binder_arity_decode_weight",
+    "binder_slot_ownership_loss_weight",
+    "binder_slot_ownership_decode_weight",
     "symbol_boundary_loss_weight",
     "design_md_dropout",
     "fidelity_loss_weight",
@@ -642,6 +644,14 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
             "binder_component_plan_decode_weight": 1.0,
             "structural_aux_head_profile": "binder-component-plan",
             "compiler_decode_mode": "tree",
+        },
+    ),
+    (
+        "binder-slot-ownership",
+        "Binder slot-ownership supervision and legal decode bias improves binder_reference_f1 and placeholder_fidelity without lowering parse_rate.",
+        {
+            "binder_slot_ownership_loss_weight": 1.0,
+            "binder_slot_ownership_decode_weight": 1.0,
         },
     ),
     (
@@ -1388,6 +1398,8 @@ def _arm_slug_from_knobs(
         and knobs.get("compiler_alignment_semantic_exhaustive")
     ):
         return "exposure-targeted-semantic-exhaustive-compiler-decision-margin"
+    if knobs.get("binder_slot_ownership_loss_weight"):
+        return "binder-slot-ownership"
     if (
         knobs.get("compiler_alignment_loss_weight")
         and knobs.get("compiler_alignment_kind_filter") == "all"
@@ -1682,6 +1694,7 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
     successor_slugs = (
         "binder-arity",
         "binder-component-plan",
+        "binder-slot-ownership",
         "literal-margin",
         "literal-close",
         "fidelity",
