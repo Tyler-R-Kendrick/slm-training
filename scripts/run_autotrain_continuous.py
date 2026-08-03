@@ -1357,6 +1357,33 @@ def _append_dynamic_thrash_arms(
             _DYNAMIC_THRASH_ARMS.append((slug, hyp, live))
 
 
+def _thrash_lever_signature(extras: dict[str, Any] | None) -> str:
+    """Stable identity for thrash recipes (excludes measurement / private keys)."""
+    raw = {
+        k: v
+        for k, v in (extras or {}).items()
+        if not str(k).startswith("_") and k not in {"seed", "steps", "decode_timeout_seconds"}
+    }
+    # Prefer registered lever subset when present so static/dynamic arms align.
+    levers = _lever_knobs(raw)
+    payload = levers if levers else raw
+    return _knobs_fingerprint(payload)
+
+
+def _known_thrash_lever_signatures() -> set[str]:
+    return {
+        _thrash_lever_signature(extras) for _, _, extras in _all_screening_arm_bank()
+    }
+
+
+def _finalize_compose_extras(extras: dict[str, Any], *, slug: str) -> dict[str, Any]:
+    out = dict(extras)
+    out["_thrash_slug"] = slug
+    if out.get("semantic_contrast_loss_weight") and int(out.get("batch_size") or 0) < 3:
+        out["batch_size"] = 3
+    return out
+
+
 def _synthesize_thrash_arms(
     *,
     known_slugs: set[str],
@@ -1365,33 +1392,58 @@ def _synthesize_thrash_arms(
 ) -> list[tuple[str, str, dict[str, Any]]]:
     """Compose size-matched thrash successors from lever atoms (self-heal).
 
-    Does not recycle multi-seed-closed slugs. Each arm is a distinct preregistered
-    (for this loop) quality objective under dynamic_thrash_arms.jsonl.
+    Does not recycle multi-seed-closed slugs **or** knob signatures already in
+    the effective bank (static or prior dynamic). Pair then triple compositions.
     """
     out: list[tuple[str, str, dict[str, Any]]] = []
+    known_sigs = _known_thrash_lever_signatures()
     atoms = list(_THRASH_COMPOSE_ATOMS)
+
+    def _try_add(slug: str, hyp: str, extras: dict[str, Any]) -> bool:
+        if slug in known_slugs or slug in closed:
+            return False
+        finalized = _finalize_compose_extras(extras, slug=slug)
+        sig = _thrash_lever_signature(finalized)
+        if sig in known_sigs:
+            return False
+        known_sigs.add(sig)
+        out.append((slug, hyp, finalized))
+        return True
+
+    # Pairs first.
     for i, (k1, v1) in enumerate(atoms):
         for k2, v2 in atoms[i + 1 :]:
             if k1 == k2:
                 continue
             slug = f"compose-{_short_lever_token(k1)}-{_short_lever_token(k2)}"
-            if slug in known_slugs or slug in closed:
-                continue
             extras = {**_compose_atom_extras(k1, v1), **_compose_atom_extras(k2, v2)}
-            extras["_thrash_slug"] = slug
-            # Contrast needs batch>=3; other pairs stay size-matched defaults.
-            if extras.get("semantic_contrast_loss_weight") and int(
-                extras.get("batch_size") or 0
-            ) < 3:
-                extras["batch_size"] = 3
             hyp = (
                 f"Joint {k1}={v1!r} with {k2}={v2!r} improves smoke "
                 f"structural_similarity without lowering parse_rate "
                 f"(loop self-heal thrash successor {slug})."
             )
-            out.append((slug, hyp, extras))
-            if len(out) >= max(1, int(batch)):
+            if _try_add(slug, hyp, extras) and len(out) >= max(1, int(batch)):
                 return out
+    # Triples when pairs are exhausted / collide with static bank recipes.
+    for i, (k1, v1) in enumerate(atoms):
+        for j, (k2, v2) in enumerate(atoms[i + 1 :], start=i + 1):
+            for k3, v3 in atoms[j + 1 :]:
+                slug = (
+                    f"compose-{_short_lever_token(k1)}-"
+                    f"{_short_lever_token(k2)}-{_short_lever_token(k3)}"
+                )
+                extras = {
+                    **_compose_atom_extras(k1, v1),
+                    **_compose_atom_extras(k2, v2),
+                    **_compose_atom_extras(k3, v3),
+                }
+                hyp = (
+                    f"Joint {k1}/{k2}/{k3} supervision improves smoke "
+                    f"structural_similarity without lowering parse_rate "
+                    f"(loop self-heal thrash successor {slug})."
+                )
+                if _try_add(slug, hyp, extras) and len(out) >= max(1, int(batch)):
+                    return out
     return out
 
 
@@ -1484,7 +1536,64 @@ def _self_heal_cycle_error(
             root, loop_id, closed=closed, skip=closed
         ):
             return "stopiteration_bank_heal"
+    # Compose arms that collide with static recipes fail matrix validation.
+    if "knob signatures must be distinct" in message:
+        if _self_heal_dedupe_dynamic_thrash_arms(root, loop_id):
+            return "knob_signature_dedupe"
     return None
+
+
+def _self_heal_dedupe_dynamic_thrash_arms(root: Path, loop_id: str) -> bool:
+    """Drop dynamic thrash arms whose lever signature matches the static bank.
+
+    Also compose fresh unique successors so thrash can continue.
+    """
+    global _DYNAMIC_THRASH_ARMS, _DYNAMIC_THRASH_LOADED_FOR
+    _load_dynamic_thrash_arms(root, loop_id)
+    static_sigs = {
+        _thrash_lever_signature(extras) for _, _, extras in _SCREENING_ARM_BANK
+    }
+    kept: list[tuple[str, str, dict[str, Any]]] = []
+    seen: set[str] = set(static_sigs)
+    dropped: list[str] = []
+    for slug, hyp, extras in _DYNAMIC_THRASH_ARMS:
+        sig = _thrash_lever_signature(extras)
+        if sig in seen:
+            dropped.append(slug)
+            continue
+        seen.add(sig)
+        kept.append((slug, hyp, extras))
+    path = _dynamic_thrash_arms_path(root, loop_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    # Rewrite file with only unique dynamic arms.
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    with tmp.open("w", encoding="utf-8") as fh:
+        for slug, hyp, extras in kept:
+            payload = {
+                "schema": "autotrain_dynamic_thrash_arm/v1",
+                "slug": slug,
+                "hypothesis": hyp,
+                "extras": {
+                    k: v for k, v in extras.items() if not str(k).startswith("_")
+                },
+                "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            }
+            fh.write(json.dumps(payload, sort_keys=True) + "\n")
+    tmp.replace(path)
+    _DYNAMIC_THRASH_ARMS = kept
+    _DYNAMIC_THRASH_LOADED_FOR = f"{root.resolve()}::{loop_id}"
+    print(
+        "SELF_HEAL_KNOB_DEDUPE "
+        f"dropped={dropped} kept={[s for s, _, _ in kept]}",
+        flush=True,
+    )
+    # Ensure at least one open unique recipe remains.
+    closed = _recent_completed_nonpositive_slugs(
+        root, _latest_cycle(root, loop_id)[1]
+    )
+    if _self_heal_thrash_bank_exhaust(root, loop_id, closed=closed, skip=closed):
+        return True
+    return bool(kept)
 
 
 def _clear_loop_blocker(root: Path, loop_id: str, *, reason: str) -> None:
@@ -7660,6 +7769,19 @@ def _matrix(
                 "novelty": novelty(0, "matched control with published eval"),
             }
         ]
+        # Track lever signatures so static + dynamic compose arms never collide
+        # (HypothesisMatrix requires distinct knob signatures).
+        seen_lever_sigs: set[str] = set()
+        control_knobs = candidates[0]["experiment"]["knobs"]
+        seen_lever_sigs.add(
+            _thrash_lever_signature(
+                {
+                    k: v
+                    for k, v in control_knobs.items()
+                    if k not in {"seed", "steps", "decode_timeout_seconds"}
+                }
+            )
+        )
         for i, (slug, hyp, extras) in enumerate(_all_screening_arm_bank(), start=1):
             if treatment_key is not None and slug == precursor_slug:
                 # The matched control is exactly this precursor arm. Emitting it
@@ -7667,6 +7789,14 @@ def _matrix(
                 # knob-signature requirement without adding information.
                 continue
             arm_extra = _apply_arm_extras(steps, extras)
+            sig = _thrash_lever_signature(arm_extra)
+            if sig in seen_lever_sigs:
+                # Prefer the static bank slug; drop duplicate dynamic recipes.
+                if slug.startswith("compose-"):
+                    continue
+                # Static collision with an already-emitted arm: skip later copy.
+                continue
+            seen_lever_sigs.add(sig)
             candidates.append(
                 {
                     "experiment": exp(
@@ -7680,6 +7810,19 @@ def _matrix(
                 }
             )
         rec = f"{prefix}-{rec_slug}"
+        candidate_ids = {
+            str((row.get("experiment") or {}).get("experiment_id") or "")
+            for row in candidates
+        }
+        if rec not in candidate_ids:
+            # Recommended compose arm may have been dropped as a signature
+            # duplicate of a static recipe — retarget to first treatment arm.
+            for row in candidates:
+                eid = str((row.get("experiment") or {}).get("experiment_id") or "")
+                if eid and not eid.endswith("-control"):
+                    rec = eid
+                    rec_slug = eid.split(f"{prefix}-", 1)[-1]
+                    break
         priorities = [
             {
                 "rank": 1,
