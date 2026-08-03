@@ -1475,6 +1475,15 @@ def _self_heal_cycle_error(
         return "feedback_conflict_soft"
     if "campaign already exists with different spec" in message:
         return "campaign_identity_soft"
+    # Empty-bank steering used bare next() on the static bank after compose
+    # successors were selected; treat residual StopIteration as bank heal.
+    if isinstance(exc, StopIteration):
+        pred = _latest_cycle(root, loop_id)[1]
+        closed = _recent_completed_nonpositive_slugs(root, pred)
+        if _self_heal_thrash_bank_exhaust(
+            root, loop_id, closed=closed, skip=closed
+        ):
+            return "stopiteration_bank_heal"
     return None
 
 
@@ -5380,16 +5389,26 @@ def _completed_candidate_priorities(
         except RuntimeError:
             successor_slug = ""
         if successor_slug:
+            # Include loop-local self-heal compose arms; bare next() on the
+            # static bank alone raised StopIteration and hard-blocked the loop
+            # after dynamic thrash successors were selected.
             successor = next(
-                row for row in _SCREENING_ARM_BANK if row[0] == successor_slug
-            )
-            alternative = {
-                "experiment_id": (
-                    candidate_id.removesuffix(candidate_slug or "") + successor_slug
+                (
+                    row
+                    for row in _all_screening_arm_bank()
+                    if row[0] == successor_slug
                 ),
-                "hypothesis": successor[1],
-                "knobs": successor[2],
-            }
+                None,
+            )
+            if successor is not None:
+                alternative = {
+                    "experiment_id": (
+                        candidate_id.removesuffix(candidate_slug or "")
+                        + successor_slug
+                    ),
+                    "hypothesis": successor[1],
+                    "knobs": successor[2],
+                }
     for row in rows:
         if row.get("disposition") == "experiment_next" and (
             str(row.get("proposed_experiment_id") or "") == candidate_id
