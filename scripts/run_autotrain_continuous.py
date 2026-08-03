@@ -30,7 +30,7 @@ import re
 import subprocess
 import sys
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -2555,12 +2555,6 @@ def _rate_to_pm(value: object) -> int | None:
     return int(max(0, min(1000, round(float(value) * 1000.0))))
 
 
-def _latency_ms_to_ns(value: object) -> int | None:
-    if not isinstance(value, (int, float)) or isinstance(value, bool):
-        return None
-    return max(1, int(round(float(value) * 1_000_000.0)))
-
-
 def _run_suite_metrics(camp_dir: Path, run_id: str) -> dict[str, float | None]:
     """Load parse / structure / latency from smoke or held_out eval JSON."""
     run_dir = camp_dir / "runs" / run_id
@@ -2596,33 +2590,36 @@ def _run_suite_metrics(camp_dir: Path, run_id: str) -> dict[str, float | None]:
     return out
 
 
-def _candidate_row_for_cert(
-    *,
-    arm_id: str,
-    knobs: dict[str, Any],
-    latency_ms: float | None,
-    parse_rate: float | None,
-) -> dict[str, Any]:
-    lat_ns = _latency_ms_to_ns(latency_ms) or 1
-    lever = hashlib.sha256(
-        json.dumps(knobs, sort_keys=True, default=str).encode("utf-8")
-    ).hexdigest()
-    successes = 2
-    quality_failures = 0 if (parse_rate is not None and parse_rate >= 1.0 - 1e-9) else 0
-    return {
-        "id": arm_id,
-        "hardware": "cpu",
-        "lever_snapshot_sha256": lever,
-        "cold_ns": [lat_ns],
-        "warm_ns": [lat_ns],
-        "input_units": [1],
-        "passes": [1],
-        "energy_uj": [1],
-        "cost_micro_usd": [1],
-        "successes": successes,
-        "quality_failures": quality_failures,
-        "trainable_params": 100,
-    }
+def _raw_metric_observations(
+    camp_dir: Path, run_id: str
+) -> tuple[dict[str, list[int]] | None, Path | None]:
+    """Read per-example promotion observations; aggregates are not samples."""
+
+    run_dir = camp_dir / "runs" / run_id
+    for name in ("eval_held_out.json", "eval_smoke.json", "eval.json"):
+        path = run_dir / name
+        if not path.is_file():
+            continue
+        details = _read_json(path).get("details")
+        if not isinstance(details, list):
+            continue
+        structural: list[int] = []
+        parse: list[int] = []
+        for row in details:
+            if not isinstance(row, dict) or row.get("incomplete") is True:
+                continue
+            score = _rate_to_pm(row.get("structural_similarity"))
+            if score is not None:
+                structural.append(score)
+            parse_ok = row.get("parse_ok")
+            if isinstance(parse_ok, bool):
+                parse.append(1000 if parse_ok else 0)
+        if structural and parse:
+            return {
+                "held_out_structural_similarity_pm": structural,
+                "parse_rate_pm": parse,
+            }, path
+    return None, None
 
 
 def export_promote_metric_certificate(
@@ -2635,6 +2632,7 @@ def export_promote_metric_certificate(
     deadline: float | None = None,
     root: Path | None = None,
     loop_id: str | None = None,
+    raw_resource_candidates: Sequence[Mapping[str, Any]] | None = None,
 ) -> tuple[Path | None, str | None]:
     """Build LeverProof evidence + certificate for continuous promote.
 
@@ -2647,6 +2645,18 @@ def export_promote_metric_certificate(
         write_metric_evidence,
     )
 
+    # LeverProof v2 selects over raw resource samples. The continuous evaluator
+    # does not own cold/warm, energy, or cost measurements, so it must never
+    # synthesize those axes from aggregate latency. A canonical measurement
+    # owner supplies every candidate row or promotion fails closed.
+    if raw_resource_candidates is None:
+        return None, "promote_evidence_build_failed:raw_resource_evidence_missing"
+    candidates = [dict(row) for row in raw_resource_candidates]
+    if {str(row.get("id") or "") for row in candidates} != {
+        "control",
+        "candidate",
+    }:
+        return None, "promote_evidence_build_failed:raw_resource_candidate_ids"
     if not IN_REPO_CHECKER.is_file():
         return None, f"leverproof_checker_missing:{IN_REPO_CHECKER}"
 
@@ -2662,13 +2672,14 @@ def export_promote_metric_certificate(
     if ss_pm is None or parse_pm is None:
         return None, (f"promote_cert_incomplete_metrics:ss={ss!r} parse={parse!r}")
 
-    # Repeat samples (fixture n≈3 style) for band assessment stability.
+    raw_observations, observation_source = _raw_metric_observations(
+        camp_dir, candidate_id
+    )
+    if raw_observations is None or observation_source is None:
+        return None, "promote_evidence_build_failed:raw_metric_observations_missing"
     observations = {
         "schema": "metric_observations/v1",
-        "metrics": {
-            "held_out_structural_similarity_pm": [ss_pm, ss_pm, ss_pm],
-            "parse_rate_pm": [parse_pm, parse_pm, parse_pm],
-        },
+        "metrics": raw_observations,
     }
     promote_dir = camp_dir / "promote"
     promote_dir.mkdir(parents=True, exist_ok=True)
@@ -2688,6 +2699,13 @@ def export_promote_metric_certificate(
                 "control_metrics": ctrl,
                 "candidate_metrics": cand,
                 "delivery_reasons": list((delivery or {}).get("reasons") or []),
+                "raw_metric_observations_source": {
+                    "path": str(observation_source),
+                    "sha256": hashlib.sha256(
+                        observation_source.read_bytes()
+                    ).hexdigest(),
+                },
+                "raw_resource_candidates": candidates,
             },
             sort_keys=True,
         )
@@ -2711,26 +2729,6 @@ def export_promote_metric_certificate(
         if man_path is None:
             mans = sorted(man_dir.glob("*.json"))
             man_path = mans[0] if mans else None
-
-    ctrl_knobs = _lever_knobs(_load_experiment_knobs(camp_dir, control_id)) or {
-        "grammar_completion_bounds": False,
-        "compact_active_canvas": False,
-    }
-    cand_knobs = _lever_knobs(_load_experiment_knobs(camp_dir, candidate_id)) or {}
-    candidates = [
-        _candidate_row_for_cert(
-            arm_id="control",
-            knobs=ctrl_knobs,
-            latency_ms=ctrl.get("latency_ms_p50"),
-            parse_rate=ctrl.get("parse_rate"),
-        ),
-        _candidate_row_for_cert(
-            arm_id="candidate",
-            knobs=cand_knobs,
-            latency_ms=cand.get("latency_ms_p50"),
-            parse_rate=cand.get("parse_rate"),
-        ),
-    ]
 
     try:
         evidence_path = promote_dir / "metric-evidence.json"

@@ -2661,7 +2661,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v159",
+      "version": "v160",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2701,6 +2701,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v160",
+          "date": "2026-08-03",
+          "note": "Land fail-closed continuous-promotion enforcement: require canonical raw LeverProof resource samples and per-example metric observations instead of fabricating evidence from aggregate metrics."
+        },
         {
           "version": "v159",
           "date": "2026-08-03",

@@ -3884,6 +3884,14 @@ def _seed_promote_runs(camp: Path) -> None:
                     "parse_rate": pr,
                     "meaningful_program_rate": mpr,
                     "structural_similarity": mpr,
+                    "details": [
+                        {
+                            "incomplete": False,
+                            "parse_ok": pr == 1.0,
+                            "structural_similarity": score,
+                        }
+                        for score in (mpr - 0.1, mpr, mpr + 0.1)
+                    ],
                 }
             ),
             encoding="utf-8",
@@ -3905,6 +3913,31 @@ def _seed_promote_runs(camp: Path) -> None:
         )
 
 
+def _raw_resource_candidates() -> list[dict[str, object]]:
+    """Explicit fixture samples; production must receive canonical measurements."""
+
+    return [
+        {
+            "id": arm_id,
+            "hardware": "cpu",
+            "lever_snapshot_sha256": digest,
+            "cold_ns": [cold_ns],
+            "warm_ns": [warm_ns, warm_ns + 100],
+            "input_units": [3],
+            "passes": [8],
+            "energy_uj": [energy_uj],
+            "cost_micro_usd": [cost],
+            "successes": 3,
+            "quality_failures": 0,
+            "trainable_params": 1_608_962,
+        }
+        for arm_id, digest, cold_ns, warm_ns, energy_uj, cost in (
+            ("control", "a" * 64, 12_000_000_000, 11_000_000_000, 5000, 20),
+            ("candidate", "b" * 64, 10_000_000_000, 9_000_000_000, 4500, 18),
+        )
+    ]
+
+
 def test_export_promote_metric_certificate_writes_v2(tmp_path: Path) -> None:
     """Real LeverProof path when checker is built; skip on CI without Lean bin."""
     import pytest
@@ -3921,11 +3954,21 @@ def test_export_promote_metric_certificate_writes_v2(tmp_path: Path) -> None:
         control_id="c-control",
         candidate_id="c-promote",
         delivery={"reasons": []},
+        raw_resource_candidates=_raw_resource_candidates(),
     )
     assert err is None, err
     assert path is not None and path.is_file()
     cert = __import__("json").loads(path.read_text(encoding="utf-8"))
     assert cert["schema"] == "metric_certificate/v2"
+    observations = json.loads(
+        (camp / "promote" / "metric-observations.json").read_text(encoding="utf-8")
+    )
+    assert observations["metrics"]["held_out_structural_similarity_pm"] == [
+        400,
+        500,
+        600,
+    ]
+    assert observations["metrics"]["parse_rate_pm"] == [1000, 1000, 1000]
     from slm_training.harnesses.experiments.verified_metrics import optimum_feedback
 
     fb = optimum_feedback(cert)
@@ -3955,10 +3998,35 @@ def test_export_promote_metric_certificate_fail_closed_without_metrics(
         control_id="c-control",
         candidate_id="c-promote",
         delivery={},
+        raw_resource_candidates=_raw_resource_candidates(),
     )
     assert path is None
     assert err is not None
-    assert "incomplete_metrics" in err or "checker_missing" in err
+    assert (
+        "incomplete_metrics" in err
+        or "checker_missing" in err
+        or "raw_metric_observations_missing" in err
+        or "raw_resource_evidence_missing" in err
+    )
+
+
+def test_export_promote_metric_certificate_rejects_synthetic_resource_defaults(
+    tmp_path: Path,
+) -> None:
+    camp = tmp_path / "camp"
+    _seed_promote_runs(camp)
+
+    path, err = _mod.export_promote_metric_certificate(
+        camp_dir=camp,
+        campaign_id="camp1",
+        control_id="c-control",
+        candidate_id="c-promote",
+        delivery={},
+    )
+
+    assert path is None
+    assert err == "promote_evidence_build_failed:raw_resource_evidence_missing"
+    assert not (camp / "promote" / "metric-evidence.json").exists()
 
 
 def test_promote_certificate_checker_uses_bounded_stage_and_120s_cap(
@@ -3996,6 +4064,7 @@ def test_promote_certificate_checker_uses_bounded_stage_and_120s_cap(
         deadline=500.0,
         root=root,
         loop_id="loop-x",
+        raw_resource_candidates=_raw_resource_candidates(),
     )
 
     assert err is None
@@ -4038,6 +4107,7 @@ def test_promote_certificate_checker_timeout_fails_closed(
         control_id="c-control",
         candidate_id="c-promote",
         delivery={},
+        raw_resource_candidates=_raw_resource_candidates(),
     )
 
     assert path is None
@@ -4045,11 +4115,10 @@ def test_promote_certificate_checker_timeout_fails_closed(
     assert not (camp / "metric-certificate.json").exists()
 
 
-def test_rate_to_pm_and_latency_helpers() -> None:
+def test_rate_to_pm_helper() -> None:
     assert _mod._rate_to_pm(0.5) == 500
     assert _mod._rate_to_pm(1.0) == 1000
     assert _mod._rate_to_pm(None) is None
-    assert _mod._latency_ms_to_ns(1.0) == 1_000_000
 
 
 def test_enqueue_champion_accepts_steps_arm(tmp_path: Path) -> None:
