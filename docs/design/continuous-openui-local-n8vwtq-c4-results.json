@@ -1,0 +1,47 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c4",
+  "cycle_index": 4,
+  "cycle_intent": "retry_measurement",
+  "source_commit": "6f4b059",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "arms": {
+    "c4-control": {
+      "status": "eval_timeout_no_scoreboard",
+      "smoke": null
+    },
+    "c4-component-plan": {
+      "status": "eval_timeout_no_scoreboard",
+      "smoke": null
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "blocked: same measurement-incomplete signature 3 consecutive cycles (c2, c3, c4); route to a different next hypothesis rather than a 4th identical retry",
+    "reasons": [
+      "measurement_incomplete:c20260803-continuous-openui-local-8c0b60dd-c4-control:missing_scoreboard",
+      "measurement_incomplete:c20260803-continuous-openui-local-8c0b60dd-c4-component-plan:missing_scoreboard",
+      "repeated_hard_blocker:same_signature_3_consecutive_cycles:c2,c3,c4"
+    ]
+  },
+  "correction": {
+    "corrects": [
+      "continuous-openui-local-n8vwtq-c2-results.json",
+      "continuous-openui-local-n8vwtq-c3-results.json"
+    ],
+    "wrong_claim": "control trains with compiler_decode_mode=off and only component-plan uses tree, so reallocating the eval wall-budget by that knob would fix the timeout",
+    "verified_correction": "Both control and component-plan experiment knobs use compiler_decode_mode=tree (verified directly against the on-disk artifacts/experiments/*.json for c2, c3, and c4). Ship-gate evaluation always runs under evaluation_policy.compiler_decode_mode=tree (strict_compiler_tree) regardless of any training-time knob -- confirmed on cycle 1's control scoreboard, which trained with --compiler-decode-mode off yet still evaluated under tree. The real driver of the cycle-1-vs-cycle-2..4 latency difference is model-output complexity (a better-trained model emits deeper valid structure, requiring the constrained tree decoder to search a much larger legal-candidate space per token), not a static per-arm knob. Commit 071560ee9da5918f6b15ff71b7c6b4a66bb7265f is not reverted -- it remains a valid, tested fix for genuinely decode-mode-heterogeneous arm pairs and correctly degrades to a symmetric split when modes match -- but it does not resolve this cycle's blocker."
+  },
+  "conclusion": "3rd consecutive cycle (c2, c3, c4) failing to complete the component-plan-vs-control ship-gate comparison on this host with the same measurement_incomplete signature. Per continuous.md's repeated-hard-blocker rule, this is now reported blocked rather than retried a 4th time. This host's CPU cannot complete a 2-arm, 3-document honest strict_compiler_tree comparison for this richer-output hypothesis within MAX_RUN_MINUTES=3, regardless of budget split, because both arms need comparable real decode time once genuinely trained. MAX_RUN_MINUTES is not weakened. Not scored as a negative model result: the hypothesis is already independently reproduced positive 3 times on other hosts (#1369, #1376, #1378); this host simply cannot independently re-confirm it under budget. No stacked PR (blocked, not positive).",
+  "next_priorities": [
+    "Route to a different, lighter-weight next hypothesis (component-token or slot-component-coverage, both proposed in this cycle's matrix) rather than a 4th identical retry of the same blocked arm",
+    "Do not weaken MAX_RUN_MINUTES or the honest ship-gate policy to force this specific comparison through on this host"
+  ],
+  "recorded_at": "2026-08-03T13:01:44Z"
+}

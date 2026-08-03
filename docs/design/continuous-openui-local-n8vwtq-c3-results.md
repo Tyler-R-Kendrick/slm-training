@@ -1,3 +1,10 @@
+> **Correction (see [c4](continuous-openui-local-n8vwtq-c4-results.md)):** the
+> "control=off vs component-plan=tree" diagnosis below is wrong — both arms
+> use `compiler_decode_mode="tree"`; ship-gate eval always runs under `"tree"`
+> regardless of any training-time knob. The fix in commit `071560ee` is a
+> reasonable general safety net but does not resolve this specific blocker
+> (which recurred a 3rd time in c4 after this repair).
+
 # Continuous autotrain: 2026-08-03 cycle 3, session n8vwtq (harness repair, exhaustion)
 
 **Loop:** `continuous-openui-local`

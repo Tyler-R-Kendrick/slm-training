@@ -1,3 +1,10 @@
+> **Correction (see [c4](continuous-openui-local-n8vwtq-c4-results.md)):** the
+> "control trains with `compiler_decode_mode=off`" claim below is wrong —
+> both arms use `"tree"`. The real driver of the slowdown is model-output
+> complexity, not a per-arm decode-mode knob; the harness fix in commit
+> `071560ee` does not resolve this cycle's blocker (though it remains a valid
+> fix for genuinely decode-mode-heterogeneous arm pairs).
+
 # Continuous autotrain: 2026-08-03 cycle 2, session n8vwtq (non-positive, eval timeout)
 
 **Loop:** `continuous-openui-local`
