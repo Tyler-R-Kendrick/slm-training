@@ -1161,6 +1161,50 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         {"ltr_tail_loss_weight": 2.0},
     ),
     (
+        "literal-close-structure",
+        "Tail-weighted LTR plus STRUCT-token reconstruction couples legal termination to grammar structure without lowering parse_rate or binder_reference_f1.",
+        {
+            "ltr_tail_loss_weight": 2.0,
+            "structure_token_loss_weight": 1.0,
+        },
+    ),
+    (
+        "literal-close-component-token",
+        "Tail-weighted LTR plus component-token reconstruction improves termination and component recall without lowering parse_rate.",
+        {
+            "ltr_tail_loss_weight": 2.0,
+            "component_token_loss_weight": 1.0,
+        },
+    ),
+    (
+        "literal-close-typed-balance",
+        "Tail-weighted LTR with count-normalized typed-family balance stabilizes component mix while fixing legal termination.",
+        {
+            "ltr_tail_loss_weight": 2.0,
+            "typed_family_balance_loss_weight": 0.25,
+        },
+    ),
+    (
+        "symbol-boundary-structure",
+        "Opaque-symbol boundary supervision plus STRUCT-token reconstruction improves binder fidelity and scaffold structure without lowering parse_rate.",
+        {
+            "symbol_boundary_loss_weight": 1.0,
+            "structure_token_loss_weight": 1.0,
+        },
+    ),
+    (
+        "semantic-contrast-structure",
+        "Hard-valid semantic contrast with STRUCT-token reconstruction improves structural_similarity at fixed size without lowering parse_rate.",
+        {
+            "semantic_contrast_dir": "src/slm_training/resources/data/eval/openui_hard_valid_v1",
+            "semantic_contrast_loss_weight": 0.25,
+            "semantic_contrast_margin": 1.0,
+            "semantic_contrast_fraction": 0.5,
+            "batch_size": 3,
+            "structure_token_loss_weight": 1.0,
+        },
+    ),
+    (
         "literal-margin",
         "Grammar-derived LIT_END alignment makes legal literal closure outrank legal byte continuation without lowering parse_rate or binder_reference_f1.",
         {
@@ -1878,6 +1922,22 @@ def _arm_slug_from_knobs(
         return "scaffold-prefix-structure"
     if knobs.get("component_token_loss_weight") and knobs.get("ltr_prefix_loss_weight"):
         return "component-token-prefix"
+    if knobs.get("ltr_tail_loss_weight") and knobs.get("structure_token_loss_weight"):
+        return "literal-close-structure"
+    if knobs.get("ltr_tail_loss_weight") and knobs.get("component_token_loss_weight"):
+        return "literal-close-component-token"
+    if knobs.get("ltr_tail_loss_weight") and knobs.get(
+        "typed_family_balance_loss_weight"
+    ):
+        return "literal-close-typed-balance"
+    if knobs.get("symbol_boundary_loss_weight") and knobs.get(
+        "structure_token_loss_weight"
+    ):
+        return "symbol-boundary-structure"
+    if knobs.get("semantic_contrast_loss_weight") and knobs.get(
+        "structure_token_loss_weight"
+    ):
+        return "semantic-contrast-structure"
     if knobs.get("ltr_tail_loss_weight"):
         return "literal-close"
     if knobs.get("ltr_prefix_loss_weight"):
@@ -1936,13 +1996,55 @@ def _arm_slug_from_knobs(
     return None
 
 
+def _is_decisive_causal_terminal(row: dict[str, Any]) -> bool:
+    """Whether a terminal champion burns the thrash family for this integration.
+
+    Fixture-noise confirms (fixture_insufficient_n_alone without a quality
+    non-regression or null primary) and harness incompletes do not burn CAP.
+    """
+    status = str(row.get("status") or "")
+    if status not in {
+        "rejected",
+        "promotion_failed",
+        "climb_accepted",
+        "promoted",
+    }:
+        return False
+    reasons = [str(r) for r in (row.get("resolve_reasons") or [])]
+    if _reasons_are_harness_incomplete_only(reasons):
+        return False
+    decisive_markers = (
+        "non_regression_fail:",
+        "primary_metric_null_or_worse:",
+        "primary_quality_win_rejected",
+        "confirmation_rejected:primary_quality",
+        "promotion_primary",
+        "eg_params_block",
+        "primary_metric_win_rejected",
+    )
+    if any(any(marker in r for marker in decisive_markers) for r in reasons):
+        return True
+    # Pure fixture-volume rejects without quality signal — do not CAP-burn.
+    if any("fixture_insufficient_n_alone" in r for r in reasons) and not any(
+        "primary_metric_null" in r or "non_regression" in r for r in reasons
+    ):
+        return False
+    return status in {"rejected", "promotion_failed", "climb_accepted", "promoted"}
+
+
 def _skip_arm_slugs(
-    entries: list[dict[str, Any]], *, integration_commit: str | None = None
+    entries: list[dict[str, Any]],
+    *,
+    integration_commit: str | None = None,
+    include_causal_cap: bool = True,
 ) -> set[str]:
     """Deprioritize arms only while a champion is still open (not forever).
 
     Permanent skip of rejected/promotion_failed starved bounds/canvas and left
     only steps/batch1 thrash — which could not re-enter the champion path.
+
+    ``include_causal_cap=False`` drops same-integration family saturation so a
+    multi-seed-open thrash bank cannot hard-die solely from confirm CAP.
     """
     skip: set[str] = set()
     terminal_counts: dict[str, int] = {}
@@ -1955,11 +2057,7 @@ def _skip_arm_slugs(
             slug
             and integration_commit
             and row.get("source_integration_commit") == integration_commit
-            and row.get("status")
-            in {"rejected", "promotion_failed", "climb_accepted", "promoted"}
-            # Harness-only terminal outcomes are not model rejects — do not
-            # permanently saturate the thrash family for this integration.
-            and not _reasons_are_harness_incomplete_only(row.get("resolve_reasons"))
+            and _is_decisive_causal_terminal(row)
         ):
             terminal_counts[slug] = terminal_counts.get(slug, 0) + 1
         # Only skip arms currently in the funnel (not terminal failures).
@@ -1979,12 +2077,17 @@ def _skip_arm_slugs(
         )
         if slug:
             skip.add(slug)
-    skip.update(
-        slug
-        for slug, count in terminal_counts.items()
-        if count >= _CAUSAL_FAMILY_ATTEMPT_CAP
-    )
+    if include_causal_cap:
+        skip.update(
+            slug
+            for slug, count in terminal_counts.items()
+            if count >= _CAUSAL_FAMILY_ATTEMPT_CAP
+        )
     return skip
+
+
+def _thrash_bank_open_slugs(closed: set[str]) -> set[str]:
+    return {slug for slug, _, _ in _SCREENING_ARM_BANK if slug not in closed}
 
 
 def _arm_close_min_null_seeds(policy: Any | None = None) -> int:
@@ -2205,6 +2308,11 @@ def _select_recommended_slug(
         "typed-family-balance",
         "container-close",
         "balanced-container-close",
+        "literal-close-structure",
+        "literal-close-component-token",
+        "literal-close-typed-balance",
+        "symbol-boundary-structure",
+        "semantic-contrast-structure",
     )
     legacy_quality_slugs = {
         "component-plan",
@@ -7810,6 +7918,28 @@ def run_cycle(
         _skip_arm_slugs(queue_entries, integration_commit=integration)
         | recent_exhausted
     )
+    # Causal-family CAP must not hard-kill thrash when multi-seed-open arms
+    # remain (confirm rejects on noisy fixture burned literal-close CAP while
+    # the arm was still multi-seed-open → bank exhaust with no promote head).
+    thrash_open = _thrash_bank_open_slugs(recent_exhausted)
+    if thrash_open and not (thrash_open - skip_slugs):
+        soft_skip = (
+            _skip_arm_slugs(
+                queue_entries,
+                integration_commit=integration,
+                include_causal_cap=False,
+            )
+            | recent_exhausted
+        )
+        if thrash_open - soft_skip:
+            relaxed = sorted(thrash_open - soft_skip)
+            print(
+                "THRASH_CAUSAL_CAP_RELAX "
+                f"reopened={relaxed} "
+                "reason=multi_seed_open_arms_remain_after_confirm_cap",
+                flush=True,
+            )
+            skip_slugs = soft_skip
     open_champion = _queue_head_open(queue_entries)
     confirmed_champion: dict[str, Any] | None = None
     promoting_champion: dict[str, Any] | None = None

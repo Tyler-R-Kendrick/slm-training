@@ -3236,6 +3236,72 @@ def test_resolve_promotion_harness_failure_not_model_reject(tmp_path: Path) -> N
     assert "harness_failure" in ledger
 
 
+def test_causal_cap_does_not_empty_multi_seed_open_bank() -> None:
+    """Confirm CAP skip must not thrash-hard-die when multi-seed-open arms remain."""
+    entries = [
+        {
+            "entry_id": "c1",
+            "status": "rejected",
+            "source_integration_commit": "tip1",
+            "source_candidate_id": "x-literal-close",
+            "knobs": {"ltr_tail_loss_weight": 2.0},
+            "resolve_reasons": [
+                "non_regression_fail:binder_reference_f1:1.0->0.0",
+                "primary_metric_null_or_worse:smoke.structural_similarity",
+            ],
+        },
+        {
+            "entry_id": "c2",
+            "status": "rejected",
+            "source_integration_commit": "tip1",
+            "source_candidate_id": "y-literal-close",
+            "knobs": {"ltr_tail_loss_weight": 2.0},
+            "resolve_reasons": [
+                "non_regression_fail:binder_reference_f1:1.0->0.0",
+            ],
+        },
+    ]
+    hard = _mod._skip_arm_slugs(entries, integration_commit="tip1")
+    assert "literal-close" in hard
+    soft = _mod._skip_arm_slugs(
+        entries, integration_commit="tip1", include_causal_cap=False
+    )
+    assert "literal-close" not in soft
+    closed: set[str] = set()
+    open_slugs = _mod._thrash_bank_open_slugs(closed)
+    assert "literal-close" in open_slugs
+    # Simulated cycle gate: relax CAP when hard skip empties open thrash.
+    skip = hard | closed
+    if open_slugs and not (open_slugs - skip):
+        skip = soft | closed
+    assert open_slugs - skip
+
+
+def test_new_literal_close_successor_slugs() -> None:
+    assert (
+        _mod._arm_slug_from_knobs(
+            {"ltr_tail_loss_weight": 2.0, "structure_token_loss_weight": 1.0}
+        )
+        == "literal-close-structure"
+    )
+    assert (
+        _mod._arm_slug_from_knobs(
+            {"ltr_tail_loss_weight": 2.0, "component_token_loss_weight": 1.0}
+        )
+        == "literal-close-component-token"
+    )
+    assert (
+        _mod._arm_slug_from_knobs(
+            {
+                "semantic_contrast_loss_weight": 0.25,
+                "structure_token_loss_weight": 1.0,
+                "batch_size": 3,
+            }
+        )
+        == "semantic-contrast-structure"
+    )
+
+
 def test_harness_incomplete_reasons_are_not_model_rejects() -> None:
     assert _mod._reason_is_harness_incomplete("harness_failure:missing_promote_run")
     assert _mod._reason_is_harness_incomplete(
