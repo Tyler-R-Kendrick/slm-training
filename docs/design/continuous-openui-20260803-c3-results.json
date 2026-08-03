@@ -1,0 +1,68 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c3",
+  "cycle_index": 3,
+  "source_commit": "9dcfa7e6",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c3-control": {
+      "trainable_params": 1608962,
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.23083333333333333,
+        "component_type_recall": 0.16666666666666666,
+        "binder_reference_f1": 0.7333333333333333,
+        "latency_ms_p50": 3232.98
+      }
+    },
+    "c3-both": {
+      "trainable_params": 1608962,
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.23083333333333333,
+        "component_type_recall": 0.16666666666666666,
+        "binder_reference_f1": 0.7333333333333333,
+        "latency_ms_p50": 2568.16
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "continue loop; local commits/docs only",
+    "reasons": [
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c3-control",
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c3-both",
+      "efficiency_win:mpr_per_ms:0.00010310405->0.00012979461:gain_fraction=0.25887016:minimum=0.05",
+      "quality_held:parse=1.0 mpr=0.3333333333333333",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.23083333333333333 candidate=0.23083333333333333 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "conclusion": "Continuous-openui-local loop, cycle 3, integrated at main HEAD 9dcfa7e6 (post-merge of PR #1369). The 'both' arm ties its matched control exactly on the declared primary (structural_similarity=.23083) and every quality metric (meaningful_program_rate=.3333, component_type_recall=.1667, binder_reference_f1=.7333 on both arms) -- only p50 latency moved (3232.98ms -> 2568.16ms), giving a >5% mpr_per_ms efficiency gain with quality held. Per the driver's quality-aware tradeoff classifier this still lands NON_POSITIVE overall because the primary metric shows zero improvement and the cycle carries fixture_insufficient_n_alone -- an efficiency win alone, without a primary or ship-quality win, does not clear the stack-layer gate. Ship gates fail as expected (insufficient_n=3).",
+  "next_priorities": [
+    "component-plan quality hypothesis is next in the ranked matrix (c20260803-continuous-openui-local-8c0b60dd-c3-component-plan)",
+    "Keep the matched control as the size-matched baseline every cycle",
+    "The 'both' arm is now exhausted at this seed; do not re-select without a new hypothesis"
+  ],
+  "recorded_at": "2026-08-03T04:41:47Z"
+}
