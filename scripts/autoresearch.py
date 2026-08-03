@@ -92,6 +92,19 @@ def _bounded_campaign_seconds(campaign: CampaignSpec) -> float:
     )
 
 
+def _bounded_experiment_seconds(
+    campaign: CampaignSpec, requested_seconds: float | None
+) -> float:
+    """Apply a driver's dynamic arm share inside the preregistered ceiling."""
+    campaign_seconds = _bounded_campaign_seconds(campaign)
+    if requested_seconds is None:
+        return campaign_seconds
+    requested = float(requested_seconds)
+    if requested <= 0:
+        raise ValueError("--experiment-wall-seconds must be positive")
+    return min(requested, campaign_seconds)
+
+
 def _git(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         ["git", *args],
@@ -1189,7 +1202,9 @@ def cmd_run(args: argparse.Namespace) -> int:
         experiment,
         commands,
         cwd=ROOT,
-        timeout_seconds=_bounded_campaign_seconds(campaign),
+        timeout_seconds=_bounded_experiment_seconds(
+            campaign, getattr(args, "experiment_wall_seconds", None)
+        ),
         campaign_manifest_sha256=lock.manifest_sha256,
     )
     if reuse_receipt is not None:
@@ -1876,6 +1891,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="ExperimentCampaignV1 JSON locked before --execute.",
     )
     run.add_argument("--trackio", action="store_true")
+    run.add_argument(
+        "--experiment-wall-seconds",
+        type=float,
+        help=(
+            "Dynamic symmetric arm share from the continuous driver; capped by "
+            "the preregistered campaign and repository limits."
+        ),
+    )
     run.add_argument(
         "--reuse-train-run",
         type=Path,

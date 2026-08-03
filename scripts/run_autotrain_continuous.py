@@ -501,9 +501,18 @@ _LEVER_KNOB_KEYS = (
     "compiler_alignment_loss_weight",
     "compiler_alignment_margin",
     "compiler_alignment_stratified",
+    "compiler_alignment_semantic_exhaustive",
     "compiler_alignment_kind_filter",
     "grammar_completion_bounds",
+    "grammar_equivalence_cache",
+    "grammar_draft_window",
     "compact_active_canvas",
+    "mixture_sampling_policy",
+    "mixture_exposure_target_profile",
+    "mixture_total_decision_budget",
+    "mixture_per_root_cap",
+    "mixture_per_template_cap",
+    "mixture_max_importance_weight",
     "component_plan_loss_weight",
     "component_plan_decode_weight",
     "component_edge_loss_weight",
@@ -1245,6 +1254,78 @@ def _revalidate_confirmed_champion_entries(
         print(
             "CHAMPION_CONFIRM_REVALIDATE_REJECT "
             f"entry_id={row.get('entry_id')} campaign={campaign_id}",
+            flush=True,
+        )
+    return changed
+
+
+def _refresh_champion_source_recipes(
+    root: Path, entries: list[dict[str, Any]]
+) -> bool:
+    """Restore lever-complete queue recipes from immutable source experiments.
+
+    Older queue writers projected only a subset of registered levers. Any such
+    confirmation or promotion changed the treatment and is not evidence for the
+    source winner, so reopen it at confirmation with the exact source recipes.
+    """
+
+    changed = False
+    open_statuses = {
+        "queued",
+        "confirming",
+        "confirmation_inconclusive",
+        "confirmed",
+        "promoting",
+        "promotion_inconclusive",
+        "harness_failure",
+    }
+    for row in entries:
+        if row.get("status") not in open_statuses:
+            continue
+        source_dir = root / str(row.get("source_campaign_id") or "")
+        candidate = _lever_knobs(
+            _load_experiment_knobs(
+                source_dir, str(row.get("source_candidate_id") or "")
+            )
+        )
+        control = _lever_knobs(
+            _load_experiment_knobs(
+                source_dir, str(row.get("source_control_id") or "")
+            )
+        )
+        if not candidate:
+            continue
+        if candidate == _lever_knobs(row.get("knobs") or {}) and control == _lever_knobs(
+            row.get("control_knobs") or {}
+        ):
+            continue
+        prior_status = str(row.get("status") or "")
+        row.update(
+            knobs=candidate,
+            control_knobs=control,
+            knobs_fingerprint=_knobs_fingerprint(candidate),
+            status="queued",
+            confirm_attempts=0,
+            promote_attempts=0,
+            confirm_campaign_id=None,
+            confirm_cycle_index=None,
+            promotion_campaign_id=None,
+            promotion_cycle_index=None,
+            resolved_at=None,
+            resolve_reasons=[
+                "champion_recipe_repaired_from_source",
+                f"invalidated_phase_status:{prior_status}",
+            ],
+        )
+        row.pop("cert_policy", None)
+        row.pop("formal_preflight_status", None)
+        row.pop("last_harness_failure", None)
+        row.pop("last_harness_failure_at", None)
+        changed = True
+        print(
+            "CHAMPION_RECIPE_REPAIRED "
+            f"entry_id={row.get('entry_id')} prior_status={prior_status} "
+            f"source={row.get('source_campaign_id')}",
             flush=True,
         )
     return changed
@@ -6126,53 +6207,7 @@ def _matrix(
         promo_extra = {
             k: v
             for k, v in promote_levers.items()
-            if k
-            in {
-                "grammar_completion_bounds",
-                "compact_active_canvas",
-                "component_plan_loss_weight",
-                "component_plan_decode_weight",
-                "component_edge_loss_weight",
-                "component_edge_alignment_loss_weight",
-                "component_edge_decode_weight",
-                "component_inventory_loss_weight",
-                "component_inventory_decode_weight",
-                "binder_topology_loss_weight",
-                "binder_topology_decode_weight",
-                "binder_component_plan_loss_weight",
-                "binder_component_plan_decode_weight",
-                "binder_arity_loss_weight",
-                "binder_arity_decode_weight",
-                "fidelity_loss_weight",
-                "semantic_contrast_dir",
-                "semantic_contrast_loss_weight",
-                "semantic_contrast_margin",
-                "semantic_contrast_fraction",
-                "symbol_slot_augmentation",
-                "mask_pattern",
-                "symbol_boundary_loss_weight",
-                "design_md_dropout",
-                "ltr_prefix_loss_weight",
-                "component_token_loss_weight",
-                "component_edge_token_loss_weight",
-                "compiler_decision_token_loss_weight",
-                "structure_token_loss_weight",
-                "typed_family_balance_loss_weight",
-                "structural_aux_head_profile",
-                "compiler_decode_mode",
-                "steps",
-                "batch_size",
-                "train_version",
-                "context_backend",
-                "sync_checkpoints",
-                "local_files_only",
-                "output_tokenizer",
-                "ltr_tail_loss_weight",
-                "compiler_alignment_loss_weight",
-                "compiler_alignment_margin",
-                "compiler_alignment_stratified",
-                "compiler_alignment_kind_filter",
-            }
+            if k in _LEVER_KNOB_KEYS
         }
         promo_steps = int(promo_extra.pop("steps", steps) or steps)
         control_extra = {
@@ -6326,53 +6361,7 @@ def _matrix(
         confirm_extra = {
             k: v
             for k, v in confirm_levers.items()
-            if k
-            in {
-                "grammar_completion_bounds",
-                "compact_active_canvas",
-                "component_plan_loss_weight",
-                "component_plan_decode_weight",
-                "component_edge_loss_weight",
-                "component_edge_alignment_loss_weight",
-                "component_edge_decode_weight",
-                "component_inventory_loss_weight",
-                "component_inventory_decode_weight",
-                "binder_topology_loss_weight",
-                "binder_topology_decode_weight",
-                "binder_component_plan_loss_weight",
-                "binder_component_plan_decode_weight",
-                "binder_arity_loss_weight",
-                "binder_arity_decode_weight",
-                "fidelity_loss_weight",
-                "semantic_contrast_dir",
-                "semantic_contrast_loss_weight",
-                "semantic_contrast_margin",
-                "semantic_contrast_fraction",
-                "symbol_slot_augmentation",
-                "mask_pattern",
-                "symbol_boundary_loss_weight",
-                "design_md_dropout",
-                "ltr_prefix_loss_weight",
-                "component_token_loss_weight",
-                "component_edge_token_loss_weight",
-                "compiler_decision_token_loss_weight",
-                "structure_token_loss_weight",
-                "typed_family_balance_loss_weight",
-                "structural_aux_head_profile",
-                "compiler_decode_mode",
-                "steps",
-                "batch_size",
-                "train_version",
-                "context_backend",
-                "sync_checkpoints",
-                "local_files_only",
-                "output_tokenizer",
-                "ltr_tail_loss_weight",
-                "compiler_alignment_loss_weight",
-                "compiler_alignment_margin",
-                "compiler_alignment_stratified",
-                "compiler_alignment_kind_filter",
-            }
+            if k in _LEVER_KNOB_KEYS
         }
         confirm_steps = int(confirm_extra.pop("steps", steps) or steps)
         control_extra = {
@@ -7146,6 +7135,7 @@ def run_cycle(
     queue_entries = _load_champion_queue(queue_path)
     # Pre-execution crashes do not spend bounded champion attempts. Promotion
     # heads also return to confirmed so the next promotion slot can retry.
+    recipes_refreshed = _refresh_champion_source_recipes(root, queue_entries)
     reconciled_replays = _reconcile_completed_confirmation_replays(
         root, queue_entries
     )
@@ -7154,7 +7144,13 @@ def run_cycle(
     confirmations_revalidated = _revalidate_confirmed_champion_entries(
         root, queue_entries
     )
-    if reconciled_replays or recovered or revalidated or confirmations_revalidated:
+    if (
+        recipes_refreshed
+        or reconciled_replays
+        or recovered
+        or revalidated
+        or confirmations_revalidated
+    ):
         _write_champion_queue(queue_path, queue_entries)
     replayed_confirmation = _confirmation_replay_entry(queue_entries, replay)
     recent_exhausted = _recent_completed_nonpositive_slugs(root, pred)
@@ -7307,6 +7303,15 @@ def run_cycle(
         stage_wall_minutes_for_role(policy, role),
         formal_required=formal_lane_required,
     )
+    # The campaign records the maximum arm ceiling before outcomes exist. The
+    # driver later passes the exact symmetric post-formal share to each run.
+    # Keeping the old pre-formal split here made the inner executor discard
+    # time that the outer allocator had correctly reclaimed.
+    campaign_wall_minutes = _post_formal_arm_budget_request(
+        policy_minutes=stage_wall_minutes_for_role(policy, role),
+        initial_arm_wall_minutes=arm_wall_minutes,
+        formal_completed=formal_lane_required,
+    )
     claim_for_role = (
         str(policy.defaults.get("claim_class_promotion") or "promotion_candidate")
         if role == "promotion"
@@ -7389,7 +7394,7 @@ def run_cycle(
         "--max-experiments",
         "3",
         "--max-wall-minutes",
-        str(arm_wall_minutes),
+        str(campaign_wall_minutes),
         "--notes",
         notes,
     ]
@@ -7818,6 +7823,8 @@ def run_cycle(
             "--campaign-manifest",
             str(man_path),
             "--execute",
+            "--experiment-wall-seconds",
+            f"{arm_wall_minutes * 60:.6f}",
         ]
         reuse = replay_manifests.get(eid, {}).get("train_reuse")
         if reuse is not None:

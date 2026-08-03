@@ -4029,6 +4029,23 @@ def test_experiment_wall_budget_reads_history_but_execution_is_capped() -> None:
     assert _bounded_campaign_seconds(historical) == float(MAX_RUN_MINUTES * 60)
 
 
+def test_dynamic_experiment_wall_is_bounded_by_campaign_ceiling() -> None:
+    from scripts.autoresearch import _bounded_experiment_seconds
+
+    bounded = CampaignSpec(
+        campaign_id="bounded-dynamic-wall",
+        objective="Bound a dynamic experiment arm share.",
+        primary_metric="score",
+        budget=CampaignBudget(max_wall_minutes=2),
+    )
+
+    assert _bounded_experiment_seconds(bounded, 73.25) == 73.25
+    assert _bounded_experiment_seconds(bounded, 180) == 120
+    assert _bounded_experiment_seconds(bounded, None) == 120
+    with pytest.raises(ValueError, match="must be positive"):
+        _bounded_experiment_seconds(bounded, 0)
+
+
 def test_execute_shares_one_wall_budget_across_stages(monkeypatch) -> None:
     import slm_training.autoresearch.engine as engine
 

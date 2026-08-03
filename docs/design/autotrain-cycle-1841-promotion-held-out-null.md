@@ -1,5 +1,11 @@
 # Autotrain c1841: Lean-gated promotion held-out null
 
+> **Later audit (c1844): invalid as promotion evidence for c1830.** The queue
+> projection dropped `mixture_sampling_policy=capacity_aware` before c1838 and
+> c1840/c1841. This held-out null remains valid for the executed replacement-
+> sampling tail comparison, but it did not test the source capacity-aware tail
+> treatment.
+
 **Verdict:** reject the confirmed tail-loss candidate. The repaired frozen
 replay completed both smoke and held-out scoreboards, and candidate and matched
 control are identical on every guarded quality and decode-work metric. The

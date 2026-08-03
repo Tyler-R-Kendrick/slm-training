@@ -2656,7 +2656,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v140",
+      "version": "v142",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2696,16 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v142",
+          "date": "2026-08-03",
+          "note": "Preserve every registered screening lever across champion confirmation and promotion, and reopen legacy queue entries whose projected recipe drifted from immutable source experiments."
+        },
+        {
+          "version": "v141",
+          "date": "2026-08-03",
+          "note": "Propagate the exact symmetric post-formal arm share into the inner experiment executor while retaining preregistered and repository hard ceilings."
+        },
         {
           "version": "v140",
           "date": "2026-08-03",
@@ -7588,6 +7598,11 @@
         {
           "version": "v3",
           "date": "2026-08-03",
+          "note": "no-bump: record c1844 incomplete promotion checkpoint provenance and correct c1838/c1841 recipe-scope claims after the queue projection audit; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
           "note": "no-bump: record honest c1843 structure-token scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
         },
         {
@@ -10247,6 +10262,11 @@
         "docs/design/ldi3-04-remine-intervene-campaign-report-20260718.json"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-08-03",
+          "note": "no-bump: add a bounded dynamic experiment-wall override for the continuous autotrain supervisor; preference remine campaign behavior is unchanged"
+        },
         {
           "version": "v4",
           "date": "2026-08-03",

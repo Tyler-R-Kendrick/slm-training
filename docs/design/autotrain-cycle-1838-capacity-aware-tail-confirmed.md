@@ -1,5 +1,11 @@
 # Autotrain c1838: capacity-aware tail fresh-seed confirmation
 
+> **Later audit (c1844): invalid as confirmation of c1830.** The champion
+> transition dropped `mixture_sampling_policy=capacity_aware`, so c1838 actually
+> measured tail weight 0 versus 1 under replacement sampling. Its measurements
+> remain valid for that executed recipe, but the capacity-aware source winner
+> must be re-confirmed with its exact recipe.
+
 **Verdict:** the lever is learning a narrow, reproducible fixture signal, but
 the model is not good enough. On seed 101836, tail supervision repeats the
 structure and binder gains at matched parameter count and exposure. Protected

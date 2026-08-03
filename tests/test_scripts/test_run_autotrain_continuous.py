@@ -523,6 +523,72 @@ def test_revalidate_confirmed_champion_rejects_historical_false_positive(
     )
 
 
+def test_refresh_champion_source_recipe_reopens_drifted_phase(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    source = root / "source-campaign" / "artifacts" / "experiments"
+    source.mkdir(parents=True)
+    candidate_id = "source-capacity-tail"
+    control_id = "source-control"
+    base = {
+        "compiler_alignment_loss_weight": 1.0,
+        "compiler_alignment_margin": 1.0,
+        "compiler_alignment_stratified": True,
+        "compiler_alignment_kind_filter": "all",
+        "mixture_sampling_policy": "capacity_aware",
+    }
+    (source / f"{candidate_id}.json").write_text(
+        json.dumps(
+            {
+                "experiment_id": candidate_id,
+                "knobs": {**base, "ltr_tail_loss_weight": 1.0},
+            }
+        )
+    )
+    (source / f"{control_id}.json").write_text(
+        json.dumps(
+            {
+                "experiment_id": control_id,
+                "knobs": {**base, "ltr_tail_loss_weight": 0.0},
+            }
+        )
+    )
+    entries = [
+        {
+            "entry_id": "legacy-drifted",
+            "status": "harness_failure",
+            "source_campaign_id": "source-campaign",
+            "source_candidate_id": candidate_id,
+            "source_control_id": control_id,
+            "knobs": {
+                "compiler_alignment_loss_weight": 1.0,
+                "ltr_tail_loss_weight": 1.0,
+            },
+            "control_knobs": {
+                "compiler_alignment_loss_weight": 1.0,
+                "ltr_tail_loss_weight": 0.0,
+            },
+        }
+    ]
+
+    assert _mod._refresh_champion_source_recipes(root, entries) is True
+    assert entries[0]["status"] == "queued"
+    assert entries[0]["knobs"]["mixture_sampling_policy"] == "capacity_aware"
+    assert entries[0]["control_knobs"]["mixture_sampling_policy"] == (
+        "capacity_aware"
+    )
+    assert entries[0]["resolve_reasons"][0] == (
+        "champion_recipe_repaired_from_source"
+    )
+
+
+def test_champion_projection_covers_every_registered_screening_lever() -> None:
+    registered = set().union(
+        *(set(extras) for _, _, extras in _mod._SCREENING_ARM_BANK)
+    ) - {"_steps_factor"}
+
+    assert registered <= set(_mod._LEVER_KNOB_KEYS)
+
+
 def test_matrix_confirm_path_same_levers_new_seed() -> None:
     from slm_training.autoresearch.schemas import HypothesisMatrix
 
@@ -543,6 +609,10 @@ def test_matrix_confirm_path_same_levers_new_seed() -> None:
             "component_edge_decode_weight": 1.0,
             "structural_aux_head_profile": "component-edge",
             "compiler_decode_mode": "tree",
+            "mixture_sampling_policy": "capacity_aware",
+            "compiler_alignment_semantic_exhaustive": True,
+            "grammar_equivalence_cache": True,
+            "grammar_draft_window": 16,
             "steps": 81,
             "batch_size": 2,
             "train_version": "wf_smoke_v2",
@@ -572,6 +642,10 @@ def test_matrix_confirm_path_same_levers_new_seed() -> None:
     assert ctrl["structural_aux_head_profile"] == "component-edge"
     assert cand["compiler_decode_mode"] == "tree"
     assert ctrl["compiler_decode_mode"] == "tree"
+    assert cand["mixture_sampling_policy"] == "capacity_aware"
+    assert cand["compiler_alignment_semantic_exhaustive"] is True
+    assert cand["grammar_equivalence_cache"] is True
+    assert cand["grammar_draft_window"] == 16
     assert cand["seed"] == ctrl["seed"] == 100_000 + 9
     assert cand["steps"] == 81
     assert ctrl["steps"] == 80
@@ -2735,12 +2809,20 @@ def test_matrix_promote_path_confirmed_knobs() -> None:
             "steps": 81,
             "batch_size": 2,
             "train_version": "wf_smoke_v2",
+            "mixture_sampling_policy": "capacity_aware",
+            "compiler_alignment_semantic_exhaustive": True,
+            "grammar_equivalence_cache": True,
+            "grammar_draft_window": 16,
         },
     )
     HypothesisMatrix.model_validate(matrix)
     assert matrix["recommended_experiment_id"] == "c20260731-c8-promote"
     cand = matrix["hypotheses"][1]["experiment"]["knobs"]
     assert cand["grammar_completion_bounds"] is True
+    assert cand["mixture_sampling_policy"] == "capacity_aware"
+    assert cand["compiler_alignment_semantic_exhaustive"] is True
+    assert cand["grammar_equivalence_cache"] is True
+    assert cand["grammar_draft_window"] == 16
     assert cand["steps"] == 81
     # formal_claims must be on the matrix member (not rewritten post-lock).
     promo_exp = matrix["hypotheses"][1]["experiment"]
@@ -4693,6 +4775,19 @@ def test_completed_formal_lane_returns_unused_time_to_matched_arms() -> None:
         initial_arm_wall_minutes=initial,
         formal_completed=False,
     ) == pytest.approx(initial)
+
+
+def test_formal_campaign_ceiling_allows_dynamic_reclaimed_arm_share() -> None:
+    initial = _mod._arm_wall_minutes(3, formal_required=True)
+    campaign_ceiling = _mod._post_formal_arm_budget_request(
+        policy_minutes=3,
+        initial_arm_wall_minutes=initial,
+        formal_completed=True,
+    )
+    reclaimed_share_seconds = 73.305
+
+    assert campaign_ceiling * 60 >= reclaimed_share_seconds
+    assert initial * 60 < reclaimed_share_seconds
 
 
 def test_arm_execution_deadline_preserves_finalization_reserve(
