@@ -74,14 +74,14 @@ def test_recorder_captures_maskgit_trajectory() -> None:
         canvas = step_row.get("canvas")
         if canvas is None:
             continue
-            for commit in step_row.get("commits") or []:
-                value = canvas[commit["t"]]
-                assert value in {commit["id"], pad_id, mask_id}
-                if commit.get("decision_source") == "dfa_singleton":
-                    assert commit["forced"] is True
-                    assert "lp" not in commit  # I2 bypass has no neural score.
-                else:
-                    assert commit["lp"] <= 0.0
+        for commit in step_row.get("commits") or []:
+            value = canvas[commit["t"]]
+            assert value in {commit["id"], pad_id, mask_id}
+            if commit.get("decision_source") == "dfa_singleton":
+                assert commit["forced"] is True
+                assert "lp" not in commit  # I2 bypass has no neural score.
+            else:
+                assert commit["lp"] <= 0.0
 
 
 def test_recorder_zero_cost_when_absent() -> None:

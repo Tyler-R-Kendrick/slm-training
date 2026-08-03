@@ -12,7 +12,7 @@ this is not a learned production capability.
 
 Both arms used CPU scratch TwoTower, one thread, batch size 2, seed 101847,
 exposure-targeted sampling, and 1,608,962 trainable parameters. The treatment
-cut decode work and p50 latency, and raised structural similarity by `.0842`,
+cut decode work and p50 latency by 59.2%, and raised structural similarity by `.0842`,
 but it regressed binder F1 by `.1302`, fidelity by `.1944`, and reward by
 `.0703`; meaningful, AST, and canonical exact metrics were all zero. Training
 loss was higher on treatment (`23.4322` vs `22.6143`). The checkpoints are

@@ -142,7 +142,15 @@ def _refresh_loop_state_after_receipt(
         return
     if handoff.loop_id != receipt.loop_id or handoff.campaign_id != receipt.campaign_id:
         return
-    if state.active_campaign_id is not None or state.state == "RUNNING":
+    # Reconcile only the exact completed campaign while the driver is idle.
+    # A stale receipt from an older handoff must never rewrite the operator
+    # view for a newer cycle (or a state file that is still transitioning).
+    if (
+        state.active_campaign_id is not None
+        or state.state == "RUNNING"
+        or state.phase != "between_cycles"
+        or state.last_completed_campaign_id != receipt.campaign_id
+    ):
         return
 
     pending_required = pending_autotrain_actions(root, handoff)

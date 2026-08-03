@@ -67,7 +67,7 @@
     "binder_reference_f1": -0.1301587301587302,
     "placeholder_fidelity": -0.19444444444444442,
     "reward_score": -0.07033333333333325,
-    "latency_fraction": 0.408,
+    "latency_fraction": -0.5918531534540596,
     "tokens_emitted_fraction": -0.5384615384615384,
     "forwards_count_fraction": -0.6071428571428571
   },

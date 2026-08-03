@@ -2530,6 +2530,9 @@ def evaluate_suites(
 
     from slm_training.harnesses.model_build.ship_gates import write_ship_gates
 
+    if model is not None and checkpoint is not None:
+        raise ValueError("provide either a preloaded model or a checkpoint, not both")
+
     # Loading a checkpoint-backed model once is materially cheaper than
     # rebuilding it for every suite.  Bind the shared instance to the exact
     # checkpoint digest so suite-result caching remains content-addressed and

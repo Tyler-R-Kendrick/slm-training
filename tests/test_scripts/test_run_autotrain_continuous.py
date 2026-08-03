@@ -278,9 +278,7 @@ def test_should_enqueue_champion_requires_quality_held() -> None:
             "positive": True,
             "measurement_complete": True,
             "primary_metric": "smoke.structural_similarity",
-            "reasons": [
-                "primary_metric_win:smoke.structural_similarity:0.05->0.14"
-            ],
+            "reasons": ["primary_metric_win:smoke.structural_similarity:0.05->0.14"],
             "candidate_id": "c1-compiler-decision-token",
             "control_id": "c1-control",
         }
@@ -573,12 +571,8 @@ def test_refresh_champion_source_recipe_reopens_drifted_phase(tmp_path: Path) ->
     assert _mod._refresh_champion_source_recipes(root, entries) is True
     assert entries[0]["status"] == "queued"
     assert entries[0]["knobs"]["mixture_sampling_policy"] == "capacity_aware"
-    assert entries[0]["control_knobs"]["mixture_sampling_policy"] == (
-        "capacity_aware"
-    )
-    assert entries[0]["resolve_reasons"][0] == (
-        "champion_recipe_repaired_from_source"
-    )
+    assert entries[0]["control_knobs"]["mixture_sampling_policy"] == ("capacity_aware")
+    assert entries[0]["resolve_reasons"][0] == ("champion_recipe_repaired_from_source")
 
 
 def test_champion_projection_covers_every_registered_screening_lever() -> None:
@@ -787,29 +781,42 @@ def test_select_recommended_slug_rotates_and_skips() -> None:
     all_slugs = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
     with pytest.raises(RuntimeError, match="screening arm bank exhausted"):
         _mod._select_recommended_slug(1, skip=all_slugs)
-    assert _mod._select_recommended_slug(
-        1817, skip=all_slugs - {"component-edge-token"}
-    ) == "component-edge-token"
-    assert _mod._select_recommended_slug(
-        1818, skip=all_slugs - {"component-edge-margin"}
-    ) == "component-edge-margin"
-    assert _mod._select_recommended_slug(
-        1821, skip=all_slugs - {"compiler-decision-token"}
-    ) == "compiler-decision-token"
-    assert _mod._select_recommended_slug(
-        1824, skip=all_slugs - {"compiler-decision-margin"}
-    ) == "compiler-decision-margin"
-    assert _mod._select_recommended_slug(
-        1841,
-        skip=all_slugs
-        - {"capacity-aware-semantic-exhaustive-compiler-decision-margin"},
-    ) == "capacity-aware-semantic-exhaustive-compiler-decision-margin"
-    assert _mod._select_recommended_slug(
-        1856, skip=all_slugs - {"slot-contract-context"}
-    ) == "slot-contract-context"
-    assert _mod._select_recommended_slug(
-        1858, skip=all_slugs - {"constraint-graph"}
-    ) == "constraint-graph"
+    assert (
+        _mod._select_recommended_slug(1817, skip=all_slugs - {"component-edge-token"})
+        == "component-edge-token"
+    )
+    assert (
+        _mod._select_recommended_slug(1818, skip=all_slugs - {"component-edge-margin"})
+        == "component-edge-margin"
+    )
+    assert (
+        _mod._select_recommended_slug(
+            1821, skip=all_slugs - {"compiler-decision-token"}
+        )
+        == "compiler-decision-token"
+    )
+    assert (
+        _mod._select_recommended_slug(
+            1824, skip=all_slugs - {"compiler-decision-margin"}
+        )
+        == "compiler-decision-margin"
+    )
+    assert (
+        _mod._select_recommended_slug(
+            1841,
+            skip=all_slugs
+            - {"capacity-aware-semantic-exhaustive-compiler-decision-margin"},
+        )
+        == "capacity-aware-semantic-exhaustive-compiler-decision-margin"
+    )
+    assert (
+        _mod._select_recommended_slug(1856, skip=all_slugs - {"slot-contract-context"})
+        == "slot-contract-context"
+    )
+    assert (
+        _mod._select_recommended_slug(1858, skip=all_slugs - {"constraint-graph"})
+        == "constraint-graph"
+    )
 
 
 def test_select_recommended_slug_prioritizes_successor_quality_after_legacy_nulls() -> (
@@ -1584,9 +1591,7 @@ def test_bounded_compiler_decision_margin_isolates_runtime_treatment() -> None:
         assert candidate[key] == control[key]
     assert control["grammar_completion_bounds"] is False
     assert candidate["grammar_completion_bounds"] is True
-    assert _mod._arm_slug_from_knobs(candidate) == (
-        "bounded-compiler-decision-margin"
-    )
+    assert _mod._arm_slug_from_knobs(candidate) == ("bounded-compiler-decision-margin")
     assert f"{prefix}-compiler-decision-margin" not in knobs
     HypothesisMatrix.model_validate(matrix)
 
@@ -1720,9 +1725,7 @@ def test_capacity_aware_tail_margin_isolates_closure_treatment() -> None:
     }
     prefix = campaign_id.replace("continuous-loop-", "c")
     control = knobs[f"{prefix}-control"]
-    candidate = knobs[
-        f"{prefix}-capacity-aware-tail-compiler-decision-margin"
-    ]
+    candidate = knobs[f"{prefix}-capacity-aware-tail-compiler-decision-margin"]
     for key in (
         "compiler_alignment_loss_weight",
         "compiler_alignment_margin",
@@ -1952,9 +1955,7 @@ def test_frozen_screening_retry_preserves_champion_enqueue_semantics() -> None:
     assert not _mod._screening_enqueue_allowed(
         cycle_intent="retry_measurement",
         replay={
-            "handoff": SimpleNamespace(
-                cycle_role="screening", cycle_intent="confirm"
-            )
+            "handoff": SimpleNamespace(cycle_role="screening", cycle_intent="confirm")
         },
     )
 
@@ -1979,9 +1980,7 @@ def test_completed_confirmation_replay_resolves_original_and_duplicate(
                 "positive": True,
                 "measurement_complete": True,
                 "primary_metric": "smoke.structural_similarity",
-                "reasons": [
-                    "primary_metric_win:smoke.structural_similarity:0.4->0.44"
-                ],
+                "reasons": ["primary_metric_win:smoke.structural_similarity:0.4->0.44"],
             }
         )
     )
@@ -2186,7 +2185,8 @@ def test_completed_null_with_exhausted_bank_requires_harness_expansion() -> None
     matrix["hypotheses"] = [
         row
         for row in matrix["hypotheses"]
-        if row["experiment"]["experiment_id"] in {
+        if row["experiment"]["experiment_id"]
+        in {
             candidate_id,
             "c20260802-c1795-control",
         }
@@ -4243,8 +4243,20 @@ def test_classify_positive_rejects_c1731_efficiency_jitter(tmp_path: Path) -> No
 def test_classify_positive_rejects_c1819_quality_regression(tmp_path: Path) -> None:
     camp = tmp_path / "camp"
     rows = (
-        ("c-control", 3772.85, 0.6666666666666666, 0.40443333333333337, 0.9523809523809524),
-        ("c-candidate", 1074.57, 0.3333333333333333, 0.17416666666666666, 0.6333333333333333),
+        (
+            "c-control",
+            3772.85,
+            0.6666666666666666,
+            0.40443333333333337,
+            0.9523809523809524,
+        ),
+        (
+            "c-candidate",
+            1074.57,
+            0.3333333333333333,
+            0.17416666666666666,
+            0.6333333333333333,
+        ),
     )
     for arm, latency, mpr, similarity, binder_f1 in rows:
         run = camp / "runs" / arm
@@ -4669,6 +4681,14 @@ def test_stage_process_updates_child_liveness(tmp_path: Path) -> None:
     assert refreshed.stage_started_at == first.stage_started_at
     assert refreshed.heartbeat_at >= first.heartbeat_at
 
+    _mod._clear_active_stage(root, loop)
+    completed = _mod.AutotrainLoopStateV1.model_validate_json(
+        _mod._loop_state_path(root, loop).read_text()
+    )
+    assert completed.active_stage is None
+    assert completed.child_pid is None
+    assert completed.stage_started_at is None
+
 
 def test_stage_command_publishes_child_pid_and_heartbeat(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -4826,9 +4846,7 @@ def test_frozen_formal_replay_retains_formal_lane() -> None:
         "candidate": {"manifest": SimpleNamespace(formal_obligations=(object(),))},
     }
 
-    assert _mod._formal_lane_required(
-        cycle_intent="retry_measurement", replay=replay
-    )
+    assert _mod._formal_lane_required(cycle_intent="retry_measurement", replay=replay)
     assert _mod._formal_lane_required(cycle_intent="promote", replay=None)
 
 
@@ -5115,7 +5133,10 @@ def test_cycle_handoff_separates_fixture_climb_from_ship(tmp_path: Path) -> None
     assert "MODEL_CARD" in next(
         action.reason for action in handoff.actions if action.kind == "document"
     )
-    assert {action.kind for action in handoff.actions} == {"document", "next_experiment"}
+    assert {action.kind for action in handoff.actions} == {
+        "document",
+        "next_experiment",
+    }
     state = json.loads((root / "loops" / "loop-1" / "state.json").read_text())
     assert state["phase"] == "between_cycles"
 
@@ -5182,7 +5203,9 @@ def test_cycle_handoff_routes_exhausted_bank_to_model_build_repair(
         formal_status="proved",
     )
 
-    repair = next(action for action in handoff.actions if action.kind == "repair_harness")
+    repair = next(
+        action for action in handoff.actions if action.kind == "repair_harness"
+    )
     assert repair.owner == "improve-openui-harnesses"
     assert repair.harness_family == "model_build"
     assert "quality-arm bank exhausted" in repair.reason
@@ -5574,9 +5597,7 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor(
         != formal_manifest.formal_obligations[0].obligation_id
     )
     promote_experiment = json.loads(json.dumps(old_control))
-    promote_experiment["experiment_id"] = (
-        "c20260801-loop-12345678-c1710-promote"
-    )
+    promote_experiment["experiment_id"] = "c20260801-loop-12345678-c1710-promote"
     promote_experiment["hypothesis"] = (
         "Promotion retest of confirmed champion levers under held-out suites."
     )
@@ -5634,9 +5655,7 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor(
     assert promoted["formal_claims"] == promote_experiment["formal_claims"]
 
     confirm_experiment = json.loads(json.dumps(old_candidate))
-    confirm_experiment["experiment_id"] = (
-        "c20260801-loop-12345678-c1710-confirm"
-    )
+    confirm_experiment["experiment_id"] = "c20260801-loop-12345678-c1710-confirm"
     confirm_manifest = _mod._manifest(
         old_campaign,
         confirm_experiment,
@@ -5716,9 +5735,7 @@ def test_frozen_replay_restores_omitted_formal_claim_from_proved_artifact(
         }
     )
     claim = _mod.FormalClaimV1(**_mod.promote_formal_claim_dict())
-    current_obligation_id = _mod.formal_obligation_id(
-        campaign_id, experiment_id, claim
-    )
+    current_obligation_id = _mod.formal_obligation_id(campaign_id, experiment_id, claim)
     preflight = _mod.FormalPreflightV1(
         campaign_id=campaign_id,
         experiment_id=experiment_id,
@@ -5977,12 +5994,30 @@ def test_reserved_runtime_owner_failure_is_not_replayed(
         climb_state="harness_failure",
         ship_state="blocked",
         primary_metric="smoke.parse_rate",
-        actions=(_mod.AutotrainActionV1(kind="retry_measurement", owner="autotrain", reason="retry", evidence_ids=(f"campaign:{campaign_id}",), frozen_manifest_sha256=digest),),
+        actions=(
+            _mod.AutotrainActionV1(
+                kind="retry_measurement",
+                owner="autotrain",
+                reason="retry",
+                evidence_ids=(f"campaign:{campaign_id}",),
+                frozen_manifest_sha256=digest,
+            ),
+        ),
     )
     (camp / "cycle_handoff.json").write_text(handoff.model_dump_json(indent=2) + "\n")
     outcomes = camp / "artifacts" / "outcomes"
     outcomes.mkdir(parents=True)
-    (outcomes / "candidate.json").write_text(json.dumps({"experiment_id": "candidate-runtime-owner", "status": "failed", "metrics": {}, "error": "unsupported compiler auxiliary lever(s); no runtime owner is implemented"}), encoding="utf-8")
+    (outcomes / "candidate.json").write_text(
+        json.dumps(
+            {
+                "experiment_id": "candidate-runtime-owner",
+                "status": "failed",
+                "metrics": {},
+                "error": "unsupported compiler auxiliary lever(s); no runtime owner is implemented",
+            }
+        ),
+        encoding="utf-8",
+    )
 
     assert _mod._load_frozen_replay(root, "loop-1", campaign_id) is None
     assert "nonreplayable_configuration" in capsys.readouterr().out
@@ -6260,9 +6295,7 @@ def test_replayed_dual_arm_timeouts_remain_inconclusive_and_require_repair(
         (run / "scoreboard.json").write_text(
             json.dumps(
                 {
-                    "evals": {
-                        "runner": {"name": "AgentV", "execution_errors": 0}
-                    },
+                    "evals": {"runner": {"name": "AgentV", "execution_errors": 0}},
                     "gates": {"authority": "AgentEvals assertions", "pass": False},
                     "suites": {
                         "smoke": {
@@ -6534,9 +6567,7 @@ def test_control_only_model_timeout_replays_without_fake_harness_repair(
         reason.startswith("candidate_runtime_unblock_reproduced:")
         for reason in replay_handoff.reasons
     )
-    assert any(
-        action.kind == "retry_measurement" for action in replay_handoff.actions
-    )
+    assert any(action.kind == "retry_measurement" for action in replay_handoff.actions)
 
 
 def test_cycle_handoff_exhausts_identical_replays_into_harness_repair(

@@ -16,6 +16,11 @@
     "trainable_params": {"control": 1608962, "candidate": 1608962},
     "sync_checkpoints": false,
     "candidate_lever": "semantic_contrast_loss_weight=.25 + compiler_alignment_loss_weight=1.0",
+    "semantic_contrast": {
+      "dir": "src/slm_training/resources/data/eval/openui_hard_valid_v1",
+      "fraction": 0.5,
+      "data_manifest_sha256": "fb320850f701ffe76170d2f26e570f1103d7815c7ea2186da846c6d185f21d10"
+    },
     "code_commit": "287c99a9a320016e6a823a2ab2d48987768e4797",
     "model_component": "model.twotower:v306"
   },

@@ -11,7 +11,12 @@ an exact quality and decode-work null.
 
 Both arms used CPU scratch TwoTower, 20 steps, batch size 2, one thread, seed
 101845, capacity-aware sampling, all-family compiler alignment, and 1,608,962
-trainable parameters. Maximum repeat was 3. Candidate loss was `30.6868` in
+trainable parameters. The control manifest is
+`c20260803-continuous-openui-202607-98199209-c1845-control.json`
+(`ab8f32f4…afd89`) with `ltr_tail_loss_weight=0.0`; the candidate manifest is
+`c20260803-continuous-openui-202607-98199209-c1845-confirm.json`
+(`c57e6f3e…5553e`) with `ltr_tail_loss_weight=1.0`. Maximum repeat was 3.
+Candidate loss was `30.6868` in
 11.76 seconds; control loss was `26.2332` in 11.93 seconds. Candidate SHA is
 `2d9c0294...4baa`; control SHA is `360ba581...cbac`. Both are local explicit
 no-sync artifacts and are never reusable, promotable, syncable, or shippable.

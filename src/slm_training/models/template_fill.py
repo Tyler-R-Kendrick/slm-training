@@ -280,7 +280,7 @@ def inventory_from_prompt(
 
     Priority:
       1. Explicit ``Placeholders:`` / ``Inventory:`` lines
-      2. Any ``:ns.slot`` tokens in prompt + DESIGN.md
+      2. Any ``:ns.slot`` tokens in the prompt only (DESIGN.md is guidance)
     The ``heuristic`` argument is retained for checkpoint/config compatibility;
     inventing marker names from prompt words is forbidden.
     """

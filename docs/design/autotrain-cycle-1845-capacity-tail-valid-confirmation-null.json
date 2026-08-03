@@ -20,6 +20,18 @@
     "mixture_sampling_policy": "capacity_aware",
     "sync_checkpoints": false
   },
+  "treatment_bindings": {
+    "control": {
+      "manifest": "manifests/c20260803-continuous-openui-202607-98199209-c1845-control.json",
+      "manifest_sha256": "ab8f32f4dd800ae2152747fa2a89a9065e2b4a6d0a02b729b24893ac3acafd89",
+      "treatment": "capacity_aware sampling with ltr_tail_loss_weight=0.0"
+    },
+    "candidate": {
+      "manifest": "manifests/c20260803-continuous-openui-202607-98199209-c1845-confirm.json",
+      "manifest_sha256": "c57e6f3e63112920982063ed7795a0fc9b3830fa2cec5fbf23d88ec5e195553e",
+      "treatment": "capacity_aware sampling with ltr_tail_loss_weight=1.0"
+    }
+  },
   "arms": {
     "control": {
       "last_loss": 26.233245849609375,

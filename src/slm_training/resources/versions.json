@@ -2661,7 +2661,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v160",
+      "version": "v161",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2701,6 +2701,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v161",
+          "date": "2026-08-03",
+          "note": "Clear terminal stage and child liveness after status reporting and serialize every driver state read-modify-write with receipt reconciliation."
+        },
         {
           "version": "v160",
           "date": "2026-08-03",
@@ -3655,6 +3660,11 @@
         ".github/workflows/ci.yml"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-08-03",
+          "note": "no-bump: externalize formal preflight version cases and clear the process-local cache between tests; production formal behavior is unchanged."
+        },
         {
           "version": "v10",
           "date": "2026-08-03",
@@ -9716,7 +9726,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v81",
+      "version": "v82",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -9737,6 +9747,11 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v82",
+          "date": "2026-08-03",
+          "note": "Reject ambiguous evaluate_suites calls that provide both a mutable preloaded model and a checkpoint, preventing cache/runtime identity ambiguity."
+        },
         {
           "version": "v81",
           "date": "2026-08-03",
@@ -12140,6 +12155,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v306",
+          "date": "2026-08-03",
+          "note": "no-bump: clarify template-fill fallback documentation; runtime behavior and checkpoint semantics are unchanged."
+        },
         {
           "version": "v306",
           "date": "2026-08-03",

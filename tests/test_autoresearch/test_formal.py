@@ -11,6 +11,8 @@ from types import SimpleNamespace
 
 import pytest
 
+from tests.casefiles import case_values
+
 from slm_training.autoresearch.experiment_campaign import (
     ArtifactRequirementV1,
     CampaignArmV1,
@@ -406,10 +408,7 @@ def test_metric_preflight_uses_mathlib_free_leverproof(
 
 @pytest.mark.parametrize(
     ("version_returncode", "version_stderr", "expected_status"),
-    [
-        (124, "formal command timed out after 0.001s", "timed_out"),
-        (1, "lean unavailable", "unknown"),
-    ],
+    case_values(__file__, "test_formal_preflight_requires_successful_lean_version"),
 )
 def test_formal_preflight_requires_successful_lean_version(
     monkeypatch: pytest.MonkeyPatch,
@@ -474,11 +473,14 @@ def test_repeated_claims_reuse_successful_project_checks(
     )
     experiment = _experiment(claim)
 
-    first, _ = run_formal_preflight("formal-campaign", experiment, claim)
-    second, _ = run_formal_preflight("formal-campaign", experiment, claim)
+    try:
+        first, _ = run_formal_preflight("formal-campaign", experiment, claim)
+        second, _ = run_formal_preflight("formal-campaign", experiment, claim)
 
-    assert first.status == second.status == "proved"
-    assert calls == [["make", "test"], ["lake", "env", "lean", "--version"]]
+        assert first.status == second.status == "proved"
+        assert calls == [["make", "test"], ["lake", "env", "lean", "--version"]]
+    finally:
+        clear_project_check_cache()
 
 
 def test_formal_preflight_forwards_liveness_callbacks(
