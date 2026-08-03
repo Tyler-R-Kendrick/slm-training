@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from dataclasses import fields
 from pathlib import Path
@@ -967,6 +968,104 @@ def test_preloaded_model_never_replays_checkpointless_eval_cache(
     second = evaluate(config, model=model, cache=cache, publish_agentv=False)
     assert second["cache_bypass_reason"] == "preloaded_model_without_checkpoint_identity"
     assert not second.get("cache_replay", False)
+
+
+def test_preloaded_model_checkpoint_identity_must_match_path(tmp_path: Path) -> None:
+    train_dir = tmp_path / "train"
+    test_dir = tmp_path / "test"
+    train_dir.mkdir()
+    (test_dir / "suites" / "smoke").mkdir(parents=True)
+    record = ExampleRecord(
+        id="cache-identity-1",
+        prompt="Hero",
+        openui='root = TextContent(":slot_0")',
+        placeholders=[":slot_0"],
+        split="smoke",
+        meta={"suite": "smoke"},
+    )
+    write_jsonl(train_dir / "records.jsonl", [record])
+    write_jsonl(test_dir / "suites" / "smoke" / "records.jsonl", [record])
+    config = ModelBuildConfig(
+        train_dir=train_dir,
+        test_dir=test_dir,
+        suite="smoke",
+        run_root=tmp_path / "runs",
+        run_id="cache-identity",
+        model_name="stub",
+    )
+    model = StubModel(seed=0)
+    checkpoint = tmp_path / "model.pt"
+    model.save(checkpoint)
+
+    with pytest.raises(ValueError, match="requires both"):
+        evaluate(
+            config,
+            model=model,
+            model_checkpoint_path=checkpoint,
+            publish_agentv=False,
+        )
+    with pytest.raises(ValueError, match="does not match"):
+        evaluate(
+            config,
+            model=model,
+            model_checkpoint_path=checkpoint,
+            model_checkpoint_sha256="0" * 64,
+            publish_agentv=False,
+        )
+
+
+def test_component_version_failure_bypasses_eval_cache(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    train_dir = tmp_path / "train"
+    test_dir = tmp_path / "test"
+    train_dir.mkdir()
+    (test_dir / "suites" / "smoke").mkdir(parents=True)
+    record = ExampleRecord(
+        id="cache-version-1",
+        prompt="Hero",
+        openui='root = TextContent(":slot_0")',
+        placeholders=[":slot_0"],
+        split="smoke",
+        meta={"suite": "smoke"},
+    )
+    write_jsonl(train_dir / "records.jsonl", [record])
+    write_jsonl(test_dir / "suites" / "smoke" / "records.jsonl", [record])
+    config = ModelBuildConfig(
+        train_dir=train_dir,
+        test_dir=test_dir,
+        suite="smoke",
+        run_root=tmp_path / "runs",
+        run_id="cache-version",
+        model_name="stub",
+    )
+    model = StubModel(seed=0)
+    checkpoint = tmp_path / "model.pt"
+    model.save(checkpoint)
+    checkpoint_sha256 = hashlib.sha256(checkpoint.read_bytes()).hexdigest()
+    cache = EvalCache(
+        EvalCacheConfig(mode=EvalCacheMode.READ_WRITE, root=tmp_path / "cache")
+    )
+    import slm_training.harnesses.model_build.eval_runner as eval_runner_module
+
+    def missing_component_version(_component_id: str) -> str:
+        raise KeyError("missing version")
+
+    monkeypatch.setattr(
+        eval_runner_module, "component_version", missing_component_version
+    )
+    metrics = evaluate(
+        config,
+        model=model,
+        model_checkpoint_path=checkpoint,
+        model_checkpoint_sha256=checkpoint_sha256,
+        cache=cache,
+        publish_agentv=False,
+    )
+
+    assert metrics["cache_bypass_reason"] == "component_version_unavailable"
+    assert not metrics.get("cache_replay", False)
+    assert not list((tmp_path / "cache").rglob("*.json"))
 
 
 def test_evaluate_supports_single_record_generation_with_stats(tmp_path: Path) -> None:

@@ -9701,7 +9701,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v80",
+      "version": "v81",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -9722,6 +9722,11 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v81",
+          "date": "2026-08-03",
+          "note": "Verify preloaded checkpoint digests against their paths and bypass suite-result caching when component version identity is unavailable."
+        },
         {
           "version": "v80",
           "date": "2026-08-03",

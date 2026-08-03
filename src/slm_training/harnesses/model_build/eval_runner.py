@@ -948,9 +948,21 @@ def evaluate(
             raise ValueError(
                 "provide either a preloaded model or a checkpoint, not both"
             )
+        if (model_checkpoint_sha256 is None) != (model_checkpoint_path is None):
+            raise ValueError(
+                "preloaded model checkpoint identity requires both "
+                "model_checkpoint_sha256 and model_checkpoint_path"
+            )
         if model_checkpoint_path is not None and not model_checkpoint_path.is_file():
             raise FileNotFoundError(
                 f"model checkpoint identity path not found: {model_checkpoint_path}"
+            )
+        if (
+            model_checkpoint_path is not None
+            and _sha256_file(model_checkpoint_path) != model_checkpoint_sha256
+        ):
+            raise ValueError(
+                "model_checkpoint_sha256 does not match model_checkpoint_path"
             )
         plugin = model
         # A caller may bind an immutable preloaded model to the exact
@@ -1090,55 +1102,56 @@ def evaluate(
                 cid: component_version(cid)
                 for cid in _evaluation_version_components(config)
             }
-        except Exception:  # noqa: BLE001 - degrade gracefully if registry unavailable
-            component_versions = {}
-        cache_dependencies = {
-            "checkpoint_sha256": checkpoint_sha256,
-            "eval_data_manifest_sha": eval_data_manifest_sha,
-            "eval_suite_manifest_sha": eval_suite_manifest_sha,
-            "suite_limit": suite_limit,
-            "suite_offset": suite_offset,
-            "evaluation_policy": evaluation_policy,
-            "generation_overrides": generation_overrides,
-            "component_versions": component_versions,
-        }
-        cache_key = suite_result_key(
-            suite=config.suite,
-            checkpoint_sha256=checkpoint_sha256,
-            eval_data_manifest_sha=eval_data_manifest_sha,
-            eval_suite_manifest_sha=eval_suite_manifest_sha,
-            eval_limit=suite_limit,
-            evaluation_policy=evaluation_policy,
-            component_versions=component_versions,
-            extra={
-                "eval_offset": suite_offset,
+        except Exception:  # noqa: BLE001 - missing version identity forbids reuse
+            cache_bypass_reason = "component_version_unavailable"
+        else:
+            cache_dependencies = {
+                "checkpoint_sha256": checkpoint_sha256,
+                "eval_data_manifest_sha": eval_data_manifest_sha,
+                "eval_suite_manifest_sha": eval_suite_manifest_sha,
+                "suite_limit": suite_limit,
+                "suite_offset": suite_offset,
+                "evaluation_policy": evaluation_policy,
                 "generation_overrides": generation_overrides,
-            },
-        )
-        if cache.config.mode in (EvalCacheMode.READ, EvalCacheMode.READ_WRITE):
-            cached_metrics = cache.get(cache_key)
-            if cached_metrics is not None:
-                # Replay: keep predictions/metrics byte-identical, but update
-                # the output path to the current run directory.
-                run_dir = config.run_dir
-                run_dir.mkdir(parents=True, exist_ok=True)
-                suite_path = run_dir / f"eval_{config.suite}.json"
-                cached_metrics = dict(cached_metrics)
-                cached_metrics["output"] = str(suite_path)
-                cached_metrics["cache_replay"] = True
-                suite_path.write_text(
-                    json.dumps(cached_metrics, indent=2) + "\n", encoding="utf-8"
-                )
-                if config.suite == "smoke":
-                    (run_dir / "eval.json").write_text(
+                "component_versions": component_versions,
+            }
+            cache_key = suite_result_key(
+                suite=config.suite,
+                checkpoint_sha256=checkpoint_sha256,
+                eval_data_manifest_sha=eval_data_manifest_sha,
+                eval_suite_manifest_sha=eval_suite_manifest_sha,
+                eval_limit=suite_limit,
+                evaluation_policy=evaluation_policy,
+                component_versions=component_versions,
+                extra={
+                    "eval_offset": suite_offset,
+                    "generation_overrides": generation_overrides,
+                },
+            )
+            if cache.config.mode in (EvalCacheMode.READ, EvalCacheMode.READ_WRITE):
+                cached_metrics = cache.get(cache_key)
+                if cached_metrics is not None:
+                    # Replay: keep predictions/metrics byte-identical, but update
+                    # the output path to the current run directory.
+                    run_dir = config.run_dir
+                    run_dir.mkdir(parents=True, exist_ok=True)
+                    suite_path = run_dir / f"eval_{config.suite}.json"
+                    cached_metrics = dict(cached_metrics)
+                    cached_metrics["output"] = str(suite_path)
+                    cached_metrics["cache_replay"] = True
+                    suite_path.write_text(
                         json.dumps(cached_metrics, indent=2) + "\n", encoding="utf-8"
                     )
-                if evaluation_remaining_records is not None:
-                    evaluation_remaining_records[0] = max(
-                        0, evaluation_remaining_records[0] - len(records)
-                    )
-                (run_dir / "decode_progress.json").unlink(missing_ok=True)
-                return cached_metrics
+                    if config.suite == "smoke":
+                        (run_dir / "eval.json").write_text(
+                            json.dumps(cached_metrics, indent=2) + "\n", encoding="utf-8"
+                        )
+                    if evaluation_remaining_records is not None:
+                        evaluation_remaining_records[0] = max(
+                            0, evaluation_remaining_records[0] - len(records)
+                        )
+                    (run_dir / "decode_progress.json").unlink(missing_ok=True)
+                    return cached_metrics
 
     batch_size = 1
     generate_batch_requests = getattr(plugin, "generate_batch_requests", None)
