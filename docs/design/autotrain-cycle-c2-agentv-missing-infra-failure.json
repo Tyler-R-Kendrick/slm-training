@@ -1,0 +1,81 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 2,
+  "evidence_class": "fixture",
+  "decision": "infrastructure_failure_not_a_model_result",
+  "scoreable": false,
+  "new_checkpoint_created": true,
+  "upstream_commit": "c5fbbb1f15b4a810061743b9e8e2c5c6fd9b5880",
+  "integration_commit": "e61c7d075b3e99118d1a421c5e563b0bbe01832e",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c2-control",
+      "trainable_params": 1608962,
+      "steps": 21,
+      "last_loss": 22.62193489074707,
+      "train_wall_seconds": 2.5020622779999258,
+      "checkpoint_sha256": "f2fe8f5aae98c7178747c5f3b926d00c3d9c1d49ce607c54224b5526000b81b2",
+      "status": "trained_eval_failed",
+      "failure_stage": "evaluate_model",
+      "failure_reason": "RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER",
+      "smoke": null
+    },
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c2-bounds",
+      "trainable_params": 1608962,
+      "steps": 21,
+      "last_loss": 22.62193489074707,
+      "train_wall_seconds": 3.0656320370000003,
+      "checkpoint_sha256": "2c1749c65f4c4fba890aef4b00981a52825aecfd73e0117f0739f26ae1742f64",
+      "status": "trained_eval_failed",
+      "failure_stage": "evaluate_model",
+      "failure_reason": "RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER",
+      "smoke": null
+    }
+  ],
+  "comparison": {
+    "attributable": false
+  },
+  "agentv": {
+    "bundles_complete": false,
+    "execution_errors": 2,
+    "ship_gates_pass": false
+  },
+  "checkpoint_policy": "local_explicit_no_sync_not_reusable_not_promoted_not_ship_eval_incomplete",
+  "lean": "not_applicable:screening",
+  "harness_repair": {
+    "harness_family": "model_build",
+    "diagnosis": "This sandbox's checkout had root npm dependencies (including @agentv/core) never installed, so evaluate_model.py --ship-gates crashed in publish_model_evaluation before producing a scoreboard. A second, deeper issue surfaced investigating this: the sandbox exports a NODE_OPTIONS (--import tsx) this Node build rejects with exit 9, which would have broken the AgentV runner subprocess (and the OpenUI lang-core bridge used by data generation) even after installing the SDK, since only src/slm_training/dsl/grammar/backends/graphql_js.py already sanitized NODE_OPTIONS before spawning node.",
+    "fix_commits": [
+      "1faeff448a06671a14a2bb9a82a2fa8a77672d36",
+      "8da7b777365bdd51d827467a541d1a655e207df0"
+    ],
+    "fix_summary": "Added `npm ci` to scripts/setup_dev_env.sh for the AgentV SDK, then generalized graphql_js.py's existing NODE_OPTIONS workaround into a shared bridge_utils.sanitized_node_env() helper used by lang_core.py (OpenUI bridge, one-shot invoke + REPL) and evals/agentv.py (AgentV runner), with regression tests at each call site.",
+    "regression_tests": [
+      "tests/test_bridge_utils.py::test_sanitized_node_env_clears_host_node_options",
+      "tests/test_dsl/test_language_contract.py::test_invoke_once_clears_host_node_options",
+      "tests/test_evals/test_agentv.py::test_agentv_clears_node_options_for_the_runner_subprocess"
+    ]
+  },
+  "next_priority": "replay identical frozen arm (retry_measurement) now that torch, the AgentV SDK, and NODE_OPTIONS sanitization are all in place and evaluate_model.py should reach a real scoreboard",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "8da7b777365bdd51d827467a541d1a655e207df0",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v77",
+      "harness.model_build.train": "v36",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "evals.agentv": "v7",
+      "model.twotower": "v299",
+      "dsl.symbolic_surface": "v6"
+    },
+    "stamped_at": "2026-08-03T01:04:30.292597+00:00"
+  }
+}
