@@ -713,6 +713,17 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         },
     ),
     (
+        "capacity-aware-compiler-decision-margin",
+        "Capacity-aware online mixture sampling reduces concentrated record repeats and raises effective training exposure for the all-family compiler-decision margin arm without lowering guarded OpenUI quality.",
+        {
+            "compiler_alignment_loss_weight": 1.0,
+            "compiler_alignment_margin": 1.0,
+            "compiler_alignment_stratified": True,
+            "compiler_alignment_kind_filter": "all",
+            "mixture_sampling_policy": "capacity_aware",
+        },
+    ),
+    (
         "structure-token",
         "Direct grammar STRUCT-token reconstruction weighting repairs scaffold formation and structural_similarity without lowering parse_rate or binder_reference_f1.",
         {"structure_token_loss_weight": 1.0},
@@ -1173,6 +1184,12 @@ def _arm_slug_from_knobs(
     if (
         knobs.get("compiler_alignment_loss_weight")
         and knobs.get("compiler_alignment_kind_filter") == "all"
+        and knobs.get("mixture_sampling_policy") == "capacity_aware"
+    ):
+        return "capacity-aware-compiler-decision-margin"
+    if (
+        knobs.get("compiler_alignment_loss_weight")
+        and knobs.get("compiler_alignment_kind_filter") == "all"
         and int(knobs.get("grammar_draft_window") or 8) > 8
     ):
         return "wide-draft-compiler-decision-margin"
@@ -1446,6 +1463,7 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
         "bounded-compiler-decision-margin",
         "cached-compiler-decision-margin",
         "wide-draft-compiler-decision-margin",
+        "capacity-aware-compiler-decision-margin",
         "structure-token",
         "typed-family-balance",
         "container-close",
@@ -6260,6 +6278,7 @@ def _matrix(
             "bounded-compiler-decision-margin": "grammar_completion_bounds",
             "cached-compiler-decision-margin": "grammar_equivalence_cache",
             "wide-draft-compiler-decision-margin": "grammar_draft_window",
+            "capacity-aware-compiler-decision-margin": "mixture_sampling_policy",
         }.get(rec_slug)
         if treatment_key is not None:
             control_extra = {

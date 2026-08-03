@@ -239,6 +239,15 @@ request-domain hits: quality and work are exact matches, while the 0.67% p50
 gain is below the 5% floor. Campaign v125 adds a typed, eval-bound compiler
 draft-window arm (`8→16`) to test whether longer grammar-certified spans can
 amortize the dominant completion-forest work without altering legal authority.
+Cycle c1828 rejects that draft-width treatment: quality, tokens, forwards,
+prefill, canvas, and completion states are identical, its 0.97% p50 delta is
+below the 5% floor, and compiler time is 0.71% worse. Training telemetry instead
+shows only 23.84 effective records across 42 draws, with one record repeated
+four times. Campaign v126 therefore keeps the all-family margin recipe and
+isolates the canonical `capacity_aware` mixture sampler against the default
+`with_replacement` precursor. The next screen asks whether greater effective
+exposure improves guarded OpenUI quality without changing corpus, parameters,
+legal authority, or model capacity.
 
 The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
 confirmed a champion, c1812 was the next protected promotion slot, and the

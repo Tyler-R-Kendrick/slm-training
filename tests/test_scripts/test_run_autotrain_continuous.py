@@ -1495,6 +1495,43 @@ def test_wide_draft_compiler_decision_margin_isolates_runtime_treatment() -> Non
     HypothesisMatrix.model_validate(matrix)
 
 
+def test_capacity_aware_compiler_decision_margin_isolates_sampler_treatment() -> None:
+    campaign_id = "continuous-loop-20260803-c1829"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1829,
+        role="screening",
+        recommended_slug="capacity-aware-compiler-decision-margin",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-capacity-aware-compiler-decision-margin"]
+    for key in (
+        "compiler_alignment_loss_weight",
+        "compiler_alignment_margin",
+        "compiler_alignment_stratified",
+        "compiler_alignment_kind_filter",
+    ):
+        assert candidate[key] == control[key]
+    assert control.get("mixture_sampling_policy") is None
+    assert candidate["mixture_sampling_policy"] == "capacity_aware"
+    assert f"{prefix}-compiler-decision-margin" not in knobs
+    assert _mod._arm_slug_from_knobs(candidate) == (
+        "capacity-aware-compiler-decision-margin"
+    )
+    HypothesisMatrix.model_validate(matrix)
+
+
 def test_frozen_screening_retry_preserves_champion_enqueue_semantics() -> None:
     replay = {"handoff": SimpleNamespace(cycle_role="screening")}
 
