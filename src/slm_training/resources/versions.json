@@ -7648,6 +7648,11 @@
         {
           "version": "v3",
           "date": "2026-08-03",
+          "note": "no-bump: persist the c1855 fresh confirmation rejection and model-card summary; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
           "note": "no-bump: persist the c1854 positive fixture result and queued confirmation provenance; SLM-228 behavior is unchanged"
         },
         {

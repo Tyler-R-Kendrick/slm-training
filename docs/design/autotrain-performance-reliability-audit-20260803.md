@@ -177,3 +177,16 @@ this is learning on a narrow fixture, not high-quality OpenUI generalization.
 The loop correctly queues a fresh-seed confirmation, keeps Lean promotion gates
 locked, and blocks capacity promotion until parameter-efficiency and full-suite
 evidence exist.
+
+## c1855 learning-status update
+
+The fresh-seed exposure-cap confirmation raises structural similarity again
+(`.230 -> .354`) and reaches the structure threshold, but it does not re-establish
+the complete quality contract: MPR is only `.333`, component recall `.333`,
+exact AST/canonical rates are zero, p50 rises `2433 -> 2574 ms`, and forwards
+`7 -> 12`. Training loss moves in the opposite direction (`10.20 -> 18.46`),
+confirming that loss is not a promotion proxy. The campaign correctly rejects
+the confirmation and exhausts the fingerprint. The model is learning a narrow
+structural fixture pattern, but high-quality OpenUI production learning is
+prevented by weak meaning/recall targets, zero exact agreement, small `n=3`
+evaluation, and cost regressions—not by Lean or a runtime training failure.
