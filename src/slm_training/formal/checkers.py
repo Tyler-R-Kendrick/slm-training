@@ -14,7 +14,6 @@ Backends
 
 from __future__ import annotations
 
-import subprocess
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -27,7 +26,15 @@ from slm_training.formal.structural import (
     check_support_certificate_reference,
     check_support_certificate_structure,
 )
-from slm_training.levers import MAX_RUN_SECONDS
+from slm_training.levers import (
+    INTERRUPT_AFTER_SECONDS,
+    KILL_GRACE_SECONDS,
+    MAX_RUN_SECONDS,
+)
+from slm_training.harness_core.bounded_process import (
+    ProcessOutcome,
+    run_bounded_process,
+)
 
 CHECKER_PYTHON_STRUCTURAL = "python_structural"
 CHECKER_PYTHON_REFERENCE = "python_reference"
@@ -210,30 +217,44 @@ def check_lean_kernel(
             detail=f"lean package missing at {LEAN_ROOT}",
         )
 
-    remaining = max(
-        1.0,
+    # The formal checker is an eval-adjacent subprocess and must obey the same
+    # repository wall cap as every other run.  ``subprocess.run(timeout=...)``
+    # does not reap descendants and previously allowed callers to pass a
+    # timeout larger than MAX_RUN_SECONDS.  Use the canonical process-group
+    # runner so Lake/Lean children are interrupted and reaped within the
+    # derived interrupt + kill-grace budget.
+    requested = (
         float(timeout_s)
         if timeout_s is not None
-        else min(120.0, MAX_RUN_SECONDS - 1),
+        else min(120.0, float(MAX_RUN_SECONDS) - 1.0)
     )
-    try:
-        proc = subprocess.run(
-            ["lake", "build", "LeverProofLean"],
-            cwd=LEAN_ROOT,
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=remaining,
-        )
-    except (OSError, subprocess.SubprocessError) as exc:
+    total = min(float(MAX_RUN_SECONDS), max(1.0, requested))
+    grace = min(float(KILL_GRACE_SECONDS), total * 0.1)
+    interrupt_after = min(
+        float(INTERRUPT_AFTER_SECONDS), max(0.001, total - grace)
+    )
+    bounded = run_bounded_process(
+        ["lake", "build", "LeverProofLean"],
+        cwd=LEAN_ROOT,
+        interrupt_after_seconds=interrupt_after,
+        kill_grace_seconds=grace,
+    )
+    if bounded.outcome is ProcessOutcome.LAUNCH_FAILED:
         return CheckerResult(
             checker_id=CHECKER_LEAN_KERNEL,
             backend=CHECKER_LEAN_KERNEL,
             ok=False,
-            detail=f"lean build error: {type(exc).__name__}: {exc}",
+            detail=f"lean build launch failed: {bounded.launch_error or 'unknown error'}",
         )
-    if proc.returncode != 0:
-        tail = (proc.stderr or proc.stdout or "")[-500:]
+    if bounded.timed_out:
+        return CheckerResult(
+            checker_id=CHECKER_LEAN_KERNEL,
+            backend=CHECKER_LEAN_KERNEL,
+            ok=False,
+            detail=f"lean build timed out after {total:.3f}s",
+        )
+    if int(bounded.returncode or 0) != 0:
+        tail = (bounded.stderr or bounded.stdout or "")[-500:]
         return CheckerResult(
             checker_id=CHECKER_LEAN_KERNEL,
             backend=CHECKER_LEAN_KERNEL,

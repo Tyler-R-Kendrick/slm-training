@@ -14221,7 +14221,7 @@
       ]
     },
     "formal.objects": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/formal/__init__.py",
@@ -14232,6 +14232,11 @@
         "docs/design/formal-objects-multi-prover.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-03",
+          "note": "Route optional Lean kernel audits through the canonical bounded process-group runner and clamp caller timeouts to the repository hard cap so Lake/Lean descendants are reaped fail-closed."
+        },
         {
           "version": "v1",
           "date": "2026-07-31",
