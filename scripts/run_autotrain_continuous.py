@@ -7111,6 +7111,7 @@ def run_cycle(
             claimed_role=role,
             claim_class=claim_for_role,
             promotion_target_available=promotion_target_available,
+            confirmation_pending=cycle_intent == "confirm",
         )
     role_primary = primary_for_role(policy, role)
     # Screening may preserve a same-leaf CLI suite override for compatibility.

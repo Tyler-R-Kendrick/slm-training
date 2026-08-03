@@ -305,6 +305,13 @@ binds exact supplied feedback and predecessor identities plus priority evidence
 only when the proposal is unbound, rejects any conflicting declaration, and
 leaves the canonical matrix validator unchanged. No arm ran, so c1835 is
 infrastructure evidence rather than a model result.
+Cycle c1836 then reached the reserved promotion cadence slot with that same
+unconfirmed champion. The execution role correctly remained screening, but the
+cadence assertion had no typed distinction between a pending confirmation and
+an ordinary new screening arm, so it stopped before research. Campaign v133
+allows only an explicitly pending confirmation to defer that slot onto smoke;
+all other occupied promotion-slot screening claims still fail, and held-out,
+promotion claim class, and Lean/formal authority remain closed.
 
 The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
 confirmed a champion, c1812 was the next protected promotion slot, and the

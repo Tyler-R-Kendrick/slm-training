@@ -371,6 +371,7 @@ def assert_cycle_cadence(
     claim_class: str | None = None,
     certified_rungs: Sequence[str] | None = None,
     promotion_target_available: bool | None = None,
+    confirmation_pending: bool = False,
 ) -> str:
     """Fail closed when a cycle claims a role outside the configured cadence.
 
@@ -389,7 +390,15 @@ def assert_cycle_cadence(
         and promotion_target_available is False
         and bool(policy.cadence.get("promotion_requires_prior_screening_win", True))
     )
-    if claimed_role != expected and not empty_promotion_fallback:
+    confirmation_fallback = (
+        expected == "promotion"
+        and claimed_role == "screening"
+        and confirmation_pending
+        and bool(policy.cadence.get("promotion_requires_prior_screening_win", True))
+    )
+    if claimed_role != expected and not (
+        empty_promotion_fallback or confirmation_fallback
+    ):
         raise HillClimbError(
             f"cycle cadence violation: cycle_index={cycle_index} expects "
             f"{expected}, claimed {claimed_role} "
@@ -420,7 +429,11 @@ def assert_cycle_cadence(
         claimed_role=claimed_role,
         certified_rungs=certified_rungs,
     )
-    return claimed_role if empty_promotion_fallback else expected
+    return (
+        claimed_role
+        if empty_promotion_fallback or confirmation_fallback
+        else expected
+    )
 
 
 def loop_data_eval_identity(

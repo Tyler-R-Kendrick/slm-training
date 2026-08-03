@@ -110,6 +110,16 @@ def test_cycle_cadence_screening_then_promotion() -> None:
             claimed_role="screening",
             promotion_target_available=True,
         )
+    confirmation_role = assert_cycle_cadence(
+        policy,
+        cycle_index=n + 1,
+        claimed_role="screening",
+        claim_class="diagnostic",
+        promotion_target_available=True,
+        confirmation_pending=True,
+    )
+    assert confirmation_role == "screening"
+    assert eval_suites_for_role(policy, confirmation_role) == ("smoke",)
     with pytest.raises(HillClimbError, match="cadence violation"):
         assert_cycle_cadence(policy, cycle_index=1, claimed_role="promotion")
     with pytest.raises(HillClimbError, match="promotion-role"):
