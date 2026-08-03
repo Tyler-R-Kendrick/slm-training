@@ -169,6 +169,25 @@ Campaign harness v114 also corrects the successor binding itself: obligation IDs
 are campaign- and experiment-scoped, so a replay must recompute them for the current
 successor rather than copy the predecessor ID. The fresh preflight's recomputed ID,
 the authorized experiment claim, and the successor manifest must now agree exactly.
+After c1816 terminally reproduced a completion-loss runtime unblock at low absolute
+meaningful-program quality, campaign harness v115 opens a distinct size-matched arm:
+`component-edge-token`. The deterministic compiler marks non-root component positions
+in the gold target, and the ordinary reconstruction CE is reweighted only at those
+positions. The arm adds no parameters, detached head, decoder score, or legal authority;
+it reports its own position count and mean CE for causal attribution.
+The c1817 edge-token arm activated on its intended rows but reproduced the
+control's meaningful-program outputs and missed the efficiency floor. Campaign
+harness v116 therefore opens `component-edge-margin`: a distinct zero-parameter
+objective over deterministic `component_bound` decisions. It trains the gold
+child component to outrank the other compiler-legal component siblings by the
+declared margin. The filter changes neither the candidate domain nor decode
+authority, and its typed row telemetry makes an inactive objective fail visibly.
+The completed c1819 frozen replay exposed a classification gap rather than a
+model win: the candidate was faster enough to improve MPR/ms while halving MPR
+and regressing both structural similarity and protected binder F1. Campaign
+harness v117 forbids that ratio from overriding a regressed MPR, the role-owned
+quality primary, or any required non-regression metric. Such cycles remain
+useful runtime evidence but cannot enter the champion queue.
 
 The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
 confirmed a champion, c1812 was the next protected promotion slot, and the

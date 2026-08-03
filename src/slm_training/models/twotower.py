@@ -367,6 +367,9 @@ class TwoTowerConfig:
     # Extra reconstruction weight on component-type tokens. Zero-parameter;
     # the same token-family mask also feeds train-only loss attribution.
     component_token_loss_weight: float = 0.0
+    # Extra reconstruction weight only where the deterministic compiler marks a
+    # non-root component edge. Zero-parameter and train-only.
+    component_edge_token_loss_weight: float = 0.0
     # Extra reconstruction weight on grammar STRUCT tokens. Zero-parameter;
     # this is distinct from component identity and never changes legality.
     structure_token_loss_weight: float = 0.0
@@ -793,10 +796,11 @@ class TwoTowerConfig:
             "all",
             "literal-close",
             "container-close",
+            "component-edge",
         }:
             raise ValueError(
                 "compiler_alignment_kind_filter must be one of: all, "
-                "literal-close, container-close"
+                "literal-close, container-close, component-edge"
             )
         repair_modes = {
             "recursive_update_mode": (
@@ -3351,6 +3355,36 @@ class TwoTowerModel(nn.Module):
                 weights = weights + (
                     component_w * component_positions.reshape(-1).float()
                 )
+            edge_token_w = float(
+                getattr(self.config, "component_edge_token_loss_weight", 0.0)
+                or 0.0
+            )
+            edge_token_positions = torch.zeros_like(target_ids, dtype=torch.bool)
+            if edge_token_w > 0.0:
+                from slm_training.dsl.grammar.fastpath.compiler_draft import (
+                    gold_compiler_decisions,
+                )
+
+                for row, record in enumerate(batch):
+                    target_key = tuple(
+                        int(token_id) for token_id in target_ids[row].tolist()
+                    )
+                    contract_key = tuple(record.placeholders or ())
+                    cache_key = (target_key, contract_key)
+                    decisions = self._compiler_decision_cache.get(cache_key)
+                    if decisions is None:
+                        decisions = gold_compiler_decisions(
+                            self.tokenizer,
+                            target_key,
+                            slot_contract=list(contract_key),
+                        )
+                        self._compiler_decision_cache[cache_key] = decisions
+                    for decision in decisions:
+                        if decision.kind == "component_bound":
+                            edge_token_positions[row, int(decision.position)] = True
+                weights = weights + (
+                    edge_token_w * edge_token_positions.reshape(-1).float()
+                )
             structure_w = float(
                 getattr(self.config, "structure_token_loss_weight", 0.0) or 0.0
             )
@@ -3398,11 +3432,13 @@ class TwoTowerModel(nn.Module):
                 )
                 mask_flat = mask_flat & token_rows.repeat_interleave(target_ids.size(1))
             component_flat = component_positions.reshape(-1) & mask_flat
+            edge_token_flat = edge_token_positions.reshape(-1) & mask_flat
             structure_flat = structure_positions.reshape(-1) & mask_flat
             prefix_flat = prefix_positions.reshape(-1) & mask_flat
             other_flat = mask_flat & ~component_positions.reshape(-1)
             for family, selected in (
                 ("component", component_flat),
+                ("component_edge", edge_token_flat),
                 ("structure", structure_flat),
                 ("prefix", prefix_flat),
                 ("non_component", other_flat),
@@ -3821,6 +3857,12 @@ class TwoTowerModel(nn.Module):
                             for candidate in decision.candidate_ids
                         )
                     )
+                elif kind_filter == "component-edge":
+                    decisions = tuple(
+                        decision
+                        for decision in decisions
+                        if decision.kind == "component_bound"
+                    )
                 if not decisions:
                     continue
                 if stratified:
@@ -3945,6 +3987,9 @@ class TwoTowerModel(nn.Module):
                 "compiler_alignment_container_close_filter_enabled": float(
                     kind_filter == "container-close"
                 ),
+                "compiler_alignment_component_edge_filter_enabled": float(
+                    kind_filter == "component-edge"
+                ),
                 "compiler_alignment_literal_close_rows": sum(
                     1
                     for target in aligned_targets
@@ -3955,6 +4000,9 @@ class TwoTowerModel(nn.Module):
                     for target in aligned_targets
                     if str(self.tokenizer.id_to_token.get(int(target), ""))
                     in {")", "]"}
+                ),
+                "compiler_alignment_component_edge_rows": sum(
+                    1 for kind in aligned_kinds if kind == "component_bound"
                 ),
                 "compiler_alignment_loss": (
                     float(alignment_loss.detach().cpu()) if aligned_canvases else 0.0

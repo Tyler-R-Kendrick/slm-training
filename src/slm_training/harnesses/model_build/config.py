@@ -325,6 +325,7 @@ class ModelBuildConfig:
     diffusion_length_loss_weight: float = 0.1
     ltr_prefix_loss_weight: float = 0.0
     component_token_loss_weight: float = 0.0
+    component_edge_token_loss_weight: float = 0.0
     structure_token_loss_weight: float = 0.0
     typed_family_balance_loss_weight: float = 0.0
     # Extra weight on final real LTR tokens (default-off; CLI: --ltr-tail-*).
@@ -577,10 +578,11 @@ class ModelBuildConfig:
             "all",
             "literal-close",
             "container-close",
+            "component-edge",
         }:
             raise ValueError(
                 "compiler_alignment_kind_filter must be one of: all, "
-                "literal-close, container-close"
+                "literal-close, container-close, component-edge"
             )
         # SLM-242: fail-closed numeric/schedule gate.
         try:

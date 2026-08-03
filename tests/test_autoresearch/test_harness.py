@@ -2153,6 +2153,20 @@ def test_compile_commands_routes_typed_component_token_training_lever() -> None:
     assert train[train.index("--component-token-loss-weight") + 1] == "1.0"
 
 
+def test_compile_commands_routes_component_edge_token_training_lever() -> None:
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            train_version="wf_smoke_v2",
+            steps=20,
+            component_edge_token_loss_weight=1.0,
+        )
+    )
+
+    commands = compile_commands(campaign(), spec)
+    train = next(command for command in commands if "scripts.train_model" in command)
+    assert train[train.index("--component-edge-token-loss-weight") + 1] == "1.0"
+
+
 def test_compile_commands_routes_typed_structure_token_training_lever() -> None:
     spec = experiment(
         knobs=ExperimentKnobs(
@@ -2198,6 +2212,26 @@ def test_compile_commands_routes_container_close_alignment_filter() -> None:
     assert (
         train[train.index("--compiler-alignment-kind-filter") + 1]
         == "container-close"
+    )
+
+
+def test_compile_commands_routes_component_edge_alignment_filter() -> None:
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            train_version="wf_smoke_v2",
+            steps=20,
+            compiler_alignment_loss_weight=1.0,
+            compiler_alignment_margin=1.0,
+            compiler_alignment_stratified=True,
+            compiler_alignment_kind_filter="component-edge",
+        )
+    )
+
+    commands = compile_commands(campaign(), spec)
+    train = next(command for command in commands if "scripts.train_model" in command)
+    assert (
+        train[train.index("--compiler-alignment-kind-filter") + 1]
+        == "component-edge"
     )
 
 

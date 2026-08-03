@@ -578,6 +578,13 @@ def compile_commands(
                     str(knobs.component_token_loss_weight),
                 ]
             )
+        if knobs.component_edge_token_loss_weight is not None:
+            train.extend(
+                [
+                    "--component-edge-token-loss-weight",
+                    str(knobs.component_edge_token_loss_weight),
+                ]
+            )
         if knobs.structure_token_loss_weight is not None:
             train.extend(
                 [

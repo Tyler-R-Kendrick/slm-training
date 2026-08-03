@@ -438,6 +438,7 @@ _RETRYABLE_PROMOTE_STATUSES = frozenset(
 _LEVER_KNOB_KEYS = (
     "ltr_prefix_loss_weight",
     "component_token_loss_weight",
+    "component_edge_token_loss_weight",
     "structure_token_loss_weight",
     "typed_family_balance_loss_weight",
     "ltr_tail_loss_weight",
@@ -630,6 +631,21 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         "component-token",
         "Direct component-token reconstruction weighting improves component_type_recall and structural_similarity without lowering parse_rate or binder_reference_f1.",
         {"component_token_loss_weight": 1.0},
+    ),
+    (
+        "component-edge-token",
+        "Direct reconstruction weighting at compiler-derived non-root component edges improves structural_similarity and canonical AST agreement without lowering parse_rate or binder_reference_f1.",
+        {"component_edge_token_loss_weight": 1.0},
+    ),
+    (
+        "component-edge-margin",
+        "Grammar-oracle component-edge alignment makes the gold child component outrank other legal component choices without lowering parse_rate or binder_reference_f1.",
+        {
+            "compiler_alignment_loss_weight": 1.0,
+            "compiler_alignment_margin": 1.0,
+            "compiler_alignment_stratified": True,
+            "compiler_alignment_kind_filter": "component-edge",
+        },
     ),
     (
         "structure-token",
@@ -1105,12 +1121,19 @@ def _arm_slug_from_knobs(
         and knobs.get("compiler_alignment_kind_filter") == "container-close"
     ):
         return "container-close"
+    if (
+        knobs.get("compiler_alignment_loss_weight")
+        and knobs.get("compiler_alignment_kind_filter") == "component-edge"
+    ):
+        return "component-edge-margin"
     if knobs.get("ltr_tail_loss_weight"):
         return "literal-close"
     if knobs.get("ltr_prefix_loss_weight"):
         return "scaffold-prefix"
     if knobs.get("component_token_loss_weight"):
         return "component-token"
+    if knobs.get("component_edge_token_loss_weight"):
+        return "component-edge-token"
     if knobs.get("structure_token_loss_weight"):
         return "structure-token"
     if knobs.get("typed_family_balance_loss_weight"):
@@ -1327,6 +1350,8 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
         "design-dropout",
         "scaffold-prefix",
         "component-token",
+        "component-edge-token",
+        "component-edge-margin",
         "structure-token",
         "typed-family-balance",
         "container-close",
@@ -3106,7 +3131,12 @@ def _classify_metric_tradeoff(
         c_eff = c_mpr / c_lat
         t_eff = t_mpr / t_lat
         efficiency_gain_fraction = (t_eff / c_eff - 1.0) if c_eff > 0 else None
-        if (
+        if not mpr_held and t_eff > c_eff + _EPS:
+            reasons.append(
+                "efficiency_win_rejected_mpr_regression:"
+                f"mpr={c_mpr}->{t_mpr}:mpr_per_ms={c_eff:.8g}->{t_eff:.8g}"
+            )
+        elif (
             efficiency_gain_fraction is not None
             and efficiency_gain_fraction + _EPS >= minimum_efficiency_gain_fraction
         ):
@@ -3398,6 +3428,17 @@ def _classify_positive(
     reasons = (
         list(reasons_pre) + list(tradeoff_reasons) + list(decision.get("reasons") or [])
     )
+    # An efficiency ratio cannot override the role-owned quality primary or
+    # its protected non-regression metrics. Otherwise halving meaningful output
+    # while becoming much faster can be mislabeled as a quality-positive screen.
+    if leaf != "latency_ms_p50" and any(
+        str(reason).startswith(
+            ("primary_metric_null_or_worse:", "non_regression_fail:")
+        )
+        for reason in reasons
+    ):
+        decision["positive"] = False
+        decision["stack_layer"] = False
     if not any(
         reason.startswith(prefix)
         for reason in reasons
@@ -3810,6 +3851,7 @@ def _completed_candidate_priorities(
         "design_md_dropout",
         "ltr_prefix_loss_weight",
         "component_token_loss_weight",
+        "component_edge_token_loss_weight",
         "structure_token_loss_weight",
         "typed_family_balance_loss_weight",
     }
@@ -5632,6 +5674,7 @@ def _matrix(
             "design_md_dropout": 0.0,
             "ltr_prefix_loss_weight": 0.0,
             "component_token_loss_weight": 0.0,
+            "component_edge_token_loss_weight": 0.0,
             "structure_token_loss_weight": 0.0,
             "typed_family_balance_loss_weight": 0.0,
             "structural_aux_head_profile": "none",
@@ -5711,6 +5754,7 @@ def _matrix(
                 "design_md_dropout",
                 "ltr_prefix_loss_weight",
                 "component_token_loss_weight",
+                "component_edge_token_loss_weight",
                 "structure_token_loss_weight",
                 "typed_family_balance_loss_weight",
                 "structural_aux_head_profile",
@@ -5909,6 +5953,7 @@ def _matrix(
                 "design_md_dropout",
                 "ltr_prefix_loss_weight",
                 "component_token_loss_weight",
+                "component_edge_token_loss_weight",
                 "structure_token_loss_weight",
                 "typed_family_balance_loss_weight",
                 "structural_aux_head_profile",
@@ -6371,6 +6416,7 @@ def _manifest(
                 "design_md_dropout": 0.0,
                 "ltr_prefix_loss_weight": 0.0,
                 "component_token_loss_weight": 0.0,
+                "component_edge_token_loss_weight": 0.0,
                 "structure_token_loss_weight": 0.0,
                 "typed_family_balance_loss_weight": 0.0,
             },
