@@ -4,9 +4,13 @@
 from __future__ import annotations
 
 import ast
+import fcntl
+import hashlib
+import importlib.util
 import re
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -16,28 +20,47 @@ FORBIDDEN_SOURCE = re.compile(r"\b(?:sorry|admit|axiom)\b")
 
 
 def _run_formal(command: list[str], *, timeout_seconds: float):
-    """Run a Lean command with the canonical process-group and project lock."""
+    """Run Lean without importing DSL-heavy package initializers in CI."""
 
-    src = str(ROOT / "src")
-    if src not in sys.path:
-        sys.path.insert(0, src)
-    from slm_training.formal.checkers import (
-        FormalProjectLock,
-        ProcessOutcome,
-        formal_process_budget,
-        run_formal_process,
+    source = ROOT / "src" / "slm_training" / "harness_core" / "bounded_process.py"
+    spec = importlib.util.spec_from_file_location("_formal_bounded_process", source)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load bounded process runner: {source}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    total, interrupt_after, grace = _formal_process_budget(timeout_seconds)
+    lock_path = Path(tempfile.gettempdir()) / (
+        "slm-formal-"
+        + hashlib.sha256(str(LEAN_ROOT.resolve()).encode()).hexdigest()[:24]
+        + ".lock"
     )
-
-    total, _interrupt_after, _grace = formal_process_budget(timeout_seconds)
-    with FormalProjectLock(LEAN_ROOT, timeout_seconds=total) as lock:
-        result = run_formal_process(
+    started = time.monotonic()
+    with lock_path.open("a+") as handle:
+        deadline = started + total
+        while True:
+            try:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise TimeoutError("formal project lock timed out")
+                time.sleep(min(0.05, remaining))
+        result = module.run_bounded_process(
             command,
             cwd=LEAN_ROOT,
-            timeout_seconds=max(0.001, total - lock.wait_seconds),
+            interrupt_after_seconds=min(
+                interrupt_after, max(0.001, deadline - time.monotonic())
+            ),
+            kill_grace_seconds=grace,
         )
+        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
     if result.timed_out:
-        raise subprocess.TimeoutExpired(command, total, output=result.stdout, stderr=result.stderr)
-    if result.outcome is ProcessOutcome.LAUNCH_FAILED:
+        raise subprocess.TimeoutExpired(
+            command, total, output=result.stdout, stderr=result.stderr
+        )
+    if result.outcome.value == "launch_failed":
         raise OSError(result.launch_error or "formal command launch failed")
     if result.returncode:
         raise subprocess.CalledProcessError(
@@ -47,6 +70,74 @@ def _run_formal(command: list[str], *, timeout_seconds: float):
             stderr=result.stderr,
         )
     return result
+
+
+def _formal_process_budget(timeout_seconds: float) -> tuple[float, float, float]:
+    """Derive the same cap values without importing ``slm_training``."""
+
+    policy = ast.parse((ROOT / "src" / "slm_training" / "levers.py").read_text())
+    values: dict[str, float] = {}
+    expressions: dict[str, ast.expr] = {}
+    for node in ast.walk(policy):
+        if isinstance(node, ast.Assign) and len(node.targets) == 1:
+            target = node.targets[0]
+            value_node = node.value
+        elif isinstance(node, ast.AnnAssign):
+            target = node.target
+            value_node = node.value
+        else:
+            continue
+        if value_node is not None:
+            if isinstance(target, ast.Name) and target.id in {
+                "MAX_RUN_MINUTES",
+                "MAX_RUN_SECONDS",
+                "INTERRUPT_AFTER_SECONDS",
+                "KILL_GRACE_SECONDS",
+            }:
+                expressions[target.id] = value_node
+
+    def evaluate(name: str) -> float:
+        if name in values:
+            return values[name]
+        expression = expressions[name]
+        if isinstance(expression, ast.Constant) and isinstance(
+            expression.value, (int, float)
+        ):
+            value = float(expression.value)
+        elif isinstance(expression, ast.Name):
+            value = evaluate(expression.id)
+        elif isinstance(expression, ast.BinOp) and isinstance(
+            expression.op, (ast.Mult, ast.Sub, ast.Add)
+        ):
+            left = _evaluate_node(expression.left, evaluate)
+            right = _evaluate_node(expression.right, evaluate)
+            value = (
+                left * right
+                if isinstance(expression.op, ast.Mult)
+                else left - right
+                if isinstance(expression.op, ast.Sub)
+                else left + right
+            )
+        else:
+            raise ValueError(f"unsupported formal policy expression: {name}")
+        values[name] = value
+        return value
+
+    values.setdefault("MAX_RUN_MINUTES", evaluate("MAX_RUN_MINUTES"))
+    for name in ("MAX_RUN_SECONDS", "INTERRUPT_AFTER_SECONDS", "KILL_GRACE_SECONDS"):
+        evaluate(name)
+    total = min(values["MAX_RUN_SECONDS"], max(0.001, float(timeout_seconds)))
+    grace = min(values["KILL_GRACE_SECONDS"], total * 0.1)
+    interrupt = min(values["INTERRUPT_AFTER_SECONDS"], max(0.001, total - grace))
+    return total, interrupt, grace
+
+
+def _evaluate_node(node: ast.expr, resolve) -> float:
+    if isinstance(node, ast.Name):
+        return resolve(node.id)
+    if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
+        return float(node.value)
+    raise ValueError("unsupported formal policy expression node")
 
 
 def _canonical_run_seconds() -> int:

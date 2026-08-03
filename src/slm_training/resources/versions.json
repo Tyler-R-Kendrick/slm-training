@@ -3674,7 +3674,7 @@
       ]
     },
     "harness.autoresearch.formal": {
-      "version": "v13",
+      "version": "v14",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/formal.py",
@@ -3685,6 +3685,11 @@
         ".github/workflows/ci.yml"
       ],
       "history": [
+        {
+          "version": "v14",
+          "date": "2026-08-03",
+          "note": "Keep the standalone formal-contract verifier dependency-light in Lean CI while preserving the canonical process-group cap and Lake project lock."
+        },
         {
           "version": "v13",
           "date": "2026-08-03",
@@ -5640,6 +5645,11 @@
         "docs/design/semantic-floor-gate-v1.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-03",
+          "note": "no-bump: refresh the committed inconclusive gate narrative and owner hash; thresholds and gate behavior are unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-08-03",
