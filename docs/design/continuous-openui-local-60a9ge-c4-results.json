@@ -1,0 +1,56 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c4",
+  "cycle_index": 4,
+  "evidence_class": "fixture",
+  "decision": "infrastructure_failure_not_a_model_result",
+  "scoreable": false,
+  "new_checkpoint_created": true,
+  "upstream_commit": "2c4debec7a426036f26159bd7340fce2cbe6411a",
+  "integration_commit": "9fed2a448a41d9513216ae2dab0ecc3dfbda4cb7",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c4-control",
+      "status": "completed_train_eval_incomplete",
+      "trainable_params": 1766990,
+      "failure_stage": "evaluate_model",
+      "failure_reason": "smoke:decode_timeout_count=3 of 3 documents; incomplete_document_n=3 -- compiler_ms_mean=23202.2ms exceeded decode_timeout_seconds=8.0 on this CPU sandbox",
+      "smoke": null,
+      "checkpoint": "runs/c20260803-continuous-openui-local-8c0b60dd-c4-control/checkpoints/last.pt"
+    },
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c4-component-edge",
+      "status": "completed_train_eval_incomplete",
+      "trainable_params": 1766990,
+      "failure_stage": "evaluate_model",
+      "failure_reason": "smoke:decode_timeout_count=3 of 3 documents; incomplete_document_n=3 -- compiler_ms_mean=23812.8ms exceeded decode_timeout_seconds=8.0 on this CPU sandbox",
+      "smoke": null,
+      "checkpoint": "runs/c20260803-continuous-openui-local-8c0b60dd-c4-component-edge/checkpoints/last.pt"
+    }
+  ],
+  "comparison": {
+    "attributable": false
+  },
+  "agentv": {
+    "bundles_complete": false,
+    "execution_errors": 0,
+    "ship_gates_pass": false,
+    "note": "AgentV finalized every record disposition; all 3 smoke documents per arm hit the internal decode timeout before producing quality metrics"
+  },
+  "checkpoint_policy": "checkpoint_created_but_not_promotable_no_scoreboard",
+  "lean": "not_applicable:screening",
+  "harness_repair": {
+    "harness_family": "model_build",
+    "diagnosis": "Both arms' decode/compiler stage took 23.2-23.8s mean per document, well past the 8.0s decode_timeout_seconds smoke default, on this session's CPU sandbox. Both control and component-edge (adding compiler-tree component-edge decode heads) time out identically, so this is not attributable to the component-edge knob -- it is a CPU-throughput/wall-budget mismatch for this container, consistent with the wf_smoke_v2/e938 recipe's default 8s timeout assuming a faster host.",
+    "fix_commit": null,
+    "fix_summary": "No code change: training itself completed and produced valid checkpoints for both arms; only the ship-gate evaluation decode step timed out. Retrying with the identical frozen arm and no configuration change is the correct next step per the loop's soft-failure rule (timeouts never stop the loop).",
+    "regression_test": null
+  },
+  "next_priority": "replay identical frozen arm (retry_measurement); if decode timeout recurs consistently for this recipe on CPU, raise decode_timeout_seconds as a knob change (not a code repair) for future cycles",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "9fed2a448a41d9513216ae2dab0ecc3dfbda4cb7",
+    "code_dirty": false
+  }
+}
