@@ -10,7 +10,7 @@ import re
 import signal
 import sys
 import time
-from dataclasses import fields
+from dataclasses import dataclass, fields
 from datetime import UTC, datetime
 from functools import lru_cache
 from pathlib import Path
@@ -23,6 +23,7 @@ from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.evals.eval_cache import (
     EvalCache,
+    EvalCacheKey,
     EvalCacheMode,
     suite_result_key,
 )
@@ -378,6 +379,71 @@ def _sha256_file(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _checkpoint_bundle_sha256(
+    checkpoint: Path, *, checkpoint_sha256: str | None = None
+) -> str:
+    """Hash every checkpoint artifact that can affect model construction."""
+    sidecars = {
+        "checkpoint": checkpoint,
+        "tokenizer": checkpoint.with_suffix(".tokenizer.json"),
+        "metadata": checkpoint.with_suffix(".meta.json"),
+        "context_tokenizer": checkpoint.with_name(
+            checkpoint.stem + ".context.tokenizer.json"
+        ),
+        "context_onnx": checkpoint.with_suffix(".context.onnx"),
+        "denoiser_onnx": checkpoint.with_suffix(".denoiser.onnx"),
+    }
+    identities = {
+        role: (
+            checkpoint_sha256
+            if role == "checkpoint" and checkpoint_sha256 is not None
+            else (_sha256_file(path) if path.is_file() else None)
+        )
+        for role, path in sidecars.items()
+    }
+    return hashlib.sha256(
+        json.dumps(identities, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+
+
+def _cache_identity_value(value: Any) -> Any:
+    """Return a stable JSON value for conservative pre-model cache identity."""
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, dict):
+        return {
+            str(key): _cache_identity_value(item)
+            for key, item in sorted(value.items(), key=lambda pair: str(pair[0]))
+        }
+    if isinstance(value, (set, frozenset)):
+        items = [_cache_identity_value(item) for item in value]
+        return sorted(
+            items,
+            key=lambda item: json.dumps(item, sort_keys=True, separators=(",", ":")),
+        )
+    if isinstance(value, (list, tuple)):
+        return [_cache_identity_value(item) for item in value]
+    if value is None or isinstance(value, (bool, int, float, str)):
+        return value
+    # Unknown config values cause a conservative miss when their representation
+    # changes; they never widen reuse.
+    return repr(value)
+
+
+def _evaluation_request_sha256(config: ModelBuildConfig) -> str:
+    # Output placement is not evaluation behavior. Every other caller field is
+    # included so a warm preflight can only be more conservative than the
+    # post-load effective-policy cache key.
+    payload = {
+        item.name: _cache_identity_value(getattr(config, item.name))
+        for item in fields(config)
+        if item.name not in {"run_id", "run_root"}
+    }
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
 
 
 def _placeholder_fidelity_normalized(pred: str, gold: ExampleRecord) -> float | None:
@@ -931,6 +997,149 @@ def _eval_data_sha(directory: Path) -> str | None:
         return None
 
 
+@dataclass(frozen=True)
+class _SuiteCachePreflight:
+    key: EvalCacheKey | None = None
+    cached_metrics: dict[str, Any] | None = None
+    checkpoint_sha256: str | None = None
+    checkpoint_bundle_sha256: str | None = None
+    eval_data_manifest_sha: str | None = None
+    eval_suite_manifest_sha: str | None = None
+    component_versions: dict[str, str] | None = None
+    dependencies: dict[str, Any] | None = None
+    bypass_reason: str | None = None
+
+
+def _suite_cache_preflight(
+    config: ModelBuildConfig,
+    *,
+    checkpoint: Path,
+    cache: EvalCache | None,
+    suite_limit: int | None,
+    suite_offset: int,
+    generation_overrides: dict[str, Any],
+    checkpoint_sha256: str | None = None,
+    checkpoint_bundle_sha256: str | None = None,
+) -> _SuiteCachePreflight:
+    """Resolve a full-suite hit without materializing the checkpoint model.
+
+    This key deliberately includes the complete caller config. A cold run only
+    writes it after model construction has established the effective checkpoint
+    policy, so the preflight is a validated shortcut rather than an attempt to
+    infer checkpoint config from partial metadata.
+    """
+    if cache is None or cache.config.mode is EvalCacheMode.OFF:
+        return _SuiteCachePreflight()
+    checkpoint_sha256 = checkpoint_sha256 or _sha256_file(checkpoint)
+    checkpoint_bundle_sha256 = (
+        checkpoint_bundle_sha256
+        or _checkpoint_bundle_sha256(
+            checkpoint, checkpoint_sha256=checkpoint_sha256
+        )
+    )
+    eval_data_manifest_sha = _eval_data_sha(Path(config.test_dir))
+    eval_suite_manifest_sha = _eval_data_sha(
+        Path(config.test_dir) / "suites" / config.suite
+    )
+    try:
+        component_versions = {
+            component_id: component_version(component_id)
+            for component_id in _evaluation_version_components(config)
+        }
+    except Exception:  # noqa: BLE001 - missing version identity forbids reuse
+        return _SuiteCachePreflight(
+            checkpoint_sha256=checkpoint_sha256,
+            checkpoint_bundle_sha256=checkpoint_bundle_sha256,
+            eval_data_manifest_sha=eval_data_manifest_sha,
+            eval_suite_manifest_sha=eval_suite_manifest_sha,
+            bypass_reason="component_version_unavailable",
+        )
+    if eval_data_manifest_sha is None or eval_suite_manifest_sha is None:
+        return _SuiteCachePreflight(
+            checkpoint_sha256=checkpoint_sha256,
+            checkpoint_bundle_sha256=checkpoint_bundle_sha256,
+            eval_data_manifest_sha=eval_data_manifest_sha,
+            eval_suite_manifest_sha=eval_suite_manifest_sha,
+            component_versions=component_versions,
+            bypass_reason="eval_manifest_unavailable",
+        )
+    request_sha256 = _evaluation_request_sha256(config)
+    dependencies = {
+        "checkpoint_sha256": checkpoint_sha256,
+        "checkpoint_bundle_sha256": checkpoint_bundle_sha256,
+        "evaluation_request_sha256": request_sha256,
+        "eval_data_manifest_sha": eval_data_manifest_sha,
+        "eval_suite_manifest_sha": eval_suite_manifest_sha,
+        "suite_limit": suite_limit,
+        "suite_offset": suite_offset,
+        "generation_overrides": generation_overrides,
+        "component_versions": component_versions,
+    }
+    key = EvalCacheKey(
+        layer="suite_result_preflight",
+        checkpoint_sha256=checkpoint_bundle_sha256,
+        request_sha256=request_sha256,
+        suite=config.suite,
+        eval_limit=suite_limit,
+        component_versions=component_versions,
+        extra={
+            "eval_data_manifest_sha": eval_data_manifest_sha,
+            "eval_suite_manifest_sha": eval_suite_manifest_sha,
+            "eval_offset": suite_offset,
+            "generation_overrides": generation_overrides,
+        },
+    )
+    cached_metrics = None
+    if cache.config.mode in (EvalCacheMode.READ, EvalCacheMode.READ_WRITE):
+        candidate = cache.get(key)
+        if candidate is not None and _suite_result_cacheable(candidate):
+            cached_metrics = candidate
+    return _SuiteCachePreflight(
+        key=key,
+        cached_metrics=cached_metrics,
+        checkpoint_sha256=checkpoint_sha256,
+        checkpoint_bundle_sha256=checkpoint_bundle_sha256,
+        eval_data_manifest_sha=eval_data_manifest_sha,
+        eval_suite_manifest_sha=eval_suite_manifest_sha,
+        component_versions=component_versions,
+        dependencies=dependencies,
+    )
+
+
+def _suite_result_cacheable(metrics: dict[str, Any]) -> bool:
+    """Only complete suite measurements may become reusable evidence."""
+    return (
+        int(metrics.get("decode_timeout_count", 0) or 0) == 0
+        and int(metrics.get("incomplete_document_n", 0) or 0) == 0
+    )
+
+
+def _replay_cached_suite(
+    config: ModelBuildConfig,
+    metrics: dict[str, Any],
+    *,
+    record_n: int,
+    evaluation_remaining_records: list[int] | None = None,
+) -> dict[str, Any]:
+    """Materialize a validated cached suite result under the current run."""
+    run_dir = config.run_dir
+    run_dir.mkdir(parents=True, exist_ok=True)
+    suite_path = run_dir / f"eval_{config.suite}.json"
+    replay = dict(metrics)
+    replay["output"] = str(suite_path)
+    replay["cache_replay"] = True
+    payload = json.dumps(replay, indent=2) + "\n"
+    suite_path.write_text(payload, encoding="utf-8")
+    if config.suite == "smoke":
+        (run_dir / "eval.json").write_text(payload, encoding="utf-8")
+    if evaluation_remaining_records is not None:
+        evaluation_remaining_records[0] = max(
+            0, evaluation_remaining_records[0] - record_n
+        )
+    (run_dir / "decode_progress.json").unlink(missing_ok=True)
+    return replay
+
+
 def _seed_eval_rng(seed: int) -> None:
     """Lock Python / NumPy / Torch RNG for greedy constrained evals."""
     import random
@@ -1036,6 +1245,7 @@ def evaluate(
     if evaluation_remaining_records is None and evaluation_deadline is not None:
         evaluation_remaining_records = [len(records)]
     ckpt = checkpoint or (config.checkpoint_dir / "last.pt")
+    cache_preflight = _SuiteCachePreflight()
 
     if model is not None:
         if checkpoint is not None:
@@ -1065,6 +1275,16 @@ def evaluate(
         # the digest and continue to fail closed below.
         loaded_checkpoint = model_checkpoint_path
         checkpoint_sha256 = model_checkpoint_sha256
+        if model_checkpoint_path is not None:
+            cache_preflight = _suite_cache_preflight(
+                config,
+                checkpoint=model_checkpoint_path,
+                cache=cache,
+                suite_limit=suite_limit,
+                suite_offset=suite_offset,
+                generation_overrides=generation_overrides,
+                checkpoint_sha256=model_checkpoint_sha256,
+            )
     else:
         if model_checkpoint_sha256 is not None or model_checkpoint_path is not None:
             raise ValueError(
@@ -1072,6 +1292,21 @@ def evaluate(
             )
         if not ckpt.exists():
             raise FileNotFoundError(f"evaluation checkpoint not found: {ckpt}")
+        cache_preflight = _suite_cache_preflight(
+            config,
+            checkpoint=ckpt,
+            cache=cache,
+            suite_limit=suite_limit,
+            suite_offset=suite_offset,
+            generation_overrides=generation_overrides,
+        )
+        if cache_preflight.cached_metrics is not None:
+            return _replay_cached_suite(
+                config,
+                cache_preflight.cached_metrics,
+                record_n=len(records),
+                evaluation_remaining_records=evaluation_remaining_records,
+            )
         train_records = []
         if config.train_dir.exists():
             try:
@@ -1084,7 +1319,7 @@ def evaluate(
             checkpoint=ckpt,
         )
         loaded_checkpoint = ckpt
-        checkpoint_sha256 = _sha256_file(ckpt)
+        checkpoint_sha256 = cache_preflight.checkpoint_sha256 or _sha256_file(ckpt)
 
     plugin_config = getattr(plugin, "config", None)
     allowed_overrides = config.runtime_override_fields
@@ -1176,7 +1411,7 @@ def evaluate(
     )
     cache_key = None
     cache_dependencies: dict[str, Any] = {}
-    cache_bypass_reason: str | None = None
+    cache_bypass_reason: str | None = cache_preflight.bypass_reason
     # A preloaded model is mutable (the training loop evaluates the live
     # weights before saving the next checkpoint).  Without an explicit
     # checkpoint digest, a suite cache key would be shared by unrelated model
@@ -1198,72 +1433,67 @@ def evaluate(
             }
         except Exception:  # noqa: BLE001 - missing version identity forbids reuse
             cache_bypass_reason = "component_version_unavailable"
-        else:
-            if not eval_data_manifest_sha or not eval_suite_manifest_sha:
-                cache_bypass_reason = "eval_manifest_unavailable"
-                cache_dependencies = {}
-                cache_key = None
-            else:
-                cache_dependencies = {
-                    "checkpoint_sha256": checkpoint_sha256,
-                    "eval_data_manifest_sha": eval_data_manifest_sha,
-                    "eval_suite_manifest_sha": eval_suite_manifest_sha,
-                    "suite_limit": suite_limit,
-                    "suite_offset": suite_offset,
-                    "evaluation_policy": evaluation_policy,
+            component_versions = None
+        if (
+            cache_bypass_reason is None
+            and (eval_data_manifest_sha is None or eval_suite_manifest_sha is None)
+        ):
+            cache_bypass_reason = "eval_manifest_unavailable"
+        if cache_bypass_reason is None and component_versions is not None:
+            checkpoint_bundle_sha256 = (
+                cache_preflight.checkpoint_bundle_sha256
+                if loaded_checkpoint is not None
+                else None
+            )
+            cache_dependencies = {
+                "checkpoint_sha256": checkpoint_sha256,
+                "checkpoint_bundle_sha256": checkpoint_bundle_sha256,
+                "eval_data_manifest_sha": eval_data_manifest_sha,
+                "eval_suite_manifest_sha": eval_suite_manifest_sha,
+                "suite_limit": suite_limit,
+                "suite_offset": suite_offset,
+                "evaluation_policy": evaluation_policy,
+                "generation_overrides": generation_overrides,
+                "component_versions": component_versions,
+            }
+            cache_key = suite_result_key(
+                suite=config.suite,
+                checkpoint_sha256=checkpoint_sha256,
+                eval_data_manifest_sha=eval_data_manifest_sha,
+                eval_suite_manifest_sha=eval_suite_manifest_sha,
+                eval_limit=suite_limit,
+                evaluation_policy=evaluation_policy,
+                component_versions=component_versions,
+                extra={
+                    "eval_offset": suite_offset,
                     "generation_overrides": generation_overrides,
-                    "component_versions": component_versions,
-                }
-                cache_key = suite_result_key(
-                    suite=config.suite,
-                    checkpoint_sha256=checkpoint_sha256,
-                    eval_data_manifest_sha=eval_data_manifest_sha,
-                    eval_suite_manifest_sha=eval_suite_manifest_sha,
-                    eval_limit=suite_limit,
-                    evaluation_policy=evaluation_policy,
-                    component_versions=component_versions,
-                    extra={
-                        "eval_offset": suite_offset,
-                        "generation_overrides": generation_overrides,
-                    },
-                )
-                if cache.config.mode in (EvalCacheMode.READ, EvalCacheMode.READ_WRITE):
-                    cached_metrics = cache.get(cache_key)
-                    if cached_metrics is not None:
-                        # Replay only deterministic quality evidence. Runtime
-                        # telemetry and provenance are rebuilt for this run.
-                        run_dir = config.run_dir
-                        run_dir.mkdir(parents=True, exist_ok=True)
-                        suite_path = run_dir / f"eval_{config.suite}.json"
-                        cached_metrics = _cache_replay_payload(
-                            cached_metrics,
-                            config=config,
-                            suite_path=suite_path,
-                            version_stamp=progress_version_stamp,
-                        )
-                        save_snapshot(run_dir, flag_snapshot)
-                        if publish_agentv and config.suite in DEFAULT_SHIP_GATES:
-                            from slm_training.evals.agentv import publish_model_evaluation
-
-                            cached_metrics["agentv"] = publish_model_evaluation(
-                                run_dir,
-                                {config.suite: cached_metrics},
-                                include_missing_suites=False,
+                    "checkpoint_bundle_sha256": checkpoint_bundle_sha256,
+                },
+            )
+            if cache.config.mode in (EvalCacheMode.READ, EvalCacheMode.READ_WRITE):
+                cached_metrics = cache.get(cache_key)
+                if cached_metrics is not None and _suite_result_cacheable(
+                    cached_metrics
+                ):
+                    if (
+                        cache_preflight.key is not None
+                        and _suite_result_cacheable(cached_metrics)
+                        and cache.config.mode is EvalCacheMode.READ_WRITE
+                    ):
+                        try:
+                            cache.put(
+                                cache_preflight.key,
+                                cached_metrics,
+                                dependencies=cache_preflight.dependencies,
                             )
-                            cached_metrics["agentv"]["suites_run"] = [config.suite]
-                        suite_path.write_text(
-                            json.dumps(cached_metrics, indent=2) + "\n", encoding="utf-8"
-                        )
-                        if config.suite == "smoke":
-                            (run_dir / "eval.json").write_text(
-                                json.dumps(cached_metrics, indent=2) + "\n", encoding="utf-8"
-                            )
-                        if evaluation_remaining_records is not None:
-                            evaluation_remaining_records[0] = max(
-                                0, evaluation_remaining_records[0] - len(records)
-                            )
-                        (run_dir / "decode_progress.json").unlink(missing_ok=True)
-                        return cached_metrics
+                        except Exception:  # noqa: BLE001,S110 - optional warm index
+                            pass
+                    return _replay_cached_suite(
+                        config,
+                        cached_metrics,
+                        record_n=len(records),
+                        evaluation_remaining_records=evaluation_remaining_records,
+                    )
 
     batch_size = 1
     generate_batch_requests = getattr(plugin, "generate_batch_requests", None)
@@ -2463,6 +2693,7 @@ def evaluate(
     if (
         cache is not None
         and cache_key is not None
+        and _suite_result_cacheable(metrics)
         and cache.config.mode
         in (
             EvalCacheMode.READ_WRITE,
@@ -2475,6 +2706,12 @@ def evaluate(
     ):
         try:
             cache.put(cache_key, metrics, dependencies=cache_dependencies)
+            if cache_preflight.key is not None:
+                cache.put(
+                    cache_preflight.key,
+                    metrics,
+                    dependencies=cache_preflight.dependencies,
+                )
         except Exception:  # noqa: BLE001,S110 - cache write must never break eval
             pass
 
@@ -2678,6 +2915,15 @@ def evaluate_suites(
     if model is not None and checkpoint is not None:
         raise ValueError("provide either a preloaded model or a checkpoint, not both")
 
+    def selected_record_n(suite: str) -> int:
+        records = load_suite_records(config.test_dir, suite)
+        limit = config.eval_limit
+        if limit is None and suite == "rico_held":
+            limit = config.rico_eval_limit
+        offset = max(0, int(config.eval_offset))
+        stop = offset + max(0, int(limit)) if limit is not None else None
+        return len(records[offset:stop])
+
     # Loading a checkpoint-backed model once is materially cheaper than
     # rebuilding it for every suite.  Bind the shared instance to the exact
     # checkpoint digest so suite-result caching remains content-addressed and
@@ -2685,6 +2931,7 @@ def evaluate_suites(
     shared_model = model
     shared_checkpoint_sha256: str | None = None
     shared_checkpoint_path: Path | None = None
+    board: dict[str, dict] = {}
     if shared_model is None:
         shared_checkpoint_path = checkpoint or (config.checkpoint_dir / "last.pt")
         if not shared_checkpoint_path.is_file():
@@ -2692,19 +2939,55 @@ def evaluate_suites(
                 f"evaluation checkpoint not found: {shared_checkpoint_path}"
             )
         shared_checkpoint_sha256 = _sha256_file(shared_checkpoint_path)
-        train_records = []
-        if config.train_dir.exists():
-            try:
-                train_records = load_train_records(config.train_dir)
-            except FileNotFoundError:
-                train_records = []
-        shared_model = build_model(
-            config,
-            train_records or load_suite_records(config.test_dir, suites[0]),
-            checkpoint=shared_checkpoint_path,
+        checkpoint_bundle_sha256 = _checkpoint_bundle_sha256(
+            shared_checkpoint_path,
+            checkpoint_sha256=shared_checkpoint_sha256,
         )
+        preflight_hits: dict[str, tuple[ModelBuildConfig, dict[str, Any]]] = {}
+        for suite in suites:
+            suite_config = replace(config, suite=suite)
+            suite_limit = suite_config.eval_limit
+            if suite_limit is None and suite == "rico_held":
+                suite_limit = suite_config.rico_eval_limit
+            preflight = _suite_cache_preflight(
+                suite_config,
+                checkpoint=shared_checkpoint_path,
+                cache=cache,
+                suite_limit=suite_limit,
+                suite_offset=int(suite_config.eval_offset),
+                generation_overrides={},
+                checkpoint_sha256=shared_checkpoint_sha256,
+                checkpoint_bundle_sha256=checkpoint_bundle_sha256,
+            )
+            if preflight.cached_metrics is not None:
+                preflight_hits[suite] = (
+                    suite_config,
+                    preflight.cached_metrics,
+                )
+        if len(preflight_hits) == len(suites):
+            for suite in suites:
+                suite_config, cached_metrics = preflight_hits[suite]
+                metrics = _replay_cached_suite(
+                    suite_config,
+                    cached_metrics,
+                    record_n=selected_record_n(suite),
+                )
+                board[suite] = {
+                    key: value for key, value in metrics.items() if key != "details"
+                }
+        else:
+            train_records = []
+            if config.train_dir.exists():
+                try:
+                    train_records = load_train_records(config.train_dir)
+                except FileNotFoundError:
+                    train_records = []
+            shared_model = build_model(
+                config,
+                train_records or load_suite_records(config.test_dir, suites[0]),
+                checkpoint=shared_checkpoint_path,
+            )
 
-    board: dict[str, dict] = {}
     evaluation_deadline = (
         time.monotonic() + float(config.evaluation_wall_seconds)
         if config.evaluation_wall_seconds
@@ -2712,31 +2995,23 @@ def evaluate_suites(
     )
     remaining_records = None
     if evaluation_deadline is not None:
-        def selected_record_n(suite: str) -> int:
-            records = load_suite_records(config.test_dir, suite)
-            limit = config.eval_limit
-            if limit is None and suite == "rico_held":
-                limit = config.rico_eval_limit
-            offset = max(0, int(config.eval_offset))
-            stop = offset + max(0, int(limit)) if limit is not None else None
-            return len(records[offset:stop])
-
         remaining_records = [
             sum(selected_record_n(suite) for suite in suites)
         ]
-    for suite in suites:
-        suite_config = replace(config, suite=suite)
-        metrics = evaluate(
-            suite_config,
-            model=shared_model,
-            model_checkpoint_sha256=shared_checkpoint_sha256,
-            model_checkpoint_path=shared_checkpoint_path,
-            publish_agentv=False,
-            cache=cache,
-            evaluation_deadline=evaluation_deadline,
-            evaluation_remaining_records=remaining_records,
-        )
-        board[suite] = {k: v for k, v in metrics.items() if k != "details"}
+    if not board:
+        for suite in suites:
+            suite_config = replace(config, suite=suite)
+            metrics = evaluate(
+                suite_config,
+                model=shared_model,
+                model_checkpoint_sha256=shared_checkpoint_sha256,
+                model_checkpoint_path=shared_checkpoint_path,
+                publish_agentv=False,
+                cache=cache,
+                evaluation_deadline=evaluation_deadline,
+                evaluation_remaining_records=remaining_records,
+            )
+            board[suite] = {k: v for k, v in metrics.items() if k != "details"}
     from slm_training.evals.record_schema import RUN_CLASSES, SCHEMA_VERSION
     from slm_training.versioning import build_version_stamp
 

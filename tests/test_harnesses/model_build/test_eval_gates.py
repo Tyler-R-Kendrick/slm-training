@@ -27,6 +27,7 @@ from slm_training.harnesses.model_build.eval_runner import (
     _effective_evaluation_policy,
     _is_meaningful_program,
     _record_langsmith_evaluation,
+    _suite_result_cacheable,
     component_type_recall,
     evaluate,
     evaluate_grammar_leakage_audit,
@@ -921,10 +922,42 @@ def test_evaluate_suites_scoreboard(
         return original_build_model(*args, **kwargs)
 
     monkeypatch.setattr(eval_runner_module, "build_model", counted_build)
-    multi = evaluate_suites(config, ["smoke", "held_out"], checkpoint=checkpoint)
+    cache = EvalCache(
+        EvalCacheConfig(mode=EvalCacheMode.READ_WRITE, root=tmp_path / "cache")
+    )
+    multi = evaluate_suites(
+        config, ["smoke", "held_out"], checkpoint=checkpoint, cache=cache
+    )
     assert len(build_calls) == 1
     assert multi["checkpoint_source"] == "checkpoint"
     assert set(multi["suites"]) == {"smoke", "held_out"}
+
+    # A complete all-suite cache hit is resolved before model construction.
+    # Output-only run identity may change without invalidating the evidence.
+    config.run_id = "gates-cache-replay"
+    replay = evaluate_suites(
+        config, ["smoke", "held_out"], checkpoint=checkpoint, cache=cache
+    )
+    assert len(build_calls) == 1
+    assert all(row["cache_replay"] for row in replay["suites"].values())
+
+    # Checkpoint sidecars participate in the preflight identity. Adding one
+    # must force the existing single shared model load rather than replaying.
+    checkpoint.with_suffix(".meta.json").write_text("{}\n", encoding="utf-8")
+    config.run_id = "gates-sidecar-change"
+    evaluate_suites(
+        config, ["smoke", "held_out"], checkpoint=checkpoint, cache=cache
+    )
+    assert len(build_calls) == 2
+
+
+def test_suite_cache_rejects_incomplete_measurements() -> None:
+    assert _suite_result_cacheable(
+        {"decode_timeout_count": 0, "incomplete_document_n": 0}
+    )
+    assert not _suite_result_cacheable(
+        {"decode_timeout_count": 1, "incomplete_document_n": 1}
+    )
 
 
 def test_preloaded_model_never_replays_checkpointless_eval_cache(
