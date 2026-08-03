@@ -1727,7 +1727,7 @@
       ]
     },
     "dsl.symbolic_surface": {
-      "version": "v5",
+      "version": "v6",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/language_contract.py",
@@ -1735,6 +1735,11 @@
         "tests/test_dsl/test_language_contract.py"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-08-03",
+          "note": "Sanitize NODE_OPTIONS (via bridge_utils.sanitized_node_env) before spawning the lang-core Node bridge subprocess/REPL, so a host-level NODE_OPTIONS the Node build rejects (e.g. --import tsx) cannot silently kill validate() with an opaque empty-output error."
+        },
         {
           "version": "v5",
           "date": "2026-08-02",
@@ -1794,7 +1799,7 @@
       ]
     },
     "evals.agentv": {
-      "version": "v6",
+      "version": "v7",
       "kind": "harness",
       "paths": [
         "src/slm_training/evals/agentv.py",
@@ -1802,6 +1807,11 @@
         "tests/test_evals/test_agentv.py"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-08-03",
+          "note": "Sanitize NODE_OPTIONS (via bridge_utils.sanitized_node_env) before spawning the AgentV runner subprocess, matching the lang-core and graphql-js bridges; a rejected host NODE_OPTIONS no longer breaks --ship-gates evaluation."
+        },
         {
           "version": "v6",
           "date": "2026-08-02",
@@ -7398,6 +7408,16 @@
         {
           "version": "v3",
           "date": "2026-08-03",
+          "note": "no-bump: record c3 grammar-completion-bounds quality-neutral checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record c2 AgentV/NODE_OPTIONS infrastructure-failure checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
           "note": "no-bump: record honest c1810 fresh-seed confirmation checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
         },
         {
@@ -10237,6 +10257,11 @@
         "docs/design/dsh0-08-foundation-disposition-20260723.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-03",
+          "note": "no-bump: refresh two stale source-identity hashes in dsh0-02-symbolic-surface-policy-20260723.json (tests/test_dsl/test_language_contract.py after adding a NODE_OPTIONS regression test; src/slm_training/data/contract.py, drifted since already-merged commit c9144577 #1337 added marker_order/marker_projection/slot_contract_size) so the evidence pin matches committed content; no policy or behavior change."
+        },
         {
           "version": "v2",
           "date": "2026-08-02",

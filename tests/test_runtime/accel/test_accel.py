@@ -2,10 +2,26 @@
 
 from __future__ import annotations
 
+import builtins
+
+import pytest
 import torch
 
 from slm_training.runtime.accel import detect_device, maybe_compile
 from slm_training.models.parallel_decode import select_unmask_indices
+
+
+def test_detect_device_missing_torch_raises_actionable_error(monkeypatch) -> None:
+    real_import = builtins.__import__
+
+    def fake_import(name, *args, **kwargs):
+        if name == "torch":
+            raise ModuleNotFoundError("No module named 'torch'")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+    with pytest.raises(RuntimeError, match="setup_dev_env.sh"):
+        detect_device("cpu")
 
 
 def test_detect_device_cpu_fallback() -> None:

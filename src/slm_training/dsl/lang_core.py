@@ -14,7 +14,12 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-from slm_training.bridge_utils import checkout_roots, readline_with_timeout, repo_root
+from slm_training.bridge_utils import (
+    checkout_roots,
+    readline_with_timeout,
+    repo_root,
+    sanitized_node_env,
+)
 from slm_training.dsl.language_contract import contract_id
 from slm_training.dsl.placeholders import extract_placeholders
 
@@ -155,6 +160,7 @@ def _ensure_repl() -> subprocess.Popen[str]:
         stderr=subprocess.PIPE,
         text=True,
         bufsize=1,
+        env=sanitized_node_env(),
     )
     return _REPL_PROC
 
@@ -178,6 +184,7 @@ def _invoke_once(payload: dict[str, Any], timeout_s: float = 30.0) -> dict[str, 
         text=True,
         timeout=timeout_s,
         check=False,
+        env=sanitized_node_env(),
     )
     stdout = (proc.stdout or "").strip()
     if not stdout:
