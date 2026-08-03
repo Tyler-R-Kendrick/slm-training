@@ -290,6 +290,13 @@ receipts. No arm ran. Campaign v130 treats `blocked` as terminal for steering
 discovery while keeping repair, documentation, and delivery prerequisites
 completed-only. The audit trail remains append-only and the corrected smoke
 confirmation stays reachable.
+Cycle c1834 reopened that confirmation on the correct smoke endpoint, then
+failed before execution because c1832's interrupted envelopes never emitted
+terminal hypothesizer feedback. Phase A had already persisted a typed incomplete
+handoff and infrastructure retry priority. Campaign v131 now converts only that
+typed disposition into a durable metric-free `stopped` feedback artifact and
+event. It does not synthesize scores; malformed or non-incomplete handoffs still
+fail closed.
 
 The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
 confirmed a champion, c1812 was the next protected promotion slot, and the

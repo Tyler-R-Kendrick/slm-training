@@ -612,12 +612,100 @@ def _feedback_context(
         feedback = _hypothesis_feedback(candidate_store, matrix)
         if feedback:
             return candidate_store, matrix, feedback
-        if index == 0 or (candidate_store.root / "cycle_handoff.json").is_file():
+        handoff_path = candidate_store.root / "cycle_handoff.json"
+        if handoff_path.is_file():
+            recovered = _recover_incomplete_handoff_feedback(
+                candidate_store, matrix, handoff_path
+            )
+            if recovered is not None:
+                return candidate_store, matrix, (recovered,)
+        if index == 0 or handoff_path.is_file():
             raise ValueError(
                 "latest hypothesis matrix has no terminal feedback; run a matrix "
                 "member before forming its successor"
             )
     return store, None, ()
+
+
+def _recover_incomplete_handoff_feedback(
+    store: CampaignStore,
+    matrix: HypothesisMatrix,
+    handoff_path: Path,
+) -> HypothesisFeedback | None:
+    """Persist Phase-A incomplete disposition as metric-free feedback."""
+
+    try:
+        handoff = AutotrainCycleHandoffV1.model_validate_json(
+            handoff_path.read_text(encoding="utf-8")
+        )
+    except ValueError:
+        return None
+    incomplete = any(
+        reason.startswith(("measurement_incomplete:", "harness_failure:"))
+        for reason in handoff.reasons
+    )
+    infrastructure = tuple(
+        priority
+        for priority in handoff.priorities
+        if priority.area in {"harness", "infrastructure"}
+    )
+    if not incomplete or not infrastructure:
+        return None
+    experiment_id = (
+        infrastructure[0].proposed_experiment_id or matrix.recommended_experiment_id
+    )
+    candidates = {
+        item.experiment.experiment_id: item.experiment for item in matrix.hypotheses
+    }
+    experiment = candidates.get(experiment_id)
+    if experiment is None:
+        return None
+    evidence = tuple(handoff.reasons) or (
+        "Phase A classified the measurement as incomplete.",
+    )
+    actions = tuple(priority.hypothesis for priority in infrastructure)
+    signature = json.dumps(
+        experiment.knobs.model_dump(exclude_none=True, mode="json"), sort_keys=True
+    )
+    identity = {
+        "matrix_id": matrix.matrix_id,
+        "experiment_id": experiment_id,
+        "outcome_status": "stopped",
+        "diagnosis_target": "infrastructure",
+        "diagnosis_evidence": evidence,
+        "recommended_actions": actions,
+    }
+    feedback = HypothesisFeedback(
+        feedback_id=(
+            "feedback-"
+            + hashlib.sha256(
+                json.dumps(identity, sort_keys=True).encode("utf-8")
+            ).hexdigest()[:16]
+        ),
+        campaign_id=matrix.campaign_id,
+        matrix_id=matrix.matrix_id,
+        experiment_id=experiment_id,
+        hypothesis=experiment.hypothesis,
+        knob_signature=signature,
+        outcome_status="stopped",
+        diagnosis_target="infrastructure",
+        diagnosis_evidence=evidence,
+        recommended_actions=actions,
+        created_at=handoff.created_at,
+    )
+    path = store.write_artifact("hypothesizer_feedback", feedback)
+    store.append_event(
+        "hypothesizer_feedback_recorded",
+        experiment_id=experiment_id,
+        status="infrastructure",
+        artifact_sha256=path.stem,
+        detail={
+            "feedback_id": feedback.feedback_id,
+            "matrix_id": matrix.matrix_id,
+            "source": "cycle_handoff",
+        },
+    )
+    return feedback
 
 
 def _authorized_replay_configs(

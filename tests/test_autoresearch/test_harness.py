@@ -2693,6 +2693,92 @@ def test_feedback_context_skips_only_initialized_incomplete_cycles(
         _feedback_context(stores[2], _lineage_stores(stores[2], third))
 
 
+def test_feedback_context_recovers_typed_incomplete_handoff(
+    tmp_path: Path,
+) -> None:
+    from scripts.autoresearch import _feedback_context, _lineage_stores
+
+    first = CampaignSpec(
+        campaign_id="cycle-1",
+        objective="Run a bounded comparison.",
+        primary_metric="score",
+        loop_id="loop-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+    )
+    second = first.model_copy(
+        update={
+            "campaign_id": "cycle-2",
+            "cycle_index": 2,
+            "predecessor_campaign_id": "cycle-1",
+        }
+    )
+    first_store = CampaignStore("cycle-1", tmp_path)
+    first_store.initialize(first)
+    second_store = CampaignStore("cycle-2", tmp_path)
+    second_store.initialize(second)
+    matrix = hypothesis_matrix(campaign_id="cycle-1")
+    matrix_path = first_store.write_artifact("hypothesis_matrices", matrix)
+    first_store.append_event(
+        "hypothesis_matrix_formed", artifact_sha256=matrix_path.stem
+    )
+    candidate_id = matrix.recommended_experiment_id
+    handoff = AutotrainCycleHandoffV1(
+        loop_id="loop-1",
+        campaign_id="cycle-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        cycle_role="screening",
+        cycle_intent="confirm",
+        evidence_class="fixture",
+        climb_state="harness_failure",
+        ship_state="blocked",
+        primary_metric="score",
+        reasons=("measurement_incomplete:control:missing_scoreboard",),
+        priorities=(
+            NextRunPriorityV1(
+                rank=1,
+                area="infrastructure",
+                hypothesis="Replay the exact frozen pair.",
+                evidence_ids=("campaign:cycle-1",),
+                confidence=0.95,
+                expected_information_gain="Complete the comparison.",
+                authority="observed_result",
+                disposition="experiment_next",
+                proposed_experiment_id=candidate_id,
+            ),
+        ),
+        actions=(
+            AutotrainActionV1(
+                kind="retry_measurement",
+                owner="autotrain",
+                reason="Replay the incomplete pair.",
+                evidence_ids=("campaign:cycle-1",),
+                frozen_manifest_sha256="c" * 64,
+            ),
+        ),
+    )
+    (first_store.root / "cycle_handoff.json").write_text(
+        handoff.model_dump_json(indent=2) + "\n", encoding="utf-8"
+    )
+
+    context_store, context_matrix, feedback = _feedback_context(
+        second_store, _lineage_stores(second_store, second)
+    )
+
+    assert context_store.root == first_store.root
+    assert context_matrix == matrix
+    assert len(feedback) == 1
+    assert feedback[0].outcome_status == "stopped"
+    assert feedback[0].diagnosis_target == "infrastructure"
+    assert feedback[0].metrics == {}
+    assert list(
+        (first_store.root / "artifacts" / "hypothesizer_feedback").glob("*.json")
+    )
+
+
 def test_replay_config_authority_is_content_bound_to_lineage(tmp_path: Path) -> None:
     from scripts.autoresearch import (
         _authorized_replay_configs,
