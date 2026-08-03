@@ -266,6 +266,67 @@ binder F1 `.7222→.8222`, fidelity `.6111→.7222`, and reward
 requires an exact fresh-seed confirmation before any promotion or Lean formal
 preflight; `n=3`, zero AST/canonical equality, and missing production suites
 remain hard blockers.
+Cycle c1831 attempted that confirmation but produced no model evidence. Git
+integration, evidence capture, and the frozen hypothesis matrix completed; the
+driver then required the original `70s + 70s + 15s = 155s` arm/finalization
+reservation even though planning had already spent part of the 180-second cap,
+so neither arm started. Campaign v128 fits equal arm deadlines to actual
+post-planning time while retaining the 15-second finalization reserve and the
+unchanged canonical cap. The exact confirmation remains queued; this timeout
+does not confirm or reject the c1830 learning signal.
+Cycle c1832 passed the new symmetric reservation and started both arms, then
+exposed a separate ladder violation: because the cycle index was a promotion
+slot, the unconfirmed champion inherited `smoke,held_out` instead of replaying
+its smoke screen. The tail candidate trained 20 steps but timed out all 3 smoke
+documents; the control reached only step 2, so neither scoreboard nor AgentV
+evidence exists. Campaign v129 pins every confirmation to screening endpoints
+regardless of cadence and represents incomplete confirmation as retryable
+`confirmation_inconclusive`. Held-out suites and Lean/formal remain closed until
+a complete fresh-seed screening confirmation succeeds.
+Cycle c1833 then found a receipt-ledger split: predecessor gating advanced past
+the evidence-bound blocked c1832 retry, but execution discovery still selected
+that same invalid frozen manifest because it recognized only `completed`
+receipts. No arm ran. Campaign v130 treats `blocked` as terminal for steering
+discovery while keeping repair, documentation, and delivery prerequisites
+completed-only. The audit trail remains append-only and the corrected smoke
+confirmation stays reachable.
+Cycle c1834 reopened that confirmation on the correct smoke endpoint, then
+failed before execution because c1832's interrupted envelopes never emitted
+terminal hypothesizer feedback. Phase A had already persisted a typed incomplete
+handoff and infrastructure retry priority. Campaign v131 now converts only that
+typed disposition into a durable metric-free `stopped` feedback artifact and
+event. It does not synthesize scores; malformed or non-incomplete handoffs still
+fail closed.
+Cycle c1835 verified that recovery, then exposed a same-invocation ordering gap:
+the continuous driver wrote its agent proposal before `hypothesize` recovered
+the feedback, so the proposal could not acknowledge an ID that did not yet
+exist. Campaign v132 treats the agent provider as the compilation boundary: it
+binds exact supplied feedback and predecessor identities plus priority evidence
+only when the proposal is unbound, rejects any conflicting declaration, and
+leaves the canonical matrix validator unchanged. No arm ran, so c1835 is
+infrastructure evidence rather than a model result.
+Cycle c1836 then reached the reserved promotion cadence slot with that same
+unconfirmed champion. The execution role correctly remained screening, but the
+cadence assertion had no typed distinction between a pending confirmation and
+an ordinary new screening arm, so it stopped before research. Campaign v133
+allows only an explicitly pending confirmation to defer that slot onto smoke;
+all other occupied promotion-slot screening claims still fail, and held-out,
+promotion claim class, and Lean/formal authority remain closed.
+The repaired c1836 invocation then reached both arms but exposed a runtime
+scheduling defect. The candidate reached step 16/20 and the matched control
+step 2/20 before their identical 66.55-second envelopes interrupted training;
+neither reached evaluation. A supporting host sample reported 12 available
+CPUs, 12--14 runnable workers, and up to 95% user CPU while each tiny scratch
+process configured an 11-thread Torch pool. Campaign v134 therefore pins only
+scratch-context train/eval children to one OpenMP/MKL thread, symmetrically.
+GPU/full-context campaigns and the frozen model/data/eval recipes are unchanged.
+Cycle c1837 selected c1836's exact retry action but stopped after research
+because frozen replay dispatch recognized registered screening slugs and
+promotion arms, not the typed `-confirm` identity assigned by the champion
+queue. Campaign v135 admits only that confirmation identity, recovers its
+registered lever family from the frozen knobs, and rewrites the matching matrix
+member before restoring the exact frozen recipe. Unknown replay arms still
+fail closed; the screening manifest digest remains the replay authority.
 
 The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
 confirmed a champion, c1812 was the next protected promotion slot, and the
@@ -915,3 +976,20 @@ a dry plan unless `--execute` is supplied; sync is a dry plan
 unless `--push` is supplied. No experiment was executed here. Future training,
 evaluation, benchmark, profile, or decision-bearing telemetry is incomplete until
 its JSON and matching markdown are committed under `docs/design/`.
+
+## Continuous-loop c1838: fresh-seed confirmation and queue repair
+
+c1838 completed the exact frozen c1836 confirmation under the single-thread
+scratch scheduler. The candidate re-held the primary structure improvement
+(`.40193→.43723`) and binder F1 (`.8000→.8222`) at matched parameters and
+exposure. The effect is fixture-only: fidelity, reward, and latency regress
+slightly, exact AST/canonical rates remain zero, and every production evidence
+suite is absent.
+
+The completed retry also exposed an orchestration attribution bug: the replay
+was being enqueued as a new screening champion while the original c1830 entry
+remained inconclusive. Campaign v136 binds a completed typed confirmation replay
+to its original queue entry, prevents duplicate screening enqueue, and
+reconciles the already-written c1838 duplicate before the next selector runs.
+Only the original entry becomes `confirmed`; it may proceed solely through the
+promotion cadence, which requires the full suite and Lean/formal preflight.

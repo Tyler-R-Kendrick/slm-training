@@ -110,6 +110,42 @@ class AgentHypothesisProvider:
         matrix = HypothesisMatrix.model_validate_json(
             self.matrix_path.read_text(encoding="utf-8")
         )
+        if feedback:
+            feedback_ids = tuple(item.feedback_id for item in feedback)
+            predecessor_ids = {item.matrix_id for item in feedback}
+            if len(predecessor_ids) != 1:
+                raise ValueError(
+                    "agent hypothesis feedback must share one predecessor matrix"
+                )
+            predecessor_id = next(iter(predecessor_ids))
+            if matrix.feedback_ids and set(matrix.feedback_ids) != set(feedback_ids):
+                raise ValueError(
+                    "agent hypothesis matrix conflicts with supplied feedback ids"
+                )
+            if (
+                matrix.predecessor_matrix_id is not None
+                and matrix.predecessor_matrix_id != predecessor_id
+            ):
+                raise ValueError(
+                    "agent hypothesis matrix conflicts with supplied predecessor"
+                )
+            priorities = tuple(
+                priority.model_copy(
+                    update={
+                        "evidence_ids": tuple(
+                            dict.fromkeys((*priority.evidence_ids, *feedback_ids))
+                        )
+                    }
+                )
+                for priority in matrix.next_run_priorities
+            )
+            matrix = matrix.model_copy(
+                update={
+                    "feedback_ids": feedback_ids,
+                    "predecessor_matrix_id": predecessor_id,
+                    "next_run_priorities": priorities,
+                }
+            )
         return HypothesisProviderResult(
             matrix=matrix,
             sources=tuple(sources),

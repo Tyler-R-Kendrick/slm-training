@@ -403,6 +403,7 @@ def test_champion_confirm_reject_without_quality(tmp_path: Path) -> None:
         entry=entry,
         delivery={
             "positive": True,
+            "measurement_complete": True,
             "reasons": ["primary_metric_win:smoke.latency_ms_p50:10000->9000"],
         },
         campaign_id="c-confirm",
@@ -410,6 +411,37 @@ def test_champion_confirm_reject_without_quality(tmp_path: Path) -> None:
     )
     assert resolved is not None
     assert resolved["status"] == "rejected"
+
+
+def test_champion_incomplete_confirmation_stays_retryable(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-incomplete-confirm"
+    entry = {
+        "schema": _mod._CHAMPION_QUEUE_SCHEMA,
+        "entry_id": "champ-incomplete",
+        "status": "confirming",
+        "knobs": {"ltr_tail_loss_weight": 1.0},
+        "knobs_fingerprint": "incomplete",
+    }
+    _mod._write_champion_queue(_mod._champion_queue_path(root, loop_id), [entry])
+
+    resolved = _mod._resolve_confirm_result(
+        root=root,
+        loop_id=loop_id,
+        entry=entry,
+        delivery={
+            "positive": False,
+            "measurement_complete": False,
+            "reasons": ["measurement_incomplete:control:missing_scoreboard"],
+        },
+        campaign_id="c-incomplete",
+        cycle_index=5,
+    )
+
+    assert resolved is not None
+    assert resolved["status"] == "confirmation_inconclusive"
+    assert "resolved_at" not in resolved
+    assert _mod._queue_head_open([resolved]) == resolved
 
 
 def test_champion_confirm_rejects_efficiency_when_primary_regresses(
@@ -632,6 +664,41 @@ def test_started_champion_measurement_keeps_attempt_spent(tmp_path: Path) -> Non
     assert _mod._recover_interrupted_champion_entries(root, [entry])
     assert entry["status"] == "confirming"
     assert entry["confirm_attempts"] == 1
+
+
+def test_historical_incomplete_confirmation_is_reopened(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    campaign = root / "c-incomplete"
+    campaign.mkdir(parents=True)
+    (campaign / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "measurement_complete": False,
+                "reasons": ["measurement_incomplete:control:missing_scoreboard"],
+            }
+        ),
+        encoding="utf-8",
+    )
+    entry = {
+        "status": "rejected",
+        "confirm_campaign_id": "c-incomplete",
+        "resolved_at": "2026-08-03T00:00:00Z",
+    }
+
+    assert _mod._recover_interrupted_champion_entries(root, [entry])
+    assert entry["status"] == "confirmation_inconclusive"
+    assert "resolved_at" not in entry
+
+
+def test_confirmation_never_inherits_promotion_role() -> None:
+    assert (
+        _mod._role_with_confirmation_boundary("promotion", confirming=True)
+        == "screening"
+    )
+    assert (
+        _mod._role_with_confirmation_boundary("promotion", confirming=False)
+        == "promotion"
+    )
 
 
 def test_select_recommended_slug_rotates_and_skips() -> None:
@@ -1582,6 +1649,61 @@ def test_frozen_screening_retry_preserves_champion_enqueue_semantics() -> None:
         cycle_intent="retry_measurement",
         replay={"handoff": SimpleNamespace(cycle_role="promotion")},
     )
+    assert not _mod._screening_enqueue_allowed(
+        cycle_intent="retry_measurement",
+        replay={
+            "handoff": SimpleNamespace(
+                cycle_role="screening", cycle_intent="confirm"
+            )
+        },
+    )
+
+
+def test_completed_confirmation_replay_resolves_original_and_duplicate(
+    tmp_path: Path,
+) -> None:
+    campaign_id = "continuous-loop-20260803-loop-c1838"
+    camp_dir = tmp_path / campaign_id
+    camp_dir.mkdir()
+    (camp_dir / "cycle_handoff.json").write_text(
+        json.dumps(
+            {
+                "cycle_index": 1838,
+                "cycle_intent": "retry_measurement",
+            }
+        )
+    )
+    (camp_dir / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "positive": True,
+                "measurement_complete": True,
+                "primary_metric": "smoke.structural_similarity",
+                "reasons": [
+                    "primary_metric_win:smoke.structural_similarity:0.4->0.44"
+                ],
+            }
+        )
+    )
+    entries = [
+        {
+            "entry_id": "original",
+            "status": "confirmation_inconclusive",
+            "knobs_fingerprint": "same",
+        },
+        {
+            "entry_id": "duplicate",
+            "status": "queued",
+            "knobs_fingerprint": "same",
+            "source_campaign_id": campaign_id,
+            "source_candidate_id": "candidate-confirm",
+        },
+    ]
+
+    assert _mod._reconcile_completed_confirmation_replays(tmp_path, entries)
+    assert entries[0]["status"] == "confirmed"
+    assert entries[0]["confirm_campaign_id"] == campaign_id
+    assert entries[1]["status"] == "skipped_duplicate"
 
 
 def test_typed_family_balance_arm_is_size_matched_and_replayable() -> None:
@@ -4421,6 +4543,40 @@ def test_driver_requires_room_for_both_arms_before_starting(
         )
 
 
+def test_post_planning_budget_is_rebalanced_symmetrically(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from slm_training.levers import HARNESS_FINALIZATION_RESERVE_SECONDS
+
+    monkeypatch.setattr(_mod.time, "monotonic", lambda: 10.0)
+    remaining = 149.0
+    fitted = _mod._fit_symmetric_arm_budget(
+        deadline=10.0 + remaining,
+        arm_count=2,
+        requested_arm_wall_minutes=70 / 60,
+    )
+
+    assert fitted * 60 == pytest.approx(
+        (remaining - HARNESS_FINALIZATION_RESERVE_SECONDS) / 2
+    )
+
+
+def test_arm_execution_deadline_preserves_finalization_reserve(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from slm_training.levers import HARNESS_FINALIZATION_RESERVE_SECONDS
+
+    monkeypatch.setattr(_mod.time, "monotonic", lambda: 10.0)
+    cycle_deadline = 100.0
+
+    assert _mod._arm_execution_deadline(
+        cycle_deadline=cycle_deadline, arm_wall_minutes=2.0
+    ) == pytest.approx(cycle_deadline - HARNESS_FINALIZATION_RESERVE_SECONDS)
+    assert _mod._arm_execution_deadline(
+        cycle_deadline=cycle_deadline, arm_wall_minutes=0.5
+    ) == pytest.approx(40.0)
+
+
 def test_supervised_cli_runs_exactly_one_agent_owned_cycle(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -5039,6 +5195,53 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor(
     )
     assert promoted["knobs"] == promote_experiment["knobs"]
     assert promoted["formal_claims"] == promote_experiment["formal_claims"]
+
+    confirm_experiment = json.loads(json.dumps(old_candidate))
+    confirm_experiment["experiment_id"] = (
+        "c20260801-loop-12345678-c1710-confirm"
+    )
+    confirm_manifest = _mod._manifest(
+        old_campaign,
+        confirm_experiment,
+        old_commit,
+        role="screening",
+        cycle_intent="confirm",
+    )
+    confirmation_replay = {
+        "control": replay["control"],
+        "candidate": {
+            "experiment": confirm_experiment,
+            "manifest": confirm_manifest,
+            "manifest_sha256": "1" * 64,
+        },
+    }
+    confirmation_matrix = _mod._matrix(
+        campaign_id=new_campaign,
+        evidence_snapshot_id="snapshot-3",
+        cites=["docs/design/autoresearch-autotraining.md"],
+        role_citations={
+            "research": "docs/design/autoresearch-autotraining.md",
+            "prior_result": "docs/design/autoresearch-autotraining.md",
+        },
+        train_version="wf_smoke_v2",
+        eval_version="e938_role_safe_all_targets_v2",
+        steps=22,
+        cycle=1712,
+        role="screening",
+        recommended_slug="batch1",
+    )
+    applied = _mod._apply_frozen_replay(
+        confirmation_matrix, confirmation_replay, new_campaign
+    )
+    assert confirmation_matrix["recommended_experiment_id"].endswith("-confirm")
+    confirmed = next(
+        item["experiment"]
+        for item in confirmation_matrix["hypotheses"]
+        if item["experiment"]["experiment_id"]
+        == confirmation_matrix["recommended_experiment_id"]
+    )
+    assert confirmed["knobs"] == confirm_experiment["knobs"]
+    assert confirmation_matrix["recommended_experiment_id"] in applied
 
 
 def test_frozen_replay_restores_omitted_formal_claim_from_proved_artifact(

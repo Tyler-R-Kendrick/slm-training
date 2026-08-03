@@ -2656,7 +2656,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v127",
+      "version": "v136",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2696,51 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v136",
+          "date": "2026-08-03",
+          "note": "Resolve completed frozen confirmation retries against their original champion entry, suppress duplicate screening enqueue, and reconcile the historical duplicate queue row before promotion selection."
+        },
+        {
+          "version": "v135",
+          "date": "2026-08-03",
+          "note": "Replay typed frozen confirmation arms by recovering their registered lever identity from knobs, preserving the frozen screening manifest while continuing to reject unknown arm kinds."
+        },
+        {
+          "version": "v134",
+          "date": "2026-08-03",
+          "note": "Pin tiny scratch train and eval subprocesses to one CPU thread so symmetric fixture arms do not oversubscribe shared hosts and consume their bounded wall envelope before scoreboards."
+        },
+        {
+          "version": "v133",
+          "date": "2026-08-03",
+          "note": "Permit an explicitly pending fresh-seed confirmation to defer a reserved promotion slot onto screening suites without granting promotion authority or weakening cadence for other arms."
+        },
+        {
+          "version": "v132",
+          "date": "2026-08-03",
+          "note": "Bind feedback recovered during hypothesis compilation into otherwise-unbound agent matrices and priorities while rejecting conflicting feedback or predecessor identities."
+        },
+        {
+          "version": "v131",
+          "date": "2026-08-03",
+          "note": "Recover metric-free terminal hypothesizer feedback from typed incomplete Phase-A handoffs so interrupted measurements can steer successors without fabricated outcomes."
+        },
+        {
+          "version": "v130",
+          "date": "2026-08-03",
+          "note": "Treat evidence-bound blocked steering receipts as terminal for execution discovery so impossible frozen retries cannot be selected after predecessor gating advances."
+        },
+        {
+          "version": "v129",
+          "date": "2026-08-03",
+          "note": "Keep champion confirmation on screening endpoints regardless of cadence, and classify incomplete confirmations as retryable rather than model rejection."
+        },
+        {
+          "version": "v128",
+          "date": "2026-08-03",
+          "note": "Rebalance symmetric arm budgets from the actual post-planning time remaining and enforce the fitted per-arm deadline while preserving the canonical finalization reserve."
+        },
         {
           "version": "v127",
           "date": "2026-08-03",
@@ -6910,6 +6955,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-08-03",
+          "note": "no-bump: append c1838 fixture-confirmation evidence to the shared quality matrix without changing the SLM-197 scorer or experiment."
+        },
+        {
+          "version": "v1",
           "date": "2026-08-02",
           "note": "no-bump: document the quality-matrix process-isolation requirement without changing the SLM-197 scorer or experiment."
         },
@@ -7505,6 +7555,16 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1838 confirmed scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1832 incomplete scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
         {
           "version": "v3",
           "date": "2026-08-03",
@@ -10120,7 +10180,7 @@
       ]
     },
     "harness.preference.remine_campaign": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/preference/remine_campaign.py",
@@ -10132,6 +10192,11 @@
         "docs/design/ldi3-04-remine-intervene-campaign-report-20260718.json"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-08-03",
+          "note": "Recover metric-free terminal hypothesizer feedback from typed incomplete Phase-A handoffs in the shared autoresearch CLI."
+        },
         {
           "version": "v3",
           "date": "2026-08-02",

@@ -1,0 +1,111 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-202607-98199209-c1838",
+  "decision": "confirmed_for_promotion_preflight",
+  "claim_class": "fixture_confirmation",
+  "formal": {
+    "status": "not_applicable:screening",
+    "reason": "Lean and formal proof are mandatory at promotion; this retry remained a screening confirmation."
+  },
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "seed": 101836,
+    "batch_size": 2,
+    "num_threads": 1,
+    "context_backend": "scratch",
+    "suite": "smoke",
+    "suite_n": 3,
+    "trainable_params": 1608962,
+    "sync_checkpoints": false
+  },
+  "arms": {
+    "control": {
+      "last_loss": 37.093997955322266,
+      "train_wall_seconds": 19.200213805015665,
+      "checkpoint_sha256": "472b1d203c90e5a8e1e88c097a325fe085da181bdd11684e39ab8c93ab0f5a9b",
+      "effective_records": 20,
+      "unique_records": 26,
+      "total_draws": 40,
+      "max_repeat": 4,
+      "metrics": {
+        "structural_similarity": 0.4019333333333333,
+        "meaningful_program_rate": 0.3333333333333333,
+        "component_type_recall": 0.25,
+        "binder_reference_f1": 0.8,
+        "placeholder_fidelity": 0.75,
+        "reward_score": 0.874,
+        "parse_rate": 1.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 3552.35,
+        "tokens_emitted_mean": 74.0,
+        "forwards_count_mean": 16.0,
+        "compiler_ms_mean": 9246.73
+      }
+    },
+    "candidate": {
+      "last_loss": 41.2862548828125,
+      "train_wall_seconds": 13.088146494003013,
+      "checkpoint_sha256": "c445ce878821e8fd8e13279d5b919c25742e9a7d45a85076b90597ead29612d5",
+      "effective_records": 20,
+      "unique_records": 26,
+      "total_draws": 40,
+      "max_repeat": 4,
+      "metrics": {
+        "structural_similarity": 0.43723333333333336,
+        "meaningful_program_rate": 0.3333333333333333,
+        "component_type_recall": 0.25,
+        "binder_reference_f1": 0.8222222222222223,
+        "placeholder_fidelity": 0.7222222222222222,
+        "reward_score": 0.8656666666666667,
+        "parse_rate": 1.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 3733.23,
+        "tokens_emitted_mean": 78.0,
+        "forwards_count_mean": 15.0,
+        "compiler_ms_mean": 9600.723
+      }
+    }
+  },
+  "effects": {
+    "structural_similarity": 0.035300000000000054,
+    "binder_reference_f1": 0.022222222222222365,
+    "placeholder_fidelity": -0.02777777777777779,
+    "reward_score": -0.008333333333333304,
+    "latency_regression_fraction": 0.0509184,
+    "compiler_time_regression_fraction": 0.038283,
+    "tokens_emitted_fraction": 0.0540541,
+    "forwards_count_fraction": -0.0625
+  },
+  "ship": {
+    "eligible": false,
+    "failures": [
+      "smoke n=3<20",
+      "meaningful_program_rate<0.66",
+      "component_type_recall<0.35",
+      "ast_beq_rate=0",
+      "canonical_beq_rate=0",
+      "held_out missing",
+      "adversarial missing",
+      "ood missing",
+      "rico_held missing",
+      "Lean/formal promotion preflight not yet run"
+    ]
+  },
+  "next_hypothesis": "Test the confirmed arm on promotion suites with Lean/formal preflight; prioritize exact AST completion and protect fidelity, reward, and latency.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "96bde338ab4e81e668de3d7b2b3ca474c8d7d7da",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.train": "v38",
+      "harness.model_build.eval": "v78",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v22",
+      "model.twotower": "v304"
+    },
+    "stamped_at": "2026-08-03T05:32:13.157108+00:00"
+  }
+}

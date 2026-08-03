@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -43,6 +44,22 @@ RESEARCH_SOURCE_KINDS = {
     "web",
     "researcher",
 }
+
+
+def _stage_environment(
+    experiment: ExperimentSpec, command: list[str]
+) -> dict[str, str] | None:
+    """Keep tiny scratch CPU arms from oversubscribing a shared host."""
+
+    if experiment.knobs.context_backend != "scratch" or not any(
+        module in command
+        for module in ("scripts.train_model", "scripts.evaluate_model")
+    ):
+        return None
+    env = os.environ.copy()
+    env["OMP_NUM_THREADS"] = "1"
+    env["MKL_NUM_THREADS"] = "1"
+    return env
 TRACE_EVIDENCE_KINDS = {"run_insight", "telemetry", "agentv", "feedback"}
 RESULT_EVIDENCE_KINDS = {
     "prior_run",
@@ -906,6 +923,7 @@ def execute_commands(
         completed = run_bounded_process(
             command,
             cwd=cwd,
+            env=_stage_environment(experiment, command),
             interrupt_after_seconds=interrupt_after,
             kill_grace_seconds=grace,
         )

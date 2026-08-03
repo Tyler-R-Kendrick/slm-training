@@ -38,6 +38,7 @@ from slm_training.autoresearch.evidence import collect_evidence
 from slm_training.autoresearch.literature import HuggingFacePapersClient
 from slm_training.levers import MAX_RUN_MINUTES, MAX_RUN_SECONDS
 from slm_training.autoresearch.providers import (
+    AgentHypothesisProvider,
     OpenAIHypothesizer,
     OpenAIProposalCompiler,
     OpenAIResearchProvider,
@@ -82,6 +83,7 @@ from slm_training.autoresearch.storage import (
     _run_exposure_text,
     append_autotrain_action_receipt,
     autotrain_action_sha256,
+    bind_autotrain_action_evidence,
     pending_autotrain_actions,
     pending_autotrain_execution_actions,
     render_loop_result_matrix,
@@ -1253,6 +1255,78 @@ def test_agent_hypothesizer_persists_matrix_and_formation_event(
     assert any(row["event_type"] == "hypothesis_matrix_formed" for row in events)
 
 
+def test_agent_hypothesizer_binds_feedback_recovered_after_proposal(
+    tmp_path: Path,
+) -> None:
+    first = hypothesis_matrix()
+    feedback = HypothesisFeedback(
+        feedback_id="feedback-aaaaaaaaaaaaaaaa",
+        campaign_id="test-campaign",
+        matrix_id=first.matrix_id,
+        experiment_id="hyp-0",
+        hypothesis=first.hypotheses[0].experiment.hypothesis,
+        knob_signature='{"steps": 100}',
+        outcome_status="stopped",
+        diagnosis_target="infrastructure",
+        diagnosis_evidence=("The prior measurement was incomplete.",),
+        recommended_actions=("Replay the matched arms.",),
+    )
+    successor = hypothesis_matrix(matrix_id="matrix-2", offset=10)
+    matrix_path = tmp_path / "late-feedback.json"
+    matrix_path.write_text(successor.model_dump_json(), encoding="utf-8")
+
+    result = AgentHypothesisProvider(matrix_path).propose(
+        campaign(), matrix_evidence(), [], (feedback,)
+    )
+
+    assert result.matrix.feedback_ids == (feedback.feedback_id,)
+    assert result.matrix.predecessor_matrix_id == first.matrix_id
+    assert all(
+        feedback.feedback_id in priority.evidence_ids
+        for priority in result.matrix.next_run_priorities
+    )
+    validate_hypothesis_matrix(
+        campaign(),
+        result.matrix,
+        matrix_evidence(),
+        [],
+        feedback=(feedback,),
+        previous_matrix=first,
+    )
+
+
+def test_agent_hypothesizer_rejects_conflicting_recovered_feedback(
+    tmp_path: Path,
+) -> None:
+    feedback = HypothesisFeedback(
+        feedback_id="feedback-aaaaaaaaaaaaaaaa",
+        campaign_id="test-campaign",
+        matrix_id="matrix-1",
+        experiment_id="hyp-0",
+        hypothesis="A sufficiently detailed prior hypothesis.",
+        knob_signature='{"steps": 100}',
+        outcome_status="stopped",
+        diagnosis_target="infrastructure",
+        diagnosis_evidence=("The prior measurement was incomplete.",),
+        recommended_actions=("Replay the matched arms.",),
+    )
+    matrix_path = tmp_path / "conflicting-feedback.json"
+    matrix_path.write_text(
+        hypothesis_matrix(
+            matrix_id="matrix-2",
+            predecessor_matrix_id="other-matrix",
+            feedback_ids=("feedback-bbbbbbbbbbbbbbbb",),
+            offset=10,
+        ).model_dump_json(),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="conflicts with supplied feedback ids"):
+        AgentHypothesisProvider(matrix_path).propose(
+            campaign(), matrix_evidence(), [], (feedback,)
+        )
+
+
 def test_hypothesizer_forms_feedback_linked_successor_matrix(tmp_path: Path) -> None:
     from scripts.autoresearch import _record_hypothesis_feedback, cmd_hypothesize
 
@@ -1551,6 +1625,26 @@ def test_ack_action_receipt_closes_predecessor_prerequisite(tmp_path: Path) -> N
     assert [
         action.kind for _, action in pending_autotrain_execution_actions(root, handoff)
     ] == ["next_experiment"]
+
+    append_autotrain_action_receipt(
+        root,
+        AutotrainActionReceiptV1(
+            loop_id="loop-1",
+            campaign_id=campaign_id,
+            action_index=1,
+            action_sha256=autotrain_action_sha256(handoff.actions[1]),
+            action_kind="next_experiment",
+            status="blocked",
+            evidence_uris=("docs/design/autoresearch-autotraining.md",),
+            evidence=bind_autotrain_action_evidence(
+                root,
+                handoff,
+                handoff.actions[1],
+                ("docs/design/autoresearch-autotraining.md",),
+            ),
+        ),
+    )
+    assert pending_autotrain_execution_actions(root, handoff) == ()
 
     stopped_handoff = handoff.model_copy(
         update={
@@ -2670,6 +2764,92 @@ def test_feedback_context_skips_only_initialized_incomplete_cycles(
     (stores[1].root / "cycle_handoff.json").write_text("{}\n")
     with pytest.raises(ValueError, match="no terminal feedback"):
         _feedback_context(stores[2], _lineage_stores(stores[2], third))
+
+
+def test_feedback_context_recovers_typed_incomplete_handoff(
+    tmp_path: Path,
+) -> None:
+    from scripts.autoresearch import _feedback_context, _lineage_stores
+
+    first = CampaignSpec(
+        campaign_id="cycle-1",
+        objective="Run a bounded comparison.",
+        primary_metric="score",
+        loop_id="loop-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+    )
+    second = first.model_copy(
+        update={
+            "campaign_id": "cycle-2",
+            "cycle_index": 2,
+            "predecessor_campaign_id": "cycle-1",
+        }
+    )
+    first_store = CampaignStore("cycle-1", tmp_path)
+    first_store.initialize(first)
+    second_store = CampaignStore("cycle-2", tmp_path)
+    second_store.initialize(second)
+    matrix = hypothesis_matrix(campaign_id="cycle-1")
+    matrix_path = first_store.write_artifact("hypothesis_matrices", matrix)
+    first_store.append_event(
+        "hypothesis_matrix_formed", artifact_sha256=matrix_path.stem
+    )
+    candidate_id = matrix.recommended_experiment_id
+    handoff = AutotrainCycleHandoffV1(
+        loop_id="loop-1",
+        campaign_id="cycle-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        cycle_role="screening",
+        cycle_intent="confirm",
+        evidence_class="fixture",
+        climb_state="harness_failure",
+        ship_state="blocked",
+        primary_metric="score",
+        reasons=("measurement_incomplete:control:missing_scoreboard",),
+        priorities=(
+            NextRunPriorityV1(
+                rank=1,
+                area="infrastructure",
+                hypothesis="Replay the exact frozen pair.",
+                evidence_ids=("campaign:cycle-1",),
+                confidence=0.95,
+                expected_information_gain="Complete the comparison.",
+                authority="observed_result",
+                disposition="experiment_next",
+                proposed_experiment_id=candidate_id,
+            ),
+        ),
+        actions=(
+            AutotrainActionV1(
+                kind="retry_measurement",
+                owner="autotrain",
+                reason="Replay the incomplete pair.",
+                evidence_ids=("campaign:cycle-1",),
+                frozen_manifest_sha256="c" * 64,
+            ),
+        ),
+    )
+    (first_store.root / "cycle_handoff.json").write_text(
+        handoff.model_dump_json(indent=2) + "\n", encoding="utf-8"
+    )
+
+    context_store, context_matrix, feedback = _feedback_context(
+        second_store, _lineage_stores(second_store, second)
+    )
+
+    assert context_store.root == first_store.root
+    assert context_matrix == matrix
+    assert len(feedback) == 1
+    assert feedback[0].outcome_status == "stopped"
+    assert feedback[0].diagnosis_target == "infrastructure"
+    assert feedback[0].metrics == {}
+    assert list(
+        (first_store.root / "artifacts" / "hypothesizer_feedback").glob("*.json")
+    )
 
 
 def test_replay_config_authority_is_content_bound_to_lineage(tmp_path: Path) -> None:
@@ -3873,6 +4053,34 @@ def test_execute_shares_one_wall_budget_across_stages(monkeypatch) -> None:
     assert outcome.status == "completed"
     assert timeouts == [4.0, 1.5]
     assert outcome.wall_time_budget_seconds == 5.0
+
+
+def test_execute_limits_threads_for_scratch_cpu_stages(monkeypatch) -> None:
+    import slm_training.autoresearch.engine as engine
+
+    monkeypatch.setenv("OMP_NUM_THREADS", "11")
+    monkeypatch.setenv("MKL_NUM_THREADS", "11")
+    scratch = experiment().model_copy(
+        update={
+            "knobs": experiment().knobs.model_copy(
+                update={"context_backend": "scratch"}
+            )
+        }
+    )
+
+    train_env = engine._stage_environment(
+        scratch, ["python", "-m", "scripts.train_model"]
+    )
+    eval_env = engine._stage_environment(
+        scratch, ["python", "-m", "scripts.evaluate_model"]
+    )
+
+    assert train_env and train_env["OMP_NUM_THREADS"] == "1"
+    assert train_env["MKL_NUM_THREADS"] == "1"
+    assert eval_env and eval_env["OMP_NUM_THREADS"] == "1"
+    assert engine._stage_environment(
+        scratch, ["python", "-m", "scripts.build_train_data"]
+    ) is None
 
 
 def test_execute_passes_inner_wall_to_evaluation(monkeypatch) -> None:

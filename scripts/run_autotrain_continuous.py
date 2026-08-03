@@ -277,6 +277,31 @@ def _require_symmetric_arm_budget(
         raise subprocess.TimeoutExpired("symmetric decision-arm budget", required)
 
 
+def _fit_symmetric_arm_budget(
+    *, deadline: float, arm_count: int, requested_arm_wall_minutes: float
+) -> float:
+    """Share the post-planning budget equally while preserving finalization."""
+
+    if arm_count <= 0:
+        raise ValueError("arm_count must be positive")
+    remaining = _remaining_timeout(deadline)
+    usable = remaining - HARNESS_FINALIZATION_RESERVE_SECONDS
+    if usable <= 0:
+        raise subprocess.TimeoutExpired("symmetric decision-arm budget", remaining)
+    return min(float(requested_arm_wall_minutes), usable / arm_count / 60)
+
+
+def _arm_execution_deadline(
+    *, cycle_deadline: float, arm_wall_minutes: float
+) -> float:
+    """Cap one arm without spending the cycle's finalization reserve."""
+
+    return min(
+        cycle_deadline - HARNESS_FINALIZATION_RESERVE_SECONDS,
+        time.monotonic() + arm_wall_minutes * 60,
+    )
+
+
 def _promotion_formal_budget_seconds(
     *, deadline: float, arm_count: int, arm_wall_minutes: float
 ) -> float:
@@ -432,6 +457,7 @@ _CHAMPION_STATUSES = frozenset(
     {
         "queued",
         "confirming",
+        "confirmation_inconclusive",
         "confirmed",
         "rejected",
         "skipped_duplicate",
@@ -1042,10 +1068,26 @@ def _campaign_started_experiment(root: Path, campaign_id: object) -> bool:
 def _recover_interrupted_champion_entries(
     root: Path, entries: list[dict[str, Any]]
 ) -> bool:
-    """Release pre-execution attempts and restore interrupted promotion heads."""
+    """Release interrupted attempts and reopen incomplete confirmations."""
     changed = False
     for row in entries:
         status = row.get("status")
+        if status == "rejected":
+            campaign_id = str(row.get("confirm_campaign_id") or "")
+            delivery_path = root / campaign_id / "sdlc_delivery.json"
+            if not campaign_id or not delivery_path.is_file():
+                continue
+            delivery = _read_json(delivery_path)
+            if delivery.get("measurement_complete") is not False:
+                continue
+            row["status"] = "confirmation_inconclusive"
+            row["last_harness_failure_at"] = time.strftime(
+                "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
+            )
+            row["resolve_reasons"] = list(delivery.get("reasons") or [])
+            row.pop("resolved_at", None)
+            changed = True
+            continue
         if status not in {"confirming", "promoting"}:
             continue
         # _update_champion_status records the currently reserved campaign in
@@ -1171,7 +1213,11 @@ def _write_champion_queue(path: Path, entries: list[dict[str, Any]]) -> None:
 def _queue_head_open(entries: list[dict[str, Any]]) -> dict[str, Any] | None:
     """First entry still awaiting confirmatory retest (queued or in-flight)."""
     for row in entries:
-        if row.get("status") in {"queued", "confirming"}:
+        if row.get("status") in {
+            "queued",
+            "confirming",
+            "confirmation_inconclusive",
+        }:
             return row
     return None
 
@@ -1335,6 +1381,7 @@ def _skip_arm_slugs(
         if row.get("status") not in {
             "queued",
             "confirming",
+            "confirmation_inconclusive",
             "confirmed",
             "promoting",
             "promotion_inconclusive",
@@ -1643,7 +1690,98 @@ def _screening_enqueue_allowed(
         cycle_intent == "retry_measurement"
         and replay is not None
         and replay["handoff"].cycle_role == "screening"
+        and getattr(replay["handoff"], "cycle_intent", None) != "confirm"
     )
+
+
+def _confirmation_replay_entry(
+    entries: list[dict[str, Any]], replay: dict[str, Any] | None
+) -> dict[str, Any] | None:
+    """Return the original champion resolved by a frozen confirmation replay."""
+
+    if replay is None or replay["handoff"].cycle_intent != "confirm":
+        return None
+    frozen = replay["candidate"]["experiment"]
+    if not str(frozen.get("experiment_id") or "").endswith("-confirm"):
+        return None
+    fingerprint = _knobs_fingerprint(_lever_knobs(frozen.get("knobs") or {}))
+    source_campaign = str(replay["handoff"].campaign_id)
+    return next(
+        (
+            row
+            for row in entries
+            if row.get("knobs_fingerprint") == fingerprint
+            and row.get("confirm_campaign_id") == source_campaign
+            and row.get("status")
+            in {"queued", "confirming", "confirmation_inconclusive"}
+        ),
+        None,
+    )
+
+
+def _reconcile_completed_confirmation_replays(
+    root: Path, entries: list[dict[str, Any]]
+) -> bool:
+    """Repair historical duplicate queue rows emitted by completed retries."""
+
+    changed = False
+    for duplicate in entries:
+        if duplicate.get("status") != "queued" or not str(
+            duplicate.get("source_candidate_id") or ""
+        ).endswith("-confirm"):
+            continue
+        campaign_id = str(duplicate.get("source_campaign_id") or "")
+        handoff_path = root / campaign_id / "cycle_handoff.json"
+        delivery_path = root / campaign_id / "sdlc_delivery.json"
+        if not handoff_path.is_file() or not delivery_path.is_file():
+            continue
+        handoff = _read_json(handoff_path)
+        delivery = _read_json(delivery_path)
+        if (
+            handoff.get("cycle_intent") != "retry_measurement"
+            or delivery.get("measurement_complete") is not True
+        ):
+            continue
+        original = next(
+            (
+                row
+                for row in entries
+                if row is not duplicate
+                and row.get("knobs_fingerprint")
+                == duplicate.get("knobs_fingerprint")
+                and row.get("status") == "confirmation_inconclusive"
+            ),
+            None,
+        )
+        if original is None:
+            continue
+        reasons = list(delivery.get("reasons") or [])
+        confirmed = _confirmation_quality_reheld(delivery)
+        if not confirmed:
+            reasons.append("confirmation_rejected:primary_quality_not_reheld")
+        stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        original.update(
+            status="confirmed" if confirmed else "rejected",
+            confirm_campaign_id=campaign_id,
+            confirm_cycle_index=handoff.get("cycle_index"),
+            resolved_at=stamp,
+            resolve_reasons=reasons,
+        )
+        duplicate.update(
+            status="skipped_duplicate",
+            resolved_at=stamp,
+            resolve_reasons=[
+                f"confirmation_replay_resolved:{original.get('entry_id')}"
+            ],
+        )
+        changed = True
+        print(
+            "CHAMPION_REPLAY_RECONCILE "
+            f"entry_id={original.get('entry_id')} status={original.get('status')} "
+            f"duplicate={duplicate.get('entry_id')} campaign={campaign_id}",
+            flush=True,
+        )
+    return changed
 
 
 def _is_champion_lever(knobs: dict[str, Any], *, candidate_id: str = "") -> bool:
@@ -1695,6 +1833,7 @@ def _enqueue_champion(
         if row.get("knobs_fingerprint") == fp and row.get("status") in {
             "queued",
             "confirming",
+            "confirmation_inconclusive",
             "confirmed",
             "promoting",
             "promotion_inconclusive",
@@ -1794,7 +1933,11 @@ def _update_champion_status(
         }:
             row["resolved_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
             row["resolve_reasons"] = list(resolve_reasons or [])
-        elif status in {"promotion_inconclusive", "harness_failure"}:
+        elif status in {
+            "confirmation_inconclusive",
+            "promotion_inconclusive",
+            "harness_failure",
+        }:
             # Capture reasons but keep the head retriable (no permanent resolve).
             stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
             if status == "promotion_inconclusive":
@@ -1826,6 +1969,17 @@ def _resolve_confirm_result(
 ) -> dict[str, Any] | None:
     """Mark confirmatory retest confirmed (quality re-holds) or rejected."""
     reasons = list(delivery.get("reasons") or [])
+    if delivery.get("measurement_complete") is not True:
+        reasons.append("confirmation_inconclusive:measurement_incomplete")
+        return _update_champion_status(
+            root=root,
+            loop_id=loop_id,
+            entry_id=str(entry["entry_id"]),
+            status="confirmation_inconclusive",
+            confirm_campaign_id=campaign_id,
+            confirm_cycle_index=cycle_index,
+            resolve_reasons=reasons,
+        )
     ok = _confirmation_quality_reheld(delivery)
     if not ok:
         reasons.append("confirmation_rejected:primary_quality_not_reheld")
@@ -5535,18 +5689,35 @@ def _apply_frozen_replay(
         None,
     )
     promotion_replay = old_candidate_id.endswith("-promote")
+    confirmation_replay = old_candidate_id.endswith("-confirm")
     if promotion_replay:
         slug = "promote"
+    elif confirmation_replay:
+        slug = "confirm"
     if slug is None:
         raise RuntimeError(
             f"unsupported automatic frozen replay arm: {old_candidate_id}"
         )
     new_ids = {"control": f"{prefix}-control", "candidate": f"{prefix}-{slug}"}
-    if promotion_replay:
+    if promotion_replay or confirmation_replay:
+        frozen_knobs = replay["candidate"]["experiment"].get("knobs") or {}
         frozen_fingerprint = _knobs_fingerprint(
-            _lever_knobs(replay["candidate"]["experiment"].get("knobs") or {})
+            _lever_knobs(frozen_knobs)
+        )
+        source_slug = (
+            _arm_slug_from_knobs(frozen_knobs, candidate_id=old_candidate_id)
+            if confirmation_replay
+            else None
         )
         candidate_target = next(
+            (
+                item["experiment"]
+                for item in matrix["hypotheses"]
+                if source_slug
+                and item["experiment"]["experiment_id"].endswith(f"-{source_slug}")
+            ),
+            None,
+        ) or next(
             (
                 item["experiment"]
                 for item in matrix["hypotheses"]
@@ -5566,7 +5737,8 @@ def _apply_frozen_replay(
             None,
         )
         if candidate_target is None:
-            raise RuntimeError("frozen promotion replay target is absent from matrix")
+            kind = "promotion" if promotion_replay else "confirmation"
+            raise RuntimeError(f"frozen {kind} replay target is absent from matrix")
         previous_target_id = str(candidate_target["experiment_id"])
         candidate_target["experiment_id"] = new_ids["candidate"]
         for priority in matrix["next_run_priorities"]:
@@ -6744,6 +6916,14 @@ def _empty_promotion_slot_falls_back(
     )
 
 
+def _role_with_confirmation_boundary(
+    cadence_role: str, *, confirming: bool
+) -> str:
+    """Keep unconfirmed champions on screening endpoints and suites."""
+
+    return "screening" if confirming else cadence_role
+
+
 def run_cycle(
     *,
     cwd: Path,
@@ -6873,13 +7053,17 @@ def run_cycle(
     queue_entries = _load_champion_queue(queue_path)
     # Pre-execution crashes do not spend bounded champion attempts. Promotion
     # heads also return to confirmed so the next promotion slot can retry.
+    reconciled_replays = _reconcile_completed_confirmation_replays(
+        root, queue_entries
+    )
     recovered = _recover_interrupted_champion_entries(root, queue_entries)
     revalidated = _revalidate_open_champion_entries(root, queue_entries)
     confirmations_revalidated = _revalidate_confirmed_champion_entries(
         root, queue_entries
     )
-    if recovered or revalidated or confirmations_revalidated:
+    if reconciled_replays or recovered or revalidated or confirmations_revalidated:
         _write_champion_queue(queue_path, queue_entries)
+    replayed_confirmation = _confirmation_replay_entry(queue_entries, replay)
     recent_exhausted = _recent_completed_nonpositive_slugs(root, pred)
     skip_slugs = (
         _skip_arm_slugs(queue_entries, integration_commit=integration)
@@ -6888,7 +7072,10 @@ def run_cycle(
     open_champion = _queue_head_open(queue_entries)
     confirmed_champion: dict[str, Any] | None = None
     promoting_champion: dict[str, Any] | None = None
-    role = cadence_role
+    role = _role_with_confirmation_boundary(
+        cadence_role,
+        confirming=replay is None and open_champion is not None,
+    )
     if replay is not None:
         open_champion = None
         cycle_intent = "retry_measurement"
@@ -7038,6 +7225,7 @@ def run_cycle(
             claimed_role=role,
             claim_class=claim_for_role,
             promotion_target_available=promotion_target_available,
+            confirmation_pending=cycle_intent == "confirm",
         )
     role_primary = primary_for_role(policy, role)
     # Screening may preserve a same-leaf CLI suite override for compatibility.
@@ -7477,11 +7665,21 @@ def run_cycle(
 
     arm_count = len({eid for eid in order if eid in by_id})
     if arm_count:
-        _require_symmetric_arm_budget(
+        requested_arm_wall_minutes = arm_wall_minutes
+        arm_wall_minutes = _fit_symmetric_arm_budget(
             deadline=deadline,
             arm_count=arm_count,
-            arm_wall_minutes=arm_wall_minutes,
+            requested_arm_wall_minutes=requested_arm_wall_minutes,
         )
+        if arm_wall_minutes < requested_arm_wall_minutes:
+            print(
+                "ARM_BUDGET_REBALANCED "
+                f"requested_s={requested_arm_wall_minutes * 60:.3f} "
+                f"effective_s={arm_wall_minutes * 60:.3f} "
+                f"arms={arm_count} "
+                f"finalization_reserve_s={HARNESS_FINALIZATION_RESERVE_SECONDS}",
+                flush=True,
+            )
     seen: set[str] = set()
     arm_exits: dict[str, int] = {}
     for eid in order:
@@ -7537,7 +7735,10 @@ def run_cycle(
         result = _stage_command(
             cmd,
             cwd=cwd,
-            deadline=deadline,
+            deadline=_arm_execution_deadline(
+                cycle_deadline=deadline,
+                arm_wall_minutes=arm_wall_minutes,
+            ),
             root=root,
             loop_id=loop_id,
             stage=stage,
@@ -7725,8 +7926,17 @@ def run_cycle(
             cert_err=cert_err,
         )
     else:
+        if replayed_confirmation is not None:
+            resolution = _resolve_confirm_result(
+                root=root,
+                loop_id=loop_id,
+                entry=replayed_confirmation,
+                delivery=delivery,
+                campaign_id=campaign_id,
+                cycle_index=cycle,
+            )
         # Only screening thrash quality-held wins enqueue (not promotion thrash noise).
-        if _screening_enqueue_allowed(cycle_intent=cycle_intent, replay=replay):
+        elif _screening_enqueue_allowed(cycle_intent=cycle_intent, replay=replay):
             resolution = _enqueue_champion(
                 root=root,
                 loop_id=loop_id,
