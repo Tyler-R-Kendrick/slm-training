@@ -4548,6 +4548,63 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor(
         rebound.formal_obligations[0].template_id
         == formal_manifest.formal_obligations[0].template_id
     )
+    promote_experiment = json.loads(json.dumps(old_control))
+    promote_experiment["experiment_id"] = (
+        "c20260801-loop-12345678-c1710-promote"
+    )
+    promote_experiment["hypothesis"] = (
+        "Promotion retest of confirmed champion levers under held-out suites."
+    )
+    promote_experiment["knobs"].update(
+        typed_family_balance_loss_weight=0.25,
+        compiler_alignment_loss_weight=1.0,
+        compiler_alignment_margin=1.0,
+        compiler_alignment_kind_filter="container-close",
+        compiler_alignment_stratified=True,
+    )
+    promote_manifest = _mod._manifest(
+        old_campaign,
+        promote_experiment,
+        old_commit,
+        role="promotion",
+        cycle_intent="promote",
+        formal_preflight_sha256="e" * 64,
+    )
+    promotion_replay = {
+        "control": replay["control"],
+        "candidate": {
+            "experiment": promote_experiment,
+            "manifest": promote_manifest,
+            "manifest_sha256": "f" * 64,
+        },
+    }
+    promotion_matrix = _mod._matrix(
+        campaign_id=new_campaign,
+        evidence_snapshot_id="snapshot-2",
+        cites=["docs/design/autoresearch-autotraining.md"],
+        role_citations={
+            "research": "docs/design/autoresearch-autotraining.md",
+            "prior_result": "docs/design/autoresearch-autotraining.md",
+        },
+        train_version="wf_smoke_v2",
+        eval_version="e938_role_safe_all_targets_v2",
+        steps=22,
+        cycle=1712,
+        role="promotion",
+        recommended_slug="batch1",
+    )
+    applied = _mod._apply_frozen_replay(
+        promotion_matrix, promotion_replay, new_campaign
+    )
+    assert promotion_matrix["recommended_experiment_id"].endswith("-promote")
+    assert promotion_matrix["recommended_experiment_id"] in applied
+    promoted = next(
+        item["experiment"]
+        for item in promotion_matrix["hypotheses"]
+        if item["experiment"]["experiment_id"]
+        == promotion_matrix["recommended_experiment_id"]
+    )
+    assert promoted["knobs"] == promote_experiment["knobs"]
 
 
 def test_frozen_replay_finds_completed_train_across_retry_lineage(

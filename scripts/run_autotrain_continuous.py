@@ -5229,11 +5229,44 @@ def _apply_frozen_replay(
         ),
         None,
     )
+    promotion_replay = old_candidate_id.endswith("-promote")
+    if promotion_replay:
+        slug = "promote"
     if slug is None:
         raise RuntimeError(
             f"unsupported automatic frozen replay arm: {old_candidate_id}"
         )
     new_ids = {"control": f"{prefix}-control", "candidate": f"{prefix}-{slug}"}
+    if promotion_replay:
+        frozen_fingerprint = _knobs_fingerprint(
+            _lever_knobs(replay["candidate"]["experiment"].get("knobs") or {})
+        )
+        candidate_target = next(
+            (
+                item["experiment"]
+                for item in matrix["hypotheses"]
+                if _knobs_fingerprint(
+                    _lever_knobs(item["experiment"].get("knobs") or {})
+                )
+                == frozen_fingerprint
+            ),
+            None,
+        ) or next(
+            (
+                item["experiment"]
+                for item in matrix["hypotheses"]
+                if item["experiment"]["experiment_id"]
+                == matrix["recommended_experiment_id"]
+            ),
+            None,
+        )
+        if candidate_target is None:
+            raise RuntimeError("frozen promotion replay target is absent from matrix")
+        previous_target_id = str(candidate_target["experiment_id"])
+        candidate_target["experiment_id"] = new_ids["candidate"]
+        for priority in matrix["next_run_priorities"]:
+            if priority.get("proposed_experiment_id") == previous_target_id:
+                priority["proposed_experiment_id"] = new_ids["candidate"]
     for role, new_id in new_ids.items():
         target = next(
             (

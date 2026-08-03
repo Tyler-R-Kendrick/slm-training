@@ -148,6 +148,11 @@ the current-main successor, regenerates and validates the Lean preflight, and
 rebinds the unchanged formal obligation before hypothesis authorization or arm
 execution. This repairs orchestration only; it does not reuse proof evidence,
 weaken the formal gate, or change the frozen model/eval recipes.
+The same replay also exposed an identity gap before execution: governed
+screening retries resolve registered arm suffixes, but promotion candidates use
+the canonical `-promote` identity. Campaign harness v111 maps that identity onto the
+matrix's authorized candidate slot before restoring the exact frozen experiment;
+unknown non-promotion suffixes still fail closed.
 
 The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
 confirmed a champion, c1812 was the next protected promotion slot, and the
