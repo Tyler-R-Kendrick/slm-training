@@ -2656,7 +2656,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v133",
+      "version": "v134",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2696,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v134",
+          "date": "2026-08-03",
+          "note": "Pin tiny scratch train and eval subprocesses to one CPU thread so symmetric fixture arms do not oversubscribe shared hosts and consume their bounded wall envelope before scoreboards."
+        },
         {
           "version": "v133",
           "date": "2026-08-03",

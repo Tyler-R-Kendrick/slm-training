@@ -312,6 +312,14 @@ an ordinary new screening arm, so it stopped before research. Campaign v133
 allows only an explicitly pending confirmation to defer that slot onto smoke;
 all other occupied promotion-slot screening claims still fail, and held-out,
 promotion claim class, and Lean/formal authority remain closed.
+The repaired c1836 invocation then reached both arms but exposed a runtime
+scheduling defect. The candidate reached step 16/20 and the matched control
+step 2/20 before their identical 66.55-second envelopes interrupted training;
+neither reached evaluation. A supporting host sample reported 12 available
+CPUs, 12--14 runnable workers, and up to 95% user CPU while each tiny scratch
+process configured an 11-thread Torch pool. Campaign v134 therefore pins only
+scratch-context train/eval children to one OpenMP/MKL thread, symmetrically.
+GPU/full-context campaigns and the frozen model/data/eval recipes are unchanged.
 
 The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
 confirmed a champion, c1812 was the next protected promotion slot, and the

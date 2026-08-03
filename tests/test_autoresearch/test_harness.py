@@ -4055,6 +4055,34 @@ def test_execute_shares_one_wall_budget_across_stages(monkeypatch) -> None:
     assert outcome.wall_time_budget_seconds == 5.0
 
 
+def test_execute_limits_threads_for_scratch_cpu_stages(monkeypatch) -> None:
+    import slm_training.autoresearch.engine as engine
+
+    monkeypatch.setenv("OMP_NUM_THREADS", "11")
+    monkeypatch.setenv("MKL_NUM_THREADS", "11")
+    scratch = experiment().model_copy(
+        update={
+            "knobs": experiment().knobs.model_copy(
+                update={"context_backend": "scratch"}
+            )
+        }
+    )
+
+    train_env = engine._stage_environment(
+        scratch, ["python", "-m", "scripts.train_model"]
+    )
+    eval_env = engine._stage_environment(
+        scratch, ["python", "-m", "scripts.evaluate_model"]
+    )
+
+    assert train_env and train_env["OMP_NUM_THREADS"] == "1"
+    assert train_env["MKL_NUM_THREADS"] == "1"
+    assert eval_env and eval_env["OMP_NUM_THREADS"] == "1"
+    assert engine._stage_environment(
+        scratch, ["python", "-m", "scripts.build_train_data"]
+    ) is None
+
+
 def test_execute_passes_inner_wall_to_evaluation(monkeypatch) -> None:
     import slm_training.autoresearch.engine as engine
 
