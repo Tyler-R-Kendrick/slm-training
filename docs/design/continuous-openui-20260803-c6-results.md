@@ -21,11 +21,11 @@ Ship gates fail as expected: `insufficient_n` (n=3, need 20), and
 
 ## Screening-bank exhaustion note
 
-This is the fourth screening arm this loop has run against the
+This is the fifth screening arm this loop has run against the
 `wf_smoke_v2` / `steps=20` recipe (after `bounds` [c1], `component-plan`
-fresh-confirm [c3], `component-edge` [c5]) to tie exactly on the declared
-primary. The size-matched knob bank at this exact recipe is increasingly
-exhausted; the next cycle should prioritize a new preregistered
+fresh-confirm [c3], `batch1` [c4], `component-edge` [c5]) to tie exactly on
+the declared primary. The size-matched knob bank at this exact recipe is
+increasingly exhausted; the next cycle should prioritize a new preregistered
 quality-targeted objective rather than rotating through more knob levers at
 the same steps/seed cadence.
 
