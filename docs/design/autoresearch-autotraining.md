@@ -297,6 +297,14 @@ handoff and infrastructure retry priority. Campaign v131 now converts only that
 typed disposition into a durable metric-free `stopped` feedback artifact and
 event. It does not synthesize scores; malformed or non-incomplete handoffs still
 fail closed.
+Cycle c1835 verified that recovery, then exposed a same-invocation ordering gap:
+the continuous driver wrote its agent proposal before `hypothesize` recovered
+the feedback, so the proposal could not acknowledge an ID that did not yet
+exist. Campaign v132 treats the agent provider as the compilation boundary: it
+binds exact supplied feedback and predecessor identities plus priority evidence
+only when the proposal is unbound, rejects any conflicting declaration, and
+leaves the canonical matrix validator unchanged. No arm ran, so c1835 is
+infrastructure evidence rather than a model result.
 
 The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
 confirmed a champion, c1812 was the next protected promotion slot, and the

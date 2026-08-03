@@ -38,6 +38,7 @@ from slm_training.autoresearch.evidence import collect_evidence
 from slm_training.autoresearch.literature import HuggingFacePapersClient
 from slm_training.levers import MAX_RUN_MINUTES, MAX_RUN_SECONDS
 from slm_training.autoresearch.providers import (
+    AgentHypothesisProvider,
     OpenAIHypothesizer,
     OpenAIProposalCompiler,
     OpenAIResearchProvider,
@@ -1252,6 +1253,78 @@ def test_agent_hypothesizer_persists_matrix_and_formation_event(
     ]
     assert sum(row["event_type"] == "experiment_proposed" for row in events) == 5
     assert any(row["event_type"] == "hypothesis_matrix_formed" for row in events)
+
+
+def test_agent_hypothesizer_binds_feedback_recovered_after_proposal(
+    tmp_path: Path,
+) -> None:
+    first = hypothesis_matrix()
+    feedback = HypothesisFeedback(
+        feedback_id="feedback-aaaaaaaaaaaaaaaa",
+        campaign_id="test-campaign",
+        matrix_id=first.matrix_id,
+        experiment_id="hyp-0",
+        hypothesis=first.hypotheses[0].experiment.hypothesis,
+        knob_signature='{"steps": 100}',
+        outcome_status="stopped",
+        diagnosis_target="infrastructure",
+        diagnosis_evidence=("The prior measurement was incomplete.",),
+        recommended_actions=("Replay the matched arms.",),
+    )
+    successor = hypothesis_matrix(matrix_id="matrix-2", offset=10)
+    matrix_path = tmp_path / "late-feedback.json"
+    matrix_path.write_text(successor.model_dump_json(), encoding="utf-8")
+
+    result = AgentHypothesisProvider(matrix_path).propose(
+        campaign(), matrix_evidence(), [], (feedback,)
+    )
+
+    assert result.matrix.feedback_ids == (feedback.feedback_id,)
+    assert result.matrix.predecessor_matrix_id == first.matrix_id
+    assert all(
+        feedback.feedback_id in priority.evidence_ids
+        for priority in result.matrix.next_run_priorities
+    )
+    validate_hypothesis_matrix(
+        campaign(),
+        result.matrix,
+        matrix_evidence(),
+        [],
+        feedback=(feedback,),
+        previous_matrix=first,
+    )
+
+
+def test_agent_hypothesizer_rejects_conflicting_recovered_feedback(
+    tmp_path: Path,
+) -> None:
+    feedback = HypothesisFeedback(
+        feedback_id="feedback-aaaaaaaaaaaaaaaa",
+        campaign_id="test-campaign",
+        matrix_id="matrix-1",
+        experiment_id="hyp-0",
+        hypothesis="A sufficiently detailed prior hypothesis.",
+        knob_signature='{"steps": 100}',
+        outcome_status="stopped",
+        diagnosis_target="infrastructure",
+        diagnosis_evidence=("The prior measurement was incomplete.",),
+        recommended_actions=("Replay the matched arms.",),
+    )
+    matrix_path = tmp_path / "conflicting-feedback.json"
+    matrix_path.write_text(
+        hypothesis_matrix(
+            matrix_id="matrix-2",
+            predecessor_matrix_id="other-matrix",
+            feedback_ids=("feedback-bbbbbbbbbbbbbbbb",),
+            offset=10,
+        ).model_dump_json(),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="conflicts with supplied feedback ids"):
+        AgentHypothesisProvider(matrix_path).propose(
+            campaign(), matrix_evidence(), [], (feedback,)
+        )
 
 
 def test_hypothesizer_forms_feedback_linked_successor_matrix(tmp_path: Path) -> None:
