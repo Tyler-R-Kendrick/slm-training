@@ -1,0 +1,71 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c4",
+  "cycle_index": 4,
+  "source_commit": "318492c5",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "cycle_intent": "screening",
+  "arms": {
+    "c4-control": {
+      "trainable_params": 1608960,
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.4166666666666667,
+        "component_type_recall": 0.25,
+        "binder_reference_f1": 0.9523809523809524,
+        "placeholder_fidelity": 0.9166666666666666,
+        "latency_ms_p50": 9007.93
+      }
+    },
+    "c4-batch1": {
+      "trainable_params": 1608960,
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.4166666666666667,
+        "component_type_recall": 0.25,
+        "binder_reference_f1": 0.9523809523809524,
+        "placeholder_fidelity": 0.9166666666666666,
+        "latency_ms_p50": 7514.4
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "document only -- no stacked PR for a non-positive cycle",
+    "reasons": [
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c4-control",
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c4-batch1",
+      "efficiency_win:mpr_per_ms:3.7004432e-05->4.4359275e-05:gain_fraction=0.19875572:minimum=0.05",
+      "quality_held:parse=1.0 mpr=0.3333333333333333",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.4166666666666667 candidate=0.4166666666666667 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "conclusion": "Continuous-openui-local loop, cycle 4: 'batch1' arm (a batch-size/runtime lever, 1,608,960 trainable params) vs its matched control. Every quality metric ties exactly between arms (parse_rate=1.0, meaningful_program_rate=.3333, structural_similarity=.41667, component_type_recall=.25, binder_reference_f1=.95238, placeholder_fidelity=.91667 on both) -- only p50 latency differs (9007.93ms -> 7514.4ms, ~16.6% faster), which the driver also scores as an mpr_per_ms efficiency gain of 19.9% (above the 5% minimum). Despite that efficiency signal, the harness's climb-policy rule that 'an efficiency ratio cannot override the role-owned quality primary' fires because the declared screening primary (smoke.structural_similarity) shows zero movement (primary_metric_null_or_worse); this forces the cycle to non-positive by design, preventing a pure latency/efficiency delta on an otherwise-tied arm from being mislabeled as a quality win. Ship gates fail as expected (insufficient_n=3, missing held_out/adversarial/ood/rico_held). Checkpoints are local scratch (sync_checkpoints=false), never reusable/promotable/syncable/shippable; no MODEL_CARD change, consistent with prior cycles in this loop.",
+  "next_priorities": [
+    "The completed non-positive arm is exhausted; test the distinct size-matched 'component-edge' quality hypothesis next (rank 1, confidence 0.90)",
+    "Keep the matched control as the size-matched baseline every cycle (rank 2, confidence 0.70)",
+    "Soft ship-gate fails on fixture n never stop the continuous loop (rank 4, confidence 0.80)"
+  ],
+  "recorded_at": "2026-08-03T06:52:13Z"
+}
