@@ -670,6 +670,16 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         {"compiler_decision_token_loss_weight": 1.0},
     ),
     (
+        "compiler-decision-margin",
+        "Grammar-oracle alignment across every compiler-decision family makes each gold legal branch outrank its legal siblings without lowering parse_rate or binder_reference_f1.",
+        {
+            "compiler_alignment_loss_weight": 1.0,
+            "compiler_alignment_margin": 1.0,
+            "compiler_alignment_stratified": True,
+            "compiler_alignment_kind_filter": "all",
+        },
+    ),
+    (
         "structure-token",
         "Direct grammar STRUCT-token reconstruction weighting repairs scaffold formation and structural_similarity without lowering parse_rate or binder_reference_f1.",
         {"structure_token_loss_weight": 1.0},
@@ -1148,6 +1158,11 @@ def _arm_slug_from_knobs(
         and knobs.get("compiler_alignment_kind_filter") == "component-edge"
     ):
         return "component-edge-margin"
+    if (
+        knobs.get("compiler_alignment_loss_weight")
+        and knobs.get("compiler_alignment_kind_filter") == "all"
+    ):
+        return "compiler-decision-margin"
     if knobs.get("ltr_tail_loss_weight"):
         return "literal-close"
     if knobs.get("ltr_prefix_loss_weight"):
@@ -1511,6 +1526,9 @@ def _should_enqueue_champion(delivery: dict[str, Any]) -> bool:
     if not delivery.get("positive"):
         return False
     reasons = list(delivery.get("reasons") or [])
+    primary_leaf = str(delivery.get("primary_metric") or "").rsplit(".", 1)[-1]
+    if primary_leaf != "latency_ms_p50" and _confirmation_quality_reheld(delivery):
+        return True
     if _quality_held_reasons(reasons):
         return True
     # Efficiency / primary latency win only when quality_held co-tagged.
@@ -1520,6 +1538,20 @@ def _should_enqueue_champion(delivery: dict[str, Any]) -> bool:
     ):
         return _quality_held_reasons(reasons)
     return False
+
+
+def _screening_enqueue_allowed(
+    *, cycle_intent: str, replay: dict[str, Any] | None
+) -> bool:
+    """Preserve screening queue semantics across an exact frozen retry."""
+
+    if cycle_intent in {"screening", "promotion"}:
+        return True
+    return bool(
+        cycle_intent == "retry_measurement"
+        and replay is not None
+        and replay["handoff"].cycle_role == "screening"
+    )
 
 
 def _is_champion_lever(knobs: dict[str, Any], *, candidate_id: str = "") -> bool:
@@ -4470,8 +4502,10 @@ def _write_cycle_handoff(
         climb_state = "rejected"
     elif measurement_incomplete:
         climb_state = "inconclusive"
-    elif delivery.get("positive"):
+    elif resolution is not None and resolution.get("status") == "queued":
         climb_state = "candidate_queued"
+    elif delivery.get("positive"):
+        climb_state = "inconclusive"
     else:
         climb_state = "rejected"
 
@@ -7565,7 +7599,7 @@ def run_cycle(
         )
     else:
         # Only screening thrash quality-held wins enqueue (not promotion thrash noise).
-        if cycle_intent in {"screening", "promotion"}:
+        if _screening_enqueue_allowed(cycle_intent=cycle_intent, replay=replay):
             resolution = _enqueue_champion(
                 root=root,
                 loop_id=loop_id,

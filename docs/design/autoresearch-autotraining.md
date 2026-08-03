@@ -209,6 +209,15 @@ decision-token arm improves smoke structure `.05237→.14623`, meaningful rate
 parse, binder F1, and fidelity held. This is a three-document screening signal,
 not ship evidence: equality remains zero and the unchanged absolute gates fail.
 The recipe therefore enters fresh-seed confirmation, not promotion or RL.
+Cycle c1823 repeats the same size-matched recipe at seed 101823 and falsifies
+that screening effect: both arms score `.0575` structure, zero meaningful rate,
+zero component recall, `.48889` binder F1, `.38889` fidelity, and zero reward;
+the candidate is also 0.92% slower. Campaign harness v121 closes the queue
+bookkeeping gap exposed by the replay path and opens `compiler-decision-margin`,
+a zero-parameter stratified alignment objective over every compiler-decision
+family. It optimizes only the gold-versus-legal-sibling ranking already consumed
+by constrained decode; grammar authority and legal candidate domains are
+unchanged.
 
 The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
 confirmed a champion, c1812 was the next protected promotion slot, and the
