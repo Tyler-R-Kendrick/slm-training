@@ -32,7 +32,9 @@ Ship gates fail as expected: `insufficient_n` (n=3, need 20), and
 **Non-positive** (`primary_metric_null_or_worse` overrides the efficiency
 signal). Per `sdlc` autotrain-iteration-delivery: docs-only local commit, no
 stacked layer. Checkpoints are local scratch (`sync_checkpoints=false`),
-never reusable/promotable/syncable/shippable; no MODEL_CARD change.
+never reusable/promotable/syncable/shippable; logged in
+[`docs/MODEL_CARD.md`](../MODEL_CARD.md) checkpoint history and the README
+summary per the model-card duty for created checkpoints.
 
 ## Next priorities (ranked by the driver)
 

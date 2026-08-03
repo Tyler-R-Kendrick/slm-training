@@ -41,8 +41,9 @@ without a new preregistered hypothesis.
 `efficiency_win_rejected_min_effect`, `confirmation_rejected`). Per `sdlc`
 autotrain-iteration-delivery: docs-only local commit, no stacked layer.
 Checkpoints are local scratch (`sync_checkpoints=false`), never
-reusable/promotable/syncable/shippable; no MODEL_CARD change, consistent with
-the cycle-1/cycle-2 precedent in this same loop.
+reusable/promotable/syncable/shippable; logged in
+[`docs/MODEL_CARD.md`](../MODEL_CARD.md) checkpoint history and the README
+summary per the model-card duty for created checkpoints.
 
 ## Next priorities (ranked by the driver)
 
