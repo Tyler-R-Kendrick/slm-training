@@ -2656,7 +2656,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v129",
+      "version": "v130",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2696,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v130",
+          "date": "2026-08-03",
+          "note": "Treat evidence-bound blocked steering receipts as terminal for execution discovery so impossible frozen retries cannot be selected after predecessor gating advances."
+        },
         {
           "version": "v129",
           "date": "2026-08-03",

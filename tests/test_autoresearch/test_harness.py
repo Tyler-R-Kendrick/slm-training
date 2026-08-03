@@ -82,6 +82,7 @@ from slm_training.autoresearch.storage import (
     _run_exposure_text,
     append_autotrain_action_receipt,
     autotrain_action_sha256,
+    bind_autotrain_action_evidence,
     pending_autotrain_actions,
     pending_autotrain_execution_actions,
     render_loop_result_matrix,
@@ -1551,6 +1552,26 @@ def test_ack_action_receipt_closes_predecessor_prerequisite(tmp_path: Path) -> N
     assert [
         action.kind for _, action in pending_autotrain_execution_actions(root, handoff)
     ] == ["next_experiment"]
+
+    append_autotrain_action_receipt(
+        root,
+        AutotrainActionReceiptV1(
+            loop_id="loop-1",
+            campaign_id=campaign_id,
+            action_index=1,
+            action_sha256=autotrain_action_sha256(handoff.actions[1]),
+            action_kind="next_experiment",
+            status="blocked",
+            evidence_uris=("docs/design/autoresearch-autotraining.md",),
+            evidence=bind_autotrain_action_evidence(
+                root,
+                handoff,
+                handoff.actions[1],
+                ("docs/design/autoresearch-autotraining.md",),
+            ),
+        ),
+    )
+    assert pending_autotrain_execution_actions(root, handoff) == ()
 
     stopped_handoff = handoff.model_copy(
         update={

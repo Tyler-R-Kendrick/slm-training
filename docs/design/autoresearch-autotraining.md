@@ -283,6 +283,13 @@ evidence exists. Campaign v129 pins every confirmation to screening endpoints
 regardless of cadence and represents incomplete confirmation as retryable
 `confirmation_inconclusive`. Held-out suites and Lean/formal remain closed until
 a complete fresh-seed screening confirmation succeeds.
+Cycle c1833 then found a receipt-ledger split: predecessor gating advanced past
+the evidence-bound blocked c1832 retry, but execution discovery still selected
+that same invalid frozen manifest because it recognized only `completed`
+receipts. No arm ran. Campaign v130 treats `blocked` as terminal for steering
+discovery while keeping repair, documentation, and delivery prerequisites
+completed-only. The audit trail remains append-only and the corrected smoke
+confirmation stays reachable.
 
 The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
 confirmed a champion, c1812 was the next protected promotion slot, and the

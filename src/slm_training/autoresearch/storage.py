@@ -216,6 +216,7 @@ def _pending_autotrain_actions(
     handoff: AutotrainCycleHandoffV1,
     *,
     kinds: frozenset[str],
+    acknowledged_statuses: frozenset[str] = frozenset({"completed"}),
 ) -> tuple[tuple[int, AutotrainActionV1], ...]:
     path = Path(root) / "loops" / handoff.loop_id / "action_receipts.jsonl"
     completed: set[tuple[int, str]] = set()
@@ -227,7 +228,7 @@ def _pending_autotrain_actions(
                 continue
             if (
                 receipt.campaign_id == handoff.campaign_id
-                and receipt.status == "completed"
+                and receipt.status in acknowledged_statuses
                 and receipt.action_index < len(handoff.actions)
                 and _receipt_satisfies_action(
                     root,
@@ -258,7 +259,12 @@ def pending_autotrain_execution_actions(
 ) -> tuple[tuple[int, AutotrainActionV1], ...]:
     """Return unacknowledged steering actions for the successor cycle."""
 
-    return _pending_autotrain_actions(root, handoff, kinds=_EXECUTION_ACTION_KINDS)
+    return _pending_autotrain_actions(
+        root,
+        handoff,
+        kinds=_EXECUTION_ACTION_KINDS,
+        acknowledged_statuses=frozenset({"completed", "blocked"}),
+    )
 
 
 def _payload(value: BaseModel | dict[str, Any]) -> dict[str, Any]:
