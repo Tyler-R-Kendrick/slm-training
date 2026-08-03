@@ -5818,6 +5818,67 @@ def test_repeated_cycle_failure_blocks_on_third_identical_error(tmp_path: Path) 
     assert state["blocker_count"] == 3
 
 
+def test_completed_candidate_priorities_accepts_dynamic_successor() -> None:
+    """Dynamic compose arms must not raise StopIteration in priority steering."""
+    _mod._DYNAMIC_THRASH_ARMS.clear()
+    _mod._DYNAMIC_THRASH_ARMS.append(
+        (
+            "compose-ltr-tail-ltr-prefix",
+            "Joint ltr tail and prefix.",
+            {
+                "ltr_tail_loss_weight": 2.0,
+                "ltr_prefix_loss_weight": 1.0,
+                "_thrash_slug": "compose-ltr-tail-ltr-prefix",
+            },
+        )
+    )
+    matrix = {
+        "hypotheses": [
+            {
+                "experiment": {
+                    "experiment_id": "c-control",
+                    "knobs": {},
+                    "hypothesis": "control",
+                }
+            },
+            {
+                "experiment": {
+                    "experiment_id": "c-bounds",
+                    "knobs": {"grammar_completion_bounds": True},
+                    "hypothesis": "bounds",
+                }
+            },
+        ],
+        "next_run_priorities": [
+            {
+                "rank": 1,
+                "area": "model_build",
+                "hypothesis": "try bounds",
+                "evidence_ids": ["a"],
+                "confidence": 0.9,
+                "expected_information_gain": "x",
+                "authority": "observed_result",
+                "disposition": "experiment_next",
+                "proposed_experiment_id": "c-bounds",
+            }
+        ],
+    }
+    # Skip every static quality arm so selection falls through to compose-*.
+    skip = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
+    rows = _mod._completed_candidate_priorities(
+        matrix,
+        "c-bounds",
+        resolved_infrastructure=True,
+        skip_slugs=skip,
+    )
+    assert rows  # must not raise StopIteration
+    assert any(
+        (p.proposed_experiment_id or "").endswith("compose-ltr-tail-ltr-prefix")
+        or "compose" in str(p.hypothesis or "")
+        for p in rows
+    ) or any(p.disposition == "monitor" for p in rows)
+
+
 def test_self_heal_thrash_bank_composes_successors(tmp_path: Path) -> None:
     """Bank exhaust must self-heal by composing size-matched thrash arms."""
     _mod._DYNAMIC_THRASH_ARMS.clear()
