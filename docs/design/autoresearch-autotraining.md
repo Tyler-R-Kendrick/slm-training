@@ -136,6 +136,45 @@ use `--compiler openai`, whose default is `gpt-5.6-sol` with `store=False`.
 
 ## Closed loop
 
+The c1806 screen rejects direct grammar `STRUCT`-token weighting: it lowers
+typed structure CE but regresses smoke structure and raises p50 more than 3x.
+Attribution shows component CE worsens while the 61-token structure family
+improves, exposing a count-imbalance tradeoff. Campaign harness v106 adds a
+zero-parameter, count-normalized component/`STRUCT` family-mean auxiliary as
+the distinct successor; legality and constrained decoding are unchanged. See
+[`autotrain-cycle-1806-structure-token-rejected.md`](autotrain-cycle-1806-structure-token-rejected.md).
+
+The c1805 exact frozen replay reproduced the c1804 control-only typed decode
+timeout. Component-token weighting is therefore a runtime-specific unblock,
+but its `.081733` structure and `7186.02` ms p50 fail absolute quality and
+latency expectations. The arm is retired. Campaign harness v105 adds a
+zero-parameter, size-matched `STRUCT`-token reconstruction successor with
+typed loss attribution; it targets scaffold formation without changing the
+grammar domain or constrained decoder. See
+[`autotrain-cycle-1805-component-token-rejected.md`](autotrain-cycle-1805-component-token-rejected.md).
+
+The c1804 component-token screen is incomplete because the matched control
+timed out on all three smoke records. Candidate-only gains in component recall,
+meaningful-program rate, binder F1, and fidelity are non-attributable; its low
+structure and high latency remain warning signals. Per-family attribution shows
+the objective reduced last-batch component CE `22.0968→17.5132`. The typed
+handoff requires one exact frozen replay. See
+[`autotrain-cycle-1804-component-token-incomplete.md`](autotrain-cycle-1804-component-token-incomplete.md).
+
+The c1803 screening result rejects `ltr_prefix_loss_weight=1`: it ties every
+smoke quality metric and worsens p50 by 174.21 ms. Campaign harness v104 adds
+direct component-token reconstruction weighting plus per-step component,
+prefix, and non-component CE/count attribution, targeting observed component
+recall .16667 without changing capacity or constrained decode authority. See
+[`autotrain-cycle-1803-scaffold-prefix-null.md`](autotrain-cycle-1803-scaffold-prefix-null.md).
+
+The c1802 screening result rejects `design_md_dropout=.25`: against its
+size-matched control it reduced smoke structure `.174167→.096400`, component
+recall `.25→.0833`, and meaningful-program rate `.3333→0`. Campaign harness
+v103 therefore preregisters zero-parameter prefix-LTR supervision as the next
+distinct scaffold-learning hypothesis. See
+[`autotrain-cycle-1802-design-dropout-rejected.md`](autotrain-cycle-1802-design-dropout-rejected.md).
+
 ```text
 repo lineage + HF Daily Papers + web + prior artifacts
                          |
@@ -260,6 +299,21 @@ This follows three complete loss-only nulls where targets and auxiliary learning
 signals were present but the trained head was not directly consumed at decode.
 The decode weight may rank only grammar-legal candidates and never weakens I6.
 Champion fingerprints retain both weights through confirmation and promotion.
+After those registered quality families and their later binder/fidelity/alignment
+successors are exhausted, the continuous bank advances to
+`symbol_slot_augmentation=true`. That arm permutes request-local slots and
+alpha-renames binders during training against an otherwise identical `false`
+control. It is parameter-size matched, remains grammar constrained, and tests
+opaque-symbol generalization without introducing surface-name features. If that
+approach is rejected, `mask_pattern=mixed` is the next registered same-size
+training-method arm against explicit `random`; it changes corruption exposure,
+not deterministic decode legality. A null or rejected mixed-mask arm advances
+to `symbol_boundary_loss_weight=1` against zero. That objective reweights the
+existing output-token CE at opaque-symbol positions and their immediate
+neighbors, adds no head or parameters, and does not affect the grammar oracle.
+If boundary supervision is null, the next arm uses deterministic
+`design_md_dropout=0.25` against zero to test scaffold-context reliance without
+changing model size or constrained decode authority.
 
 ### Program experiments route through this loop (G1, SLM-46)
 

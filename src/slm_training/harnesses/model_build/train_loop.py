@@ -275,11 +275,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     contrast_fraction = float(getattr(config, "semantic_contrast_fraction", 0.0) or 0.0)
     contrast_pairs = []
     contrast_dir = getattr(config, "semantic_contrast_dir", None)
-    if contrast_weight > 0.0:
-        if contrast_dir is None:
-            raise ValueError(
-                "semantic_contrast_loss_weight requires semantic_contrast_dir"
-            )
+    if contrast_weight > 0.0 and contrast_dir is None:
+        raise ValueError("semantic_contrast_loss_weight requires semantic_contrast_dir")
+    if contrast_dir is not None:
         if not 0.0 < contrast_fraction <= 1.0:
             raise ValueError("semantic_contrast_fraction must be in (0, 1]")
         if config.batch_size < 2:
@@ -1368,7 +1366,32 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "seed": config.seed,
             "steps_requested": config.steps,
             "batch_size": config.batch_size,
+            "mask_pattern": str(getattr(config, "mask_pattern", "random") or "random"),
+            "runtime_symbol_features": str(
+                getattr(config, "runtime_symbol_features", "none") or "none"
+            ),
+            "symbol_slot_augmentation": bool(
+                getattr(config, "symbol_slot_augmentation", False)
+            ),
+            "semantic_candidate_masks": bool(
+                getattr(config, "semantic_candidate_masks", False)
+            ),
+            "constraint_graph_mode": str(
+                getattr(config, "constraint_graph_mode", "off") or "off"
+            ),
             "ltr_loss_weight": getattr(config, "ltr_loss_weight", 0.0),
+            "ltr_prefix_loss_weight": getattr(
+                config, "ltr_prefix_loss_weight", 0.0
+            ),
+            "component_token_loss_weight": getattr(
+                config, "component_token_loss_weight", 0.0
+            ),
+            "structure_token_loss_weight": getattr(
+                config, "structure_token_loss_weight", 0.0
+            ),
+            "typed_family_balance_loss_weight": getattr(
+                config, "typed_family_balance_loss_weight", 0.0
+            ),
             "ltr_tail_loss_weight": getattr(config, "ltr_tail_loss_weight", 0.0),
             "ltr_tail_tokens": getattr(config, "ltr_tail_tokens", 0),
             "compiler_alignment_loss_weight": getattr(
@@ -1506,6 +1529,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             ),
             "root_reference_identity_decode_weight": getattr(
                 config, "root_reference_identity_decode_weight", 0.0
+            ),
+            "symbol_boundary_loss_weight": getattr(
+                config, "symbol_boundary_loss_weight", 0.0
             ),
             "fuse_ltr_loss": bool(getattr(config, "fuse_ltr_loss", True)),
             "fidelity_loss_weight": getattr(config, "fidelity_loss_weight", 0.0),

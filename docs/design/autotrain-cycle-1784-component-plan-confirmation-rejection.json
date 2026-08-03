@@ -1,0 +1,44 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1784",
+  "cycle_index": 1784,
+  "cycle_intent": "confirm",
+  "evidence_class": "fixture",
+  "decision": "rejected_fresh_confirmation_quality_tie_efficiency_below_minimum",
+  "scoreable": true,
+  "new_checkpoint_created": true,
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1784-confirm",
+      "manifest_sha256": "73dc371cb604fcdb2d55283e8000304cc3c2215258e5a6edc31c87691447fd1c",
+      "checkpoint_sha256": "9f6aa2f6c0876900190ff902d48bf0a9bcba61f7501d5d43972d21d4eadb9c2b",
+      "params": 1755764,
+      "train": {"device": "cpu", "steps": 21, "batch_size": 2, "seed": 101784, "last_loss": 15.503561973571777, "elapsed_wall_seconds": 6.522938826994505},
+      "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.057499999999999996, "binder_reference_f1": 0.8222222222222223, "placeholder_fidelity": 0.7222222222222222, "reward_score": 0.0, "latency_ms_p50": 1246.97},
+      "held_out": {"n": 5, "parse_rate": 1.0, "meaningful_program_rate": 0.2, "structural_similarity": 0.08940000000000001, "binder_reference_f1": 0.7076190476190476, "placeholder_fidelity": 0.58, "reward_score": 0.0, "latency_ms_p50": 1249.79},
+      "effective_runtime_flags": {"compact_active_canvas": false, "grammar_completion_bounds": false, "component_plan_decode_weight": 1.0}
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1784-control",
+      "manifest_sha256": "e8bf37ddaa3d23cb85a1dbd8058297cd389e59a151f40dd42611c00677848be4",
+      "checkpoint_sha256": "19abd599df33b9a2d79e30da7ad1e89971fdb97d30b092d08a47d78bcb019f00",
+      "params": 1755764,
+      "train": {"device": "cpu", "steps": 21, "batch_size": 2, "seed": 101784, "last_loss": 11.333019256591797, "elapsed_wall_seconds": 2.738321251992602},
+      "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.057499999999999996, "binder_reference_f1": 0.8222222222222223, "placeholder_fidelity": 0.7222222222222222, "reward_score": 0.0, "latency_ms_p50": 1373.19},
+      "held_out": {"n": 5, "parse_rate": 1.0, "meaningful_program_rate": 0.2, "structural_similarity": 0.08940000000000001, "binder_reference_f1": 0.7076190476190476, "placeholder_fidelity": 0.58, "reward_score": 0.0, "latency_ms_p50": 1287.42},
+      "effective_runtime_flags": {"compact_active_canvas": false, "grammar_completion_bounds": false, "component_plan_decode_weight": 0.0}
+    }
+  ],
+  "comparison": {"quality_exact_tie": true, "candidate_smoke_latency_fraction_change": -0.09191736030702236, "candidate_held_out_latency_fraction_change": -0.0292290006369329, "candidate_train_wall_fraction_change": 1.3820940739688377, "held_out_efficiency_below_minimum": true, "trainable_params_matched": true, "runtime_flags_attributable": true},
+  "agentv": {"bundles_complete": true, "execution_errors": 0, "ship_gates_pass": false},
+  "checkpoint_policy": "local_explicit_no_sync_rejected_not_reusable_not_promoted_not_ship",
+  "lean": "not_applicable:confirmation",
+  "next_priority": "distinct_size_matched_certified_quality_objective_batch_size_runtime_diagnostic_only",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "15f9e40b0716c4fa57fdfd601212daf6b7a117ad",
+    "code_dirty": false,
+    "components": {"config.levers": "v30", "harness.model_build.eval": "v76", "harness.experiment_feature_flags": "v4", "evals.meaningful_program": "2.13.0", "evals.power_protocol": "v8", "evals.scoring": "v22", "model.twotower": "v291"},
+    "stamped_at": "2026-08-02T18:54:30.441631+00:00"
+  }
+}

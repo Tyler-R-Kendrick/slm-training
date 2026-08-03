@@ -2656,7 +2656,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v86",
+      "version": "v106",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2696,116 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v106",
+          "date": "2026-08-03",
+          "note": "Add a zero-parameter count-normalized component and STRUCT family-mean objective after direct STRUCT weighting exposed a cross-family CE tradeoff."
+        },
+        {
+          "version": "v105",
+          "date": "2026-08-02",
+          "note": "Add a size-matched grammar STRUCT-token reconstruction arm and typed structure loss attribution after component-token weighting reproduced only a runtime-specific unblock."
+        },
+        {
+          "version": "v104",
+          "date": "2026-08-02",
+          "note": "no-bump: record c1804 incomplete component-token fixture evidence and its exact frozen replay requirement; campaign behavior is unchanged"
+        },
+        {
+          "version": "v104",
+          "date": "2026-08-02",
+          "note": "Add direct component-token reconstruction weighting and per-step token-family loss attribution after prefix supervision was null."
+        },
+        {
+          "version": "v103",
+          "date": "2026-08-02",
+          "note": "Add a zero-parameter prefix-LTR scaffold objective after DESIGN context dropout regressed structural quality."
+        },
+        {
+          "version": "v102",
+          "date": "2026-08-02",
+          "note": "Add a zero-parameter deterministic DESIGN.md context-dropout arm after symbol-boundary supervision was null."
+        },
+        {
+          "version": "v101",
+          "date": "2026-08-02",
+          "note": "Project the next current registered arm when a completed predecessor's frozen matrix predates that arm, without mutating the locked matrix."
+        },
+        {
+          "version": "v100",
+          "date": "2026-08-02",
+          "note": "Add a zero-parameter symbol-boundary training objective after the screening bank exhausted and make candidate campaign locks fingerprint slot, mask, and boundary controls against their true off states."
+        },
+        {
+          "version": "v99",
+          "date": "2026-08-02",
+          "note": "Bind screening primary projection to its actually evaluated suite and add a size-matched mixed-corruption successor after slot augmentation exhausted."
+        },
+        {
+          "version": "v98",
+          "date": "2026-08-02",
+          "note": "Add a size-matched slot-permutation and alpha-renaming augmentation successor after the continuous quality-arm bank exhausted, with stable slugging and champion replay identity."
+        },
+        {
+          "version": "v97",
+          "date": "2026-08-02",
+          "note": "Extract every evaluation suite headline independently of verbose per-record telemetry so held-out primaries cannot disappear from outcomes and terminal matrices."
+        },
+        {
+          "version": "v96",
+          "date": "2026-08-02",
+          "note": "Recover historical frozen-replay parameter counts only from content-bound source train summaries so the terminal result matrix preserves size evidence."
+        },
+        {
+          "version": "v95",
+          "date": "2026-08-02",
+          "note": "Require candidate-only evidence before terminal runtime rejection and carry content-bound trainable-parameter provenance into frozen-reuse outcomes and result matrices."
+        },
+        {
+          "version": "v94",
+          "date": "2026-08-02",
+          "note": "Treat promotion cadence as an opportunity for a prior screening winner: when no queued or confirmed target exists, fall back to smoke-only screening instead of leaking a fresh arm into held-out promotion suites."
+        },
+        {
+          "version": "v93",
+          "date": "2026-08-02",
+          "note": "Project confirmation rows from the authoritative champion queue, route exhausted banks to typed harness expansion, and add a causally matched semantic-contrast successor with identical pair exposure in both arms."
+        },
+        {
+          "version": "v92",
+          "date": "2026-08-02",
+          "note": "Add compiler-decision component-edge alignment as a distinct size-matched train-only successor family after the registered screening bank is honestly exhausted."
+        },
+        {
+          "version": "v91",
+          "date": "2026-08-02",
+          "note": "Fail confirmation closed unless the policy-owned primary quality metric wins without required non-regression breaches; make queue resolution authoritative and revalidate historical false confirmations before promotion selection."
+        },
+        {
+          "version": "v90",
+          "date": "2026-08-02",
+          "note": "Bypass the exhausted screening-arm selector for confirmation and promotion cycles, whose exact recipes already come from the champion queue."
+        },
+        {
+          "version": "v89",
+          "date": "2026-08-02",
+          "note": "Close complete non-positive frozen-replay arms across lineage, reclassify complete historical receipts under current promotion policy so stale positives cannot reopen rejected approaches, bound terminal result-matrix cells, and add a size-matched placeholder-fidelity successor objective after bank exhaustion."
+        },
+        {
+          "version": "v88",
+          "date": "2026-08-02",
+          "note": "no-bump: move the binder-quality control parity parameter rows into the canonical external case resource; assertions and harness behavior are unchanged."
+        },
+        {
+          "version": "v88",
+          "date": "2026-08-02",
+          "note": "Prevent predecessor priorities from reopening lineage-closed arms, apply the bounded latency tradeoff to every quality-primary win, and revalidate durable champion entries under current harness policy."
+        },
+        {
+          "version": "v87",
+          "date": "2026-08-02",
+          "note": "Make rejected screening approaches lineage-wide exclusions, fail closed when the registered bank is exhausted, and add size-matched binder-arity and binder-component-plan quality objectives instead of recycling old runtime arms."
+        },
         {
           "version": "v86",
           "date": "2026-08-02",
@@ -7287,6 +7397,91 @@
       "history": [
         {
           "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1806 rejected STRUCT-token checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: record the c1805 frozen component-token replay disposition in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1804 incomplete component-token checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1803 rejected scaffold-prefix checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1802 rejected DESIGN-dropout checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1801 rejected symbol-boundary checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1800 rejected mixed-mask checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1799 rejected slot-augmentation checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1796 incomplete semantic-contrast checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1795 rejected edge-alignment checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1793 rejected placeholder-fidelity confirmation checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1791 placeholder-fidelity fixture-candidate checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1789 incomplete binder-component-plan checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1788 rejected binder-arity checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1786 rejected steps checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1785 recycled-bounds null checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1784 component-plan confirmation rejection checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
           "date": "2026-08-02",
           "note": "no-bump: add honest c1783 fixture-efficiency candidate checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
         },
@@ -8207,7 +8402,7 @@
       ]
     },
     "harness.experiments.slm292_semantic_contrast_objective": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm292_semantic_contrast_objective.py",
@@ -8217,6 +8412,11 @@
         "docs/design/iter-slm292-semantic-contrast-objective-20260725.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-02",
+          "note": "Make semantic-contrast controls pair-exposure matched and project historical external marker aliases through one shared opaque ordinal codec before model training."
+        },
         {
           "version": "v1",
           "date": "2026-07-25",
@@ -8961,7 +9161,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v76",
+      "version": "v77",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -8982,6 +9182,11 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v77",
+          "date": "2026-08-02",
+          "note": "Prefer the production batch request API when a decoder also exposes single-record stats, retaining row-tagged DecodeStats while restoring I4 compacted evaluation and disclosing configured and observed chunk sizes."
+        },
         {
           "version": "v76",
           "date": "2026-08-02",
@@ -9435,7 +9640,7 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v29",
+      "version": "v36",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
@@ -9443,6 +9648,41 @@
         "src/slm_training/harnesses/quality/__init__.py"
       ],
       "history": [
+        {
+          "version": "v36",
+          "date": "2026-08-03",
+          "note": "Persist the typed family-balance objective weight and active-family auxiliary attribution in training evidence."
+        },
+        {
+          "version": "v35",
+          "date": "2026-08-02",
+          "note": "Persist the grammar STRUCT-token objective weight and typed structure loss attribution in training evidence."
+        },
+        {
+          "version": "v34",
+          "date": "2026-08-02",
+          "note": "Persist component-token objective weight and token-family loss attribution in training evidence."
+        },
+        {
+          "version": "v33",
+          "date": "2026-08-02",
+          "note": "Record the prefix-LTR auxiliary loss weight in every training recipe."
+        },
+        {
+          "version": "v32",
+          "date": "2026-08-02",
+          "note": "Record the symbol-boundary auxiliary loss weight in every training recipe."
+        },
+        {
+          "version": "v31",
+          "date": "2026-08-02",
+          "note": "Record corruption pattern, runtime symbol features, slot augmentation, semantic masks, and constraint-graph mode in every training recipe."
+        },
+        {
+          "version": "v30",
+          "date": "2026-08-02",
+          "note": "Allow declared semantic-contrast pair exposure with zero contrast weight so matched controls differ from treatment only in the objective weight."
+        },
         {
           "version": "v29",
           "date": "2026-08-02",
@@ -9672,6 +9912,11 @@
         "docs/design/ldi3-04-remine-intervene-campaign-report-20260718.json"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: persist content-bound trainable-parameter provenance for autotrain stage reuse without changing preference remine campaign behavior"
+        },
         {
           "version": "v3",
           "date": "2026-08-02",
@@ -11237,7 +11482,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v291",
+      "version": "v298",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -11280,6 +11525,46 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v298",
+          "date": "2026-08-03",
+          "note": "Add a zero-parameter count-normalized auxiliary with equal component and STRUCT family-mean contribution."
+        },
+        {
+          "version": "v297",
+          "date": "2026-08-02",
+          "note": "Add zero-parameter grammar STRUCT-token reconstruction weighting with raw structure-family CE attribution."
+        },
+        {
+          "version": "v296",
+          "date": "2026-08-02",
+          "note": "Add zero-parameter component-token reconstruction weighting with raw component, prefix, and non-component CE attribution."
+        },
+        {
+          "version": "v295",
+          "date": "2026-08-02",
+          "note": "Expose the existing zero-parameter opaque-symbol boundary loss through the canonical train CLI and typed autoresearch compiler."
+        },
+        {
+          "version": "v294",
+          "date": "2026-08-02",
+          "note": "Project legacy semantic-contrast pair sides through one shared opaque slot codec before model use, preserving pair identity while enforcing output contract v2."
+        },
+        {
+          "version": "v293",
+          "date": "2026-08-02",
+          "note": "Extend the canonical train_model structural auxiliary profile enum with binder-arity and binder-component-plan so governed size-matched matrix arms reach the existing model-build implementation."
+        },
+        {
+          "version": "v292",
+          "date": "2026-08-02",
+          "note": "no-bump: move the binder-quality head capacity parity parameter rows into the canonical external case resource; assertions and model behavior are unchanged."
+        },
+        {
+          "version": "v292",
+          "date": "2026-08-02",
+          "note": "Add binder-arity and binder-component-plan structural auxiliary profiles so matched controls instantiate the same head capacity as new train-and-decode quality arms."
+        },
         {
           "version": "v291",
           "date": "2026-08-02",

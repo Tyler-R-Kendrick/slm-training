@@ -545,6 +545,10 @@ def compile_commands(
             )
         if knobs.ltr_tail_loss_weight is not None:
             train.extend(["--ltr-tail-loss-weight", str(knobs.ltr_tail_loss_weight)])
+        if knobs.ltr_prefix_loss_weight is not None:
+            train.extend(
+                ["--ltr-prefix-loss-weight", str(knobs.ltr_prefix_loss_weight)]
+            )
         if knobs.compiler_alignment_margin is not None:
             train.extend(
                 ["--compiler-alignment-margin", str(knobs.compiler_alignment_margin)]
@@ -565,6 +569,27 @@ def compile_commands(
                 [
                     "--component-inventory-loss-weight",
                     str(knobs.component_inventory_loss_weight),
+                ]
+            )
+        if knobs.component_token_loss_weight is not None:
+            train.extend(
+                [
+                    "--component-token-loss-weight",
+                    str(knobs.component_token_loss_weight),
+                ]
+            )
+        if knobs.structure_token_loss_weight is not None:
+            train.extend(
+                [
+                    "--structure-token-loss-weight",
+                    str(knobs.structure_token_loss_weight),
+                ]
+            )
+        if knobs.typed_family_balance_loss_weight is not None:
+            train.extend(
+                [
+                    "--typed-family-balance-loss-weight",
+                    str(knobs.typed_family_balance_loss_weight),
                 ]
             )
         if knobs.structural_aux_head_profile is not None:
@@ -601,6 +626,26 @@ def compile_commands(
                 [
                     "--component-edge-alignment-loss-weight",
                     str(knobs.component_edge_alignment_loss_weight),
+                ]
+            )
+        if knobs.semantic_contrast_dir is not None:
+            train.extend(["--semantic-contrast-dir", knobs.semantic_contrast_dir])
+        if knobs.semantic_contrast_loss_weight is not None:
+            train.extend(
+                [
+                    "--semantic-contrast-loss-weight",
+                    str(knobs.semantic_contrast_loss_weight),
+                ]
+            )
+        if knobs.semantic_contrast_margin is not None:
+            train.extend(
+                ["--semantic-contrast-margin", str(knobs.semantic_contrast_margin)]
+            )
+        if knobs.semantic_contrast_fraction is not None:
+            train.extend(
+                [
+                    "--semantic-contrast-fraction",
+                    str(knobs.semantic_contrast_fraction),
                 ]
             )
         if knobs.component_edge_decode_weight is not None:
@@ -646,12 +691,23 @@ def compile_commands(
             train.extend(
                 ["--binder-arity-decode-weight", str(knobs.binder_arity_decode_weight)]
             )
+        if knobs.symbol_boundary_loss_weight is not None:
+            train.extend(
+                [
+                    "--symbol-boundary-loss-weight",
+                    str(knobs.symbol_boundary_loss_weight),
+                ]
+            )
+        if knobs.fidelity_loss_weight is not None:
+            train.extend(["--fidelity-loss-weight", str(knobs.fidelity_loss_weight)])
         if knobs.schema_in_context:
             train.append("--schema-in-context")
         if knobs.slot_contract_in_context:
             train.append("--slot-contract-in-context")
         if knobs.design_md_context is False:
             train.append("--no-design-md-context")
+        if knobs.design_md_dropout is not None:
+            train.extend(["--design-md-dropout", str(knobs.design_md_dropout)])
         for field, flag in {
             "runtime_symbol_features": "runtime-symbol-features",
             "constraint_graph_mode": "constraint-graph-mode",
@@ -909,6 +965,7 @@ def execute_commands(
             artifact_revision_before=artifact_revision_before,
         )
         flattened = _numeric_metrics(parsed) if parsed is not None else {}
+        flattened.update(_suite_headline_metrics(parsed))
         if "scripts.build_train_data" in command:
             data_metrics.update(flattened)
         elif "scripts.train_model" in command and completed.returncode == 0:
@@ -1160,6 +1217,23 @@ def _numeric_metrics(value: object, prefix: str = "") -> dict[str, float]:
                 result[name] = float(child)
             elif len(result) < 300:
                 result.update(_numeric_metrics(child, name))
+    return result
+
+
+def _suite_headline_metrics(value: object) -> dict[str, float]:
+    """Extract every suite headline without traversing verbose suite details."""
+
+    if not isinstance(value, dict) or not isinstance(value.get("suites"), dict):
+        return {}
+    result: dict[str, float] = {}
+    for suite, metrics in value["suites"].items():
+        if not isinstance(metrics, dict):
+            continue
+        for name, metric in metrics.items():
+            if isinstance(metric, bool):
+                result[f"suites.{suite}.{name}"] = float(metric)
+            elif isinstance(metric, (int, float)):
+                result[f"suites.{suite}.{name}"] = float(metric)
     return result
 
 

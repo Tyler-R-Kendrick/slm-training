@@ -324,6 +324,9 @@ class ModelBuildConfig:
     diffusion_overallocate: int = 8
     diffusion_length_loss_weight: float = 0.1
     ltr_prefix_loss_weight: float = 0.0
+    component_token_loss_weight: float = 0.0
+    structure_token_loss_weight: float = 0.0
+    typed_family_balance_loss_weight: float = 0.0
     # Extra weight on final real LTR tokens (default-off; CLI: --ltr-tail-*).
     ltr_tail_loss_weight: float = 0.0
     ltr_tail_tokens: int = 32

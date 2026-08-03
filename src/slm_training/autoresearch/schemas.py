@@ -217,6 +217,9 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "compiler_alignment_semantic_exhaustive",
         "compiler_alignment_kind_filter",
         "component_inventory_loss_weight",
+        "component_token_loss_weight",
+        "structure_token_loss_weight",
+        "typed_family_balance_loss_weight",
         "structural_aux_head_profile",
         "component_inventory_decode_weight",
         "component_plan_loss_weight",
@@ -230,6 +233,7 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "binder_topology_decode_weight",
         "binder_arity_loss_weight",
         "binder_arity_decode_weight",
+        "symbol_boundary_loss_weight",
         "compiler_decode_mode",
         "compiler_search_mode",
         "compiler_search_trigger",
@@ -239,9 +243,16 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "compiler_search_backtrack_limit",
         "data_source",
         "design_md_context",
+        "design_md_dropout",
         "eval_version",
+        "fidelity_loss_weight",
+        "semantic_contrast_dir",
+        "semantic_contrast_loss_weight",
+        "semantic_contrast_margin",
+        "semantic_contrast_fraction",
         "derive_from",
         "lr",
+        "ltr_prefix_loss_weight",
         "ltr_tail_loss_weight",
         "local_files_only",
         "max_records_per_parent",
@@ -491,6 +502,7 @@ class ExperimentKnobs(StrictModel):
     steps: int | None = Field(default=None, ge=1, le=100_000)
     batch_size: int | None = Field(default=None, ge=1, le=1024)
     lr: float | None = Field(default=None, gt=0, le=1)
+    ltr_prefix_loss_weight: float | None = Field(default=None, ge=0, le=20)
     ltr_tail_loss_weight: float | None = Field(default=None, ge=0, le=20)
     seed: int | None = Field(default=None, ge=0)
     context_backend: Literal["scratch", "hf"] | None = None
@@ -501,6 +513,9 @@ class ExperimentKnobs(StrictModel):
     compiler_alignment_semantic_exhaustive: bool | None = None
     compiler_alignment_kind_filter: Literal["all", "literal-close"] | None = None
     component_inventory_loss_weight: float | None = Field(default=None, ge=0, le=20)
+    component_token_loss_weight: float | None = Field(default=None, ge=0, le=20)
+    structure_token_loss_weight: float | None = Field(default=None, ge=0, le=20)
+    typed_family_balance_loss_weight: float | None = Field(default=None, ge=0, le=20)
     structural_aux_head_profile: (
         Literal[
             "none",
@@ -508,6 +523,8 @@ class ExperimentKnobs(StrictModel):
             "component-edge",
             "component-inventory",
             "binder-topology",
+            "binder-arity",
+            "binder-component-plan",
             "component-structure",
         ]
         | None
@@ -526,6 +543,12 @@ class ExperimentKnobs(StrictModel):
     binder_topology_decode_weight: float | None = Field(default=None, ge=0, le=20)
     binder_arity_loss_weight: float | None = Field(default=None, ge=0, le=20)
     binder_arity_decode_weight: float | None = Field(default=None, ge=0, le=20)
+    symbol_boundary_loss_weight: float | None = Field(default=None, ge=0, le=20)
+    fidelity_loss_weight: float | None = Field(default=None, ge=0, le=20)
+    semantic_contrast_dir: str | None = Field(default=None, min_length=1, max_length=512)
+    semantic_contrast_loss_weight: float | None = Field(default=None, ge=0, le=20)
+    semantic_contrast_margin: float | None = Field(default=None, ge=0, le=20)
+    semantic_contrast_fraction: float | None = Field(default=None, gt=0, le=1)
     compiler_decode_mode: Literal["off", "forced", "restricted", "tree"] | None = None
     compiler_search_mode: Literal["greedy", "lattice", "ptrm", "gram"] | None = None
     compiler_search_trigger: Literal["bottom", "stagnation", "always"] | None = None
@@ -536,6 +559,7 @@ class ExperimentKnobs(StrictModel):
     schema_in_context: bool | None = None
     slot_contract_in_context: bool | None = None
     design_md_context: bool | None = None
+    design_md_dropout: float | None = Field(default=None, ge=0, le=1)
     local_files_only: bool | None = None
     sync_checkpoints: bool | None = None
     topology_actions: bool | None = None

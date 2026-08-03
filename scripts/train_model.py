@@ -564,6 +564,24 @@ def main(argv: list[str] | None = None) -> int:
         help="Extra weight for the first three LTR positions (root/early structure).",
     )
     parser.add_argument(
+        "--component-token-loss-weight",
+        type=float,
+        default=0.0,
+        help="Extra reconstruction weight for component-type output tokens.",
+    )
+    parser.add_argument(
+        "--structure-token-loss-weight",
+        type=float,
+        default=0.0,
+        help="Extra reconstruction weight for grammar STRUCT output tokens.",
+    )
+    parser.add_argument(
+        "--typed-family-balance-loss-weight",
+        type=float,
+        default=0.0,
+        help="Count-normalized auxiliary over component and STRUCT token means.",
+    )
+    parser.add_argument(
         "--ltr-tail-loss-weight",
         type=float,
         default=0.0,
@@ -617,6 +635,8 @@ def main(argv: list[str] | None = None) -> int:
             "component-edge",
             "component-inventory",
             "binder-topology",
+            "binder-arity",
+            "binder-component-plan",
             "component-structure",
         ),
         default="none",
@@ -964,6 +984,12 @@ def main(argv: list[str] | None = None) -> int:
         type=float,
         default=0.0,
         help="Bias legal reference-list continue/stop paths by planned arity.",
+    )
+    parser.add_argument(
+        "--symbol-boundary-loss-weight",
+        type=float,
+        default=0.0,
+        help="Extra CE weight on opaque-symbol tokens and their immediate boundaries.",
     )
     parser.add_argument(
         "--root-reference-arity-loss-weight",
@@ -1539,6 +1565,9 @@ def main(argv: list[str] | None = None) -> int:
         emit_record_nll=bool(args.emit_record_nll),
         ltr_loss_weight=args.ltr_loss_weight,
         ltr_prefix_loss_weight=args.ltr_prefix_loss_weight,
+        component_token_loss_weight=args.component_token_loss_weight,
+        structure_token_loss_weight=args.structure_token_loss_weight,
+        typed_family_balance_loss_weight=args.typed_family_balance_loss_weight,
         ltr_tail_loss_weight=args.ltr_tail_loss_weight,
         ltr_tail_tokens=args.ltr_tail_tokens,
         compiler_alignment_loss_weight=args.compiler_alignment_loss_weight,
@@ -1623,6 +1652,7 @@ def main(argv: list[str] | None = None) -> int:
         ),
         binder_arity_loss_weight=args.binder_arity_loss_weight,
         binder_arity_decode_weight=args.binder_arity_decode_weight,
+        symbol_boundary_loss_weight=args.symbol_boundary_loss_weight,
         root_reference_arity_loss_weight=args.root_reference_arity_loss_weight,
         root_reference_arity_decode_weight=args.root_reference_arity_decode_weight,
         root_reference_identity_loss_weight=(args.root_reference_identity_loss_weight),

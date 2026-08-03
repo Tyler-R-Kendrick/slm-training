@@ -63,6 +63,7 @@ _REPAIR_ACTION_KINDS = frozenset({"repair_harness", "repair_formal"})
 _DATA_EVIDENCE_NAMES = frozenset(
     {"data_manifest.json", "quality_report.json", "synthesis_feedback.json"}
 )
+_MATRIX_CELL_MAX_CHARS = 240
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
@@ -665,6 +666,12 @@ def loop_result_rows(
                 handoff = json.loads(handoff_path.read_text(encoding="utf-8"))
             except json.JSONDecodeError:
                 handoff = {}
+        handoff = _project_confirmation_queue_status(
+            root,
+            loop_id,
+            campaign.campaign_id,
+            handoff,
+        )
         runtime_disposition = _runtime_replay_disposition(
             handoff, outcome.experiment_id
         )
@@ -687,7 +694,7 @@ def loop_result_rows(
                 summary = json.loads(summary_path.read_text(encoding="utf-8"))
                 params = str(int(summary["track"]["trainable_params"]))
             except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError):
-                params = "—"
+                params = _reused_training_params(outcome)
         rows.append(
             {
                 "cycle": campaign.cycle_index,
@@ -695,7 +702,10 @@ def loop_result_rows(
                 "integrated": (campaign.integration_commit or "")[:8] or "—",
                 "experiment": outcome.experiment_id,
                 "params": params,
-                "primary": _metric_text(outcome.metrics, campaign.primary_metric),
+                "primary": _outcome_metric_text(
+                    outcome,
+                    str(handoff.get("primary_metric") or campaign.primary_metric),
+                ),
                 "metrics": _metrics_text(
                     outcome.metrics,
                     outcome.data_metrics,
@@ -749,6 +759,108 @@ def loop_result_rows(
             str(row["experiment"]),
         ),
     )
+
+
+def _reused_training_params(outcome: ExperimentOutcome) -> str:
+    """Recover content-bound parameter evidence from a frozen training reuse."""
+
+    for stage in outcome.stage_telemetry:
+        if stage.get("stage_kind") != "reused_training":
+            continue
+        params = stage.get("trainable_params")
+        if isinstance(params, int) and not isinstance(params, bool) and params > 0:
+            return str(params)
+        summary_path = stage.get("source_train_summary")
+        expected_sha = stage.get("source_train_summary_sha256")
+        if not isinstance(summary_path, str) or not isinstance(expected_sha, str):
+            continue
+        try:
+            raw = Path(summary_path).read_bytes()
+        except OSError:
+            continue
+        if hashlib.sha256(raw).hexdigest() != expected_sha:
+            continue
+        try:
+            summary_params = json.loads(raw)["track"]["trainable_params"]
+        except (KeyError, TypeError, json.JSONDecodeError):
+            continue
+        if (
+            isinstance(summary_params, int)
+            and not isinstance(summary_params, bool)
+            and summary_params > 0
+        ):
+            return str(summary_params)
+    return "—"
+
+
+def _outcome_metric_text(outcome: ExperimentOutcome, name: str) -> str:
+    """Read a primary from flattened metrics or its content-bound stage payload."""
+
+    value = _metric_text(outcome.metrics, name)
+    if value != "—":
+        return value
+    parts = name.split(".", maxsplit=1)
+    if len(parts) != 2:
+        return "—"
+    suite, metric = parts
+    for stage in reversed(outcome.stage_telemetry):
+        parsed = stage.get("parsed_output")
+        if not isinstance(parsed, dict):
+            continue
+        suites = parsed.get("suites")
+        suite_metrics = suites.get(suite) if isinstance(suites, dict) else None
+        candidate = (
+            suite_metrics.get(metric) if isinstance(suite_metrics, dict) else None
+        )
+        if isinstance(candidate, bool):
+            return f"{float(candidate):g}"
+        if isinstance(candidate, (int, float)):
+            return f"{candidate:g}"
+    return "—"
+
+
+def _project_confirmation_queue_status(
+    root: Path | str,
+    loop_id: str,
+    campaign_id: str,
+    handoff: dict[str, Any],
+) -> dict[str, Any]:
+    """Overlay a historical confirmation row with its authoritative queue state."""
+
+    if handoff.get("cycle_intent") != "confirm":
+        return handoff
+    queue_path = Path(root) / "loops" / loop_id / "champion_queue.jsonl"
+    if not queue_path.is_file():
+        return handoff
+    status: str | None = None
+    for line in queue_path.read_text(encoding="utf-8").splitlines():
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if (
+            isinstance(row, dict)
+            and row.get("confirm_campaign_id") == campaign_id
+        ):
+            status = str(row.get("status") or "") or None
+    if status is None:
+        return handoff
+    projected = dict(handoff)
+    if status == "rejected":
+        projected["climb_state"] = "rejected"
+        projected["formal_status"] = "not_applicable:confirmation_rejected"
+    elif status == "harness_failure":
+        projected["climb_state"] = "harness_failure"
+        projected["formal_status"] = "not_applicable:confirmation_harness_failure"
+    elif status in {
+        "confirmed",
+        "promoting",
+        "promotion_inconclusive",
+        "promotion_failed",
+        "climb_accepted",
+    }:
+        projected["climb_state"] = "champion_confirmed"
+    return projected
 
 
 def _runtime_replay_disposition(
@@ -1392,6 +1504,11 @@ def _metrics_text(
 def _lean_text(optimum: Any | None, handoff: dict[str, Any] | None = None) -> str:
     if optimum is None:
         handoff = handoff or {}
+        if (
+            handoff.get("cycle_intent") == "confirm"
+            and handoff.get("climb_state") == "rejected"
+        ):
+            return "not_applicable:confirmation_rejected"
         formal_status = handoff.get("formal_status")
         if formal_status:
             return str(formal_status)
@@ -1421,4 +1538,7 @@ def _gate_text(metrics: dict[str, float]) -> str:
 
 
 def _markdown_cell(value: Any) -> str:
-    return str(value).replace("|", r"\|").replace("\n", " ")
+    text = " ".join(str(value).split())
+    if len(text) > _MATRIX_CELL_MAX_CHARS:
+        text = text[: _MATRIX_CELL_MAX_CHARS - 3].rstrip() + "..."
+    return text.replace("|", r"\|")

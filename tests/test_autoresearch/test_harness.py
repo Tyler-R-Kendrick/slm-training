@@ -75,12 +75,22 @@ from slm_training.autoresearch.schemas import (
 from slm_training.autoresearch.storage import (
     CampaignStore,
     _lean_text,
+    _markdown_cell,
+    _project_confirmation_queue_status,
     append_autotrain_action_receipt,
     autotrain_action_sha256,
     pending_autotrain_actions,
     pending_autotrain_execution_actions,
     render_loop_result_matrix,
 )
+
+
+def test_result_matrix_cells_collapse_and_bound_verbose_diagnostics() -> None:
+    rendered = _markdown_cell("first line\n" + "argparse detail " * 40)
+
+    assert "\n" not in rendered
+    assert len(rendered) <= 240
+    assert rendered.endswith("...")
 
 
 def test_result_matrix_explains_lean_applicability() -> None:
@@ -96,7 +106,46 @@ def test_result_matrix_explains_lean_applicability() -> None:
         None,
         {"cycle_intent": "confirm", "cycle_role": "promotion"},
     ) == ("not_applicable:confirmation")
+    assert _lean_text(
+        None,
+        {
+            "cycle_intent": "confirm",
+            "cycle_role": "promotion",
+            "climb_state": "rejected",
+        },
+    ) == ("not_applicable:confirmation_rejected")
     assert _lean_text(None, {"formal_status": "proved"}) == "proved"
+
+
+def test_confirmation_matrix_projects_authoritative_queue_rejection(
+    tmp_path: Path,
+) -> None:
+    queue = tmp_path / "loops" / "loop-1" / "champion_queue.jsonl"
+    queue.parent.mkdir(parents=True)
+    queue.write_text(
+        json.dumps(
+            {
+                "confirm_campaign_id": "cycle-confirm",
+                "status": "rejected",
+            }
+        )
+        + "\n"
+    )
+
+    projected = _project_confirmation_queue_status(
+        tmp_path,
+        "loop-1",
+        "cycle-confirm",
+        {
+            "cycle_intent": "confirm",
+            "climb_state": "champion_confirmed",
+            "formal_status": "not_applicable:confirmation",
+        },
+    )
+
+    assert projected["climb_state"] == "rejected"
+    assert projected["formal_status"] == "not_applicable:confirmation_rejected"
+    assert _lean_text(None, projected) == "not_applicable:confirmation_rejected"
 
 
 def test_idle_loop_does_not_become_stale_from_old_heartbeat(tmp_path: Path) -> None:
@@ -960,6 +1009,7 @@ def test_frozen_training_reuse_verifies_lineage_recipe_and_checkpoint(
         "stopped_on": "steps",
         "steps": int(_command_flag(train, "--steps")),
         "checkpoint": str(checkpoint),
+        "track": {"trainable_params": 1234},
         "version_stamp": {
             "code_commit": source_manifest.source_commit,
             "code_dirty": False,
@@ -990,6 +1040,7 @@ def test_frozen_training_reuse_verifies_lineage_recipe_and_checkpoint(
     assert receipt["stage_kind"] == "reused_training"
     assert receipt["measurement_complete"] is True
     assert receipt["checkpoint_sha256"] == hashlib.sha256(b"checkpoint").hexdigest()
+    assert receipt["trainable_params"] == 1234
 
     bad_target = target_manifest.model_copy(
         update={"replay_of_manifest_sha256": "0" * 64}
@@ -2074,6 +2125,62 @@ def test_compile_commands_routes_typed_ltr_tail_training_lever() -> None:
     assert train[train.index("--ltr-tail-loss-weight") + 1] == "2.0"
 
 
+def test_compile_commands_routes_typed_ltr_prefix_training_lever() -> None:
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            train_version="wf_smoke_v2",
+            steps=20,
+            ltr_prefix_loss_weight=1.0,
+        )
+    )
+
+    commands = compile_commands(campaign(), spec)
+    train = next(command for command in commands if "scripts.train_model" in command)
+    assert train[train.index("--ltr-prefix-loss-weight") + 1] == "1.0"
+
+
+def test_compile_commands_routes_typed_component_token_training_lever() -> None:
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            train_version="wf_smoke_v2",
+            steps=20,
+            component_token_loss_weight=1.0,
+        )
+    )
+
+    commands = compile_commands(campaign(), spec)
+    train = next(command for command in commands if "scripts.train_model" in command)
+    assert train[train.index("--component-token-loss-weight") + 1] == "1.0"
+
+
+def test_compile_commands_routes_typed_structure_token_training_lever() -> None:
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            train_version="wf_smoke_v2",
+            steps=20,
+            structure_token_loss_weight=1.0,
+        )
+    )
+
+    commands = compile_commands(campaign(), spec)
+    train = next(command for command in commands if "scripts.train_model" in command)
+    assert train[train.index("--structure-token-loss-weight") + 1] == "1.0"
+
+
+def test_compile_commands_routes_typed_family_balance_training_lever() -> None:
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            train_version="wf_smoke_v2",
+            steps=20,
+            typed_family_balance_loss_weight=0.25,
+        )
+    )
+
+    commands = compile_commands(campaign(), spec)
+    train = next(command for command in commands if "scripts.train_model" in command)
+    assert train[train.index("--typed-family-balance-loss-weight") + 1] == "0.25"
+
+
 def test_campaign_loop_lineage_is_strict() -> None:
     first = CampaignSpec(
         campaign_id="cycle-1",
@@ -2731,6 +2838,12 @@ def test_loop_result_matrix_is_derived_from_verified_campaign_chain(
             "held_out.incomplete_document_n": 0,
             "held_out.decode_timeout_count": 0,
             "held_out.structural_similarity": 0.75,
+            "smoke.n": 3,
+            "smoke.document_n": 3,
+            "smoke.completed_document_n": 3,
+            "smoke.incomplete_document_n": 0,
+            "smoke.decode_timeout_count": 0,
+            "smoke.parse_rate": 1.0,
             "trainable_params": 1234,
             "ship_gates_pass": 1,
         },
@@ -2757,14 +2870,76 @@ def test_loop_result_matrix_is_derived_from_verified_campaign_chain(
         status="none",
         artifact_sha256=diagnosis_path.stem,
     )
+    (tmp_path / loop_campaign.campaign_id / "cycle_handoff.json").write_text(
+        json.dumps({"primary_metric": "smoke.parse_rate"}),
+        encoding="utf-8",
+    )
 
     matrix = render_loop_result_matrix(tmp_path, "loop-1")
     assert "Liveness" in matrix
-    assert "| 1 | cccccccc | dddddddd | hyp-0 | 1234 | 0.75 |" in matrix
+    assert "| 1 | cccccccc | dddddddd | hyp-0 | 1234 | 1 |" in matrix
     assert (
         "| — | pass | complete | none | fixture | — | blocked | completed |" in matrix
     )
     assert len(matrix.encode("utf-8")) < 64 * 1024
+
+
+def test_loop_result_matrix_recovers_content_bound_reused_params(
+    tmp_path: Path,
+) -> None:
+    campaign = CampaignSpec(
+        campaign_id="cycle-reuse",
+        objective="Render the frozen checkpoint size in the result matrix.",
+        primary_metric="held_out.structural_similarity",
+        loop_id="loop-1",
+        cycle_index=1,
+        upstream_commit="c" * 40,
+        integration_commit="d" * 40,
+    )
+    store = CampaignStore(campaign.campaign_id, tmp_path)
+    store.initialize(campaign)
+    summary_path = tmp_path / "source" / "train_summary.json"
+    summary_path.parent.mkdir()
+    summary_path.write_text(
+        json.dumps({"track": {"trainable_params": 1_608_962}}),
+        encoding="utf-8",
+    )
+    outcome = ExperimentOutcome(
+        experiment_id="replay",
+        campaign_id=campaign.campaign_id,
+        status="completed",
+        metrics={},
+        stage_telemetry=(
+            {
+                "stage_kind": "reused_training",
+                "source_train_summary": str(summary_path),
+                "source_train_summary_sha256": hashlib.sha256(
+                    summary_path.read_bytes()
+                ).hexdigest(),
+            },
+            {
+                "parsed_output": {
+                    "suites": {"held_out": {"structural_similarity": 0.75}}
+                }
+            },
+        ),
+    )
+    artifact = store.write_artifact("outcomes", outcome)
+    store.append_event(
+        "experiment_finished",
+        experiment_id="replay",
+        status="completed",
+        artifact_sha256=artifact.stem,
+    )
+
+    rendered = render_loop_result_matrix(tmp_path, "loop-1")
+    assert "| replay | 1608962 | 0.75 |" in rendered
+
+    summary_path.write_text(
+        json.dumps({"track": {"trainable_params": 9_999_999}}),
+        encoding="utf-8",
+    )
+    assert "| replay | — | 0.75 |" in render_loop_result_matrix(tmp_path, "loop-1")
 
 
 def test_loop_result_matrix_marks_timeout_measurement_incomplete(
@@ -3257,6 +3432,12 @@ def test_compile_resolves_canonical_published_train_version() -> None:
             binder_topology_decode_weight=0.4,
             binder_arity_loss_weight=1.2,
             binder_arity_decode_weight=0.3,
+            symbol_boundary_loss_weight=1.0,
+            fidelity_loss_weight=1.5,
+            semantic_contrast_dir="resources/contrast",
+            semantic_contrast_loss_weight=0.25,
+            semantic_contrast_margin=1.0,
+            semantic_contrast_fraction=0.5,
             compiler_decode_mode="tree",
             compiler_search_mode="ptrm",
             compiler_search_trigger="stagnation",
@@ -3267,6 +3448,7 @@ def test_compile_resolves_canonical_published_train_version() -> None:
             schema_in_context=True,
             slot_contract_in_context=True,
             design_md_context=False,
+            design_md_dropout=0.25,
             local_files_only=True,
             sync_checkpoints=False,
             mixture_sampling_policy="capacity_aware",
@@ -3319,11 +3501,26 @@ def test_compile_resolves_canonical_published_train_version() -> None:
     )
     assert commands[0][commands[0].index("--binder-arity-loss-weight") + 1] == "1.2"
     assert commands[0][commands[0].index("--binder-arity-decode-weight") + 1] == "0.3"
+    assert commands[0][commands[0].index("--symbol-boundary-loss-weight") + 1] == (
+        "1.0"
+    )
+    assert commands[0][commands[0].index("--fidelity-loss-weight") + 1] == "1.5"
+    assert commands[0][commands[0].index("--semantic-contrast-dir") + 1] == (
+        "resources/contrast"
+    )
+    assert commands[0][commands[0].index("--semantic-contrast-loss-weight") + 1] == (
+        "0.25"
+    )
+    assert commands[0][commands[0].index("--semantic-contrast-margin") + 1] == "1.0"
+    assert commands[0][commands[0].index("--semantic-contrast-fraction") + 1] == (
+        "0.5"
+    )
     assert commands[0][commands[0].index("--compiler-decode-mode") + 1] == "tree"
     assert "--grammar-ltr-primary" in commands[0]
     assert "--schema-in-context" in commands[0]
     assert "--slot-contract-in-context" in commands[0]
     assert "--no-design-md-context" in commands[0]
+    assert commands[0][commands[0].index("--design-md-dropout") + 1] == "0.25"
     assert "--local-files-only" in commands[0]
     assert "--no-sync-checkpoints" in commands[0]
     assert (
@@ -3652,6 +3849,17 @@ def test_execute_resolves_truncated_train_stdout_from_canonical_summary(
         "large_payload": "x" * 100_000,
     }
     evaluation = _complete_gate_scoreboard(run_dir / "agentv")
+    evaluation["suites"]["smoke"]["task_scoreboard"] = {
+        f"verbose_{index}": float(index) for index in range(350)
+    }
+    evaluation["suites"]["held_out"] = {
+        "n": 5,
+        "document_n": 5,
+        "completed_document_n": 5,
+        "incomplete_document_n": 0,
+        "decode_timeout_count": 0,
+        "structural_similarity": 0.8,
+    }
     evaluation["large_payload"] = "y" * 100_000
     replies = iter(
         (
@@ -3711,6 +3919,7 @@ def test_execute_resolves_truncated_train_stdout_from_canonical_summary(
 
     assert outcome.status == "completed"
     assert outcome.metrics["trainable_params"] == 12345
+    assert outcome.metrics["suites.held_out.structural_similarity"] == 0.8
     assert outcome.stage_telemetry[0]["parsed_output_source"] == str(
         run_dir / "train_summary.json"
     )
