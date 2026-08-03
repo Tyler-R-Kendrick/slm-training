@@ -9,7 +9,7 @@ import subprocess
 from pathlib import Path
 from typing import Any, Sequence
 
-from slm_training.bridge_utils import checkout_roots
+from slm_training.bridge_utils import checkout_roots, sanitized_node_env
 
 
 def _agentv_runtime(repo_root: Path) -> tuple[Path, Path]:
@@ -122,6 +122,7 @@ def publish_agentv_evaluation(
         check=False,
         capture_output=True,
         text=True,
+        env=sanitized_node_env(),
     )
     if completed.returncode:
         detail = (completed.stderr or completed.stdout).strip()
