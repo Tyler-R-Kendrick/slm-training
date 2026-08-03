@@ -1,0 +1,71 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 2,
+  "source_commit": "7a63cce4",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 22,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes_per_experiment": 1.1666666666666667,
+    "ship_gates": true,
+    "seed": 100002
+  },
+  "arms": {
+    "c2-control": {
+      "hypothesis": "Matched fixture control with both grammar levers off completes smoke eval under the published suite.",
+      "trainable_params": 1755764,
+      "train_elapsed_wall_seconds": 4.089609214999996,
+      "status": "measurement_incomplete",
+      "smoke": {
+        "n": 3,
+        "decode_timeout_count": 3,
+        "parse_rate": null,
+        "meaningful_program_rate": null,
+        "structural_similarity": null,
+        "binder_reference_f1": null
+      }
+    },
+    "c2-component-plan": {
+      "hypothesis": "Component-plan train-and-decode coupling improves smoke structural_similarity without lowering parse_rate or binder_reference_f1.",
+      "trainable_params": 1755764,
+      "train_elapsed_wall_seconds": 8.14841666999996,
+      "status": "measurement_incomplete",
+      "smoke": {
+        "n": 3,
+        "decode_timeout_count": 3,
+        "parse_rate": null,
+        "meaningful_program_rate": null,
+        "structural_similarity": null,
+        "binder_reference_f1": null
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "continue loop; local commits/docs only",
+    "reasons": [
+      "measurement_incomplete:c20260803-continuous-openui-local-8c0b60dd-c2-control:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "measurement_incomplete:c20260803-continuous-openui-local-8c0b60dd-c2-component-plan:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c2-control",
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c2-component-plan",
+      "primary_metric_unavailable",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "conclusion": "Continuous-openui-local loop, cycle 2 of 2026-08-03 (day-numbered doc c4): both arms trained fast (control 4.09s, component-plan 8.15s wall for 22 steps, matched 1,755,764 params) but AgentV smoke decode timed out on all 3 documents for BOTH arms, leaving parse_rate/structural_similarity/binder_reference_f1/meaningful_program_rate unmeasured on both sides. Training completed cleanly; the incomplete measurement is isolated to the AgentV decode/eval stage within this campaign's ~70s-per-experiment wall allocation (max_wall_minutes=1.1667 per experiment in campaign.json), which leaves very little headroom after Node/AgentV bridge startup for the control arm's stated hypothesis of 'both grammar levers off' (i.e. an unconstrained-decode diagnostic arm) -- unconstrained search is expected to be slower per AGENTS.md's decode invariants (unconstrained arms are diagnostic controls, never defaults, and are allowed to be slow/incomplete). This looks like the same recurring AgentV-decode-timeout-under-tight-wall-budget pattern already documented across many prior cycles (e.g. autotrain-cycle-1821, -1796, -1770, -1766, -1751) rather than a new regression; no speculative code fix is applied here without reproducing a code-level defect. SDLC Phase A classifies NON_POSITIVE (primary_metric_unavailable + fixture_insufficient_n_alone); no stacked PR. The driver's auto-generated handoff also names a repair_harness action (owner improve-openui-harnesses, family model_build) plus a queued retry_measurement for the identical frozen arms -- both remain open for a dedicated harness-focused cycle rather than being closed with an unverified fix in this pass.",
+  "next_priorities": [
+    "Route the AgentV decode-timeout-under-tight-wall-budget pattern to improve-openui-harnesses for a proper repro + fix (or a documented decision that unconstrained-grammar control arms need a larger decode_timeout_seconds/max_wall_minutes allocation) before treating this exact frozen pair as retryable (rank 1, confidence 0.85)",
+    "Replay the identical frozen control/component-plan pair (seed 100002, 1,755,764 params) once the harness repair lands, per the queued retry_measurement action (rank 2, confidence 0.90)",
+    "Do not select a new model hypothesis ahead of the repair_harness prerequisite, per autotrain continuous-mode ordering (rank 3, confidence 0.95)"
+  ],
+  "recorded_at": "2026-08-03T08:39:27Z"
+}
