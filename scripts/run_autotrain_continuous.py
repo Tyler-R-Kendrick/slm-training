@@ -639,6 +639,16 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         {"typed_family_balance_loss_weight": 0.25},
     ),
     (
+        "container-close",
+        "Grammar-derived container-close alignment makes the gold legal ')' or ']' outrank legal comma continuation without lowering structural_similarity, component_type_recall, or binder_reference_f1.",
+        {
+            "compiler_alignment_loss_weight": 1.0,
+            "compiler_alignment_margin": 1.0,
+            "compiler_alignment_stratified": True,
+            "compiler_alignment_kind_filter": "container-close",
+        },
+    ),
+    (
         "component-structure",
         "Joint component-plan and component-edge train-and-decode coupling improves smoke structural_similarity beyond either isolated arm.",
         {
@@ -1070,6 +1080,11 @@ def _arm_slug_from_knobs(
         and knobs.get("compiler_alignment_kind_filter") == "literal-close"
     ):
         return "literal-margin"
+    if (
+        knobs.get("compiler_alignment_loss_weight")
+        and knobs.get("compiler_alignment_kind_filter") == "container-close"
+    ):
+        return "container-close"
     if knobs.get("ltr_tail_loss_weight"):
         return "literal-close"
     if knobs.get("ltr_prefix_loss_weight"):
@@ -1294,6 +1309,7 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
         "component-token",
         "structure-token",
         "typed-family-balance",
+        "container-close",
     )
     legacy_quality_slugs = {
         "component-plan",

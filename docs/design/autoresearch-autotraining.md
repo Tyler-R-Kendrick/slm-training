@@ -136,6 +136,15 @@ use `--compiler openai`, whose default is `gpt-5.6-sol` with `store=False`.
 
 ## Closed loop
 
+The c1807 typed-family balance screen improves structure, binder F1, recall,
+and fidelity but produces no meaningful programs and increases p50 more than
+5x. Decode telemetry attributes the cost to runaway legal continuation: 201
+tokens and 51 forwards versus 27 and 5. Campaign harness v107 therefore adds a
+grammar-derived `container-close` alignment filter that trains only gold `)` /
+`]` choices competing with legal comma continuation. It changes training
+ranking, never grammar legality or deterministic certification. See
+[`autotrain-cycle-1807-typed-family-balance-rejected.md`](autotrain-cycle-1807-typed-family-balance-rejected.md).
+
 The c1806 screen rejects direct grammar `STRUCT`-token weighting: it lowers
 typed structure CE but regresses smoke structure and raises p50 more than 3x.
 Attribution shows component CE worsens while the 61-token structure family
