@@ -847,7 +847,12 @@ def test_select_recommended_slug_prioritizes_successor_quality_after_legacy_null
     assert _mod._select_recommended_slug(1795, skip=skip) == "semantic-contrast"
 
     skip.add("semantic-contrast")
-    assert _mod._select_recommended_slug(1796, skip=skip) == "slot-augmentation"
+    assert (
+        _mod._select_recommended_slug(1796, skip=skip)
+        == "semantic-contrast-compiler-margin"
+    )
+    skip.add("semantic-contrast-compiler-margin")
+    assert _mod._select_recommended_slug(1797, skip=skip) == "slot-augmentation"
 
     skip.add("slot-augmentation")
     assert _mod._select_recommended_slug(1797, skip=skip) == "mixed-mask"

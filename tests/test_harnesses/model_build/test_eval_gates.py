@@ -894,6 +894,37 @@ def test_evaluate_suites_scoreboard(
     assert loaded["suites"]["smoke"]["checkpoint_sha256"] == loaded["checkpoint_sha256"]
     assert (tmp_path / "runs" / "gates" / "scoreboard.json").exists()
 
+    # A checkpoint-backed multi-suite evaluation must construct the model once,
+    # then reuse that immutable instance for every suite.
+    (test_dir / "suites" / "held_out").mkdir(parents=True)
+    write_jsonl(
+        test_dir / "suites" / "held_out" / "records.jsonl",
+        [
+            ExampleRecord(
+                id="h1",
+                prompt="Hero",
+                openui=hero,
+                placeholders=[":slot_0", ":slot_1"],
+                split="held_out",
+                meta={"suite": "held_out"},
+            )
+        ],
+    )
+    import slm_training.harnesses.model_build.eval_runner as eval_runner_module
+
+    original_build_model = eval_runner_module.build_model
+    build_calls: list[Path] = []
+
+    def counted_build(*args, **kwargs):
+        build_calls.append(kwargs["checkpoint"])
+        return original_build_model(*args, **kwargs)
+
+    monkeypatch.setattr(eval_runner_module, "build_model", counted_build)
+    multi = evaluate_suites(config, ["smoke", "held_out"], checkpoint=checkpoint)
+    assert len(build_calls) == 1
+    assert multi["checkpoint_source"] == "checkpoint"
+    assert set(multi["suites"]) == {"smoke", "held_out"}
+
 
 def test_preloaded_model_never_replays_checkpointless_eval_cache(
     tmp_path: Path,

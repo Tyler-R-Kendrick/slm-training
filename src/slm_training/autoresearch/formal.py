@@ -47,6 +47,32 @@ _FORBIDDEN_PROOF_TOKENS = re.compile(r"\b(?:sorry|admit|axiom|unsafe|native_deci
 
 
 @dataclass(frozen=True)
+class _ProjectChecks:
+    """Successful checks that can be reused by later claims in this process."""
+
+    build: subprocess.CompletedProcess[str]
+    audit: subprocess.CompletedProcess[str]
+    version: subprocess.CompletedProcess[str]
+    output: str
+    proof_total: bool
+
+
+# ``cmd formalize`` can carry several claims for the same pinned Lean project.
+# Re-running ``make test`` for every claim is redundant, but a failed or stale
+# check must never become sticky.  The key includes the complete proof-project
+# digest and the runner identity (the latter keeps monkeypatched/test runners
+# isolated).  This cache is intentionally process-local: no proof authority is
+# persisted without the normal content-addressed preflight artifact.
+_PROJECT_CHECK_CACHE: dict[tuple[str, str, object], _ProjectChecks] = {}
+
+
+def clear_project_check_cache() -> None:
+    """Clear the process-local Lean project-check cache (tests/tools)."""
+
+    _PROJECT_CHECK_CACHE.clear()
+
+
+@dataclass(frozen=True)
 class FormalTemplate:
     template_id: str
     version: str
@@ -338,6 +364,18 @@ def _proof_digest(template: FormalTemplate) -> str:
     return digest.hexdigest()
 
 
+def _project_digest(template: FormalTemplate) -> str:
+    """Digest every file that can change the pinned Lean project check."""
+
+    digest = hashlib.sha256()
+    for label, path in _proof_paths(template):
+        digest.update(label.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
 def _mathlib_version(template: FormalTemplate) -> str:
     if template.lean_project == "leverproof":
         return "none"
@@ -414,33 +452,25 @@ def _is_timeout_result(proc: subprocess.CompletedProcess[str]) -> bool:
     return "timed out after" in err or "timed out after" in out
 
 
-def run_formal_preflight(
-    campaign_id: str,
-    experiment: ExperimentSpec,
-    claim: FormalClaimV1,
+def _project_checks(
+    template: FormalTemplate,
     *,
-    timeout_seconds: float = float(MAX_RUN_SECONDS),
-    on_start: Callable[[int], None] | None = None,
-    on_heartbeat: Callable[[int], None] | None = None,
-) -> tuple[FormalPreflightV1, FormalObligationV1]:
-    """Build the pinned Lean project and emit a content-addressable result.
+    remaining: Callable[[], float],
+    on_start: Callable[[int], None] | None,
+    on_heartbeat: Callable[[int], None] | None,
+) -> _ProjectChecks:
+    """Run or reuse the expensive project-wide Lean checks.
 
-    ``timeout_seconds`` is caller-owned but repository-capped. A wall
-    hit records status ``timed_out`` — incomplete measurement, not a proof
-    rejection.
+    Only a fully successful, total proof project is cached.  A timeout,
+    compiler failure, failed axiom audit, or forbidden source token is always
+    retried for the next claim rather than converted into durable negative
+    authority.
     """
 
-    template = FORMAL_TEMPLATES.get(claim.template_id)
-    if template is None:
-        raise ValueError(f"unknown formal template: {claim.template_id}")
-    if experiment.campaign_id != campaign_id:
-        raise ValueError("formal claim belongs to a different campaign")
-    started = time.monotonic()
-    budget_seconds = min(float(MAX_RUN_SECONDS), max(0.001, float(timeout_seconds)))
-    command_deadline = started + max(0.001, budget_seconds - 1.0)
-
-    def remaining() -> float:
-        return max(0.001, command_deadline - time.monotonic())
+    key = (str(_lean_root(template).resolve()), _project_digest(template), _run)
+    cached = _PROJECT_CHECK_CACHE.get(key)
+    if cached is not None:
+        return cached
 
     lean_root = _lean_root(template)
     build_command = (
@@ -488,6 +518,66 @@ def run_formal_preflight(
     )
     output = f"{build.stdout}\n{build.stderr}\n{audit.stdout}\n{audit.stderr}"
     proof_total = _proof_sources_are_total(template)
+    result = _ProjectChecks(
+        build=build,
+        audit=audit,
+        version=version,
+        output=output,
+        proof_total=proof_total,
+    )
+    if (
+        build.returncode == 0
+        and audit.returncode == 0
+        and version.returncode == 0
+        and not audit_timed_out
+        and "sorryAx" not in output
+        and proof_total
+    ):
+        _PROJECT_CHECK_CACHE[key] = result
+    return result
+
+
+def run_formal_preflight(
+    campaign_id: str,
+    experiment: ExperimentSpec,
+    claim: FormalClaimV1,
+    *,
+    timeout_seconds: float = float(MAX_RUN_SECONDS),
+    on_start: Callable[[int], None] | None = None,
+    on_heartbeat: Callable[[int], None] | None = None,
+) -> tuple[FormalPreflightV1, FormalObligationV1]:
+    """Build the pinned Lean project and emit a content-addressable result.
+
+    ``timeout_seconds`` is caller-owned but repository-capped. A wall
+    hit records status ``timed_out`` — incomplete measurement, not a proof
+    rejection.
+    """
+
+    template = FORMAL_TEMPLATES.get(claim.template_id)
+    if template is None:
+        raise ValueError(f"unknown formal template: {claim.template_id}")
+    if experiment.campaign_id != campaign_id:
+        raise ValueError("formal claim belongs to a different campaign")
+    started = time.monotonic()
+    budget_seconds = min(float(MAX_RUN_SECONDS), max(0.001, float(timeout_seconds)))
+    command_deadline = started + max(0.001, budget_seconds - 1.0)
+
+    def remaining() -> float:
+        return max(0.001, command_deadline - time.monotonic())
+
+    checks = _project_checks(
+        template,
+        remaining=remaining,
+        on_start=on_start,
+        on_heartbeat=on_heartbeat,
+    )
+    build = checks.build
+    audit = checks.audit
+    version = checks.version
+    output = checks.output
+    proof_total = checks.proof_total
+    build_timed_out = _is_timeout_result(build)
+    audit_timed_out = build_timed_out or _is_timeout_result(audit)
     if audit_timed_out or build_timed_out:
         status: FormalProofStatus = "timed_out"
     elif (

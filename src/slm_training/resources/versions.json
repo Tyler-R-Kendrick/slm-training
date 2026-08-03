@@ -2656,7 +2656,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v155",
+      "version": "v156",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2696,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v156",
+          "date": "2026-08-03",
+          "note": "Preregister a distinct semantic-contrast plus compiler-alignment quality arm after the prior screening bank was exhausted."
+        },
         {
           "version": "v155",
           "date": "2026-08-03",
@@ -3614,7 +3619,7 @@
       ]
     },
     "harness.autoresearch.formal": {
-      "version": "v8",
+      "version": "v9",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/formal.py",
@@ -3625,6 +3630,11 @@
         ".github/workflows/ci.yml"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-08-03",
+          "note": "Reuse only successful content-digested Lean project checks within one process; failed, timed-out, or non-total proofs are never cached."
+        },
         {
           "version": "v8",
           "date": "2026-08-02",
@@ -9646,7 +9656,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v79",
+      "version": "v80",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -9667,6 +9677,11 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v80",
+          "date": "2026-08-03",
+          "note": "Share one checkpoint-bound immutable model across multi-suite evaluations, preserving fail-closed cache identity and avoiding repeated model construction."
+        },
         {
           "version": "v79",
           "date": "2026-08-03",

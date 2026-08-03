@@ -26,6 +26,7 @@ from slm_training.autoresearch.formal import (
     _run as _run_formal,
     bind_preflight,
     check_formal_trace,
+    clear_project_check_cache,
     formal_trace_from_closure,
     run_formal_preflight,
     validate_formal_preflight_artifact,
@@ -401,6 +402,40 @@ def test_metric_preflight_uses_mathlib_free_leverproof(
     )
     assert preflight.mathlib_version == "none"
     assert preflight.status == "proved"
+
+
+def test_repeated_claims_reuse_successful_project_checks(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[list[str]] = []
+
+    def successful(
+        command: list[str],
+        *,
+        cwd: Path,
+        timeout_seconds: float,
+        on_start=None,
+        on_heartbeat=None,
+    ) -> subprocess.CompletedProcess[str]:
+        del cwd, timeout_seconds, on_start, on_heartbeat
+        calls.append(command)
+        stdout = "Lean (version 4.30.0)" if "--version" in command else "passed"
+        return subprocess.CompletedProcess(command, 0, stdout=stdout, stderr="")
+
+    clear_project_check_cache()
+    monkeypatch.setattr("slm_training.autoresearch.formal._run", successful)
+    claim = FormalClaimV1(
+        template_id="metrics.structural_similarity_monotone",
+        claim="Nondecreasing jaccard and depth components cannot reduce the proxy.",
+        policy="required",
+    )
+    experiment = _experiment(claim)
+
+    first, _ = run_formal_preflight("formal-campaign", experiment, claim)
+    second, _ = run_formal_preflight("formal-campaign", experiment, claim)
+
+    assert first.status == second.status == "proved"
+    assert calls == [["make", "test"], ["lake", "env", "lean", "--version"]]
 
 
 def test_formal_preflight_forwards_liveness_callbacks(

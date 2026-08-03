@@ -190,3 +190,38 @@ the confirmation and exhausts the fingerprint. The model is learning a narrow
 structural fixture pattern, but high-quality OpenUI production learning is
 prevented by weak meaning/recall targets, zero exact agreement, small `n=3`
 evaluation, and cost regressions—not by Lean or a runtime training failure.
+
+## c1858-c1859 and current optimization closeout
+
+c1858 (slot-contract context) and c1859 (constraint-graph conditioning) both
+completed their frozen smoke measurements with size-matched parameters. Neither
+changed guarded quality: c1858 held structure `.1742`, MPR `.333`, recall `.25`,
+binder F1 `.633`, and fidelity `.528`, while c1859 held structure `.3058`, MPR
+`.333`, recall `.25`, binder F1 `.952`, and fidelity `.917`. Exact AST and
+canonical agreement remained zero in both; c1858's `7.66%` fixture latency
+improvement and c1859's `3.44%` regression are efficiency diagnostics only.
+The registered arm bank was therefore exhausted and the loop stopped at a
+typed `repair_harness` handoff instead of retrying a rejected approach.
+
+The reliability/performance repair is now implemented:
+
+- `evaluate_suites()` constructs a checkpoint-backed model once and reuses that
+  immutable instance across suites. The exact checkpoint digest is bound into
+  the suite cache key; mutable preloaded models without a digest still bypass
+  cache fail-closed. This is `harness.model_build.eval` v80.
+- Formal claims reuse only a successful, complete-project Lean check within one
+  process, keyed by the full proof-project digest and runner identity. Failed,
+  timed-out, non-total, or axiom-tainted checks are never cached. This is
+  `harness.autoresearch.formal` v9.
+- Matched CPU arms remain serialized by policy. Parallelizing them would
+  contend for the same cores and corrupt the wall comparison; only read-only
+  discovery or explicitly isolated shards may be parallelized after a measured
+  wall/CPU/memory parity benchmark.
+- A new preregistered `semantic-contrast-compiler-margin` arm combines two
+  distinct learning signals (hard-valid semantic contrast and grammar-oracle
+  compiler alignment) so the next cycle can proceed after c1859 without
+  recycling an exhausted objective.
+
+The next run must still be treated as fixture evidence until the evaluation
+ladder reaches `n≥20` with held-out, adversarial, OOD, and RICO suites. Lean,
+cache identity, and supervisor liveness are not current learning blockers.

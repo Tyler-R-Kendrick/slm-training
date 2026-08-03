@@ -910,6 +910,8 @@ def evaluate(
     model=None,
     checkpoint: Path | None = None,
     *,
+    model_checkpoint_sha256: str | None = None,
+    model_checkpoint_path: Path | None = None,
     publish_agentv: bool = True,
     cache: EvalCache | None = None,
     generation_overrides: dict[str, Any] | None = None,
@@ -946,10 +948,22 @@ def evaluate(
             raise ValueError(
                 "provide either a preloaded model or a checkpoint, not both"
             )
+        if model_checkpoint_path is not None and not model_checkpoint_path.is_file():
+            raise FileNotFoundError(
+                f"model checkpoint identity path not found: {model_checkpoint_path}"
+            )
         plugin = model
-        loaded_checkpoint: Path | None = None
-        checkpoint_sha256: str | None = None
+        # A caller may bind an immutable preloaded model to the exact
+        # checkpoint that produced it.  This is the only safe way to enable
+        # suite-cache reuse for a preloaded model; live training models omit
+        # the digest and continue to fail closed below.
+        loaded_checkpoint = model_checkpoint_path
+        checkpoint_sha256 = model_checkpoint_sha256
     else:
+        if model_checkpoint_sha256 is not None or model_checkpoint_path is not None:
+            raise ValueError(
+                "model checkpoint identity requires a preloaded model"
+            )
         if not ckpt.exists():
             raise FileNotFoundError(f"evaluation checkpoint not found: {ckpt}")
         train_records = []
@@ -2503,6 +2517,32 @@ def evaluate_suites(
 
     from slm_training.harnesses.model_build.ship_gates import write_ship_gates
 
+    # Loading a checkpoint-backed model once is materially cheaper than
+    # rebuilding it for every suite.  Bind the shared instance to the exact
+    # checkpoint digest so suite-result caching remains content-addressed and
+    # live mutable training models still use the fail-closed no-identity path.
+    shared_model = model
+    shared_checkpoint_sha256: str | None = None
+    shared_checkpoint_path: Path | None = None
+    if shared_model is None:
+        shared_checkpoint_path = checkpoint or (config.checkpoint_dir / "last.pt")
+        if not shared_checkpoint_path.is_file():
+            raise FileNotFoundError(
+                f"evaluation checkpoint not found: {shared_checkpoint_path}"
+            )
+        shared_checkpoint_sha256 = _sha256_file(shared_checkpoint_path)
+        train_records = []
+        if config.train_dir.exists():
+            try:
+                train_records = load_train_records(config.train_dir)
+            except FileNotFoundError:
+                train_records = []
+        shared_model = build_model(
+            config,
+            train_records or load_suite_records(config.test_dir, suites[0]),
+            checkpoint=shared_checkpoint_path,
+        )
+
     board: dict[str, dict] = {}
     evaluation_deadline = (
         time.monotonic() + float(config.evaluation_wall_seconds)
@@ -2527,8 +2567,9 @@ def evaluate_suites(
         suite_config = replace(config, suite=suite)
         metrics = evaluate(
             suite_config,
-            model=model,
-            checkpoint=checkpoint,
+            model=shared_model,
+            model_checkpoint_sha256=shared_checkpoint_sha256,
+            model_checkpoint_path=shared_checkpoint_path,
             publish_agentv=False,
             cache=cache,
             evaluation_deadline=evaluation_deadline,
@@ -2546,10 +2587,12 @@ def evaluate_suites(
         "run_id": config.run_id,
         "checkpoint": (
             None
-            if model is not None
-            else str(checkpoint or (config.checkpoint_dir / "last.pt"))
+            if shared_checkpoint_path is None
+            else str(shared_checkpoint_path)
         ),
-        "checkpoint_source": "preloaded_model" if model is not None else "checkpoint",
+        "checkpoint_source": (
+            "preloaded_model" if shared_checkpoint_path is None else "checkpoint"
+        ),
         "checkpoint_sha256": next(iter(board.values()), {}).get("checkpoint_sha256"),
         "test_dir": str(config.test_dir),
         "eval_data_manifest_sha": next(iter(board.values()), {}).get(

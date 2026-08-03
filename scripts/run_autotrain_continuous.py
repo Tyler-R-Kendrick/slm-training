@@ -729,6 +729,21 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         },
     ),
     (
+        "semantic-contrast-compiler-margin",
+        "Combining hard-valid semantic contrast with grammar-oracle compiler alignment improves structural_similarity and exact structural agreement at fixed model size.",
+        {
+            "semantic_contrast_dir": "src/slm_training/resources/data/eval/openui_hard_valid_v1",
+            "semantic_contrast_loss_weight": 0.25,
+            "semantic_contrast_margin": 1.0,
+            "semantic_contrast_fraction": 0.5,
+            "compiler_alignment_loss_weight": 1.0,
+            "compiler_alignment_margin": 1.0,
+            "compiler_alignment_stratified": True,
+            "compiler_alignment_kind_filter": "all",
+            "compiler_decode_mode": "tree",
+        },
+    ),
+    (
         "slot-augmentation",
         "Request-local slot permutation and alpha-renaming augmentation improves held-out binder_reference_f1 and structural_similarity without lowering parse_rate.",
         {"symbol_slot_augmentation": True},
@@ -1447,6 +1462,12 @@ def _arm_slug_from_knobs(
     if knobs.get("slot_contract_in_context"):
         return "slot-contract-context"
     if (
+        knobs.get("semantic_contrast_loss_weight")
+        and knobs.get("compiler_alignment_loss_weight")
+        and knobs.get("compiler_alignment_kind_filter") == "all"
+    ):
+        return "semantic-contrast-compiler-margin"
+    if (
         knobs.get("compiler_alignment_loss_weight")
         and knobs.get("compiler_alignment_kind_filter") == "all"
         and knobs.get("mixture_sampling_policy") == "exposure_targeted"
@@ -1770,6 +1791,7 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
         "fidelity",
         "edge-alignment",
         "semantic-contrast",
+        "semantic-contrast-compiler-margin",
         "slot-augmentation",
         "mixed-mask",
         "symbol-boundary",
