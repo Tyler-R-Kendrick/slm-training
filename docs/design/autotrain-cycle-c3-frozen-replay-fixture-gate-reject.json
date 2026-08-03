@@ -1,0 +1,110 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c3",
+  "cycle_index": 3,
+  "cycle_intent": "retry_measurement",
+  "predecessor_campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c2",
+  "evidence_class": "fixture",
+  "decision": "expected_fixture_ship_gate_reject_not_ship",
+  "scoreable": true,
+  "new_checkpoint_created": true,
+  "upstream_commit": "86e481cb10fd1bb503eb0fc8528ee278da2337e6",
+  "integration_commit": "2b61fdce82e48fee609b880929855ede2067f961",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c3-control",
+      "trainable_params": 1608962,
+      "steps": 22,
+      "last_loss": 14.390223503112793,
+      "checkpoint_sha256": "1bc6370f72ec70fe0697414fa7614e2fc446d9795e91a8ae043bd95fe8b9286e",
+      "status": "trained_evaluated_gate_rejected",
+      "smoke": {
+        "n": 3,
+        "structural_similarity": 0.32666666666666666,
+        "meaningful_program_rate": 0.0,
+        "component_type_recall": 0.16666666666666666,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "reward_score": 0.0
+      },
+      "gate_pass": false,
+      "gate_failures": [
+        "smoke:insufficient_n actual=3 need>=20",
+        "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+        "smoke:structural_similarity actual=0.32666666666666666 need>=0.35",
+        "smoke:component_type_recall actual=0.16666666666666666 need>=0.35",
+        "smoke:ast_beq_rate actual=0.0 need>=0.2",
+        "smoke:canonical_beq_rate actual=0.0 need>=0.1",
+        "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "held_out:missing_suite",
+        "adversarial:missing_suite",
+        "ood:missing_suite",
+        "rico_held:missing_suite"
+      ]
+    },
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c3-canvas",
+      "trainable_params": 1608962,
+      "steps": 22,
+      "last_loss": 14.390223503112793,
+      "checkpoint_sha256": "9f73b7a8466b7ab117988b2ab7516dffce7c9ac4f4d0ad7204a580d71053b1a4",
+      "status": "trained_evaluated_gate_rejected",
+      "smoke": {
+        "n": 3,
+        "structural_similarity": 0.32666666666666666,
+        "meaningful_program_rate": 0.0,
+        "component_type_recall": 0.16666666666666666,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "reward_score": 0.0
+      },
+      "gate_pass": false,
+      "gate_failures": [
+        "smoke:insufficient_n actual=3 need>=20",
+        "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+        "smoke:structural_similarity actual=0.32666666666666666 need>=0.35",
+        "smoke:component_type_recall actual=0.16666666666666666 need>=0.35",
+        "smoke:ast_beq_rate actual=0.0 need>=0.2",
+        "smoke:canonical_beq_rate actual=0.0 need>=0.1",
+        "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "held_out:missing_suite",
+        "adversarial:missing_suite",
+        "ood:missing_suite",
+        "rico_held:missing_suite"
+      ]
+    }
+  ],
+  "comparison": {
+    "attributable": false,
+    "primary_metric_delta": 0.0,
+    "note": "control and canvas tie exactly on smoke.structural_similarity; expected at n=3 fixture scale (wf_smoke_v2, 22 steps)."
+  },
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "reasons": [
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c3-control",
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c3-canvas",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.32666666666666666 candidate=0.32666666666666666 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "checkpoint_policy": "local_explicit_no_sync_not_reusable_not_promoted_not_ship_eval_incomplete",
+  "lean": "not_applicable:retry_measurement",
+  "next_priority": "test the distinct size-matched 'component-plan' quality hypothesis (c...-c3-component-plan) per the driver's ranked successor priorities",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "2b61fdce82e48fee609b880929855ede2067f961",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.train": "v42",
+      "harness.experiment_feature_flags": "v4"
+    },
+    "stamped_at": "2026-08-03T14:39:26Z"
+  }
+}
