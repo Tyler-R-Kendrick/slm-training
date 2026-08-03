@@ -266,6 +266,14 @@ binder F1 `.7222→.8222`, fidelity `.6111→.7222`, and reward
 requires an exact fresh-seed confirmation before any promotion or Lean formal
 preflight; `n=3`, zero AST/canonical equality, and missing production suites
 remain hard blockers.
+Cycle c1831 attempted that confirmation but produced no model evidence. Git
+integration, evidence capture, and the frozen hypothesis matrix completed; the
+driver then required the original `70s + 70s + 15s = 155s` arm/finalization
+reservation even though planning had already spent part of the 180-second cap,
+so neither arm started. Campaign v128 fits equal arm deadlines to actual
+post-planning time while retaining the 15-second finalization reserve and the
+unchanged canonical cap. The exact confirmation remains queued; this timeout
+does not confirm or reject the c1830 learning signal.
 
 The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
 confirmed a champion, c1812 was the next protected promotion slot, and the

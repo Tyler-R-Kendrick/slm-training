@@ -277,6 +277,31 @@ def _require_symmetric_arm_budget(
         raise subprocess.TimeoutExpired("symmetric decision-arm budget", required)
 
 
+def _fit_symmetric_arm_budget(
+    *, deadline: float, arm_count: int, requested_arm_wall_minutes: float
+) -> float:
+    """Share the post-planning budget equally while preserving finalization."""
+
+    if arm_count <= 0:
+        raise ValueError("arm_count must be positive")
+    remaining = _remaining_timeout(deadline)
+    usable = remaining - HARNESS_FINALIZATION_RESERVE_SECONDS
+    if usable <= 0:
+        raise subprocess.TimeoutExpired("symmetric decision-arm budget", remaining)
+    return min(float(requested_arm_wall_minutes), usable / arm_count / 60)
+
+
+def _arm_execution_deadline(
+    *, cycle_deadline: float, arm_wall_minutes: float
+) -> float:
+    """Cap one arm without spending the cycle's finalization reserve."""
+
+    return min(
+        cycle_deadline - HARNESS_FINALIZATION_RESERVE_SECONDS,
+        time.monotonic() + arm_wall_minutes * 60,
+    )
+
+
 def _promotion_formal_budget_seconds(
     *, deadline: float, arm_count: int, arm_wall_minutes: float
 ) -> float:
@@ -7477,11 +7502,21 @@ def run_cycle(
 
     arm_count = len({eid for eid in order if eid in by_id})
     if arm_count:
-        _require_symmetric_arm_budget(
+        requested_arm_wall_minutes = arm_wall_minutes
+        arm_wall_minutes = _fit_symmetric_arm_budget(
             deadline=deadline,
             arm_count=arm_count,
-            arm_wall_minutes=arm_wall_minutes,
+            requested_arm_wall_minutes=requested_arm_wall_minutes,
         )
+        if arm_wall_minutes < requested_arm_wall_minutes:
+            print(
+                "ARM_BUDGET_REBALANCED "
+                f"requested_s={requested_arm_wall_minutes * 60:.3f} "
+                f"effective_s={arm_wall_minutes * 60:.3f} "
+                f"arms={arm_count} "
+                f"finalization_reserve_s={HARNESS_FINALIZATION_RESERVE_SECONDS}",
+                flush=True,
+            )
     seen: set[str] = set()
     arm_exits: dict[str, int] = {}
     for eid in order:
@@ -7537,7 +7572,10 @@ def run_cycle(
         result = _stage_command(
             cmd,
             cwd=cwd,
-            deadline=deadline,
+            deadline=_arm_execution_deadline(
+                cycle_deadline=deadline,
+                arm_wall_minutes=arm_wall_minutes,
+            ),
             root=root,
             loop_id=loop_id,
             stage=stage,

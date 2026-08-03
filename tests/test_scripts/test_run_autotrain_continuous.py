@@ -4421,6 +4421,40 @@ def test_driver_requires_room_for_both_arms_before_starting(
         )
 
 
+def test_post_planning_budget_is_rebalanced_symmetrically(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from slm_training.levers import HARNESS_FINALIZATION_RESERVE_SECONDS
+
+    monkeypatch.setattr(_mod.time, "monotonic", lambda: 10.0)
+    remaining = 149.0
+    fitted = _mod._fit_symmetric_arm_budget(
+        deadline=10.0 + remaining,
+        arm_count=2,
+        requested_arm_wall_minutes=70 / 60,
+    )
+
+    assert fitted * 60 == pytest.approx(
+        (remaining - HARNESS_FINALIZATION_RESERVE_SECONDS) / 2
+    )
+
+
+def test_arm_execution_deadline_preserves_finalization_reserve(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from slm_training.levers import HARNESS_FINALIZATION_RESERVE_SECONDS
+
+    monkeypatch.setattr(_mod.time, "monotonic", lambda: 10.0)
+    cycle_deadline = 100.0
+
+    assert _mod._arm_execution_deadline(
+        cycle_deadline=cycle_deadline, arm_wall_minutes=2.0
+    ) == pytest.approx(cycle_deadline - HARNESS_FINALIZATION_RESERVE_SECONDS)
+    assert _mod._arm_execution_deadline(
+        cycle_deadline=cycle_deadline, arm_wall_minutes=0.5
+    ) == pytest.approx(40.0)
+
+
 def test_supervised_cli_runs_exactly_one_agent_owned_cycle(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
