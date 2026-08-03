@@ -820,6 +820,18 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         },
     ),
     (
+        "exposure-targeted-semantic-exhaustive-compiler-decision-margin",
+        "Semantic-exhaustive compiler supervision preserves exposure-targeted semantic gains while reducing runaway legal continuation and decode cost.",
+        {
+            "compiler_alignment_loss_weight": 1.0,
+            "compiler_alignment_margin": 1.0,
+            "compiler_alignment_stratified": True,
+            "compiler_alignment_semantic_exhaustive": True,
+            "compiler_alignment_kind_filter": "all",
+            "mixture_sampling_policy": "exposure_targeted",
+        },
+    ),
+    (
         "structure-token",
         "Direct grammar STRUCT-token reconstruction weighting repairs scaffold formation and structural_similarity without lowering parse_rate or binder_reference_f1.",
         {"structure_token_loss_weight": 1.0},
@@ -1373,6 +1385,13 @@ def _arm_slug_from_knobs(
         knobs.get("compiler_alignment_loss_weight")
         and knobs.get("compiler_alignment_kind_filter") == "all"
         and knobs.get("mixture_sampling_policy") == "exposure_targeted"
+        and knobs.get("compiler_alignment_semantic_exhaustive")
+    ):
+        return "exposure-targeted-semantic-exhaustive-compiler-decision-margin"
+    if (
+        knobs.get("compiler_alignment_loss_weight")
+        and knobs.get("compiler_alignment_kind_filter") == "all"
+        and knobs.get("mixture_sampling_policy") == "exposure_targeted"
     ):
         return "exposure-targeted-compiler-decision-margin"
     if (
@@ -1685,6 +1704,7 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
         "capacity-aware-semantic-exhaustive-compiler-decision-margin",
         "capacity-aware-semantic-exhaustive-structure-token-margin",
         "exposure-targeted-compiler-decision-margin",
+        "exposure-targeted-semantic-exhaustive-compiler-decision-margin",
         "structure-token",
         "typed-family-balance",
         "container-close",
@@ -6543,6 +6563,9 @@ def _matrix(
             "exposure-targeted-compiler-decision-margin": (
                 "mixture_sampling_policy"
             ),
+            "exposure-targeted-semantic-exhaustive-compiler-decision-margin": (
+                "compiler_alignment_semantic_exhaustive"
+            ),
         }.get(rec_slug)
         if treatment_key is not None:
             control_extra = {
@@ -6553,7 +6576,9 @@ def _matrix(
         if rec_slug == "exposure-targeted-compiler-decision-margin":
             control_extra = dict(bank_by_slug[rec_slug][1])
             control_extra["mixture_sampling_policy"] = "capacity_aware"
-        if rec_slug == "exposure-targeted-compiler-decision-margin":
+        if rec_slug == "exposure-targeted-semantic-exhaustive-compiler-decision-margin":
+            precursor_slug = "exposure-targeted-compiler-decision-margin"
+        elif rec_slug == "exposure-targeted-compiler-decision-margin":
             precursor_slug = "capacity-aware-compiler-decision-margin"
         elif rec_slug == "capacity-aware-semantic-exhaustive-structure-token-margin":
             precursor_slug = (
