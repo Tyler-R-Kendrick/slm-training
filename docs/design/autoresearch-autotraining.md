@@ -993,3 +993,20 @@ to its original queue entry, prevents duplicate screening enqueue, and
 reconciles the already-written c1838 duplicate before the next selector runs.
 Only the original entry becomes `confirmed`; it may proceed solely through the
 promotion cadence, which requires the full suite and Lean/formal preflight.
+
+## Continuous-loop c1839: tail null and successor objective
+
+On seed 101839, capacity-aware tail supervision was exactly neutral on every
+guarded quality and decode-work metric and 3.8% slower at p50. Combined with the
+mixed c1838 result, this closes tail weighting as a robust screening approach;
+it does not revoke the already-confirmed c1830 queue entry, whose authority is
+limited to the separately governed promotion trial.
+
+The handoff reported the registered quality bank exhausted. Campaign v137 adds
+one distinct size-matched successor: capacity-aware semantic-exhaustive compiler
+alignment. Its matched control retains capacity-aware all-family margin and the
+treatment changes only `compiler_alignment_semantic_exhaustive=false→true`.
+This increases supervised semantic-decision coverage without adding parameters
+or changing constrained decode authority, and directly targets the persistent
+zero exact-AST/canonical signal. It is preregistered for the next screening slot;
+c1840 remains a promotion slot with mandatory Lean/formal preflight.

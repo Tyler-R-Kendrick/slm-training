@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import fcntl
 import hashlib
 import json
+import os
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
@@ -54,6 +56,7 @@ from slm_training.autoresearch.schemas import (
     AutotrainActionReceiptV1,
     AutotrainActionV1,
     AutotrainCycleHandoffV1,
+    AutotrainLoopStateV1,
     CampaignBudget,
     CampaignSpec,
     CategoricalNoveltyAudit,
@@ -80,8 +83,10 @@ from slm_training.autoresearch.storage import (
     _markdown_cell,
     _metrics_text,
     _project_confirmation_queue_status,
+    _retry_measurement_evidence_is_complete,
     _run_exposure_text,
     append_autotrain_action_receipt,
+    autotrain_loop_state_lock,
     autotrain_action_sha256,
     bind_autotrain_action_evidence,
     pending_autotrain_actions,
@@ -1549,9 +1554,62 @@ def test_ack_action_receipt_closes_predecessor_prerequisite(tmp_path: Path) -> N
     handoff_path = root / campaign_id / "cycle_handoff.json"
     handoff_path.parent.mkdir(parents=True)
     handoff_path.write_text(handoff.model_dump_json(indent=2) + "\n")
+    state_path = root / "loops" / "loop-1" / "state.json"
+    state_path.parent.mkdir(parents=True)
+    state_path.write_text(
+        AutotrainLoopStateV1(
+            loop_id="loop-1",
+            state="IDLE",
+            phase="between_cycles",
+            last_completed_campaign_id=campaign_id,
+            cycle_index=1,
+            next_action="document",
+        ).model_dump_json(indent=2)
+        + "\n"
+    )
     assert [action.kind for _, action in pending_autotrain_actions(root, handoff)] == [
         "document"
     ]
+    assert [
+        action.kind for _, action in pending_autotrain_execution_actions(root, handoff)
+    ] == ["next_experiment"]
+
+    driver_owned_args = build_parser().parse_args(
+        [
+            "--root",
+            str(root),
+            "ack-action",
+            "--loop-id",
+            "loop-1",
+            "--campaign-id",
+            campaign_id,
+            "--action-index",
+            "1",
+            "--evidence",
+            "docs/design/autoresearch-autotraining.md",
+        ]
+    )
+    with pytest.raises(ValueError, match="continuous-driver-owned"):
+        driver_owned_args.func(driver_owned_args)
+
+    blocked_args = build_parser().parse_args(
+        [
+            "--root",
+            str(root),
+            "ack-action",
+            "--loop-id",
+            "loop-1",
+            "--campaign-id",
+            campaign_id,
+            "--action-index",
+            "1",
+            "--status",
+            "blocked",
+            "--evidence",
+            "docs/design/autoresearch-autotraining.md",
+        ]
+    )
+    assert blocked_args.func(blocked_args) == 0
     assert [
         action.kind for _, action in pending_autotrain_execution_actions(root, handoff)
     ] == ["next_experiment"]
@@ -1607,6 +1665,11 @@ def test_ack_action_receipt_closes_predecessor_prerequisite(tmp_path: Path) -> N
     )
     assert args.func(args) == 0
     assert pending_autotrain_actions(root, handoff) == ()
+    refreshed_state = AutotrainLoopStateV1.model_validate_json(
+        state_path.read_text(encoding="utf-8")
+    )
+    assert refreshed_state.next_action == "next_experiment"
+    assert refreshed_state.phase == "between_cycles"
     receipt_rows = [
         json.loads(row)
         for row in (root / "loops" / "loop-1" / "action_receipts.jsonl")
@@ -1644,7 +1707,10 @@ def test_ack_action_receipt_closes_predecessor_prerequisite(tmp_path: Path) -> N
             ),
         ),
     )
-    assert pending_autotrain_execution_actions(root, handoff) == ()
+    assert [
+        action.kind
+        for _, action in pending_autotrain_execution_actions(root, handoff)
+    ] == ["next_experiment"]
 
     stopped_handoff = handoff.model_copy(
         update={
@@ -1704,6 +1770,112 @@ def test_ack_action_receipt_closes_predecessor_prerequisite(tmp_path: Path) -> N
     assert [
         action.kind for _, action in pending_autotrain_actions(root, stopped_handoff)
     ] == ["stop_campaign"]
+
+
+def test_loop_state_lock_is_shared_across_writers(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    lock_path = root / "loops" / "loop-1" / "state.lock"
+
+    with autotrain_loop_state_lock(root, "loop-1"):
+        competing_fd = os.open(lock_path, os.O_RDWR)
+        try:
+            with pytest.raises(BlockingIOError):
+                fcntl.flock(competing_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        finally:
+            os.close(competing_fd)
+
+    competing_fd = os.open(lock_path, os.O_RDWR)
+    try:
+        fcntl.flock(competing_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    finally:
+        fcntl.flock(competing_fd, fcntl.LOCK_UN)
+        os.close(competing_fd)
+
+
+def test_retry_receipt_requires_complete_predecessor_bound_pair(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    campaign_id = "cycle-1"
+    action = AutotrainActionV1(
+        kind="retry_measurement",
+        owner="autotrain",
+        reason="Replay the incomplete matched pair.",
+        evidence_ids=(f"campaign:{campaign_id}",),
+        frozen_manifest_sha256="a" * 64,
+    )
+    handoff = AutotrainCycleHandoffV1(
+        loop_id="loop-1",
+        campaign_id=campaign_id,
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        cycle_role="screening",
+        cycle_intent="retry_measurement",
+        evidence_class="fixture",
+        climb_state="inconclusive",
+        ship_state="blocked",
+        primary_metric="smoke.parse_rate",
+        actions=(action,),
+    )
+    successor = root / campaign_id / "successor"
+    manifests = successor / "manifests"
+    manifests.mkdir(parents=True)
+    (successor / "campaign.json").write_text(
+        json.dumps(
+            {
+                "campaign_id": "cycle-2",
+                "loop_id": "loop-1",
+                "predecessor_campaign_id": campaign_id,
+            }
+        ),
+        encoding="utf-8",
+    )
+    (successor / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "schema": "autotrain_sdlc_delivery/v1",
+                "campaign_id": "cycle-2",
+                "loop_id": "loop-1",
+                "measurement_complete": True,
+                "arm_order": ["control", "candidate"],
+            }
+        ),
+        encoding="utf-8",
+    )
+    for arm in ("control", "candidate"):
+        (manifests / f"{arm}.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": "ExperimentCampaignV1",
+                    "campaign_id": "cycle-2",
+                    "experiment_id": arm,
+                }
+            ),
+            encoding="utf-8",
+        )
+    evidence = tuple(
+        f"successor/{name}"
+        for name in (
+            "campaign.json",
+            "sdlc_delivery.json",
+            "manifests/control.json",
+            "manifests/candidate.json",
+        )
+    )
+    receipt = AutotrainActionReceiptV1(
+        loop_id="loop-1",
+        campaign_id=campaign_id,
+        action_index=0,
+        action_sha256=autotrain_action_sha256(action),
+        action_kind=action.kind,
+        status="completed",
+        evidence_uris=evidence,
+    )
+    assert _retry_measurement_evidence_is_complete(root, handoff, receipt)
+    assert not _retry_measurement_evidence_is_complete(
+        root,
+        handoff,
+        receipt.model_copy(update={"evidence_uris": ("successor/campaign.json",)}),
+    )
 
 
 def test_theorem_band_miss_stops_and_requires_formal_repair(tmp_path: Path) -> None:
@@ -3753,6 +3925,8 @@ def test_compile_resolves_canonical_published_train_version() -> None:
             component_inventory_decode_weight=0.75,
             component_plan_loss_weight=1.25,
             component_plan_decode_weight=0.5,
+            slot_component_loss_weight=1.1,
+            slot_component_decode_weight=0.7,
             component_edge_loss_weight=1.5,
             component_edge_alignment_loss_weight=1.75,
             component_edge_decode_weight=0.25,
@@ -3762,6 +3936,8 @@ def test_compile_resolves_canonical_published_train_version() -> None:
             binder_topology_decode_weight=0.4,
             binder_arity_loss_weight=1.2,
             binder_arity_decode_weight=0.3,
+            binder_slot_ownership_loss_weight=1.4,
+            binder_slot_ownership_decode_weight=0.6,
             symbol_boundary_loss_weight=1.0,
             fidelity_loss_weight=1.5,
             semantic_contrast_dir="resources/contrast",
@@ -3809,6 +3985,8 @@ def test_compile_resolves_canonical_published_train_version() -> None:
     )
     assert commands[0][commands[0].index("--component-plan-loss-weight") + 1] == "1.25"
     assert commands[0][commands[0].index("--component-plan-decode-weight") + 1] == "0.5"
+    assert commands[0][commands[0].index("--slot-component-loss-weight") + 1] == "1.1"
+    assert commands[0][commands[0].index("--slot-component-decode-weight") + 1] == "0.7"
     assert commands[0][commands[0].index("--component-edge-loss-weight") + 1] == "1.5"
     assert (
         commands[0][commands[0].index("--component-edge-alignment-loss-weight") + 1]
@@ -3831,6 +4009,14 @@ def test_compile_resolves_canonical_published_train_version() -> None:
     )
     assert commands[0][commands[0].index("--binder-arity-loss-weight") + 1] == "1.2"
     assert commands[0][commands[0].index("--binder-arity-decode-weight") + 1] == "0.3"
+    assert (
+        commands[0][commands[0].index("--binder-slot-ownership-loss-weight") + 1]
+        == "1.4"
+    )
+    assert (
+        commands[0][commands[0].index("--binder-slot-ownership-decode-weight") + 1]
+        == "0.6"
+    )
     assert commands[0][commands[0].index("--symbol-boundary-loss-weight") + 1] == (
         "1.0"
     )
@@ -4027,6 +4213,23 @@ def test_experiment_wall_budget_reads_history_but_execution_is_capped() -> None:
     from scripts.autoresearch import _bounded_campaign_seconds
 
     assert _bounded_campaign_seconds(historical) == float(MAX_RUN_MINUTES * 60)
+
+
+def test_dynamic_experiment_wall_is_bounded_by_campaign_ceiling() -> None:
+    from scripts.autoresearch import _bounded_experiment_seconds
+
+    bounded = CampaignSpec(
+        campaign_id="bounded-dynamic-wall",
+        objective="Bound a dynamic experiment arm share.",
+        primary_metric="score",
+        budget=CampaignBudget(max_wall_minutes=2),
+    )
+
+    assert _bounded_experiment_seconds(bounded, 73.25) == 73.25
+    assert _bounded_experiment_seconds(bounded, 180) == 120
+    assert _bounded_experiment_seconds(bounded, None) == 120
+    with pytest.raises(ValueError, match="must be positive"):
+        _bounded_experiment_seconds(bounded, 0)
 
 
 def test_execute_shares_one_wall_budget_across_stages(monkeypatch) -> None:

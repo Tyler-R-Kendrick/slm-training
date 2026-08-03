@@ -10087,6 +10087,12 @@ class TwoTowerModel(nn.Module):
         _hidden_rows: dict[tuple[int, ...], torch.Tensor] | None = None,
     ) -> tuple[int, ...]:
         """Rank completion paths using gathered rows of the tied LM head."""
+        from slm_training.models.decode_stats import check_decode_deadline
+
+        # Path ranking can fan out over thousands of legal trie edges. Keep
+        # the evaluator's cooperative deadline live through this phase too;
+        # forest construction is not the only expensive compiler operation.
+        check_decode_deadline()
         if len(paths) == 1 and coverage == "complete":
             if paths[0].token_ids:
                 self._record_exact_bypass(int(paths[0].token_ids[0]))
@@ -10106,6 +10112,7 @@ class TwoTowerModel(nn.Module):
         # configured margin. Anything less falls through to the model below.
         speculative = self._speculative_ranker()
         if speculative is not None and len(paths) > 1:
+            check_decode_deadline()
             choice = speculative.choose(prefix, paths)
             if choice is not None:
                 if stats is not None:
@@ -10448,8 +10455,10 @@ class TwoTowerModel(nn.Module):
         with timed_ms(stats, "trie_ms"):
             children: dict[tuple[int, ...], set[int]] = {}
             for path in paths:
+                check_decode_deadline()
                 parent = tuple(prefix)
                 for token_id in path.token_ids:
+                    check_decode_deadline()
                     children.setdefault(parent, set()).add(int(token_id))
                     parent = (*parent, int(token_id))
             edge_scores: dict[tuple[tuple[int, ...], int], float] = {}
@@ -10476,6 +10485,7 @@ class TwoTowerModel(nn.Module):
                 parent for parent in parents if parent not in hidden_rows
             ]
             for start in range(0, len(missing_parents), batch_states):
+                check_decode_deadline()
                 chunk = missing_parents[start : start + batch_states]
                 canvases = torch.cat(
                     [self._compiler_canvas(list(parent), length) for parent in chunk],
@@ -10499,6 +10509,7 @@ class TwoTowerModel(nn.Module):
                 if path.token_ids
             }
             for parent in parents:
+                check_decode_deadline()
                 candidate_ids = tuple(sorted(children[parent]))
                 scores = self._project_candidates(
                     hidden_rows[parent][len(parent)], candidate_ids
@@ -10665,10 +10676,12 @@ class TwoTowerModel(nn.Module):
 
         path_scores: list[float] = []
         for path in paths:
+            check_decode_deadline()
             parent = tuple(prefix)
             score = 0.0
             branches = 0
             for token_id in path.token_ids:
+                check_decode_deadline()
                 score += edge_scores.get((parent, int(token_id)), 0.0)
                 if len(children.get(parent, ())) > 1:
                     branches += 1
@@ -11440,6 +11453,9 @@ class TwoTowerModel(nn.Module):
             raise ValueError(
                 "compiler_decode_mode must be off, forced, restricted, or tree"
             )
+        from slm_training.models.decode_stats import check_decode_deadline
+
+        check_decode_deadline()
         bsz = int(ctx.size(0))
         shared_completion_domains = CompletionBatchCache()
 
@@ -11535,10 +11551,12 @@ class TwoTowerModel(nn.Module):
                 active[row] = False
 
         while any(active):
+            check_decode_deadline()
             forests: dict[int, Any] = {}
             selected_now: dict[int, tuple[int, ...]] = {}
             model_rows: list[int] = []
             for row in range(bsz):
+                check_decode_deadline()
                 if not active[row]:
                     continue
                 prefix = prefixes[row]
@@ -11558,6 +11576,7 @@ class TwoTowerModel(nn.Module):
                         )
                     finally:
                         state._collect_completion_stats()
+                check_decode_deadline()
                 forced_closure: tuple[int, ...] = ()
                 verified_solver_decode = bool(
                     getattr(self.config, "verified_solver_decode", False)
@@ -11609,6 +11628,7 @@ class TwoTowerModel(nn.Module):
                     model_rows.append(row)
 
             for row, selected in selected_now.items():
+                check_decode_deadline()
                 commit(row, forests[row], selected)
             if stats is not None and selected_now:
                 stats.forced_row_tokens_without_forward += sum(
@@ -11696,6 +11716,7 @@ class TwoTowerModel(nn.Module):
             )
             batch_states = max(1, min(max_states, token_budget // max(1, length)))
             for start in range(0, len(entries), batch_states):
+                check_decode_deadline()
                 chunk = entries[start : start + batch_states]
                 canvases = torch.cat(
                     [
@@ -11724,6 +11745,7 @@ class TwoTowerModel(nn.Module):
                 stats.ambiguous_rows_forwarded += len({row for row, _parent in entries})
 
             for row in ranked_rows:
+                check_decode_deadline()
                 selected = self._select_compiler_path(
                     prefixes[row],
                     forests[row].paths,
@@ -14408,6 +14430,8 @@ class TwoTowerModel(nn.Module):
                                 admitted = bool(
                                     admit_fill(engine, self.tokenizer, trial)
                                 )
+                        except (TimeoutError, KeyboardInterrupt):
+                            raise
                         except Exception:  # noqa: BLE001
                             admitted = False
                     if admitted:
@@ -14415,6 +14439,8 @@ class TwoTowerModel(nn.Module):
                             admitted = not filter_ids_by_stream(
                                 self.tokenizer, trial, [position]
                             )
+                        except (TimeoutError, KeyboardInterrupt):
+                            raise
                         except Exception:  # noqa: BLE001
                             admitted = False
                     if admitted:

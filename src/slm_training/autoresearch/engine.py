@@ -649,6 +649,14 @@ def compile_commands(
                     str(knobs.component_plan_decode_weight),
                 ]
             )
+        if knobs.slot_component_loss_weight is not None:
+            train.extend(
+                ["--slot-component-loss-weight", str(knobs.slot_component_loss_weight)]
+            )
+        if knobs.slot_component_decode_weight is not None:
+            train.extend(
+                ["--slot-component-decode-weight", str(knobs.slot_component_decode_weight)]
+            )
         if knobs.component_edge_loss_weight is not None:
             train.extend(
                 ["--component-edge-loss-weight", str(knobs.component_edge_loss_weight)]
@@ -722,6 +730,20 @@ def compile_commands(
         if knobs.binder_arity_decode_weight is not None:
             train.extend(
                 ["--binder-arity-decode-weight", str(knobs.binder_arity_decode_weight)]
+            )
+        if knobs.binder_slot_ownership_loss_weight is not None:
+            train.extend(
+                [
+                    "--binder-slot-ownership-loss-weight",
+                    str(knobs.binder_slot_ownership_loss_weight),
+                ]
+            )
+        if knobs.binder_slot_ownership_decode_weight is not None:
+            train.extend(
+                [
+                    "--binder-slot-ownership-decode-weight",
+                    str(knobs.binder_slot_ownership_decode_weight),
+                ]
             )
         if knobs.symbol_boundary_loss_weight is not None:
             train.extend(

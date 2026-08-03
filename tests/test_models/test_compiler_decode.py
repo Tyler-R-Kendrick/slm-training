@@ -63,6 +63,21 @@ def test_canonical_valid_openui_propagates_decode_deadline(monkeypatch) -> None:
         TwoTowerModel._canonical_valid_openui("root = Separator()")
 
 
+def test_compiler_batch_propagates_decode_deadline(monkeypatch) -> None:
+    from slm_training.models import decode_stats
+
+    model = _model()
+    ctx = torch.zeros((1, 2, model.config.d_model))
+    ctx_pad = torch.zeros((1, 2), dtype=torch.bool)
+    monkeypatch.setattr(
+        decode_stats,
+        "check_decode_deadline",
+        lambda: (_ for _ in ()).throw(TimeoutError("compiler deadline")),
+    )
+    with pytest.raises(TimeoutError, match="compiler deadline"):
+        model._compiler_ltr_decode_batch(ctx, ctx_pad, 8, mode="tree")
+
+
 def _model(**config_overrides) -> TwoTowerModel:
     record = ExampleRecord(
         id="compiler",

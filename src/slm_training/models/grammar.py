@@ -858,6 +858,8 @@ def dfa_admits_token(
             t0 = time.perf_counter()
             try:
                 eng.set_prefix(prefix_text)  # type: ignore[union-attr]
+            except (TimeoutError, KeyboardInterrupt):
+                raise
             except Exception:  # noqa: BLE001
                 pass
             if stats is not None:
@@ -1602,6 +1604,8 @@ def filter_ids_by_stream(
             try:
                 if not engine.set_prefix(text):
                     return list(newly_filled)
+            except (TimeoutError, KeyboardInterrupt):
+                raise
             except Exception:  # noqa: BLE001
                 pass
         return []

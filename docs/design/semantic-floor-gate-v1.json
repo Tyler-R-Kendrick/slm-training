@@ -332,7 +332,7 @@
   "eval_manifests": [],
   "evaluator_versions": {
     "@agentv/core": "4.42.4",
-    "agentv_owner_sha256": "67a681afbaf6d057d21411c56203bea43cbd494f420539ee1f17ec1dedc243c9",
+    "agentv_owner_sha256": "4282222b1d78ec134d35397ca1a6d6dd923a24f8703bf80610a527550e89f45f",
     "evals.scoring": "v22"
   },
   "evidence": [
@@ -393,7 +393,7 @@
     }
   ],
   "evidence_cutoff": "2026-07-21T04:15:30.006965Z",
-  "gate_hash": "cc7f6daf118ecc8f208d7aac26a9531c028b295c35b2141f6cd0a866a2f5faaa",
+  "gate_hash": "f25071623d6ab52e9af533a2c074c3ff9a2d0980da03be00d8a176075e7f978e",
   "generated_at": "2026-07-23T07:03:22.541155Z",
   "legacy_meaning_v1_by_suite": {},
   "metric_versions": {

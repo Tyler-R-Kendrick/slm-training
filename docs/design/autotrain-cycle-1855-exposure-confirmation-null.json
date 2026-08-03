@@ -1,0 +1,16 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-202607-98199209-c1855",
+  "decision": "reject_confirmation_fixture_only",
+  "claim_class": "fixture_confirmation",
+  "formal": {"status": "not_applicable:confirmation"},
+  "recipe": {"device": "cpu", "steps": 21, "seed": 101855, "batch_size": 2, "num_threads": 1, "context_backend": "scratch", "suite": "smoke", "suite_n": 3, "trainable_params": {"control": 1608962, "candidate": 1613477}, "sync_checkpoints": false, "sampling_policy": "capacity_aware"},
+  "arms": {
+    "control": {"last_loss": 10.201632499694824, "checkpoint_sha256": "b67c8792ead1f9d7c7ac1865069e07e5548490c84d5298e0792bade873aae558", "metrics": {"parse_rate": 1.0, "structural_similarity": 0.22999999999999998, "meaningful_program_rate": 0.0, "component_type_recall": 0.0, "binder_reference_f1": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0, "ast_beq_rate": 0.0, "canonical_beq_rate": 0.0, "latency_ms_p50": 2432.7, "tokens_emitted_mean": 60.0, "forwards_count_mean": 7.0, "compiler_ms_mean": 6622.082}},
+    "candidate": {"last_loss": 18.4581241607666, "checkpoint_sha256": "49c3b3e3daa57e1287d100a2f66fcf7cf80ab6b98d4204554be9a184072cd864", "metrics": {"parse_rate": 1.0, "structural_similarity": 0.3541666666666667, "meaningful_program_rate": 0.3333333333333333, "component_type_recall": 0.3333333333333333, "binder_reference_f1": 0.6333333333333333, "placeholder_fidelity": 0.5277777777777778, "reward_score": 0.8073333333333332, "ast_beq_rate": 0.0, "canonical_beq_rate": 0.0, "latency_ms_p50": 2573.93, "tokens_emitted_mean": 72.0, "forwards_count_mean": 12.0, "compiler_ms_mean": 6734.117}}
+  },
+  "effects": {"structural_similarity": 0.1241666666666667, "meaningful_program_rate": 0.3333333333333333, "component_type_recall": 0.3333333333333333, "latency_fraction": 0.05805483619024131, "tokens_fraction": 0.2, "forwards_fraction": 0.7142857142857143, "params_fraction": 0.0028061570130307615},
+  "ship": {"eligible": false, "failures": ["smoke n=3<20", "meaningful_program_rate below .66", "component recall below .35", "AST/canonical exact rates 0", "latency and decode-work regression", "parameter growth lacks EG_params evidence", "production suites missing", "confirmation_rejected:primary_quality_not_reheld"]},
+  "successor": {"experiment_slug": "distinct quality-targeted objective after confirmation rejection", "next_action": "exhaust exposure-cap champion; do not spend more scalar steps or promote the checkpoint; keep Lean locked"},
+  "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "06a56975795dac3347299375604b8089867bf77e", "code_dirty": false, "components": {"harness.model_build.train": "v38", "harness.autoresearch.experiment_campaign": "v152", "harness.model_build.eval": "v79", "evals.meaningful_program": "2.13.0", "evals.scoring": "v22", "model.twotower": "v304"}, "stamped_at": "2026-08-03T08:21:51.464636+00:00"}
+}

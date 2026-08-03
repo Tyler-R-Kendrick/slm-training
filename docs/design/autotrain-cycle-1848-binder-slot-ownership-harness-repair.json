@@ -1,0 +1,73 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-202607-98199209-c1848",
+  "decision": "incomplete_harness_repair_required",
+  "claim_class": "fixture_screening",
+  "formal": {"status": "not_applicable:screening"},
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "seed": 101848,
+    "batch_size": 2,
+    "num_threads": 1,
+    "context_backend": "scratch",
+    "suite": "smoke",
+    "suite_n": 3,
+    "trainable_params": 1608962,
+    "sync_checkpoints": false,
+    "sampling_policy": "capacity_aware"
+  },
+  "arms": {
+    "control": {
+      "status": "completed",
+      "last_loss": 15.693244934082031,
+      "checkpoint_sha256": "a9a2f810adda33050b8aacddb4d116f8d31e7fc772ff4762dcbecbd7042d269f",
+      "metrics": {
+        "parse_rate": 1.0,
+        "structural_similarity": 0.0575,
+        "meaningful_program_rate": 0.0,
+        "component_type_recall": 0.0,
+        "binder_reference_f1": 0.0,
+        "placeholder_fidelity": 0.0,
+        "reward_score": 0.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 911.1,
+        "completed_document_n": 3
+      }
+    },
+    "candidate": {
+      "status": "harness_failed_before_training",
+      "arm": "binder-slot-ownership",
+      "error": "ModelBuildConfig rejected binder_slot_ownership_decode_weight because the arm omitted the required tree compiler decode capability.",
+      "metrics": null
+    }
+  },
+  "ship": {
+    "eligible": false,
+    "failures": [
+      "candidate harness failure before training",
+      "measurement incomplete; identical frozen replay required",
+      "smoke n=3<20",
+      "production suites missing"
+    ]
+  },
+  "successor": {
+    "experiment_slug": "binder-slot-ownership",
+    "next_action": "replay the identical frozen arm after tree compiler capability repair"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "24bd7f2de2f8a86b5e1a566ae4e7a9431d82292c",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.train": "v38",
+      "harness.autoresearch.experiment_campaign": "v144",
+      "harness.model_build.eval": "v79",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v22",
+      "model.twotower": "v304"
+    },
+    "stamped_at": "2026-08-03T07:40:34.813660+00:00"
+  }
+}

@@ -1,0 +1,109 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-202607-98199209-c1861",
+  "decision": "reject_fixture_positive_not_ship",
+  "claim_class": "fixture_screening",
+  "formal": {"status": "not_applicable:screening"},
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "seed": 101860,
+    "batch_size": 2,
+    "num_threads": 1,
+    "context_backend": "scratch",
+    "suite": "smoke",
+    "suite_n": 3,
+    "trainable_params": {"control": 1608962, "candidate": 1608962},
+    "sync_checkpoints": false,
+    "candidate_lever": "semantic_contrast_loss_weight=.25 + compiler_alignment_loss_weight=1.0",
+    "semantic_contrast": {
+      "dir": "src/slm_training/resources/data/eval/openui_hard_valid_v1",
+      "fraction": 0.5,
+      "data_manifest_sha256": "fb320850f701ffe76170d2f26e570f1103d7815c7ea2186da846c6d185f21d10"
+    },
+    "code_commit": "287c99a9a320016e6a823a2ab2d48987768e4797",
+    "model_component": "model.twotower:v306"
+  },
+  "arms": {
+    "control": {
+      "status": "complete_gate_reject",
+      "checkpoint_sha256": "e308ede682745e0d8d8f901502064f27a159dde71acb182e916e6d85962a57bb",
+      "metrics": {
+        "parse_rate": 1.0,
+        "structural_similarity": 0.0575,
+        "meaningful_program_rate": 0.0,
+        "component_type_recall": 0.0,
+        "binder_reference_f1": 0.0,
+        "placeholder_fidelity": 0.0,
+        "reward_score": 0.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 16758.82,
+        "tokens_emitted_mean": 765.0,
+        "forwards_count_mean": 243.0,
+        "compiler_ms_mean": 28924.5,
+        "decode_timeout_count": 0
+      }
+    },
+    "candidate": {
+      "status": "complete_gate_reject",
+      "checkpoint_sha256": "53ab1fe784bed91b206d6ec89f74a908bda7f542ec3951a176daf96e71bd0f2f",
+      "metrics": {
+        "parse_rate": 1.0,
+        "structural_similarity": 0.27416666666666667,
+        "meaningful_program_rate": 0.3333333333333333,
+        "component_type_recall": 0.3333333333333333,
+        "binder_reference_f1": 0.6333333333333333,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.8153333333333332,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 3626.09,
+        "tokens_emitted_mean": 126.0,
+        "forwards_count_mean": 52.0,
+        "compiler_ms_mean": 8699.0,
+        "decode_timeout_count": 0
+      }
+    }
+  },
+  "effects": {
+    "structural_similarity_delta": 0.21666666666666667,
+    "meaningful_program_rate_delta": 0.3333333333333333,
+    "latency_fraction": -0.7836560479001197,
+    "tokens_fraction": -0.8352941176470589,
+    "forwards_fraction": -0.7860082304526749,
+    "params_fraction": 0.0
+  },
+  "ship": {
+    "eligible": false,
+    "failures": [
+      "smoke n=3<20",
+      "MPR .333<.66",
+      "structure .274<.35",
+      "component recall .333<.35",
+      "AST/canonical exact rates 0",
+      "held-out/adversarial/OOD/RICO suites missing"
+    ]
+  },
+  "learning_interpretation": "matched fixture signal only; not evidence of high-quality OpenUI generalization",
+  "harness_repair": "compiler-tree deadline checks now propagate; both arms completed with zero decode timeouts",
+  "successor": {
+    "experiment_slug": "distinct size-matched quality objective after registered bank exhaustion",
+    "next_action": "use a broader held-out suite and semantic/exact targets before promotion claims"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "287c99a9a320016e6a823a2ab2d48987768e4797",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v80",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v306"
+    },
+    "stamped_at": "2026-08-03T09:38:58Z"
+  }
+}

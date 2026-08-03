@@ -35,7 +35,7 @@
     },
     {
       "path": "tests/test_dsl/test_language_contract.py",
-      "sha256": "1633d3538f99b5abc4957972dc31ab803e0d10442c57b76c8f6f28d5bfd39d09"
+      "sha256": "44da381f501a3c277bcd1d6d8e802df9e757325c968699b7e2aa44fd61b9315d"
     },
     {
       "path": "src/slm_training/dsl/pack.py",
