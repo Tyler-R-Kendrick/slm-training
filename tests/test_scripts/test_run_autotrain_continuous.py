@@ -26,6 +26,16 @@ _classify_metric_tradeoff = _mod._classify_metric_tradeoff
 _PRIMARY = "smoke.latency_ms_p50"
 
 
+@pytest.fixture(autouse=True)
+def _clear_dynamic_thrash_bank_cache() -> None:
+    """Isolate loop-local self-heal thrash arms across tests."""
+    _mod._DYNAMIC_THRASH_ARMS.clear()
+    _mod._DYNAMIC_THRASH_LOADED_FOR = None
+    yield
+    _mod._DYNAMIC_THRASH_ARMS.clear()
+    _mod._DYNAMIC_THRASH_LOADED_FOR = None
+
+
 def _classify(
     *,
     control: dict[str, float | None],
