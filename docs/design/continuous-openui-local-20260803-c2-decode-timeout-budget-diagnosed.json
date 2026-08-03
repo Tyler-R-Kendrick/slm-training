@@ -1,0 +1,58 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 2,
+  "decision": "harness_failure_decode_timeout_budget_diagnosed",
+  "evidence_class": "fixture",
+  "cycle_role": "screening",
+  "primary_metric": "smoke.structural_similarity",
+  "reasons": [
+    "measurement_incomplete:c20260803-continuous-openui-local-8c0b60dd-c2-control:smoke:incomplete_document_n=3:decode_timeout_count=3",
+    "measurement_incomplete:c20260803-continuous-openui-local-8c0b60dd-c2-component-plan:smoke:incomplete_document_n=3:decode_timeout_count=3",
+    "primary_metric_unavailable"
+  ],
+  "arms": [
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c2-control",
+      "seed": 100002,
+      "governed_decode_timeout_seconds": 24.0,
+      "completed_document_n": 0,
+      "incomplete_document_n": 3
+    },
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c2-component-plan",
+      "seed": 100002,
+      "governed_decode_timeout_seconds": 24.0,
+      "completed_document_n": 0,
+      "incomplete_document_n": 3
+    }
+  ],
+  "diagnostic": {
+    "kind": "decode_timeout_budget_sweep",
+    "method": "scripts.evaluate_model --evaluation-policy strict_compiler_tree --seed 100002 --decode-timeout-seconds 90 --device cpu, same c2-control checkpoint",
+    "result": {
+      "completed_document_n": 3,
+      "incomplete_document_n": 0
+    },
+    "conclusion": "budget_limited_not_hang",
+    "reference_methodology": "scripts/run_slm303_decode_budget_audit.py"
+  },
+  "policy_reference": {
+    "file": "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json",
+    "version": "v4",
+    "field": "measurement.screening_decode_timeout_seconds",
+    "current_value": 24,
+    "change_made_this_cycle": false,
+    "reason": "governed threshold change requires a dedicated preregistered meta-campaign against unchanged held-out controls, not a same-cycle edit"
+  },
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false
+  },
+  "handoff_action_status": {
+    "document": "completed",
+    "repair_harness": "blocked",
+    "retry_measurement": "pending"
+  }
+}
