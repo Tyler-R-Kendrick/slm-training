@@ -1,0 +1,53 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c5",
+  "cycle_index": 5,
+  "evidence_class": "fixture",
+  "decision": "infrastructure_failure_not_a_model_result",
+  "scoreable": false,
+  "new_checkpoint_created": false,
+  "upstream_commit": "2c4debec7a426036f26159bd7340fce2cbe6411a",
+  "integration_commit": "f511a781503625d1bf793a4c21bf4c0288f44a7c",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c5-control",
+      "status": "completed_train_eval_incomplete",
+      "trainable_params": 1766990,
+      "failure_stage": "evaluate_model",
+      "failure_reason": "smoke:decode_timeout_count=3 of 3 documents (repeat of cycle 4); compiler_ms_mean=23622.2ms exceeded the wall-fitted decode_timeout_seconds",
+      "smoke": null
+    },
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c5-component-edge",
+      "status": "completed_train_eval_incomplete",
+      "trainable_params": 1766990,
+      "failure_stage": "evaluate_model",
+      "failure_reason": "smoke:decode_timeout_count=3 of 3 documents (repeat of cycle 4); compiler_ms_mean=23184.0ms exceeded the wall-fitted decode_timeout_seconds",
+      "smoke": null
+    }
+  ],
+  "comparison": {
+    "attributable": false
+  },
+  "agentv": {
+    "bundles_complete": false,
+    "execution_errors": 0,
+    "ship_gates_pass": false
+  },
+  "checkpoint_policy": "no_new_checkpoint_frozen_replay",
+  "lean": "not_applicable:retry_measurement",
+  "harness_repair": {
+    "harness_family": "model_build",
+    "diagnosis": "This is the frozen replay of cycle 4's identical arm, and both arms time out identically again (control 23622.2ms, component-edge 23184.0ms mean compiler time). This confirms cycle 4's finding: the decode_timeout_seconds fitted by _fit_screening_decode_timeout_seconds() (train-floor + overhead clamp under the repo's MAX_RUN_MINUTES=3 hard cap) is structurally too tight for this recipe's per-document compile cost on this host, for BOTH arms -- not specific to the component-edge knob. This is a wall-budget/recipe-shape tension, not a code defect: raising decode_timeout_seconds would only be a knob change for a future cycle, and the clamp exists deliberately to protect the hard run cap, so it is not being widened here.",
+    "fix_commit": null,
+    "fix_summary": "No code change. Per max_consecutive_frozen_replays=1 (src/slm_training/resources/experiments/autotrain_climb/policy.v1.json), this arm is now exhausted for identical frozen replay; the next cycle rotates to a distinct knob per the driver's ranked priorities rather than a third replay of the same arm.",
+    "regression_test": null
+  },
+  "next_priority": "rotate to the next-ranked distinct knob (not another component-edge replay); this eval-subset/recipe pairing structurally cannot fit its decode budget",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "f511a781503625d1bf793a4c21bf4c0288f44a7c",
+    "code_dirty": false
+  }
+}
