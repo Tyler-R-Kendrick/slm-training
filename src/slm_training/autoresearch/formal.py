@@ -578,11 +578,13 @@ def run_formal_preflight(
     proof_total = checks.proof_total
     build_timed_out = _is_timeout_result(build)
     audit_timed_out = build_timed_out or _is_timeout_result(audit)
-    if audit_timed_out or build_timed_out:
+    version_timed_out = _is_timeout_result(version)
+    if audit_timed_out or build_timed_out or version_timed_out:
         status: FormalProofStatus = "timed_out"
     elif (
         build.returncode == 0
         and audit.returncode == 0
+        and version.returncode == 0
         and "sorryAx" not in output
         and proof_total
     ):

@@ -404,6 +404,49 @@ def test_metric_preflight_uses_mathlib_free_leverproof(
     assert preflight.status == "proved"
 
 
+@pytest.mark.parametrize(
+    ("version_returncode", "version_stderr", "expected_status"),
+    [
+        (124, "formal command timed out after 0.001s", "timed_out"),
+        (1, "lean unavailable", "unknown"),
+    ],
+)
+def test_formal_preflight_requires_successful_lean_version(
+    monkeypatch: pytest.MonkeyPatch,
+    version_returncode: int,
+    version_stderr: str,
+    expected_status: str,
+) -> None:
+    def runner(
+        command: list[str],
+        *,
+        cwd: Path,
+        timeout_seconds: float,
+        on_start=None,
+        on_heartbeat=None,
+    ) -> subprocess.CompletedProcess[str]:
+        del cwd, timeout_seconds, on_start, on_heartbeat
+        if "--version" in command:
+            return subprocess.CompletedProcess(
+                command, version_returncode, "", version_stderr
+            )
+        return subprocess.CompletedProcess(command, 0, "passed", "")
+
+    clear_project_check_cache()
+    monkeypatch.setattr("slm_training.autoresearch.formal._run", runner)
+    claim = FormalClaimV1(
+        template_id="metrics.structural_similarity_monotone",
+        claim="Nondecreasing jaccard and depth components cannot reduce the proxy.",
+        policy="required",
+    )
+
+    preflight, _ = run_formal_preflight(
+        "formal-campaign", _experiment(claim), claim
+    )
+
+    assert preflight.status == expected_status
+
+
 def test_repeated_claims_reuse_successful_project_checks(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

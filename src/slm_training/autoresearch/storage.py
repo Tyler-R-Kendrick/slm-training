@@ -319,13 +319,18 @@ def pending_autotrain_actions(
 def pending_autotrain_execution_actions(
     root: Path | str, handoff: AutotrainCycleHandoffV1
 ) -> tuple[tuple[int, AutotrainActionV1], ...]:
-    """Return unacknowledged steering actions for the successor cycle."""
+    """Return unacknowledged steering actions for the successor cycle.
+
+    A blocked execution receipt is diagnostic evidence, not completion. It
+    remains pending so the supervisor cannot advance past an incomplete
+    matched measurement by recording ``status=blocked``.
+    """
 
     return _pending_autotrain_actions(
         root,
         handoff,
         kinds=_EXECUTION_ACTION_KINDS,
-        acknowledged_statuses=frozenset({"completed", "blocked"}),
+        acknowledged_statuses=frozenset({"completed"}),
     )
 
 

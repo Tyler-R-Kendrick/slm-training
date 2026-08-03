@@ -2661,7 +2661,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v156",
+      "version": "v157",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2701,6 +2701,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v157",
+          "date": "2026-08-03",
+          "note": "Keep blocked execution receipts pending so incomplete matched measurements cannot advance the continuous loop."
+        },
         {
           "version": "v156",
           "date": "2026-08-03",
@@ -3624,7 +3629,7 @@
       ]
     },
     "harness.autoresearch.formal": {
-      "version": "v9",
+      "version": "v10",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/formal.py",
@@ -3635,6 +3640,11 @@
         ".github/workflows/ci.yml"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-08-03",
+          "note": "Require the pinned Lean version check to succeed before a formal preflight can be proved; classify version timeouts as incomplete and failures as unknown."
+        },
         {
           "version": "v9",
           "date": "2026-08-03",
@@ -10180,7 +10190,7 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v38",
+      "version": "v39",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
@@ -10188,6 +10198,11 @@
         "src/slm_training/harnesses/quality/__init__.py"
       ],
       "history": [
+        {
+          "version": "v39",
+          "date": "2026-08-03",
+          "note": "Fail closed when semantic-contrast batches cannot retain a base-corpus reconstruction row; pair-only batches are not comparable to the control."
+        },
         {
           "version": "v38",
           "date": "2026-08-02",
