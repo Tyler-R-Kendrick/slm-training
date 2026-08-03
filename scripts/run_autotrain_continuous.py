@@ -800,6 +800,17 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         },
     ),
     (
+        "exposure-targeted-compiler-decision-margin",
+        "Default-derived rare-action exposure improves guarded structural and semantic OpenUI quality relative to capacity-aware sampling at fixed model size, loss, and decode authority.",
+        {
+            "compiler_alignment_loss_weight": 1.0,
+            "compiler_alignment_margin": 1.0,
+            "compiler_alignment_stratified": True,
+            "compiler_alignment_kind_filter": "all",
+            "mixture_sampling_policy": "exposure_targeted",
+        },
+    ),
+    (
         "structure-token",
         "Direct grammar STRUCT-token reconstruction weighting repairs scaffold formation and structural_similarity without lowering parse_rate or binder_reference_f1.",
         {"structure_token_loss_weight": 1.0},
@@ -1280,6 +1291,12 @@ def _arm_slug_from_knobs(
     if (
         knobs.get("compiler_alignment_loss_weight")
         and knobs.get("compiler_alignment_kind_filter") == "all"
+        and knobs.get("mixture_sampling_policy") == "exposure_targeted"
+    ):
+        return "exposure-targeted-compiler-decision-margin"
+    if (
+        knobs.get("compiler_alignment_loss_weight")
+        and knobs.get("compiler_alignment_kind_filter") == "all"
         and knobs.get("mixture_sampling_policy") == "capacity_aware"
         and knobs.get("compiler_alignment_semantic_exhaustive")
         and knobs.get("structure_token_loss_weight")
@@ -1586,6 +1603,7 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
         "capacity-aware-tail-compiler-decision-margin",
         "capacity-aware-semantic-exhaustive-compiler-decision-margin",
         "capacity-aware-semantic-exhaustive-structure-token-margin",
+        "exposure-targeted-compiler-decision-margin",
         "structure-token",
         "typed-family-balance",
         "container-close",
@@ -6533,6 +6551,9 @@ def _matrix(
             "capacity-aware-semantic-exhaustive-structure-token-margin": (
                 "structure_token_loss_weight"
             ),
+            "exposure-targeted-compiler-decision-margin": (
+                "mixture_sampling_policy"
+            ),
         }.get(rec_slug)
         if treatment_key is not None:
             control_extra = {
@@ -6540,7 +6561,12 @@ def _matrix(
                 for key, value in bank_by_slug[rec_slug][1].items()
                 if key != treatment_key
             }
-        if rec_slug == "capacity-aware-semantic-exhaustive-structure-token-margin":
+        if rec_slug == "exposure-targeted-compiler-decision-margin":
+            control_extra = dict(bank_by_slug[rec_slug][1])
+            control_extra["mixture_sampling_policy"] = "capacity_aware"
+        if rec_slug == "exposure-targeted-compiler-decision-margin":
+            precursor_slug = "capacity-aware-compiler-decision-margin"
+        elif rec_slug == "capacity-aware-semantic-exhaustive-structure-token-margin":
             precursor_slug = (
                 "capacity-aware-semantic-exhaustive-compiler-decision-margin"
             )
