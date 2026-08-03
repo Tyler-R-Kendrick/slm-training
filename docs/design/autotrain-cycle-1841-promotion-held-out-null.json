@@ -1,0 +1,73 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-202607-98199209-c1841",
+  "decision": "reject_held_out_null",
+  "claim_class": "fixture_promotion_replay",
+  "formal": {
+    "status": "proved",
+    "template_id": "metrics.structural_similarity_monotone",
+    "duration_seconds": 1.6131290650228038,
+    "preflight_sha256": "e3741613041d79c7fa22bb7b13c1be937bffb77667d3a1fad8f3be85401c71e8"
+  },
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "seed": 101840,
+    "batch_size": 2,
+    "num_threads": 1,
+    "context_backend": "scratch",
+    "suites": ["smoke", "held_out"],
+    "suite_n": {"smoke": 3, "held_out": 5},
+    "trainable_params": 1608962,
+    "grammar_constrained": true,
+    "reused_frozen_training": true,
+    "effective_arm_wall_seconds": 73.07,
+    "sync_checkpoints": false
+  },
+  "arms": {
+    "control": {
+      "checkpoint_sha256": "1d0aa0ecb7844ba4055e6ae5682f82870275230f7026bb098d45267f074c75f5",
+      "smoke": {"n": 3, "parse_rate": 1.0, "structural_similarity": 0.46416666666666667, "meaningful_program_rate": 0.3333333333333333, "component_type_recall": 0.25, "binder_reference_f1": 0.6333333333333333, "placeholder_fidelity": 0.5277777777777778, "reward_score": 0.8073333333333332, "ast_beq_rate": 0.0, "canonical_beq_rate": 0.0, "tokens_emitted_mean": 78.0, "forwards_count_mean": 17.0, "latency_ms_p50": 2955.32, "compiler_ms_mean": 7415.153},
+      "held_out": {"n": 5, "parse_rate": 1.0, "structural_similarity": 0.30788, "meaningful_program_rate": 0.0, "component_type_recall": 0.1619047619047619, "binder_reference_f1": 0.43714285714285717, "placeholder_fidelity": 0.29, "reward_score": 0.736, "ast_beq_rate": 0.0, "canonical_beq_rate": 0.0, "tokens_emitted_mean": 130.0, "forwards_count_mean": 17.0, "latency_ms_p50": 3087.23, "compiler_ms_mean": 12749.95}
+    },
+    "candidate": {
+      "checkpoint_sha256": "6834a759b874f040ad69df2673f9aa08c464fc2e1b3400a31877bf592f614cfa",
+      "smoke": {"n": 3, "parse_rate": 1.0, "structural_similarity": 0.46416666666666667, "meaningful_program_rate": 0.3333333333333333, "component_type_recall": 0.25, "binder_reference_f1": 0.6333333333333333, "placeholder_fidelity": 0.5277777777777778, "reward_score": 0.8073333333333332, "ast_beq_rate": 0.0, "canonical_beq_rate": 0.0, "tokens_emitted_mean": 78.0, "forwards_count_mean": 17.0, "latency_ms_p50": 2933.64, "compiler_ms_mean": 7318.327},
+      "held_out": {"n": 5, "parse_rate": 1.0, "structural_similarity": 0.30788, "meaningful_program_rate": 0.0, "component_type_recall": 0.1619047619047619, "binder_reference_f1": 0.43714285714285717, "placeholder_fidelity": 0.29, "reward_score": 0.736, "ast_beq_rate": 0.0, "canonical_beq_rate": 0.0, "tokens_emitted_mean": 130.0, "forwards_count_mean": 17.0, "latency_ms_p50": 3160.2, "compiler_ms_mean": 13029.556}
+    }
+  },
+  "effects": {
+    "held_out_structural_similarity": 0.0,
+    "held_out_meaningful_program_rate": 0.0,
+    "held_out_component_type_recall": 0.0,
+    "held_out_binder_reference_f1": 0.0,
+    "held_out_placeholder_fidelity": 0.0,
+    "held_out_reward_score": 0.0,
+    "held_out_ast_beq_rate": 0.0,
+    "held_out_canonical_beq_rate": 0.0,
+    "held_out_latency_regression_fraction": 0.023636,
+    "held_out_compiler_time_regression_fraction": 0.02193
+  },
+  "ship": {
+    "eligible": false,
+    "failures": ["smoke n=3<20", "held_out n=5<20", "meaningful_program_rate below gate", "component_type_recall below gate", "ast_beq_rate=0", "canonical_beq_rate=0", "adversarial missing", "ood missing", "rico_held missing"]
+  },
+  "successor": {
+    "experiment_slug": "capacity-aware-semantic-exhaustive-compiler-decision-margin",
+    "hypothesis": "Semantic-exhaustive compiler alignment may improve exact AST and canonical agreement without changing model size or decode authority."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "95344121fb06f2297b4a9fbfbd0d06f2dc2784cf",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.train": "v38",
+      "harness.model_build.eval": "v78",
+      "harness.autoresearch.experiment_campaign": "v138",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v22",
+      "model.twotower": "v304"
+    },
+    "stamped_at": "2026-08-03T06:34:05.001780+00:00"
+  }
+}

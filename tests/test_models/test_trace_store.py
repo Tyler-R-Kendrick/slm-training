@@ -51,10 +51,12 @@ def _model() -> TwoTowerModel:
 
 def test_recorder_captures_maskgit_trajectory() -> None:
     model = _model()
+    model.config.grammar_ltr_primary = False
     recorder = DecodeTraceRecorder()
     model.trace_recorder = recorder
-    # Unconstrained decode: one pass, no grammar retry — final state is exact.
-    text = model.generate("Hero", gold=None, grammar_constrained=False)
+    # MaskGIT remains grammar constrained; shadow/trajectory observation never
+    # grants an unconstrained production path.
+    text = model.generate("Hero", gold=None, grammar_constrained=True)
     model.trace_recorder = None
 
     assert recorder.nfe > 0
@@ -75,13 +77,18 @@ def test_recorder_captures_maskgit_trajectory() -> None:
         for commit in step_row.get("commits") or []:
             value = canvas[commit["t"]]
             assert value in {commit["id"], pad_id, mask_id}
-            assert commit["lp"] <= 0.0
+            if commit.get("decision_source") == "dfa_singleton":
+                assert commit["forced"] is True
+                assert "lp" not in commit  # I2 bypass has no neural score.
+            else:
+                assert commit["lp"] <= 0.0
 
 
 def test_recorder_zero_cost_when_absent() -> None:
     model = _model()
+    model.config.grammar_ltr_primary = False
     assert model.trace_recorder is None
-    text = model.generate("Hero", gold=None, grammar_constrained=False)
+    text = model.generate("Hero", gold=None, grammar_constrained=True)
     assert isinstance(text, str)
 
 

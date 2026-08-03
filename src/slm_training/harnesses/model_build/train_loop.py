@@ -280,8 +280,15 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     if contrast_dir is not None:
         if not 0.0 < contrast_fraction <= 1.0:
             raise ValueError("semantic_contrast_fraction must be in (0, 1]")
-        if config.batch_size < 2:
-            raise ValueError("semantic contrast objective requires batch_size >= 2")
+        # A contrast pair consumes two rows and the base corpus must still
+        # contribute at least one reconstruction row.  With batch_size=2 the
+        # old sampler silently produced pair-only batches, changing both data
+        # exposure and effective CE supervision relative to the control arm.
+        if config.batch_size < 3:
+            raise ValueError(
+                "semantic contrast objective requires batch_size >= 3 "
+                "to retain a base-corpus row"
+            )
         if replay_fraction:
             raise ValueError(
                 "semantic contrast objective cannot be combined with replay"

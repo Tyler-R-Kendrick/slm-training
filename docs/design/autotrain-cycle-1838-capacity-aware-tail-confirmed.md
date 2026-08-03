@@ -1,9 +1,15 @@
 # Autotrain c1838: capacity-aware tail fresh-seed confirmation
 
-**Verdict:** the lever is learning a narrow, reproducible fixture signal, but
-the model is not good enough. On seed 101836, tail supervision repeats the
-structure and binder gains at matched parameter count and exposure. Protected
-quality is mixed and all production ship gates remain red.
+> **Later audit (c1844): invalid as confirmation of c1830.** The champion
+> transition dropped `mixture_sampling_policy=capacity_aware`, so c1838 actually
+> measured tail weight 0 versus 1 under replacement sampling. Its measurements
+> remain valid for that executed recipe, but the capacity-aware source winner
+> must be re-confirmed with its exact recipe.
+
+**Verdict:** this records the executed replacement-sampling recipe only. It is
+not a valid confirmation of the c1830 capacity-aware winner because the
+champion transition dropped `mixture_sampling_policy=capacity_aware`; no model
+learning or promotion claim is authorized by this run.
 
 | Arm | Params | Effective / draws | Unique | Structure | MPR | Recall | Binder F1 | Fidelity | Reward | Tokens | Forwards | p50 ms |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -32,9 +38,10 @@ mandatory in the promotion preflight. Campaign v136 repairs the queue ledger so
 this retry confirms the original c1830 champion and suppresses its duplicate
 c1838 screening row.
 
-Next: run the confirmed candidate through promotion cadence with held-out suites
-and Lean/formal preflight; prioritize exact AST/canonical completion and protect
-fidelity/reward rather than optimizing fixture structure alone.
+Next: run a fresh, exact-recipe confirmation only after restoring the locked
+capacity-aware sampling knob, with held-out suites and Lean/formal preflight;
+prioritize exact AST/canonical completion and protect fidelity/reward rather
+than optimizing fixture structure alone.
 
 Machine evidence:
 [`autotrain-cycle-1838-capacity-aware-tail-confirmed.json`](autotrain-cycle-1838-capacity-aware-tail-confirmed.json).

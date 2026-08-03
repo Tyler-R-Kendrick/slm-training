@@ -9,9 +9,10 @@ import json
 import os
 import subprocess
 import tempfile
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 from pydantic import BaseModel
 
@@ -20,6 +21,7 @@ from slm_training.autoresearch.schemas import (
     AutotrainActionReceiptV1,
     AutotrainActionV1,
     AutotrainCycleHandoffV1,
+    AutotrainLoopStateV1,
     CampaignSpec,
     Diagnosis,
     ExperimentOutcome,
@@ -71,22 +73,113 @@ def autotrain_action_sha256(action: AutotrainActionV1) -> str:
     return _sha(action.model_dump(mode="json"))
 
 
+def autotrain_action_is_execution(action: AutotrainActionV1) -> bool:
+    """Return whether only the continuous driver may complete this action."""
+
+    return action.kind in _EXECUTION_ACTION_KINDS
+
+
+@contextmanager
+def autotrain_loop_state_lock(root: Path | str, loop_id: str) -> Iterator[None]:
+    """Serialize short-lived state writes and receipt reconciliation per loop."""
+
+    path = Path(root) / "loops" / loop_id / "state.lock"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lock_fd = os.open(path, os.O_CREAT | os.O_RDWR, 0o644)
+    try:
+        fcntl.flock(lock_fd, fcntl.LOCK_EX)
+        yield
+    finally:
+        fcntl.flock(lock_fd, fcntl.LOCK_UN)
+        os.close(lock_fd)
+
+
 def append_autotrain_action_receipt(
     root: Path | str, receipt: AutotrainActionReceiptV1
 ) -> Path:
     path = Path(root) / "loops" / receipt.loop_id / "action_receipts.jsonl"
     path.parent.mkdir(parents=True, exist_ok=True)
-    lock_fd = os.open(path.with_suffix(".lock"), os.O_CREAT | os.O_RDWR, 0o644)
-    try:
-        fcntl.flock(lock_fd, fcntl.LOCK_EX)
-        with path.open("a", encoding="utf-8") as stream:
-            stream.write(receipt.model_dump_json() + "\n")
-            stream.flush()
-            os.fsync(stream.fileno())
-    finally:
-        fcntl.flock(lock_fd, fcntl.LOCK_UN)
-        os.close(lock_fd)
+    with autotrain_loop_state_lock(root, receipt.loop_id):
+        lock_fd = os.open(path.with_suffix(".lock"), os.O_CREAT | os.O_RDWR, 0o644)
+        try:
+            fcntl.flock(lock_fd, fcntl.LOCK_EX)
+            with path.open("a", encoding="utf-8") as stream:
+                stream.write(receipt.model_dump_json() + "\n")
+                stream.flush()
+                os.fsync(stream.fileno())
+        finally:
+            fcntl.flock(lock_fd, fcntl.LOCK_UN)
+            os.close(lock_fd)
+        _refresh_loop_state_after_receipt(Path(root), receipt)
     return path
+
+
+def _refresh_loop_state_after_receipt(
+    root: Path, receipt: AutotrainActionReceiptV1
+) -> None:
+    """Keep the human-facing loop state aligned with durable action receipts.
+
+    Handoffs and receipts are the authority for gating, but ``state.json`` is
+    what operators see in the result matrix.  Without this reconciliation an
+    acknowledged prerequisite remains displayed as the next action until the
+    next campaign rewrites the state, which makes a healthy loop look stuck.
+    Only an idle/between-cycle state for the acknowledged campaign is updated;
+    an active driver owns its running state and must not be clobbered.
+    """
+
+    handoff_path = root / receipt.campaign_id / "cycle_handoff.json"
+    state_path = root / "loops" / receipt.loop_id / "state.json"
+    if not handoff_path.is_file() or not state_path.is_file():
+        return
+    try:
+        handoff = AutotrainCycleHandoffV1.model_validate_json(
+            handoff_path.read_text(encoding="utf-8")
+        )
+        state = AutotrainLoopStateV1.model_validate_json(
+            state_path.read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        return
+    if handoff.loop_id != receipt.loop_id or handoff.campaign_id != receipt.campaign_id:
+        return
+    # Reconcile only the exact completed campaign while the driver is idle.
+    # A stale receipt from an older handoff must never rewrite the operator
+    # view for a newer cycle (or a state file that is still transitioning).
+    if (
+        state.active_campaign_id is not None
+        or state.state == "RUNNING"
+        or state.phase != "between_cycles"
+        or state.last_completed_campaign_id != receipt.campaign_id
+    ):
+        return
+
+    pending_required = pending_autotrain_actions(root, handoff)
+    if pending_required:
+        next_action = pending_required[0][1].kind
+    else:
+        pending_execution = pending_autotrain_execution_actions(root, handoff)
+        next_action = (
+            pending_execution[0][1].kind
+            if pending_execution
+            else "run bounded campaign"
+        )
+    updated = state.model_copy(
+        update={
+            "state": "IDLE",
+            "phase": "between_cycles",
+            "next_action": next_action,
+            "heartbeat_at": utc_now(),
+        }
+    )
+    tmp = state_path.with_suffix(".json.tmp")
+    try:
+        tmp.write_text(updated.model_dump_json(indent=2) + "\n", encoding="utf-8")
+        tmp.replace(state_path)
+    except OSError:
+        try:
+            tmp.unlink()
+        except OSError:
+            pass
 
 
 def _git(*args: str) -> subprocess.CompletedProcess[bytes]:
@@ -208,7 +301,77 @@ def _receipt_satisfies_action(
         )
     except (OSError, subprocess.SubprocessError, ValueError):
         return False
-    return current == receipt.evidence
+    if current != receipt.evidence:
+        return False
+    if action.kind not in _EXECUTION_ACTION_KINDS:
+        return True
+    if action.kind != "retry_measurement":
+        return False
+    return _retry_measurement_evidence_is_complete(root, handoff, receipt)
+
+
+def _retry_measurement_evidence_is_complete(
+    root: Path | str,
+    handoff: AutotrainCycleHandoffV1,
+    receipt: AutotrainActionReceiptV1,
+) -> bool:
+    """Require a complete, predecessor-bound successor pair for retry completion."""
+
+    campaign_root = (Path(root) / handoff.campaign_id).resolve()
+    repo_root = _REPO_ROOT.resolve()
+
+    def resolve(uri: str) -> Path | None:
+        for base in (campaign_root, repo_root):
+            path = (base / uri).resolve()
+            if path.is_file() and path.is_relative_to(base):
+                return path
+        return None
+
+    paths = tuple(resolve(uri) for uri in receipt.evidence_uris)
+    if any(path is None for path in paths):
+        return False
+    evidence_paths = tuple(path for path in paths if path is not None)
+    campaign_paths = tuple(path for path in evidence_paths if path.name == "campaign.json")
+    delivery_paths = tuple(path for path in evidence_paths if path.name == "sdlc_delivery.json")
+    manifest_paths = tuple(
+        path for path in evidence_paths if path.suffix == ".json" and path.parent.name == "manifests"
+    )
+    if len(campaign_paths) != 1 or len(delivery_paths) != 1 or len(manifest_paths) != 2:
+        return False
+    campaign_path = campaign_paths[0]
+    delivery_path = delivery_paths[0]
+    if campaign_path.parent != delivery_path.parent or any(
+        path.parent.parent != delivery_path.parent for path in manifest_paths
+    ):
+        return False
+    try:
+        campaign = json.loads(campaign_path.read_text(encoding="utf-8"))
+        delivery = json.loads(delivery_path.read_text(encoding="utf-8"))
+        manifests = tuple(json.loads(path.read_text(encoding="utf-8")) for path in manifest_paths)
+    except (OSError, json.JSONDecodeError):
+        return False
+    successor_id = delivery.get("campaign_id")
+    arm_order = delivery.get("arm_order")
+    if (
+        delivery.get("schema") != "autotrain_sdlc_delivery/v1"
+        or delivery.get("measurement_complete") is not True
+        or delivery.get("loop_id") != handoff.loop_id
+        or not isinstance(successor_id, str)
+        or successor_id == handoff.campaign_id
+        or not isinstance(arm_order, list)
+        or len(arm_order) != 2
+        or len(set(arm_order)) != 2
+        or campaign.get("campaign_id") != successor_id
+        or campaign.get("loop_id") != handoff.loop_id
+        or campaign.get("predecessor_campaign_id") != handoff.campaign_id
+    ):
+        return False
+    return {path.stem for path in manifest_paths} == set(arm_order) and all(
+        manifest.get("schema_version") == "ExperimentCampaignV1"
+        and manifest.get("campaign_id") == successor_id
+        and manifest.get("experiment_id") in arm_order
+        for manifest in manifests
+    )
 
 
 def _pending_autotrain_actions(
@@ -257,13 +420,18 @@ def pending_autotrain_actions(
 def pending_autotrain_execution_actions(
     root: Path | str, handoff: AutotrainCycleHandoffV1
 ) -> tuple[tuple[int, AutotrainActionV1], ...]:
-    """Return unacknowledged steering actions for the successor cycle."""
+    """Return unacknowledged steering actions for the successor cycle.
+
+    A blocked execution receipt is diagnostic evidence, not completion. It
+    remains pending so the supervisor cannot advance past an incomplete
+    matched measurement by recording ``status=blocked``.
+    """
 
     return _pending_autotrain_actions(
         root,
         handoff,
         kinds=_EXECUTION_ACTION_KINDS,
-        acknowledged_statuses=frozenset({"completed", "blocked"}),
+        acknowledged_statuses=frozenset({"completed"}),
     )
 
 

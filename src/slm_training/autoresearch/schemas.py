@@ -226,6 +226,8 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "component_inventory_decode_weight",
         "component_plan_loss_weight",
         "component_plan_decode_weight",
+        "slot_component_loss_weight",
+        "slot_component_decode_weight",
         "component_edge_loss_weight",
         "component_edge_alignment_loss_weight",
         "component_edge_decode_weight",
@@ -235,6 +237,8 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "binder_topology_decode_weight",
         "binder_arity_loss_weight",
         "binder_arity_decode_weight",
+        "binder_slot_ownership_loss_weight",
+        "binder_slot_ownership_decode_weight",
         "symbol_boundary_loss_weight",
         "compiler_decode_mode",
         "compiler_search_mode",
@@ -543,6 +547,8 @@ class ExperimentKnobs(StrictModel):
     component_inventory_decode_weight: float | None = Field(default=None, ge=0, le=20)
     component_plan_loss_weight: float | None = Field(default=None, ge=0, le=20)
     component_plan_decode_weight: float | None = Field(default=None, ge=0, le=20)
+    slot_component_loss_weight: float | None = Field(default=None, ge=0, le=20)
+    slot_component_decode_weight: float | None = Field(default=None, ge=0, le=20)
     component_edge_loss_weight: float | None = Field(default=None, ge=0, le=20)
     component_edge_alignment_loss_weight: float | None = Field(
         default=None, ge=0, le=20
@@ -554,6 +560,8 @@ class ExperimentKnobs(StrictModel):
     binder_topology_decode_weight: float | None = Field(default=None, ge=0, le=20)
     binder_arity_loss_weight: float | None = Field(default=None, ge=0, le=20)
     binder_arity_decode_weight: float | None = Field(default=None, ge=0, le=20)
+    binder_slot_ownership_loss_weight: float | None = Field(default=None, ge=0, le=20)
+    binder_slot_ownership_decode_weight: float | None = Field(default=None, ge=0, le=20)
     symbol_boundary_loss_weight: float | None = Field(default=None, ge=0, le=20)
     fidelity_loss_weight: float | None = Field(default=None, ge=0, le=20)
     semantic_contrast_dir: str | None = Field(default=None, min_length=1, max_length=512)

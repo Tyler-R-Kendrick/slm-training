@@ -1738,6 +1738,11 @@
         {
           "version": "v6",
           "date": "2026-08-03",
+          "note": "no-bump: add regression coverage for propagating DFA stream-probe deadlines; symbolic-surface policy behavior is unchanged."
+        },
+        {
+          "version": "v6",
+          "date": "2026-08-03",
           "note": "Sanitize NODE_OPTIONS (via bridge_utils.sanitized_node_env) before spawning the lang-core Node bridge subprocess/REPL, so a host-level NODE_OPTIONS the Node build rejects (e.g. --import tsx) cannot silently kill validate() with an opaque empty-output error."
         },
         {
@@ -2656,7 +2661,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v136",
+      "version": "v162",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2701,151 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v162",
+          "date": "2026-08-03",
+          "note": "Require retry completion receipts to bind a complete two-arm successor delivery and its predecessor lineage instead of accepting arbitrary durable files."
+        },
+        {
+          "version": "v161",
+          "date": "2026-08-03",
+          "note": "Clear terminal stage and child liveness after status reporting and serialize every driver state read-modify-write with receipt reconciliation."
+        },
+        {
+          "version": "v160",
+          "date": "2026-08-03",
+          "note": "Land fail-closed continuous-promotion enforcement: require canonical raw LeverProof resource samples and per-example metric observations instead of fabricating evidence from aggregate metrics."
+        },
+        {
+          "version": "v159",
+          "date": "2026-08-03",
+          "note": "Serialize receipt and driver state reconciliation, keep blocked execution work pending, and reserve completion receipts for the continuous driver."
+        },
+        {
+          "version": "v158",
+          "date": "2026-08-03",
+          "note": "Fail closed when continuous promotion lacks canonical raw LeverProof resource samples and bind band assessments to per-example metric observations instead of synthetic aggregates."
+        },
+        {
+          "version": "v157",
+          "date": "2026-08-03",
+          "note": "Keep blocked execution receipts pending so incomplete matched measurements cannot advance the continuous loop."
+        },
+        {
+          "version": "v156",
+          "date": "2026-08-03",
+          "note": "Preregister a distinct semantic-contrast plus compiler-alignment quality arm after the prior screening bank was exhausted."
+        },
+        {
+          "version": "v155",
+          "date": "2026-08-03",
+          "note": "no-bump: document c1859's constraint-graph fixture null and exhausted-objective handoff; campaign behavior unchanged."
+        },
+        {
+          "version": "v155",
+          "date": "2026-08-03",
+          "note": "Add a second distinct constraint-graph quality arm after slot-contract-context replay exhaustion so continuous screening has a registered implemented successor."
+        },
+        {
+          "version": "v154",
+          "date": "2026-08-03",
+          "note": "no-bump: document c1858's frozen slot-contract-context replay null and successor priorities; campaign behavior unchanged."
+        },
+        {
+          "version": "v154",
+          "date": "2026-08-03",
+          "note": "no-bump: document c1857's incomplete slot-contract-context harness failure and replay receipt; campaign behavior unchanged."
+        },
+        {
+          "version": "v154",
+          "date": "2026-08-03",
+          "note": "Add a preregistered slot-contract-context quality arm so exhausted screening lineages advance to a distinct implemented training signal instead of retrying deterministically."
+        },
+        {
+          "version": "v153",
+          "date": "2026-08-03",
+          "note": "Refresh idle loop liveness state from content-bound action receipts so result matrices show the actual next action between campaigns."
+        },
+        {
+          "version": "v152",
+          "date": "2026-08-03",
+          "note": "Ignore stale deliver_stack actions from legacy positive fixture handoffs when Phase A recorded stack_layer=false, allowing the next experiment to proceed."
+        },
+        {
+          "version": "v151",
+          "date": "2026-08-03",
+          "note": "Do not emit a blocking deliver_stack action for positive fixture metrics when Phase A has no tracked stack delta; allow the supervised loop to consume next_experiment."
+        },
+        {
+          "version": "v150",
+          "date": "2026-08-03",
+          "note": "Add a data-oriented slot-component exposure-cap successor after c1853 so the loop tests target coverage rather than stacking auxiliary heads."
+        },
+        {
+          "version": "v149",
+          "date": "2026-08-03",
+          "note": "Add a distinct slot-component-inventory coupling successor after the c1852 null, preserving matched controls and tree-constrained decode."
+        },
+        {
+          "version": "v148",
+          "date": "2026-08-03",
+          "note": "Add a distinct slot-component-fidelity coupling successor after c1851 so the loop preregisters a new causal interaction instead of replaying the exhausted owner-only arm."
+        },
+        {
+          "version": "v147",
+          "date": "2026-08-03",
+          "note": "Classify reserved runtime-owner failures as non-replayable so the supervised loop skips impossible frozen recipes and advances to the implemented slot-component successor instead of aborting."
+        },
+        {
+          "version": "v146",
+          "date": "2026-08-03",
+          "note": "Replace the unusable binder-slot ownership successor with the implemented slot-component coverage owner after c1849 exposed the missing runtime implementation, preserving fail-closed model validation."
+        },
+        {
+          "version": "v145",
+          "date": "2026-08-03",
+          "note": "Require the binder-slot-ownership successor to use the tree compiler decode mode so its registered decode bias has an executable capability path instead of failing closed at model construction."
+        },
+        {
+          "version": "v144",
+          "date": "2026-08-03",
+          "note": "Wire a distinct binder-slot-ownership training/decode successor after the c1847 quality-arm exhaustion so the supervised loop can continue without recycling rejected objectives."
+        },
+        {
+          "version": "v143",
+          "date": "2026-08-03",
+          "note": "Add a size-matched exposure-targeted plus semantic-exhaustive successor to test whether the observed semantic quality gain can retain lower decode work."
+        },
+        {
+          "version": "v142",
+          "date": "2026-08-03",
+          "note": "Preserve every registered screening lever across champion confirmation and promotion, and reopen legacy queue entries whose projected recipe drifted from immutable source experiments."
+        },
+        {
+          "version": "v141",
+          "date": "2026-08-03",
+          "note": "Propagate the exact symmetric post-formal arm share into the inner experiment executor while retaining preregistered and repository hard ceilings."
+        },
+        {
+          "version": "v140",
+          "date": "2026-08-03",
+          "note": "Add a size-matched exposure-targeted versus capacity-aware sampling objective to test rare decision coverage after loss-only quality arms were null."
+        },
+        {
+          "version": "v139",
+          "date": "2026-08-03",
+          "note": "Add a size-matched semantic-exhaustive plus STRUCT-token objective that tests scaffold-quality recovery after exhaustive supervision reduced decode work without improving quality."
+        },
+        {
+          "version": "v138",
+          "date": "2026-08-03",
+          "note": "Return unused proved-formal preflight time symmetrically to promotion decision arms while preserving the canonical finalization reserve and hard run cap."
+        },
+        {
+          "version": "v137",
+          "date": "2026-08-03",
+          "note": "Add a distinct size-matched capacity-aware semantic-exhaustive compiler-alignment objective after the registered screening bank was exhausted, isolating decision coverage without changing model size or decode authority."
+        },
         {
           "version": "v136",
           "date": "2026-08-03",
@@ -3504,7 +3654,7 @@
       ]
     },
     "harness.autoresearch.formal": {
-      "version": "v8",
+      "version": "v10",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/formal.py",
@@ -3515,6 +3665,21 @@
         ".github/workflows/ci.yml"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-08-03",
+          "note": "no-bump: externalize formal preflight version cases and clear the process-local cache between tests; production formal behavior is unchanged."
+        },
+        {
+          "version": "v10",
+          "date": "2026-08-03",
+          "note": "Require the pinned Lean version check to succeed before a formal preflight can be proved; classify version timeouts as incomplete and failures as unknown."
+        },
+        {
+          "version": "v9",
+          "date": "2026-08-03",
+          "note": "Reuse only successful content-digested Lean project checks within one process; failed, timed-out, or non-total proofs are never cached."
+        },
         {
           "version": "v8",
           "date": "2026-08-02",
@@ -5437,6 +5602,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-08-03",
+          "note": "no-bump: regenerate the unchanged inconclusive gate against the current AgentV owner hash; thresholds and gate behavior are unchanged"
+        },
+        {
+          "version": "v1",
           "date": "2026-08-01",
           "note": "no-bump: regenerate the unchanged inconclusive gate after updating its embedded harness component identities"
         },
@@ -6956,6 +7126,11 @@
         {
           "version": "v1",
           "date": "2026-08-03",
+          "note": "no-bump: append c1839 null evidence and its successor objective to the shared quality matrix without changing the SLM-197 scorer or experiment."
+        },
+        {
+          "version": "v1",
+          "date": "2026-08-03",
           "note": "no-bump: append c1838 fixture-confirmation evidence to the shared quality matrix without changing the SLM-197 scorer or experiment."
         },
         {
@@ -7558,7 +7733,127 @@
         {
           "version": "v3",
           "date": "2026-08-03",
+          "note": "no-bump: record c1863's rejected confirmation result in the model card and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
           "note": "no-bump: record honest continuous-openui-local 8c0b60dd-c2 (session j48f8u) component-plan reproduction checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record c1862's incomplete confirmation result in the model card and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record c1861's frozen replay result in the model card and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record c1860's incomplete scratch checkpoint pair in the model card and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record c1859's constraint-graph checkpoint pair in the model card and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record c1858's replay-null checkpoint pair in the model card and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record c1857's control-only checkpoint and slot-contract-context harness failure in the model card and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: persist the c1855 fresh confirmation rejection and model-card summary; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: persist the c1854 positive fixture result and queued confirmation provenance; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: persist the c1853 null result matrix and model-card summary; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: persist the c1852 null result matrix and model-card summary; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: persist the c1851 measured result matrix and model-card summary; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1851 slot-component coverage checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1849 incomplete slot-owner runtime-gap checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1848 incomplete binder-slot-ownership harness-repair checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1847 semantic-exhaustive successor checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1846 exposure-targeted quality-cost checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1845 lever-complete capacity-aware tail confirmation provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record c1844 incomplete promotion checkpoint provenance and correct c1838/c1841 recipe-scope claims after the queue projection audit; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1843 structure-token scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1842 semantic-exhaustive scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: replace c1840 incomplete promotion provenance with the completed c1841 held-out null in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1840 incomplete promotion checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1839 scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
         },
         {
           "version": "v3",
@@ -9436,7 +9731,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v78",
+      "version": "v82",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -9458,6 +9753,26 @@
       ],
       "history": [
         {
+          "version": "v82",
+          "date": "2026-08-03",
+          "note": "Reject ambiguous evaluate_suites calls that provide both a mutable preloaded model and a checkpoint, preventing cache/runtime identity ambiguity."
+        },
+        {
+          "version": "v81",
+          "date": "2026-08-03",
+          "note": "Verify preloaded checkpoint digests against their paths and bypass suite-result caching when component version identity is unavailable."
+        },
+        {
+          "version": "v80",
+          "date": "2026-08-03",
+          "note": "Share one checkpoint-bound immutable model across multi-suite evaluations, preserving fail-closed cache identity and avoiding repeated model construction."
+        },
+        {
+          "version": "v79",
+          "date": "2026-08-03",
+          "note": "Fail closed on suite-cache reuse for mutable preloaded models without a checkpoint identity; expose the bypass reason for attribution."
+        },
+    {
           "version": "v78",
           "date": "2026-08-02",
           "note": "no-bump: clarify that the scaled timeout is a whole decode-chunk budget; evaluation behavior is unchanged."
@@ -9925,7 +10240,7 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v38",
+      "version": "v39",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
@@ -9933,6 +10248,11 @@
         "src/slm_training/harnesses/quality/__init__.py"
       ],
       "history": [
+        {
+          "version": "v39",
+          "date": "2026-08-03",
+          "note": "Fail closed when semantic-contrast batches cannot retain a base-corpus reconstruction row; pair-only batches are not comparable to the control."
+        },
         {
           "version": "v38",
           "date": "2026-08-02",
@@ -10202,6 +10522,16 @@
         "docs/design/ldi3-04-remine-intervene-campaign-report-20260718.json"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-08-03",
+          "note": "no-bump: restrict continuous-loop execution-action receipts and serialize its state updates; preference remine campaign behavior is unchanged"
+        },
+        {
+          "version": "v4",
+          "date": "2026-08-03",
+          "note": "no-bump: add a bounded dynamic experiment-wall override for the continuous autotrain supervisor; preference remine campaign behavior is unchanged"
+        },
         {
           "version": "v4",
           "date": "2026-08-03",
@@ -10517,6 +10847,11 @@
         "docs/design/dsh0-08-foundation-disposition-20260723.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-03",
+          "note": "no-bump: refresh the pinned language-contract test hash after adding compiler/stream deadline regression coverage; staged harness behavior is unchanged."
+        },
         {
           "version": "v2",
           "date": "2026-08-03",
@@ -11782,7 +12117,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v304",
+      "version": "v306",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -11825,6 +12160,21 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v306",
+          "date": "2026-08-03",
+          "note": "no-bump: clarify template-fill fallback documentation; runtime behavior and checkpoint semantics are unchanged."
+        },
+        {
+          "version": "v306",
+          "date": "2026-08-03",
+          "note": "Propagate cooperative decode deadlines through compiler forest construction, path ranking, prefill scheduling, and constrained stream probes so slow legal search cannot swallow evaluator timeouts."
+        },
+        {
+          "version": "v305",
+          "date": "2026-08-03",
+          "note": "Keep incidental DESIGN.md marker examples out of prompt slot-contract extraction while preserving explicit design inventory lines, preventing valid rows from failing contiguous-ordinal validation."
+        },
         {
           "version": "v304",
           "date": "2026-08-02",

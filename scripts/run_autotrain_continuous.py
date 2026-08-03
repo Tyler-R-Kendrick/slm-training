@@ -30,7 +30,7 @@ import re
 import subprocess
 import sys
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -63,6 +63,7 @@ from slm_training.autoresearch.storage import (
     CampaignStore,
     append_autotrain_action_receipt,
     autotrain_action_sha256,
+    autotrain_loop_state_lock,
     bind_autotrain_action_evidence,
     pending_autotrain_actions,
     pending_autotrain_execution_actions,
@@ -253,9 +254,7 @@ def _arm_wall_minutes(policy_minutes: float, *, formal_required: bool) -> float:
     return min(float(policy_minutes), symmetric_minutes)
 
 
-def _formal_lane_required(
-    *, cycle_intent: str, replay: dict[str, Any] | None
-) -> bool:
+def _formal_lane_required(*, cycle_intent: str, replay: dict[str, Any] | None) -> bool:
     """Reserve formal time only for work whose locked plan requires it."""
 
     if cycle_intent == "promote":
@@ -291,9 +290,20 @@ def _fit_symmetric_arm_budget(
     return min(float(requested_arm_wall_minutes), usable / arm_count / 60)
 
 
-def _arm_execution_deadline(
-    *, cycle_deadline: float, arm_wall_minutes: float
+def _post_formal_arm_budget_request(
+    *,
+    policy_minutes: float,
+    initial_arm_wall_minutes: float,
+    formal_completed: bool,
 ) -> float:
+    """Return unused formal-lane time to the matched decision arms."""
+
+    if formal_completed:
+        return float(policy_minutes)
+    return float(initial_arm_wall_minutes)
+
+
+def _arm_execution_deadline(*, cycle_deadline: float, arm_wall_minutes: float) -> float:
     """Cap one arm without spending the cycle's finalization reserve."""
 
     return min(
@@ -488,9 +498,18 @@ _LEVER_KNOB_KEYS = (
     "compiler_alignment_loss_weight",
     "compiler_alignment_margin",
     "compiler_alignment_stratified",
+    "compiler_alignment_semantic_exhaustive",
     "compiler_alignment_kind_filter",
     "grammar_completion_bounds",
+    "grammar_equivalence_cache",
+    "grammar_draft_window",
     "compact_active_canvas",
+    "mixture_sampling_policy",
+    "mixture_exposure_target_profile",
+    "mixture_total_decision_budget",
+    "mixture_per_root_cap",
+    "mixture_per_template_cap",
+    "mixture_max_importance_weight",
     "component_plan_loss_weight",
     "component_plan_decode_weight",
     "component_edge_loss_weight",
@@ -504,6 +523,10 @@ _LEVER_KNOB_KEYS = (
     "binder_component_plan_decode_weight",
     "binder_arity_loss_weight",
     "binder_arity_decode_weight",
+    "slot_component_loss_weight",
+    "slot_component_decode_weight",
+    "slot_contract_in_context",
+    "constraint_graph_mode",
     "symbol_boundary_loss_weight",
     "design_md_dropout",
     "fidelity_loss_weight",
@@ -623,6 +646,63 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         },
     ),
     (
+        "slot-component-coverage",
+        "Implemented slot-component ownership supervision and legal decode bias improves component_type_recall and placeholder_fidelity without lowering parse_rate.",
+        {
+            "slot_component_loss_weight": 1.0,
+            "slot_component_decode_weight": 1.0,
+            "compiler_decode_mode": "tree",
+        },
+    ),
+    (
+        "slot-component-fidelity-coupling",
+        "Coupling implemented slot-component ownership with stronger placeholder-fidelity supervision improves component_type_recall and placeholder_fidelity without lowering parse_rate or structural_similarity.",
+        {
+            "slot_component_loss_weight": 1.0,
+            "slot_component_decode_weight": 1.0,
+            "fidelity_loss_weight": 1.5,
+            "compiler_decode_mode": "tree",
+        },
+    ),
+    (
+        "slot-component-inventory-coupling",
+        "Coupling implemented slot-component ownership with component-inventory supervision improves component_type_recall and structural_similarity without lowering parse_rate or binder_reference_f1.",
+        {
+            "slot_component_loss_weight": 1.0,
+            "slot_component_decode_weight": 1.0,
+            "component_inventory_loss_weight": 1.0,
+            "component_inventory_decode_weight": 1.0,
+            "compiler_decode_mode": "tree",
+        },
+    ),
+    (
+        "slot-component-exposure-cap",
+        "Targeted rare-component exposure with a per-template cap plus implemented slot-component supervision improves component_type_recall and structural_similarity without buying capacity.",
+        {
+            "slot_component_loss_weight": 1.0,
+            "slot_component_decode_weight": 1.0,
+            "mixture_sampling_policy": "exposure_targeted",
+            "mixture_per_template_cap": 2,
+            "compiler_decode_mode": "tree",
+        },
+    ),
+    (
+        "slot-contract-context",
+        "Providing the canonical slot contract in context improves component_type_recall, placeholder_fidelity, and structural_similarity without weakening constrained decoding or increasing model size.",
+        {
+            "slot_contract_in_context": True,
+            "compiler_decode_mode": "tree",
+        },
+    ),
+    (
+        "constraint-graph",
+        "Grammar constraint-graph conditioning improves structural_similarity and meaningful-program rate at fixed model size while preserving fail-closed constrained decoding.",
+        {
+            "constraint_graph_mode": "grammar",
+            "compiler_decode_mode": "tree",
+        },
+    ),
+    (
         "fidelity",
         "Stronger placeholder-fidelity supervision improves binder_reference_f1 and structural_similarity without lowering parse_rate.",
         {"fidelity_loss_weight": 1.5},
@@ -643,6 +723,21 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
             "semantic_contrast_loss_weight": 0.25,
             "semantic_contrast_margin": 1.0,
             "semantic_contrast_fraction": 0.5,
+        },
+    ),
+    (
+        "semantic-contrast-compiler-margin",
+        "Combining hard-valid semantic contrast with grammar-oracle compiler alignment improves structural_similarity and exact structural agreement at fixed model size.",
+        {
+            "semantic_contrast_dir": "src/slm_training/resources/data/eval/openui_hard_valid_v1",
+            "semantic_contrast_loss_weight": 0.25,
+            "semantic_contrast_margin": 1.0,
+            "semantic_contrast_fraction": 0.5,
+            "compiler_alignment_loss_weight": 1.0,
+            "compiler_alignment_margin": 1.0,
+            "compiler_alignment_stratified": True,
+            "compiler_alignment_kind_filter": "all",
+            "compiler_decode_mode": "tree",
         },
     ),
     (
@@ -762,6 +857,54 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         },
     ),
     (
+        "capacity-aware-semantic-exhaustive-compiler-decision-margin",
+        "Exhaustive grammar-oracle supervision over every semantic compiler decision improves exact AST and canonical agreement on top of capacity-aware all-family alignment without lowering guarded OpenUI quality.",
+        {
+            "compiler_alignment_loss_weight": 1.0,
+            "compiler_alignment_margin": 1.0,
+            "compiler_alignment_stratified": True,
+            "compiler_alignment_semantic_exhaustive": True,
+            "compiler_alignment_kind_filter": "all",
+            "mixture_sampling_policy": "capacity_aware",
+        },
+    ),
+    (
+        "capacity-aware-semantic-exhaustive-structure-token-margin",
+        "Direct STRUCT-token reconstruction counterbalances semantic-exhaustive compression and improves scaffold quality while retaining its reduced decode work.",
+        {
+            "compiler_alignment_loss_weight": 1.0,
+            "compiler_alignment_margin": 1.0,
+            "compiler_alignment_stratified": True,
+            "compiler_alignment_semantic_exhaustive": True,
+            "compiler_alignment_kind_filter": "all",
+            "mixture_sampling_policy": "capacity_aware",
+            "structure_token_loss_weight": 1.0,
+        },
+    ),
+    (
+        "exposure-targeted-compiler-decision-margin",
+        "Default-derived rare-action exposure improves guarded structural and semantic OpenUI quality relative to capacity-aware sampling at fixed model size, loss, and decode authority.",
+        {
+            "compiler_alignment_loss_weight": 1.0,
+            "compiler_alignment_margin": 1.0,
+            "compiler_alignment_stratified": True,
+            "compiler_alignment_kind_filter": "all",
+            "mixture_sampling_policy": "exposure_targeted",
+        },
+    ),
+    (
+        "exposure-targeted-semantic-exhaustive-compiler-decision-margin",
+        "Semantic-exhaustive compiler supervision preserves exposure-targeted semantic gains while reducing runaway legal continuation and decode cost.",
+        {
+            "compiler_alignment_loss_weight": 1.0,
+            "compiler_alignment_margin": 1.0,
+            "compiler_alignment_stratified": True,
+            "compiler_alignment_semantic_exhaustive": True,
+            "compiler_alignment_kind_filter": "all",
+            "mixture_sampling_policy": "exposure_targeted",
+        },
+    ),
+    (
         "structure-token",
         "Direct grammar STRUCT-token reconstruction weighting repairs scaffold formation and structural_similarity without lowering parse_rate or binder_reference_f1.",
         {"structure_token_loss_weight": 1.0},
@@ -848,7 +991,7 @@ def _loop_state_path(root: Path, loop_id: str) -> Path:
     return root / "loops" / loop_id / "state.json"
 
 
-def _write_loop_state(root: Path, state: AutotrainLoopStateV1) -> Path:
+def _write_loop_state_unlocked(root: Path, state: AutotrainLoopStateV1) -> Path:
     path = _loop_state_path(root, state.loop_id)
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".json.tmp")
@@ -857,52 +1000,83 @@ def _write_loop_state(root: Path, state: AutotrainLoopStateV1) -> Path:
     return path
 
 
+def _write_loop_state(root: Path, state: AutotrainLoopStateV1) -> Path:
+    with autotrain_loop_state_lock(root, state.loop_id):
+        return _write_loop_state_unlocked(root, state)
+
+
 def _set_active_stage(root: Path, loop_id: str, stage: str) -> None:
     path = _loop_state_path(root, loop_id)
-    if not path.is_file():
-        return
-    try:
-        state = AutotrainLoopStateV1.model_validate_json(
-            path.read_text(encoding="utf-8")
+    with autotrain_loop_state_lock(root, loop_id):
+        if not path.is_file():
+            return
+        try:
+            state = AutotrainLoopStateV1.model_validate_json(
+                path.read_text(encoding="utf-8")
+            )
+        except (OSError, ValueError):
+            return
+        _write_loop_state_unlocked(
+            root,
+            state.model_copy(
+                update={
+                    "active_stage": stage,
+                    "child_pid": None,
+                    "stage_started_at": None,
+                    "heartbeat_at": utc_now(),
+                }
+            ),
         )
-    except (OSError, ValueError):
-        return
-    _write_loop_state(
-        root,
-        state.model_copy(
-            update={
-                "active_stage": stage,
-                "child_pid": None,
-                "stage_started_at": None,
-                "heartbeat_at": utc_now(),
-            }
-        ),
-    )
 
 
 def _set_stage_process(root: Path, loop_id: str, stage: str, child_pid: int) -> None:
     path = _loop_state_path(root, loop_id)
-    if not path.is_file():
-        return
-    try:
-        state = AutotrainLoopStateV1.model_validate_json(
-            path.read_text(encoding="utf-8")
+    with autotrain_loop_state_lock(root, loop_id):
+        if not path.is_file():
+            return
+        try:
+            state = AutotrainLoopStateV1.model_validate_json(
+                path.read_text(encoding="utf-8")
+            )
+        except (OSError, ValueError):
+            return
+        now = utc_now()
+        started_at = state.stage_started_at if state.active_stage == stage else None
+        _write_loop_state_unlocked(
+            root,
+            state.model_copy(
+                update={
+                    "active_stage": stage,
+                    "child_pid": child_pid,
+                    "stage_started_at": started_at or now,
+                    "heartbeat_at": now,
+                }
+            ),
         )
-    except (OSError, ValueError):
-        return
-    now = utc_now()
-    started_at = state.stage_started_at if state.active_stage == stage else None
-    _write_loop_state(
-        root,
-        state.model_copy(
-            update={
-                "active_stage": stage,
-                "child_pid": child_pid,
-                "stage_started_at": started_at or now,
-                "heartbeat_at": now,
-            }
-        ),
-    )
+
+
+def _clear_active_stage(root: Path, loop_id: str) -> None:
+    path = _loop_state_path(root, loop_id)
+    with autotrain_loop_state_lock(root, loop_id):
+        if not path.is_file():
+            return
+        try:
+            state = AutotrainLoopStateV1.model_validate_json(
+                path.read_text(encoding="utf-8")
+            )
+        except (OSError, ValueError):
+            return
+        _write_loop_state_unlocked(
+            root,
+            state.model_copy(
+                update={
+                    "active_stage": None,
+                    "child_pid": None,
+                    "stage_started_at": None,
+                    "heartbeat_at": utc_now(),
+                }
+            ),
+        )
 
 
 def _record_cycle_failure(
@@ -1128,7 +1302,12 @@ def _revalidate_open_champion_entries(
         control_id = str(row.get("source_control_id") or "")
         candidate_id = str(row.get("source_candidate_id") or "")
         camp_dir = root / campaign_id
-        if not campaign_id or not control_id or not candidate_id or not camp_dir.is_dir():
+        if (
+            not campaign_id
+            or not control_id
+            or not candidate_id
+            or not camp_dir.is_dir()
+        ):
             continue
         handoff = _read_json(camp_dir / "cycle_handoff.json")
         delivery = _read_json(camp_dir / "sdlc_delivery.json")
@@ -1143,9 +1322,7 @@ def _revalidate_open_champion_entries(
                 control_id=control_id,
                 candidate_id=candidate_id,
                 role=str(
-                    row.get("source_role")
-                    or handoff.get("cycle_role")
-                    or "screening"
+                    row.get("source_role") or handoff.get("cycle_role") or "screening"
                 ),
             )
         except (OSError, TypeError, ValueError):
@@ -1201,6 +1378,74 @@ def _revalidate_confirmed_champion_entries(
     return changed
 
 
+def _refresh_champion_source_recipes(root: Path, entries: list[dict[str, Any]]) -> bool:
+    """Restore lever-complete queue recipes from immutable source experiments.
+
+    Older queue writers projected only a subset of registered levers. Any such
+    confirmation or promotion changed the treatment and is not evidence for the
+    source winner, so reopen it at confirmation with the exact source recipes.
+    """
+
+    changed = False
+    open_statuses = {
+        "queued",
+        "confirming",
+        "confirmation_inconclusive",
+        "confirmed",
+        "promoting",
+        "promotion_inconclusive",
+        "harness_failure",
+    }
+    for row in entries:
+        if row.get("status") not in open_statuses:
+            continue
+        source_dir = root / str(row.get("source_campaign_id") or "")
+        candidate = _lever_knobs(
+            _load_experiment_knobs(
+                source_dir, str(row.get("source_candidate_id") or "")
+            )
+        )
+        control = _lever_knobs(
+            _load_experiment_knobs(source_dir, str(row.get("source_control_id") or ""))
+        )
+        if not candidate:
+            continue
+        if candidate == _lever_knobs(
+            row.get("knobs") or {}
+        ) and control == _lever_knobs(row.get("control_knobs") or {}):
+            continue
+        prior_status = str(row.get("status") or "")
+        row.update(
+            knobs=candidate,
+            control_knobs=control,
+            knobs_fingerprint=_knobs_fingerprint(candidate),
+            status="queued",
+            confirm_attempts=0,
+            promote_attempts=0,
+            confirm_campaign_id=None,
+            confirm_cycle_index=None,
+            promotion_campaign_id=None,
+            promotion_cycle_index=None,
+            resolved_at=None,
+            resolve_reasons=[
+                "champion_recipe_repaired_from_source",
+                f"invalidated_phase_status:{prior_status}",
+            ],
+        )
+        row.pop("cert_policy", None)
+        row.pop("formal_preflight_status", None)
+        row.pop("last_harness_failure", None)
+        row.pop("last_harness_failure_at", None)
+        changed = True
+        print(
+            "CHAMPION_RECIPE_REPAIRED "
+            f"entry_id={row.get('entry_id')} prior_status={prior_status} "
+            f"source={row.get('source_campaign_id')}",
+            flush=True,
+        )
+    return changed
+
+
 def _write_champion_queue(path: Path, entries: list[dict[str, Any]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + ".tmp")
@@ -1239,6 +1484,61 @@ def _arm_slug_from_knobs(
     knobs: dict[str, Any], *, candidate_id: str = ""
 ) -> str | None:
     """Map knobs / candidate id to thrash arm slug."""
+    if knobs.get("constraint_graph_mode") == "grammar":
+        return "constraint-graph"
+    if knobs.get("slot_contract_in_context"):
+        return "slot-contract-context"
+    if (
+        knobs.get("semantic_contrast_loss_weight")
+        and knobs.get("compiler_alignment_loss_weight")
+        and knobs.get("compiler_alignment_kind_filter") == "all"
+    ):
+        return "semantic-contrast-compiler-margin"
+    if (
+        knobs.get("compiler_alignment_loss_weight")
+        and knobs.get("compiler_alignment_kind_filter") == "all"
+        and knobs.get("mixture_sampling_policy") == "exposure_targeted"
+        and knobs.get("compiler_alignment_semantic_exhaustive")
+    ):
+        return "exposure-targeted-semantic-exhaustive-compiler-decision-margin"
+    if (
+        knobs.get("slot_component_loss_weight")
+        and knobs.get("mixture_sampling_policy") == "exposure_targeted"
+        and knobs.get("mixture_per_template_cap")
+    ):
+        return "slot-component-exposure-cap"
+    if knobs.get("slot_component_loss_weight") and knobs.get(
+        "component_inventory_loss_weight"
+    ):
+        return "slot-component-inventory-coupling"
+    if (
+        knobs.get("slot_component_loss_weight")
+        and float(knobs.get("fidelity_loss_weight") or 0.5) != 0.5
+    ):
+        return "slot-component-fidelity-coupling"
+    if knobs.get("slot_component_loss_weight"):
+        return "slot-component-coverage"
+    if (
+        knobs.get("compiler_alignment_loss_weight")
+        and knobs.get("compiler_alignment_kind_filter") == "all"
+        and knobs.get("mixture_sampling_policy") == "exposure_targeted"
+    ):
+        return "exposure-targeted-compiler-decision-margin"
+    if (
+        knobs.get("compiler_alignment_loss_weight")
+        and knobs.get("compiler_alignment_kind_filter") == "all"
+        and knobs.get("mixture_sampling_policy") == "capacity_aware"
+        and knobs.get("compiler_alignment_semantic_exhaustive")
+        and knobs.get("structure_token_loss_weight")
+    ):
+        return "capacity-aware-semantic-exhaustive-structure-token-margin"
+    if (
+        knobs.get("compiler_alignment_loss_weight")
+        and knobs.get("compiler_alignment_kind_filter") == "all"
+        and knobs.get("mixture_sampling_policy") == "capacity_aware"
+        and knobs.get("compiler_alignment_semantic_exhaustive")
+    ):
+        return "capacity-aware-semantic-exhaustive-compiler-decision-margin"
     if (
         knobs.get("compiler_alignment_loss_weight")
         and knobs.get("compiler_alignment_kind_filter") == "all"
@@ -1512,11 +1812,18 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
     successor_slugs = (
         "binder-arity",
         "binder-component-plan",
+        "slot-component-coverage",
+        "slot-component-fidelity-coupling",
+        "slot-component-inventory-coupling",
+        "slot-component-exposure-cap",
+        "slot-contract-context",
+        "constraint-graph",
         "literal-margin",
         "literal-close",
         "fidelity",
         "edge-alignment",
         "semantic-contrast",
+        "semantic-contrast-compiler-margin",
         "slot-augmentation",
         "mixed-mask",
         "symbol-boundary",
@@ -1531,6 +1838,10 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
         "wide-draft-compiler-decision-margin",
         "capacity-aware-compiler-decision-margin",
         "capacity-aware-tail-compiler-decision-margin",
+        "capacity-aware-semantic-exhaustive-compiler-decision-margin",
+        "capacity-aware-semantic-exhaustive-structure-token-margin",
+        "exposure-targeted-compiler-decision-margin",
+        "exposure-targeted-semantic-exhaustive-compiler-decision-margin",
         "structure-token",
         "typed-family-balance",
         "container-close",
@@ -1543,11 +1854,7 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
         "binder-topology",
         "component-structure",
     }
-    bank = tuple(
-        row
-        for row in _SCREENING_ARM_BANK
-        if row[0] not in successor_slugs
-    )
+    bank = tuple(row for row in _SCREENING_ARM_BANK if row[0] not in successor_slugs)
     n = len(bank)
     start = (max(1, int(cycle)) - 1) % n
     ordered = [bank[(start + i) % n][0] for i in range(n)]
@@ -1747,8 +2054,7 @@ def _reconcile_completed_confirmation_replays(
                 row
                 for row in entries
                 if row is not duplicate
-                and row.get("knobs_fingerprint")
-                == duplicate.get("knobs_fingerprint")
+                and row.get("knobs_fingerprint") == duplicate.get("knobs_fingerprint")
                 and row.get("status") == "confirmation_inconclusive"
             ),
             None,
@@ -2276,12 +2582,6 @@ def _rate_to_pm(value: object) -> int | None:
     return int(max(0, min(1000, round(float(value) * 1000.0))))
 
 
-def _latency_ms_to_ns(value: object) -> int | None:
-    if not isinstance(value, (int, float)) or isinstance(value, bool):
-        return None
-    return max(1, int(round(float(value) * 1_000_000.0)))
-
-
 def _run_suite_metrics(camp_dir: Path, run_id: str) -> dict[str, float | None]:
     """Load parse / structure / latency from smoke or held_out eval JSON."""
     run_dir = camp_dir / "runs" / run_id
@@ -2317,33 +2617,36 @@ def _run_suite_metrics(camp_dir: Path, run_id: str) -> dict[str, float | None]:
     return out
 
 
-def _candidate_row_for_cert(
-    *,
-    arm_id: str,
-    knobs: dict[str, Any],
-    latency_ms: float | None,
-    parse_rate: float | None,
-) -> dict[str, Any]:
-    lat_ns = _latency_ms_to_ns(latency_ms) or 1
-    lever = hashlib.sha256(
-        json.dumps(knobs, sort_keys=True, default=str).encode("utf-8")
-    ).hexdigest()
-    successes = 2
-    quality_failures = 0 if (parse_rate is not None and parse_rate >= 1.0 - 1e-9) else 0
-    return {
-        "id": arm_id,
-        "hardware": "cpu",
-        "lever_snapshot_sha256": lever,
-        "cold_ns": [lat_ns],
-        "warm_ns": [lat_ns],
-        "input_units": [1],
-        "passes": [1],
-        "energy_uj": [1],
-        "cost_micro_usd": [1],
-        "successes": successes,
-        "quality_failures": quality_failures,
-        "trainable_params": 100,
-    }
+def _raw_metric_observations(
+    camp_dir: Path, run_id: str
+) -> tuple[dict[str, list[int]] | None, Path | None]:
+    """Read per-example promotion observations; aggregates are not samples."""
+
+    run_dir = camp_dir / "runs" / run_id
+    for name in ("eval_held_out.json", "eval_smoke.json", "eval.json"):
+        path = run_dir / name
+        if not path.is_file():
+            continue
+        details = _read_json(path).get("details")
+        if not isinstance(details, list):
+            continue
+        structural: list[int] = []
+        parse: list[int] = []
+        for row in details:
+            if not isinstance(row, dict) or row.get("incomplete") is True:
+                continue
+            score = _rate_to_pm(row.get("structural_similarity"))
+            if score is not None:
+                structural.append(score)
+            parse_ok = row.get("parse_ok")
+            if isinstance(parse_ok, bool):
+                parse.append(1000 if parse_ok else 0)
+        if structural and parse:
+            return {
+                "held_out_structural_similarity_pm": structural,
+                "parse_rate_pm": parse,
+            }, path
+    return None, None
 
 
 def export_promote_metric_certificate(
@@ -2356,6 +2659,7 @@ def export_promote_metric_certificate(
     deadline: float | None = None,
     root: Path | None = None,
     loop_id: str | None = None,
+    raw_resource_candidates: Sequence[Mapping[str, Any]] | None = None,
 ) -> tuple[Path | None, str | None]:
     """Build LeverProof evidence + certificate for continuous promote.
 
@@ -2368,6 +2672,18 @@ def export_promote_metric_certificate(
         write_metric_evidence,
     )
 
+    # LeverProof v2 selects over raw resource samples. The continuous evaluator
+    # does not own cold/warm, energy, or cost measurements, so it must never
+    # synthesize those axes from aggregate latency. A canonical measurement
+    # owner supplies every candidate row or promotion fails closed.
+    if raw_resource_candidates is None:
+        return None, "promote_evidence_build_failed:raw_resource_evidence_missing"
+    candidates = [dict(row) for row in raw_resource_candidates]
+    if {str(row.get("id") or "") for row in candidates} != {
+        "control",
+        "candidate",
+    }:
+        return None, "promote_evidence_build_failed:raw_resource_candidate_ids"
     if not IN_REPO_CHECKER.is_file():
         return None, f"leverproof_checker_missing:{IN_REPO_CHECKER}"
 
@@ -2383,13 +2699,14 @@ def export_promote_metric_certificate(
     if ss_pm is None or parse_pm is None:
         return None, (f"promote_cert_incomplete_metrics:ss={ss!r} parse={parse!r}")
 
-    # Repeat samples (fixture n≈3 style) for band assessment stability.
+    raw_observations, observation_source = _raw_metric_observations(
+        camp_dir, candidate_id
+    )
+    if raw_observations is None or observation_source is None:
+        return None, "promote_evidence_build_failed:raw_metric_observations_missing"
     observations = {
         "schema": "metric_observations/v1",
-        "metrics": {
-            "held_out_structural_similarity_pm": [ss_pm, ss_pm, ss_pm],
-            "parse_rate_pm": [parse_pm, parse_pm, parse_pm],
-        },
+        "metrics": raw_observations,
     }
     promote_dir = camp_dir / "promote"
     promote_dir.mkdir(parents=True, exist_ok=True)
@@ -2409,6 +2726,13 @@ def export_promote_metric_certificate(
                 "control_metrics": ctrl,
                 "candidate_metrics": cand,
                 "delivery_reasons": list((delivery or {}).get("reasons") or []),
+                "raw_metric_observations_source": {
+                    "path": str(observation_source),
+                    "sha256": hashlib.sha256(
+                        observation_source.read_bytes()
+                    ).hexdigest(),
+                },
+                "raw_resource_candidates": candidates,
             },
             sort_keys=True,
         )
@@ -2432,26 +2756,6 @@ def export_promote_metric_certificate(
         if man_path is None:
             mans = sorted(man_dir.glob("*.json"))
             man_path = mans[0] if mans else None
-
-    ctrl_knobs = _lever_knobs(_load_experiment_knobs(camp_dir, control_id)) or {
-        "grammar_completion_bounds": False,
-        "compact_active_canvas": False,
-    }
-    cand_knobs = _lever_knobs(_load_experiment_knobs(camp_dir, candidate_id)) or {}
-    candidates = [
-        _candidate_row_for_cert(
-            arm_id="control",
-            knobs=ctrl_knobs,
-            latency_ms=ctrl.get("latency_ms_p50"),
-            parse_rate=ctrl.get("parse_rate"),
-        ),
-        _candidate_row_for_cert(
-            arm_id="candidate",
-            knobs=cand_knobs,
-            latency_ms=cand.get("latency_ms_p50"),
-            parse_rate=cand.get("parse_rate"),
-        ),
-    ]
 
     try:
         evidence_path = promote_dir / "metric-evidence.json"
@@ -3717,8 +4021,7 @@ def _classify_positive(
             control_latency is not None
             and candidate_latency is not None
             and control_latency > 0
-            and candidate_latency
-            > control_latency * (1.0 + _LATENCY_REGRESSION_BUDGET)
+            and candidate_latency > control_latency * (1.0 + _LATENCY_REGRESSION_BUDGET)
             and candidate_latency > control_latency + _LATENCY_REGRESSION_ABS_MS
         ):
             decision["positive"] = False
@@ -4158,11 +4461,23 @@ def _completed_candidate_priorities(
         "compiler_decision_token_loss_weight",
         "structure_token_loss_weight",
         "typed_family_balance_loss_weight",
+        "slot_contract_in_context",
+        "constraint_graph_mode",
     }
+
     def has_quality_objective(knobs: dict[str, Any]) -> bool:
-        return any(float(knobs.get(key) or 0) > 0 for key in quality_keys) or (
-            float(knobs.get("fidelity_loss_weight") or 0.5) != 0.5
-        ) or str(knobs.get("mask_pattern") or "random") != "random"
+        def active(value: Any) -> bool:
+            if value is None or value is False:
+                return False
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                return value > 0
+            return True
+
+        return (
+            any(active(knobs.get(key)) for key in quality_keys)
+            or (float(knobs.get("fidelity_loss_weight") or 0.5) != 0.5)
+            or str(knobs.get("mask_pattern") or "random") != "random"
+        )
 
     targeted_alternative = next(
         (
@@ -4642,9 +4957,7 @@ def _predecessor_priority_slug(
         if observed and observed not in executed_slugs and observed not in closed:
             return observed
         cursor = str(
-            _read_json(ancestor_dir / "campaign.json").get(
-                "predecessor_campaign_id"
-            )
+            _read_json(ancestor_dir / "campaign.json").get("predecessor_campaign_id")
             or ""
         )
 
@@ -4705,8 +5018,7 @@ def _write_cycle_handoff(
         finalized_decode_timeout and not control_decode_timeout
     )
     control_only_model_timeout = bool(
-        control_decode_timeout
-        and not finalized_decode_timeout
+        control_decode_timeout and not finalized_decode_timeout
     )
     control_runtime_reproduced = bool(
         control_only_model_timeout
@@ -5032,31 +5344,31 @@ def _write_cycle_handoff(
             )
         else:
             actions[0:0] = [
-            AutotrainActionV1(
-                kind="repair_harness",
-                owner="improve-openui-harnesses",
-                reason=(
-                    "AgentV finalized every record disposition and reported an "
-                    "internal decode timeout; "
-                )
-                + (
-                    "repair canonical model-build runtime before replaying the "
-                    "frozen arm"
+                AutotrainActionV1(
+                    kind="repair_harness",
+                    owner="improve-openui-harnesses",
+                    reason=(
+                        "AgentV finalized every record disposition and reported an "
+                        "internal decode timeout; "
+                    )
+                    + (
+                        "repair canonical model-build runtime before replaying the "
+                        "frozen arm"
+                    ),
+                    evidence_ids=(evidence_id,),
+                    harness_family="model_build",
+                    frozen_manifest_sha256=manifest_sha,
                 ),
-                evidence_ids=(evidence_id,),
-                harness_family="model_build",
-                frozen_manifest_sha256=manifest_sha,
-            ),
-            AutotrainActionV1(
-                kind="retry_measurement",
-                owner="autotrain",
-                reason=(
-                    "replay the identical frozen arm after the required "
-                    "canonical runtime repair"
+                AutotrainActionV1(
+                    kind="retry_measurement",
+                    owner="autotrain",
+                    reason=(
+                        "replay the identical frozen arm after the required "
+                        "canonical runtime repair"
+                    ),
+                    evidence_ids=(evidence_id,),
+                    frozen_manifest_sha256=manifest_sha,
                 ),
-                evidence_ids=(evidence_id,),
-                frozen_manifest_sha256=manifest_sha,
-            ),
             ]
     elif measurement_incomplete:
         from slm_training.autoresearch.climb_policy import (
@@ -5169,7 +5481,10 @@ def _write_cycle_handoff(
                 evidence_ids=(evidence_id,),
             )
         )
-    if delivery.get("positive"):
+    # A metric-positive fixture with no tracked delta has nothing reviewable to
+    # deliver. Do not emit a blocking deliver_stack action in that case; the
+    # continuous loop must be able to consume its next-experiment action.
+    if delivery.get("positive") and delivery.get("stack_layer"):
         actions.append(
             AutotrainActionV1(
                 kind="deliver_stack",
@@ -5484,13 +5799,8 @@ def _restore_frozen_formal_claims(
             or preflight.experiment_id != manifest.experiment_id
             or preflight.template_id != obligation.template_id
             or preflight.policy != obligation.policy
-            or (
-                claim.policy == "required"
-                and preflight.status != "proved"
-            )
-            or formal_obligation_id(
-                manifest.campaign_id, manifest.experiment_id, claim
-            )
+            or (claim.policy == "required" and preflight.status != "proved")
+            or formal_obligation_id(manifest.campaign_id, manifest.experiment_id, claim)
             != preflight.obligation_id
         ):
             raise RuntimeError(
@@ -5514,7 +5824,11 @@ def _nonreplayable_configuration_failure(
         ):
             continue
         error = str(outcome.get("error") or "")
-        if "lever_capability_compatibility" in error:
+        if (
+            "lever_capability_compatibility" in error
+            or "unsupported compiler auxiliary lever" in error
+            or "no runtime owner is implemented" in error
+        ):
             return "lever_capability_compatibility"
     return None
 
@@ -5591,9 +5905,7 @@ def _load_frozen_replay(
     }
     for role in ("control", "candidate"):
         item = replay[role]
-        _restore_frozen_formal_claims(
-            camp_dir, item["experiment"], item["manifest"]
-        )
+        _restore_frozen_formal_claims(camp_dir, item["experiment"], item["manifest"])
         item["train_reuse"] = _completed_frozen_train_source(
             root=root,
             campaign_dir=camp_dir,
@@ -5650,7 +5962,9 @@ def _completed_frozen_train_source(
         predecessor_seen: set[str] = set()
         while predecessor_id is not None:
             if predecessor_id in predecessor_seen:
-                raise RuntimeError("frozen campaign predecessor lineage contains a cycle")
+                raise RuntimeError(
+                    "frozen campaign predecessor lineage contains a cycle"
+                )
             predecessor_seen.add(predecessor_id)
             current_dir = root / predecessor_id
             try:
@@ -5701,40 +6015,42 @@ def _apply_frozen_replay(
     new_ids = {"control": f"{prefix}-control", "candidate": f"{prefix}-{slug}"}
     if promotion_replay or confirmation_replay:
         frozen_knobs = replay["candidate"]["experiment"].get("knobs") or {}
-        frozen_fingerprint = _knobs_fingerprint(
-            _lever_knobs(frozen_knobs)
-        )
+        frozen_fingerprint = _knobs_fingerprint(_lever_knobs(frozen_knobs))
         source_slug = (
             _arm_slug_from_knobs(frozen_knobs, candidate_id=old_candidate_id)
             if confirmation_replay
             else None
         )
-        candidate_target = next(
-            (
-                item["experiment"]
-                for item in matrix["hypotheses"]
-                if source_slug
-                and item["experiment"]["experiment_id"].endswith(f"-{source_slug}")
-            ),
-            None,
-        ) or next(
-            (
-                item["experiment"]
-                for item in matrix["hypotheses"]
-                if _knobs_fingerprint(
-                    _lever_knobs(item["experiment"].get("knobs") or {})
-                )
-                == frozen_fingerprint
-            ),
-            None,
-        ) or next(
-            (
-                item["experiment"]
-                for item in matrix["hypotheses"]
-                if item["experiment"]["experiment_id"]
-                == matrix["recommended_experiment_id"]
-            ),
-            None,
+        candidate_target = (
+            next(
+                (
+                    item["experiment"]
+                    for item in matrix["hypotheses"]
+                    if source_slug
+                    and item["experiment"]["experiment_id"].endswith(f"-{source_slug}")
+                ),
+                None,
+            )
+            or next(
+                (
+                    item["experiment"]
+                    for item in matrix["hypotheses"]
+                    if _knobs_fingerprint(
+                        _lever_knobs(item["experiment"].get("knobs") or {})
+                    )
+                    == frozen_fingerprint
+                ),
+                None,
+            )
+            or next(
+                (
+                    item["experiment"]
+                    for item in matrix["hypotheses"]
+                    if item["experiment"]["experiment_id"]
+                    == matrix["recommended_experiment_id"]
+                ),
+                None,
+            )
         )
         if candidate_target is None:
             kind = "promotion" if promotion_replay else "confirmation"
@@ -5876,6 +6192,16 @@ def _require_predecessor_actions(
     if handoff.loop_id != loop_id or handoff.campaign_id != predecessor_campaign_id:
         raise RuntimeError("predecessor handoff identity does not match loop lineage")
     pending = pending_autotrain_actions(root, handoff)
+    delivery = _read_json(root / predecessor_campaign_id / "sdlc_delivery.json")
+    if delivery.get("stack_layer") is False:
+        # Historical positive fixture handoffs emitted deliver_stack even when
+        # Phase A had no tracked delta. That action is not executable and must
+        # not block the next experiment; the handoff writer now omits it.
+        pending = tuple(
+            (index, action)
+            for index, action in pending
+            if action.kind != "deliver_stack"
+        )
     if pending:
         detail = ", ".join(f"{index}:{action.kind}" for index, action in pending)
         raise RuntimeError(
@@ -6050,57 +6376,7 @@ def _matrix(
     prefix = campaign_id.replace("continuous-loop-", "c")
     # Promotion path (Change C): confirmed champion knobs under promotion suites.
     if promote_levers:
-        promo_extra = {
-            k: v
-            for k, v in promote_levers.items()
-            if k
-            in {
-                "grammar_completion_bounds",
-                "compact_active_canvas",
-                "component_plan_loss_weight",
-                "component_plan_decode_weight",
-                "component_edge_loss_weight",
-                "component_edge_alignment_loss_weight",
-                "component_edge_decode_weight",
-                "component_inventory_loss_weight",
-                "component_inventory_decode_weight",
-                "binder_topology_loss_weight",
-                "binder_topology_decode_weight",
-                "binder_component_plan_loss_weight",
-                "binder_component_plan_decode_weight",
-                "binder_arity_loss_weight",
-                "binder_arity_decode_weight",
-                "fidelity_loss_weight",
-                "semantic_contrast_dir",
-                "semantic_contrast_loss_weight",
-                "semantic_contrast_margin",
-                "semantic_contrast_fraction",
-                "symbol_slot_augmentation",
-                "mask_pattern",
-                "symbol_boundary_loss_weight",
-                "design_md_dropout",
-                "ltr_prefix_loss_weight",
-                "component_token_loss_weight",
-                "component_edge_token_loss_weight",
-                "compiler_decision_token_loss_weight",
-                "structure_token_loss_weight",
-                "typed_family_balance_loss_weight",
-                "structural_aux_head_profile",
-                "compiler_decode_mode",
-                "steps",
-                "batch_size",
-                "train_version",
-                "context_backend",
-                "sync_checkpoints",
-                "local_files_only",
-                "output_tokenizer",
-                "ltr_tail_loss_weight",
-                "compiler_alignment_loss_weight",
-                "compiler_alignment_margin",
-                "compiler_alignment_stratified",
-                "compiler_alignment_kind_filter",
-            }
-        }
+        promo_extra = {k: v for k, v in promote_levers.items() if k in _LEVER_KNOB_KEYS}
         promo_steps = int(promo_extra.pop("steps", steps) or steps)
         control_extra = {
             k: v
@@ -6251,55 +6527,7 @@ def _matrix(
     # another thrash of the fixed lever bank.
     elif confirm_levers:
         confirm_extra = {
-            k: v
-            for k, v in confirm_levers.items()
-            if k
-            in {
-                "grammar_completion_bounds",
-                "compact_active_canvas",
-                "component_plan_loss_weight",
-                "component_plan_decode_weight",
-                "component_edge_loss_weight",
-                "component_edge_alignment_loss_weight",
-                "component_edge_decode_weight",
-                "component_inventory_loss_weight",
-                "component_inventory_decode_weight",
-                "binder_topology_loss_weight",
-                "binder_topology_decode_weight",
-                "binder_component_plan_loss_weight",
-                "binder_component_plan_decode_weight",
-                "binder_arity_loss_weight",
-                "binder_arity_decode_weight",
-                "fidelity_loss_weight",
-                "semantic_contrast_dir",
-                "semantic_contrast_loss_weight",
-                "semantic_contrast_margin",
-                "semantic_contrast_fraction",
-                "symbol_slot_augmentation",
-                "mask_pattern",
-                "symbol_boundary_loss_weight",
-                "design_md_dropout",
-                "ltr_prefix_loss_weight",
-                "component_token_loss_weight",
-                "component_edge_token_loss_weight",
-                "compiler_decision_token_loss_weight",
-                "structure_token_loss_weight",
-                "typed_family_balance_loss_weight",
-                "structural_aux_head_profile",
-                "compiler_decode_mode",
-                "steps",
-                "batch_size",
-                "train_version",
-                "context_backend",
-                "sync_checkpoints",
-                "local_files_only",
-                "output_tokenizer",
-                "ltr_tail_loss_weight",
-                "compiler_alignment_loss_weight",
-                "compiler_alignment_margin",
-                "compiler_alignment_stratified",
-                "compiler_alignment_kind_filter",
-            }
+            k: v for k, v in confirm_levers.items() if k in _LEVER_KNOB_KEYS
         }
         confirm_steps = int(confirm_extra.pop("steps", steps) or steps)
         control_extra = {
@@ -6472,6 +6700,16 @@ def _matrix(
             "wide-draft-compiler-decision-margin": "grammar_draft_window",
             "capacity-aware-compiler-decision-margin": "mixture_sampling_policy",
             "capacity-aware-tail-compiler-decision-margin": "ltr_tail_loss_weight",
+            "capacity-aware-semantic-exhaustive-compiler-decision-margin": (
+                "compiler_alignment_semantic_exhaustive"
+            ),
+            "capacity-aware-semantic-exhaustive-structure-token-margin": (
+                "structure_token_loss_weight"
+            ),
+            "exposure-targeted-compiler-decision-margin": ("mixture_sampling_policy"),
+            "exposure-targeted-semantic-exhaustive-compiler-decision-margin": (
+                "compiler_alignment_semantic_exhaustive"
+            ),
         }.get(rec_slug)
         if treatment_key is not None:
             control_extra = {
@@ -6479,11 +6717,24 @@ def _matrix(
                 for key, value in bank_by_slug[rec_slug][1].items()
                 if key != treatment_key
             }
-        precursor_slug = (
-            "capacity-aware-compiler-decision-margin"
-            if rec_slug == "capacity-aware-tail-compiler-decision-margin"
-            else "compiler-decision-margin"
-        )
+        if rec_slug == "exposure-targeted-compiler-decision-margin":
+            control_extra = dict(bank_by_slug[rec_slug][1])
+            control_extra["mixture_sampling_policy"] = "capacity_aware"
+        if rec_slug == "exposure-targeted-semantic-exhaustive-compiler-decision-margin":
+            precursor_slug = "exposure-targeted-compiler-decision-margin"
+        elif rec_slug == "exposure-targeted-compiler-decision-margin":
+            precursor_slug = "capacity-aware-compiler-decision-margin"
+        elif rec_slug == "capacity-aware-semantic-exhaustive-structure-token-margin":
+            precursor_slug = (
+                "capacity-aware-semantic-exhaustive-compiler-decision-margin"
+            )
+        elif rec_slug in {
+            "capacity-aware-tail-compiler-decision-margin",
+            "capacity-aware-semantic-exhaustive-compiler-decision-margin",
+        }:
+            precursor_slug = "capacity-aware-compiler-decision-margin"
+        else:
+            precursor_slug = "compiler-decision-margin"
         candidates = [
             {
                 "experiment": exp(
@@ -6529,10 +6780,7 @@ def _matrix(
             }
         ]
         for i, (slug, hyp, extras) in enumerate(_SCREENING_ARM_BANK, start=1):
-            if (
-                treatment_key is not None
-                and slug == precursor_slug
-            ):
+            if treatment_key is not None and slug == precursor_slug:
                 # The matched control is exactly this precursor arm. Emitting it
                 # again would violate the preregistration contract's distinct-
                 # knob-signature requirement without adding information.
@@ -6916,9 +7164,7 @@ def _empty_promotion_slot_falls_back(
     )
 
 
-def _role_with_confirmation_boundary(
-    cadence_role: str, *, confirming: bool
-) -> str:
+def _role_with_confirmation_boundary(cadence_role: str, *, confirming: bool) -> str:
     """Keep unconfirmed champions on screening endpoints and suites."""
 
     return "screening" if confirming else cadence_role
@@ -7053,15 +7299,20 @@ def run_cycle(
     queue_entries = _load_champion_queue(queue_path)
     # Pre-execution crashes do not spend bounded champion attempts. Promotion
     # heads also return to confirmed so the next promotion slot can retry.
-    reconciled_replays = _reconcile_completed_confirmation_replays(
-        root, queue_entries
-    )
+    recipes_refreshed = _refresh_champion_source_recipes(root, queue_entries)
+    reconciled_replays = _reconcile_completed_confirmation_replays(root, queue_entries)
     recovered = _recover_interrupted_champion_entries(root, queue_entries)
     revalidated = _revalidate_open_champion_entries(root, queue_entries)
     confirmations_revalidated = _revalidate_confirmed_champion_entries(
         root, queue_entries
     )
-    if reconciled_replays or recovered or revalidated or confirmations_revalidated:
+    if (
+        recipes_refreshed
+        or reconciled_replays
+        or recovered
+        or revalidated
+        or confirmations_revalidated
+    ):
         _write_champion_queue(queue_path, queue_entries)
     replayed_confirmation = _confirmation_replay_entry(queue_entries, replay)
     recent_exhausted = _recent_completed_nonpositive_slugs(root, pred)
@@ -7206,12 +7457,22 @@ def run_cycle(
             f"cycle={cycle} suites={','.join(eval_suites_for_role(policy, role))}",
             flush=True,
         )
+    formal_lane_required = _formal_lane_required(
+        cycle_intent=cycle_intent,
+        replay=replay,
+    )
     arm_wall_minutes = _arm_wall_minutes(
         stage_wall_minutes_for_role(policy, role),
-        formal_required=_formal_lane_required(
-            cycle_intent=cycle_intent,
-            replay=replay,
-        ),
+        formal_required=formal_lane_required,
+    )
+    # The campaign records the maximum arm ceiling before outcomes exist. The
+    # driver later passes the exact symmetric post-formal share to each run.
+    # Keeping the old pre-formal split here made the inner executor discard
+    # time that the outer allocator had correctly reclaimed.
+    campaign_wall_minutes = _post_formal_arm_budget_request(
+        policy_minutes=stage_wall_minutes_for_role(policy, role),
+        initial_arm_wall_minutes=arm_wall_minutes,
+        formal_completed=formal_lane_required,
     )
     claim_for_role = (
         str(policy.defaults.get("claim_class_promotion") or "promotion_candidate")
@@ -7295,7 +7556,7 @@ def run_cycle(
         "--max-experiments",
         "3",
         "--max-wall-minutes",
-        str(arm_wall_minutes),
+        str(campaign_wall_minutes),
         "--notes",
         notes,
     ]
@@ -7515,8 +7776,7 @@ def run_cycle(
     promote_formal_status: str | None = None
     promote_preflight_sha: str | None = None
     replay_formal_required = any(
-        bool(item["manifest"].formal_obligations)
-        for item in replay_manifests.values()
+        bool(item["manifest"].formal_obligations) for item in replay_manifests.values()
     )
     if replay_formal_required:
         replay_arm_count = len(replay_manifest_paths)
@@ -7657,15 +7917,20 @@ def run_cycle(
             else "BLOCK"
         )
         print(
-            f"REPLAY_FORMAL_{kind} skip_execute "
-            f"status={promote_formal_status}",
+            f"REPLAY_FORMAL_{kind} skip_execute status={promote_formal_status}",
             flush=True,
         )
         order = []
 
     arm_count = len({eid for eid in order if eid in by_id})
     if arm_count:
-        requested_arm_wall_minutes = arm_wall_minutes
+        requested_arm_wall_minutes = _post_formal_arm_budget_request(
+            policy_minutes=stage_wall_minutes_for_role(policy, role),
+            initial_arm_wall_minutes=arm_wall_minutes,
+            formal_completed=(
+                formal_lane_required and promote_formal_status == "proved"
+            ),
+        )
         arm_wall_minutes = _fit_symmetric_arm_budget(
             deadline=deadline,
             arm_count=arm_count,
@@ -7718,6 +7983,8 @@ def run_cycle(
             "--campaign-manifest",
             str(man_path),
             "--execute",
+            "--experiment-wall-seconds",
+            f"{arm_wall_minutes * 60:.6f}",
         ]
         reuse = replay_manifests.get(eid, {}).get("train_reuse")
         if reuse is not None:
@@ -7786,6 +8053,11 @@ def run_cycle(
         and delivery.get("measurement_complete") is True
     ):
         evidence = (
+            str(
+                (camp_dir / "campaign.json").relative_to(cwd)
+                if (camp_dir / "campaign.json").is_relative_to(cwd)
+                else camp_dir / "campaign.json"
+            ),
             str(
                 (camp_dir / "sdlc_delivery.json").relative_to(cwd)
                 if (camp_dir / "sdlc_delivery.json").is_relative_to(cwd)
@@ -7959,22 +8231,25 @@ def run_cycle(
         formal_status=promote_formal_status,
         skip_slugs=skip_slugs,
     )
-    _run(
-        [
-            *ar,
-            "status",
-            "--loop-id",
-            loop_id,
-            "--matrix",
-            "--last",
-            "5",
-        ],
-        cwd=cwd,
-        deadline=deadline,
-        root=root,
-        loop_id=loop_id,
-        stage="campaign-status",
-    )
+    try:
+        _run(
+            [
+                *ar,
+                "status",
+                "--loop-id",
+                loop_id,
+                "--matrix",
+                "--last",
+                "5",
+            ],
+            cwd=cwd,
+            deadline=deadline,
+            root=root,
+            loop_id=loop_id,
+            stage="campaign-status",
+        )
+    finally:
+        _clear_active_stage(root, loop_id)
     print(
         f"CYCLE_COMPLETE {campaign_id} role={role} intent={cycle_intent} "
         f"positive={delivery['positive']}",
