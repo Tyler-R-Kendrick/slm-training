@@ -39,6 +39,20 @@ def test_inventory_from_prompt_heuristic() -> None:
     assert inv == []
 
 
+def test_inventory_ignores_incidental_design_examples() -> None:
+    assert inventory_from_prompt(
+        "Login form. Placeholders: :slot_0, :slot_1",
+        "Guidance example: keep copy symbolic as `:slot_4`.",
+    ) == [":slot_0", ":slot_1"]
+
+
+def test_inventory_accepts_explicit_design_inventory() -> None:
+    assert inventory_from_prompt(
+        "Login form.",
+        "Placeholders: :slot_0, :slot_1",
+    ) == [":slot_0", ":slot_1"]
+
+
 def test_ensure_prompt_inventory_idempotent() -> None:
     slots = [":slot_0"]
     once = ensure_prompt_inventory("Single button.", slots)

@@ -11967,7 +11967,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v304",
+      "version": "v305",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -12010,6 +12010,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v305",
+          "date": "2026-08-03",
+          "note": "Keep incidental DESIGN.md marker examples out of prompt slot-contract extraction while preserving explicit design inventory lines, preventing valid rows from failing contiguous-ordinal validation."
+        },
         {
           "version": "v304",
           "date": "2026-08-02",

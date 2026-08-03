@@ -284,7 +284,14 @@ def inventory_from_prompt(
     The ``heuristic`` argument is retained for checkpoint/config compatibility;
     inventing marker names from prompt words is forbidden.
     """
-    text = f"{prompt or ''}\n{design_md or ''}"
+    prompt_text = prompt or ""
+    design_text = design_md or ""
+    # DESIGN.md is guidance, not an inventory channel.  It commonly contains
+    # illustrative markers (for example ``:slot_4``); merging those examples
+    # with the prompt inventory creates a non-contiguous contract and aborts
+    # otherwise valid training rows.  Only an explicit inventory line in the
+    # design context is authoritative.
+    text = f"{prompt_text}\n{design_text}"
     explicit: list[str] = []
     for match in _INVENTORY_LINE_RE.finditer(text):
         explicit.extend(PLACEHOLDER_RE.findall(match.group(1)))
@@ -298,7 +305,7 @@ def inventory_from_prompt(
     if explicit:
         return normalize_placeholders(explicit)
 
-    found = extract_placeholders(text)
+    found = extract_placeholders(prompt_text)
     if found:
         return normalize_placeholders(found)
 
