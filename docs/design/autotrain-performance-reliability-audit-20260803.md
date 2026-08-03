@@ -164,3 +164,16 @@ but inadequate target/data coverage and auxiliary objectives that add capacity
 without transferring capability; the fixture remains only `n=3`. Capacity
 growth is therefore blocked by the parameter-efficiency law and the loop keeps
 the matched control while seeking a data/target-oriented, size-matched arm.
+
+## c1854 learning-status update
+
+c1854 is the first follow-on that shows a useful fixture signal from targeted
+exposure plus the implemented slot-component owner: structural similarity
+improved `.0575 -> .1353`, MPR `0 -> .333`, and recall `0 -> .167`. However,
+binder/fidelity remain low, exact AST/canonical rates are zero, p50 latency
+rises `917 -> 1005 ms`, tokens `21 -> 36`, forwards `4 -> 7`, and the candidate
+adds `4,515` parameters. With smoke `n=3` and no held-out or production suites,
+this is learning on a narrow fixture, not high-quality OpenUI generalization.
+The loop correctly queues a fresh-seed confirmation, keeps Lean promotion gates
+locked, and blocks capacity promotion until parameter-efficiency and full-suite
+evidence exist.
