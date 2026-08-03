@@ -1,0 +1,80 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c3",
+  "cycle_index": 3,
+  "cycle_intent": "confirm",
+  "source_commit": "20665535",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "seed": 100003
+  },
+  "arms": {
+    "s2-c3-control": {
+      "trainable_params": 1755764,
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.23083333333333333,
+        "component_type_recall": 0.16666666666666666,
+        "binder_reference_f1": 0.48888888888888893,
+        "placeholder_fidelity": 0.2222222222222222,
+        "reward_score": 0.283,
+        "latency_ms_p50": 2231.7
+      }
+    },
+    "s2-c3-confirm": {
+      "trainable_params": 1755764,
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.23083333333333333,
+        "component_type_recall": 0.16666666666666666,
+        "binder_reference_f1": 0.26666666666666666,
+        "placeholder_fidelity": 0.2222222222222222,
+        "reward_score": 0.283,
+        "latency_ms_p50": 2251.55
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "continue loop; local commits/docs only",
+    "reasons": [
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c3-control",
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c3-confirm",
+      "non_regression_fail:binder_reference_f1:0.48888888888888893->0.26666666666666666",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.23083333333333333 candidate=0.23083333333333333 improvement=0.0",
+      "fixture_insufficient_n_alone",
+      "confirmation_rejected:primary_quality_not_reheld"
+    ]
+  },
+  "champion_status": {
+    "entry_id": "champ-continuous-openui-local-2-e19bda467f7df6df",
+    "status": "rejected",
+    "note": "This is the fresh-seed (seed=100003, distinct from seed=100002 used by both today's session-1 c2 and this session's replay of it) confirmation of the 'component-plan' champion queued by cycle 2. It fails to reproduce: primary metric ties exactly with control (no win) and binder_reference_f1 regresses (0.4889 -> 0.2667, a real degradation, not noise)."
+  },
+  "conclusion": "This is the genuine fresh-seed confirmation both today's earlier cycle (#1369, seed=100002) and this session's cycle 2 (bit-exact replay of the same seed) called for but could not themselves provide. Under an actually different seed (100003), the previously reported 'component-plan' +0.0561 structural_similarity win does NOT reproduce -- both arms tie exactly on the primary, and component-plan additionally regresses binder_reference_f1 by -0.222. This falsifies the queued champion: the c2 win across two sessions (today and yesterday) was seed-specific noise at this fixture scale (n=3), not a real structural effect of the component-plan knob. The driver auto-marked the queued champion fingerprint e19bda467f7df6df as rejected.",
+  "next_priorities": [
+    "Do not promote or re-queue the component-plan champion from seed=100002 alone -- it is now falsified by an independent fresh-seed measurement",
+    "Retain training loss as a diagnostic only, not a promotion proxy -- loss and certified program quality diverged on this confirmation",
+    "Preregister a new, distinct quality-targeted structural hypothesis rather than recycling the exhausted component-plan/bounds pair",
+    "Merge PR #1351 (AgentV NODE_OPTIONS + missing-SDK fix) so future sessions do not need this session's local-only workaround to get real evaluations at all"
+  ],
+  "recorded_at": "2026-08-03T05:51:37Z"
+}
