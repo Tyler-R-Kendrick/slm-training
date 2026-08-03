@@ -4609,6 +4609,63 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor(
     assert promoted["formal_claims"] == promote_experiment["formal_claims"]
 
 
+def test_frozen_replay_restores_omitted_formal_claim_from_proved_artifact(
+    tmp_path: Path,
+) -> None:
+    campaign_id = "continuous-loop-20260801-loop-12345678-c1714"
+    experiment_id = "c20260801-loop-12345678-c1714-promote"
+    experiment = {
+        "experiment_id": experiment_id,
+        "campaign_id": campaign_id,
+        "hypothesis": "Replay a promotion candidate with a governed proof.",
+        "rationale": "The historic replay omitted the experiment claim.",
+        "expected_effect": "The proof-bound frozen candidate reaches evaluation.",
+        "falsification_criteria": ["Formal claim recovery fails closed."],
+        "stop_conditions": ["Stop after the bounded evaluation."],
+        "citations": ["fixture://formal-replay"],
+        "knobs": {"steps": 1, "batch_size": 1, "seed": 7},
+        "formal_claims": [],
+    }
+    preflight_sha = "e" * 64
+    manifest = _mod._manifest(
+        campaign_id,
+        experiment,
+        "a" * 40,
+        role="promotion",
+        cycle_intent="promote",
+        formal_preflight_sha256=preflight_sha,
+    )
+    obligation = manifest.formal_obligations[0]
+    claim = _mod.FormalClaimV1(**_mod.promote_formal_claim_dict())
+    preflight = _mod.FormalPreflightV1(
+        campaign_id=campaign_id,
+        experiment_id=experiment_id,
+        obligation_id=obligation.obligation_id,
+        template_id=claim.template_id,
+        template_version="v1",
+        claim=claim.claim,
+        policy=claim.policy,
+        status="proved",
+        evidence_scope="universal",
+        theorem="structuralSimilarity_monotone",
+        proof_target="Structural similarity monotonicity",
+        source_digests={"Main.lean": "1" * 64},
+        proof_sha256="2" * 64,
+        lean_version="v4.20.0",
+        mathlib_version="fixture",
+        build_output_sha256="3" * 64,
+        duration_seconds=0.1,
+    )
+    camp_dir = tmp_path / campaign_id
+    artifact = camp_dir / "artifacts" / "formal_preflights" / f"{preflight_sha}.json"
+    artifact.parent.mkdir(parents=True)
+    artifact.write_text(preflight.model_dump_json(indent=2) + "\n")
+
+    _mod._restore_frozen_formal_claims(camp_dir, experiment, manifest)
+
+    assert experiment["formal_claims"] == [claim.model_dump()]
+
+
 def test_frozen_replay_finds_completed_train_across_retry_lineage(
     tmp_path: Path,
 ) -> None:

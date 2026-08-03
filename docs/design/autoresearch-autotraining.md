@@ -158,6 +158,12 @@ its knobs and requires current-campaign candidate metrics before declaring a
 control-only timeout replay terminal. A derived handoff produced by the earlier
 bug is deterministically refreshed to `inconclusive` with the frozen retry still
 queued; source-campaign candidate metrics cannot satisfy the current replay.
+Campaign harness v113 closes the historical-replay edge case where the immediate
+predecessor was itself created by the pre-v112 bug and therefore contains an empty
+claim list. The loader recovers each claim only from its typed, content-bound formal
+preflight artifact, verifies campaign, experiment, obligation, template, policy,
+status, and recomputed obligation identity, then carries that exact claim into the
+fresh-proof successor. Missing or inconsistent proof evidence fails closed.
 
 The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
 confirmed a champion, c1812 was the next protected promotion slot, and the

@@ -44,6 +44,7 @@ from slm_training.autoresearch.experiment_campaign import (
     ExperimentCampaignV1,
     MultiplicityFamilyV1,
 )
+from slm_training.autoresearch.formal import formal_obligation_id
 from slm_training.autoresearch.schemas import (
     AutotrainActionReceiptV1,
     AutotrainActionV1,
@@ -51,7 +52,9 @@ from slm_training.autoresearch.schemas import (
     AutotrainLoopStateV1,
     CampaignBudget,
     CampaignSpec,
+    FormalClaimV1,
     FormalObligationV1,
+    FormalPreflightV1,
     HypothesisMatrix,
     NextRunPriorityV1,
     utc_now,
@@ -5098,6 +5101,59 @@ def _manifest_with_sha(
     raise RuntimeError(f"frozen replay manifest is missing: {digest}")
 
 
+def _restore_frozen_formal_claims(
+    camp_dir: Path,
+    experiment: dict[str, Any],
+    manifest: ExperimentCampaignV1,
+) -> None:
+    """Recover claims omitted by an older replay from its proved artifacts."""
+
+    if experiment.get("formal_claims") or not manifest.formal_obligations:
+        return
+    claims: list[dict[str, str]] = []
+    for obligation in manifest.formal_obligations:
+        path = (
+            camp_dir
+            / "artifacts"
+            / "formal_preflights"
+            / f"{obligation.preflight_sha256}.json"
+        )
+        if not path.is_file():
+            raise RuntimeError(
+                "frozen replay formal preflight is missing: "
+                f"{obligation.preflight_sha256}"
+            )
+        preflight = FormalPreflightV1.model_validate_json(
+            path.read_text(encoding="utf-8")
+        )
+        claim = FormalClaimV1(
+            template_id=preflight.template_id,
+            claim=preflight.claim,
+            policy=preflight.policy,
+        )
+        if (
+            preflight.campaign_id != manifest.campaign_id
+            or preflight.experiment_id != manifest.experiment_id
+            or preflight.obligation_id != obligation.obligation_id
+            or preflight.template_id != obligation.template_id
+            or preflight.policy != obligation.policy
+            or (
+                claim.policy == "required"
+                and preflight.status != "proved"
+            )
+            or formal_obligation_id(
+                manifest.campaign_id, manifest.experiment_id, claim
+            )
+            != obligation.obligation_id
+        ):
+            raise RuntimeError(
+                "frozen replay formal claim recovery mismatch: "
+                f"{obligation.obligation_id}"
+            )
+        claims.append(claim.model_dump())
+    experiment["formal_claims"] = claims
+
+
 def _nonreplayable_configuration_failure(
     camp_dir: Path, experiment_id: str
 ) -> str | None:
@@ -5188,6 +5244,9 @@ def _load_frozen_replay(
     }
     for role in ("control", "candidate"):
         item = replay[role]
+        _restore_frozen_formal_claims(
+            camp_dir, item["experiment"], item["manifest"]
+        )
         item["train_reuse"] = _completed_frozen_train_source(
             root=root,
             campaign_dir=camp_dir,
