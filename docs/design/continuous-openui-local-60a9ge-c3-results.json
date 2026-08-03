@@ -1,0 +1,78 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c3",
+  "cycle_index": 3,
+  "source_commit": "7f856181c1965fdc0491942cc73d768b48950cec",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 21,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "seed": 100001,
+    "trainable_params": 1755760
+  },
+  "arms": {
+    "c3-control": {
+      "trainable_params": 1755760,
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.23083333333333333,
+        "component_type_recall": 0.16666666666666666,
+        "binder_reference_f1": 0.7333333333333334,
+        "placeholder_fidelity": 0.6388888888888888,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "reward_score": 0.8406666666666666,
+        "latency_ms_p50": 11044.17
+      }
+    },
+    "c3-component-plan": {
+      "trainable_params": 1755760,
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.1725,
+        "component_type_recall": 0.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "placeholder_fidelity": 0.5277777777777778,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "reward_score": 0.8073333333333332,
+        "latency_ms_p50": 10381.34
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": -0.05833333333333335,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "local commits + docs only; no new stack layer",
+    "reasons": [
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c3-component-plan",
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c3-control",
+      "non_regression_fail:binder_reference_f1:0.7333333333333334->0.6333333333333333",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.23083333333333333 candidate=0.1725 improvement=-0.05833333333333335",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "conclusion": "Continuous-openui-local loop (session 60a9ge), cycle 3: tested the driver's rank-1 'component-plan' size-matched knob hypothesis against a fresh control. Both arms parse all 3 smoke docs at identical size (1,755,760 params), but component-plan regresses on every quality axis: structural_similarity .1725 vs control .23083 (-.0583), meaningful_program_rate 0 vs .33333, component_type_recall 0 vs .16667, binder_reference_f1 .63333 vs .73333 (a non_regression_fail), placeholder_fidelity .52778 vs .63889. component-plan is also marginally faster (10381.34ms vs 11044.17ms p50) but that is not a quality-neutral latency win since quality regressed. SDLC Phase A classifies NON_POSITIVE (fixture insufficient_n + negative primary-metric delta + a binder_reference_f1 non-regression-gate fail); no stacked PR layer opened. This rules out 'component-plan' as this cycle's knob; the driver's next-ranked hypothesis is 'component-edge'.",
+  "next_priorities": [
+    "The completed non-positive arm is exhausted; test the distinct size-matched 'component-edge' quality hypothesis next (rank 1, confidence 0.90)",
+    "Keep the matched control as the size-matched baseline every cycle (rank 2, confidence 0.70)",
+    "Rotate thrash recommendation across the lever bank (rank 3, confidence 0.65)",
+    "Soft ship-gate fails on fixture n never stop the continuous loop (rank 4, confidence 0.80)"
+  ],
+  "recorded_at": "2026-08-03T20:36:28Z"
+}
