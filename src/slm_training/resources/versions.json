@@ -2656,7 +2656,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v145",
+      "version": "v146",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2696,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v146",
+          "date": "2026-08-03",
+          "note": "Replace the unusable binder-slot ownership successor with the implemented slot-component coverage owner after c1849 exposed the missing runtime implementation, preserving fail-closed model validation."
+        },
         {
           "version": "v145",
           "date": "2026-08-03",

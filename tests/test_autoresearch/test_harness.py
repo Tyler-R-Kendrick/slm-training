@@ -3753,6 +3753,8 @@ def test_compile_resolves_canonical_published_train_version() -> None:
             component_inventory_decode_weight=0.75,
             component_plan_loss_weight=1.25,
             component_plan_decode_weight=0.5,
+            slot_component_loss_weight=1.1,
+            slot_component_decode_weight=0.7,
             component_edge_loss_weight=1.5,
             component_edge_alignment_loss_weight=1.75,
             component_edge_decode_weight=0.25,
@@ -3811,6 +3813,8 @@ def test_compile_resolves_canonical_published_train_version() -> None:
     )
     assert commands[0][commands[0].index("--component-plan-loss-weight") + 1] == "1.25"
     assert commands[0][commands[0].index("--component-plan-decode-weight") + 1] == "0.5"
+    assert commands[0][commands[0].index("--slot-component-loss-weight") + 1] == "1.1"
+    assert commands[0][commands[0].index("--slot-component-decode-weight") + 1] == "0.7"
     assert commands[0][commands[0].index("--component-edge-loss-weight") + 1] == "1.5"
     assert (
         commands[0][commands[0].index("--component-edge-alignment-loss-weight") + 1]

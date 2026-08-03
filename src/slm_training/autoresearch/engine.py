@@ -649,6 +649,14 @@ def compile_commands(
                     str(knobs.component_plan_decode_weight),
                 ]
             )
+        if knobs.slot_component_loss_weight is not None:
+            train.extend(
+                ["--slot-component-loss-weight", str(knobs.slot_component_loss_weight)]
+            )
+        if knobs.slot_component_decode_weight is not None:
+            train.extend(
+                ["--slot-component-decode-weight", str(knobs.slot_component_decode_weight)]
+            )
         if knobs.component_edge_loss_weight is not None:
             train.extend(
                 ["--component-edge-loss-weight", str(knobs.component_edge_loss_weight)]
