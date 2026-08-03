@@ -1,0 +1,71 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c1",
+  "loop_id": "continuous-openui-local",
+  "cycle_index": 1,
+  "evidence_class": "fixture",
+  "decision": "harness_failure_no_measurement",
+  "scoreable": false,
+  "new_checkpoint_created": true,
+  "upstream_commit": "ae15f91daa6bd12f880fe74ee9aa47a4e32f1492",
+  "integration_commit": "ae15f91daa6bd12f880fe74ee9aa47a4e32f1492",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c1-control",
+      "trainable_params": 1608962,
+      "checkpoint_sha256": "3783759ca1ff0b4f015dbc9a592f0b7bd541c8a17a774a741050524b398373ba",
+      "steps": 21,
+      "stopped_on": "steps",
+      "last_loss": 22.62193489074707,
+      "train_status": "completed",
+      "eval_status": "failed",
+      "eval_error": "AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER"
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c1-bounds",
+      "trainable_params": 1608962,
+      "checkpoint_sha256": "28c62e648c28868c7d1fb3293099aadcf4c971a61f893c775e8a6ddb7dfeefde",
+      "steps": 21,
+      "stopped_on": "steps",
+      "last_loss": 22.62193489074707,
+      "train_status": "completed",
+      "eval_status": "failed",
+      "eval_error": "AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER"
+    }
+  ],
+  "root_cause": {
+    "summary": "evaluate_model.py --ship-gates called publish_agentv_evaluation(), which spawns `node scripts/run_agentv_eval.mjs`; the checkout's node_modules/ (gitignored) was never installed, and the sandbox's ambient NODE_OPTIONS=\"--import tsx\" (left over from an unrelated JS project) is rejected outright by any node child process once npm ci does run, so the AgentV SDK could not execute even after installing dependencies.",
+    "affected_harness_families": ["model_build", "dsl"],
+    "secondary_defect": "tests/test_evals fixtures (oracle_scoring_replay, denoising_nll, emptiness_probe) were independently broken on main: build_fixture_records() never projected metric_gaming archetypes' dotted slot markers (e.g. :card.title) into the opaque :slot_<n> identities data/contract.py requires, unlike MetricGamingCase which already applies that same codec to the same archetypes."
+  },
+  "repair": {
+    "pull_request": "https://github.com/Tyler-R-Kendrick/slm-training/pull/1354",
+    "commit": "bf83505d01785b6e9cb401c95125bbb7b6e99e44",
+    "fix_summary": "Added node_subprocess_env() (strips NODE_OPTIONS) used by both dsl/lang_core.py and evals/agentv.py node subprocess spawns; added scripts/ensure_node_toolchain.sh idempotent npm-ci bootstrap; fixed oracle_scoring_replay.build_fixture_records() to project archetype markers; renamed two test fixtures' hardcoded dotted markers to canonical ordinals; regenerated the semantic-floor-gate doc pair for the resulting agentv_owner_sha256 change."
+  },
+  "comparison": {
+    "attributable": false,
+    "reason": "Both arms produced identical measured smoke.structural_similarity (0.0575) because the ship-gate AgentV publish step failed before any suite evaluation ran on either arm; this is an infrastructure null, not a model comparison."
+  },
+  "agentv": {
+    "bundles_complete": false,
+    "execution_errors": 2,
+    "ship_gates_pass": false
+  },
+  "checkpoint_policy": "local_explicit_no_sync_incomplete_measurement_not_reusable_not_promoted_not_ship",
+  "lean": "not_applicable:screening",
+  "next_priority": "retry_measurement: replay the identical frozen control/candidate arm (frozen_manifest_sha256 7462dc61b1fd1023203cb6df61716a7a4136b39f4dbc52216fa9ceffc0d4c6dd) now that the harness is repaired",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "ae15f91daa6bd12f880fe74ee9aa47a4e32f1492",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.train": "v29",
+      "harness.experiment_feature_flags": "v4"
+    },
+    "stamped_at": "2026-08-02T19:31:29.760614+00:00"
+  }
+}
