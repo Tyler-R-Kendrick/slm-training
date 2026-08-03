@@ -34,6 +34,16 @@ def _agentv_runtime(repo_root: Path) -> tuple[Path, Path]:
     )
 
 
+def ensure_agentv_available(repo_root: Path | None = None) -> None:
+    """Fail fast with actionable guidance if the AgentV SDK is unreachable.
+
+    ``--ship-gates`` evaluation always needs AgentV, but the failure otherwise
+    only surfaces after a full train step; callers that know a cycle is about
+    to spend its wall budget on training should preflight this first.
+    """
+    _agentv_runtime(repo_root or Path(__file__).resolve().parents[3])
+
+
 def publish_agentv_evaluation(
     run_dir: Path | str,
     *,

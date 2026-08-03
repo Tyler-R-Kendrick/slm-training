@@ -6357,8 +6357,13 @@ def run_cycle(
         primary_for_role,
         stage_wall_minutes_for_role,
     )
+    from slm_training.evals.agentv import ensure_agentv_available
 
     deadline = time.monotonic() + MAX_RUN_SECONDS
+    # Embedded execution always requests --ship-gates (see engine.py), which
+    # needs the AgentV SDK. Preflight it here so a cold, un-bootstrapped
+    # checkout fails in milliseconds instead of after a full train step.
+    ensure_agentv_available(cwd)
     policy = load_climb_policy()
     # Defaults from external policy when caller still uses legacy pins.
     if train_version == "wf_smoke_v2":

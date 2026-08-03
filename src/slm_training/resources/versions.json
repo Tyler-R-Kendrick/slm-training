@@ -1799,7 +1799,7 @@
       ]
     },
     "evals.agentv": {
-      "version": "v7",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "src/slm_training/evals/agentv.py",
@@ -1807,6 +1807,11 @@
         "tests/test_evals/test_agentv.py"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-08-03",
+          "note": "Add ensure_agentv_available(repo_root) preflight so callers can fail fast with the existing 'run npm ci' guidance before spending a training wall on a cold checkout, instead of only discovering the missing SDK after --ship-gates evaluation."
+        },
         {
           "version": "v7",
           "date": "2026-08-03",
@@ -2656,7 +2661,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v109",
+      "version": "v110",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2701,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v110",
+          "date": "2026-08-03",
+          "note": "run_cycle() preflights ensure_agentv_available(cwd) before git sync so a cold checkout missing the AgentV SDK fails immediately instead of misclassifying a full wasted train step as an experiment_failed model result (found repairing cycle continuous-openui-20260803 c1)."
+        },
         {
           "version": "v109",
           "date": "2026-08-03",
