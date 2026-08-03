@@ -1690,7 +1690,98 @@ def _screening_enqueue_allowed(
         cycle_intent == "retry_measurement"
         and replay is not None
         and replay["handoff"].cycle_role == "screening"
+        and getattr(replay["handoff"], "cycle_intent", None) != "confirm"
     )
+
+
+def _confirmation_replay_entry(
+    entries: list[dict[str, Any]], replay: dict[str, Any] | None
+) -> dict[str, Any] | None:
+    """Return the original champion resolved by a frozen confirmation replay."""
+
+    if replay is None or replay["handoff"].cycle_intent != "confirm":
+        return None
+    frozen = replay["candidate"]["experiment"]
+    if not str(frozen.get("experiment_id") or "").endswith("-confirm"):
+        return None
+    fingerprint = _knobs_fingerprint(_lever_knobs(frozen.get("knobs") or {}))
+    source_campaign = str(replay["handoff"].campaign_id)
+    return next(
+        (
+            row
+            for row in entries
+            if row.get("knobs_fingerprint") == fingerprint
+            and row.get("confirm_campaign_id") == source_campaign
+            and row.get("status")
+            in {"queued", "confirming", "confirmation_inconclusive"}
+        ),
+        None,
+    )
+
+
+def _reconcile_completed_confirmation_replays(
+    root: Path, entries: list[dict[str, Any]]
+) -> bool:
+    """Repair historical duplicate queue rows emitted by completed retries."""
+
+    changed = False
+    for duplicate in entries:
+        if duplicate.get("status") != "queued" or not str(
+            duplicate.get("source_candidate_id") or ""
+        ).endswith("-confirm"):
+            continue
+        campaign_id = str(duplicate.get("source_campaign_id") or "")
+        handoff_path = root / campaign_id / "cycle_handoff.json"
+        delivery_path = root / campaign_id / "sdlc_delivery.json"
+        if not handoff_path.is_file() or not delivery_path.is_file():
+            continue
+        handoff = _read_json(handoff_path)
+        delivery = _read_json(delivery_path)
+        if (
+            handoff.get("cycle_intent") != "retry_measurement"
+            or delivery.get("measurement_complete") is not True
+        ):
+            continue
+        original = next(
+            (
+                row
+                for row in entries
+                if row is not duplicate
+                and row.get("knobs_fingerprint")
+                == duplicate.get("knobs_fingerprint")
+                and row.get("status") == "confirmation_inconclusive"
+            ),
+            None,
+        )
+        if original is None:
+            continue
+        reasons = list(delivery.get("reasons") or [])
+        confirmed = _confirmation_quality_reheld(delivery)
+        if not confirmed:
+            reasons.append("confirmation_rejected:primary_quality_not_reheld")
+        stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        original.update(
+            status="confirmed" if confirmed else "rejected",
+            confirm_campaign_id=campaign_id,
+            confirm_cycle_index=handoff.get("cycle_index"),
+            resolved_at=stamp,
+            resolve_reasons=reasons,
+        )
+        duplicate.update(
+            status="skipped_duplicate",
+            resolved_at=stamp,
+            resolve_reasons=[
+                f"confirmation_replay_resolved:{original.get('entry_id')}"
+            ],
+        )
+        changed = True
+        print(
+            "CHAMPION_REPLAY_RECONCILE "
+            f"entry_id={original.get('entry_id')} status={original.get('status')} "
+            f"duplicate={duplicate.get('entry_id')} campaign={campaign_id}",
+            flush=True,
+        )
+    return changed
 
 
 def _is_champion_lever(knobs: dict[str, Any], *, candidate_id: str = "") -> bool:
@@ -1742,6 +1833,7 @@ def _enqueue_champion(
         if row.get("knobs_fingerprint") == fp and row.get("status") in {
             "queued",
             "confirming",
+            "confirmation_inconclusive",
             "confirmed",
             "promoting",
             "promotion_inconclusive",
@@ -6961,13 +7053,17 @@ def run_cycle(
     queue_entries = _load_champion_queue(queue_path)
     # Pre-execution crashes do not spend bounded champion attempts. Promotion
     # heads also return to confirmed so the next promotion slot can retry.
+    reconciled_replays = _reconcile_completed_confirmation_replays(
+        root, queue_entries
+    )
     recovered = _recover_interrupted_champion_entries(root, queue_entries)
     revalidated = _revalidate_open_champion_entries(root, queue_entries)
     confirmations_revalidated = _revalidate_confirmed_champion_entries(
         root, queue_entries
     )
-    if recovered or revalidated or confirmations_revalidated:
+    if reconciled_replays or recovered or revalidated or confirmations_revalidated:
         _write_champion_queue(queue_path, queue_entries)
+    replayed_confirmation = _confirmation_replay_entry(queue_entries, replay)
     recent_exhausted = _recent_completed_nonpositive_slugs(root, pred)
     skip_slugs = (
         _skip_arm_slugs(queue_entries, integration_commit=integration)
@@ -7830,8 +7926,17 @@ def run_cycle(
             cert_err=cert_err,
         )
     else:
+        if replayed_confirmation is not None:
+            resolution = _resolve_confirm_result(
+                root=root,
+                loop_id=loop_id,
+                entry=replayed_confirmation,
+                delivery=delivery,
+                campaign_id=campaign_id,
+                cycle_index=cycle,
+            )
         # Only screening thrash quality-held wins enqueue (not promotion thrash noise).
-        if _screening_enqueue_allowed(cycle_intent=cycle_intent, replay=replay):
+        elif _screening_enqueue_allowed(cycle_intent=cycle_intent, replay=replay):
             resolution = _enqueue_champion(
                 root=root,
                 loop_id=loop_id,

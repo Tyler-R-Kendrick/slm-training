@@ -976,3 +976,20 @@ a dry plan unless `--execute` is supplied; sync is a dry plan
 unless `--push` is supplied. No experiment was executed here. Future training,
 evaluation, benchmark, profile, or decision-bearing telemetry is incomplete until
 its JSON and matching markdown are committed under `docs/design/`.
+
+## Continuous-loop c1838: fresh-seed confirmation and queue repair
+
+c1838 completed the exact frozen c1836 confirmation under the single-thread
+scratch scheduler. The candidate re-held the primary structure improvement
+(`.40193→.43723`) and binder F1 (`.8000→.8222`) at matched parameters and
+exposure. The effect is fixture-only: fidelity, reward, and latency regress
+slightly, exact AST/canonical rates remain zero, and every production evidence
+suite is absent.
+
+The completed retry also exposed an orchestration attribution bug: the replay
+was being enqueued as a new screening champion while the original c1830 entry
+remained inconclusive. Campaign v136 binds a completed typed confirmation replay
+to its original queue entry, prevents duplicate screening enqueue, and
+reconciles the already-written c1838 duplicate before the next selector runs.
+Only the original entry becomes `confirmed`; it may proceed solely through the
+promotion cadence, which requires the full suite and Lean/formal preflight.

@@ -2656,7 +2656,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v135",
+      "version": "v136",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2696,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v136",
+          "date": "2026-08-03",
+          "note": "Resolve completed frozen confirmation retries against their original champion entry, suppress duplicate screening enqueue, and reconcile the historical duplicate queue row before promotion selection."
+        },
         {
           "version": "v135",
           "date": "2026-08-03",
@@ -6950,6 +6955,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-08-03",
+          "note": "no-bump: append c1838 fixture-confirmation evidence to the shared quality matrix without changing the SLM-197 scorer or experiment."
+        },
+        {
+          "version": "v1",
           "date": "2026-08-02",
           "note": "no-bump: document the quality-matrix process-isolation requirement without changing the SLM-197 scorer or experiment."
         },
@@ -7545,6 +7555,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1838 confirmed scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
         {
           "version": "v3",
           "date": "2026-08-03",

@@ -1649,6 +1649,61 @@ def test_frozen_screening_retry_preserves_champion_enqueue_semantics() -> None:
         cycle_intent="retry_measurement",
         replay={"handoff": SimpleNamespace(cycle_role="promotion")},
     )
+    assert not _mod._screening_enqueue_allowed(
+        cycle_intent="retry_measurement",
+        replay={
+            "handoff": SimpleNamespace(
+                cycle_role="screening", cycle_intent="confirm"
+            )
+        },
+    )
+
+
+def test_completed_confirmation_replay_resolves_original_and_duplicate(
+    tmp_path: Path,
+) -> None:
+    campaign_id = "continuous-loop-20260803-loop-c1838"
+    camp_dir = tmp_path / campaign_id
+    camp_dir.mkdir()
+    (camp_dir / "cycle_handoff.json").write_text(
+        json.dumps(
+            {
+                "cycle_index": 1838,
+                "cycle_intent": "retry_measurement",
+            }
+        )
+    )
+    (camp_dir / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "positive": True,
+                "measurement_complete": True,
+                "primary_metric": "smoke.structural_similarity",
+                "reasons": [
+                    "primary_metric_win:smoke.structural_similarity:0.4->0.44"
+                ],
+            }
+        )
+    )
+    entries = [
+        {
+            "entry_id": "original",
+            "status": "confirmation_inconclusive",
+            "knobs_fingerprint": "same",
+        },
+        {
+            "entry_id": "duplicate",
+            "status": "queued",
+            "knobs_fingerprint": "same",
+            "source_campaign_id": campaign_id,
+            "source_candidate_id": "candidate-confirm",
+        },
+    ]
+
+    assert _mod._reconcile_completed_confirmation_replays(tmp_path, entries)
+    assert entries[0]["status"] == "confirmed"
+    assert entries[0]["confirm_campaign_id"] == campaign_id
+    assert entries[1]["status"] == "skipped_duplicate"
 
 
 def test_typed_family_balance_arm_is_size_matched_and_replayable() -> None:

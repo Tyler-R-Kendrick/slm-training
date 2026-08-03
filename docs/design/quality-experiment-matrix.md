@@ -22,6 +22,17 @@ row runs in a process-isolated worker with independently owned artifacts.
 **Research map:** [research-lineage.md](research-lineage.md) (MaskGIT, constrained diffusion, DPO/GRPO surrogates);
 correction / remask candidates: [research-correction-critics.md](research-correction-critics.md).
 
+## Latest autotrain signal (c1838)
+
+The capacity-aware tail-supervision arm repeated its narrow fixture structure
+gain on seed 101836: structural similarity `.40193→.43723` and binder F1
+`.8000→.8222` at matched 1,608,962 parameters and matched exposure. Fidelity
+`.7500→.7222`, reward `.8740→.8657`, and p50 latency `3552→3733` ms regress,
+while exact AST and canonical equality remain zero. This confirms that the
+training objective changes learned behavior; it does not establish a useful or
+shippable model. Promotion now requires the registered held-out suites and Lean
+formal preflight. See [c1838 measured results](autotrain-cycle-1838-capacity-aware-tail-confirmed.md).
+
 ---
 
 ## Failure baseline (`twotower_v1_ship`)
