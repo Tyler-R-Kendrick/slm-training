@@ -1,0 +1,72 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "loop_id": "continuous-openui-local-b",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local--a8257b0d-c1",
+  "cycle_index": 1,
+  "decision": "non_positive_null_delta",
+  "evidence_class": "fixture",
+  "cycle_role": "screening",
+  "primary_metric": "smoke.structural_similarity",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "905cf794e60528101c94936b3e98f97e98f7cb97",
+    "code_dirty": false
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "steps": 20,
+    "suites": ["smoke"],
+    "suite_n": {"smoke": 3},
+    "honesty_mode": "fixture_screening"
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260803-continuous-openui-local--a8257b0d-c1-control",
+      "checkpoint_sha256": "f2fe8f5aae98c7178747c5f3b926d00c3d9c1d49ce607c54224b5526000b81b2",
+      "suites": {
+        "smoke": {
+          "n": 3,
+          "completed_document_n": 3,
+          "meaningful_program_rate": 0.0,
+          "structural_similarity": 0.0575,
+          "binder_reference_f1": 0.6333333333333333,
+          "parse_rate": 1.0,
+          "latency_ms_p50": 1200.72
+        }
+      }
+    },
+    {
+      "experiment_id": "c20260803-continuous-openui-local--a8257b0d-c1-bounds",
+      "checkpoint_sha256": "2c1749c65f4c4fba890aef4b00981a52825aecfd73e0117f0739f26ae1742f64",
+      "suites": {
+        "smoke": {
+          "n": 3,
+          "completed_document_n": 3,
+          "meaningful_program_rate": 0.0,
+          "structural_similarity": 0.0575,
+          "binder_reference_f1": 0.6333333333333333,
+          "parse_rate": 1.0,
+          "latency_ms_p50": 1271.92
+        }
+      }
+    }
+  ],
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "reasons": [
+      "fixture_insufficient_n:c20260803-continuous-openui-local--a8257b0d-c1-control",
+      "fixture_insufficient_n:c20260803-continuous-openui-local--a8257b0d-c1-bounds",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.0575:candidate=0.0575:improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "next_priority": {
+    "rank": 1,
+    "area": "model",
+    "hypothesis": "The completed non-positive arm is exhausted; test the distinct size-matched 'component-plan' quality hypothesis next.",
+    "proposed_experiment_id": "c20260803-continuous-openui-local--a8257b0d-c1-component-plan"
+  }
+}
