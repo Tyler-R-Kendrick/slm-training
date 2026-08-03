@@ -649,6 +649,17 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         },
     ),
     (
+        "balanced-container-close",
+        "Container-close alignment preserves the typed-family balance arm's structural gains while preventing runaway legal comma continuation.",
+        {
+            "typed_family_balance_loss_weight": 0.25,
+            "compiler_alignment_loss_weight": 1.0,
+            "compiler_alignment_margin": 1.0,
+            "compiler_alignment_stratified": True,
+            "compiler_alignment_kind_filter": "container-close",
+        },
+    ),
+    (
         "component-structure",
         "Joint component-plan and component-edge train-and-decode coupling improves smoke structural_similarity beyond either isolated arm.",
         {
@@ -1076,6 +1087,12 @@ def _arm_slug_from_knobs(
 ) -> str | None:
     """Map knobs / candidate id to thrash arm slug."""
     if (
+        knobs.get("typed_family_balance_loss_weight")
+        and knobs.get("compiler_alignment_loss_weight")
+        and knobs.get("compiler_alignment_kind_filter") == "container-close"
+    ):
+        return "balanced-container-close"
+    if (
         knobs.get("compiler_alignment_loss_weight")
         and knobs.get("compiler_alignment_kind_filter") == "literal-close"
     ):
@@ -1310,6 +1327,7 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
         "structure-token",
         "typed-family-balance",
         "container-close",
+        "balanced-container-close",
     )
     legacy_quality_slugs = {
         "component-plan",
