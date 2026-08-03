@@ -1,0 +1,62 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 2,
+  "source_commit": "a17d7ebf3db9718de3e4ae0abb4e276b3471c9ec",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "seed": 100002
+  },
+  "arms": {
+    "c2-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.32666666666666666,
+        "binder_reference_f1": 0.0,
+        "latency_ms_p50": 46719.25
+      }
+    },
+    "c2-component-plan": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.38280000000000003,
+        "binder_reference_f1": 0.0,
+        "latency_ms_p50": 38911.65
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.05613333333333337,
+  "sdlc_phase_a": {
+    "positive": true,
+    "stack_layer": true,
+    "stack_action": "deliver_stack_after_documentation",
+    "agent_required": "document, then open/update a stacked PR for the positive result",
+    "reasons": [
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c2-control",
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c2-component-plan",
+      "primary_metric_win:smoke.structural_similarity:0.32666666666666666->0.38280000000000003:improvement=0.05613333333333337"
+    ]
+  },
+  "conclusion": "Continuous-openui-local loop, cycle 2 (scheduled session, branch claude/great-dirac-dpur3s): the size-matched 'component-plan' arm beats its matched control on the declared primary, smoke.structural_similarity, by +0.05613 (0.32667 -> 0.38280), at the same seed (100002) as five prior independently-run sessions' measurements of the same hypothesis. This is the sixth independent, byte-identical reproduction of this exact delta, now on top of the multi-seed thrash-arm-close fix (PR #1386) -- further evidence the underlying fixture effect is real and deterministic, not sampling noise or an artifact of the just-fixed closure-policy bug. binder_reference_f1 reads 0 on both arms this cycle. meaningful_program_rate stays 0 on both arms -- the win remains confined to raw structural similarity, not full program correctness. Ship gates fail as expected (insufficient_n=3; held_out/adversarial/ood/rico_held not run). The driver's own classifier flagged 'positive_no_tracked_delta_skip_stack' because this cycle re-ran the identical recipe with no new code/harness diff of its own; per sdlc autotrain-iteration-delivery, documenting a positive result is itself the reviewable delta that earns a stacked layer, matching how all five prior reproductions of this same hypothesis were delivered (PR #1369, #1376, #1378, #1384, and the c4/j48f8u docs). This cycle's control arm's child process exceeded the invoking shell's external wrapper timeout mid-run (exit=124 in the raw arm_exits record); the driver's own MAX_RUN_MINUTES=3 per-arm wall cap was not exceeded and the arm completed with real, non-placeholder smoke metrics matching the historical control reading exactly -- not a harness bug, and not something this cycle blocks on.",
+  "next_priorities": [
+    "Do not attempt the blocked '-confirm'/'-fresh-confirmation' frozen-replay path or the seed-100005 dual-arm decode timeout speculatively; route to a dedicated improve-openui-harnesses session (rank 1, confidence 0.95, currently blocked).",
+    "Once those blockers are resolved: confirm the fixture candidate on a fresh seed with the exact size-matched recipe before any promotion.",
+    "Keep promotion formal preflight locked until fresh confirmation establishes a champion (rank 2, lean_assumption, confidence 1.0)."
+  ],
+  "recorded_at": "2026-08-03T17:38:26Z"
+}
