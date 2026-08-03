@@ -893,6 +893,8 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
             "semantic_contrast_loss_weight": 0.25,
             "semantic_contrast_margin": 1.0,
             "semantic_contrast_fraction": 0.5,
+            # train_loop requires batch_size >= 3 for contrast base-corpus row
+            "batch_size": 3,
         },
     ),
     (
@@ -903,6 +905,7 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
             "semantic_contrast_loss_weight": 0.25,
             "semantic_contrast_margin": 1.0,
             "semantic_contrast_fraction": 0.5,
+            "batch_size": 3,
             "compiler_alignment_loss_weight": 1.0,
             "compiler_alignment_margin": 1.0,
             "compiler_alignment_stratified": True,
@@ -6584,11 +6587,29 @@ def _matrix(
         }
 
     def knobs(**extra: object) -> dict:
+        # Semantic-contrast train_loop requires batch_size >= 3. Matched controls
+        # that share contrast pair exposure (dir/margin/fraction) use the same
+        # batch for size/dynamics match even when contrast weight is 0.
+        extra_map = dict(extra)
+        contrast_weight = float(extra_map.get("semantic_contrast_loss_weight") or 0.0)
+        contrast_exposure = bool(
+            extra_map.get("semantic_contrast_dir")
+            or extra_map.get("semantic_contrast_margin")
+            or extra_map.get("semantic_contrast_fraction")
+            or contrast_weight > 0
+        )
+        default_batch = 3 if contrast_exposure else 2
+        if contrast_exposure:
+            try:
+                requested_batch = int(extra_map.get("batch_size") or default_batch)
+            except (TypeError, ValueError):
+                requested_batch = default_batch
+            extra_map["batch_size"] = max(3, requested_batch)
         base: dict[str, object] = {
             "train_version": train_version,
             "eval_version": eval_version,
             "steps": steps,
-            "batch_size": 2,
+            "batch_size": default_batch,
             "seed": seed,
             "context_backend": "scratch",
             "sync_checkpoints": False,
@@ -6633,7 +6654,7 @@ def _matrix(
             "decode_timeout_seconds": decode_timeout,
             "eval_suites": eval_suites,
         }
-        base.update(extra)
+        base.update(extra_map)
         return base
 
     def exp(
@@ -7167,16 +7188,19 @@ def _matrix(
         fb_ids = [
             str(item.get("feedback_id")) for item in feedback if item.get("feedback_id")
         ]
-        payload["feedback_ids"] = fb_ids
-        if previous_matrix_id:
-            payload["predecessor_matrix_id"] = previous_matrix_id
-        # continuous priorities must cite every feedback id
-        for priority in payload["next_run_priorities"]:
-            evidence = list(priority.get("evidence_ids") or [])
-            for fid in fb_ids:
-                if fid not in evidence:
-                    evidence.append(fid)
-            priority["evidence_ids"] = evidence
+        # Only bind feedback ids that hypothesize will also load. Stale ids from
+        # distant ancestors fail AgentHypothesisProvider with
+        # "matrix conflicts with supplied feedback ids" and abort thrash.
+        if fb_ids:
+            payload["feedback_ids"] = fb_ids
+            if previous_matrix_id:
+                payload["predecessor_matrix_id"] = previous_matrix_id
+            for priority in payload["next_run_priorities"]:
+                evidence = list(priority.get("evidence_ids") or [])
+                for fid in fb_ids:
+                    if fid not in evidence:
+                        evidence.append(fid)
+                priority["evidence_ids"] = evidence
     return payload
 
 
@@ -8049,6 +8073,22 @@ def run_cycle(
     elif promote_levers is None and confirm_levers is None:
         print(
             f"THRASH_ROTATE cycle={cycle} recommended={rec_slug} skip={sorted(skip_slugs)}",
+            flush=True,
+        )
+    # Thrash bank rotation is authoritative; drop orphan feedback bindings so
+    # agent hypothesize accepts the pre-built matrix when lineage feedback is empty.
+    if (
+        promote_levers is None
+        and confirm_levers is None
+        and not feedback
+        and matrix.get("feedback_ids")
+    ):
+        matrix = dict(matrix)
+        matrix.pop("feedback_ids", None)
+        matrix.pop("predecessor_matrix_id", None)
+        print(
+            "THRASH_MATRIX_STRIP_STALE_FEEDBACK "
+            f"campaign={campaign_id} (no live predecessor feedback)",
             flush=True,
         )
     HypothesisMatrix.model_validate(matrix)
