@@ -13,6 +13,7 @@ from slm_training.formal.checkers import (
     CHECKER_LEAN_KERNEL,
     CHECKER_PYTHON_REFERENCE,
     CHECKER_PYTHON_STRUCTURAL,
+    FormalProjectLock,
     check_python_reference,
     check_python_structural,
     run_checkers,
@@ -249,3 +250,15 @@ def test_lean_kernel_timeout_is_not_success(monkeypatch, tmp_path) -> None:
 
     assert not result.ok
     assert "timed out" in result.detail
+
+
+def test_formal_project_lock_times_out_while_another_holder_is_active(
+    tmp_path,
+) -> None:
+    with FormalProjectLock(tmp_path, timeout_seconds=1.0) as held:
+        assert held.wait_seconds < 1.0
+        try:
+            with FormalProjectLock(tmp_path, timeout_seconds=0.02):
+                raise AssertionError("lock unexpectedly re-entered")
+        except TimeoutError as exc:
+            assert "formal project lock timed out" in str(exc)

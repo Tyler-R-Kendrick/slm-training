@@ -12,7 +12,7 @@
   ],
   "components": {
     "formal.leverproof": {
-      "version": "v10",
+      "version": "v11",
       "kind": "harness",
       "paths": [
         "src/leverproof_lean/",
@@ -25,6 +25,11 @@
         "src/leverproof_lean/Test/Proofs.lean"
       ],
       "history": [
+        {
+          "version": "v11",
+          "date": "2026-08-03",
+          "note": "Route LeverProof certificate checks through the canonical bounded process-group runner and shared project lock; timeout and launch failures remain fail-closed."
+        },
         {
           "version": "v10",
           "date": "2026-08-02",
@@ -3669,7 +3674,7 @@
       ]
     },
     "harness.autoresearch.formal": {
-      "version": "v12",
+      "version": "v13",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/formal.py",
@@ -3680,6 +3685,11 @@
         ".github/workflows/ci.yml"
       ],
       "history": [
+        {
+          "version": "v13",
+          "date": "2026-08-03",
+          "note": "Serialize project-wide formal checks with the shared Lake lock and preserve lock-wait provenance while maintaining recursive source coverage."
+        },
         {
           "version": "v12",
           "date": "2026-08-03",
@@ -4083,7 +4093,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v145",
+      "version": "v146",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
@@ -4095,6 +4105,11 @@
         "tests/test_harnesses/experiments/test_locked_manifest_digest_threading.py"
       ],
       "history": [
+        {
+          "version": "v146",
+          "date": "2026-08-03",
+          "note": "Route LeverProof certificate replay through the canonical bounded process-group runner and project lock; timeout and launch failures remain fail-closed."
+        },
         {
           "version": "v145",
           "date": "2026-07-31",
@@ -14255,7 +14270,7 @@
       ]
     },
     "evals.ecosystem_tier_scoreboard": {
-      "version": "v1",
+      "version": "v2",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/ecosystem_tier_scoreboard.py",
@@ -14264,6 +14279,11 @@
         "docs/design/ecosystem-tier-scoreboard.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-03",
+          "note": "Route diagnostic Lean probes through the bounded process-group runner and shared project lock; timeout and build failures remain unknown/error."
+        },
         {
           "version": "v1",
           "date": "2026-07-30",
@@ -14286,7 +14306,7 @@
       ]
     },
     "formal.objects": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/formal/__init__.py",
@@ -14297,6 +14317,11 @@
         "docs/design/formal-objects-multi-prover.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "Add a process-shared Lake project lock and reusable bounded formal command adapter so every Lean checker reaps descendants under the canonical cap."
+        },
         {
           "version": "v2",
           "date": "2026-08-03",
@@ -14347,7 +14372,7 @@
       ]
     },
     "harness.experiments.anti_e237_semantic_factor_frontier": {
-      "version": "v10",
+      "version": "v11",
       "kind": "harness",
       "paths": [
         "src/slm_training/data/progspec/semantic_evidence.py",
@@ -14387,6 +14412,11 @@
         "src/slm_training/resources/experiments/semantic_factor_frontier/formal_preflights/sff_role-shuffle-membership.json"
       ],
       "history": [
+        {
+          "version": "v11",
+          "date": "2026-08-03",
+          "note": "Bound SFF Lean proof regeneration and version probes, serialize project builds, and validate committed proof digests fail-closed."
+        },
         {
           "version": "v10",
           "date": "2026-08-01",

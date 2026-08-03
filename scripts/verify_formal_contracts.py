@@ -6,12 +6,47 @@ from __future__ import annotations
 import ast
 import re
 import subprocess
+import sys
 import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 LEAN_ROOT = ROOT / "src" / "slm_training" / "formal" / "lean"
 FORBIDDEN_SOURCE = re.compile(r"\b(?:sorry|admit|axiom)\b")
+
+
+def _run_formal(command: list[str], *, timeout_seconds: float):
+    """Run a Lean command with the canonical process-group and project lock."""
+
+    src = str(ROOT / "src")
+    if src not in sys.path:
+        sys.path.insert(0, src)
+    from slm_training.formal.checkers import (
+        FormalProjectLock,
+        ProcessOutcome,
+        formal_process_budget,
+        run_formal_process,
+    )
+
+    total, _interrupt_after, _grace = formal_process_budget(timeout_seconds)
+    with FormalProjectLock(LEAN_ROOT, timeout_seconds=total) as lock:
+        result = run_formal_process(
+            command,
+            cwd=LEAN_ROOT,
+            timeout_seconds=max(0.001, total - lock.wait_seconds),
+        )
+    if result.timed_out:
+        raise subprocess.TimeoutExpired(command, total, output=result.stdout, stderr=result.stderr)
+    if result.outcome is ProcessOutcome.LAUNCH_FAILED:
+        raise OSError(result.launch_error or "formal command launch failed")
+    if result.returncode:
+        raise subprocess.CalledProcessError(
+            result.returncode,
+            command,
+            output=result.stdout,
+            stderr=result.stderr,
+        )
+    return result
 
 
 def _canonical_run_seconds() -> int:
@@ -32,7 +67,7 @@ def _canonical_run_seconds() -> int:
 
 def main() -> int:
     sources = (LEAN_ROOT / "OpenUIProofs.lean",) + tuple(
-        sorted((LEAN_ROOT / "OpenUIProofs").glob("*.lean"))
+        sorted((LEAN_ROOT / "OpenUIProofs").rglob("*.lean"))
     )
     forbidden = [
         str(path.relative_to(ROOT))
@@ -46,19 +81,10 @@ def main() -> int:
     def remaining() -> float:
         return max(0.001, deadline - time.monotonic())
 
-    subprocess.run(
-        ["lake", "build", "OpenUIProofs"],
-        cwd=LEAN_ROOT,
-        check=True,
-        timeout=remaining(),
-    )
-    audit = subprocess.run(
+    _run_formal(["lake", "build", "OpenUIProofs"], timeout_seconds=remaining())
+    audit = _run_formal(
         ["lake", "env", "lean", "OpenUIProofs/Axioms.lean"],
-        cwd=LEAN_ROOT,
-        check=True,
-        capture_output=True,
-        text=True,
-        timeout=remaining(),
+        timeout_seconds=remaining(),
     )
     output = f"{audit.stdout}\n{audit.stderr}"
     if "sorryAx" in output:

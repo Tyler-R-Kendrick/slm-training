@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import subprocess
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
@@ -20,6 +19,12 @@ from slm_training.autoresearch.experiment_campaign import (
     campaign_manifest_sha256,
 )
 from slm_training.levers import INTERRUPT_AFTER_SECONDS
+from slm_training.formal.checkers import (
+    FormalProjectLock,
+    ProcessOutcome,
+    formal_process_budget,
+    run_formal_process,
+)
 
 EVIDENCE_SCHEMA = "metric_evidence/v1"
 CERTIFICATE_SCHEMA = "metric_certificate/v1"
@@ -41,6 +46,16 @@ IN_REPO_CHECKER = (
     / "bin"
     / "leverproof-lean"
 )
+
+
+def _checker_project_root(checker: Path) -> Path:
+    """Resolve the Lake project root for an in-repo or test checker binary."""
+
+    resolved = checker.resolve()
+    for parent in (resolved.parent, *resolved.parents):
+        if (parent / "lakefile.toml").is_file():
+            return parent
+    return resolved.parent
 
 
 class VerifiedMetricError(ValueError):
@@ -400,21 +415,31 @@ def verify_metric_certificate(
                 "assumption-backed metric is outside its calculated range"
             )
 
+    checker_path = Path(_resolve_checker(checker))
+    project_root = _checker_project_root(checker_path)
+    total, _interrupt_after, _grace = formal_process_budget(
+        INTERRUPT_AFTER_SECONDS
+    )
     try:
-        completed = subprocess.run(
-            [
-                _resolve_checker(checker),
-                "verify",
-                str(evidence_file),
-                str(certificate_file),
-            ],
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=INTERRUPT_AFTER_SECONDS,
+        with FormalProjectLock(project_root, timeout_seconds=total) as lock:
+            completed = run_formal_process(
+                [
+                    str(checker_path),
+                    "verify",
+                    str(evidence_file),
+                    str(certificate_file),
+                ],
+                cwd=project_root,
+                timeout_seconds=max(0.001, total - lock.wait_seconds),
+            )
+    except TimeoutError as exc:
+        raise VerifiedMetricError(f"LeverProof replay lock timed out: {exc}") from exc
+    if completed.timed_out:
+        raise VerifiedMetricError("LeverProof replay exceeded the run cap")
+    if completed.outcome is ProcessOutcome.LAUNCH_FAILED:
+        raise VerifiedMetricError(
+            f"LeverProof replay could not start: {completed.launch_error}"
         )
-    except subprocess.TimeoutExpired as exc:
-        raise VerifiedMetricError("LeverProof replay exceeded the run cap") from exc
     if completed.returncode != 0 or completed.stdout.strip() != "verified":
         detail = completed.stderr.strip() or completed.stdout.strip() or "rejected"
         raise VerifiedMetricError(f"LeverProof replay failed: {detail}")

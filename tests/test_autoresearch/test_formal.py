@@ -98,6 +98,28 @@ def test_leverproof_project_digest_includes_runtime_json_fixtures() -> None:
     assert "Test/bands.json" in labels
 
 
+def test_project_paths_recurse_nested_lean_sources(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    nested = tmp_path / "LeverProofLean" / "Nested"
+    nested.mkdir(parents=True)
+    (nested / "Imported.lean").write_text("namespace Nested\nend Nested\n")
+    nested_test = tmp_path / "Test" / "fixtures"
+    nested_test.mkdir(parents=True)
+    (nested_test / "extra.json").write_text("{}\n")
+    monkeypatch.setattr(
+        "slm_training.autoresearch.formal._lean_root", lambda _template: tmp_path
+    )
+
+    labels = {
+        label
+        for label, _path in _proof_paths(FORMAL_TEMPLATES["sff.advisory-keys-legal"])
+    }
+
+    assert "LeverProofLean/Nested/Imported.lean" in labels
+    assert "Test/fixtures/extra.json" in labels
+
+
 def test_leverproof_source_audit_falls_back_to_grep(tmp_path: Path) -> None:
     result = _make_proofs(tmp_path, rg="missing-rg-for-test")
 
