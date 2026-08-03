@@ -1,0 +1,78 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "cycle": 6,
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c6",
+  "experiment": "component-plan",
+  "claim_class": "fixture_screen",
+  "status": "rejected",
+  "measurement_complete": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "backend": "scratch TwoTower",
+    "matrix_set": "continuous-openui-local",
+    "honesty_mode": "grammar_constrained_strict_compiler_tree",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite_n": {"smoke": 3, "held_out": 0, "adversarial": 0, "ood": 0, "rico_held": 0}
+  },
+  "arms": {
+    "control": {
+      "id": "c20260803-continuous-openui-local-8c0b60dd-c6-control",
+      "trainable_params": 1755764,
+      "structural_similarity": 0.0964,
+      "binder_reference_f1": 0.822222,
+      "meaningful_program_rate": 0.0,
+      "latency_ms_p50": 3767.44,
+      "exit": 0
+    },
+    "candidate": {
+      "id": "c20260803-continuous-openui-local-8c0b60dd-c6-component-plan",
+      "trainable_params": 1755764,
+      "structural_similarity": 0.0964,
+      "binder_reference_f1": 0.822222,
+      "meaningful_program_rate": 0.0,
+      "latency_ms_p50": 3648.99,
+      "exit": 0
+    }
+  },
+  "gates": {
+    "pass": false,
+    "failures": [
+      "smoke:insufficient_n",
+      "smoke:meaningful_program_rate",
+      "smoke:structural_similarity",
+      "smoke:component_type_recall",
+      "smoke:ast_beq_rate",
+      "smoke:canonical_beq_rate",
+      "held_out:missing_suite",
+      "adversarial:missing_suite",
+      "ood:missing_suite",
+      "rico_held:missing_suite"
+    ]
+  },
+  "signals": {
+    "attribution": "fresh-seed component-plan hypothesis (distinct arm from c3's rejected component-plan), size-matched at 1,755,764 params; quality-identical to control on every smoke metric (structural_similarity, binder_reference_f1, meaningful_program_rate all tie), improvement 0.0. Candidate is 3.1% faster p50 but with no quality offset.",
+    "prevention": ["fixture n=3", "null primary-metric delta alone is never positive"],
+    "next_priorities": [
+      "test the distinct size-matched component-edge quality hypothesis next (this arm pair is exhausted)",
+      "keep the matched control every cycle"
+    ]
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "4396399d1a0132ded63233d43bbb93fb47366b84",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v84",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v23",
+      "model.twotower": "v308"
+    },
+    "stamped_at": "2026-08-03T23:50:59Z"
+  }
+}
