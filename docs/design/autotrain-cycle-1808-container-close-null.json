@@ -1,0 +1,105 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1808",
+  "cycle_index": 1808,
+  "decision": "reject_null_and_training_overhead",
+  "evidence_class": "fixture_screening",
+  "formal_status": "not_applicable:screening",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "7c992eb6ea19f4934f098801c2c6e6022af6a53f",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.autoresearch.experiment_campaign": "v107",
+      "harness.model_build.eval": "v77",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v299"
+    },
+    "stamped_at": "2026-08-03T00:29:21.780955+00:00"
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "steps": 22,
+    "seed": 101808,
+    "batch_size": 2,
+    "sync_checkpoints": false,
+    "suite": "smoke",
+    "suite_n": 3,
+    "honesty_mode": "fixture_screening"
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1808-control",
+      "trainable_params": 1608962,
+      "checkpoint_sha256": "d2e8deb799449e8ae2c172d49a56d0d249b06647a2a262f707563dfe0e28ccb9",
+      "compiler_alignment_loss_weight": 0.0,
+      "last_loss": 21.847225189208984,
+      "train_wall_seconds": 3.0720829850179143,
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.3225,
+        "binder_reference_f1": 0.0,
+        "component_type_recall": 0.0,
+        "placeholder_fidelity": 0.0,
+        "reward_score": 0.0,
+        "latency_ms_p50": 1900.3
+      },
+      "decode_trace": {
+        "tokens_emitted": 36,
+        "forwards_count": 7,
+        "compiler_ms": 4419.568,
+        "completion_unique_states": 61368,
+        "completion_parser_forks": 64255
+      }
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1808-container-close",
+      "trainable_params": 1608962,
+      "checkpoint_sha256": "d2fbce1464ad27b3f0524d7d03a8c6b9c73b5e881c162fc557114bc042f79d4f",
+      "compiler_alignment_loss_weight": 1.0,
+      "compiler_alignment_margin": 1.0,
+      "compiler_alignment_kind_filter": "container-close",
+      "last_loss": 24.51253890991211,
+      "train_wall_seconds": 9.346509360999335,
+      "alignment_attribution": {
+        "eligible_rows": 116,
+        "first_step_loss": 21.743532180786133,
+        "first_step_margin_violation_rate": 0.6000000238418579,
+        "last_step_loss": 0.000011622772944974713,
+        "last_step_margin_violation_rate": 0.0
+      },
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.3225,
+        "binder_reference_f1": 0.0,
+        "component_type_recall": 0.0,
+        "placeholder_fidelity": 0.0,
+        "reward_score": 0.0,
+        "latency_ms_p50": 1931.99
+      },
+      "decode_trace": {
+        "tokens_emitted": 36,
+        "forwards_count": 7,
+        "compiler_ms": 4510.161,
+        "completion_unique_states": 61368,
+        "completion_parser_forks": 64255
+      }
+    }
+  ],
+  "next_hypothesis": {
+    "slug": "balanced-container-close",
+    "authority": "observed_result",
+    "confidence": 0.9,
+    "statement": "Typed-family balance plus saturated container-close alignment preserves c1807 quality gains while preventing its runaway comma continuation."
+  }
+}

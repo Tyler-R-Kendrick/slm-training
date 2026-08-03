@@ -136,6 +136,26 @@ use `--compiler openai`, whose default is `gpt-5.6-sol` with `store=False`.
 
 ## Closed loop
 
+The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
+confirmed a champion, c1812 was the next protected promotion slot, and the
+intervening screening bank was exhausted. The driver failed instead of waiting
+usefully. Campaign harness v109 preserves the promotion cadence and held-out
+suite boundary by spending that otherwise-empty slot on a second fresh-seed
+confirmation of the same size-matched recipes. It never promotes early and
+never recycles a rejected arm. See
+[`autotrain-cycle-1811-promotion-wait-harness-failure.md`](autotrain-cycle-1811-promotion-wait-harness-failure.md).
+
+The c1808 container-close screen is an exact quality null: both arms emit the
+same 36 tokens with seven forwards and score `.3225` structural similarity,
+while all meaningful, binder, component, fidelity, and reward metrics remain
+zero. The loss did receive 116 eligible rows and drove margin violations from
+`.60` on step one to zero on step two, but the matched control already chose
+the legal closes; training wall time rose `3.07→9.35` seconds with no decode
+benefit. Campaign harness v108 therefore tests the interaction that c1808 could
+not identify: typed-family balance for the c1807 quality gains plus the same
+container-close loss to prevent its runaway comma continuation. See
+[`autotrain-cycle-1808-container-close-null.md`](autotrain-cycle-1808-container-close-null.md).
+
 The c1807 typed-family balance screen improves structure, binder F1, recall,
 and fidelity but produces no meaningful programs and increases p50 more than
 5x. Decode telemetry attributes the cost to runaway legal continuation: 201

@@ -649,6 +649,17 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         },
     ),
     (
+        "balanced-container-close",
+        "Container-close alignment preserves the typed-family balance arm's structural gains while preventing runaway legal comma continuation.",
+        {
+            "typed_family_balance_loss_weight": 0.25,
+            "compiler_alignment_loss_weight": 1.0,
+            "compiler_alignment_margin": 1.0,
+            "compiler_alignment_stratified": True,
+            "compiler_alignment_kind_filter": "container-close",
+        },
+    ),
+    (
         "component-structure",
         "Joint component-plan and component-edge train-and-decode coupling improves smoke structural_similarity beyond either isolated arm.",
         {
@@ -1076,6 +1087,12 @@ def _arm_slug_from_knobs(
 ) -> str | None:
     """Map knobs / candidate id to thrash arm slug."""
     if (
+        knobs.get("typed_family_balance_loss_weight")
+        and knobs.get("compiler_alignment_loss_weight")
+        and knobs.get("compiler_alignment_kind_filter") == "container-close"
+    ):
+        return "balanced-container-close"
+    if (
         knobs.get("compiler_alignment_loss_weight")
         and knobs.get("compiler_alignment_kind_filter") == "literal-close"
     ):
@@ -1310,6 +1327,7 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
         "structure-token",
         "typed-family-balance",
         "container-close",
+        "balanced-container-close",
     )
     legacy_quality_slugs = {
         "component-plan",
@@ -1341,6 +1359,33 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
         "registered screening arm bank exhausted; add a distinct preregistered "
         "quality objective instead of recycling a rejected approach"
     )
+
+
+def _repeat_confirm_while_waiting_for_promotion(
+    *,
+    cadence_role: str,
+    confirmed_champion: dict[str, Any] | None,
+    cycle: int,
+    skip: set[str],
+) -> bool:
+    """Use a fresh confirmation seed when no novel screen fits before cadence.
+
+    Promotion cadence protects held-out suites from opportunistic exposure. A
+    confirmed champion must therefore not promote early merely because the
+    screening bank is exhausted. A second bounded confirmation is useful,
+    remains on screening suites, and avoids turning the expected wait into an
+    orchestration failure.
+    """
+
+    if cadence_role == "promotion" or not confirmed_champion:
+        return False
+    if confirmed_champion.get("status") != "confirmed":
+        return False
+    try:
+        _select_recommended_slug(cycle, skip=skip)
+    except RuntimeError:
+        return True
+    return False
 
 
 def _select_cycle_slug(
@@ -6425,6 +6470,11 @@ def run_cycle(
     )
     if recovered or revalidated or confirmations_revalidated:
         _write_champion_queue(queue_path, queue_entries)
+    recent_exhausted = _recent_completed_nonpositive_slugs(root, pred)
+    skip_slugs = (
+        _skip_arm_slugs(queue_entries, integration_commit=integration)
+        | recent_exhausted
+    )
     open_champion = _queue_head_open(queue_entries)
     confirmed_champion: dict[str, Any] | None = None
     promoting_champion: dict[str, Any] | None = None
@@ -6443,7 +6493,23 @@ def run_cycle(
             role = "screening"
             cycle_intent = "screening"
     else:
-        cycle_intent = "screening"
+        confirmed_waiting = _queue_head_confirmed(queue_entries)
+        if _repeat_confirm_while_waiting_for_promotion(
+            cadence_role=cadence_role,
+            confirmed_champion=confirmed_waiting,
+            cycle=cycle,
+            skip=skip_slugs,
+        ):
+            open_champion = confirmed_waiting
+            cycle_intent = "confirm"
+            print(
+                "CHAMPION_CONFIRM_FALLBACK "
+                "reason=screening_bank_exhausted_awaiting_promotion_cadence "
+                f"entry_id={confirmed_waiting.get('entry_id')}",
+                flush=True,
+            )
+        else:
+            cycle_intent = "screening"
     campaign_id = _campaign_id(loop_id, cycle)
     if open_champion is not None:
         attempts = _bump_champion_attempt(
@@ -6772,11 +6838,6 @@ def run_cycle(
             promoting_champion = None
             cycle_intent = role
             promote_levers = None
-    recent_exhausted = _recent_completed_nonpositive_slugs(root, pred)
-    skip_slugs = (
-        _skip_arm_slugs(queue_entries, integration_commit=integration)
-        | recent_exhausted
-    )
     if recent_exhausted:
         print(
             "RECENT_EXHAUSTION skip=" + ",".join(sorted(recent_exhausted)),

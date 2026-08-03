@@ -2656,7 +2656,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v107",
+      "version": "v109",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2696,16 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v109",
+          "date": "2026-08-03",
+          "note": "When a confirmed champion awaits its protected promotion cadence and the screening bank is exhausted, run a second fresh-seed confirmation instead of failing or exposing held-out suites early."
+        },
+        {
+          "version": "v108",
+          "date": "2026-08-03",
+          "note": "Add the size-matched typed-family-balance plus container-close interaction arm after close-only supervision saturated its rows but tied the matched control."
+        },
         {
           "version": "v107",
           "date": "2026-08-03",
@@ -7398,7 +7408,27 @@
         {
           "version": "v3",
           "date": "2026-08-03",
+          "note": "no-bump: record c3 grammar-completion-bounds quality-neutral checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
           "note": "no-bump: record c2 AgentV/NODE_OPTIONS infrastructure-failure checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1810 fresh-seed confirmation checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1809 fresh-confirmation-only checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1808 rejected container-close checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
         },
         {
           "version": "v3",
@@ -11492,7 +11522,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v299",
+      "version": "v300",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -11535,6 +11565,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v300",
+          "date": "2026-08-03",
+          "note": "Preserve reconstruction and typed-family attribution when compiler alignment is active so combined-objective training signals remain complete."
+        },
         {
           "version": "v299",
           "date": "2026-08-03",
