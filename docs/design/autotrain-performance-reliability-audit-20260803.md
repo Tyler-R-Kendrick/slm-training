@@ -225,3 +225,20 @@ The reliability/performance repair is now implemented:
 The next run must still be treated as fixture evidence until the evaluation
 ladder reaches `n≥20` with held-out, adversarial, OOD, and RICO suites. Lean,
 cache identity, and supervisor liveness are not current learning blockers.
+
+## c1860 measurement closeout
+
+c1860 exercised the new size-matched semantic-contrast plus compiler-alignment
+objective. The candidate completed its 20-step scratch train and smoke decode,
+but the outer hard cap interrupted the matched control during evaluation before
+it wrote a scoreboard. The candidate therefore cannot be compared or called a
+learning win. Its standalone smoke result is weak (`struct=.2742`, MPR `.333`,
+recall `.333`, binder F1 `.633`, exact AST/canonical `0`, `n=3`) and its p50
+latency rose to `3606 ms` with `126` tokens and `52` forwards. The candidate is
+size-matched (`1,608,962` parameters) and its higher loss (`17.98` vs control
+training `15.09`) does not establish quality harm without a complete control.
+
+The immediate prevention is measurement reliability: replay both frozen arms
+under the same bounded stage before changing the objective. After that replay,
+the quality blocker to investigate is target/data supervision that can move
+exact AST agreement, not another capacity increase or a Lean relaxation.

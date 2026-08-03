@@ -1,0 +1,52 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-202607-98199209-c1860",
+  "decision": "reject_semantic_contrast_compiler_margin_incomplete",
+  "claim_class": "fixture_screening",
+  "formal": {"status": "not_applicable:screening"},
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "seed": 101860,
+    "batch_size": 2,
+    "num_threads": 1,
+    "context_backend": "scratch",
+    "suite": "smoke",
+    "suite_n": 3,
+    "trainable_params": {"control": 1608962, "candidate": 1608962},
+    "sync_checkpoints": false,
+    "candidate_lever": "semantic_contrast_loss_weight=.25 + compiler_alignment_loss_weight=1.0"
+  },
+  "arms": {
+    "control": {
+      "status": "incomplete",
+      "last_loss": 15.0883150100708,
+      "metrics": {},
+      "failure": "outer hard cap interrupted evaluation before scoreboard"
+    },
+    "candidate": {
+      "status": "complete_gate_reject",
+      "last_loss": 17.98033905029297,
+      "checkpoint_sha256": "53ab1fe784bed91b206d6ec89f74a908bda7f542ec3951a176daf96e71bd0f2f",
+      "metrics": {
+        "parse_rate": 1.0,
+        "structural_similarity": 0.27416666666666667,
+        "meaningful_program_rate": 0.3333333333333333,
+        "component_type_recall": 0.3333333333333333,
+        "binder_reference_f1": 0.6333333333333333,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.8153333333333332,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 3605.87,
+        "tokens_emitted_mean": 126.0,
+        "forwards_count_mean": 52.0,
+        "compiler_ms_mean": 8680.0
+      }
+    }
+  },
+  "effects": {"structural_similarity": null, "meaningful_program_rate": null, "latency_fraction": null, "tokens_fraction": null, "forwards_fraction": null, "params_fraction": 0.0},
+  "ship": {"eligible": false, "failures": ["matched control missing scoreboard", "smoke n=3<20", "MPR .333<.66", "structure .274<.35", "AST/canonical exact rates 0", "held-out/adversarial/OOD/RICO suites missing"]},
+  "successor": {"experiment_slug": "replay exact frozen control and candidate", "next_action": "complete measurement before changing the hypothesis"},
+  "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "4ad2e31eddb9a2b22d6162bda8a88c904a777e08", "code_dirty": false, "components": {"harness.autoresearch.formal": "v9", "harness.model_build.eval": "v80", "harness.autoresearch.experiment_campaign": "v156"}, "stamped_at": "2026-08-03T09:13:00Z"}
+}
