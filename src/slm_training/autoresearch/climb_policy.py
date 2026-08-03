@@ -314,7 +314,11 @@ def max_consecutive_frozen_replays(policy: ClimbPolicy) -> int:
 
 
 def decode_timeout_seconds_for_role(policy: ClimbPolicy, role: str) -> float:
-    """Per-record decode timeout for continuous eval arms."""
+    """Per-record decode timeout for continuous eval arms.
+
+    Screening defaults lean toward thrash arm-wall fit (see continuous
+    ``_fit_screening_decode_timeout_seconds`` which may clamp further).
+    """
 
     measurement = policy.measurement
     if role == "promotion":
@@ -322,7 +326,9 @@ def decode_timeout_seconds_for_role(policy: ClimbPolicy, role: str) -> float:
         default = 24.0
     else:
         key = "screening_decode_timeout_seconds"
-        default = 24.0
+        # Default 8s: with smoke n=3 and ~70s arm share under MAX_RUN=3m,
+        # 24s×3 already exceeds the arm wall (empty scoreboards).
+        default = 8.0
     value = float(measurement.get(key, default))
     if value <= 0:
         raise ClimbPolicyError(f"measurement.{key} must be > 0, got {value}")

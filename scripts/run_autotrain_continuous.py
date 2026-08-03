@@ -254,6 +254,130 @@ def _arm_wall_minutes(policy_minutes: float, *, formal_required: bool) -> float:
     return min(float(policy_minutes), symmetric_minutes)
 
 
+def _arm_wall_seconds(*, policy_minutes: float, formal_required: bool) -> float:
+    return float(_arm_wall_minutes(policy_minutes, formal_required=formal_required)) * 60.0
+
+
+def _fit_screening_decode_timeout_seconds(
+    policy: Any,
+    *,
+    arm_wall_seconds: float | None = None,
+    formal_required: bool = False,
+) -> tuple[float, dict[str, float]]:
+    """Clamp screening decode so n×decode + train floor fits the arm wall.
+
+    Timeouts are optima: if this clamp always binds, either the arm share model
+    or the thrash recipe (steps/n) needs recalibration — not silent wall++.
+    """
+    from slm_training.autoresearch.climb_policy import (
+        decode_timeout_seconds_for_role,
+        stage_wall_minutes_for_role,
+    )
+
+    measurement = getattr(policy, "measurement", None) or {}
+    if not isinstance(measurement, dict):
+        measurement = {}
+    thrash = measurement.get("thrash_timing") or {}
+    if not isinstance(thrash, dict):
+        thrash = {}
+    smoke_n = max(1, int(measurement.get("screening_smoke_n") or 3))
+    min_train = float(thrash.get("min_train_floor_seconds") or 20.0)
+    overhead = float(thrash.get("eval_overhead_seconds") or 8.0)
+    configured = float(decode_timeout_seconds_for_role(policy, "screening"))
+    if arm_wall_seconds is None:
+        arm_wall_seconds = _arm_wall_seconds(
+            policy_minutes=float(stage_wall_minutes_for_role(policy, "screening")),
+            formal_required=formal_required,
+        )
+    # Max per-record decode that still leaves train floor + overhead.
+    usable = float(arm_wall_seconds) - min_train - overhead
+    max_decode = max(1.0, usable / float(smoke_n))
+    fitted = min(configured, max_decode)
+    meta = {
+        "arm_wall_seconds": float(arm_wall_seconds),
+        "configured_decode_timeout_seconds": configured,
+        "fitted_decode_timeout_seconds": float(fitted),
+        "smoke_n": float(smoke_n),
+        "min_train_floor_seconds": min_train,
+        "eval_overhead_seconds": overhead,
+        "eval_budget_seconds": float(fitted) * float(smoke_n),
+        "clamp_bound": 1.0 if fitted + 1e-9 < configured else 0.0,
+    }
+    return float(fitted), meta
+
+
+def _screening_thrash_steps(policy: Any, requested_steps: int) -> int:
+    """Cap thrash train steps so micro-train fits the arm budget."""
+    measurement = getattr(policy, "measurement", None) or {}
+    if not isinstance(measurement, dict):
+        return max(1, int(requested_steps))
+    thrash = measurement.get("thrash_timing") or {}
+    if not isinstance(thrash, dict):
+        return max(1, int(requested_steps))
+    cap = thrash.get("screening_thrash_steps")
+    if cap is None:
+        return max(1, int(requested_steps))
+    return max(1, min(int(requested_steps), int(cap)))
+
+
+def _write_thrash_timing(
+    camp_dir: Path,
+    *,
+    loop_id: str,
+    campaign_id: str,
+    cycle_index: int | None,
+    role: str,
+    measurement_complete: bool,
+    arm_wall_seconds: float | None,
+    decode_fit: dict[str, float] | None,
+    reasons: list[str],
+    control_metrics: dict[str, Any] | None,
+    candidate_metrics: dict[str, Any] | None,
+) -> Path:
+    """Durable thrash timing / completeness row for Pareto recalibration."""
+
+    incomplete_reasons = [
+        str(r)
+        for r in reasons
+        if str(r).startswith(
+            (
+                "measurement_incomplete",
+                "empty_metrics",
+                "primary_metric_unavailable",
+                "harness_failure",
+            )
+        )
+    ]
+    has_ss = isinstance(
+        (control_metrics or {}).get("structural_similarity"), (int, float)
+    ) and isinstance(
+        (candidate_metrics or {}).get("structural_similarity"), (int, float)
+    )
+    payload = {
+        "schema": "thrash_timing/v1",
+        "loop_id": loop_id,
+        "campaign_id": campaign_id,
+        "cycle_index": cycle_index,
+        "role": role,
+        "complete": bool(measurement_complete and has_ss),
+        "measurement_complete": bool(measurement_complete),
+        "has_dual_arm_ss": has_ss,
+        "arm_wall_seconds": arm_wall_seconds,
+        "decode_fit": decode_fit,
+        "incomplete_reasons": incomplete_reasons,
+        "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+    path = camp_dir / "thrash_timing.json"
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    # camp_dir is root/campaign_id; parent is autoresearch root
+    root = camp_dir.parent
+    ledger = root / "loops" / loop_id / "thrash_timing.jsonl"
+    ledger.parent.mkdir(parents=True, exist_ok=True)
+    with ledger.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(payload, sort_keys=True) + "\n")
+    return path
+
+
 def _formal_lane_required(*, cycle_intent: str, replay: dict[str, Any] | None) -> bool:
     """Reserve formal time only for work whose locked plan requires it."""
 
@@ -4345,6 +4469,39 @@ def _phase_a_delivery(
     with ledger.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(record, sort_keys=True) + "\n")
 
+    # Pareto thrash timing: durable completeness + decode-fit snapshot.
+    try:
+        from slm_training.autoresearch.climb_policy import stage_wall_minutes_for_role
+
+        arm_s = _arm_wall_seconds(
+            policy_minutes=float(stage_wall_minutes_for_role(policy, role)),
+            formal_required=str(cycle_intent or role) == "promote",
+        )
+        decode_fit = None
+        if role == "screening":
+            _fitted, decode_fit = _fit_screening_decode_timeout_seconds(
+                policy, arm_wall_seconds=arm_s
+            )
+        _write_thrash_timing(
+            camp_dir,
+            loop_id=loop_id,
+            campaign_id=campaign_id,
+            cycle_index=cycle_index,
+            role=str(role),
+            measurement_complete=bool(record.get("measurement_complete")),
+            arm_wall_seconds=arm_s,
+            decode_fit=decode_fit,
+            reasons=list(record.get("reasons") or []),
+            control_metrics=record.get("control_metrics")
+            if isinstance(record.get("control_metrics"), dict)
+            else None,
+            candidate_metrics=record.get("candidate_metrics")
+            if isinstance(record.get("candidate_metrics"), dict)
+            else None,
+        )
+    except Exception as exc:  # noqa: BLE001 — never fail Phase A on telemetry
+        print(f"THRASH_TIMING_WRITE_SKIP err={exc}", flush=True)
+
     tag = "POSITIVE" if record["positive"] else "NON_POSITIVE"
     print(
         f"SDLC_PHASE_A {tag} campaign={campaign_id} "
@@ -6371,9 +6528,15 @@ def _matrix(
     # Distinct seeds are required so multi-seed approach closure can re-test a
     # once-null arm on a new seed before permanent bank close.
     seed = 100_000 + int(cycle)
-    steps = steps + (cycle % 3)  # slight variation avoids knob-signature collision
     pol = policy or load_climb_policy()
-    decode_timeout = decode_timeout_seconds_for_role(pol, role)
+    # Thrash: micro-steps + decode fit so n×decode + train floor ≤ arm wall
+    # (Pareto: incomplete rate drives recalibration of these, not wall++).
+    if role == "screening":
+        steps = _screening_thrash_steps(pol, steps)
+        decode_timeout, _decode_fit = _fit_screening_decode_timeout_seconds(pol)
+    else:
+        decode_timeout = decode_timeout_seconds_for_role(pol, role)
+    steps = int(steps) + (cycle % 3)  # slight variation avoids knob-signature collision
     eval_suites = ",".join(eval_suites_for_role(pol, role))
 
     def uses() -> list[dict]:
