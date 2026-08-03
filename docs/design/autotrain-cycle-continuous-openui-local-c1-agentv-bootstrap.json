@@ -1,0 +1,68 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "cycle": 1,
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c1",
+  "experiment": "bounds",
+  "claim_class": "fixture_screen",
+  "status": "infra_incomplete",
+  "measurement_complete": false,
+  "recipe": {
+    "device": "cpu",
+    "steps": 21,
+    "backend": "scratch TwoTower",
+    "matrix_set": "continuous-openui-local",
+    "honesty_mode": "grammar_constrained_strict_compiler_tree",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite_n": {"smoke": 0, "held_out": 0, "adversarial": 0, "ood": 0, "rico_held": 0}
+  },
+  "arms": {
+    "control": {
+      "id": "c20260803-continuous-openui-local-8c0b60dd-c1-control",
+      "trainable_params": 1608962,
+      "train_completed": true,
+      "eval_completed": false,
+      "exit": 2
+    },
+    "candidate": {
+      "id": "c20260803-continuous-openui-local-8c0b60dd-c1-bounds",
+      "trainable_params": 1608962,
+      "train_completed": true,
+      "eval_completed": false,
+      "exit": 2
+    }
+  },
+  "gates": {
+    "pass": null,
+    "failures": ["no_scoreboard:agentv_sdk_unavailable"]
+  },
+  "signals": {
+    "attribution": "both arms trained (21 steps, 1,608,962 params, matched pair) but scripts.evaluate_model --ship-gates crashed before any scoreboard existed: RuntimeError('AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER')",
+    "prevention": [
+      "fresh continuous-autotrain container never ships node_modules",
+      "same infra gap already hit this loop at cycles c1/c2 on 2026-08-02 (NODE_OPTIONS + missing torch); this is the AgentV-SDK sibling of that class",
+      "harness_failure classified this measurement_incomplete, not a model result, so no primary-metric comparison is authorized"
+    ],
+    "next_priorities": [
+      "replay the identical frozen control/bounds arms now that the AgentV SDK self-heal is committed",
+      "keep the repair scoped to environment bootstrap only; no model/decode-path change"
+    ]
+  },
+  "repair": {
+    "harness_family": "model_build",
+    "frozen_manifest_sha256": "c4c7bc4837d5a4f076eaa574ad119c9a9709376e9923d8becf7360215f813528",
+    "repair_commit": "0a7a7219a1059a288594473cdae50c1c77e22122",
+    "repair_summary": "src/slm_training/evals/agentv.py: _agentv_runtime now runs one bounded, NODE_OPTIONS-sanitized `npm ci` in the checkout before raising when node_modules/@agentv/core is missing (evals.agentv v7 -> v8). Regression tests added in tests/test_evals/test_agentv.py."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "f4949582d9410832cd638fe8aec9141407eb01ab",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.train": "v42",
+      "harness.experiment_feature_flags": "v4"
+    },
+    "stamped_at": "2026-08-03T23:32:10.309345+00:00"
+  }
+}
