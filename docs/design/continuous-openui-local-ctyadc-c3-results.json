@@ -1,0 +1,67 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c3",
+  "cycle_index": 3,
+  "source_commit": "3e042a270681f5641c3a2b53a1a8d164bfdb88e7",
+  "frozen_replay_of": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c2",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 22,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "ship_gates": true,
+    "seed": 100002,
+    "trainable_params": 1755764
+  },
+  "arms": {
+    "c3-control": {
+      "status": "completed_eval_gates_failed",
+      "checkpoint_sha256": "6abf57d4898e8fe7cb1dace959d3ce5fec463f816b3686c99ad18abf6db3512b",
+      "last_loss": 14.390223503112793,
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.32666666666666666,
+        "binder_reference_f1": 0.0,
+        "latency_ms_p50": 30965.21
+      }
+    },
+    "c3-component-plan": {
+      "status": "completed_eval_gates_failed",
+      "checkpoint_sha256": "20e573b14e3216132d27101e98f5c49dfe634acd0101b2ce18b5f9f0f8a8e741",
+      "reused_checkpoint_from": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c2",
+      "last_loss": 19.91602325439453,
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.38280000000000003,
+        "binder_reference_f1": 0.0,
+        "latency_ms_p50": 23572.64
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.05613333333333337,
+  "sdlc_phase_a": {
+    "positive": true,
+    "stack_layer": false,
+    "stack_action": "positive_no_tracked_delta_skip_stack",
+    "agent_required": "metric win recorded; no code/docs delta beyond this documentation — open a normal reviewable PR to land docs; continue loop",
+    "reasons": [
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c3-component-plan",
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c3-control",
+      "primary_metric_win:smoke.structural_similarity:0.32666666666666666->0.38280000000000003:improvement=0.05613333333333337"
+    ]
+  },
+  "conclusion": "Continuous-openui-local loop, cycle 3 (scheduled session ctyadc, branch claude/great-dirac-pa8smx): frozen replay of the identical c2 control+component-plan arms, run to complete the attribution that this session's own mid-cycle git mutation left incomplete in cycle 2 (see continuous-openui-local-ctyadc-c2-results.md). 'component-plan' again beats its size-matched control on the declared primary at seed 100002 -- structural_similarity 0.32667 -> 0.38280, improvement +0.05613 -- byte-identical to every prior independent measurement of this hypothesis (PR #1369, #1376, #1378, and this branch's own cycle-2 candidate arm). Checkpoint SHAs (control 6abf57d4...db3512b, component-plan 20e573b1...f0f8a8e741) are byte-identical to the j48f8u and sk4t9p sessions, confirming the fixture effect is deterministic. meaningful_program_rate and binder_reference_f1 stay 0 on both arms. Ship gates fail as expected (fixture_insufficient_n, n=3 vs required 20). SDLC Phase A classifies POSITIVE (primary_metric_win) but the automated classifier flags positive_no_tracked_delta_skip_stack because this cycle re-ran the identical frozen recipe with no new code/harness diff of its own -- per sdlc autotrain-iteration-delivery, documenting a positive result is itself the reviewable delta, and this cycle also closes out the incomplete measurement from cycle 2.",
+  "next_priorities": [
+    "This arm is now exhausted for screening; test the driver's ranked 'component-edge' hypothesis next (rank 1, confidence 0.9, proposed_experiment_id c20260803-continuous-openui-local-8c0b60dd-c3-component-edge) rather than re-running component-plan again.",
+    "Keep the matched control fixed every cycle (rank 2, confidence 0.7)."
+  ],
+  "recorded_at": "2026-08-03T13:39:47Z"
+}
