@@ -36,7 +36,20 @@ def _trace(
                 "canvas": [1, 0, 3],
                 "unknown_positions": [1],
                 "commits": [{"t": 1, "id": 2, "lp": -0.5}],
-                "remasks": [{"positions": [1], "reason": "grammar_stream"}],
+                "remasks": [
+                    {
+                        "positions": [1],
+                        "reason": "grammar_stream",
+                        "conflict_slice": {
+                            "stage": "grammar",
+                            "failing_node_ids": [1],
+                            "dependency_frontier": [1, 2],
+                            "protected_node_ids": [0],
+                            "completeness_class": "SOUND_OVERAPPROX",
+                            "source_provenance": "test.stream_check",
+                        },
+                    }
+                ],
             }
         ],
     }
@@ -63,8 +76,17 @@ def test_failure_cone_and_repair_records() -> None:
     trace = _trace(tid="r1", prompt="hero", text="root = Card([])")
     cones = extract_failure_cone(trace)
     assert cones and cones[0]["cone_positions"]
+    assert cones[0]["authorized"] is True
+    assert 0 not in cones[0]["cone_positions"]
     records = repair_records_from_traces([trace])
     assert records and records[0].meta["source_family"] == "self_distilled_repair"
+
+
+def test_heuristic_cone_is_diagnostic_only() -> None:
+    trace = _trace(tid="r2", prompt="hero", text="root = Card([])")
+    trace["steps"][0]["remasks"][0].pop("conflict_slice")
+    assert extract_failure_cone(trace)[0]["authorized"] is False
+    assert repair_records_from_traces([trace]) == []
 
 
 def test_self_distill_sft_smoke(tmp_path: Path) -> None:

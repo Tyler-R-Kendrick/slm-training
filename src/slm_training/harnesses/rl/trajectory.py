@@ -69,8 +69,16 @@ def _group_traces(
 def trajectory_logprob(
     model: TwoTowerModel,
     trace: dict[str, Any],
+    *,
+    require_recorded_support: bool = True,
 ) -> torch.Tensor | None:
-    """Sum log π_θ(a_t | canvas_t) over recorded commits (same support when present)."""
+    """Score recorded commits on the rollout policy's exact legal support.
+
+    E64 is undefined when rollout and learner normalize over different action
+    sets.  Primary trajectory RL therefore fails closed when a commit omitted
+    ``allowed_id_set``; callers may disable the check only for diagnostic
+    replay of historical traces.
+    """
     prompt = str((trace.get("meta") or {}).get("prompt") or "")
     steps = list(trace.get("steps") or [])
     if not prompt or not steps:
@@ -100,6 +108,11 @@ def trajectory_logprob(
         # Mask illegal ids when support was recorded (diffusion top-p analogue).
         for commit in commits:
             allowed = commit.get("allowed_id_set")
+            if require_recorded_support and not allowed:
+                raise ValueError(
+                    "trajectory commit is missing allowed_id_set; recollect with "
+                    "--record-support"
+                )
             pos = int(commit["t"])
             tid = int(commit["id"])
             row = logits[0, pos].float()
@@ -107,7 +120,9 @@ def trajectory_logprob(
                 mask = torch.full_like(row, float("-inf"))
                 idxs = [int(x) for x in allowed if 0 <= int(x) < row.numel()]
                 if not idxs:
-                    continue
+                    raise ValueError("trajectory commit has an empty legal support")
+                if tid not in idxs:
+                    raise ValueError("trajectory action is outside its recorded support")
                 mask[idxs] = row[idxs]
                 row = mask
             lp = F.log_softmax(row, dim=-1)[tid]
@@ -123,6 +138,10 @@ def importance_weighted_loss(
     group: list[dict[str, Any]],
     *,
     clip_ratio: float = 0.2,
+    min_reward_std: float = 1e-3,
+    kl_beta: float = 0.0,
+    require_recorded_support: bool = True,
+    require_behavior_logprobs: bool = True,
 ) -> torch.Tensor | None:
     if len(group) < 2:
         return None
@@ -133,7 +152,7 @@ def importance_weighted_loss(
     advantages = [r - mean_r for r in rewards]
     var = sum(a * a for a in advantages) / len(advantages)
     std = math.sqrt(var)
-    if std < 1e-6 or mean_r <= 0:
+    if std < float(min_reward_std) or mean_r <= 0:
         return None
     advantages = [a / std for a in advantages]
 
@@ -141,26 +160,47 @@ def importance_weighted_loss(
     for trace, adv in zip(group, advantages):
         if abs(adv) < 1e-8:
             continue
-        new_lp = trajectory_logprob(model, trace)
+        new_lp = trajectory_logprob(
+            model,
+            trace,
+            require_recorded_support=require_recorded_support,
+        )
         if new_lp is None:
             continue
         # Rollout log-prob from recorded commit lps (behavior policy).
         old_lps: list[float] = []
+        commit_count = 0
         for step in trace.get("steps") or []:
             for commit in step.get("commits") or []:
+                commit_count += 1
                 if "lp" in commit:
                     old_lps.append(float(commit["lp"]))
+        if require_behavior_logprobs and len(old_lps) != commit_count:
+            raise ValueError(
+                "trajectory commit is missing rollout log-probability; recollect "
+                "with the trajectory recorder"
+            )
         if not old_lps:
-            # Fall back to on-policy PG without importance weights.
+            # Historical diagnostic replay only; primary E64 fails above.
             losses.append(-float(adv) * new_lp)
             continue
-        old_lp = sum(old_lps) / len(old_lps)
+        # ``trajectory_logprob`` is a sum over commits, so the immutable
+        # behavior-policy quantity must use the same reduction.  Averaging one
+        # side silently makes the importance ratio depend on trace length.
+        old_lp = sum(old_lps)
         ratio = torch.exp(new_lp - float(old_lp))
         clipped = torch.clamp(ratio, 1.0 - clip_ratio, 1.0 + clip_ratio)
         # PPO-style clipped surrogate on trajectory likelihoods.
         unclipped = ratio * float(adv)
         clipped_obj = clipped * float(adv)
-        losses.append(-torch.min(unclipped, clipped_obj))
+        loss = -torch.min(unclipped, clipped_obj)
+        if kl_beta > 0:
+            # A sampled behavior-policy KL anchor on the exact recorded
+            # support.  This is deliberately conservative: it penalizes
+            # movement away from the immutable rollout policy without
+            # pretending one sampled action is a full-distribution KL.
+            loss = loss + float(kl_beta) * (new_lp - float(old_lp)).square()
+        losses.append(loss)
     if not losses:
         return None
     return torch.stack(losses).mean()
@@ -246,7 +286,13 @@ def train_trajectory_rl(
             opt.zero_grad(set_to_none=True)
             with timed("traj_pg"):
                 loss = importance_weighted_loss(
-                    model, group, clip_ratio=cfg.clip_ratio
+                    model,
+                    group,
+                    clip_ratio=cfg.clip_ratio,
+                    min_reward_std=cfg.min_reward_std,
+                    kl_beta=cfg.kl_beta,
+                    require_recorded_support=True,
+                    require_behavior_logprobs=True,
                 )
             if loss is None:
                 continue
@@ -265,6 +311,10 @@ def train_trajectory_rl(
         "n_traces": len(traces),
         "n_groups": len(usable),
         "repair_routed_groups": repair_routed,
+        "require_recorded_support": True,
+        "require_behavior_logprobs": True,
+        "min_reward_std": cfg.min_reward_std,
+        "kl_beta": cfg.kl_beta,
         "history": history[-50:],
         "telemetry": tel.summary(),
     }

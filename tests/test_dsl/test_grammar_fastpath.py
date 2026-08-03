@@ -32,6 +32,53 @@ def _tok() -> OpenUITokenizer:
     )
 
 
+def test_gate_calibration_selects_highest_safe_coverage() -> None:
+    from slm_training.dsl.grammar.fastpath.trust_train import gate_calibration_report
+
+    report = gate_calibration_report(
+        [0.95, 0.9, 0.7, 0.2],
+        [1.0, 1.0, 0.0, 0.0],
+        max_selective_risk=0.0,
+    )
+    assert 0.0 <= report["brier"] <= 1.0
+    assert 0.0 <= report["ece"] <= 1.0
+    assert report["operating_point"]["coverage"] == 0.5
+    assert report["operating_point"]["threshold"] == 0.9
+
+
+def test_gate_calibration_abstains_when_no_safe_threshold() -> None:
+    from slm_training.dsl.grammar.fastpath.trust_train import gate_calibration_report
+
+    report = gate_calibration_report([0.9], [0.0], max_selective_risk=0.0)
+    assert report["operating_point"] is None
+    assert report["abstain_required"] is True
+    assert gate_calibration_report([0.9], [1.0], bins=0)["ece"] < 0.11
+
+
+def test_gate_mining_scores_only_model_filled_positions() -> None:
+    from slm_training.dsl.grammar.fastpath.trust_train import mine_gate_batch
+
+    records = [
+        ExampleRecord(id="short", prompt="CTA", openui='root = Button(":slot_0")'),
+        ExampleRecord(
+            id="long",
+            prompt="Card",
+            openui='root = Card([TextContent(":slot_0")])',
+        ),
+    ]
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32, n_heads=4, context_layers=1, denoiser_layers=1, seed=0
+        ),
+        device="cpu",
+    )
+    hidden, labels, scored = mine_gate_batch(model, records, mask_rate=1.0)
+    assert hidden.shape[:2] == labels.shape == scored.shape
+    expected = sum(len(model.tokenizer.encode(record.openui)) - 1 for record in records)
+    assert int(scored.sum()) == expected
+
+
 def test_engine_force_equal_after_name() -> None:
     eng = OpenUIIncrementalEngine()
     assert eng.set_prefix("root")

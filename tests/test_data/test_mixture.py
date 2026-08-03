@@ -13,6 +13,7 @@ from slm_training.data.mixture import (
     build_exposure_ledger,
     corpus_diagnostics,
     default_base_weights,
+    feedback_adjusted_mixture,
     fit_weight_regression,
     load_mixture_manifest,
     local_probe_candidates,
@@ -47,6 +48,25 @@ def test_mixture_normalize_and_hash(tmp_path: Path) -> None:
     path = write_mixture_manifest(tmp_path / "m1.json", m)
     loaded = load_mixture_manifest(path)
     assert mixture_hash(loaded) == mixture_hash(m)
+
+
+def test_feedback_adjusted_mixture_uses_learning_not_raw_difficulty() -> None:
+    base = MixtureManifest(
+        mixture_id="base",
+        weights={"learning": 0.5, "flat": 0.3, "memorized": 0.2},
+    )
+    adjusted, audit = feedback_adjusted_mixture(
+        base,
+        {
+            "learning": [2.0, 1.4],
+            "flat": [2.0, 1.995],
+            "memorized": [0.03, 0.02],
+        },
+    )
+    assert adjusted.weights["learning"] > base.normalized().weights["learning"]
+    assert adjusted.weights["flat"] < base.normalized().weights["flat"]
+    assert audit["signals"]["learning"]["disposition"] == "upweight_learning"
+    assert audit["signals"]["flat"]["disposition"] == "downweight_high_flat"
 
 
 def test_sample_mixture_batch_respects_weights() -> None:

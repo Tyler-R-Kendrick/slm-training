@@ -291,7 +291,7 @@
       ]
     },
     "data.corpus_certification": {
-      "version": "v1",
+      "version": "v2",
       "kind": "data_builder",
       "paths": [
         "src/slm_training/data/verify/",
@@ -300,9 +300,16 @@
         "tests/test_scripts/test_audit_data_corpora.py",
         "src/slm_training/resources/data/train/openui_verified_v1/",
         "docs/design/corpus-certification.md",
-        "docs/design/iter-slm289-corpus-certification-20260725.json"
+        "docs/design/iter-slm289-corpus-certification-20260725.json",
+        "src/slm_training/dsl/grammar/backends/openui_hybrid.py",
+        "tests/test_dsl/test_grammar_backends.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-03",
+          "note": "Quarantine G2 corpus rows when the independent lang-core and Lark authorities disagree on acceptance or structural AST identity."
+        },
         {
           "version": "v1",
           "date": "2026-07-25",
@@ -2188,12 +2195,17 @@
       ]
     },
     "evals.scoring": {
-      "version": "v22",
+      "version": "v23",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/"
       ],
       "history": [
+        {
+          "version": "v23",
+          "date": "2026-08-03",
+          "note": "Add unseen schema-family, binder-rename, declaration-reorder, and alternate-grammar transfer evidence to deterministic generalization reports."
+        },
         {
           "version": "v22",
           "date": "2026-07-23",
@@ -2383,6 +2395,11 @@
         "docs/design/openfeature-experiments.md"
       ],
       "history": [
+        {
+          "version": "v12",
+          "date": "2026-08-03",
+          "note": "no-bump: promotion endpoint assertions call the pure route function directly to avoid the documented TestClient portal deadlock; request and response behavior are unchanged"
+        },
         {
           "version": "v12",
           "date": "2026-07-31",
@@ -3917,7 +3934,7 @@
       ]
     },
     "harness.distill": {
-      "version": "v9",
+      "version": "v10",
       "kind": "harness",
       "paths": [
         "docs/design/ap020-on-policy-abstract-self-distillation.md",
@@ -3945,15 +3962,23 @@
         "src/slm_training/harnesses/distill/prompted_teacher.py",
         "src/slm_training/harnesses/distill/self_distill_collect.py",
         "src/slm_training/harnesses/distill/semantic_repair.py",
+        "src/slm_training/harnesses/distill/repair.py",
+        "src/slm_training/harnesses/distill/sft.py",
         "tests/test_harnesses/distill/test_legal_set_kl.py",
         "tests/test_harnesses/distill/test_operator_decision_state.py",
         "tests/test_harnesses/distill/test_operator_teacher_ceiling.py",
         "tests/test_harnesses/distill/test_operator_verifier_kd_defer.py",
         "tests/test_harnesses/distill/test_prompted_teacher.py",
         "tests/test_harnesses/distill/test_self_distill_collect.py",
-        "tests/test_harnesses/distill/test_semantic_repair.py"
+        "tests/test_harnesses/distill/test_semantic_repair.py",
+        "tests/test_harnesses/distill/test_select_sft.py"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-08-03",
+          "note": "Admit only exact or sound verifier conflict slices to repair SFT and supervise their localized cone while freezing certified spans."
+        },
         {
           "version": "v9",
           "date": "2026-07-26",
@@ -4098,7 +4123,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v146",
+      "version": "v147",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
@@ -4107,9 +4132,16 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py",
         "scripts/resume_climb.py",
         "scripts/run_scaling_ladder.py",
-        "tests/test_harnesses/experiments/test_locked_manifest_digest_threading.py"
+        "tests/test_harnesses/experiments/test_locked_manifest_digest_threading.py",
+        "src/slm_training/harnesses/rl/trajectory.py",
+        "tests/test_harnesses/rl/test_trajectory.py"
       ],
       "history": [
+        {
+          "version": "v147",
+          "date": "2026-08-03",
+          "note": "Make trajectory RL fail closed on missing rollout support or behavior log-probabilities and activate configured reward-variance and sampled KL anchors."
+        },
         {
           "version": "v146",
           "date": "2026-08-03",
@@ -7176,6 +7208,11 @@
         {
           "version": "v1",
           "date": "2026-08-03",
+          "note": "no-bump: reconcile the shared E60-E65 status table after their canonical substrates landed; SLM-197 behavior is unchanged."
+        },
+        {
+          "version": "v1",
+          "date": "2026-08-03",
           "note": "no-bump: append c1839 null evidence and its successor objective to the shared quality matrix without changing the SLM-197 scorer or experiment."
         },
         {
@@ -7780,6 +7817,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: reconcile verifier-guided research-lineage status after E63-E65 wiring; SLM-228 behavior is unchanged."
+        },
         {
           "version": "v3",
           "date": "2026-08-03",
@@ -10315,7 +10357,7 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v41",
+      "version": "v42",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
@@ -10323,6 +10365,11 @@
         "src/slm_training/harnesses/quality/__init__.py"
       ],
       "history": [
+        {
+          "version": "v42",
+          "date": "2026-08-03",
+          "note": "Persist per-family denoising-NLL learning curves so the next-run mixture scheduler can distinguish learning from high-flat noise."
+        },
         {
           "version": "v41",
           "date": "2026-08-03",
@@ -11018,7 +11065,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v24",
+      "version": "v25",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -11026,6 +11073,7 @@
         "src/slm_training/data/language_contract/",
         "src/slm_training/dsl/renderability.py",
         "src/slm_training/data/mixture.py",
+        "scripts/run_mixture_search.py",
         "src/slm_training/dsl/packs/openui.py",
         "src/slm_training/resources/train_seeds.jsonl",
         "src/slm_training/resources/frontier/",
@@ -11033,6 +11081,11 @@
         "docs/design/dsh1-08-harness-qa-completion-20260725.json"
       ],
       "history": [
+        {
+          "version": "v25",
+          "date": "2026-08-03",
+          "note": "Add a bounded between-run mixture scheduler that upweights learning families and downweights near-certain or high-flat families without changing confirmatory runs in flight."
+        },
         {
           "version": "v24",
           "date": "2026-07-30",
@@ -11426,12 +11479,17 @@
       ]
     },
     "matrix.quality": {
-      "version": "v9",
+      "version": "v10",
       "kind": "matrix",
       "paths": [
         "scripts/run_quality_matrix.py"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-08-03",
+          "note": "Calibrate trained trust gates on the disjoint held-out slice and persist Brier, ECE, selective-risk, coverage, and the safe remask threshold."
+        },
         {
           "version": "v9",
           "date": "2026-08-02",
@@ -12207,7 +12265,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v307",
+      "version": "v308",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -12247,9 +12305,16 @@
         "tests/test_dsl/test_speculative_rank.py",
         "tests/test_runtime/test_decode_schedule.py",
         "src/slm_training/resources/decode/speculative_ngram_v1.json",
-        "docs/design/role-factorized-abstract-plans.md"
+        "docs/design/role-factorized-abstract-plans.md",
+        "src/slm_training/dsl/grammar/fastpath/trust_train.py",
+        "tests/test_dsl/test_grammar_fastpath.py"
       ],
       "history": [
+        {
+          "version": "v308",
+          "date": "2026-08-03",
+          "note": "Emit sound-overapprox grammar conflict slices from MaskGIT stream failures and add calibrated selective remask operating points without weakening grammar authority."
+        },
         {
           "version": "v307",
           "date": "2026-08-03",

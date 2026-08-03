@@ -31,9 +31,6 @@ from __future__ import annotations
 import hashlib
 from typing import Any
 
-import pytest
-from fastapi.testclient import TestClient
-
 from slm_training.autoresearch.experiment_campaign import (
     campaign_manifest_sha256,
     ExperimentCampaignV1,
@@ -42,7 +39,6 @@ from slm_training.data.locked_eval_manifest import (
     canonical_manifest_path,
     load_locked_manifest_payload,
 )
-from slm_training.web.app import create_app
 from slm_training.web.routes import PromotionEvalRequest, promotion_evaluate
 
 _REAL_DIGEST = load_locked_manifest_payload(canonical_manifest_path())["manifest_sha256"]
@@ -155,69 +151,53 @@ def _manifest_and_matching_result(
     return manifest_json, result
 
 
-@pytest.fixture
-def ro_client() -> TestClient:
-    with TestClient(create_app(execution=False)) as client:
-        yield client
-
-
-def test_verify_flag_defaults_to_false_and_omits_disk_check(
-    ro_client: TestClient,
-) -> None:
+def test_verify_flag_defaults_to_false_and_omits_disk_check() -> None:
     """Self-consistent-but-fake digest passes when the flag is omitted."""
     manifest, result = _manifest_and_matching_result(
         locked_eval_manifest_sha256=_WRONG_DIGEST
     )
 
-    response = ro_client.post(
-        "/api/promotion/evaluate",
-        json={"campaign_manifest": manifest, "campaign_result": result},
+    response = promotion_evaluate(
+        PromotionEvalRequest(campaign_manifest=manifest, campaign_result=result)
     )
 
-    assert response.status_code == 200
-    failures = response.json()["checks"]["campaign_governance"]["failures"]
+    failures = response["checks"]["campaign_governance"]["failures"]
     assert "locked_eval_manifest_digest_unverified_on_disk" not in failures
 
 
-def test_verify_flag_true_rejects_digest_not_on_disk(ro_client: TestClient) -> None:
+def test_verify_flag_true_rejects_digest_not_on_disk() -> None:
     """Same self-consistent-but-fake digest fails closed once opted in."""
     manifest, result = _manifest_and_matching_result(
         locked_eval_manifest_sha256=_WRONG_DIGEST
     )
 
-    response = ro_client.post(
-        "/api/promotion/evaluate",
-        json={
-            "campaign_manifest": manifest,
-            "campaign_result": result,
-            "verify_locked_manifest_digest": True,
-        },
+    body = promotion_evaluate(
+        PromotionEvalRequest(
+            campaign_manifest=manifest,
+            campaign_result=result,
+            verify_locked_manifest_digest=True,
+        )
     )
-
-    assert response.status_code == 200
-    body = response.json()
     failures = body["checks"]["campaign_governance"]["failures"]
     assert "locked_eval_manifest_digest_unverified_on_disk" in failures
     assert body["promotable"] is False
 
 
-def test_verify_flag_true_accepts_real_committed_digest(ro_client: TestClient) -> None:
+def test_verify_flag_true_accepts_real_committed_digest() -> None:
     """The real, untampered committed manifest digest passes the disk check."""
     manifest, result = _manifest_and_matching_result(
         locked_eval_manifest_sha256=_REAL_DIGEST
     )
 
-    response = ro_client.post(
-        "/api/promotion/evaluate",
-        json={
-            "campaign_manifest": manifest,
-            "campaign_result": result,
-            "verify_locked_manifest_digest": True,
-        },
+    response = promotion_evaluate(
+        PromotionEvalRequest(
+            campaign_manifest=manifest,
+            campaign_result=result,
+            verify_locked_manifest_digest=True,
+        )
     )
 
-    assert response.status_code == 200
-    failures = response.json()["checks"]["campaign_governance"]["failures"]
+    failures = response["checks"]["campaign_governance"]["failures"]
     assert "locked_eval_manifest_digest_unverified_on_disk" not in failures
     assert "locked_eval_manifest_sha256_mismatch" not in failures
     assert "locked_eval_manifest_sha256_missing" not in failures

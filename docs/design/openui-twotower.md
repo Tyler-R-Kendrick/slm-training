@@ -152,7 +152,7 @@ Leakage checks use exact + **structural** OpenUI fingerprints (placeholder/binde
 12. V4 critic remask / trust gate / honest inventory (E30–E36; E34 deferred) — [research-correction-critics.md](research-correction-critics.md) (**done**; E35/E36 fixture ship)
 13. V5 DSL-native / lexer tokenizer (E40–E46) — [dsl-native-tokenizer.md](dsl-native-tokenizer.md) (**done**)
 14. V6 CoRe remask / T2M / slot-aware trust / honest champion (E50–E55) — [quality-experiment-matrix.md](quality-experiment-matrix.md) (**done**; E53/E55 fixture ship)
-15. Remaining verifier-guided repair gaps (proposed E60–E65: differential validation, failure-cone remask, minimal hard negatives, calibration, trajectory-aligned RL, schema generalization) — [verifier-guided-repair.md](verifier-guided-repair.md) (**proposed**; docs only)
+15. Verifier-guided repair substrates (E60–E65: differential validation, failure-cone remask, minimal hard negatives, calibration, trajectory-aligned RL, schema generalization) — [verifier-guided-repair.md](verifier-guided-repair.md) (**wired; matched model-quality results pending**)
 
 ### Eval-driven ship gates (honest policy)
 

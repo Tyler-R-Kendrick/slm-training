@@ -2184,6 +2184,7 @@ def _maybe_trust_gate(exp: Experiment, ckpt: Path, args: argparse.Namespace) -> 
         device=args.device,
         limit=int(getattr(args, "pref_limit", 40) or 40),
         slot_aware=bool(getattr(exp, "slot_aware_trust_gate", False)),
+        calibration_records=exp.test_dir / "suites" / "held_out" / "records.jsonl",
     )
     gate_ckpt = Path(summary.get("checkpoint") or (out_dir / "checkpoints" / "last.pt"))
     if gate_ckpt.is_file():
