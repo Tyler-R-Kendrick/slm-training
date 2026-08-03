@@ -253,6 +253,21 @@ def _arm_wall_minutes(policy_minutes: float, *, formal_required: bool) -> float:
     return min(float(policy_minutes), symmetric_minutes)
 
 
+def _formal_lane_required(
+    *, cycle_intent: str, replay: dict[str, Any] | None
+) -> bool:
+    """Reserve formal time only for work whose locked plan requires it."""
+
+    if cycle_intent == "promote":
+        return True
+    if replay is None:
+        return False
+    return any(
+        bool(replay[arm]["manifest"].formal_obligations)
+        for arm in ("control", "candidate")
+    )
+
+
 def _require_symmetric_arm_budget(
     *, deadline: float, arm_count: int, arm_wall_minutes: float
 ) -> None:
@@ -6845,7 +6860,10 @@ def run_cycle(
         )
     arm_wall_minutes = _arm_wall_minutes(
         stage_wall_minutes_for_role(policy, role),
-        formal_required=role == "promotion",
+        formal_required=_formal_lane_required(
+            cycle_intent=cycle_intent,
+            replay=replay,
+        ),
     )
     claim_for_role = (
         str(policy.defaults.get("claim_class_promotion") or "promotion_candidate")

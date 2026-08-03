@@ -2656,7 +2656,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v119",
+      "version": "v120",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2696,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v120",
+          "date": "2026-08-02",
+          "note": "Reserve a third formal lane from actual promote intent or frozen manifest obligations, allowing confirmation during promotion cadence to retain the full symmetric two-arm budget."
+        },
         {
           "version": "v119",
           "date": "2026-08-03",
@@ -9307,6 +9312,11 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v78",
+          "date": "2026-08-02",
+          "note": "no-bump: clarify that the scaled timeout is a whole decode-chunk budget; evaluation behavior is unchanged."
+        },
         {
           "version": "v78",
           "date": "2026-08-02",

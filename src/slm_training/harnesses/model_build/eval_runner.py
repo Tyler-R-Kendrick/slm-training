@@ -889,7 +889,7 @@ def _effective_record_decode_timeout(
     chunk_record_n: int,
     now: float | None = None,
 ) -> float:
-    """Allocate a fair, bounded per-record share for one decode chunk."""
+    """Allocate a fair, bounded wall-time budget for one decode chunk."""
 
     requested_chunk_seconds = requested_seconds * max(1, int(chunk_record_n))
     if evaluation_deadline is None:

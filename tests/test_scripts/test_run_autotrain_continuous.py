@@ -4067,6 +4067,27 @@ def test_arm_wall_budget_accounts_for_formal_stage_and_reserves_orchestration() 
     assert reserved == pytest.approx(MAX_HARNESS_WALL_SECONDS)
 
 
+def test_confirmation_during_promotion_cadence_uses_two_arm_budget() -> None:
+    formal_required = _mod._formal_lane_required(cycle_intent="confirm", replay=None)
+
+    assert formal_required is False
+    assert _mod._arm_wall_minutes(3, formal_required=formal_required) > (
+        _mod._arm_wall_minutes(3, formal_required=True)
+    )
+
+
+def test_frozen_formal_replay_retains_formal_lane() -> None:
+    replay = {
+        "control": {"manifest": SimpleNamespace(formal_obligations=())},
+        "candidate": {"manifest": SimpleNamespace(formal_obligations=(object(),))},
+    }
+
+    assert _mod._formal_lane_required(
+        cycle_intent="retry_measurement", replay=replay
+    )
+    assert _mod._formal_lane_required(cycle_intent="promote", replay=None)
+
+
 def test_empty_promotion_slot_falls_back_but_frozen_replay_does_not() -> None:
     args = {
         "cadence_role": "promotion",
