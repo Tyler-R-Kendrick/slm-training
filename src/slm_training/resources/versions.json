@@ -2656,7 +2656,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v117",
+      "version": "v118",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2696,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v118",
+          "date": "2026-08-02",
+          "note": "Add a zero-parameter dense compiler-decision token reconstruction arm after c1817 and c1819 showed that component-edge objectives cover only two or three final-step rows."
+        },
         {
           "version": "v117",
           "date": "2026-08-02",
@@ -9740,7 +9745,7 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v37",
+      "version": "v38",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
@@ -9748,6 +9753,11 @@
         "src/slm_training/harnesses/quality/__init__.py"
       ],
       "history": [
+        {
+          "version": "v38",
+          "date": "2026-08-02",
+          "note": "Persist the dense compiler-decision token objective weight and decision-position loss attribution in training evidence."
+        },
         {
           "version": "v37",
           "date": "2026-08-03",
@@ -11587,7 +11597,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v303",
+      "version": "v304",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -11630,6 +11640,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v304",
+          "date": "2026-08-02",
+          "note": "Add zero-parameter reconstruction weighting and typed CE attribution at every gold compiler decision position."
+        },
         {
           "version": "v303",
           "date": "2026-08-02",

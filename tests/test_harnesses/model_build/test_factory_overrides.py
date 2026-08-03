@@ -121,6 +121,19 @@ def test_component_token_weight_overrides_resumed_checkpoint() -> None:
     assert model.config.component_token_loss_weight == 1.0
 
 
+def test_compiler_decision_token_weight_overrides_resumed_checkpoint() -> None:
+    model = SimpleNamespace(
+        config=SimpleNamespace(compiler_decision_token_loss_weight=0.0)
+    )
+    config = ModelBuildConfig(
+        train_dir=Path("."), compiler_decision_token_loss_weight=1.0
+    )
+
+    apply_runtime_overrides(model, config)
+
+    assert model.config.compiler_decision_token_loss_weight == 1.0
+
+
 def test_structure_token_weight_overrides_resumed_checkpoint() -> None:
     model = SimpleNamespace(config=SimpleNamespace(structure_token_loss_weight=0.0))
     config = ModelBuildConfig(train_dir=Path("."), structure_token_loss_weight=1.0)

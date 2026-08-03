@@ -505,6 +505,49 @@ def test_component_edge_token_weight_changes_loss_and_emits_attribution() -> Non
     assert weighted_loss > base_loss
 
 
+def test_compiler_decision_token_weight_is_dense_and_zero_parameter() -> None:
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+    base = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            seed=7,
+            compiler_decision_token_loss_weight=0.0,
+        ),
+        device="cpu",
+    )
+    weighted = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            seed=7,
+            compiler_decision_token_loss_weight=1.0,
+        ),
+        device="cpu",
+    )
+
+    base_loss = base.training_loss(records)
+    weighted_loss = weighted.training_loss(records)
+
+    assert sum(p.numel() for p in base.parameters()) == sum(
+        p.numel() for p in weighted.parameters()
+    )
+    metrics = weighted.last_training_metrics
+    assert metrics["token_loss_compiler_decision_count"] > 0
+    assert metrics["token_loss_compiler_decision_mean_ce"] is not None
+    assert (
+        metrics["token_loss_compiler_decision_count"]
+        > metrics["token_loss_component_edge_count"]
+    )
+    assert weighted_loss > base_loss
+
+
 def test_structure_token_weight_changes_loss_and_emits_attribution() -> None:
     records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
     base = TwoTowerModel.from_records(

@@ -2167,6 +2167,20 @@ def test_compile_commands_routes_component_edge_token_training_lever() -> None:
     assert train[train.index("--component-edge-token-loss-weight") + 1] == "1.0"
 
 
+def test_compile_commands_routes_compiler_decision_token_training_lever() -> None:
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            train_version="wf_smoke_v2",
+            steps=20,
+            compiler_decision_token_loss_weight=1.0,
+        )
+    )
+
+    commands = compile_commands(campaign(), spec)
+    train = next(command for command in commands if "scripts.train_model" in command)
+    assert train[train.index("--compiler-decision-token-loss-weight") + 1] == "1.0"
+
+
 def test_compile_commands_routes_typed_structure_token_training_lever() -> None:
     spec = experiment(
         knobs=ExperimentKnobs(

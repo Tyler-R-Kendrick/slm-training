@@ -370,6 +370,9 @@ class TwoTowerConfig:
     # Extra reconstruction weight only where the deterministic compiler marks a
     # non-root component edge. Zero-parameter and train-only.
     component_edge_token_loss_weight: float = 0.0
+    # Extra reconstruction weight at every deterministic compiler decision.
+    # Zero-parameter and train-only; it never changes the legal decode domain.
+    compiler_decision_token_loss_weight: float = 0.0
     # Extra reconstruction weight on grammar STRUCT tokens. Zero-parameter;
     # this is distinct from component identity and never changes legality.
     structure_token_loss_weight: float = 0.0
@@ -3359,8 +3362,15 @@ class TwoTowerModel(nn.Module):
                 getattr(self.config, "component_edge_token_loss_weight", 0.0)
                 or 0.0
             )
+            decision_token_w = float(
+                getattr(self.config, "compiler_decision_token_loss_weight", 0.0)
+                or 0.0
+            )
             edge_token_positions = torch.zeros_like(target_ids, dtype=torch.bool)
-            if edge_token_w > 0.0:
+            decision_token_positions = torch.zeros_like(
+                target_ids, dtype=torch.bool
+            )
+            if edge_token_w > 0.0 or decision_token_w > 0.0:
                 from slm_training.dsl.grammar.fastpath.compiler_draft import (
                     gold_compiler_decisions,
                 )
@@ -3380,10 +3390,17 @@ class TwoTowerModel(nn.Module):
                         )
                         self._compiler_decision_cache[cache_key] = decisions
                     for decision in decisions:
+                        decision_token_positions[row, int(decision.position)] = True
                         if decision.kind == "component_bound":
                             edge_token_positions[row, int(decision.position)] = True
+            if edge_token_w > 0.0:
                 weights = weights + (
                     edge_token_w * edge_token_positions.reshape(-1).float()
+                )
+            if decision_token_w > 0.0:
+                weights = weights + (
+                    decision_token_w
+                    * decision_token_positions.reshape(-1).float()
                 )
             structure_w = float(
                 getattr(self.config, "structure_token_loss_weight", 0.0) or 0.0
@@ -3433,12 +3450,14 @@ class TwoTowerModel(nn.Module):
                 mask_flat = mask_flat & token_rows.repeat_interleave(target_ids.size(1))
             component_flat = component_positions.reshape(-1) & mask_flat
             edge_token_flat = edge_token_positions.reshape(-1) & mask_flat
+            decision_token_flat = decision_token_positions.reshape(-1) & mask_flat
             structure_flat = structure_positions.reshape(-1) & mask_flat
             prefix_flat = prefix_positions.reshape(-1) & mask_flat
             other_flat = mask_flat & ~component_positions.reshape(-1)
             for family, selected in (
                 ("component", component_flat),
                 ("component_edge", edge_token_flat),
+                ("compiler_decision", decision_token_flat),
                 ("structure", structure_flat),
                 ("prefix", prefix_flat),
                 ("non_component", other_flat),

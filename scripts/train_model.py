@@ -576,6 +576,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Extra reconstruction weight at compiler-derived component edges.",
     )
     parser.add_argument(
+        "--compiler-decision-token-loss-weight",
+        type=float,
+        default=0.0,
+        help="Extra reconstruction weight at every compiler-derived decision.",
+    )
+    parser.add_argument(
         "--structure-token-loss-weight",
         type=float,
         default=0.0,
@@ -1576,6 +1582,9 @@ def main(argv: list[str] | None = None) -> int:
         ltr_prefix_loss_weight=args.ltr_prefix_loss_weight,
         component_token_loss_weight=args.component_token_loss_weight,
         component_edge_token_loss_weight=args.component_edge_token_loss_weight,
+        compiler_decision_token_loss_weight=(
+            args.compiler_decision_token_loss_weight
+        ),
         structure_token_loss_weight=args.structure_token_loss_weight,
         typed_family_balance_loss_weight=args.typed_family_balance_loss_weight,
         ltr_tail_loss_weight=args.ltr_tail_loss_weight,

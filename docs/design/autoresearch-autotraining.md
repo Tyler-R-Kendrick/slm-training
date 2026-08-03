@@ -188,6 +188,13 @@ and regressing both structural similarity and protected binder F1. Campaign
 harness v117 forbids that ratio from overriding a regressed MPR, the role-owned
 quality primary, or any required non-regression metric. Such cycles remain
 useful runtime evidence but cannot enter the champion queue.
+After v117 correctly exhausted c1819, c1820 stopped before experiment formation
+because the quality-arm bank had no distinct successor. Campaign harness v118
+opens `compiler-decision-token`: ordinary reconstruction CE is reweighted at
+every gold position where the deterministic compiler exposes a legal branch.
+This directly tests the observed coverage hypothesis—two or three component-edge
+rows may be too sparse—without adding parameters, decoder scores, or legal
+authority. Typed decision counts and mean CE make achieved density measurable.
 
 The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
 confirmed a champion, c1812 was the next protected promotion slot, and the

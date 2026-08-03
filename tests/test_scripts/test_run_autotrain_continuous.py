@@ -637,6 +637,9 @@ def test_select_recommended_slug_rotates_and_skips() -> None:
     assert _mod._select_recommended_slug(
         1818, skip=all_slugs - {"component-edge-margin"}
     ) == "component-edge-margin"
+    assert _mod._select_recommended_slug(
+        1821, skip=all_slugs - {"compiler-decision-token"}
+    ) == "compiler-decision-token"
 
 
 def test_select_recommended_slug_prioritizes_successor_quality_after_legacy_nulls() -> (
@@ -1307,6 +1310,33 @@ def test_component_edge_margin_arm_is_size_matched_and_replayable() -> None:
     assert candidate["compiler_alignment_margin"] == 1.0
     assert candidate["compiler_alignment_kind_filter"] == "component-edge"
     assert _mod._arm_slug_from_knobs(candidate) == "component-edge-margin"
+
+
+def test_compiler_decision_token_arm_is_dense_and_size_matched() -> None:
+    campaign_id = "continuous-loop-20260803-c1821"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1821,
+        role="screening",
+        recommended_slug="compiler-decision-token",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-compiler-decision-token"]
+    assert control["compiler_decision_token_loss_weight"] == 0.0
+    assert candidate["compiler_decision_token_loss_weight"] == 1.0
+    assert _mod._arm_slug_from_knobs(candidate) == "compiler-decision-token"
+    assert "compiler_decision_token_loss_weight" in _mod._LEVER_KNOB_KEYS
 
 
 def test_typed_family_balance_arm_is_size_matched_and_replayable() -> None:
