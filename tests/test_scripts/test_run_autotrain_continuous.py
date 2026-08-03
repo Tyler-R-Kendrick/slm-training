@@ -1314,6 +1314,30 @@ def test_balanced_container_close_arm_combines_quality_and_close_objectives() ->
     assert _mod._arm_slug_from_knobs(candidate) == "balanced-container-close"
 
 
+def test_confirmed_champion_reconfirms_when_bank_exhausted_before_promotion() -> None:
+    exhausted = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
+    champion = {"status": "confirmed", "entry_id": "champ-1"}
+
+    assert _mod._repeat_confirm_while_waiting_for_promotion(
+        cadence_role="screening",
+        confirmed_champion=champion,
+        cycle=1811,
+        skip=exhausted,
+    )
+    assert not _mod._repeat_confirm_while_waiting_for_promotion(
+        cadence_role="promotion",
+        confirmed_champion=champion,
+        cycle=1812,
+        skip=exhausted,
+    )
+    assert not _mod._repeat_confirm_while_waiting_for_promotion(
+        cadence_role="screening",
+        confirmed_champion=champion,
+        cycle=1811,
+        skip=exhausted - {"balanced-container-close"},
+    )
+
+
 def test_completed_frozen_retry_steers_to_distinct_quality_arm() -> None:
     matrix = _mod._matrix(
         campaign_id="continuous-loop-20260731-c10",

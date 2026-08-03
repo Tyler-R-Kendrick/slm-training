@@ -2646,7 +2646,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v108",
+      "version": "v109",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2686,6 +2686,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v109",
+          "date": "2026-08-03",
+          "note": "When a confirmed champion awaits its protected promotion cadence and the screening bank is exhausted, run a second fresh-seed confirmation instead of failing or exposing held-out suites early."
+        },
         {
           "version": "v108",
           "date": "2026-08-03",
