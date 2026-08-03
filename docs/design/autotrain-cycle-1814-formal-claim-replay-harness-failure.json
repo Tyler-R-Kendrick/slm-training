@@ -1,0 +1,67 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1814",
+  "cycle_index": 1814,
+  "decision": "harness_failure_retry_exact_frozen_pair",
+  "evidence_class": "fixture_promotion_replay",
+  "formal_status": "proved",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "5c4c6f31e55482c8831cc5599cdbbf7ccbb52dc1",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v77",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v300"
+    },
+    "stamped_at": "2026-08-03T01:30:40.427502+00:00"
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "steps": 20,
+    "sync_checkpoints": false,
+    "checkpoint_mode": "reuse_c1812_frozen_pair",
+    "suites": ["smoke", "held_out"],
+    "suite_n": {"smoke": 3, "held_out": 5},
+    "honesty_mode": "fixture_promotion_replay"
+  },
+  "formal_preflight": {
+    "template_id": "metrics.structural_similarity_monotone",
+    "duration_seconds": 1.392755,
+    "sha256": "d811136806e82f619be926e6c75a8bbdccc010de407a1d8abdd7cdb83b247bbe"
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1814-control",
+      "source_checkpoint_sha256": "c91414a1de04856080ecdfe59207979ebdd69246d8aa83c80b18a390f42e4aae",
+      "current_scoreboard": true,
+      "suites": {
+        "smoke": {"n": 3, "completed_document_n": 0, "decode_timeout_count": 3},
+        "held_out": {"n": 5, "completed_document_n": 0, "decode_timeout_count": 5}
+      }
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1814-promote",
+      "source_checkpoint_sha256": "7b1d0a90167f06525372f083fb471e5164fd64c4946013996ce3031e7292cb4d",
+      "current_scoreboard": false,
+      "failure": "campaign formal obligations did not exactly match experiment formal claims"
+    }
+  ],
+  "harness_repairs": [
+    "copy frozen formal claims with the replayed experiment",
+    "require usable current candidate metrics before classifying runtime unblock",
+    "rewrite stale derived handoff to inconclusive when current candidate metrics are absent"
+  ],
+  "next_hypothesis": {
+    "kind": "exact_frozen_measurement_replay",
+    "authority": "observed_harness_failure",
+    "confidence": 0.99,
+    "statement": "Preserving frozen formal claims will let the current candidate evaluate; only then can the repeated control timeout support a terminal comparison disposition."
+  }
+}

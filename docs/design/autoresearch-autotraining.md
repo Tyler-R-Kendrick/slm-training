@@ -153,6 +153,11 @@ screening retries resolve registered arm suffixes, but promotion candidates use
 the canonical `-promote` identity. Campaign harness v111 maps that identity onto the
 matrix's authorized candidate slot before restoring the exact frozen experiment;
 unknown non-promotion suffixes still fail closed.
+Campaign harness v112 also copies the frozen experiment's formal claims alongside
+its knobs and requires current-campaign candidate metrics before declaring a
+control-only timeout replay terminal. A derived handoff produced by the earlier
+bug is deterministically refreshed to `inconclusive` with the frozen retry still
+queued; source-campaign candidate metrics cannot satisfy the current replay.
 
 The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
 confirmed a champion, c1812 was the next protected promotion slot, and the

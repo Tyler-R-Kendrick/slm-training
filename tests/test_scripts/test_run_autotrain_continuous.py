@@ -4555,6 +4555,7 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor(
     promote_experiment["hypothesis"] = (
         "Promotion retest of confirmed champion levers under held-out suites."
     )
+    promote_experiment["formal_claims"] = [_mod.promote_formal_claim_dict()]
     promote_experiment["knobs"].update(
         typed_family_balance_loss_weight=0.25,
         compiler_alignment_loss_weight=1.0,
@@ -4605,6 +4606,7 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor(
         == promotion_matrix["recommended_experiment_id"]
     )
     assert promoted["knobs"] == promote_experiment["knobs"]
+    assert promoted["formal_claims"] == promote_experiment["formal_claims"]
 
 
 def test_frozen_replay_finds_completed_train_across_retry_lineage(
@@ -5321,6 +5323,36 @@ def test_control_only_model_timeout_replays_without_fake_harness_repair(
     assert any(action.kind == "retry_measurement" for action in handoff.actions)
     assert all(action.kind != "repair_harness" for action in handoff.actions)
     assert "tail-supervised candidate completed" in handoff.priorities[0].hypothesis
+
+    replay_handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="promotion",
+        cycle_intent="retry_measurement",
+        primary_metric="held_out.structural_similarity",
+        matrix=_priority_matrix(),
+        delivery={
+            "positive": False,
+            "control_id": "control",
+            "candidate_id": "literal-close",
+            "measurement_complete": False,
+            "reasons": ["measurement_incomplete:literal-close:missing_scoreboard"],
+        },
+        resolution=None,
+        formal_status="proved",
+    )
+    assert replay_handoff.climb_state == "inconclusive"
+    assert not any(
+        reason.startswith("candidate_runtime_unblock_reproduced:")
+        for reason in replay_handoff.reasons
+    )
+    assert any(
+        action.kind == "retry_measurement" for action in replay_handoff.actions
+    )
 
 
 def test_cycle_handoff_exhausts_identical_replays_into_harness_repair(

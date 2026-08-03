@@ -4360,7 +4360,9 @@ def _write_cycle_handoff(
         and not finalized_decode_timeout
     )
     control_runtime_reproduced = bool(
-        control_only_model_timeout and cycle_intent == "retry_measurement"
+        control_only_model_timeout
+        and cycle_intent == "retry_measurement"
+        and _run_has_usable_metrics(camp_dir, candidate_id)
     )
     frozen_replay_count = 0
     frozen_replay_limit = 0
@@ -4864,6 +4866,57 @@ def _write_cycle_handoff(
     return handoff
 
 
+def _refresh_incomplete_replay_handoff(
+    root: Path, loop_id: str, campaign_id: str | None
+) -> bool:
+    """Repair a derived terminal handoff when its current candidate never scored."""
+
+    if not campaign_id:
+        return False
+    camp_dir = root / campaign_id
+    handoff_path = camp_dir / "cycle_handoff.json"
+    if not handoff_path.is_file():
+        return False
+    handoff = AutotrainCycleHandoffV1.model_validate_json(
+        handoff_path.read_text(encoding="utf-8")
+    )
+    if handoff.loop_id != loop_id or handoff.cycle_intent != "retry_measurement":
+        return False
+    terminal = any(
+        reason.startswith("candidate_runtime_unblock_reproduced:")
+        for reason in handoff.reasons
+    )
+    delivery = _read_json(camp_dir / "sdlc_delivery.json")
+    candidate_id = str(delivery.get("candidate_id") or "")
+    if not terminal or _run_has_usable_metrics(camp_dir, candidate_id):
+        return False
+    campaign = CampaignSpec.model_validate_json(
+        (camp_dir / "campaign.json").read_text(encoding="utf-8")
+    )
+    matrix = _read_json(camp_dir / "matrix-proposal.json")
+    _write_cycle_handoff(
+        root=root,
+        loop_id=loop_id,
+        campaign_id=campaign_id,
+        cycle_index=campaign.cycle_index,
+        upstream_commit=str(campaign.upstream_commit),
+        integration_commit=str(campaign.integration_commit),
+        role=handoff.cycle_role,
+        cycle_intent=handoff.cycle_intent,
+        primary_metric=handoff.primary_metric,
+        matrix=matrix,
+        delivery=delivery,
+        resolution=None,
+        formal_status=_formal_preflight_status(camp_dir),
+    )
+    print(
+        "REPLAY_HANDOFF_REFRESH "
+        f"campaign={campaign_id} reason=current_candidate_missing_metrics",
+        flush=True,
+    )
+    return True
+
+
 def _latest_cycle(root: Path, loop_id: str) -> tuple[int, str | None]:
     campaigns = sorted(root.glob("*/campaign.json"))
     best_idx = 0
@@ -5286,8 +5339,9 @@ def _apply_frozen_replay(
             "falsification_criteria",
             "stop_conditions",
             "knobs",
+            "formal_claims",
         ):
-            target[key] = frozen[key]
+            target[key] = frozen.get(key, []) if key == "formal_claims" else frozen[key]
     matrix["recommended_experiment_id"] = new_ids["candidate"]
     matrix["selection_rationale"] = (
         "Current-main successor replay of the incomplete frozen measurement; "
@@ -6487,6 +6541,8 @@ def run_cycle(
 
     idx, pred = _latest_cycle(root, loop_id)
     lineage_pred = _campaign_at_cycle(root, loop_id, idx)
+    if require_action_receipts:
+        _refresh_incomplete_replay_handoff(root, loop_id, pred)
     if require_action_receipts:
         _require_predecessor_actions(root, loop_id, pred)
     replay = (
