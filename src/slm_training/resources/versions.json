@@ -2656,7 +2656,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v147",
+      "version": "v148",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2696,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v148",
+          "date": "2026-08-03",
+          "note": "Add a distinct slot-component-fidelity coupling successor after c1851 so the loop preregisters a new causal interaction instead of replaying the exhausted owner-only arm."
+        },
         {
           "version": "v147",
           "date": "2026-08-03",
@@ -7620,6 +7625,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1851 slot-component coverage checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
         {
           "version": "v3",
           "date": "2026-08-03",

@@ -656,6 +656,16 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         },
     ),
     (
+        "slot-component-fidelity-coupling",
+        "Coupling implemented slot-component ownership with stronger placeholder-fidelity supervision improves component_type_recall and placeholder_fidelity without lowering parse_rate or structural_similarity.",
+        {
+            "slot_component_loss_weight": 1.0,
+            "slot_component_decode_weight": 1.0,
+            "fidelity_loss_weight": 1.5,
+            "compiler_decode_mode": "tree",
+        },
+    ),
+    (
         "fidelity",
         "Stronger placeholder-fidelity supervision improves binder_reference_f1 and structural_similarity without lowering parse_rate.",
         {"fidelity_loss_weight": 1.5},
@@ -1399,6 +1409,8 @@ def _arm_slug_from_knobs(
         and knobs.get("compiler_alignment_semantic_exhaustive")
     ):
         return "exposure-targeted-semantic-exhaustive-compiler-decision-margin"
+    if knobs.get("slot_component_loss_weight") and float(knobs.get("fidelity_loss_weight") or 0.5) != 0.5:
+        return "slot-component-fidelity-coupling"
     if knobs.get("slot_component_loss_weight"):
         return "slot-component-coverage"
     if (
@@ -1696,6 +1708,7 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
         "binder-arity",
         "binder-component-plan",
         "slot-component-coverage",
+        "slot-component-fidelity-coupling",
         "literal-margin",
         "literal-close",
         "fidelity",
