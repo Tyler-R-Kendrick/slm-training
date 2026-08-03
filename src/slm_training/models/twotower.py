@@ -3937,7 +3937,7 @@ class TwoTowerModel(nn.Module):
                 }
             else:
                 kind_losses = {}
-            self.last_training_metrics = {
+            self.last_training_metrics.update({
                 "compiler_alignment_rows": aligned_rows,
                 "compiler_alignment_literal_close_filter_enabled": float(
                     kind_filter == "literal-close"
@@ -3990,7 +3990,7 @@ class TwoTowerModel(nn.Module):
                     f"compiler_alignment_{kind}_loss": loss
                     for kind, loss in sorted(kind_losses.items())
                 },
-            }
+            })
 
         inventory_w = float(
             getattr(self.config, "component_inventory_loss_weight", 0.0) or 0.0
