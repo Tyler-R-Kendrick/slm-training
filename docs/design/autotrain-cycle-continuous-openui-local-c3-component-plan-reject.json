@@ -1,0 +1,81 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "cycle": 3,
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c3",
+  "experiment": "component-plan",
+  "claim_class": "fixture_screen",
+  "status": "rejected",
+  "measurement_complete": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "backend": "scratch TwoTower",
+    "matrix_set": "continuous-openui-local",
+    "honesty_mode": "grammar_constrained_strict_compiler_tree",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite_n": {"smoke": 3, "held_out": 0, "adversarial": 0, "ood": 0, "rico_held": 0}
+  },
+  "arms": {
+    "control": {
+      "id": "c20260803-continuous-openui-local-8c0b60dd-c3-control",
+      "trainable_params": 1755764,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "structural_similarity": 0.23083333333333333,
+      "binder_reference_f1": 0.7333333333333334,
+      "latency_ms_p50": 9760.0,
+      "exit": 0
+    },
+    "candidate": {
+      "id": "c20260803-continuous-openui-local-8c0b60dd-c3-component-plan",
+      "trainable_params": 1755764,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "structural_similarity": 0.1725,
+      "binder_reference_f1": 0.6333333333333333,
+      "latency_ms_p50": 9273.63,
+      "exit": 0
+    }
+  },
+  "gates": {
+    "pass": false,
+    "failures": [
+      "smoke:insufficient_n",
+      "smoke:meaningful_program_rate",
+      "smoke:structural_similarity",
+      "smoke:component_type_recall",
+      "smoke:ast_beq_rate",
+      "smoke:canonical_beq_rate",
+      "held_out:missing_suite",
+      "adversarial:missing_suite",
+      "ood:missing_suite",
+      "rico_held:missing_suite"
+    ]
+  },
+  "signals": {
+    "attribution": "matched pair, size-matched (1,755,764 params both arms); component-plan candidate regresses vs control on every quality axis: meaningful_program_rate 0.3333->0.0, structural_similarity 0.2308->0.1725 (primary metric, -0.0583), binder_reference_f1 0.7333->0.6333 (non_regression_fail). Candidate is faster (9273.63ms vs 9760.0ms p50) but that does not offset a quality regression.",
+    "prevention": ["fixture n=3", "no held-out/OOD/RICO suites", "quality regression alone is a reject, not a latency win"],
+    "next_priorities": [
+      "test the distinct size-matched component-edge quality hypothesis next (component-plan arm is exhausted)",
+      "keep the matched control every cycle",
+      "rotate thrash recommendation across the lever bank, not bounds/component-plan only"
+    ]
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "101f68a301c3d7a3d3dba8abd39e1cf8f2802829",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v84",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v23",
+      "model.twotower": "v308"
+    },
+    "stamped_at": "2026-08-03T23:42:50Z"
+  }
+}
