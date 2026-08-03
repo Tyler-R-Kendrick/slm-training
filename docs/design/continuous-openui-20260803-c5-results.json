@@ -1,0 +1,69 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c3",
+  "cycle_index": 3,
+  "source_commit": "bcda93e0",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 22,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "ship_gates": true,
+    "seed": 100002,
+    "note": "frozen_replay of campaign continuous-loop-20260803-continuous-openui-local-8c0b60dd-c2 (cycle_intent=retry_measurement); reuses c2's already-trained checkpoints for eval only, no retrain"
+  },
+  "arms": {
+    "c3-control": {
+      "trainable_params": 1755764,
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.32666666666666666,
+        "component_type_recall": 0.16666666666666666,
+        "binder_reference_f1": 0.0,
+        "placeholder_fidelity": 0.0,
+        "latency_ms_p50": 16747.64
+      }
+    },
+    "c3-component-plan": {
+      "trainable_params": 1755764,
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.38280000000000003,
+        "component_type_recall": 0.16666666666666666,
+        "binder_reference_f1": 0.0,
+        "placeholder_fidelity": 0.0,
+        "latency_ms_p50": 11584.63
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.05613333333333337,
+  "sdlc_phase_a": {
+    "positive": true,
+    "stack_layer": false,
+    "has_tracked_delta": false,
+    "stack_action": "positive_no_tracked_delta_skip_stack",
+    "agent_required": "metric win recorded; no code/docs delta beyond this documentation -- skip a separate stack PR; continue loop",
+    "reasons": [
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c3-component-plan",
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c3-control",
+      "primary_metric_win:smoke.structural_similarity:0.32666666666666666->0.38280000000000003:improvement=0.05613333333333337"
+    ]
+  },
+  "conclusion": "Continuous-openui-local loop, cycle 3 of 2026-08-03 (day-numbered doc c5): a frozen replay of campaign c2's control/component-plan pair (cycle_intent=retry_measurement, reusing c2's already-trained checkpoints for eval only) completed cleanly this time -- no decode timeout, unlike the original c2 measurement documented in continuous-openui-20260803-c4-results.md. The size-matched component-plan arm (1,755,764 trainable params, seed 100002) beats its matched control on the declared primary, smoke.structural_similarity, by +0.0561 (0.32667 -> 0.38280), and also improves component_type_recall (0 -> .16667) and p50 latency (16747.64ms -> 11584.63ms control->candidate). meaningful_program_rate, binder_reference_f1, and placeholder_fidelity remain 0 on both arms -- the win is confined to raw structural similarity, component-type recall, and latency, not full program meaningfulness. These exact metric values also match an earlier, unrelated prior session's continuous-openui-20260803-c2-results.json record for the same hypothesis/seed/param-count combination, consistent with this being a deterministic training+eval recipe (fixed fixture data, fixed seed) rather than a coincidence -- i.e. this is now at least the second independent measurement of the same structural direction. Ship gates fail as expected (insufficient_n=3, need>=20; held_out/adversarial/ood/rico_held not run). SDLC Phase A classifies this cycle POSITIVE (primary_metric_win) but has_tracked_delta=false and stack_action=positive_no_tracked_delta_skip_stack -- the win itself is not new code/docs beyond this record, so no separate stacked PR is opened; this documentation is delivered on the same branch/PR as the c3/c4 cycles above (PR #1374).",
+  "next_priorities": [
+    "The completed frozen replay rejects re-selecting this exact arm; test the distinct size-matched 'component-edge' quality hypothesis next (rank 1, confidence 0.90)",
+    "Keep the matched control as the size-matched baseline every cycle (rank 2, confidence 0.70)",
+    "Do not conflate this confirmed screening win with ship readiness -- meaningful_program_rate, binder_reference_f1, ast_beq_rate, canonical_beq_rate stay 0 on both arms"
+  ],
+  "recorded_at": "2026-08-03T08:53:24Z"
+}
