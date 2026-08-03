@@ -72,9 +72,10 @@ arms such as `component-plan` and `literal-close` cannot be truncated into an
 unsupported last word.
 Replay manifests carrying Lean formal obligations never inherit the source proof
 digest. The successor is first materialized without obligations, runs and validates
-a fresh current-campaign Lean preflight, then restores the frozen obligation IDs,
-templates, and policies bound only to the new proof digest before hypothesis
-authorization or execution. An unproved or timed-out preflight leaves both arms
+a fresh current-campaign Lean preflight, then restores the frozen obligation
+templates and policies under current campaign/experiment IDs bound only to the
+new proof digest before hypothesis authorization or execution. An unproved or
+timed-out preflight leaves both arms
 unexecuted and fails closed.
 Lineage validation is shared by status and feedback traversal so those surfaces cannot
 disagree about an initialized-only gap. When the newest handoff-less frozen replay
@@ -145,7 +146,7 @@ the source manifest's required Lean obligation and rejected the replay before a
 successor campaign could create the mandated fresh proof. Campaign harness v110
 allows the governed frozen recipe to load, strips the stale proof binding from
 the current-main successor, regenerates and validates the Lean preflight, and
-rebinds the unchanged formal obligation before hypothesis authorization or arm
+rebinds the unchanged formal claim policy before hypothesis authorization or arm
 execution. This repairs orchestration only; it does not reuse proof evidence,
 weaken the formal gate, or change the frozen model/eval recipes.
 The same replay also exposed an identity gap before execution: governed
@@ -164,6 +165,10 @@ claim list. The loader recovers each claim only from its typed, content-bound fo
 preflight artifact, verifies campaign, experiment, obligation, template, policy,
 status, and recomputed obligation identity, then carries that exact claim into the
 fresh-proof successor. Missing or inconsistent proof evidence fails closed.
+Campaign harness v114 also corrects the successor binding itself: obligation IDs
+are campaign- and experiment-scoped, so a replay must recompute them for the current
+successor rather than copy the predecessor ID. The fresh preflight's recomputed ID,
+the authorized experiment claim, and the successor manifest must now agree exactly.
 
 The c1811 pre-execution failure exposed a cadence-boundary gap: c1810 had
 confirmed a champion, c1812 was the next protected promotion slot, and the

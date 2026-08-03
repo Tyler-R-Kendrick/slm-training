@@ -4541,12 +4541,22 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor(
         formal_successor,
         formal_manifest,
         preflight_sha256="1" * 64,
+        formal_claims=[_mod.promote_formal_claim_dict()],
     )
     assert len(rebound.formal_obligations) == 1
     assert rebound.formal_obligations[0].preflight_sha256 == "1" * 64
     assert (
         rebound.formal_obligations[0].template_id
         == formal_manifest.formal_obligations[0].template_id
+    )
+    assert rebound.formal_obligations[0].obligation_id == _mod.formal_obligation_id(
+        new_campaign,
+        "new-promote",
+        _mod.FormalClaimV1(**_mod.promote_formal_claim_dict()),
+    )
+    assert (
+        rebound.formal_obligations[0].obligation_id
+        != formal_manifest.formal_obligations[0].obligation_id
     )
     promote_experiment = json.loads(json.dumps(old_control))
     promote_experiment["experiment_id"] = (
@@ -4636,11 +4646,21 @@ def test_frozen_replay_restores_omitted_formal_claim_from_proved_artifact(
         formal_preflight_sha256=preflight_sha,
     )
     obligation = manifest.formal_obligations[0]
+    manifest = manifest.model_copy(
+        update={
+            "formal_obligations": (
+                obligation.model_copy(update={"obligation_id": "formal-" + "0" * 16}),
+            )
+        }
+    )
     claim = _mod.FormalClaimV1(**_mod.promote_formal_claim_dict())
+    current_obligation_id = _mod.formal_obligation_id(
+        campaign_id, experiment_id, claim
+    )
     preflight = _mod.FormalPreflightV1(
         campaign_id=campaign_id,
         experiment_id=experiment_id,
-        obligation_id=obligation.obligation_id,
+        obligation_id=current_obligation_id,
         template_id=claim.template_id,
         template_version="v1",
         claim=claim.claim,

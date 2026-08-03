@@ -5134,7 +5134,6 @@ def _restore_frozen_formal_claims(
         if (
             preflight.campaign_id != manifest.campaign_id
             or preflight.experiment_id != manifest.experiment_id
-            or preflight.obligation_id != obligation.obligation_id
             or preflight.template_id != obligation.template_id
             or preflight.policy != obligation.policy
             or (
@@ -5144,7 +5143,7 @@ def _restore_frozen_formal_claims(
             or formal_obligation_id(
                 manifest.campaign_id, manifest.experiment_id, claim
             )
-            != obligation.obligation_id
+            != preflight.obligation_id
         ):
             raise RuntimeError(
                 "frozen replay formal claim recovery mismatch: "
@@ -5452,12 +5451,28 @@ def _bind_fresh_replay_formal_preflight(
     frozen: ExperimentCampaignV1,
     *,
     preflight_sha256: str,
+    formal_claims: list[dict[str, str]],
 ) -> ExperimentCampaignV1:
-    """Restore frozen formal obligations with only the fresh proof digest."""
+    """Bind frozen claim policy to current identities and the fresh proof."""
 
-    obligations = tuple(
-        obligation.model_copy(update={"preflight_sha256": preflight_sha256})
+    claims = tuple(FormalClaimV1.model_validate(claim) for claim in formal_claims)
+    expected = sorted(
+        (obligation.template_id, obligation.policy)
         for obligation in frozen.formal_obligations
+    )
+    actual = sorted((claim.template_id, claim.policy) for claim in claims)
+    if actual != expected:
+        raise RuntimeError("frozen replay formal claim policy mismatch")
+    obligations = tuple(
+        FormalObligationV1(
+            obligation_id=formal_obligation_id(
+                successor.campaign_id, successor.experiment_id, claim
+            ),
+            template_id=claim.template_id,
+            policy=claim.policy,
+            preflight_sha256=preflight_sha256,
+        )
+        for claim in claims
     )
     rebound = successor.model_copy(update={"formal_obligations": obligations})
     return ExperimentCampaignV1.model_validate(rebound.model_dump(mode="json"))
@@ -7110,6 +7125,9 @@ def run_cycle(
                     successor,
                     frozen_replay["manifest"],
                     preflight_sha256=promote_preflight_sha,
+                    formal_claims=list(
+                        frozen_replay["experiment"].get("formal_claims") or []
+                    ),
                 )
                 path.write_text(
                     rebound.model_dump_json(indent=2) + "\n", encoding="utf-8"
