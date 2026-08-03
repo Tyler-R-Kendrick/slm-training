@@ -5033,11 +5033,7 @@ def test_cycle_handoff_separates_fixture_climb_from_ship(tmp_path: Path) -> None
     assert "MODEL_CARD" in next(
         action.reason for action in handoff.actions if action.kind == "document"
     )
-    assert {action.kind for action in handoff.actions} == {
-        "document",
-        "deliver_stack",
-        "next_experiment",
-    }
+    assert {action.kind for action in handoff.actions} == {"document", "next_experiment"}
     state = json.loads((root / "loops" / "loop-1" / "state.json").read_text())
     assert state["phase"] == "between_cycles"
 

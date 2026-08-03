@@ -2656,7 +2656,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v150",
+      "version": "v151",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2696,6 +2696,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v151",
+          "date": "2026-08-03",
+          "note": "Do not emit a blocking deliver_stack action for positive fixture metrics when Phase A has no tracked stack delta; allow the supervised loop to consume next_experiment."
+        },
         {
           "version": "v150",
           "date": "2026-08-03",

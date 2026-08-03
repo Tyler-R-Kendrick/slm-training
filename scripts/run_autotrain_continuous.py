@@ -5402,7 +5402,10 @@ def _write_cycle_handoff(
                 evidence_ids=(evidence_id,),
             )
         )
-    if delivery.get("positive"):
+    # A metric-positive fixture with no tracked delta has nothing reviewable to
+    # deliver. Do not emit a blocking deliver_stack action in that case; the
+    # continuous loop must be able to consume its next-experiment action.
+    if delivery.get("positive") and delivery.get("stack_layer"):
         actions.append(
             AutotrainActionV1(
                 kind="deliver_stack",
