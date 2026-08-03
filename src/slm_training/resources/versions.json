@@ -2699,6 +2699,11 @@
         {
           "version": "v155",
           "date": "2026-08-03",
+          "note": "no-bump: document c1859's constraint-graph fixture null and exhausted-objective handoff; campaign behavior unchanged."
+        },
+        {
+          "version": "v155",
+          "date": "2026-08-03",
           "note": "Add a second distinct constraint-graph quality arm after slot-contract-context replay exhaustion so continuous screening has a registered implemented successor."
         },
         {
@@ -7670,6 +7675,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record c1859's constraint-graph checkpoint pair in the model card and README; SLM-228 behavior is unchanged."
+        },
         {
           "version": "v3",
           "date": "2026-08-03",
