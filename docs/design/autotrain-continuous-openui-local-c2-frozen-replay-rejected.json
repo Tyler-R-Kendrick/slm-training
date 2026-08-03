@@ -1,0 +1,104 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c2",
+  "loop_id": "continuous-openui-local",
+  "cycle_index": 2,
+  "cycle_intent": "retry_measurement",
+  "replay_of_manifest_sha256": "7462dc61b1fd1023203cb6df61716a7a4136b39f4dbc52216fa9ceffc0d4c6dd",
+  "evidence_class": "fixture",
+  "decision": "reject_fixture_insufficient_n",
+  "scoreable": true,
+  "measurement_complete": true,
+  "new_checkpoint_created": true,
+  "upstream_commit": "ff96b4e840e8b49c3c44d29c17b198759987d6f3",
+  "integration_commit": "49c30117f8c0c8f0dd6f6ad4f0d5ea1a1c8a3ee5c",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "arms": [
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c2-control",
+      "trainable_params": 1608962,
+      "steps": 21,
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 1053.75
+      },
+      "agentv_execution_errors": 0,
+      "gate_failures": [
+        "smoke:insufficient_n actual=3 need>=20",
+        "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+        "smoke:structural_similarity actual=0.057499999999999996 need>=0.35",
+        "smoke:component_type_recall actual=0.0 need>=0.35",
+        "smoke:ast_beq_rate actual=0.0 need>=0.2",
+        "smoke:canonical_beq_rate actual=0.0 need>=0.1",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "held_out:missing_suite",
+        "adversarial:missing_suite",
+        "ood:missing_suite",
+        "rico_held:missing_suite"
+      ]
+    },
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c2-bounds",
+      "trainable_params": 1608962,
+      "steps": 21,
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 1050.67
+      },
+      "agentv_execution_errors": 0,
+      "gate_failures": [
+        "smoke:insufficient_n actual=3 need>=20",
+        "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+        "smoke:structural_similarity actual=0.057499999999999996 need>=0.35",
+        "smoke:component_type_recall actual=0.0 need>=0.35",
+        "smoke:ast_beq_rate actual=0.0 need>=0.2",
+        "smoke:canonical_beq_rate actual=0.0 need>=0.1",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "held_out:missing_suite",
+        "adversarial:missing_suite",
+        "ood:missing_suite",
+        "rico_held:missing_suite"
+      ]
+    }
+  ],
+  "comparison": {
+    "attributable": true,
+    "parameter_delta": 0,
+    "structural_similarity_delta": 0.0,
+    "note": "control and bounds are identical matched-knob arms for this screening replay; both fail the same honest ship-gate criteria for the same reason (fixture n=3 well under the n>=20 volume floor for a 21-step CPU smoke run), not a model regression."
+  },
+  "agentv": {
+    "bundles_complete": true,
+    "execution_errors": 0,
+    "ship_gates_pass": false
+  },
+  "checkpoint_policy": "local_explicit_no_sync_rejected_not_reusable_not_promoted_not_ship",
+  "lean": "not_applicable:retry_measurement",
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "reasons": [
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c2-control",
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c2-bounds",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.057499999999999996 candidate=0.057499999999999996 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "harness_note": "This replay is the direct confirmation that PR #1354 (commit bf83505) unblocked the pipeline: both arms now reach a complete AgentEvals scoreboard with 0 AgentV execution errors, versus cycle 1's harness_failure before any suite could run.",
+  "next_priority": "distinct size-matched 'component-plan' quality hypothesis (c20260803-continuous-openui-local-8c0b60dd-c2-component-plan) per the driver's ranked priorities",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "49c30117f8c0c8f0dd6f6ad4f0d5ea1a1c8a3ee5c",
+    "code_dirty": false
+  }
+}
