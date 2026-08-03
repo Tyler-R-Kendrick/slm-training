@@ -1,0 +1,105 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "loop_id": "continuous-openui-20260803",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-202608-fa9f9cf7-c2",
+  "cycle_index": 2,
+  "cycle_intent": "retry_measurement",
+  "evidence_class": "fixture",
+  "decision": "rejected_quality_neutral",
+  "scoreable": true,
+  "new_checkpoint_created": false,
+  "upstream_commit": "a290ad299fde4c7c1c57596887cff3e304ab4c7e",
+  "integration_commit": "690ea0c188f1030a364997f7ffb9ab973fbbd2a6",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "note": "frozen replay of c1's control/bounds checkpoints (identical to prior loop's c2/c3); no retrain"
+  },
+  "arms": {
+    "control": {
+      "experiment_id": "c20260803-continuous-openui-202608-fa9f9cf7-c2-control",
+      "checkpoint_sha256": "f2fe8f5aae98c7178747c5f3b926d00c3d9c1d49ce607c54224b5526000b81b2",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "component_type_recall": 0.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.0,
+        "latency_ms_p50": 1592.81
+      },
+      "ship_gates_pass": false
+    },
+    "bounds": {
+      "experiment_id": "c20260803-continuous-openui-202608-fa9f9cf7-c2-bounds",
+      "checkpoint_sha256": "2c1749c65f4c4fba890aef4b00981a52825aecfd73e0117f0739f26ae1742f64",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "component_type_recall": 0.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.0,
+        "latency_ms_p50": 1708.44
+      },
+      "ship_gates_pass": false
+    }
+  },
+  "comparison": {
+    "attributable": true,
+    "primary_delta": 0.0,
+    "latency_delta_ms_p50": 115.63,
+    "verdict": "exact tie on every quality metric; bounds is 115.63ms slower p50 with no offsetting quality gain"
+  },
+  "agentv": {
+    "bundles_complete": true,
+    "execution_errors": 0,
+    "ship_gates_pass": false
+  },
+  "checkpoint_policy": "reuses_c1_checkpoints_no_new_checkpoint_local_no_sync",
+  "lean": "not_applicable:retry_measurement",
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260803-continuous-openui-202608-fa9f9cf7-c2-control",
+      "fixture_insufficient_n:c20260803-continuous-openui-202608-fa9f9cf7-c2-bounds",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.057499999999999996 candidate=0.057499999999999996 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "next_priority": "test the distinct size-matched component-plan quality hypothesis (c2-component-plan) per the ranked matrix, keeping the matched control every cycle",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "690ea0c188f1030a364997f7ffb9ab973fbbd2a6",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v77",
+      "harness.model_build.train": "v36",
+      "harness.experiment_feature_flags": "v4",
+      "harness.autoresearch.experiment_campaign": "v110",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "evals.agentv": "v8",
+      "model.twotower": "v299",
+      "dsl.symbolic_surface": "v6"
+    },
+    "stamped_at": "2026-08-03T01:42:52.367119Z"
+  }
+}
