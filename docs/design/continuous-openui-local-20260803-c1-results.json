@@ -1,0 +1,92 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c1",
+  "cycle_index": 1,
+  "decision": "non_positive_null_delta",
+  "evidence_class": "fixture",
+  "cycle_role": "screening",
+  "primary_metric": "smoke.structural_similarity",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "62540f38bd510fc60d3d2975306cab411c612456",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v77",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v300"
+    }
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "steps": 20,
+    "suites": ["smoke"],
+    "suite_n": {"smoke": 3},
+    "honesty_mode": "fixture_screening"
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c1-control",
+      "hypothesis": "Matched fixture control with both grammar levers off completes smoke eval under the published suite.",
+      "checkpoint_sha256": "507e0028eccee68dcc6d32190f9e98eca67e3b257a1ee09eac62f3ef528899a7",
+      "suites": {
+        "smoke": {
+          "n": 3,
+          "completed_document_n": 3,
+          "meaningful_program_rate": 0.0,
+          "structural_similarity": 0.0575,
+          "binder_reference_f1": 0.6333333333333333,
+          "parse_rate": 1.0,
+          "latency_ms_p50": 1406.14
+        }
+      }
+    },
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c1-bounds",
+      "hypothesis": "grammar_completion_bounds reduces smoke latency_ms_p50 versus the matched control without lowering parse_rate.",
+      "checkpoint_sha256": "2c1749c65f4c4fba890aef4b00981a52825aecfd73e0117f0739f26ae1742f64",
+      "suites": {
+        "smoke": {
+          "n": 3,
+          "completed_document_n": 3,
+          "meaningful_program_rate": 0.0,
+          "structural_similarity": 0.0575,
+          "binder_reference_f1": 0.6333333333333333,
+          "parse_rate": 1.0,
+          "latency_ms_p50": 1218.84
+        }
+      }
+    }
+  ],
+  "gate_failures": [
+    "smoke:insufficient_n actual=3 need>=20",
+    "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+    "smoke:structural_similarity actual=0.0575 need>=0.35",
+    "smoke:component_type_recall actual=0.0 need>=0.35",
+    "smoke:ast_beq_rate actual=0.0 need>=0.2",
+    "smoke:canonical_beq_rate actual=0.0 need>=0.1",
+    "smoke:reward_score actual=0.0 need>=0.3"
+  ],
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "reasons": [
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c1-control",
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c1-bounds",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.0575:candidate=0.0575:improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "next_priority": {
+    "rank": 1,
+    "area": "model",
+    "hypothesis": "The completed non-positive arm is exhausted; test the distinct size-matched 'component-plan' quality hypothesis next.",
+    "proposed_experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c1-component-plan"
+  }
+}
