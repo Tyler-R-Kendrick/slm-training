@@ -512,6 +512,9 @@ class ExperimentKnobs(StrictModel):
     ltr_prefix_loss_weight: float | None = Field(default=None, ge=0, le=20)
     ltr_tail_loss_weight: float | None = Field(default=None, ge=0, le=20)
     seed: int | None = Field(default=None, ge=0)
+    # Continuous thrash identity: bumps when the screening arm bank is fully
+    # closed so reopen is a regime transition (new approach), not a recycle.
+    screening_regime_epoch: int | None = Field(default=None, ge=0, le=1_000_000)
     context_backend: Literal["scratch", "hf"] | None = None
     output_tokenizer: Literal["compositional", "lexer"] | None = None
     compiler_alignment_loss_weight: float | None = Field(default=None, ge=0, le=10)
