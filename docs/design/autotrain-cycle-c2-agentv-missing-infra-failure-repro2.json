@@ -1,0 +1,83 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c2",
+  "campaign_id_note": "Collides byte-for-byte with docs/design/autotrain-cycle-c2-agentv-missing-infra-failure.json's campaign_id (same loop_id + calendar date hash), but is a distinct physical run in a separate sandbox with distinct checkpoint digests; not a duplicate of that finding.",
+  "cycle_index": 2,
+  "evidence_class": "fixture",
+  "decision": "infrastructure_failure_not_a_model_result",
+  "scoreable": false,
+  "new_checkpoint_created": true,
+  "upstream_commit": "86e481cb10fd1bb503eb0fc8528ee278da2337e6",
+  "integration_commit": "86e481cb10fd1bb503eb0fc8528ee278da2337e6",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c2-control",
+      "trainable_params": 1608962,
+      "steps": 22,
+      "last_loss": 14.390223503112793,
+      "checkpoint_sha256": "1bc6370f72ec70fe0697414fa7614e2fc446d9795e91a8ae043bd95fe8b9286e",
+      "status": "trained_eval_failed_then_replayed",
+      "failure_stage": "evaluate_model --ship-gates",
+      "failure_reason": "RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER",
+      "smoke": {
+        "latency_ms_p50": 36712.92,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.32666666666666666,
+        "binder_reference_f1": 0.0
+      }
+    },
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c2-canvas",
+      "trainable_params": 1608962,
+      "steps": 22,
+      "last_loss": 14.390223503112793,
+      "checkpoint_sha256": "9f73b7a8466b7ab117988b2ab7516dffce7c9ac4f4d0ad7204a580d71053b1a4",
+      "status": "trained_eval_failed_then_replayed",
+      "failure_stage": "evaluate_model --ship-gates",
+      "failure_reason": "RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER",
+      "smoke": {
+        "latency_ms_p50": 36020.26,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.32666666666666666,
+        "binder_reference_f1": 0.0
+      }
+    }
+  ],
+  "comparison": {
+    "attributable": false,
+    "primary_metric_delta": 0.0,
+    "note": "control and canvas tie exactly on smoke.structural_similarity at fixture scale (22 steps, 101 records); not a model result either way."
+  },
+  "agentv": {
+    "bundles_complete": false,
+    "execution_errors": 2,
+    "ship_gates_pass": false
+  },
+  "checkpoint_policy": "local_explicit_no_sync_not_reusable_not_promoted_not_ship_eval_incomplete",
+  "lean": "not_applicable:screening",
+  "harness_repair": {
+    "harness_family": "model_build",
+    "diagnosis": "This is a second, independent sandbox on the same calendar date hitting the identical, already-documented gap recorded in docs/design/autotrain-cycle-c2-agentv-missing-infra-failure.json (commit 72fdffaf054efee2f3dccc4bab0ca97c111072e1, #1360): a fresh checkout never ran `npm ci` at the repo root, so node_modules/@agentv/core was missing and evaluate_model.py --ship-gates crashed in publish_model_evaluation before producing a scoreboard for either arm. The NODE_OPTIONS sanitization fix from #1360 (slm_training.bridge_utils.sanitized_node_env(), already wired into src/slm_training/evals/agentv.py) is already in place at this commit and required no further change.",
+    "fix_commits": [
+      "72fdffaf054efee2f3dccc4bab0ca97c111072e1"
+    ],
+    "fix_summary": "No source change needed: ran `env -u NODE_OPTIONS npm ci` at the repo root per scripts/setup_dev_env.sh, which installed node_modules/@agentv/core and unblocked the already-sanitized AgentV runner subprocess.",
+    "regression_tests": [
+      "tests/test_evals/test_agentv.py::test_agentv_clears_node_options_for_the_runner_subprocess"
+    ]
+  },
+  "next_priority": "replay identical frozen arm (retry_measurement) now that the AgentV SDK is installed in this sandbox",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "86e481cb10fd1bb503eb0fc8528ee278da2337e6",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.train": "v42",
+      "harness.experiment_feature_flags": "v4"
+    },
+    "stamped_at": "2026-08-03T14:31:57.152778+00:00"
+  }
+}
