@@ -1,0 +1,63 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 2,
+  "source_commit": "cc9671d7",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "seed": 100002,
+    "trainable_params": 1755764
+  },
+  "arms": {
+    "c2-control": {
+      "trainable_params": 1755764,
+      "status": "measurement_incomplete",
+      "exit_code": 2,
+      "smoke": {
+        "n": 3,
+        "decode_timeout_count": 3,
+        "incomplete_document_n": 3
+      }
+    },
+    "c2-component-plan": {
+      "trainable_params": 1755764,
+      "status": "measurement_incomplete",
+      "exit_code": 2,
+      "smoke": {
+        "n": 3,
+        "decode_timeout_count": 3,
+        "incomplete_document_n": 3
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "local commits + docs only; no new stack layer",
+    "reasons": [
+      "measurement_incomplete:c20260804-continuous-openui-local-8c0b60dd-c2-control:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "measurement_incomplete:c20260804-continuous-openui-local-8c0b60dd-c2-component-plan:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "harness_failure:c20260804-continuous-openui-local-8c0b60dd-c2-component-plan:experiment_failed",
+      "harness_failure:c20260804-continuous-openui-local-8c0b60dd-c2-control:experiment_failed",
+      "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c2-control",
+      "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c2-component-plan",
+      "primary_metric_unavailable",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "conclusion": "Continuous-openui-local loop, cycle 2 (this session, branch claude/great-dirac-krjpdg): both the size-matched control and the 'component-plan' quality-hypothesis candidate (rank-1 priority from cycle 1) hit an internal AgentV decode timeout on all 3 smoke records (compiler_ms_mean ~23.5-23.9s per record, against the wall-adaptive per-record decode_timeout_seconds budget). SLM-303 decode-outcome classification correctly treats every timed-out record as incompleteness (never a false parse/quality-0), so no quality metric is reported for either arm -- the comparison is inconclusive, not a model result. This is an infrastructure/measurement signal, not a model-quality regression: the driver's typed handoff routes it to a repair_harness action against the model_build harness family (frozen_manifest_sha256 d5cd43c7...f3003e3) with a paired retry_measurement action to replay the identical frozen control/component-plan arms once repaired. SDLC Phase A classifies this cycle NON_POSITIVE (measurement incomplete, primary metric unavailable); no stacked PR layer is opened -- local commit + docs only. Per the continuous-loop self-heal law this is the first occurrence of this exact blocker this session (not yet the 3-consecutive-failure hard-block threshold), so the loop continues by re-invoking the driver to consume the queued retry_measurement action before any new model hypothesis.",
+  "next_priorities": [
+    "Replay the exact frozen control and candidate (component-plan, seed 100002, 1,755,764 params) before testing a new hypothesis (rank 1, confidence 0.95)"
+  ],
+  "recorded_at": "2026-08-04T01:37:38Z"
+}
