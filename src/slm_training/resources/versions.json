@@ -2734,7 +2734,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v183",
+      "version": "v184",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2775,6 +2775,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v184",
+          "note": "raise screening decode budget again after c19 dual-arm frozen-replay timeouts",
+          "date": "2026-08-04"
+        },
         {
           "version": "v183",
           "note": "raise screening decode budget after c18 dual-arm timeouts",
