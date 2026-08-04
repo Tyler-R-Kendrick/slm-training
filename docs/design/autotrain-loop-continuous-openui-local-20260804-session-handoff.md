@@ -36,24 +36,42 @@ Scheduled-routine iteration summary. Loop `continuous-openui-local`, branch
    regression test pinning real margin over the worst observed sample. Full
    writeup:
    [`autotrain-thrash-timing-pareto-20260804-recalibration.md`](autotrain-thrash-timing-pareto-20260804-recalibration.md).
+5. **c6** — acked c4's `repair_harness`/`document` actions with the real fix
+   commit and let the driver queue another `retry_measurement`. It replayed
+   the *same* frozen c2 lineage again and timed out identically — the
+   materialized manifest showed the new `decode_timeout_seconds: 10.0`, but
+   the actual `evaluate_model` invocation still used `8.0`. This is correct,
+   not a bug: `retry_measurement` reproduces the identical frozen arm
+   (pinned config, for scientific reproducibility), so it can never exercise
+   a policy change — only a **new** hypothesis/matrix does. See
+   [`autotrain-cycle-c6-frozen-replay-does-not-pick-up-recalibration-20260804.md`](autotrain-cycle-c6-frozen-replay-does-not-pick-up-recalibration-20260804.md).
+   Stopped here rather than acking another identical replay (c7, c8, ...)
+   that would reproduce the same 8.0s-pinned result with zero new
+   information.
 
 ## State for the next iteration
 
 - Loop id `continuous-openui-local`; last completed campaign
-  `continuous-loop-20260804-continuous-openui-local-8c0b60dd-c4`; this
-  iteration additionally landed the `screening_decode_timeout_seconds`
-  recalibration above (code/policy change, not just docs).
-- **Next action:** run a fresh screening cycle (c5) under the recalibrated
-  10s budget to confirm it clears the smoke suite on this host — if it does,
-  that produces the first real `smoke.structural_similarity` measurement for
-  this loop-id/session and unblocks actual model comparison; if it still
-  times out, that is new accumulated evidence for a further round.
+  `continuous-loop-20260804-continuous-openui-local-8c0b60dd-c6`; this
+  session landed the `screening_decode_timeout_seconds` recalibration
+  (code/policy/test, commit `663e2020`) but has **not yet validated it**,
+  because every cycle so far has been a `retry_measurement` replay of the
+  original (pre-recalibration) c2 lineage, which by design keeps the
+  original 8.0s config.
+- **Next action:** do **not** ack another `repair_harness`/retry the c2/c3/
+  c4/c6 lineage. Start a genuinely **new** screening hypothesis (new
+  candidate matrix, fresh `experiment_id` lineage) so the current policy's
+  `screening_decode_timeout_seconds=10` is actually used. That run is the
+  first real test of the recalibration and, if it clears the smoke suite,
+  produces the first real `smoke.structural_similarity` measurement for
+  this loop-id/session.
 - No positive **training** result yet this loop-id/session — no stacked PR
   opened for a training win (per `autotrain` continuous-mode SDLC rule:
   stacked PRs only after a positive-result run). The branch PR for this
   session covers the infra bootstrap, the timeout recalibration (code +
-  policy + test), and the honest diagnosis docs, including the correction
-  above.
+  policy + test, currently unvalidated), and the honest diagnosis docs,
+  including two corrections along the way (the "3x host speed" mischaracterization,
+  and the "replay doesn't pick up new policy" clarification).
 - Container bootstrap (`.venv`, torch, `node_modules` incl. `@agentv/core`,
   `openui_bridge`, `design_md_bridge`) is now warm for this container's
   lifetime; a fresh container will need `scripts/setup_dev_env.sh` again.
