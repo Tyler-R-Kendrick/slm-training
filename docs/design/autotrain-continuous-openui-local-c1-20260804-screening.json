@@ -1,0 +1,96 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c1",
+  "cycle_index": 1,
+  "cycle_intent": "screening",
+  "cycle_role": "screening",
+  "evidence_class": "fixture",
+  "decision": "rejected",
+  "climb_state": "rejected",
+  "ship_state": "blocked",
+  "scoreable": true,
+  "new_checkpoint_created": true,
+  "upstream_commit": "eba6db3044076285581b80cfe5294a2ecbcee8a1",
+  "integration_commit": "eba6db3044076285581b80cfe5294a2ecbcee8a1",
+  "train_version": "wf_smoke_v2",
+  "eval_suite": "smoke",
+  "primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "experiment_id": "c20260804-continuous-openui-local-8c0b60dd-c1-control",
+      "role": "control",
+      "run_id": "c20260804-continuous-openui-local-8c0b60dd-c1-control",
+      "checkpoint": "runs/c20260804-continuous-openui-local-8c0b60dd-c1-control/checkpoints/last.pt",
+      "params": 1608960,
+      "metrics": {
+        "smoke.latency_ms_p50": 3299.53,
+        "smoke.parse_rate": 1.0,
+        "smoke.meaningful_program_rate": 0.0,
+        "smoke.structural_similarity": 0.057499999999999996,
+        "smoke.binder_reference_f1": 0.6333333333333333
+      },
+      "gates_pass": false,
+      "gate_failure_count": 11
+    },
+    {
+      "experiment_id": "c20260804-continuous-openui-local-8c0b60dd-c1-bounds",
+      "role": "candidate",
+      "run_id": "c20260804-continuous-openui-local-8c0b60dd-c1-bounds",
+      "checkpoint": "runs/c20260804-continuous-openui-local-8c0b60dd-c1-bounds/checkpoints/last.pt",
+      "params": 1608960,
+      "metrics": {
+        "smoke.latency_ms_p50": 3854.54,
+        "smoke.parse_rate": 1.0,
+        "smoke.meaningful_program_rate": 0.0,
+        "smoke.structural_similarity": 0.057499999999999996,
+        "smoke.binder_reference_f1": 0.6333333333333333
+      },
+      "gates_pass": false,
+      "gate_failure_count": 11
+    }
+  ],
+  "reasons": [
+    "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c1-control",
+    "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c1-bounds",
+    "primary_metric_null_or_worse:smoke.structural_similarity:control=0.057499999999999996 candidate=0.057499999999999996 improvement=0.0",
+    "fixture_insufficient_n_alone"
+  ],
+  "gate_failures": {
+    "evidence_volume_failures": [
+      "smoke:insufficient_n actual=3 need>=20",
+      "held_out:missing_suite",
+      "adversarial:missing_suite",
+      "ood:missing_suite",
+      "rico_held:missing_suite"
+    ],
+    "quality_threshold_failures": [
+      "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+      "smoke:structural_similarity actual=0.057499999999999996 need>=0.35",
+      "smoke:component_type_recall actual=0.0 need>=0.35",
+      "smoke:ast_beq_rate actual=0.0 need>=0.2",
+      "smoke:canonical_beq_rate actual=0.0 need>=0.1",
+      "smoke:reward_score actual=0.0 need>=0.3"
+    ]
+  },
+  "sdlc_phase_a": "NON_POSITIVE",
+  "stack_layer": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "eba6db3044076285581b80cfe5294a2ecbcee8a1",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v84",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v23",
+      "model.twotower": "v308"
+    },
+    "stamped_at": "2026-08-04T08:30:04.558378+00:00"
+  },
+  "lean": "not_applicable:screening",
+  "agentv": "expected_gate_rejection",
+  "next_priority": "c20260804-continuous-openui-local-8c0b60dd-c1-component-plan"
+}
