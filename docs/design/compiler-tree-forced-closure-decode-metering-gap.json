@@ -1,0 +1,111 @@
+{
+  "schema": "harness_repair_finding/v1",
+  "title": "compiler_ms decode-cost metering gap: two grammar-authority call sites were unmetered",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "routed_from": {
+    "loop_id": "continuous-openui-local",
+    "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c2",
+    "cycle_index": 2,
+    "frozen_manifest_sha256": "becbf08df082ca96a0f5b686cbd81d21130ca5be60637b95ac8601945f2adf7e",
+    "prior_findings": [
+      "docs/design/continuous-openui-local-gd6j83-c2-dual-arm-decode-timeout.md",
+      "docs/design/autotrain-cycle-c5-dual-arm-decode-timeout-unresolved.md",
+      "docs/design/autotrain-cycle-c5-c6-replay-blocked-follow-up.md"
+    ]
+  },
+  "reproduction": {
+    "method": "python -m scripts.evaluate_model --ship-gates --train-version wf_smoke_v2 --test-dir e938_role_safe_all_targets_v2 --suite smoke --eval-limit 1 against the frozen c1/c2 control checkpoints, decode-timeout raised to 60s so the record finishes instead of being cut off (diagnostic only, never used to claim a passing ship-gate).",
+    "checkpoints_used": [
+      "outputs/autoresearch/continuous-loop-20260804-continuous-openui-local-8c0b60dd-c1/runs/c20260804-continuous-openui-local-8c0b60dd-c1-control/checkpoints/last.pt (seed 100001)",
+      "outputs/autoresearch/continuous-loop-20260804-continuous-openui-local-8c0b60dd-c2/runs/c20260804-continuous-openui-local-8c0b60dd-c2-control/checkpoints/last.pt (seed 100002)"
+    ],
+    "key_discovery": "the c1 control checkpoint's own persisted config declares compiler_decode_mode='off' (it decodes through the legacy LTR/exact_forced_token_id I2-bypass path), while the c2 control/component-plan checkpoints declare compiler_decode_mode='tree' (the compiler-tree greedy path). evaluate_model.py --ship-gates does not force compiler_decode_mode onto a checkpoint unless --compiler-decode-mode is also passed explicitly as a CLI flag (making it a runtime_override_field); otherwise eval_runner.evaluate() restores the checkpoint's own declared value after build_model(). The two prior cycle docs' 'compiler_ms_mean jumped ~5-6x, symmetric across arms' comparison was therefore comparing two DIFFERENT decode mechanisms, not the same search at two seeds."
+  },
+  "before_fix": {
+    "c1_control_seed100001_one_record": {
+      "compiler_decode_mode": "off",
+      "compiler_ms_sum_ms": 0.0,
+      "total_ms_sum_ms": 31630.675,
+      "unattributed_ms_sum_ms": 31307.411,
+      "attributed_fraction": 0.0102,
+      "tokens_emitted": 62,
+      "completion_unique_states": 163216,
+      "completion_edges_built": 13148
+    },
+    "c2_control_seed100002_one_record": {
+      "compiler_decode_mode": "tree",
+      "compiler_ms_sum_ms": 14864.24,
+      "total_ms_sum_ms": 15238.98,
+      "unattributed_ms_sum_ms": 338.224,
+      "attributed_fraction": 0.9778,
+      "tokens_emitted": 43,
+      "completion_unique_states": 90295,
+      "completion_edges_built": 2701
+    }
+  },
+  "after_fix": {
+    "c1_control_seed100001_one_record": {
+      "compiler_decode_mode": "off",
+      "compiler_ms_sum_ms": 38001.575,
+      "total_ms_sum_ms": 39266.109,
+      "unattributed_ms_sum_ms": 73.965,
+      "attributed_fraction": 0.9981,
+      "tokens_emitted": 62,
+      "completion_unique_states": 163216,
+      "completion_edges_built": 13148
+    }
+  },
+  "root_cause": "models/grammar.py's exact_forced_token_id() (the legacy non-compiler-tree LTR decode's I2 deterministic-singleton bypass, invoked once per token from _constrained_ltr_repair) calls build_completion_forest() -- the exact same expensive CompletionSession/outgoing()-edge grammar-authority computation the compiler-tree path times as compiler_ms in twotower.py's _compiler_ltr_decode_one/_compiler_ltr_decode_batch -- with zero timed_ms instrumentation anywhere in the call chain. A checkpoint whose own persisted config decodes through this legacy mechanism (compiler_decode_mode='off') can spend effectively all of its real decode wall time inside this one unmetered call while compiler_ms stays 0.0 and the true cost silently lands in unattributed_ms. Separately (defense in depth, smaller effect on this specific case), state.completion_forced_closure() -- called immediately after build_completion_forest() in both _compiler_ltr_decode_one and _compiler_ltr_decode_batch -- performs the same kind of outgoing()-edge walk in a loop that can span the remaining canvas, and was called just outside the timed_ms(compiler_ms) block that wraps only the initial forest build.",
+  "not_a_search_algorithm_bug": "The completion kernel's own bounds are intact and were not the defect: CompletionSession.terminal_witness caps each top-level candidate to a fixed node_budget (16), LatticeSearchState.backtrack_limit defaults to 8, and check_decode_deadline() is honored throughout every recursive expansion (outgoing/advance/terminal_witness), so a slow decode fails closed with a typed TimeoutError rather than hanging. SemanticState carries a real structural __eq__/memoized __hash__ and OpenUIIncrementalEngine.parser_state_key() is structural (LALR state stack + pending tail), so state interning is not defeated by an identity-based key. The large completion_unique_states/completion_edges_built counts observed (tens of thousands per single ~256-token record) reflect that the grammar-authority computation is a genuinely non-trivial, repeated Lark-based incremental-parse-plus-scope-analysis, invoked once per token (or once per top-level candidate per token) -- not an unbounded or exponential blow-up.",
+  "fix": {
+    "files": [
+      "src/slm_training/models/grammar.py",
+      "src/slm_training/models/twotower.py"
+    ],
+    "description": "Wrap exact_forced_token_id's build_completion_forest call in with timed_ms(get_active_stats(), 'compiler_ms'). Widen the existing with timed_ms(stats, 'compiler_ms') block in _compiler_ltr_decode_one and _compiler_ltr_decode_batch to also cover the immediately-following state.completion_forced_closure(...) call. Both changes are purely additive timing instrumentation -- no decode/generation-output behavior change, no change to which tokens are emitted or which candidates are legal (I2/I6 untouched); only decode_stats attribution changes (compiler_ms measured where it previously wasn't, unattributed_ms shrinks correspondingly).",
+    "behavior_neutral_for_output": true,
+    "changes_metric_values": true
+  },
+  "regression_test": {
+    "file": "tests/test_dsl/test_exact_forced_horizon.py",
+    "test": "test_exact_forced_token_id_charges_compiler_ms_not_unattributed",
+    "method": "monkeypatch build_completion_forest to delay by 50ms while still returning the real result, call exact_forced_token_id under an active DecodeStats, assert stats.compiler_ms captures at least 90% of the delay",
+    "verified_fails_without_fix": true,
+    "verified_passes_with_fix": true
+  },
+  "test_results": {
+    "targeted": "tests/test_dsl/test_exact_forced_horizon.py -- 3 passed",
+    "family": "tests/test_dsl/test_exact_forced_horizon.py tests/test_models/test_compiler_decode.py -- 235 passed, 2 failed (pre-existing, unrelated: missing @openuidev/lang-core npm bridge deps in this sandbox; fail identically on an unmodified checkout)",
+    "contract_test": "tests/test_scripts/test_run_autotrain_continuous.py -- 222 passed, 1 skipped (test_replayed_dual_arm_timeouts_remain_inconclusive_and_require_repair intact, not weakened)",
+    "wider_sweep": "tests/test_models/test_grammar_diffusion.py tests/test_models/test_completion_decode_state.py tests/test_dsl/test_completion_kernel.py tests/test_dsl/test_grammar_fastpath_lexer_cache.py tests/test_dsl/test_engine_direct_feed.py -- 101 passed, 2 failed (pre-existing, unrelated: progspec generator oracle rejection; fail identically on an unmodified checkout)",
+    "check_changed_hook": "15 pre-existing failures reproduced identically on an unmodified checkout (Node bridge deps, operator-policy-view fixture drift, tree-edit value-mode label drift, twotower checkpoint-preserve fixtures); zero new failures introduced by this change",
+    "repo_policy": "python -m scripts.repo_policy -- ok",
+    "version_stamps": "python -m scripts.verify_version_stamps --check -- ok after model.twotower v309 -> v310 bump"
+  },
+  "conclusion": "This is a genuine, now-fixed decode-cost METERING defect in the canonical model_build/twotower decode-stats instrumentation, not evidence of a runaway or exponential compiler-tree search. It directly undermines the specific evidence chain the c5 and gd6j83-c2 docs used ('compiler_ms_mean jumped ~5-6x symmetrically'): that comparison silently pitted a fully-metered decode (compiler_decode_mode=tree) against an almost-entirely-unmetered one (compiler_decode_mode=off), because those two checkpoints/cycles happened to decode through different mechanisms and evaluate_model.py --ship-gates does not force one uniformly without an explicit --compiler-decode-mode flag. Once metered identically, the seed-100001 control's real per-record grammar-authority cost (~38s in this single-record reproduction) is comparable to or larger than seed-100002's (~15-23s/record) -- the two are not obviously different regimes once measured on the same basis. This finding neither confirms nor rules out that the gd6j83-c2 dual-arm timeout itself would reproduce identically under corrected metering; that determination is left to the queued retry_measurement replay per the loop's existing rule (never auto-retire a symmetric dual-arm timeout; require repair first, which this is).",
+  "next_steps": [
+    "retry_measurement on the identical frozen c2 arm (already queued by the loop) now that compiler_ms/unattributed_ms correctly reflect both decode mechanisms",
+    "when comparing compiler_ms_mean across cycles/arms going forward, also check each arm's evaluation_policy.compiler_decode_mode -- a symmetric comparison requires both arms to be decoding through the same mechanism, which is not guaranteed by --ship-gates alone",
+    "consider (separate, not attempted here) whether evaluate_model.py --ship-gates should warn or fail when a checkpoint's own persisted compiler_decode_mode disagrees with the STRICT_COMPILER_TREE_POLICY_ID it claims to apply, since this silent divergence is what made the metering gap invisible for two prior investigation sessions"
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "4e137321054f590f5dc5518d18f166bbc37109ed",
+    "code_dirty": true,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v88",
+      "harness.model_build.train": "v42",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v23",
+      "evals.agentv": "v7",
+      "model.twotower": "v310",
+      "dsl.symbolic_surface": "v6"
+    },
+    "stamped_at": "2026-08-04T20:00:00Z"
+  },
+  "recorded_at": "2026-08-04T20:00:00Z"
+}
