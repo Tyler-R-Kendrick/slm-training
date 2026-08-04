@@ -1,0 +1,87 @@
+{
+  "schema": "autotrain_continuous_cycle_results/v1",
+  "loop_id": "continuous-openui-local-r3",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local--c8650581-c6",
+  "cycle_index": 6,
+  "source_commit": "34111e6e",
+  "integration_commit": "9f24bd3e",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "screening",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true
+  },
+  "arms": {
+    "control": {
+      "id": "c20260804-continuous-openui-local--c8650581-c6-control",
+      "trainable_params": 1755764,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete_gate_reject",
+      "metrics": {
+        "latency_ms_p50": 5671.81,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0964,
+        "binder_reference_f1": 0.8222222222222223
+      }
+    },
+    "component_plan": {
+      "id": "c20260804-continuous-openui-local--c8650581-c6-component-plan",
+      "trainable_params": 1755764,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete_gate_reject",
+      "metrics": {
+        "latency_ms_p50": 5167.69,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0964,
+        "binder_reference_f1": 0.8222222222222223
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260804-continuous-openui-local--c8650581-c6-control",
+      "fixture_insufficient_n:c20260804-continuous-openui-local--c8650581-c6-component-plan",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.0964 candidate=0.0964 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "climb_state": "rejected",
+  "ship_state": "blocked",
+  "conclusion": "component_plan_exact_tie_fixture_n3",
+  "caveats": [
+    "Exact tie on the primary metric (0.0964 == 0.0964) and on binder_reference_f1 (0.82222 == 0.82222); component_plan is not distinguishable from control at this fixture scale.",
+    "meaningful_program_rate is 0.0 for both arms at n=3 -- expected fixture-scale noise, not a claim about the component_plan lever's real effect.",
+    "component_plan arm's trainable_params (1,755,764) is larger than the r3-c5 baseline (1,608,962); this cycle's own control is size-matched to component_plan, so the comparison is still valid, but not directly comparable in absolute terms to cycle 5's arms."
+  ],
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "model",
+      "hypothesis": "The completed non-positive arm is exhausted; test the distinct size-matched 'component-edge' quality hypothesis next.",
+      "action": "experiment_next",
+      "experiment_id": "c20260804-continuous-openui-local--c8650581-c6-component-edge"
+    },
+    {
+      "rank": 2,
+      "area": "evaluation",
+      "hypothesis": "Keep the matched control as the size-matched baseline every cycle.",
+      "action": "experiment_next",
+      "experiment_id": "c20260804-continuous-openui-local--c8650581-c6-control"
+    }
+  ],
+  "recorded_at": "2026-08-04T23:54:24Z"
+}
