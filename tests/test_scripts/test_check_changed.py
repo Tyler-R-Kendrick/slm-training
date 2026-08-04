@@ -1,3 +1,4 @@
+import json
 import subprocess
 import sys
 from types import SimpleNamespace
@@ -292,3 +293,87 @@ def test_list_mode_needs_no_installed_dependencies() -> None:
     )
 
     assert result.returncode == 0, result.stderr
+
+
+def _uniform_nodes(files: int, per_file: int) -> list[str]:
+    return [
+        f"tests/test_uniform_{file_index}.py::test_{node_index}"
+        for file_index in range(files)
+        for node_index in range(per_file)
+    ]
+
+
+def test_duration_aware_shards_are_deterministic() -> None:
+    nodes = _uniform_nodes(5, 4)
+    table = {"tests/test_uniform_1.py": 30.0, "tests/test_uniform_3.py": 2.5}
+
+    first = check_changed._shard_test_nodes(nodes, 3, durations=table)
+    second = check_changed._shard_test_nodes(list(reversed(nodes)), 3, durations=table)
+
+    assert first == second
+    assert {node for batch in first for node in batch} == set(nodes)
+
+
+def test_duration_aware_shards_isolate_a_heavy_file() -> None:
+    heavy = "tests/test_heavy.py"
+    light = [f"tests/test_light_{index}.py" for index in range(10)]
+    nodes = [
+        *(f"{heavy}::test_{index}" for index in range(3)),
+        *(f"{path}::test_{index}" for path in light for index in range(2)),
+    ]
+    table = {heavy: 100.0, **{path: 1.0 for path in light}}
+
+    for shard_count in (2, 4, 8):
+        batches = check_changed._shard_test_nodes(nodes, shard_count, durations=table)
+        heavy_batches = [
+            batch for batch in batches if any(node.startswith(f"{heavy}::") for node in batch)
+        ]
+
+        assert len(heavy_batches) == 1, "a measured file must stay on one shard"
+        assert sorted(heavy_batches[0]) == sorted(
+            node for node in nodes if node.startswith(f"{heavy}::")
+        )
+        assert {node for batch in batches for node in batch} == set(nodes)
+
+
+def test_empty_duration_table_reduces_to_node_count_balancing() -> None:
+    nodes = _uniform_nodes(6, 5)
+
+    batches = check_changed._shard_test_nodes(nodes, 4, durations={})
+
+    counts = [len(batch) for batch in batches]
+    assert max(counts) - min(counts) <= 1
+    assert {node for batch in batches for node in batch} == set(nodes)
+    # Per-file balance is preserved too, which is what the count-balanced
+    # predecessor guaranteed.
+    for file_index in range(6):
+        prefix = f"tests/test_uniform_{file_index}.py::"
+        per_file = [sum(node.startswith(prefix) for node in batch) for batch in batches]
+        assert max(per_file) - min(per_file) <= 1
+
+
+def test_committed_test_duration_table_is_schema_valid() -> None:
+    payload = json.loads(check_changed.TEST_DURATIONS_PATH.read_text(encoding="utf-8"))
+
+    assert payload["schema"] == "test_file_durations/v1"
+    assert payload["unit"] == "seconds"
+    assert payload["generated_by"]
+    durations = payload["durations"]
+    assert durations
+    for path, seconds in durations.items():
+        assert path.startswith("tests/") and path.endswith(".py"), path
+        assert isinstance(seconds, (int, float)) and seconds > 0, path
+
+    loaded = check_changed._test_file_durations()
+    assert loaded == {path: float(value) for path, value in durations.items()}
+
+
+def test_missing_duration_table_degrades_to_an_empty_weighting(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(
+        check_changed, "TEST_DURATIONS_PATH", tmp_path / "absent.json"
+    )
+    check_changed._test_file_durations.cache_clear()
+    try:
+        assert check_changed._test_file_durations() == {}
+    finally:
+        check_changed._test_file_durations.cache_clear()
