@@ -1,0 +1,94 @@
+{
+  "schema": "autotrain_continuous_cycle_results/v1",
+  "loop_id": "continuous-openui-local-r3",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local--c8650581-c4",
+  "cycle_index": 4,
+  "source_commit": "34111e6e",
+  "integration_commit": "78cf357d",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "screening",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true
+  },
+  "harness_bug": {
+    "family": "model_build",
+    "symptom": "scripts.evaluate_model --ship-gates crashed inside publish_agentv_evaluation with node ERR_MODULE_NOT_FOUND for node_modules/typebox/build/typebox.mjs (imported by node_modules/typebox/build/index.mjs)",
+    "root_cause": "repo-root node_modules was stale/mismatched against the committed package-lock.json (installed typebox resolved to 1.3.6 but was missing build/typebox.mjs, which that version's index.mjs imports). package-lock.json itself was unchanged, confirming environment staleness rather than a lockfile or dependency-version bug.",
+    "repair": "NODE_OPTIONS= npm ci at the repo root (NODE_OPTIONS cleared because the ambient value in this container is a malformed literal-quoted string, \"--import tsx\" --max-old-space-size=8192, which breaks node/npm invocations outright) resynced node_modules to the lockfile and restored the missing file.",
+    "repaired_by_commit": null,
+    "note": "Two prerequisite schema/allowlist bugs were fixed by commit before this arm could even reach hypothesize/validate: ExperimentKnobs was missing generate_batch_size (harness.autoresearch.experiment_campaign v180->v181) and DEFAULT_ALLOWED_KNOBS did not list it either (v181->v182). This node_modules repair is a local environment resync only (no tracked file changed) and is recorded here as the evidence for the repair_harness handoff action."
+  },
+  "arms": {
+    "control": {
+      "id": "c20260804-continuous-openui-local--c8650581-c4-control",
+      "trainable_params": 1608962,
+      "exit_code": 2,
+      "train_status": "completed",
+      "eval_status": "harness_error_pre_repair",
+      "measurement_complete": false,
+      "metrics_partial": {
+        "latency_ms_p50": 27562.0,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.4166666666666667,
+        "binder_reference_f1": 0.9523809523809524
+      }
+    },
+    "steps": {
+      "id": "c20260804-continuous-openui-local--c8650581-c4-steps",
+      "trainable_params": 1608962,
+      "exit_code": 124,
+      "train_status": "wall_timeout",
+      "eval_status": "not_run",
+      "measurement_complete": false,
+      "metrics_partial": {
+        "latency_ms_p50": 18456.8,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.51,
+        "binder_reference_f1": 0.8222222222222223
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "measurement_incomplete:c20260804-continuous-openui-local--c8650581-c4-control:missing_scoreboard",
+      "measurement_incomplete:c20260804-continuous-openui-local--c8650581-c4-steps:missing_scoreboard",
+      "harness_failure:c20260804-continuous-openui-local--c8650581-c4-control:experiment_failed",
+      "efficiency_win:mpr_per_ms:1.2093946e-05->1.8060191e-05:gain_fraction=0.49332495:minimum=0.05",
+      "quality_held:parse=1.0 mpr=0.3333333333333333",
+      "non_regression_fail:binder_reference_f1:0.9523809523809524->0.8222222222222223",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.4166666666666667 candidate=0.51 improvement=0.09333333333333332",
+      "executable_unblock:candidate_completed_after_control_error"
+    ]
+  },
+  "climb_state": "inconclusive",
+  "ship_state": "blocked",
+  "conclusion": "measurement_incomplete_both_arms_pre_repair_harness_bug",
+  "caveats": [
+    "The metrics_partial values above were captured from partial train/eval telemetry, not a completed scoreboard.json (control's evaluate_model process crashed before publishing; steps hit the experiment wall cap). They are recorded for diagnostic continuity only and must not be read as an honest matched control/candidate comparison or a structural_similarity win for the steps arm.",
+    "steps' exit=124 is a soft wall-cap timeout (MAX_RUN_MINUTES / --experiment-wall-seconds), expected on this CPU-only fixture host and not itself evidence of a lever regression.",
+    "This cycle blocked entirely before the node_modules repair (harness_bug above); the queued retry_measurement action replays the identical frozen arm (frozen_manifest_sha256 ec197e9107e56d008ae1bf461b5b17794f4c3edd17c9fde8b79b6d3b712651b4) once every prerequisite handoff action is acknowledged."
+  ],
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "infrastructure",
+      "hypothesis": "The measurement is incomplete; replay the exact frozen control and candidate before testing a new hypothesis.",
+      "action": "experiment_next",
+      "experiment_id": "c20260804-continuous-openui-local--c8650581-c4-steps"
+    }
+  ],
+  "recorded_at": "2026-08-04T23:50:00Z"
+}
