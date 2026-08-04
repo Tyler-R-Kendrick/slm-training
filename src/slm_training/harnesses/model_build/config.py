@@ -478,13 +478,17 @@ class ModelBuildConfig:
     # V7 speculative denoising (docs/design/speculative-denoising.md)
     stability_min_persistence: int = 0  # E70 commit gate (0=off)
     stability_jsd_weight: float = 1.0  # E70 remask score mix
-    unmask_mode: str = "positions"  # positions | cluster (E71)
+    unmask_mode: str = "positions"  # positions | cluster (E71) | hybrid (HX4)
     # Block-diffusion scheduling (L-D): when on, unmask selection groups
     # positions into fixed blocks (BlockNoiseSchedule) and parallel step
     # commits are jointly validated by multi_region_support (proven-impossible
     # canvases revert to masks). Default off = existing positionwise MaskGIT.
     block_diffusion_decode: bool = False
     block_diffusion_block_size: int = 4
+    # HX4 hybrid unmask scheduler: minimum contiguous masked-run length that is
+    # budgeted through the block (span) lane; shorter runs use the frontier lane.
+    hybrid_span_min_run: int = 3
+    hybrid_frontier_head: int = 2
     cluster_attn_threshold: float = 0.08
     cluster_max_size: int = 4
     cluster_verify: bool = False  # E72 ordered cluster verification

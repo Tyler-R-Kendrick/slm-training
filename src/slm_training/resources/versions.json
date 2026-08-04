@@ -1168,11 +1168,12 @@
       ]
     },
     "dsl.completion_kernel": {
-      "version": "v19",
+      "version": "v20",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/grammar/fastpath/engine.py",
         "src/slm_training/dsl/grammar/fastpath/completion_artifact.py",
+        "tests/test_dsl/test_static_lalr_adapter.py",
         "src/slm_training/dsl/grammar/fastpath/completion_kernel.py",
         "src/slm_training/dsl/grammar/fastpath/force_emit.py",
         "src/slm_training/dsl/grammar/fastpath/semantic_state.py",
@@ -1195,6 +1196,11 @@
         "docs/design/adr-constrained-diffusion-topology-split.md"
       ],
       "history": [
+        {
+          "version": "v20",
+          "date": "2026-08-04",
+          "note": "Certified executable LALR adapter over the completion artifact (W2 lane). The builder emits I64 rule_origins / rule_lengths tensors plus a state_min_terminals lower-bound tensor (control_only_lower_bound, negative_only, max 3, 54/119 states nonzero, -1 sentinel, brute-force-oracle validated); StaticLalrAdapter executes shift/reduce over the arrays and is certified in lockstep against the live Lark InteractiveParser over the E1 corpus (accepts-set equality at every terminal prefix). require_certified_static_lalr() is fail-closed and cached per artifact digest; load_checked_completion_artifact re-derives and equality-checks the new arrays. Artifact regenerated (53824 to 56224 bytes) so its sha256 changed and checkpoints declaring the old identity must be re-stamped (fail-closed contract). Adapter and bound are CONSUMED BY NOTHING: completion_kernel.py and engine.py untouched, no default decode path changed."
+        },
         {
           "version": "v19",
           "date": "2026-08-04",
@@ -9944,7 +9950,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v88",
+      "version": "v89",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -9965,6 +9971,11 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v89",
+          "date": "2026-08-04",
+          "note": "Additive decode telemetry for the HX4/HX5 lanes: hybrid_span_commits, hybrid_frontier_commits, hybrid_span_reverts, block_joint_unknowns (joint validator returned authority=unknown and commits were kept) and template_slot_positions (E20 template holes, folded once per generate), all added to the aggregate_stats key list. Counters only; no metric or gate semantics change. HX5 session reuse also changes engine-counter accounting on the default repair path: engine stats fold once per _ensure_valid_openui call instead of once per attempt, so completion_* totals drop without any decode-output change."
+        },
         {
           "version": "v88",
           "date": "2026-08-04",
@@ -12401,7 +12412,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v310",
+      "version": "v311",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -12447,9 +12458,19 @@
       ],
       "history": [
         {
+          "version": "v311",
+          "date": "2026-08-04T20:05:00+00:00",
+          "note": "no-bump-collision-renumber: this branch's decode-metering fix (below) and origin/main's HX4/HX5 change (also below) independently bumped model.twotower to v310 in parallel; origin/main's PR merged to main first, so on merging origin/main into this branch the top-level version is renumbered v310->v311 to keep the sequence unique. Neither underlying entry's content is edited -- both original v310 history entries are preserved verbatim below, in each side's original relative order, per the version-stamp merge contract."
+        },
+        {
           "version": "v310",
           "date": "2026-08-04T20:00:00+00:00",
           "note": "fix(decode-metering): exact_forced_token_id (models/grammar.py), used by the legacy non-compiler-tree LTR decode path, called build_completion_forest with zero timed_ms instrumentation, so a checkpoint that decodes via compiler_decode_mode='off' (its own persisted config) could spend nearly all of its real decode wall time in that call while compiler_ms stayed 0.0 and the cost silently fell into unattributed_ms. Also widened the compiler-tree timed_ms(compiler_ms) block in twotower.py's _compiler_ltr_decode_one/_compiler_ltr_decode_batch to cover completion_forced_closure, the same outgoing()-edge grammar-authority walk chained off the same call. Pure additive timing instrumentation: no decode/generation-output behavior changes, only decode_stats attribution (compiler_ms up, unattributed_ms down for previously-unmetered calls). See docs/design/compiler-tree-forced-closure-decode-metering-gap.md."
+        },
+        {
+          "version": "v310",
+          "date": "2026-08-04",
+          "note": "HX4 hybrid unmask scheduler (unmask_mode=hybrid, default off): contiguous masked runs at or above hybrid_span_min_run (new lever, default 3) trimmed at the first EOS/PAD are budgeted through BlockNoiseSchedule/select_blocks_to_unmask; remaining holes take a frontier-first order (left neighbour committed, then confidence). Both lanes reuse the existing commit/admit machinery, so legality is never widened. The joint validator guard is widened to hybrid with a REGION-SCOPED revert: span commits revert first, multi_region_support re-runs once, and frontier commits revert only if the canvas is still proven impossible (L-D all-or-nothing preserved as the fallback and byte-identical when block_diffusion_decode is on and hybrid off). HX5: _constrained_ltr_repair accepts an optional caller-owned GrammarDecodeState (skipping its engine-stat fold), _ensure_valid_openui allocates one session for all repair attempts and folds once, and deterministic attempts short-circuit when an attempt reproduces the previous text. Default positions path untouched; fixture outputs byte-identical."
         },
         {
           "version": "v309",
