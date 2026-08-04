@@ -1,0 +1,55 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260801",
+  "campaign_id": "continuous-loop-20260801-c3",
+  "cycle_index": 3,
+  "cycle_role": "screening",
+  "source_commit": "1bdfb14ebcf2393976a7c969e7bdd449fc5ada39",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "batch_size": 2,
+    "seed": 7,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c3-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.1725,
+        "latency_ms_p50": 9589.97,
+        "latency_ms_p95": 10310.73
+      }
+    },
+    "c3-both": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.1725,
+        "latency_ms_p50": 9430.79,
+        "latency_ms_p95": 10043.95
+      },
+      "levers": {"grammar_completion_bounds": true, "compact_active_canvas": true}
+    }
+  },
+  "primary_metric": "smoke.latency_ms_p50",
+  "primary_delta_ms": 159.18,
+  "conclusion": "grammar_completion_bounds + compact_active_canvas together shaved smoke p50 latency by 159ms (9589.97ms -> 9430.79ms) but SDLC Phase A classifies this NON_POSITIVE: meaningful_program_rate stayed 0.0 on both arms (mpr=0.0 < 1/3 fixture floor), and structural_similarity was identically 0.1725 on both arms -- a pure latency delta with no quality movement is rejected as a free win per the quality-aware tradeoff policy (latency_win_rejected_low_mpr).",
+  "next_priorities": [
+    "grammar_completion_bounds + compact_active_canvas do not move quality at this fixture scale; do not prioritize a dedicated matrix for this pairing until a lever moves mpr or structural_similarity off the floor on the same suite"
+  ],
+  "recorded_at": "2026-08-01T08:37:15+00:00"
+}
