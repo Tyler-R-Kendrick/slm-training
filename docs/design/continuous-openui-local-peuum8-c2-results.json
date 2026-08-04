@@ -1,0 +1,87 @@
+{
+  "schema": "autotrain_continuous_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 2,
+  "source_commit": "b04d663628ddf75a7c3be8c4f70f053065170890",
+  "integration_commit": "92ceb3ea1762751f9cc3acc16b7b3cd088fc845d",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "screening",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true,
+    "seed": 100002
+  },
+  "arms": {
+    "control": {
+      "id": "c20260804-continuous-openui-local-8c0b60dd-c2-control",
+      "trainable_params": 1755764,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete_gate_reject",
+      "metrics": {
+        "latency_ms_p50": 34102.31,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.32666666666666666,
+        "binder_reference_f1": 0.0
+      }
+    },
+    "component_plan": {
+      "id": "c20260804-continuous-openui-local-8c0b60dd-c2-component-plan",
+      "trainable_params": 1755764,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete_gate_reject",
+      "metrics": {
+        "latency_ms_p50": 29684.18,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.38280000000000003,
+        "binder_reference_f1": 0.0
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.05613333333333337,
+  "sdlc_phase_a": {
+    "positive": true,
+    "stack_layer": false,
+    "has_tracked_delta": false,
+    "stack_action": "positive_no_tracked_delta_skip_stack",
+    "agent_required": "metric win recorded; no code/docs delta — skip stack PR; continue loop",
+    "reasons": [
+      "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c2-control",
+      "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c2-component-plan",
+      "primary_metric_win:smoke.structural_similarity:0.32666666666666666->0.38280000000000003:improvement=0.05613333333333337"
+    ]
+  },
+  "climb_state": "candidate_queued",
+  "ship_state": "blocked",
+  "champion_enqueue": {
+    "entry_id": "champ-continuous-openui-local-2-6cfba5d6fd08579f",
+    "fingerprint": "6cfba5d6fd08579f",
+    "candidate": "c20260804-continuous-openui-local-8c0b60dd-c2-component-plan"
+  },
+  "conclusion": "positive_screening_awaiting_fresh_seed_confirmation",
+  "caveats": [
+    "fixture n=3 smoke suite, well under the n>=20 evidence-volume gate; both arms still fail ship gates (gate reject) despite the primary-metric win",
+    "binder_reference_f1 regressed 0.6333 (cycle 1 recipe) to 0.0 on both arms this cycle — recipe/knob change between cycles, not attributable to the component-plan treatment alone",
+    "not a promotion; climb_state=candidate_queued pending fresh-seed confirmation per priority rank 1"
+  ],
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "evaluation",
+      "hypothesis": "Confirm the fixture candidate on a fresh seed with the exact size-matched treatment and control recipes before promotion.",
+      "action": "experiment_next",
+      "experiment_id": "c20260804-continuous-openui-local-8c0b60dd-c2-component-plan-fresh-confirmation"
+    }
+  ],
+  "recorded_at": "2026-08-04T21:36:39Z"
+}
