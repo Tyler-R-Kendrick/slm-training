@@ -12,6 +12,30 @@ from typing import Any, Sequence
 from slm_training.bridge_utils import checkout_roots, sanitized_node_env
 
 
+def _bootstrap_agentv_sdk(root: Path) -> tuple[bool, str]:
+    """Run ``npm ci`` once in ``root`` if it has a lockfile but no installed SDK.
+
+    A freshly cloned checkout has no ``node_modules`` until someone runs
+    ``npm ci``. Rather than fail every eval in a fresh checkout, install once
+    (clearing ``NODE_OPTIONS`` so a host shell's ``--import tsx`` can't make
+    npm's own node invocation exit 9) and let the caller re-check the SDK.
+    Returns ``(success, detail)`` so a failed bootstrap is diagnosable from
+    the caller's error text alone instead of silently discarding npm's output.
+    """
+    if not (root / "package-lock.json").is_file():
+        return False, "no package-lock.json in checkout root"
+    result = subprocess.run(
+        ["npm", "ci"],
+        cwd=root,
+        env=sanitized_node_env(),
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    detail = (result.stderr or result.stdout or "").strip()
+    return result.returncode == 0, detail
+
+
 def _agentv_runtime(repo_root: Path) -> tuple[Path, Path]:
     """Resolve the pinned SDK from this checkout or its Git common checkout."""
     override = os.getenv("AGENTV_RUNNER")
@@ -20,17 +44,40 @@ def _agentv_runtime(repo_root: Path) -> tuple[Path, Path]:
         return runner, runner.parents[1]
 
     checkout_runner = repo_root / "scripts" / "run_agentv_eval.mjs"
-    for root in checkout_roots(repo_root):
-        runner = (
+    roots = checkout_roots(repo_root)
+
+    def _runner_for(root: Path) -> Path:
+        return (
             checkout_runner
             if checkout_runner.is_file()
             else root / "scripts" / "run_agentv_eval.mjs"
         )
-        sdk = root / "node_modules" / "@agentv" / "core" / "package.json"
-        if runner.is_file() and sdk.is_file():
+
+    def _sdk_for(root: Path) -> Path:
+        return root / "node_modules" / "@agentv" / "core" / "package.json"
+
+    # First pass: reuse an already-installed SDK from any root before
+    # installing anything, so a worktree never re-bootstraps a copy the
+    # Git common checkout already has.
+    for root in roots:
+        runner = _runner_for(root)
+        if runner.is_file() and _sdk_for(root).is_file():
+            return runner, root
+
+    # No root has the SDK installed. Bootstrap starting from the last root
+    # (the Git common checkout, when this is a worktree) so the install is
+    # shared instead of duplicated per-worktree.
+    bootstrap_detail = ""
+    for root in reversed(roots):
+        runner = _runner_for(root)
+        if not runner.is_file():
+            continue
+        bootstrapped, bootstrap_detail = _bootstrap_agentv_sdk(root)
+        if bootstrapped and _sdk_for(root).is_file():
             return runner, root
     raise RuntimeError(
         "AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER"
+        + (f" (last bootstrap attempt: {bootstrap_detail})" if bootstrap_detail else "")
     )
 
 
