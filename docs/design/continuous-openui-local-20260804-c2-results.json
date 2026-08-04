@@ -1,0 +1,52 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 2,
+  "cycle_intent": "retry_measurement",
+  "source_commit": "eba6db3044076285581b80cfe5294a2ecbcee8a1",
+  "integration_commit": "0da92101e31ee0906e54fe11b206a2e7a27fbe6f",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "honest_slot_contract": true,
+    "slot_contract_constrained_decode": true,
+    "compiler_decode_mode": "off"
+  },
+  "arms": {
+    "c2-control": {
+      "status": "complete_gate_reject",
+      "structural_similarity": 0.057499999999999996,
+      "meaningful_program_rate": 0.0,
+      "parse_rate": 1.0,
+      "binder_reference_f1": 0.6333333333333333,
+      "latency_ms_p50": 4764.89
+    },
+    "c2-bounds": {
+      "status": "complete_gate_reject",
+      "structural_similarity": 0.057499999999999996,
+      "meaningful_program_rate": 0.0,
+      "parse_rate": 1.0,
+      "binder_reference_f1": 0.6333333333333333,
+      "latency_ms_p50": 4741.75
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "conclusion": "The frozen replay of cycle 1's control/bounds arms (queued as a retry_measurement action) completed end to end for the first time this loop: node_modules/@agentv/core is now installed, so both arms produced a full scoreboard/gates.json instead of a harness_failure. Both arms fail the smoke ship gate on expected fixture-scale grounds (smoke:insufficient_n actual=3 need>=20, plus quality-threshold floors) and the primary metric shows zero delta between control and candidate (0.0575 both). Per sdlc autotrain-iteration-delivery this is classified non-positive: fixture insufficient_n and a null primary-metric delta are explicitly listed as not-positive, so no stacked PR opens for this cycle -- confirms harness_failure repair only unblocks measurement, it does not itself count as a model win.",
+  "repair": null,
+  "known_debt_discovered": null,
+  "next_priorities": [
+    "model: test the distinct size-matched 'component-plan' quality hypothesis next (rank 1, confidence 0.90)",
+    "evaluation: keep the matched control as the size-matched baseline every cycle (rank 2, confidence 0.70)",
+    "model: rotate thrash recommendation across the lever bank instead of bounds-only (rank 3, confidence 0.65, monitor)",
+    "infrastructure: soft ship-gate fails on fixture n never stop the continuous loop (rank 4, confidence 0.80, monitor)"
+  ],
+  "recorded_at": "2026-08-04T07:45:00+00:00"
+}
