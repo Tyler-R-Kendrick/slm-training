@@ -1,0 +1,79 @@
+{
+  "finding": "lexer_cache_fix_does_not_change_eval_harness_decode_outcome_at_smoke_scale",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "is_fix": false,
+  "task": "decode-compiler-tree-lexer-cache-fix.md next_steps item 1: re-run the deadline-swallow-finding's isolated per-record eval protocol after PR #1173 (Lark lexer/scanner cache) to see whether compiler_ms drops enough for the exposure12 smoke records to finish inside decode_timeout_seconds=30 without the still-unapplied deadline-swallow fix from PR #1171.",
+  "reproduction": {
+    "checkpoint_source": "rebuilt from scratch in a fresh .venv-diag (Python 3.12) + npm ci (repo root + src/apps/openui_bridge), identical recipe to decode-compiler-tree-deadline-swallow-finding.md",
+    "train_data_build": "python -m scripts.build_train_data --source fixture --profile strict --max-records-per-parent 12 --version lever_exposure12_v1 --output-root outputs/data/train",
+    "train_data_check": {
+      "record_count": 107,
+      "matches_prior_doc": "decode-compiler-tree-deadline-swallow-finding.md (n=107)"
+    },
+    "train_command": "python -m scripts.train_model --train-dir src/slm_training/resources/data/train/lever_exposure12_v1 --model twotower --context-backend scratch --steps 16 --batch-size 2 --lr 1e-3 --structural-bias 1.5 --seed 47 --run-id exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed47 --no-sync-checkpoints --device cpu",
+    "eval_command_template": "python -m scripts.evaluate_model --test-dir src/slm_training/resources/data/eval/e938_role_safe_all_targets_v2 --suite smoke --train-dir src/slm_training/resources/data/train/lever_exposure12_v1 --model twotower --device cpu --checkpoint outputs/runs/exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed47/checkpoints/last.pt --grammar-constrained --decode-timeout-seconds 30 --seed 47 --constraint-debt-routing-mode fixed_asap --run-class scratch_matrix --eval-limit 1 --eval-offset {0,1,2}",
+    "isolation": "each smoke record run alone (--eval-limit 1 --eval-offset N), same protocol as decode-compiler-tree-deadline-swallow-finding.md, on code at HEAD (7bb77c9191dc1410f6b4af10670f81e27ecc43b8, includes PR #1173's lexer/scanner cache)"
+  },
+  "per_record_decode_stats": [
+    {
+      "record_id": "smoke_hero_01",
+      "eval_offset": 0,
+      "meaningful_program_rate": 0.0,
+      "decode_outcome_counts": {"model_valid": 0, "model_invalid": 0, "model_abstain": 0, "runtime_timeout": 0, "fallback_output": 1, "harness_error": 0},
+      "latency_ms_p50": 30206.27,
+      "total_ms_sum": 30206.041,
+      "compiler_ms_sum": 29419.672,
+      "compiler_ms_share_pct": 97.4,
+      "forwards_count_sum": 8.0,
+      "tokens_emitted_sum": 13.0,
+      "compiler_prefill_batches_sum": 8.0,
+      "pre_fix_baseline": {"total_ms_sum": 30006.543, "compiler_ms_sum": 29209.748, "compiler_ms_share_pct": 97.3, "forwards_count_sum": 3.0, "tokens_emitted_sum": 7.0}
+    },
+    {
+      "record_id": "smoke_button_01",
+      "eval_offset": 1,
+      "meaningful_program_rate": 0.0,
+      "decode_outcome_counts": {"model_valid": 0, "model_invalid": 0, "model_abstain": 0, "runtime_timeout": 0, "fallback_output": 1, "harness_error": 0},
+      "latency_ms_p50": 30009.11,
+      "total_ms_sum": 30008.824,
+      "compiler_ms_sum": 28519.169,
+      "compiler_ms_share_pct": 95.0,
+      "forwards_count_sum": 47.0,
+      "tokens_emitted_sum": 84.0,
+      "compiler_prefill_batches_sum": 47.0,
+      "pre_fix_baseline": {"total_ms_sum": 30006.47, "compiler_ms_sum": 29378.141, "compiler_ms_share_pct": 97.9, "forwards_count_sum": 4.0, "tokens_emitted_sum": 8.0}
+    },
+    {
+      "record_id": "smoke_callout_01",
+      "eval_offset": 2,
+      "meaningful_program_rate": 1.0,
+      "decode_outcome_counts": {"model_valid": 0, "model_invalid": 0, "model_abstain": 0, "runtime_timeout": 0, "fallback_output": 1, "harness_error": 0},
+      "latency_ms_p50": 30106.06,
+      "total_ms_sum": 30105.851,
+      "compiler_ms_sum": 29099.131,
+      "compiler_ms_share_pct": 96.7,
+      "forwards_count_sum": 8.0,
+      "tokens_emitted_sum": 13.0,
+      "compiler_prefill_batches_sum": 8.0,
+      "pre_fix_baseline": {"total_ms_sum": 30010.186, "compiler_ms_sum": 29186.439, "compiler_ms_share_pct": 97.3, "forwards_count_sum": 4.0, "tokens_emitted_sum": 8.0}
+    }
+  ],
+  "interpretation": "next_steps item 1 answered negatively: compiler_ms did NOT drop enough for any of the three smoke records to finish inside the 30s decode_timeout_seconds budget. All three still land on decode_outcome=fallback_output at ~30.0-30.2s wall, with compiler_ms still 95-97% of total -- the identical qualitative pattern as the pre-fix deadline-swallow-finding measurement. meaningful_program_rate is unchanged (0.0, 0.0, 1.0). next_steps item 3 (deadline-swallow-finding.md) is also answered: the swallow bug is still reachable and still masks these as fallback_output instead of a classified runtime_timeout, exactly as expected, since PR #1173 only cached lexer/scanner construction and did not apply the deadline-swallow-finding's separate proposed_fix_sketch (except TimeoutError: raise / check_decode_deadline() in the compiler-tree loop).",
+  "secondary_observation_throughput_increase": "The lexer/scanner cache fix is nonetheless doing real work inside the same wall-clock budget: compiler_prefill_batches / forwards_count rose on every record (offset0 3->8, offset2 4->8, offset1 4->47 with tokens_emitted 8->84). More build_completion_forest calls now fit inside 30s because each one no longer pays a full uncached Lark lexer rebuild -- this matches the fix's own measured ~2-2.1x per-call win from decode-compiler-tree-lexer-cache-fix.md. The eval harness's outcome/latency metrics do not surface this improvement because the hard wall still caps total_ms at ~30s regardless of how many more calls complete underneath it; only a metric like compiler_prefill_batches or forwards_count exposes the gain at this evaluation granularity. offset1's outlier 47-batch, 10x-tokens run vs the other two records' ~8 batches was not isolated further this session (record-specific structure, not re-measured across reps) and should not be read as a general 10x speedup claim.",
+  "why_finding_not_patch": "Same status as decode-compiler-tree-deadline-swallow-finding.md and decode-compiler-tree-lexer-cache-fix.md: this is a diagnostic re-measurement, not a change to watched harness code. No files under src/ were edited this session.",
+  "next_steps": [
+    "Apply decode-compiler-tree-deadline-swallow-finding.md's proposed_fix_sketch (except TimeoutError: raise in compiler_draft.py:2313; check_decode_deadline() calls in the compiler-tree per-position loop) via improve-openui-harnesses -- this is the fix that would actually change decode_outcome classification, not the lexer cache alone.",
+    "Apply decode-compiler-tree-lexer-cache-fix.md's proposed-fix-sketch item 2 (make _incremental_sync genuinely incremental at the lex layer) -- may further raise compiler_prefill_batches per 30s window but will not by itself resolve the still-open deadline-swallow classification bug.",
+    "After both land, re-run this exact isolated per-record protocol; only then would a change in decode_outcome (fallback_output -> runtime_timeout or a real on-time completion) be expected."
+  ],
+  "cleanup_note": "lever_exposure12_v1 train-data rebuild and the scratch checkpoint used for this diagnostic are not committed (outputs/ is gitignored); the auto-published copy under src/slm_training/resources/data/train/lever_exposure12_v1 is removed after this session's runs, same as the prior finding's cleanup note.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "7bb77c9191dc1410f6b4af10670f81e27ecc43b8",
+    "code_dirty": false,
+    "components": {},
+    "note": "python -m scripts.verify_version_stamps --check reports 0 components touched (no src/ files edited this session -- diagnostic re-run only)."
+  },
+  "captured_at": "2026-07-28T10:42:41.000000Z"
+}
