@@ -1,0 +1,63 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c1",
+  "cycle_index": 1,
+  "source_commit": "86e481cb10fd1bb503eb0fc8528ee278da2337e6",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 1.1666666666666667,
+    "ship_gates": true,
+    "seed": 100001
+  },
+  "arms": {
+    "c1-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 5125.94
+      }
+    },
+    "c1-bounds": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 4782.11
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "continue loop; local commits/docs only",
+    "reasons": [
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c1-control",
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c1-bounds",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.057499999999999996:candidate=0.057499999999999996:improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "conclusion": "Continuous-openui-local loop, cycle 1 (scheduled routine session sched01, branch claude/great-dirac-4a2kac): the 'bounds' knob-rotation arm ties its size-matched control exactly on the declared primary, smoke.structural_similarity (0.0575 both arms, seed 100001) -- a null delta, not a regression, not a win. parse_rate=1.0 and binder_reference_f1=0.6333 also match exactly on both arms; meaningful_program_rate stays 0 on both. Ship gates fail as expected (fixture_insufficient_n, n=3 vs the required 20). SDLC Phase A classifies this cycle NON_POSITIVE (primary_metric_null_or_worse); per sdlc autotrain-iteration-delivery, no new stack layer opens for this cycle -- docs land, loop continues with cycle 2. This is the fifth local reproduction of the same c1 null-delta screening result (see continuous-openui-local-j48f8u-c1-results.md and continuous-openui-local-ts5ofk-c1-results.md for the third and fourth).",
+  "next_priorities": [
+    "The completed 'bounds' arm is exhausted (null delta); test the distinct size-matched 'component-plan' quality hypothesis next (rank 1, confidence 0.9) -- this hypothesis has independently reproduced a +0.056 structural_similarity win across four prior sessions (see continuous-openui-local-ts5ofk-c2-results.md)",
+    "Keep the matched control as the size-matched baseline every cycle (rank 2, confidence 0.7)",
+    "Do not re-attempt the blocked '-confirm' fresh-seed confirmation path or the seed-100005 dual-arm decode timeout speculatively; that remains routed to a dedicated improve-openui-harnesses session (see autotrain-cycle-c5-c6-replay-blocked-follow-up.md)"
+  ],
+  "recorded_at": "2026-08-03T16:40:02Z"
+}

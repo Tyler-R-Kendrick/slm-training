@@ -19,11 +19,109 @@ from slm_training.dsl.schema import ExampleRecord
 from slm_training.models.tokenizer import tokenize_text
 
 _COMPONENT_RE = re.compile(r"\b([A-Z][A-Za-z0-9]*)\s*\(")
+_BINDER_ASSIGN_RE = re.compile(r"(?m)^\s*([a-z_][A-Za-z0-9_]*)\s*=")
+_LOWER_NAME_RE = re.compile(r"\b[a-z_][A-Za-z0-9_]*\b")
 
 
 def _component_combinations(source: str, size: int) -> set[tuple[str, ...]]:
     names = sorted(set(_COMPONENT_RE.findall(source)))
     return set(itertools.combinations(names, size))
+
+
+def rename_binders(source: str) -> str:
+    """Apply a deterministic, string-safe binder permutation (E65 stress)."""
+    names = sorted(set(_BINDER_ASSIGN_RE.findall(source)) - {"root"})
+    mapping = {name: f"sym_{index}" for index, name in enumerate(names)}
+    if not mapping:
+        return source
+    pieces = re.split(r'("(?:\\.|[^"\\])*")', source)
+    for index in range(0, len(pieces), 2):
+        pieces[index] = _LOWER_NAME_RE.sub(
+            lambda match: mapping.get(match.group(0), match.group(0)), pieces[index]
+        )
+    return "".join(pieces)
+
+
+def reorder_declarations(source: str) -> str:
+    """Reverse declaration order while preserving every declaration byte."""
+    lines = [line for line in source.splitlines() if line.strip()]
+    suffix = "\n" if source.endswith("\n") else ""
+    return "\n".join(reversed(lines)) + suffix
+
+
+def schema_transfer_report(
+    train_records: Iterable[ExampleRecord],
+    held_records: Iterable[ExampleRecord],
+    *,
+    alien_programs: Mapping[str, Iterable[str]] | None = None,
+) -> dict[str, Any]:
+    """Leave-family-out and representation-perturbation audit (E65)."""
+    train = list(train_records)
+    held = list(held_records)
+    known = set().union(*(_component_combinations(row.openui, 1) for row in train))
+    known_names = {item[0] for item in known}
+    held_names = set().union(*(_component_combinations(row.openui, 1) for row in held))
+    held_name_set = {item[0] for item in held_names}
+    unseen = sorted(held_name_set - known_names)
+    leave_one_out = {
+        family: sum(
+            family in {item[0] for item in _component_combinations(row.openui, 1)}
+            for row in held
+        )
+        for family in unseen
+    }
+
+    perturbations: list[dict[str, Any]] = []
+    for record in sorted(held, key=lambda row: row.id):
+        renamed = rename_binders(record.openui)
+        reordered = reorder_declarations(record.openui)
+        row = {"id": record.id, "rename_valid": False, "reorder_valid": False}
+        try:
+            row["rename_valid"] = validate(renamed).root is not None
+        except (ParseError, ValueError, RuntimeError):
+            pass
+        try:
+            row["reorder_valid"] = validate(reordered).root is not None
+        except (ParseError, ValueError, RuntimeError):
+            pass
+        perturbations.append(row)
+
+    alien: dict[str, dict[str, Any]] = {}
+    if alien_programs:
+        from slm_training.dsl.grammar.backends import get_backend
+
+        for dsl, programs in sorted(alien_programs.items()):
+            sources = list(programs)
+            passed = 0
+            errors: list[str] = []
+            backend = get_backend(dsl)
+            for source in sources:
+                try:
+                    backend.validate(source)
+                    passed += 1
+                except Exception as exc:  # noqa: BLE001 - transfer audit records failure
+                    errors.append(str(exc).splitlines()[0][:200])
+            alien[dsl] = {"n": len(sources), "valid": passed, "errors": errors[:10]}
+
+    return {
+        "known_schema_families": sorted(known_names),
+        "held_schema_families": sorted(held_name_set),
+        "unseen_schema_families": unseen,
+        "leave_one_schema_family_out_n": leave_one_out,
+        "symbol_rename_valid_rate": (
+            sum(bool(row["rename_valid"]) for row in perturbations) / len(perturbations)
+            if perturbations
+            else None
+        ),
+        "declaration_reorder_valid_rate": (
+            sum(bool(row["reorder_valid"]) for row in perturbations)
+            / len(perturbations)
+            if perturbations
+            else None
+        ),
+        "perturbations": perturbations,
+        "alien_grammar_transfer": alien,
+    }
 
 
 def _tree_depth(value: Any) -> int:
@@ -93,7 +191,9 @@ def train_generalization_profile(records: Iterable[ExampleRecord]) -> dict[str, 
     edits: set[tuple[str, ...]] = set()
     domains: set[str] = set()
     contracts: set[str] = set()
+    components: set[str] = set()
     for record in rows:
+        components.update(_COMPONENT_RE.findall(record.openui))
         pairs |= _component_combinations(record.openui, 2)
         triples |= _component_combinations(record.openui, 3)
         if composition := _edit_composition(record):
@@ -103,6 +203,7 @@ def train_generalization_profile(records: Iterable[ExampleRecord]) -> dict[str, 
         if contract := (record.meta or {}).get("contract_id"):
             contracts.add(str(contract))
     return {
+        "component_families": sorted(components),
         "component_pairs": sorted([list(value) for value in pairs]),
         "component_triples": sorted([list(value) for value in triples]),
         "max_tree_depth": max((_program_depth(row.openui) for row in rows), default=0),
@@ -138,6 +239,10 @@ def generalization_report(
             contaminated.append({"id": record.id, "reasons": reasons})
             continue
         slices: list[str] = []
+        if set(_COMPONENT_RE.findall(record.openui)) - set(
+            profile["component_families"]
+        ):
+            slices.append("unseen_component_family")
         if _component_combinations(record.openui, 2) - known_pairs:
             slices.append("unseen_component_pair")
         if _component_combinations(record.openui, 3) - known_triples:
@@ -167,4 +272,5 @@ def generalization_report(
         "contaminated": contaminated,
         "slice_counts": dict(sorted(counts.items())),
         "records": rows,
+        "schema_transfer": schema_transfer_report(train, held),
     }

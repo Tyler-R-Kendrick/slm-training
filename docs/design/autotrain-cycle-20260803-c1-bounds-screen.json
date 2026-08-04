@@ -1,0 +1,76 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "cycle": 1,
+  "loop_id": "continuous-openui-20260730",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-202607-98199209-c1",
+  "experiment": "bounds",
+  "claim_class": "fixture_screen",
+  "status": "rejected",
+  "measurement_complete": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "backend": "scratch TwoTower",
+    "matrix_set": "continuous-openui-local",
+    "honesty_mode": "grammar_constrained_strict_compiler_tree",
+    "suite_n": {"smoke": 3, "held_out": 0, "adversarial": 0, "ood": 0, "rico_held": 0}
+  },
+  "arms": {
+    "control": {
+      "id": "c20260803-continuous-openui-202607-98199209-c1-control",
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "structural_similarity": 0.0575,
+      "binder_reference_f1": 0.6333333333333333,
+      "latency_ms_p50": 971.56,
+      "exit": 0
+    },
+    "candidate": {
+      "id": "c20260803-continuous-openui-202607-98199209-c1-bounds",
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "structural_similarity": 0.0575,
+      "binder_reference_f1": 0.6333333333333333,
+      "latency_ms_p50": 981.72,
+      "exit": 0
+    }
+  },
+  "gates": {
+    "pass": false,
+    "failures": [
+      "smoke:insufficient_n",
+      "smoke:meaningful_program_rate",
+      "smoke:structural_similarity",
+      "smoke:component_type_recall",
+      "smoke:ast_beq_rate",
+      "smoke:canonical_beq_rate",
+      "smoke:reward_score",
+      "held_out:missing_suite",
+      "adversarial:missing_suite",
+      "ood:missing_suite",
+      "rico_held:missing_suite"
+    ]
+  },
+  "signals": {
+    "attribution": "matched pair; quality null; candidate p50 +1.05%",
+    "prevention": ["fixture n=3", "no held-out/OOD/RICO suites", "meaningful rate 0"],
+    "next_priorities": [
+      "component-plan quality arm with exact matched control",
+      "retain the control every cycle",
+      "rerun semantic-contrast arms only after CE-mask parity telemetry is present"
+    ]
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "c9237dc7f9cfed63f7f9c490975f07ca85470160",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v82",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v22",
+      "model.twotower": "v307"
+    },
+    "stamped_at": "2026-08-03T12:20:47.909067+00:00"
+  }
+}

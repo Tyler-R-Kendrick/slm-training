@@ -12,7 +12,7 @@
   ],
   "components": {
     "formal.leverproof": {
-      "version": "v7",
+      "version": "v11",
       "kind": "harness",
       "paths": [
         "src/leverproof_lean/",
@@ -25,6 +25,26 @@
         "src/leverproof_lean/Test/Proofs.lean"
       ],
       "history": [
+        {
+          "version": "v11",
+          "date": "2026-08-03",
+          "note": "Route LeverProof certificate checks through the canonical bounded process-group runner and shared project lock; timeout and launch failures remain fail-closed."
+        },
+        {
+          "version": "v10",
+          "date": "2026-08-02",
+          "note": "Keep proof audits fail closed while portably falling back to grep when ripgrep is absent."
+        },
+        {
+          "version": "v9",
+          "date": "2026-08-02",
+          "note": "Fail closed when ripgrep is unavailable or errors, reject source-level sorryAx escapes, and reject sorryAx in theorem-audit output."
+        },
+        {
+          "version": "v8",
+          "date": "2026-08-01",
+          "note": "Use the Mathlib-free StructuralMetrics theorem for promotion preflight, build and protocol-test the certificate checker in the same run, and forbid native_decide proof escapes"
+        },
         {
           "version": "v7",
           "date": "2026-07-31",
@@ -271,7 +291,7 @@
       ]
     },
     "data.corpus_certification": {
-      "version": "v1",
+      "version": "v2",
       "kind": "data_builder",
       "paths": [
         "src/slm_training/data/verify/",
@@ -280,9 +300,16 @@
         "tests/test_scripts/test_audit_data_corpora.py",
         "src/slm_training/resources/data/train/openui_verified_v1/",
         "docs/design/corpus-certification.md",
-        "docs/design/iter-slm289-corpus-certification-20260725.json"
+        "docs/design/iter-slm289-corpus-certification-20260725.json",
+        "src/slm_training/dsl/grammar/backends/openui_hybrid.py",
+        "tests/test_dsl/test_grammar_backends.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-03",
+          "note": "Quarantine G2 corpus rows when the independent lang-core and Lark authorities disagree on acceptance or structural AST identity."
+        },
         {
           "version": "v1",
           "date": "2026-07-25",
@@ -1141,11 +1168,12 @@
       ]
     },
     "dsl.completion_kernel": {
-      "version": "v4",
+      "version": "v20",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/grammar/fastpath/engine.py",
         "src/slm_training/dsl/grammar/fastpath/completion_artifact.py",
+        "tests/test_dsl/test_static_lalr_adapter.py",
         "src/slm_training/dsl/grammar/fastpath/completion_kernel.py",
         "src/slm_training/dsl/grammar/fastpath/force_emit.py",
         "src/slm_training/dsl/grammar/fastpath/semantic_state.py",
@@ -1168,6 +1196,86 @@
         "docs/design/adr-constrained-diffusion-topology-split.md"
       ],
       "history": [
+        {
+          "version": "v20",
+          "date": "2026-08-04",
+          "note": "Certified executable LALR adapter over the completion artifact (W2 lane). The builder emits I64 rule_origins / rule_lengths tensors plus a state_min_terminals lower-bound tensor (control_only_lower_bound, negative_only, max 3, 54/119 states nonzero, -1 sentinel, brute-force-oracle validated); StaticLalrAdapter executes shift/reduce over the arrays and is certified in lockstep against the live Lark InteractiveParser over the E1 corpus (accepts-set equality at every terminal prefix). require_certified_static_lalr() is fail-closed and cached per artifact digest; load_checked_completion_artifact re-derives and equality-checks the new arrays. Artifact regenerated (53824 to 56224 bytes) so its sha256 changed and checkpoints declaring the old identity must be re-stamped (fail-closed contract). Adapter and bound are CONSUMED BY NOTHING: completion_kernel.py and engine.py untouched, no default decode path changed."
+        },
+        {
+          "version": "v19",
+          "date": "2026-08-04",
+          "note": "multi_region_support: exact bounded multi-region completability under decode semantics (memoized DFS on (position, parser_state_key); epsilon fills for empty-piece tokens; budget exhaustion returns authority=unknown, fail-closed). Differential tests prove it rejects the left-prefix counterexample and agrees on completable canvases. Measured on real fixture canvases: 100 percent of admit probes are in the suffix-blind configuration but 0/60 sampled admits were jointly impossible - the gap's teeth are parallel block commits."
+        },
+        {
+          "version": "v18",
+          "date": "2026-08-04",
+          "note": "Fix two engine false-admit bugs (retrying a rejected set_prefix text returned True via the already-synced fast path; a rejected incremental delta returned the recovery resync's success) with a _synced_ok flag copied across forks and honored by engine_in_sync; relabel residual multi-hole support so canvases containing holes carry authority=left_prefix_overapprox (never exact) with the a-HOLE-c counterexample proven by bounded enumeration in tests."
+        },
+        {
+          "version": "v17",
+          "date": "2026-08-04",
+          "note": "L1+L2 of the precompiled-grammar-admissibility campaign: cached allowed-id expansion on the forest path and a session-scoped control-key branch memo (parser_state_key x sequence x literal-frame x path cap). Draft reuse only; semantic filters, path labels, and authority unchanged; E1 oracle parity green; new branch_memo_hits/misses counters."
+        },
+        {
+          "version": "v16",
+          "date": "2026-08-02",
+          "note": "Snapshot the already-integer LALR state stack directly for exact interning and accepts memo keys, removing redundant per-element integer coercion."
+        },
+        {
+          "version": "v15",
+          "date": "2026-08-02",
+          "note": "Reuse exact tokenizer-kind projections across completion transitions and preserve tokenizer-local surface-cache ownership, without changing grammar candidates or proof order."
+        },
+        {
+          "version": "v14",
+          "date": "2026-08-02",
+          "note": "Construct hot immutable semantic states and delimiter frames directly instead of reflecting through dataclasses.replace, preserving identical fields and interning authority."
+        },
+        {
+          "version": "v13",
+          "date": "2026-08-02",
+          "note": "Cache frozen tokenizer identity, kind, and special-token projections on the request tokenizer for semantic-state transitions without changing transition facts or interning keys."
+        },
+        {
+          "version": "v12",
+          "date": "2026-08-02",
+          "note": "Share the dormant lexer thread across callback-free control parser descendants while retaining independently copied feed-mutated parser stacks."
+        },
+        {
+          "version": "v11",
+          "date": "2026-08-02",
+          "note": "Share verified tokenizer-to-terminal maps across completion parser forks and detach the cache only when a branch encounters a new tokenizer."
+        },
+        {
+          "version": "v10",
+          "date": "2026-08-02",
+          "note": "Keep mutable macro expansions out of the token surface cache and cover the expansion-table mutation boundary with exact direct-feed regression evidence."
+        },
+        {
+          "version": "v9",
+          "date": "2026-08-02",
+          "note": "Share append-only fed-token histories across completion parser forks and detach both buffers before the first branch-local terminal commit."
+        },
+        {
+          "version": "v8",
+          "date": "2026-08-02",
+          "note": "Share immutable callback-free Lark parser configuration across descendant control-only completion forks while retaining fork-local stacks and lexer threads."
+        },
+        {
+          "version": "v7",
+          "date": "2026-08-02",
+          "note": "Memoize immutable semantic-state hashes and completed exact top-level witness verdicts without caching UNKNOWN or changing candidate order, proof budgets, or grammar authority."
+        },
+        {
+          "version": "v6",
+          "date": "2026-08-01",
+          "note": "Represent interned completion prefixes as persistent parent-token links and materialize exact tuples only for states that require an authority scan."
+        },
+        {
+          "version": "v5",
+          "date": "2026-08-01",
+          "note": "Skip the redundant rollback snapshot on already-isolated disposable parser branches while retaining transactional restoration for every reusable engine path."
+        },
         {
           "version": "v4",
           "date": "2026-07-31",
@@ -1246,7 +1354,7 @@
       ]
     },
     "dsl.operators.registry": {
-      "version": "v11",
+      "version": "v12",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/registry.py",
@@ -1254,6 +1362,21 @@
         "tests/test_dsl/test_operator_registry.py"
       ],
       "history": [
+        {
+          "version": "v12",
+          "date": "2026-08-04",
+          "note": "no-bump: per-query witness tally in dsl/pack.py feeding the false-singleton counter; telemetry only, decode behavior unchanged (witness counters reproduce the merged baseline 2180/2104/88 with byte-identical outputs)."
+        },
+        {
+          "version": "v12",
+          "date": "2026-08-04",
+          "note": "no-bump: add the _note_witness advisory counter helper and its call sites in dsl/pack.py, splitting the previously collapsed UNKNOWN vs UNSUPPORTED witness-prune verdicts. Telemetry only - the drop behavior, candidate sets, and emitted domains are unchanged (measured byte-identical on the profile fixture)."
+        },
+        {
+          "version": "v12",
+          "date": "2026-08-02",
+          "note": "Treat empty pack-owned tree-edit inventories as unavailable in filled_slots, matching their fail-closed DslPack contract and dashboard capability reporting."
+        },
         {
           "version": "v11",
           "date": "2026-07-29",
@@ -1647,7 +1770,7 @@
       ]
     },
     "dsl.symbolic_surface": {
-      "version": "v4",
+      "version": "v6",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/language_contract.py",
@@ -1655,6 +1778,21 @@
         "tests/test_dsl/test_language_contract.py"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-08-03",
+          "note": "no-bump: add regression coverage for propagating DFA stream-probe deadlines; symbolic-surface policy behavior is unchanged."
+        },
+        {
+          "version": "v6",
+          "date": "2026-08-03",
+          "note": "Sanitize NODE_OPTIONS (via bridge_utils.sanitized_node_env) before spawning the lang-core Node bridge subprocess/REPL, so a host-level NODE_OPTIONS the Node build rejects (e.g. --import tsx) cannot silently kill validate() with an opaque empty-output error."
+        },
+        {
+          "version": "v5",
+          "date": "2026-08-02",
+          "note": "Project root-presence probes through a cached official lang-core bridge result while retaining identical parser authority and fail-closed ParseError behavior."
+        },
         {
           "version": "v4",
           "date": "2026-07-25",
@@ -1709,7 +1847,7 @@
       ]
     },
     "evals.agentv": {
-      "version": "v6",
+      "version": "v9",
       "kind": "harness",
       "paths": [
         "src/slm_training/evals/agentv.py",
@@ -1717,6 +1855,26 @@
         "tests/test_evals/test_agentv.py"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-08-04",
+          "note": "Address CodeRabbit review on #1429: check all checkout roots for an already-installed SDK before bootstrapping any of them, and bootstrap starting from the Git common checkout (last root) so a worktree with a tracked package-lock.json never installs a redundant node_modules copy. Surface the npm ci failure detail (stderr/stdout) in the raised RuntimeError instead of discarding it."
+        },
+        {
+          "version": "v8",
+          "date": "2026-08-04",
+          "note": "Self-heal _agentv_runtime: when the pinned SDK is missing but a package-lock.json exists, run npm ci once (sanitized_node_env) before failing, so a fresh checkout's first --ship-gates eval no longer hard-fails on missing node_modules."
+        },
+        {
+          "version": "v7",
+          "date": "2026-08-03",
+          "note": "Sanitize NODE_OPTIONS (via bridge_utils.sanitized_node_env) before spawning the AgentV runner subprocess, matching the lang-core and graphql-js bridges; a rejected host NODE_OPTIONS no longer breaks --ship-gates evaluation."
+        },
+        {
+          "version": "v6",
+          "date": "2026-08-02",
+          "note": "no-bump: refresh stale smoke-suite test fixtures with ast_beq_rate/canonical_beq_rate so test_agentv.py matches the already-shipped v6 gate policy; no harness behavior change"
+        },
         {
           "version": "v6",
           "date": "2026-07-30T10:18:42-05:00",
@@ -1760,6 +1918,11 @@
         "docs/design/dsh5-03-bulk-operator-crossover.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-04",
+          "note": "no-bump: mark test_run_dsh5_03_bulk_operator_crossover's single test @pytest.mark.slow. Its ~252s run_local_preflight cost sits in one test node, so no shard packing fits it under MAX_RUN_MINUTES; it was cancelled on every CI run, producing no evidence. Deselected by default (addopts) and run explicitly with -m slow. Coverage reduction stated in docs/design/false-singleton-and-shard-makespan-20260804.md; harness behavior unchanged."
+        },
         {
           "version": "v1",
           "date": "2026-07-26",
@@ -2078,12 +2241,17 @@
       ]
     },
     "evals.scoring": {
-      "version": "v22",
+      "version": "v23",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/"
       ],
       "history": [
+        {
+          "version": "v23",
+          "date": "2026-08-03",
+          "note": "Add unseen schema-family, binder-rename, declaration-reorder, and alternate-grammar transfer evidence to deterministic generalization reports."
+        },
         {
           "version": "v22",
           "date": "2026-07-23",
@@ -2273,6 +2441,11 @@
         "docs/design/openfeature-experiments.md"
       ],
       "history": [
+        {
+          "version": "v12",
+          "date": "2026-08-03",
+          "note": "no-bump: promotion endpoint assertions call the pure route function directly to avoid the documented TestClient portal deadlock; request and response behavior are unchanged"
+        },
         {
           "version": "v12",
           "date": "2026-07-31",
@@ -2556,7 +2729,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v26",
+      "version": "v179",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2568,6 +2741,7 @@
         "src/slm_training/autoresearch/schemas.py",
         "src/slm_training/autoresearch/storage.py",
         "src/slm_training/autoresearch/engine.py",
+        "src/slm_training/autoresearch/evidence.py",
         "src/slm_training/autoresearch/researcher_eval.py",
         "src/slm_training/autoresearch/hypothesizer_eval.py",
         "src/slm_training/autoresearch/providers.py",
@@ -2580,6 +2754,9 @@
         "docs/design/autoresearch-autotraining.md",
         "docs/design/experiment-campaign-governance.md",
         "docs/design/autotrain-climb-policy.md",
+        "docs/design/autotrain-cycle-1729-binder-topology-capacity-audit.json",
+        "docs/design/autotrain-cycle-1729-binder-topology-capacity-audit.md",
+        "docs/design/adversarial-review.md",
         "docs/design/authoritative-credit-one-shot-agent-prompt.md",
         "tests/test_autoresearch/test_experiment_campaign.py",
         "tests/test_autoresearch/test_hillclimb.py",
@@ -2589,9 +2766,885 @@
         "tests/test_scripts/test_slm_cli.py",
         "tests/test_scripts/test_run_autotrain_continuous.py",
         "scripts/run_autotrain_continuous.py",
+        "scripts/report_autotrain_continuous.sh",
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v179",
+          "date": "2026-08-04",
+          "note": "Raise screening_decode_timeout_seconds 8 -> 12 (policy.v1.json v4 -> v5). Fresh scheduled-loop evidence (continuous-openui-scheduled-fe71636 c3): compiler_ms_mean ~23.1-23.2s/record left both arms at decode_timeout_count=3/3 while the 8s-configured chunk budget (24s) used less than half the ~51.7s eval wall actually granted that cycle. _fit_screening_decode_timeout_seconds's own wall-fit ceiling for the nominal 70s arm share is 14.0s ((70-20-8)/3); 12 stays inside that ceiling and inside test_climb_policy_measurement_helpers' existing declared-safe [1.0, 12.0] range, so no test boundary changed. Still short of the observed ~23s/record cost -- partial mitigation, root cause (fixture compile+decode cost vs. nominal per-record wall budget on CPU-only hosts) stays open."
+        },
+        {
+          "version": "v178",
+          "date": "2026-08-03",
+          "note": "Expose grammar_incremental_state as a typed decode-cost knob (allowlist + argv compile + train CLI; measured 2.3-3.6x MaskGIT decode wall effect, byte-identical outputs), inject the perf result JSONs into LINEAGE_DOCS, and claim autoresearch/evidence.py under this component (previously unowned)."
+        },
+        {
+          "version": "v177",
+          "date": "2026-08-04",
+          "note": "Automatic climb promote re-cert on harness/policy authority change: stamp promote_authority_sha256; cycle startup recertifies promoted/climb_accepted under current dispose rules"
+        },
+        {
+          "version": "v176",
+          "date": "2026-08-03",
+          "note": "Compose thrash arms must not collide with static knob signatures; matrix emission dedupes; self-heal rewrites dynamic_thrash_arms on ValidationError"
+        },
+        {
+          "version": "v175",
+          "date": "2026-08-03",
+          "note": "Fix StopIteration hard-block when dynamic compose thrash successors are selected for completed-candidate priority steering; look up arms via _all_screening_arm_bank"
+        },
+        {
+          "version": "v174",
+          "date": "2026-08-03",
+          "note": "no-bump: isolate dynamic thrash bank module cache between continuous tests (fixture-only)"
+        },
+        {
+          "version": "v174",
+          "date": "2026-08-03",
+          "note": "Continuous self-heal: compose dynamic thrash arms on bank exhaust, clear BLOCKED on healable errors, continue loop without human re-prompt; continuous skill law updated"
+        },
+        {
+          "version": "v173",
+          "date": "2026-08-03",
+          "note": "Thrash bank: relax causal CAP when it would empty multi-seed-open arms; decisive CAP counting; add literal-close/structure successors so bank exhaust does not hard-block"
+        },
+        {
+          "version": "v172",
+          "date": "2026-08-03",
+          "note": "Harness/infra incompletes never invalidate experiments: refund promote attempts, park not promotion_failed on attempt cap, rearm after integration fix, thrash multi-seed close ignores harness-only outcomes"
+        },
+        {
+          "version": "v171",
+          "date": "2026-08-03",
+          "note": "Promote deadline_reserve float skip: arm budget schedule margin; no refund promote_attempts on harness_failure; bank-exhaust promote fallback; add scaffold-prefix-structure/tail + component-token-prefix thrash successors"
+        },
+        {
+          "version": "v170",
+          "date": "2026-08-03",
+          "note": "Thrash never binds handoff-pred feedback_ids (handoff pred ≠ hypothesize lineage); only confirm/promote/replay bind; fixes CYCLE_ERROR conflicts with supplied feedback ids after incomplete successor"
+        },
+        {
+          "version": "v169",
+          "date": "2026-08-03",
+          "note": "Thrash executable: semantic-contrast batch_size>=3; strip stale matrix feedback_ids when lineage feedback empty (agent hypothesize no longer abort thrash)"
+        },
+        {
+          "version": "v168",
+          "date": "2026-08-03",
+          "note": "Pareto thrash timing: screening decode 8s + thrash steps 40 so n×decode fits 70s arm wall; thrash_timing/v1 telemetry; incomplete rate drives recalibration not wall++"
+        },
+        {
+          "version": "v167",
+          "date": "2026-08-03",
+          "note": "Thrash-arm permanent close requires min 2 distinct complete-null seeds (not one fixture null); remove regime-epoch recycle of closed approaches"
+        },
+        {
+          "version": "v166",
+          "date": "2026-08-03",
+          "note": "Continuous screening bank exhaustion fail-forwards via screening_regime_epoch reopen (new seed offset + regime knob) instead of hard-blocking after 3 cycle failures"
+        },
+        {
+          "version": "v165",
+          "date": "2026-08-03",
+          "note": "Bind exact paired decision arms to the hypothesis matrix event chain before execution; result overlays prefer this binding over legacy handoff arm-order text."
+        },
+        {
+          "version": "v164",
+          "date": "2026-08-03",
+          "note": "Render paired campaigns fail-closed: missing arm_order members become explicit harness-incomplete rows instead of completed model evidence."
+        },
+        {
+          "version": "v163",
+          "date": "2026-08-03",
+          "note": "Bind Phase A to matrix control/candidate ids and emit durable arm_skipped deadline events so dynamic successors and incomplete pairs remain explicit in the result matrix."
+        },
+        {
+          "version": "v162",
+          "date": "2026-08-03",
+          "note": "Require retry completion receipts to bind a complete two-arm successor delivery and its predecessor lineage instead of accepting arbitrary durable files."
+        },
+        {
+          "version": "v161",
+          "date": "2026-08-03",
+          "note": "Clear terminal stage and child liveness after status reporting and serialize every driver state read-modify-write with receipt reconciliation."
+        },
+        {
+          "version": "v160",
+          "date": "2026-08-03",
+          "note": "Land fail-closed continuous-promotion enforcement: require canonical raw LeverProof resource samples and per-example metric observations instead of fabricating evidence from aggregate metrics."
+        },
+        {
+          "version": "v159",
+          "date": "2026-08-03",
+          "note": "Serialize receipt and driver state reconciliation, keep blocked execution work pending, and reserve completion receipts for the continuous driver."
+        },
+        {
+          "version": "v158",
+          "date": "2026-08-03",
+          "note": "Fail closed when continuous promotion lacks canonical raw LeverProof resource samples and bind band assessments to per-example metric observations instead of synthetic aggregates."
+        },
+        {
+          "version": "v157",
+          "date": "2026-08-03",
+          "note": "Keep blocked execution receipts pending so incomplete matched measurements cannot advance the continuous loop."
+        },
+        {
+          "version": "v156",
+          "date": "2026-08-03",
+          "note": "Preregister a distinct semantic-contrast plus compiler-alignment quality arm after the prior screening bank was exhausted."
+        },
+        {
+          "version": "v155",
+          "date": "2026-08-03",
+          "note": "no-bump: document c1859's constraint-graph fixture null and exhausted-objective handoff; campaign behavior unchanged."
+        },
+        {
+          "version": "v155",
+          "date": "2026-08-03",
+          "note": "Add a second distinct constraint-graph quality arm after slot-contract-context replay exhaustion so continuous screening has a registered implemented successor."
+        },
+        {
+          "version": "v154",
+          "date": "2026-08-03",
+          "note": "no-bump: document c1858's frozen slot-contract-context replay null and successor priorities; campaign behavior unchanged."
+        },
+        {
+          "version": "v154",
+          "date": "2026-08-03",
+          "note": "no-bump: document c1857's incomplete slot-contract-context harness failure and replay receipt; campaign behavior unchanged."
+        },
+        {
+          "version": "v154",
+          "date": "2026-08-03",
+          "note": "Add a preregistered slot-contract-context quality arm so exhausted screening lineages advance to a distinct implemented training signal instead of retrying deterministically."
+        },
+        {
+          "version": "v153",
+          "date": "2026-08-03",
+          "note": "Refresh idle loop liveness state from content-bound action receipts so result matrices show the actual next action between campaigns."
+        },
+        {
+          "version": "v152",
+          "date": "2026-08-03",
+          "note": "Ignore stale deliver_stack actions from legacy positive fixture handoffs when Phase A recorded stack_layer=false, allowing the next experiment to proceed."
+        },
+        {
+          "version": "v151",
+          "date": "2026-08-03",
+          "note": "Do not emit a blocking deliver_stack action for positive fixture metrics when Phase A has no tracked stack delta; allow the supervised loop to consume next_experiment."
+        },
+        {
+          "version": "v150",
+          "date": "2026-08-03",
+          "note": "Add a data-oriented slot-component exposure-cap successor after c1853 so the loop tests target coverage rather than stacking auxiliary heads."
+        },
+        {
+          "version": "v149",
+          "date": "2026-08-03",
+          "note": "Add a distinct slot-component-inventory coupling successor after the c1852 null, preserving matched controls and tree-constrained decode."
+        },
+        {
+          "version": "v148",
+          "date": "2026-08-03",
+          "note": "Add a distinct slot-component-fidelity coupling successor after c1851 so the loop preregisters a new causal interaction instead of replaying the exhausted owner-only arm."
+        },
+        {
+          "version": "v147",
+          "date": "2026-08-03",
+          "note": "Classify reserved runtime-owner failures as non-replayable so the supervised loop skips impossible frozen recipes and advances to the implemented slot-component successor instead of aborting."
+        },
+        {
+          "version": "v146",
+          "date": "2026-08-03",
+          "note": "Replace the unusable binder-slot ownership successor with the implemented slot-component coverage owner after c1849 exposed the missing runtime implementation, preserving fail-closed model validation."
+        },
+        {
+          "version": "v145",
+          "date": "2026-08-03",
+          "note": "Require the binder-slot-ownership successor to use the tree compiler decode mode so its registered decode bias has an executable capability path instead of failing closed at model construction."
+        },
+        {
+          "version": "v144",
+          "date": "2026-08-03",
+          "note": "Wire a distinct binder-slot-ownership training/decode successor after the c1847 quality-arm exhaustion so the supervised loop can continue without recycling rejected objectives."
+        },
+        {
+          "version": "v143",
+          "date": "2026-08-03",
+          "note": "Add a size-matched exposure-targeted plus semantic-exhaustive successor to test whether the observed semantic quality gain can retain lower decode work."
+        },
+        {
+          "version": "v142",
+          "date": "2026-08-03",
+          "note": "Preserve every registered screening lever across champion confirmation and promotion, and reopen legacy queue entries whose projected recipe drifted from immutable source experiments."
+        },
+        {
+          "version": "v141",
+          "date": "2026-08-03",
+          "note": "Propagate the exact symmetric post-formal arm share into the inner experiment executor while retaining preregistered and repository hard ceilings."
+        },
+        {
+          "version": "v140",
+          "date": "2026-08-03",
+          "note": "Add a size-matched exposure-targeted versus capacity-aware sampling objective to test rare decision coverage after loss-only quality arms were null."
+        },
+        {
+          "version": "v139",
+          "date": "2026-08-03",
+          "note": "Add a size-matched semantic-exhaustive plus STRUCT-token objective that tests scaffold-quality recovery after exhaustive supervision reduced decode work without improving quality."
+        },
+        {
+          "version": "v138",
+          "date": "2026-08-03",
+          "note": "Return unused proved-formal preflight time symmetrically to promotion decision arms while preserving the canonical finalization reserve and hard run cap."
+        },
+        {
+          "version": "v137",
+          "date": "2026-08-03",
+          "note": "Add a distinct size-matched capacity-aware semantic-exhaustive compiler-alignment objective after the registered screening bank was exhausted, isolating decision coverage without changing model size or decode authority."
+        },
+        {
+          "version": "v136",
+          "date": "2026-08-03",
+          "note": "Resolve completed frozen confirmation retries against their original champion entry, suppress duplicate screening enqueue, and reconcile the historical duplicate queue row before promotion selection."
+        },
+        {
+          "version": "v135",
+          "date": "2026-08-03",
+          "note": "Replay typed frozen confirmation arms by recovering their registered lever identity from knobs, preserving the frozen screening manifest while continuing to reject unknown arm kinds."
+        },
+        {
+          "version": "v134",
+          "date": "2026-08-03",
+          "note": "Pin tiny scratch train and eval subprocesses to one CPU thread so symmetric fixture arms do not oversubscribe shared hosts and consume their bounded wall envelope before scoreboards."
+        },
+        {
+          "version": "v133",
+          "date": "2026-08-03",
+          "note": "Permit an explicitly pending fresh-seed confirmation to defer a reserved promotion slot onto screening suites without granting promotion authority or weakening cadence for other arms."
+        },
+        {
+          "version": "v132",
+          "date": "2026-08-03",
+          "note": "Bind feedback recovered during hypothesis compilation into otherwise-unbound agent matrices and priorities while rejecting conflicting feedback or predecessor identities."
+        },
+        {
+          "version": "v131",
+          "date": "2026-08-03",
+          "note": "Recover metric-free terminal hypothesizer feedback from typed incomplete Phase-A handoffs so interrupted measurements can steer successors without fabricated outcomes."
+        },
+        {
+          "version": "v130",
+          "date": "2026-08-03",
+          "note": "Treat evidence-bound blocked steering receipts as terminal for execution discovery so impossible frozen retries cannot be selected after predecessor gating advances."
+        },
+        {
+          "version": "v129",
+          "date": "2026-08-03",
+          "note": "Keep champion confirmation on screening endpoints regardless of cadence, and classify incomplete confirmations as retryable rather than model rejection."
+        },
+        {
+          "version": "v128",
+          "date": "2026-08-03",
+          "note": "Rebalance symmetric arm budgets from the actual post-planning time remaining and enforce the fitted per-arm deadline while preserving the canonical finalization reserve."
+        },
+        {
+          "version": "v127",
+          "date": "2026-08-03",
+          "note": "no-bump: record the c1830 capacity-aware tail fixture positive and confirmation requirement; campaign behavior is unchanged"
+        },
+        {
+          "version": "v127",
+          "date": "2026-08-03",
+          "note": "After c1829 tied higher effective exposure to guarded quality and excess continuation cost, surface exposure in the terminal matrix and add a size-matched capacity-aware tail-supervision successor."
+        },
+        {
+          "version": "v126",
+          "date": "2026-08-03",
+          "note": "After c1828 found compiler draft width quality- and work-null, add a size-matched capacity-aware mixture-sampling arm to test the observed low effective-record exposure without changing corpus or model capacity."
+        },
+        {
+          "version": "v125",
+          "date": "2026-08-03",
+          "note": "After c1827 found no reusable compiler-tree equivalence-cache hits, add a typed certified draft-window arm that can amortize completion-forest construction without changing model size or grammar authority."
+        },
+        {
+          "version": "v124",
+          "date": "2026-08-03",
+          "note": "After c1826 showed completion bounds were inert in compiler-tree evaluation, add a size-matched completion-domain cache arm and order terminal metrics by quality then runtime mechanism."
+        },
+        {
+          "version": "v123",
+          "date": "2026-08-03",
+          "note": "Deduplicate the bounded compiler-decision-margin matrix by using its identical unbounded precursor as the matched control instead of emitting that knob signature twice."
+        },
+        {
+          "version": "v122",
+          "date": "2026-08-03",
+          "note": "Preserve c1824's high-quality margin arm as the control for an isolated deterministic completion-bounds latency treatment and surface emitted-token, forward, prefill, and canvas costs in terminal matrices."
+        },
+        {
+          "version": "v121",
+          "date": "2026-08-02",
+          "note": "After the c1823 fresh-seed null, add an all-family compiler-decision legal-margin arm and preserve honest champion queue semantics across exact frozen screening retries."
+        },
+        {
+          "version": "v120",
+          "date": "2026-08-02",
+          "note": "Reserve a third formal lane from actual promote intent or frozen manifest obligations, allowing confirmation during promotion cadence to retain the full symmetric two-arm budget."
+        },
+        {
+          "version": "v119",
+          "date": "2026-08-03",
+          "note": "no-bump: document the c1822 exact-replay fixture result and fresh-seed confirmation disposition; campaign behavior is unchanged"
+        },
+        {
+          "version": "v119",
+          "date": "2026-08-02",
+          "note": "Allocate screening wall time across its two executed arms while promotion retains the third Lean preflight lane, so not-applicable formal work cannot starve measurement."
+        },
+        {
+          "version": "v118",
+          "date": "2026-08-02",
+          "note": "Add a zero-parameter dense compiler-decision token reconstruction arm after c1817 and c1819 showed that component-edge objectives cover only two or three final-step rows."
+        },
+        {
+          "version": "v117",
+          "date": "2026-08-02",
+          "note": "Reject efficiency-ratio positives when meaningful-program rate regresses or the role-owned quality primary or protected non-regression metrics fail, closing the c1819 false-positive queue path."
+        },
+        {
+          "version": "v116",
+          "date": "2026-08-02",
+          "note": "Add a zero-parameter component-edge margin arm that aligns gold compiler component-bound choices against their legal siblings after direct edge-token reconstruction was a quality null."
+        },
+        {
+          "version": "v115",
+          "date": "2026-08-03",
+          "note": "Add a zero-parameter component-edge token reconstruction arm after completion-oriented losses produced a reproducible runtime unblock but low absolute meaningful-program quality."
+        },
+        {
+          "version": "v114",
+          "date": "2026-08-03",
+          "note": "Recompute formal obligation identities for the current replay campaign and experiment instead of copying predecessor-scoped IDs; bind them to the fresh proof and exact recovered claims."
+        },
+        {
+          "version": "v113",
+          "date": "2026-08-03",
+          "note": "Recover formal claims omitted by historical frozen replays only from their verified proof-bound preflight artifacts before generating a fresh current-campaign proof."
+        },
+        {
+          "version": "v112",
+          "date": "2026-08-03",
+          "note": "Preserve frozen experiment formal claims and require current-campaign candidate metrics before terminating a control-timeout replay; refresh affected derived handoffs to the queued retry."
+        },
+        {
+          "version": "v111",
+          "date": "2026-08-03",
+          "note": "Authorize canonical promote identity for a governed frozen replay while preserving the exact source experiment and rejecting unknown non-promotion suffixes."
+        },
+        {
+          "version": "v110",
+          "date": "2026-08-03",
+          "note": "Regenerate and validate a fresh Lean preflight before authorizing or executing a current-main frozen promotion replay; never carry the source proof digest into its successor manifest."
+        },
+        {
+          "version": "v109",
+          "date": "2026-08-03",
+          "note": "When a confirmed champion awaits its protected promotion cadence and the screening bank is exhausted, run a second fresh-seed confirmation instead of failing or exposing held-out suites early."
+        },
+        {
+          "version": "v108",
+          "date": "2026-08-03",
+          "note": "Add the size-matched typed-family-balance plus container-close interaction arm after close-only supervision saturated its rows but tied the matched control."
+        },
+        {
+          "version": "v107",
+          "date": "2026-08-03",
+          "note": "Add a size-matched grammar-derived container-close alignment arm after typed-family balance improved quality but caused runaway legal continuation."
+        },
+        {
+          "version": "v106",
+          "date": "2026-08-03",
+          "note": "Add a zero-parameter count-normalized component and STRUCT family-mean objective after direct STRUCT weighting exposed a cross-family CE tradeoff."
+        },
+        {
+          "version": "v105",
+          "date": "2026-08-02",
+          "note": "Add a size-matched grammar STRUCT-token reconstruction arm and typed structure loss attribution after component-token weighting reproduced only a runtime-specific unblock."
+        },
+        {
+          "version": "v104",
+          "date": "2026-08-02",
+          "note": "no-bump: record c1804 incomplete component-token fixture evidence and its exact frozen replay requirement; campaign behavior is unchanged"
+        },
+        {
+          "version": "v104",
+          "date": "2026-08-02",
+          "note": "Add direct component-token reconstruction weighting and per-step token-family loss attribution after prefix supervision was null."
+        },
+        {
+          "version": "v103",
+          "date": "2026-08-02",
+          "note": "Add a zero-parameter prefix-LTR scaffold objective after DESIGN context dropout regressed structural quality."
+        },
+        {
+          "version": "v102",
+          "date": "2026-08-02",
+          "note": "Add a zero-parameter deterministic DESIGN.md context-dropout arm after symbol-boundary supervision was null."
+        },
+        {
+          "version": "v101",
+          "date": "2026-08-02",
+          "note": "Project the next current registered arm when a completed predecessor's frozen matrix predates that arm, without mutating the locked matrix."
+        },
+        {
+          "version": "v100",
+          "date": "2026-08-02",
+          "note": "Add a zero-parameter symbol-boundary training objective after the screening bank exhausted and make candidate campaign locks fingerprint slot, mask, and boundary controls against their true off states."
+        },
+        {
+          "version": "v99",
+          "date": "2026-08-02",
+          "note": "Bind screening primary projection to its actually evaluated suite and add a size-matched mixed-corruption successor after slot augmentation exhausted."
+        },
+        {
+          "version": "v98",
+          "date": "2026-08-02",
+          "note": "Add a size-matched slot-permutation and alpha-renaming augmentation successor after the continuous quality-arm bank exhausted, with stable slugging and champion replay identity."
+        },
+        {
+          "version": "v97",
+          "date": "2026-08-02",
+          "note": "Extract every evaluation suite headline independently of verbose per-record telemetry so held-out primaries cannot disappear from outcomes and terminal matrices."
+        },
+        {
+          "version": "v96",
+          "date": "2026-08-02",
+          "note": "Recover historical frozen-replay parameter counts only from content-bound source train summaries so the terminal result matrix preserves size evidence."
+        },
+        {
+          "version": "v95",
+          "date": "2026-08-02",
+          "note": "Require candidate-only evidence before terminal runtime rejection and carry content-bound trainable-parameter provenance into frozen-reuse outcomes and result matrices."
+        },
+        {
+          "version": "v94",
+          "date": "2026-08-02",
+          "note": "Treat promotion cadence as an opportunity for a prior screening winner: when no queued or confirmed target exists, fall back to smoke-only screening instead of leaking a fresh arm into held-out promotion suites."
+        },
+        {
+          "version": "v93",
+          "date": "2026-08-02",
+          "note": "Project confirmation rows from the authoritative champion queue, route exhausted banks to typed harness expansion, and add a causally matched semantic-contrast successor with identical pair exposure in both arms."
+        },
+        {
+          "version": "v92",
+          "date": "2026-08-02",
+          "note": "Add compiler-decision component-edge alignment as a distinct size-matched train-only successor family after the registered screening bank is honestly exhausted."
+        },
+        {
+          "version": "v91",
+          "date": "2026-08-02",
+          "note": "Fail confirmation closed unless the policy-owned primary quality metric wins without required non-regression breaches; make queue resolution authoritative and revalidate historical false confirmations before promotion selection."
+        },
+        {
+          "version": "v90",
+          "date": "2026-08-02",
+          "note": "Bypass the exhausted screening-arm selector for confirmation and promotion cycles, whose exact recipes already come from the champion queue."
+        },
+        {
+          "version": "v89",
+          "date": "2026-08-02",
+          "note": "Close complete non-positive frozen-replay arms across lineage, reclassify complete historical receipts under current promotion policy so stale positives cannot reopen rejected approaches, bound terminal result-matrix cells, and add a size-matched placeholder-fidelity successor objective after bank exhaustion."
+        },
+        {
+          "version": "v88",
+          "date": "2026-08-02",
+          "note": "no-bump: move the binder-quality control parity parameter rows into the canonical external case resource; assertions and harness behavior are unchanged."
+        },
+        {
+          "version": "v88",
+          "date": "2026-08-02",
+          "note": "Prevent predecessor priorities from reopening lineage-closed arms, apply the bounded latency tradeoff to every quality-primary win, and revalidate durable champion entries under current harness policy."
+        },
+        {
+          "version": "v87",
+          "date": "2026-08-02",
+          "note": "Make rejected screening approaches lineage-wide exclusions, fail closed when the registered bank is exhausted, and add size-matched binder-arity and binder-component-plan quality objectives instead of recycling old runtime arms."
+        },
+        {
+          "version": "v86",
+          "date": "2026-08-02",
+          "note": "Keep the exact content-bound measurement retry pending alongside a canonical harness-repair action so acknowledging the repair cannot silently advance to a different campaign or seed."
+        },
+        {
+          "version": "v85",
+          "date": "2026-08-02",
+          "note": "Preserve checkpoint-declared runtime-symbol levers during evaluation instead of routing unregistered config fields through the curated OpenFeature registry."
+        },
+        {
+          "version": "v84",
+          "date": "2026-08-02",
+          "note": "Carry every declared TwoTower runtime-symbol lever into evaluation through the typed feature-flag surface so matched controls preserve their actual off state."
+        },
+        {
+          "version": "v83",
+          "date": "2026-08-02",
+          "note": "Treat a complete rejected fresh-seed confirmation as terminal exhaustion of its underlying quality family so the next matrix cannot recycle the disproven arm."
+        },
+        {
+          "version": "v82",
+          "date": "2026-08-02",
+          "note": "Replace stale preregistered priorities after a fixture candidate is queued with an explicit fresh-seed confirmation action and a visible Lean promotion-preflight lock."
+        },
+        {
+          "version": "v81",
+          "date": "2026-08-02",
+          "note": "Project both sides of a reproduced control-only timeout as model-runtime evidence, label the completing candidate as an absolute-quality rejection, and exhaust terminal runtime-rejected arms before choosing the next hypothesis."
+        },
+        {
+          "version": "v80",
+          "date": "2026-08-02",
+          "note": "Generalize the control-arm diagnosis from numeric literal starvation to any authoritative control-only decode timeout while preserving the one-replay model-runtime policy."
+        },
+        {
+          "version": "v79",
+          "date": "2026-08-02",
+          "note": "Classify control-only numeric literal starvation as a typed model-runtime comparison, require one exact frozen replay, and avoid a false canonical harness-repair action."
+        },
+        {
+          "version": "v78",
+          "date": "2026-08-02",
+          "note": "Carry a high-confidence observed model-build successor across bounded champion confirmation or promotion interruptions until that arm actually executes."
+        },
+        {
+          "version": "v77",
+          "date": "2026-08-02",
+          "note": "Let a high-confidence observed next-experiment handoff override generic recent-arm cooldown so causal successor steering is not silently replaced by thrash rotation."
+        },
+        {
+          "version": "v76",
+          "date": "2026-08-02",
+          "note": "Route observed numeric literal-close starvation directly to the existing typed, size-matched literal-close experiment instead of falsely requiring a model-build harness repair."
+        },
+        {
+          "version": "v75",
+          "date": "2026-08-02",
+          "note": "Retire candidate-only runtime failures after their bounded frozen replay, steer to a distinct hypothesis, and label terminal matrices as model-runtime rejections without inventing quality metrics."
+        },
+        {
+          "version": "v74",
+          "date": "2026-08-02",
+          "note": "Traverse the content-bound campaign predecessor chain across initialized-only recovery nodes when resolving completed frozen training stages."
+        },
+        {
+          "version": "v73",
+          "date": "2026-08-02",
+          "note": "Report exhausted finalized-timeout replay budgets explicitly and require a canonical runtime repair before one more content-bound validation replay."
+        },
+        {
+          "version": "v72",
+          "date": "2026-08-02",
+          "note": "Resolve frozen replay arm identity by longest registered suffix so hyphenated arms such as component-plan and literal-close remain replayable."
+        },
+        {
+          "version": "v71",
+          "date": "2026-08-02",
+          "note": "Route finalized AgentV decode timeouts ahead of generic failed-process attribution so handoffs retain both the required runtime repair and the content-bound frozen retry."
+        },
+        {
+          "version": "v70",
+          "date": "2026-08-02",
+          "note": "Add a governed size-matched literal-margin arm that aligns only grammar-derived numeric-frame LIT_END decisions against legal byte alternatives and steer a completed literal-close null directly to it."
+        },
+        {
+          "version": "v69",
+          "date": "2026-08-02",
+          "note": "Give observed numeric-literal termination starvation precedence over generic failed-outcome classification so the new size-matched training arm is selected even when an older harness omits the generic failure tag."
+        },
+        {
+          "version": "v68",
+          "date": "2026-08-02",
+          "note": "Detect finalized numeric-literal termination starvation, expose the existing size-matched LTR tail-loss lever to governed campaigns, and steer the next cycle to a new constrained literal-close arm instead of replaying the stalled checkpoint."
+        },
+        {
+          "version": "v68",
+          "date": "2026-08-02",
+          "note": "Add a governed size-matched literal-margin arm that aligns only grammar-derived numeric-frame LIT_END decisions against legal byte alternatives and steer a completed literal-close null directly to it."
+        },
+        {
+          "version": "v67",
+          "date": "2026-08-02",
+          "note": "Detect finalized numeric-literal termination starvation, expose the existing size-matched LTR tail-loss lever to governed campaigns, and steer the next cycle to a new constrained literal-close arm instead of replaying the stalled checkpoint."
+        },
+        {
+          "version": "v67",
+          "date": "2026-08-02",
+          "note": "Reserve five seconds inside the supervised evaluation stage for scoreboard binding, gates, AgentV, outcome persistence, and feedback after the inner evaluator stops."
+        },
+        {
+          "version": "v66",
+          "date": "2026-08-02",
+          "note": "Pass the remaining experiment-stage wall into model-build evaluation so it can finalize typed per-record outcomes before the outer supervisor interrupt."
+        },
+        {
+          "version": "v65",
+          "date": "2026-08-02",
+          "note": "Require canonical harness repair after one hash-linked cached reproduction of an incomplete measurement instead of spending a second identical replay wall."
+        },
+        {
+          "version": "v64",
+          "date": "2026-08-02",
+          "note": "Replace stale preregistration-time confirmation priorities with outcome-conditioned promotion or rejection steering, including explicit loss-quality divergence and diagnostic-only runtime successors."
+        },
+        {
+          "version": "v63",
+          "date": "2026-08-02",
+          "note": "Preserve matched-control recipes for champion confirmation and promotion, including steps-only candidates, and reclaim attempts that fail before experiment execution starts."
+        },
+        {
+          "version": "v66",
+          "date": "2026-08-02",
+          "note": "Reserve five seconds inside the supervised evaluation stage for scoreboard binding, gates, AgentV, outcome persistence, and feedback after the inner evaluator stops."
+        },
+        {
+          "version": "v65",
+          "date": "2026-08-02",
+          "note": "Pass the remaining experiment-stage wall into model-build evaluation so it can finalize typed per-record outcomes before the outer supervisor interrupt."
+        },
+        {
+          "version": "v64",
+          "date": "2026-08-02",
+          "note": "Require canonical harness repair after one hash-linked cached reproduction of an incomplete measurement instead of spending a second identical replay wall."
+        },
+        {
+          "version": "v63",
+          "date": "2026-08-02",
+          "note": "Replace stale preregistration-time confirmation priorities with outcome-conditioned promotion or rejection steering, including explicit loss-quality divergence and diagnostic-only runtime successors."
+        },
+        {
+          "version": "v62",
+          "date": "2026-08-02",
+          "note": "Preserve matched-control recipes for champion confirmation and promotion, including steps-only candidates, and reclaim attempts that fail before experiment execution starts."
+        },
+        {
+          "version": "v62",
+          "date": "2026-08-02",
+          "note": "Combine v61 continuous successor integrity with v61 historical campaign-lock digest compatibility."
+        },
+        {
+          "version": "v61",
+          "date": "2026-08-02",
+          "note": "Validate historical campaign-lock digests against an explicit projection that omits only replicate-ledger defaults added after those locks were written."
+        },
+        {
+          "version": "v61",
+          "date": "2026-08-02",
+          "note": "no-bump: merge the already-versioned v60 supervisor integrity changes into the later v61 continuous branch without additional behavior changes."
+        },
+        {
+          "version": "v61",
+          "date": "2026-08-02",
+          "note": "Bind structural decode arms and size-matched controls to the required tree compiler path in train and eval, classify failed outcomes as harness failures, and skip immutable capability-invalid frozen retries in favor of new preregistered successors"
+        },
+        {
+          "version": "v60",
+          "date": "2026-08-02",
+          "note": "no-bump: externalize the completeness-counter regression inputs without changing harness behavior."
+        },
+        {
+          "version": "v60",
+          "date": "2026-08-02",
+          "note": "Require complete AgentV-bound evaluation counters, SHA-bound action receipts, theorem-repair handoffs, bounded supervised child stages, symmetric formal and arm budgets, counterbalanced serialized arms, and content-revalidated promotion replicates."
+        },
+        {
+          "version": "v60",
+          "date": "2026-08-02",
+          "note": "Couple structural auxiliary screening losses to their trained legal-candidate decode rankers and retain decode weights through confirmation and promotion after three loss-only quality nulls"
+        },
+        {
+          "version": "v59",
+          "date": "2026-08-02",
+          "note": "no-bump: move the invalid and empty scoreboard parameter table into the canonical external test-case resource; assertions and harness behavior are unchanged."
+        },
+        {
+          "version": "v59",
+          "date": "2026-08-02",
+          "note": "Fail closed before positive classification when either arm lacks a scoreboard, has invalid or empty suites, or reports inconsistent document and timeout counts."
+        },
+        {
+          "version": "v58",
+          "date": "2026-08-02",
+          "note": "Require every authoritative suite scoreboard to be complete before SDLC delivery can classify a cycle as positive, with typed per-run and per-suite incompleteness reasons."
+        },
+        {
+          "version": "v57",
+          "date": "2026-08-02",
+          "note": "Treat Phase A measurement_complete=false and stopped evals with partial train metrics as infrastructure-incomplete evidence, queue the exact frozen retry, and render that retry as the leading terminal priority."
+        },
+        {
+          "version": "v56",
+          "date": "2026-08-02",
+          "note": "Render exhausted-quality-bank successors from the selected arm's actual hypothesis and classify runtime levers as diagnostics instead of falsely labeling them quality hypotheses."
+        },
+        {
+          "version": "v55",
+          "date": "2026-08-02",
+          "note": "Cool down complete non-positive arm families across one bounded predecessor-chain bank pass and steer successor priorities to the next unexhausted quality hypothesis."
+        },
+        {
+          "version": "v54",
+          "date": "2026-08-02",
+          "note": "Centralize role-aware metric resolution inside outcome classification so promotion cannot inherit smoke overrides, and distinguish confirmation-cycle Lean applicability in terminal matrices."
+        },
+        {
+          "version": "v53",
+          "date": "2026-08-02",
+          "note": "Reclassify predecessor results under the current policy, exhaust completed nulls on promotion-cadence screens, preserve held-quality evidence for efficient champions, lock promotion primaries to held-out policy, and make Lean, gate, liveness, plus non-causal diagnostic terminal states explicit."
+        },
+        {
+          "version": "v52",
+          "date": "2026-08-02",
+          "note": "Require a policy-owned five-percent minimum efficiency effect so noise-scale latency jitter cannot mint positive continuous cycles or repeat exhausted model arms."
+        },
+        {
+          "version": "v51",
+          "date": "2026-08-01",
+          "note": "Remove every stale executable priority for a completed candidate and register the c1729 capacity-audit evidence under the continuous-campaign component."
+        },
+        {
+          "version": "v50",
+          "date": "2026-08-01",
+          "note": "Match structural auxiliary-head capacity across screening arms, carry trainable parameter counts into outcomes and terminal matrices, replace completed-null steering with a distinct next hypothesis, and consume that priority in the next screening cycle."
+        },
+        {
+          "version": "v49",
+          "date": "2026-08-01",
+          "note": "Use structural similarity as the non-saturated screening primary, add size-matched structural supervision arms, and replace stale infrastructure replay priorities after complete measurement."
+        },
+        {
+          "version": "v48",
+          "date": "2026-08-01",
+          "note": "Route a fully finalized AgentV scoreboard with typed internal decode timeouts directly to canonical model-build runtime repair before frozen replay instead of spending another unchanged generic retry"
+        },
+        {
+          "version": "v47",
+          "date": "2026-08-01",
+          "note": "Allocate the bounded cycle's usable wall symmetrically across both decision arms after retaining finalization reserve, avoiding premature supervisor interruption of otherwise completable smoke evaluation"
+        },
+        {
+          "version": "v46",
+          "date": "2026-08-01",
+          "note": "Bound consecutive frozen measurement replays and route exhaustion into a typed canonical harness repair without rejecting the model or losing the manifest digest"
+        },
+        {
+          "version": "v45",
+          "date": "2026-08-01",
+          "note": "Keep timed-out stage telemetry fail closed for stale or invalid decode_progress artifacts and cover both rejection paths"
+        },
+        {
+          "version": "v44",
+          "date": "2026-08-01",
+          "note": "Ingest a fresh non-scoreable decode_progress artifact into timed-out experiment stage telemetry without promoting partial counters into experiment metrics"
+        },
+        {
+          "version": "v43",
+          "date": "2026-08-01",
+          "note": "Reuse completed frozen-replay train stages through verified manifest lineage, exact recipe checks, checkpoint sidecar hashes, and explicit plan/outcome receipts"
+        },
+        {
+          "version": "v42",
+          "date": "2026-08-01",
+          "note": "Project legacy exit-8 outcomes as completed gate rejections only when their clean commit-bound AgentV scoreboard is complete"
+        },
+        {
+          "version": "v41",
+          "date": "2026-08-01",
+          "note": "no-bump: align the recovery artifact documentation, remove a redundant lineage guard, and pin rejection of non-diagnostic replay recovery"
+        },
+        {
+          "version": "v41",
+          "date": "2026-08-01",
+          "note": "Recover terminal handoff-less diagnostic replays without rerunning arms, share initialized-gap lineage validation across status and feedback, and classify eval gate rejection from the complete scoreboard"
+        },
+        {
+          "version": "v40",
+          "date": "2026-08-01",
+          "note": "Authorize repeated and exhausted knob signatures only for arm IDs bound to current-campaign replay manifests whose config and frozen source digests verify against lineage"
+        },
+        {
+          "version": "v39",
+          "date": "2026-08-01",
+          "note": "Select the newest terminal-feedback context across initialized-only interrupted cycles while keeping completed feedback gaps fail closed"
+        },
+        {
+          "version": "v38",
+          "date": "2026-08-01",
+          "note": "Separate latest initialized lineage from latest completed replay authority and recover only unique initialized-only predecessor gaps after interrupted continuous cycles"
+        },
+        {
+          "version": "v37",
+          "date": "2026-08-01",
+          "note": "Acknowledge frozen retries only after both arms produce a complete measured delivery, and let digest-less legacy retries fall through to an ordinary successor cycle instead of stalling the supervisor"
+        },
+        {
+          "version": "v36",
+          "date": "2026-08-01",
+          "note": "Materialize pending frozen measurement retries as current-main successor campaigns with exact plan and recipe lineage, fresh-Lean fail-closed handling, completion-bound receipts, and recovery from initialized-only campaigns"
+        },
+        {
+          "version": "v35",
+          "date": "2026-08-01",
+          "note": "no-bump: document the openui_bridge/design_md_bridge npm ci prerequisite in continuous.md (prose-only; no behavior change to the continuous driver)"
+        },
+        {
+          "version": "v35",
+          "date": "2026-08-01",
+          "note": "Resolve bounded stage results from current-attempt canonical train and eval artifacts when stdout is only a truncated log tail, reject unchanged artifacts from prior attempts, and report an absent host driver as dead instead of trusting stale running state"
+        },
+        {
+          "version": "v34",
+          "date": "2026-08-01",
+          "note": "Keep supervised predecessor receipts fail closed while allowing the legacy unsupervised executor to advance, and type malformed training step declarations as incomplete evidence"
+        },
+        {
+          "version": "v33",
+          "date": "2026-08-01",
+          "note": "Reject partial evaluation scoreboards as infrastructure evidence, require theorem-stop receipts, validate durable action evidence, and publish live child process heartbeats"
+        },
+        {
+          "version": "v32",
+          "date": "2026-08-01",
+          "note": "Fail closed before the first decision arm unless both symmetric arm budgets plus finalization fit, and bind action acknowledgements to exact loop and campaign lineage"
+        },
+        {
+          "version": "v31",
+          "date": "2026-08-01",
+          "note": "Fail-closed measurement integrity: process-tree bounded stages, symmetric arm budgets, partial-train rejection, typed gate-fail evidence, infrastructure rediagnosis, bounded evidence roots, loop-scoped campaigns, content-bound action receipts, stale-code re-exec, and completeness/liveness matrix signals"
+        },
+        {
+          "version": "v30",
+          "date": "2026-08-01",
+          "note": "Agent-supervised one-cycle handoff and heartbeat; typed harness/Lean/data actions; three-strike blockers; quality-primary screening; fail-closed rung evidence; canonical run caps; causal-family saturation; compact climb-vs-ship matrix"
+        },
+        {
+          "version": "v29",
+          "date": "2026-08-01",
+          "note": "Promote dispose requires dual-arm primary effect (> min_effect) + cert continue; vacuous cert alone cannot mark promoted; repair_vacuous_promotes reclassifies historical cert-only promotes"
+        },
+        {
+          "version": "v28",
+          "date": "2026-08-01",
+          "note": "Promote formal_claims in matrix before lock; harness_failure disposition for missing promote run / matrix membership (not model reject)"
+        },
+        {
+          "version": "v27",
+          "date": "2026-08-01",
+          "note": "Promote formal timeout 600s → timed_out / promotion_inconclusive (not failed); refund promote_attempts on timeout"
+        },
         {
           "version": "v26",
           "date": "2026-08-01",
@@ -2765,7 +3818,7 @@
       ]
     },
     "harness.autoresearch.formal": {
-      "version": "v2",
+      "version": "v14",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/formal.py",
@@ -2776,6 +3829,91 @@
         ".github/workflows/ci.yml"
       ],
       "history": [
+        {
+          "version": "v14",
+          "date": "2026-08-04",
+          "note": "no-bump: CI python matrix 8 -> 12 shards so broad stacked-PR diffs fit the canonical 3-minute per-job wall (timeout itself unchanged, per MAX_RUN_MINUTES law); formal-contract behavior unchanged."
+        },
+        {
+          "version": "v14",
+          "date": "2026-08-03",
+          "note": "no-bump: CI no-torch fast path excludes tests/test_versioning again — test_mirrors.py imports torch transitively, so versions.json-only PRs failed collection; formal-contract behavior unchanged."
+        },
+        {
+          "version": "v14",
+          "date": "2026-08-03",
+          "note": "Keep the standalone formal-contract verifier dependency-light in Lean CI while preserving the canonical process-group cap and Lake project lock."
+        },
+        {
+          "version": "v13",
+          "date": "2026-08-03",
+          "note": "Serialize project-wide formal checks with the shared Lake lock and preserve lock-wait provenance while maintaining recursive source coverage."
+        },
+        {
+          "version": "v12",
+          "date": "2026-08-03",
+          "note": "Recursively bind nested Lean sources and executable identities into formal project checks so imported proof changes or toolchain replacement cannot reuse stale success."
+        },
+        {
+          "version": "v11",
+          "date": "2026-08-03",
+          "note": "Bind the process-local Lean project-check digest to every Test/*.json fixture consumed by the proof runner, preventing stale successful checks after fixture changes."
+        },
+        {
+          "version": "v10",
+          "date": "2026-08-03",
+          "note": "no-bump: externalize formal preflight version cases and clear the process-local cache between tests; production formal behavior is unchanged."
+        },
+        {
+          "version": "v10",
+          "date": "2026-08-03",
+          "note": "Require the pinned Lean version check to succeed before a formal preflight can be proved; classify version timeouts as incomplete and failures as unknown."
+        },
+        {
+          "version": "v9",
+          "date": "2026-08-03",
+          "note": "Reuse only successful content-digested Lean project checks within one process; failed, timed-out, or non-total proofs are never cached."
+        },
+        {
+          "version": "v8",
+          "date": "2026-08-02",
+          "note": "no-bump: cover and document the portable proof-audit search-tool fallback without changing formal orchestration behavior."
+        },
+        {
+          "version": "v8",
+          "date": "2026-08-02",
+          "note": "Expose Lean process start and heartbeat callbacks through the bounded process-group runner so supervisor state identifies and can reap formal children."
+        },
+        {
+          "version": "v7",
+          "date": "2026-08-01",
+          "note": "Register all six AdvisoryResidual SFF templates with theorem-specific source digests in the canonical formal validator"
+        },
+        {
+          "version": "v6",
+          "date": "2026-08-01",
+          "note": "Run formal checks in bounded process groups so timed-out Lake and Lean descendants are interrupted and reaped"
+        },
+        {
+          "version": "v5",
+          "date": "2026-08-01",
+          "note": "no-bump: document the cold and warm promotion-proof runtime reproduction without changing formal behavior"
+        },
+        {
+          "version": "v5",
+          "date": "2026-08-01",
+          "note": "Route structural-similarity promotion preflight to the Mathlib-free LeverProof kernel and expose fail-closed current-binding validation for cached artifacts"
+        },
+        {
+          "version": "v4",
+          "date": "2026-08-01",
+          "note": "Clamp caller-requested formal execution to the canonical repository run cap while preserving typed timeout status"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-01",
+          "note": "Caller-owned formal timeout; status timed_out on wall hit (not unknown); do not clamp to MAX_RUN_SECONDS"
+        },
         {
           "version": "v2",
           "date": "2026-07-30",
@@ -2849,12 +3987,27 @@
       ]
     },
     "harness.core": {
-      "version": "v12",
+      "version": "v15",
       "kind": "harness",
       "paths": [
         "src/slm_training/harness_core/"
       ],
       "history": [
+        {
+          "version": "v15",
+          "date": "2026-08-01",
+          "note": "Reap an already-exited process before process-group liveness checks so zero-grace cleanup does not report a false kill"
+        },
+        {
+          "version": "v14",
+          "date": "2026-08-01",
+          "note": "Expose bounded subprocess start and heartbeat callbacks for truthful supervisor liveness state"
+        },
+        {
+          "version": "v13",
+          "date": "2026-08-01",
+          "note": "Add a bounded process-group runner with explicit interrupt and kill budgets, typed outcomes, tree cleanup, and bounded output capture"
+        },
         {
           "version": "v12",
           "date": "2026-07-30T10:18:42-05:00",
@@ -2918,7 +4071,7 @@
       ]
     },
     "harness.distill": {
-      "version": "v9",
+      "version": "v10",
       "kind": "harness",
       "paths": [
         "docs/design/ap020-on-policy-abstract-self-distillation.md",
@@ -2946,15 +4099,23 @@
         "src/slm_training/harnesses/distill/prompted_teacher.py",
         "src/slm_training/harnesses/distill/self_distill_collect.py",
         "src/slm_training/harnesses/distill/semantic_repair.py",
+        "src/slm_training/harnesses/distill/repair.py",
+        "src/slm_training/harnesses/distill/sft.py",
         "tests/test_harnesses/distill/test_legal_set_kl.py",
         "tests/test_harnesses/distill/test_operator_decision_state.py",
         "tests/test_harnesses/distill/test_operator_teacher_ceiling.py",
         "tests/test_harnesses/distill/test_operator_verifier_kd_defer.py",
         "tests/test_harnesses/distill/test_prompted_teacher.py",
         "tests/test_harnesses/distill/test_self_distill_collect.py",
-        "tests/test_harnesses/distill/test_semantic_repair.py"
+        "tests/test_harnesses/distill/test_semantic_repair.py",
+        "tests/test_harnesses/distill/test_select_sft.py"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-08-03",
+          "note": "Admit only exact or sound verifier conflict slices to repair SFT and supervise their localized cone while freezing certified spans."
+        },
         {
           "version": "v9",
           "date": "2026-07-26",
@@ -3068,7 +4229,7 @@
       ]
     },
     "harness.experiment_feature_flags": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/feature_flags.py",
@@ -3076,6 +4237,11 @@
         "src/slm_training/resources/experiment_feature_flag_history.json"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-08-01",
+          "note": "Register the structural auxiliary-head profile as a persisted OpenFeature training lever for capacity-matched controls."
+        },
         {
           "version": "v3",
           "date": "2026-07-24",
@@ -3094,7 +4260,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v145",
+      "version": "v147",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
@@ -3103,9 +4269,21 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py",
         "scripts/resume_climb.py",
         "scripts/run_scaling_ladder.py",
-        "tests/test_harnesses/experiments/test_locked_manifest_digest_threading.py"
+        "tests/test_harnesses/experiments/test_locked_manifest_digest_threading.py",
+        "src/slm_training/harnesses/rl/trajectory.py",
+        "tests/test_harnesses/rl/test_trajectory.py"
       ],
       "history": [
+        {
+          "version": "v147",
+          "date": "2026-08-03",
+          "note": "Make trajectory RL fail closed on missing rollout support or behavior log-probabilities and activate configured reward-variance and sampled KL anchors."
+        },
+        {
+          "version": "v146",
+          "date": "2026-08-03",
+          "note": "Route LeverProof certificate replay through the canonical bounded process-group runner and project lock; timeout and launch failures remain fail-closed."
+        },
         {
           "version": "v145",
           "date": "2026-07-31",
@@ -4638,6 +5816,26 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-08-03",
+          "note": "no-bump: regenerate the committed gate artifact after upstream component bumps (evals.scoring v23, harness.experiments v147) so publish --check passes again; verdict stays inconclusive, thresholds and gate behavior unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-08-03",
+          "note": "no-bump: refresh the committed inconclusive gate narrative and owner hash; thresholds and gate behavior are unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-08-03",
+          "note": "no-bump: regenerate the unchanged inconclusive gate against the current AgentV owner hash; thresholds and gate behavior are unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-08-01",
+          "note": "no-bump: regenerate the unchanged inconclusive gate after updating its embedded harness component identities"
+        },
+        {
+          "version": "v1",
           "date": "2026-07-30",
           "note": "no-bump: regenerate the unchanged inconclusive closeout after merging continuous-autotrain and formal-preflight histories"
         },
@@ -6151,6 +7349,31 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-08-04",
+          "note": "no-bump: correct a stale fixed-output-vocab figure (296 -> 569) in docs/design/quality-experiment-matrix.md; the registry pins vocab_size 569 and the wrong number had misled an external reviewer. Documentation only."
+        },
+        {
+          "version": "v1",
+          "date": "2026-08-03",
+          "note": "no-bump: reconcile the shared E60-E65 status table after their canonical substrates landed; SLM-197 behavior is unchanged."
+        },
+        {
+          "version": "v1",
+          "date": "2026-08-03",
+          "note": "no-bump: append c1839 null evidence and its successor objective to the shared quality matrix without changing the SLM-197 scorer or experiment."
+        },
+        {
+          "version": "v1",
+          "date": "2026-08-03",
+          "note": "no-bump: append c1838 fixture-confirmation evidence to the shared quality matrix without changing the SLM-197 scorer or experiment."
+        },
+        {
+          "version": "v1",
+          "date": "2026-08-02",
+          "note": "no-bump: document the quality-matrix process-isolation requirement without changing the SLM-197 scorer or experiment."
+        },
+        {
+          "version": "v1",
           "date": "2026-07-27",
           "note": "no-bump: append the SLM-420 (DSH5-12) advanced-operator disposition terminal entry to the shared quality matrix without changing the SLM-197 scorer or matrix behavior"
         },
@@ -6741,6 +7964,566 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-04",
+          "note": "no-bump: record scheduled loop fe71636 c2's control/canvas scratch checkpoint provenance (AgentV harness failure, repaired, replay still decode-timeout incomplete) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: restore the SLM-303 tiny-v2 fresh-baseline rows to README/MODEL_CARD checkpoint tables (recovered user WIP; fixture wiring claim only); SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: reconcile verifier-guided research-lineage status after E63-E65 wiring; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record the c2 component-plan fixture screen and queued confirmation in the model card and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record the c1 bounds screen scratch checkpoints in the model card and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record c1863's rejected confirmation result in the model card and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest continuous-openui-local 8c0b60dd-c2 (session j48f8u) component-plan reproduction checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record c1862's incomplete confirmation result in the model card and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record c1861's frozen replay result in the model card and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record c1860's incomplete scratch checkpoint pair in the model card and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record c1859's constraint-graph checkpoint pair in the model card and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record c1858's replay-null checkpoint pair in the model card and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record c1857's control-only checkpoint and slot-contract-context harness failure in the model card and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: persist the c1855 fresh confirmation rejection and model-card summary; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: persist the c1854 positive fixture result and queued confirmation provenance; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: persist the c1853 null result matrix and model-card summary; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: persist the c1852 null result matrix and model-card summary; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: persist the c1851 measured result matrix and model-card summary; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1851 slot-component coverage checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1849 incomplete slot-owner runtime-gap checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1848 incomplete binder-slot-ownership harness-repair checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1847 semantic-exhaustive successor checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1846 exposure-targeted quality-cost checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1845 lever-complete capacity-aware tail confirmation provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record c1844 incomplete promotion checkpoint provenance and correct c1838/c1841 recipe-scope claims after the queue projection audit; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1843 structure-token scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1842 semantic-exhaustive scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: replace c1840 incomplete promotion provenance with the completed c1841 held-out null in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1840 incomplete promotion checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1839 scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest continuous-openui-local 8c0b60dd-c1 (session j48f8u) exact-tie checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1838 confirmed scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1832 incomplete scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1830 capacity-aware tail scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1829 capacity-aware quality-cost scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1828 wide-draft null scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1827 compiler-cache null scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1826 bounded-margin null scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1824 quality-cost scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1823 fresh-seed-null scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1822 fixture-positive replay provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1821 measurement-incomplete scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1819 rejected component-edge-margin checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1818 infrastructure-incomplete control checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1817 null scratch-checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1812 incomplete promotion checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record c3 grammar-completion-bounds quality-neutral checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record c2 AgentV/NODE_OPTIONS infrastructure-failure checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1810 fresh-seed confirmation checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1809 fresh-confirmation-only checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1808 rejected container-close checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1807 rejected typed-family balance checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "no-bump: record honest c1806 rejected STRUCT-token checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: record the c1805 frozen component-token replay disposition in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1804 incomplete component-token checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1803 rejected scaffold-prefix checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1802 rejected DESIGN-dropout checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1801 rejected symbol-boundary checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1800 rejected mixed-mask checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1799 rejected slot-augmentation checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1796 incomplete semantic-contrast checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1795 rejected edge-alignment checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1793 rejected placeholder-fidelity confirmation checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1791 placeholder-fidelity fixture-candidate checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1789 incomplete binder-component-plan checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1788 rejected binder-arity checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1786 rejected steps checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1785 recycled-bounds null checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1784 component-plan confirmation rejection checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1783 fixture-efficiency candidate checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1782 incomplete runtime-flag harness checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1781 invalid canvas scratch checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1780 rejected component-structure scratch checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1779 rejected binder-topology scratch checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1778 rejected batch-size-one runtime checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1777 rejected component-inventory confirmation checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1776 fixture-only component-inventory candidate checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1775 rejected component-edge scratch checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: correct c1773 README provenance from numeric literal extension to the observed open nested component trajectory; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1773 control-incomplete literal-close checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1772 rejected bounds confirmation checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1771 fixture-only bounds efficiency checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1770 infrastructure-incomplete component-edge checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1766 infrastructure-incomplete component-plan checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1765 rejected numeric literal-margin checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1764 rejected literal-close checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1760 incomplete-measurement checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1759 rejected-confirmation checkpoint provenance and restore the missing c1757 checkpoint-history row in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest model-card and README provenance for the unrelated c1757 scratch candidate and control; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest model-card and README provenance for two unrelated c1756 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest model-card and README provenance for two unrelated c1755 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest model-card and README provenance for two unrelated c1754 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest model-card and README provenance for two unrelated c1753 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest model-card and README provenance for two unrelated c1752 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest model-card and README provenance for the unrelated incomplete c1751 control checkpoint; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest model-card and README provenance for two unrelated c1750 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest model-card and README provenance for two unrelated c1749 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest model-card and README provenance for two unrelated c1748 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest model-card and README provenance for two unrelated incomplete c1737 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest model-card and README provenance for two unrelated c1736 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest model-card and README provenance for two unrelated c1735 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest model-card and README provenance for two unrelated c1734 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest model-card and README provenance for two unrelated c1733 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: complete the unrelated c1732 scratch checkpoint provenance in the model card; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest model-card provenance for two unrelated c1732 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest model-card provenance for two unrelated c1731 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest model-card provenance for two unrelated c1730 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-01",
+          "note": "no-bump: add honest model-card provenance for two unrelated c1729 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-01",
+          "note": "no-bump: add honest model-card provenance for the unrelated c1717 control scratch checkpoint; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-01",
+          "note": "no-bump: add honest model-card provenance for two unrelated c1716 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-01",
+          "note": "no-bump: add honest model-card provenance for two unrelated c1715 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-01",
+          "note": "no-bump: add honest model-card provenance for six unrelated autotrain scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
+        },
         {
           "version": "v3",
           "date": "2026-07-30",
@@ -7448,7 +9231,7 @@
       ]
     },
     "harness.experiments.slm292_semantic_contrast_objective": {
-      "version": "v1",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm292_semantic_contrast_objective.py",
@@ -7458,6 +9241,16 @@
         "docs/design/iter-slm292-semantic-contrast-objective-20260725.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "Require zero-weight controls and positive-weight treatments to use identical pair records and reconstruction masks, leaving only the semantic margin coefficient as the treatment difference."
+        },
+        {
+          "version": "v2",
+          "date": "2026-08-02",
+          "note": "Make semantic-contrast controls pair-exposure matched and project historical external marker aliases through one shared opaque ordinal codec before model training."
+        },
         {
           "version": "v1",
           "date": "2026-07-25",
@@ -8109,8 +9902,25 @@
         }
       ]
     },
-    "harness.flags": {
+    "harness.experiments.var2_02_ops_vocab_history_widening": {
       "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "scripts/run_var2_02_ops_vocab_history_widening.py",
+        "tests/test_scripts/test_run_var2_02_ops_vocab_history_widening.py",
+        "docs/design/var2-02-ops-vocab-history-widening-20260728.json",
+        "docs/design/var2-02-ops-vocab-history-widening-20260728.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-28",
+          "note": "VAR2-02: follow-on to VAR2-01's named next step ('widening the corpus to topology/history operators, or accepting the narrower scope'). Builds one real ConversationTraceV1 (conversation.py's own API: self-COPY_STATE, a real legal AST_EDIT, UNDO, REDO, CHECKOUT_STATE, FORK) and re-runs VAR2-01's adequacy-audit/wiring-probe shape against it, scoped to only the history half of the gap (4 of VAR2-01's 6 unused_ops: conversation.undo/redo/checkout_state/copy_state). Topology-operator widening (openui.wrap_node/reorder_children/etc.) and conversation.ast_edit/transaction_commit (structurally unreachable per VAR2-01) stay explicitly out of scope. Claim classes measurement + wiring only; no production behavior change."
+        }
+      ]
+    },
+    "harness.flags": {
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/flags/",
@@ -8119,6 +9929,11 @@
         "tests/test_flags/test_openfeature_experiments.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-02",
+          "note": "Derive checkpoint runtime override fields only from explicit CLI options, including BooleanOptionalAction negatives and DESIGN.md aliases."
+        },
         {
           "version": "v1",
           "date": "2026-07-24",
@@ -8197,7 +10012,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v71",
+      "version": "v91",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -8218,6 +10033,116 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v91",
+          "date": "2026-08-04",
+          "note": "Add witness_false_singleton_risk: flags a completion-domain query that ends with exactly one PROVEN candidate while >=1 UNKNOWN (budget-exhausted) candidate was dropped, i.e. a survivor that looks deterministically forced to exact_forced_token_id and bypasses the model under I2 on the strength of a search budget rather than a proof. Reads zero on the profile fixture; a unit test proves the detector fires. Counter only."
+        },
+        {
+          "version": "v90",
+          "date": "2026-08-04",
+          "note": "Advisory witness-outcome counters: witness_materialized / witness_kept / witness_pruned_unknown / witness_pruned_unsupported, plus aggregate keys. Distinguishes a certified UNSUPPORTED rejection from a budget-exhausted UNKNOWN one in the completion-domain filter (the two were collapsed into a single witness_pruned reason). Counters only; no gate or metric semantics change; fixture outputs byte-identical."
+        },
+        {
+          "version": "v89",
+          "date": "2026-08-04",
+          "note": "Additive decode telemetry for the HX4/HX5 lanes: hybrid_span_commits, hybrid_frontier_commits, hybrid_span_reverts, block_joint_unknowns (joint validator returned authority=unknown and commits were kept) and template_slot_positions (E20 template holes, folded once per generate), all added to the aggregate_stats key list. Counters only; no metric or gate semantics change. HX5 session reuse also changes engine-counter accounting on the default repair path: engine stats fold once per _ensure_valid_openui call instead of once per attempt, so completion_* totals drop without any decode-output change."
+        },
+        {
+          "version": "v88",
+          "date": "2026-08-04",
+          "note": "Add block_joint_rejections counter (parallel block-step commits reverted on proven joint impossibility); additive telemetry."
+        },
+        {
+          "version": "v87",
+          "date": "2026-08-04",
+          "note": "HX1 blast-radius advisory counters: admit_probe_canvases / admit_probe_committed_suffix count MaskGIT admit probes whose canvas holds committed tokens after the first hole (the left-prefix-unvalidatable configuration). Measured 442/442 = 100 percent on the profile fixture; additive telemetry only."
+        },
+        {
+          "version": "v86",
+          "date": "2026-08-04",
+          "note": "Fold the completion session's new branch_memo_hits/misses counters into DecodeStats (completion_branch_memo_hits/misses); additive telemetry only."
+        },
+        {
+          "version": "v85",
+          "date": "2026-08-03",
+          "note": "Advisory measurement-validity telemetry: attributed/unattributed decode wall coverage (attributed_fraction) in aggregate_stats, dfa_* engine-counter folds, per-suite prediction-diversity summary (distinct_prediction_count, most_common_prediction_share), and a timeout dominant-phase sub-cause in decode_outcome_detail. Additive only; no gate or metric semantics change."
+        },
+        {
+          "version": "v84",
+          "date": "2026-08-03",
+          "note": "Resolve complete checkpoint-backed suite cache hits from conservative checkpoint-bundle, request, data, and component identity before model construction; incomplete measurements remain non-cacheable."
+        },
+        {
+          "version": "v83",
+          "date": "2026-08-03",
+          "note": "Separate observed batched request latency from amortized throughput and sanitize suite-cache replays so runtime telemetry and provenance are never reused as current measurements."
+        },
+        {
+          "version": "v82",
+          "date": "2026-08-03",
+          "note": "Reject ambiguous evaluate_suites calls that provide both a mutable preloaded model and a checkpoint, preventing cache/runtime identity ambiguity."
+        },
+        {
+          "version": "v81",
+          "date": "2026-08-03",
+          "note": "Verify preloaded checkpoint digests against their paths and bypass suite-result caching when component version identity is unavailable."
+        },
+        {
+          "version": "v80",
+          "date": "2026-08-03",
+          "note": "Share one checkpoint-bound immutable model across multi-suite evaluations, preserving fail-closed cache identity and avoiding repeated model construction."
+        },
+        {
+          "version": "v79",
+          "date": "2026-08-03",
+          "note": "Fail closed on suite-cache reuse for mutable preloaded models without a checkpoint identity; expose the bypass reason for attribution."
+        },
+    {
+          "version": "v78",
+          "date": "2026-08-02",
+          "note": "no-bump: clarify that the scaled timeout is a whole decode-chunk budget; evaluation behavior is unchanged."
+        },
+        {
+          "version": "v78",
+          "date": "2026-08-02",
+          "note": "Honor the documented per-record decode timeout for production batches by scaling the chunk wall with its record count while remaining bounded by any cumulative evaluation wall."
+        },
+        {
+          "version": "v77",
+          "date": "2026-08-02",
+          "note": "Prefer the production batch request API when a decoder also exposes single-record stats, retaining row-tagged DecodeStats while restoring I4 compacted evaluation and disclosing configured and observed chunk sizes."
+        },
+        {
+          "version": "v76",
+          "date": "2026-08-02",
+          "note": "Preserve non-explicit checkpoint runtime fields during evaluation and snapshot the effective loaded model config rather than argparse defaults."
+        },
+        {
+          "version": "v75",
+          "date": "2026-08-02",
+          "note": "Partition an optional cumulative evaluation wall across remaining records, reserve scoreboard finalization time, and persist the effective timeout allocation range."
+        },
+        {
+          "version": "v74",
+          "date": "2026-08-02",
+          "note": "no-bump: add regression coverage for rejecting unsupported eval_shards values in model-build configuration; evaluation behavior is unchanged."
+        },
+        {
+          "version": "v74",
+          "date": "2026-08-02",
+          "note": "Initialize constrained generation outside document deadlines, disclose initialization latency, and disarm repeating SIGALRM delivery before timeout bookkeeping so timeouts remain typed evidence."
+        },
+        {
+          "version": "v73",
+          "date": "2026-08-01",
+          "note": "Preserve the original supervisor interrupt when best-effort decode progress annotation or serialization fails"
+        },
+        {
+          "version": "v72",
+          "date": "2026-08-01",
+          "note": "Atomically persist version-stamped non-scoreable decode counters on supervisor interruption and remove the transient progress artifact after canonical evaluation completes"
+        },
         {
           "version": "v71",
           "date": "2026-07-31",
@@ -8641,7 +10566,7 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v27",
+      "version": "v42",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
@@ -8649,6 +10574,81 @@
         "src/slm_training/harnesses/quality/__init__.py"
       ],
       "history": [
+        {
+          "version": "v42",
+          "date": "2026-08-03",
+          "note": "Persist per-family denoising-NLL learning curves so the next-run mixture scheduler can distinguish learning from high-flat noise."
+        },
+        {
+          "version": "v41",
+          "date": "2026-08-03",
+          "note": "Load declared semantic-contrast pairs for zero-weight controls as well as treatments so both arms realize the same sampled records and CE supervision."
+        },
+        {
+          "version": "v40",
+          "date": "2026-08-03",
+          "note": "Do not validate or load semantic-contrast sources when the objective weight is zero, so matched controls with candidate metadata remain runnable."
+        },
+        {
+          "version": "v39",
+          "date": "2026-08-03",
+          "note": "Fail closed when semantic-contrast batches cannot retain a base-corpus reconstruction row; pair-only batches are not comparable to the control."
+        },
+        {
+          "version": "v38",
+          "date": "2026-08-02",
+          "note": "Persist the dense compiler-decision token objective weight and decision-position loss attribution in training evidence."
+        },
+        {
+          "version": "v37",
+          "date": "2026-08-03",
+          "note": "Persist component-edge token objective weight and edge-position loss attribution in training evidence."
+        },
+        {
+          "version": "v36",
+          "date": "2026-08-03",
+          "note": "Persist the typed family-balance objective weight and active-family auxiliary attribution in training evidence."
+        },
+        {
+          "version": "v35",
+          "date": "2026-08-02",
+          "note": "Persist the grammar STRUCT-token objective weight and typed structure loss attribution in training evidence."
+        },
+        {
+          "version": "v34",
+          "date": "2026-08-02",
+          "note": "Persist component-token objective weight and token-family loss attribution in training evidence."
+        },
+        {
+          "version": "v33",
+          "date": "2026-08-02",
+          "note": "Record the prefix-LTR auxiliary loss weight in every training recipe."
+        },
+        {
+          "version": "v32",
+          "date": "2026-08-02",
+          "note": "Record the symbol-boundary auxiliary loss weight in every training recipe."
+        },
+        {
+          "version": "v31",
+          "date": "2026-08-02",
+          "note": "Record corruption pattern, runtime symbol features, slot augmentation, semantic masks, and constraint-graph mode in every training recipe."
+        },
+        {
+          "version": "v30",
+          "date": "2026-08-02",
+          "note": "Allow declared semantic-contrast pair exposure with zero contrast weight so matched controls differ from treatment only in the objective weight."
+        },
+        {
+          "version": "v29",
+          "date": "2026-08-02",
+          "note": "Record the compiler-alignment decision-family filter in every training recipe so targeted literal-close supervision is auditable."
+        },
+        {
+          "version": "v28",
+          "date": "2026-08-01",
+          "note": "Record the structural auxiliary-head profile in every training recipe so capacity-matched control provenance is explicit."
+        },
         {
           "version": "v27",
           "date": "2026-07-29",
@@ -8851,7 +10851,7 @@
       ]
     },
     "harness.preference.remine_campaign": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/preference/remine_campaign.py",
@@ -8863,6 +10863,76 @@
         "docs/design/ldi3-04-remine-intervene-campaign-report-20260718.json"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-08-03",
+          "note": "no-bump: restrict continuous-loop execution-action receipts and serialize its state updates; preference remine campaign behavior is unchanged"
+        },
+        {
+          "version": "v4",
+          "date": "2026-08-03",
+          "note": "no-bump: add a bounded dynamic experiment-wall override for the continuous autotrain supervisor; preference remine campaign behavior is unchanged"
+        },
+        {
+          "version": "v4",
+          "date": "2026-08-03",
+          "note": "Recover metric-free terminal hypothesizer feedback from typed incomplete Phase-A handoffs in the shared autoresearch CLI."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: persist content-bound trainable-parameter provenance for autotrain stage reuse without changing preference remine campaign behavior"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: bind continuous autotrain action acknowledgements to typed evidence identities without changing preference remine behavior."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-01",
+          "note": "no-bump: add frozen autotrain stage-reuse CLI validation without changing preference remine campaign behavior"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-01",
+          "note": "no-bump: share continuous lineage validation with status without changing remine campaign behavior"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-01",
+          "note": "no-bump: authorize content-bound continuous replay configs without changing remine campaign behavior"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-01",
+          "note": "no-bump: recover continuous autotrain feedback context without changing remine campaign behavior"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-01",
+          "note": "no-bump: recover continuous autotrain predecessor lineage without changing remine campaign behavior"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-01",
+          "note": "no-bump: validate durable autotrain action receipt evidence without changing remine campaign behavior"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-01",
+          "note": "no-bump: validate autotrain action acknowledgement lineage and indices without changing remine campaign behavior"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-01",
+          "note": "no-bump: explicit autoresearch evidence roots now replace the legacy outputs default while omitted roots preserve remine campaign behavior"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-01",
+          "note": "no-bump: scripts/autoresearch.py clamps all campaign execution to the canonical run cap while preserving historical remine artifact readability"
+        },
         {
           "version": "v3",
           "date": "2026-07-31",
@@ -9120,6 +11190,36 @@
       "history": [
         {
           "version": "v2",
+          "date": "2026-08-04",
+          "note": "no-bump: second same-day re-pin of the dsl/pack.py source identity in the DSH0-02 symbolic-surface evidence record after the telemetry-only false-singleton tally; acceptance criteria re-exercised and green."
+        },
+        {
+          "version": "v2",
+          "date": "2026-08-04",
+          "note": "no-bump: re-pin the src/slm_training/dsl/pack.py source identity in the DSH0-02 symbolic-surface evidence record after telemetry-only witness counters were added there, and document the re-validation (closed GraphQL fixture still admitted, language-contract + minimal-witness suites 27/27). Surface-policy behavior, acceptance criteria, and the dsl.symbolic_surface/v1 authority are unchanged."
+        },
+        {
+          "version": "v2",
+          "date": "2026-08-03",
+          "note": "no-bump: refresh the pinned language-contract test hash after adding compiler/stream deadline regression coverage; staged harness behavior is unchanged."
+        },
+        {
+          "version": "v2",
+          "date": "2026-08-03",
+          "note": "no-bump: refresh two stale source-identity hashes in dsh0-02-symbolic-surface-policy-20260723.json (tests/test_dsl/test_language_contract.py after adding a NODE_OPTIONS regression test; src/slm_training/data/contract.py, drifted since already-merged commit c9144577 #1337 added marker_order/marker_projection/slot_contract_size) so the evidence pin matches committed content; no policy or behavior change."
+        },
+        {
+          "version": "v2",
+          "date": "2026-08-02",
+          "note": "no-bump: refresh the pinned pack source hash after fail-closed capability reporting changed; staged symbolic-surface behavior is unchanged"
+        },
+        {
+          "version": "v2",
+          "date": "2026-08-02",
+          "note": "no-bump: refresh pinned symbolic-surface source hashes after opaque-marker test reconciliation; staged harness behavior is unchanged"
+        },
+        {
+          "version": "v2",
           "date": "2026-07-24",
           "note": "no-bump: refresh pinned symbolic-surface source hashes after decode-deadline regression coverage"
         },
@@ -9184,7 +11284,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v24",
+      "version": "v25",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -9192,6 +11292,7 @@
         "src/slm_training/data/language_contract/",
         "src/slm_training/dsl/renderability.py",
         "src/slm_training/data/mixture.py",
+        "scripts/run_mixture_search.py",
         "src/slm_training/dsl/packs/openui.py",
         "src/slm_training/resources/train_seeds.jsonl",
         "src/slm_training/resources/frontier/",
@@ -9199,6 +11300,11 @@
         "docs/design/dsh1-08-harness-qa-completion-20260725.json"
       ],
       "history": [
+        {
+          "version": "v25",
+          "date": "2026-08-03",
+          "note": "Add a bounded between-run mixture scheduler that upweights learning families and downweights near-certain or high-flat families without changing confirmatory runs in flight."
+        },
         {
           "version": "v24",
           "date": "2026-07-30",
@@ -9498,7 +11604,7 @@
       ]
     },
     "matrix.perf": {
-      "version": "v8",
+      "version": "v9",
       "kind": "matrix",
       "paths": [
         "scripts/run_perf_matrix.py",
@@ -9509,6 +11615,21 @@
         "docs/design/runtime-performance.md"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-08-03",
+          "note": "no-bump: Round 7 follow-up docs — record the landed finalize_ms/attributed_fraction telemetry and HEAD re-validation numbers in runtime-performance.md; matrix behavior unchanged."
+        },
+        {
+          "version": "v9",
+          "date": "2026-08-03",
+          "note": "no-bump: Round 7 docs record of the preregistered-and-falsified MaskGIT persistent-grammar-state experiment (reverted; see maskgit-persistent-grammar-state-20260803.md); matrix behavior and measured evidence files are unchanged by this entry."
+        },
+        {
+          "version": "v9",
+          "date": "2026-08-03",
+          "note": "Document observed batched request latency separately from amortized throughput and prohibit stale runtime cache telemetry from performance interpretation."
+        },
         {
           "version": "v8",
           "date": "2026-07-30",
@@ -9587,12 +11708,22 @@
       ]
     },
     "matrix.quality": {
-      "version": "v8",
+      "version": "v10",
       "kind": "matrix",
       "paths": [
         "scripts/run_quality_matrix.py"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-08-03",
+          "note": "Calibrate trained trust gates on the disjoint held-out slice and persist Brier, ECE, selective-risk, coverage, and the safe remask threshold."
+        },
+        {
+          "version": "v9",
+          "date": "2026-08-02",
+          "note": "Reject workers greater than one until quality-matrix execution state is process-isolated, preventing shared stdout and mutable registry corruption."
+        },
         {
           "version": "v8",
           "date": "2026-07-25",
@@ -10363,7 +12494,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v269",
+      "version": "v311",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -10403,9 +12534,286 @@
         "tests/test_dsl/test_speculative_rank.py",
         "tests/test_runtime/test_decode_schedule.py",
         "src/slm_training/resources/decode/speculative_ngram_v1.json",
-        "docs/design/role-factorized-abstract-plans.md"
+        "docs/design/role-factorized-abstract-plans.md",
+        "src/slm_training/dsl/grammar/fastpath/trust_train.py",
+        "tests/test_dsl/test_grammar_fastpath.py"
       ],
       "history": [
+        {
+          "version": "v311",
+          "date": "2026-08-04T20:05:00+00:00",
+          "note": "no-bump-collision-renumber: this branch's decode-metering fix (below) and origin/main's HX4/HX5 change (also below) independently bumped model.twotower to v310 in parallel; origin/main's PR merged to main first, so on merging origin/main into this branch the top-level version is renumbered v310->v311 to keep the sequence unique. Neither underlying entry's content is edited -- both original v310 history entries are preserved verbatim below, in each side's original relative order, per the version-stamp merge contract."
+        },
+        {
+          "version": "v310",
+          "date": "2026-08-04T20:00:00+00:00",
+          "note": "fix(decode-metering): exact_forced_token_id (models/grammar.py), used by the legacy non-compiler-tree LTR decode path, called build_completion_forest with zero timed_ms instrumentation, so a checkpoint that decodes via compiler_decode_mode='off' (its own persisted config) could spend nearly all of its real decode wall time in that call while compiler_ms stayed 0.0 and the cost silently fell into unattributed_ms. Also widened the compiler-tree timed_ms(compiler_ms) block in twotower.py's _compiler_ltr_decode_one/_compiler_ltr_decode_batch to cover completion_forced_closure, the same outgoing()-edge grammar-authority walk chained off the same call. Pure additive timing instrumentation: no decode/generation-output behavior changes, only decode_stats attribution (compiler_ms up, unattributed_ms down for previously-unmetered calls). See docs/design/compiler-tree-forced-closure-decode-metering-gap.md."
+        },
+        {
+          "version": "v310",
+          "date": "2026-08-04",
+          "note": "HX4 hybrid unmask scheduler (unmask_mode=hybrid, default off): contiguous masked runs at or above hybrid_span_min_run (new lever, default 3) trimmed at the first EOS/PAD are budgeted through BlockNoiseSchedule/select_blocks_to_unmask; remaining holes take a frontier-first order (left neighbour committed, then confidence). Both lanes reuse the existing commit/admit machinery, so legality is never widened. The joint validator guard is widened to hybrid with a REGION-SCOPED revert: span commits revert first, multi_region_support re-runs once, and frontier commits revert only if the canvas is still proven impossible (L-D all-or-nothing preserved as the fallback and byte-identical when block_diffusion_decode is on and hybrid off). HX5: _constrained_ltr_repair accepts an optional caller-owned GrammarDecodeState (skipping its engine-stat fold), _ensure_valid_openui allocates one session for all repair attempts and folds once, and deterministic attempts short-circuit when an attempt reproduces the previous text. Default positions path untouched; fixture outputs byte-identical."
+        },
+        {
+          "version": "v309",
+          "date": "2026-08-04",
+          "note": "block_diffusion_decode lever (default off): block-grouped unmask scheduling via BlockNoiseSchedule with parallel step commits jointly validated by multi_region_support (proven-impossible canvases revert to masks; unknown keeps commits). Fix pick_constrained_production to report the SURVIVING candidate's probability instead of the unconstrained argmax's. Lever-off fixture outputs byte-identical."
+        },
+        {
+          "version": "v308",
+          "date": "2026-08-04",
+          "note": "no-bump: _note_admit_canvas advisory counter calls before the two MaskGIT admit_fill sites; byte-identical fixture outputs."
+        },
+        {
+          "version": "v308",
+          "date": "2026-08-04",
+          "note": "no-bump: engine_in_sync and the stateless already-synced check additionally require the engine's _synced_ok flag so a rejected sync can never vouch for reuse; identical results on valid prefixes, byte-identical fixture outputs."
+        },
+        {
+          "version": "v308",
+          "date": "2026-08-04",
+          "note": "no-bump: contract_allowed_token_ids prefix membership via a set instead of an O(prefix) list scan; identical results, pure work-skipping (campaign L1)."
+        },
+        {
+          "version": "v308",
+          "date": "2026-08-03",
+          "note": "no-bump: add --grammar-incremental-state train CLI flag (BooleanOptionalAction, default True mirrors ModelBuildConfig) so the autoresearch knob compiles to argv; absent flag preserves existing behavior exactly."
+        },
+        {
+          "version": "v308",
+          "date": "2026-08-03",
+          "note": "no-bump: finalize_ms timed spans around the top-level repair/certify call sites and a state-engine counter fold at decode-path exits; telemetry only, generate outputs byte-identical (attributed_fraction 0.25 to 1.0 on the MaskGIT profile)."
+        },
+        {
+          "version": "v308",
+          "date": "2026-08-03",
+          "note": "no-bump: add regression tests pinning engine-reuse equivalence, admit_fill reuse, stateful pick parity, and unadvertised-append session detach (from the falsified MaskGIT persistent-state experiment); no source behavior change."
+        },
+        {
+          "version": "v308",
+          "date": "2026-08-03",
+          "note": "Emit sound-overapprox grammar conflict slices from MaskGIT stream failures and add calibrated selective remask operating points without weakening grammar authority."
+        },
+        {
+          "version": "v307",
+          "date": "2026-08-03",
+          "note": "Exclude annotated contrast-negative rows from reconstruction CE independently of auxiliary weight and persist the realized CE mask identity, making matched semantic-contrast arms attributable."
+        },
+        {
+          "version": "v306",
+          "date": "2026-08-03",
+          "note": "no-bump: clarify template-fill fallback documentation; runtime behavior and checkpoint semantics are unchanged."
+        },
+        {
+          "version": "v306",
+          "date": "2026-08-03",
+          "note": "Propagate cooperative decode deadlines through compiler forest construction, path ranking, prefill scheduling, and constrained stream probes so slow legal search cannot swallow evaluator timeouts."
+        },
+        {
+          "version": "v305",
+          "date": "2026-08-03",
+          "note": "Keep incidental DESIGN.md marker examples out of prompt slot-contract extraction while preserving explicit design inventory lines, preventing valid rows from failing contiguous-ordinal validation."
+        },
+        {
+          "version": "v304",
+          "date": "2026-08-02",
+          "note": "Add zero-parameter reconstruction weighting and typed CE attribution at every gold compiler decision position."
+        },
+        {
+          "version": "v303",
+          "date": "2026-08-02",
+          "note": "Complete component-edge compiler-alignment routing at the fail-closed ModelBuildConfig boundary after c1818 exposed the omitted allowlist owner."
+        },
+        {
+          "version": "v302",
+          "date": "2026-08-02",
+          "note": "Allow compiler alignment to target only deterministic component-bound branch decisions and report typed component-edge row telemetry."
+        },
+        {
+          "version": "v301",
+          "date": "2026-08-03",
+          "note": "Add zero-parameter reconstruction weighting at deterministic compiler-derived non-root component edges with typed train-only attribution."
+        },
+        {
+          "version": "v300",
+          "date": "2026-08-03",
+          "note": "Preserve reconstruction and typed-family attribution when compiler alignment is active so combined-objective training signals remain complete."
+        },
+        {
+          "version": "v299",
+          "date": "2026-08-03",
+          "note": "Extend compiler alignment with a grammar-derived container-close filter for gold ')' or ']' decisions competing with legal comma continuation."
+        },
+        {
+          "version": "v298",
+          "date": "2026-08-03",
+          "note": "Add a zero-parameter count-normalized auxiliary with equal component and STRUCT family-mean contribution."
+        },
+        {
+          "version": "v297",
+          "date": "2026-08-02",
+          "note": "Add zero-parameter grammar STRUCT-token reconstruction weighting with raw structure-family CE attribution."
+        },
+        {
+          "version": "v296",
+          "date": "2026-08-02",
+          "note": "Add zero-parameter component-token reconstruction weighting with raw component, prefix, and non-component CE attribution."
+        },
+        {
+          "version": "v295",
+          "date": "2026-08-02",
+          "note": "Expose the existing zero-parameter opaque-symbol boundary loss through the canonical train CLI and typed autoresearch compiler."
+        },
+        {
+          "version": "v294",
+          "date": "2026-08-02",
+          "note": "Project legacy semantic-contrast pair sides through one shared opaque slot codec before model use, preserving pair identity while enforcing output contract v2."
+        },
+        {
+          "version": "v293",
+          "date": "2026-08-02",
+          "note": "Extend the canonical train_model structural auxiliary profile enum with binder-arity and binder-component-plan so governed size-matched matrix arms reach the existing model-build implementation."
+        },
+        {
+          "version": "v292",
+          "date": "2026-08-02",
+          "note": "no-bump: move the binder-quality head capacity parity parameter rows into the canonical external case resource; assertions and model behavior are unchanged."
+        },
+        {
+          "version": "v292",
+          "date": "2026-08-02",
+          "note": "Add binder-arity and binder-component-plan structural auxiliary profiles so matched controls instantiate the same head capacity as new train-and-decode quality arms."
+        },
+        {
+          "version": "v291",
+          "date": "2026-08-02",
+          "note": "Bound component-plan root and Poisson-count decode biases by their configured weight so a poorly calibrated auxiliary head cannot dominate legal closure choices until timeout."
+        },
+        {
+          "version": "v290",
+          "date": "2026-08-02",
+          "note": "Add fail-closed compiler-alignment filtering for grammar-derived numeric-frame LIT_END targets, preserving the legal candidate domain while directly training numeric closure versus legal byte continuation."
+        },
+        {
+          "version": "v289",
+          "date": "2026-08-02",
+          "note": "no-bump: add an eval-only cumulative wall field to ModelBuildConfig; TwoTower architecture, training, legal domains, and ranking are unchanged."
+        },
+        {
+          "version": "v289",
+          "date": "2026-08-02",
+          "note": "Cache tokenizer-identity-scoped compiler terminal projections, classify components by the canonical kind-id set, retain explicit request authority for legacy external marker text, and keep visible honest slot inventory authoritative over stale non-opaque arguments."
+        },
+        {
+          "version": "v288",
+          "date": "2026-08-02",
+          "note": "no-bump: complete the v288 slot-authority repair by retaining an explicit canonical request contract when legacy external marker text cannot form model identity."
+        },
+        {
+          "version": "v288",
+          "date": "2026-08-02",
+          "note": "Cache tokenizer-identity-scoped compiler terminal projections, classify components by the canonical kind-id set, and keep visible honest slot inventory authoritative over stale non-opaque arguments."
+        },
+        {
+          "version": "v288",
+          "date": "2026-08-02",
+          "note": "Regenerate the committed speculative n-gram ranker from the latest canonical train-only corpus after opaque structural-id and fixture refreshes."
+        },
+        {
+          "version": "v287",
+          "date": "2026-08-02",
+          "note": "Reject eval_shards values other than one until evaluation supports real process-isolated shard execution, preventing false parallelism claims."
+        },
+        {
+          "version": "v287",
+          "date": "2026-08-02",
+          "note": "Regenerate the committed speculative n-gram ranker from the latest canonical train-only corpus after opaque structural-id and fixture refreshes."
+        },
+        {
+          "version": "v286",
+          "date": "2026-08-02",
+          "note": "Decode mutable macro token surfaces from the live expansion table instead of retaining stale per-token cached text."
+        },
+        {
+          "version": "v285",
+          "date": "2026-08-02",
+          "note": "Preload exact constrained-generation authority outside per-document deadlines and cache tokenizer surface/kind projections used by the compiler without changing legal domains or model ranking."
+        },
+        {
+          "version": "v284",
+          "date": "2026-08-01",
+          "note": "Restore the registered E282 surface-identifier diagnostic arm while retaining fail-closed constrained, macro, and non-absolute restrictions; add direct tokenizer-preserving warm-start coverage."
+        },
+        {
+          "version": "v283",
+          "date": "2026-08-01",
+          "note": "Keep explicit production request slot contracts structured and out of model-facing prompt text while continuing to prohibit silent gold-contract channels."
+        },
+        {
+          "version": "v282",
+          "date": "2026-08-01",
+          "note": "Invalidate packed completion state when LTR repair traverses a pre-existing canvas token outside the advertised branch while retaining strict rejection for newly chosen tokens."
+        },
+        {
+          "version": "v281",
+          "date": "2026-08-01",
+          "note": "Reject surface-identifier model configurations at construction so external names cannot become scoring or grammar authority."
+        },
+        {
+          "version": "v280",
+          "date": "2026-08-01",
+          "note": "Retain semantic component-membership probing for broad identifier terminals whenever the completion compiler cannot provide a complete certificate."
+        },
+        {
+          "version": "v279",
+          "date": "2026-08-01",
+          "note": "Union current-corpus and parent-checkpoint context vocabularies during warm start while remapping learned source embedding rows and retaining new-corpus rows."
+        },
+        {
+          "version": "v278",
+          "date": "2026-08-01",
+          "note": "Allow structural auxiliary heads to be prebuilt independently of loss weight so zero-loss controls and supervised candidates have identical trainable capacity."
+        },
+        {
+          "version": "v277",
+          "date": "2026-08-01",
+          "note": "Precompute immutable DSL token-kind enum values once per tokenizer so exact completion and semantic authority avoid repeated enum construction during witness search."
+        },
+        {
+          "version": "v276",
+          "date": "2026-08-01",
+          "note": "Mark completion-forest candidate forks disposable on rejection so direct grammar feeds avoid a second control-state clone without changing candidate order, authority, or payloads."
+        },
+        {
+          "version": "v275",
+          "date": "2026-08-01",
+          "note": "Attach the active DecodeStats bucket to exceptional exits and fold completion-session deltas in a finally block so deadline interrupts retain exact grammar-work counters"
+        },
+        {
+          "version": "v274",
+          "date": "2026-08-01",
+          "note": "Skip tokenizer cache-fingerprint construction for uncached exact terminal-mask lookups after the c1720 interrupt trace isolated repeated full-vocabulary sorting in completion-forest decisions"
+        },
+        {
+          "version": "v273",
+          "date": "2026-08-01",
+          "note": "Raise the automatic CPU compiler-tree prefill batch from four to sixteen exact states after the c1719 frozen-checkpoint probe showed higher state throughput without changing path choice"
+        },
+        {
+          "version": "v272",
+          "date": "2026-08-01",
+          "note": "Use the checked static token-to-terminal map for completion-forest branch and forced-token feeds, retaining canonical text fallback at ambiguous junctions"
+        },
+        {
+          "version": "v271",
+          "date": "2026-08-01",
+          "note": "Invoke official AST completeness parsing only at grammar states where end-of-document is legal, preserving fail-closed terminal authority while removing nonterminal bridge round trips"
+        },
+        {
+          "version": "v270",
+          "date": "2026-08-01",
+          "note": "Cache immutable tokenizer kind membership and remove redundant set copies from the terminal-witness completion-forest hot path"
+        },
         {
           "version": "v269",
           "date": "2026-07-31",
@@ -12221,7 +14629,7 @@
       ]
     },
     "evals.ecosystem_tier_scoreboard": {
-      "version": "v1",
+      "version": "v2",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/ecosystem_tier_scoreboard.py",
@@ -12230,6 +14638,11 @@
         "docs/design/ecosystem-tier-scoreboard.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-03",
+          "note": "Route diagnostic Lean probes through the bounded process-group runner and shared project lock; timeout and build failures remain unknown/error."
+        },
         {
           "version": "v1",
           "date": "2026-07-30",
@@ -12252,7 +14665,7 @@
       ]
     },
     "formal.objects": {
-      "version": "v1",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/formal/__init__.py",
@@ -12263,6 +14676,16 @@
         "docs/design/formal-objects-multi-prover.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-03",
+          "note": "Add a process-shared Lake project lock and reusable bounded formal command adapter so every Lean checker reaps descendants under the canonical cap."
+        },
+        {
+          "version": "v2",
+          "date": "2026-08-03",
+          "note": "Route optional Lean kernel audits through the canonical bounded process-group runner and clamp caller timeouts to the repository hard cap so Lake/Lean descendants are reaped fail-closed."
+        },
         {
           "version": "v1",
           "date": "2026-07-31",
@@ -12308,7 +14731,7 @@
       ]
     },
     "harness.experiments.anti_e237_semantic_factor_frontier": {
-      "version": "v9",
+      "version": "v11",
       "kind": "harness",
       "paths": [
         "src/slm_training/data/progspec/semantic_evidence.py",
@@ -12348,6 +14771,16 @@
         "src/slm_training/resources/experiments/semantic_factor_frontier/formal_preflights/sff_role-shuffle-membership.json"
       ],
       "history": [
+        {
+          "version": "v11",
+          "date": "2026-08-03",
+          "note": "Bound SFF Lean proof regeneration and version probes, serialize project builds, and validate committed proof digests fail-closed."
+        },
+        {
+          "version": "v10",
+          "date": "2026-08-01",
+          "note": "Replace native_decide with kernel-checked decide proofs and regenerate the source-bound SFF formal preflight artifacts"
+        },
         {
           "version": "v9",
           "date": "2026-07-31",

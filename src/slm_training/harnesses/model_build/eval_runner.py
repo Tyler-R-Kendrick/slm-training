@@ -8,8 +8,10 @@ import math
 import platform
 import re
 import signal
+import sys
 import time
-from dataclasses import fields
+from collections import Counter
+from dataclasses import dataclass, fields
 from datetime import UTC, datetime
 from functools import lru_cache
 from pathlib import Path
@@ -22,6 +24,7 @@ from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.evals.eval_cache import (
     EvalCache,
+    EvalCacheKey,
     EvalCacheMode,
     suite_result_key,
 )
@@ -45,12 +48,14 @@ from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
 )
 from slm_training.models.decode_stats import (
+    DecodeStats,
+    aggregate_stats,
     check_decode_deadline,
     clear_decode_deadline,
     collect_decode_stats,
     set_decode_deadline,
 )
-from slm_training.versioning import component_version
+from slm_training.versioning import build_version_stamp, component_version
 
 _COMPONENT_RE = re.compile(r"\b([A-Z][A-Za-z0-9]*)\s*\(")
 _LANGSMITH_METRIC_KEYS = (
@@ -67,6 +72,153 @@ _LANGSMITH_METRIC_KEYS = (
     "decode_timeout_rate",
 )
 
+# A suite cache stores deterministic predictions/quality evidence, never host
+# runtime observations.  Replaying timing, timeout, initialization, or
+# provenance fields would make a transient slow host (or an old checkout) look
+# like a current measurement and could incorrectly satisfy a perf gate.
+_CACHE_RUNTIME_KEYS = frozenset(
+    {
+        "latency_ms_p50",
+        "latency_ms_p95",
+        "latency_ms_p50_including_incomplete",
+        "latency_ms_p95_including_incomplete",
+        "decode_batch_wall_ms_p50",
+        "decode_batch_wall_ms_p95",
+        "decode_amortized_ms_per_record_p50",
+        "decode_amortized_ms_per_record_p95",
+        "decode_records_per_second",
+        "completed_latency_n",
+        "incomplete_latency_n",
+        "decode_timeout_count",
+        "decode_timeout_document_count",
+        "decode_timeout_document_n",
+        "decode_timeout_rate",
+        "decode_initialization_ms",
+        "decode_stats",
+        "evaluated_at",
+        "code_git_sha",
+        "code_dirty",
+        "agentv",
+        "output",
+        "version_stamp",
+    }
+)
+
+
+def _cache_replay_payload(
+    payload: dict[str, Any],
+    *,
+    config: ModelBuildConfig,
+    suite_path: Path,
+    version_stamp: dict[str, Any],
+) -> dict[str, Any]:
+    """Project cached quality evidence into a fresh, non-runtime envelope."""
+    replay = dict(payload)
+    for key in _CACHE_RUNTIME_KEYS:
+        replay.pop(key, None)
+    # Preserve the metric names for consumers, but make the absence of a new
+    # runtime observation explicit rather than silently dropping the fields.
+    for key in (
+        "latency_ms_p50",
+        "latency_ms_p95",
+        "latency_ms_p50_including_incomplete",
+        "latency_ms_p95_including_incomplete",
+        "decode_batch_wall_ms_p50",
+        "decode_batch_wall_ms_p95",
+        "decode_amortized_ms_per_record_p50",
+        "decode_amortized_ms_per_record_p95",
+        "decode_records_per_second",
+        "decode_timeout_count",
+        "decode_timeout_document_count",
+        "decode_timeout_document_n",
+        "decode_timeout_rate",
+        "decode_initialization_ms",
+        "decode_stats",
+    ):
+        replay[key] = None
+    details = []
+    for row in replay.get("details", []) or []:
+        if not isinstance(row, dict):
+            continue
+        detail = dict(row)
+        for key in (
+            "latency_ms",
+            "request_completion_latency_ms",
+            "amortized_batch_latency_ms",
+            "batch_size",
+            "temporal_decode_evidence",
+        ):
+            detail.pop(key, None)
+        details.append(detail)
+    if "details" in replay:
+        replay["details"] = details
+    replay.update(
+        {
+            "output": str(suite_path),
+            "cache_replay": True,
+            "cache_runtime_metrics_available": False,
+            "runtime_measurement_source": "cache_not_measured",
+            "evaluated_at": datetime.now(UTC).isoformat(),
+            "code_git_sha": _git_sha(),
+            "code_dirty": _git_dirty(),
+            "version_stamp": version_stamp,
+        }
+    )
+    return replay
+
+
+def _persist_decode_progress(
+    config: ModelBuildConfig,
+    *,
+    status: str,
+    processed_record_n: int,
+    active_chunk: list[ExampleRecord],
+    stats_rows: list[DecodeStats],
+    version_stamp: dict[str, Any],
+) -> Path:
+    """Atomically persist non-scoreable decode work before a supervisor stop."""
+    run_dir = config.run_dir
+    run_dir.mkdir(parents=True, exist_ok=True)
+    path = run_dir / "decode_progress.json"
+    tmp = run_dir / "decode_progress.json.tmp"
+    payload = {
+        "schema_version": "DecodeProgressV1",
+        "run_id": config.run_id,
+        "suite": config.suite,
+        "status": status,
+        "measurement_complete": False,
+        "scoreable": False,
+        "processed_record_n": int(processed_record_n),
+        "active_record_ids": [record.id for record in active_chunk],
+        "decode_stats": aggregate_stats(stats_rows),
+        "version_stamp": version_stamp,
+        "recorded_at": datetime.now(UTC).isoformat(),
+    }
+    tmp.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    tmp.replace(path)
+    return path
+
+
+def _prediction_diversity(predictions: list[str]) -> dict[str, Any]:
+    """Advisory degenerate-output summary over a suite's predictions.
+
+    Empty predictions are excluded (already counted by
+    ``empty_prediction_count``); the share answers "how much of this suite's
+    evidence rests on one identical output". Not a gate.
+    """
+    nonempty = [p for p in predictions if p.strip()]
+    if not nonempty:
+        return {
+            "distinct_prediction_count": 0,
+            "most_common_prediction_share": None,
+        }
+    counts = Counter(nonempty)
+    _, top_count = counts.most_common(1)[0]
+    return {
+        "distinct_prediction_count": len(counts),
+        "most_common_prediction_share": round(top_count / len(nonempty), 4),
+    }
+
 
 def _evaluation_version_components(config: ModelBuildConfig) -> tuple[str, ...]:
     components = (
@@ -80,7 +232,9 @@ def _evaluation_version_components(config: ModelBuildConfig) -> tuple[str, ...]:
     return components + (("model.twotower",) if config.model_name == "twotower" else ())
 
 
-def _record_langsmith_evaluation(config, *, suites: dict[str, dict], scoreboard: dict) -> None:
+def _record_langsmith_evaluation(
+    config, *, suites: dict[str, dict], scoreboard: dict
+) -> None:
     """Publish only aggregate evaluation data to the active summary trace."""
     from slm_training.runtime.telemetry import current_trace
 
@@ -88,11 +242,7 @@ def _record_langsmith_evaluation(config, *, suites: dict[str, dict], scoreboard:
     if trace is None:
         return
     summary = {
-        suite: {
-            key: metrics[key]
-            for key in _LANGSMITH_METRIC_KEYS
-            if key in metrics
-        }
+        suite: {key: metrics[key] for key in _LANGSMITH_METRIC_KEYS if key in metrics}
         for suite, metrics in suites.items()
     }
     trace.record_summary(
@@ -143,7 +293,9 @@ _TEMPORAL_DECODE_TRACE_FIELDS = (
 )
 
 
-def _temporal_decode_evidence(stats: object | None, record_id: str) -> list[dict[str, object]]:
+def _temporal_decode_evidence(
+    stats: object | None, record_id: str
+) -> list[dict[str, object]]:
     """Return the prefix-time, model-available trace projection for one record.
 
     This is deliberately not a ``DecodeStats.as_dict()`` snapshot: aggregate
@@ -158,9 +310,7 @@ def _temporal_decode_evidence(stats: object | None, record_id: str) -> list[dict
         if trace.get("record_id") != record_id:
             continue
         item = {
-            key: trace[key]
-            for key in _TEMPORAL_DECODE_TRACE_FIELDS
-            if key in trace
+            key: trace[key] for key in _TEMPORAL_DECODE_TRACE_FIELDS if key in trace
         }
         if "position" in item:
             evidence.append(item)
@@ -203,9 +353,15 @@ def _aggregate_scope_contract_metrics(
     def summarize(group: list[dict[str, Any]]) -> dict[str, Any]:
         summary: dict[str, Any] = {"sample_count": len(group)}
         for key in mean_keys:
-            values = [float(row[key]) for row in group if isinstance(row.get(key), (int, float))]
+            values = [
+                float(row[key])
+                for row in group
+                if isinstance(row.get(key), (int, float))
+            ]
             if values:
-                summary[f"{key}_mean" if key.endswith("_size") else key] = sum(values) / len(values)
+                summary[f"{key}_mean" if key.endswith("_size") else key] = sum(
+                    values
+                ) / len(values)
         tp = sum(int(row.get("failure_cone_tp", 0)) for row in group)
         fp = sum(int(row.get("failure_cone_fp", 0)) for row in group)
         fn = sum(int(row.get("failure_cone_fn", 0)) for row in group)
@@ -217,7 +373,9 @@ def _aggregate_scope_contract_metrics(
                 "failure_cone_recall": recall,
                 "failure_cone_f1": (
                     2.0 * precision * recall / (precision + recall)
-                    if precision is not None and recall is not None and precision + recall
+                    if precision is not None
+                    and recall is not None
+                    and precision + recall
                     else None
                 ),
             }
@@ -243,6 +401,71 @@ def _sha256_file(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _checkpoint_bundle_sha256(
+    checkpoint: Path, *, checkpoint_sha256: str | None = None
+) -> str:
+    """Hash every checkpoint artifact that can affect model construction."""
+    sidecars = {
+        "checkpoint": checkpoint,
+        "tokenizer": checkpoint.with_suffix(".tokenizer.json"),
+        "metadata": checkpoint.with_suffix(".meta.json"),
+        "context_tokenizer": checkpoint.with_name(
+            checkpoint.stem + ".context.tokenizer.json"
+        ),
+        "context_onnx": checkpoint.with_suffix(".context.onnx"),
+        "denoiser_onnx": checkpoint.with_suffix(".denoiser.onnx"),
+    }
+    identities = {
+        role: (
+            checkpoint_sha256
+            if role == "checkpoint" and checkpoint_sha256 is not None
+            else (_sha256_file(path) if path.is_file() else None)
+        )
+        for role, path in sidecars.items()
+    }
+    return hashlib.sha256(
+        json.dumps(identities, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+
+
+def _cache_identity_value(value: Any) -> Any:
+    """Return a stable JSON value for conservative pre-model cache identity."""
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, dict):
+        return {
+            str(key): _cache_identity_value(item)
+            for key, item in sorted(value.items(), key=lambda pair: str(pair[0]))
+        }
+    if isinstance(value, (set, frozenset)):
+        items = [_cache_identity_value(item) for item in value]
+        return sorted(
+            items,
+            key=lambda item: json.dumps(item, sort_keys=True, separators=(",", ":")),
+        )
+    if isinstance(value, (list, tuple)):
+        return [_cache_identity_value(item) for item in value]
+    if value is None or isinstance(value, (bool, int, float, str)):
+        return value
+    # Unknown config values cause a conservative miss when their representation
+    # changes; they never widen reuse.
+    return repr(value)
+
+
+def _evaluation_request_sha256(config: ModelBuildConfig) -> str:
+    # Output placement is not evaluation behavior. Every other caller field is
+    # included so a warm preflight can only be more conservative than the
+    # post-load effective-policy cache key.
+    payload = {
+        item.name: _cache_identity_value(getattr(config, item.name))
+        for item in fields(config)
+        if item.name not in {"run_id", "run_root"}
+    }
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
 
 
 def _placeholder_fidelity_normalized(pred: str, gold: ExampleRecord) -> float | None:
@@ -391,9 +614,7 @@ def _contract_recall(pred: str, record: ExampleRecord) -> float | None:
     return len(pred_set & gold_set) / len(gold_set)
 
 
-def _binder_reference_f1(
-    precision: float | None, recall: float | None
-) -> float | None:
+def _binder_reference_f1(precision: float | None, recall: float | None) -> float | None:
     """Harmonic mean for the existing binder/reference contract evidence."""
     if precision is None or recall is None:
         return None
@@ -556,6 +777,7 @@ def _effective_evaluation_policy(
             else int(value("generate_max_attempts"))
         ),
         "decode_timeout_seconds": value("decode_timeout_seconds"),
+        "evaluation_wall_seconds": value("evaluation_wall_seconds"),
         "allow_unconstrained_fallback": bool(value("allow_unconstrained_fallback")),
         "gen_steps": int(value("gen_steps") or 0),
         "grammar_ltr_max_tokens": int(value("grammar_ltr_max_tokens") or 0),
@@ -797,6 +1019,149 @@ def _eval_data_sha(directory: Path) -> str | None:
         return None
 
 
+@dataclass(frozen=True)
+class _SuiteCachePreflight:
+    key: EvalCacheKey | None = None
+    cached_metrics: dict[str, Any] | None = None
+    checkpoint_sha256: str | None = None
+    checkpoint_bundle_sha256: str | None = None
+    eval_data_manifest_sha: str | None = None
+    eval_suite_manifest_sha: str | None = None
+    component_versions: dict[str, str] | None = None
+    dependencies: dict[str, Any] | None = None
+    bypass_reason: str | None = None
+
+
+def _suite_cache_preflight(
+    config: ModelBuildConfig,
+    *,
+    checkpoint: Path,
+    cache: EvalCache | None,
+    suite_limit: int | None,
+    suite_offset: int,
+    generation_overrides: dict[str, Any],
+    checkpoint_sha256: str | None = None,
+    checkpoint_bundle_sha256: str | None = None,
+) -> _SuiteCachePreflight:
+    """Resolve a full-suite hit without materializing the checkpoint model.
+
+    This key deliberately includes the complete caller config. A cold run only
+    writes it after model construction has established the effective checkpoint
+    policy, so the preflight is a validated shortcut rather than an attempt to
+    infer checkpoint config from partial metadata.
+    """
+    if cache is None or cache.config.mode is EvalCacheMode.OFF:
+        return _SuiteCachePreflight()
+    checkpoint_sha256 = checkpoint_sha256 or _sha256_file(checkpoint)
+    checkpoint_bundle_sha256 = (
+        checkpoint_bundle_sha256
+        or _checkpoint_bundle_sha256(
+            checkpoint, checkpoint_sha256=checkpoint_sha256
+        )
+    )
+    eval_data_manifest_sha = _eval_data_sha(Path(config.test_dir))
+    eval_suite_manifest_sha = _eval_data_sha(
+        Path(config.test_dir) / "suites" / config.suite
+    )
+    try:
+        component_versions = {
+            component_id: component_version(component_id)
+            for component_id in _evaluation_version_components(config)
+        }
+    except Exception:  # noqa: BLE001 - missing version identity forbids reuse
+        return _SuiteCachePreflight(
+            checkpoint_sha256=checkpoint_sha256,
+            checkpoint_bundle_sha256=checkpoint_bundle_sha256,
+            eval_data_manifest_sha=eval_data_manifest_sha,
+            eval_suite_manifest_sha=eval_suite_manifest_sha,
+            bypass_reason="component_version_unavailable",
+        )
+    if eval_data_manifest_sha is None or eval_suite_manifest_sha is None:
+        return _SuiteCachePreflight(
+            checkpoint_sha256=checkpoint_sha256,
+            checkpoint_bundle_sha256=checkpoint_bundle_sha256,
+            eval_data_manifest_sha=eval_data_manifest_sha,
+            eval_suite_manifest_sha=eval_suite_manifest_sha,
+            component_versions=component_versions,
+            bypass_reason="eval_manifest_unavailable",
+        )
+    request_sha256 = _evaluation_request_sha256(config)
+    dependencies = {
+        "checkpoint_sha256": checkpoint_sha256,
+        "checkpoint_bundle_sha256": checkpoint_bundle_sha256,
+        "evaluation_request_sha256": request_sha256,
+        "eval_data_manifest_sha": eval_data_manifest_sha,
+        "eval_suite_manifest_sha": eval_suite_manifest_sha,
+        "suite_limit": suite_limit,
+        "suite_offset": suite_offset,
+        "generation_overrides": generation_overrides,
+        "component_versions": component_versions,
+    }
+    key = EvalCacheKey(
+        layer="suite_result_preflight",
+        checkpoint_sha256=checkpoint_bundle_sha256,
+        request_sha256=request_sha256,
+        suite=config.suite,
+        eval_limit=suite_limit,
+        component_versions=component_versions,
+        extra={
+            "eval_data_manifest_sha": eval_data_manifest_sha,
+            "eval_suite_manifest_sha": eval_suite_manifest_sha,
+            "eval_offset": suite_offset,
+            "generation_overrides": generation_overrides,
+        },
+    )
+    cached_metrics = None
+    if cache.config.mode in (EvalCacheMode.READ, EvalCacheMode.READ_WRITE):
+        candidate = cache.get(key)
+        if candidate is not None and _suite_result_cacheable(candidate):
+            cached_metrics = candidate
+    return _SuiteCachePreflight(
+        key=key,
+        cached_metrics=cached_metrics,
+        checkpoint_sha256=checkpoint_sha256,
+        checkpoint_bundle_sha256=checkpoint_bundle_sha256,
+        eval_data_manifest_sha=eval_data_manifest_sha,
+        eval_suite_manifest_sha=eval_suite_manifest_sha,
+        component_versions=component_versions,
+        dependencies=dependencies,
+    )
+
+
+def _suite_result_cacheable(metrics: dict[str, Any]) -> bool:
+    """Only complete suite measurements may become reusable evidence."""
+    return (
+        int(metrics.get("decode_timeout_count", 0) or 0) == 0
+        and int(metrics.get("incomplete_document_n", 0) or 0) == 0
+    )
+
+
+def _replay_cached_suite(
+    config: ModelBuildConfig,
+    metrics: dict[str, Any],
+    *,
+    record_n: int,
+    evaluation_remaining_records: list[int] | None = None,
+) -> dict[str, Any]:
+    """Materialize a validated cached suite result under the current run."""
+    run_dir = config.run_dir
+    run_dir.mkdir(parents=True, exist_ok=True)
+    suite_path = run_dir / f"eval_{config.suite}.json"
+    replay = dict(metrics)
+    replay["output"] = str(suite_path)
+    replay["cache_replay"] = True
+    payload = json.dumps(replay, indent=2) + "\n"
+    suite_path.write_text(payload, encoding="utf-8")
+    if config.suite == "smoke":
+        (run_dir / "eval.json").write_text(payload, encoding="utf-8")
+    if evaluation_remaining_records is not None:
+        evaluation_remaining_records[0] = max(
+            0, evaluation_remaining_records[0] - record_n
+        )
+    (run_dir / "decode_progress.json").unlink(missing_ok=True)
+    return replay
+
+
 def _seed_eval_rng(seed: int) -> None:
     """Lock Python / NumPy / Torch RNG for greedy constrained evals."""
     import random
@@ -818,18 +1183,68 @@ def _seed_eval_rng(seed: int) -> None:
         pass
 
 
+def _clear_repeating_decode_alarm(previous: Any) -> None:
+    """Cancel SIGALRM without letting a pending interval tick escape cleanup."""
+    if not (hasattr(signal, "setitimer") and hasattr(signal, "SIGALRM")):
+        return
+    old_mask = None
+    pthread_sigmask = getattr(signal, "pthread_sigmask", None)
+    if callable(pthread_sigmask):
+        old_mask = pthread_sigmask(signal.SIG_BLOCK, {signal.SIGALRM})
+    try:
+        # Ignoring SIGALRM while blocked discards any already-pending interval
+        # tick before the caller's previous disposition is restored.
+        signal.signal(signal.SIGALRM, signal.SIG_IGN)
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        if previous is not None:
+            signal.signal(signal.SIGALRM, previous)
+    finally:
+        if callable(pthread_sigmask) and old_mask is not None:
+            pthread_sigmask(signal.SIG_SETMASK, old_mask)
+
+
+_EVALUATION_FINALIZATION_RESERVE_SECONDS = 2.0
+
+
+def _effective_record_decode_timeout(
+    requested_seconds: float,
+    *,
+    evaluation_deadline: float | None,
+    remaining_record_n: int,
+    chunk_record_n: int,
+    now: float | None = None,
+) -> float:
+    """Allocate a fair, bounded wall-time budget for one decode chunk."""
+
+    requested_chunk_seconds = requested_seconds * max(1, int(chunk_record_n))
+    if evaluation_deadline is None:
+        return requested_chunk_seconds
+    current = time.monotonic() if now is None else float(now)
+    usable = max(
+        0.05,
+        float(evaluation_deadline) - current - _EVALUATION_FINALIZATION_RESERVE_SECONDS,
+    )
+    fair_share = usable * max(1, int(chunk_record_n)) / max(1, int(remaining_record_n))
+    if requested_seconds > 0:
+        fair_share = min(requested_chunk_seconds, fair_share)
+    return max(0.05, fair_share)
+
+
 def evaluate(
     config: ModelBuildConfig,
     model=None,
     checkpoint: Path | None = None,
     *,
+    model_checkpoint_sha256: str | None = None,
+    model_checkpoint_path: Path | None = None,
     publish_agentv: bool = True,
     cache: EvalCache | None = None,
     generation_overrides: dict[str, Any] | None = None,
+    evaluation_deadline: float | None = None,
+    evaluation_remaining_records: list[int] | None = None,
 ) -> dict:
     from slm_training.harnesses.model_build.feature_flags import resolve, save_snapshot
 
-    config, flag_snapshot = resolve(config, phase="evaluation")
     generation_overrides = dict(generation_overrides or {})
     _seed_eval_rng(int(getattr(config, "seed", 0) or 0))
     if config.test_dir is None:
@@ -844,24 +1259,76 @@ def evaluate(
         suite_limit = getattr(config, "rico_eval_limit", None)
     records = records[
         suite_offset : (
-            suite_offset + max(0, int(suite_limit))
-            if suite_limit is not None
-            else None
+            suite_offset + max(0, int(suite_limit)) if suite_limit is not None else None
         )
     ]
+    if evaluation_deadline is None and config.evaluation_wall_seconds:
+        evaluation_deadline = time.monotonic() + float(config.evaluation_wall_seconds)
+    if evaluation_remaining_records is None and evaluation_deadline is not None:
+        evaluation_remaining_records = [len(records)]
     ckpt = checkpoint or (config.checkpoint_dir / "last.pt")
+    cache_preflight = _SuiteCachePreflight()
 
     if model is not None:
         if checkpoint is not None:
             raise ValueError(
                 "provide either a preloaded model or a checkpoint, not both"
             )
+        if (model_checkpoint_sha256 is None) != (model_checkpoint_path is None):
+            raise ValueError(
+                "preloaded model checkpoint identity requires both "
+                "model_checkpoint_sha256 and model_checkpoint_path"
+            )
+        if model_checkpoint_path is not None and not model_checkpoint_path.is_file():
+            raise FileNotFoundError(
+                f"model checkpoint identity path not found: {model_checkpoint_path}"
+            )
+        if (
+            model_checkpoint_path is not None
+            and _sha256_file(model_checkpoint_path) != model_checkpoint_sha256
+        ):
+            raise ValueError(
+                "model_checkpoint_sha256 does not match model_checkpoint_path"
+            )
         plugin = model
-        loaded_checkpoint: Path | None = None
-        checkpoint_sha256: str | None = None
+        # A caller may bind an immutable preloaded model to the exact
+        # checkpoint that produced it.  This is the only safe way to enable
+        # suite-cache reuse for a preloaded model; live training models omit
+        # the digest and continue to fail closed below.
+        loaded_checkpoint = model_checkpoint_path
+        checkpoint_sha256 = model_checkpoint_sha256
+        if model_checkpoint_path is not None:
+            cache_preflight = _suite_cache_preflight(
+                config,
+                checkpoint=model_checkpoint_path,
+                cache=cache,
+                suite_limit=suite_limit,
+                suite_offset=suite_offset,
+                generation_overrides=generation_overrides,
+                checkpoint_sha256=model_checkpoint_sha256,
+            )
     else:
+        if model_checkpoint_sha256 is not None or model_checkpoint_path is not None:
+            raise ValueError(
+                "model checkpoint identity requires a preloaded model"
+            )
         if not ckpt.exists():
             raise FileNotFoundError(f"evaluation checkpoint not found: {ckpt}")
+        cache_preflight = _suite_cache_preflight(
+            config,
+            checkpoint=ckpt,
+            cache=cache,
+            suite_limit=suite_limit,
+            suite_offset=suite_offset,
+            generation_overrides=generation_overrides,
+        )
+        if cache_preflight.cached_metrics is not None:
+            return _replay_cached_suite(
+                config,
+                cache_preflight.cached_metrics,
+                record_n=len(records),
+                evaluation_remaining_records=evaluation_remaining_records,
+            )
         train_records = []
         if config.train_dir.exists():
             try:
@@ -874,7 +1341,15 @@ def evaluate(
             checkpoint=ckpt,
         )
         loaded_checkpoint = ckpt
-        checkpoint_sha256 = _sha256_file(ckpt)
+        checkpoint_sha256 = cache_preflight.checkpoint_sha256 or _sha256_file(ckpt)
+
+    plugin_config = getattr(plugin, "config", None)
+    allowed_overrides = config.runtime_override_fields
+    if plugin_config is not None and allowed_overrides is not None:
+        for item in fields(config):
+            if item.name not in allowed_overrides and hasattr(plugin_config, item.name):
+                setattr(config, item.name, getattr(plugin_config, item.name))
+    config, flag_snapshot = resolve(config, phase="evaluation")
 
     # V7 decode telemetry: reset per-suite so forwards/hit-rate are suite-local.
     spec_stats = getattr(plugin, "speculative_stats", None)
@@ -953,63 +1428,111 @@ def evaluate(
         target_length=canvas_cap,
     )
     harness_provenance_ref = harness_provenance_id(harness_provenance)
+    progress_version_stamp = build_version_stamp(
+        *_evaluation_version_components(config)
+    )
     cache_key = None
     cache_dependencies: dict[str, Any] = {}
-    if cache is not None and cache.config.mode is not EvalCacheMode.OFF:
+    cache_bypass_reason: str | None = cache_preflight.bypass_reason
+    # A preloaded model is mutable (the training loop evaluates the live
+    # weights before saving the next checkpoint).  Without an explicit
+    # checkpoint digest, a suite cache key would be shared by unrelated model
+    # states and could replay stale quality as if the current arm had learned.
+    # Fail closed: recompute rather than infer identity from architecture-only
+    # metadata.  Checkpoint-backed evaluation retains the normal cache path.
+    if (
+        model is not None
+        and checkpoint_sha256 is None
+        and cache is not None
+        and cache.config.mode is not EvalCacheMode.OFF
+    ):
+        cache_bypass_reason = "preloaded_model_without_checkpoint_identity"
+    elif cache is not None and cache.config.mode is not EvalCacheMode.OFF:
         try:
             component_versions = {
                 cid: component_version(cid)
                 for cid in _evaluation_version_components(config)
             }
-        except Exception:  # noqa: BLE001 - degrade gracefully if registry unavailable
-            component_versions = {}
-        cache_dependencies = {
-            "checkpoint_sha256": checkpoint_sha256,
-            "eval_data_manifest_sha": eval_data_manifest_sha,
-            "eval_suite_manifest_sha": eval_suite_manifest_sha,
-            "suite_limit": suite_limit,
-            "suite_offset": suite_offset,
-            "evaluation_policy": evaluation_policy,
-            "generation_overrides": generation_overrides,
-            "component_versions": component_versions,
-        }
-        cache_key = suite_result_key(
-            suite=config.suite,
-            checkpoint_sha256=checkpoint_sha256,
-            eval_data_manifest_sha=eval_data_manifest_sha,
-            eval_suite_manifest_sha=eval_suite_manifest_sha,
-            eval_limit=suite_limit,
-            evaluation_policy=evaluation_policy,
-            component_versions=component_versions,
-            extra={
-                "eval_offset": suite_offset,
+        except Exception:  # noqa: BLE001 - missing version identity forbids reuse
+            cache_bypass_reason = "component_version_unavailable"
+            component_versions = None
+        if (
+            cache_bypass_reason is None
+            and (eval_data_manifest_sha is None or eval_suite_manifest_sha is None)
+        ):
+            cache_bypass_reason = "eval_manifest_unavailable"
+        if cache_bypass_reason is None and component_versions is not None:
+            checkpoint_bundle_sha256 = (
+                cache_preflight.checkpoint_bundle_sha256
+                if loaded_checkpoint is not None
+                else None
+            )
+            cache_dependencies = {
+                "checkpoint_sha256": checkpoint_sha256,
+                "checkpoint_bundle_sha256": checkpoint_bundle_sha256,
+                "eval_data_manifest_sha": eval_data_manifest_sha,
+                "eval_suite_manifest_sha": eval_suite_manifest_sha,
+                "suite_limit": suite_limit,
+                "suite_offset": suite_offset,
+                "evaluation_policy": evaluation_policy,
                 "generation_overrides": generation_overrides,
-            },
-        )
-        if cache.config.mode in (EvalCacheMode.READ, EvalCacheMode.READ_WRITE):
-            cached_metrics = cache.get(cache_key)
-            if cached_metrics is not None:
-                # Replay: keep predictions/metrics byte-identical, but update
-                # the output path to the current run directory.
-                run_dir = config.run_dir
-                run_dir.mkdir(parents=True, exist_ok=True)
-                suite_path = run_dir / f"eval_{config.suite}.json"
-                cached_metrics = dict(cached_metrics)
-                cached_metrics["output"] = str(suite_path)
-                cached_metrics["cache_replay"] = True
-                suite_path.write_text(
-                    json.dumps(cached_metrics, indent=2) + "\n", encoding="utf-8"
-                )
-                if config.suite == "smoke":
-                    (run_dir / "eval.json").write_text(
-                        json.dumps(cached_metrics, indent=2) + "\n", encoding="utf-8"
+                "component_versions": component_versions,
+            }
+            cache_key = suite_result_key(
+                suite=config.suite,
+                checkpoint_sha256=checkpoint_sha256,
+                eval_data_manifest_sha=eval_data_manifest_sha,
+                eval_suite_manifest_sha=eval_suite_manifest_sha,
+                eval_limit=suite_limit,
+                evaluation_policy=evaluation_policy,
+                component_versions=component_versions,
+                extra={
+                    "eval_offset": suite_offset,
+                    "generation_overrides": generation_overrides,
+                    "checkpoint_bundle_sha256": checkpoint_bundle_sha256,
+                },
+            )
+            if cache.config.mode in (EvalCacheMode.READ, EvalCacheMode.READ_WRITE):
+                cached_metrics = cache.get(cache_key)
+                if cached_metrics is not None and _suite_result_cacheable(
+                    cached_metrics
+                ):
+                    if (
+                        cache_preflight.key is not None
+                        and _suite_result_cacheable(cached_metrics)
+                        and cache.config.mode is EvalCacheMode.READ_WRITE
+                    ):
+                        try:
+                            cache.put(
+                                cache_preflight.key,
+                                cached_metrics,
+                                dependencies=cache_preflight.dependencies,
+                            )
+                        except Exception:  # noqa: BLE001,S110 - optional warm index
+                            pass
+                    return _replay_cached_suite(
+                        config,
+                        cached_metrics,
+                        record_n=len(records),
+                        evaluation_remaining_records=evaluation_remaining_records,
                     )
-                return cached_metrics
 
     batch_size = 1
     generate_batch_requests = getattr(plugin, "generate_batch_requests", None)
     generate_batch = getattr(plugin, "generate_batch", None)
     generate_with_stats = getattr(plugin, "generate_with_stats", None)
+    prepare_generation = getattr(plugin, "prepare_generation", None)
+    decode_initialization_ms = 0.0
+    if callable(prepare_generation):
+        # Process-scoped parser/schema/static-artifact initialization is not a
+        # document decode.  Run it once, outside every per-chunk deadline, and
+        # disclose its wall cost separately so the first record is not the
+        # accidental owner of cold harness setup while later records are warm.
+        initialization_started = time.perf_counter()
+        prepare_generation()
+        decode_initialization_ms = (
+            time.perf_counter() - initialization_started
+        ) * 1000.0
     if callable(generate_batch_requests) or callable(generate_batch):
         batch_size = max(
             1,
@@ -1017,8 +1540,10 @@ def evaluate(
                 getattr(getattr(plugin, "config", None), "generate_batch_size", 8) or 8
             ),
         )
-    if callable(generate_with_stats):
-        batch_size = 1
+    # Prefer the production batch API when a plugin exposes both interfaces.
+    # collect_decode_stats() retains row-tagged evidence for the batch path;
+    # merely exposing the legacy single-record stats method must not disable
+    # I4 row compaction and force sequential decode.
 
     def _eval_schema() -> str | None:
         if not getattr(config, "schema_in_context", False):
@@ -1105,14 +1630,10 @@ def evaluate(
         for prompt in prompts:
             try:
                 out.append(
-                    plugin.generate(
-                        prompt, max_len=canvas_cap, **generation_overrides
-                    )
+                    plugin.generate(prompt, max_len=canvas_cap, **generation_overrides)
                 )
             except TypeError:
-                out.append(
-                    plugin.generate(prompt, gold=None, **generation_overrides)
-                )
+                out.append(plugin.generate(prompt, gold=None, **generation_overrides))
         consume = getattr(plugin, "consume_generation_evidence", None)
         evidence = consume() if callable(consume) else []
         return out, list(evidence)
@@ -1126,6 +1647,9 @@ def evaluate(
     # None when the plugin exposes no stats) so every scored record can be
     # classified into the decode-outcome taxonomy.
     chunk_decode_meta: list[dict[str, Any]] = []
+    decode_chunk_sizes: list[int] = []
+    processed_record_n = 0
+    effective_decode_timeouts: list[float] = []
 
     def _generate_chunk(
         chunk: list[ExampleRecord],
@@ -1137,10 +1661,29 @@ def evaluate(
         one-shot timeout swallowed by bare ``except Exception`` cannot leave
         decode running for minutes past ``decode_timeout_seconds``.
         """
-        nonlocal decode_timeout_count
-        seconds = float(getattr(config, "decode_timeout_seconds", 0) or 0)
+        nonlocal decode_timeout_count, processed_record_n
+        decode_chunk_sizes.append(len(chunk))
+        requested_seconds = float(getattr(config, "decode_timeout_seconds", 0) or 0)
+        remaining_record_n = (
+            int(evaluation_remaining_records[0])
+            if evaluation_remaining_records is not None
+            else len(chunk)
+        )
+        seconds = _effective_record_decode_timeout(
+            requested_seconds,
+            evaluation_deadline=evaluation_deadline,
+            remaining_record_n=remaining_record_n,
+            chunk_record_n=len(chunk),
+        )
+        if evaluation_deadline is not None:
+            effective_decode_timeouts.append(seconds)
+            if evaluation_remaining_records is not None:
+                evaluation_remaining_records[0] = max(
+                    0, evaluation_remaining_records[0] - len(chunk)
+                )
 
         def _run(timed_out: bool) -> tuple[list[str], list[dict[str, Any]]]:
+            nonlocal processed_record_n
             stats_before = len(decode_stats_rows)
             # Re-check at chunk entry so deadline is live even without LTR hooks.
             if not timed_out:
@@ -1149,11 +1692,48 @@ def evaluate(
             stats = (
                 decode_stats_rows[-1] if len(decode_stats_rows) > stats_before else None
             )
-            chunk_decode_meta.append({"timed_out": timed_out, "stats": stats})
+            chunk_decode_meta.append(
+                {
+                    "timed_out": timed_out,
+                    "stats": stats,
+                    "effective_timeout_seconds": seconds,
+                }
+            )
+            processed_record_n += len(chunk)
             return result
 
+        def _persist_interrupted(exc: KeyboardInterrupt) -> None:
+            try:
+                stats = getattr(exc, "decode_stats", None)
+                if isinstance(stats, DecodeStats):
+                    _annotate_decode_trace_records(stats, chunk)
+                partial_rows = [
+                    row for row in decode_stats_rows if isinstance(row, DecodeStats)
+                ]
+                if isinstance(stats, DecodeStats) and all(
+                    stats is not row for row in partial_rows
+                ):
+                    partial_rows.append(stats)
+                _persist_decode_progress(
+                    config,
+                    status="interrupted",
+                    processed_record_n=processed_record_n,
+                    active_chunk=chunk,
+                    stats_rows=partial_rows,
+                    version_stamp=progress_version_stamp,
+                )
+            except Exception as progress_error:  # noqa: BLE001
+                print(
+                    f"decode progress persistence failed: {progress_error}",
+                    file=sys.stderr,
+                )
+
         if seconds <= 0:
-            return _run(timed_out=False)
+            try:
+                return _run(timed_out=False)
+            except KeyboardInterrupt as exc:
+                _persist_interrupted(exc)
+                raise
 
         set_decode_deadline(seconds)
         use_alarm = hasattr(signal, "setitimer") and hasattr(signal, "SIGALRM")
@@ -1164,24 +1744,40 @@ def evaluate(
                 raise TimeoutError(f"decode exceeded {seconds:g}s")
 
             previous = signal.signal(signal.SIGALRM, _alarm)
-            # First fire at budget; then every 0.1s until cleared. Interval
-            # prevents a swallowed one-shot from disabling the wall.
-            signal.setitimer(signal.ITIMER_REAL, seconds, min(0.1, max(0.05, seconds / 10.0)))
+            # First fire at budget; then every 0.5s until cleared. Re-firing
+            # prevents a swallowed one-shot from disabling the wall, while
+            # leaving the outer timeout handler enough time to disarm before
+            # another tick can interrupt its bookkeeping.
+            signal.setitimer(signal.ITIMER_REAL, seconds, 0.5)
         try:
             return _run(timed_out=False)
         except TimeoutError as exc:
+            if use_alarm:
+                _clear_repeating_decode_alarm(previous)
+                use_alarm = False
             stats = getattr(exc, "decode_stats", None)
             if stats is not None:
                 _annotate_decode_trace_records(stats, chunk)
                 decode_stats_rows.append(stats)
-            chunk_decode_meta.append({"timed_out": True, "stats": stats})
+            chunk_decode_meta.append(
+                {
+                    "timed_out": True,
+                    "stats": stats,
+                    "effective_timeout_seconds": seconds,
+                }
+            )
             decode_timeout_count += len(chunk)
+            processed_record_n += len(chunk)
             return ["" for _ in chunk], []
+        except KeyboardInterrupt as exc:
+            if use_alarm:
+                _clear_repeating_decode_alarm(previous)
+                use_alarm = False
+            _persist_interrupted(exc)
+            raise
         finally:
             if use_alarm:
-                signal.setitimer(signal.ITIMER_REAL, 0)
-                if previous is not None:
-                    signal.signal(signal.SIGALRM, previous)
+                _clear_repeating_decode_alarm(previous)
             clear_decode_deadline()
 
     def _decode_outcome_fields(
@@ -1232,6 +1828,22 @@ def evaluate(
         detail = None
         if outcome == MODEL_VALID and parse_ok is None:
             detail = "parse_not_evaluated"
+        if timed_out and stats is not None:
+            # Advisory sub-cause: which instrumented phase the censored decode
+            # spent its wall in (dark cost shows up as a low dominant share).
+            from slm_training.models.decode_stats import ATTRIBUTED_PHASE_FIELDS
+
+            phases = {
+                name: float(getattr(stats, name, 0.0) or 0.0)
+                for name in ATTRIBUTED_PHASE_FIELDS
+            }
+            total = float(getattr(stats, "total_ms", 0.0) or 0.0)
+            if any(phases.values()):
+                dominant = max(phases, key=phases.get)  # type: ignore[arg-type]
+                detail = (
+                    f"timeout_dominant_phase={dominant}"
+                    f"({phases[dominant]:.0f}ms/{total:.0f}ms)"
+                )
         return {
             "decode_outcome": outcome,
             "stop_reason": stop_reason,
@@ -1425,17 +2037,15 @@ def evaluate(
             ast_beq_bit = 1.0 if exact >= 1.0 else 0.0
         can_beq_bit = 1.0 if _canonical_beq(scored_pred, record.openui) else 0.0
         # Optional certificate pair from record meta / prediction evidence.
-        pred_cert = (evidence or {}).get("support_certificate") or (
-            evidence or {}
-        ).get("formal_object")
+        pred_cert = (evidence or {}).get("support_certificate") or (evidence or {}).get(
+            "formal_object"
+        )
         gold_cert = (record.meta or {}).get("support_certificate") or (
             record.meta or {}
         ).get("formal_object")
         cert_bit: float | None
         if pred_cert is not None or gold_cert is not None:
-            cert_bit = (
-                1.0 if _certificate_equivalent(pred_cert, gold_cert) else 0.0
-            )
+            cert_bit = 1.0 if _certificate_equivalent(pred_cert, gold_cert) else 0.0
         else:
             cert_bit = None
         recall = component_type_recall(scored_pred, record.openui)
@@ -1547,7 +2157,9 @@ def evaluate(
                     "bucket": (
                         "small"
                         if len(record.openui) < 160
-                        else "medium" if len(record.openui) < 400 else "large"
+                        else "medium"
+                        if len(record.openui) < 400
+                        else "large"
                     ),
                 },
                 "serialized": serialized,
@@ -1577,6 +2189,11 @@ def evaluate(
         )
 
     incomplete_latencies: list[float] = []
+    # Keep request completion latency separate from the amortized share of a
+    # batched decode.  The latter is useful for throughput accounting but is
+    # not an observed request latency (all requests complete when the batch
+    # returns).
+    amortized_latencies: list[float] = []
     if batch_size > 1 and (
         callable(generate_batch_requests) or callable(generate_batch)
     ):
@@ -1590,11 +2207,16 @@ def evaluate(
             per = elapsed / max(1, len(chunk))
             for index, (record, pred) in enumerate(zip(chunk, preds)):
                 if timed_out:
-                    incomplete_latencies.append(per)
+                    incomplete_latencies.append(elapsed)
                 else:
-                    latencies.append(per)
+                    latencies.append(elapsed)
+                amortized_latencies.append(per)
                 evidence = evidence_rows[index] if index < len(evidence_rows) else None
-                _score_one(record, pred, per, evidence, chunk_meta)
+                _score_one(record, pred, elapsed, evidence, chunk_meta)
+                if details:
+                    details[-1]["request_completion_latency_ms"] = round(elapsed, 2)
+                    details[-1]["amortized_batch_latency_ms"] = round(per, 2)
+                    details[-1]["batch_size"] = len(chunk)
     else:
         for record in records:
             t0 = time.perf_counter()
@@ -1607,6 +2229,7 @@ def evaluate(
                 incomplete_latencies.append(elapsed_ms)
             else:
                 latencies.append(elapsed_ms)
+            amortized_latencies.append(elapsed_ms)
             _score_one(
                 record,
                 pred,
@@ -1614,6 +2237,10 @@ def evaluate(
                 evidence_rows[0] if evidence_rows else None,
                 chunk_meta,
             )
+            if details:
+                details[-1]["request_completion_latency_ms"] = round(elapsed_ms, 2)
+                details[-1]["amortized_batch_latency_ms"] = round(elapsed_ms, 2)
+                details[-1]["batch_size"] = 1
 
     # Primary latency percentiles are completed attempts only so a budget wall
     # does not look like "slow but finishing" quality. Timeout walls stay under
@@ -1625,6 +2252,9 @@ def evaluate(
     p95 = _nearest_rank(lat_sorted, 0.95)
     p50_all = _nearest_rank(all_lat_sorted, 0.50)
     p95_all = _nearest_rank(all_lat_sorted, 0.95)
+    amortized_sorted = sorted(amortized_latencies)
+    amortized_p50 = _nearest_rank(amortized_sorted, 0.50)
+    amortized_p95 = _nearest_rank(amortized_sorted, 0.95)
     gold_design_mean = (
         sum(gold_design_scores) / len(gold_design_scores)
         if gold_design_scores
@@ -1654,6 +2284,7 @@ def evaluate(
 
     from slm_training.evals.power_protocol import binomial_rate_evidence
     from slm_training.evals.record_schema import RUN_CLASSES, SCHEMA_VERSION
+
     def _rate_evidence(successes: int, total: int) -> dict[str, Any]:
         evidence_class = (
             "unmeasured"
@@ -1697,7 +2328,9 @@ def evaluate(
         "evidence_class": "unmeasured",
     }
 
-    run_class = config.run_class if config.run_class in RUN_CLASSES else "scratch_matrix"
+    run_class = (
+        config.run_class if config.run_class in RUN_CLASSES else "scratch_matrix"
+    )
     metrics = {
         "schema_version": SCHEMA_VERSION,
         "run_class": run_class,
@@ -1711,6 +2344,16 @@ def evaluate(
         "eval_offset": suite_offset,
         "seed": int(getattr(config, "seed", 0) or 0),
         "diagnostic_subset": suite_limit is not None or suite_offset > 0,
+        "evaluation_wall_seconds": config.evaluation_wall_seconds,
+        "effective_decode_timeout_seconds_min": (
+            min(effective_decode_timeouts) if effective_decode_timeouts else None
+        ),
+        "effective_decode_timeout_seconds_max": (
+            max(effective_decode_timeouts) if effective_decode_timeouts else None
+        ),
+        "decode_batch_size_configured": batch_size,
+        "decode_batch_size_max": max(decode_chunk_sizes) if decode_chunk_sizes else 0,
+        "decode_chunk_n": len(decode_chunk_sizes),
         # Persist the effective decode policy beside every scoreboard.  This
         # is essential for comparing historical runs: checkpoint defaults and
         # CLI diagnostic overrides can materially change quality and timeout
@@ -1753,9 +2396,7 @@ def evaluate(
         "rate_evidence": {
             "parse_rate": syntax_rate_evidence,
             "syntax_parse_rate": syntax_rate_evidence,
-            "raw_syntax_validity": _rate_evidence(
-                raw_syntax_ok, completed_document_n
-            ),
+            "raw_syntax_validity": _rate_evidence(raw_syntax_ok, completed_document_n),
             "meaningful_program_rate": meaningful_rate_evidence,
             "exact_match": _rate_evidence(int(sum(exact_vals)), len(exact_vals)),
             "decode_timeout_rate": timeout_rate_evidence,
@@ -1817,6 +2458,17 @@ def evaluate(
         "latency_ms_p95_including_incomplete": (
             round(p95_all, 2) if p95_all is not None else None
         ),
+        "decode_batch_wall_ms_p50": round(p50, 2) if p50 is not None else None,
+        "decode_batch_wall_ms_p95": round(p95, 2) if p95 is not None else None,
+        "decode_amortized_ms_per_record_p50": (
+            round(amortized_p50, 2) if amortized_p50 is not None else None
+        ),
+        "decode_amortized_ms_per_record_p95": (
+            round(amortized_p95, 2) if amortized_p95 is not None else None
+        ),
+        "decode_records_per_second": (
+            (1000.0 / amortized_p50) if amortized_p50 and amortized_p50 > 0 else None
+        ),
         "completed_latency_n": len(latencies),
         "incomplete_latency_n": len(incomplete_latencies),
         "checkpoint": str(loaded_checkpoint) if loaded_checkpoint else None,
@@ -1841,12 +2493,18 @@ def evaluate(
         "decode_timeout_rate": (
             (decode_timeout_document_n / document_n) if document_n else None
         ),
+        "decode_initialization_ms": round(decode_initialization_ms, 3),
         "decode_canvas_cap": canvas_cap,
         # SLM-303: per-taxonomy decode-outcome counts over details[] rows
         # (additive; every taxonomy key always present).
         "decode_outcome_counts": outcome_counts(
             [str(row.get("decode_outcome")) for row in details]
         ),
+        # Advisory degenerate-output signal (no gate): a suite whose
+        # predictions collapse to one constant string scores every quality
+        # metric on the same output; a high most_common share flags that the
+        # measurement, not the model, may be what a verdict is about.
+        **_prediction_diversity([str(row.get("prediction") or "") for row in details]),
         "details": details,
         "generation_evidence_schemas": sorted(
             {
@@ -2014,8 +2672,11 @@ def evaluate(
         metrics["speculative_stats"] = spec_stats.as_dict()
     if decode_stats_rows:
         from slm_training.models.decode_stats import aggregate_stats
+
         metrics["decode_stats"] = aggregate_stats(decode_stats_rows)
-        retries = sum(int(getattr(row, "unconstrained_retries", 0)) for row in decode_stats_rows)
+        retries = sum(
+            int(getattr(row, "unconstrained_retries", 0)) for row in decode_stats_rows
+        )
         metrics["constrained_fallback_rate"] = retries / len(decode_stats_rows)
         metrics["rate_evidence"]["constrained_fallback_rate"] = {
             "schema": "rate_evidence/v1",
@@ -2046,16 +2707,14 @@ def evaluate(
             "placeholder_validity",
         ]
     metrics["decoder_guaranteed"] = decoder_guaranteed
+    if cache_bypass_reason is not None:
+        metrics["cache_bypass_reason"] = cache_bypass_reason
 
     run_dir = config.run_dir
     run_dir.mkdir(parents=True, exist_ok=True)
     save_snapshot(run_dir, flag_snapshot)
     suite_path = run_dir / f"eval_{config.suite}.json"
-    from slm_training.versioning import build_version_stamp
-
-    metrics["version_stamp"] = build_version_stamp(
-        *_evaluation_version_components(config)
-    )
+    metrics["version_stamp"] = progress_version_stamp
     metrics["output"] = str(suite_path)
     if publish_agentv:
         if config.suite in DEFAULT_SHIP_GATES:
@@ -2074,12 +2733,28 @@ def evaluate(
                 "skipped": f"suite {config.suite!r} is not in the ship-gate policy"
             }
     # SDE3-01: persist the full suite result for exact replay when enabled.
-    if cache is not None and cache_key is not None and cache.config.mode in (
-        EvalCacheMode.READ_WRITE,
-        EvalCacheMode.REFRESH,
+    if (
+        cache is not None
+        and cache_key is not None
+        and _suite_result_cacheable(metrics)
+        and cache.config.mode
+        in (
+            EvalCacheMode.READ_WRITE,
+            EvalCacheMode.REFRESH,
+        )
+        and not metrics.get("incomplete_document_n")
+        and metrics.get("eval_data_manifest_sha")
+        and metrics.get("eval_suite_manifest_sha")
+        and metrics.get("cache_bypass_reason") is None
     ):
         try:
             cache.put(cache_key, metrics, dependencies=cache_dependencies)
+            if cache_preflight.key is not None:
+                cache.put(
+                    cache_preflight.key,
+                    metrics,
+                    dependencies=cache_preflight.dependencies,
+                )
         except Exception:  # noqa: BLE001,S110 - cache write must never break eval
             pass
 
@@ -2087,6 +2762,7 @@ def evaluate(
     suite_path.write_text(payload, encoding="utf-8")
     if config.suite == "smoke":
         (run_dir / "eval.json").write_text(payload, encoding="utf-8")
+    (run_dir / "decode_progress.json").unlink(missing_ok=True)
     if publish_agentv:
         _record_langsmith_evaluation(
             config,
@@ -2134,9 +2810,9 @@ def evaluate_grammar_leakage_audit(
         },
     }
     selected_names = variant_names or tuple(all_variants)
-    if "constrained_native" not in selected_names or not set(
-        selected_names
-    ).issubset(all_variants):
+    if "constrained_native" not in selected_names or not set(selected_names).issubset(
+        all_variants
+    ):
         raise ValueError(
             "grammar leakage audit variants must include constrained_native"
         )
@@ -2213,6 +2889,7 @@ def evaluate_grammar_leakage_audit(
             grouped["complexity"].setdefault(
                 str((detail.get("complexity") or {}).get("bucket") or "unknown"), []
             ).append(detail)
+
         def _completed_rate(rows: list[dict[str, Any]], key: str) -> float | None:
             completed = [
                 row
@@ -2227,9 +2904,7 @@ def evaluate_grammar_leakage_audit(
             axis: {
                 label: {
                     "n": len(rows),
-                    "completed_n": sum(
-                        1 for row in rows if not row.get("incomplete")
-                    ),
+                    "completed_n": sum(1 for row in rows if not row.get("incomplete")),
                     "incomplete_n": sum(1 for row in rows if row.get("incomplete")),
                     "meaningful_program_rate": _completed_rate(
                         rows, "binding_aware_meaningful_v2"
@@ -2280,17 +2955,106 @@ def evaluate_suites(
 
     from slm_training.harnesses.model_build.ship_gates import write_ship_gates
 
+    if model is not None and checkpoint is not None:
+        raise ValueError("provide either a preloaded model or a checkpoint, not both")
+
+    def selected_record_n(suite: str) -> int:
+        records = load_suite_records(config.test_dir, suite)
+        limit = config.eval_limit
+        if limit is None and suite == "rico_held":
+            limit = config.rico_eval_limit
+        offset = max(0, int(config.eval_offset))
+        stop = offset + max(0, int(limit)) if limit is not None else None
+        return len(records[offset:stop])
+
+    # Loading a checkpoint-backed model once is materially cheaper than
+    # rebuilding it for every suite.  Bind the shared instance to the exact
+    # checkpoint digest so suite-result caching remains content-addressed and
+    # live mutable training models still use the fail-closed no-identity path.
+    shared_model = model
+    shared_checkpoint_sha256: str | None = None
+    shared_checkpoint_path: Path | None = None
     board: dict[str, dict] = {}
-    for suite in suites:
-        suite_config = replace(config, suite=suite)
-        metrics = evaluate(
-            suite_config,
-            model=model,
-            checkpoint=checkpoint,
-            publish_agentv=False,
-            cache=cache,
+    if shared_model is None:
+        shared_checkpoint_path = checkpoint or (config.checkpoint_dir / "last.pt")
+        if not shared_checkpoint_path.is_file():
+            raise FileNotFoundError(
+                f"evaluation checkpoint not found: {shared_checkpoint_path}"
+            )
+        shared_checkpoint_sha256 = _sha256_file(shared_checkpoint_path)
+        checkpoint_bundle_sha256 = _checkpoint_bundle_sha256(
+            shared_checkpoint_path,
+            checkpoint_sha256=shared_checkpoint_sha256,
         )
-        board[suite] = {k: v for k, v in metrics.items() if k != "details"}
+        preflight_hits: dict[str, tuple[ModelBuildConfig, dict[str, Any]]] = {}
+        for suite in suites:
+            suite_config = replace(config, suite=suite)
+            suite_limit = suite_config.eval_limit
+            if suite_limit is None and suite == "rico_held":
+                suite_limit = suite_config.rico_eval_limit
+            preflight = _suite_cache_preflight(
+                suite_config,
+                checkpoint=shared_checkpoint_path,
+                cache=cache,
+                suite_limit=suite_limit,
+                suite_offset=int(suite_config.eval_offset),
+                generation_overrides={},
+                checkpoint_sha256=shared_checkpoint_sha256,
+                checkpoint_bundle_sha256=checkpoint_bundle_sha256,
+            )
+            if preflight.cached_metrics is not None:
+                preflight_hits[suite] = (
+                    suite_config,
+                    preflight.cached_metrics,
+                )
+        if len(preflight_hits) == len(suites):
+            for suite in suites:
+                suite_config, cached_metrics = preflight_hits[suite]
+                metrics = _replay_cached_suite(
+                    suite_config,
+                    cached_metrics,
+                    record_n=selected_record_n(suite),
+                )
+                board[suite] = {
+                    key: value for key, value in metrics.items() if key != "details"
+                }
+        else:
+            train_records = []
+            if config.train_dir.exists():
+                try:
+                    train_records = load_train_records(config.train_dir)
+                except FileNotFoundError:
+                    train_records = []
+            shared_model = build_model(
+                config,
+                train_records or load_suite_records(config.test_dir, suites[0]),
+                checkpoint=shared_checkpoint_path,
+            )
+
+    evaluation_deadline = (
+        time.monotonic() + float(config.evaluation_wall_seconds)
+        if config.evaluation_wall_seconds
+        else None
+    )
+    remaining_records = None
+    if evaluation_deadline is not None:
+        remaining_records = [
+            sum(selected_record_n(suite) for suite in suites)
+        ]
+    if not board:
+        for suite in suites:
+            suite_config = replace(config, suite=suite)
+            metrics = evaluate(
+                suite_config,
+                model=shared_model,
+                model_checkpoint_sha256=shared_checkpoint_sha256,
+                model_checkpoint_path=shared_checkpoint_path,
+                publish_agentv=False,
+                cache=cache,
+                evaluation_deadline=evaluation_deadline,
+                evaluation_remaining_records=remaining_records,
+            )
+            board[suite] = {k: v for k, v in metrics.items() if k != "details"}
     from slm_training.evals.record_schema import RUN_CLASSES, SCHEMA_VERSION
     from slm_training.versioning import build_version_stamp
 
@@ -2302,10 +3066,12 @@ def evaluate_suites(
         "run_id": config.run_id,
         "checkpoint": (
             None
-            if model is not None
-            else str(checkpoint or (config.checkpoint_dir / "last.pt"))
+            if shared_checkpoint_path is None
+            else str(shared_checkpoint_path)
         ),
-        "checkpoint_source": "preloaded_model" if model is not None else "checkpoint",
+        "checkpoint_source": (
+            "preloaded_model" if shared_checkpoint_path is None else "checkpoint"
+        ),
         "checkpoint_sha256": next(iter(board.values()), {}).get("checkpoint_sha256"),
         "test_dir": str(config.test_dir),
         "eval_data_manifest_sha": next(iter(board.values()), {}).get(

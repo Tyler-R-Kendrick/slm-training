@@ -1,0 +1,67 @@
+{
+  "schema": "autotrain_sdlc_delivery/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c2",
+  "finished_at": "2026-08-04T04:34:45Z",
+  "sdlc_phase": "A",
+  "positive": false,
+  "stack_layer": false,
+  "has_tracked_delta": false,
+  "stack_action": "no_stack_layer_non_positive",
+  "agent_required": "continue loop; local commits/docs only",
+  "arm_order": [
+    "c20260804-continuous-openui-local-8c0b60dd-c2-bounds",
+    "c20260804-continuous-openui-local-8c0b60dd-c2-control"
+  ],
+  "arm_seed": 100001,
+  "arm_exits": {
+    "c20260804-continuous-openui-local-8c0b60dd-c2-bounds": 0,
+    "c20260804-continuous-openui-local-8c0b60dd-c2-control": 0
+  },
+  "arm_skipped": {},
+  "reasons": [
+    "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c2-control",
+    "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c2-bounds",
+    "primary_metric_null_or_worse:smoke.structural_similarity:control=0.057499999999999996 candidate=0.057499999999999996 improvement=0.0",
+    "fixture_insufficient_n_alone"
+  ],
+  "primary_metric": "smoke.structural_similarity",
+  "direction": "increase",
+  "role": "screening",
+  "control_metrics": {
+    "latency_ms_p50": 3715.94,
+    "parse_rate": 1.0,
+    "meaningful_program_rate": 0.0,
+    "structural_similarity": 0.057499999999999996,
+    "binder_reference_f1": 0.6333333333333333,
+    "smoke.latency_ms_p50": 3715.94,
+    "smoke.parse_rate": 1.0,
+    "smoke.meaningful_program_rate": 0.0,
+    "smoke.structural_similarity": 0.057499999999999996,
+    "smoke.binder_reference_f1": 0.6333333333333333
+  },
+  "candidate_metrics": {
+    "latency_ms_p50": 4536.84,
+    "parse_rate": 1.0,
+    "meaningful_program_rate": 0.0,
+    "structural_similarity": 0.057499999999999996,
+    "binder_reference_f1": 0.6333333333333333,
+    "smoke.latency_ms_p50": 4536.84,
+    "smoke.parse_rate": 1.0,
+    "smoke.meaningful_program_rate": 0.0,
+    "smoke.structural_similarity": 0.057499999999999996,
+    "smoke.binder_reference_f1": 0.6333333333333333
+  },
+  "policy_sha256": "dc440eead28217d19f863e3019a736ca6072e1747fb513d19a3c222c93f11975",
+  "policy_version": "v4",
+  "control_id": "c20260804-continuous-openui-local-8c0b60dd-c2-control",
+  "candidate_id": "c20260804-continuous-openui-local-8c0b60dd-c2-bounds",
+  "baseline_trainable_params": 1608962,
+  "candidate_trainable_params": 1608962,
+  "fixture_volume_gate_hits": 2,
+  "measurement_complete": true,
+  "cycle_role": "screening",
+  "cycle_index": 2,
+  "cycle_intent": "retry_measurement",
+  "climb_policy_sha256": "dc440eead28217d19f863e3019a736ca6072e1747fb513d19a3c222c93f11975"
+}

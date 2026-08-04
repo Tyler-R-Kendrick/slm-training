@@ -27,14 +27,17 @@ from slm_training.autoresearch.hillclimb import (
     knob_signature_sha256,
 )
 from slm_training.lineage.records import canonical_json
+from slm_training.levers import MAX_RUN_MINUTES
 
 __all__ = [
     "CLIMB_POLICY_SCHEMA",
     "CLIMB_RESOURCE_DIR",
+    "PROMOTE_AUTHORITY_SCHEMA",
     "ClimbPolicy",
     "ClimbPolicyError",
     "load_climb_policy",
     "climb_policy_content_digest",
+    "promote_authority_sha256",
     "loop_data_eval_identity",
     "loop_ledger_path",
     "load_loop_exhausted_ledger",
@@ -43,9 +46,11 @@ __all__ = [
     "assert_cycle_cadence",
     "primary_for_role",
     "stage_wall_minutes_for_role",
+    "max_consecutive_frozen_replays",
     "decode_timeout_seconds_for_role",
     "eval_suites_for_role",
     "classify_positive_metrics",
+    "promotion_primary_effect_met",
     "assert_recipe_null_regime_pressure",
     "is_recipe_tweak_knobs",
     "count_recipe_nulls_in_ledger",
@@ -54,12 +59,12 @@ __all__ = [
 ]
 
 _PACKAGE_ROOT = Path(__file__).resolve().parents[1]
-CLIMB_RESOURCE_DIR = (
-    _PACKAGE_ROOT / "resources" / "experiments" / "autotrain_climb"
-)
+CLIMB_RESOURCE_DIR = _PACKAGE_ROOT / "resources" / "experiments" / "autotrain_climb"
 _REPO_ROOT = _PACKAGE_ROOT.parents[1]
 CLIMB_POLICY_SCHEMA = "autotrain_climb_policy/v1"
+PROMOTE_AUTHORITY_SCHEMA = "autotrain_promote_authority/v1"
 _DEFAULT_POLICY_PATH = CLIMB_RESOURCE_DIR / "policy.v1.json"
+_PROMOTE_AUTHORITY_HARNESS_COMPONENT = "harness.autoresearch.experiment_campaign"
 
 
 class ClimbPolicyError(ValueError):
@@ -90,7 +95,9 @@ def _read_json(path: Path) -> dict[str, Any]:
     return payload
 
 
-def _require_mapping(payload: Mapping[str, Any], key: str, path: Path) -> Mapping[str, Any]:
+def _require_mapping(
+    payload: Mapping[str, Any], key: str, path: Path
+) -> Mapping[str, Any]:
     raw = payload.get(key)
     if not isinstance(raw, Mapping):
         raise ClimbPolicyError(f"{path}: missing object field {key!r}")
@@ -153,6 +160,22 @@ class ClimbPolicy:
         return dict(self.payload["positive_classification"])
 
     @property
+    def promotion_dispose(self) -> Mapping[str, Any]:
+        """Promote authority knobs (effect gate + cert); defaults fail closed."""
+        raw = self.payload.get("promotion_dispose")
+        base = {
+            "require_primary_win": True,
+            "require_cert_continue": True,
+            "require_dual_arm_metrics": True,
+            "require_parse_non_regression": True,
+            "ignore_ship_insufficient_n_for_climb": True,
+            "recertify_on_authority_change": True,
+        }
+        if isinstance(raw, Mapping):
+            base.update(dict(raw))
+        return base
+
+    @property
     def synthesis_loop(self) -> Mapping[str, Any]:
         return dict(self.payload["synthesis_loop"])
 
@@ -177,6 +200,32 @@ def climb_policy_content_digest(payload: Mapping[str, Any]) -> str:
     """Stable digest of policy content (excludes path-only identity)."""
 
     body = {k: v for k, v in payload.items() if k not in {"path", "sha256"}}
+    return hashlib.sha256(canonical_json(body).encode("utf-8")).hexdigest()
+
+
+def promote_authority_sha256(
+    *,
+    climb_policy_sha256: str,
+    locked_expectations_sha256: str,
+    harness_component_version: str,
+    harness_component: str = _PROMOTE_AUTHORITY_HARNESS_COMPONENT,
+) -> str:
+    """Content hash for climb-promote authority under current harness/policy.
+
+    Climb ``promoted`` / ``climb_accepted`` rows must carry this digest. When
+    climb policy, locked promote expectations, or the continuous/promote
+    harness component version changes, the digest changes and historical
+    promotions must re-certify under current dispose rules before remaining
+    authoritative.
+    """
+
+    body = {
+        "schema": PROMOTE_AUTHORITY_SCHEMA,
+        "climb_policy_sha256": str(climb_policy_sha256 or ""),
+        "locked_expectations_sha256": str(locked_expectations_sha256 or ""),
+        "harness_component": str(harness_component or _PROMOTE_AUTHORITY_HARNESS_COMPONENT),
+        "harness_component_version": str(harness_component_version or ""),
+    }
     return hashlib.sha256(canonical_json(body).encode("utf-8")).hexdigest()
 
 
@@ -212,7 +261,10 @@ def load_climb_policy(path: str | None = None) -> ClimbPolicy:
             raise ClimbPolicyError(f"{policy_path}: missing required field {key!r}")
     screening = _require_mapping(payload, "screening_primary", policy_path)
     promotion = _require_mapping(payload, "promotion_primary", policy_path)
-    for block_name, block in (("screening_primary", screening), ("promotion_primary", promotion)):
+    for block_name, block in (
+        ("screening_primary", screening),
+        ("promotion_primary", promotion),
+    ):
         if not block.get("metric"):
             raise ClimbPolicyError(f"{policy_path}: {block_name}.metric required")
         direction = str(block.get("direction") or "")
@@ -226,6 +278,24 @@ def load_climb_policy(path: str | None = None) -> ClimbPolicy:
     if int(cadence.get("screening_cycles_per_promotion") or 0) < 1:
         raise ClimbPolicyError(
             f"{policy_path}: cadence.screening_cycles_per_promotion must be >= 1"
+        )
+    max_replays = int(
+        _require_mapping(payload, "measurement", policy_path).get(
+            "max_consecutive_frozen_replays", 2
+        )
+    )
+    if max_replays < 1:
+        raise ClimbPolicyError(
+            f"{policy_path}: measurement.max_consecutive_frozen_replays must be >= 1"
+        )
+    positive = _require_mapping(payload, "positive_classification", policy_path)
+    minimum_efficiency_gain_fraction = float(
+        positive.get("minimum_efficiency_gain_fraction", -1.0)
+    )
+    if not 0.0 < minimum_efficiency_gain_fraction < 1.0:
+        raise ClimbPolicyError(
+            f"{policy_path}: positive_classification."
+            "minimum_efficiency_gain_fraction must be in (0, 1)"
         )
     return ClimbPolicy(
         path=policy_path.resolve(),
@@ -245,7 +315,7 @@ def primary_for_role(policy: ClimbPolicy, role: str) -> Mapping[str, Any]:
 
 
 def stage_wall_minutes_for_role(policy: ClimbPolicy, role: str) -> int:
-    """Continuous-local stage wall (minutes) for campaign/eval; not global CI cap."""
+    """Return a role wall that obeys the repository-wide command cap."""
 
     measurement = policy.measurement
     if role == "promotion":
@@ -256,13 +326,30 @@ def stage_wall_minutes_for_role(policy: ClimbPolicy, role: str) -> int:
         default = 10
     value = measurement.get(key, default)
     minutes = int(value)
-    if minutes < 1:
-        raise ClimbPolicyError(f"measurement.{key} must be >= 1, got {minutes}")
+    if not 1 <= minutes <= MAX_RUN_MINUTES:
+        raise ClimbPolicyError(
+            f"measurement.{key} must be in [1, {MAX_RUN_MINUTES}], got {minutes}"
+        )
     return minutes
 
 
+def max_consecutive_frozen_replays(policy: ClimbPolicy) -> int:
+    """Bound identical incomplete replays before canonical harness repair."""
+
+    value = int(policy.measurement.get("max_consecutive_frozen_replays", 2))
+    if value < 1:
+        raise ClimbPolicyError(
+            "measurement.max_consecutive_frozen_replays must be >= 1"
+        )
+    return value
+
+
 def decode_timeout_seconds_for_role(policy: ClimbPolicy, role: str) -> float:
-    """Per-record decode timeout for continuous eval arms."""
+    """Per-record decode timeout for continuous eval arms.
+
+    Screening defaults lean toward thrash arm-wall fit (see continuous
+    ``_fit_screening_decode_timeout_seconds`` which may clamp further).
+    """
 
     measurement = policy.measurement
     if role == "promotion":
@@ -270,7 +357,9 @@ def decode_timeout_seconds_for_role(policy: ClimbPolicy, role: str) -> float:
         default = 24.0
     else:
         key = "screening_decode_timeout_seconds"
-        default = 24.0
+        # Default 8s: with smoke n=3 and ~70s arm share under MAX_RUN=3m,
+        # 24s×3 already exceeds the arm wall (empty scoreboards).
+        default = 8.0
     value = float(measurement.get(key, default))
     if value <= 0:
         raise ClimbPolicyError(f"measurement.{key} must be > 0, got {value}")
@@ -290,7 +379,9 @@ def eval_suites_for_role(policy: ClimbPolicy, role: str) -> tuple[str, ...]:
     if raw is None:
         return default
     if not isinstance(raw, list) or not raw:
-        raise ClimbPolicyError(f"measurement suites for role {role!r} must be a non-empty list")
+        raise ClimbPolicyError(
+            f"measurement suites for role {role!r} must be a non-empty list"
+        )
     return tuple(str(x) for x in raw)
 
 
@@ -316,13 +407,35 @@ def assert_cycle_cadence(
     claimed_role: str,
     claim_class: str | None = None,
     certified_rungs: Sequence[str] | None = None,
+    promotion_target_available: bool | None = None,
+    confirmation_pending: bool = False,
 ) -> str:
-    """Fail closed when a cycle claims promotion outside the configured cadence."""
+    """Fail closed when a cycle claims a role outside the configured cadence.
+
+    A promotion cadence slot is an opportunity to measure a prior screening
+    winner, not authority to expose a new arm to promotion suites.  When the
+    policy requires a prior screening win, an explicitly empty promotion slot
+    may therefore fall back to screening.
+    """
 
     expected = cycle_role_for_index(policy, cycle_index)
     if claimed_role not in {"screening", "promotion"}:
         raise HillClimbError(f"invalid cycle role: {claimed_role!r}")
-    if claimed_role != expected:
+    empty_promotion_fallback = (
+        expected == "promotion"
+        and claimed_role == "screening"
+        and promotion_target_available is False
+        and bool(policy.cadence.get("promotion_requires_prior_screening_win", True))
+    )
+    confirmation_fallback = (
+        expected == "promotion"
+        and claimed_role == "screening"
+        and confirmation_pending
+        and bool(policy.cadence.get("promotion_requires_prior_screening_win", True))
+    )
+    if claimed_role != expected and not (
+        empty_promotion_fallback or confirmation_fallback
+    ):
         raise HillClimbError(
             f"cycle cadence violation: cycle_index={cycle_index} expects "
             f"{expected}, claimed {claimed_role} "
@@ -353,7 +466,11 @@ def assert_cycle_cadence(
         claimed_role=claimed_role,
         certified_rungs=certified_rungs,
     )
-    return expected
+    return (
+        claimed_role
+        if empty_promotion_fallback or confirmation_fallback
+        else expected
+    )
 
 
 def loop_data_eval_identity(
@@ -379,13 +496,20 @@ def loop_data_eval_identity(
     }
     if extra:
         values.update(dict(extra))
-    ordered = {field: values.get(field, "") for field in policy.exhausted_identity_fields}
+    ordered = {
+        field: values.get(field, "") for field in policy.exhausted_identity_fields
+    }
     return hashlib.sha256(canonical_json(ordered).encode("utf-8")).hexdigest()
 
 
-def loop_ledger_path(autoresearch_root: Path, loop_id: str, policy: ClimbPolicy | None = None) -> Path:
+def loop_ledger_path(
+    autoresearch_root: Path, loop_id: str, policy: ClimbPolicy | None = None
+) -> Path:
     pol = policy or load_climb_policy()
-    template = str(pol.loop_ledger.get("relative_path_template") or "loops/{loop_id}/exhausted_knob_ledger.json")
+    template = str(
+        pol.loop_ledger.get("relative_path_template")
+        or "loops/{loop_id}/exhausted_knob_ledger.json"
+    )
     rel = template.format(loop_id=loop_id)
     return Path(autoresearch_root) / rel
 
@@ -393,7 +517,9 @@ def loop_ledger_path(autoresearch_root: Path, loop_id: str, policy: ClimbPolicy 
 def load_loop_exhausted_ledger(
     autoresearch_root: Path, loop_id: str, policy: ClimbPolicy | None = None
 ) -> ExhaustedKnobLedger:
-    return ExhaustedKnobLedger.load(loop_ledger_path(autoresearch_root, loop_id, policy))
+    return ExhaustedKnobLedger.load(
+        loop_ledger_path(autoresearch_root, loop_id, policy)
+    )
 
 
 def save_loop_exhausted_ledger(
@@ -464,7 +590,9 @@ def assert_recipe_null_regime_pressure(
         data_eval_identity=data_eval_identity,
         claim_class=claim_class,
     )
-    require = bool(policy.recipe_null_cap.get("require_regime_transition_after_cap", True))
+    require = bool(
+        policy.recipe_null_cap.get("require_regime_transition_after_cap", True)
+    )
     if nulls < cap:
         return
     if require and not matrix_has_regime_transition:
@@ -473,7 +601,9 @@ def assert_recipe_null_regime_pressure(
             "successor matrix must include a regime_transition_candidate"
         )
     if proposed_knobs is not None:
-        pure_recipe = all(is_recipe_tweak_knobs(policy, knobs) for knobs in proposed_knobs)
+        pure_recipe = all(
+            is_recipe_tweak_knobs(policy, knobs) for knobs in proposed_knobs
+        )
         if pure_recipe:
             raise HillClimbError(
                 f"recipe-null cap reached ({nulls}>={cap}); replaying only "
@@ -506,11 +636,17 @@ def assert_rung_allows_promotion(
     if idx == 0:
         return
     prior = order[idx - 1]
-    certified = set(certified_rungs or ())
+    configured = gates.get("certified_rungs") or ()
+    certified = set(certified_rungs if certified_rungs is not None else configured)
     if prior not in certified:
         raise HillClimbError(
             f"rung gate: cannot open promotion while prior rung {prior!r} is unmet "
             f"(current={current!r})"
+        )
+    evidence = gates.get("certification_evidence") or {}
+    if not isinstance(evidence, Mapping) or not evidence.get(prior):
+        raise HillClimbError(
+            f"rung gate: certified prior rung {prior!r} lacks durable evidence"
         )
 
 
@@ -528,6 +664,68 @@ def _metric_from_map(metrics: Mapping[str, Any], metric_id: str) -> float | None
         if str(key).endswith(f".{leaf}") and isinstance(val, (int, float)):
             return float(val)
     return None
+
+
+def promotion_primary_effect_met(
+    *,
+    control_metrics: Mapping[str, Any] | None,
+    candidate_metrics: Mapping[str, Any] | None,
+    promotion_primary: Mapping[str, Any],
+    require_dual_arm_metrics: bool = True,
+    require_parse_non_regression: bool = True,
+) -> tuple[bool, list[str], float | None]:
+    """Whether dual-arm held-out (or policy) primary meets minimum_effect.
+
+    Used by continuous promote dispose: cert ``continue`` is necessary but not
+    sufficient. Returns ``(ok, reasons, improvement)``. Missing dual-arm primary
+    values fail closed when ``require_dual_arm_metrics`` is true.
+    """
+    reasons: list[str] = []
+    metric = str(promotion_primary.get("metric") or "")
+    direction = str(promotion_primary.get("direction") or "increase")
+    minimum_effect = float(promotion_primary.get("minimum_effect") or 0.0)
+    if not metric:
+        reasons.append("promote_primary_metric_unconfigured")
+        return False, reasons, None
+
+    control = control_metrics or {}
+    candidate = candidate_metrics or {}
+    c_val = _metric_from_map(control, metric)
+    t_val = _metric_from_map(candidate, metric)
+    if c_val is None or t_val is None:
+        if require_dual_arm_metrics:
+            reasons.append(
+                f"promote_primary_metrics_missing:metric={metric}:"
+                f"control={c_val} candidate={t_val}"
+            )
+            return False, reasons, None
+        reasons.append(f"promote_primary_metrics_optional_missing:metric={metric}")
+        return True, reasons, None
+
+    raw = t_val - c_val
+    improvement = float(improvement_signed(raw, direction))  # type: ignore[arg-type]
+
+    if require_parse_non_regression:
+        c_pr = _metric_from_map(control, "parse_rate")
+        t_pr = _metric_from_map(candidate, "parse_rate")
+        if c_pr is not None and t_pr is not None and t_pr + 1e-12 < c_pr:
+            reasons.append(f"promote_parse_regression:control={c_pr} candidate={t_pr}")
+            return False, reasons, improvement
+
+    # Match classify_positive_metrics: strict greater-than min_effect.
+    if not (improvement > minimum_effect):
+        reasons.append(
+            "promote_primary_null_or_insufficient:"
+            f"metric={metric}:control={c_val}:candidate={t_val}:"
+            f"min_effect={minimum_effect}:delta={improvement}"
+        )
+        return False, reasons, improvement
+
+    reasons.append(
+        f"promote_primary_win:{metric}:{c_val}->{t_val}:"
+        f"improvement={improvement}:min_effect={minimum_effect}"
+    )
+    return True, reasons, improvement
 
 
 def classify_positive_metrics(
@@ -572,9 +770,7 @@ def classify_positive_metrics(
             nr_imp = improvement_signed(t_nr - c_nr, nr_dir)  # type: ignore[arg-type]
             if nr_imp < nr_min:
                 non_reg_ok = False
-                reasons.append(
-                    f"non_regression_fail:{nr_metric}:{c_nr}->{t_nr}"
-                )
+                reasons.append(f"non_regression_fail:{nr_metric}:{c_nr}->{t_nr}")
         if improvement > minimum_effect and non_reg_ok:
             positive = True
             reasons.append(
@@ -654,9 +850,10 @@ def synthesis_policy_allows_sft(
         assert_synthesis_feedback_cleared_for_sft,
     )
 
-    names = tuple(
-        str(x) for x in (policy.synthesis_loop.get("action_filenames") or ())
-    ) or None
+    names = (
+        tuple(str(x) for x in (policy.synthesis_loop.get("action_filenames") or ()))
+        or None
+    )
     waiver = policy.synthesis_loop.get("allow_global_waiver_code", "*")
     assert_synthesis_feedback_cleared_for_sft(
         Path(train_dir),

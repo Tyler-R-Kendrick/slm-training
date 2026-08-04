@@ -1,0 +1,68 @@
+{
+  "schema": "autotrain_sdlc_delivery/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c1",
+  "finished_at": "2026-08-04T00:29:30Z",
+  "sdlc_phase": "A",
+  "positive": false,
+  "stack_layer": false,
+  "has_tracked_delta": false,
+  "stack_action": "no_stack_layer_non_positive",
+  "agent_required": "continue loop; local commits/docs only",
+  "arm_order": [
+    "c20260804-continuous-openui-local-8c0b60dd-c1-control",
+    "c20260804-continuous-openui-local-8c0b60dd-c1-bounds"
+  ],
+  "arm_seed": 100001,
+  "arm_exits": {
+    "c20260804-continuous-openui-local-8c0b60dd-c1-control": 2,
+    "c20260804-continuous-openui-local-8c0b60dd-c1-bounds": 2
+  },
+  "arm_skipped": {},
+  "reasons": [
+    "measurement_incomplete:c20260804-continuous-openui-local-8c0b60dd-c1-control:missing_scoreboard",
+    "measurement_incomplete:c20260804-continuous-openui-local-8c0b60dd-c1-bounds:missing_scoreboard",
+    "harness_failure:c20260804-continuous-openui-local-8c0b60dd-c1-bounds:experiment_failed",
+    "empty_metrics:a8fd9892e67239fa6ace564fca31b5919b936b64754796b0ee333662860c9687",
+    "harness_failure:c20260804-continuous-openui-local-8c0b60dd-c1-control:experiment_failed",
+    "empty_metrics:1729c183d2862474898b012e5adb91a246bc23dd910b808f7aa36cf21cce99df",
+    "primary_metric_unavailable"
+  ],
+  "primary_metric": "smoke.structural_similarity",
+  "direction": "increase",
+  "role": "screening",
+  "control_metrics": {
+    "latency_ms_p50": null,
+    "parse_rate": null,
+    "meaningful_program_rate": null,
+    "structural_similarity": null,
+    "binder_reference_f1": null
+  },
+  "candidate_metrics": {
+    "latency_ms_p50": null,
+    "parse_rate": null,
+    "meaningful_program_rate": null,
+    "structural_similarity": null,
+    "binder_reference_f1": null
+  },
+  "policy_sha256": "dc440eead28217d19f863e3019a736ca6072e1747fb513d19a3c222c93f11975",
+  "policy_version": "v4",
+  "control_id": "c20260804-continuous-openui-local-8c0b60dd-c1-control",
+  "candidate_id": "c20260804-continuous-openui-local-8c0b60dd-c1-bounds",
+  "baseline_trainable_params": null,
+  "candidate_trainable_params": null,
+  "fixture_volume_gate_hits": 0,
+  "measurement_complete": false,
+  "cycle_role": "screening",
+  "cycle_index": 1,
+  "cycle_intent": "screening",
+  "climb_policy_sha256": "dc440eead28217d19f863e3019a736ca6072e1747fb513d19a3c222c93f11975",
+  "diagnosis": {
+    "root_cause": "fresh remote/web session container had no Python virtualenv provisioned; `train_model.py` failed fast with `ModuleNotFoundError: No module named 'torch'` before any model or harness code executed",
+    "harness_defect": false,
+    "unblock_action": "installed python3.12 venv + pinned deps (`pytest`, `ruff`, `numpy`, `httpx`, `fastapi`, `lark`, `openfeature-sdk`, `pydantic`, `PyYAML`, `onnxruntime`, `torch==2.5.1+cpu`) exactly per `scripts/setup_dev_env.sh`, plus `env -u NODE_OPTIONS npm ci` for the AgentV SDK (the session's global `NODE_OPTIONS=--import tsx` otherwise crashes plain `node`)",
+    "repair_scope": "session-provisioning only; no repo code changed for this action -- the existing `RuntimeError` guard in `src/slm_training/runtime/accel/__init__.py` already names the correct fix",
+    "durable_fix": "added `.claude/hooks/session-start.sh` (registered in `.claude/settings.json` SessionStart) so future remote/web sessions bootstrap the same venv + AgentV SDK automatically instead of re-discovering this failure",
+    "verification": "identical frozen arm (`c20260804-continuous-openui-local-8c0b60dd-c1-{control,bounds}`) replayed in cycle 2 of this session after the fix; see continuous-openui-local-io35qa-c2-results.md"
+  }
+}

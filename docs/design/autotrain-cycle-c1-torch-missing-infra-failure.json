@@ -1,0 +1,63 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c1",
+  "cycle_index": 1,
+  "evidence_class": "fixture",
+  "decision": "infrastructure_failure_not_a_model_result",
+  "scoreable": false,
+  "new_checkpoint_created": false,
+  "upstream_commit": "c5fbbb1f15b4a810061743b9e8e2c5c6fd9b5880",
+  "integration_commit": "c5fbbb1f15b4a810061743b9e8e2c5c6fd9b5880",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c1-control",
+      "status": "failed",
+      "exit_code": 1,
+      "failure_stage": "train_model",
+      "failure_reason": "ModuleNotFoundError: No module named 'torch' (venv lacked the pinned CPU torch wheel)",
+      "smoke": null
+    },
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c1-bounds",
+      "status": "failed",
+      "exit_code": 1,
+      "failure_stage": "train_model",
+      "failure_reason": "ModuleNotFoundError: No module named 'torch' (venv lacked the pinned CPU torch wheel)",
+      "smoke": null
+    }
+  ],
+  "comparison": {
+    "attributable": false
+  },
+  "agentv": {
+    "bundles_complete": false,
+    "execution_errors": 2,
+    "ship_gates_pass": false
+  },
+  "checkpoint_policy": "no_checkpoint_created_infrastructure_failure",
+  "lean": "not_applicable:screening",
+  "harness_repair": {
+    "harness_family": "model_build",
+    "diagnosis": "detect_device() in src/slm_training/runtime/accel/__init__.py did a bare `import torch`, so a missing torch install surfaced as a bare traceback deep inside scripts/train_model.py instead of an actionable error, and the continuous driver classified the missing dependency as a model_build harness_failure rather than an environment gap.",
+    "fix_commit": "1faeff448a06671a14a2bb9a82a2fa8a77672d36",
+    "fix_summary": "detect_device now raises a RuntimeError pointing at the new scripts/setup_dev_env.sh bootstrap (or the pinned pip install command) when torch is absent; added scripts/setup_dev_env.sh mirroring CI's Python 3.12 + pinned CPU torch wheel setup; added a regression test asserting the actionable error message.",
+    "regression_test": "tests/test_runtime/accel/test_accel.py::test_detect_device_missing_torch_raises_actionable_error"
+  },
+  "next_priority": "replay identical frozen arm (retry_measurement) now that torch is installed and the harness fails closed with a clear message",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "1faeff448a06671a14a2bb9a82a2fa8a77672d36",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v77",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v299"
+    },
+    "stamped_at": "2026-08-03T00:34:36.606880+00:00"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1811",
+  "cycle_index": 1811,
+  "decision": "harness_failure_before_matrix",
+  "evidence_class": "no_model_evidence",
+  "formal_status": "not_run:pre_execution_harness_failure",
+  "upstream_commit": "dd6d2e93ca834c65baf5ff0d6fc22d1491335d58",
+  "integration_commit": "670fb058b05dde77d231e2a8795f416f27e1cd84",
+  "failure": {
+    "stage": "matrix_selection",
+    "message": "registered screening arm bank exhausted; add a distinct preregistered quality objective instead of recycling a rejected approach",
+    "training_started": false,
+    "evaluation_started": false,
+    "checkpoint_written": false,
+    "promotion_suite_exposed": false
+  },
+  "repair": {
+    "component": "harness.autoresearch.experiment_campaign",
+    "version": "v109",
+    "behavior": "repeat exact confirmed recipes on a fresh screening seed until the protected promotion cadence"
+  }
+}

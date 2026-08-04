@@ -1,0 +1,63 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260801",
+  "campaign_id": "continuous-loop-20260801-c4",
+  "cycle_index": 4,
+  "source_commit": "c1c4eca349b66f05684975575a3640ced50051ea",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "role": "promotion",
+  "arms": {
+    "c20260801-c4-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "latency_ms_p50": 19807.48,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.4166666666666667
+      },
+      "held_out": {
+        "latency_ms_p50": 20777.56,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.38248
+      }
+    },
+    "c20260801-c4-steps": {
+      "status": "completed_eval_gates_failed",
+      "levers": {
+        "steps": "increased vs. control (see manifest for exact value)"
+      },
+      "smoke": {
+        "latency_ms_p50": 11153.18,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.51
+      },
+      "held_out": {
+        "latency_ms_p50": 11075.73,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.37006
+      }
+    }
+  },
+  "primary_metric": "held_out.structural_similarity",
+  "primary_delta": -0.012419999999999987,
+  "conclusion": "The 'steps' candidate roughly halved latency on both smoke and held_out suites (held_out.latency_ms_p50 20777.56ms -> 11075.73ms) and lifted smoke.structural_similarity (0.4167 -> 0.51), but this cycle's role is 'promotion' with primary_metric=held_out.structural_similarity, which moved the wrong direction (0.38248 -> 0.37006, -0.0124). Per the quality-aware tradeoff policy, a latency win does not substitute for a primary-metric regression on a promotion-role cycle. Classified non-positive; both arms also fail ship gates on fixture insufficient_n at this scale.",
+  "next_priorities": [
+    "The steps lever's large latency win is worth re-screening at 'screening' role (primary_metric=latency) with parse/mpr held, separate from this promotion-role read",
+    "Re-run the steps candidate at a larger held_out suite size before drawing a structural_similarity conclusion -- n is fixture-scale here",
+    "Do not promote on the held_out.structural_similarity regression regardless of the latency improvement"
+  ],
+  "recorded_at": "2026-08-01T13:44:07.000000+00:00"
+}

@@ -1,0 +1,65 @@
+{
+  "finding": "test_evals_suite_regression_blocks_agentv_nodeoptions_fix",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "is_fix": false,
+  "context": {
+    "loop_id": "continuous-openui-local",
+    "predecessor_campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c1",
+    "successor_campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c2",
+    "prior_finding": "agentv-sdk-wiring-results.json#npm_ci_repair_verification"
+  },
+  "second_blocker_error": "RuntimeError: AgentV SDK evaluation failed: node: --import tsx is not allowed in NODE_OPTIONS",
+  "root_cause": "src/slm_training/evals/agentv.py:119 publish_agentv_evaluation calls subprocess.run(['node', runner, ...]) with no env= override, so it inherits the parent process's ambient NODE_OPTIONS ('\"--import tsx\" --max-old-space-size=8192', set for unrelated TS tooling in this sandbox). Node rejects the --import flag when supplied via NODE_OPTIONS for a bare script invocation.",
+  "candidate_fix": {
+    "file": "src/slm_training/evals/agentv.py",
+    "location": "immediately before the subprocess.run(command, ...) call in publish_agentv_evaluation",
+    "diff": "env = dict(os.environ)\nenv.pop(\"NODE_OPTIONS\", None)\ncompleted = subprocess.run(\n    command,\n    cwd=runtime_root,\n    check=False,\n    capture_output=True,\n    text=True,\n    env=env,\n)",
+    "would_bump": {"component": "evals.agentv", "from": "v6", "to": "v7"},
+    "verification_before_revert": [
+      "python -m py_compile src/slm_training/evals/agentv.py -- clean",
+      "ruff check src/slm_training/evals/agentv.py -- all checks passed",
+      "pytest tests/test_evals/test_agentv.py -- 7/7 passed with and without the fix (does not exercise the real node subprocess path)",
+      "python -m scripts.verify_version_stamps --check -- passed with v7 bump staged"
+    ],
+    "status": "reverted_not_committed"
+  },
+  "why_reverted": {
+    "hook": ".githooks/pre-commit -> check-changed --staged --changed-tests-only",
+    "mapping": "scripts/check_changed.py maps any path under src/slm_training/evals/ to the full tests/test_evals directory target (plus tests/test_harnesses/model_build), not just the touched module's own tests",
+    "directory_result_at_head": "64 failed, 333 passed, 5 errors (pytest tests/test_evals -q) at commit f95f85e47e6c9e9d5eb30a001df168854694766a and its parent c9144577938ff407e1bbe401649f580ad3cec2c3",
+    "confirmed_pre_existing": "git stash / git stash pop around the candidate diff reproduced byte-identical failure counts and failure identities with and without the fix",
+    "example_failures": [
+      {
+        "test": "tests/test_evals/test_semantic_fidelity.py::test_ast_beq_true_for_style_normalized_match",
+        "error": "AssertionError: assert False is True -- where False = ast_beq('root = Stack([t], \"column\")\\nt = TextContent(\":x\")', 'root = Stack([t],\"column\")\\nt = TextContent(\":x\")')"
+      },
+      {
+        "test": "tests/test_evals/test_operator_systems_benchmark.py (multiple cases)",
+        "error": "slm_training.dsl.operators.registry.OperatorAuthorityError: pack static/schema oracle rejected source"
+      }
+    ],
+    "policy_reason": "Repo law: never weaken a gate to green CI, never use --no-verify without explicit authorization (not available in this unattended run); autotrain-iteration-delivery A1 requires the change be green locally before an incremental commit. Fixing 64 unrelated pre-existing failures is out of scope for this cycle.",
+    "action_taken": "git checkout -- src/slm_training/evals/agentv.py src/slm_training/resources/versions.json (working tree restored to clean HEAD)"
+  },
+  "bisection_attempted": {
+    "hypothesis": "Lark lexer/scanner caching commit 20b658f ('cache Lark lexer/scanner per grammar in OpenUIIncrementalEngine', part of the ~50 commits ahead of this sandbox's origin/main mirror) plausibly regressed ast_beq-style AST equivalence checks in the incremental-parse path.",
+    "check_performed": "git show 20b658f^:tests/test_evals/test_semantic_fidelity.py",
+    "result": "file did not exist at that revision; a direct before/after diff on this file is not possible without a fuller bisection",
+    "conclusion": "inconclusive in the time available for this cycle; needs a dedicated harness-repair session",
+    "caveat": "OperatorAuthorityError failures in test_operator_systems_benchmark.py look like a second, unrelated root cause -- do not assume a single fix repairs all 64 failures"
+  },
+  "why_finding_not_patch": "tests/test_evals is the required directory-wide test target for any change under src/slm_training/evals/ per scripts/check_changed.py. Until this pre-existing failure surface is repaired, the local pre-commit hook structurally blocks all future commits touching AgentV/eval-runner code. This is a HarnessSignalV1-shaped blocker for the model_build/eval family and should route through improve-openui-harnesses.",
+  "next_steps": [
+    "Bisect the ~50 commits ahead of origin/main (git log --oneline origin/main..HEAD), starting with the Lark lexer/scanner caching cluster near 20b658f, to find the ast_beq regression root cause.",
+    "Separately triage the OperatorAuthorityError failures in test_operator_systems_benchmark.py as a likely-distinct root cause.",
+    "Once tests/test_evals is green (or remaining failures are explicitly triaged/ticketed rather than silently skipped), reapply the candidate_fix diff verbatim under the normal pre-commit hook.",
+    "Re-run the continuous-loop supervised cycle for continuous-openui-local once both the AgentV SDK gap (already repaired, evidence commit f95f85e) and this NODE_OPTIONS fix are both landed, so frozen-replay-at-eval can reach a real scoreboard."
+  ],
+  "cleanup_note": "No files created outside docs/design/; the reverted diff is not present in the working tree.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "note": "Docs-only change; the candidate fix to src/slm_training/evals/agentv.py and src/slm_training/resources/versions.json was reverted before commit. python -m scripts.verify_version_stamps --check against this docs-only change reports 0 watched components touched."
+  },
+  "captured_at": "2026-08-02T21:50:00Z"
+}

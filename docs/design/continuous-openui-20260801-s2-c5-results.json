@@ -1,0 +1,40 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260801",
+  "campaign_id": "continuous-loop-20260801-c5",
+  "cycle_index": 5,
+  "cycle_role": "screening",
+  "source_commit": "1bdfb14ebcf2393976a7c969e7bdd449fc5ada39",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "batch_size_configured": "2 (control) vs 1 (candidate, batch1 lever)",
+    "seed": 7,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c5-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {"n": 3, "completed_document_n": 2, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.05625, "latency_ms_p50": 3888.95, "latency_ms_p95": 4057.17}
+    },
+    "c5-batch1": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {"n": 3, "completed_document_n": 1, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.0184, "latency_ms_p50": 22880.57, "latency_ms_p95": 22880.57},
+      "levers": {"batch_size": 1}
+    }
+  },
+  "primary_metric": "smoke.latency_ms_p50",
+  "primary_delta_ms": -18991.62,
+  "conclusion": "Dropping batch_size from 2 to 1 made smoke p50 latency nearly 6x worse (3888.95ms -> 22880.57ms) with no quality gain (meaningful_program_rate 0.0 on both arms, structural_similarity actually fell 0.05625 -> 0.0184). SDLC Phase A classifies NON_POSITIVE (primary_metric_null_or_worse). Both arms also hit fixture_insufficient_n (n=3 < 20 floor) and c5-batch1 only completed 1/3 smoke documents in the wall cap, so this single cycle is not a reliable read on batch_size=1 -- but the direction (much slower, no better) is unambiguous enough that batch_size=1 is not worth prioritizing further at this scale.",
+  "next_priorities": [
+    "Do not pursue batch_size=1 as a lever direction; batch_size=2 (current default) is the better-performing arm on every measured dimension this cycle",
+    "If batch_size sensitivity is worth exploring further, test batch_size>2 instead, at a larger n"
+  ],
+  "recorded_at": "2026-08-01T08:46:03+00:00"
+}

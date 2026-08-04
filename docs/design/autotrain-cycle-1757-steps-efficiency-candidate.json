@@ -1,0 +1,42 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1757",
+  "cycle_index": 1757,
+  "evidence_class": "fixture",
+  "decision": "candidate_queued_for_confirmation",
+  "scoreable": true,
+  "arm_order": ["control", "steps"],
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1757-control",
+      "manifest_sha256": "d219153612f623f27b0cbeefc15fce312f9c6e6fb2ed6d2845d26d08b0bfc087",
+      "params": 1608962,
+      "steps": 22,
+      "checkpoint_sha256": "dad20b468316e4711acb13c79b23fad72d99b5b22f5b4a1553fcdf571f5501c9",
+      "loss": 12.775651931762695,
+      "train_wall_seconds": 2.881813879997935,
+      "smoke": {"n": 3, "document_n": 3, "completed_document_n": 3, "incomplete_document_n": 0, "decode_timeout_count": 0, "parse_rate": 1.0, "binder_reference_f1": 0.6333333333333333, "meaningful_program_rate": 0.3333333333333333, "structural_similarity": 0.17416666666666666, "component_type_recall": 0.25, "ast_node_f1": 0.2619047619047619, "ast_edge_f1": 0.0, "latency_ms_p50": 1346.77}
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1757-steps",
+      "manifest_sha256": "8634cffacc2ea5ab8200daa1a133924e3088d6fb930c9bef9d8d817aacf59b69",
+      "params": 1608962,
+      "steps": 44,
+      "checkpoint_sha256": "5f3f64ef88c874a536edbd61c5948de85c15109057fccc53650f486639f2b087",
+      "loss": 12.306541442871094,
+      "train_wall_seconds": 4.952248729998246,
+      "smoke": {"n": 3, "document_n": 3, "completed_document_n": 3, "incomplete_document_n": 0, "decode_timeout_count": 0, "parse_rate": 1.0, "binder_reference_f1": 0.6333333333333333, "meaningful_program_rate": 0.3333333333333333, "structural_similarity": 0.13526666666666667, "component_type_recall": 0.16666666666666666, "ast_node_f1": 0.16666666666666666, "ast_edge_f1": 0.0, "latency_ms_p50": 1184.95}
+    }
+  ],
+  "deltas": {"mpr_per_ms_gain_fraction": 0.13656272, "latency_percent": -12.0154, "structural_similarity_percent": -22.3349, "loss_percent": -3.6719, "train_wall_ratio": 1.7184},
+  "ship_gates_pass": false,
+  "lean": "not_applicable:screening",
+  "next_priority": "fresh-seed counterbalanced confirmation with structure and recall rollback signals",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "051c8025bcd4c8adcaaf8e051e7c71bb1cb6134c",
+    "code_dirty": false,
+    "components": {"config.levers": "v30", "harness.model_build.eval": "v74", "harness.experiment_feature_flags": "v4", "evals.meaningful_program": "2.13.0", "evals.power_protocol": "v8", "evals.scoring": "v22", "model.twotower": "v288"},
+    "stamped_at": "2026-08-02T12:53:52.036465+00:00"
+  }
+}

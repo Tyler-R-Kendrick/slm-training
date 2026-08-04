@@ -9,6 +9,7 @@ import random
 import re
 import warnings
 from collections import Counter, defaultdict
+from collections.abc import Mapping, Sequence
 from contextvars import ContextVar
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -63,6 +64,7 @@ from slm_training.models.decode_stats import (
 from slm_training.runtime.decode_schedule import plan_prefill, record_plan
 from slm_training.models.grammar import (
     CompletionBatchCache,
+    GrammarDecodeState,
     apply_structural_bias,
     exact_forced_token_id,
     filter_ids_by_stream,
@@ -131,6 +133,16 @@ from slm_training.models.tokenizer import (
 )
 
 _ABSTRACT_PLAN_MODES: tuple[str, ...] = tuple(mode.value for mode in AbstractPlanMode)
+STRUCTURAL_AUX_HEAD_PROFILES = (
+    "none",
+    "component-plan",
+    "component-edge",
+    "component-inventory",
+    "binder-topology",
+    "binder-arity",
+    "binder-component-plan",
+    "component-structure",
+)
 _PLAN_CONNECTOR_ARMS: tuple[str, ...] = tuple(arm.value for arm in PlanConnectorArm)
 _OPAQUE_PROJECTION_MODELS: ContextVar[frozenset[int]] = ContextVar(
     "twotower_opaque_projection_models",
@@ -354,6 +366,21 @@ class TwoTowerConfig:
     ltr_loss_weight: float = 0.5
     # Extra weight on the first content transitions (root -> assignment).
     ltr_prefix_loss_weight: float = 0.0
+    # Extra reconstruction weight on component-type tokens. Zero-parameter;
+    # the same token-family mask also feeds train-only loss attribution.
+    component_token_loss_weight: float = 0.0
+    # Extra reconstruction weight only where the deterministic compiler marks a
+    # non-root component edge. Zero-parameter and train-only.
+    component_edge_token_loss_weight: float = 0.0
+    # Extra reconstruction weight at every deterministic compiler decision.
+    # Zero-parameter and train-only; it never changes the legal decode domain.
+    compiler_decision_token_loss_weight: float = 0.0
+    # Extra reconstruction weight on grammar STRUCT tokens. Zero-parameter;
+    # this is distinct from component identity and never changes legality.
+    structure_token_loss_weight: float = 0.0
+    # Count-normalized auxiliary over component and STRUCT token-family means.
+    # Zero-parameter and train-only; it never changes the legal decode domain.
+    typed_family_balance_loss_weight: float = 0.0
     # Extra weight on the final real LTR tokens (default-off).
     ltr_tail_loss_weight: float = 0.0
     ltr_tail_tokens: int = 32
@@ -361,6 +388,10 @@ class TwoTowerConfig:
     compiler_alignment_margin: float = 0.0
     compiler_alignment_stratified: bool = False
     compiler_alignment_semantic_exhaustive: bool = False
+    # Limit compiler alignment to a grammar-derived branch family.  The
+    # literal-close arm teaches numeric-frame LIT_END against the *legal* byte
+    # alternatives; it never changes the constrained domain used at decode time.
+    compiler_alignment_kind_filter: str = "all"
     # SLM-164: confusion-targeted legal-sibling contrast margin (default-off).
     legal_margin_mode: str = "none"
     targeted_margin_manifest: Path | None = None
@@ -368,6 +399,10 @@ class TwoTowerConfig:
     targeted_margin_family_weights: tuple[tuple[str, float], ...] = ()
     # Prompt-level multi-label component inventory derived from gold token kinds.
     component_inventory_loss_weight: float = 0.0
+    # Build train-only structural heads independently from their loss weights so
+    # matched controls can carry identical trainable capacity with zero auxiliary
+    # supervision. Legacy checkpoints default to weight-driven construction.
+    structural_aux_head_profile: str = "none"
     # Bias only compiler-legal component candidates with the learned inventory.
     component_inventory_decode_weight: float = 0.0
     # Grammar-role plan: root class plus bound-component multiplicities.
@@ -628,7 +663,9 @@ class TwoTowerConfig:
     # with the pre-existing baseline. This only ever populates
     # ``TwoTowerModel.abstract_plan_trace(...)``, a side channel that
     # ``training_loss``/``forward`` never call on their own.
-    abstract_plan_mode: str = "disabled"  # disabled | teacher_forced | sampled | oracle | random | shuffled
+    abstract_plan_mode: str = (
+        "disabled"  # disabled | teacher_forced | sampled | oracle | random | shuffled
+    )
     # AP-022 (SLM-313): default-off auxiliary supervision and conditioning for
     # the discrete plan.  The structural target is derived only from training
     # labels; held-out decoding always uses the predicted plan.
@@ -640,7 +677,9 @@ class TwoTowerConfig:
     # connector at all -- bit-exact with the pre-AP-024 baseline. Requires
     # ``abstract_plan_mode != "disabled"``, since every arm conditions on
     # that head's trace (see ``AbstractPlanConnector``/``PlanConnectorArm``).
-    abstract_plan_connector_arm: str = "disabled"  # disabled | learned | oracle | detached | empty | random | shuffled
+    abstract_plan_connector_arm: str = (
+        "disabled"  # disabled | learned | oracle | detached | empty | random | shuffled
+    )
     connector_hidden_dim: int = 256
     connector_rank: int = 32
     connector_n_queries: int = 4
@@ -695,8 +734,17 @@ class TwoTowerConfig:
     # remask_policy="stability" ranks remasks by persistence + inter-step JSD.
     stability_min_persistence: int = 0
     stability_jsd_weight: float = 1.0
-    # E71 DAPD/DAWN-lite: positions (classic) | cluster (attention clusters).
+    # E71 DAPD/DAWN-lite: positions (classic) | cluster (attention clusters)
+    # | hybrid (HX4: block-scheduled span lane + frontier-first position lane).
     unmask_mode: str = "positions"
+    block_diffusion_decode: bool = False
+    block_diffusion_block_size: int = 4
+    # HX4: minimum contiguous masked-run length that qualifies for the hybrid
+    # span lane. Shorter runs fall through to the frontier (positionwise) lane.
+    hybrid_span_min_run: int = 3
+    # Positions at a run's committed edge handled positionwise (HX4): keeps
+    # both lanes live on an unfragmented canvas.
+    hybrid_frontier_head: int = 2
     cluster_attn_threshold: float = 0.08
     cluster_max_size: int = 4
     # E72: verify clusters in anchor order; outcome (j, repair).
@@ -752,6 +800,22 @@ class TwoTowerConfig:
                 "request_aware_slot_reservation is unsupported; "
                 "no request-aware compiler owner is implemented"
             )
+        if self.structural_aux_head_profile not in STRUCTURAL_AUX_HEAD_PROFILES:
+            raise ValueError(
+                "structural_aux_head_profile="
+                f"{self.structural_aux_head_profile!r} is not one of "
+                f"{STRUCTURAL_AUX_HEAD_PROFILES!r}"
+            )
+        if self.compiler_alignment_kind_filter not in {
+            "all",
+            "literal-close",
+            "container-close",
+            "component-edge",
+        }:
+            raise ValueError(
+                "compiler_alignment_kind_filter must be one of: all, "
+                "literal-close, container-close, component-edge"
+            )
         repair_modes = {
             "recursive_update_mode": (
                 self.recursive_update_mode,
@@ -771,9 +835,7 @@ class TwoTowerConfig:
         }
         for field_name, (value, supported, _) in repair_modes.items():
             if value not in supported:
-                raise ValueError(
-                    f"{field_name}={value!r} is not one of {supported!r}"
-                )
+                raise ValueError(f"{field_name}={value!r} is not one of {supported!r}")
         # AP-023 (SLM-315): reject typo'd/unknown modes early so an invalid
         # value can never silently take the "enabled" branch in __init__ and
         # break the disabled-by-default bit-exact guarantee.
@@ -876,6 +938,68 @@ def _pad_batch(
     if device is not None:
         out = out.to(device)
     return out
+
+
+def hybrid_mask_runs(
+    unknown_row: Sequence[bool],
+    ids_row: Sequence[int],
+    *,
+    eos_id: int,
+    pad_id: int,
+) -> list[list[int]]:
+    """Contiguous masked-position runs, trimmed at the EOS/PAD boundary (HX4).
+
+    The canvas suffix after the first EOS (or PAD) is not part of the program,
+    so a span must never cross that boundary: positions at or after the first
+    EOS/PAD token are dropped and a run straddling it is truncated. Returns
+    runs in left-to-right order; each run is the list of its absolute positions.
+    """
+    limit = len(unknown_row)
+    for index, token_id in enumerate(ids_row):
+        value = int(token_id)
+        if value == int(eos_id) or value == int(pad_id):
+            limit = index
+            break
+    limit = min(limit, len(unknown_row))
+    runs: list[list[int]] = []
+    current: list[int] = []
+    for position in range(limit):
+        if bool(unknown_row[position]):
+            current.append(position)
+        elif current:
+            runs.append(current)
+            current = []
+    if current:
+        runs.append(current)
+    return runs
+
+
+def hybrid_frontier_order(
+    positions: Sequence[int],
+    unknown_row: Sequence[bool],
+    confidences: Mapping[int, float],
+) -> list[int]:
+    """Frontier-first ordering for the HX4 positionwise lane.
+
+    A position whose LEFT neighbour is already committed (or position 1, right
+    after BOS) extends the verified prefix, so it outranks interior holes. Ties
+    inside each group break on descending confidence, then on position so the
+    order is total and deterministic.
+    """
+
+    def _key(position: int) -> tuple[int, float, int]:
+        left_committed = position == 1 or (
+            position > 0
+            and position - 1 < len(unknown_row)
+            and not bool(unknown_row[position - 1])
+        )
+        return (
+            0 if left_committed else 1,
+            -float(confidences.get(position, 0.0)),
+            int(position),
+        )
+
+    return sorted((int(p) for p in positions), key=_key)
 
 
 def _truncate_with_eos(ids: list[int], max_len: int, eos_id: int) -> list[int]:
@@ -1139,8 +1263,7 @@ def reduce_weighted_recursive_depth_losses(
         raise ValueError("recursive depth losses must be scalar tensors")
 
     contributions = tuple(
-        weight * loss
-        for weight, loss in zip(supervision.normalized(), depth_losses)
+        weight * loss for weight, loss in zip(supervision.normalized(), depth_losses)
     )
     return contributions, torch.stack(contributions).sum()
 
@@ -1640,8 +1763,14 @@ class TwoTowerModel(nn.Module):
             if str(getattr(self.config, "mask_pattern", "random")) == "diffusion"
             else None
         )
+        aux_profile = str(
+            getattr(self.config, "structural_aux_head_profile", "none") or "none"
+        )
         inventory_enabled = (
-            float(getattr(self.config, "component_inventory_loss_weight", 0.0) or 0.0)
+            aux_profile == "component-inventory"
+            or float(
+                getattr(self.config, "component_inventory_loss_weight", 0.0) or 0.0
+            )
             > 0.0
             or float(
                 getattr(self.config, "component_inventory_decode_weight", 0.0) or 0.0
@@ -1657,7 +1786,9 @@ class TwoTowerModel(nn.Module):
             else None
         )
         plan_enabled = (
-            float(getattr(self.config, "component_plan_loss_weight", 0.0) or 0.0) > 0.0
+            aux_profile in {"component-plan", "component-structure"}
+            or float(getattr(self.config, "component_plan_loss_weight", 0.0) or 0.0)
+            > 0.0
             or float(getattr(self.config, "component_plan_decode_weight", 0.0) or 0.0)
             > 0.0
         )
@@ -1687,7 +1818,9 @@ class TwoTowerModel(nn.Module):
             else None
         )
         edge_enabled = (
-            float(getattr(self.config, "component_edge_loss_weight", 0.0) or 0.0) > 0.0
+            aux_profile in {"component-edge", "component-structure"}
+            or float(getattr(self.config, "component_edge_loss_weight", 0.0) or 0.0)
+            > 0.0
             or float(
                 getattr(self.config, "component_edge_alignment_loss_weight", 0.0) or 0.0
             )
@@ -1711,7 +1844,10 @@ class TwoTowerModel(nn.Module):
         except (AttributeError, TypeError, ValueError):
             binder_plan_ids = ()
         binder_plan_enabled = (
-            float(getattr(self.config, "binder_component_plan_loss_weight", 0.0) or 0.0)
+            aux_profile == "binder-component-plan"
+            or float(
+                getattr(self.config, "binder_component_plan_loss_weight", 0.0) or 0.0
+            )
             > 0.0
             or float(
                 getattr(self.config, "binder_component_plan_decode_weight", 0.0) or 0.0
@@ -1730,7 +1866,9 @@ class TwoTowerModel(nn.Module):
             else None
         )
         binder_topology_enabled = (
-            float(getattr(self.config, "binder_topology_loss_weight", 0.0) or 0.0) > 0.0
+            aux_profile == "binder-topology"
+            or float(getattr(self.config, "binder_topology_loss_weight", 0.0) or 0.0)
+            > 0.0
             or float(getattr(self.config, "binder_topology_decode_weight", 0.0) or 0.0)
             > 0.0
         )
@@ -1746,7 +1884,9 @@ class TwoTowerModel(nn.Module):
             else None
         )
         binder_arity_enabled = (
-            float(getattr(self.config, "binder_arity_loss_weight", 0.0) or 0.0) > 0.0
+            aux_profile == "binder-arity"
+            or float(getattr(self.config, "binder_arity_loss_weight", 0.0) or 0.0)
+            > 0.0
             or float(getattr(self.config, "binder_arity_decode_weight", 0.0) or 0.0)
             > 0.0
         )
@@ -1901,14 +2041,14 @@ class TwoTowerModel(nn.Module):
         self._semantic_role_properties: list[dict[str, tuple[str, ...]]] | None = None
         self._semantic_plan_action_scores: list[dict[int, float]] | None = None
         self._semantic_plan_action_counts: list[dict[int, int]] | None = None
-        self._semantic_plan_role_bindings: list[
-            dict[str, tuple[str, ...]]
-        ] | None = None
+        self._semantic_plan_role_bindings: list[dict[str, tuple[str, ...]]] | None = (
+            None
+        )
         self._semantic_plan_required_root_references: list[dict[int, str]] | None = None
         self._semantic_plan_outer_groups: list[dict[str, object] | None] | None = None
-        self._semantic_plan_root_token_plans: list[
-            tuple[tuple[str, ...], tuple[str, ...]] | None
-        ] | None = None
+        self._semantic_plan_root_token_plans: (
+            list[tuple[tuple[str, ...], tuple[str, ...]] | None] | None
+        ) = None
         self._semantic_plan_root_last_abstention: dict[str, object] | None = None
         self._last_generation_evidence: list[dict[str, object]] = []
         # Per-example symbol tables for lexer-native encode/decode.
@@ -2034,6 +2174,41 @@ class TwoTowerModel(nn.Module):
             )
             for _ in range(batch_size)
         ]
+
+    def _note_admit_canvas(self, trial: list[int]) -> None:
+        """HX1 advisory: count admit probes whose canvas has committed tokens
+        after the first hole (the span admit_fill cannot validate)."""
+        stats = get_active_stats()
+        if stats is None:
+            return
+        stats.admit_probe_canvases += 1
+        mask = int(self.tokenizer.mask_id)
+        try:
+            first_mask = trial.index(mask)
+        except ValueError:
+            return
+        pad = int(self.tokenizer.pad_id)
+        for token_id in trial[first_mask + 1 :]:
+            value = int(token_id)
+            if value != pad and value != mask:
+                stats.admit_probe_committed_suffix += 1
+                return
+
+    @staticmethod
+    def _fold_state_engine_stats(states: list | None) -> None:
+        """Fold each state engine's lifetime counters into the active stats.
+
+        Called once when a decode path's request-local states go out of
+        scope; engines are per-state, so a single fold never double-counts.
+        """
+        if not states:
+            return
+        from slm_training.models.decode_stats import collect_engine_stats
+
+        for state in states:
+            engine = getattr(state, "engine", None)
+            if engine is not None:
+                collect_engine_stats(engine)
 
     def clear_train_caches(self) -> None:
         self._context_text_cache.clear()
@@ -2457,7 +2632,9 @@ class TwoTowerModel(nn.Module):
                     node_count += 1
                     max_depth = max(max_depth, depth)
                     props = node.get("props")
-                    children = props.get("children") if isinstance(props, dict) else None
+                    children = (
+                        props.get("children") if isinstance(props, dict) else None
+                    )
                     if not isinstance(children, list) or not children:
                         leaf_count += 1
                     if isinstance(props, dict):
@@ -2966,7 +3143,9 @@ class TwoTowerModel(nn.Module):
                     parts = (
                         f"{namespace}:{ordinal}",
                         f"role:{symbol.role}" if symbol.role else None,
-                        f"type:{symbol.semantic_type}" if symbol.semantic_type else None,
+                        f"type:{symbol.semantic_type}"
+                        if symbol.semantic_type
+                        else None,
                         (
                             f"semantic-role:{symbol.semantic_role}"
                             if symbol.semantic_role
@@ -3248,6 +3427,10 @@ class TwoTowerModel(nn.Module):
             flat_targets = target_ids.reshape(-1)
             ce = F.cross_entropy(flat_logits, flat_targets, reduction="none")
             weights = torch.ones_like(ce)
+            positions = torch.arange(target_ids.size(1), device=target_ids.device)
+            first = target_ids[:, 0].eq(self.tokenizer.bos_id)
+            content_rank = positions.unsqueeze(0) - first.unsqueeze(1).long()
+            prefix_positions = (content_rank >= 0) & (content_rank < 3) & ltr_suffix
             if ltr_w > 0.0 and fuse and ltr_suffix.any():
                 suffix_flat = ltr_suffix.reshape(-1)
                 weights = weights + (ltr_w * suffix_flat.float())
@@ -3255,19 +3438,98 @@ class TwoTowerModel(nn.Module):
                     getattr(self.config, "ltr_prefix_loss_weight", 0.0) or 0.0
                 )
                 if prefix_w > 0.0:
-                    positions = torch.arange(
-                        target_ids.size(1), device=target_ids.device
+                    weights = weights + (
+                        prefix_w * prefix_positions.reshape(-1).float()
                     )
-                    first = target_ids[:, 0].eq(self.tokenizer.bos_id)
-                    content_rank = positions.unsqueeze(0) - first.unsqueeze(1).long()
-                    prefix = (content_rank >= 0) & (content_rank < 3) & ltr_suffix
-                    weights = weights + (prefix_w * prefix.reshape(-1).float())
-                tail_w = float(
-                    getattr(self.config, "ltr_tail_loss_weight", 0.0) or 0.0
-                )
+                tail_w = float(getattr(self.config, "ltr_tail_loss_weight", 0.0) or 0.0)
                 if tail_w > 0.0:
                     tail = self._ltr_tail_mask(target_ids, ltr_suffix)
                     weights = weights + (tail_w * tail.reshape(-1).float())
+            kind_ids = getattr(self.tokenizer, "kind_ids", None)
+            component_ids = set(kind_ids("component")) if callable(kind_ids) else set()
+            structure_ids = set(kind_ids("struct")) if callable(kind_ids) else set()
+            component_positions = torch.zeros_like(target_ids, dtype=torch.bool)
+            for token_id in component_ids:
+                component_positions |= target_ids.eq(int(token_id))
+            structure_positions = torch.zeros_like(target_ids, dtype=torch.bool)
+            for token_id in structure_ids:
+                structure_positions |= target_ids.eq(int(token_id))
+            component_w = float(
+                getattr(self.config, "component_token_loss_weight", 0.0) or 0.0
+            )
+            if component_w > 0.0 and not component_ids:
+                raise ValueError(
+                    "component_token_loss_weight requires a tokenizer with "
+                    "typed component token ids"
+                )
+            if component_w > 0.0 and component_positions.any():
+                weights = weights + (
+                    component_w * component_positions.reshape(-1).float()
+                )
+            edge_token_w = float(
+                getattr(self.config, "component_edge_token_loss_weight", 0.0)
+                or 0.0
+            )
+            decision_token_w = float(
+                getattr(self.config, "compiler_decision_token_loss_weight", 0.0)
+                or 0.0
+            )
+            edge_token_positions = torch.zeros_like(target_ids, dtype=torch.bool)
+            decision_token_positions = torch.zeros_like(
+                target_ids, dtype=torch.bool
+            )
+            if edge_token_w > 0.0 or decision_token_w > 0.0:
+                from slm_training.dsl.grammar.fastpath.compiler_draft import (
+                    gold_compiler_decisions,
+                )
+
+                for row, record in enumerate(batch):
+                    target_key = tuple(
+                        int(token_id) for token_id in target_ids[row].tolist()
+                    )
+                    contract_key = tuple(record.placeholders or ())
+                    cache_key = (target_key, contract_key)
+                    decisions = self._compiler_decision_cache.get(cache_key)
+                    if decisions is None:
+                        decisions = gold_compiler_decisions(
+                            self.tokenizer,
+                            target_key,
+                            slot_contract=list(contract_key),
+                        )
+                        self._compiler_decision_cache[cache_key] = decisions
+                    for decision in decisions:
+                        decision_token_positions[row, int(decision.position)] = True
+                        if decision.kind == "component_bound":
+                            edge_token_positions[row, int(decision.position)] = True
+            if edge_token_w > 0.0:
+                weights = weights + (
+                    edge_token_w * edge_token_positions.reshape(-1).float()
+                )
+            if decision_token_w > 0.0:
+                weights = weights + (
+                    decision_token_w
+                    * decision_token_positions.reshape(-1).float()
+                )
+            structure_w = float(
+                getattr(self.config, "structure_token_loss_weight", 0.0) or 0.0
+            )
+            if structure_w > 0.0 and not structure_ids:
+                raise ValueError(
+                    "structure_token_loss_weight requires a tokenizer with "
+                    "typed structure token ids"
+                )
+            if structure_w > 0.0 and structure_positions.any():
+                weights = weights + (
+                    structure_w * structure_positions.reshape(-1).float()
+                )
+            balance_w = float(
+                getattr(self.config, "typed_family_balance_loss_weight", 0.0) or 0.0
+            )
+            if balance_w > 0.0 and (not component_ids or not structure_ids):
+                raise ValueError(
+                    "typed_family_balance_loss_weight requires a tokenizer with "
+                    "typed component and structure token ids"
+                )
             if mdlm_row_w is not None:
                 # Broadcast per-row MDLM 1/t weights onto token positions.
                 seq = target_ids.size(1)
@@ -3277,28 +3539,79 @@ class TwoTowerModel(nn.Module):
             contrast_weight = float(
                 getattr(self.config, "semantic_contrast_loss_weight", 0.0) or 0.0
             )
-            if contrast_weight > 0.0:
-                from slm_training.models.semantic_contrast_loss import (
-                    semantic_contrast_metadata,
-                )
+            from slm_training.models.semantic_contrast_loss import (
+                semantic_contrast_metadata,
+            )
 
-                # Negative sides are score-only: their token CE would train the
-                # very corruption that the pairwise objective must reject.
-                token_rows = torch.as_tensor(
-                    [
-                        semantic_contrast_metadata(record) is None
-                        or semantic_contrast_metadata(record)["role"] != "negative"
-                        for record in batch
-                    ],
-                    device=target_ids.device,
-                    dtype=torch.bool,
+            # Pair negatives are score-only in both the zero-weight control and
+            # the treatment.  Conditioning this mask on the auxiliary weight
+            # changes the base reconstruction objective between arms and makes
+            # a nominally matched contrast experiment unattributable.
+            contrast_metadata = [semantic_contrast_metadata(record) for record in batch]
+            token_rows = torch.as_tensor(
+                [
+                    meta is None or meta["role"] != "negative"
+                    for meta in contrast_metadata
+                ],
+                device=target_ids.device,
+                dtype=torch.bool,
+            )
+            mask_flat = mask_flat & token_rows.repeat_interleave(target_ids.size(1))
+            self.last_training_metrics.update(
+                {
+                    "semantic_contrast_ce_negative_rows_excluded": int(
+                        (~token_rows).sum().detach().cpu()
+                    ),
+                    "semantic_contrast_ce_scored_tokens": int(
+                        mask_flat.sum().detach().cpu()
+                    ),
+                    "semantic_contrast_ce_mask_sha256": hashlib.sha256(
+                        bytes(
+                            mask_flat.detach()
+                            .to(device="cpu", dtype=torch.uint8)
+                            .tolist()
+                        )
+                    ).hexdigest(),
+                }
+            )
+            component_flat = component_positions.reshape(-1) & mask_flat
+            edge_token_flat = edge_token_positions.reshape(-1) & mask_flat
+            decision_token_flat = decision_token_positions.reshape(-1) & mask_flat
+            structure_flat = structure_positions.reshape(-1) & mask_flat
+            prefix_flat = prefix_positions.reshape(-1) & mask_flat
+            other_flat = mask_flat & ~component_positions.reshape(-1)
+            for family, selected in (
+                ("component", component_flat),
+                ("component_edge", edge_token_flat),
+                ("compiler_decision", decision_token_flat),
+                ("structure", structure_flat),
+                ("prefix", prefix_flat),
+                ("non_component", other_flat),
+            ):
+                count = int(selected.sum().detach().cpu())
+                self.last_training_metrics[f"token_loss_{family}_count"] = count
+                self.last_training_metrics[f"token_loss_{family}_mean_ce"] = (
+                    float(ce[selected].mean().detach().cpu()) if count else None
                 )
-                mask_flat = mask_flat & token_rows.repeat_interleave(target_ids.size(1))
-            mask_loss = (ce * weights)[mask_flat].mean()
+            balance_terms = [
+                ce[selected].mean()
+                for selected in (component_flat, structure_flat)
+                if selected.any()
+            ]
+            balance_aux = ce.new_zeros(())
+            if balance_w > 0.0 and len(balance_terms) == 2:
+                balance_aux = balance_w * torch.stack(balance_terms).mean()
+            self.last_training_metrics["typed_family_balance_active_families"] = len(
+                balance_terms
+            )
+            self.last_training_metrics["typed_family_balance_aux_loss"] = float(
+                balance_aux.detach().cpu()
+            )
+            mask_loss = (ce * weights)[mask_flat].mean() + balance_aux
             # Diagnostic only: preserve per-record masked token loss without
             # changing the scalar objective or its gradient reduction.
             row_values = (ce * weights).reshape(target_ids.shape)
-            row_mask = predict_mask
+            row_mask = mask_flat.reshape_as(predict_mask)
             row_counts = row_mask.sum(dim=1).clamp_min(1)
             self._last_example_token_losses = (
                 ((row_values * row_mask).sum(dim=1) / row_counts)
@@ -3455,7 +3768,9 @@ class TwoTowerModel(nn.Module):
             if not predict_mask.any():
                 raise ValueError("semantic contrast objective has no scored tokens")
             sequence_ce = F.cross_entropy(
-                logits.reshape(-1, logits.size(-1)), target_ids.reshape(-1), reduction="none"
+                logits.reshape(-1, logits.size(-1)),
+                target_ids.reshape(-1),
+                reduction="none",
             ).reshape(target_ids.shape)
             sequence_nll = (sequence_ce * predict_mask).sum(dim=1) / predict_mask.sum(
                 dim=1
@@ -3471,11 +3786,19 @@ class TwoTowerModel(nn.Module):
                     raise ValueError("semantic contrast batch duplicates a pair side")
                 pair[meta["role"]] = index
                 families[meta["family"]] = families.get(meta["family"], 0) + 1
-            complete = [pair for pair in pairs.values() if set(pair) == {"positive", "negative"}]
+            complete = [
+                pair for pair in pairs.values() if set(pair) == {"positive", "negative"}
+            ]
             if len(complete) != len(pairs) or not complete:
-                raise ValueError("semantic contrast batch must contain complete positive/negative pairs")
-            positive_scores = -torch.stack([sequence_nll[pair["positive"]] for pair in complete])
-            negative_scores = -torch.stack([sequence_nll[pair["negative"]] for pair in complete])
+                raise ValueError(
+                    "semantic contrast batch must contain complete positive/negative pairs"
+                )
+            positive_scores = -torch.stack(
+                [sequence_nll[pair["positive"]] for pair in complete]
+            )
+            negative_scores = -torch.stack(
+                [sequence_nll[pair["negative"]] for pair in complete]
+            )
             objective = pairwise_margin_loss(
                 positive_scores,
                 negative_scores,
@@ -3486,13 +3809,23 @@ class TwoTowerModel(nn.Module):
                 {
                     "semantic_contrast_loss": float(objective.loss.detach().cpu()),
                     "semantic_contrast_loss_weight": contrast_weight,
-                    "semantic_contrast_margin": float(getattr(self.config, "semantic_contrast_margin", 1.0)),
+                    "semantic_contrast_margin": float(
+                        getattr(self.config, "semantic_contrast_margin", 1.0)
+                    ),
                     "semantic_contrast_pairs": len(complete),
                     "semantic_contrast_family_sides": dict(sorted(families.items())),
-                    "semantic_contrast_positive_nll": float((-positive_scores).mean().detach().cpu()),
-                    "semantic_contrast_negative_nll": float((-negative_scores).mean().detach().cpu()),
-                    "semantic_contrast_score_distance": float(objective.score_distance.detach().cpu()),
-                    "semantic_contrast_violation_rate": float(objective.violation_rate.detach().cpu()),
+                    "semantic_contrast_positive_nll": float(
+                        (-positive_scores).mean().detach().cpu()
+                    ),
+                    "semantic_contrast_negative_nll": float(
+                        (-negative_scores).mean().detach().cpu()
+                    ),
+                    "semantic_contrast_score_distance": float(
+                        objective.score_distance.detach().cpu()
+                    ),
+                    "semantic_contrast_violation_rate": float(
+                        objective.violation_rate.detach().cpu()
+                    ),
                 }
             )
         else:
@@ -3609,6 +3942,9 @@ class TwoTowerModel(nn.Module):
             semantic_exhaustive = bool(
                 getattr(self.config, "compiler_alignment_semantic_exhaustive", False)
             )
+            kind_filter = str(
+                getattr(self.config, "compiler_alignment_kind_filter", "all") or "all"
+            )
             aligned_canvases: list[torch.Tensor] = []
             aligned_targets: list[int] = []
             aligned_positions: list[int] = []
@@ -3630,6 +3966,48 @@ class TwoTowerModel(nn.Module):
                         slot_contract=list(contract_key),
                     )
                     self._compiler_decision_cache[key] = decisions
+                if not decisions:
+                    continue
+                if kind_filter == "literal-close":
+                    numeric_close_positions: set[int] = set()
+                    open_frame: str | None = None
+                    for position, token_id in enumerate(target_key):
+                        token = str(
+                            self.tokenizer.id_to_token.get(int(token_id), "")
+                        )
+                        if token in {"LIT_NUM", "LIT_STR"}:
+                            open_frame = token
+                        elif token == "LIT_END":
+                            if open_frame == "LIT_NUM":
+                                numeric_close_positions.add(position)
+                            open_frame = None
+                    decisions = tuple(
+                        decision
+                        for decision in decisions
+                        if int(decision.position) in numeric_close_positions
+                    )
+                elif kind_filter == "container-close":
+                    decisions = tuple(
+                        decision
+                        for decision in decisions
+                        if str(
+                            self.tokenizer.id_to_token.get(
+                                int(target_key[int(decision.position)]), ""
+                            )
+                        )
+                        in {")", "]"}
+                        and any(
+                            str(self.tokenizer.id_to_token.get(int(candidate), ""))
+                            == ","
+                            for candidate in decision.candidate_ids
+                        )
+                    )
+                elif kind_filter == "component-edge":
+                    decisions = tuple(
+                        decision
+                        for decision in decisions
+                        if decision.kind == "component_bound"
+                    )
                 if not decisions:
                     continue
                 if stratified:
@@ -3746,8 +4124,31 @@ class TwoTowerModel(nn.Module):
                 }
             else:
                 kind_losses = {}
-            self.last_training_metrics = {
+            self.last_training_metrics.update({
                 "compiler_alignment_rows": aligned_rows,
+                "compiler_alignment_literal_close_filter_enabled": float(
+                    kind_filter == "literal-close"
+                ),
+                "compiler_alignment_container_close_filter_enabled": float(
+                    kind_filter == "container-close"
+                ),
+                "compiler_alignment_component_edge_filter_enabled": float(
+                    kind_filter == "component-edge"
+                ),
+                "compiler_alignment_literal_close_rows": sum(
+                    1
+                    for target in aligned_targets
+                    if str(self.tokenizer.id_to_token.get(int(target), "")) == "LIT_END"
+                ),
+                "compiler_alignment_container_close_rows": sum(
+                    1
+                    for target in aligned_targets
+                    if str(self.tokenizer.id_to_token.get(int(target), ""))
+                    in {")", "]"}
+                ),
+                "compiler_alignment_component_edge_rows": sum(
+                    1 for kind in aligned_kinds if kind == "component_bound"
+                ),
                 "compiler_alignment_loss": (
                     float(alignment_loss.detach().cpu()) if aligned_canvases else 0.0
                 ),
@@ -3782,7 +4183,7 @@ class TwoTowerModel(nn.Module):
                     f"compiler_alignment_{kind}_loss": loss
                     for kind, loss in sorted(kind_losses.items())
                 },
-            }
+            })
 
         inventory_w = float(
             getattr(self.config, "component_inventory_loss_weight", 0.0) or 0.0
@@ -4685,7 +5086,8 @@ class TwoTowerModel(nn.Module):
         # must reproduce prior (no-history) output exactly.
         ops_text = (
             history_ops_text
-            if history_ops_text and getattr(self.config, "encoder_ops_conditioning", False)
+            if history_ops_text
+            and getattr(self.config, "encoder_ops_conditioning", False)
             else None
         )
         return format_context_text(
@@ -4748,7 +5150,9 @@ class TwoTowerModel(nn.Module):
         self, slot_contract: list[str] | tuple[str, ...] | None = None
     ) -> str | None:
         """Return a certified fallback without inventing completion symbols."""
-        marker = next((item for item in slot_contract or () if is_placeholder(item)), None)
+        marker = next(
+            (item for item in slot_contract or () if is_placeholder(item)), None
+        )
         candidates = (
             [f"root = TextContent({json.dumps(marker)})\n"]
             if marker
@@ -4769,8 +5173,14 @@ class TwoTowerModel(nn.Module):
         ctx: torch.Tensor,
         ctx_pad: torch.Tensor,
         length: int,
+        *,
+        state: "GrammarDecodeState | None" = None,
     ) -> str:
-        """Speculative LTR decode from BOS with force-emit + constrained picks."""
+        """Speculative LTR decode from BOS with force-emit + constrained picks.
+
+        HX5: ``state`` is passed straight through so an attempt loop can share
+        one grammar session; the caller keeps ownership (and folds its stats).
+        """
         device = self.device_name
         repair_len = min(length, max(8, int(self.config.grammar_ltr_max_tokens)))
         repaired = torch.full(
@@ -4781,7 +5191,9 @@ class TwoTowerModel(nn.Module):
         )
         repaired[0, 0] = self.tokenizer.bos_id
         unknown_r = repaired.eq(self.tokenizer.mask_id)
-        repaired = self._constrained_ltr_repair(repaired, unknown_r, ctx, ctx_pad)
+        repaired = self._constrained_ltr_repair(
+            repaired, unknown_r, ctx, ctx_pad, state=state
+        )
         return self._decode_ids(repaired[0])
 
     def _ensure_valid_openui(
@@ -4832,11 +5244,31 @@ class TwoTowerModel(nn.Module):
         ):
             return text
         last = text
-        for _ in range(max(0, int(attempts))):
-            last = self._ltr_repair_from_bos(ctx, ctx_pad, length)
-            ser = self._canonical_valid_openui(last)
-            if ser is not None:
-                return ser
+        # HX5: one grammar session for the whole attempt loop (each attempt
+        # re-decodes from BOS, so the DFA/completion caches are re-usable), and
+        # one engine-stats fold for the session that owns them.
+        state_rows = self._new_grammar_states(1) if int(attempts) > 0 else None
+        shared_state = state_rows[0] if state_rows else None
+        try:
+            previous: str | None = None
+            for _ in range(max(0, int(attempts))):
+                last = self._ltr_repair_from_bos(
+                    ctx, ctx_pad, length, state=shared_state
+                )
+                ser = self._canonical_valid_openui(last)
+                if ser is not None:
+                    return ser
+                if (
+                    not bool(getattr(self.config, "grammar_sample_decode", False))
+                    and previous is not None
+                    and last == previous
+                ):
+                    # Deterministic decode: attempts 2..N are bit-identical
+                    # recomputations of a repair that already failed.
+                    break
+                previous = last
+        finally:
+            self._fold_state_engine_stats(state_rows)
         if self.config.grammar_finalize_validate or require_valid:
             fallback = self._minimal_valid_openui(slot_contract)
             if fallback is not None:
@@ -4857,8 +5289,15 @@ class TwoTowerModel(nn.Module):
         ctx_pad: torch.Tensor,
         *,
         slot_contract: list[str] | None = None,
+        state: "GrammarDecodeState | None" = None,
     ) -> torch.Tensor:
         """Fill remaining masks left-to-right with streaming-parser filtering.
+
+        HX5: ``state`` lets a caller that repairs repeatedly (the
+        ``_ensure_valid_openui`` attempt loop) reuse ONE grammar session across
+        attempts instead of rebuilding the DFA/completion caches per attempt.
+        The owner of a passed-in state also owns folding its engine counters,
+        so this method never folds a state it did not allocate.
 
         R4: honor ``grammar_multitoken_accept`` + ``grammar_canvas_lookahead``
         so repair/BOS certify share the same forward budget as greedy LTR.
@@ -4872,8 +5311,14 @@ class TwoTowerModel(nn.Module):
         contract = slot_contract if use_contract else None
         length = ids.size(1)
         use_fast = bool(getattr(self.config, "grammar_fastpath", True))
-        states = self._new_grammar_states(1)
-        st = states[0] if states is not None else None
+        if state is not None:
+            states = None
+            st = state
+            owns_states = False
+        else:
+            states = self._new_grammar_states(1)
+            st = states[0] if states is not None else None
+            owns_states = True
         pick_kw = self._pick_kwargs()
         multitoken = bool(getattr(self.config, "grammar_multitoken_accept", False))
         multitoken_max = max(
@@ -4970,7 +5415,11 @@ class TwoTowerModel(nn.Module):
                 break
             if not bool(unknown[0, t].item()):
                 if st is not None and len(st.prefix_ids) == t:
-                    st.advance_token(tok, int(ids[0, t].item()))
+                    st.advance_token(
+                        tok,
+                        int(ids[0, t].item()),
+                        require_completion_advertised=False,
+                    )
                 t += 1
                 continue
             prefix = ids[0, :t].tolist()
@@ -5200,6 +5649,8 @@ class TwoTowerModel(nn.Module):
                 unknown=unknown[0].tolist(),
                 commits=repair_commits,
             )
+        if owns_states:
+            self._fold_state_engine_stats(states)
         return ids
 
     def _ltr_canvases(self, length: int) -> list[int]:
@@ -5428,7 +5879,9 @@ class TwoTowerModel(nn.Module):
         if cached is None:
             from slm_training.runtime.decode_schedule import schedule_backend
 
-            cached = schedule_backend(str(getattr(self.config, "device", "") or "") or None)
+            cached = schedule_backend(
+                str(getattr(self.config, "device", "") or "") or None
+            )
             self._schedule_backend_cache = cached
         return cached
 
@@ -5455,7 +5908,9 @@ class TwoTowerModel(nn.Module):
             # lever is reachable without a build step.
             ranker = load_ranker(
                 getattr(self.config, "speculative_rank_table", None),
-                margin=float(getattr(self.config, "speculative_rank_margin", 0.0) or 0.0),
+                margin=float(
+                    getattr(self.config, "speculative_rank_margin", 0.0) or 0.0
+                ),
             )
         self._speculative_ranker_cache = ranker
         return ranker
@@ -5684,9 +6139,7 @@ class TwoTowerModel(nn.Module):
             if not bool(getattr(self.config, "slot_component_next_context", False)):
                 return list(slots)
             return [
-                f"{slot}\n{slots[index + 1]}"
-                if index + 1 < len(slots)
-                else slot
+                f"{slot}\n{slots[index + 1]}" if index + 1 < len(slots) else slot
                 for index, slot in enumerate(slots)
             ]
         indices = ordinals if ordinals is not None else list(range(len(slots)))
@@ -5781,18 +6234,25 @@ class TwoTowerModel(nn.Module):
             if token_id not in component_ids:
                 continue
             if kind == "component_root":
-                bias[position] = weight * logits[0, token_id]
+                # The plan head is auxiliary and can be poorly calibrated on a
+                # short or early-stopped train.  Its raw root logits and
+                # Poisson rates are unbounded; adding them directly lets this
+                # heuristic dominate the base model indefinitely (for example,
+                # repeatedly extending a legal variadic component until the
+                # decode deadline).  Keep the configured weight as the maximum
+                # authority of the heuristic while preserving sign and order.
+                bias[position] = weight * torch.tanh(logits[0, token_id])
             elif kind == "component_bound":
                 remaining = (
                     F.softplus(logits[1, token_id]) - emitted_bound.get(token_id, 0)
                 ).clamp_min(1e-4)
-                bias[position] = weight * remaining.log()
+                bias[position] = weight * torch.tanh(remaining.log())
             elif kind == "component_root_or_bound":
                 remaining = (
                     F.softplus(logits[1, token_id]) - emitted_bound.get(token_id, 0)
                 ).clamp_min(1e-4)
-                bias[position] = weight * torch.logaddexp(
-                    logits[0, token_id], remaining.log()
+                bias[position] = weight * torch.tanh(
+                    torch.logaddexp(logits[0, token_id], remaining.log())
                 )
         return bias
 
@@ -5944,7 +6404,9 @@ class TwoTowerModel(nn.Module):
             prefix,
             candidate_ids,
             candidate_kinds,
-            slot_contract if slot_contract is not None else row_value(self._slot_contracts),
+            slot_contract
+            if slot_contract is not None
+            else row_value(self._slot_contracts),
             row_value(self._semantic_role_candidates),
         )
 
@@ -5986,7 +6448,9 @@ class TwoTowerModel(nn.Module):
         direct_string_properties = {
             name: {
                 property_name
-                for property_name, schema in (definition.get("properties") or {}).items()
+                for property_name, schema in (
+                    definition.get("properties") or {}
+                ).items()
                 if isinstance(schema, dict) and schema.get("type") == "string"
             }
             for name in sorted(set(component_names))
@@ -6071,8 +6535,7 @@ class TwoTowerModel(nn.Module):
         def enum_values(value: object) -> set[str]:
             if isinstance(value, dict):
                 return {
-                    str(item).lower()
-                    for item in value.get("enum", ())
+                    str(item).lower() for item in value.get("enum", ())
                 } | set().union(*(enum_values(child) for child in value.values()))
             if isinstance(value, list):
                 return set().union(*(enum_values(child) for child in value), set())
@@ -6157,7 +6620,11 @@ class TwoTowerModel(nn.Module):
         coverage: dict[str, list[str]] = defaultdict(list)
         bound_slots: set[str] = set()
         component_names = sorted(
-            {component for candidates in role_candidates.values() for component in candidates}
+            {
+                component
+                for candidates in role_candidates.values()
+                for component in candidates
+            }
         )
 
         def covered_by_planned(slots: tuple[str, ...]) -> bool:
@@ -6228,7 +6695,8 @@ class TwoTowerModel(nn.Module):
                 (
                     preferred
                     for preferred in DEFAULT_HOUSE_STYLE.preferred_components
-                    if preferred in planned and preferred in candidates
+                    if preferred in planned
+                    and preferred in candidates
                     and TwoTowerModel._semantic_role_family_has_capacity(
                         preferred,
                         (
@@ -6539,8 +7007,7 @@ class TwoTowerModel(nn.Module):
                 remaining_families = {
                     family
                     for family, token_id in family_token_ids.items()
-                    if family != active_family
-                    and remaining_counts.get(token_id, 0) > 0
+                    if family != active_family and remaining_counts.get(token_id, 0) > 0
                 }
                 comma_id = self.tokenizer.token_to_id.get(",")
                 close_id = self.tokenizer.token_to_id.get("]")
@@ -6636,8 +7103,7 @@ class TwoTowerModel(nn.Module):
                 for position, (token_id, kind) in enumerate(
                     zip(candidate_ids, candidate_kinds, strict=True)
                 )
-                if kind in component_kinds
-                and remaining_counts.get(token_id, 0) > 0
+                if kind in component_kinds and remaining_counts.get(token_id, 0) > 0
             }
             if containment and (best := max(containment.values())) > 0:
                 for position, count in containment.items():
@@ -7129,9 +7595,7 @@ class TwoTowerModel(nn.Module):
         slot_positions = [
             position
             for position, token_id in enumerate(candidate_ids)
-            if str(self.tokenizer.id_to_token.get(token_id, "")).startswith(
-                SLOT_PREFIX
-            )
+            if str(self.tokenizer.id_to_token.get(token_id, "")).startswith(SLOT_PREFIX)
         ]
         non_slot_scores = [
             float(scores[position].item())
@@ -7304,9 +7768,7 @@ class TwoTowerModel(nn.Module):
         scores: torch.Tensor,
     ) -> torch.Tensor | None:
         """Prefer a visible authored component's boolean ``open`` property."""
-        weight = float(
-            getattr(self.config, "schema_open_decode_weight", 0.0) or 0.0
-        )
+        weight = float(getattr(self.config, "schema_open_decode_weight", 0.0) or 0.0)
         frames = list(getattr(state, "frames", ()))
         if weight <= 0.0 or not frames:
             return None
@@ -7470,7 +7932,9 @@ class TwoTowerModel(nn.Module):
 
         properties_by_slot = semantic_role_properties
         if properties_by_slot is None and not self._opaque_slot_projection_active:
-            from slm_training.data.quality import semantic_role_properties as infer_roles
+            from slm_training.data.quality import (
+                semantic_role_properties as infer_roles,
+            )
 
             properties_by_slot = infer_roles(slot_contract)
         properties_by_slot = properties_by_slot or {}
@@ -7631,11 +8095,11 @@ class TwoTowerModel(nn.Module):
         }
         properties_by_slot = semantic_role_properties
         if properties_by_slot is None and not self._opaque_slot_projection_active:
-            from slm_training.data.quality import semantic_role_properties as infer_roles
-
-            properties_by_slot = infer_roles(
-                [slot for _index, slot in missing]
+            from slm_training.data.quality import (
+                semantic_role_properties as infer_roles,
             )
+
+            properties_by_slot = infer_roles([slot for _index, slot in missing])
         properties_by_slot = properties_by_slot or {}
         owner_component = next(
             (
@@ -8099,9 +8563,7 @@ class TwoTowerModel(nn.Module):
             target = library_schema().get("$defs", {}).get(name)
             return isinstance(
                 target, dict
-            ) and TwoTowerModel._schema_can_reach_visible_slot(
-                target, seen | {name}
-            )
+            ) and TwoTowerModel._schema_can_reach_visible_slot(target, seen | {name})
         if schema.get("x-openui-placeholder") or schema.get("type") == "string":
             return True
         return any(
@@ -8417,8 +8879,7 @@ class TwoTowerModel(nn.Module):
                 or 0.0
             ),
             float(
-                getattr(self.config, "semantic_plan_margin_decode_weight", 0.0)
-                or 0.0
+                getattr(self.config, "semantic_plan_margin_decode_weight", 0.0) or 0.0
             ),
         )
         slot_contract = (
@@ -8473,10 +8934,12 @@ class TwoTowerModel(nn.Module):
                 ]
                 comma_id = self.tokenizer.token_to_id.get(",")
                 close_id = self.tokenizer.token_to_id.get("]")
-                if not targets and comma_id in candidate_ids and close_id in candidate_ids:
-                    targets = [
-                        candidate_ids.index(comma_id if missing else close_id)
-                    ]
+                if (
+                    not targets
+                    and comma_id in candidate_ids
+                    and close_id in candidate_ids
+                ):
+                    targets = [candidate_ids.index(comma_id if missing else close_id)]
                 if targets:
                     target = max(
                         targets, key=lambda position: float(scores[position].item())
@@ -8566,14 +9029,11 @@ class TwoTowerModel(nn.Module):
                     frame = frames[-1]
                     schemas = tuple(getattr(frame, "schemas", ()))
                     arg_index = int(getattr(frame, "arg_index", -1))
-                    if (
-                        getattr(frame, "kind", None) == "component"
-                        and 0 <= arg_index < len(schemas)
-                    ):
+                    if getattr(
+                        frame, "kind", None
+                    ) == "component" and 0 <= arg_index < len(schemas):
                         enum_ids: list[int] = []
-                        for value in self._schema_enum_values(
-                            dict(schemas[arg_index])
-                        ):
+                        for value in self._schema_enum_values(dict(schemas[arg_index])):
                             spellings = [f"{LIT_PREFIX}{json.dumps(value)}"]
                             if isinstance(value, str):
                                 spellings.append(f"{DIR_PREFIX}{value}")
@@ -9183,8 +9643,7 @@ class TwoTowerModel(nn.Module):
         if not targets:
             return None
         margin = float(
-            getattr(self.config, "semantic_plan_root_margin_decode_weight", 0.0)
-            or 0.0
+            getattr(self.config, "semantic_plan_root_margin_decode_weight", 0.0) or 0.0
         )
         weight = float(
             getattr(self.config, "semantic_plan_root_decode_weight", 0.0) or 0.0
@@ -9637,9 +10096,7 @@ class TwoTowerModel(nn.Module):
         split = min(int(emitted) + 1, logits.numel())
         stop_score = logits[:split].max()
         continue_score = (
-            logits[split:].max()
-            if split < logits.numel()
-            else logits.new_tensor(-1e4)
+            logits[split:].max() if split < logits.numel() else logits.new_tensor(-1e4)
         )
         return [
             weight * float(stop_score if stops[index] else continue_score)
@@ -9701,7 +10158,9 @@ class TwoTowerModel(nn.Module):
         mix = min(weight, 1.0)
         bias = [0.0] * len(paths)
         for rank, (position, _) in enumerate(ranked_unused):
-            bias[position] = mix * (ranked_scores[rank] - float(scores[position].item()))
+            bias[position] = mix * (
+                ranked_scores[rank] - float(scores[position].item())
+            )
         for position, reference in references:
             if reference in used:
                 bias[position] = -20.0 * mix
@@ -9724,17 +10183,13 @@ class TwoTowerModel(nn.Module):
         reference_counts = bound_binder_reference_counts(self.tokenizer, prefix)
         slot_binders = {
             binder
-            for binder, slots in bound_binder_slot_ids(
-                self.tokenizer, prefix
-            ).items()
+            for binder, slots in bound_binder_slot_ids(self.tokenizer, prefix).items()
             if slots and reference_counts.get(binder, 0) > 0
         }
         if not slot_binders:
             return None
         return [
-            -1e9
-            if path.token_ids and int(path.token_ids[0]) in slot_binders
-            else 0.0
+            -1e9 if path.token_ids and int(path.token_ids[0]) in slot_binders else 0.0
             for path in paths
         ]
 
@@ -9760,10 +10215,7 @@ class TwoTowerModel(nn.Module):
         if visible.issubset(prefix):
             return None
         close_id = self.tokenizer.token_to_id.get("]")
-        return [
-            -1e9 if close_id in path.token_ids else 0.0
-            for path in paths
-        ]
+        return [-1e9 if close_id in path.token_ids else 0.0 for path in paths]
 
     def _required_slot_root_completion_path_bias(
         self,
@@ -9786,10 +10238,7 @@ class TwoTowerModel(nn.Module):
         close_id = self.tokenizer.token_to_id.get("]")
         if close_id is None:
             return None
-        return [
-            -1e9 if close_id in path.token_ids else 0.0
-            for path in paths
-        ]
+        return [-1e9 if close_id in path.token_ids else 0.0 for path in paths]
 
     def _select_compiler_path(
         self,
@@ -9807,6 +10256,12 @@ class TwoTowerModel(nn.Module):
         _hidden_rows: dict[tuple[int, ...], torch.Tensor] | None = None,
     ) -> tuple[int, ...]:
         """Rank completion paths using gathered rows of the tied LM head."""
+        from slm_training.models.decode_stats import check_decode_deadline
+
+        # Path ranking can fan out over thousands of legal trie edges. Keep
+        # the evaluator's cooperative deadline live through this phase too;
+        # forest construction is not the only expensive compiler operation.
+        check_decode_deadline()
         if len(paths) == 1 and coverage == "complete":
             if paths[0].token_ids:
                 self._record_exact_bypass(int(paths[0].token_ids[0]))
@@ -9826,6 +10281,7 @@ class TwoTowerModel(nn.Module):
         # configured margin. Anything less falls through to the model below.
         speculative = self._speculative_ranker()
         if speculative is not None and len(paths) > 1:
+            check_decode_deadline()
             choice = speculative.choose(prefix, paths)
             if choice is not None:
                 if stats is not None:
@@ -9856,7 +10312,9 @@ class TwoTowerModel(nn.Module):
                 },
                 separators=(",", ":"),
             ).encode("utf-8")
-            return int.from_bytes(hashlib.sha256(material).digest()[:8], "big") % len(paths)
+            return int.from_bytes(hashlib.sha256(material).digest()[:8], "big") % len(
+                paths
+            )
 
         def record_choice(
             chosen: int,
@@ -9931,9 +10389,7 @@ class TwoTowerModel(nn.Module):
 
         def bound_plan_kinds(kinds: tuple[str, ...]) -> tuple[str, ...]:
             return tuple(
-                "component_bound"
-                if kind in {"component", "component_bound"}
-                else ""
+                "component_bound" if kind in {"component", "component_bound"} else ""
                 for kind in kinds
             )
 
@@ -10142,7 +10598,10 @@ class TwoTowerModel(nn.Module):
             )
             if repeated_slot_bias is not None:
                 scores = scores + repeated_slot_bias
-            if bool(getattr(self.config, "grammar_uniform_at_unforced", False)) and len(scores) > 1:
+            if (
+                bool(getattr(self.config, "grammar_uniform_at_unforced", False))
+                and len(scores) > 1
+            ):
                 chosen = uniform_legal_index()
             elif bool(getattr(self.config, "grammar_sample_decode", False)):
                 temp = float(
@@ -10165,8 +10624,10 @@ class TwoTowerModel(nn.Module):
         with timed_ms(stats, "trie_ms"):
             children: dict[tuple[int, ...], set[int]] = {}
             for path in paths:
+                check_decode_deadline()
                 parent = tuple(prefix)
                 for token_id in path.token_ids:
+                    check_decode_deadline()
                     children.setdefault(parent, set()).add(int(token_id))
                     parent = (*parent, int(token_id))
             edge_scores: dict[tuple[tuple[int, ...], int], float] = {}
@@ -10179,7 +10640,7 @@ class TwoTowerModel(nn.Module):
                 if len(parent) < length and len(child_ids) > 1
             ]
             device_type = str(self.device_name).split(":", 1)[0].lower()
-            auto_states = 4 if device_type == "cpu" else 32
+            auto_states = 16 if device_type == "cpu" else 32
             max_states = int(
                 getattr(self.config, "compiler_prefill_max_states", 0) or auto_states
             )
@@ -10193,12 +10654,10 @@ class TwoTowerModel(nn.Module):
                 parent for parent in parents if parent not in hidden_rows
             ]
             for start in range(0, len(missing_parents), batch_states):
+                check_decode_deadline()
                 chunk = missing_parents[start : start + batch_states]
                 canvases = torch.cat(
-                    [
-                        self._compiler_canvas(list(parent), length)
-                        for parent in chunk
-                    ],
+                    [self._compiler_canvas(list(parent), length) for parent in chunk],
                     dim=0,
                 )
                 k = len(chunk)
@@ -10219,6 +10678,7 @@ class TwoTowerModel(nn.Module):
                 if path.token_ids
             }
             for parent in parents:
+                check_decode_deadline()
                 candidate_ids = tuple(sorted(children[parent]))
                 scores = self._project_candidates(
                     hidden_rows[parent][len(parent)], candidate_ids
@@ -10385,10 +10845,12 @@ class TwoTowerModel(nn.Module):
 
         path_scores: list[float] = []
         for path in paths:
+            check_decode_deadline()
             parent = tuple(prefix)
             score = 0.0
             branches = 0
             for token_id in path.token_ids:
+                check_decode_deadline()
                 score += edge_scores.get((parent, int(token_id)), 0.0)
                 if len(children.get(parent, ())) > 1:
                     branches += 1
@@ -10425,9 +10887,7 @@ class TwoTowerModel(nn.Module):
             ctx, ctx_pad, prefix, paths, path_tensor
         )
         if root_identity_bias is not None:
-            before_root_identity = max(
-                range(len(paths)), key=path_scores.__getitem__
-            )
+            before_root_identity = max(range(len(paths)), key=path_scores.__getitem__)
             path_scores = [
                 score + root_identity_bias[index]
                 for index, score in enumerate(path_scores)
@@ -10457,12 +10917,9 @@ class TwoTowerModel(nn.Module):
             ),
         ):
             if path_bias is not None:
-                before_path_bias = max(
-                    range(len(paths)), key=path_scores.__getitem__
-                )
+                before_path_bias = max(range(len(paths)), key=path_scores.__getitem__)
                 path_scores = [
-                    score + path_bias[index]
-                    for index, score in enumerate(path_scores)
+                    score + path_bias[index] for index, score in enumerate(path_scores)
                 ]
                 if stats is not None:
                     setattr(
@@ -10483,9 +10940,7 @@ class TwoTowerModel(nn.Module):
             prefix, paths, slot_contract, path_scores
         )
         if coverage_close_bias is not None:
-            before_coverage_close = max(
-                range(len(paths)), key=path_scores.__getitem__
-            )
+            before_coverage_close = max(range(len(paths)), key=path_scores.__getitem__)
             path_scores = [
                 score + coverage_close_bias[index]
                 for index, score in enumerate(path_scores)
@@ -10510,7 +10965,10 @@ class TwoTowerModel(nn.Module):
                 float(value)
                 for value in (path_tensor + repeated_slot_bias).detach().cpu().tolist()
             ]
-        if bool(getattr(self.config, "grammar_uniform_at_unforced", False)) and len(paths) > 1:
+        if (
+            bool(getattr(self.config, "grammar_uniform_at_unforced", False))
+            and len(paths) > 1
+        ):
             chosen = uniform_legal_index()
         elif bool(getattr(self.config, "grammar_sample_decode", False)):
             temp = float(getattr(self.config, "grammar_sample_temperature", 0.8) or 0.8)
@@ -10760,6 +11218,10 @@ class TwoTowerModel(nn.Module):
             state.remaining_tokens = length - len(prefix)
             if stats is not None and search_mode != "greedy":
                 stats.compiler_lattice_recurrences += 1
+            forced_closure: tuple[int, ...] = ()
+            verified_solver_decode = bool(
+                getattr(self.config, "verified_solver_decode", False)
+            )
             with timed_ms(stats, "compiler_ms"):
                 forest = build_completion_forest(
                     self.tokenizer,
@@ -10773,16 +11235,21 @@ class TwoTowerModel(nn.Module):
                     remaining_tokens=length - len(prefix),
                     runtime_symbols=self._runtime_symbols_for_row(_plan_row),
                 )
-            forced_closure: tuple[int, ...] = ()
-            verified_solver_decode = bool(
-                getattr(self.config, "verified_solver_decode", False)
-            )
-            if forest.coverage == "complete" and not verified_solver_decode:
-                closure = state.completion_forced_closure(length - len(prefix))
-                if closure is not None:
-                    closure_tokens, _closure_state, closure_coverage = closure
-                    if closure_coverage == "complete" and closure_tokens:
-                        forced_closure = tuple(int(token_id) for token_id in closure_tokens)
+                # The forced-singleton chain walk (completion_forced_closure)
+                # re-invokes the same outgoing()-edge grammar-authority
+                # computation as build_completion_forest, in a loop that can
+                # span the entire remaining canvas. It is the same
+                # compiler-tree search cost as the call it chains from and
+                # must not silently fall into unattributed_ms — see
+                # docs/design/compiler-tree-forced-closure-decode-metering-gap.md.
+                if forest.coverage == "complete" and not verified_solver_decode:
+                    closure = state.completion_forced_closure(length - len(prefix))
+                    if closure is not None:
+                        closure_tokens, _closure_state, closure_coverage = closure
+                        if closure_coverage == "complete" and closure_tokens:
+                            forced_closure = tuple(
+                                int(token_id) for token_id in closure_tokens
+                            )
             if verified_solver_decode:
                 # VSS1-03: certified exact closure prunes the forest to the live
                 # subset before any soft ranking. Disabled by default (guard above),
@@ -11162,6 +11629,9 @@ class TwoTowerModel(nn.Module):
             raise ValueError(
                 "compiler_decode_mode must be off, forced, restricted, or tree"
             )
+        from slm_training.models.decode_stats import check_decode_deadline
+
+        check_decode_deadline()
         bsz = int(ctx.size(0))
         shared_completion_domains = CompletionBatchCache()
 
@@ -11257,38 +11727,55 @@ class TwoTowerModel(nn.Module):
                 active[row] = False
 
         while any(active):
+            check_decode_deadline()
             forests: dict[int, Any] = {}
             selected_now: dict[int, tuple[int, ...]] = {}
             model_rows: list[int] = []
             for row in range(bsz):
+                check_decode_deadline()
                 if not active[row]:
                     continue
                 prefix = prefixes[row]
                 state = states[row]
                 state.remaining_tokens = length - len(prefix)
-                with timed_ms(stats, "compiler_ms"):
-                    forest = build_completion_forest(
-                        self.tokenizer,
-                        prefix,
-                        state=state,
-                        slot_contract=contracts[row],
-                        max_path_tokens=draft_window,
-                        min_content=self._effective_min_content(contracts[row]),
-                        remaining_tokens=length - len(prefix),
-                        runtime_symbols=self._runtime_symbols_for_row(row),
-                    )
                 forced_closure: tuple[int, ...] = ()
                 verified_solver_decode = bool(
                     getattr(self.config, "verified_solver_decode", False)
                 )
-                if forest.coverage == "complete" and not verified_solver_decode:
-                    closure = state.completion_forced_closure(length - len(prefix))
-                    if closure is not None:
-                        closure_tokens, _closure_state, closure_coverage = closure
-                        if closure_coverage == "complete" and closure_tokens:
-                            forced_closure = tuple(
-                                int(token_id) for token_id in closure_tokens
+                with timed_ms(stats, "compiler_ms"):
+                    try:
+                        forest = build_completion_forest(
+                            self.tokenizer,
+                            prefix,
+                            state=state,
+                            slot_contract=contracts[row],
+                            max_path_tokens=draft_window,
+                            min_content=self._effective_min_content(contracts[row]),
+                            remaining_tokens=length - len(prefix),
+                            runtime_symbols=self._runtime_symbols_for_row(row),
+                        )
+                        # The forced-singleton chain walk re-invokes the same
+                        # outgoing()-edge grammar-authority computation as
+                        # build_completion_forest, in a loop that can span the
+                        # entire remaining canvas. It is the same
+                        # compiler-tree search cost as the call it chains from
+                        # and must not silently fall into unattributed_ms —
+                        # see docs/design/compiler-tree-forced-closure-decode-metering-gap.md.
+                        if forest.coverage == "complete" and not verified_solver_decode:
+                            closure = state.completion_forced_closure(
+                                length - len(prefix)
                             )
+                            if closure is not None:
+                                closure_tokens, _closure_state, closure_coverage = (
+                                    closure
+                                )
+                                if closure_coverage == "complete" and closure_tokens:
+                                    forced_closure = tuple(
+                                        int(token_id) for token_id in closure_tokens
+                                    )
+                    finally:
+                        state._collect_completion_stats()
+                check_decode_deadline()
                 if verified_solver_decode:
                     forest = self._solver_prune_forest(forest, prefix)
                 forests[row] = forest
@@ -11328,6 +11815,7 @@ class TwoTowerModel(nn.Module):
                     model_rows.append(row)
 
             for row, selected in selected_now.items():
+                check_decode_deadline()
                 commit(row, forests[row], selected)
             if stats is not None and selected_now:
                 stats.forced_row_tokens_without_forward += sum(
@@ -11405,7 +11893,7 @@ class TwoTowerModel(nn.Module):
                 row: {} for row in ranked_rows
             }
             device_type = str(self.device_name).split(":", 1)[0].lower()
-            auto_states = 4 if device_type == "cpu" else 32
+            auto_states = 16 if device_type == "cpu" else 32
             max_states = int(
                 getattr(self.config, "compiler_prefill_max_states", 0) or auto_states
             )
@@ -11415,6 +11903,7 @@ class TwoTowerModel(nn.Module):
             )
             batch_states = max(1, min(max_states, token_budget // max(1, length)))
             for start in range(0, len(entries), batch_states):
+                check_decode_deadline()
                 chunk = entries[start : start + batch_states]
                 canvases = torch.cat(
                     [
@@ -11443,6 +11932,7 @@ class TwoTowerModel(nn.Module):
                 stats.ambiguous_rows_forwarded += len({row for row, _parent in entries})
 
             for row in ranked_rows:
+                check_decode_deadline()
                 selected = self._select_compiler_path(
                     prefixes[row],
                     forests[row].paths,
@@ -12519,6 +13009,7 @@ class TwoTowerModel(nn.Module):
                 break
 
         assert ids is not None
+        self._fold_state_engine_stats(states)
         return ids
 
     def _resolve_slot_contract(
@@ -12664,17 +13155,18 @@ class TwoTowerModel(nn.Module):
             )
             row_ids[0, 0] = self.tokenizer.bos_id
             unknown = row_ids.eq(self.tokenizer.mask_id)
-            filled = self._constrained_ltr_repair(
-                row_ids,
-                unknown,
-                ctx[i : i + 1],
-                ctx_pad[i : i + 1],
-                slot_contract=(
-                    slot_contracts[i]
-                    if slot_contracts and i < len(slot_contracts)
-                    else None
-                ),
-            )
+            with timed_ms(get_active_stats(), "finalize_ms"):
+                filled = self._constrained_ltr_repair(
+                    row_ids,
+                    unknown,
+                    ctx[i : i + 1],
+                    ctx_pad[i : i + 1],
+                    slot_contract=(
+                        slot_contracts[i]
+                        if slot_contracts and i < len(slot_contracts)
+                        else None
+                    ),
+                )
             repaired.append(self._decode_ids(filled[0]))
         return repaired
 
@@ -12757,6 +13249,35 @@ class TwoTowerModel(nn.Module):
             )
 
     @torch.inference_mode()
+    def prepare_generation(self) -> None:
+        """Initialize immutable constrained-decode authority before requests.
+
+        Evaluation and serving callers may invoke this once outside a request
+        deadline.  It loads the exact OpenUI schema, parser, lexer, static
+        token-to-terminal artifact, and packed-kernel modules without running
+        a model forward or admitting any token.  Decode legality and output
+        remain unchanged; only process-cold harness setup is separated from
+        per-document latency.
+        """
+        if not bool(self.config.grammar_constrained):
+            return
+        from slm_training.dsl.grammar.fastpath import completion_kernel  # noqa: F401
+        from slm_training.dsl.grammar.fastpath.compiler_draft import (
+            _official_schema,
+        )
+        from slm_training.dsl.grammar.fastpath.engine import engine_for_dsl
+        from slm_training.models.grammar import active_dsl
+
+        _official_schema()
+        engine = engine_for_dsl(active_dsl())
+        if engine is None:
+            raise RuntimeError("constrained generation has no incremental grammar engine")
+        engine.reset()
+        # This deterministic lookup is normally lazy on the first token feed.
+        # Resolve it here so no document inherits process-cold artifact I/O.
+        engine._direct_map(self.tokenizer)
+
+    @torch.inference_mode()
     def generate_batch_requests(
         self,
         requests: list[GenerationRequest],
@@ -12803,10 +13324,10 @@ class TwoTowerModel(nn.Module):
     ) -> list[str]:
         """Generate using production-available inputs only (no gold records).
 
-        E35 honesty: when ``honest_slot_contract`` is set, surface
-        ``request.slot_contract`` into the user-visible prompt via
-        ``ensure_prompt_inventory`` (inventory-in-prompt API), then extract
-        inventory from the prompt text — never a silent gold channel.
+        Request slot contracts are caller-owned structured input. Keep them
+        out of model-facing prompt text and pass them directly to constrained
+        decoding; the honesty rule forbids silent *gold* contracts, not an
+        explicit production request field.
         """
         if not requests:
             return []
@@ -12817,14 +13338,11 @@ class TwoTowerModel(nn.Module):
             raise ValueError(
                 "checkpoint predates compact output contracts; request a document"
             )
-        honest = bool(getattr(self.config, "honest_slot_contract", False))
         prompts: list[str] = []
         slot_contracts: list[list[str] | None] = []
         for r in requests:
             prompt = r.prompt
             contract = list(r.slot_contract) if r.slot_contract else None
-            if honest and contract and not _opaque_slot_projection:
-                prompt = ensure_prompt_inventory(prompt, contract)
             prompts.append(prompt)
             slot_contracts.append(contract)
         schemas = [r.schema for r in requests]
@@ -13238,16 +13756,28 @@ class TwoTowerModel(nn.Module):
                 for i in range(len(prompts))
             ]
         if use_contract_decode:
-            if (not honest or opaque_slot_projection) and slot_contracts is not None:
-                self._slot_contracts = [list(c) if c else None for c in slot_contracts]
-            else:
-                self._slot_contracts = []
-                for i, prompt in enumerate(prompts):
-                    gold = golds[i] if golds else None
-                    dm = design_mds[i] if design_mds else None
-                    self._slot_contracts.append(
-                        self._resolve_slot_contract(prompt, gold, dm)
-                    )
+            self._slot_contracts = []
+            for i, prompt in enumerate(prompts):
+                gold = golds[i] if golds else None
+                dm = design_mds[i] if design_mds else None
+                supplied = (
+                    slot_contracts[i]
+                    if slot_contracts is not None and i < len(slot_contracts)
+                    else None
+                )
+                visible = None
+                if honest and not opaque_slot_projection:
+                    try:
+                        visible = self._resolve_slot_contract(prompt, gold, dm)
+                    except ValueError:
+                        # External/legacy marker names are realization data,
+                        # not model identity. An explicit canonical request
+                        # contract remains authoritative; without one, fail.
+                        if supplied is None:
+                            raise
+                self._slot_contracts.append(
+                    list(visible or supplied) if visible or supplied else None
+                )
         else:
             self._slot_contracts = None
         if not use_contract_decode:
@@ -13332,9 +13862,7 @@ class TwoTowerModel(nn.Module):
                     if slot in by_surface
                 )
                 if typed_roles:
-                        prompts[row] = (
-                            f"{prompt.rstrip()}\nSemantic roles: {typed_roles}"
-                        )
+                    prompts[row] = f"{prompt.rstrip()}\nSemantic roles: {typed_roles}"
         if typed_role_scoring > 0.0:
             if role_weight > 0.0 and (
                 not opaque_slot_projection
@@ -13438,9 +13966,7 @@ class TwoTowerModel(nn.Module):
             self._semantic_plan_action_scores = []
             self._semantic_plan_action_counts = []
             self._semantic_plan_role_bindings = []
-            self._semantic_plan_required_root_references = [
-                {} for _prompt in prompts
-            ]
+            self._semantic_plan_required_root_references = [{} for _prompt in prompts]
             self._semantic_plan_outer_groups = []
             self._semantic_plan_root_token_plans = [None for _prompt in prompts]
             for row, prompt in enumerate(prompts):
@@ -13682,17 +14208,18 @@ class TwoTowerModel(nn.Module):
                     if self._slot_contracts and i < len(self._slot_contracts)
                     else None
                 )
-                certified.append(
-                    self._ensure_valid_openui(
-                        text,
-                        ctx[i : i + 1],
-                        ctx_pad[i : i + 1],
-                        length,
-                        attempts=ensure_attempts,
-                        slot_contract=contract,
-                        require_valid=True,
+                with timed_ms(get_active_stats(), "finalize_ms"):
+                    certified.append(
+                        self._ensure_valid_openui(
+                            text,
+                            ctx[i : i + 1],
+                            ctx_pad[i : i + 1],
+                            length,
+                            attempts=ensure_attempts,
+                            slot_contract=contract,
+                            require_valid=True,
+                        )
                     )
-                )
             return certified
 
         # Fall back to per-item MaskGIT for non-LTR-primary path.
@@ -13979,12 +14506,20 @@ class TwoTowerModel(nn.Module):
             unknown[0, :] = False
             if len(seed) < length:
                 ids[0, len(seed) :] = self.tokenizer.pad_id
+            template_slots = 0
             for t in template_mask_positions(seed, self.tokenizer):
                 if 0 < t < length:
                     ids[0, t] = self.tokenizer.mask_id
                     unknown[0, t] = True
+                    template_slots += 1
             ids[0, 0] = self.tokenizer.bos_id
             unknown[0, 0] = False
+            if template_slots:
+                # E20 telemetry: how many holes the skeleton actually left the
+                # denoiser (one fold per generate, never per step).
+                active = get_active_stats()
+                if active is not None:
+                    active.template_slot_positions += template_slots
 
         steps = max(1, self.config.gen_steps)
         remask_ratio = float(getattr(self.config, "remask_ratio", 0.0) or 0.0)
@@ -13995,9 +14530,16 @@ class TwoTowerModel(nn.Module):
         stability_min_persistence = int(
             getattr(self.config, "stability_min_persistence", 0) or 0
         )
-        cluster_mode = (
-            str(getattr(self.config, "unmask_mode", "positions") or "positions").lower()
-            == "cluster"
+        unmask_mode_cfg = str(
+            getattr(self.config, "unmask_mode", "positions") or "positions"
+        ).lower()
+        cluster_mode = unmask_mode_cfg == "cluster"
+        # HX4: span lane (block-budgeted contiguous runs) + frontier lane
+        # (positionwise, prefix-extending first). Default "positions" is
+        # untouched; "cluster" keeps the V7 path.
+        hybrid_mode = unmask_mode_cfg == "hybrid"
+        hybrid_min_run = max(
+            1, int(getattr(self.config, "hybrid_span_min_run", 3) or 3)
         )
         cluster_verify = cluster_mode and bool(
             getattr(self.config, "cluster_verify", False)
@@ -14090,9 +14632,12 @@ class TwoTowerModel(nn.Module):
 
                             engine = engine_for_dsl(active_dsl())
                             if engine is not None:
+                                self._note_admit_canvas(trial)
                                 admitted = bool(
                                     admit_fill(engine, self.tokenizer, trial)
                                 )
+                        except (TimeoutError, KeyboardInterrupt):
+                            raise
                         except Exception:  # noqa: BLE001
                             admitted = False
                     if admitted:
@@ -14100,6 +14645,8 @@ class TwoTowerModel(nn.Module):
                             admitted = not filter_ids_by_stream(
                                 self.tokenizer, trial, [position]
                             )
+                        except (TimeoutError, KeyboardInterrupt):
+                            raise
                         except Exception:  # noqa: BLE001
                             admitted = False
                     if admitted:
@@ -14211,6 +14758,131 @@ class TwoTowerModel(nn.Module):
                 if remaining > 0
                 else []
             )
+            # L-D block-diffusion scheduling: group unmask selection into
+            # fixed blocks. Positionwise commit/admit machinery below is
+            # untouched — this changes WHICH positions a step reveals, and
+            # step commits are jointly validated after the commit loop.
+            if (
+                flat_idx
+                and not cluster_mode
+                and bool(getattr(self.config, "block_diffusion_decode", False))
+            ):
+                from slm_training.models.block_noise import (
+                    BlockNoiseSchedule,
+                    block_positions,
+                    num_blocks,
+                )
+
+                bsize = max(
+                    1, int(getattr(self.config, "block_diffusion_block_size", 4) or 4)
+                )
+                nblocks = num_blocks(length, bsize)
+                schedule = BlockNoiseSchedule(
+                    block_size=bsize, gen_steps=max(1, steps)
+                )
+                block_conf = torch.full((1, nblocks), -1.0, device=conf.device)
+                block_unknown = torch.zeros(
+                    (1, nblocks), dtype=torch.bool, device=conf.device
+                )
+                for blk in range(nblocks):
+                    span = list(block_positions(blk, length, bsize))
+                    span_unknown = [p for p in span if bool(unknown[0, p])]
+                    if not span_unknown:
+                        continue
+                    block_unknown[0, blk] = True
+                    block_conf[0, blk] = float(
+                        sum(float(conf_for_unmask[0, p]) for p in span_unknown)
+                        / len(span_unknown)
+                    )
+                from slm_training.models.block_noise import select_blocks_to_unmask
+
+                chosen = select_blocks_to_unmask(
+                    block_conf,
+                    block_unknown,
+                    step=step,
+                    schedule=schedule,
+                )
+                flat_idx = [
+                    p
+                    for blk in chosen
+                    for p in block_positions(int(blk), length, bsize)
+                    if bool(unknown[0, p])
+                ]
+            # HX4 hybrid scheduling: two lanes over the SAME commit/admit
+            # machinery. Long contiguous holes are budgeted as spans (block
+            # schedule); everything else is revealed positionwise, frontier
+            # first, so the verified prefix grows instead of fragmenting.
+            hybrid_span_set: set[int] = set()
+            if flat_idx and not cluster_mode and hybrid_mode:
+                from slm_training.models.block_noise import (
+                    BlockNoiseSchedule,
+                    select_blocks_to_unmask,
+                )
+
+                unknown_row = [bool(v) for v in unknown[0].tolist()]
+                runs = hybrid_mask_runs(
+                    unknown_row,
+                    [int(v) for v in ids[0].tolist()],
+                    eos_id=int(self.tokenizer.eos_id),
+                    pad_id=int(self.tokenizer.pad_id),
+                )
+                # A run that touches committed context (or the BOS edge) hands
+                # its leading positions to the positionwise lane: that edge is
+                # where left grammar context is richest and where a
+                # block-parallel commit is most likely to be rejected. The
+                # interior remainder stays span-eligible. Without this carve
+                # the two lanes degenerate into a threshold-flipped binary
+                # switch — a fresh all-mask canvas is one run, so everything
+                # is a "span" and the frontier lane never engages.
+                head_n = max(0, int(getattr(self.config, "hybrid_frontier_head", 2)))
+                span_runs: list[list[int]] = []
+                for run in runs:
+                    at_frontier = run[0] == 0 or not bool(unknown_row[run[0] - 1])
+                    head = run[:head_n] if at_frontier else []
+                    tail = run[len(head) :]
+                    if len(tail) >= hybrid_min_run:
+                        span_runs.append(tail)
+                if span_runs:
+                    schedule = BlockNoiseSchedule(
+                        block_size=hybrid_min_run, gen_steps=max(1, steps)
+                    )
+                    run_conf = torch.full(
+                        (1, len(span_runs)), -1.0, device=conf.device
+                    )
+                    run_unknown = torch.ones(
+                        (1, len(span_runs)), dtype=torch.bool, device=conf.device
+                    )
+                    for i, run in enumerate(span_runs):
+                        run_conf[0, i] = float(
+                            sum(float(conf_for_unmask[0, p]) for p in run) / len(run)
+                        )
+                    chosen_runs = select_blocks_to_unmask(
+                        run_conf,
+                        run_unknown,
+                        step=step,
+                        schedule=schedule,
+                        mode=str(
+                            getattr(self.config, "parallel_unmask", "adaptive")
+                            or "adaptive"
+                        ),
+                    )
+                    for flat in chosen_runs:
+                        run = span_runs[int(flat) % len(span_runs)]
+                        hybrid_span_set.update(int(p) for p in run)
+                frontier_candidates = [
+                    t
+                    for t in range(length)
+                    if unknown_row[t] and t not in hybrid_span_set
+                ]
+                frontier_budget = max(
+                    1, math.ceil(remaining / max(1, steps - step))
+                )
+                frontier = hybrid_frontier_order(
+                    frontier_candidates,
+                    unknown_row,
+                    {t: float(conf_for_unmask[0, t]) for t in frontier_candidates},
+                )[:frontier_budget]
+                flat_idx = [*sorted(hybrid_span_set), *frontier]
             # E70: only commit predictions whose argmax has persisted.
             if tracker is not None and stability_min_persistence > 0 and flat_idx:
                 flat_idx = tracker.filter_commit_indices(
@@ -14306,6 +14978,7 @@ class TwoTowerModel(nn.Module):
                     if admit_on and engine is not None and b == 0:
                         trial = ids[0].tolist()
                         trial[t] = candidate
+                        self._note_admit_canvas(trial)
                         try:
                             if not admit_fill(engine, self.tokenizer, trial):
                                 if asap is not None:
@@ -14374,6 +15047,90 @@ class TwoTowerModel(nn.Module):
                                 except Exception:  # noqa: BLE001
                                     pass
                             step_commits.append(commit)
+                # HX4: attribute this step's commits to their lane before the
+                # joint validator runs, so a region-scoped revert knows which
+                # positions belong to a span.
+                newly_span: list[int] = []
+                newly_frontier: list[int] = list(newly)
+                if hybrid_mode and newly:
+                    newly_span = [t for t in newly if t in hybrid_span_set]
+                    newly_frontier = [t for t in newly if t not in hybrid_span_set]
+                    lane_stats = get_active_stats()
+                    if lane_stats is not None:
+                        lane_stats.hybrid_span_commits += len(newly_span)
+                        lane_stats.hybrid_frontier_commits += len(newly_frontier)
+                # L-D joint validation: parallel block commits can jointly
+                # produce a canvas no fill completes even though each commit
+                # passed its own left-prefix admit (100% of admit probes are
+                # in the suffix-blind configuration; see campaign L-B).
+                # Proven-impossible canvases revert this step's commits to
+                # masks. Fail-closed direction only: authority "unknown"
+                # (budget) keeps the commits — parity with today's behavior.
+                if (
+                    len(newly) > 1
+                    and use_grammar
+                    and (
+                        bool(getattr(self.config, "block_diffusion_decode", False))
+                        or hybrid_mode
+                    )
+                ):
+                    from slm_training.dsl.grammar.fastpath.residual_support import (
+                        multi_region_support,
+                    )
+
+                    def _revert(positions: list[int]) -> None:
+                        for t in positions:
+                            ids[0, t] = self.tokenizer.mask_id
+                            unknown[0, t] = True
+
+                    verdict = multi_region_support(
+                        self.tokenizer, ids[0].tolist(), node_budget=2000
+                    )
+                    if (
+                        not verdict.admitted
+                        and verdict.authority == "exact_multi_region"
+                    ):
+                        active_stats = get_active_stats()
+                        if active_stats is not None:
+                            active_stats.block_joint_rejections += 1
+                        if hybrid_mode and newly_span:
+                            # HX4 region-scoped revert: the span lane is the
+                            # wide, suffix-blind bet, so it pays first. The
+                            # frontier lane only pays when the canvas is STILL
+                            # proven impossible without the span.
+                            _revert(newly_span)
+                            if active_stats is not None:
+                                active_stats.hybrid_span_reverts += 1
+                            reverted = set(newly_span)
+                            newly = list(newly_frontier)
+                            step_commits = [
+                                c
+                                for c in step_commits
+                                if int(c.get("t", -1)) not in reverted
+                            ]
+                            second = multi_region_support(
+                                self.tokenizer, ids[0].tolist(), node_budget=2000
+                            )
+                            if (
+                                not second.admitted
+                                and second.authority == "exact_multi_region"
+                            ):
+                                _revert(newly_frontier)
+                                newly = []
+                                step_commits = []
+                            elif second.authority == "unknown":
+                                if active_stats is not None:
+                                    active_stats.block_joint_unknowns += 1
+                        else:
+                            _revert(newly)
+                            newly = []
+                            step_commits = []
+                    elif verdict.authority == "unknown":
+                        # Fail-open by design (budget, not proof) — the commits
+                        # stand; count it so the open share stays visible.
+                        active_stats = get_active_stats()
+                        if active_stats is not None:
+                            active_stats.block_joint_unknowns += 1
             else:
                 # --- V7 cluster path (E71/E72/E73/E74); single-sequence B=1 ---
                 proposals: dict[int, int] = {}
@@ -14605,10 +15362,44 @@ class TwoTowerModel(nn.Module):
                     ids[0, t] = self.tokenizer.mask_id
                     unknown[0, t] = True
                 if rec is not None and remask:
+                    # E61: the stream checker identifies the first hard-error
+                    # tokens.  The suffix from the containing statement is a
+                    # conservative dependency closure: later statements may
+                    # consume this binder, while the verified prefix is frozen.
+                    frontier = set(int(t) for t in remask)
+                    try:
+                        starts = []
+                        for t in remask:
+                            span = self.tokenizer.spanning_statement(
+                                ids[0].tolist(), int(t)
+                            )
+                            starts.append(span[0] if span is not None else int(t))
+                        first = min(starts)
+                        frontier.update(
+                            t
+                            for t in range(first, length)
+                            if int(ids[0, t].item()) != self.tokenizer.pad_id
+                        )
+                    except (AttributeError, TypeError, ValueError):
+                        first = min(int(t) for t in remask)
+                        frontier.update(range(first, length))
+                    protected = sorted(
+                        t
+                        for t in range(1, first)
+                        if not bool(unknown[0, t].item())
+                    )
                     step_remasks.append(
                         {
                             "positions": [int(t) for t in remask],
                             "reason": "grammar_stream",
+                            "conflict_slice": {
+                                "stage": "grammar",
+                                "failing_node_ids": [int(t) for t in remask],
+                                "dependency_frontier": sorted(frontier),
+                                "protected_node_ids": protected,
+                                "completeness_class": "SOUND_OVERAPPROX",
+                                "source_provenance": "maskgit.stream_check",
+                            },
                         }
                     )
             else:
@@ -14668,13 +15459,14 @@ class TwoTowerModel(nn.Module):
 
         if unknown.any():
             if use_grammar:
-                ids = self._constrained_ltr_repair(
-                    ids,
-                    unknown,
-                    ctx,
-                    ctx_pad,
-                    slot_contract=slot_contract,
-                )
+                with timed_ms(get_active_stats(), "finalize_ms"):
+                    ids = self._constrained_ltr_repair(
+                        ids,
+                        unknown,
+                        ctx,
+                        ctx_pad,
+                        slot_contract=slot_contract,
+                    )
             else:
                 logits = self.denoiser(
                     ids, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
@@ -14698,21 +15490,22 @@ class TwoTowerModel(nn.Module):
         if rec is not None:
             rec.end(canvas=ids[0].tolist(), text=text)
         if use_grammar:
-            repaired = self._repair_surface_syntax(text)
-            canonical = self._canonical_valid_openui(repaired)
-            if canonical is not None:
-                return canonical
-            return self._ensure_valid_openui(
-                text,
-                ctx,
-                ctx_pad,
-                length,
-                attempts=max(
-                    1, int(getattr(self.config, "generate_max_attempts", 3) or 3)
-                ),
-                slot_contract=slot_contract,
-                require_valid=True,
-            )
+            with timed_ms(get_active_stats(), "finalize_ms"):
+                repaired = self._repair_surface_syntax(text)
+                canonical = self._canonical_valid_openui(repaired)
+                if canonical is not None:
+                    return canonical
+                return self._ensure_valid_openui(
+                    text,
+                    ctx,
+                    ctx_pad,
+                    length,
+                    attempts=max(
+                        1, int(getattr(self.config, "generate_max_attempts", 3) or 3)
+                    ),
+                    slot_contract=slot_contract,
+                    require_valid=True,
+                )
         return text
 
     @torch.inference_mode()
@@ -14890,7 +15683,13 @@ class TwoTowerModel(nn.Module):
         )
         torch.save(payload, path)
 
-    def load(self, path: Path | str, *, allow_tie_migration: bool = False) -> None:
+    def load(
+        self,
+        path: Path | str,
+        *,
+        allow_tie_migration: bool = False,
+        preserve_tokenizers: bool = False,
+    ) -> None:
         path = Path(path)
         payload = torch.load(path, map_location=self.device_name, weights_only=True)
         if payload.get("kind") != "twotower":
@@ -14906,9 +15705,69 @@ class TwoTowerModel(nn.Module):
             payload.get("config") or {},
             allow_tie_migration=allow_tie_migration,
         )
+        state_dict = payload["state_dict"]
+        if preserve_tokenizers:
+            tok_path = path.with_suffix(".tokenizer.json")
+            source_tokenizer = (
+                load_tokenizer_sidecar(tok_path) if tok_path.exists() else self.tokenizer
+            )
+            if source_tokenizer.token_to_id != self.tokenizer.token_to_id:
+                raise ValueError(
+                    "initialize_from requires an identical output-tokenizer layout"
+                )
+            ctx_tok_path = path.with_name(path.stem + ".context.tokenizer.json")
+            source_context_tokenizer = (
+                load_tokenizer_sidecar(ctx_tok_path)
+                if ctx_tok_path.exists()
+                else source_tokenizer
+            )
+            if isinstance(self.context, ScratchContextEncoder):
+                if not isinstance(source_context_tokenizer, OpenUITokenizer) or not isinstance(
+                    self.context_tokenizer, OpenUITokenizer
+                ):
+                    raise TypeError(
+                        "scratch-context warm starts require OpenUITokenizer sidecars"
+                    )
+                merged_tokens = list(self.context_tokenizer.token_to_id)
+                merged_tokens.extend(
+                    token
+                    for token in source_context_tokenizer.token_to_id
+                    if token not in self.context_tokenizer.token_to_id
+                )
+                merged_token_to_id = {
+                    token: token_id for token_id, token in enumerate(merged_tokens)
+                }
+                merged_context_tokenizer = OpenUITokenizer(
+                    token_to_id=merged_token_to_id,
+                    id_to_token={
+                        token_id: token
+                        for token, token_id in merged_token_to_id.items()
+                    },
+                )
+                source_embedding = state_dict.get("context.encoder.tok.weight")
+                if source_embedding is None:
+                    raise ValueError(
+                        "initialize_from checkpoint is missing context token embeddings"
+                    )
+                from slm_training.dsl.abstract_plan import (
+                    resize_embedding_preserving_rows,
+                )
+
+                resized = resize_embedding_preserving_rows(
+                    self.context.encoder.tok,
+                    merged_context_tokenizer.vocab_size,
+                ).to(self.device_name)
+                remapped_embedding = resized.weight.detach().clone()
+                for token, source_id in source_context_tokenizer.token_to_id.items():
+                    target_id = merged_context_tokenizer.token_to_id[token]
+                    remapped_embedding[target_id].copy_(source_embedding[source_id])
+                self.context.encoder.tok = resized
+                self.context_tokenizer = merged_context_tokenizer
+                state_dict = dict(state_dict)
+                state_dict["context.encoder.tok.weight"] = remapped_embedding
         _load_checkpoint_state(
             self,
-            payload["state_dict"],
+            state_dict,
             allow_missing_auxiliary_heads=True,
         )
         source_config = payload.get("config") or {}
@@ -14933,14 +15792,15 @@ class TwoTowerModel(nn.Module):
         if "gen_len" in payload:
             self.gen_len = int(payload["gen_len"])
         self.output_contract_version = int(payload.get("output_contract_version", 0))
-        tok_path = path.with_suffix(".tokenizer.json")
-        if tok_path.exists():
-            self.tokenizer = load_tokenizer_sidecar(tok_path)
-        ctx_tok_path = path.with_name(path.stem + ".context.tokenizer.json")
-        if ctx_tok_path.exists():
-            self.context_tokenizer = load_tokenizer_sidecar(ctx_tok_path)
-        else:
-            self.context_tokenizer = self.tokenizer
+        if not preserve_tokenizers:
+            tok_path = path.with_suffix(".tokenizer.json")
+            if tok_path.exists():
+                self.tokenizer = load_tokenizer_sidecar(tok_path)
+            ctx_tok_path = path.with_name(path.stem + ".context.tokenizer.json")
+            if ctx_tok_path.exists():
+                self.context_tokenizer = load_tokenizer_sidecar(ctx_tok_path)
+            else:
+                self.context_tokenizer = self.tokenizer
 
     @classmethod
     def from_checkpoint(

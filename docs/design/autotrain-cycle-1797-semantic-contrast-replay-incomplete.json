@@ -1,0 +1,112 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1797",
+  "cycle_index": 1797,
+  "cycle_intent": "retry_measurement",
+  "evidence_class": "fixture",
+  "decision": "inconclusive_shared_runtime_timeout",
+  "scoreable": false,
+  "new_checkpoint_created": false,
+  "upstream_commit": "ecd706f070aebf93193df279f4463d7a44f44e0e",
+  "integration_commit": "3106116c2d1c25bc3353cb4518590350a0902a44",
+  "source_campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1796",
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1797-semantic-contrast",
+      "source_trainable_params": 1608962,
+      "source_checkpoint_sha256": "feb745fc464348d43d61a0777efde1437b262cd59b4b331b768eda64670defb4",
+      "semantic_contrast_loss_weight": 0.25,
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 2,
+        "incomplete_document_n": 1,
+        "decode_timeout_count": 1,
+        "partial_metrics_scoreable": false,
+        "structural_similarity": 0.25,
+        "binder_reference_f1": 0.4,
+        "placeholder_fidelity": 0.3333333333333333,
+        "reward_score": 0.4305,
+        "latency_ms_p50": 1242.83
+      },
+      "held_out": {
+        "n": 5,
+        "completed_document_n": 5,
+        "incomplete_document_n": 0,
+        "decode_timeout_count": 0,
+        "partial_metrics_scoreable": false,
+        "structural_similarity": 0.1681,
+        "binder_reference_f1": 0.45999999999999996,
+        "placeholder_fidelity": 0.4,
+        "reward_score": 0.5166000000000001,
+        "latency_ms_p50": 3799.4
+      }
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1797-control",
+      "source_trainable_params": 1608962,
+      "source_checkpoint_sha256": "8ad84a58c9fdaf9c3a6892eb330f9e1e9df8b7256f19b77cf7ddbba0fff84be0",
+      "semantic_contrast_loss_weight": 0.0,
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 2,
+        "incomplete_document_n": 1,
+        "decode_timeout_count": 1,
+        "partial_metrics_scoreable": false,
+        "structural_similarity": 0.31,
+        "binder_reference_f1": 0.9,
+        "placeholder_fidelity": 0.8333333333333333,
+        "reward_score": 0.905,
+        "latency_ms_p50": 2440.39
+      },
+      "held_out": {
+        "n": 5,
+        "completed_document_n": 5,
+        "incomplete_document_n": 0,
+        "decode_timeout_count": 0,
+        "partial_metrics_scoreable": false,
+        "structural_similarity": 0.25042,
+        "binder_reference_f1": 0.7076190476190476,
+        "placeholder_fidelity": 0.58,
+        "reward_score": 0.835,
+        "latency_ms_p50": 4145.38
+      }
+    }
+  ],
+  "comparison": {
+    "attributable": false,
+    "reason": "both arms timed out on one smoke document",
+    "parameter_delta": 0,
+    "quality_deltas": null
+  },
+  "runtime_diagnosis": {
+    "evaluation_wall_seconds": 36.999996,
+    "effective_decode_timeout_seconds_min": 4.203406672716873,
+    "effective_decode_timeout_seconds_max": 4.703460114164045,
+    "shared_timeout": true,
+    "false_terminal_projection_repaired": true,
+    "repair": "prefer production batch requests over the legacy single-record stats interface while retaining row-tagged DecodeStats"
+  },
+  "agentv": {
+    "bundles_complete": true,
+    "execution_errors": 0,
+    "ship_gates_pass": false
+  },
+  "checkpoint_policy": "reused_c1796_local_checkpoints_no_new_checkpoint_not_promoted_not_ship",
+  "lean": "not_applicable:retry_measurement",
+  "next_priority": "exact_frozen_replay_under_eval_v77",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "3106116c2d1c25bc3353cb4518590350a0902a44",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v76",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v294"
+    },
+    "stamped_at": "2026-08-02T21:45:54.640447+00:00"
+  }
+}

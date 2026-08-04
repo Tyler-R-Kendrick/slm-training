@@ -236,6 +236,18 @@ def _schema(source: str) -> GateResult:
         validate(source)
     except (ParseError, RuntimeError, ValueError) as exc:
         return _fail(Gate.SCHEMA, str(exc).splitlines()[0][:200])
+    # E60: when both authorities are installed, a one-sided accept or
+    # structural AST mismatch is quarantined instead of hidden by fallback.
+    from slm_training.dsl.grammar.backends.openui_hybrid import OpenUIHybridBackend
+
+    differential = OpenUIHybridBackend().differential_validate(source)
+    if differential.disagreement:
+        return _fail(
+            Gate.SCHEMA,
+            "differential parser disagreement: "
+            f"langcore={differential.langcore_ok} lark={differential.lark_ok} "
+            f"ast_agreement={differential.ast_agreement}",
+        )
     return _pass(Gate.SCHEMA)
 
 

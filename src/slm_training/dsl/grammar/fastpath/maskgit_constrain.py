@@ -26,8 +26,15 @@ def admit_fill(
     Cheap OpenUI specialization of CFG ∩ completion emptiness
     (Mündler et al. 2025, arXiv:2508.10111 / constrained-diffusion.ai):
     require the contiguous unmasked left-span to be a valid incomplete
-    InteractiveParser prefix. Tokens after the first hole are ignored
-    (holes can rewrite the suffix).
+    InteractiveParser prefix. Tokens after the first hole are ignored.
+
+    HONESTY: this makes the probe a LEFT-PREFIX OVER-APPROXIMATION, not an
+    exact joint-canvas check. The historical justification ("holes can
+    rewrite the suffix") only holds when remasking is active; the shipped
+    default is ``remask_ratio=0.0``, under which committed suffix tokens are
+    never rewritten — so True here does not certify that fixed tokens after
+    a hole remain jointly completable. Exact multi-region support requires
+    CFG ∩ fixed-region-language emptiness (see residual_support docstring).
     """
     mask_id = tokenizer.mask_id if mask_id is None else mask_id
     # Lexer-native token spellings are typed vocabulary labels (`<SYM_0>`,

@@ -1,0 +1,37 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1753",
+  "cycle_index": 1753,
+  "evidence_class": "fixture",
+  "scoreable": true,
+  "decision": "rejected_quality_regression",
+  "primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1753-control",
+      "status": "completed_gate_rejection",
+      "manifest_sha256": "9f726cade62a93d291a396282deae43de511de382b3cb2f861e99c05c0a4ca70",
+      "trainable_parameters": 1913789,
+      "checkpoint_sha256": "e6936a8c5ce379d30fd2ccd31590e185083a2a16a5fdb11fbd990fca50a25611",
+      "last_loss": 13.743734359741211,
+      "train_wall_seconds": 2.7400730500230566,
+      "smoke": {"n": 3, "parse_rate": 1.0, "binder_reference_f1": 0.8222222222222223, "meaningful_program_rate": 0.0, "structural_similarity": 0.057499999999999996, "component_type_recall": 0.0, "ast_node_f1": 0.0, "ast_edge_f1": 0.0, "latency_ms_p50": 1424.68}
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1753-component-structure",
+      "status": "completed_quality_regression",
+      "manifest_sha256": "29771bda4d4b4f106dca445f1cb15f9f6b6f4d5b7158fdc4e4a6ce36f8a739b1",
+      "trainable_parameters": 1913789,
+      "checkpoint_sha256": "da567ef70533919b92a2b637a6d18e71c5756ce9afec330d8586b28306fb78f9",
+      "last_loss": 18.588932037353516,
+      "train_wall_seconds": 7.345639179984573,
+      "knobs": {"component_plan_loss_weight": 1.0, "component_plan_decode_weight": 1.0, "component_edge_loss_weight": 1.0, "component_edge_decode_weight": 1.0, "compiler_decode_mode": "tree"},
+      "smoke": {"n": 3, "parse_rate": 1.0, "binder_reference_f1": 0.8222222222222223, "meaningful_program_rate": 0.0, "structural_similarity": 0.043333333333333335, "component_type_recall": 0.0, "ast_node_f1": 0.016260162601626015, "ast_edge_f1": 0.0, "latency_ms_p50": 1712.01}
+    }
+  ],
+  "deltas": {"structural_similarity": -0.01416666666666666, "latency_percent": 20.1681, "train_wall_ratio": 2.6808},
+  "ship_gates_pass": false,
+  "lean": {"status": "not_applicable:screening", "promotion_requirement": "fresh proved certificate remains required"},
+  "next_priority": "completion-bounds runtime diagnostic with matched control",
+  "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "fbfb3757dcd30fd9018aa2f0d7d7609fb3edffd9", "code_dirty": false, "components": {"config.levers": "v30", "harness.model_build.eval": "v74", "harness.experiment_feature_flags": "v4", "evals.meaningful_program": "2.13.0", "evals.power_protocol": "v8", "evals.scoring": "v22", "model.twotower": "v288"}, "stamped_at": "2026-08-02T11:08:04.511860+00:00"}
+}

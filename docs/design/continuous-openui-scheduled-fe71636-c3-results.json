@@ -1,0 +1,77 @@
+{
+  "schema": "autotrain_continuous_cycle_results/v1",
+  "loop_id": "continuous-openui-scheduled-fe71636",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-schedu-3d42338c-c3",
+  "cycle_index": 3,
+  "source_commit": "fe716367ffdd1c15353e93338a704b21e3c851c8",
+  "integration_commit": "fb6d460b1a07a55a899b9fc4bf24edb163b9a8ae",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "retry_measurement",
+  "replay_of_campaign": "continuous-loop-20260804-continuous-openui-schedu-3d42338c-c2",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true,
+    "decode_timeout_seconds": 8.0
+  },
+  "arms": {
+    "control": {
+      "id": "c20260804-continuous-openui-schedu-3d42338c-c3-control",
+      "trainable_params": 1608962,
+      "compiler_ms_mean": 23080.2,
+      "decode_timeout_count": 3,
+      "measurement_status": "incomplete"
+    },
+    "canvas": {
+      "id": "c20260804-continuous-openui-schedu-3d42338c-c3-canvas",
+      "trainable_params": 1608962,
+      "compiler_ms_mean": 23127.6,
+      "decode_timeout_count": 3,
+      "measurement_status": "incomplete"
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "measurement_incomplete:c20260804-continuous-openui-schedu-3d42338c-c3-control:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "measurement_incomplete:c20260804-continuous-openui-schedu-3d42338c-c3-canvas:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "harness_failure:c20260804-continuous-openui-schedu-3d42338c-c3-control:experiment_failed",
+      "harness_failure:c20260804-continuous-openui-schedu-3d42338c-c3-canvas:experiment_failed",
+      "fixture_insufficient_n:c20260804-continuous-openui-schedu-3d42338c-c3-control",
+      "fixture_insufficient_n:c20260804-continuous-openui-schedu-3d42338c-c3-canvas",
+      "primary_metric_unavailable",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "infrastructure_note": "The AgentV bootstrap repair (commit 2aedf3bae011718e6439f9a51f4cabf394962528) unblocked the harness itself -- both arms now produce a complete gates.json/scoreboard.json verdict instead of harness_failure/missing_scoreboard. But every one of the 3 smoke records still hit the decode timeout: compiler_ms_mean ~23.1-23.2s/record vs. an 8s-configured (24s combined) chunk budget, even though ~51.7s of eval wall was actually granted this cycle.",
+  "harness_signal": {
+    "family": "model_build",
+    "root_cause": "screening_decode_timeout_seconds=8 needlessly under-used the granted eval wall: _fit_screening_decode_timeout_seconds's own wall-fit ceiling for the nominal 70s arm share is (70-20-8)/3=14.0s, but fitted=min(configured=8, 14)=8 -- the configured value, not the wall, was the binding constraint (clamp_bound=0.0 in thrash_timing.json).",
+    "repair_commit": "3c3028822f358d5a702d9ee9bceb7968be4e662c",
+    "repair_summary": "Raise screening_decode_timeout_seconds 8 -> 12 (policy.v1.json v4 -> v5), staying under the 14.0s wall-fit ceiling and inside the pre-existing test_climb_policy_measurement_helpers [1.0, 12.0] range. Partial mitigation only: 12s/record is still short of the observed ~23.1s/record cost on this host, so a full-completion replay is not expected; documented as a bounded, evidence-based improvement, not a claimed fix of the underlying host-capacity gap.",
+    "regression_tests": [
+      "tests/test_scripts/test_run_autotrain_continuous.py::test_fit_screening_decode_fits_arm_wall",
+      "tests/test_scripts/test_run_autotrain_continuous.py::test_screening_matrix_uses_fitted_decode_and_thrash_steps"
+    ],
+    "version_stamp_component": "harness.autoresearch.experiment_campaign v178 -> v179"
+  },
+  "conclusion": "measurement_incomplete_partial_repair_unresolved_pending_next_cycle",
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "infrastructure",
+      "hypothesis": "Replay the frozen control/canvas arm once more under the raised 12s budget; if still incomplete, the remaining gap (~23s observed vs 12s granted) is a genuine host CPU-throughput/fixture-cost mismatch that needs either a smaller screening_smoke_n, fewer training steps to free more eval wall, or is simply out of reach for wf_smoke_v2 on a CPU-only sandbox within MAX_RUN_MINUTES=3 -- not further blind timeout increases.",
+      "action": "retry_measurement",
+      "experiment_id": "c20260804-continuous-openui-schedu-3d42338c-c3-canvas"
+    }
+  ],
+  "recorded_at": "2026-08-04T20:39:40Z"
+}

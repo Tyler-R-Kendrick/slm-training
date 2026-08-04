@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures
+import functools
 import hashlib
 import json
 import os
@@ -19,6 +20,11 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 CHANGED_TEST_WORKERS: int | None = None
+# Read as a plain repo-relative path rather than importlib.resources so the
+# table resolves in worktrees and uninstalled checkouts too.
+TEST_DURATIONS_PATH = (
+    ROOT / "src" / "slm_training" / "resources" / "ci" / "test_durations_v1.json"
+)
 
 
 # Editing any instruction surface re-certifies the whole parity matrix; the
@@ -480,21 +486,78 @@ def _changed_test_workers() -> int:
     return configured_workers
 
 
-def _shard_test_nodes(nodes: list[str], workers: int) -> list[list[str]]:
-    """Hash-shard each test file independently so slow suites stay balanced."""
-    batches: list[list[str]] = [[] for _ in range(workers)]
+@functools.lru_cache(maxsize=1)
+def _test_file_durations() -> dict[str, float]:
+    """Committed per-file wall-clock weights; empty when absent or unreadable.
+
+    Duration weights only reorder the shard packing, so a missing or corrupt
+    table degrades to the historical count-balanced behaviour instead of
+    failing the run.
+    """
+    try:
+        payload = json.loads(TEST_DURATIONS_PATH.read_text(encoding="utf-8"))
+        durations = payload["durations"]
+    except (OSError, ValueError, KeyError, TypeError):
+        return {}
+    if not isinstance(durations, dict):
+        return {}
+    return {
+        str(path): float(seconds)
+        for path, seconds in durations.items()
+        if isinstance(seconds, (int, float)) and float(seconds) > 0.0
+    }
+
+
+def _shard_test_nodes(
+    nodes: list[str],
+    workers: int,
+    durations: dict[str, float] | None = None,
+) -> list[list[str]]:
+    """Pack test nodes into ``workers`` shards, heaviest node first.
+
+    The objective is **minimising the slowest shard**, because the canonical
+    per-job wall (``MAX_RUN_MINUTES``) is enforced per shard: a packing is
+    good exactly when its worst shard fits.
+
+    A measured file's weight is therefore spread across its own nodes rather
+    than kept whole. Keeping files atomic (the original duration-aware
+    packing) isolates a slow suite but makes the worst shard *equal to the
+    single heaviest file* -- on the committed table that is 429s on one shard
+    versus 143s when the same file's nodes are allowed to spread, i.e. the
+    isolation objective actively defeats the wall the sharding exists to
+    satisfy. Unmeasured files keep one unit of weight per node, so an empty
+    weights table still reduces exactly to count-balanced round-robin.
+
+    Node-level splitting cannot help a file whose weight sits in a single
+    test; those are irreducible by any packing and need their own remedy.
+    """
+    table = _test_file_durations() if durations is None else durations
     by_file: dict[str, list[str]] = {}
     for node in nodes:
         by_file.setdefault(node.split("::", 1)[0], []).append(node)
-    offset = 0
+    units: list[tuple[float, str, int, list[str]]] = []
     for path in sorted(by_file):
         group = sorted(
             by_file[path],
             key=lambda node: hashlib.sha256(node.encode()).digest(),
         )
-        for index, node in enumerate(group):
-            batches[(offset + index) % workers].append(node)
-        offset = (offset + len(group)) % workers
+        weight = table.get(path)
+        # Spread a measured file's cost over its own nodes so LPT can split it
+        # across shards; an unmeasured file falls back to one unit per node.
+        per_node = 1.0 if weight is None else float(weight) / max(1, len(group))
+        units.extend(
+            (per_node, path, index, [node]) for index, node in enumerate(group)
+        )
+    # Longest-processing-time-first: the heaviest node picks the emptiest
+    # shard, which is the standard greedy approximation for minimising the
+    # makespan (worst shard).
+    units.sort(key=lambda unit: (-unit[0], unit[1], unit[2]))
+    batches: list[list[str]] = [[] for _ in range(workers)]
+    loads = [0.0] * workers
+    for weight, _path, _index, group in units:
+        target = min(range(workers), key=lambda shard: (loads[shard], shard))
+        batches[target].extend(group)
+        loads[target] += weight
     return batches
 
 

@@ -1,0 +1,60 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260802",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202608-39ee9cf7-c4",
+  "cycle_index": 4,
+  "source_commit": "b025766",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c4-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.23083333333333333,
+        "latency_ms_p50": 4552.29
+      }
+    },
+    "c4-canvas": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.23083333333333333,
+        "latency_ms_p50": 4107.9
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": true,
+    "stack_layer": false,
+    "stack_action": "positive_no_tracked_delta_skip_stack",
+    "agent_required": "metric win recorded; no code/docs delta -- skip stack PR; continue loop",
+    "reasons": [
+      "efficiency_win:mpr_per_ms:7.322322e-05->8.1144461e-05:gain_fraction=0.10817936:minimum=0.05",
+      "quality_held:parse=1.0 mpr=0.3333333333333333",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.23083333333333333 candidate=0.23083333333333333 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "conclusion": "Retry of the c3 frozen pair (queued retry_measurement): the c3-control decode timeout did not reproduce -- both arms completed with real scoreboards this time, confirming it was a one-run timing artifact rather than a persistent infra regression. The driver classified this cycle POSITIVE (efficiency_win on mpr_per_ms with quality held, structural_similarity unchanged) but explicitly skipped stacking because the cycle carries no tracked code/docs delta (no lever/code change was made between c3 and this retry) -- correctly, since there is nothing new to ship. Fixture ship gates fail as expected at n=3.",
+  "next_priorities": [
+    "component-plan quality hypothesis is next in the ranked matrix (c4-component-plan) per the driver's speculative priorities",
+    "Keep the matched control as the size-matched baseline every cycle",
+    "Separately: dedicated repair pass for the 64 pre-existing tests/test_evals failures on main flagged in cycle 2's doc"
+  ],
+  "recorded_at": "2026-08-02T18:31:00+00:00"
+}

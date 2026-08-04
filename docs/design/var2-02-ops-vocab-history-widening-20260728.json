@@ -1,0 +1,101 @@
+{
+  "schema": "var2_02_ops_vocab_history_widening/v1",
+  "issue": "VAR2-02 (follow-on to SLM-428 / VAR2-01)",
+  "generated_at": "2026-07-28T09:46:48Z",
+  "ops_vocab_fingerprint": "e039ebe5ab2ea6d746bd0757d16f65e2768fb4c0b8f4f37aa42c3e32472ecb93",
+  "corpus_content_fingerprint": "0e3308f39abf7f4c8000b120ef8bcbaef755bc66f88aae8d0e925aec1c9e0ad9",
+  "op_id_sequence": [
+    "conversation.copy_state",
+    "openui.remove_node",
+    "conversation.undo",
+    "conversation.redo",
+    "conversation.checkout_state",
+    "conversation.fork"
+  ],
+  "adequacy_audit": {
+    "targeted_history_ops": [
+      "conversation.checkout_state",
+      "conversation.copy_state",
+      "conversation.redo",
+      "conversation.undo"
+    ],
+    "newly_covered_ops": [
+      "conversation.checkout_state",
+      "conversation.copy_state",
+      "conversation.redo",
+      "conversation.undo"
+    ],
+    "still_missing_targeted_ops": [],
+    "unused_ops_after_widening_union_with_var2_01": [
+      "conversation.ast_edit",
+      "conversation.transaction_commit",
+      "openui.contract_subtree",
+      "openui.duplicate_subtree",
+      "openui.expand_template",
+      "openui.move_node",
+      "openui.reorder_children",
+      "openui.reparent_node",
+      "openui.set_property",
+      "openui.unset_property",
+      "openui.unwrap_node",
+      "openui.wrap_node"
+    ],
+    "unused_ops_before_widening_var2_01_published": [
+      "conversation.ast_edit",
+      "conversation.checkout_state",
+      "conversation.copy_state",
+      "conversation.redo",
+      "conversation.transaction_commit",
+      "conversation.undo",
+      "openui.contract_subtree",
+      "openui.duplicate_subtree",
+      "openui.expand_template",
+      "openui.move_node",
+      "openui.reorder_children",
+      "openui.reparent_node",
+      "openui.set_property",
+      "openui.unset_property",
+      "openui.unwrap_node",
+      "openui.wrap_node"
+    ],
+    "topology_ops_left_out_of_scope": [
+      "openui.contract_subtree",
+      "openui.duplicate_subtree",
+      "openui.expand_template",
+      "openui.move_node",
+      "openui.reorder_children",
+      "openui.reparent_node",
+      "openui.set_property",
+      "openui.unset_property",
+      "openui.unwrap_node",
+      "openui.wrap_node"
+    ],
+    "claim_class": "measurement"
+  },
+  "wiring_probe": {
+    "hypothetical": true,
+    "production_conditioning_changed": false,
+    "op_id_sequence": [
+      "conversation.copy_state",
+      "openui.remove_node",
+      "conversation.undo",
+      "conversation.redo",
+      "conversation.checkout_state",
+      "conversation.fork"
+    ],
+    "representable": true,
+    "off_arm_unchanged": true,
+    "on_arm_adds_history_section": true,
+    "reserved_tokens_all_layered": true,
+    "claim_class": "wiring"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "7bb77c9191dc1410f6b4af10670f81e27ecc43b8",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.var2_02_ops_vocab_history_widening": "v1"
+    },
+    "stamped_at": "2026-07-28T09:46:48.977542+00:00"
+  }
+}

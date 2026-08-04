@@ -1,0 +1,102 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1823",
+  "cycle_index": 1823,
+  "decision": "reject_fresh_seed_null",
+  "evidence_class": "fixture_screening",
+  "formal_status": "not_applicable:screening",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "dc2c25ed97a0d0f6987c2da855b23ce829096187",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v78",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v304"
+    },
+    "stamped_at": "2026-08-03T03:18:55.569172+00:00"
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "steps": 22,
+    "seed": 101823,
+    "batch_size": 2,
+    "sync_checkpoints": false,
+    "suites": [
+      "smoke"
+    ],
+    "suite_n": {
+      "smoke": 3
+    },
+    "honesty_mode": "fixture_screening"
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1823-control",
+      "trainable_params": 1608962,
+      "compiler_decision_token_loss_weight": 0.0,
+      "last_loss": 15.62063980102539,
+      "train_wall_seconds": 3.6248246069881134,
+      "checkpoint_sha256": "56af25606e463a9252e9a0f2d90e8a93ece62512c510a658bf297b6c61d37aef",
+      "suites": {
+        "smoke": {
+          "n": 3,
+          "parse_rate": 1.0,
+          "meaningful_program_rate": 0.0,
+          "structural_similarity": 0.057499999999999996,
+          "component_type_recall": 0.0,
+          "binder_reference_f1": 0.48888888888888893,
+          "placeholder_fidelity": 0.38888888888888884,
+          "reward_score": 0.0,
+          "ast_beq_rate": 0.0,
+          "canonical_beq_rate": 0.0,
+          "latency_ms_p50": 1765.12,
+          "decode_timeout_count": 0
+        }
+      }
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1823-compiler-decision-token",
+      "trainable_params": 1608962,
+      "compiler_decision_token_loss_weight": 1.0,
+      "last_loss": 21.14346694946289,
+      "train_wall_seconds": 7.411677876021713,
+      "checkpoint_sha256": "de76bb723f33d4188d5eef453e5e3769499a1c2c02cc50dce18c0960da2c2e2c",
+      "suites": {
+        "smoke": {
+          "n": 3,
+          "parse_rate": 1.0,
+          "meaningful_program_rate": 0.0,
+          "structural_similarity": 0.057499999999999996,
+          "component_type_recall": 0.0,
+          "binder_reference_f1": 0.48888888888888893,
+          "placeholder_fidelity": 0.38888888888888884,
+          "reward_score": 0.0,
+          "ast_beq_rate": 0.0,
+          "canonical_beq_rate": 0.0,
+          "latency_ms_p50": 1781.41,
+          "decode_timeout_count": 0
+        }
+      }
+    }
+  ],
+  "primary_effect": 0.0,
+  "mpr_effect": 0.0,
+  "component_type_recall_effect": 0.0,
+  "reward_effect": 0.0,
+  "latency_improvement_fraction": -0.009228834300217658,
+  "ship_gates_pass": false,
+  "measurement_complete": true,
+  "next_hypothesis": {
+    "kind": "compiler_decision_margin",
+    "authority": "observed_result",
+    "confidence": 0.85,
+    "statement": "Replace extra full-vocabulary CE with a size-matched stratified legal-candidate margin over every compiler-decision family; keep grammar authority and parameter count unchanged."
+  }
+}

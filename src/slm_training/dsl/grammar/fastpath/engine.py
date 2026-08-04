@@ -131,6 +131,10 @@ class OpenUIIncrementalEngine:
         self._parser = _load_parser(self._resolved)
         self._lexer = _load_lexer(self._resolved)
         self._prefix = ""
+        # True only when ``_prefix`` was accepted by a successful sync; a
+        # rejected sync leaves ``_prefix`` set for diagnostics but must never
+        # satisfy the already-synced fast paths (false-admit hazard).
+        self._synced_ok = True
         # ``None`` means dirty: accepts are recomputed lazily on first query.
         # Lark's ``InteractiveParser.accepts()`` costs milliseconds, so the
         # sync paths mark dirty instead of refreshing eagerly — probe/advance
@@ -146,6 +150,7 @@ class OpenUIIncrementalEngine:
         # entire lex of ``_prefix`` (no trim / EOF cut).  Enables the
         # suffix-lex fast path in ``advance_checked``.
         self._fed_lark: list | None = []
+        self._fed_buffers_shared = False
         self._tail_clean = True
         # Open framed literal as (kind, body), kind in {"str", "num"}.
         # Explicit state: a pending frame determines all future feed
@@ -160,6 +165,7 @@ class OpenUIIncrementalEngine:
         # (a) a hit re-verifies identity and (b) the strong reference keeps
         # the id from being recycled while the entry lives.
         self._direct_map_cache: dict[int, tuple[object, dict | None]] = {}
+        self._direct_map_cache_shared = False
         self._full_syncs = 0
         self._incremental_advances = 0
         self._copy_probes = 0
@@ -193,12 +199,14 @@ class OpenUIIncrementalEngine:
 
     def reset(self) -> None:
         self._prefix = ""
+        self._synced_ok = True
         self._ip = self._parser.parse_interactive()
         if self._control_only:
             self._ip = self._ip_control_copy()
         self._fed_token_count = 0
         self._fed_tokens = []
         self._fed_lark = []
+        self._fed_buffers_shared = False
         self._tail_clean = True
         self._frame = None
         self._tail = ""
@@ -248,10 +256,7 @@ class OpenUIIncrementalEngine:
             self._accepts = frozenset()
             return
         try:
-            stack = tuple(
-                int(state)
-                for state in getattr(self._ip.parser_state, "state_stack", ())
-            )
+            stack = tuple(getattr(self._ip.parser_state, "state_stack", ()))
             key = (self._fingerprint, stack)
             cached = _ACCEPTS_MEMO.get(key)
             if cached is None:
@@ -274,11 +279,13 @@ class OpenUIIncrementalEngine:
         self._full_syncs += 1
         self._frame = None  # text route owns lexical state now
         self._prefix = prefix
+        self._synced_ok = False  # set True only on the success path below
         self._ip = self._parser.parse_interactive()
         if self._control_only:
             self._ip = self._ip_control_copy()
         self._fed_token_count = 0
         self._fed_tokens = []
+        self._fed_buffers_shared = False
         tokens, trimmed = self._lex_tokens_report(prefix)
         if tokens is None:
             self._accepts = frozenset()
@@ -301,6 +308,7 @@ class OpenUIIncrementalEngine:
         except UnexpectedEOF:
             self._fed_tokens = self._token_keys(tokens[: self._fed_token_count])
         self._fed_lark = list(tokens[: self._fed_token_count])
+        self._fed_buffers_shared = False
         self._tail_clean = not trimmed and self._fed_token_count == len(tokens)
         self._tail = (
             prefix[tokens[self._fed_token_count - 1].end_pos :]
@@ -308,6 +316,7 @@ class OpenUIIncrementalEngine:
             else prefix
         )
         self._accepts = None  # dirty — computed lazily on first query
+        self._synced_ok = True
         return True
 
     def _incremental_sync(self, prefix: str) -> bool:
@@ -330,13 +339,19 @@ class OpenUIIncrementalEngine:
             self._fed_tokens = keys[: self._fed_token_count]
         except UnexpectedToken:
             # InteractiveParser is poisoned after a rejected feed — full resync
-            # back to the last good prefix so shared row state stays usable.
-            return self._full_sync(prev_prefix)
+            # back to the last good prefix so shared row state stays usable,
+            # then REPORT THE REJECTION. Returning the resync's own success
+            # here was a false admit: set_prefix("root = = ") on an engine
+            # synced at "root" answered True while a fresh engine says False.
+            self._full_sync(prev_prefix)
+            return False
         except UnexpectedEOF:
             self._fed_tokens = keys[: self._fed_token_count]
         self._prefix = prefix
+        self._synced_ok = True
         self._incremental_advances += 1
         self._fed_lark = list(tokens[: self._fed_token_count])
+        self._fed_buffers_shared = False
         self._tail_clean = not trimmed and self._fed_token_count == len(tokens)
         self._tail = (
             prefix[tokens[self._fed_token_count - 1].end_pos :]
@@ -351,6 +366,7 @@ class OpenUIIncrementalEngine:
         try:
             if (
                 self._ip is not None
+                and self._synced_ok
                 and prefix.startswith(self._prefix)
                 and len(prefix) >= len(self._prefix)
             ):
@@ -474,9 +490,11 @@ class OpenUIIncrementalEngine:
                     tail = suffix_text
             self._fed_tokens = self._token_keys(fed)
             self._fed_lark = fed
+            self._fed_buffers_shared = False
             self._tail_clean = tail_clean
             self._tail = tail
             self._prefix = new_prefix
+            self._synced_ok = True
             self._incremental_advances += 1
             self._accepts = None  # dirty — computed lazily on first query
             return True
@@ -498,11 +516,7 @@ class OpenUIIncrementalEngine:
         depends on it. Whitespace-only tails are behaviorally inert and are
         normalized away so states reached via different spacing intern equal.
         """
-        stack = (
-            tuple(int(s) for s in self._ip.parser_state.state_stack)
-            if self._ip is not None
-            else ()
-        )
+        stack = tuple(self._ip.parser_state.state_stack) if self._ip is not None else ()
         tail = self._pending_tail()
         tail = tail if tail.strip() else ""
         frame = tuple(self._frame) if self._frame is not None else None
@@ -548,6 +562,9 @@ class OpenUIIncrementalEngine:
             if mapping is None:
                 mapping = dsl_direct_terminal_map(tokenizer, self._parser.terminals)
             entry = (tokenizer, mapping)
+            if self._direct_map_cache_shared:
+                self._direct_map_cache = dict(self._direct_map_cache)
+                self._direct_map_cache_shared = False
             self._direct_map_cache[key] = entry
         return entry[1]
 
@@ -585,6 +602,7 @@ class OpenUIIncrementalEngine:
             self._tail,
             self._frame,
         ) = snap
+        self._fed_buffers_shared = False
 
     def _append_piece(self, piece: str) -> None:
         """Append ``piece`` to ``_prefix``, separating against lexeme gluing.
@@ -603,24 +621,43 @@ class OpenUIIncrementalEngine:
         ):
             self._prefix += " "
         self._prefix += piece
+        self._synced_ok = True
 
-    def _feed_terminal_direct(self, term: str, value: str, piece: str) -> bool:
-        """Feed one verified terminal; restore exactly on grammar rejection."""
+    def _feed_terminal_direct(
+        self,
+        term: str,
+        value: str,
+        piece: str,
+        *,
+        restore_on_reject: bool = True,
+    ) -> bool:
+        """Feed one verified terminal; optionally restore on rejection.
+
+        Callers normally retain the transactional default.  A caller that has
+        just forked this engine and will discard the fork on ``False`` may opt
+        out of the redundant second control-state copy.
+        """
         assert self._ip is not None
-        snap = self._snapshot()
+        snap = self._snapshot() if restore_on_reject else None
         token = Token(term, value)
         try:
             self._ip.feed_token(token)
             self._fed_token_count += 1
         except UnexpectedToken:
             # Mirror advance_checked: never leave a poisoned InteractiveParser.
-            self._restore(snap)
+            if snap is not None:
+                self._restore(snap)
             return False
         except UnexpectedEOF:
             # Defensive (mirrors _full_sync): keep the fed token committed.
             self._fed_token_count += 1
         self._append_piece(piece)
         self._tail = ""  # a directly fed piece is consumed fully
+        if self._fed_buffers_shared:
+            self._fed_tokens = list(self._fed_tokens)
+            if self._fed_lark is not None:
+                self._fed_lark = list(self._fed_lark)
+            self._fed_buffers_shared = False
         self._fed_tokens.append((term, value))
         if self._fed_lark is not None:
             self._fed_lark.append(token)
@@ -639,6 +676,8 @@ class OpenUIIncrementalEngine:
         token_id: int,
         *,
         _macro_seen: frozenset[int] = frozenset(),
+        _restore_on_reject: bool = True,
+        _token_kind=None,
     ) -> bool | None:
         """Feed one DSL-native token id directly as its Lark terminal.
 
@@ -648,6 +687,11 @@ class OpenUIIncrementalEngine:
         is unsupported — the caller must use the canonical text path
         (``advance_checked(token_surface_piece(...))``) instead. Anything that
         cannot be verified against the live grammar fails closed.
+
+        ``_restore_on_reject=False`` is reserved for an already-isolated fork
+        that the caller discards when this method returns ``False``.  The
+        default remains fully transactional, and macro expansion always keeps
+        its own all-or-nothing snapshot.
         """
         mapping = self._direct_map(tokenizer)
         if mapping is None:
@@ -657,12 +701,14 @@ class OpenUIIncrementalEngine:
             # BOS/EOS/PAD/MASK are never fed as source terminals (decode
             # drops them; EOS acceptability is queried via next_terminals).
             return True
-        try:
-            kind = tokenizer.kind_of(tid)
-        except (TimeoutError, KeyboardInterrupt):
-            raise
-        except Exception:
-            return None
+        kind = _token_kind
+        if kind is None:
+            try:
+                kind = tokenizer.kind_of(tid)
+            except (TimeoutError, KeyboardInterrupt):
+                raise
+            except Exception:
+                return None
         from slm_training.models.dsl_tokenizer import TokenKind
 
         if kind is TokenKind.SPECIAL:  # <unk> and friends: never fed
@@ -683,10 +729,20 @@ class OpenUIIncrementalEngine:
                     if not body or not _NUMBER_COMPLETE.fullmatch(body):
                         return False  # malformed frame: fail closed
                     self._frame = None
-                    return self._feed_terminal_direct("NUMBER", body, body)
+                    return self._feed_terminal_direct(
+                        "NUMBER",
+                        body,
+                        body,
+                        restore_on_reject=_restore_on_reject,
+                    )
                 self._frame = None
                 quoted = '"' + body + '"'
-                return self._feed_terminal_direct("STRING", quoted, quoted)
+                return self._feed_terminal_direct(
+                    "STRING",
+                    quoted,
+                    quoted,
+                    restore_on_reject=_restore_on_reject,
+                )
             if kind is TokenKind.BYTE:
                 raw = str(tokenizer.id_to_token.get(tid, ""))
                 ch = chr(int(raw[2:], 16)) if raw.startswith("B:") else None
@@ -732,25 +788,45 @@ class OpenUIIncrementalEngine:
                 # a second adjacent NL token is a no-op — never a second
                 # _NL terminal, which the grammar never sees.
                 return True
-            return self._feed_terminal_direct(term, piece, piece)
+            return self._feed_terminal_direct(
+                term,
+                piece,
+                piece,
+                restore_on_reject=_restore_on_reject,
+            )
 
         # --- bools / null ---
         term = mapping["bool"].get(tid) or mapping["null"].get(tid)
         if term is not None:
             text = str(tokenizer.id_to_token.get(tid, ""))
-            return self._feed_terminal_direct(term, text, text)
+            return self._feed_terminal_direct(
+                term,
+                text,
+                text,
+                restore_on_reject=_restore_on_reject,
+            )
 
         # --- fixed string rows ---
         if tid in mapping["str_lit_ids"]:
             body = str(tokenizer.id_to_token.get(tid, ""))[4:]
             quoted = json.dumps(body, ensure_ascii=False)
-            return self._feed_terminal_direct("STRING", quoted, quoted)
+            return self._feed_terminal_direct(
+                "STRING",
+                quoted,
+                quoted,
+                restore_on_reject=_restore_on_reject,
+            )
 
         # --- broad content kinds ---
         term = mapping["kind_terminals"].get(kind)
         if term is not None:
             piece = tokenizer.decode([tid]) or str(tokenizer.id_to_token.get(tid, ""))
-            return self._feed_terminal_direct(term, piece, piece)
+            return self._feed_terminal_direct(
+                term,
+                piece,
+                piece,
+                restore_on_reject=_restore_on_reject,
+            )
 
         # --- macros: feed the verified fixed expansion iteratively ---
         if kind is TokenKind.MACRO:
@@ -828,8 +904,17 @@ class OpenUIIncrementalEngine:
 
         interactive = self._ip
         parser_state = interactive.parser_state
-        parse_conf = _shallow_copy(parser_state.parse_conf)
-        parse_conf.callbacks = {}
+        parse_conf = parser_state.parse_conf
+        share_lexer_thread = not bool(parse_conf.callbacks)
+        if parse_conf.callbacks:
+            # The first semantic -> control fork must detach and suppress tree
+            # callbacks. Descendant control-only forks can share that immutable
+            # callback-free parser configuration; only their mutable stacks and
+            # lexer threads need copying. Exact traversal and reductions are
+            # unchanged, while the completion forest avoids one allocation per
+            # parser fork.
+            parse_conf = _shallow_copy(parse_conf)
+            parse_conf.callbacks = {}
         # Reductions require one stack value per shifted state, but callbacks
         # are disabled, so immutable ``None`` placeholders are sufficient.
         cloned_state = type(parser_state)(
@@ -841,7 +926,11 @@ class OpenUIIncrementalEngine:
         return type(interactive)(
             interactive.parser,
             cloned_state,
-            _shallow_copy(interactive.lexer_thread),
+            (
+                interactive.lexer_thread
+                if share_lexer_thread
+                else _shallow_copy(interactive.lexer_thread)
+            ),
         )
 
     def _copy(self, *, control_only: bool) -> "OpenUIIncrementalEngine":
@@ -860,6 +949,7 @@ class OpenUIIncrementalEngine:
         fork._parser = self._parser
         fork._lexer = self._lexer
         fork._prefix = self._prefix
+        fork._synced_ok = self._synced_ok
         fork._accepts = self._accepts
         fork._ip = (
             self._ip_control_copy()
@@ -869,13 +959,23 @@ class OpenUIIncrementalEngine:
             else None
         )
         fork._fed_token_count = self._fed_token_count
-        fork._fed_tokens = list(self._fed_tokens)
-        fork._fed_lark = list(self._fed_lark) if self._fed_lark is not None else None
+        # Forks are overwhelmingly read-only probes. Share the append-only fed
+        # history and detach it only when either engine commits a terminal;
+        # parser stacks and lexer threads remain independently copied above.
+        fork._fed_tokens = self._fed_tokens
+        fork._fed_lark = self._fed_lark
+        self._fed_buffers_shared = True
+        fork._fed_buffers_shared = True
         fork._tail_clean = self._tail_clean
         fork._tail = self._tail
         fork._frame = self._frame
         fork._fingerprint = self._fingerprint
-        fork._direct_map_cache = dict(self._direct_map_cache)
+        # The verified tokenizer map is read-only on the hot fork path. Share
+        # it until a fork sees a different tokenizer, then detach before the
+        # cache insert. This avoids one dict allocation per parser fork.
+        fork._direct_map_cache = self._direct_map_cache
+        self._direct_map_cache_shared = True
+        fork._direct_map_cache_shared = True
         fork._full_syncs = 0
         fork._incremental_advances = 0
         fork._copy_probes = 0

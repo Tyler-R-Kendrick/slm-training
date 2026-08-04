@@ -1,0 +1,59 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-202607-98199209-c1836",
+  "decision": "retry_after_scratch_cpu_scheduler_repair",
+  "claim_class": "incomplete_fixture_measurement",
+  "formal": {
+    "status": "not_applicable:screening",
+    "reason": "Confirmation is a screening measurement and did not receive promotion authority."
+  },
+  "execution": {
+    "upstream_commit": "9dcfa7e68eab9a1055a6585da759511a3b755bd0",
+    "integration_commit": "adb81e1b90ba827cd1c2145608c0db77d05e723c",
+    "primary_metric": "smoke.structural_similarity",
+    "champion_attempt": "2/2",
+    "research_completed": true,
+    "hypothesis_matrix_completed": true,
+    "arms_started": 2,
+    "train_completed": false,
+    "eval_completed": false,
+    "agentevals_emitted": false,
+    "checkpoint_written": false,
+    "failure_type": "dual_arm_training_timeout",
+    "failure_message": "candidate stopped at step 16/20 and control at step 2/20 before evaluation",
+    "candidate_last_step": 16,
+    "candidate_last_loss": 22.56598472595215,
+    "control_last_step": 2,
+    "control_last_loss": 141.105712890625,
+    "per_arm_wall_seconds": 66.553,
+    "recorded_at": "2026-08-03T05:20:03Z"
+  },
+  "diagnosis": {
+    "model_signal": "none",
+    "root_cause": "Tiny scratch CPU subprocesses configured 11 Torch threads on a 12-CPU shared host that showed 12-14 runnable workers and up to 95 percent user CPU, producing nondeterministic oversubscription inside the fixed arm envelopes.",
+    "repair": "Pin scratch-context train and eval children to one OpenMP and MKL thread symmetrically; keep full-context and GPU execution unchanged.",
+    "fabricated_metrics": false,
+    "gate_weakened": false,
+    "cap_changed": false
+  },
+  "ship": {
+    "eligible": false,
+    "failures": [
+      "both training arms incomplete",
+      "no evaluation executed",
+      "no AgentV evidence",
+      "fresh-seed confirmation pending",
+      "formal preflight not applicable to screening confirmation"
+    ]
+  },
+  "next_hypothesis": "Retry the capacity-aware tail candidate and matched control on a new seed at the smoke screening boundary, even though the numerical cycle occupies a reserved promotion slot.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "adb81e1b90ba827cd1c2145608c0db77d05e723c",
+    "code_dirty": true,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v134"
+    },
+    "stamped_at": "2026-08-03T05:27:00+00:00"
+  }
+}

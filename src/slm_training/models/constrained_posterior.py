@@ -51,7 +51,10 @@ class ExtendabilityChecker:
         True when the leftmost unmasked span can still complete in the grammar.
 
         Mirrors the MaskGIT ``admit_fill`` specialization: tokens after the
-        first hole are ignored because holes may rewrite the suffix.
+        first hole are ignored. HONESTY: that makes this a left-prefix
+        over-approximation — with the shipped default ``remask_ratio=0.0``
+        committed suffix tokens are never rewritten, so True does not certify
+        the joint fixed canvas is completable.
         """
         text = codec.decode(
             production_ids,
@@ -123,8 +126,6 @@ def pick_constrained_production(
         prod_scores = production_logits[position]
         slot_scores = slot_logits[position]
     prod_probs = F.softmax(prod_scores, dim=-1)
-    conf, _ = prod_probs.max(dim=-1)
-    confidence = float(conf.item())
 
     for prod_id in _topk_candidates(prod_scores, top_k):
         if int(prod_id) in {
@@ -147,6 +148,11 @@ def pick_constrained_production(
             int(prod_id),
             int(slot_id),
         ):
+            # Confidence must belong to the SURVIVING candidate, not the
+            # unconstrained argmax: reporting max(softmax) even when that
+            # candidate was rejected let an illegal token's probability rank
+            # the commit order (verified bug; campaign L-D).
+            confidence = float(prod_probs[int(prod_id)].item())
             return int(prod_id), int(slot_id), confidence
     return None
 

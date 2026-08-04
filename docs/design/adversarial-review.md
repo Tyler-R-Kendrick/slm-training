@@ -15,6 +15,16 @@ Rubber-duck / red-team audit of what shipped under `twotower_v1_ship` and the su
 
 ## Findings
 
+### Continuous-loop capacity integrity (2026-08-01)
+
+Autotrain c1729 showed that a nonzero structural auxiliary loss could instantiate
+an extra trainable head only in the treatment while the result matrix omitted
+parameter counts. The measured arm was null, but its advertised size-matched
+attribution was invalid. Structural screening now prebuilds the same declared head
+profile in control and treatment, exports trainable parameters into outcomes, and
+fails through the existing capacity charge if parity is absent. See
+[`autotrain-cycle-1729-binder-topology-capacity-audit.md`](autotrain-cycle-1729-binder-topology-capacity-audit.md).
+
 ### P0 — correctness / honesty
 
 1. **Gates exclude hard suites.** `evaluate_model --suites …` only fail-unders the primary (smoke). Hand-written `gates.json` marks held_out pass at parse ≥ 0.15 (1/5). `rico_held` / adversarial parse **0.0** never fail the ship.
@@ -159,6 +169,32 @@ python -m scripts.evaluate_model \
   --run-id twotower_v1_ship \
   --ship-gates
 ```
+
+## 2026-08-01 — continuous screening primary audit
+
+c1728 completed a size-matched frozen batch-size replay with parse rate and
+binder-reference F1 both equal to 1.0 in both arms, while structural similarity
+fell from 0.3656 to 0.1557. The prior screening primary,
+`smoke.binder_reference_f1`, was therefore saturated and would classify a large
+observed structure regression as a primary tie.
+
+Autotrain climb policy v3 uses `smoke.structural_similarity` with minimum effect
+0.01 as the screening primary, while parse rate and binder-reference F1 are
+explicit non-regression metrics. This does not weaken ship gates: screening is
+still a three-record fixture control, promotion still requires the held-out
+structural primary, multi-seed and Lean/LeverProof evidence, and ship still
+requires all authoritative AgentEvals suites and sample floors. The new screening
+arms activate existing structural loss heads without changing parameter count.
+
+Adversarial checks:
+
+- A syntactically valid but structurally empty output cannot win on parse alone.
+- A structure gain that damages binder correctness cannot enqueue a champion.
+- A larger model cannot win because every new arm is parameter-size matched.
+- Decode legality, deterministic singleton bypass, and fail-closed certification
+  are unchanged; only the learned ranking loss changes.
+- Latency remains a reported cost and can reject an otherwise marginal result,
+  but it is no longer mistaken for the quality objective.
 
 ## 2026-07-18 — measurement-honesty remediation (policy delta)
 

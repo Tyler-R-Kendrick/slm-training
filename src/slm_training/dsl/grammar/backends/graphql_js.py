@@ -11,13 +11,13 @@ small binding surface cannot exercise.
 from __future__ import annotations
 
 import json
-import os
 import shutil
 import subprocess
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+from slm_training.bridge_utils import sanitized_node_env
 from slm_training.dsl.lang_core import ParseError, Program
 from slm_training.dsl.grammar.backends.types import GrammarInfo, REPO_ROOT
 from slm_training.dsl.stream_types import StreamStatus
@@ -43,14 +43,6 @@ def bridge_available() -> bool:
     )
 
 
-def _sanitized_env() -> dict[str, str]:
-    # Session environments may inject NODE_OPTIONS entries (e.g. --import tsx)
-    # that this Node build rejects with exit 9, silently killing the bridge.
-    env = dict(os.environ)
-    env["NODE_OPTIONS"] = ""
-    return env
-
-
 def invoke_bridge(payload: dict[str, Any], timeout_s: float = 30.0) -> dict[str, Any]:
     node = _node_bin()
     if not node:
@@ -66,7 +58,7 @@ def invoke_bridge(payload: dict[str, Any], timeout_s: float = 30.0) -> dict[str,
         text=True,
         timeout=timeout_s,
         check=False,
-        env=_sanitized_env(),
+        env=sanitized_node_env(),
     )
     stdout = (proc.stdout or "").strip()
     if not stdout:

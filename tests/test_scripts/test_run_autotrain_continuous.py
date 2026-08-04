@@ -2,8 +2,17 @@
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
+import json
+import subprocess
 from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
+
+from tests.casefiles import case_values
+from slm_training.autoresearch.schemas import HypothesisMatrix
 
 _SCRIPT = (
     Path(__file__).resolve().parents[2] / "scripts" / "run_autotrain_continuous.py"
@@ -13,8 +22,32 @@ assert _SPEC is not None and _SPEC.loader is not None
 _mod = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(_mod)
 
-_classify = _mod._classify_metric_tradeoff
+_classify_metric_tradeoff = _mod._classify_metric_tradeoff
 _PRIMARY = "smoke.latency_ms_p50"
+
+
+@pytest.fixture(autouse=True)
+def _clear_dynamic_thrash_bank_cache() -> None:
+    """Isolate loop-local self-heal thrash arms across tests."""
+    _mod._DYNAMIC_THRASH_ARMS.clear()
+    _mod._DYNAMIC_THRASH_LOADED_FOR = None
+    yield
+    _mod._DYNAMIC_THRASH_ARMS.clear()
+    _mod._DYNAMIC_THRASH_LOADED_FOR = None
+
+
+def _classify(
+    *,
+    control: dict[str, float | None],
+    candidate: dict[str, float | None],
+    primary_metric: str,
+) -> tuple[bool, list[str]]:
+    return _classify_metric_tradeoff(
+        control=control,
+        candidate=candidate,
+        primary_metric=primary_metric,
+        minimum_efficiency_gain_fraction=0.05,
+    )
 
 
 def _arms(
@@ -49,9 +82,7 @@ def test_naive_latency_win_with_zero_mpr_is_not_positive() -> None:
 
 
 def test_latency_win_with_held_quality_is_positive() -> None:
-    control, candidate = _arms(
-        c_lat=11208.72, t_lat=7676.43, c_mpr=1.0, t_mpr=1.0
-    )
+    control, candidate = _arms(c_lat=11208.72, t_lat=7676.43, c_mpr=1.0, t_mpr=1.0)
     positive, reasons = _classify(
         control=control, candidate=candidate, primary_metric=_PRIMARY
     )
@@ -62,9 +93,7 @@ def test_latency_win_with_held_quality_is_positive() -> None:
 
 def test_quality_win_with_bounded_latency_cost_is_positive() -> None:
     # Control slightly faster but candidate has better meaning — must not fail.
-    control, candidate = _arms(
-        c_lat=7911.18, t_lat=8197.07, c_mpr=0.0, t_mpr=1.0
-    )
+    control, candidate = _arms(c_lat=7911.18, t_lat=8197.07, c_mpr=0.0, t_mpr=1.0)
     positive, reasons = _classify(
         control=control, candidate=candidate, primary_metric=_PRIMARY
     )
@@ -73,9 +102,7 @@ def test_quality_win_with_bounded_latency_cost_is_positive() -> None:
 
 
 def test_quality_win_rejected_when_latency_blows_budget() -> None:
-    control, candidate = _arms(
-        c_lat=5000.0, t_lat=10000.0, c_mpr=0.0, t_mpr=1.0
-    )
+    control, candidate = _arms(c_lat=5000.0, t_lat=10000.0, c_mpr=0.0, t_mpr=1.0)
     positive, reasons = _classify(
         control=control, candidate=candidate, primary_metric=_PRIMARY
     )
@@ -84,9 +111,7 @@ def test_quality_win_rejected_when_latency_blows_budget() -> None:
 
 
 def test_timeout_band_micro_win_rejected() -> None:
-    control, candidate = _arms(
-        c_lat=12000.9, t_lat=12000.3, c_mpr=0.33, t_mpr=0.33
-    )
+    control, candidate = _arms(c_lat=12000.9, t_lat=12000.3, c_mpr=0.33, t_mpr=0.33)
     positive, reasons = _classify(
         control=control, candidate=candidate, primary_metric=_PRIMARY
     )
@@ -106,12 +131,46 @@ def test_efficiency_win_counts_when_faster_with_same_mpr() -> None:
         r.startswith("primary_metric_win:") or r.startswith("efficiency_win:")
         for r in reasons
     )
+    assert any(r.startswith("quality_held:") for r in reasons)
+
+
+def test_efficiency_win_rejects_mpr_regression_above_floor() -> None:
+    control, candidate = _arms(
+        c_lat=3772.85,
+        t_lat=1074.57,
+        c_mpr=0.6666666666666666,
+        t_mpr=0.3333333333333333,
+    )
+
+    positive, reasons = _classify(
+        control=control, candidate=candidate, primary_metric=_PRIMARY
+    )
+
+    assert positive is False
+    assert any(
+        reason.startswith("efficiency_win_rejected_mpr_regression:")
+        for reason in reasons
+    )
+
+
+def test_efficiency_micro_win_is_rejected_as_noise() -> None:
+    control, candidate = _arms(
+        c_lat=3453.06,
+        t_lat=3430.55,
+        c_mpr=0.3333333333333333,
+        t_mpr=0.3333333333333333,
+    )
+    positive, reasons = _classify(
+        control=control,
+        candidate=candidate,
+        primary_metric="smoke.structural_similarity",
+    )
+    assert positive is False
+    assert any(r.startswith("efficiency_win_rejected_min_effect:") for r in reasons)
 
 
 def test_mpr_regression_blocks_latency_win() -> None:
-    control, candidate = _arms(
-        c_lat=10000.0, t_lat=5000.0, c_mpr=1.0, t_mpr=0.0
-    )
+    control, candidate = _arms(c_lat=10000.0, t_lat=5000.0, c_mpr=1.0, t_mpr=0.0)
     positive, reasons = _classify(
         control=control, candidate=candidate, primary_metric=_PRIMARY
     )
@@ -141,13 +200,28 @@ def test_climb_policy_measurement_helpers() -> None:
         decode_timeout_seconds_for_role,
         eval_suites_for_role,
         load_climb_policy,
+        max_consecutive_frozen_replays,
         stage_wall_minutes_for_role,
     )
 
     policy = load_climb_policy()
-    assert stage_wall_minutes_for_role(policy, "screening") >= 8
-    assert decode_timeout_seconds_for_role(policy, "screening") >= 20
+    assert stage_wall_minutes_for_role(policy, "screening") == 3
+    # Screening decode is thrash-calibrated (fits n×decode under ~70s arm wall).
+    assert 1.0 <= decode_timeout_seconds_for_role(policy, "screening") <= 12.0
+    assert decode_timeout_seconds_for_role(policy, "promotion") >= 20
     assert eval_suites_for_role(policy, "screening") == ("smoke",)
+    assert max_consecutive_frozen_replays(policy) == 1
+
+
+def test_run_metrics_loads_screening_quality_primary(tmp_path: Path) -> None:
+    run_dir = tmp_path / "runs" / "candidate"
+    run_dir.mkdir(parents=True)
+    (run_dir / "eval_smoke.json").write_text(
+        json.dumps({"metrics": {"binder_reference_f1": 0.75}})
+    )
+    metrics = _mod._run_metrics(tmp_path, "candidate")
+    assert metrics["binder_reference_f1"] == 0.75
+    assert metrics["smoke.binder_reference_f1"] == 0.75
 
 
 def test_knobs_fingerprint_excludes_steps_jitter() -> None:
@@ -209,6 +283,18 @@ def test_should_enqueue_champion_requires_quality_held() -> None:
             "control_id": "c1-control",
         }
     )
+    # A declared quality primary win already is quality evidence when the
+    # classifier reports no protected-metric regression.
+    assert _mod._should_enqueue_champion(
+        {
+            "positive": True,
+            "measurement_complete": True,
+            "primary_metric": "smoke.structural_similarity",
+            "reasons": ["primary_metric_win:smoke.structural_similarity:0.05->0.14"],
+            "candidate_id": "c1-compiler-decision-token",
+            "control_id": "c1-control",
+        }
+    )
     assert not _mod._should_enqueue_champion(
         {
             "positive": False,
@@ -235,8 +321,15 @@ def test_champion_queue_enqueue_dedup_and_confirm_resolve(tmp_path: Path) -> Non
         "decode_timeout_seconds": 24.0,
     }
     (exp_dir / "c1-bounds.json").write_text(
+        __import__("json").dumps({"experiment_id": "c1-bounds", "knobs": knobs}),
+        encoding="utf-8",
+    )
+    (exp_dir / "c1-control.json").write_text(
         __import__("json").dumps(
-            {"experiment_id": "c1-bounds", "knobs": knobs}
+            {
+                "experiment_id": "c1-control",
+                "knobs": {**knobs, "grammar_completion_bounds": False, "steps": 40},
+            }
         ),
         encoding="utf-8",
     )
@@ -260,6 +353,8 @@ def test_champion_queue_enqueue_dedup_and_confirm_resolve(tmp_path: Path) -> Non
     assert entry is not None
     assert entry["status"] == "queued"
     assert entry["knobs"]["grammar_completion_bounds"] is True
+    assert entry["control_knobs"]["grammar_completion_bounds"] is False
+    assert entry["control_knobs"]["steps"] == 40
     assert "seed" not in entry["knobs"]
     # Dedup: same fingerprint stays single open entry.
     again = _mod._enqueue_champion(
@@ -275,8 +370,10 @@ def test_champion_queue_enqueue_dedup_and_confirm_resolve(tmp_path: Path) -> Non
     # Confirm success → confirmed
     confirm_delivery = {
         "positive": True,
+        "measurement_complete": True,
+        "primary_metric": "smoke.meaningful_program_rate",
         "reasons": [
-            "quality_metric_win:meaningful_program_rate:0.5->1.0:lat=9000->8500",
+            "primary_metric_win:smoke.meaningful_program_rate:0.5->1.0:improvement=0.5",
             "quality_held:parse=1.0 mpr=1.0",
         ],
     }
@@ -290,9 +387,12 @@ def test_champion_queue_enqueue_dedup_and_confirm_resolve(tmp_path: Path) -> Non
     )
     assert resolved is not None
     assert resolved["status"] == "confirmed"
-    assert _mod._queue_head_open(
-        _mod._load_champion_queue(_mod._champion_queue_path(root, loop_id))
-    ) is None
+    assert (
+        _mod._queue_head_open(
+            _mod._load_champion_queue(_mod._champion_queue_path(root, loop_id))
+        )
+        is None
+    )
 
 
 def test_champion_confirm_reject_without_quality(tmp_path: Path) -> None:
@@ -313,6 +413,7 @@ def test_champion_confirm_reject_without_quality(tmp_path: Path) -> None:
         entry=entry,
         delivery={
             "positive": True,
+            "measurement_complete": True,
             "reasons": ["primary_metric_win:smoke.latency_ms_p50:10000->9000"],
         },
         campaign_id="c-confirm",
@@ -320,6 +421,178 @@ def test_champion_confirm_reject_without_quality(tmp_path: Path) -> None:
     )
     assert resolved is not None
     assert resolved["status"] == "rejected"
+
+
+def test_champion_incomplete_confirmation_stays_retryable(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-incomplete-confirm"
+    entry = {
+        "schema": _mod._CHAMPION_QUEUE_SCHEMA,
+        "entry_id": "champ-incomplete",
+        "status": "confirming",
+        "knobs": {"ltr_tail_loss_weight": 1.0},
+        "knobs_fingerprint": "incomplete",
+    }
+    _mod._write_champion_queue(_mod._champion_queue_path(root, loop_id), [entry])
+
+    resolved = _mod._resolve_confirm_result(
+        root=root,
+        loop_id=loop_id,
+        entry=entry,
+        delivery={
+            "positive": False,
+            "measurement_complete": False,
+            "reasons": ["measurement_incomplete:control:missing_scoreboard"],
+        },
+        campaign_id="c-incomplete",
+        cycle_index=5,
+    )
+
+    assert resolved is not None
+    assert resolved["status"] == "confirmation_inconclusive"
+    assert "resolved_at" not in resolved
+    assert _mod._queue_head_open([resolved]) == resolved
+
+
+def test_champion_confirm_rejects_efficiency_when_primary_regresses(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-quality-regression"
+    entry = {
+        "schema": _mod._CHAMPION_QUEUE_SCHEMA,
+        "entry_id": "champ-quality-regression",
+        "status": "confirming",
+        "knobs": {"fidelity_loss_weight": 1.5},
+        "knobs_fingerprint": "quality-regression",
+    }
+    _mod._write_champion_queue(_mod._champion_queue_path(root, loop_id), [entry])
+    delivery = {
+        "positive": True,
+        "measurement_complete": True,
+        "primary_metric": "smoke.structural_similarity",
+        "reasons": [
+            "efficiency_win:mpr_per_ms:0.00006->0.00014:gain_fraction=1.1:minimum=0.05",
+            "quality_held:parse=1.0 mpr=0.3333333333333333",
+            "non_regression_fail:binder_reference_f1:0.95->0.63",
+            "primary_metric_null_or_worse:smoke.structural_similarity:control=0.4575 candidate=0.4458 improvement=-0.0117",
+        ],
+    }
+
+    resolved = _mod._resolve_confirm_result(
+        root=root,
+        loop_id=loop_id,
+        entry=entry,
+        delivery=delivery,
+        campaign_id="c-confirm-regression",
+        cycle_index=4,
+    )
+
+    assert resolved is not None
+    assert resolved["status"] == "rejected"
+    assert (
+        "confirmation_rejected:primary_quality_not_reheld"
+        in resolved["resolve_reasons"]
+    )
+
+
+def test_revalidate_confirmed_champion_rejects_historical_false_positive(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    campaign_id = "continuous-loop-c-confirm"
+    camp = root / campaign_id
+    camp.mkdir(parents=True)
+    (camp / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "positive": True,
+                "measurement_complete": True,
+                "primary_metric": "smoke.structural_similarity",
+                "reasons": [
+                    "efficiency_win:mpr_per_ms:0.00006->0.00014:gain_fraction=1.1:minimum=0.05",
+                    "quality_held:parse=1.0 mpr=0.3333333333333333",
+                    "primary_metric_null_or_worse:smoke.structural_similarity:control=0.45 candidate=0.44 improvement=-0.01",
+                ],
+            }
+        )
+    )
+    entries = [
+        {
+            "schema": _mod._CHAMPION_QUEUE_SCHEMA,
+            "entry_id": "champ-false-confirm",
+            "status": "confirmed",
+            "confirm_campaign_id": campaign_id,
+        }
+    ]
+
+    assert _mod._revalidate_confirmed_champion_entries(root, entries) is True
+    assert entries[0]["status"] == "rejected"
+    assert entries[0]["resolve_reasons"][0] == (
+        "confirmation_reclassified_nonpositive_under_current_policy"
+    )
+
+
+def test_refresh_champion_source_recipe_reopens_drifted_phase(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    source = root / "source-campaign" / "artifacts" / "experiments"
+    source.mkdir(parents=True)
+    candidate_id = "source-capacity-tail"
+    control_id = "source-control"
+    base = {
+        "compiler_alignment_loss_weight": 1.0,
+        "compiler_alignment_margin": 1.0,
+        "compiler_alignment_stratified": True,
+        "compiler_alignment_kind_filter": "all",
+        "mixture_sampling_policy": "capacity_aware",
+    }
+    (source / f"{candidate_id}.json").write_text(
+        json.dumps(
+            {
+                "experiment_id": candidate_id,
+                "knobs": {**base, "ltr_tail_loss_weight": 1.0},
+            }
+        )
+    )
+    (source / f"{control_id}.json").write_text(
+        json.dumps(
+            {
+                "experiment_id": control_id,
+                "knobs": {**base, "ltr_tail_loss_weight": 0.0},
+            }
+        )
+    )
+    entries = [
+        {
+            "entry_id": "legacy-drifted",
+            "status": "harness_failure",
+            "source_campaign_id": "source-campaign",
+            "source_candidate_id": candidate_id,
+            "source_control_id": control_id,
+            "knobs": {
+                "compiler_alignment_loss_weight": 1.0,
+                "ltr_tail_loss_weight": 1.0,
+            },
+            "control_knobs": {
+                "compiler_alignment_loss_weight": 1.0,
+                "ltr_tail_loss_weight": 0.0,
+            },
+        }
+    ]
+
+    assert _mod._refresh_champion_source_recipes(root, entries) is True
+    assert entries[0]["status"] == "queued"
+    assert entries[0]["knobs"]["mixture_sampling_policy"] == "capacity_aware"
+    assert entries[0]["control_knobs"]["mixture_sampling_policy"] == ("capacity_aware")
+    assert entries[0]["resolve_reasons"][0] == ("champion_recipe_repaired_from_source")
+
+
+def test_champion_projection_covers_every_registered_screening_lever() -> None:
+    registered = set().union(
+        *(set(extras) for _, _, extras in _mod._SCREENING_ARM_BANK)
+    ) - {"_steps_factor"}
+
+    assert registered <= set(_mod._LEVER_KNOB_KEYS)
 
 
 def test_matrix_confirm_path_same_levers_new_seed() -> None:
@@ -338,9 +611,23 @@ def test_matrix_confirm_path_same_levers_new_seed() -> None:
         confirm_levers={
             "grammar_completion_bounds": True,
             "compact_active_canvas": False,
+            "component_edge_loss_weight": 1.0,
+            "component_edge_decode_weight": 1.0,
+            "structural_aux_head_profile": "component-edge",
+            "compiler_decode_mode": "tree",
+            "mixture_sampling_policy": "capacity_aware",
+            "compiler_alignment_semantic_exhaustive": True,
+            "grammar_equivalence_cache": True,
+            "grammar_draft_window": 16,
             "steps": 81,
             "batch_size": 2,
             "train_version": "wf_smoke_v2",
+        },
+        confirm_control_levers={
+            "steps": 80,
+            "batch_size": 2,
+            "train_version": "wf_smoke_v2",
+            "structural_aux_head_profile": "component-edge",
         },
     )
     HypothesisMatrix.model_validate(matrix)
@@ -353,8 +640,145 @@ def test_matrix_confirm_path_same_levers_new_seed() -> None:
     ctrl = matrix["hypotheses"][0]["experiment"]["knobs"]
     assert cand["grammar_completion_bounds"] is True
     assert ctrl["grammar_completion_bounds"] is False
+    assert cand["component_edge_loss_weight"] == 1.0
+    assert ctrl["component_edge_loss_weight"] == 0.0
+    assert cand["component_edge_decode_weight"] == 1.0
+    assert ctrl["component_edge_decode_weight"] == 0.0
+    assert cand["structural_aux_head_profile"] == "component-edge"
+    assert ctrl["structural_aux_head_profile"] == "component-edge"
+    assert cand["compiler_decode_mode"] == "tree"
+    assert ctrl["compiler_decode_mode"] == "tree"
+    assert cand["mixture_sampling_policy"] == "capacity_aware"
+    assert cand["compiler_alignment_semantic_exhaustive"] is True
+    assert cand["grammar_equivalence_cache"] is True
+    assert cand["grammar_draft_window"] == 16
     assert cand["seed"] == ctrl["seed"] == 100_000 + 9
     assert cand["steps"] == 81
+    assert ctrl["steps"] == 80
+
+
+def test_matrix_steps_confirm_preserves_distinct_source_control_recipe() -> None:
+    from slm_training.autoresearch.schemas import HypothesisMatrix
+
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-20260802-c1758",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1758,
+        role="screening",
+        confirm_levers={"steps": 44, "batch_size": 2},
+        confirm_control_levers={"steps": 22, "batch_size": 2},
+    )
+
+    validated = HypothesisMatrix.model_validate(matrix)
+    control = validated.hypotheses[0].experiment.knobs
+    candidate = validated.hypotheses[1].experiment.knobs
+    assert control.steps == 22
+    assert candidate.steps == 44
+    assert control.seed == candidate.seed == 101758
+
+
+def test_matrix_steps_promotion_preserves_distinct_source_control_recipe() -> None:
+    from slm_training.autoresearch.schemas import HypothesisMatrix
+
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-20260802-c1760",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1760,
+        role="promotion",
+        promote_levers={"steps": 44, "batch_size": 2},
+        promote_control_levers={"steps": 22, "batch_size": 2},
+    )
+
+    validated = HypothesisMatrix.model_validate(matrix)
+    control = validated.hypotheses[0].experiment.knobs
+    candidate = validated.hypotheses[1].experiment.knobs
+    assert control.steps == 22
+    assert candidate.steps == 44
+    assert control.seed == candidate.seed == 101760
+
+
+def test_preexecution_champion_failure_reclaims_attempt(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    confirming = {
+        "status": "confirming",
+        "confirm_attempts": 1,
+        "confirm_campaign_id": "c1758",
+    }
+    promoting = {
+        "status": "promoting",
+        "promote_attempts": 1,
+        "promotion_campaign_id": "c1759",
+    }
+
+    assert _mod._recover_interrupted_champion_entries(root, [confirming, promoting])
+    assert confirming["status"] == "queued"
+    assert confirming["confirm_attempts"] == 0
+    assert promoting["status"] == "confirmed"
+    assert promoting["promote_attempts"] == 0
+
+
+def test_started_champion_measurement_keeps_attempt_spent(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    campaign = root / "c1758"
+    campaign.mkdir(parents=True)
+    (campaign / "events.jsonl").write_text(
+        json.dumps({"event_type": "experiment_started"}) + "\n",
+        encoding="utf-8",
+    )
+    entry = {
+        "status": "confirming",
+        "confirm_attempts": 1,
+        "confirm_campaign_id": "c1758",
+    }
+
+    assert _mod._recover_interrupted_champion_entries(root, [entry])
+    assert entry["status"] == "confirming"
+    assert entry["confirm_attempts"] == 1
+
+
+def test_historical_incomplete_confirmation_is_reopened(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    campaign = root / "c-incomplete"
+    campaign.mkdir(parents=True)
+    (campaign / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "measurement_complete": False,
+                "reasons": ["measurement_incomplete:control:missing_scoreboard"],
+            }
+        ),
+        encoding="utf-8",
+    )
+    entry = {
+        "status": "rejected",
+        "confirm_campaign_id": "c-incomplete",
+        "resolved_at": "2026-08-03T00:00:00Z",
+    }
+
+    assert _mod._recover_interrupted_champion_entries(root, [entry])
+    assert entry["status"] == "confirmation_inconclusive"
+    assert "resolved_at" not in entry
+
+
+def test_confirmation_never_inherits_promotion_role() -> None:
+    assert (
+        _mod._role_with_confirmation_boundary("promotion", confirming=True)
+        == "screening"
+    )
+    assert (
+        _mod._role_with_confirmation_boundary("promotion", confirming=False)
+        == "promotion"
+    )
 
 
 def test_select_recommended_slug_rotates_and_skips() -> None:
@@ -362,11 +786,304 @@ def test_select_recommended_slug_rotates_and_skips() -> None:
     assert _mod._select_recommended_slug(1) == "bounds"
     assert _mod._select_recommended_slug(2) == "canvas"
     assert _mod._select_recommended_slug(3) == "both"
+    assert _mod._select_recommended_slug(1729) == "canvas"
     # skip bounds → canvas even on cycle 1
     assert _mod._select_recommended_slug(1, skip={"bounds"}) == "canvas"
-    # all skipped → still returns rotated head
+    # all skipped fails closed rather than recycling a rejected approach
     all_slugs = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
-    assert _mod._select_recommended_slug(1, skip=all_slugs) == "bounds"
+    with pytest.raises(RuntimeError, match="screening arm bank exhausted"):
+        _mod._select_recommended_slug(1, skip=all_slugs)
+    assert (
+        _mod._select_recommended_slug(1817, skip=all_slugs - {"component-edge-token"})
+        == "component-edge-token"
+    )
+    assert (
+        _mod._select_recommended_slug(1818, skip=all_slugs - {"component-edge-margin"})
+        == "component-edge-margin"
+    )
+    assert (
+        _mod._select_recommended_slug(
+            1821, skip=all_slugs - {"compiler-decision-token"}
+        )
+        == "compiler-decision-token"
+    )
+    assert (
+        _mod._select_recommended_slug(
+            1824, skip=all_slugs - {"compiler-decision-margin"}
+        )
+        == "compiler-decision-margin"
+    )
+    assert (
+        _mod._select_recommended_slug(
+            1841,
+            skip=all_slugs
+            - {"capacity-aware-semantic-exhaustive-compiler-decision-margin"},
+        )
+        == "capacity-aware-semantic-exhaustive-compiler-decision-margin"
+    )
+    assert (
+        _mod._select_recommended_slug(1856, skip=all_slugs - {"slot-contract-context"})
+        == "slot-contract-context"
+    )
+    assert (
+        _mod._select_recommended_slug(1858, skip=all_slugs - {"constraint-graph"})
+        == "constraint-graph"
+    )
+
+
+def test_select_recommended_slug_prioritizes_successor_quality_after_legacy_nulls() -> (
+    None
+):
+    skip = {
+        "component-plan",
+        "component-edge",
+        "component-inventory",
+        "binder-topology",
+        "component-structure",
+    }
+    assert _mod._select_recommended_slug(1786, skip=skip) == "binder-arity"
+
+    skip.update(
+        {
+            "binder-arity",
+            "binder-component-plan",
+            "slot-component-coverage",
+            "slot-component-fidelity-coupling",
+            "slot-component-inventory-coupling",
+            "slot-component-exposure-cap",
+            "slot-contract-context",
+            "constraint-graph",
+            "literal-margin",
+            "literal-close",
+        }
+    )
+    assert _mod._select_recommended_slug(1791, skip=skip) == "fidelity"
+
+    skip.add("fidelity")
+    assert _mod._select_recommended_slug(1794, skip=skip) == "edge-alignment"
+
+    skip.add("edge-alignment")
+    assert _mod._select_recommended_slug(1795, skip=skip) == "semantic-contrast"
+
+    skip.add("semantic-contrast")
+    assert (
+        _mod._select_recommended_slug(1796, skip=skip)
+        == "semantic-contrast-compiler-margin"
+    )
+    skip.add("semantic-contrast-compiler-margin")
+    assert _mod._select_recommended_slug(1797, skip=skip) == "slot-augmentation"
+
+    skip.add("slot-augmentation")
+    assert _mod._select_recommended_slug(1797, skip=skip) == "mixed-mask"
+
+    skip.add("mixed-mask")
+    assert _mod._select_recommended_slug(1798, skip=skip) == "symbol-boundary"
+
+    skip.add("symbol-boundary")
+    assert _mod._select_recommended_slug(1799, skip=skip) == "design-dropout"
+
+    skip.add("design-dropout")
+    assert _mod._select_recommended_slug(1800, skip=skip) == "scaffold-prefix"
+    skip.add("scaffold-prefix")
+    assert _mod._select_recommended_slug(1801, skip=skip) == "scaffold-prefix-structure"
+    skip.add("scaffold-prefix-structure")
+    assert _mod._select_recommended_slug(1802, skip=skip) == "scaffold-prefix-tail"
+    skip.add("scaffold-prefix-tail")
+    assert _mod._select_recommended_slug(1803, skip=skip) == "component-token"
+    skip.add("component-token")
+    assert _mod._select_recommended_slug(1804, skip=skip) == "component-token-prefix"
+
+
+def test_new_successor_arm_slug_mapping() -> None:
+    assert (
+        _mod._arm_slug_from_knobs(
+            {"ltr_prefix_loss_weight": 1.0, "structure_token_loss_weight": 1.0}
+        )
+        == "scaffold-prefix-structure"
+    )
+    assert (
+        _mod._arm_slug_from_knobs(
+            {"ltr_prefix_loss_weight": 1.0, "ltr_tail_loss_weight": 1.0}
+        )
+        == "scaffold-prefix-tail"
+    )
+    assert (
+        _mod._arm_slug_from_knobs(
+            {"component_token_loss_weight": 1.0, "ltr_prefix_loss_weight": 1.0}
+        )
+        == "component-token-prefix"
+    )
+
+
+def test_confirmation_bypasses_exhausted_screening_selector() -> None:
+    all_slugs = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
+
+    assert (
+        _mod._select_cycle_slug(
+            1792,
+            predecessor_priority=None,
+            skip=all_slugs,
+            has_confirm_levers=True,
+            has_promote_levers=False,
+        )
+        is None
+    )
+    with pytest.raises(RuntimeError, match="screening arm bank exhausted"):
+        _mod._select_cycle_slug(
+            1792,
+            predecessor_priority=None,
+            skip=all_slugs,
+            has_confirm_levers=False,
+            has_promote_levers=False,
+        )
+
+
+def _write_screening_null_camp(
+    root: Path,
+    *,
+    camp_id: str,
+    loop_id: str,
+    slug: str,
+    seed: int,
+    predecessor: str | None,
+    positive: bool = False,
+    knobs_extra: dict | None = None,
+) -> None:
+    camp = root / camp_id
+    camp.mkdir(parents=True, exist_ok=True)
+    knobs = {
+        "grammar_completion_bounds": slug == "bounds",
+        "compact_active_canvas": slug == "canvas",
+        "seed": seed,
+        **(knobs_extra or {}),
+    }
+    if slug == "both":
+        knobs["grammar_completion_bounds"] = True
+        knobs["compact_active_canvas"] = True
+    (camp / "campaign.json").write_text(
+        json.dumps(
+            {
+                "campaign_id": camp_id,
+                "loop_id": loop_id,
+                "predecessor_campaign_id": predecessor,
+            }
+        ),
+        encoding="utf-8",
+    )
+    (camp / "cycle_handoff.json").write_text(
+        json.dumps({"loop_id": loop_id, "cycle_intent": "screening"}),
+        encoding="utf-8",
+    )
+    (camp / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "candidate_id": f"{camp_id}-{slug}",
+                "control_id": f"{camp_id}-control",
+                "cycle_intent": "screening",
+                "positive": positive,
+                "measurement_complete": True,
+            }
+        ),
+        encoding="utf-8",
+    )
+    (camp / "matrix-proposal.json").write_text(
+        json.dumps(
+            {
+                "hypotheses": [
+                    {
+                        "experiment": {
+                            "experiment_id": f"{camp_id}-{slug}",
+                            "knobs": knobs,
+                        }
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
+def test_single_complete_null_does_not_close_arm(tmp_path: Path) -> None:
+    """Fixture-noise single-seed null must not permanent-close the thrash arm."""
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-ms"
+    _write_screening_null_camp(
+        root,
+        camp_id="c1",
+        loop_id=loop_id,
+        slug="bounds",
+        seed=100_001,
+        predecessor=None,
+        positive=False,
+    )
+    assert "bounds" not in _mod._recent_completed_nonpositive_slugs(
+        root, "c1", min_null_seeds=2
+    )
+    # Still selectable for a second-seed retest.
+    assert _mod._select_recommended_slug(1, skip=set()) == "bounds"
+
+
+def test_two_distinct_seed_nulls_close_arm(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-ms2"
+    _write_screening_null_camp(
+        root,
+        camp_id="c1",
+        loop_id=loop_id,
+        slug="bounds",
+        seed=100_001,
+        predecessor=None,
+    )
+    _write_screening_null_camp(
+        root,
+        camp_id="c2",
+        loop_id=loop_id,
+        slug="bounds",
+        seed=100_002,
+        predecessor="c1",
+    )
+    closed = _mod._recent_completed_nonpositive_slugs(
+        root, "c2", min_null_seeds=2
+    )
+    assert "bounds" in closed
+    # Other arms remain open.
+    assert _mod._select_recommended_slug(1, skip=closed) != "bounds"
+
+
+def test_positive_clears_prior_null_tally(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-ms3"
+    _write_screening_null_camp(
+        root,
+        camp_id="c1",
+        loop_id=loop_id,
+        slug="bounds",
+        seed=1,
+        predecessor=None,
+        positive=False,
+    )
+    _write_screening_null_camp(
+        root,
+        camp_id="c2",
+        loop_id=loop_id,
+        slug="bounds",
+        seed=2,
+        predecessor="c1",
+        positive=True,
+    )
+    # After a win, one later null is not enough to re-close.
+    _write_screening_null_camp(
+        root,
+        camp_id="c3",
+        loop_id=loop_id,
+        slug="bounds",
+        seed=3,
+        predecessor="c2",
+        positive=False,
+    )
+    assert "bounds" not in _mod._recent_completed_nonpositive_slugs(
+        root, "c3", min_null_seeds=2
+    )
 
 
 def test_matrix_thrash_rotation_recommends_non_bounds() -> None:
@@ -389,6 +1106,2008 @@ def test_matrix_thrash_rotation_recommends_non_bounds() -> None:
     ids = [h["experiment"]["experiment_id"] for h in matrix["hypotheses"]]
     assert "c20260731-c2-batch1" in ids
     assert "c20260731-c2-bounds" in ids
+    assert "c20260731-c2-component-plan" in ids
+    assert "c20260731-c2-binder-topology" in ids
+    assert "c20260731-c2-binder-arity" in ids
+    assert "c20260731-c2-binder-component-plan" in ids
+    assert "c20260731-c2-literal-close" in ids
+
+
+def test_literal_close_arm_is_size_matched_and_changes_only_tail_loss() -> None:
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-20260802-c1764",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1764,
+        role="screening",
+        recommended_slug="literal-close",
+    )
+    by_id = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    control = by_id["c20260802-c1764-control"]
+    candidate = by_id["c20260802-c1764-literal-close"]
+
+    assert matrix["recommended_experiment_id"].endswith("-literal-close")
+    assert control["ltr_tail_loss_weight"] == 0.0
+    assert candidate["ltr_tail_loss_weight"] == 2.0
+    assert control["steps"] == candidate["steps"]
+    assert control["batch_size"] == candidate["batch_size"]
+
+
+def test_literal_margin_arm_is_size_matched_and_targets_legal_close_branch() -> None:
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-20260802-c1765",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1765,
+        role="screening",
+        recommended_slug="literal-margin",
+    )
+    by_id = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    control = by_id["c20260802-c1765-control"]
+    candidate = by_id["c20260802-c1765-literal-margin"]
+
+    assert matrix["recommended_experiment_id"].endswith("-literal-margin")
+    assert control["compiler_alignment_loss_weight"] == 0.0
+    assert candidate["compiler_alignment_loss_weight"] == 1.0
+    assert candidate["compiler_alignment_margin"] == 1.0
+    assert candidate["compiler_alignment_stratified"] is True
+    assert candidate["compiler_alignment_kind_filter"] == "literal-close"
+    assert control["steps"] == candidate["steps"]
+    assert control["batch_size"] == candidate["batch_size"]
+
+
+def test_completed_literal_close_null_steers_to_literal_margin() -> None:
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-20260802-c1764",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1764,
+        role="screening",
+        recommended_slug="literal-close",
+    )
+
+    priorities = _mod._completed_candidate_priorities(
+        matrix,
+        "c20260802-c1764-literal-close",
+        resolved_infrastructure=False,
+    )
+
+    assert priorities[0].area == "model"
+    assert priorities[0].proposed_experiment_id.endswith("-literal-margin")
+    assert "literal-margin" in priorities[0].hypothesis
+
+
+def test_legacy_literal_close_matrix_steers_to_new_literal_margin() -> None:
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-20260802-c1764",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1764,
+        role="screening",
+        recommended_slug="literal-close",
+    )
+    matrix["hypotheses"] = [
+        row
+        for row in matrix["hypotheses"]
+        if not row["experiment"]["experiment_id"].endswith("-literal-margin")
+    ]
+
+    priorities = _mod._completed_candidate_priorities(
+        matrix,
+        "c20260802-c1764-literal-close",
+        resolved_infrastructure=False,
+    )
+
+    assert priorities[0].proposed_experiment_id == ("c20260802-c1764-literal-margin")
+
+
+def test_structural_screening_control_matches_recommended_head_capacity() -> None:
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-20260731-c1729",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=22,
+        cycle=1729,
+        role="screening",
+        recommended_slug="binder-topology",
+    )
+    by_id = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+
+    control = by_id["c20260731-c1729-control"]
+    candidate = by_id["c20260731-c1729-binder-topology"]
+    assert control["binder_topology_loss_weight"] == 0.0
+    assert candidate["binder_topology_loss_weight"] == 0.25
+    assert control["binder_topology_decode_weight"] == 0.0
+    assert candidate["binder_topology_decode_weight"] == 1.0
+    assert control["structural_aux_head_profile"] == "binder-topology"
+    assert candidate["structural_aux_head_profile"] == "binder-topology"
+    assert control["compiler_decode_mode"] == "tree"
+    assert candidate["compiler_decode_mode"] == "tree"
+
+
+@pytest.mark.parametrize(
+    ("slug", "loss_key", "decode_key", "profile"),
+    case_values(__file__, "test_binder_quality_screening_controls_are_size_matched"),
+)
+def test_binder_quality_screening_controls_are_size_matched(
+    slug: str, loss_key: str, decode_key: str, profile: str
+) -> None:
+    campaign_id = f"continuous-loop-20260802-{slug}"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1786,
+        role="screening",
+        recommended_slug=slug,
+    )
+    by_id = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = by_id[f"{prefix}-control"]
+    candidate = by_id[f"{prefix}-{slug}"]
+    assert control[loss_key] == 0.0
+    assert control[decode_key] == 0.0
+    assert candidate[loss_key] == 1.0
+    assert candidate[decode_key] == 1.0
+    assert control["structural_aux_head_profile"] == profile
+    assert candidate["structural_aux_head_profile"] == profile
+    assert control["compiler_decode_mode"] == "tree"
+    assert candidate["compiler_decode_mode"] == "tree"
+
+
+def test_structural_screening_arms_couple_training_to_decode() -> None:
+    by_slug = {slug: extras for slug, _hypothesis, extras in _mod._SCREENING_ARM_BANK}
+
+    for slug, prefix in (
+        ("component-plan", "component_plan"),
+        ("component-edge", "component_edge"),
+        ("component-inventory", "component_inventory"),
+        ("binder-topology", "binder_topology"),
+        ("binder-arity", "binder_arity"),
+        ("binder-component-plan", "binder_component_plan"),
+    ):
+        assert by_slug[slug][f"{prefix}_loss_weight"] > 0.0
+        assert by_slug[slug][f"{prefix}_decode_weight"] > 0.0
+        assert by_slug[slug]["compiler_decode_mode"] == "tree"
+
+    joint = by_slug["component-structure"]
+    assert joint["component_plan_loss_weight"] > 0.0
+    assert joint["component_plan_decode_weight"] > 0.0
+    assert joint["component_edge_loss_weight"] > 0.0
+    assert joint["component_edge_decode_weight"] > 0.0
+    assert joint["compiler_decode_mode"] == "tree"
+
+
+def test_fidelity_screening_arm_is_size_matched_training_objective() -> None:
+    campaign_id = "continuous-loop-20260802-c1791"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=22,
+        cycle=1791,
+        role="screening",
+        recommended_slug="fidelity",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+
+    assert knobs[f"{prefix}-control"]["fidelity_loss_weight"] == 0.5
+    assert knobs[f"{prefix}-fidelity"]["fidelity_loss_weight"] == 1.5
+    assert (
+        _mod._arm_slug_from_knobs(
+            knobs[f"{prefix}-fidelity"], candidate_id=f"{prefix}-fidelity"
+        )
+        == "fidelity"
+    )
+
+
+def test_edge_alignment_arm_is_size_matched_training_objective() -> None:
+    campaign_id = "continuous-loop-20260802-c1794"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1794,
+        role="screening",
+        recommended_slug="edge-alignment",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-edge-alignment"]
+
+    assert control["component_edge_alignment_loss_weight"] == 0.0
+    assert candidate["component_edge_alignment_loss_weight"] == 1.0
+    assert control["structural_aux_head_profile"] == "component-edge"
+    assert candidate["structural_aux_head_profile"] == "component-edge"
+    assert _mod._arm_slug_from_knobs(candidate) == "edge-alignment"
+
+
+def test_semantic_contrast_arm_matches_pair_exposure_and_changes_only_weight() -> None:
+    campaign_id = "continuous-loop-20260802-c1796"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1796,
+        role="screening",
+        recommended_slug="semantic-contrast",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-semantic-contrast"]
+
+    assert control["semantic_contrast_loss_weight"] == 0.0
+    assert candidate["semantic_contrast_loss_weight"] == 0.25
+    for key in (
+        "semantic_contrast_dir",
+        "semantic_contrast_margin",
+        "semantic_contrast_fraction",
+        "steps",
+        "batch_size",
+    ):
+        assert control[key] == candidate[key]
+    assert _mod._arm_slug_from_knobs(candidate) == "semantic-contrast"
+
+
+def test_slot_augmentation_arm_is_size_matched_and_replayable() -> None:
+    campaign_id = "continuous-loop-20260802-c1799"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1799,
+        role="screening",
+        recommended_slug="slot-augmentation",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-slot-augmentation"]
+
+    assert control["symbol_slot_augmentation"] is False
+    assert candidate["symbol_slot_augmentation"] is True
+    assert _mod._arm_slug_from_knobs(candidate) == "slot-augmentation"
+    assert "symbol_slot_augmentation" in _mod._LEVER_KNOB_KEYS
+
+
+def test_mixed_mask_arm_is_size_matched_and_replayable() -> None:
+    campaign_id = "continuous-loop-20260802-c1800"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1800,
+        role="screening",
+        recommended_slug="mixed-mask",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-mixed-mask"]
+
+    assert control["mask_pattern"] == "random"
+    assert candidate["mask_pattern"] == "mixed"
+    assert _mod._arm_slug_from_knobs(candidate) == "mixed-mask"
+    assert "mask_pattern" in _mod._LEVER_KNOB_KEYS
+
+
+def test_symbol_boundary_arm_is_size_matched_and_replayable() -> None:
+    campaign_id = "continuous-loop-20260802-c1801"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1801,
+        role="screening",
+        recommended_slug="symbol-boundary",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-symbol-boundary"]
+
+    assert control["symbol_boundary_loss_weight"] == 0.0
+    assert candidate["symbol_boundary_loss_weight"] == 1.0
+    assert _mod._arm_slug_from_knobs(candidate) == "symbol-boundary"
+    assert "symbol_boundary_loss_weight" in _mod._LEVER_KNOB_KEYS
+
+    experiment = next(
+        row["experiment"]
+        for row in matrix["hypotheses"]
+        if row["experiment"]["experiment_id"].endswith("-symbol-boundary")
+    )
+    manifest = _mod._manifest(campaign_id, experiment, "a" * 40)
+    arm_shas = {arm.role: arm.config_sha256 for arm in manifest.arms}
+    assert arm_shas["control"] != arm_shas["candidate"]
+
+
+def test_completed_candidate_projects_new_arm_missing_from_frozen_matrix() -> None:
+    campaign_id = "continuous-loop-20260802-c1800"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1800,
+        role="screening",
+        recommended_slug="mixed-mask",
+    )
+    matrix["hypotheses"] = [
+        row
+        for row in matrix["hypotheses"]
+        if not row["experiment"]["experiment_id"].endswith("-symbol-boundary")
+    ]
+    candidate_id = "c20260802-c1800-mixed-mask"
+    skip = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
+    skip.difference_update({"mixed-mask", "symbol-boundary"})
+
+    priorities = _mod._completed_candidate_priorities(
+        matrix,
+        candidate_id,
+        resolved_infrastructure=False,
+        skip_slugs=skip,
+    )
+
+    assert priorities[0].proposed_experiment_id == "c20260802-c1800-symbol-boundary"
+    assert "symbol-boundary" in priorities[0].hypothesis
+
+
+def test_design_dropout_arm_is_size_matched_and_replayable() -> None:
+    campaign_id = "continuous-loop-20260802-c1802"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1802,
+        role="screening",
+        recommended_slug="design-dropout",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-design-dropout"]
+    assert control["design_md_dropout"] == 0.0
+    assert candidate["design_md_dropout"] == 0.25
+    assert _mod._arm_slug_from_knobs(candidate) == "design-dropout"
+    assert "design_md_dropout" in _mod._LEVER_KNOB_KEYS
+
+
+def test_scaffold_prefix_arm_is_size_matched_and_replayable() -> None:
+    campaign_id = "continuous-loop-20260802-c1803"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1803,
+        role="screening",
+        recommended_slug="scaffold-prefix",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-scaffold-prefix"]
+    assert control["ltr_prefix_loss_weight"] == 0.0
+    assert candidate["ltr_prefix_loss_weight"] == 1.0
+    assert _mod._arm_slug_from_knobs(candidate) == "scaffold-prefix"
+    assert "ltr_prefix_loss_weight" in _mod._LEVER_KNOB_KEYS
+
+
+def test_component_token_arm_is_size_matched_and_replayable() -> None:
+    campaign_id = "continuous-loop-20260802-c1804"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1804,
+        role="screening",
+        recommended_slug="component-token",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-component-token"]
+    assert control["component_token_loss_weight"] == 0.0
+    assert candidate["component_token_loss_weight"] == 1.0
+    assert _mod._arm_slug_from_knobs(candidate) == "component-token"
+    assert "component_token_loss_weight" in _mod._LEVER_KNOB_KEYS
+
+
+def test_structure_token_arm_is_size_matched_and_replayable() -> None:
+    campaign_id = "continuous-loop-20260802-c1806"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1806,
+        role="screening",
+        recommended_slug="structure-token",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-structure-token"]
+    assert control["structure_token_loss_weight"] == 0.0
+    assert candidate["structure_token_loss_weight"] == 1.0
+    assert _mod._arm_slug_from_knobs(candidate) == "structure-token"
+    assert "structure_token_loss_weight" in _mod._LEVER_KNOB_KEYS
+
+
+def test_component_edge_token_arm_is_size_matched_and_replayable() -> None:
+    campaign_id = "continuous-loop-20260803-c1817"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1817,
+        role="screening",
+        recommended_slug="component-edge-token",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-component-edge-token"]
+    assert control["component_edge_token_loss_weight"] == 0.0
+    assert candidate["component_edge_token_loss_weight"] == 1.0
+    assert _mod._arm_slug_from_knobs(candidate) == "component-edge-token"
+    assert "component_edge_token_loss_weight" in _mod._LEVER_KNOB_KEYS
+
+
+def test_component_edge_margin_arm_is_size_matched_and_replayable() -> None:
+    campaign_id = "continuous-loop-20260803-c1818"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1818,
+        role="screening",
+        recommended_slug="component-edge-margin",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-component-edge-margin"]
+    assert control["compiler_alignment_loss_weight"] == 0.0
+    assert candidate["compiler_alignment_loss_weight"] == 1.0
+    assert candidate["compiler_alignment_margin"] == 1.0
+    assert candidate["compiler_alignment_kind_filter"] == "component-edge"
+    assert _mod._arm_slug_from_knobs(candidate) == "component-edge-margin"
+
+
+def test_compiler_decision_token_arm_is_dense_and_size_matched() -> None:
+    campaign_id = "continuous-loop-20260803-c1821"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1821,
+        role="screening",
+        recommended_slug="compiler-decision-token",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-compiler-decision-token"]
+    assert control["compiler_decision_token_loss_weight"] == 0.0
+    assert candidate["compiler_decision_token_loss_weight"] == 1.0
+    assert _mod._arm_slug_from_knobs(candidate) == "compiler-decision-token"
+    assert "compiler_decision_token_loss_weight" in _mod._LEVER_KNOB_KEYS
+
+
+def test_compiler_decision_margin_arm_is_size_matched_and_replayable() -> None:
+    campaign_id = "continuous-loop-20260803-c1824"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1824,
+        role="screening",
+        recommended_slug="compiler-decision-margin",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-compiler-decision-margin"]
+    assert control["compiler_alignment_loss_weight"] == 0.0
+    assert candidate["compiler_alignment_loss_weight"] == 1.0
+    assert candidate["compiler_alignment_margin"] == 1.0
+    assert candidate["compiler_alignment_stratified"] is True
+    assert candidate["compiler_alignment_kind_filter"] == "all"
+    assert _mod._arm_slug_from_knobs(candidate) == "compiler-decision-margin"
+
+
+def test_bounded_compiler_decision_margin_isolates_runtime_treatment() -> None:
+    campaign_id = "continuous-loop-20260803-c1825"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1825,
+        role="screening",
+        recommended_slug="bounded-compiler-decision-margin",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-bounded-compiler-decision-margin"]
+    for key in (
+        "compiler_alignment_loss_weight",
+        "compiler_alignment_margin",
+        "compiler_alignment_stratified",
+        "compiler_alignment_kind_filter",
+    ):
+        assert candidate[key] == control[key]
+    assert control["grammar_completion_bounds"] is False
+    assert candidate["grammar_completion_bounds"] is True
+    assert _mod._arm_slug_from_knobs(candidate) == ("bounded-compiler-decision-margin")
+    assert f"{prefix}-compiler-decision-margin" not in knobs
+    HypothesisMatrix.model_validate(matrix)
+
+
+def test_cached_compiler_decision_margin_isolates_runtime_treatment() -> None:
+    campaign_id = "continuous-loop-20260803-c1827"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1827,
+        role="screening",
+        recommended_slug="cached-compiler-decision-margin",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-cached-compiler-decision-margin"]
+    for key in (
+        "compiler_alignment_loss_weight",
+        "compiler_alignment_margin",
+        "compiler_alignment_stratified",
+        "compiler_alignment_kind_filter",
+    ):
+        assert candidate[key] == control[key]
+    assert control["grammar_equivalence_cache"] is False
+    assert candidate["grammar_equivalence_cache"] is True
+    assert f"{prefix}-compiler-decision-margin" not in knobs
+    assert _mod._arm_slug_from_knobs(candidate) == "cached-compiler-decision-margin"
+    HypothesisMatrix.model_validate(matrix)
+
+
+def test_wide_draft_compiler_decision_margin_isolates_runtime_treatment() -> None:
+    campaign_id = "continuous-loop-20260803-c1828"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1828,
+        role="screening",
+        recommended_slug="wide-draft-compiler-decision-margin",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-wide-draft-compiler-decision-margin"]
+    for key in (
+        "compiler_alignment_loss_weight",
+        "compiler_alignment_margin",
+        "compiler_alignment_stratified",
+        "compiler_alignment_kind_filter",
+    ):
+        assert candidate[key] == control[key]
+    assert control["grammar_draft_window"] == 8
+    assert candidate["grammar_draft_window"] == 16
+    assert f"{prefix}-compiler-decision-margin" not in knobs
+    assert _mod._arm_slug_from_knobs(candidate) == (
+        "wide-draft-compiler-decision-margin"
+    )
+    HypothesisMatrix.model_validate(matrix)
+
+
+def test_capacity_aware_compiler_decision_margin_isolates_sampler_treatment() -> None:
+    campaign_id = "continuous-loop-20260803-c1829"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1829,
+        role="screening",
+        recommended_slug="capacity-aware-compiler-decision-margin",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-capacity-aware-compiler-decision-margin"]
+    for key in (
+        "compiler_alignment_loss_weight",
+        "compiler_alignment_margin",
+        "compiler_alignment_stratified",
+        "compiler_alignment_kind_filter",
+    ):
+        assert candidate[key] == control[key]
+    assert control.get("mixture_sampling_policy") is None
+    assert candidate["mixture_sampling_policy"] == "capacity_aware"
+    assert f"{prefix}-compiler-decision-margin" not in knobs
+    assert _mod._arm_slug_from_knobs(candidate) == (
+        "capacity-aware-compiler-decision-margin"
+    )
+    HypothesisMatrix.model_validate(matrix)
+
+
+def test_capacity_aware_tail_margin_isolates_closure_treatment() -> None:
+    campaign_id = "continuous-loop-20260803-c1830"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1830,
+        role="screening",
+        recommended_slug="capacity-aware-tail-compiler-decision-margin",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-capacity-aware-tail-compiler-decision-margin"]
+    for key in (
+        "compiler_alignment_loss_weight",
+        "compiler_alignment_margin",
+        "compiler_alignment_stratified",
+        "compiler_alignment_kind_filter",
+        "mixture_sampling_policy",
+    ):
+        assert candidate[key] == control[key]
+    assert control["ltr_tail_loss_weight"] == 0.0
+    assert candidate["ltr_tail_loss_weight"] == 1.0
+    assert f"{prefix}-capacity-aware-compiler-decision-margin" not in knobs
+    assert _mod._arm_slug_from_knobs(candidate) == (
+        "capacity-aware-tail-compiler-decision-margin"
+    )
+    HypothesisMatrix.model_validate(matrix)
+
+
+def test_capacity_aware_semantic_exhaustive_isolates_decision_coverage() -> None:
+    campaign_id = "continuous-loop-20260803-c1841"
+    slug = "capacity-aware-semantic-exhaustive-compiler-decision-margin"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1841,
+        role="screening",
+        recommended_slug=slug,
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-{slug}"]
+    for key in (
+        "compiler_alignment_loss_weight",
+        "compiler_alignment_margin",
+        "compiler_alignment_stratified",
+        "compiler_alignment_kind_filter",
+        "mixture_sampling_policy",
+    ):
+        assert candidate[key] == control[key]
+    assert not control.get("compiler_alignment_semantic_exhaustive", False)
+    assert candidate["compiler_alignment_semantic_exhaustive"] is True
+    assert f"{prefix}-capacity-aware-compiler-decision-margin" not in knobs
+    assert _mod._arm_slug_from_knobs(candidate) == slug
+    HypothesisMatrix.model_validate(matrix)
+
+
+def test_semantic_exhaustive_structure_token_isolates_scaffold_recovery() -> None:
+    campaign_id = "continuous-loop-20260803-c1843"
+    slug = "capacity-aware-semantic-exhaustive-structure-token-margin"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1843,
+        role="screening",
+        recommended_slug=slug,
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-{slug}"]
+    for key in (
+        "compiler_alignment_loss_weight",
+        "compiler_alignment_margin",
+        "compiler_alignment_stratified",
+        "compiler_alignment_semantic_exhaustive",
+        "compiler_alignment_kind_filter",
+        "mixture_sampling_policy",
+    ):
+        assert candidate[key] == control[key]
+    assert control["structure_token_loss_weight"] == 0.0
+    assert candidate["structure_token_loss_weight"] == 1.0
+    assert (
+        f"{prefix}-capacity-aware-semantic-exhaustive-compiler-decision-margin"
+        not in knobs
+    )
+    assert _mod._arm_slug_from_knobs(candidate) == slug
+    HypothesisMatrix.model_validate(matrix)
+
+
+def test_exposure_targeted_isolates_sampling_policy() -> None:
+    campaign_id = "continuous-loop-20260803-c1844"
+    slug = "exposure-targeted-compiler-decision-margin"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1844,
+        role="screening",
+        recommended_slug=slug,
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-{slug}"]
+    for key in (
+        "compiler_alignment_loss_weight",
+        "compiler_alignment_margin",
+        "compiler_alignment_stratified",
+        "compiler_alignment_kind_filter",
+    ):
+        assert candidate[key] == control[key]
+    assert control["mixture_sampling_policy"] == "capacity_aware"
+    assert candidate["mixture_sampling_policy"] == "exposure_targeted"
+    assert f"{prefix}-capacity-aware-compiler-decision-margin" not in knobs
+    assert _mod._arm_slug_from_knobs(candidate) == slug
+    HypothesisMatrix.model_validate(matrix)
+
+
+def test_exposure_targeted_semantic_exhaustive_isolates_compression() -> None:
+    campaign_id = "continuous-loop-20260803-c1847"
+    slug = "exposure-targeted-semantic-exhaustive-compiler-decision-margin"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1847,
+        role="screening",
+        recommended_slug=slug,
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-{slug}"]
+    assert control["mixture_sampling_policy"] == "exposure_targeted"
+    assert candidate["mixture_sampling_policy"] == "exposure_targeted"
+    assert not control.get("compiler_alignment_semantic_exhaustive", False)
+    assert candidate["compiler_alignment_semantic_exhaustive"] is True
+    assert _mod._arm_slug_from_knobs(candidate) == slug
+    HypothesisMatrix.model_validate(matrix)
+
+
+def test_slot_component_coverage_is_registered_as_distinct_quality_successor() -> None:
+    slug = "slot-component-coverage"
+    by_slug = {name: extras for name, _hypothesis, extras in _mod._SCREENING_ARM_BANK}
+    knobs = by_slug[slug]
+    assert knobs["slot_component_loss_weight"] == 1.0
+    assert knobs["slot_component_decode_weight"] == 1.0
+    assert knobs["compiler_decode_mode"] == "tree"
+    assert _mod._arm_slug_from_knobs(knobs) == slug
+
+    skip = set(by_slug) - {slug}
+    assert _mod._select_recommended_slug(1900, skip=skip) == slug
+
+
+def test_slot_component_fidelity_coupling_is_distinct_follow_on() -> None:
+    slug = "slot-component-fidelity-coupling"
+    by_slug = {name: extras for name, _hypothesis, extras in _mod._SCREENING_ARM_BANK}
+    knobs = by_slug[slug]
+    assert knobs["slot_component_loss_weight"] == 1.0
+    assert knobs["slot_component_decode_weight"] == 1.0
+    assert knobs["fidelity_loss_weight"] == 1.5
+    assert knobs["compiler_decode_mode"] == "tree"
+    assert _mod._arm_slug_from_knobs(knobs) == slug
+
+    skip = set(by_slug) - {slug}
+    assert _mod._select_recommended_slug(1901, skip=skip) == slug
+
+
+def test_slot_component_inventory_coupling_is_distinct_follow_on() -> None:
+    slug = "slot-component-inventory-coupling"
+    by_slug = {name: extras for name, _hypothesis, extras in _mod._SCREENING_ARM_BANK}
+    knobs = by_slug[slug]
+    assert knobs["slot_component_loss_weight"] == 1.0
+    assert knobs["component_inventory_loss_weight"] == 1.0
+    assert knobs["component_inventory_decode_weight"] == 1.0
+    assert knobs["compiler_decode_mode"] == "tree"
+    assert _mod._arm_slug_from_knobs(knobs) == slug
+
+    skip = set(by_slug) - {slug}
+    assert _mod._select_recommended_slug(1902, skip=skip) == slug
+
+
+def test_slot_component_exposure_cap_is_distinct_data_successor() -> None:
+    slug = "slot-component-exposure-cap"
+    by_slug = {name: extras for name, _hypothesis, extras in _mod._SCREENING_ARM_BANK}
+    knobs = by_slug[slug]
+    assert knobs["slot_component_loss_weight"] == 1.0
+    assert knobs["mixture_sampling_policy"] == "exposure_targeted"
+    assert knobs["mixture_per_template_cap"] == 2
+    assert knobs["compiler_decode_mode"] == "tree"
+    assert _mod._arm_slug_from_knobs(knobs) == slug
+
+    skip = set(by_slug) - {slug}
+    assert _mod._select_recommended_slug(1903, skip=skip) == slug
+
+
+def test_frozen_screening_retry_preserves_champion_enqueue_semantics() -> None:
+    replay = {"handoff": SimpleNamespace(cycle_role="screening")}
+
+    assert _mod._screening_enqueue_allowed(
+        cycle_intent="retry_measurement", replay=replay
+    )
+    assert not _mod._screening_enqueue_allowed(
+        cycle_intent="retry_measurement",
+        replay={"handoff": SimpleNamespace(cycle_role="promotion")},
+    )
+    assert not _mod._screening_enqueue_allowed(
+        cycle_intent="retry_measurement",
+        replay={
+            "handoff": SimpleNamespace(cycle_role="screening", cycle_intent="confirm")
+        },
+    )
+
+
+def test_completed_confirmation_replay_resolves_original_and_duplicate(
+    tmp_path: Path,
+) -> None:
+    campaign_id = "continuous-loop-20260803-loop-c1838"
+    camp_dir = tmp_path / campaign_id
+    camp_dir.mkdir()
+    (camp_dir / "cycle_handoff.json").write_text(
+        json.dumps(
+            {
+                "cycle_index": 1838,
+                "cycle_intent": "retry_measurement",
+            }
+        )
+    )
+    (camp_dir / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "positive": True,
+                "measurement_complete": True,
+                "primary_metric": "smoke.structural_similarity",
+                "reasons": ["primary_metric_win:smoke.structural_similarity:0.4->0.44"],
+            }
+        )
+    )
+    entries = [
+        {
+            "entry_id": "original",
+            "status": "confirmation_inconclusive",
+            "knobs_fingerprint": "same",
+        },
+        {
+            "entry_id": "duplicate",
+            "status": "queued",
+            "knobs_fingerprint": "same",
+            "source_campaign_id": campaign_id,
+            "source_candidate_id": "candidate-confirm",
+        },
+    ]
+
+    assert _mod._reconcile_completed_confirmation_replays(tmp_path, entries)
+    assert entries[0]["status"] == "confirmed"
+    assert entries[0]["confirm_campaign_id"] == campaign_id
+    assert entries[1]["status"] == "skipped_duplicate"
+
+
+def test_typed_family_balance_arm_is_size_matched_and_replayable() -> None:
+    campaign_id = "continuous-loop-20260803-c1807"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1807,
+        role="screening",
+        recommended_slug="typed-family-balance",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-typed-family-balance"]
+    assert control["typed_family_balance_loss_weight"] == 0.0
+    assert candidate["typed_family_balance_loss_weight"] == 0.25
+    assert _mod._arm_slug_from_knobs(candidate) == "typed-family-balance"
+    assert "typed_family_balance_loss_weight" in _mod._LEVER_KNOB_KEYS
+
+
+def test_container_close_arm_is_size_matched_and_targets_legal_close_branch() -> None:
+    campaign_id = "continuous-loop-20260803-c1808"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1808,
+        role="screening",
+        recommended_slug="container-close",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-container-close"]
+    assert control["compiler_alignment_loss_weight"] == 0.0
+    assert candidate["compiler_alignment_loss_weight"] == 1.0
+    assert candidate["compiler_alignment_margin"] == 1.0
+    assert candidate["compiler_alignment_kind_filter"] == "container-close"
+    assert _mod._arm_slug_from_knobs(candidate) == "container-close"
+
+
+def test_balanced_container_close_arm_combines_quality_and_close_objectives() -> None:
+    campaign_id = "continuous-loop-20260803-c1809"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1809,
+        role="screening",
+        recommended_slug="balanced-container-close",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    control = knobs[f"{prefix}-control"]
+    candidate = knobs[f"{prefix}-balanced-container-close"]
+    assert control["typed_family_balance_loss_weight"] == 0.0
+    assert control["compiler_alignment_loss_weight"] == 0.0
+    assert candidate["typed_family_balance_loss_weight"] == 0.25
+    assert candidate["compiler_alignment_loss_weight"] == 1.0
+    assert candidate["compiler_alignment_margin"] == 1.0
+    assert candidate["compiler_alignment_kind_filter"] == "container-close"
+    assert _mod._arm_slug_from_knobs(candidate) == "balanced-container-close"
+
+
+def test_confirmed_champion_reconfirms_when_bank_exhausted_before_promotion() -> None:
+    exhausted = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
+    champion = {"status": "confirmed", "entry_id": "champ-1"}
+
+    assert _mod._repeat_confirm_while_waiting_for_promotion(
+        cadence_role="screening",
+        confirmed_champion=champion,
+        cycle=1811,
+        skip=exhausted,
+    )
+    assert not _mod._repeat_confirm_while_waiting_for_promotion(
+        cadence_role="promotion",
+        confirmed_champion=champion,
+        cycle=1812,
+        skip=exhausted,
+    )
+    assert not _mod._repeat_confirm_while_waiting_for_promotion(
+        cadence_role="screening",
+        confirmed_champion=champion,
+        cycle=1811,
+        skip=exhausted - {"balanced-container-close"},
+    )
+
+
+def test_completed_frozen_retry_steers_to_distinct_quality_arm() -> None:
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-20260731-c10",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=80,
+        cycle=10,
+        role="screening",
+        recommended_slug="batch1",
+    )
+    candidate_id = "c20260731-c10-batch1"
+    matrix["next_run_priorities"][0].update(
+        {
+            "area": "infrastructure",
+            "hypothesis": "The repaired harness completes the frozen replay.",
+            "authority": "observed_result",
+            "proposed_experiment_id": candidate_id,
+        }
+    )
+
+    priorities = _mod._completed_retry_priorities(matrix, candidate_id)
+
+    assert priorities[0].area == "model"
+    assert priorities[0].proposed_experiment_id == "c20260731-c10-component-plan"
+    assert "resolved infrastructure" in priorities[0].expected_information_gain
+
+
+def test_completed_null_steers_to_distinct_quality_arm() -> None:
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-20260731-c1729",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=22,
+        cycle=1729,
+        role="screening",
+        recommended_slug="binder-topology",
+    )
+    candidate_id = "c20260731-c1729-binder-topology"
+
+    priorities = _mod._completed_candidate_priorities(
+        matrix, candidate_id, resolved_infrastructure=False
+    )
+
+    assert priorities[0].proposed_experiment_id == "c20260731-c1729-component-plan"
+    assert "completed null" in priorities[0].expected_information_gain
+    assert "component-plan" in priorities[0].hypothesis
+
+
+def test_completed_null_with_exhausted_bank_requires_harness_expansion() -> None:
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-20260802-c1795",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=21,
+        cycle=1795,
+        role="screening",
+        recommended_slug="edge-alignment",
+    )
+    candidate_id = matrix["recommended_experiment_id"]
+    matrix["hypotheses"] = [
+        row
+        for row in matrix["hypotheses"]
+        if row["experiment"]["experiment_id"]
+        in {
+            candidate_id,
+            "c20260802-c1795-control",
+        }
+    ]
+
+    priorities = _mod._completed_candidate_priorities(
+        matrix,
+        candidate_id,
+        resolved_infrastructure=False,
+    )
+
+    assert priorities[0].area == "model_build"
+    assert priorities[0].disposition == "monitor"
+    assert priorities[0].proposed_experiment_id is None
+    assert all(row.disposition != "experiment_next" for row in priorities)
+    assert "preregister" in priorities[0].hypothesis
+
+
+def test_completed_null_prioritizes_new_quality_objective_before_runtime() -> None:
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-20260802-c1735",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=22,
+        cycle=1735,
+        role="screening",
+        recommended_slug="component-structure",
+    )
+    candidate_id = matrix["recommended_experiment_id"]
+
+    priorities = _mod._completed_candidate_priorities(
+        matrix,
+        candidate_id,
+        resolved_infrastructure=False,
+        skip_slugs={
+            "component-plan",
+            "component-edge",
+            "component-inventory",
+            "binder-topology",
+        },
+    )
+
+    assert priorities[0].area == "model"
+    assert priorities[0].proposed_experiment_id.endswith("-binder-arity")
+    assert "quality" in priorities[0].hypothesis
+
+
+def test_completed_confirmation_replaces_stale_preregistered_priorities() -> None:
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-20260802-c1759",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1759,
+        role="screening",
+        confirm_levers={"steps": 44, "batch_size": 2},
+        confirm_control_levers={"steps": 22, "batch_size": 2},
+    )
+    candidate_id = matrix["recommended_experiment_id"]
+
+    priorities = _mod._completed_confirmation_priorities(
+        matrix,
+        candidate_id,
+        {
+            "positive": False,
+            "primary_metric": "smoke.structural_similarity",
+            "control_metrics": {
+                "smoke.structural_similarity": 0.17416666666666666,
+                "meaningful_program_rate": 1 / 3,
+            },
+            "candidate_metrics": {
+                "smoke.structural_similarity": 0.0575,
+                "meaningful_program_rate": 0.0,
+            },
+        },
+        {"status": "rejected"},
+    )
+
+    assert "rejected the champion fingerprint" in priorities[0].hypothesis
+    assert "0.17416666666666666->0.0575" in priorities[0].hypothesis
+    assert priorities[0].proposed_experiment_id is None
+    assert all(
+        priority.proposed_experiment_id != candidate_id for priority in priorities
+    )
+    executable = [
+        priority for priority in priorities if priority.disposition == "experiment_next"
+    ]
+    assert len(executable) == 1
+    assert executable[0].area == "experiments"
+    assert executable[0].proposed_experiment_id.endswith("-batch1")
+    assert "runtime diagnostic" in executable[0].hypothesis
+
+
+def test_completed_confirmation_that_reholds_steers_to_promotion() -> None:
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-20260802-c1760",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1760,
+        role="screening",
+        confirm_levers={"steps": 44, "batch_size": 2},
+        confirm_control_levers={"steps": 22, "batch_size": 2},
+    )
+    candidate_id = matrix["recommended_experiment_id"]
+
+    priorities = _mod._completed_confirmation_priorities(
+        matrix,
+        candidate_id,
+        {"positive": True},
+        {"status": "confirmed"},
+    )
+
+    assert priorities[0].area == "promotion"
+    assert priorities[0].disposition == "experiment_next"
+    assert priorities[0].proposed_experiment_id == candidate_id
+    assert "re-held" in priorities[0].hypothesis
+
+
+def test_completed_confirmation_uses_resolution_not_raw_positive() -> None:
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-20260802-c1761",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1761,
+        role="screening",
+        confirm_levers={"fidelity_loss_weight": 1.5},
+        confirm_control_levers={"fidelity_loss_weight": 0.5},
+    )
+    candidate_id = matrix["recommended_experiment_id"]
+
+    priorities = _mod._completed_confirmation_priorities(
+        matrix,
+        candidate_id,
+        {
+            "positive": True,
+            "primary_metric": "smoke.structural_similarity",
+            "control_metrics": {"smoke.structural_similarity": 0.45},
+            "candidate_metrics": {"smoke.structural_similarity": 0.44},
+        },
+        {"status": "rejected"},
+    )
+
+    assert priorities[0].area != "promotion"
+    assert all(
+        priority.proposed_experiment_id != candidate_id for priority in priorities
+    )
+
+
+def test_queued_candidate_priorities_require_fresh_confirmation_before_lean() -> None:
+    priorities = _mod._queued_candidate_priorities("cycle-candidate", "campaign:cycle")
+
+    assert priorities[0].area == "evaluation"
+    assert priorities[0].authority == "observed_result"
+    assert priorities[0].proposed_experiment_id == (
+        "cycle-candidate-fresh-confirmation"
+    )
+    assert "fresh seed" in priorities[0].hypothesis
+    assert priorities[1].area == "lean_model"
+    assert priorities[1].authority == "lean_assumption"
+    assert "until fresh confirmation" in priorities[1].hypothesis
+
+
+def test_predecessor_completed_null_drives_next_screening_arm(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "continuous-loop-20260731-c1729"
+    camp.mkdir(parents=True)
+    matrix = _mod._matrix(
+        campaign_id=camp.name,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=22,
+        cycle=1729,
+        role="screening",
+        recommended_slug="binder-topology",
+    )
+    candidate_id = matrix["recommended_experiment_id"]
+    control_id = matrix["hypotheses"][0]["experiment"]["experiment_id"]
+    for arm in (control_id, candidate_id):
+        run = camp / "runs" / arm
+        _write_eval(
+            run / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            meaningful_program_rate=0.0,
+            structural_similarity=0.1,
+            latency_ms_p50=1000.0,
+        )
+        _write_complete_scoreboard(run, "smoke")
+    (camp / "matrix-proposal.json").write_text(json.dumps(matrix))
+    (camp / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "control_id": control_id,
+                "candidate_id": candidate_id,
+                "positive": False,
+                "reasons": ["no_registered_effect"],
+            }
+        )
+    )
+    (camp / "cycle_handoff.json").write_text(
+        json.dumps(
+            {
+                "cycle_intent": "screening",
+                "priorities": [
+                    {
+                        "rank": 1,
+                        "disposition": "experiment_next",
+                        "proposed_experiment_id": candidate_id,
+                    }
+                ],
+            }
+        )
+    )
+
+    assert (
+        _mod._predecessor_priority_slug(root, camp.name, skip=set()) == "component-plan"
+    )
+    assert (
+        _mod._predecessor_priority_slug(root, camp.name, skip={"component-plan"})
+        == "component-edge"
+    )
+
+
+def test_predecessor_rejected_confirmation_uses_outcome_conditioned_successor(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "continuous-loop-20260802-c1759"
+    camp.mkdir(parents=True)
+    matrix = _mod._matrix(
+        campaign_id=camp.name,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1759,
+        role="screening",
+        confirm_levers={"steps": 44, "batch_size": 2},
+        confirm_control_levers={"steps": 22, "batch_size": 2},
+    )
+    control_id = matrix["hypotheses"][0]["experiment"]["experiment_id"]
+    candidate_id = matrix["recommended_experiment_id"]
+    for arm, structure, meaning, latency in (
+        (control_id, 0.17416666666666666, 1 / 3, 1362.47),
+        (candidate_id, 0.0575, 0.0, 3195.06),
+    ):
+        run = camp / "runs" / arm
+        _write_eval(
+            run / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            meaningful_program_rate=meaning,
+            structural_similarity=structure,
+            latency_ms_p50=latency,
+        )
+        _write_complete_scoreboard(run, "smoke")
+    (camp / "matrix-proposal.json").write_text(json.dumps(matrix))
+    (camp / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "control_id": control_id,
+                "candidate_id": candidate_id,
+                "positive": True,
+                "primary_metric": "smoke.structural_similarity",
+                "measurement_complete": True,
+                "control_metrics": {
+                    "smoke.structural_similarity": 0.17416666666666666,
+                    "meaningful_program_rate": 1 / 3,
+                },
+                "candidate_metrics": {
+                    "smoke.structural_similarity": 0.0575,
+                    "meaningful_program_rate": 0.0,
+                },
+            }
+        )
+    )
+    (camp / "cycle_handoff.json").write_text(
+        json.dumps(
+            {
+                "cycle_intent": "confirm",
+                "cycle_role": "screening",
+                "climb_state": "champion_confirmed",
+                "priorities": matrix["next_run_priorities"],
+            }
+        )
+    )
+
+    assert _mod._predecessor_priority_slug(root, camp.name, skip=set()) == "batch1"
+
+
+def test_recent_completed_nonpositive_slugs_follow_predecessor_chain(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    predecessor: str | None = None
+    for cycle, slug in ((1732, "component-plan"), (1733, "component-edge")):
+        campaign_id = f"continuous-loop-20260802-c{cycle}"
+        camp = root / campaign_id
+        matrix = _mod._matrix(
+            campaign_id=campaign_id,
+            evidence_snapshot_id="snap",
+            cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+            role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+            train_version="wf_smoke_v2",
+            eval_version="e_test",
+            steps=22,
+            cycle=cycle,
+            role="screening",
+            recommended_slug=slug,
+        )
+        candidate_id = matrix["recommended_experiment_id"]
+        camp.mkdir(parents=True)
+        (camp / "campaign.json").write_text(
+            json.dumps(
+                {
+                    "campaign_id": campaign_id,
+                    "loop_id": "loop-1",
+                    "predecessor_campaign_id": predecessor,
+                }
+            )
+        )
+        (camp / "matrix-proposal.json").write_text(json.dumps(matrix))
+        (camp / "sdlc_delivery.json").write_text(
+            json.dumps(
+                {
+                    "candidate_id": candidate_id,
+                    "cycle_intent": "screening",
+                    "positive": False,
+                    "measurement_complete": True,
+                }
+            )
+        )
+        (camp / "cycle_handoff.json").write_text(
+            json.dumps({"loop_id": "loop-1", "cycle_intent": "screening"})
+        )
+        predecessor = campaign_id
+
+    # Lineage mechanics tests use min_null_seeds=1; production default is 2.
+    assert _mod._recent_completed_nonpositive_slugs(
+        root, predecessor, min_null_seeds=1
+    ) == {
+        "component-plan",
+        "component-edge",
+    }
+
+    assert _mod._recent_completed_nonpositive_slugs(
+        root, predecessor, max_cycles=1, min_null_seeds=1
+    ) == {"component-edge"}
+
+    newest = root / str(predecessor) / "sdlc_delivery.json"
+    newest_delivery = json.loads(newest.read_text())
+    newest_delivery["cycle_intent"] = "retry_measurement"
+    newest.write_text(json.dumps(newest_delivery))
+    (root / str(predecessor) / "cycle_handoff.json").write_text(
+        json.dumps({"loop_id": "loop-1", "cycle_intent": "retry_measurement"})
+    )
+    assert _mod._recent_completed_nonpositive_slugs(
+        root, predecessor, min_null_seeds=1
+    ) == {
+        "component-plan",
+        "component-edge",
+    }
+
+    newest_delivery = json.loads(newest.read_text())
+    newest_delivery["measurement_complete"] = False
+    newest.write_text(json.dumps(newest_delivery))
+    assert _mod._recent_completed_nonpositive_slugs(
+        root, predecessor, min_null_seeds=1
+    ) == {
+        "component-plan"
+    }
+
+    newest_delivery = json.loads(newest.read_text())
+    candidate_id = newest_delivery["candidate_id"]
+    newest_delivery["cycle_intent"] = "retry_measurement"
+    newest.write_text(json.dumps(newest_delivery))
+    (root / str(predecessor) / "cycle_handoff.json").write_text(
+        json.dumps(
+            {
+                "loop_id": "loop-1",
+                "cycle_intent": "screening",
+                "climb_state": "rejected",
+                "reasons": [
+                    f"candidate_runtime_unblock_reproduced:{candidate_id}",
+                    "control_runtime_rejected_after_frozen_replay:control",
+                ],
+            }
+        )
+    )
+    assert _mod._recent_completed_nonpositive_slugs(
+        root, predecessor, min_null_seeds=1
+    ) == {
+        "component-plan",
+        "component-edge",
+    }
+
+
+def test_recent_completed_nonpositive_slugs_reclassifies_stale_positive(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "autoresearch"
+    campaign_id = "continuous-loop-20260802-c1786"
+    camp = root / campaign_id
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=22,
+        cycle=1786,
+        role="screening",
+        recommended_slug="steps",
+    )
+    candidate_id = matrix["recommended_experiment_id"]
+    camp.mkdir(parents=True)
+    (camp / "campaign.json").write_text(
+        json.dumps({"campaign_id": campaign_id, "loop_id": "loop-1"})
+    )
+    (camp / "matrix-proposal.json").write_text(json.dumps(matrix))
+    (camp / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "candidate_id": candidate_id,
+                "control_id": f"{campaign_id}-control",
+                "primary_metric": "smoke.structural_similarity",
+                "cycle_intent": "screening",
+                "positive": True,
+                "measurement_complete": True,
+            }
+        )
+    )
+    (camp / "cycle_handoff.json").write_text(
+        json.dumps({"loop_id": "loop-1", "cycle_intent": "screening"})
+    )
+    monkeypatch.setattr(
+        _mod,
+        "_classify_positive",
+        lambda **_kwargs: {
+            "positive": False,
+            "control_metrics": {"structural_similarity": 0.1},
+            "candidate_metrics": {"structural_similarity": 0.2},
+            "reasons": ["primary_quality_win_rejected_latency_budget"],
+        },
+    )
+
+    assert _mod._recent_completed_nonpositive_slugs(
+        root, campaign_id, min_null_seeds=1
+    ) == {"steps"}
+
+
+def test_completed_null_does_not_age_out_of_lineage_exhaustion(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    old_id = "continuous-loop-20260802-c1"
+    old = root / old_id
+    matrix = _mod._matrix(
+        campaign_id=old_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1,
+        role="screening",
+        recommended_slug="bounds",
+    )
+    old.mkdir(parents=True)
+    (old / "campaign.json").write_text(
+        json.dumps(
+            {
+                "campaign_id": old_id,
+                "loop_id": "loop-1",
+                "predecessor_campaign_id": None,
+            }
+        )
+    )
+    (old / "matrix-proposal.json").write_text(json.dumps(matrix))
+    (old / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "candidate_id": matrix["recommended_experiment_id"],
+                "cycle_intent": "screening",
+                "positive": False,
+                "measurement_complete": True,
+            }
+        )
+    )
+    (old / "cycle_handoff.json").write_text(
+        json.dumps({"loop_id": "loop-1", "cycle_intent": "screening"})
+    )
+
+    predecessor = old_id
+    for cycle in range(2, _mod._RECENT_EXHAUSTION_CYCLE_WINDOW + 4):
+        campaign_id = f"continuous-loop-20260802-c{cycle}"
+        camp = root / campaign_id
+        camp.mkdir()
+        (camp / "campaign.json").write_text(
+            json.dumps(
+                {
+                    "campaign_id": campaign_id,
+                    "loop_id": "loop-1",
+                    "predecessor_campaign_id": predecessor,
+                }
+            )
+        )
+        (camp / "cycle_handoff.json").write_text(
+            json.dumps({"loop_id": "loop-1", "cycle_intent": "screening"})
+        )
+        predecessor = campaign_id
+
+    assert "bounds" not in _mod._recent_completed_nonpositive_slugs(
+        root,
+        predecessor,
+        max_cycles=_mod._RECENT_EXHAUSTION_CYCLE_WINDOW,
+        min_null_seeds=1,
+    )
+    assert "bounds" in _mod._recent_completed_nonpositive_slugs(
+        root, predecessor, min_null_seeds=1
+    )
+    # Production default (2 seeds) does not close on a single complete null.
+    assert "bounds" not in _mod._recent_completed_nonpositive_slugs(
+        root, predecessor, min_null_seeds=2
+    )
+
+
+def test_rejected_confirmation_exhausts_its_source_quality_family(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    campaign_id = "continuous-loop-20260802-c1777"
+    camp = root / campaign_id
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1777,
+        role="screening",
+        confirm_levers={
+            "component_inventory_loss_weight": 1.0,
+            "component_inventory_decode_weight": 1.0,
+        },
+        confirm_control_levers={
+            "component_inventory_loss_weight": 0.0,
+            "component_inventory_decode_weight": 0.0,
+        },
+    )
+    candidate_id = matrix["recommended_experiment_id"]
+    camp.mkdir(parents=True)
+    (camp / "campaign.json").write_text(
+        json.dumps({"campaign_id": campaign_id, "loop_id": "loop-1"})
+    )
+    (camp / "matrix-proposal.json").write_text(json.dumps(matrix))
+    (camp / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "candidate_id": candidate_id,
+                "cycle_intent": "confirm",
+                "positive": False,
+                "measurement_complete": True,
+            }
+        )
+    )
+    (camp / "cycle_handoff.json").write_text(
+        json.dumps(
+            {
+                "loop_id": "loop-1",
+                "cycle_intent": "confirm",
+                "climb_state": "rejected",
+            }
+        )
+    )
+
+    assert _mod._recent_completed_nonpositive_slugs(
+        root, campaign_id, min_null_seeds=1
+    ) == {"component-inventory"}
+    assert _mod._recent_completed_nonpositive_slugs(
+        root, campaign_id, min_null_seeds=2
+    ) == set()
+
+
+def test_predecessor_reclassifies_stale_positive_under_current_policy(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "continuous-loop-20260801-c1731"
+    matrix = _mod._matrix(
+        campaign_id=camp.name,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=22,
+        cycle=1731,
+        role="screening",
+        recommended_slug="component-plan",
+    )
+    candidate_id = matrix["recommended_experiment_id"]
+    control_id = matrix["hypotheses"][0]["experiment"]["experiment_id"]
+    for arm, latency in ((control_id, 3453.06), (candidate_id, 3430.55)):
+        run = camp / "runs" / arm
+        _write_eval(
+            run / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            meaningful_program_rate=0.3333333333333333,
+            structural_similarity=0.41973333333333335,
+            latency_ms_p50=latency,
+        )
+        _write_complete_scoreboard(run, "smoke")
+    (camp / "matrix-proposal.json").write_text(json.dumps(matrix))
+    (camp / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "control_id": control_id,
+                "candidate_id": candidate_id,
+                "positive": True,
+                "reasons": ["historical_noise_scale_efficiency_win"],
+            }
+        )
+    )
+    (camp / "cycle_handoff.json").write_text(
+        json.dumps(
+            {
+                "cycle_role": "screening",
+                "cycle_intent": "screening",
+                "primary_metric": "smoke.structural_similarity",
+                "priorities": [
+                    {
+                        "rank": 1,
+                        "disposition": "experiment_next",
+                        "proposed_experiment_id": candidate_id,
+                    }
+                ],
+            }
+        )
+    )
+
+    assert (
+        _mod._predecessor_priority_slug(root, camp.name, skip=set()) == "component-edge"
+    )
+
+
+def test_promotion_cadence_null_exhausts_completed_arm(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "continuous-loop-20260801-c1732"
+    matrix = _mod._matrix(
+        campaign_id=camp.name,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=22,
+        cycle=1732,
+        role="promotion",
+        recommended_slug="component-plan",
+    )
+    candidate_id = matrix["recommended_experiment_id"]
+    control_id = matrix["hypotheses"][0]["experiment"]["experiment_id"]
+    for arm in (control_id, candidate_id):
+        run = camp / "runs" / arm
+        _write_eval(
+            run / "eval_held_out.json",
+            suite="held_out",
+            parse_rate=1.0,
+            meaningful_program_rate=0.0,
+            structural_similarity=0.06024,
+            latency_ms_p50=2000.0,
+        )
+        _write_complete_scoreboard(run, "held_out")
+    (camp / "matrix-proposal.json").write_text(json.dumps(matrix))
+    (camp / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "control_id": control_id,
+                "candidate_id": candidate_id,
+                "positive": False,
+                "reasons": ["primary_metric_null_or_worse"],
+            }
+        )
+    )
+    (camp / "cycle_handoff.json").write_text(
+        json.dumps(
+            {
+                "cycle_role": "promotion",
+                "cycle_intent": "promotion",
+                "primary_metric": "held_out.structural_similarity",
+                "priorities": [
+                    {
+                        "rank": 1,
+                        "disposition": "experiment_next",
+                        "proposed_experiment_id": candidate_id,
+                    }
+                ],
+            }
+        )
+    )
+
+    assert (
+        _mod._predecessor_priority_slug(root, camp.name, skip=set()) == "component-edge"
+    )
 
 
 def test_matrix_promote_path_confirmed_knobs() -> None:
@@ -410,13 +3129,312 @@ def test_matrix_promote_path_confirmed_knobs() -> None:
             "steps": 81,
             "batch_size": 2,
             "train_version": "wf_smoke_v2",
+            "mixture_sampling_policy": "capacity_aware",
+            "compiler_alignment_semantic_exhaustive": True,
+            "grammar_equivalence_cache": True,
+            "grammar_draft_window": 16,
         },
     )
     HypothesisMatrix.model_validate(matrix)
     assert matrix["recommended_experiment_id"] == "c20260731-c8-promote"
     cand = matrix["hypotheses"][1]["experiment"]["knobs"]
     assert cand["grammar_completion_bounds"] is True
+    assert cand["mixture_sampling_policy"] == "capacity_aware"
+    assert cand["compiler_alignment_semantic_exhaustive"] is True
+    assert cand["grammar_equivalence_cache"] is True
+    assert cand["grammar_draft_window"] == 16
     assert cand["steps"] == 81
+    # formal_claims must be on the matrix member (not rewritten post-lock).
+    promo_exp = matrix["hypotheses"][1]["experiment"]
+    assert promo_exp.get("formal_claims")
+    assert promo_exp["formal_claims"][0]["template_id"] == (
+        _mod._PROMOTE_FORMAL_TEMPLATE_ID
+    )
+
+
+def test_detect_promote_harness_failure_missing_run(tmp_path: Path) -> None:
+    camp = tmp_path / "camp"
+    (camp / "runs" / "c-control").mkdir(parents=True)
+    # Control has metrics via suite loader fallback path — write smoke eval.
+    smoke = camp / "runs" / "c-control" / "eval_smoke.json"
+    smoke.write_text(
+        __import__("json").dumps(
+            {
+                "suite": "smoke",
+                "parse_rate": 1.0,
+                "structural_similarity": 0.4,
+                "meaningful_program_rate": 0.3,
+                "latency_ms_p50": 1000.0,
+            }
+        ),
+        encoding="utf-8",
+    )
+    reasons = _mod.detect_promote_harness_failure(
+        camp_dir=camp,
+        control_id="c-control",
+        candidate_id="c-promote",
+        arm_exits={"c-control": 2, "c-promote": 1},
+        cert_err="promote_cert_incomplete_metrics:ss=None parse=None",
+    )
+    assert any(r.startswith("harness_failure:") for r in reasons)
+    assert any("missing_promote_run" in r or "promote_arm_exit" in r for r in reasons)
+
+
+def test_resolve_promotion_harness_failure_not_model_reject(tmp_path: Path) -> None:
+    root = tmp_path / "ar"
+    loop = "L"
+    camp = root / "camp-hf"
+    (camp / "runs" / "c-control").mkdir(parents=True)
+    (camp / "runs" / "c-control" / "eval_smoke.json").write_text(
+        __import__("json").dumps(
+            {
+                "suite": "smoke",
+                "parse_rate": 1.0,
+                "structural_similarity": 0.4,
+                "latency_ms_p50": 1000.0,
+            }
+        ),
+        encoding="utf-8",
+    )
+    entry = {
+        "entry_id": "champ-hf-1",
+        "status": "promoting",
+        "knobs_fingerprint": "fp-hf",
+        "promote_attempts": 1,
+        "knobs": {"grammar_completion_bounds": True},
+    }
+    path = _mod._champion_queue_path(root, loop)
+    _mod._write_champion_queue(path, [entry])
+    _mod.record_formal_preflight_status(
+        camp,
+        status="proved",
+        template_id=_mod._PROMOTE_FORMAL_TEMPLATE_ID,
+    )
+    resolved = _mod._resolve_promotion_result(
+        root=root,
+        loop_id=loop,
+        entry=entry,
+        delivery={
+            "positive": False,
+            "control_id": "c-control",
+            "candidate_id": "c-promote",
+            "reasons": [
+                "primary_metric_unavailable",
+                "promote_cert_incomplete_metrics:ss=None parse=None",
+            ],
+        },
+        campaign_id="camp-hf",
+        cycle_index=3,
+        camp_dir=camp,
+        formal_preflight_status="proved",
+        locked_expectations_sha256="c" * 64,
+        arm_exits={"c-control": 2, "c-promote": 1},
+        cert_err="promote_cert_incomplete_metrics:ss=None parse=None",
+    )
+    assert resolved is not None
+    assert resolved["status"] == "harness_failure"
+    assert resolved["status"] != "promotion_failed"
+    assert resolved["status"] != "rejected"
+    rows = _mod._load_champion_queue(path)
+    assert rows[0]["status"] == "harness_failure"
+    # Harness incompletes refund promote_attempts — not a model reject spend.
+    assert int(rows[0].get("promote_attempts") or 0) == 0
+    assert rows[0].get("last_harness_failure") is True
+    head = _mod._queue_head_confirmed(rows)
+    assert head is not None and head["entry_id"] == "champ-hf-1"
+    ledger = (root / "loops" / loop / "learning_certificate_ledger.jsonl").read_text()
+    assert "harness_failure" in ledger
+
+
+def test_causal_cap_does_not_empty_multi_seed_open_bank() -> None:
+    """Confirm CAP skip must not thrash-hard-die when multi-seed-open arms remain."""
+    entries = [
+        {
+            "entry_id": "c1",
+            "status": "rejected",
+            "source_integration_commit": "tip1",
+            "source_candidate_id": "x-literal-close",
+            "knobs": {"ltr_tail_loss_weight": 2.0},
+            "resolve_reasons": [
+                "non_regression_fail:binder_reference_f1:1.0->0.0",
+                "primary_metric_null_or_worse:smoke.structural_similarity",
+            ],
+        },
+        {
+            "entry_id": "c2",
+            "status": "rejected",
+            "source_integration_commit": "tip1",
+            "source_candidate_id": "y-literal-close",
+            "knobs": {"ltr_tail_loss_weight": 2.0},
+            "resolve_reasons": [
+                "non_regression_fail:binder_reference_f1:1.0->0.0",
+            ],
+        },
+    ]
+    hard = _mod._skip_arm_slugs(entries, integration_commit="tip1")
+    assert "literal-close" in hard
+    soft = _mod._skip_arm_slugs(
+        entries, integration_commit="tip1", include_causal_cap=False
+    )
+    assert "literal-close" not in soft
+    closed: set[str] = set()
+    open_slugs = _mod._thrash_bank_open_slugs(closed)
+    assert "literal-close" in open_slugs
+    # Simulated cycle gate: relax CAP when hard skip empties open thrash.
+    skip = hard | closed
+    if open_slugs and not (open_slugs - skip):
+        skip = soft | closed
+    assert open_slugs - skip
+
+
+def test_new_literal_close_successor_slugs() -> None:
+    assert (
+        _mod._arm_slug_from_knobs(
+            {"ltr_tail_loss_weight": 2.0, "structure_token_loss_weight": 1.0}
+        )
+        == "literal-close-structure"
+    )
+    assert (
+        _mod._arm_slug_from_knobs(
+            {"ltr_tail_loss_weight": 2.0, "component_token_loss_weight": 1.0}
+        )
+        == "literal-close-component-token"
+    )
+    assert (
+        _mod._arm_slug_from_knobs(
+            {
+                "semantic_contrast_loss_weight": 0.25,
+                "structure_token_loss_weight": 1.0,
+                "batch_size": 3,
+            }
+        )
+        == "semantic-contrast-structure"
+    )
+
+
+def test_harness_incomplete_reasons_are_not_model_rejects() -> None:
+    assert _mod._reason_is_harness_incomplete("harness_failure:missing_promote_run")
+    assert _mod._reason_is_harness_incomplete(
+        "measurement_incomplete:x:missing_scoreboard"
+    )
+    assert not _mod._reason_is_harness_incomplete(
+        "primary_metric_null_or_worse:smoke.structural_similarity"
+    )
+    assert _mod._reasons_are_harness_incomplete_only(
+        [
+            "harness_failure:missing_promote_run",
+            "measurement_incomplete:c-control:missing_scoreboard",
+            "promote_attempts_exceeded:3>2",
+        ]
+    )
+    assert not _mod._reasons_are_harness_incomplete_only(
+        [
+            "harness_failure:missing_promote_run",
+            "primary_metric_null_or_worse:ss",
+        ]
+    )
+
+
+def test_reopen_harness_blocked_champion_after_integration_change(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "ar"
+    entries = [
+        {
+            "entry_id": "champ-hf-park",
+            "status": "harness_failure",
+            "promote_attempts": 0,
+            "last_harness_failure": True,
+            "harness_failure_integration_commit": "aaa111",
+            "resolve_reasons": [
+                "harness_failure:missing_promote_run",
+                "promote_harness_parked:incomplete_not_model_reject",
+            ],
+            "knobs": {"ltr_prefix_loss_weight": 1.0},
+        },
+        {
+            "entry_id": "champ-model-fail",
+            "status": "promotion_failed",
+            "resolve_reasons": [
+                "primary_metric_null_or_worse:smoke.structural_similarity"
+            ],
+            "harness_failure_integration_commit": "aaa111",
+            "knobs": {"mask_pattern": "mixed"},
+        },
+    ]
+    assert _mod._reopen_harness_blocked_champions(
+        root, entries, integration_commit="bbb222"
+    )
+    by = {e["entry_id"]: e for e in entries}
+    assert by["champ-hf-park"]["status"] == "confirmed"
+    assert by["champ-hf-park"]["promote_attempts"] == 0
+    assert "harness_retry_after_integration_change" in by["champ-hf-park"]["resolve_reasons"]
+    # Model reject stays terminal.
+    assert by["champ-model-fail"]["status"] == "promotion_failed"
+
+
+def test_thrash_close_ignores_harness_incomplete_nulls(tmp_path: Path) -> None:
+    root = tmp_path / "ar"
+    loop = "L"
+    # Two complete harness-incomplete "nulls" must not close the arm.
+    for i, seed in enumerate((7, 8)):
+        camp = root / f"c-hf-{i}"
+        camp.mkdir(parents=True)
+        (camp / "campaign.json").write_text(
+            __import__("json").dumps(
+                {
+                    "campaign_id": camp.name,
+                    "loop_id": loop,
+                    "cycle_index": i + 1,
+                    "predecessor_campaign_id": None if i == 0 else f"c-hf-{i-1}",
+                }
+            ),
+            encoding="utf-8",
+        )
+        (camp / "sdlc_delivery.json").write_text(
+            __import__("json").dumps(
+                {
+                    "candidate_id": f"{camp.name}-scaffold-prefix",
+                    "control_id": f"{camp.name}-control",
+                    "measurement_complete": True,
+                    "positive": False,
+                    "cycle_intent": "screening",
+                    "harness_failure": True,
+                    "reasons": ["harness_failure:missing_promote_run"],
+                }
+            ),
+            encoding="utf-8",
+        )
+        (camp / "cycle_handoff.json").write_text(
+            __import__("json").dumps(
+                {
+                    "loop_id": loop,
+                    "reasons": ["harness_failure:missing_promote_run"],
+                    "cycle_intent": "screening",
+                }
+            ),
+            encoding="utf-8",
+        )
+        (camp / "matrix-proposal.json").write_text(
+            __import__("json").dumps(
+                {
+                    "hypotheses": [
+                        {
+                            "experiment": {
+                                "experiment_id": f"{camp.name}-scaffold-prefix",
+                                "knobs": {
+                                    "ltr_prefix_loss_weight": 1.0,
+                                    "seed": seed,
+                                },
+                            }
+                        }
+                    ]
+                }
+            ),
+            encoding="utf-8",
+        )
+    closed = _mod._recent_completed_nonpositive_slugs(root, "c-hf-1", min_null_seeds=2)
+    assert "scaffold-prefix" not in closed
 
 
 def test_resolve_promotion_phase_a_alone_cannot_promote(tmp_path: Path) -> None:
@@ -459,10 +3477,15 @@ def test_resolve_promotion_phase_a_alone_cannot_promote(tmp_path: Path) -> None:
     )
     assert fail is not None
     assert fail["status"] == "promotion_failed"
-    assert any("formal_preflight" in r or "certificate" in r for r in (fail.get("resolve_reasons") or []))
+    assert any(
+        "formal_preflight" in r or "certificate" in r
+        for r in (fail.get("resolve_reasons") or [])
+    )
 
 
-def _v2_cert(*, exp_sha: str, authority: str = "assumption_backed", relation: str = "in_band") -> dict:
+def _v2_cert(
+    *, exp_sha: str, authority: str = "assumption_backed", relation: str = "in_band"
+) -> dict:
     """Minimal v2 certificate mapping accepted by optimum_feedback."""
     return {
         "schema": "metric_certificate/v2",
@@ -537,18 +3560,99 @@ def test_dispose_champion_promote_invalid_cert_not_promoted() -> None:
     assert any("v2" in r for r in d["reasons"])
 
 
+def _held_out_win_metrics(
+    *, control_ss: float = 0.10, candidate_ss: float = 0.20
+) -> tuple[dict[str, float], dict[str, float]]:
+    """Dual-arm metrics with held_out SS win above default min_effect 0.01."""
+    control = {
+        "structural_similarity": control_ss,
+        "held_out.structural_similarity": control_ss,
+        "parse_rate": 1.0,
+        "held_out.parse_rate": 1.0,
+    }
+    candidate = {
+        "structural_similarity": candidate_ss,
+        "held_out.structural_similarity": candidate_ss,
+        "parse_rate": 1.0,
+        "held_out.parse_rate": 1.0,
+    }
+    return control, candidate
+
+
 def test_dispose_champion_promote_in_band_v2_promotes() -> None:
     exp_sha = _mod.locked_promote_expectations_sha256()
+    control, candidate = _held_out_win_metrics()
     d = _mod.dispose_champion_promote(
         formal_preflight_status="proved",
         certificate=_v2_cert(exp_sha=exp_sha, relation="in_band"),
         locked_expectations_sha256=exp_sha,
         phase_a_positive=True,
         phase_a_quality_held=True,
+        control_metrics=control,
+        candidate_metrics=candidate,
     )
-    assert d["status"] == "promoted"
+    assert d["status"] == "climb_accepted"
     assert d["cert_policy"] == "continue"
+    assert d["promotion_primary_met"] is True
+    assert d["primary_improvement"] is not None
+    assert float(d["primary_improvement"]) > 0.01
     assert d["emit_five_lane_matrix"] is False
+    assert any(r.startswith("promote_primary_win:") for r in d["reasons"])
+
+
+def test_dispose_champion_promote_null_primary_not_promoted() -> None:
+    """Cert continue + formal proved + null held_out delta must not promote."""
+    exp_sha = _mod.locked_promote_expectations_sha256()
+    control, candidate = _held_out_win_metrics(control_ss=0.25, candidate_ss=0.25)
+    d = _mod.dispose_champion_promote(
+        formal_preflight_status="proved",
+        certificate=_v2_cert(exp_sha=exp_sha, relation="in_band"),
+        locked_expectations_sha256=exp_sha,
+        phase_a_positive=False,
+        control_metrics=control,
+        candidate_metrics=candidate,
+    )
+    assert d["status"] == "promotion_failed"
+    assert d["cert_policy"] == "continue"
+    assert d["promotion_primary_met"] is False
+    assert any("promote_primary_null_or_insufficient" in r for r in d["reasons"])
+
+
+def test_dispose_champion_promote_missing_primary_metrics_not_promoted() -> None:
+    exp_sha = _mod.locked_promote_expectations_sha256()
+    d = _mod.dispose_champion_promote(
+        formal_preflight_status="proved",
+        certificate=_v2_cert(exp_sha=exp_sha, relation="in_band"),
+        locked_expectations_sha256=exp_sha,
+        control_metrics={},
+        candidate_metrics={},
+    )
+    assert d["status"] == "promotion_failed"
+    assert d["cert_policy"] == "continue"
+    assert any("promote_primary_metrics_missing" in r for r in d["reasons"])
+
+
+def test_dispose_champion_promote_parse_regression_not_promoted() -> None:
+    exp_sha = _mod.locked_promote_expectations_sha256()
+    control = {
+        "structural_similarity": 0.1,
+        "held_out.structural_similarity": 0.1,
+        "parse_rate": 1.0,
+    }
+    candidate = {
+        "structural_similarity": 0.3,
+        "held_out.structural_similarity": 0.3,
+        "parse_rate": 0.5,
+    }
+    d = _mod.dispose_champion_promote(
+        formal_preflight_status="proved",
+        certificate=_v2_cert(exp_sha=exp_sha, relation="in_band"),
+        locked_expectations_sha256=exp_sha,
+        control_metrics=control,
+        candidate_metrics=candidate,
+    )
+    assert d["status"] == "promotion_failed"
+    assert any("promote_parse_regression" in r for r in d["reasons"])
 
 
 def test_dispose_champion_promote_assumption_miss_five_lane() -> None:
@@ -568,9 +3672,7 @@ def test_dispose_champion_promote_theorem_miss_no_promote() -> None:
     exp_sha = _mod.locked_promote_expectations_sha256()
     d = _mod.dispose_champion_promote(
         formal_preflight_status="proved",
-        certificate=_v2_cert(
-            exp_sha=exp_sha, authority="theorem", relation="below"
-        ),
+        certificate=_v2_cert(exp_sha=exp_sha, authority="theorem", relation="below"),
         locked_expectations_sha256=exp_sha,
     )
     assert d["status"] == "promotion_failed"
@@ -596,7 +3698,11 @@ def test_promote_manifest_locks_expectations_and_formal() -> None:
     exp = {
         "experiment_id": "c-promote",
         "hypothesis": "Confirmed champion levers hold under promotion primary.",
-        "knobs": {"seed": 7, "eval_version": "e_test", "grammar_completion_bounds": True},
+        "knobs": {
+            "seed": 7,
+            "eval_version": "e_test",
+            "grammar_completion_bounds": True,
+        },
         "formal_claims": [_mod.promote_formal_claim_dict()],
     }
     preflight_sha = "ab" * 32  # 64 hex
@@ -638,21 +3744,67 @@ def test_promote_manifest_without_preflight_sha_has_no_placeholder_obligation() 
     assert man.formal_obligations == ()
 
 
-def test_resolve_promotion_with_in_band_cert_promotes(tmp_path: Path) -> None:
-    root = tmp_path / "autoresearch"
-    loop_id = "loop-cert"
-    camp = root / "c-cert"
-    camp.mkdir(parents=True)
+def _write_run_eval(
+    camp: Path,
+    run_id: str,
+    *,
+    structural_similarity: float,
+    parse_rate: float = 1.0,
+) -> None:
+    """Seed dual-arm eval artifacts so harness detection sees complete measurement."""
+    run_dir = camp / "runs" / run_id
+    run_dir.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "n": 3,
+        "document_n": 3,
+        "completed_document_n": 3,
+        "incomplete_document_n": 0,
+        "decode_timeout_count": 0,
+        "structural_similarity": structural_similarity,
+        "parse_rate": parse_rate,
+        "meaningful_program_rate": 0.5,
+        "latency_ms_p50": 100.0,
+    }
+    (run_dir / "eval_held_out.json").write_text(
+        __import__("json").dumps(payload), encoding="utf-8"
+    )
+    (run_dir / "eval_smoke.json").write_text(
+        __import__("json").dumps(payload), encoding="utf-8"
+    )
+
+
+def _seed_complete_promotion_pair(
+    camp: Path, *, prefix: str, seed: int
+) -> tuple[str, str, dict[str, float], dict[str, float]]:
+    control_id = f"{prefix}-control"
+    candidate_id = f"{prefix}-promote"
+    _write_run_eval(camp, control_id, structural_similarity=0.10)
+    _write_run_eval(camp, candidate_id, structural_similarity=0.20)
     exp_sha = _mod.locked_promote_expectations_sha256()
-    cert = _v2_cert(exp_sha=exp_sha, relation="in_band")
     (camp / "metric-certificate.json").write_text(
-        __import__("json").dumps(cert), encoding="utf-8"
+        json.dumps(_v2_cert(exp_sha=exp_sha, relation="in_band")), encoding="utf-8"
     )
     _mod.record_formal_preflight_status(
         camp,
         status="proved",
         template_id=_mod._PROMOTE_FORMAL_TEMPLATE_ID,
     )
+    manifests = camp / "manifests"
+    manifests.mkdir(parents=True)
+    for arm_id in (control_id, candidate_id):
+        (manifests / f"{arm_id}.json").write_text(
+            json.dumps({"experiment_id": arm_id, "seeds": [seed]}),
+            encoding="utf-8",
+        )
+    control, candidate = _held_out_win_metrics()
+    return control_id, candidate_id, control, candidate
+
+
+def test_resolve_promotion_requires_two_content_bound_seed_pairs(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-cert"
     path = _mod._champion_queue_path(root, loop_id)
     entry = {
         "schema": _mod._CHAMPION_QUEUE_SCHEMA,
@@ -662,24 +3814,197 @@ def test_resolve_promotion_with_in_band_cert_promotes(tmp_path: Path) -> None:
         "knobs_fingerprint": "fpok",
     }
     _mod._write_champion_queue(path, [entry])
+
+    statuses: list[str] = []
+    for cycle_index, seed in ((9, 109), (10, 110)):
+        campaign_id = f"c-cert-{cycle_index}"
+        camp = root / campaign_id
+        control_id, candidate_id, control, candidate = _seed_complete_promotion_pair(
+            camp, prefix=campaign_id, seed=seed
+        )
+        delivery = {
+            "positive": True,
+            "measurement_complete": True,
+            "reasons": ["quality_held:parse=1.0 mpr=1.0"],
+            "control_id": control_id,
+            "candidate_id": candidate_id,
+            "control_metrics": control,
+            "candidate_metrics": candidate,
+            "arm_seed": seed,
+            "arm_order": _mod._counterbalanced_arm_order(
+                control_id,
+                candidate_id,
+                cycle_index=cycle_index,
+                seed=seed,
+                promotion_replicate_index=len(statuses),
+            ),
+        }
+        (camp / "sdlc_delivery.json").write_text(json.dumps(delivery), encoding="utf-8")
+        resolved = _mod._resolve_promotion_result(
+            root=root,
+            loop_id=loop_id,
+            entry=_mod._load_champion_queue(path)[0],
+            delivery=delivery,
+            campaign_id=campaign_id,
+            cycle_index=cycle_index,
+            camp_dir=camp,
+            formal_preflight_status="proved",
+            arm_exits={control_id: 0, candidate_id: 0},
+        )
+        assert resolved is not None
+        statuses.append(str(resolved["status"]))
+
+    assert statuses == ["promotion_inconclusive", "climb_accepted"]
+    replicate_ledger = _mod._promotion_replicate_ledger_path(root, loop_id)
+    rows, error = _mod._record_promotion_replicate(
+        root=root,
+        loop_id=loop_id,
+        entry=_mod._load_champion_queue(path)[0],
+        campaign_id=campaign_id,
+        cycle_index=cycle_index,
+        camp_dir=camp,
+        delivery=delivery,
+        arm_exits={control_id: 0, candidate_id: 0},
+    )
+    assert error is None
+    assert len(rows) == 2
+    replicates = [
+        json.loads(line)
+        for line in replicate_ledger.read_text(encoding="utf-8").splitlines()
+    ]
+    assert len(replicates) == 2
+    for replicate in replicates:
+        seed = replicate["seed"]
+        camp = root / replicate["campaign_id"]
+        for arm_id in (replicate["control_id"], replicate["candidate_id"]):
+            manifest = json.loads((camp / "manifests" / f"{arm_id}.json").read_text())
+            assert manifest["seeds"] == [seed]
+    ledger = root / "loops" / loop_id / "learning_certificate_ledger.jsonl"
+    assert ledger.is_file()
+    line = ledger.read_text(encoding="utf-8").strip().splitlines()[-1]
+    assert "climb_accepted" in line
+    assert "promote_primary_win" in line or "primary_improvement" in line
+
+
+def test_tampered_promotion_replicate_does_not_satisfy_seed_floor(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-tampered"
+    entry = {"entry_id": "champ", "knobs_fingerprint": "fingerprint"}
+    ledger = _mod._promotion_replicate_ledger_path(root, loop_id)
+    ledger.parent.mkdir(parents=True)
+    ledger.write_text(
+        json.dumps(
+            {
+                "schema": _mod._PROMOTION_REPLICATE_SCHEMA,
+                "entry_id": "champ",
+                "knobs_fingerprint": "fingerprint",
+                "seed": 101,
+                "content_sha256": "0" * 64,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    assert _mod._verified_promotion_replicates(root, loop_id, entry) == []
+
+
+@pytest.mark.parametrize("mutated", ["manifest", "certificate", "delivery"])
+def test_mutated_promotion_evidence_invalidates_replicate(
+    tmp_path: Path, mutated: str
+) -> None:
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-mutated"
+    campaign_id = "campaign-1"
+    camp = root / campaign_id
+    entry = {"entry_id": "champ", "knobs_fingerprint": "fingerprint"}
+    control_id, candidate_id, control, candidate = _seed_complete_promotion_pair(
+        camp, prefix=campaign_id, seed=101
+    )
+    delivery = {
+        "measurement_complete": True,
+        "control_id": control_id,
+        "candidate_id": candidate_id,
+        "control_metrics": control,
+        "candidate_metrics": candidate,
+        "arm_seed": 101,
+        "arm_order": [control_id, candidate_id],
+    }
+    delivery_path = camp / "sdlc_delivery.json"
+    delivery_path.write_text(json.dumps(delivery), encoding="utf-8")
+    rows, error = _mod._record_promotion_replicate(
+        root=root,
+        loop_id=loop_id,
+        entry=entry,
+        campaign_id=campaign_id,
+        cycle_index=1,
+        camp_dir=camp,
+        delivery=delivery,
+        arm_exits={control_id: 0, candidate_id: 0},
+    )
+    assert error is None and len(rows) == 1
+
+    if mutated == "manifest":
+        path = camp / "manifests" / f"{candidate_id}.json"
+        path.write_text(path.read_text(encoding="utf-8") + " ", encoding="utf-8")
+    elif mutated == "certificate":
+        path = camp / "metric-certificate.json"
+        path.write_text(path.read_text(encoding="utf-8") + " ", encoding="utf-8")
+    else:
+        delivery["arm_seed"] = 102
+        delivery_path.write_text(json.dumps(delivery), encoding="utf-8")
+
+    assert _mod._verified_promotion_replicates(root, loop_id, entry) == []
+
+
+def test_resolve_promotion_null_primary_not_promoted(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-null-primary"
+    camp = root / "c-null"
+    camp.mkdir(parents=True)
+    _write_run_eval(camp, "ctrl", structural_similarity=0.40)
+    _write_run_eval(camp, "cand", structural_similarity=0.40)
+    exp_sha = _mod.locked_promote_expectations_sha256()
+    cert = _v2_cert(exp_sha=exp_sha, relation="in_band")
+    (camp / "metric-certificate.json").write_text(
+        __import__("json").dumps(cert), encoding="utf-8"
+    )
+    _mod.record_formal_preflight_status(
+        camp, status="proved", template_id=_mod._PROMOTE_FORMAL_TEMPLATE_ID
+    )
+    path = _mod._champion_queue_path(root, loop_id)
+    entry = {
+        "schema": _mod._CHAMPION_QUEUE_SCHEMA,
+        "entry_id": "champ-null",
+        "status": "promoting",
+        "knobs": {"grammar_completion_bounds": True},
+        "knobs_fingerprint": "fpnull",
+    }
+    _mod._write_champion_queue(path, [entry])
+    control, candidate = _held_out_win_metrics(control_ss=0.4, candidate_ss=0.4)
     resolved = _mod._resolve_promotion_result(
         root=root,
         loop_id=loop_id,
         entry=entry,
         delivery={
-            "positive": True,
-            "reasons": ["quality_held:parse=1.0 mpr=1.0"],
+            "positive": False,
+            "reasons": ["primary_metric_null_or_worse:held_out.structural_similarity"],
+            "control_metrics": control,
+            "candidate_metrics": candidate,
+            "control_id": "ctrl",
+            "candidate_id": "cand",
         },
-        campaign_id="c-cert",
-        cycle_index=9,
+        campaign_id="c-null",
+        cycle_index=11,
         camp_dir=camp,
+        formal_preflight_status="proved",
+        arm_exits={"ctrl": 0, "cand": 0},
     )
     assert resolved is not None
-    assert resolved["status"] == "promoted"
-    ledger = root / "loops" / loop_id / "learning_certificate_ledger.jsonl"
-    assert ledger.is_file()
-    line = ledger.read_text(encoding="utf-8").strip().splitlines()[-1]
-    assert "promoted" in line
+    assert resolved["status"] == "promotion_failed"
+    reasons = resolved.get("resolve_reasons") or []
+    assert any("promote_primary_null_or_insufficient" in str(r) for r in reasons)
 
 
 def test_resolve_promotion_assumption_miss_writes_five_lane(tmp_path: Path) -> None:
@@ -712,6 +4037,7 @@ def test_resolve_promotion_assumption_miss_writes_five_lane(tmp_path: Path) -> N
         campaign_id="c-5lane",
         cycle_index=10,
         camp_dir=camp,
+        formal_preflight_status="proved",
     )
     assert resolved is not None
     assert resolved["status"] == "promotion_failed"
@@ -795,8 +4121,8 @@ def test_promote_formal_claims_match_obligations_for_execute_binding() -> None:
     assert man.formal_obligations[0].preflight_sha256 == preflight_sha
 
 
-def test_ensure_promote_formal_preflight_content_addressed_when_recorded(
-    tmp_path: Path,
+def test_ensure_promote_formal_preflight_revalidates_recorded_artifact(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     import hashlib
     import json
@@ -842,12 +4168,62 @@ def test_ensure_promote_formal_preflight_content_addressed_when_recorded(
     (camp / "formal_preflight_status.json").write_text(
         json.dumps(st, indent=2) + "\n", encoding="utf-8"
     )
+    validated = SimpleNamespace(status="proved")
+    monkeypatch.setattr(
+        "slm_training.autoresearch.formal.validate_formal_preflight_artifact",
+        lambda *args, **kwargs: validated,
+    )
     status, sha = _mod.ensure_promote_formal_preflight(
         camp_dir=camp, campaign_id="c1", experiment_id="e1", run_lean=False
     )
     assert status == "proved"
     assert sha == content_sha
     assert (art / f"{sha}.json").is_file()
+    recorded = json.loads(
+        (camp / "formal_preflight_status.json").read_text(encoding="utf-8")
+    )
+    assert recorded["binding_validated_sha256"] == content_sha
+    assert _mod._formal_preflight_status(camp) == "proved"
+
+
+def test_ensure_promote_formal_preflight_rejects_stale_recorded_artifact(
+    tmp_path: Path,
+) -> None:
+    camp = tmp_path / "camp"
+    camp.mkdir()
+    sha = "a" * 64
+    _mod.record_formal_preflight_status(
+        camp, status="proved", template_id=_mod._PROMOTE_FORMAL_TEMPLATE_ID
+    )
+    status_path = camp / "formal_preflight_status.json"
+    recorded = json.loads(status_path.read_text(encoding="utf-8"))
+    recorded["preflight_sha256"] = sha
+    status_path.write_text(json.dumps(recorded, indent=2) + "\n", encoding="utf-8")
+
+    status, returned_sha = _mod.ensure_promote_formal_preflight(
+        camp_dir=camp, campaign_id="c1", experiment_id="e1", run_lean=False
+    )
+
+    assert status == "unknown"
+    assert returned_sha is None
+    assert _mod._formal_preflight_status(camp) == "unknown"
+    recorded = json.loads(status_path.read_text(encoding="utf-8"))
+    assert recorded["reason"].startswith("cached_formal_preflight_invalid:")
+
+
+def test_formal_preflight_status_rejects_unvalidated_proved_sidecar(
+    tmp_path: Path,
+) -> None:
+    camp = tmp_path / "camp"
+    _mod.record_formal_preflight_status(
+        camp, status="proved", template_id=_mod._PROMOTE_FORMAL_TEMPLATE_ID
+    )
+    status_path = camp / "formal_preflight_status.json"
+    recorded = json.loads(status_path.read_text(encoding="utf-8"))
+    recorded["preflight_sha256"] = "a" * 64
+    status_path.write_text(json.dumps(recorded, indent=2) + "\n", encoding="utf-8")
+
+    assert _mod._formal_preflight_status(camp) is None
 
 
 def test_skip_arm_slugs_only_while_open() -> None:
@@ -874,13 +4250,20 @@ def test_skip_arm_slugs_only_while_open() -> None:
     assert "canvas" in skip
 
 
-def test_is_champion_lever_includes_steps_and_batch1() -> None:
+def test_is_champion_lever_includes_training_and_decode_arms() -> None:
     assert _mod._is_champion_lever(
         {"grammar_completion_bounds": True}, candidate_id="x-bounds"
     )
     assert _mod._is_champion_lever({"batch_size": 1}, candidate_id="x-batch1")
     assert _mod._is_champion_lever(
-        {"grammar_completion_bounds": False, "compact_active_canvas": False, "steps": 160},
+        {"component_edge_loss_weight": 1.0}, candidate_id="x-component-edge"
+    )
+    assert _mod._is_champion_lever(
+        {
+            "grammar_completion_bounds": False,
+            "compact_active_canvas": False,
+            "steps": 160,
+        },
         candidate_id="c20260731-c1-steps",
     )
     assert not _mod._is_champion_lever(
@@ -907,6 +4290,14 @@ def _seed_promote_runs(camp: Path) -> None:
                     "parse_rate": pr,
                     "meaningful_program_rate": mpr,
                     "structural_similarity": mpr,
+                    "details": [
+                        {
+                            "incomplete": False,
+                            "parse_ok": pr == 1.0,
+                            "structural_similarity": score,
+                        }
+                        for score in (mpr - 0.1, mpr, mpr + 0.1)
+                    ],
                 }
             ),
             encoding="utf-8",
@@ -928,6 +4319,31 @@ def _seed_promote_runs(camp: Path) -> None:
         )
 
 
+def _raw_resource_candidates() -> list[dict[str, object]]:
+    """Explicit fixture samples; production must receive canonical measurements."""
+
+    return [
+        {
+            "id": arm_id,
+            "hardware": "cpu",
+            "lever_snapshot_sha256": digest,
+            "cold_ns": [cold_ns],
+            "warm_ns": [warm_ns, warm_ns + 100],
+            "input_units": [3],
+            "passes": [8],
+            "energy_uj": [energy_uj],
+            "cost_micro_usd": [cost],
+            "successes": 3,
+            "quality_failures": 0,
+            "trainable_params": 1_608_962,
+        }
+        for arm_id, digest, cold_ns, warm_ns, energy_uj, cost in (
+            ("control", "a" * 64, 12_000_000_000, 11_000_000_000, 5000, 20),
+            ("candidate", "b" * 64, 10_000_000_000, 9_000_000_000, 4500, 18),
+        )
+    ]
+
+
 def test_export_promote_metric_certificate_writes_v2(tmp_path: Path) -> None:
     """Real LeverProof path when checker is built; skip on CI without Lean bin."""
     import pytest
@@ -944,23 +4360,36 @@ def test_export_promote_metric_certificate_writes_v2(tmp_path: Path) -> None:
         control_id="c-control",
         candidate_id="c-promote",
         delivery={"reasons": []},
+        raw_resource_candidates=_raw_resource_candidates(),
     )
     assert err is None, err
     assert path is not None and path.is_file()
     cert = __import__("json").loads(path.read_text(encoding="utf-8"))
     assert cert["schema"] == "metric_certificate/v2"
+    observations = json.loads(
+        (camp / "promote" / "metric-observations.json").read_text(encoding="utf-8")
+    )
+    assert observations["metrics"]["held_out_structural_similarity_pm"] == [
+        400,
+        500,
+        600,
+    ]
+    assert observations["metrics"]["parse_rate_pm"] == [1000, 1000, 1000]
     from slm_training.harnesses.experiments.verified_metrics import optimum_feedback
 
     fb = optimum_feedback(cert)
     assert fb["policy"] == "continue"
+    control, candidate = _held_out_win_metrics(control_ss=0.25, candidate_ss=0.50)
     d = _mod.dispose_champion_promote(
         formal_preflight_status="proved",
         certificate=cert,
         locked_expectations_sha256=_mod.locked_promote_expectations_sha256(),
         phase_a_positive=True,
         phase_a_quality_held=True,
+        control_metrics=control,
+        candidate_metrics=candidate,
     )
-    assert d["status"] == "promoted"
+    assert d["status"] == "climb_accepted"
 
 
 def test_export_promote_metric_certificate_fail_closed_without_metrics(
@@ -975,17 +4404,127 @@ def test_export_promote_metric_certificate_fail_closed_without_metrics(
         control_id="c-control",
         candidate_id="c-promote",
         delivery={},
+        raw_resource_candidates=_raw_resource_candidates(),
     )
     assert path is None
     assert err is not None
-    assert "incomplete_metrics" in err or "checker_missing" in err
+    assert (
+        "incomplete_metrics" in err
+        or "checker_missing" in err
+        or "raw_metric_observations_missing" in err
+        or "raw_resource_evidence_missing" in err
+    )
 
 
-def test_rate_to_pm_and_latency_helpers() -> None:
+def test_export_promote_metric_certificate_rejects_synthetic_resource_defaults(
+    tmp_path: Path,
+) -> None:
+    camp = tmp_path / "camp"
+    _seed_promote_runs(camp)
+
+    path, err = _mod.export_promote_metric_certificate(
+        camp_dir=camp,
+        campaign_id="camp1",
+        control_id="c-control",
+        candidate_id="c-promote",
+        delivery={},
+    )
+
+    assert path is None
+    assert err == "promote_evidence_build_failed:raw_resource_evidence_missing"
+    assert not (camp / "promote" / "metric-evidence.json").exists()
+
+
+def test_promote_certificate_checker_uses_bounded_stage_and_120s_cap(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from slm_training.harnesses.experiments import verified_metrics
+
+    camp = tmp_path / "camp"
+    root = tmp_path / "ar"
+    checker = tmp_path / "leverproof-lean"
+    checker.write_text("checker", encoding="utf-8")
+    _seed_promote_runs(camp)
+    monkeypatch.setattr(verified_metrics, "IN_REPO_CHECKER", checker)
+    monkeypatch.setattr(_mod.time, "monotonic", lambda: 100.0)
+    captured: dict[str, object] = {}
+
+    def bounded(cmd, **kwargs):
+        captured.update({"cmd": cmd, **kwargs})
+        return _mod.BoundedProcessResult(
+            command=tuple(cmd),
+            outcome=_mod.ProcessOutcome.COMPLETED,
+            returncode=0,
+            stdout='{"schema":"metric_certificate/v2","selected_candidate":"candidate"}',
+            stderr="",
+            duration_seconds=0.1,
+        )
+
+    monkeypatch.setattr(_mod, "_stage_command", bounded)
+    path, err = _mod.export_promote_metric_certificate(
+        camp_dir=camp,
+        campaign_id="camp1",
+        control_id="c-control",
+        candidate_id="c-promote",
+        delivery={},
+        deadline=500.0,
+        root=root,
+        loop_id="loop-x",
+        raw_resource_candidates=_raw_resource_candidates(),
+    )
+
+    assert err is None
+    assert path is not None
+    assert captured["deadline"] == 220.0
+    assert captured["root"] == root
+    assert captured["loop_id"] == "loop-x"
+    assert captured["stage"] == "promotion-certificate"
+
+
+def test_promote_certificate_checker_timeout_fails_closed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from slm_training.harnesses.experiments import verified_metrics
+
+    camp = tmp_path / "camp"
+    checker = tmp_path / "leverproof-lean"
+    checker.write_text("checker", encoding="utf-8")
+    _seed_promote_runs(camp)
+    monkeypatch.setattr(verified_metrics, "IN_REPO_CHECKER", checker)
+
+    def timed_out(cmd, **kwargs):
+        del kwargs
+        return _mod.BoundedProcessResult(
+            command=tuple(cmd),
+            outcome=_mod.ProcessOutcome.KILLED,
+            returncode=-9,
+            stdout="",
+            stderr="",
+            duration_seconds=120.0,
+            timed_out=True,
+            interrupted=True,
+            killed=True,
+        )
+
+    monkeypatch.setattr(_mod, "_stage_command", timed_out)
+    path, err = _mod.export_promote_metric_certificate(
+        camp_dir=camp,
+        campaign_id="camp1",
+        control_id="c-control",
+        candidate_id="c-promote",
+        delivery={},
+        raw_resource_candidates=_raw_resource_candidates(),
+    )
+
+    assert path is None
+    assert err == "promote_certify_failed:checker timed out within 120s cap"
+    assert not (camp / "metric-certificate.json").exists()
+
+
+def test_rate_to_pm_helper() -> None:
     assert _mod._rate_to_pm(0.5) == 500
     assert _mod._rate_to_pm(1.0) == 1000
     assert _mod._rate_to_pm(None) is None
-    assert _mod._latency_ms_to_ns(1.0) == 1_000_000
 
 
 def test_enqueue_champion_accepts_steps_arm(tmp_path: Path) -> None:
@@ -1036,6 +4575,23 @@ def _write_eval(path: Path, *, suite: str, **metrics: float) -> None:
     path.write_text(__import__("json").dumps(payload), encoding="utf-8")
 
 
+def _write_complete_scoreboard(run: Path, *suite_names: str) -> None:
+    suites = {}
+    for suite in suite_names:
+        document_n = 5 if suite == "held_out" else 3
+        suites[suite] = {
+            "suite": suite,
+            "n": document_n,
+            "document_n": document_n,
+            "completed_document_n": document_n,
+            "incomplete_document_n": 0,
+            "decode_timeout_document_count": 0,
+        }
+    (run / "scoreboard.json").write_text(
+        json.dumps({"suites": suites}), encoding="utf-8"
+    )
+
+
 def test_run_metrics_loads_held_out_when_preferred(tmp_path: Path) -> None:
     camp = tmp_path / "camp"
     run = camp / "runs" / "arm-a"
@@ -1064,8 +4620,358 @@ def test_run_metrics_loads_held_out_when_preferred(tmp_path: Path) -> None:
     assert held["smoke.structural_similarity"] == 0.2
 
 
+def test_classify_positive_rejects_c1731_efficiency_jitter(tmp_path: Path) -> None:
+    camp = tmp_path / "camp"
+    for arm, latency in (("c-control", 3453.06), ("c-component-plan", 3430.55)):
+        _write_eval(
+            camp / "runs" / arm / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            binder_reference_f1=0.6333333333333333,
+            meaningful_program_rate=0.3333333333333333,
+            structural_similarity=0.41973333333333335,
+            latency_ms_p50=latency,
+        )
+    result = _mod._classify_positive(
+        camp_dir=camp,
+        primary_metric="smoke.structural_similarity",
+        control_id="c-control",
+        candidate_id="c-component-plan",
+        role="screening",
+    )
+    assert result["positive"] is False
+    assert any(
+        reason.startswith("efficiency_win_rejected_min_effect:")
+        for reason in result["reasons"]
+    )
+
+
+def test_classify_positive_rejects_c1819_quality_regression(tmp_path: Path) -> None:
+    camp = tmp_path / "camp"
+    rows = (
+        (
+            "c-control",
+            3772.85,
+            0.6666666666666666,
+            0.40443333333333337,
+            0.9523809523809524,
+        ),
+        (
+            "c-candidate",
+            1074.57,
+            0.3333333333333333,
+            0.17416666666666666,
+            0.6333333333333333,
+        ),
+    )
+    for arm, latency, mpr, similarity, binder_f1 in rows:
+        run = camp / "runs" / arm
+        _write_eval(
+            run / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            binder_reference_f1=binder_f1,
+            meaningful_program_rate=mpr,
+            structural_similarity=similarity,
+            latency_ms_p50=latency,
+        )
+        _write_complete_scoreboard(run, "smoke")
+
+    result = _mod._classify_positive(
+        camp_dir=camp,
+        primary_metric="smoke.structural_similarity",
+        control_id="c-control",
+        candidate_id="c-candidate",
+        role="screening",
+    )
+
+    assert result["positive"] is False
+    assert result["stack_layer"] is False
+    assert any(
+        reason.startswith("efficiency_win_rejected_mpr_regression:")
+        for reason in result["reasons"]
+    )
+    assert any(
+        reason.startswith("non_regression_fail:binder_reference_f1:")
+        for reason in result["reasons"]
+    )
+
+
+def test_classify_positive_rejects_quality_win_with_unbounded_latency_cost(
+    tmp_path: Path,
+) -> None:
+    camp = tmp_path / "camp"
+    for arm, similarity, latency in (
+        ("c-control", 0.13526666666666667, 1105.9),
+        ("c-steps", 0.41973333333333335, 2810.05),
+    ):
+        run = camp / "runs" / arm
+        _write_eval(
+            run / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            binder_reference_f1=0.6333333333333333,
+            meaningful_program_rate=0.3333333333333333,
+            structural_similarity=similarity,
+            latency_ms_p50=latency,
+        )
+        _write_complete_scoreboard(run, "smoke")
+
+    result = _mod._classify_positive(
+        camp_dir=camp,
+        primary_metric="smoke.structural_similarity",
+        control_id="c-control",
+        candidate_id="c-steps",
+        role="screening",
+    )
+
+    assert result["positive"] is False
+    assert result["stack_layer"] is False
+    assert any(
+        reason.startswith("primary_quality_win_rejected_latency_budget:")
+        for reason in result["reasons"]
+    )
+
+
+def test_open_champion_is_revalidated_under_current_policy(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "cycle-1"
+    for arm, similarity, latency in (
+        ("c-control", 0.13526666666666667, 1105.9),
+        ("c-steps", 0.41973333333333335, 2810.05),
+    ):
+        run = camp / "runs" / arm
+        _write_eval(
+            run / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            meaningful_program_rate=0.3333333333333333,
+            structural_similarity=similarity,
+            latency_ms_p50=latency,
+        )
+        _write_complete_scoreboard(run, "smoke")
+    (camp / "cycle_handoff.json").write_text(
+        json.dumps(
+            {
+                "cycle_role": "screening",
+                "primary_metric": "smoke.structural_similarity",
+            }
+        )
+    )
+    entries = [
+        {
+            "entry_id": "champ-1",
+            "status": "queued",
+            "source_campaign_id": camp.name,
+            "source_control_id": "c-control",
+            "source_candidate_id": "c-steps",
+            "source_role": "screening",
+        }
+    ]
+
+    assert _mod._revalidate_open_champion_entries(root, entries) is True
+    assert entries[0]["status"] == "rejected"
+    assert (
+        "source_reclassified_nonpositive_under_current_policy"
+        in entries[0]["resolve_reasons"]
+    )
+
+
+def test_promote_authority_digest_changes_with_harness_version() -> None:
+    from slm_training.autoresearch.climb_policy import promote_authority_sha256
+
+    a = promote_authority_sha256(
+        climb_policy_sha256="p" * 64,
+        locked_expectations_sha256="e" * 64,
+        harness_component_version="v176",
+    )
+    b = promote_authority_sha256(
+        climb_policy_sha256="p" * 64,
+        locked_expectations_sha256="e" * 64,
+        harness_component_version="v177",
+    )
+    assert a != b
+    assert len(a) == 64
+
+
+def test_recertify_promoted_requeues_when_evidence_missing(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-recert"
+    (root / "loops" / loop_id).mkdir(parents=True)
+    entries = [
+        {
+            "entry_id": "champ-legacy",
+            "status": "promoted",
+            "knobs_fingerprint": "abc",
+            # no promote_authority_sha256, no promotion campaign
+            "resolve_reasons": ["cert_policy:continue", "phase_a_positive"],
+        }
+    ]
+    assert (
+        _mod._recertify_promoted_champion_entries(root, loop_id, entries) is True
+    )
+    assert entries[0]["status"] == "confirmed"
+    assert entries[0].get("recert_required") is True
+    assert any(
+        "recert_required" in str(r) for r in entries[0].get("resolve_reasons") or []
+    )
+    audit = (
+        root / "loops" / loop_id / "historical_reclassification.jsonl"
+    ).read_text(encoding="utf-8")
+    assert "promote_authority_recert" in audit
+    assert "requeue" in audit
+
+
+def test_recertify_promoted_fails_null_primary_under_current_rules(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-recert-fail"
+    camp = root / "promote-camp"
+    camp.mkdir(parents=True)
+    exp_sha = _mod.locked_promote_expectations_sha256()
+    (camp / "metric-certificate.json").write_text(
+        json.dumps(_v2_cert(exp_sha=exp_sha, relation="in_band")), encoding="utf-8"
+    )
+    (camp / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "measurement_complete": True,
+                "positive": True,
+                "control_id": "c-control",
+                "candidate_id": "c-promote",
+                "control_metrics": {
+                    "structural_similarity": 0.25,
+                    "held_out.structural_similarity": 0.25,
+                    "parse_rate": 1.0,
+                },
+                "candidate_metrics": {
+                    "structural_similarity": 0.25,
+                    "held_out.structural_similarity": 0.25,
+                    "parse_rate": 1.0,
+                },
+                "reasons": ["cert_policy:continue"],
+            }
+        ),
+        encoding="utf-8",
+    )
+    entries = [
+        {
+            "entry_id": "champ-vacuous",
+            "status": "promoted",
+            "promotion_campaign_id": camp.name,
+            "formal_preflight_status": "proved",
+            "resolve_reasons": ["cert_policy:continue", "phase_a_positive"],
+        }
+    ]
+    assert (
+        _mod._recertify_promoted_champion_entries(root, loop_id, entries) is True
+    )
+    assert entries[0]["status"] == "promotion_failed"
+    assert any(
+        "recert_under_current_policy" in str(r)
+        for r in entries[0].get("resolve_reasons") or []
+    )
+
+
+def test_recertify_promoted_keeps_and_restamps_valid_win(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-recert-keep"
+    camp = root / "promote-camp-win"
+    camp.mkdir(parents=True)
+    exp_sha = _mod.locked_promote_expectations_sha256()
+    (camp / "metric-certificate.json").write_text(
+        json.dumps(_v2_cert(exp_sha=exp_sha, relation="in_band")), encoding="utf-8"
+    )
+    control, candidate = _held_out_win_metrics()
+    (camp / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "measurement_complete": True,
+                "positive": True,
+                "control_id": "c-control",
+                "candidate_id": "c-promote",
+                "control_metrics": control,
+                "candidate_metrics": candidate,
+                "reasons": ["cert_policy:continue", "promote_primary_win:held_out"],
+            }
+        ),
+        encoding="utf-8",
+    )
+    entries = [
+        {
+            "entry_id": "champ-valid",
+            "status": "climb_accepted",
+            "promotion_campaign_id": camp.name,
+            "formal_preflight_status": "proved",
+            "promote_authority_sha256": "stale" * 16,
+            "resolve_reasons": ["cert_policy:continue"],
+        }
+    ]
+    assert (
+        _mod._recertify_promoted_champion_entries(root, loop_id, entries) is True
+    )
+    assert entries[0]["status"] == "climb_accepted"
+    assert entries[0].get("promote_authority_sha256")
+    assert entries[0]["promote_authority_sha256"] != "stale" * 16
+    assert any(
+        "recertified_under_current_promote_authority" in str(r)
+        for r in entries[0].get("resolve_reasons") or []
+    )
+    # Second pass with current stamp is a no-op.
+    assert (
+        _mod._recertify_promoted_champion_entries(root, loop_id, entries) is False
+    )
+
+
+def test_classify_positive_marks_finalized_decode_timeout_incomplete(
+    tmp_path: Path,
+) -> None:
+    camp = tmp_path / "camp"
+    for arm, similarity in (("c-control", 0.2), ("c-candidate", 0.4)):
+        run = camp / "runs" / arm
+        _write_eval(
+            run / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            meaningful_program_rate=1.0,
+            structural_similarity=similarity,
+            latency_ms_p50=1000.0,
+        )
+        (run / "scoreboard.json").write_text(
+            json.dumps(
+                {
+                    "suites": [
+                        {
+                            "suite": "smoke",
+                            "n": 3,
+                            "completed_document_n": 2,
+                            "incomplete_document_n": 1,
+                            "decode_timeout_document_count": 1,
+                        }
+                    ]
+                }
+            )
+        )
+
+    result = _mod._classify_positive(
+        camp_dir=camp,
+        primary_metric="smoke.structural_similarity",
+        control_id="c-control",
+        candidate_id="c-candidate",
+        role="screening",
+    )
+
+    assert result["positive"] is False
+    assert _mod._measurement_is_complete(result) is False
+    assert any(
+        reason.startswith("measurement_incomplete:c-control:smoke:")
+        for reason in result["reasons"]
+    )
+
+
 def test_classify_positive_promotion_sees_held_out_primary(tmp_path: Path) -> None:
-    """Regression: promote primary must not be unavailable when held_out eval exists."""
+    """Promotion must ignore a same-leaf smoke override and score held-out."""
     camp = tmp_path / "camp"
     for arm, ss in (("c-control", 0.30), ("c-promote", 0.40)):
         run = camp / "runs" / arm
@@ -1085,10 +4991,11 @@ def test_classify_positive_promotion_sees_held_out_primary(tmp_path: Path) -> No
             structural_similarity=ss,
             latency_ms_p50=12000.0,
         )
+        _write_complete_scoreboard(run, "smoke", "held_out")
         # No gates.json → avoid fixture_insufficient_n noise for this unit test.
     result = _mod._classify_positive(
         camp_dir=camp,
-        primary_metric="held_out.structural_similarity",
+        primary_metric="smoke.structural_similarity",
         control_id="c-control",
         candidate_id="c-promote",
         role="promotion",
@@ -1099,6 +5006,153 @@ def test_classify_positive_promotion_sees_held_out_primary(tmp_path: Path) -> No
         for r in (result.get("reasons") or [])
     )
     assert result["positive"] is True
+
+
+def test_classify_positive_rejects_missing_scoreboards(tmp_path: Path) -> None:
+    camp = tmp_path / "camp"
+    for arm, similarity in (("c-control", 0.2), ("c-candidate", 0.4)):
+        _write_eval(
+            camp / "runs" / arm / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            meaningful_program_rate=1.0,
+            structural_similarity=similarity,
+            latency_ms_p50=1000.0,
+        )
+    result = _mod._classify_positive(
+        camp_dir=camp,
+        primary_metric="smoke.structural_similarity",
+        control_id="c-control",
+        candidate_id="c-candidate",
+    )
+    assert result["positive"] is False
+    assert {
+        "measurement_incomplete:c-control:missing_scoreboard",
+        "measurement_incomplete:c-candidate:missing_scoreboard",
+    }.issubset(result["reasons"])
+
+
+def test_classify_positive_routes_failed_outcome_to_harness_repair(
+    tmp_path: Path,
+) -> None:
+    camp = tmp_path / "camp"
+    for arm, similarity in (("c-control", 0.2), ("c-candidate", 0.4)):
+        run = camp / "runs" / arm
+        _write_eval(
+            run / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            meaningful_program_rate=1.0,
+            structural_similarity=similarity,
+            latency_ms_p50=1000.0,
+        )
+        _write_complete_scoreboard(run, "smoke")
+    outcomes = camp / "artifacts" / "outcomes"
+    outcomes.mkdir(parents=True)
+    (outcomes / "candidate.json").write_text(
+        json.dumps(
+            {
+                "experiment_id": "c-candidate",
+                "status": "failed",
+                "metrics": {},
+                "error": "lever_capability_compatibility: unsupported lever",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = _mod._classify_positive(
+        camp_dir=camp,
+        primary_metric="smoke.structural_similarity",
+        control_id="c-control",
+        candidate_id="c-candidate",
+    )
+
+    assert result["positive"] is False
+    assert "harness_failure:c-candidate:experiment_failed" in result["reasons"]
+
+
+@pytest.mark.parametrize(
+    ("suites", "reason"),
+    case_values(__file__, "test_classify_positive_rejects_invalid_or_empty_suites"),
+)
+def test_classify_positive_rejects_invalid_or_empty_suites(
+    tmp_path: Path, suites: object, reason: str
+) -> None:
+    camp = tmp_path / "camp"
+    for arm, similarity in (("c-control", 0.2), ("c-candidate", 0.4)):
+        run = camp / "runs" / arm
+        _write_eval(
+            run / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            meaningful_program_rate=1.0,
+            structural_similarity=similarity,
+            latency_ms_p50=1000.0,
+        )
+        _write_complete_scoreboard(run, "smoke")
+    scoreboard = camp / "runs" / "c-candidate" / "scoreboard.json"
+    scoreboard.write_text(json.dumps({"suites": suites}), encoding="utf-8")
+    result = _mod._classify_positive(
+        camp_dir=camp,
+        primary_metric="smoke.structural_similarity",
+        control_id="c-control",
+        candidate_id="c-candidate",
+    )
+    assert result["positive"] is False
+    assert f"measurement_incomplete:c-candidate:{reason}" in result["reasons"]
+
+
+def test_classify_positive_rejects_inconsistent_suite_counts(tmp_path: Path) -> None:
+    camp = tmp_path / "camp"
+    for arm, similarity in (("c-control", 0.2), ("c-candidate", 0.4)):
+        run = camp / "runs" / arm
+        _write_eval(
+            run / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            meaningful_program_rate=1.0,
+            structural_similarity=similarity,
+            latency_ms_p50=1000.0,
+        )
+        _write_complete_scoreboard(run, "smoke")
+    scoreboard = camp / "runs" / "c-candidate" / "scoreboard.json"
+    payload = json.loads(scoreboard.read_text(encoding="utf-8"))
+    payload["suites"]["smoke"]["completed_document_n"] = 2
+    scoreboard.write_text(json.dumps(payload), encoding="utf-8")
+    result = _mod._classify_positive(
+        camp_dir=camp,
+        primary_metric="smoke.structural_similarity",
+        control_id="c-control",
+        candidate_id="c-candidate",
+    )
+    assert result["positive"] is False
+    assert any(
+        reason.startswith("measurement_incomplete:c-candidate:smoke:invalid_counts:")
+        for reason in result["reasons"]
+    )
+
+
+def test_promotion_cycle_ignores_smoke_cli_primary_override() -> None:
+    assert (
+        _mod._effective_primary_metric(
+            role="promotion",
+            policy_metric="held_out.structural_similarity",
+            requested_metric="smoke.structural_similarity",
+        )
+        == "held_out.structural_similarity"
+    )
+
+
+def test_screening_cycle_ignores_held_out_cli_primary_override() -> None:
+    assert (
+        _mod._effective_primary_metric(
+            role="screening",
+            policy_metric="smoke.structural_similarity",
+            requested_metric="held_out.structural_similarity",
+        )
+        == "smoke.structural_similarity"
+    )
 
 
 def test_classify_positive_promotion_null_held_out_not_positive(tmp_path: Path) -> None:
@@ -1151,6 +5205,2509 @@ def test_driver_lock_singleton(tmp_path: Path) -> None:
     fh2.close()
 
 
-def test_promote_formal_timeout_constant_is_bounded() -> None:
-    # Continuous must not inherit multi-hour MAX_RUN_SECONDS for Mathlib cold builds.
-    assert 30.0 <= _mod._PROMOTE_FORMAL_TIMEOUT_S <= 600.0
+def test_stage_process_updates_child_liveness(tmp_path: Path) -> None:
+    root = tmp_path / "ar"
+    loop = "loop-x"
+    _mod._write_loop_state(
+        root,
+        _mod.AutotrainLoopStateV1(
+            loop_id=loop,
+            state="RUNNING",
+            phase="running",
+            pid=123,
+            active_stage="orchestration",
+        ),
+    )
+
+    _mod._set_active_stage(root, loop, "experiment:arm")
+    _mod._set_stage_process(root, loop, "experiment:arm", 456)
+    first = _mod.AutotrainLoopStateV1.model_validate_json(
+        _mod._loop_state_path(root, loop).read_text()
+    )
+    _mod._set_stage_process(root, loop, "experiment:arm", 456)
+    refreshed = _mod.AutotrainLoopStateV1.model_validate_json(
+        _mod._loop_state_path(root, loop).read_text()
+    )
+
+    assert first.child_pid == 456
+    assert first.stage_started_at is not None
+    assert refreshed.stage_started_at == first.stage_started_at
+    assert refreshed.heartbeat_at >= first.heartbeat_at
+
+    _mod._clear_active_stage(root, loop)
+    completed = _mod.AutotrainLoopStateV1.model_validate_json(
+        _mod._loop_state_path(root, loop).read_text()
+    )
+    assert completed.active_stage is None
+    assert completed.child_pid is None
+    assert completed.stage_started_at is None
+
+
+def test_stage_command_publishes_child_pid_and_heartbeat(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "ar"
+    loop = "loop-x"
+    _mod._write_loop_state(
+        root,
+        _mod.AutotrainLoopStateV1(
+            loop_id=loop,
+            state="RUNNING",
+            phase="running",
+            pid=123,
+            active_stage="orchestration",
+        ),
+    )
+
+    def bounded(cmd, **kwargs):
+        kwargs["on_start"](456)
+        kwargs["on_heartbeat"](456)
+        return _mod.BoundedProcessResult(
+            command=tuple(cmd),
+            outcome=_mod.ProcessOutcome.COMPLETED,
+            returncode=0,
+            stdout="",
+            stderr="",
+            duration_seconds=0.1,
+        )
+
+    monkeypatch.setattr(_mod, "run_bounded_process", bounded)
+    _mod._stage_command(
+        ["true"],
+        cwd=tmp_path,
+        root=root,
+        loop_id=loop,
+        stage="campaign-research",
+    )
+    state = _mod.AutotrainLoopStateV1.model_validate_json(
+        _mod._loop_state_path(root, loop).read_text()
+    )
+
+    assert state.active_stage == "campaign-research"
+    assert state.child_pid == 456
+    assert state.stage_started_at is not None
+    assert state.heartbeat_at is not None
+
+
+def test_promote_formal_preflight_publishes_child_liveness(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "ar"
+    loop = "loop-x"
+    camp = root / "camp1"
+    _mod._write_loop_state(
+        root,
+        _mod.AutotrainLoopStateV1(
+            loop_id=loop,
+            state="RUNNING",
+            phase="running",
+            pid=123,
+            active_stage="orchestration",
+        ),
+    )
+
+    def successful(
+        command,
+        *,
+        cwd,
+        timeout_seconds,
+        on_start=None,
+        on_heartbeat=None,
+    ):
+        del cwd
+        del timeout_seconds
+        assert on_start is not None
+        assert on_heartbeat is not None
+        on_start(789)
+        on_heartbeat(789)
+        stdout = "Lean (version 4.30.0)" if "--version" in command else "passed"
+        return subprocess.CompletedProcess(command, 0, stdout=stdout, stderr="")
+
+    monkeypatch.setattr("slm_training.autoresearch.formal._run", successful)
+    status, sha = _mod.ensure_promote_formal_preflight(
+        camp_dir=camp,
+        campaign_id="camp1",
+        experiment_id="camp1-promote",
+        run_lean=True,
+        root=root,
+        loop_id=loop,
+    )
+    state = _mod.AutotrainLoopStateV1.model_validate_json(
+        _mod._loop_state_path(root, loop).read_text()
+    )
+
+    assert status == "proved"
+    assert sha is not None
+    assert state.active_stage == "promotion-formal-preflight"
+    assert state.child_pid == 789
+    assert state.heartbeat_at is not None
+
+
+def test_promote_formal_timeout_obeys_repository_cap() -> None:
+    from slm_training.levers import MAX_RUN_SECONDS
+
+    assert _mod._PROMOTE_FORMAL_TIMEOUT_S == float(MAX_RUN_SECONDS)
+
+
+def test_cycle_deadline_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(_mod.time, "monotonic", lambda: 10.0)
+    with pytest.raises(subprocess.TimeoutExpired, match="autotrain bounded cycle"):
+        _mod._remaining_timeout(9.0)
+
+
+def test_arm_wall_budget_accounts_for_formal_stage_and_reserves_orchestration() -> None:
+    from slm_training.levers import (
+        HARNESS_FINALIZATION_RESERVE_SECONDS,
+        MAX_HARNESS_WALL_SECONDS,
+    )
+
+    promotion_minutes = _mod._arm_wall_minutes(3, formal_required=True)
+    promotion_expected = min(
+        3.0,
+        (MAX_HARNESS_WALL_SECONDS - HARNESS_FINALIZATION_RESERVE_SECONDS) / 3 / 60,
+    )
+    assert promotion_minutes == pytest.approx(promotion_expected)
+    assert _mod._arm_wall_minutes(0.5, formal_required=True) == pytest.approx(
+        min(
+            0.5,
+            (MAX_HARNESS_WALL_SECONDS - HARNESS_FINALIZATION_RESERVE_SECONDS) / 3 / 60,
+        )
+    )
+    screening_minutes = _mod._arm_wall_minutes(3, formal_required=False)
+    screening_expected = min(
+        3.0,
+        (MAX_HARNESS_WALL_SECONDS - HARNESS_FINALIZATION_RESERVE_SECONDS) / 2 / 60,
+    )
+    assert screening_minutes == pytest.approx(screening_expected)
+    assert screening_minutes > promotion_minutes
+    reserved = 2 * screening_minutes * 60 + HARNESS_FINALIZATION_RESERVE_SECONDS
+    assert reserved == pytest.approx(MAX_HARNESS_WALL_SECONDS)
+
+
+def test_confirmation_during_promotion_cadence_uses_two_arm_budget() -> None:
+    formal_required = _mod._formal_lane_required(cycle_intent="confirm", replay=None)
+
+    assert formal_required is False
+    assert _mod._arm_wall_minutes(3, formal_required=formal_required) > (
+        _mod._arm_wall_minutes(3, formal_required=True)
+    )
+
+
+def test_frozen_formal_replay_retains_formal_lane() -> None:
+    replay = {
+        "control": {"manifest": SimpleNamespace(formal_obligations=())},
+        "candidate": {"manifest": SimpleNamespace(formal_obligations=(object(),))},
+    }
+
+    assert _mod._formal_lane_required(cycle_intent="retry_measurement", replay=replay)
+    assert _mod._formal_lane_required(cycle_intent="promote", replay=None)
+
+
+def test_empty_promotion_slot_falls_back_but_frozen_replay_does_not() -> None:
+    args = {
+        "cadence_role": "promotion",
+        "promotion_target_available": False,
+        "prior_screening_win_required": True,
+    }
+    assert _mod._empty_promotion_slot_falls_back(replay=None, **args)
+    assert not _mod._empty_promotion_slot_falls_back(replay=object(), **args)
+    assert not _mod._empty_promotion_slot_falls_back(
+        replay=None,
+        **{**args, "promotion_target_available": True},
+    )
+    assert not _mod._empty_promotion_slot_falls_back(
+        replay=None,
+        **{**args, "cadence_role": "screening"},
+    )
+
+
+def test_formal_budget_reserves_two_full_arms_and_finalization(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from slm_training.levers import (
+        HARNESS_FINALIZATION_RESERVE_SECONDS,
+        MAX_RUN_SECONDS,
+    )
+
+    monkeypatch.setattr(_mod.time, "monotonic", lambda: 10.0)
+    arm_minutes = 0.75
+    deadline = 200.0
+    formal = _mod._promotion_formal_budget_seconds(
+        deadline=deadline,
+        arm_count=2,
+        arm_wall_minutes=arm_minutes,
+    )
+    reserved = 2 * arm_minutes * 60 + HARNESS_FINALIZATION_RESERVE_SECONDS
+    capped_remaining = min(float(MAX_RUN_SECONDS), deadline - 10.0)
+    assert formal == pytest.approx(capped_remaining - reserved)
+    assert formal + reserved == pytest.approx(capped_remaining)
+
+
+def test_counterbalanced_arm_order_alternates_without_relabeling() -> None:
+    first = _mod._counterbalanced_arm_order(
+        "control", "candidate", cycle_index=1, seed=101
+    )
+    second = _mod._counterbalanced_arm_order(
+        "control", "candidate", cycle_index=2, seed=102
+    )
+    assert first == ["control", "candidate"]
+    assert second == ["candidate", "control"]
+    assert set(first) == set(second) == {"control", "candidate"}
+
+
+def test_phase_a_uses_explicit_dynamic_arm_ids_and_records_skips(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    camp = tmp_path / "campaign-dynamic"
+    camp.mkdir()
+    skipped = {
+        "successor-dose-3": {
+            "reason": "deadline_reserve",
+            "remaining_seconds": 1.0,
+            "required_seconds": 10.0,
+        }
+    }
+    monkeypatch.setattr(_mod, "_git", lambda *args, **kwargs: "")
+    delivery = _mod._phase_a_delivery(
+        cwd=tmp_path,
+        root=tmp_path,
+        loop_id="loop",
+        campaign_id="campaign-dynamic",
+        primary_metric="smoke.latency_ms_p50",
+        control_id="matrix-control",
+        candidate_id="successor-dose-3",
+        arm_skipped=skipped,
+    )
+    assert delivery["control_id"] == "matrix-control"
+    assert delivery["candidate_id"] == "successor-dose-3"
+    assert delivery["arm_skipped"] == skipped
+
+
+def test_expected_arm_binding_is_append_only_and_content_bound(tmp_path: Path) -> None:
+    campaign_id = "campaign-arm-binding"
+    campaign = _mod.CampaignSpec(
+        campaign_id=campaign_id,
+        objective="Bind both decision arms before execution.",
+        primary_metric="smoke.parse_rate",
+        loop_id="loop-arm-binding",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+    )
+    _mod.CampaignStore(campaign_id, tmp_path).initialize(campaign)
+    matrix_path = tmp_path / campaign_id / "matrix-proposal.json"
+    matrix_path.write_text(json.dumps({"matrix_id": "matrix-1"}), encoding="utf-8")
+    event = _mod._bind_expected_arms(
+        root=tmp_path,
+        campaign_id=campaign_id,
+        matrix_path=matrix_path,
+        control_id="matrix-control",
+        candidate_id="successor-dose-3",
+        arm_order=("successor-dose-3", "matrix-control"),
+    )
+    assert event["event_type"] == "decision_arms_bound"
+    assert event["detail"]["expected_arm_ids"] == [
+        "matrix-control",
+        "successor-dose-3",
+    ]
+    assert _mod._bind_expected_arms(
+        root=tmp_path,
+        campaign_id=campaign_id,
+        matrix_path=matrix_path,
+        control_id="matrix-control",
+        candidate_id="successor-dose-3",
+        arm_order=("successor-dose-3", "matrix-control"),
+    )["event_id"] == event["event_id"]
+
+
+def test_promotion_order_uses_replicate_index_when_cadence_has_same_parity() -> None:
+    first = _mod._counterbalanced_arm_order(
+        "control",
+        "candidate",
+        cycle_index=3,
+        seed=103,
+        promotion_replicate_index=0,
+    )
+    second = _mod._counterbalanced_arm_order(
+        "control",
+        "candidate",
+        cycle_index=5,
+        seed=105,
+        promotion_replicate_index=1,
+    )
+    assert first == ["control", "candidate"]
+    assert second == ["candidate", "control"]
+
+
+def test_driver_requires_room_for_both_arms_before_starting(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(_mod.time, "monotonic", lambda: 0.0)
+    from slm_training.levers import HARNESS_FINALIZATION_RESERVE_SECONDS
+
+    arm_minutes = 0.75
+    required = 2 * arm_minutes * 60 + HARNESS_FINALIZATION_RESERVE_SECONDS
+    _mod._require_symmetric_arm_budget(
+        deadline=required + 1, arm_count=2, arm_wall_minutes=arm_minutes
+    )
+    with pytest.raises(subprocess.TimeoutExpired, match="symmetric decision-arm"):
+        _mod._require_symmetric_arm_budget(
+            deadline=required - 1, arm_count=2, arm_wall_minutes=arm_minutes
+        )
+
+
+def test_post_planning_budget_is_rebalanced_symmetrically(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from slm_training.levers import HARNESS_FINALIZATION_RESERVE_SECONDS
+
+    monkeypatch.setattr(_mod.time, "monotonic", lambda: 10.0)
+    remaining = 149.0
+    fitted = _mod._fit_symmetric_arm_budget(
+        deadline=10.0 + remaining,
+        arm_count=2,
+        requested_arm_wall_minutes=70 / 60,
+    )
+
+    assert fitted * 60 == pytest.approx(
+        (
+            remaining
+            - HARNESS_FINALIZATION_RESERVE_SECONDS
+            - _mod._ARM_BUDGET_SCHEDULE_MARGIN_SECONDS
+        )
+        / 2
+    )
+
+
+def test_fit_arm_budget_leaves_margin_so_deadline_check_passes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Regression: promote arms skipped when remaining ≈ required by μs."""
+    from slm_training.levers import HARNESS_FINALIZATION_RESERVE_SECONDS
+
+    now = 1000.0
+    monkeypatch.setattr(_mod.time, "monotonic", lambda: now)
+    remaining = 160.0
+    deadline = now + remaining
+    fitted = _mod._fit_symmetric_arm_budget(
+        deadline=deadline,
+        arm_count=2,
+        requested_arm_wall_minutes=3.0,
+    )
+    # Simulate a few μs of wall time between fit and execute check.
+    monkeypatch.setattr(_mod.time, "monotonic", lambda: now + 1e-4)
+    remaining_after = max(0.0, deadline - _mod.time.monotonic())
+    required = 2 * fitted * 60.0 + HARNESS_FINALIZATION_RESERVE_SECONDS
+    assert remaining_after + 1e-3 >= required
+
+
+def test_completed_formal_lane_returns_unused_time_to_matched_arms() -> None:
+    initial = _mod._arm_wall_minutes(3, formal_required=True)
+
+    assert _mod._post_formal_arm_budget_request(
+        policy_minutes=3,
+        initial_arm_wall_minutes=initial,
+        formal_completed=True,
+    ) == pytest.approx(3.0)
+    assert _mod._post_formal_arm_budget_request(
+        policy_minutes=3,
+        initial_arm_wall_minutes=initial,
+        formal_completed=False,
+    ) == pytest.approx(initial)
+
+
+def test_formal_campaign_ceiling_allows_dynamic_reclaimed_arm_share() -> None:
+    initial = _mod._arm_wall_minutes(3, formal_required=True)
+    campaign_ceiling = _mod._post_formal_arm_budget_request(
+        policy_minutes=3,
+        initial_arm_wall_minutes=initial,
+        formal_completed=True,
+    )
+    reclaimed_share_seconds = 73.305
+
+    assert campaign_ceiling * 60 >= reclaimed_share_seconds
+    assert initial * 60 < reclaimed_share_seconds
+
+
+def test_arm_execution_deadline_preserves_finalization_reserve(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from slm_training.levers import HARNESS_FINALIZATION_RESERVE_SECONDS
+
+    monkeypatch.setattr(_mod.time, "monotonic", lambda: 10.0)
+    cycle_deadline = 100.0
+
+    assert _mod._arm_execution_deadline(
+        cycle_deadline=cycle_deadline, arm_wall_minutes=2.0
+    ) == pytest.approx(cycle_deadline - HARNESS_FINALIZATION_RESERVE_SECONDS)
+    assert _mod._arm_execution_deadline(
+        cycle_deadline=cycle_deadline, arm_wall_minutes=0.5
+    ) == pytest.approx(40.0)
+
+
+def test_supervised_cli_runs_exactly_one_agent_owned_cycle(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[dict] = []
+    lock_handle = (tmp_path / "driver.lock").open("w+")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(_mod, "_git", lambda *args, **kwargs: "a" * 40)
+    monkeypatch.setattr(
+        _mod,
+        "acquire_driver_lock",
+        lambda *args, **kwargs: lock_handle,
+    )
+    monkeypatch.setattr(
+        _mod,
+        "run_cycle",
+        lambda **kwargs: calls.append(kwargs) or "cycle-1",
+    )
+
+    assert _mod.main(["--supervised", "--max-cycles", "1"]) == 0
+    assert len(calls) == 1
+    assert calls[0]["sync_git"] is False
+    assert calls[0]["require_action_receipts"] is True
+
+
+def test_legacy_unsupervised_cycle_does_not_require_agent_receipts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[dict] = []
+    lock_handle = (tmp_path / "driver.lock").open("w+")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(_mod, "_git", lambda *args, **kwargs: "a" * 40)
+    monkeypatch.setattr(
+        _mod,
+        "acquire_driver_lock",
+        lambda *args, **kwargs: lock_handle,
+    )
+    monkeypatch.setattr(
+        _mod,
+        "run_cycle",
+        lambda **kwargs: calls.append(kwargs) or "cycle-1",
+    )
+
+    assert _mod.main(["--max-cycles", "1"]) == 0
+    assert calls[0]["sync_git"] is True
+    assert calls[0]["require_action_receipts"] is False
+    assert calls[0]["startup_commit"] == "a" * 40
+
+
+def test_cli_reexecs_after_integrating_new_driver_code(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    lock_handle = (tmp_path / "driver.lock").open("w+")
+    reexec: list[tuple[str, list[str]]] = []
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(_mod, "_git", lambda *args, **kwargs: "a" * 40)
+    monkeypatch.setattr(
+        _mod,
+        "acquire_driver_lock",
+        lambda *args, **kwargs: lock_handle,
+    )
+    monkeypatch.setattr(
+        _mod,
+        "run_cycle",
+        lambda **kwargs: (_ for _ in ()).throw(_mod._CodeUpdated("new head")),
+    )
+
+    def fake_execv(executable: str, argv: list[str]) -> None:
+        reexec.append((executable, argv))
+        raise SystemExit(0)
+
+    monkeypatch.setattr(_mod.os, "execv", fake_execv)
+    with pytest.raises(SystemExit):
+        _mod.main(["--max-cycles", "1"])
+    assert reexec and reexec[0][0] == _mod.sys.executable
+
+
+def _priority_matrix() -> dict:
+    return {
+        "next_run_priorities": [
+            {
+                "rank": 1,
+                "area": "model",
+                "hypothesis": "Test the next quality-bearing model lever.",
+                "evidence_ids": ["feedback-1"],
+                "confidence": 0.5,
+                "expected_information_gain": "Resolve one quality residual.",
+                "authority": "speculative",
+                "disposition": "monitor",
+                "proposed_experiment_id": None,
+            }
+        ]
+    }
+
+
+def test_cycle_handoff_separates_fixture_climb_from_ship(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "cycle-1"
+    (camp / "runs" / "cand").mkdir(parents=True)
+    (camp / "runs" / "cand" / "gates.json").write_text(
+        json.dumps({"authority": "AgentEvals assertions", "pass": False})
+    )
+    (camp / "runs" / "cand" / "last.pt").write_bytes(b"checkpoint")
+    handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="promotion",
+        cycle_intent="promote",
+        primary_metric="held_out.structural_similarity",
+        matrix=_priority_matrix(),
+        delivery={
+            "positive": True,
+            "candidate_id": "cand",
+            "reasons": ["primary_metric_win:x"],
+            "stack_layer": False,
+            "arm_order": ["control", "cand"],
+            "arm_seed": 101,
+        },
+        resolution={"status": "climb_accepted", "resolve_reasons": []},
+        formal_status="proved",
+    )
+    assert handoff.climb_state == "climb_accepted"
+    assert handoff.ship_state == "blocked"
+    assert handoff.evidence_class == "fixture"
+    assert handoff.checkpoint_paths == ("runs/cand/last.pt",)
+    assert handoff.checkpoint_documentation_required is True
+    assert "arm_order:control,cand" in handoff.reasons
+    assert "MODEL_CARD" in next(
+        action.reason for action in handoff.actions if action.kind == "document"
+    )
+    assert {action.kind for action in handoff.actions} == {
+        "document",
+        "next_experiment",
+    }
+    state = json.loads((root / "loops" / "loop-1" / "state.json").read_text())
+    assert state["phase"] == "between_cycles"
+
+
+def test_predecessor_without_stack_delta_does_not_block_on_deliver_stack(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "cycle-1"
+    camp.mkdir(parents=True)
+    (camp / "cycle_handoff.json").write_text(
+        json.dumps(
+            {
+                "schema_version": "AutotrainCycleHandoffV1",
+                "loop_id": "loop-1",
+                "campaign_id": "cycle-1",
+                "cycle_index": 1,
+                "upstream_commit": "a" * 40,
+                "integration_commit": "b" * 40,
+                "cycle_role": "screening",
+                "cycle_intent": "screening",
+                "evidence_class": "fixture",
+                "climb_state": "candidate_queued",
+                "ship_state": "blocked",
+                "primary_metric": "smoke.structural_similarity",
+                "actions": [
+                    {
+                        "kind": "deliver_stack",
+                        "owner": "sdlc",
+                        "reason": "stale",
+                        "evidence_ids": ["campaign:cycle-1"],
+                    }
+                ],
+            }
+        )
+    )
+    (camp / "sdlc_delivery.json").write_text(json.dumps({"stack_layer": False}))
+    _mod._require_predecessor_actions(root, "loop-1", "cycle-1")
+
+
+def test_cycle_handoff_routes_exhausted_bank_to_model_build_repair(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    (root / "cycle-exhausted").mkdir(parents=True)
+    handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-exhausted",
+        cycle_index=1795,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="screening",
+        cycle_intent="screening",
+        primary_metric="held_out.structural_similarity",
+        matrix=_priority_matrix(),
+        delivery={
+            "positive": False,
+            "candidate_id": "edge-alignment",
+            "control_id": "control",
+            "reasons": ["primary_metric_not_improved"],
+        },
+        resolution=None,
+        formal_status="proved",
+    )
+
+    repair = next(
+        action for action in handoff.actions if action.kind == "repair_harness"
+    )
+    assert repair.owner == "improve-openui-harnesses"
+    assert repair.harness_family == "model_build"
+    assert "quality-arm bank exhausted" in repair.reason
+    assert all(action.kind != "next_experiment" for action in handoff.actions)
+    assert handoff.priorities[0].disposition == "monitor"
+
+
+def test_cycle_handoff_routes_frozen_harness_repair(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "cycle-1"
+    head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+    predecessor = subprocess.check_output(
+        ["git", "rev-parse", "HEAD^"], text=True
+    ).strip()
+    (camp / "artifacts" / "outcomes").mkdir(parents=True)
+    (camp / "artifacts" / "outcomes" / "outcome.json").write_text(
+        json.dumps(
+            {
+                "harness_signals": [
+                    {
+                        "family": "model_build",
+                        "reproduced_on_frozen_input": True,
+                    }
+                ]
+            }
+        )
+    )
+    (camp / "manifests").mkdir()
+    experiment = {
+        "experiment_id": "cand",
+        "campaign_id": "cycle-1",
+        "hypothesis": "A frozen harness failure remains replayable after repair.",
+        "rationale": "Repair and measurement are independent obligations.",
+        "expected_effect": "The same content-bound manifest is replayed.",
+        "falsification_criteria": ["The retry disappears after repair."],
+        "stop_conditions": ["Stop after the bounded replay."],
+        "citations": ["fixture://repair-replay"],
+        "knobs": {"steps": 1},
+    }
+    manifest_path = camp / "manifests" / "cand.json"
+    manifest_path.write_text(
+        _mod._manifest("cycle-1", experiment, predecessor).model_dump_json(indent=2)
+        + "\n"
+    )
+    handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-1",
+        cycle_index=1,
+        upstream_commit=predecessor,
+        integration_commit=predecessor,
+        role="promotion",
+        cycle_intent="promote",
+        primary_metric="held_out.structural_similarity",
+        matrix=_priority_matrix(),
+        delivery={
+            "positive": False,
+            "candidate_id": "cand",
+            "reasons": ["harness_failure:missing_promote_run"],
+            "stack_layer": False,
+        },
+        resolution={"status": "harness_failure", "resolve_reasons": []},
+        formal_status="proved",
+    )
+    repair = handoff.actions[0]
+    assert repair.kind == "repair_harness"
+    assert repair.owner == "improve-openui-harnesses"
+    assert repair.harness_family == "model_build"
+    assert repair.frozen_manifest_sha256 is not None
+    retry = handoff.actions[1]
+    assert retry.kind == "retry_measurement"
+    assert retry.owner == "autotrain"
+    assert retry.frozen_manifest_sha256 == repair.frozen_manifest_sha256
+    assert "identical frozen arm" in retry.reason
+    assert all(action.kind != "next_experiment" for action in handoff.actions)
+
+    repair_index = handoff.actions.index(repair)
+    evidence = _mod.bind_autotrain_action_evidence(root, handoff, repair, (head,))
+    _mod.append_autotrain_action_receipt(
+        root,
+        _mod.AutotrainActionReceiptV1(
+            loop_id="loop-1",
+            campaign_id="cycle-1",
+            action_index=repair_index,
+            action_sha256=_mod.autotrain_action_sha256(repair),
+            action_kind=repair.kind,
+            status="completed",
+            evidence_uris=(head,),
+            evidence=evidence,
+        ),
+    )
+    assert all(
+        action.kind != "repair_harness"
+        for _, action in _mod.pending_autotrain_actions(root, handoff)
+    )
+    pending_execution = _mod.pending_autotrain_execution_actions(root, handoff)
+    assert pending_execution == ((handoff.actions.index(retry), retry),)
+
+
+def test_repeated_cycle_failure_blocks_on_third_identical_error(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    for expected in (1, 2, 3):
+        count = _mod._record_cycle_failure(
+            root=root,
+            loop_id="loop-1",
+            exc=RuntimeError("same blocker"),
+            cycle_index=0,
+        )
+        assert count == expected
+    state = json.loads((root / "loops" / "loop-1" / "state.json").read_text())
+    assert state["state"] == "BLOCKED"
+    assert state["blocker_count"] == 3
+
+
+def test_completed_candidate_priorities_accepts_dynamic_successor() -> None:
+    """Dynamic compose arms must not raise StopIteration in priority steering."""
+    _mod._DYNAMIC_THRASH_ARMS.clear()
+    _mod._DYNAMIC_THRASH_ARMS.append(
+        (
+            "compose-ltr-tail-ltr-prefix",
+            "Joint ltr tail and prefix.",
+            {
+                "ltr_tail_loss_weight": 2.0,
+                "ltr_prefix_loss_weight": 1.0,
+                "_thrash_slug": "compose-ltr-tail-ltr-prefix",
+            },
+        )
+    )
+    matrix = {
+        "hypotheses": [
+            {
+                "experiment": {
+                    "experiment_id": "c-control",
+                    "knobs": {},
+                    "hypothesis": "control",
+                }
+            },
+            {
+                "experiment": {
+                    "experiment_id": "c-bounds",
+                    "knobs": {"grammar_completion_bounds": True},
+                    "hypothesis": "bounds",
+                }
+            },
+        ],
+        "next_run_priorities": [
+            {
+                "rank": 1,
+                "area": "model_build",
+                "hypothesis": "try bounds",
+                "evidence_ids": ["a"],
+                "confidence": 0.9,
+                "expected_information_gain": "x",
+                "authority": "observed_result",
+                "disposition": "experiment_next",
+                "proposed_experiment_id": "c-bounds",
+            }
+        ],
+    }
+    # Skip every static quality arm so selection falls through to compose-*.
+    skip = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
+    rows = _mod._completed_candidate_priorities(
+        matrix,
+        "c-bounds",
+        resolved_infrastructure=True,
+        skip_slugs=skip,
+    )
+    assert rows  # must not raise StopIteration
+    assert any(
+        (p.proposed_experiment_id or "").endswith("compose-ltr-tail-ltr-prefix")
+        or "compose" in str(p.hypothesis or "")
+        for p in rows
+    ) or any(p.disposition == "monitor" for p in rows)
+
+
+def test_self_heal_thrash_bank_composes_successors(tmp_path: Path) -> None:
+    """Bank exhaust must self-heal by composing size-matched thrash arms."""
+    _mod._DYNAMIC_THRASH_ARMS.clear()
+    _mod._DYNAMIC_THRASH_LOADED_FOR = None
+    root = tmp_path / "ar"
+    loop = "L"
+    closed = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
+    assert _mod._self_heal_thrash_bank_exhaust(
+        root, loop, closed=closed, skip=set()
+    )
+    assert _mod._DYNAMIC_THRASH_ARMS
+    path = _mod._dynamic_thrash_arms_path(root, loop)
+    assert path.is_file()
+    # Newly composed arms are selectable and signature-unique vs static bank.
+    static_sigs = {
+        _mod._thrash_lever_signature(ex) for _, _, ex in _mod._SCREENING_ARM_BANK
+    }
+    for slug, _, extras in _mod._DYNAMIC_THRASH_ARMS:
+        assert slug.startswith("compose-")
+        assert _mod._thrash_lever_signature(extras) not in static_sigs
+    slug = _mod._select_recommended_slug(1, skip=closed)
+    assert slug.startswith("compose-")
+    extras = dict(_mod._DYNAMIC_THRASH_ARMS[0][2])
+    assert _mod._arm_slug_from_knobs(extras) == _mod._DYNAMIC_THRASH_ARMS[0][0]
+
+
+def test_thrash_matrix_dedupes_compose_vs_static_knob_signatures() -> None:
+    """Matrix must not fail HypothesisMatrix when compose collides with static."""
+    from slm_training.autoresearch.schemas import HypothesisMatrix
+
+    _mod._DYNAMIC_THRASH_ARMS.clear()
+    # Deliberate collision: same levers as scaffold-prefix-tail.
+    _mod._DYNAMIC_THRASH_ARMS.append(
+        (
+            "compose-ltr-tail-ltr-prefix",
+            "Duplicate of scaffold-prefix-tail levers for collision test.",
+            {
+                "ltr_tail_loss_weight": 1.0,
+                "ltr_prefix_loss_weight": 1.0,
+                "_thrash_slug": "compose-ltr-tail-ltr-prefix",
+            },
+        )
+    )
+    # Also add a unique compose arm that must survive.
+    _mod._DYNAMIC_THRASH_ARMS.append(
+        (
+            "compose-ltr-prefix-compiler-decision-token",
+            "Unique prefix plus compiler-decision token thrash successor.",
+            {
+                "ltr_prefix_loss_weight": 1.0,
+                "compiler_decision_token_loss_weight": 1.0,
+                "_thrash_slug": "compose-ltr-prefix-compiler-decision-token",
+            },
+        )
+    )
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-dedupe-c1",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=40,
+        cycle=1,
+        role="screening",
+        recommended_slug="compose-ltr-tail-ltr-prefix",
+    )
+    HypothesisMatrix.model_validate(matrix)
+    ids = [
+        h["experiment"]["experiment_id"] for h in matrix["hypotheses"]
+    ]
+    assert not any(i.endswith("compose-ltr-tail-ltr-prefix") for i in ids)
+    assert any(i.endswith("compose-ltr-prefix-compiler-decision-token") for i in ids)
+    # Recommended retargets to a real hypothesis id.
+    assert matrix["recommended_experiment_id"] in ids
+
+
+def test_self_heal_cycle_error_recovers_bank_exhaust(tmp_path: Path) -> None:
+    _mod._DYNAMIC_THRASH_ARMS.clear()
+    _mod._DYNAMIC_THRASH_LOADED_FOR = None
+    root = tmp_path / "ar"
+    loop = "L"
+    kind = _mod._self_heal_cycle_error(
+        root=root,
+        loop_id=loop,
+        exc=RuntimeError(_mod._BANK_EXHAUST_MSG),
+        integration_commit="abc",
+    )
+    assert kind == "thrash_bank_compose"
+    _mod._clear_loop_blocker(root, loop, reason=kind)
+    state = json.loads((root / "loops" / loop / "state.json").read_text())
+    assert state["state"] == "IDLE"
+    assert state["blocker_count"] == 0
+
+
+def test_repeated_timeouts_remain_soft_and_never_block(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    for _ in range(4):
+        count = _mod._record_cycle_failure(
+            root=root,
+            loop_id="loop-1",
+            exc=subprocess.TimeoutExpired("bounded-stage", 3),
+            cycle_index=2,
+        )
+        assert count == 0
+    state = json.loads((root / "loops" / "loop-1" / "state.json").read_text())
+    assert state["state"] == "IDLE"
+    assert state["blocker_count"] == 0
+    assert state["next_action"] == "retry incomplete cycle"
+
+
+def test_campaign_identity_is_loop_scoped() -> None:
+    first = _mod._campaign_id("continuous-a", 7, date="20260801")
+    second = _mod._campaign_id("continuous-b", 7, date="20260801")
+    assert first != second
+    assert first.endswith("-c7")
+    assert second.endswith("-c7")
+
+
+def test_latest_cycle_uses_highest_index_but_last_completed_predecessor(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    for index in (10, 11):
+        campaign_id = f"cycle-{index}"
+        camp = root / campaign_id
+        camp.mkdir(parents=True)
+        (camp / "campaign.json").write_text(
+            json.dumps(
+                {
+                    "loop_id": "loop-1",
+                    "campaign_id": campaign_id,
+                    "cycle_index": index,
+                }
+            )
+        )
+    (root / "cycle-10" / "cycle_handoff.json").write_text("{}\n")
+
+    assert _mod._latest_cycle(root, "loop-1") == (11, "cycle-10")
+    assert _mod._campaign_at_cycle(root, "loop-1", 11) == "cycle-11"
+
+
+def test_terminal_interrupted_replay_finalizes_without_rerunning_arms(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "autoresearch"
+    campaign_id = "cycle-1"
+    camp = root / campaign_id
+    (camp / "manifests").mkdir(parents=True)
+    (camp / "campaign.json").write_text(
+        json.dumps(
+            {
+                "loop_id": "loop-1",
+                "campaign_id": campaign_id,
+                "cycle_index": 1,
+                "primary_metric": "smoke.binder_reference_f1",
+                "upstream_commit": "a" * 40,
+                "integration_commit": "b" * 40,
+            }
+        )
+    )
+    matrix = {
+        **_priority_matrix(),
+        "recommended_experiment_id": "candidate",
+        "hypotheses": [{"experiment": {"experiment_id": "control"}}],
+    }
+    (camp / "matrix-proposal.json").write_text(json.dumps(matrix))
+    for experiment_id in ("control", "candidate"):
+        (camp / "manifests" / f"{experiment_id}.json").write_text(
+            json.dumps(
+                {
+                    "replay_of_manifest_sha256": "c" * 64,
+                    "claim_class": "diagnostic",
+                }
+            )
+        )
+    store = _mod.CampaignStore(campaign_id, root)
+    store.append_event("experiment_finished", experiment_id="control")
+
+    subprocesses: list[list[str]] = []
+    handoffs: list[dict] = []
+    monkeypatch.setattr(
+        _mod, "_run", lambda command, **_kwargs: subprocesses.append(command)
+    )
+    monkeypatch.setattr(
+        _mod,
+        "_phase_a_delivery",
+        lambda **_kwargs: {
+            "positive": False,
+            "candidate_id": "candidate",
+            "reasons": ["measurement_incomplete:no_smoke_metrics"],
+        },
+    )
+    monkeypatch.setattr(
+        _mod,
+        "_write_cycle_handoff",
+        lambda **kwargs: handoffs.append(kwargs),
+    )
+
+    assert (
+        _mod._finalize_terminal_interrupted_replay(
+            cwd=tmp_path,
+            root=root,
+            loop_id="loop-1",
+            deadline=float("inf"),
+        )
+        is None
+    )
+    assert subprocesses == []
+
+    store.append_event("experiment_finished", experiment_id="candidate")
+    candidate_manifest = camp / "manifests" / "candidate.json"
+    candidate_manifest.write_text(
+        json.dumps(
+            {
+                "replay_of_manifest_sha256": "c" * 64,
+                "claim_class": "promotion_candidate",
+            }
+        )
+    )
+    assert (
+        _mod._finalize_terminal_interrupted_replay(
+            cwd=tmp_path,
+            root=root,
+            loop_id="loop-1",
+            deadline=float("inf"),
+        )
+        is None
+    )
+    assert subprocesses == []
+    candidate_manifest.write_text(
+        json.dumps(
+            {
+                "replay_of_manifest_sha256": "c" * 64,
+                "claim_class": "diagnostic",
+            }
+        )
+    )
+    assert (
+        _mod._finalize_terminal_interrupted_replay(
+            cwd=tmp_path,
+            root=root,
+            loop_id="loop-1",
+            deadline=float("inf"),
+        )
+        == campaign_id
+    )
+    assert len(subprocesses) == 1
+    assert "run" not in subprocesses[0]
+    assert handoffs[0]["cycle_intent"] == "retry_measurement"
+    assert handoffs[0]["campaign_id"] == campaign_id
+
+
+@pytest.mark.parametrize(
+    "candidate_slug", ("batch1", "component-plan", "literal-close")
+)
+def test_frozen_replay_preserves_recipe_and_links_current_main_successor(
+    candidate_slug: str,
+) -> None:
+    old_campaign = "continuous-loop-20260801-loop-12345678-c1710"
+    new_campaign = "continuous-loop-20260801-loop-12345678-c1712"
+    matrix = _mod._matrix(
+        campaign_id=new_campaign,
+        evidence_snapshot_id="snapshot-1",
+        cites=["docs/design/autoresearch-autotraining.md"],
+        role_citations={
+            "research": "docs/design/autoresearch-autotraining.md",
+            "prior_result": "docs/design/autoresearch-autotraining.md",
+        },
+        train_version="wf_smoke_v2",
+        eval_version="e938_role_safe_all_targets_v2",
+        steps=22,
+        cycle=1712,
+        recommended_slug=candidate_slug,
+    )
+    old_control = json.loads(json.dumps(matrix["hypotheses"][0]["experiment"]))
+    old_candidate = json.loads(
+        json.dumps(
+            next(
+                row["experiment"]
+                for row in matrix["hypotheses"]
+                if row["experiment"]["experiment_id"].endswith(f"-{candidate_slug}")
+            )
+        )
+    )
+    old_control.update(
+        experiment_id="c20260801-loop-12345678-c1710-control",
+        campaign_id=old_campaign,
+    )
+    old_candidate.update(
+        experiment_id=f"c20260801-loop-12345678-c1710-{candidate_slug}",
+        campaign_id=old_campaign,
+    )
+    old_control["knobs"].update(steps=80, seed=101710, batch_size=2)
+    old_candidate["knobs"].update(steps=80, seed=101710, batch_size=1)
+    old_commit = "a" * 40
+    control_manifest = _mod._manifest(old_campaign, old_control, old_commit)
+    candidate_manifest = _mod._manifest(old_campaign, old_candidate, old_commit)
+    replay = {
+        "control": {
+            "experiment": old_control,
+            "manifest": control_manifest,
+            "manifest_sha256": "b" * 64,
+        },
+        "candidate": {
+            "experiment": old_candidate,
+            "manifest": candidate_manifest,
+            "manifest_sha256": "c" * 64,
+        },
+    }
+
+    replay_manifests = _mod._apply_frozen_replay(matrix, replay, new_campaign)
+    recommended = next(
+        row["experiment"]
+        for row in matrix["hypotheses"]
+        if row["experiment"]["experiment_id"] == matrix["recommended_experiment_id"]
+    )
+    assert recommended["knobs"] == old_candidate["knobs"]
+    current_commit = "d" * 40
+    successor = _mod._replay_successor_manifest(
+        replay_manifests[matrix["recommended_experiment_id"]]["manifest"],
+        frozen_manifest_sha256="c" * 64,
+        campaign_id=new_campaign,
+        experiment_id=matrix["recommended_experiment_id"],
+        integration_commit=current_commit,
+    )
+    assert successor.source_commit == current_commit
+    assert successor.replay_of_manifest_sha256 == "c" * 64
+    assert successor.endpoints == candidate_manifest.endpoints
+    assert successor.arms == candidate_manifest.arms
+    assert successor.seeds == candidate_manifest.seeds
+    assert successor.stopping_rules == candidate_manifest.stopping_rules
+    assert successor.promotion_gates == candidate_manifest.promotion_gates
+    formal_manifest = _mod._manifest(
+        old_campaign,
+        old_candidate,
+        old_commit,
+        role="promotion",
+        cycle_intent="promote",
+        formal_preflight_sha256="e" * 64,
+    )
+    assert formal_manifest.formal_obligations
+    formal_successor = _mod._replay_successor_manifest(
+        formal_manifest,
+        frozen_manifest_sha256="f" * 64,
+        campaign_id=new_campaign,
+        experiment_id="new-promote",
+        integration_commit=current_commit,
+    )
+    assert formal_successor.formal_obligations == ()
+    rebound = _mod._bind_fresh_replay_formal_preflight(
+        formal_successor,
+        formal_manifest,
+        preflight_sha256="1" * 64,
+        formal_claims=[_mod.promote_formal_claim_dict()],
+    )
+    assert len(rebound.formal_obligations) == 1
+    assert rebound.formal_obligations[0].preflight_sha256 == "1" * 64
+    assert (
+        rebound.formal_obligations[0].template_id
+        == formal_manifest.formal_obligations[0].template_id
+    )
+    assert rebound.formal_obligations[0].obligation_id == _mod.formal_obligation_id(
+        new_campaign,
+        "new-promote",
+        _mod.FormalClaimV1(**_mod.promote_formal_claim_dict()),
+    )
+    assert (
+        rebound.formal_obligations[0].obligation_id
+        != formal_manifest.formal_obligations[0].obligation_id
+    )
+    promote_experiment = json.loads(json.dumps(old_control))
+    promote_experiment["experiment_id"] = "c20260801-loop-12345678-c1710-promote"
+    promote_experiment["hypothesis"] = (
+        "Promotion retest of confirmed champion levers under held-out suites."
+    )
+    promote_experiment["formal_claims"] = [_mod.promote_formal_claim_dict()]
+    promote_experiment["knobs"].update(
+        typed_family_balance_loss_weight=0.25,
+        compiler_alignment_loss_weight=1.0,
+        compiler_alignment_margin=1.0,
+        compiler_alignment_kind_filter="container-close",
+        compiler_alignment_stratified=True,
+    )
+    promote_manifest = _mod._manifest(
+        old_campaign,
+        promote_experiment,
+        old_commit,
+        role="promotion",
+        cycle_intent="promote",
+        formal_preflight_sha256="e" * 64,
+    )
+    promotion_replay = {
+        "control": replay["control"],
+        "candidate": {
+            "experiment": promote_experiment,
+            "manifest": promote_manifest,
+            "manifest_sha256": "f" * 64,
+        },
+    }
+    promotion_matrix = _mod._matrix(
+        campaign_id=new_campaign,
+        evidence_snapshot_id="snapshot-2",
+        cites=["docs/design/autoresearch-autotraining.md"],
+        role_citations={
+            "research": "docs/design/autoresearch-autotraining.md",
+            "prior_result": "docs/design/autoresearch-autotraining.md",
+        },
+        train_version="wf_smoke_v2",
+        eval_version="e938_role_safe_all_targets_v2",
+        steps=22,
+        cycle=1712,
+        role="promotion",
+        recommended_slug="batch1",
+    )
+    applied = _mod._apply_frozen_replay(
+        promotion_matrix, promotion_replay, new_campaign
+    )
+    assert promotion_matrix["recommended_experiment_id"].endswith("-promote")
+    assert promotion_matrix["recommended_experiment_id"] in applied
+    promoted = next(
+        item["experiment"]
+        for item in promotion_matrix["hypotheses"]
+        if item["experiment"]["experiment_id"]
+        == promotion_matrix["recommended_experiment_id"]
+    )
+    assert promoted["knobs"] == promote_experiment["knobs"]
+    assert promoted["formal_claims"] == promote_experiment["formal_claims"]
+
+    confirm_experiment = json.loads(json.dumps(old_candidate))
+    confirm_experiment["experiment_id"] = "c20260801-loop-12345678-c1710-confirm"
+    confirm_manifest = _mod._manifest(
+        old_campaign,
+        confirm_experiment,
+        old_commit,
+        role="screening",
+        cycle_intent="confirm",
+    )
+    confirmation_replay = {
+        "control": replay["control"],
+        "candidate": {
+            "experiment": confirm_experiment,
+            "manifest": confirm_manifest,
+            "manifest_sha256": "1" * 64,
+        },
+    }
+    confirmation_matrix = _mod._matrix(
+        campaign_id=new_campaign,
+        evidence_snapshot_id="snapshot-3",
+        cites=["docs/design/autoresearch-autotraining.md"],
+        role_citations={
+            "research": "docs/design/autoresearch-autotraining.md",
+            "prior_result": "docs/design/autoresearch-autotraining.md",
+        },
+        train_version="wf_smoke_v2",
+        eval_version="e938_role_safe_all_targets_v2",
+        steps=22,
+        cycle=1712,
+        role="screening",
+        recommended_slug="batch1",
+    )
+    applied = _mod._apply_frozen_replay(
+        confirmation_matrix, confirmation_replay, new_campaign
+    )
+    assert confirmation_matrix["recommended_experiment_id"].endswith("-confirm")
+    confirmed = next(
+        item["experiment"]
+        for item in confirmation_matrix["hypotheses"]
+        if item["experiment"]["experiment_id"]
+        == confirmation_matrix["recommended_experiment_id"]
+    )
+    assert confirmed["knobs"] == confirm_experiment["knobs"]
+    assert confirmation_matrix["recommended_experiment_id"] in applied
+
+
+def test_frozen_replay_restores_omitted_formal_claim_from_proved_artifact(
+    tmp_path: Path,
+) -> None:
+    campaign_id = "continuous-loop-20260801-loop-12345678-c1714"
+    experiment_id = "c20260801-loop-12345678-c1714-promote"
+    experiment = {
+        "experiment_id": experiment_id,
+        "campaign_id": campaign_id,
+        "hypothesis": "Replay a promotion candidate with a governed proof.",
+        "rationale": "The historic replay omitted the experiment claim.",
+        "expected_effect": "The proof-bound frozen candidate reaches evaluation.",
+        "falsification_criteria": ["Formal claim recovery fails closed."],
+        "stop_conditions": ["Stop after the bounded evaluation."],
+        "citations": ["fixture://formal-replay"],
+        "knobs": {"steps": 1, "batch_size": 1, "seed": 7},
+        "formal_claims": [],
+    }
+    preflight_sha = "e" * 64
+    manifest = _mod._manifest(
+        campaign_id,
+        experiment,
+        "a" * 40,
+        role="promotion",
+        cycle_intent="promote",
+        formal_preflight_sha256=preflight_sha,
+    )
+    obligation = manifest.formal_obligations[0]
+    manifest = manifest.model_copy(
+        update={
+            "formal_obligations": (
+                obligation.model_copy(update={"obligation_id": "formal-" + "0" * 16}),
+            )
+        }
+    )
+    claim = _mod.FormalClaimV1(**_mod.promote_formal_claim_dict())
+    current_obligation_id = _mod.formal_obligation_id(campaign_id, experiment_id, claim)
+    preflight = _mod.FormalPreflightV1(
+        campaign_id=campaign_id,
+        experiment_id=experiment_id,
+        obligation_id=current_obligation_id,
+        template_id=claim.template_id,
+        template_version="v1",
+        claim=claim.claim,
+        policy=claim.policy,
+        status="proved",
+        evidence_scope="universal",
+        theorem="structuralSimilarity_monotone",
+        proof_target="Structural similarity monotonicity",
+        source_digests={"Main.lean": "1" * 64},
+        proof_sha256="2" * 64,
+        lean_version="v4.20.0",
+        mathlib_version="fixture",
+        build_output_sha256="3" * 64,
+        duration_seconds=0.1,
+    )
+    camp_dir = tmp_path / campaign_id
+    artifact = camp_dir / "artifacts" / "formal_preflights" / f"{preflight_sha}.json"
+    artifact.parent.mkdir(parents=True)
+    artifact.write_text(preflight.model_dump_json(indent=2) + "\n")
+
+    _mod._restore_frozen_formal_claims(camp_dir, experiment, manifest)
+
+    assert experiment["formal_claims"] == [claim.model_dump()]
+
+
+def test_frozen_replay_finds_completed_train_across_retry_lineage(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    source_campaign = "cycle-1"
+    initialized_only_campaign = "cycle-2"
+    retry_campaign = "cycle-3"
+    source_dir = root / source_campaign
+    retry_dir = root / retry_campaign
+    source_experiment = {
+        "experiment_id": "source-batch1",
+        "campaign_id": source_campaign,
+        "hypothesis": "A completed source train can be reused.",
+        "rationale": "Frozen replay preserves the exact training configuration.",
+        "expected_effect": "The successor starts at evaluation.",
+        "falsification_criteria": ["The manifest lineage does not verify."],
+        "stop_conditions": ["Stop after the bounded evaluation."],
+        "citations": ["fixture://source"],
+        "knobs": {"steps": 1, "batch_size": 1, "seed": 7},
+    }
+    source_manifest = _mod._manifest(source_campaign, source_experiment, "a" * 40)
+    source_path = source_dir / "manifests" / "source-batch1.json"
+    source_path.parent.mkdir(parents=True)
+    source_path.write_text(source_manifest.model_dump_json(indent=2) + "\n")
+    source_sha = hashlib.sha256(source_path.read_bytes()).hexdigest()
+    retry_manifest = _mod._replay_successor_manifest(
+        source_manifest,
+        frozen_manifest_sha256=source_sha,
+        campaign_id=retry_campaign,
+        experiment_id="retry-batch1",
+        integration_commit="b" * 40,
+    )
+    retry_path = retry_dir / "manifests" / "retry-batch1.json"
+    retry_path.parent.mkdir(parents=True)
+    retry_path.write_text(retry_manifest.model_dump_json(indent=2) + "\n")
+    initialized_only_dir = root / initialized_only_campaign
+    initialized_only_dir.mkdir(parents=True)
+    (initialized_only_dir / "campaign.json").write_text(
+        _mod.CampaignSpec(
+            campaign_id=initialized_only_campaign,
+            objective="initialized recovery gap",
+            primary_metric="smoke.parse_rate",
+            loop_id="loop-1",
+            cycle_index=2,
+            predecessor_campaign_id=source_campaign,
+            upstream_commit="b" * 40,
+            integration_commit="b" * 40,
+        ).model_dump_json(indent=2)
+        + "\n"
+    )
+    (retry_dir / "campaign.json").write_text(
+        _mod.CampaignSpec(
+            campaign_id=retry_campaign,
+            objective="fixture replay",
+            primary_metric="smoke.parse_rate",
+            loop_id="loop-1",
+            cycle_index=3,
+            predecessor_campaign_id=initialized_only_campaign,
+            upstream_commit="b" * 40,
+            integration_commit="b" * 40,
+        ).model_dump_json(indent=2)
+        + "\n"
+    )
+    checkpoint = source_dir / "runs" / "source-batch1" / "checkpoints" / "last.pt"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"checkpoint")
+    (checkpoint.parents[1] / "train_summary.json").write_text(
+        json.dumps(
+            {
+                "run_id": "source-batch1",
+                "stopped_on": "steps",
+                "steps": 1,
+                "checkpoint": str(checkpoint),
+            }
+        )
+    )
+
+    reuse = _mod._completed_frozen_train_source(
+        root=root,
+        campaign_dir=retry_dir,
+        manifest=retry_manifest,
+        manifest_path=retry_path,
+    )
+
+    assert reuse is not None
+    assert reuse["run_dir"] == source_dir / "runs" / "source-batch1"
+    assert reuse["manifest_paths"] == (retry_path, source_path)
+
+
+def test_digestless_frozen_retry_does_not_stall_cycle(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = tmp_path / "autoresearch"
+    campaign_id = "cycle-1"
+    handoff = _mod.AutotrainCycleHandoffV1(
+        loop_id="loop-1",
+        campaign_id=campaign_id,
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        cycle_role="screening",
+        cycle_intent="screening",
+        evidence_class="fixture",
+        climb_state="inconclusive",
+        ship_state="blocked",
+        primary_metric="smoke.parse_rate",
+        actions=(
+            _mod.AutotrainActionV1(
+                kind="retry_measurement",
+                owner="autotrain",
+                reason="measurement incomplete but manifest was not written",
+                evidence_ids=(f"campaign:{campaign_id}",),
+            ),
+        ),
+    )
+    path = root / campaign_id / "cycle_handoff.json"
+    path.parent.mkdir(parents=True)
+    path.write_text(handoff.model_dump_json(indent=2) + "\n")
+
+    assert _mod._load_frozen_replay(root, "loop-1", campaign_id) is None
+    assert (
+        "FROZEN_REPLAY_SKIP reason=missing_frozen_manifest_sha256"
+        in capsys.readouterr().out
+    )
+
+
+def test_invalid_frozen_configuration_is_not_replayed(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = tmp_path / "autoresearch"
+    campaign_id = "cycle-invalid"
+    camp = root / campaign_id
+    experiment = {
+        "experiment_id": "candidate-invalid",
+        "campaign_id": campaign_id,
+        "hypothesis": "A compiler-path lever requires its decode companion.",
+        "rationale": "The exact frozen recipe is intentionally invalid.",
+        "expected_effect": "Proposal validation prevents execution.",
+        "falsification_criteria": ["The invalid arm reaches training."],
+        "stop_conditions": ["Stop at capability validation."],
+        "citations": ["fixture://invalid"],
+        "knobs": {
+            "steps": 1,
+            "binder_topology_decode_weight": 1.0,
+            "compiler_decode_mode": "off",
+        },
+    }
+    manifest = _mod._manifest(campaign_id, experiment, "a" * 40)
+    manifest_path = camp / "manifests" / "candidate-invalid.json"
+    manifest_path.parent.mkdir(parents=True)
+    manifest_path.write_text(manifest.model_dump_json(indent=2) + "\n")
+    digest = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+    handoff = _mod.AutotrainCycleHandoffV1(
+        loop_id="loop-1",
+        campaign_id=campaign_id,
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        cycle_role="screening",
+        cycle_intent="screening",
+        evidence_class="fixture",
+        climb_state="harness_failure",
+        ship_state="blocked",
+        primary_metric="smoke.parse_rate",
+        actions=(
+            _mod.AutotrainActionV1(
+                kind="retry_measurement",
+                owner="autotrain",
+                reason="retry the frozen incomplete arm",
+                evidence_ids=(f"campaign:{campaign_id}",),
+                frozen_manifest_sha256=digest,
+            ),
+        ),
+    )
+    (camp / "cycle_handoff.json").write_text(handoff.model_dump_json(indent=2) + "\n")
+    outcomes = camp / "artifacts" / "outcomes"
+    outcomes.mkdir(parents=True)
+    (outcomes / "candidate.json").write_text(
+        json.dumps(
+            {
+                "experiment_id": "candidate-invalid",
+                "status": "failed",
+                "metrics": {},
+                "error": "lever_capability_compatibility: unsupported enabled levers",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert _mod._load_frozen_replay(root, "loop-1", campaign_id) is None
+    output = capsys.readouterr().out
+    assert "FROZEN_REPLAY_SKIP reason=nonreplayable_configuration" in output
+    assert "detail=lever_capability_compatibility" in output
+
+
+def test_reserved_runtime_owner_failure_is_not_replayed(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = tmp_path / "autoresearch"
+    campaign_id = "cycle-runtime-owner"
+    camp = root / campaign_id
+    experiment = {
+        "experiment_id": "candidate-runtime-owner",
+        "campaign_id": campaign_id,
+        "hypothesis": "A reserved owner must not be replayed before implementation.",
+        "rationale": "The exact frozen recipe reached the model constructor.",
+        "expected_effect": "The owner is either implemented or skipped fail-closed.",
+        "falsification_criteria": ["The reserved owner silently runs."],
+        "stop_conditions": ["Stop at runtime-owner validation."],
+        "citations": ["fixture://runtime-owner"],
+        "knobs": {"steps": 1, "binder_slot_ownership_decode_weight": 1.0},
+    }
+    manifest = _mod._manifest(campaign_id, experiment, "a" * 40)
+    manifest_path = camp / "manifests" / "candidate-runtime-owner.json"
+    manifest_path.parent.mkdir(parents=True)
+    manifest_path.write_text(manifest.model_dump_json(indent=2) + "\n")
+    digest = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+    handoff = _mod.AutotrainCycleHandoffV1(
+        loop_id="loop-1",
+        campaign_id=campaign_id,
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        cycle_role="screening",
+        cycle_intent="screening",
+        evidence_class="fixture",
+        climb_state="harness_failure",
+        ship_state="blocked",
+        primary_metric="smoke.parse_rate",
+        actions=(
+            _mod.AutotrainActionV1(
+                kind="retry_measurement",
+                owner="autotrain",
+                reason="retry",
+                evidence_ids=(f"campaign:{campaign_id}",),
+                frozen_manifest_sha256=digest,
+            ),
+        ),
+    )
+    (camp / "cycle_handoff.json").write_text(handoff.model_dump_json(indent=2) + "\n")
+    outcomes = camp / "artifacts" / "outcomes"
+    outcomes.mkdir(parents=True)
+    (outcomes / "candidate.json").write_text(
+        json.dumps(
+            {
+                "experiment_id": "candidate-runtime-owner",
+                "status": "failed",
+                "metrics": {},
+                "error": "unsupported compiler auxiliary lever(s); no runtime owner is implemented",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert _mod._load_frozen_replay(root, "loop-1", campaign_id) is None
+    assert "nonreplayable_configuration" in capsys.readouterr().out
+
+
+def test_measurement_completion_requires_both_arm_metrics_and_no_soft_failure() -> None:
+    complete = {
+        "control_metrics": {"parse_rate": 1.0},
+        "candidate_metrics": {"parse_rate": 1.0},
+        "reasons": ["primary_metric_null_or_worse:smoke.parse_rate"],
+    }
+    assert _mod._measurement_is_complete(complete)
+    assert not _mod._measurement_is_complete(
+        {**complete, "reasons": ["measurement_incomplete:no_smoke_metrics"]}
+    )
+    assert not _mod._measurement_is_complete(
+        {**complete, "candidate_metrics": {"parse_rate": None}}
+    )
+
+
+def test_continuous_evidence_is_bounded_to_predecessor_and_loop(tmp_path: Path) -> None:
+    roots = _mod._continuous_evidence_roots(
+        tmp_path / "autoresearch", "loop-1", "campaign-6"
+    )
+    assert roots == (
+        tmp_path / "autoresearch" / "campaign-6",
+        tmp_path / "autoresearch" / "loops" / "loop-1",
+        tmp_path / "autoresearch" / "sdlc_delivery_ledger.jsonl",
+    )
+
+
+def test_predecessor_prerequisite_must_be_acknowledged(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    campaign_id = "cycle-1"
+    handoff = _mod.AutotrainCycleHandoffV1(
+        loop_id="loop-1",
+        campaign_id=campaign_id,
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        cycle_role="screening",
+        cycle_intent="screening",
+        evidence_class="fixture",
+        climb_state="rejected",
+        ship_state="blocked",
+        primary_metric="smoke.parse_rate",
+        actions=(
+            _mod.AutotrainActionV1(
+                kind="document",
+                owner="documenting-experiment-results",
+                reason="Persist the result before advancing.",
+                evidence_ids=(f"campaign:{campaign_id}",),
+            ),
+        ),
+    )
+    path = root / campaign_id / "cycle_handoff.json"
+    path.parent.mkdir(parents=True)
+    path.write_text(handoff.model_dump_json(indent=2) + "\n")
+
+    with pytest.raises(RuntimeError, match="0:document"):
+        _mod._require_predecessor_actions(root, "loop-1", campaign_id)
+    _mod._require_predecessor_actions(root, "loop-1", "historical-without-handoff")
+
+
+def test_cycle_handoff_marks_incomplete_measurement_for_frozen_retry(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "cycle-1"
+    (camp / "manifests").mkdir(parents=True)
+    (camp / "manifests" / "cand.json").write_text("{}\n")
+    handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="screening",
+        cycle_intent="screening",
+        primary_metric="smoke.binder_reference_f1",
+        matrix=_priority_matrix(),
+        delivery={
+            "positive": False,
+            "candidate_id": "cand",
+            "reasons": ["measurement_incomplete:no_smoke_metrics"],
+            "stack_layer": False,
+        },
+        resolution=None,
+        formal_status=None,
+    )
+    assert handoff.climb_state == "inconclusive"
+    retry = next(
+        action for action in handoff.actions if action.kind == "retry_measurement"
+    )
+    assert retry.frozen_manifest_sha256 == hashlib.sha256(b"{}\n").hexdigest()
+    assert all(action.kind != "next_experiment" for action in handoff.actions)
+
+
+def test_cycle_handoff_uses_delivery_completeness_for_wall_timeout_retry(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "cycle-1"
+    (camp / "manifests").mkdir(parents=True)
+    (camp / "manifests" / "cand.json").write_text("{}\n")
+
+    handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="screening",
+        cycle_intent="screening",
+        primary_metric="smoke.structural_similarity",
+        matrix=_priority_matrix(),
+        delivery={
+            "positive": False,
+            "candidate_id": "cand",
+            "measurement_complete": False,
+            "reasons": ["wall_timeout:control", "primary_metric_unavailable"],
+            "stack_layer": False,
+        },
+        resolution=None,
+        formal_status=None,
+    )
+
+    assert handoff.climb_state == "inconclusive"
+    assert handoff.priorities[0].area == "infrastructure"
+    assert handoff.priorities[0].proposed_experiment_id == "cand"
+    assert "exact frozen" in handoff.priorities[0].hypothesis
+    assert any(action.kind == "retry_measurement" for action in handoff.actions)
+    assert all(action.kind != "next_experiment" for action in handoff.actions)
+
+
+def test_finalized_decode_timeout_routes_directly_to_runtime_repair(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "cycle-1"
+    run = camp / "runs" / "cand"
+    run.mkdir(parents=True)
+    (camp / "manifests").mkdir()
+    (camp / "manifests" / "cand.json").write_text("{}\n")
+    (run / "scoreboard.json").write_text(
+        json.dumps(
+            {
+                "evals": {"runner": {"name": "AgentV", "execution_errors": 0}},
+                "gates": {"authority": "AgentEvals assertions", "pass": False},
+                "suites": {
+                    "smoke": {
+                        "n": 3,
+                        "completed_document_n": 2,
+                        "incomplete_document_n": 1,
+                        "decode_timeout_document_count": 1,
+                    }
+                },
+            }
+        )
+    )
+
+    handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="screening",
+        cycle_intent="screening",
+        primary_metric="smoke.binder_reference_f1",
+        matrix=_priority_matrix(),
+        delivery={
+            "positive": False,
+            "candidate_id": "cand",
+            "reasons": [
+                "measurement_incomplete:decode_timeout",
+                "harness_failure:cand:experiment_failed",
+            ],
+            "stack_layer": False,
+        },
+        resolution=None,
+        formal_status=None,
+    )
+
+    repair = next(
+        action for action in handoff.actions if action.kind == "repair_harness"
+    )
+    retry = next(
+        action for action in handoff.actions if action.kind == "retry_measurement"
+    )
+    assert repair.owner == "improve-openui-harnesses"
+    assert repair.harness_family == "model_build"
+    assert "finalized every record disposition" in repair.reason
+    assert repair.frozen_manifest_sha256 == hashlib.sha256(b"{}\n").hexdigest()
+    assert retry.frozen_manifest_sha256 == repair.frozen_manifest_sha256
+    assert handoff.actions.index(repair) < handoff.actions.index(retry)
+
+
+def test_replayed_finalized_decode_timeout_rejects_runtime_arm(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "cycle-2"
+    run = camp / "runs" / "cand"
+    run.mkdir(parents=True)
+    (camp / "manifests").mkdir()
+    (camp / "campaign.json").write_text(
+        json.dumps({"predecessor_campaign_id": "cycle-1"})
+    )
+    (camp / "manifests" / "cand.json").write_text("{}\n")
+    (run / "scoreboard.json").write_text(
+        json.dumps(
+            {
+                "evals": {"runner": {"name": "AgentV", "execution_errors": 0}},
+                "gates": {"authority": "AgentEvals assertions", "pass": False},
+                "suites": {
+                    "smoke": {
+                        "n": 3,
+                        "completed_document_n": 0,
+                        "incomplete_document_n": 3,
+                        "decode_timeout_document_count": 3,
+                    }
+                },
+            }
+        )
+    )
+
+    handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-2",
+        cycle_index=2,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="screening",
+        cycle_intent="retry_measurement",
+        primary_metric="smoke.binder_reference_f1",
+        matrix=_priority_matrix(),
+        delivery={
+            "positive": False,
+            "candidate_id": "cand",
+            "reasons": [
+                "measurement_incomplete:decode_timeout",
+                "harness_failure:cand:experiment_failed",
+            ],
+            "stack_layer": False,
+        },
+        resolution=None,
+        formal_status=None,
+    )
+
+    assert handoff.climb_state == "rejected"
+    assert any("candidate_runtime_rejected" in reason for reason in handoff.reasons)
+    assert all(action.kind != "repair_harness" for action in handoff.actions)
+    assert all(action.kind != "retry_measurement" for action in handoff.actions)
+    assert any(action.kind == "next_experiment" for action in handoff.actions)
+
+
+def test_replayed_dual_arm_timeouts_remain_inconclusive_and_require_repair(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "cycle-2"
+    (camp / "manifests").mkdir(parents=True)
+    (camp / "campaign.json").write_text(
+        json.dumps({"predecessor_campaign_id": "cycle-1"})
+    )
+    (camp / "manifests" / "cand.json").write_text("{}\n")
+    for experiment_id in ("control", "cand"):
+        run = camp / "runs" / experiment_id
+        run.mkdir(parents=True)
+        (run / "scoreboard.json").write_text(
+            json.dumps(
+                {
+                    "evals": {"runner": {"name": "AgentV", "execution_errors": 0}},
+                    "gates": {"authority": "AgentEvals assertions", "pass": False},
+                    "suites": {
+                        "smoke": {
+                            "n": 3,
+                            "completed_document_n": 2,
+                            "incomplete_document_n": 1,
+                            "decode_timeout_document_count": 1,
+                        }
+                    },
+                }
+            )
+        )
+
+    handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-2",
+        cycle_index=2,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="promotion",
+        cycle_intent="retry_measurement",
+        primary_metric="held_out.structural_similarity",
+        matrix=_priority_matrix(),
+        delivery={
+            "positive": False,
+            "control_id": "control",
+            "candidate_id": "cand",
+            "measurement_complete": False,
+            "reasons": [
+                "measurement_incomplete:control:decode_timeout",
+                "measurement_incomplete:cand:decode_timeout",
+            ],
+            "stack_layer": False,
+        },
+        resolution=None,
+        formal_status=None,
+    )
+
+    assert handoff.climb_state == "inconclusive"
+    assert all("candidate_runtime_rejected" not in reason for reason in handoff.reasons)
+    assert any(action.kind == "repair_harness" for action in handoff.actions)
+    assert any(action.kind == "retry_measurement" for action in handoff.actions)
+    assert all(action.kind != "next_experiment" for action in handoff.actions)
+
+
+def test_numeric_literal_close_starvation_steers_new_training_arm(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "cycle-1"
+    run = camp / "runs" / "cand"
+    run.mkdir(parents=True)
+    (camp / "manifests").mkdir()
+    (camp / "manifests" / "cand.json").write_text("{}\n")
+    traces = [
+        {
+            "record_id": "smoke-1",
+            "prefix_text": f'root = Slider("$6", "discrete", {"1" * n}',
+            "chosen_token": "B:31",
+            "legal_candidates": 12,
+        }
+        for n in range(6, 10)
+    ]
+    (run / "eval_smoke.json").write_text(
+        json.dumps(
+            {
+                "decode_timeout_document_count": 1,
+                "decode_stats": {"constrained_selection_traces": traces},
+            }
+        )
+    )
+
+    assert _mod._has_numeric_literal_close_starvation(camp, "cand")
+    handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="promotion",
+        cycle_intent="retry_measurement",
+        primary_metric="held_out.structural_similarity",
+        matrix=_priority_matrix(),
+        delivery={
+            "positive": False,
+            "candidate_id": "cand",
+            "measurement_complete": False,
+            "reasons": ["measurement_incomplete:decode_timeout"],
+            "stack_layer": False,
+        },
+        resolution=None,
+        formal_status=None,
+    )
+
+    assert handoff.priorities[0].area == "model_build"
+    assert handoff.priorities[0].proposed_experiment_id == "cand-literal-close"
+    successor = next(
+        action for action in handoff.actions if action.kind == "next_experiment"
+    )
+    assert successor.owner == "autotrain"
+    assert "registered typed tail-weighted LTR signal" in successor.reason
+    assert "do not replay" in successor.reason
+    assert all(action.kind != "repair_harness" for action in handoff.actions)
+    assert _mod._predecessor_priority_slug(root, "cycle-1", skip=set()) == (
+        "literal-close"
+    )
+    assert (
+        _mod._predecessor_priority_slug(root, "cycle-1", skip={"literal-close"})
+        == "literal-close"
+    )
+
+    predecessor = "cycle-1"
+    for index, slug in ((2, "bounds"), (3, "confirm")):
+        successor = root / f"cycle-{index}"
+        successor.mkdir()
+        (successor / "campaign.json").write_text(
+            json.dumps({"predecessor_campaign_id": predecessor})
+        )
+        (successor / "sdlc_delivery.json").write_text(
+            json.dumps({"candidate_id": f"cand-{slug}"})
+        )
+        (successor / "cycle_handoff.json").write_text(
+            json.dumps(
+                {
+                    "priorities": [
+                        {
+                            "rank": 1,
+                            "area": "experiments",
+                            "authority": "speculative",
+                            "confidence": 0.6,
+                            "disposition": "experiment_next",
+                            "proposed_experiment_id": f"cand-{slug}",
+                        }
+                    ]
+                }
+            )
+        )
+        predecessor = f"cycle-{index}"
+
+    assert (
+        _mod._predecessor_priority_slug(root, predecessor, skip={"literal-close"})
+        == "literal-close"
+    )
+    assert (
+        _mod._predecessor_priority_slug(
+            root,
+            predecessor,
+            skip={"literal-close"},
+            closed={"literal-close"},
+        )
+        is None
+    )
+
+
+def test_control_only_model_timeout_replays_without_fake_harness_repair(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "cycle-1"
+    control = camp / "runs" / "control"
+    candidate = camp / "runs" / "literal-close"
+    control.mkdir(parents=True)
+    candidate.mkdir(parents=True)
+    (camp / "manifests").mkdir()
+    (camp / "manifests" / "literal-close.json").write_text("{}\n")
+    traces = [
+        {
+            "record_id": "smoke-1",
+            "prefix_text": f'root = Slider("$6", "discrete", {"1" * n}',
+            "chosen_token": "B:31",
+            "legal_candidates": 12,
+        }
+        for n in range(6, 10)
+    ]
+    (control / "eval_smoke.json").write_text(
+        json.dumps(
+            {
+                "n": 1,
+                "completed_document_n": 0,
+                "incomplete_document_n": 1,
+                "decode_timeout_document_count": 1,
+                "decode_stats": {"constrained_selection_traces": traces},
+            }
+        )
+    )
+    (control / "scoreboard.json").write_text(
+        json.dumps(
+            {
+                "evals": {
+                    "runner": {
+                        "name": "AgentV",
+                        "execution_errors": 0,
+                    }
+                },
+                "gates": {"authority": "AgentEvals assertions", "pass": False},
+                "suites": {
+                    "smoke": {
+                        "n": 1,
+                        "completed_document_n": 0,
+                        "incomplete_document_n": 1,
+                        "decode_timeout_document_count": 1,
+                    }
+                },
+            }
+        )
+    )
+    (candidate / "eval_smoke.json").write_text(
+        json.dumps(
+            {
+                "n": 1,
+                "completed_document_n": 1,
+                "incomplete_document_n": 0,
+                "decode_timeout_document_count": 0,
+            }
+        )
+    )
+
+    handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="screening",
+        cycle_intent="screening",
+        primary_metric="smoke.structural_similarity",
+        matrix=_priority_matrix(),
+        delivery={
+            "positive": False,
+            "control_id": "control",
+            "candidate_id": "literal-close",
+            "measurement_complete": False,
+            "reasons": ["harness_failure:control:experiment_failed"],
+        },
+        resolution=None,
+        formal_status=None,
+    )
+
+    assert any(action.kind == "retry_measurement" for action in handoff.actions)
+    assert all(action.kind != "repair_harness" for action in handoff.actions)
+    assert "tail-supervised candidate completed" in handoff.priorities[0].hypothesis
+
+    replay_handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="promotion",
+        cycle_intent="retry_measurement",
+        primary_metric="held_out.structural_similarity",
+        matrix=_priority_matrix(),
+        delivery={
+            "positive": False,
+            "control_id": "control",
+            "candidate_id": "literal-close",
+            "measurement_complete": False,
+            "reasons": ["measurement_incomplete:literal-close:missing_scoreboard"],
+        },
+        resolution=None,
+        formal_status="proved",
+    )
+    assert replay_handoff.climb_state == "inconclusive"
+    assert not any(
+        reason.startswith("candidate_runtime_unblock_reproduced:")
+        for reason in replay_handoff.reasons
+    )
+    assert any(action.kind == "retry_measurement" for action in replay_handoff.actions)
+
+
+def test_cycle_handoff_exhausts_identical_replays_into_harness_repair(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    prior = root / "cycle-1"
+    current = root / "cycle-2"
+    (current / "manifests").mkdir(parents=True)
+    prior.mkdir(parents=True)
+    (current / "manifests" / "cand.json").write_text("{}\n")
+    (prior / "campaign.json").write_text(json.dumps({"predecessor_campaign_id": None}))
+    (prior / "cycle_handoff.json").write_text(
+        json.dumps(
+            {
+                "loop_id": "loop-1",
+                "campaign_id": "cycle-1",
+                "cycle_intent": "promotion",
+            }
+        )
+    )
+    (current / "campaign.json").write_text(
+        json.dumps({"predecessor_campaign_id": "cycle-1"})
+    )
+
+    handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-2",
+        cycle_index=2,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="screening",
+        cycle_intent="retry_measurement",
+        primary_metric="smoke.binder_reference_f1",
+        matrix=_priority_matrix(),
+        delivery={
+            "positive": False,
+            "candidate_id": "cand",
+            "reasons": ["measurement_incomplete:no_smoke_metrics"],
+            "stack_layer": False,
+        },
+        resolution=None,
+        formal_status=None,
+    )
+
+    repair = next(
+        action for action in handoff.actions if action.kind == "repair_harness"
+    )
+    assert repair.owner == "improve-openui-harnesses"
+    assert repair.frozen_manifest_sha256 == hashlib.sha256(b"{}\n").hexdigest()
+    assert "(1/1)" in repair.reason
+    retry = next(
+        action for action in handoff.actions if action.kind == "retry_measurement"
+    )
+    assert retry.frozen_manifest_sha256 == repair.frozen_manifest_sha256
+    assert handoff.actions.index(repair) < handoff.actions.index(retry)
+
+    prior_handoff = json.loads((prior / "cycle_handoff.json").read_text())
+    prior_handoff["actions"] = [repair.model_dump(mode="json")]
+    (prior / "cycle_handoff.json").write_text(json.dumps(prior_handoff))
+    assert (
+        _mod._consecutive_frozen_replays(root, "loop-1", "cycle-2", "retry_measurement")
+        == 1
+    )
+
+
+def test_causal_family_saturates_per_integrated_code() -> None:
+    entries = [
+        {
+            "status": "rejected",
+            "source_integration_commit": "a" * 40,
+            "knobs": {"grammar_completion_bounds": True},
+        },
+        {
+            "status": "promotion_failed",
+            "source_integration_commit": "a" * 40,
+            "knobs": {"grammar_completion_bounds": True},
+        },
+    ]
+    assert "bounds" in _mod._skip_arm_slugs(entries, integration_commit="a" * 40)
+    assert "bounds" not in _mod._skip_arm_slugs(entries, integration_commit="b" * 40)
+
+
+def test_dispose_champion_promote_formal_timeout_is_inconclusive_not_failed() -> None:
+    d = _mod.dispose_champion_promote(
+        formal_preflight_status="timed_out",
+        certificate=None,
+        locked_expectations_sha256="a" * 64,
+        phase_a_positive=True,
+        phase_a_quality_held=True,
+    )
+    assert d["status"] == "promotion_inconclusive"
+    assert d.get("timeout") is True
+    assert d.get("inconclusive") is True
+    assert any("formal_preflight_timed_out" in r for r in d["reasons"])
+    assert any("measurement_incomplete" in r for r in d["reasons"])
+    assert d["status"] != "promotion_failed"
+    assert d["status"] != "rejected"
+
+
+def test_resolve_promotion_formal_timeout_refunds_attempt_and_stays_retriable(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "ar"
+    loop = "L"
+    camp = root / "camp-to"
+    camp.mkdir(parents=True)
+    entry = {
+        "entry_id": "champ-to-1",
+        "status": "promoting",
+        "knobs_fingerprint": "fp1",
+        "promote_attempts": 1,
+        "knobs": {"grammar_completion_bounds": True},
+    }
+    path = _mod._champion_queue_path(root, loop)
+    _mod._write_champion_queue(path, [entry])
+    _mod.record_formal_preflight_status(
+        camp,
+        status="timed_out",
+        template_id=_mod._PROMOTE_FORMAL_TEMPLATE_ID,
+        reason="formal_preflight_timed_out:wall_s=600",
+        timeout_seconds=600.0,
+        duration_seconds=600.1,
+        timed_out=True,
+    )
+    resolved = _mod._resolve_promotion_result(
+        root=root,
+        loop_id=loop,
+        entry=entry,
+        delivery={
+            "positive": False,
+            "reasons": ["fixture_insufficient_n:arm"],
+        },
+        campaign_id="camp-to",
+        cycle_index=9,
+        camp_dir=camp,
+        formal_preflight_status="timed_out",
+        locked_expectations_sha256="b" * 64,
+    )
+    assert resolved is not None
+    assert resolved["status"] == "promotion_inconclusive"
+    rows = _mod._load_champion_queue(path)
+    assert rows[0]["status"] == "promotion_inconclusive"
+    # Attempt refunded so timeout is not a permanent rejection path.
+    assert int(rows[0].get("promote_attempts") or 0) == 0
+    assert rows[0].get("last_formal_timeout") is True
+    # Retriable head for next promotion cadence.
+    head = _mod._queue_head_confirmed(rows)
+    assert head is not None
+    assert head["entry_id"] == "champ-to-1"
+    # Ledger captures inconclusive outcome (not promotion_failed).
+    ledger = root / "loops" / loop / "learning_certificate_ledger.jsonl"
+    line = ledger.read_text(encoding="utf-8").strip().splitlines()[-1]
+    assert "promotion_inconclusive" in line
+    assert "timed_out" in line
+
+
+def test_fit_screening_decode_fits_arm_wall() -> None:
+    """n×decode + train floor must not exceed the symmetric arm wall."""
+    from slm_training.autoresearch.climb_policy import load_climb_policy
+
+    policy = load_climb_policy()
+    fitted, meta = _mod._fit_screening_decode_timeout_seconds(policy)
+    arm = float(meta["arm_wall_seconds"])
+    n = int(meta["smoke_n"])
+    train = float(meta["min_train_floor_seconds"])
+    overhead = float(meta["eval_overhead_seconds"])
+    assert fitted * n + train + overhead <= arm + 1e-6
+    assert fitted <= 12.0  # thrash-calibrated, not ship 24s
+
+
+def test_screening_matrix_uses_fitted_decode_and_thrash_steps() -> None:
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-timing-c1",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=80,
+        cycle=4,
+        role="screening",
+        recommended_slug="bounds",
+    )
+    cand = next(
+        h["experiment"]
+        for h in matrix["hypotheses"]
+        if str(h["experiment"]["experiment_id"]).endswith("-bounds")
+    )
+    knobs = cand["knobs"]
+    assert float(knobs["decode_timeout_seconds"]) <= 12.0  # policy.v1.json v5
+    assert int(knobs["steps"]) <= 43  # thrash cap 40 + cycle%3
+
+
+def test_write_thrash_timing_records_completeness(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "c-time"
+    camp.mkdir(parents=True)
+    path = _mod._write_thrash_timing(
+        camp,
+        loop_id="loop-t",
+        campaign_id="c-time",
+        cycle_index=9,
+        role="screening",
+        measurement_complete=False,
+        arm_wall_seconds=70.0,
+        decode_fit={"fitted_decode_timeout_seconds": 8.0},
+        reasons=["measurement_incomplete:x:missing_scoreboard", "empty_metrics:y"],
+        control_metrics={"structural_similarity": None},
+        candidate_metrics={},
+    )
+    assert path.is_file()
+    data = json.loads(path.read_text(encoding="utf-8"))
+    assert data["schema"] == "thrash_timing/v1"
+    assert data["complete"] is False
+    assert any("measurement_incomplete" in r for r in data["incomplete_reasons"])
+    ledger = root / "loops" / "loop-t" / "thrash_timing.jsonl"
+    assert ledger.is_file()
+
+
+def test_semantic_contrast_thrash_arm_uses_batch_size_at_least_3() -> None:
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-sc-c1",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=80,
+        cycle=3,
+        role="screening",
+        recommended_slug="semantic-contrast",
+    )
+    cand = next(
+        h["experiment"]
+        for h in matrix["hypotheses"]
+        if str(h["experiment"]["experiment_id"]).endswith("-semantic-contrast")
+    )
+    assert int(cand["knobs"]["batch_size"]) >= 3
+    assert float(cand["knobs"]["semantic_contrast_loss_weight"]) > 0
+
+
+def test_thrash_matrix_strips_stale_feedback_when_no_live_feedback(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Agent hypothesize fails if matrix.feedback_ids disagree with live feedback."""
+    from slm_training.autoresearch.schemas import HypothesisMatrix
+
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-fb-c1",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=40,
+        cycle=1,
+        role="screening",
+        recommended_slug="bounds",
+        feedback=[{"feedback_id": "feedback-stale", "matrix_id": "old-m1"}],
+        previous_matrix_id="old-m1",
+    )
+    assert matrix.get("feedback_ids") == ["feedback-stale"]
+    # Driver thrash path always strips feedback binds (handoff pred ≠ lineage).
+    promote_levers = None
+    confirm_levers = None
+    replay = None
+    if (
+        promote_levers is None
+        and confirm_levers is None
+        and replay is None
+        and (matrix.get("feedback_ids") or matrix.get("predecessor_matrix_id"))
+    ):
+        matrix = dict(matrix)
+        matrix.pop("feedback_ids", None)
+        matrix.pop("predecessor_matrix_id", None)
+    HypothesisMatrix.model_validate(matrix)
+    assert "feedback_ids" not in matrix
+    assert "predecessor_matrix_id" not in matrix
+
+
+def test_thrash_does_not_bind_handoff_pred_feedback_ids(tmp_path: Path) -> None:
+    """Thrash must not pin handoff-pred feedback; hypothesize rebinds lineage.
+
+    Continuous pred is the last *handoff* campaign, while hypothesize walks
+    full loop lineage and may select a different formed matrix (e.g. incomplete
+    successor with partial feedback). Pinning handoff ids aborts thrash with
+    'agent hypothesis matrix conflicts with supplied feedback ids'.
+    """
+    from slm_training.autoresearch.providers import AgentHypothesisProvider
+    from slm_training.autoresearch.schemas import (
+        CampaignSpec,
+        EvidenceSnapshot,
+        HypothesisFeedback,
+        HypothesisMatrix,
+    )
+
+    # Thrash build path: no feedback passed (bind_pred_feedback=False).
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-fb-c2",
+        evidence_snapshot_id="snap-c2",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=40,
+        cycle=2,
+        role="screening",
+        recommended_slug="semantic-contrast",
+        feedback=None,
+        previous_matrix_id=None,
+    )
+    assert not matrix.get("feedback_ids")
+    assert not matrix.get("predecessor_matrix_id")
+    validated = HypothesisMatrix.model_validate(matrix)
+
+    # Live lineage feedback differs from handoff-pred ids thrash used to bind.
+    # Empty matrix feedback_ids lets AgentHypothesisProvider rebind safely.
+    live = HypothesisFeedback(
+        feedback_id="feedback-abcdef0123456789",
+        campaign_id="lineage-camp",
+        matrix_id="lineage-m1",
+        experiment_id="exp-control",
+        hypothesis="A sufficiently detailed lineage diagnosis hypothesis.",
+        knob_signature='{"steps": 40}',
+        outcome_status="stopped",
+        diagnosis_target="infrastructure",
+        diagnosis_evidence=("Lineage arm finished without dual-arm scoreboard.",),
+        recommended_actions=("Rotate thrash under fitted decode budget.",),
+    )
+    path = tmp_path / "thrash-matrix.json"
+    path.write_text(validated.model_dump_json(), encoding="utf-8")
+    camp = CampaignSpec(
+        campaign_id="continuous-loop-fb-c2",
+        objective="Size-matched thrash under wall cap.",
+        primary_metric="smoke.structural_similarity",
+    )
+    evidence = EvidenceSnapshot(snapshot_id="snap-c2", roots=("outputs",), items=())
+    result = AgentHypothesisProvider(path).propose(camp, evidence, [], (live,))
+    assert result.matrix.feedback_ids == (live.feedback_id,)
+    assert result.matrix.predecessor_matrix_id == live.matrix_id

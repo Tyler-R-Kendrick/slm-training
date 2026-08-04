@@ -5,59 +5,51 @@
 | Field | Value |
 | --- | --- |
 | Loop | `continuous-openui-20260730` |
-| Campaign | `continuous-loop-20260801-c5` |
-| Predecessor | `continuous-loop-20260801-c3` (cycle 4 attempt truncated by an undersized outer wall-clock wrapper before either arm finished; no artifacts, not documented as its own cycle) |
-| Source | `5bc90d81ff3fc0da24e4d64c1e7b2c8e37f61f1e` |
+| Campaign | `continuous-loop-20260801-continuous-openui-202607-98199209-c3` |
+| Source | `90a3ff4bdf0a932b2fffc8d9ab0ff03cddeb7126` |
 | Device | CPU |
-| Steps | 40 / seed 7 |
+| Steps | 20 / batch 2 |
 | Train | `wf_smoke_v2` |
 | Eval | `e938_role_safe_all_targets_v2` |
-| Wall cap | 3 minutes per arm; `decode_timeout_seconds=24.0` |
-| Version stamp | `code_commit=311db12a`, `harness.autoresearch.experiment_campaign=v26`, `harness.model_build.eval=v71` |
+| Wall cap | 3 minutes |
+| Objective | Retry cycle 4's timed-out recipe, rotated to the `both` (bounds + canvas) lever |
 
 ## Run matrix
 
-| Arm | Levers | smoke n | parse_rate | meaningful_program_rate | latency_ms_p50 | Status |
-| --- | --- | ---: | ---: | ---: | ---: | --- |
-| c20260801-c5-control | `batch_size=2` | 3 | 1.0 | 0.0 | 2646.91 | eval completed; ship gates fail (insufficient n) |
-| c20260801-c5-batch1 | `batch_size=1` | 3 | — | — | — | **all 3 smoke decodes hit the 24s timeout**; ship gates fail (insufficient n + no measurable metrics) |
+| Arm | Levers | smoke n | parse_rate | meaningful_program_rate | binder_reference_f1 | latency_ms_p50 | Status |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| control | both off | 3 | 1.0 | 0.0 | 0.7222 | 6736.19 | eval completed; ship gates fail (fixture n + quality) |
+| both | bounds **on**, canvas **on** | 3 | 1.0 | 0.0 | 0.7222 | 6488.99 | eval completed; ship gates fail (same) |
 
-Primary delta: **not comparable** — the candidate arm produced `decode_timeout_count=3`
-and every quality/latency metric is `null`.
+Primary metric `smoke.binder_reference_f1` delta: **0.0** (identical). Latency
+moved -247.2 ms (both faster) but is not the declared primary and is not,
+alone, a positive result.
 
 ## Diagnostics
 
-1. `batch_size=1` is a reproducible-looking regression: all 3 smoke-suite
-   decodes exhausted the 24s `decode_timeout_seconds` budget, so
-   `parse_rate`, `meaningful_program_rate`, `structural_similarity`, and
-   `latency_ms_p50` are all `null` in `gates.json`. The control arm
-   (`batch_size=2`) decoded normally in the same cycle under the same wall
-   cap.
-2. `sdlc_delivery.json` recorded `primary_metric_unavailable` for both the
-   control/candidate comparison lines — this is the driver correctly
-   refusing to compare a real number against `null`, not a classifier bug.
-3. An earlier cycle-4 attempt (`continuous-loop-20260801-c4`, not
-   documented) was truncated by an outer wall-clock wrapper set too small
-   for two sequential 3-minute-capped arms; self-healed by widening the
-   outer wrapper before this cycle, per the loop's non-terminating law
-   (soft failures/timeouts are inputs to the next cycle, not stop
-   conditions).
+1. **Cycle 4's timeout did not reproduce.** This retry of the equivalent
+   recipe finished in ~74s wall for both arms — confirms the prior wall-cap
+   hit (`continuous-openui-20260730-c4-results.md`) was session-level
+   resource variance (this session had just installed a fresh venv +
+   CUDA/torch wheels), not a `compact_active_canvas` or `model_build`
+   harness defect. No repair lane opened.
+2. The combined `bounds + canvas` lever again shows a null quality delta —
+   the third consecutive non-positive result on this lever bank (cycles 2,
+   3, 5 in this session; cycle 2 of the prior session already showed the
+   same for `bounds` alone).
+3. SDLC Phase A: **non-positive**
+   (`primary_metric_null_or_worse:smoke.binder_reference_f1:control=0.7222
+   candidate=0.7222 improvement=0.0`). No stack layer opened.
 
 ## Next-run priorities
 
-1. **infrastructure:** re-run `batch_size=1` in isolation to confirm the
-   `decode_timeout_count=3` result reproduces before treating it as a typed
-   `HarnessSignalV1` (single occurrence so far; repeated-blocker rule needs
-   3 identical failures with no new information).
-2. **model:** do not conclude anything about `batch_size` and latency from
-   this cycle — the candidate arm never produced a measurable decode.
-3. **evaluation:** fixture `insufficient_n` (n=3 < 20 on both `smoke` and
-   `held_out`) remains expected and non-terminal at `wf_smoke_v2` scale.
+1. **model:** stop thrashing the `bounds`/`canvas` lever bank — rotate to an
+   untested lever family for the next cycle.
+2. **infrastructure:** confirmed transient timeout, not a repeated hard
+   blocker; no `HarnessSignalV1` filed.
+3. **process:** continue the loop; do not promote off screening evidence.
 
 ## Artifacts
 
-- Campaign: `outputs/autoresearch/continuous-loop-20260801-c5/`
-- Runs: `.../runs/c20260801-c5-control/`, `.../runs/c20260801-c5-batch1/`
-- SDLC delivery: `.../sdlc_delivery.json` (`positive=false`,
-  `stack_layer=false`, `action=no_stack_layer_non_positive`)
+- Campaign: `outputs/autoresearch/continuous-loop-20260801-continuous-openui-202607-98199209-c3/`
 - JSON twin: `continuous-openui-20260730-c5-results.json`

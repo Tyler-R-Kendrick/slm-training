@@ -3,15 +3,18 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
 import torch
 
+from slm_training.data.contract import canonicalize_example_template_markers
 from slm_training.dsl.schema import ExampleRecord
 
 _META_KEY = "semantic_contrast"
+_SLOT_ALIAS_RE = re.compile(r":slot_(0|[1-9][0-9]*)(?:\.[A-Za-z0-9_.-]+)?\Z")
 
 
 @dataclass(frozen=True)
@@ -74,6 +77,35 @@ def load_semantic_contrast_pairs(path: Path) -> list[SemanticContrastTrainingPai
                     raise ValueError("pair roles must be positive then negative")
                 positive = ExampleRecord.from_dict(positive_row["record"])
                 negative = ExampleRecord.from_dict(negative_row["record"])
+                positive_marker_order = list(positive.placeholders or ())
+                negative_marker_order = list(negative.placeholders or ())
+                if not positive_marker_order:
+                    raise ValueError("positive pair side must declare template markers")
+                marker_projection = {
+                    marker: f":slot_{index}"
+                    for index, marker in enumerate(positive_marker_order)
+                }
+                for marker in negative_marker_order:
+                    if marker in marker_projection:
+                        continue
+                    match = _SLOT_ALIAS_RE.fullmatch(marker)
+                    if match is None or int(match.group(1)) >= len(
+                        positive_marker_order
+                    ):
+                        raise ValueError(
+                            "negative pair marker has no positive-side ordinal"
+                        )
+                    marker_projection[marker] = f":slot_{int(match.group(1))}"
+                positive = canonicalize_example_template_markers(
+                    positive,
+                    marker_projection=marker_projection,
+                    slot_contract_size=len(positive_marker_order),
+                )
+                negative = canonicalize_example_template_markers(
+                    negative,
+                    marker_projection=marker_projection,
+                    slot_contract_size=len(positive_marker_order),
+                )
                 if positive.split != "train" or negative.split != "train":
                     # The immutable artifact carries held-out/OOD diagnostic
                     # rows too; never relabel them into training supervision.

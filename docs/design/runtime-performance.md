@@ -9,6 +9,22 @@ only be compared after calculation.
 
 Measured on `twotower_v1_ship` (CPU, scratch context, LTR primary).
 
+### Evaluation latency and cache boundary (2026-08-03)
+
+For batched evaluation, `latency_ms_p50/p95` now mean the observed request
+completion wall for the batch (every request completes when its batch returns).
+The separate `decode_amortized_ms_per_record_p50/p95` and
+`decode_records_per_second` fields are throughput signals and must not be used
+as request-latency budgets. Per-record details carry both values and the batch
+size. This distinction is required for honest comparisons when batch size or
+the final short batch changes.
+
+Suite-cache hits replay only deterministic prediction/quality evidence. Timing,
+timeouts, decoder initialization, code provenance, version stamps, and AgentV
+paths are rebuilt (or explicitly marked `cache_not_measured`) for the current
+run. Incomplete or manifest-unidentified evaluations are not written to the
+suite cache and cannot satisfy a performance gate through replay.
+
 ## Hotspots
 
 | Path | Before (initial) | After round 1 | After round 2 |
@@ -166,6 +182,26 @@ admits per candidate). Round 5:
 python -m scripts.profile_generate --rounds 2
 python -m scripts.run_perf_matrix --only P0,Q9,R9,PG --limit 4
 ```
+
+## Round 7 — MaskGIT persistent state (falsified, reverted; 2026-08-03)
+
+Preregistered attempt to pass a persistent `GrammarDecodeState` + hoisted
+`admit_fill` engine through `_generate_maskgit_one`'s constrained picks
+(mirroring the LTR paths). **Falsified and reverted**: only 13% of MaskGIT
+picks are state-eligible (mask holes left of the position force the stateless
+path), `dfa_sync_ms` is ~0.05% of generate wall, and the dominant cost is
+`build_completion_forest` in the repair phase (74–94% via
+`_ltr_repair_from_bos` → `exact_forced_token_id` → `terminal_witness`).
+Discovery: `--no-incremental` (`grammar_incremental_state=False`) is
+**3–3.6× faster** on the MaskGIT path with byte-identical outputs — P1's
+LTR-derived cost profile does not transfer here. Measured on the 2026-07-30
+tree (2581bf49-era working copy); re-validated at HEAD eba6db30 (**2.29×**,
+7.49 → 3.27 s/gen). Follow-up telemetry landed: `finalize_ms` now times the
+repair/certify phase (87% of MaskGIT generate wall) and `aggregate_stats`
+reports `attributed_fraction` (0.25 → 1.0 on this profile) so dark decode
+cost fails loudly in `profile_generate` instead of needing manual cProfile.
+`grammar_incremental_state` is now a typed autoresearch knob. Full numbers:
+[`maskgit-persistent-grammar-state-20260803.md`](maskgit-persistent-grammar-state-20260803.md).
 
 ## Playground load reproduction (2026-07-15)
 

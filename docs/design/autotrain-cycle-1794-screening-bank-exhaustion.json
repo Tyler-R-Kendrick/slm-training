@@ -1,0 +1,37 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1794",
+  "cycle_index": 1794,
+  "cycle_intent": "screening",
+  "evidence_class": "none",
+  "decision": "pre_matrix_harness_stop_repaired",
+  "scoreable": false,
+  "new_checkpoint_created": false,
+  "upstream_commit": "2051bddbf96c197005b63c5b61fef282c6326898",
+  "integration_commit": "a5073e970de71b8e93c38aa23a7b095f19277efa",
+  "failure": {
+    "stage": "screening_arm_selection",
+    "message": "registered screening arm bank exhausted; add a distinct preregistered quality objective instead of recycling a rejected approach",
+    "fingerprint_sha256": "95336c76890dd12bf849b503854192e83b770d69bd61d40c94510bbb2b405d52"
+  },
+  "repair": {
+    "component": "harness.autoresearch.experiment_campaign",
+    "version": "v92",
+    "new_family": "edge-alignment",
+    "control": {
+      "component_edge_alignment_loss_weight": 0.0,
+      "structural_aux_head_profile": "component-edge"
+    },
+    "candidate": {
+      "component_edge_alignment_loss_weight": 1.0,
+      "structural_aux_head_profile": "component-edge"
+    },
+    "parameter_matching": "same auxiliary head instantiated in both arms",
+    "decode_invariants": "unchanged; train-only objective"
+  },
+  "agentv": "not_applicable:no_eval",
+  "ship_gates": "not_applicable:no_eval",
+  "checkpoint_policy": "not_applicable:no_checkpoint",
+  "lean": "not_applicable:pre_matrix_harness_stop",
+  "next_priority": "run_size_matched_edge_alignment_fixture_screen"
+}

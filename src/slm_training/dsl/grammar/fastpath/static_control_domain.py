@@ -3,9 +3,12 @@
 Production domains are obtained only after the completion artifact checker
 accepts the request-independent projection. Scope and semantic (Γ) constraints
 remain request-local leaf filters that may only **tighten** the static domain.
-Lark remains the live parser authority until a separately proven executable
-control adapter exists; this module does not rebrand certificate payload as a
-DPDA executor.
+Lark remains the live parser authority. ``StaticLalrAdapter`` is an executable
+projection of the certified control arrays, but it is import-only: it becomes
+usable evidence only after ``require_certified_static_lalr`` proves lockstep
+accepts-set equality against the live ``InteractiveParser`` over the canonical
+corpus, and no decode path consumes it. Certificate payload is never rebranded
+as a DPDA executor.
 
 See ``docs/design/adr-constrained-diffusion-topology-split.md``.
 """
@@ -17,6 +20,7 @@ from dataclasses import dataclass
 from typing import Any, Iterable, Sequence
 
 from slm_training.dsl.grammar.fastpath.completion_artifact import (
+    StaticLalrAdapter,
     load_checked_completion_artifact,
 )
 from slm_training.dsl.grammar.fastpath.completion_kernel import CompletionSession
@@ -31,16 +35,21 @@ __all__ = [
     "DomainParityReport",
     "DomainSnapshot",
     "ForcedMacroEdge",
+    "STATIC_LALR_CORPUS",
+    "StaticLalrCertificate",
     "assert_gamma_only_tightens",
     "candidate_multiset",
+    "certify_static_lalr_adapter",
     "compare_domain_parity",
     "dynamic_forced_closure",
     "e9_warm_hard_prefix_classification",
     "extract_static_forced_macro",
     "production_domain",
     "production_domain_snapshot",
+    "require_certified_static_lalr",
     "require_certified_static_projection",
     "static_forced_macro_edge",
+    "static_lalr_adapter",
     "walk_static_forced_macro",
 ]
 
@@ -137,6 +146,150 @@ def require_certified_static_projection(
     return checked.direct_map
 
 
+# Mirrors the canonical E1 corpus exercised by
+# ``tests/test_dsl/test_static_control_domain.py`` (complete programs, partial
+# programs, and the hard prefix).
+STATIC_LALR_CORPUS: tuple[str, ...] = (
+    'root = TextContent(":slot_0")\n',
+    "root = Card([])\n",
+    'root = Card([b1, b2])\nb1 = TextContent(":slot_0")\nb2 = TextContent(":slot_1")\n',
+    "root = Card([b1",
+    HARD_PREFIX_SURFACE,
+    "root =",
+    "root",
+    "",
+)
+
+
+@dataclass(frozen=True)
+class StaticLalrCertificate:
+    """Lockstep evidence that the adapter tracks the live Lark parser exactly."""
+
+    equal: bool
+    programs: int
+    steps: int
+    states_visited: int
+    mismatches: tuple[str, ...]
+
+
+def static_lalr_adapter(
+    tokenizer: Any = None,
+    *,
+    engine: OpenUIIncrementalEngine | None = None,
+) -> StaticLalrAdapter:
+    """Return the adapter carried by the checked artifact (fail-closed)."""
+
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    eng = engine if engine is not None else OpenUIIncrementalEngine()
+    tok = tokenizer if tokenizer is not None else DSLNativeTokenizer.build()
+    checked = load_checked_completion_artifact(
+        tok, eng._parser, grammar_path=eng.grammar_path
+    )
+    if checked.lalr is None:
+        raise ValueError("checked artifact carries no static LALR adapter")
+    return checked.lalr
+
+
+def certify_static_lalr_adapter(
+    adapter: StaticLalrAdapter,
+    parser: Any,
+    corpus: Sequence[str] = STATIC_LALR_CORPUS,
+) -> StaticLalrCertificate:
+    """Walk the live ``InteractiveParser`` and the adapter in lockstep.
+
+    For every prefix of every corpus program (one prefix per lexed terminal),
+    the adapter's accepts-set must equal ``InteractiveParser.accepts()`` and the
+    adapter must admit the terminal the live lexer/parser just consumed.  The
+    live parser stays the authority; this only reports whether the executable
+    projection is faithful.
+    """
+
+    from lark.exceptions import UnexpectedInput
+
+    mismatches: list[str] = []
+    steps = 0
+    visited: set[tuple[int, ...]] = set()
+
+    for program in corpus:
+        stack = adapter.start_stack()
+        visited.add(stack)
+        interactive = parser.parse_interactive(program)
+        try:
+            for token in interactive.iter_parse():
+                # ``iter_parse`` yields before feeding, so both sides are at the
+                # same prefix here.
+                live = frozenset(interactive.accepts())
+                static = adapter.accepts(stack)
+                if live != static:
+                    mismatches.append(
+                        f"{program!r}@{steps}: accepts differ {sorted(live ^ static)}"
+                    )
+                    break
+                advanced = adapter.step(stack, str(token.type))
+                if advanced is None:
+                    mismatches.append(
+                        f"{program!r}@{steps}: adapter rejected {token.type}"
+                    )
+                    break
+                stack = advanced
+                visited.add(stack)
+                steps += 1
+            else:
+                live = frozenset(interactive.accepts())
+                static = adapter.accepts(stack)
+                if live != static:
+                    mismatches.append(
+                        f"{program!r}@end: accepts differ {sorted(live ^ static)}"
+                    )
+        except UnexpectedInput as exc:  # pragma: no cover - corpus lexes cleanly
+            mismatches.append(f"{program!r}: live parser rejected the corpus ({exc})")
+
+    return StaticLalrCertificate(
+        equal=not mismatches,
+        programs=len(tuple(corpus)),
+        steps=steps,
+        states_visited=len({stack[-1] for stack in visited}),
+        mismatches=tuple(mismatches),
+    )
+
+
+_STATIC_LALR_CERTIFICATES: dict[str, StaticLalrCertificate] = {}
+
+
+def require_certified_static_lalr(
+    tokenizer: Any = None,
+    *,
+    engine: OpenUIIncrementalEngine | None = None,
+) -> StaticLalrCertificate:
+    """Fail closed unless the executable adapter matches the live parser.
+
+    Process-cached per artifact digest, following
+    ``require_certified_static_projection``.  Raises ``ValueError`` on any
+    lockstep divergence — an uncertified adapter is never handed back.
+    """
+
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    eng = engine if engine is not None else OpenUIIncrementalEngine()
+    tok = tokenizer if tokenizer is not None else DSLNativeTokenizer.build()
+    checked = load_checked_completion_artifact(
+        tok, eng._parser, grammar_path=eng.grammar_path
+    )
+    if checked.lalr is None:
+        raise ValueError("checked artifact carries no static LALR adapter")
+    cached = _STATIC_LALR_CERTIFICATES.get(checked.digest)
+    if cached is None:
+        cached = certify_static_lalr_adapter(checked.lalr, eng._parser)
+        if not cached.equal:
+            raise ValueError(
+                "static LALR adapter is not certified against live Lark: "
+                + "; ".join(cached.mismatches)
+            )
+        _STATIC_LALR_CERTIFICATES[checked.digest] = cached
+    return cached
+
+
 def candidate_multiset(
     domain: CompletionDomainV1 | DomainSnapshot,
 ) -> tuple[tuple[str, tuple[int, ...]], ...]:
@@ -145,7 +298,9 @@ def candidate_multiset(
     if isinstance(domain, DomainSnapshot):
         items = list(zip(domain.candidate_kinds, domain.candidates, strict=True))
     else:
-        items = [(c.kind, tuple(int(t) for t in c.token_ids)) for c in domain.candidates]
+        items = [
+            (c.kind, tuple(int(t) for t in c.token_ids)) for c in domain.candidates
+        ]
     return tuple(sorted(items, key=lambda item: (item[0], item[1])))
 
 
@@ -163,9 +318,7 @@ def _snapshot_from_domain(
         status=str(domain.status),
         coverage=coverage,
         reason=str(domain.reason or ""),
-        candidates=tuple(
-            tuple(int(t) for t in c.token_ids) for c in domain.candidates
-        ),
+        candidates=tuple(tuple(int(t) for t in c.token_ids) for c in domain.candidates),
         candidate_kinds=tuple(str(c.kind) for c in domain.candidates),
         terminals=tuple(str(t) for t in (domain.terminals or ())),
         authority=authority,

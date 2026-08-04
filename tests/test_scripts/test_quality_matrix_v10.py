@@ -86,6 +86,12 @@ def test_v10_list_needs_no_parent_or_event_file(capsys) -> None:
     assert '"id": "E248"' in capsys.readouterr().out
 
 
+def test_quality_matrix_rejects_thread_parallel_workers(capsys) -> None:
+    with pytest.raises(SystemExit):
+        main(["--matrix", "v10", "--list", "--workers", "2"])
+    assert "process-isolated" in capsys.readouterr().err
+
+
 def test_v10_intervention_execution_requires_events() -> None:
     with pytest.raises(SystemExit):
         main(
@@ -115,14 +121,29 @@ def test_v10_parent_control_is_read_only(tmp_path, monkeypatch) -> None:
 
     monkeypatch.setattr("scripts.run_quality_matrix.evaluate_suites", fake_evaluate)
 
-    assert main(
-        [
-            "--matrix", "v10", "--only", "E248", "--parent", str(parent),
-            "--train-dir", str(train_dir), "--test-dir", str(tmp_path / "eval"),
-            "--run-root", str(run_root), "--docs-out", str(tmp_path / "results.json"),
-            "--suites", "smoke",
-        ]
-    ) == 0
+    assert (
+        main(
+            [
+                "--matrix",
+                "v10",
+                "--only",
+                "E248",
+                "--parent",
+                str(parent),
+                "--train-dir",
+                str(train_dir),
+                "--test-dir",
+                str(tmp_path / "eval"),
+                "--run-root",
+                str(run_root),
+                "--docs-out",
+                str(tmp_path / "results.json"),
+                "--suites",
+                "smoke",
+            ]
+        )
+        == 0
+    )
     result = json.loads(
         (run_root / "qx_e248_local_parent_control" / "matrix_result.json").read_text()
     )
@@ -169,7 +190,9 @@ def test_local_preference_resume_reuses_only_matching_stage(tmp_path) -> None:
     )
     events.write_text(json.dumps(event.to_dict()) + "\n")
     run_root = tmp_path / "runs"
-    summary_path = run_root / exp.run_id / "local_preference/local_preference_summary.json"
+    summary_path = (
+        run_root / exp.run_id / "local_preference/local_preference_summary.json"
+    )
     summary_path.parent.mkdir(parents=True)
     summary_path.write_text(
         json.dumps(
@@ -178,7 +201,9 @@ def test_local_preference_resume_reuses_only_matching_stage(tmp_path) -> None:
                 "steps": 30,
                 "balanced": False,
                 "reference_tethered": False,
-                "source_checkpoint_sha": hashlib.sha256(parent.read_bytes()).hexdigest(),
+                "source_checkpoint_sha": hashlib.sha256(
+                    parent.read_bytes()
+                ).hexdigest(),
                 "train_events": 1,
                 "held_out_events": 0,
                 "checkpoint": str(trained),

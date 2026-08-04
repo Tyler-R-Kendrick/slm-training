@@ -1,0 +1,108 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1809",
+  "cycle_index": 1809,
+  "decision": "queue_fresh_seed_confirmation",
+  "evidence_class": "fixture_screening",
+  "formal_status": "not_applicable:screening",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "a62e23d2437676853f4c5b8798db28ab29db9b7b",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.autoresearch.experiment_campaign": "v108",
+      "harness.model_build.eval": "v77",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v299"
+    },
+    "stamped_at": "2026-08-03T00:41:16.518739+00:00"
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "steps": 20,
+    "seed": 101809,
+    "batch_size": 2,
+    "sync_checkpoints": false,
+    "suite": "smoke",
+    "suite_n": 3,
+    "honesty_mode": "fixture_screening"
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1809-control",
+      "trainable_params": 1608962,
+      "checkpoint_sha256": "ba99d6c276587cdd168e16cc6ef5ec9289202187d8be91eac72669aae336e1bf",
+      "typed_family_balance_loss_weight": 0.0,
+      "compiler_alignment_loss_weight": 0.0,
+      "last_loss": 11.301897048950195,
+      "train_wall_seconds": 2.5046294779749587,
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.0,
+        "component_type_recall": 0.0,
+        "placeholder_fidelity": 0.0,
+        "reward_score": 0.0,
+        "latency_ms_p50": 944.03
+      },
+      "decode_trace": {
+        "tokens_emitted": 21,
+        "forwards_count": 4,
+        "compiler_ms": 2242.254,
+        "completion_unique_states": 31483,
+        "completion_parser_forks": 32859
+      }
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1809-balanced-container-close",
+      "trainable_params": 1608962,
+      "checkpoint_sha256": "6a73da29a1624f40e968eaa856f502ef48dd82f55f3343d575d123e34c32e81f",
+      "typed_family_balance_loss_weight": 0.25,
+      "compiler_alignment_loss_weight": 1.0,
+      "compiler_alignment_margin": 1.0,
+      "compiler_alignment_kind_filter": "container-close",
+      "last_loss": 22.549907684326172,
+      "train_wall_seconds": 8.884605354978703,
+      "alignment_attribution": {
+        "eligible_rows": 106,
+        "first_step_loss": 14.272923469543457,
+        "first_step_margin_violation_rate": 0.6000000238418579,
+        "last_step_loss": 0.8993648290634155,
+        "last_step_margin_violation_rate": 0.20000000298023224
+      },
+      "attribution_gap": "compiler alignment replaced typed-family metrics in c1809; fixed by model.twotower v300 before confirmation",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.17416666666666666,
+        "binder_reference_f1": 0.6333333333333333,
+        "component_type_recall": 0.25,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.7653333333333334,
+        "latency_ms_p50": 973.43
+      },
+      "decode_trace": {
+        "tokens_emitted": 24,
+        "forwards_count": 4,
+        "compiler_ms": 2147.999,
+        "completion_unique_states": 31118,
+        "completion_parser_forks": 32126
+      }
+    }
+  ],
+  "next_hypothesis": {
+    "kind": "fresh_seed_confirmation",
+    "authority": "observed_result",
+    "confidence": 0.95,
+    "statement": "The exact size-matched combined treatment reproduces its quality gain on a fresh seed before promotion formal preflight unlocks."
+  }
+}

@@ -1,65 +1,61 @@
 {
   "schema": "continuous_autotrain_cycle_results/v1",
   "loop_id": "continuous-openui-20260730",
-  "campaign_id": "continuous-loop-20260801-c5",
+  "campaign_id": "continuous-loop-20260801-continuous-openui-202607-98199209-c3",
   "cycle_index": 5,
-  "predecessor_campaign_id": "continuous-loop-20260801-c3",
-  "source_commit": "5bc90d81ff3fc0da24e4d64c1e7b2c8e37f61f1e",
+  "source_commit": "90a3ff4bdf0a932b2fffc8d9ab0ff03cddeb7126",
   "honesty": "fixture_or_scratch",
   "not_ship_claim": true,
-  "version_stamp": {
-    "stamp_schema": "version_stamp/v1",
-    "code_commit": "311db12ab4299c313a7766e232d1b35990a971fe",
-    "code_dirty": false,
-    "components": {
-      "harness.autoresearch.experiment_campaign": "v26",
-      "harness.model_build.eval": "v71"
-    },
-    "stamped_at": "2026-08-01T07:56:47.217848+00:00"
-  },
   "recipe": {
     "device": "cpu",
-    "steps": 40,
-    "seed": 7,
+    "steps": 20,
+    "batch_size": 2,
     "context_backend": "scratch",
     "train_version": "wf_smoke_v2",
     "eval_version": "e938_role_safe_all_targets_v2",
     "max_wall_minutes": 3,
-    "decode_timeout_seconds": 24.0,
-    "ship_gates": true
+    "ship_gates": true,
+    "objective": "Retry of cycle 4's timed-out arms, rotated to the 'both' (bounds + canvas) combination lever"
   },
   "arms": {
-    "c20260801-c5-control": {
+    "c20260801-continuous-openui-202607-98199209-c3-control": {
       "status": "completed_eval_gates_failed",
-      "levers": { "batch_size": 2 },
       "smoke": {
         "n": 3,
         "parse_rate": 1.0,
         "meaningful_program_rate": 0.0,
-        "structural_similarity": 0.057499999999999996,
-        "latency_ms_p50": 2646.91
+        "structural_similarity": 0.1725,
+        "binder_reference_f1": 0.7222222222222222,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 6736.19
       }
     },
-    "c20260801-c5-batch1": {
-      "status": "completed_eval_gates_failed_no_metrics",
-      "levers": { "batch_size": 1 },
+    "c20260801-continuous-openui-202607-98199209-c3-both": {
+      "status": "completed_eval_gates_failed",
       "smoke": {
         "n": 3,
-        "decode_timeout_count": 3,
-        "parse_rate": null,
-        "meaningful_program_rate": null,
-        "structural_similarity": null,
-        "latency_ms_p50": null
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.1725,
+        "binder_reference_f1": 0.7222222222222222,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 6488.99
+      },
+      "levers": {
+        "grammar_completion_bounds": true,
+        "compact_active_canvas": true
       }
     }
   },
-  "primary_metric": "smoke.latency_ms_p50",
-  "primary_delta_ms": null,
-  "conclusion": "batch_size=1 caused all 3 smoke-suite decodes to hit the 24s decode-timeout budget (decode_timeout_count=3), producing no comparable metrics against the batch_size=2 control (which decoded normally, parse_rate=1.0, p50=2646.91ms). Not yet a confirmed harness defect (single occurrence) but a real, reproducible-looking regression worth re-testing before batch_size=1 is used in any continuous cycle.",
+  "primary_metric": "smoke.binder_reference_f1",
+  "primary_delta": 0.0,
+  "conclusion": "Cycle 4's wall-timeout did not reproduce: this retry of the equivalent recipe completed cleanly for both arms in ~74s wall, confirming cycle 4 was session-level resource variance, not a compact_active_canvas or model_build harness defect. The combined bounds+canvas lever again shows zero quality delta vs control (binder_reference_f1, parse_rate, meaningful_program_rate, structural_similarity all identical); latency moved -247ms (both faster) but is not the declared primary. Third consecutive non-positive screening result on this lever bank -- SDLC Phase A: non-positive.",
   "next_priorities": [
-    "infrastructure: re-run batch_size=1 in isolation (steps=40, same eval_version) to confirm the decode-timeout-count=3 result reproduces before treating it as a harness signal",
-    "model: revisit smaller batch sizes only after the timeout cause is understood -- do not conclude batch_size=1 is slower on latency alone, since it never produced a measurable decode this cycle",
-    "evaluation: fixture insufficient_n (n=3 < 20) on both smoke and held_out remains an expected, non-terminal diagnostic at wf_smoke_v2 scale"
+    "The bounds/canvas lever bank has now shown null quality deltas across three cycles (2, 3, 5); stop thrashing this bank and rotate to an untested lever family per handoff rank-3",
+    "Confirmed: cycle 4's timeout was transient, not a repeated hard blocker -- no harness repair lane needed",
+    "Continue the loop; do not promote off screening evidence"
   ],
-  "recorded_at": "2026-08-01T07:50:01+00:00"
+  "recorded_at": "2026-08-01T21:37:51+00:00"
 }

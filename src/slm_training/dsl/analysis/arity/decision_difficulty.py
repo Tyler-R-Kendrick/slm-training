@@ -13,9 +13,14 @@ from __future__ import annotations
 import json
 import math
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from slm_training.harnesses.distill.grammar_trace import GrammarDecisionTrace
+if TYPE_CHECKING:  # pragma: no cover - typing-only; keeps this package torch-free
+    # Importing this at runtime pulls in slm_training.harnesses.distill.__init__,
+    # which imports torch and breaks the "analysis package is torch-free"
+    # invariant (tests/test_dsl/test_arity_analysis.py). It is only used as an
+    # annotation, and this module already has `from __future__ import annotations`.
+    from slm_training.harnesses.distill.grammar_trace import GrammarDecisionTrace
 
 SCHEMA_VERSION = "sde2-06.v1"
 

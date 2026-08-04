@@ -211,3 +211,29 @@ until executor parity (E1) and anti-E237 contracts pass.**
 | Tests | `tests/test_dsl/test_static_control_domain.py`, `test_residual_support.py` |
 | **Lean claim-core proofs** | [`adr-constrained-diffusion-topology-proofs.md`](adr-constrained-diffusion-topology-proofs.md) · `src/leverproof_lean/LeverProofLean/ConstrainedDiffusion.lean` |
 | **Advisory semantic-factor frontier (anti-E237)** | [`semantic-factor-frontier.md`](semantic-factor-frontier.md) · fixture results [`semantic-factor-frontier-results.md`](semantic-factor-frontier-results.md) |
+
+## Amendment (2026-08-04): the suffix axis of residual honesty
+
+The `honest_overapprox` labeling and the `honest_overapprox_preserves_admit`
+proof obligation cover the **Γ axis** only. A second axis was left implicit
+and mislabeled: `admit_fill` validates only the committed span left of the
+first hole, so for hole-bearing canvases the residual predicate is a
+**left-prefix over-approximation** — and with the shipped default
+`remask_ratio=0.0`, committed suffix tokens are never rewritten, so
+left-prefix admissibility does not imply joint completability
+(counterexample proven by bounded enumeration in
+`tests/test_dsl/test_residual_support.py`). As of this amendment:
+
+- hole-bearing canvases carry `authority="left_prefix_overapprox"` (never
+  `"exact"`);
+- `multi_region_support` provides the exact bounded joint check
+  (`authority="exact_multi_region"`, budget exhaustion typed `"unknown"`);
+- the `block_diffusion_decode` lever's parallel commits are the first
+  production consumer of the exact check (proven-impossible step canvases
+  revert to masks; unknown keeps commits — fail-closed direction only).
+
+Measured context: 100% of MaskGIT admit probes occur in the suffix-blind
+configuration, yet 0/60 sampled sequential-commit canvases were jointly
+impossible on the profile fixture — the gap's practical teeth are parallel
+block commits. See
+[`residual-honesty-block-diffusion-20260804.md`](residual-honesty-block-diffusion-20260804.md).

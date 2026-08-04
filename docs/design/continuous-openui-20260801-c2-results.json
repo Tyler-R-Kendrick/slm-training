@@ -1,0 +1,63 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260801",
+  "campaign_id": "continuous-loop-20260801-c2",
+  "cycle_index": 2,
+  "source_commit": "c1c4eca349b66f05684975575a3640ced50051ea",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "hypothesis": "compact_active_canvas reduces smoke latency_ms_p50 versus the matched control without lowering parse_rate.",
+  "arms": {
+    "c20260801-c2-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "latency_ms_p50": 20845.04,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.28
+      },
+      "gate_failures": [
+        "smoke:insufficient_n actual=3 need>=20",
+        "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+        "smoke:structural_similarity actual=0.28 need>=0.35",
+        "smoke:component_type_recall actual=0.0 need>=0.35",
+        "smoke:ast_beq_rate actual=0.0 need>=0.2",
+        "smoke:canonical_beq_rate actual=0.0 need>=0.1",
+        "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "smoke:decode_timeout_count actual=2 need=0"
+      ]
+    },
+    "c20260801-c2-canvas": {
+      "status": "completed_eval_gates_failed",
+      "levers": {
+        "compact_active_canvas": true
+      },
+      "smoke": {
+        "latency_ms_p50": 21207.37,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.28
+      }
+    }
+  },
+  "primary_metric": "smoke.latency_ms_p50",
+  "primary_delta_ms": -362.3299999999981,
+  "conclusion": "AgentV SDK now installed (see continuous-openui-20260801-c1-results.json for the self-heal); both arms produced real multi-suite ship-gate scoreboards. Control fails ship gates on fixture insufficient_n (n=3 < 20) and downstream quality thresholds, as expected at 20-step/wf_smoke_v2 scale -- not a model regression. compact_active_canvas made smoke.latency_ms_p50 worse (control=20845.04ms, candidate=21207.37ms, delta -362.33ms) with parse_rate and meaningful_program_rate unchanged (1.0->1.0, 0.0->0.0): a null/negative lever delta, not a quality-aware win. SDLC Phase A classifies this cycle non-positive; no stack layer opened.",
+  "next_priorities": [
+    "Do not promote compact_active_canvas from this fixture-scale screening result alone",
+    "Re-test at a higher step budget (still within the 3-minute wall cap) once a lever shows a directionally favorable screening delta",
+    "Keep ship gates honest -- fixture insufficient_n is an expected diagnostic at smoke scale, not a loop terminator"
+  ],
+  "recorded_at": "2026-08-01T13:35:08.000000+00:00"
+}

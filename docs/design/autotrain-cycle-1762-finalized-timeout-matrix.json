@@ -1,0 +1,111 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1762",
+  "cycle_index": 1762,
+  "evidence_class": "fixture",
+  "decision": "finalized_timeout_matrix_measurement_incomplete",
+  "scoreable": false,
+  "train_cache": {
+    "control": "reused c1760 completed train",
+    "candidate": "reused c1760 completed train",
+    "new_checkpoints": 0
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1762-batch1",
+      "manifest_sha256": "8f668aef008c8e79fa5aeadb8e35b94ceb98b9e92eb0ab6377821ec3708f4ec3",
+      "reused_checkpoint_sha256": "da3c04625d68e7660e4231f60694839214c843ef7dbfbec84dd477e5f9bcdcc9",
+      "params": 1608962,
+      "batch_size": 1,
+      "campaign_status": "stopped_at_outer_wall_after_artifact_finalization",
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 0,
+        "incomplete_document_n": 3,
+        "decode_timeout_count": 3,
+        "parse_rate": null,
+        "meaningful_program_rate": null,
+        "structural_similarity": null,
+        "component_type_recall": null,
+        "latency_ms_p50": null,
+        "latency_ms_p50_including_incomplete": 4566.26,
+        "effective_decode_timeout_seconds_min": 4.564373166669005,
+        "effective_decode_timeout_seconds_max": 4.564942773751682
+      },
+      "held_out": {
+        "n": 5,
+        "completed_document_n": 0,
+        "incomplete_document_n": 5,
+        "decode_timeout_count": 5,
+        "parse_rate": null,
+        "meaningful_program_rate": null,
+        "structural_similarity": null,
+        "component_type_recall": null,
+        "latency_ms_p50": null,
+        "latency_ms_p50_including_incomplete": 4540.28,
+        "effective_decode_timeout_seconds_min": 4.53586067998549,
+        "effective_decode_timeout_seconds_max": 4.539845795999281
+      },
+      "agentv": {
+        "suite_results": 2,
+        "passed": 0,
+        "failed": 2,
+        "execution_errors": 0
+      }
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1762-control",
+      "manifest_sha256": "fcf2adf9073fb10ca21de5f7d5fc7dc8a76fbc16a95e96684f329badd671f615",
+      "reused_checkpoint_sha256": "bd95d451cbbe624ac91339bf6fa21e743061ab66eeb9c42655fc7d4848b549dc",
+      "params": 1608962,
+      "batch_size": 2,
+      "campaign_status": "completed_gate_rejection",
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 3,
+        "incomplete_document_n": 0,
+        "decode_timeout_count": 0,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.13526666666666667,
+        "component_type_recall": 0.16666666666666666,
+        "latency_ms_p50": 1325.28
+      },
+      "held_out": {
+        "n": 5,
+        "completed_document_n": 5,
+        "incomplete_document_n": 0,
+        "decode_timeout_count": 0,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.060239999999999995,
+        "component_type_recall": 0.02857142857142857,
+        "latency_ms_p50": 1361.05
+      },
+      "agentv": {
+        "suite_results": 2,
+        "passed": 0,
+        "failed": 2,
+        "execution_errors": 0
+      }
+    }
+  ],
+  "ship_gates_pass": false,
+  "lean": "not_applicable:no_champion",
+  "next_priority": "reserve outer post-evaluation finalization time, replay the exact frozen manifest once, then target constrained decoder witness expansion if all candidate records remain typed timeouts",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "249d9d49b86117022f0671a48b95b00089f8392f",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v75",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v289"
+    },
+    "stamped_at": "2026-08-02T14:57:24.058736+00:00"
+  }
+}

@@ -9,6 +9,9 @@ from slm_training.autoresearch.experiment_campaign import (
     validate_result_claim,
 )
 from slm_training.autoresearch.schemas import (
+    AutotrainActionV1,
+    AutotrainCycleHandoffV1,
+    AutotrainLoopStateV1,
     CampaignSpec,
     Diagnosis,
     EvidenceSnapshot,
@@ -27,6 +30,9 @@ from slm_training.autoresearch.schemas import (
 from slm_training.autoresearch.storage import CampaignStore
 
 __all__ = [
+    "AutotrainActionV1",
+    "AutotrainCycleHandoffV1",
+    "AutotrainLoopStateV1",
     "CampaignSpec",
     "CampaignDeviationV1",
     "CampaignResultV1",

@@ -1,0 +1,72 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c1",
+  "cycle_index": 1,
+  "session_note": "second continuous-openui-local session on 2026-08-03; deterministic campaign_id collides with the earlier same-day continuous-openui-20260803-c1-results.json (fresh outputs/ per container, no cross-session lineage) -- suffixed s2 to avoid overwriting the already-merged doc (#1369).",
+  "source_commit": "9dcfa7e6",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "seed": 100001
+  },
+  "arms": {
+    "s2-c1-control": {
+      "trainable_params": 1608962,
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 1250.52
+      }
+    },
+    "s2-c1-bounds": {
+      "trainable_params": 1608962,
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 1271.2
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "continue loop; local commits/docs only",
+    "reasons": [
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c1-control",
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c1-bounds",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.057499999999999996 candidate=0.057499999999999996 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "harness_repair": {
+    "signal": "AgentV SDK subprocess launch crashed for every model-build eval in a fresh container: a session-injected NODE_OPTIONS (`\"--import tsx\" --max-old-space-size=8192`) makes the pinned Node runner refuse to start, and the SDK itself was not installed (missing `node_modules/@agentv/core`, needs `npm ci`).",
+    "already_diagnosed_and_fixed_upstream": "PR #1351 (open since 2026-08-02, unmerged) already carries the canonical code fix: sanitize the AgentV subprocess environment in src/slm_training/evals/agentv.py (mirrors the existing _sanitized_env() pattern in graphql_js.py) plus a regression test and an evals.agentv version bump.",
+    "this_session_workaround": "Ran `npm ci` and invoked the driver with NODE_OPTIONS unset (session-only, not a repo code change) rather than duplicate PR #1351's diff in a second branch. No source changes made in this session for this defect.",
+    "action_needed": "Merge #1351 so future fresh-container sessions do not have to rediscover this same blocker."
+  },
+  "conclusion": "Second continuous-openui-local session on 2026-08-03, cycle 1 (bounds vs matched control), integrated at main HEAD 9dcfa7e6 (which already includes the earlier session's c1/c2 via merged #1369). Both arms tie exactly on the primary (structural_similarity=0.0575) and every other quality metric, reproducing the earlier same-day c1 bounds screen bit-for-bit (same recipe, same seed pool) -- the 'bounds' knob still produces no measurable structural effect at this fixture scale. Ship gates fail as expected (insufficient_n, missing held/adversarial/ood/rico suites). This confirms 'bounds' remains exhausted; the driver's own successor priority (matching the earlier session's) points at 'component-plan' next.",
+  "next_priorities": [
+    "component-plan fresh-seed confirmation vs matched control is next (rank 1, confidence 0.90) -- this is the actual objective of this session's loop",
+    "Keep the matched control as the size-matched baseline every cycle",
+    "Merge PR #1351 (AgentV NODE_OPTIONS + missing-SDK fix) so this defect stops recurring across fresh-container sessions"
+  ],
+  "recorded_at": "2026-08-03T05:45:01Z"
+}

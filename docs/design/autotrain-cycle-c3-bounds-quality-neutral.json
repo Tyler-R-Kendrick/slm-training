@@ -1,0 +1,82 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c3",
+  "cycle_index": 3,
+  "evidence_class": "fixture",
+  "decision": "reject_quality_neutral",
+  "scoreable": true,
+  "new_checkpoint_created": false,
+  "upstream_commit": "c5fbbb1f15b4a810061743b9e8e2c5c6fd9b5880",
+  "integration_commit": "82816d4a7bf245e8112d4f4dd2c992f42f84fb91",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c3-control",
+      "trainable_params": 1608962,
+      "checkpoint_sha256": "f2fe8f5aae98c7178747c5f3b926d00c3d9c1d49ce607c54224b5526000b81b2",
+      "reused_from_campaign": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c2",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "component_type_recall": 0.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "reward_score": 0.0,
+        "latency_ms_p50": 3064.79
+      }
+    },
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c3-bounds",
+      "trainable_params": 1608962,
+      "checkpoint_sha256": "2c1749c65f4c4fba890aef4b00981a52825aecfd73e0117f0739f26ae1742f64",
+      "reused_from_campaign": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c2",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "component_type_recall": 0.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "reward_score": 0.0,
+        "latency_ms_p50": 3107.7
+      }
+    }
+  ],
+  "comparison": {
+    "attributable": true,
+    "parameter_delta": 0,
+    "structural_similarity_delta": 0.0,
+    "latency_ms_p50_delta": 42.91
+  },
+  "agentv": {
+    "bundles_complete": true,
+    "execution_errors": 0,
+    "ship_gates_pass": false
+  },
+  "checkpoint_policy": "reused_frozen_replay_checkpoints_not_reusable_not_promoted_not_ship",
+  "lean": "not_applicable:screening",
+  "next_priority": "test the distinct size-matched 'component-plan' quality hypothesis (c20260803-continuous-openui-local-8c0b60dd-c3-component-plan)",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "82816d4a7bf245e8112d4f4dd2c992f42f84fb91",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v77",
+      "harness.model_build.train": "v36",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "evals.agentv": "v7",
+      "model.twotower": "v299",
+      "dsl.symbolic_surface": "v6"
+    },
+    "stamped_at": "2026-08-03T01:08:42.440887+00:00"
+  }
+}

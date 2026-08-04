@@ -14,11 +14,13 @@ from slm_training.autoresearch.climb_policy import (
     classify_positive_metrics,
     climb_policy_content_digest,
     cycle_role_for_index,
+    eval_suites_for_role,
     is_recipe_tweak_knobs,
     load_climb_policy,
     load_loop_exhausted_ledger,
     loop_data_eval_identity,
     primary_for_role,
+    promotion_primary_effect_met,
     save_loop_exhausted_ledger,
 )
 from slm_training.autoresearch.hillclimb import (
@@ -33,8 +35,14 @@ def test_load_climb_policy_has_volatile_fields_and_digest() -> None:
     assert policy.schema == "autotrain_climb_policy/v1"
     assert policy.version
     assert len(policy.sha256) == 64
-    assert policy.screening_primary["metric"]
+    assert policy.screening_primary["metric"] == "smoke.structural_similarity"
+    assert {
+        item["metric_leaf"]
+        for item in policy.screening_primary["require_non_regression_metrics"]
+    } == {"parse_rate", "binder_reference_f1"}
     assert policy.promotion_primary["metric"]
+    assert policy.promotion_dispose["require_primary_win"] is True
+    assert policy.positive_classification["minimum_efficiency_gain_fraction"] == 0.05
     assert policy.cadence["screening_cycles_per_promotion"]
     assert policy.exhausted_identity_fields
     assert policy.recipe_tweak_knobs
@@ -47,6 +55,36 @@ def test_load_climb_policy_has_volatile_fields_and_digest() -> None:
     assert digest1 != digest2
 
 
+def test_promotion_primary_effect_met_null_and_win() -> None:
+    policy = load_climb_policy()
+    primary = dict(policy.promotion_primary)
+    ok, reasons, delta = promotion_primary_effect_met(
+        control_metrics={"held_out.structural_similarity": 0.2, "parse_rate": 1.0},
+        candidate_metrics={"held_out.structural_similarity": 0.2, "parse_rate": 1.0},
+        promotion_primary=primary,
+    )
+    assert ok is False
+    assert delta == 0.0
+    assert any("promote_primary_null_or_insufficient" in r for r in reasons)
+
+    ok2, reasons2, delta2 = promotion_primary_effect_met(
+        control_metrics={"structural_similarity": 0.1, "parse_rate": 1.0},
+        candidate_metrics={"structural_similarity": 0.25, "parse_rate": 1.0},
+        promotion_primary=primary,
+    )
+    assert ok2 is True
+    assert delta2 is not None and delta2 > 0.01
+    assert any(r.startswith("promote_primary_win:") for r in reasons2)
+
+    ok3, reasons3, _ = promotion_primary_effect_met(
+        control_metrics={},
+        candidate_metrics={},
+        promotion_primary=primary,
+    )
+    assert ok3 is False
+    assert any("promote_primary_metrics_missing" in r for r in reasons3)
+
+
 def test_cycle_cadence_screening_then_promotion() -> None:
     policy = load_climb_policy()
     n = int(policy.cadence["screening_cycles_per_promotion"])
@@ -56,6 +94,32 @@ def test_cycle_cadence_screening_then_promotion() -> None:
         assert_cycle_cadence(policy, cycle_index=i, claimed_role="screening")
     assert cycle_role_for_index(policy, n + 1) == "promotion"
     assert_cycle_cadence(policy, cycle_index=n + 1, claimed_role="promotion")
+    fallback_role = assert_cycle_cadence(
+        policy,
+        cycle_index=n + 1,
+        claimed_role="screening",
+        claim_class="diagnostic",
+        promotion_target_available=False,
+    )
+    assert fallback_role == "screening"
+    assert eval_suites_for_role(policy, fallback_role) == ("smoke",)
+    with pytest.raises(HillClimbError, match="cadence violation"):
+        assert_cycle_cadence(
+            policy,
+            cycle_index=n + 1,
+            claimed_role="screening",
+            promotion_target_available=True,
+        )
+    confirmation_role = assert_cycle_cadence(
+        policy,
+        cycle_index=n + 1,
+        claimed_role="screening",
+        claim_class="diagnostic",
+        promotion_target_available=True,
+        confirmation_pending=True,
+    )
+    assert confirmation_role == "screening"
+    assert eval_suites_for_role(policy, confirmation_role) == ("smoke",)
     with pytest.raises(HillClimbError, match="cadence violation"):
         assert_cycle_cadence(policy, cycle_index=1, claimed_role="promotion")
     with pytest.raises(HillClimbError, match="promotion-role"):
@@ -67,24 +131,40 @@ def test_cycle_cadence_screening_then_promotion() -> None:
         )
 
 
-def test_classify_positive_screening_win_and_latency_regression() -> None:
+def test_classify_positive_screening_quality_win_and_regression() -> None:
     policy = load_climb_policy()
-    # Screening primary is latency decrease: lower candidate is a win.
+    # Structure is the primary; parse and binder correctness must not regress.
     win = classify_positive_metrics(
         policy,
         role="screening",
-        control_metrics={"latency_ms_p50": 11.0, "parse_rate": 1.0},
-        candidate_metrics={"latency_ms_p50": 10.0, "parse_rate": 1.0},
+        control_metrics={
+            "structural_similarity": 0.4,
+            "binder_reference_f1": 1.0,
+            "parse_rate": 1.0,
+        },
+        candidate_metrics={
+            "structural_similarity": 0.6,
+            "binder_reference_f1": 1.0,
+            "parse_rate": 1.0,
+        },
     )
     assert win["positive"] is True
     assert any(r.startswith("primary_metric_win") for r in win["reasons"])
 
-    # Higher latency is a regression for decrease metrics — not positive.
+    # Lower structure is not positive.
     bad = classify_positive_metrics(
         policy,
         role="screening",
-        control_metrics={"latency_ms_p50": 11.0, "parse_rate": 1.0},
-        candidate_metrics={"latency_ms_p50": 12.5, "parse_rate": 1.0},
+        control_metrics={
+            "structural_similarity": 0.6,
+            "binder_reference_f1": 1.0,
+            "parse_rate": 1.0,
+        },
+        candidate_metrics={
+            "structural_similarity": 0.4,
+            "binder_reference_f1": 1.0,
+            "parse_rate": 1.0,
+        },
     )
     assert bad["positive"] is False
     assert any("null_or_worse" in r for r in bad["reasons"])
@@ -95,8 +175,16 @@ def test_classify_positive_capacity_growth_without_eg_params() -> None:
     result = classify_positive_metrics(
         policy,
         role="screening",
-        control_metrics={"latency_ms_p50": 11.0, "parse_rate": 1.0},
-        candidate_metrics={"latency_ms_p50": 10.0, "parse_rate": 1.0},
+        control_metrics={
+            "structural_similarity": 0.4,
+            "binder_reference_f1": 1.0,
+            "parse_rate": 1.0,
+        },
+        candidate_metrics={
+            "structural_similarity": 0.6,
+            "binder_reference_f1": 1.0,
+            "parse_rate": 1.0,
+        },
         baseline_trainable_params=1_000_000,
         candidate_trainable_params=2_000_000,
         eg_params_by_seed=None,
@@ -110,8 +198,16 @@ def test_classify_positive_capacity_growth_with_eg_params() -> None:
     result = classify_positive_metrics(
         policy,
         role="screening",
-        control_metrics={"latency_ms_p50": 11.0, "parse_rate": 1.0},
-        candidate_metrics={"latency_ms_p50": 10.0, "parse_rate": 1.0},
+        control_metrics={
+            "structural_similarity": 0.4,
+            "binder_reference_f1": 1.0,
+            "parse_rate": 1.0,
+        },
+        candidate_metrics={
+            "structural_similarity": 0.6,
+            "binder_reference_f1": 1.0,
+            "parse_rate": 1.0,
+        },
         baseline_trainable_params=1_000_000,
         candidate_trainable_params=2_000_000,
         eg_params_by_seed=(1.2, 1.3),
@@ -246,7 +342,7 @@ def test_is_recipe_tweak_knobs() -> None:
 
 def test_rung_gate_optional() -> None:
     policy = load_climb_policy()
-    # Default policy has rung_gates.enabled false → no-op
+    # Default policy carries durable evidence for the prior rung.
     assert_rung_allows_promotion(policy, claimed_role="promotion")
 
 
@@ -263,6 +359,11 @@ def test_continuous_classify_positive_entry(tmp_path: Path) -> None:
     (control / "eval_smoke.json").write_text(
         json.dumps(
             {
+                "n": 3,
+                "document_n": 3,
+                "completed_document_n": 3,
+                "incomplete_document_n": 0,
+                "decode_timeout_count": 0,
                 "latency_ms_p50": 11.0,
                 "parse_rate": 1.0,
                 "meaningful_program_rate": 1.0,
@@ -273,6 +374,11 @@ def test_continuous_classify_positive_entry(tmp_path: Path) -> None:
     (cand / "eval_smoke.json").write_text(
         json.dumps(
             {
+                "n": 3,
+                "document_n": 3,
+                "completed_document_n": 3,
+                "incomplete_document_n": 0,
+                "decode_timeout_count": 0,
                 "latency_ms_p50": 10.0,
                 "parse_rate": 1.0,
                 "meaningful_program_rate": 1.0,
@@ -280,6 +386,21 @@ def test_continuous_classify_positive_entry(tmp_path: Path) -> None:
         ),
         encoding="utf-8",
     )
+    complete_scoreboard = {
+        "suites": {
+            "smoke": {
+                "n": 3,
+                "document_n": 3,
+                "completed_document_n": 3,
+                "incomplete_document_n": 0,
+                "decode_timeout_count": 0,
+            }
+        }
+    }
+    for run_dir in (control, cand):
+        (run_dir / "scoreboard.json").write_text(
+            json.dumps(complete_scoreboard), encoding="utf-8"
+        )
     win = _classify_positive(
         camp_dir=camp,
         primary_metric="smoke.latency_ms_p50",
@@ -292,6 +413,11 @@ def test_continuous_classify_positive_entry(tmp_path: Path) -> None:
     (cand / "eval_smoke.json").write_text(
         json.dumps(
             {
+                "n": 3,
+                "document_n": 3,
+                "completed_document_n": 3,
+                "incomplete_document_n": 0,
+                "decode_timeout_count": 0,
                 "latency_ms_p50": 12.5,
                 "parse_rate": 1.0,
                 "meaningful_program_rate": 1.0,
@@ -309,7 +435,17 @@ def test_continuous_classify_positive_entry(tmp_path: Path) -> None:
     assert bad["positive"] is False
 
     (cand / "eval_smoke.json").write_text(
-        json.dumps({"latency_ms_p50": 10.0, "parse_rate": 1.0}),
+        json.dumps(
+            {
+                "n": 3,
+                "document_n": 3,
+                "completed_document_n": 3,
+                "incomplete_document_n": 0,
+                "decode_timeout_count": 0,
+                "latency_ms_p50": 10.0,
+                "parse_rate": 1.0,
+            }
+        ),
         encoding="utf-8",
     )
     # Win on metric but uncharged capacity growth
@@ -410,7 +546,9 @@ def test_train_eval_identity_differs_when_versions_change() -> None:
 
 def test_synthesis_policy_uses_action_filenames(tmp_path: Path) -> None:
     """Policy action_filenames drive the SFT gate lookup, not only hard-coded names."""
-    from slm_training.autoresearch.hillclimb import assert_synthesis_feedback_cleared_for_sft
+    from slm_training.autoresearch.hillclimb import (
+        assert_synthesis_feedback_cleared_for_sft,
+    )
 
     policy = load_climb_policy()
     names = tuple(policy.synthesis_loop["action_filenames"])
@@ -486,9 +624,10 @@ def test_policy_require_multi_seed_false_allows_single_seed_promotion() -> None:
     # model_copy to one seed and prove causal shape accepts policy override.
     base = ExperimentCampaignV1.model_validate(_manifest_payload())
     one_seed = base.model_copy(update={"seeds": (7,)})
-    assert validate_causal_campaign_shape(
-        one_seed, min_seeds=1, require_multi_seed=False
-    ) == ()
+    assert (
+        validate_causal_campaign_shape(one_seed, min_seeds=1, require_multi_seed=False)
+        == ()
+    )
     # No kwargs → loads real committed policy (min_seeds=2) → fails single seed
     default_failures = validate_causal_campaign_shape(one_seed)
     assert any(f.startswith("insufficient_seeds:1<2") for f in default_failures)
@@ -519,8 +658,9 @@ def test_policy_require_multi_seed_false_allows_single_seed_promotion() -> None:
 
 
 def test_continuous_manifest_promotion_uses_held_out_primary() -> None:
-    """Promotion-role continuous manifests use policy promotion primary + multi-seed."""
+    """Each bounded promotion manifest honestly declares its one executed seed."""
     from scripts.run_autotrain_continuous import _manifest
+    from slm_training.autoresearch.climb_policy import promotion_seed_floor
 
     policy = load_climb_policy()
     promo = primary_for_role(policy, "promotion")
@@ -544,8 +684,10 @@ def test_continuous_manifest_promotion_uses_held_out_primary() -> None:
     assert man.claim_class == "promotion_candidate"
     assert man.endpoints[0].metric == promo["metric"]
     assert man.endpoints[0].direction == promo["direction"]
-    min_seeds = int(promo.get("min_seeds") or 2)
-    assert len(man.seeds) >= min_seeds
+    assert man.seeds == (7,)
+    assert promotion_seed_floor(policy)[0] >= 2
+    assert man.replicate_ledger_schema == "autotrain_promotion_replicate/v1"
+    assert man.replicate_seed_floor == promotion_seed_floor(policy)[0]
     assert man.locked_eval_manifest_sha256
     assert man.mechanism_off_arm_ids
     assert man.executable_kill_criteria
@@ -559,7 +701,7 @@ def test_continuous_manifest_promotion_uses_held_out_primary() -> None:
     )
     assert screen.claim_class == "diagnostic"
     assert screen.endpoints[0].metric == primary_for_role(policy, "screening")["metric"]
-    # Continuous screening wall is policy measurement budget, not global 3m CI cap.
+    # Role policy owns the stage wall within the canonical repository cap.
     from slm_training.autoresearch.climb_policy import stage_wall_minutes_for_role
 
     assert screen.budget.max_wall_minutes == float(

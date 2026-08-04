@@ -10,12 +10,17 @@ from __future__ import annotations
 
 import hashlib
 import json
-import subprocess
 import time
 from pathlib import Path
 from typing import Any, Mapping
 
 from slm_training.autoresearch.schemas import FormalObligationV1, FormalPreflightV1
+from slm_training.formal.checkers import (
+    FormalProjectLock,
+    ProcessOutcome,
+    formal_process_budget,
+    run_formal_process,
+)
 from slm_training.lineage.records import canonical_json
 
 __all__ = [
@@ -141,16 +146,39 @@ def _preflight_path(template_id: str) -> Path:
     return SFF_FORMAL_DIR / f"{template_id.replace('.', '_')}.json"
 
 
-def _lean_version() -> str:
-    proc = subprocess.run(
+def _run_lean_command(
+    command: list[str], *, timeout_seconds: float | None
+) -> tuple[Any, float]:
+    total, _interrupt_after, _grace = formal_process_budget(timeout_seconds)
+    with FormalProjectLock(_LEAN_ROOT, timeout_seconds=total) as lock:
+        result = run_formal_process(
+            command,
+            cwd=_LEAN_ROOT,
+            timeout_seconds=max(0.001, total - lock.wait_seconds),
+        )
+        return result, lock.wait_seconds
+
+
+def _lean_version(*, timeout_seconds: float | None = None) -> tuple[str, float]:
+    proc, lock_wait_seconds = _run_lean_command(
         ["lake", "env", "lean", "--version"],
-        cwd=_LEAN_ROOT,
-        check=False,
-        capture_output=True,
-        text=True,
+        timeout_seconds=timeout_seconds,
     )
+    if proc.timed_out:
+        raise SFFFormalError("Lean version probe timed out")
+    if proc.outcome is ProcessOutcome.LAUNCH_FAILED:
+        raise SFFFormalError(
+            f"Lean version probe could not start: {proc.launch_error}"
+        )
+    if proc.returncode != 0:
+        raise SFFFormalError(
+            "Lean version probe failed: "
+            + (proc.stderr.strip() or proc.stdout.strip() or "no diagnostic")
+        )
     text = (proc.stdout or proc.stderr or "").strip()
-    return text or "unknown"
+    if not text:
+        raise SFFFormalError("Lean version probe returned no version")
+    return text, lock_wait_seconds
 
 
 def _proof_sha256(template: Mapping[str, Any], digests: Mapping[str, str]) -> str:
@@ -216,16 +244,15 @@ def verify_sff_formal_sources(*, run_lean: bool = False) -> dict[str, Any]:
             {"template_id": template["template_id"], "source_digests": digests}
         )
     if run_lean:
-        proc = subprocess.run(
-            ["make", "proofs"],
-            cwd=_LEAN_ROOT,
-            check=False,
-            capture_output=True,
-            text=True,
+        proc, lock_wait_seconds = _run_lean_command(
+            ["make", "proofs"], timeout_seconds=None
         )
         report["lean_ok"] = proc.returncode == 0
+        report["project_lock_wait_seconds"] = lock_wait_seconds
         report["lean_stderr_tail"] = (proc.stderr or proc.stdout or "")[-2000:]
-        if proc.returncode != 0:
+        if proc.timed_out:
+            raise SFFFormalError("leverproof proofs timed out")
+        if proc.outcome is ProcessOutcome.LAUNCH_FAILED or proc.returncode != 0:
             raise SFFFormalError(
                 "leverproof proofs failed:\n" + report["lean_stderr_tail"]
             )
@@ -241,22 +268,27 @@ def regenerate_sff_formal_preflights(*, require_lean: bool = True) -> list[Path]
 
     SFF_FORMAL_DIR.mkdir(parents=True, exist_ok=True)
     started = time.monotonic()
-    proc = subprocess.run(
-        ["make", "proofs"],
-        cwd=_LEAN_ROOT,
-        check=False,
-        capture_output=True,
-        text=True,
+    deadline = started + float(formal_process_budget(None)[0])
+    proc, lock_wait_seconds = _run_lean_command(
+        ["make", "proofs"], timeout_seconds=max(0.001, deadline - time.monotonic())
     )
     duration = time.monotonic() - started
     lean_ok = proc.returncode == 0
-    build_output = f"{proc.stdout or ''}\n{proc.stderr or ''}"
+    build_output = (
+        f"project_lock_wait_seconds={lock_wait_seconds:.6f}\n"
+        f"{proc.stdout or ''}\n{proc.stderr or ''}"
+    )
     if require_lean and not lean_ok:
+        if proc.timed_out:
+            raise SFFFormalError("cannot regenerate formal preflights: Lean proofs timed out")
         raise SFFFormalError(
             "cannot regenerate formal preflights: Lean proofs failed:\n"
             + build_output[-2000:]
         )
-    lean_version = _lean_version()
+    lean_version, version_lock_wait = _lean_version(
+        timeout_seconds=max(0.001, deadline - time.monotonic())
+    )
+    build_output += f"\nversion_project_lock_wait_seconds={version_lock_wait:.6f}"
     written: list[Path] = []
     for template in SFF_FORMAL_TEMPLATES:
         preflight = _build_preflight_model(
@@ -303,6 +335,12 @@ def validate_committed_preflights() -> list[FormalPreflightV1]:
             raise SFFFormalError(
                 f"formal preflight stale for {tid}: source digests drifted; "
                 "run regenerate_sff_formal_preflights() after make proofs"
+            )
+        expected_proof_sha = _proof_sha256(template, expected)
+        if preflight.proof_sha256 != expected_proof_sha:
+            raise SFFFormalError(
+                f"formal preflight proof digest stale for {tid}: "
+                "run regenerate_sff_formal_preflights() after proof changes"
             )
         if preflight.status != "proved":
             raise SFFFormalError(

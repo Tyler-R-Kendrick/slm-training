@@ -127,6 +127,34 @@ def test_hybrid_prefers_langcore() -> None:
     }
 
 
+@pytest.mark.skipif(not bridge_available(), reason="OpenUI bridge missing")
+def test_hybrid_differential_validation_requires_ast_agreement() -> None:
+    hybrid = get_backend("openui")
+    result = hybrid.differential_validate(OPENUI_SRC)
+    assert result.available
+    assert result.accepted
+    assert not result.disagreement
+
+
+def test_hybrid_differential_validation_records_one_sided_acceptance(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from slm_training.dsl.grammar.backends.openui_hybrid import OpenUIHybridBackend
+
+    hybrid = OpenUIHybridBackend()
+    monkeypatch.setattr(hybrid._langcore, "available", lambda: True)
+    monkeypatch.setattr(hybrid._lark, "available", lambda: True)
+
+    def reject(_source: str):
+        raise ValueError("official reject")
+
+    monkeypatch.setattr(hybrid._langcore, "validate", reject)
+    result = hybrid.differential_validate(OPENUI_SRC)
+    assert result.disagreement
+    assert result.langcore_ok is False
+    assert result.lark_ok is True
+
+
 def test_grammar_module_uses_backend(monkeypatch: pytest.MonkeyPatch) -> None:
     from slm_training.models import grammar as grammar_mod
 
