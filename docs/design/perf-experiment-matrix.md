@@ -235,7 +235,7 @@ Recipe: CPU, committed `playground_demo/last.pt`, smoke `n=2`, no training,
 same-run C0 control, official bridge healthy. The run emitted AgentEvals JSONL
 and a pinned `@agentv/core` result bundle (`total=5`, `passed=0`,
 `executionErrors=0`). Full evidence is in
-[`perf-matrix-results.json`](perf-matrix-results.json).
+[`completion-kernel-perf-results.json`](completion-kernel-perf-results.json).
 
 | ID | mode | mean ms | p50 ms | forwards/call | forced tokens | fallbacks | parse | fidelity |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -403,3 +403,88 @@ two-target-cluster wiring screen; confirmation was not touched, no checkpoint
 was written, and no production/default claim is supported. AgentV passed 5/5
 with no execution errors. Full k-grid, confidence intervals, work attribution,
 and recipe: [SLM-194 evidence](iter-slm194-candidate-proposals-20260724.md).
+
+## Packed incremental completion kernel (2026-07-29)
+
+`python -m scripts.run_perf_matrix --completion-kernel
+--completion-repetitions 5 --docs-agentv-dir
+docs/design/completion-kernel-perf-agentv-20260729` compares the private prefix-oriented V1 reference
+with the production request-local packed kernel on the same tokenizer, schema,
+budget, process, and interpreter. This is CPU fixture/scratch evidence only.
+
+The exact-V1-output gates passed, including ordered witnesses at every canonical
+prefix and exactly 12 replayable candidates for `root = Card([b1,`. The V1
+payload labels that bounded subset `complete`/`witness_pruned`; it is not a
+claim that the two omitted UNKNOWN branches were proven unreachable. Cold empty
+and `root` medians stayed within the 15% regression guard. The cold difficult
+prefix remained a negative latency point at 738.29 ms V1 versus 880.92 ms
+packed, while a primed row-owned session with the row-domain
+cache cleared before every V2 sample fell from 735.96 ms to 8.05 ms (91.44×).
+Choice-codec cold bounded-distance queries improved 21.04× with exhaustive
+parity. The bounded solver was 1.03×.
+
+The compiler fixture exercises immutable hard-domain sharing across equivalent
+V2 rows: wall median 2,389.07 ms → 82.01 ms and compiler-time median
+2,315.39 ms → 4.069 ms, with identical ids/outcome/validation/forward count.
+The singleton arm remained identical with zero forwards. This is explicitly a
+warm sharing result; the cold parity payload was 2,975.2 ms V1 versus
+2,512.9 ms packed, and no
+end-to-end production or ship factor is claimed.
+
+All 13 gates and AgentV criteria passed. The ≥10× criterion is named and
+scoped to persistent-session kernel work without a row-domain cache hit; the
+matched cold hard row is the negative 0.84× point above. Canonical raw samples,
+MAD/min/max, environment, work deltas, correctness digests, version stamp, and
+the two earlier non-promotable diagnostics are retained in
+[`completion-kernel-perf-results.json`](completion-kernel-perf-results.json).
+The complete published AgentV bundle, including all 13 execution traces and
+transcripts, is tracked under
+[`completion-kernel-perf-agentv-20260729/`](completion-kernel-perf-agentv-20260729/).
+
+### Upstream reconciliation and ambiguous-row batching preregistration
+
+Locked before the reconciliation rerun: commit `d6b671fd` is the implementation
+control. The candidate may only compact independent greedy compiler rows into
+shared denoiser forwards; it must retain that control's request-local
+`CompletionBatchCache`, per-row semantic/parser state, path scoring, and
+finalization. Search/trajectory modes and speculative-ranker rows keep the
+sequential path. This is a same-parameter runtime arm.
+
+The canonical completion-kernel fixture compares the control explicitly by
+calling the same per-row `_compiler_ltr_decode_one` loop used by `d6b671fd`;
+the candidate calls `_compiler_ltr_decode_batch` on the same two contexts,
+length, mode, weights, and hard-domain cache policy. Promotion requires exact
+ids/outcome/final-validation parity, fewer neural calls with the same nonzero
+`denoiser_rows_evaluated`, compact/control median latency <= 1.15, and every
+pre-existing packed-kernel gate. Failure rejects the batching candidate and
+retains the upstream implementation; no gate or model size may change after
+the outcome is visible.
+
+The first clean run at `79a9dadf` was a complete negative: AgentV passed 16/17
+with no execution errors. The batching candidate itself preserved exact
+ids/outcomes/final validation, reduced neural calls from 10 to 5 for the same
+10 denoiser rows, and improved median latency from 2,912.85 ms to 2,828.80 ms
+(1.030x). The unrelated pre-existing cold-`root` gate failed at 7.05 ms V1
+versus 8.74 ms packed (0.807x), while all other old gates passed.
+
+The run-order audit found that the newly added multi-second neural fixture ran
+before the unchanged upstream microbenchmarks, altering their CPU/cache/thermal
+preconditions. The successor is locked to move only that new fixture after all
+upstream measurements; workload, repetitions, gates, model, and arm
+implementations remain unchanged. The failed run and its 17-case AgentV traces
+remain durable under
+[`completion-kernel-perf-agentv-20260729-reconciled/`](completion-kernel-perf-agentv-20260729-reconciled/).
+
+The isolated v7 successor at `61945d68` passed all 17/17 gates and AgentV
+criteria with no execution errors. Cold empty and `root` remained inside the
+15% guard at 0.902x and 0.957x; warm hard-prefix reuse retained an 89.81x
+speedup, choice cold bounded-distance retained 22.01x, the solver retained
+1.032x, and compiler wall/compiler-time speedups were 31.06x/566.22x.
+
+The batch-two arm again had exact ids/outcomes/final validation, cut neural
+calls from 10 to 5, and preserved 10 evaluated denoiser rows. Its CPU median
+was 2,636.95 ms sequential versus 2,743.42 ms compact (0.961x), a 4.0%
+wall-time regression inside the locked 15% guard. The result promotes
+cross-row call compaction, not a CPU latency claim; larger-device/batch
+throughput remains unmeasured. The complete successor traces are under
+[`completion-kernel-perf-agentv-20260729-reconciled-v2/`](completion-kernel-perf-agentv-20260729-reconciled-v2/).

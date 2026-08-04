@@ -85,13 +85,18 @@ place cannot make a program illegal.
 This closed `test_repair_exact_token_skips_forward_and_records_authority`,
 which was red on `main` from before this document existed.
 
-### I3 — Speculative completion from forward-calculated symbol tables
+### I3 — Forest-verified speculative completion from forward-calculated symbol tables
 
 Symbol tables are computed *before* the model. At a non-singleton branch point
 the choice among already-legal candidates may be made by a **deterministic
-scorer**, and a run of such choices committed as one span — lookahead-then-
-verify (LAVE), with the grammar oracle as the verifier (IG-CD
-intersection-witness completions).
+scorer**, and a run of such choices committed as one span —
+**forest-verified speculative completion**: draft only from the complete legal
+forest / domain, re-derive the domain each step, and verify against the grammar
+oracle before commit (IG-CD intersection-witness completions). This is **not**
+LAVE-as-primary (sample-N invent complete prefixes from model marginals, then
+Earley / recovery-rewrite). The LAVE *slogan* (lookahead-then-verify) is
+adjacent literature; production objects and recovery policy differ — see
+[adr-constrained-diffusion-topology-split.md](adr-constrained-diffusion-topology-split.md).
 
 Implementation: `src/slm_training/dsl/grammar/fastpath/speculative_rank.py`.
 

@@ -85,11 +85,11 @@ RECURRENCE_HEALTH_SEED_STRIDE = 1_000
 
 HERO = (
     'root = Stack([hero], "column")\n'
-    'hero_title = TextContent(":hero.title")\n'
-    'hero_body = TextContent(":hero.body")\n'
+    'hero_title = TextContent(":slot_0")\n'
+    'hero_body = TextContent(":slot_1")\n'
     "hero = Card([hero_title, hero_body])"
 )
-CTA = 'root = Stack([cta])\ncta = Button(":cta.label")'
+CTA = 'root = Stack([cta])\ncta = Button(":slot_0")'
 
 
 def _today_slug() -> str:

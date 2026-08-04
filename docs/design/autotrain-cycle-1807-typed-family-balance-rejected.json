@@ -1,0 +1,125 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1807",
+  "cycle_index": 1807,
+  "evidence_class": "fixture",
+  "decision": "reject_latency_and_absolute_quality",
+  "scoreable": true,
+  "new_checkpoint_created": true,
+  "upstream_commit": "ff96b4e840e8b49c3c44d29c17b198759987d6f3",
+  "integration_commit": "5cf9c4c29fba7b7cbbf8068e90330028f154ea38",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1807-control",
+      "trainable_params": 1608962,
+      "checkpoint_sha256": "3886a40325c0b2319d1003b3cc5d39d4ccf2a7e1b6aff4d81a1c9bd1a6de0c79",
+      "typed_family_balance_loss_weight": 0.0,
+      "steps": 21,
+      "seed": 101807,
+      "last_loss": 12.124850273132324,
+      "train_wall_seconds": 2.7222316979896277,
+      "token_loss_attribution": {
+        "component_count": 4,
+        "component_mean_ce": 23.65535545349121,
+        "structure_count": 35,
+        "structure_mean_ce": 7.865087032318115,
+        "prefix_count": 2,
+        "prefix_mean_ce": 0.6190223693847656,
+        "non_component_count": 56,
+        "non_component_mean_ce": 8.69128131866455,
+        "balance_aux_loss": 0.0
+      },
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "component_type_recall": 0.0,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.7653333333333334,
+        "latency_ms_p50": 1084.71
+      },
+      "decode_trace": {
+        "tokens_emitted": 27,
+        "forwards_count": 5,
+        "compiler_ms": 2270.532,
+        "completion_unique_states": 31499,
+        "completion_parser_forks": 32891
+      }
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1807-typed-family-balance",
+      "trainable_params": 1608962,
+      "checkpoint_sha256": "1850d25ff7b8b592a9c478214c6994892faeac63c3cb6c6aa45ffb66ba2ff06e",
+      "typed_family_balance_loss_weight": 0.25,
+      "steps": 21,
+      "seed": 101807,
+      "last_loss": 15.431387901306152,
+      "train_wall_seconds": 3.698899546987377,
+      "token_loss_attribution": {
+        "component_count": 4,
+        "component_mean_ce": 18.565921783447266,
+        "structure_count": 35,
+        "structure_mean_ce": 7.835239887237549,
+        "prefix_count": 2,
+        "prefix_mean_ce": 1.2052574157714844,
+        "non_component_count": 56,
+        "non_component_mean_ce": 9.037080764770508,
+        "balance_aux_loss": 3.300145149230957
+      },
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.10446666666666667,
+        "binder_reference_f1": 1.0,
+        "component_type_recall": 0.08333333333333333,
+        "placeholder_fidelity": 1.0,
+        "reward_score": 0.9369999999999999,
+        "latency_ms_p50": 5868.74
+      },
+      "decode_trace": {
+        "tokens_emitted": 201,
+        "forwards_count": 51,
+        "compiler_ms": 10183.834,
+        "completion_unique_states": 115693,
+        "completion_parser_forks": 123198
+      }
+    }
+  ],
+  "comparison": {
+    "attributable": true,
+    "parameter_delta": 0,
+    "structural_similarity_delta": 0.04696666666666667,
+    "latency_ms_p50_delta": 4784.03,
+    "component_mean_ce_delta": -5.089433670043945,
+    "structure_mean_ce_delta": -0.029847145080566406,
+    "tokens_emitted_delta": 174,
+    "forwards_count_delta": 46
+  },
+  "agentv": {
+    "bundles_complete": true,
+    "execution_errors": 0,
+    "ship_gates_pass": false
+  },
+  "checkpoint_policy": "local_explicit_no_sync_rejected_not_reusable_not_promoted_not_ship",
+  "lean": "not_applicable:screening",
+  "next_priority": "container-close",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "5cf9c4c29fba7b7cbbf8068e90330028f154ea38",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v77",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v298"
+    },
+    "stamped_at": "2026-08-03T00:14:59.600012+00:00"
+  }
+}

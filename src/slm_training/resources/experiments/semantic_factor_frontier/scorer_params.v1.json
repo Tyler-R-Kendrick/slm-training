@@ -1,0 +1,100 @@
+{
+  "schema": "sff_scorer_params/v1",
+  "version": "v1",
+  "description": "Scorer / residual model parameters for SFF arms. Change alphas, role weights, propagation, and arm tables here without editing harness code.",
+  "defaults": {
+    "lambda_restart": 0.15,
+    "max_steps": 16,
+    "normalize_scores": true,
+    "restart_legal_bonus": 1.5,
+    "restart_role_bonus": {
+      "USE": 2.0,
+      "TARGET": 2.0,
+      "DEFINITION": 2.0,
+      "SOURCE": 2.0
+    },
+    "restart_non_member_bonus": 1.0,
+    "restart_contradict_scale": 0.25,
+    "role_boost": {
+      "USE": 0.5,
+      "TARGET": 0.5,
+      "default_non_member": 0.25
+    },
+    "direct_role_multipliers": {
+      "USE": 4.0,
+      "TARGET": 4.0,
+      "default_non_member": 2.0,
+      "MEMBER": 1.0,
+      "COMPONENT": 1.0
+    },
+    "exact_typed_role_multipliers": {
+      "USE": 3.0,
+      "TARGET": 3.0,
+      "DEFINITION": 0.5,
+      "SOURCE": 0.5,
+      "default": 1.0
+    },
+    "lossy_pairwise_edge_weight": 0.5,
+    "member_roles": [
+      "MEMBER",
+      "COMPONENT"
+    ],
+    "tol": 1e-08,
+    "gamma_contradict": 1.0
+  },
+  "arms": {
+    "control_none": {
+      "representation": "none",
+      "decode_apply": false,
+      "alpha": 0.0
+    },
+    "train_on_decode_off_role_ported": {
+      "representation": "role_ported_factor",
+      "decode_apply": false,
+      "alpha": 0.0
+    },
+    "train_on_decode_on_role_ported": {
+      "representation": "role_ported_factor",
+      "decode_apply": true,
+      "alpha": 1.5
+    },
+    "train_on_decode_on_factor_node": {
+      "representation": "factor_node",
+      "decode_apply": true,
+      "alpha": 1.5
+    },
+    "train_on_decode_on_direct_factors": {
+      "representation": "direct_factors",
+      "decode_apply": true,
+      "alpha": 1.5
+    },
+    "train_on_decode_on_lossy_pairwise": {
+      "representation": "lossy_pairwise",
+      "decode_apply": true,
+      "alpha": 1.5
+    },
+    "train_on_decode_on_role_shuffled": {
+      "representation": "role_shuffled",
+      "decode_apply": true,
+      "alpha": 1.5
+    },
+    "exact_typed_zero_parameter": {
+      "representation": "exact_typed_zero_parameter",
+      "decode_apply": true,
+      "alpha": 1.5
+    },
+    "oracle_diagnostic": {
+      "representation": "oracle_diagnostic",
+      "decode_apply": true,
+      "alpha": 1.5
+    }
+  },
+  "decode_on_arm_prefixes": [
+    "train_on_decode_on_"
+  ],
+  "decode_on_arm_ids": [
+    "exact_typed_zero_parameter",
+    "oracle_diagnostic"
+  ],
+  "control_arm_id": "control_none"
+}

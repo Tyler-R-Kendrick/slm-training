@@ -4,7 +4,10 @@ from types import SimpleNamespace
 import pytest
 
 from slm_training.harnesses.model_build.config import ModelBuildConfig
-from slm_training.harnesses.model_build.factory import apply_runtime_overrides
+from slm_training.harnesses.model_build.factory import (
+    _twotower_config_from_build,
+    apply_runtime_overrides,
+)
 
 
 def test_none_decode_overrides_preserve_checkpoint_settings() -> None:
@@ -109,6 +112,50 @@ def test_design_md_dropout_overrides_resumed_checkpoint() -> None:
     assert model.config.design_md_dropout == 0.5
 
 
+def test_component_token_weight_overrides_resumed_checkpoint() -> None:
+    model = SimpleNamespace(config=SimpleNamespace(component_token_loss_weight=0.0))
+    config = ModelBuildConfig(train_dir=Path("."), component_token_loss_weight=1.0)
+
+    apply_runtime_overrides(model, config)
+
+    assert model.config.component_token_loss_weight == 1.0
+
+
+def test_compiler_decision_token_weight_overrides_resumed_checkpoint() -> None:
+    model = SimpleNamespace(
+        config=SimpleNamespace(compiler_decision_token_loss_weight=0.0)
+    )
+    config = ModelBuildConfig(
+        train_dir=Path("."), compiler_decision_token_loss_weight=1.0
+    )
+
+    apply_runtime_overrides(model, config)
+
+    assert model.config.compiler_decision_token_loss_weight == 1.0
+
+
+def test_structure_token_weight_overrides_resumed_checkpoint() -> None:
+    model = SimpleNamespace(config=SimpleNamespace(structure_token_loss_weight=0.0))
+    config = ModelBuildConfig(train_dir=Path("."), structure_token_loss_weight=1.0)
+
+    apply_runtime_overrides(model, config)
+
+    assert model.config.structure_token_loss_weight == 1.0
+
+
+def test_typed_family_balance_weight_overrides_resumed_checkpoint() -> None:
+    model = SimpleNamespace(
+        config=SimpleNamespace(typed_family_balance_loss_weight=0.0)
+    )
+    config = ModelBuildConfig(
+        train_dir=Path("."), typed_family_balance_loss_weight=0.25
+    )
+
+    apply_runtime_overrides(model, config)
+
+    assert model.config.typed_family_balance_loss_weight == 0.25
+
+
 def test_explicit_runtime_override_fields_preserve_unrelated_checkpoint_config() -> None:
     model = SimpleNamespace(
         config=SimpleNamespace(
@@ -190,3 +237,78 @@ def test_action_alias_overrides_round_trip() -> None:
 
     assert model.config.action_alias_mode == "fixed"
     assert model.config.action_description_name_mode == "alias_aware_description"
+
+
+def test_compiler_completion_flags_reach_twotower_config() -> None:
+    config = ModelBuildConfig(
+        train_dir=Path("."),
+        output_tokenizer="lexer",
+        compiler_decode_mode="tree",
+        required_slot_array_completion=True,
+        required_slot_root_completion=True,
+        slot_alias_unique_decode=True,
+        binder_topology_unique_decode=True,
+        compiler_schema_component_types=True,
+    )
+
+    runtime = _twotower_config_from_build(config)
+
+    assert runtime.required_slot_array_completion is True
+    assert runtime.required_slot_root_completion is True
+    assert runtime.slot_alias_unique_decode is True
+    assert runtime.binder_topology_unique_decode is True
+    assert runtime.compiler_schema_component_types is True
+
+
+def test_compiler_alignment_kind_filter_reaches_twotower_config() -> None:
+    config = ModelBuildConfig(
+        train_dir=Path("."),
+        compiler_alignment_loss_weight=1.0,
+        compiler_alignment_kind_filter="literal-close",
+    )
+
+    runtime = _twotower_config_from_build(config)
+
+    assert runtime.compiler_alignment_kind_filter == "literal-close"
+
+
+def test_container_close_alignment_filter_reaches_twotower_config() -> None:
+    config = ModelBuildConfig(
+        train_dir=Path("."),
+        compiler_alignment_loss_weight=1.0,
+        compiler_alignment_kind_filter="container-close",
+    )
+
+    runtime = _twotower_config_from_build(config)
+
+    assert runtime.compiler_alignment_kind_filter == "container-close"
+
+
+def test_component_edge_alignment_filter_reaches_twotower_config() -> None:
+    config = ModelBuildConfig(
+        train_dir=Path("."),
+        compiler_alignment_loss_weight=1.0,
+        compiler_alignment_kind_filter="component-edge",
+    )
+
+    runtime = _twotower_config_from_build(config)
+
+    assert runtime.compiler_alignment_kind_filter == "component-edge"
+
+
+def test_model_build_rejects_unknown_compiler_alignment_kind_filter() -> None:
+    with pytest.raises(ValueError, match="compiler_alignment_kind_filter"):
+        ModelBuildConfig(train_dir=Path("."), compiler_alignment_kind_filter="unknown")
+
+
+def test_unowned_compiler_auxiliary_fails_closed_at_factory_boundary() -> None:
+    config = ModelBuildConfig(
+        train_dir=Path("."),
+        output_tokenizer="lexer",
+        compiler_decode_mode="tree",
+        binder_slot_ownership_loss_weight=1.0,
+        binder_slot_ownership_decode_weight=1.0,
+    )
+
+    with pytest.raises(ValueError, match="no runtime owner is implemented"):
+        _twotower_config_from_build(config)

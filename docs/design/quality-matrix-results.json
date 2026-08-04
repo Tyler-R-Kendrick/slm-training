@@ -1,54 +1,77 @@
 {
-  "matrix": "quality-experiment-matrix-v5",
+  "matrix": "quality-experiment-matrix-v16",
   "reference": "docs/design/quality-experiment-matrix.md",
   "gate_policy": {
     "smoke": {
-      "parse_rate": 0.66,
+      "meaningful_program_rate": 0.66,
       "structural_similarity": 0.35,
+      "component_type_recall": 0.35,
       "placeholder_fidelity": 0.25,
       "reward_score": 0.3
     },
     "held_out": {
-      "parse_rate": 0.4,
+      "meaningful_program_rate": 0.4,
       "structural_similarity": 0.3,
+      "component_type_recall": 0.3,
       "placeholder_fidelity": 0.15
     },
     "adversarial": {
-      "parse_rate": 0.25,
-      "structural_similarity": 0.25
+      "meaningful_program_rate": 0.25,
+      "structural_similarity": 0.25,
+      "component_type_recall": 0.2
     },
     "ood": {
-      "parse_rate": 0.25,
-      "structural_similarity": 0.25
+      "meaningful_program_rate": 0.25,
+      "structural_similarity": 0.25,
+      "component_type_recall": 0.2
     },
     "rico_held": {
-      "parse_rate": 0.1,
-      "structural_similarity": 0.2
+      "meaningful_program_rate": 0.1,
+      "structural_similarity": 0.2,
+      "component_type_recall": 0.15
     }
   },
   "device": "cpu",
   "batch_size": 4,
   "learning_rate": 0.0003,
   "seed": 0,
-  "test_dir": "outputs/test_data/v1",
-  "design_md_in_context": false,
-  "rico_eval_limit": 3,
+  "test_dir": "outputs/data/eval/slm303_v4",
+  "design_md_in_context": null,
+  "training_executed": false,
+  "rico_eval_limit": 32,
   "suites": [
+    "adversarial",
+    "held_out",
+    "ood",
+    "rico_held",
     "smoke"
   ],
-  "steps": 64,
+  "steps": 0,
   "gen_steps": 8,
   "context_backend": "scratch",
-  "matrix_set": "v5",
+  "matrix_set": "v16",
   "results": [
     {
-      "id": "E42",
-      "run_id": "qx_e42_factorized",
+      "id": "E280",
+      "run_id": "qx_e280_c3_macro_tokens",
       "pass": false,
       "failures": [
-        "exception: FileNotFoundError: missing suite 'smoke' under outputs/test_data/v1"
+        "exception: SystemExit: 143"
       ],
       "suites": {}
     }
-  ]
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "7bb77c9191dc1410f6b4af10670f81e27ecc43b8",
+    "code_dirty": true,
+    "components": {
+      "matrix.quality": "v8",
+      "harness.experiment_feature_flags": "v3",
+      "harness.model_build.eval": "v63",
+      "evals.meaningful_program": "2.13.0",
+      "gates.ship": "openui_ship_gates_v4"
+    },
+    "stamped_at": "2026-07-28T21:16:59.415123+00:00"
+  }
 }

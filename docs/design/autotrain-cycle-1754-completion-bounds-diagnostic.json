@@ -1,0 +1,17 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1754",
+  "cycle_index": 1754,
+  "evidence_class": "fixture",
+  "decision": "rejected_efficiency_null",
+  "scoreable": true,
+  "arms": [
+    {"experiment_id": "c20260802-continuous-openui-202607-98199209-c1754-control", "manifest_sha256": "c9df244900044c09aee60a5a0fddd46e0aa4634ee90b64c37327f45aa2c71dd0", "params": 1608962, "checkpoint_sha256": "0716d0d24fc2cf49c6ab7d28640767cb94e5fc325a9202a47e058f20749c18ba", "loss": 11.516963005065918, "train_wall_seconds": 2.817257519986015, "smoke": {"n": 3, "parse_rate": 1.0, "binder_reference_f1": 1.0, "meaningful_program_rate": 0.6666666666666666, "structural_similarity": 0.03573333333333333, "component_type_recall": 0.3333333333333333, "latency_ms_p50": 14431.8}},
+    {"experiment_id": "c20260802-continuous-openui-202607-98199209-c1754-bounds", "manifest_sha256": "536011d77bb989a526323be234101209434a907c4e95b2ab5d057818dbbcbbc3", "params": 1608962, "checkpoint_sha256": "98b03a38f29a975f6a1aaace7fc6d22225571ea52ddafd03e979df6d51c413c7", "loss": 11.516963005065918, "train_wall_seconds": 3.3476444100379013, "grammar_completion_bounds": true, "smoke": {"n": 3, "parse_rate": 1.0, "binder_reference_f1": 1.0, "meaningful_program_rate": 0.6666666666666666, "structural_similarity": 0.03573333333333333, "component_type_recall": 0.3333333333333333, "latency_ms_p50": 14453.65}}
+  ],
+  "deltas": {"quality": 0.0, "latency_percent": 0.1514, "train_wall_ratio": 1.1883},
+  "ship_gates_pass": false,
+  "lean": "not_applicable:screening",
+  "next_priority": "compact-active-canvas runtime diagnostic",
+  "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "0ebf14cdac4682efac4e1af59a41a952e65cc0f4", "code_dirty": false, "components": {"config.levers": "v30", "harness.model_build.eval": "v74", "harness.experiment_feature_flags": "v4", "evals.meaningful_program": "2.13.0", "evals.power_protocol": "v8", "evals.scoring": "v22", "model.twotower": "v288"}, "stamped_at": "2026-08-02T11:12:50.520185+00:00"}
+}

@@ -1,0 +1,25 @@
+{
+  "schema": "synthesis_feedback_actions/v1",
+  "version": "wf_smoke_v2",
+  "recorded_at": "2026-07-31T23:00:00Z",
+  "actions": [
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "family",
+      "target": "human_curated",
+      "note": "Audited quality_report + rejected.jsonl: 1 human_curated candidate was already dropped at decontamination (ngram_overlap). Admitted human_curated set (20) is post-gate. Decontamination gate unchanged; continuous fixture SFT may resume. Next rebuild re-audits sources before raising exposure."
+    },
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "family",
+      "target": "prompt_paraphrase",
+      "note": "Audited: 2 prompt_paraphrase decontamination drops (ngram_overlap) already rejected. Remaining paraphrases passed fuzzy/semantic/exposure gates. No gate weakening; synthesizer templates stay under strict decontamination on rebuild."
+    },
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "synthesizer",
+      "target": "template",
+      "note": "Audited: template synthesizer contributed 2 decontamination drops already excluded from admitted records. Keep synthesizer; enforce decontamination on every rebuild. Fixture continuous trains use admitted-only corpus."
+    }
+  ]
+}

@@ -1,8 +1,14 @@
 # Grammar-topology diffusion
 
 **Status:** implemented experimental replacement for the former fixed-canvas
-`grammar_diffusion` plug-in. It is not a ship claim. X9-X15 must establish quality,
-topology, trace, and efficiency evidence before promotion.
+`grammar_diffusion` plug-in. **Not a ship claim.** Model-facing binder / mask /
+scope topology heads are **frozen** pending the anti-E237 preregistered contract
+in [adr-constrained-diffusion-topology-split.md](adr-constrained-diffusion-topology-split.md)
+(measured losing record: E236/E237 0/38 choice changes, E729 causal decode harm,
+X9–X21 ship fails). Infrastructure topology (legal apply, valid edits) is a
+separate claim family under the engine/edit path and does not reopen CPRH-as-head.
+X9–X21 confirmation evidence is closed negative for promotion; do not cite “X9–X15
+must establish” as an open promotion path for model-facing heads.
 
 ## Why the state space changed
 

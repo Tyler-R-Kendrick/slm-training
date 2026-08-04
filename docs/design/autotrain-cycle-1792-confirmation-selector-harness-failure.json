@@ -1,0 +1,25 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1792",
+  "cycle_index": 1792,
+  "cycle_intent": "confirm",
+  "evidence_class": "harness_failure",
+  "decision": "inconclusive_retry_identical_confirmation_after_harness_repair",
+  "scoreable": false,
+  "new_checkpoint_created": false,
+  "failure": {
+    "stage": "pre_matrix_screening_selection",
+    "error_type": "RuntimeError",
+    "message": "registered screening arm bank exhausted; add a distinct preregistered quality objective instead of recycling a rejected approach",
+    "fingerprint": "bcdd8297cb59dfde04fd4b0844ae4137395ee89a992f2c95f9cfd26be02c24cb",
+    "arm_started": false
+  },
+  "harness_signal": {
+    "owner": "harness.autoresearch.experiment_campaign",
+    "repair_version": "v90",
+    "repair": "confirmation_and_promotion_bypass_screening_selector"
+  },
+  "checkpoint_policy": "no_checkpoint_created",
+  "lean": "not_applicable:harness_failure_before_promotion",
+  "next_priority": "recover_attempt_and_replay_exact_c1791_confirmation"
+}

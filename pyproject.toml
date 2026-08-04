@@ -120,11 +120,12 @@ where = ["src", "."]
 include = ["slm_training*", "gpu_multi_farm*", "scripts*"]
 
 [tool.setuptools.package-data]
-slm_training = ["evals/*.json", "dsl/grammars/*", "resources/**/*"]
+slm_training = ["dsl/grammars/*", "resources/**/*"]
 "slm_training.web" = ["static/**/*"]
 
 [tool.setuptools.exclude-package-data]
 slm_training = [
+  "resources/test_cases/**",
   "resources/data/**/governance/**",
   "resources/data/**/records.jsonl",
   "resources/data/train/slm230_symbol_only_v1/**",
@@ -142,9 +143,10 @@ package = false
 testpaths = ["tests"]
 pythonpath = ["src", "."]
 asyncio_mode = "auto"
-addopts = "-m 'not training'"
+addopts = "-m 'not training and not slow'"
 markers = [
   "training: iterative model training or training smoke (explicit opt-in only)",
+  "slow: single test exceeding the canonical per-job wall (MAX_RUN_MINUTES); no shard packing can fit it, so it is deselected by default and must be run explicitly with -m slow",
 ]
 
 [tool.vercel]
@@ -180,6 +182,14 @@ extend-exclude = [
   ".cursor/skills/headroom",
   ".cursor/skills/caveman*",
   ".cursor/skills/ponytail*",
+  ".grok/skills/hf-*",
+  ".grok/skills/huggingface-*",
+  ".grok/skills/trl-training",
+  ".grok/skills/train-sentence-transformers",
+  ".grok/skills/transformers-js",
+  ".grok/skills/headroom",
+  ".grok/skills/caveman*",
+  ".grok/skills/ponytail*",
 ]
 
 [tool.ruff.lint.per-file-ignores]

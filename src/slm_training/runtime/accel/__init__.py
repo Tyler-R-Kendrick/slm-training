@@ -25,7 +25,15 @@ class AccelInfo:
 
 def detect_device(preferred: str | None = None) -> AccelInfo:
     """Pick CUDA → Ascend NPU → DirectML → CPU unless explicitly forced."""
-    import torch
+    try:
+        import torch
+    except ModuleNotFoundError as exc:
+        raise RuntimeError(
+            "torch is not installed in this environment. Run "
+            "scripts/setup_dev_env.sh to install the pinned CPU wheel, or "
+            "`pip install --index-url https://download.pytorch.org/whl/cpu "
+            "torch==2.5.1+cpu` directly."
+        ) from exc
 
     if preferred and preferred.lower() in {"dml", "directml"}:
         info = _detect_directml()

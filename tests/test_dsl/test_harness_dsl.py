@@ -6,6 +6,8 @@ from dataclasses import replace
 
 import pytest
 
+from tests.casefiles import case_values
+
 from slm_training.data.contract import RuntimeSymbol
 from slm_training.dsl.harness_dsl import (
     HarnessDslError,
@@ -69,12 +71,7 @@ def test_pack_category_and_artifact_identity_are_exact() -> None:
 
 @pytest.mark.parametrize(
     ("old", "new"),
-    [
-        ("OP IDENTITY", "OP INVENT"),
-        ("TYPE expression", "TYPE prose"),
-        ("CATEGORY call", "CATEGORY user_category"),
-        ("PAYLOAD_END", "PAYLOAD_END\nTRAILING"),
-    ],
+    case_values(__file__, "test_unknown_or_trailing_framing_fails_closed"),
 )
 def test_unknown_or_trailing_framing_fails_closed(old: str, new: str) -> None:
     source = serialize_harness_task(
@@ -93,12 +90,10 @@ def test_unknown_or_trailing_framing_fails_closed(old: str, new: str) -> None:
 
 @pytest.mark.parametrize(
     ("category", "payload"),
-    [
-        ("STRING", '"write a dashboard"'),
-        ("ref", "userIdentifier"),
-        ("call", "Separator(]"),
-        ("call", "Separator() // explain"),
-    ],
+    case_values(
+        __file__,
+        "test_open_prose_identifiers_comments_and_invalid_fragments_are_rejected",
+    ),
 )
 def test_open_prose_identifiers_comments_and_invalid_fragments_are_rejected(
     category: str, payload: str

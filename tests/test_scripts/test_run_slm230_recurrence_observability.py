@@ -23,7 +23,8 @@ def _model() -> TwoTowerModel:
     record = ExampleRecord(
         id="fixture",
         prompt="One text node",
-        openui='root = TextContent(":fixture")',
+        openui='root = TextContent(":slot_0")',
+        placeholders=[":slot_0"],
         split="train",
     )
     return TwoTowerModel.from_records(

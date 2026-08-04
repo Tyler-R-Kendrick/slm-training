@@ -12,6 +12,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.casefiles import case_values
+
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 from slm_training.models.twotower_numeric_gates import (
     NumericValidationError,
@@ -217,12 +219,10 @@ def test_model_build_config_rejects_reference_weights_for_other_models() -> None
 
 @pytest.mark.parametrize(
     "weight_name",
-    [
-        "component_edge_decode_weight",
-        "binder_component_plan_decode_weight",
-        "binder_topology_decode_weight",
-        "binder_arity_decode_weight",
-    ],
+    case_values(
+        __file__,
+        "test_model_build_config_rejects_compiler_path_levers_when_decode_is_off",
+    ),
 )
 def test_model_build_config_rejects_compiler_path_levers_when_decode_is_off(
     weight_name: str,
@@ -331,7 +331,7 @@ def test_model_build_config_rejects_prohibited_semantic_marker_lever_before_arti
     tmp_path: Path,
 ) -> None:
     run_root = tmp_path / "runs"
-    with pytest.raises(ValueError, match="template markers are opaque"):
+    with pytest.raises(ValueError, match="prohibited enabled levers"):
         _valid_build_config(
             run_root=run_root,
             run_id="must-not-exist",

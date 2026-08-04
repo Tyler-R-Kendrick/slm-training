@@ -1,0 +1,131 @@
+{
+  "schema": "autotrain_climb_policy/v1",
+  "version": "v5",
+  "description": "High-volatility continuous autotrain hill-climb policy. Harness/driver code loads this artifact; change metrics, cadence, caps, and identity fields here without re-authoring classifiers.",
+  "screening_primary": {
+    "metric": "smoke.structural_similarity",
+    "direction": "increase",
+    "minimum_effect": 0.01,
+    "require_non_regression_metrics": [
+      {
+        "metric_leaf": "parse_rate",
+        "direction": "increase",
+        "minimum_effect": 0.0
+      },
+      {
+        "metric_leaf": "binder_reference_f1",
+        "direction": "increase",
+        "minimum_effect": 0.0
+      }
+    ]
+  },
+  "promotion_primary": {
+    "metric": "held_out.structural_similarity",
+    "direction": "increase",
+    "minimum_effect": 0.01,
+    "require_locked_eval": true,
+    "require_multi_seed": true,
+    "min_seeds": 2
+  },
+  "defaults": {
+    "train_version": "wf_smoke_v2",
+    "eval_version_resolve": "published_smoke",
+    "claim_class_screening": "diagnostic",
+    "claim_class_promotion": "promotion_candidate",
+    "exploratory_claim_class": "fixture"
+  },
+  "measurement": {
+    "screening_stage_wall_minutes": 3,
+    "promotion_stage_wall_minutes": 3,
+    "screening_decode_timeout_seconds": 12,
+    "promotion_decode_timeout_seconds": 24,
+    "screening_smoke_n": 3,
+    "max_consecutive_frozen_replays": 1,
+    "screening_suites": ["smoke"],
+    "promotion_suites": ["smoke", "held_out"],
+    "thrash_timing": {
+      "schema": "thrash_timing_policy/v1",
+      "description": "Pareto-calibrated thrash budgets: timeouts ≈ p95(work)+margin. Incomplete rate outside [low,high] means recalculate recipe/budget, not ad-hoc wall++.",
+      "incomplete_rate_high": 0.15,
+      "incomplete_rate_low": 0.05,
+      "p95_margin": 0.15,
+      "min_train_floor_seconds": 20,
+      "eval_overhead_seconds": 8,
+      "screening_thrash_steps": 40
+    }
+  },
+  "cadence": {
+    "screening_cycles_per_promotion": 3,
+    "first_cycle_role": "screening",
+    "promotion_requires_prior_screening_win": true
+  },
+  "exhausted_identity_fields": [
+    "claim_class",
+    "train_version",
+    "eval_version",
+    "primary_metric",
+    "direction",
+    "data_manifest_sha256"
+  ],
+  "recipe_tweak_knobs": [
+    "steps",
+    "lr",
+    "batch_size",
+    "seed",
+    "grad_accum",
+    "noise_rate"
+  ],
+  "recipe_null_cap": {
+    "max_nulls_per_family": 2,
+    "require_regime_transition_after_cap": true
+  },
+  "screening_arm_closure": {
+    "min_complete_null_seeds": 2,
+    "description": "Permanent thrash-arm bank close requires this many distinct seeds of complete non-positive measurement. One fixture-noise null never closes the approach."
+  },
+  "positive_classification": {
+    "allow_executable_unblock": true,
+    "fixture_insufficient_n_alone_not_positive": true,
+    "minimum_efficiency_gain_fraction": 0.05,
+    "require_size_match_or_eg_params": true,
+    "eg_params_lcb_min": 1.0,
+    "stack_requires_tracked_delta": true
+  },
+  "promotion_dispose": {
+    "require_primary_win": true,
+    "require_cert_continue": true,
+    "require_dual_arm_metrics": true,
+    "require_parse_non_regression": true,
+    "ignore_ship_insufficient_n_for_climb": true,
+    "recertify_on_authority_change": true
+  },
+  "synthesis_loop": {
+    "block_sft_on_open_recommendations": true,
+    "action_filenames": [
+      "synthesis_feedback_actions.json",
+      "synthesis_feedback_action.json"
+    ],
+    "allow_global_waiver_code": "*",
+    "prefer_data_rebuild_before_sft": true
+  },
+  "rung_gates": {
+    "enabled": true,
+    "current_rung": "grammar_2_ast",
+    "certified_rungs": ["ast_2_ast"],
+    "certification_evidence": {
+      "ast_2_ast": "docs/MODEL_CARD.md#capability-ladder-position-decode-invariant-i10"
+    },
+    "order": [
+      "ast_2_ast",
+      "grammar_2_ast",
+      "grammar_ops_2_ast",
+      "simplified_nl_2_ast",
+      "complex_nl_2_ast"
+    ],
+    "block_promotion_if_prior_rung_unmet": true
+  },
+  "loop_ledger": {
+    "relative_path_template": "loops/{loop_id}/exhausted_knob_ledger.json",
+    "schema": "exhausted_knob_ledger/v1"
+  }
+}

@@ -4,15 +4,189 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
-from typing import Any, Literal
+from pathlib import Path
+from typing import Any, Literal, Mapping
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictInt, model_validator
 
 from slm_training.levers import MAX_RUN_MINUTES
+
+HarnessFamily = Literal[
+    "autoresearch",
+    "annotations",
+    "distill",
+    "experiments",
+    "model_build",
+    "preference",
+    "quality",
+    "rl",
+    "test_data",
+    "train_data",
+]
 
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+_EVALUATION_COUNTERS = (
+    "n",
+    "document_n",
+    "completed_document_n",
+    "incomplete_document_n",
+    "decode_timeout_count",
+)
+_EVALUATION_SIGNAL_LEAVES = frozenset(
+    {
+        *_EVALUATION_COUNTERS,
+        "parse_rate",
+        "structural_similarity",
+        "meaningful_program_rate",
+    }
+)
+
+
+def _flat_numeric_metrics(value: object, prefix: str = "") -> dict[str, float]:
+    result: dict[str, float] = {}
+    if not isinstance(value, Mapping):
+        return result
+    for key, child in value.items():
+        name = f"{prefix}.{key}".strip(".")
+        if isinstance(child, bool):
+            continue
+        elif isinstance(child, (int, float)):
+            result[name] = float(child)
+        else:
+            result.update(_flat_numeric_metrics(child, name))
+    return result
+
+
+def _bound_evaluation_artifact(value: object, *, artifact_root: Path | None) -> bool:
+    if not isinstance(value, str) or not value:
+        return False
+    path = Path(value)
+    if not path.is_absolute() and artifact_root is not None:
+        path = artifact_root / path
+    return path.is_file()
+
+
+def evaluation_completeness_failures(
+    payload: Mapping[str, Any],
+    *,
+    require_agent_bindings: bool = False,
+    artifact_root: Path | None = None,
+) -> tuple[str, ...]:
+    """Return fail-closed reasons for a canonical evaluation measurement.
+
+    Historical payloads remain schema-readable.  Once an evaluation is used as
+    current decision evidence, every suite must expose all five counters and
+    AgentV ship-gate payloads must bind their AgentEvals spec and result index.
+    """
+
+    flat = _flat_numeric_metrics(payload)
+    evaluation_present = (
+        "suites" in payload
+        or "gates.pass" in flat
+        or any(key.rsplit(".", 1)[-1] in _EVALUATION_SIGNAL_LEAVES for key in flat)
+    )
+    if not evaluation_present:
+        return ()
+
+    suites = payload.get("suites")
+    if isinstance(suites, Mapping):
+        suite_names = tuple(str(name) for name in suites)
+        prefix_for = lambda name: f"suites.{name}"  # noqa: E731
+    else:
+        prefixes = {
+            key.rsplit(".", 1)[0]
+            for key in flat
+            if "." in key
+            and key.rsplit(".", 1)[-1] in _EVALUATION_SIGNAL_LEAVES
+            and not key.startswith(("evals.", "gates."))
+        }
+        suite_names = tuple(sorted(prefixes))
+        prefix_for = lambda name: name  # noqa: E731
+
+    failures: list[str] = []
+    if not suite_names:
+        failures.append("evaluation suites are missing")
+    for suite_name in suite_names:
+        prefix = prefix_for(suite_name)
+        values: dict[str, int] = {}
+        for counter in _EVALUATION_COUNTERS:
+            key = f"{prefix}.{counter}"
+            value = flat.get(key)
+            if value is None or value < 0 or not value.is_integer():
+                failures.append(f"{suite_name} missing valid {counter}")
+            else:
+                values[counter] = int(value)
+        if len(values) != len(_EVALUATION_COUNTERS):
+            continue
+        if values["document_n"] > values["n"]:
+            failures.append(f"{suite_name} document_n must not exceed n")
+        if (
+            values["completed_document_n"] + values["incomplete_document_n"]
+            != values["document_n"]
+        ):
+            failures.append(
+                f"{suite_name} document completion counters must equal document_n"
+            )
+        if values["incomplete_document_n"] != 0:
+            failures.append(f"{suite_name} incomplete_document_n must be zero")
+        if values["decode_timeout_count"] != 0:
+            failures.append(f"{suite_name} decode_timeout_count must be zero")
+
+    if not require_agent_bindings:
+        return tuple(failures)
+
+    evals = payload.get("evals")
+    gates = payload.get("gates")
+    if not isinstance(evals, Mapping):
+        return (*failures, "AgentEvals payload is missing")
+    runner = evals.get("runner")
+    criteria = evals.get("criteria")
+    summary = evals.get("summary")
+    artifacts = evals.get("artifacts")
+    if evals.get("format") != "AgentEvals JSONL":
+        failures.append("AgentEvals format binding is missing")
+    if (
+        evals.get("authority") != "AgentEvals assertions"
+        or not isinstance(gates, Mapping)
+        or gates.get("authority") != "AgentEvals assertions"
+    ):
+        failures.append("AgentEvals authority binding is missing")
+    if not isinstance(runner, Mapping) or runner.get("name") != "AgentV":
+        failures.append("AgentV runner binding is missing")
+    elif runner.get("execution_errors") != 0:
+        failures.append("AgentV runner reported execution errors")
+    if not isinstance(criteria, Mapping) or not all(
+        type(criteria.get(key)) is int for key in ("total", "passed", "failed")
+    ):
+        failures.append("AgentEvals criteria counters are missing")
+    elif (
+        criteria["total"] < 1
+        or criteria["passed"] + criteria["failed"] != criteria["total"]
+    ):
+        failures.append("AgentEvals criteria counters are inconsistent")
+    if (
+        not isinstance(summary, Mapping)
+        or type(summary.get("total")) is not int
+        or summary["total"] < 1
+        or summary.get("executionErrors") != 0
+    ):
+        failures.append("AgentV summary binding is missing or incomplete")
+    if not _bound_evaluation_artifact(evals.get("spec"), artifact_root=artifact_root):
+        failures.append("AgentEvals spec artifact binding is missing")
+    index_path = artifacts.get("indexPath") if isinstance(artifacts, Mapping) else None
+    if not _bound_evaluation_artifact(index_path, artifact_root=artifact_root):
+        failures.append("AgentV result index artifact binding is missing")
+    return tuple(failures)
+
+
+def evaluation_measurement_incomplete(metrics: dict[str, float]) -> bool:
+    """Return whether current evaluation evidence is partial or underspecified."""
+
+    return bool(evaluation_completeness_failures(metrics))
 
 
 class StrictModel(BaseModel):
@@ -22,9 +196,9 @@ class StrictModel(BaseModel):
 class CampaignBudget(StrictModel):
     max_experiments: int = Field(default=12, ge=1, le=1000)
     max_gpu_hours: float = Field(default=0.0, ge=0)
-    max_wall_minutes: float = Field(
-        default=float(MAX_RUN_MINUTES), gt=0, le=float(MAX_RUN_MINUTES)
-    )
+    # Historical artifacts used longer declared walls. Readers accept those
+    # records; every execution surface clamps new work to MAX_RUN_MINUTES.
+    max_wall_minutes: float = Field(default=float(MAX_RUN_MINUTES), gt=0, le=60.0)
 
 
 DEFAULT_ALLOWED_KNOBS = frozenset(
@@ -41,10 +215,19 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "compiler_alignment_margin",
         "compiler_alignment_stratified",
         "compiler_alignment_semantic_exhaustive",
+        "compiler_alignment_kind_filter",
         "component_inventory_loss_weight",
+        "component_token_loss_weight",
+        "component_edge_token_loss_weight",
+        "compiler_decision_token_loss_weight",
+        "structure_token_loss_weight",
+        "typed_family_balance_loss_weight",
+        "structural_aux_head_profile",
         "component_inventory_decode_weight",
         "component_plan_loss_weight",
         "component_plan_decode_weight",
+        "slot_component_loss_weight",
+        "slot_component_decode_weight",
         "component_edge_loss_weight",
         "component_edge_alignment_loss_weight",
         "component_edge_decode_weight",
@@ -54,6 +237,9 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "binder_topology_decode_weight",
         "binder_arity_loss_weight",
         "binder_arity_decode_weight",
+        "binder_slot_ownership_loss_weight",
+        "binder_slot_ownership_decode_weight",
+        "symbol_boundary_loss_weight",
         "compiler_decode_mode",
         "compiler_search_mode",
         "compiler_search_trigger",
@@ -63,9 +249,17 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "compiler_search_backtrack_limit",
         "data_source",
         "design_md_context",
+        "design_md_dropout",
         "eval_version",
+        "fidelity_loss_weight",
+        "semantic_contrast_dir",
+        "semantic_contrast_loss_weight",
+        "semantic_contrast_margin",
+        "semantic_contrast_fraction",
         "derive_from",
         "lr",
+        "ltr_prefix_loss_weight",
+        "ltr_tail_loss_weight",
         "local_files_only",
         "max_records_per_parent",
         "min_quality_score",
@@ -108,7 +302,11 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "grammar_completion_bounds",
         "grammar_equivalence_cache",
         "grammar_active_symbol_bitsets",
+        "grammar_incremental_state",
         "compact_active_canvas",
+        "grammar_draft_window",
+        "decode_timeout_seconds",
+        "eval_suites",
         "action_embedding_init",
         "action_embedding_train",
         "action_alias_mode",
@@ -130,8 +328,44 @@ class CampaignSpec(StrictModel):
     evidence_roots: tuple[str, ...] = ("outputs",)
     allowed_knobs: frozenset[str] = DEFAULT_ALLOWED_KNOBS
     budget: CampaignBudget = Field(default_factory=CampaignBudget)
+    loop_id: str | None = Field(
+        default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    )
+    cycle_index: int | None = Field(default=None, ge=1)
+    predecessor_campaign_id: str | None = Field(
+        default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    )
+    upstream_commit: str | None = Field(default=None, pattern=r"^[0-9a-f]{40}$")
+    integration_commit: str | None = Field(default=None, pattern=r"^[0-9a-f]{40}$")
     created_at: str = Field(default_factory=utc_now)
     notes: str = ""
+
+    @model_validator(mode="after")
+    def validate_loop_lineage(self) -> CampaignSpec:
+        if self.loop_id is None:
+            if any(
+                value is not None
+                for value in (
+                    self.cycle_index,
+                    self.predecessor_campaign_id,
+                    self.upstream_commit,
+                    self.integration_commit,
+                )
+            ):
+                raise ValueError("cycle lineage requires loop_id")
+            return self
+        if self.cycle_index is None:
+            raise ValueError("loop_id requires cycle_index")
+        if self.upstream_commit is None or self.integration_commit is None:
+            raise ValueError(
+                "continuous cycle requires upstream_commit and integration_commit"
+            )
+        if self.cycle_index == 1 and self.predecessor_campaign_id is not None:
+            raise ValueError("first loop cycle cannot have a predecessor campaign")
+        if self.cycle_index > 1 and self.predecessor_campaign_id is None:
+            raise ValueError("later loop cycles require a predecessor campaign")
+        return self
+
 
 class ResearchSource(StrictModel):
     source_id: str
@@ -261,7 +495,10 @@ class ExperimentKnobs(StrictModel):
     mixture_weights: dict[str, float] | None = None
     mixture_sampling_policy: (
         Literal[
-            "with_replacement", "capacity_aware", "quota_capacity_aware", "exposure_targeted"
+            "with_replacement",
+            "capacity_aware",
+            "quota_capacity_aware",
+            "exposure_targeted",
         ]
         | None
     ) = None
@@ -273,17 +510,49 @@ class ExperimentKnobs(StrictModel):
     steps: int | None = Field(default=None, ge=1, le=100_000)
     batch_size: int | None = Field(default=None, ge=1, le=1024)
     lr: float | None = Field(default=None, gt=0, le=1)
+    ltr_prefix_loss_weight: float | None = Field(default=None, ge=0, le=20)
+    ltr_tail_loss_weight: float | None = Field(default=None, ge=0, le=20)
     seed: int | None = Field(default=None, ge=0)
+    # Historical continuous field (regime-epoch reopen was removed). Accepted
+    # read-only for old matrices; not used for thrash identity or bank close.
+    screening_regime_epoch: int | None = Field(default=None, ge=0, le=1_000_000)
     context_backend: Literal["scratch", "hf"] | None = None
     output_tokenizer: Literal["compositional", "lexer"] | None = None
     compiler_alignment_loss_weight: float | None = Field(default=None, ge=0, le=10)
     compiler_alignment_margin: float | None = Field(default=None, ge=0, le=20)
     compiler_alignment_stratified: bool | None = None
     compiler_alignment_semantic_exhaustive: bool | None = None
+    compiler_alignment_kind_filter: (
+        Literal["all", "literal-close", "container-close", "component-edge"] | None
+    ) = None
     component_inventory_loss_weight: float | None = Field(default=None, ge=0, le=20)
+    component_token_loss_weight: float | None = Field(default=None, ge=0, le=20)
+    component_edge_token_loss_weight: float | None = Field(
+        default=None, ge=0, le=20
+    )
+    compiler_decision_token_loss_weight: float | None = Field(
+        default=None, ge=0, le=20
+    )
+    structure_token_loss_weight: float | None = Field(default=None, ge=0, le=20)
+    typed_family_balance_loss_weight: float | None = Field(default=None, ge=0, le=20)
+    structural_aux_head_profile: (
+        Literal[
+            "none",
+            "component-plan",
+            "component-edge",
+            "component-inventory",
+            "binder-topology",
+            "binder-arity",
+            "binder-component-plan",
+            "component-structure",
+        ]
+        | None
+    ) = None
     component_inventory_decode_weight: float | None = Field(default=None, ge=0, le=20)
     component_plan_loss_weight: float | None = Field(default=None, ge=0, le=20)
     component_plan_decode_weight: float | None = Field(default=None, ge=0, le=20)
+    slot_component_loss_weight: float | None = Field(default=None, ge=0, le=20)
+    slot_component_decode_weight: float | None = Field(default=None, ge=0, le=20)
     component_edge_loss_weight: float | None = Field(default=None, ge=0, le=20)
     component_edge_alignment_loss_weight: float | None = Field(
         default=None, ge=0, le=20
@@ -295,6 +564,14 @@ class ExperimentKnobs(StrictModel):
     binder_topology_decode_weight: float | None = Field(default=None, ge=0, le=20)
     binder_arity_loss_weight: float | None = Field(default=None, ge=0, le=20)
     binder_arity_decode_weight: float | None = Field(default=None, ge=0, le=20)
+    binder_slot_ownership_loss_weight: float | None = Field(default=None, ge=0, le=20)
+    binder_slot_ownership_decode_weight: float | None = Field(default=None, ge=0, le=20)
+    symbol_boundary_loss_weight: float | None = Field(default=None, ge=0, le=20)
+    fidelity_loss_weight: float | None = Field(default=None, ge=0, le=20)
+    semantic_contrast_dir: str | None = Field(default=None, min_length=1, max_length=512)
+    semantic_contrast_loss_weight: float | None = Field(default=None, ge=0, le=20)
+    semantic_contrast_margin: float | None = Field(default=None, ge=0, le=20)
+    semantic_contrast_fraction: float | None = Field(default=None, gt=0, le=1)
     compiler_decode_mode: Literal["off", "forced", "restricted", "tree"] | None = None
     compiler_search_mode: Literal["greedy", "lattice", "ptrm", "gram"] | None = None
     compiler_search_trigger: Literal["bottom", "stagnation", "always"] | None = None
@@ -305,6 +582,7 @@ class ExperimentKnobs(StrictModel):
     schema_in_context: bool | None = None
     slot_contract_in_context: bool | None = None
     design_md_context: bool | None = None
+    design_md_dropout: float | None = Field(default=None, ge=0, le=1)
     local_files_only: bool | None = None
     sync_checkpoints: bool | None = None
     topology_actions: bool | None = None
@@ -337,7 +615,19 @@ class ExperimentKnobs(StrictModel):
     grammar_completion_bounds: bool | None = None
     grammar_equivalence_cache: bool | None = None
     grammar_active_symbol_bitsets: bool | None = None
+    # P1 persistent-decode-state lever: disabling it measured 2.3-3.6x faster
+    # MaskGIT decode wall with byte-identical outputs (see
+    # docs/design/maskgit-persistent-grammar-state-20260803.md).
+    grammar_incremental_state: bool | None = None
     compact_active_canvas: bool | None = None
+    grammar_draft_window: int | None = Field(default=None, ge=1, le=64)
+    # Continuous measurement knobs (screening smoke-only + decode budget).
+    decode_timeout_seconds: float | None = Field(default=None, gt=0, le=600)
+    eval_suites: str | None = Field(
+        default=None,
+        description="Comma-separated evaluate_model --suites (e.g. smoke).",
+        pattern=r"^[A-Za-z0-9_,]+$",
+    )
     action_embedding_init: (
         Literal[
             "none",
@@ -402,6 +692,98 @@ class ExperimentKnobs(StrictModel):
         return self
 
 
+FormalProofPolicy = Literal["required", "advisory"]
+# timed_out = wall exceeded (incomplete measurement, never a proof rejection)
+FormalProofStatus = Literal["proved", "refuted", "conditional", "unknown", "timed_out"]
+FormalEvidenceScope = Literal["universal", "bounded_instance", "conditional"]
+
+
+class FormalClaimV1(StrictModel):
+    """A hypothesis claim routed to one versioned formal template."""
+
+    template_id: str = Field(pattern=r"^[a-z0-9][a-z0-9._-]{2,127}$")
+    claim: str = Field(min_length=12)
+    policy: FormalProofPolicy = "advisory"
+
+
+class FormalObligationV1(StrictModel):
+    """Immutable link from a campaign lock to a formal-preflight artifact."""
+
+    obligation_id: str = Field(pattern=r"^formal-[0-9a-f]{16}$")
+    template_id: str = Field(pattern=r"^[a-z0-9][a-z0-9._-]{2,127}$")
+    policy: FormalProofPolicy
+    preflight_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
+class FormalPreflightV1(StrictModel):
+    """Auditable proof or counterexample result produced before execution."""
+
+    schema_version: Literal["FormalPreflightV1"] = "FormalPreflightV1"
+    campaign_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+    experiment_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+    obligation_id: str = Field(pattern=r"^formal-[0-9a-f]{16}$")
+    template_id: str = Field(pattern=r"^[a-z0-9][a-z0-9._-]{2,127}$")
+    template_version: str = Field(pattern=r"^v[1-9][0-9]*$")
+    claim: str = Field(min_length=12)
+    policy: FormalProofPolicy
+    status: FormalProofStatus
+    evidence_scope: FormalEvidenceScope
+    theorem: str = Field(min_length=1)
+    proof_target: str = Field(min_length=1)
+    checker_contract: str | None = None
+    assumptions: tuple[str, ...] = ()
+    open_assumptions: tuple[str, ...] = ()
+    source_digests: dict[str, str] = Field(min_length=1)
+    proof_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    lean_version: str = Field(min_length=1)
+    mathlib_version: str = Field(min_length=1)
+    build_output_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    counterexample: dict[str, Any] | None = None
+    duration_seconds: float = Field(ge=0)
+    created_at: str = Field(default_factory=utc_now)
+
+    @model_validator(mode="after")
+    def validate_evidence(self) -> FormalPreflightV1:
+        invalid = {
+            path: digest
+            for path, digest in self.source_digests.items()
+            if len(digest) != 64
+            or any(char not in "0123456789abcdef" for char in digest)
+        }
+        if invalid:
+            raise ValueError(f"invalid source digests: {sorted(invalid)}")
+        if self.status == "refuted" and self.counterexample is None:
+            raise ValueError("refuted formal preflights require a counterexample")
+        if self.status == "proved" and self.open_assumptions:
+            raise ValueError("proved formal preflights cannot have open assumptions")
+        if self.status == "conditional" and not self.open_assumptions:
+            raise ValueError("conditional formal preflights require open assumptions")
+        return self
+
+
+class FormalTraceStepV1(StrictModel):
+    """JSON representation of one step accepted by ``Trace.validTrace``."""
+
+    before_removed: tuple[StrictInt, ...]
+    after_removed: tuple[StrictInt, ...]
+    certified: tuple[StrictInt, ...]
+    before_history: tuple[str, ...]
+    after_history: tuple[str, ...]
+
+    @model_validator(mode="after")
+    def unique_sets(self) -> FormalTraceStepV1:
+        for label, values in (
+            ("before_removed", self.before_removed),
+            ("after_removed", self.after_removed),
+            ("certified", self.certified),
+        ):
+            if any(value < 0 for value in values):
+                raise ValueError(f"{label} must contain nonnegative integer ordinals")
+            if len(values) != len(set(values)):
+                raise ValueError(f"{label} must contain unique candidates")
+        return self
+
+
 class ExperimentSpec(StrictModel):
     experiment_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
     campaign_id: str
@@ -412,6 +794,7 @@ class ExperimentSpec(StrictModel):
     stop_conditions: tuple[str, ...] = Field(min_length=1)
     citations: tuple[str, ...] = Field(min_length=1)
     knobs: ExperimentKnobs
+    formal_claims: tuple[FormalClaimV1, ...] = ()
     parent_experiment_id: str | None = None
     requires_rl: bool = False
     rl_readiness_report: str | None = None
@@ -423,6 +806,9 @@ class ExperimentSpec(StrictModel):
             raise ValueError("experiment must change at least one allowlisted knob")
         if self.requires_rl and not self.rl_readiness_report:
             raise ValueError("RL experiments require an approved readiness report")
+        template_ids = tuple(claim.template_id for claim in self.formal_claims)
+        if len(template_ids) != len(set(template_ids)):
+            raise ValueError("formal claim template identifiers must be unique")
         return self
 
 
@@ -459,10 +845,89 @@ class CategoricalNoveltyAudit(StrictModel):
         return self
 
 
+DiagnosisLane = Literal[
+    "measurement_control",
+    "training_method",
+    "architecture",
+    "lean_model",
+    "assumptions",
+]
+
+PriorityArea = Literal[
+    "data",
+    "researcher",
+    "model",
+    "infrastructure",
+    "evaluation",
+    "promotion",
+    "autoresearch",
+    "annotations",
+    "distill",
+    "experiments",
+    "model_build",
+    "preference",
+    "quality",
+    "rl",
+    "test_data",
+    "train_data",
+    "measurement_control",
+    "training_method",
+    "architecture",
+    "lean_model",
+    "assumptions",
+]
+
+
+class MetricBandBreachV1(StrictModel):
+    metric_id: str = Field(min_length=1)
+    authority: Literal["theorem", "assumption_backed"]
+    relation: Literal["below", "above", "mixed"]
+
+
+class OptimumFeedbackV1(StrictModel):
+    """Cycle-level disposition from a replayed Lean metric certificate."""
+
+    schema_version: Literal["OptimumFeedbackV1"] = "OptimumFeedbackV1"
+    policy: Literal[
+        "continue",
+        "stop",
+        "block_promotion_and_diagnose",
+        "historical_only",
+    ]
+    breaches: tuple[MetricBandBreachV1, ...] = ()
+    diagnosis_lanes: tuple[DiagnosisLane, ...] = ()
+    metric_evidence_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    metric_certificate_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+    @model_validator(mode="after")
+    def validate_disposition(self) -> OptimumFeedbackV1:
+        has_breach = bool(self.breaches)
+        if has_breach != bool(self.diagnosis_lanes):
+            raise ValueError("band breaches and diagnosis lanes must appear together")
+        if has_breach and set(self.diagnosis_lanes) != {
+            "measurement_control",
+            "training_method",
+            "architecture",
+            "lean_model",
+            "assumptions",
+        }:
+            raise ValueError("band breaches require the complete diagnosis matrix")
+        if self.policy in {"continue", "historical_only"} and has_breach:
+            raise ValueError(f"{self.policy} feedback cannot contain a breach")
+        if self.policy in {"stop", "block_promotion_and_diagnose"} and not has_breach:
+            raise ValueError(f"{self.policy} feedback requires a breach")
+        if self.policy == "stop" and not any(
+            breach.authority == "theorem" for breach in self.breaches
+        ):
+            raise ValueError("stop policy requires a theorem-backed breach")
+        return self
+
+
 class HypothesisCandidate(StrictModel):
     experiment: ExperimentSpec
     evidence_uses: tuple[EvidenceUse, ...] = Field(min_length=1)
     novelty: CategoricalNoveltyAudit
+    diagnosis_lane: DiagnosisLane | None = None
 
     @model_validator(mode="after")
     def validate_evidence_citations(self) -> HypothesisCandidate:
@@ -475,6 +940,198 @@ class HypothesisCandidate(StrictModel):
         return self
 
 
+class NextRunPriorityV1(StrictModel):
+    """Evidence-linked steering; authority is kept distinct from speculation."""
+
+    schema_version: Literal["NextRunPriorityV1"] = "NextRunPriorityV1"
+    rank: int = Field(ge=1)
+    area: PriorityArea
+    hypothesis: str = Field(min_length=12)
+    evidence_ids: tuple[str, ...] = Field(min_length=1)
+    confidence: float = Field(ge=0, le=1)
+    expected_information_gain: str = Field(min_length=8)
+    authority: Literal[
+        "lean_theorem",
+        "lean_assumption",
+        "reproduced_harness_signal",
+        "observed_result",
+        "speculative",
+    ]
+    disposition: Literal[
+        "stop_campaign",
+        "block_promotion",
+        "repair_before_run",
+        "experiment_next",
+        "monitor",
+    ]
+    proposed_experiment_id: str | None = Field(
+        default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    )
+
+    @model_validator(mode="after")
+    def validate_authority(self) -> NextRunPriorityV1:
+        if self.authority == "lean_theorem" and self.disposition != "stop_campaign":
+            raise ValueError(
+                "Lean theorem authority must stop the contradicted campaign"
+            )
+        if (
+            self.disposition == "stop_campaign"
+            and self.proposed_experiment_id is not None
+        ):
+            raise ValueError("stopped campaigns cannot nominate a training experiment")
+        if (
+            self.disposition == "experiment_next"
+            and self.proposed_experiment_id is None
+        ):
+            raise ValueError("experiment_next priority requires an experiment id")
+        return self
+
+
+class AutotrainActionV1(StrictModel):
+    """One evidence-bound action for the agent supervisor between cycles."""
+
+    schema_version: Literal["AutotrainActionV1"] = "AutotrainActionV1"
+    kind: Literal[
+        "stop_campaign",
+        "repair_harness",
+        "repair_formal",
+        "rebuild_data",
+        "document",
+        "deliver_stack",
+        "retry_measurement",
+        "next_experiment",
+        "monitor",
+    ]
+    owner: Literal[
+        "autotrain",
+        "improve-openui-harnesses",
+        "improve-lean-optimums",
+        "synthesis-feedback",
+        "documenting-experiment-results",
+        "sdlc",
+    ]
+    reason: str = Field(min_length=1)
+    evidence_ids: tuple[str, ...] = Field(min_length=1)
+    harness_family: HarnessFamily | None = None
+    frozen_manifest_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+
+    @model_validator(mode="after")
+    def validate_harness_action(self) -> AutotrainActionV1:
+        if self.kind == "repair_harness" and self.harness_family is None:
+            raise ValueError("repair_harness action requires harness_family")
+        if self.kind != "repair_harness" and self.harness_family is not None:
+            raise ValueError("harness_family is only valid for repair_harness")
+        if self.kind not in {"repair_harness", "retry_measurement"} and (
+            self.frozen_manifest_sha256 is not None
+        ):
+            raise ValueError(
+                "frozen_manifest_sha256 is only valid for repair/retry actions"
+            )
+        return self
+
+
+class AutotrainCycleHandoffV1(StrictModel):
+    """Typed boundary returned to the agent supervisor after one bounded cycle."""
+
+    schema_version: Literal["AutotrainCycleHandoffV1"] = "AutotrainCycleHandoffV1"
+    loop_id: str = Field(min_length=1)
+    campaign_id: str = Field(min_length=1)
+    cycle_index: int = Field(ge=1)
+    upstream_commit: str = Field(pattern=r"^[0-9a-f]{40}$")
+    integration_commit: str = Field(pattern=r"^[0-9a-f]{40}$")
+    cycle_role: Literal["screening", "promotion"]
+    cycle_intent: str = Field(min_length=1)
+    evidence_class: Literal["fixture", "scratch", "ship"]
+    climb_state: Literal[
+        "rejected",
+        "candidate_queued",
+        "champion_confirmed",
+        "climb_accepted",
+        "inconclusive",
+        "harness_failure",
+    ]
+    ship_state: Literal["not_evaluated", "blocked", "ship_promoted"]
+    primary_metric: str = Field(min_length=1)
+    reasons: tuple[str, ...] = ()
+    priorities: tuple[NextRunPriorityV1, ...] = ()
+    actions: tuple[AutotrainActionV1, ...] = Field(min_length=1)
+    formal_status: str | None = None
+    checkpoint_paths: tuple[str, ...] = ()
+    checkpoint_documentation_required: bool = False
+    created_at: str = Field(default_factory=utc_now)
+
+    @model_validator(mode="after")
+    def validate_checkpoint_accountability(self) -> AutotrainCycleHandoffV1:
+        if self.checkpoint_documentation_required != bool(self.checkpoint_paths):
+            raise ValueError(
+                "checkpoint documentation is required exactly when checkpoints exist"
+            )
+        return self
+
+
+class AutotrainActionEvidenceV1(StrictModel):
+    """Content identity for one durable action-receipt evidence item."""
+
+    uri: str = Field(min_length=1)
+    kind: Literal["git_commit", "repo_file", "campaign_artifact"]
+    sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
+class AutotrainActionReceiptV1(StrictModel):
+    """Append-only evidence that a supervisor executed one handoff action."""
+
+    schema_version: Literal["AutotrainActionReceiptV1"] = "AutotrainActionReceiptV1"
+    loop_id: str = Field(min_length=1)
+    campaign_id: str = Field(min_length=1)
+    action_index: int = Field(ge=0)
+    action_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    action_kind: str = Field(min_length=1)
+    status: Literal["completed", "blocked"]
+    evidence_uris: tuple[str, ...] = Field(min_length=1)
+    evidence: tuple[AutotrainActionEvidenceV1, ...] = ()
+    recorded_at: str = Field(default_factory=utc_now)
+
+    @model_validator(mode="after")
+    def validate_evidence_identity(self) -> AutotrainActionReceiptV1:
+        if (
+            self.evidence
+            and tuple(item.uri for item in self.evidence) != self.evidence_uris
+        ):
+            raise ValueError("receipt evidence identities must match evidence_uris")
+        return self
+
+
+class AutotrainLoopStateV1(StrictModel):
+    """Small resumable state and heartbeat for one supervised loop."""
+
+    schema_version: Literal["AutotrainLoopStateV1"] = "AutotrainLoopStateV1"
+    loop_id: str = Field(min_length=1)
+    state: Literal["RUNNING", "IDLE", "STALE", "DEAD", "BLOCKED"]
+    phase: Literal[
+        "syncing",
+        "running",
+        "diagnosing",
+        "repairing_harness",
+        "repairing_formal",
+        "documenting",
+        "delivering",
+        "between_cycles",
+        "blocked",
+    ]
+    active_campaign_id: str | None = None
+    last_completed_campaign_id: str | None = None
+    cycle_index: int = Field(default=0, ge=0)
+    next_action: str | None = None
+    blocker_fingerprint: str | None = None
+    blocker_count: int = Field(default=0, ge=0)
+    pid: int | None = Field(default=None, ge=1)
+    active_stage: str | None = None
+    child_pid: int | None = Field(default=None, ge=1)
+    stage_started_at: str | None = None
+    integration_commit: str | None = Field(default=None, pattern=r"^[0-9a-f]{40}$")
+    heartbeat_at: str = Field(default_factory=utc_now)
+
+
 class HypothesisMatrix(StrictModel):
     matrix_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
     campaign_id: str
@@ -484,6 +1141,7 @@ class HypothesisMatrix(StrictModel):
     selection_rationale: str = Field(min_length=12)
     predecessor_matrix_id: str | None = None
     feedback_ids: tuple[str, ...] = ()
+    next_run_priorities: tuple[NextRunPriorityV1, ...] = ()
     created_at: str = Field(default_factory=utc_now)
 
     @model_validator(mode="after")
@@ -512,6 +1170,32 @@ class HypothesisMatrix(StrictModel):
             raise ValueError(
                 "matrix with a predecessor_matrix_id must acknowledge feedback_ids"
             )
+        if self.next_run_priorities:
+            ordered = sorted(self.next_run_priorities, key=lambda item: item.rank)
+            if [item.rank for item in ordered] != list(
+                range(1, len(self.next_run_priorities) + 1)
+            ):
+                raise ValueError("next-run priority ranks must be contiguous from one")
+            unknown = {
+                item.proposed_experiment_id
+                for item in ordered
+                if item.proposed_experiment_id is not None
+            } - set(ids)
+            if unknown:
+                raise ValueError(
+                    f"next-run priorities reference unknown experiments: {sorted(unknown)}"
+                )
+            experiment_priorities = [
+                item for item in ordered if item.disposition == "experiment_next"
+            ]
+            if (
+                experiment_priorities
+                and experiment_priorities[0].proposed_experiment_id
+                != self.recommended_experiment_id
+            ):
+                raise ValueError(
+                    "highest-ranked experiment priority must match the recommendation"
+                )
         return self
 
 
@@ -528,11 +1212,31 @@ class HypothesisFeedback(StrictModel):
     metrics: dict[str, float] = Field(default_factory=dict)
     data_metrics: dict[str, float] = Field(default_factory=dict)
     diagnosis_target: Literal[
-        "data", "researcher", "model", "infrastructure", "none"
+        "data", "researcher", "model", "harness", "infrastructure", "none"
     ]
+    harness_family: HarnessFamily | None = None
     diagnosis_evidence: tuple[str, ...]
     recommended_actions: tuple[str, ...]
+    optimum_feedback: OptimumFeedbackV1 | None = None
     created_at: str = Field(default_factory=utc_now)
+
+    @model_validator(mode="after")
+    def validate_harness_family(self) -> HypothesisFeedback:
+        if self.diagnosis_target == "harness" and self.harness_family is None:
+            raise ValueError("harness feedback requires harness_family")
+        if self.diagnosis_target != "harness" and self.harness_family is not None:
+            raise ValueError("harness_family is only valid for harness feedback")
+        return self
+
+
+class HarnessSignalV1(StrictModel):
+    """Frozen-input evidence that a canonical harness, not a model arm, failed."""
+
+    family: HarnessFamily
+    code: str = Field(min_length=1)
+    evidence_uri: str = Field(min_length=1)
+    reproduced_on_frozen_input: bool
+    primary: bool = False
 
 
 class ExperimentOutcome(StrictModel):
@@ -548,20 +1252,38 @@ class ExperimentOutcome(StrictModel):
     error: str | None = None
     wall_time_budget_seconds: float | None = Field(default=None, gt=0)
     stage_telemetry: tuple[dict[str, Any], ...] = ()
+    harness_signals: tuple[HarnessSignalV1, ...] = ()
     started_at: str | None = None
     finished_at: str | None = None
     campaign_manifest_sha256: str | None = Field(
         default=None, pattern=r"^[0-9a-f]{64}$"
     )
 
+    @model_validator(mode="after")
+    def validate_harness_signals(self) -> ExperimentOutcome:
+        if sum(signal.primary for signal in self.harness_signals) > 1:
+            raise ValueError(
+                "experiment outcome may name at most one primary harness signal"
+            )
+        return self
+
 
 class Diagnosis(StrictModel):
     experiment_id: str
-    target: Literal["data", "researcher", "model", "infrastructure", "none"]
+    target: Literal["data", "researcher", "model", "harness", "infrastructure", "none"]
+    harness_family: HarnessFamily | None = None
     confidence: float = Field(ge=0, le=1)
     evidence: tuple[str, ...]
     recommended_actions: tuple[str, ...]
     created_at: str = Field(default_factory=utc_now)
+
+    @model_validator(mode="after")
+    def validate_harness_family(self) -> Diagnosis:
+        if self.target == "harness" and self.harness_family is None:
+            raise ValueError("harness diagnosis requires harness_family")
+        if self.target != "harness" and self.harness_family is not None:
+            raise ValueError("harness_family is only valid for a harness diagnosis")
+        return self
 
 
 class RLReadinessReport(StrictModel):
@@ -590,6 +1312,9 @@ class ResearcherBenchmarkReport(StrictModel):
     actionable_rate: float = Field(ge=0, le=1)
     pass_threshold: float = Field(ge=0, le=1)
     passed: bool
+    promotion_policy: Literal["human_review_v1", "automated_frozen_meta_gate_v1"] = (
+        "human_review_v1"
+    )
     human_approved: bool = False
     promotable: bool = False
     agentv: dict[str, Any] = Field(default_factory=dict)
@@ -607,6 +1332,9 @@ class HypothesizerBenchmarkReport(StrictModel):
     feedback_lineage_rate: float = Field(ge=0, le=1)
     pass_threshold: float = Field(ge=0, le=1)
     passed: bool
+    promotion_policy: Literal["human_review_v1", "automated_frozen_meta_gate_v1"] = (
+        "human_review_v1"
+    )
     human_approved: bool = False
     promotable: bool = False
     agentv: dict[str, Any] = Field(default_factory=dict)

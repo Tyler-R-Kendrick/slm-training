@@ -1,0 +1,102 @@
+{
+  "schema": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1739",
+  "loop_id": "continuous-openui-20260730",
+  "cycle_index": 1739,
+  "campaign_role": "screening",
+  "cycle_intent": "retry_measurement",
+  "run_class": "fixture_scratch_incomplete",
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "steps": 22,
+  "seed": 101737,
+  "checkpoint_reuse": "exact frozen c1737 checkpoints",
+  "upstream_commit": "62f315565318479b83e6352e1b0d75ab66011b9b",
+  "integration_commit": "8a43ff44c6f8a84c2fd67a24e04d0e28cbbca860",
+  "primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "label": "matched control",
+      "trainable_parameters": 1608962,
+      "compact_active_canvas": false,
+      "suite_n": 3,
+      "completed_document_n": 2,
+      "incomplete_document_n": 1,
+      "decode_timeout_count": 1,
+      "parse_rate_completed": 1.0,
+      "meaningful_program_rate_completed": 0.5,
+      "structural_similarity_completed": 0.11665,
+      "binder_reference_f1_completed": 1.0,
+      "latency_ms_p50_completed": 8860.24,
+      "latency_ms_p50_including_incomplete": 20108.53,
+      "decode_initialization_ms": 145.596,
+      "forwards_count_sum": 118,
+      "completion_unique_states_sum": 310372,
+      "completion_witness_states_expanded_sum": 22908,
+      "completion_parser_forks_sum": 349615,
+      "total_eval_ms": 53014.642,
+      "scoreable_comparison": false
+    },
+    {
+      "label": "compact active canvas",
+      "trainable_parameters": 1608962,
+      "compact_active_canvas": true,
+      "suite_n": 3,
+      "completed_document_n": 2,
+      "incomplete_document_n": 1,
+      "decode_timeout_count": 1,
+      "parse_rate_completed": 1.0,
+      "meaningful_program_rate_completed": 0.5,
+      "structural_similarity_completed": 0.11665,
+      "binder_reference_f1_completed": 1.0,
+      "latency_ms_p50_completed": 9001.83,
+      "latency_ms_p50_including_incomplete": 19685.63,
+      "decode_initialization_ms": 142.754,
+      "forwards_count_sum": 119,
+      "completion_unique_states_sum": 313492,
+      "completion_witness_states_expanded_sum": 23165,
+      "completion_parser_forks_sum": 352977,
+      "total_eval_ms": 52691.153,
+      "scoreable_comparison": false
+    }
+  ],
+  "comparison": {
+    "parameter_matched": true,
+    "measurement_complete": false,
+    "quality_delta": "unavailable",
+    "latency_delta": "unavailable",
+    "disposition": "inconclusive_runtime_repair_then_exact_frozen_retry"
+  },
+  "harness_feedback": {
+    "signal": "The corrected SDLC classifier rejects both partial authoritative scoreboards; exact runtime remains the blocker.",
+    "repair": "Reduce order-preserving canonical compiler cost, retain exact parity and Lean validation, then replay the identical frozen arms.",
+    "reverted_hypotheses": [
+      "verified_final_branch_state_transfer",
+      "verified_intermediate_branch_state_transfer"
+    ],
+    "component_version": "harness.autoresearch.experiment_campaign/v58"
+  },
+  "formal_evidence": {
+    "status": "not_applicable:incomplete_screening",
+    "validation_required": "python -m scripts.verify_formal_contracts"
+  },
+  "next_action": {
+    "kind": "repair_harness_then_retry_measurement",
+    "priority": "order_preserving_parser_state_copy_and_allocation_cost",
+    "frozen_manifest_sha256": "2e345cb87c44e26cc6b64b99a9989200fc989261f21f15041fcefe55941823a6"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "8a43ff44c6f8a84c2fd67a24e04d0e28cbbca860",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v58",
+      "harness.model_build.eval": "v74",
+      "model.twotower": "v285",
+      "dsl.completion_kernel": "v7",
+      "dsl.symbolic_surface": "v5"
+    }
+  },
+  "checkpoint_documentation_required": false,
+  "ship_eligible": false
+}

@@ -457,3 +457,26 @@ section. Still open: the `s36_seed42` cross-session discrepancy and the
 original hang itself (a non-reproduction is not a fix). Next queued
 `AP-007+` campaign arm remains the other actually-open thread for a future
 iteration.
+
+## CPU thread-count determinism check (2026-07-28, scheduled autotrain-loop session)
+
+DSH5-10 closed for real in the interim (`iter-slm418-dsh5-10-disposition-20260727.md`,
+SLM-418: `no_held_out_benefit_at_fixture_scale_retain_dag_only`) — not picked
+up here. The seed=44 eval-hang thread (`lever-seed-rescue-steps72-measured-results.md`
+next-step 1) already has two open unmerged PRs today (#1179, #1180) from a
+different scheduled session, so this iteration picked up that doc's other
+open thread instead (next-step 2: the `s36_seed42` cross-session
+discrepancy), scoped down to what's actually reproducible: a controlled
+thread-count sweep on the committed `wf_smoke_v2` recipe (`--seed 0`,
+`--steps 8`, `OMP_NUM_THREADS`/`MKL_NUM_THREADS` in `{1,2,3,4}`, 2 reps at
+1/2/4, 1 rep at 3). Real evidence, not a repeat: `last_loss` is bit-for-bit
+reproducible *within* a fixed thread count, but takes two distinct values
+across thread-count buckets (`{1,2}` vs `{3,4}`, `~1e-7` relative delta) —
+confirming thread count is a real, measured non-determinism source in this
+harness even with a fixed seed, though at a scale too small to fully explain
+the original discrepancy's much larger categorical outcome swing. Full
+write-up: [lever-cpu-thread-count-nondeterminism-measured-results.md](lever-cpu-thread-count-nondeterminism-measured-results.md).
+Still `fixture_or_scratch`, `is_fix: false` (no harness code changed).
+
+Total independently verified rows across this file: **28** (unchanged — this
+is a separate thread-count lever check, not another `wf_smoke_v2` row).

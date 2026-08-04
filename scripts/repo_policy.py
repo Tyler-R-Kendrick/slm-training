@@ -49,7 +49,14 @@ ALLOWED_ROOTS = {
     "tests",
     "vercel.json",
 }
-DISCOVERY_ROOTS = (Path(".claude/skills"), Path(".cursor/skills"))
+# Symlink mirrors of .agents/skills for clients that do not always scan the
+# canonical root. Codex and GitHub Copilot load .agents/skills/ directly and
+# must not grow a redundant .codex/skills/ tree.
+DISCOVERY_ROOTS = (
+    Path(".claude/skills"),
+    Path(".cursor/skills"),
+    Path(".grok/skills"),
+)
 SHELL_OPERATORS = {"&", "&&", ";", "|", "||"}
 ALLOWED_TRACKED_IGNORED = {
     ".agents/skills/huggingface-community-evals/examples/.env.example",
@@ -149,6 +156,12 @@ def validate_skill_mirrors(root: Path = ROOT) -> list[str]:
     for relative_root in DISCOVERY_ROOTS:
         discovery = root / relative_root
         if not discovery.is_dir():
+            if canonical_names:
+                errors.append(
+                    f"missing skill discovery root: {relative_root}; "
+                    "create it and symlink every canonical skill from "
+                    f"../../.agents/skills/<name>"
+                )
             continue
         # A canonical skill with no discovery entry is invisible to that client.
         # Checking only the other direction let a newly added skill ship unseen.

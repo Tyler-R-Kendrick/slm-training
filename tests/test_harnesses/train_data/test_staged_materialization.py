@@ -196,7 +196,7 @@ def test_no_plan_legacy_fixture_bytes_remain_pinned(
     )
 
     assert _sha((Path("out/v1") / "records.jsonl").read_text()) == (
-        "0831fdee53294f5fb41588f36b2fa3f6605ade4dd976ccbd9212f28f30ef2f6a"
+        "d4fd73f48321a075e3d726f9e67c2e00c5015e8007aac2874eff29fe9478234e"
     )
 
 

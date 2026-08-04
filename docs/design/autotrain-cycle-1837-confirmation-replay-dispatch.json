@@ -1,0 +1,54 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-202607-98199209-c1837",
+  "decision": "retry_after_confirmation_replay_dispatch_repair",
+  "claim_class": "pre_execution_harness_failure",
+  "formal": {
+    "status": "not_applicable:pre_execution",
+    "reason": "No arm executed and the selected frozen manifest was screening-class."
+  },
+  "execution": {
+    "upstream_commit": "9dcfa7e68eab9a1055a6585da759511a3b755bd0",
+    "integration_commit": "91aa29b88fcced3cd24b416c6b4a4ef835b1dad5",
+    "primary_metric": "smoke.structural_similarity",
+    "research_completed": true,
+    "hypothesis_matrix_completed": false,
+    "arms_started": 0,
+    "train_completed": false,
+    "eval_completed": false,
+    "agentevals_emitted": false,
+    "checkpoint_written": false,
+    "failure_type": "RuntimeError",
+    "failure_message": "unsupported automatic frozen replay arm: c20260803-continuous-openui-202607-98199209-c1836-confirm",
+    "failure_fingerprint": "0a31072570dd75425176f1e0f6486f0dd739759e5b9eb4e67396acb591d8047e",
+    "recorded_at": "2026-08-03T05:27:28Z"
+  },
+  "diagnosis": {
+    "model_signal": "none",
+    "root_cause": "Frozen replay dispatch recognized registered lever slugs and promotion but not the typed confirmation identity assigned after a screening win.",
+    "repair": "Admit typed confirmation replay, recover its registered source lever from frozen knobs, and preserve exact frozen manifest lineage.",
+    "fabricated_metrics": false,
+    "gate_weakened": false,
+    "cap_changed": false
+  },
+  "ship": {
+    "eligible": false,
+    "failures": [
+      "no training arm executed",
+      "no evaluation executed",
+      "no AgentV evidence",
+      "fresh-seed confirmation pending",
+      "formal preflight not applicable to screening replay"
+    ]
+  },
+  "next_hypothesis": "Replay the exact frozen c1836 comparison with confirmation dispatch and bounded single-thread scratch execution.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "91aa29b88fcced3cd24b416c6b4a4ef835b1dad5",
+    "code_dirty": true,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v135"
+    },
+    "stamped_at": "2026-08-03T05:31:00+00:00"
+  }
+}

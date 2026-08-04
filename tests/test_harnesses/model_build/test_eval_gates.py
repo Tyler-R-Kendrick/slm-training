@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from dataclasses import fields
 from pathlib import Path
 from types import SimpleNamespace
@@ -20,10 +22,12 @@ from slm_training.harnesses.model_build.data import (
     load_suite_records,
     load_train_records,
 )
+from slm_training.harness_core.eval_cache import EvalCache, EvalCacheConfig, EvalCacheMode
 from slm_training.harnesses.model_build.eval_runner import (
     _effective_evaluation_policy,
     _is_meaningful_program,
     _record_langsmith_evaluation,
+    _suite_result_cacheable,
     component_type_recall,
     evaluate,
     evaluate_grammar_leakage_audit,
@@ -34,10 +38,29 @@ from slm_training.harnesses.model_build.plugin import GenerationRequest, StubMod
 from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
     evaluate_ship_gates,
+    load_ship_gate_policy,
     write_ship_gates,
 )
 from slm_training.harnesses.preference import composite_reward
 from slm_training.models.decode_stats import DecodeStats
+from tests.casefiles import case_values
+
+
+def test_default_ship_gate_policy_is_external_and_strict(tmp_path: Path) -> None:
+    policy = load_ship_gate_policy()
+    assert policy["suites"] == DEFAULT_SHIP_GATES
+
+    policy["suites"].pop("rico_held")
+    path = tmp_path / "openui_ship_gates_v6.json"
+    path.write_text(json.dumps(policy), encoding="utf-8")
+    with pytest.raises(ValueError, match="all canonical ship suites"):
+        load_ship_gate_policy(path)
+
+    policy = load_ship_gate_policy()
+    policy["suites"]["smoke"].pop("reward_score")
+    path.write_text(json.dumps(policy), encoding="utf-8")
+    with pytest.raises(ValueError, match="canonical metrics"):
+        load_ship_gate_policy(path)
 
 
 def test_langsmith_evaluation_summary_excludes_per_example_details(
@@ -50,9 +73,7 @@ def test_langsmith_evaluation_summary_excludes_per_example_details(
             captured["name"] = name
             captured.update(kwargs)
 
-    monkeypatch.setattr(
-        "slm_training.runtime.telemetry.current_trace", lambda: Trace()
-    )
+    monkeypatch.setattr("slm_training.runtime.telemetry.current_trace", lambda: Trace())
     _record_langsmith_evaluation(
         SimpleNamespace(run_id="safe-summary"),
         suites={
@@ -127,18 +148,20 @@ def test_evaluation_policy_reports_loaded_checkpoint_settings() -> None:
 
 @pytest.mark.parametrize(
     "unsafe",
-    [
-        {"grammar_constrained": False},
-        {"allow_unconstrained_fallback": True},
-        {"grammar_sample_decode": True},
-        {"grammar_uniform_at_unforced": True},
-    ],
+    case_values(
+        __file__, "test_new_model_build_config_rejects_unsafe_generation_flags"
+    ),
 )
 def test_new_model_build_config_rejects_unsafe_generation_flags(
     unsafe: dict[str, bool],
 ) -> None:
     with pytest.raises(ValueError, match="unsafe|stochastic"):
         ModelBuildConfig(train_dir=Path("train"), **unsafe)
+
+
+def test_model_build_rejects_unimplemented_eval_sharding() -> None:
+    with pytest.raises(ValueError, match="deterministic shard execution"):
+        ModelBuildConfig(train_dir=Path("train"), eval_shards=2)
 
 
 def test_evaluation_policy_snapshots_every_loaded_model_config_field() -> None:
@@ -262,9 +285,7 @@ def test_grammar_leakage_audit_runs_explicit_decode_variants(
         run_id="audit",
         model_name="stub",
     )
-    payload = evaluate_grammar_leakage_audit(
-        config, model=model, publish_agentv=False
-    )
+    payload = evaluate_grammar_leakage_audit(config, model=model, publish_agentv=False)
 
     assert model.calls == [True, True]
     assert model.config.grammar_constrained is True
@@ -275,8 +296,7 @@ def test_grammar_leakage_audit_runs_explicit_decode_variants(
         "constrained_compiler",
     }
     assert (
-        payload["strata"]["constrained_native"]["semantic_factor"]["content"]["n"]
-        == 1
+        payload["strata"]["constrained_native"]["semantic_factor"]["content"]["n"] == 1
     )
     assert Path(payload["output"]).is_file()
 
@@ -443,18 +463,20 @@ def _full_suite_metrics(**overrides: float) -> dict[str, dict[str, float]]:
     """Every policy suite passing every default bar, before overrides."""
     base = {
         suite: {
-            "n": 32,
+            "n": int(mins.get("min_n", 32)),
             "meaningful_program_rate": 0.9,
             "syntax_parse_rate": 1.0,
             "structural_similarity": 0.9,
             "component_type_recall": 0.9,
+            "ast_beq_rate": 0.9,
+            "canonical_beq_rate": 0.9,
             "placeholder_fidelity": 0.9,
             "reward_score": 0.9,
             # Measured (zero) fallback telemetry: certified_fallback requires
             # evidence, not absence.
             "fallback_count": 0,
         }
-        for suite in DEFAULT_SHIP_GATES
+        for suite, mins in DEFAULT_SHIP_GATES.items()
     }
     for metrics in base.values():
         metrics.update(overrides)
@@ -466,6 +488,12 @@ def test_semantic_density_floor_present_for_every_suite() -> None:
     for suite, mins in DEFAULT_SHIP_GATES.items():
         assert "component_type_recall" in mins, suite
         assert mins["component_type_recall"] <= mins["structural_similarity"]
+        # v6: BEq-analogue floors on every suite; exact equality is harder than
+        # soft structure, so floors must not exceed structural_similarity.
+        assert "ast_beq_rate" in mins, suite
+        assert "canonical_beq_rate" in mins, suite
+        assert mins["ast_beq_rate"] <= mins["structural_similarity"]
+        assert mins["canonical_beq_rate"] <= mins["ast_beq_rate"]
 
 
 def test_ship_gates_fail_on_shorter_but_emptier_output() -> None:
@@ -484,6 +512,60 @@ def test_ship_gates_pass_when_density_met() -> None:
     result = evaluate_ship_gates(_full_suite_metrics())
     assert result["pass"] is True
     assert not result["failures"]
+
+
+def test_ship_gates_fail_on_syntax_alone() -> None:
+    # High syntax/parse-adjacent rates without BEq or density cannot promote.
+    suites = _full_suite_metrics(
+        meaningful_program_rate=0.95,
+        structural_similarity=0.9,
+        component_type_recall=0.0,
+        ast_beq_rate=0.0,
+        canonical_beq_rate=0.0,
+    )
+    result = evaluate_ship_gates(suites)
+    assert result["pass"] is False
+    assert any(
+        ":ast_beq_rate" in f or ":component_type_recall" in f
+        for f in result["failures"]
+    )
+
+
+def test_ship_gates_fail_when_ast_beq_collapses() -> None:
+    suites = _full_suite_metrics(ast_beq_rate=0.0, canonical_beq_rate=0.0)
+    result = evaluate_ship_gates(suites)
+    assert result["pass"] is False
+    assert any(":ast_beq_rate" in f for f in result["failures"])
+    assert any(":canonical_beq_rate" in f for f in result["failures"])
+
+
+def test_certificate_equivalence_integrity_when_present() -> None:
+    suites = _full_suite_metrics()
+    suites["smoke"]["certificates_compared"] = 4
+    suites["smoke"]["certificate_equivalence_rate"] = 0.5
+    suites["smoke"]["certificate_replay_failures"] = 1
+    result = evaluate_ship_gates(suites)
+    assert result["pass"] is False
+    assert any("certificate_equivalence_rate" in f for f in result["failures"])
+    assert any("certificate_replay_failures" in f for f in result["failures"])
+    assert result["measurement_integrity_failures"]
+
+
+def test_certificate_equivalence_not_required_when_absent() -> None:
+    # No certificates compared → integrity gate does not fire.
+    result = evaluate_ship_gates(_full_suite_metrics())
+    assert result["pass"] is True
+    assert not any("certificate" in f for f in result["failures"])
+
+
+def test_rico_ship_gate_requires_full_production_suite() -> None:
+    suites = _full_suite_metrics()
+    suites["rico_held"]["n"] = 1499
+
+    result = evaluate_ship_gates(suites)
+
+    assert result["pass"] is False
+    assert "rico_held:insufficient_n actual=1499 need>=1500" in result["failures"]
 
 
 def test_ship_gates_fail_on_none_metric_values() -> None:
@@ -505,9 +587,7 @@ def test_certified_fallback_fails_when_unmeasured() -> None:
     del suites["smoke"]["fallback_count"]
     result = evaluate_ship_gates(suites)
     assert result["pass"] is False
-    assert any(
-        "smoke:certified_fallback unmeasured" in f for f in result["failures"]
-    )
+    assert any("smoke:certified_fallback unmeasured" in f for f in result["failures"])
 
 
 def test_certified_fallback_fails_on_measured_fallbacks() -> None:
@@ -526,7 +606,9 @@ def test_ship_gates_fail_on_insufficient_suite_n() -> None:
     suites["smoke"]["n"] = 3
     result = evaluate_ship_gates(suites)
     assert result["pass"] is False
-    assert any("smoke:insufficient_n actual=3 need>=20" in f for f in result["failures"])
+    assert any(
+        "smoke:insufficient_n actual=3 need>=20" in f for f in result["failures"]
+    )
     assert result["evidence_volume_failures"]
 
 
@@ -551,9 +633,7 @@ def test_ship_gate_runtime_failures_include_decode_timeouts() -> None:
     suites["smoke"]["decode_timeout_count"] = 1
     result = evaluate_ship_gates(suites)
     assert result["pass"] is False
-    assert result["runtime_failures"] == [
-        "smoke:decode_timeout_count actual=1 need=0"
-    ]
+    assert result["runtime_failures"] == ["smoke:decode_timeout_count actual=1 need=0"]
 
 
 @pytest.mark.parametrize(
@@ -595,9 +675,10 @@ def test_custom_ship_thresholds_have_stable_distinct_provenance() -> None:
     first = evaluate_ship_gates(_full_suite_metrics(), thresholds=thresholds)
     second = evaluate_ship_gates(_full_suite_metrics(), thresholds=thresholds)
     policy = first["meaningful_metric_policy"]
-    assert policy["threshold_version"] == second["meaningful_metric_policy"][
-        "threshold_version"
-    ]
+    assert (
+        policy["threshold_version"]
+        == second["meaningful_metric_policy"]["threshold_version"]
+    )
     assert policy["threshold_version"].startswith("custom:")
     assert policy["meaningful_program_v1"]["thresholds"] == "request_thresholds"
     assert policy["binding_aware_meaningful_v2"]["thresholds"] is None
@@ -626,6 +707,7 @@ def test_write_ship_gates_stamps_payload(tmp_path: Path) -> None:
         "gates.ship",
         "harness.core",
         "evals.meaningful_program",
+        "evals.semantic_fidelity",
     }
     on_disk = json.loads((tmp_path / "gates.json").read_text(encoding="utf-8"))
     assert on_disk["version_stamp"]["stamp_schema"] == "version_stamp/v1"
@@ -648,14 +730,50 @@ def test_write_ship_gates_binds_verdict_to_raw_agentevals_criteria(
         "criteria": {"pass": True, "results": results},
         "runner": {"name": "AgentV", "execution_errors": 0},
     }
-    assert write_ship_gates(
-        tmp_path / "valid", suites, evals_result=evals_result
-    )["pass"] is True
+    assert (
+        write_ship_gates(tmp_path / "valid", suites, evals_result=evals_result)["pass"]
+        is True
+    )
 
     results[0]["actual"] = 99
-    assert write_ship_gates(
-        tmp_path / "tampered", suites, evals_result=evals_result
-    )["pass"] is False
+    assert (
+        write_ship_gates(tmp_path / "tampered", suites, evals_result=evals_result)[
+            "pass"
+        ]
+        is False
+    )
+
+
+def test_write_ship_gates_binds_reachability_to_agentevals(
+    tmp_path: Path,
+) -> None:
+    from slm_training.evals.agentv import model_ship_gate_cases
+
+    suites = _full_suite_metrics()
+    reachability = {"smoke": 0.75}
+    results = [
+        {**criterion, "pass": criterion["id"] != "smoke:reachability_unproven"}
+        for case in model_ship_gate_cases(suites, suite_reachability=reachability)
+        for criterion in case["assertions"]
+    ]
+    evals_result = {
+        "format": "AgentEvals JSONL",
+        "authority": "AgentEvals assertions",
+        "criteria": {"pass": False, "results": results},
+        "runner": {"name": "AgentV", "execution_errors": 0},
+    }
+
+    payload = write_ship_gates(
+        tmp_path,
+        suites,
+        suite_reachability=reachability,
+        evals_result=evals_result,
+    )
+
+    assert payload["gates"]["smoke:reachability_unproven"] is False
+    assert payload["measurement_integrity_failures"] == [
+        "reachability_unproven:smoke actual=0.75 need=1.0"
+    ]
 
 
 def test_evaluate_suites_scoreboard(
@@ -744,7 +862,9 @@ def test_evaluate_suites_scoreboard(
     assert metrics["meaningful_metric_primary"] == "meaningful_program_v1"
     assert metrics["binding_aware_meaningful_v2_rate_strict"] == 0.0
     assert metrics["binding_aware_meaningful_v2_coverage"] == 0.0
-    assert metrics["details"][0]["semantic_meaning_report_v2"]["coverage_known"] is False
+    assert (
+        metrics["details"][0]["semantic_meaning_report_v2"]["coverage_known"] is False
+    )
 
     monkeypatch.setattr(
         "slm_training.evals.agentv.publish_model_evaluation",
@@ -775,6 +895,210 @@ def test_evaluate_suites_scoreboard(
     assert loaded["checkpoint_source"] == "checkpoint"
     assert loaded["suites"]["smoke"]["checkpoint_sha256"] == loaded["checkpoint_sha256"]
     assert (tmp_path / "runs" / "gates" / "scoreboard.json").exists()
+
+    # A checkpoint-backed multi-suite evaluation must construct the model once,
+    # then reuse that immutable instance for every suite.
+    (test_dir / "suites" / "held_out").mkdir(parents=True)
+    write_jsonl(
+        test_dir / "suites" / "held_out" / "records.jsonl",
+        [
+            ExampleRecord(
+                id="h1",
+                prompt="Hero",
+                openui=hero,
+                placeholders=[":slot_0", ":slot_1"],
+                split="held_out",
+                meta={"suite": "held_out"},
+            )
+        ],
+    )
+    import slm_training.harnesses.model_build.eval_runner as eval_runner_module
+
+    original_build_model = eval_runner_module.build_model
+    build_calls: list[Path] = []
+
+    def counted_build(*args, **kwargs):
+        build_calls.append(kwargs["checkpoint"])
+        return original_build_model(*args, **kwargs)
+
+    monkeypatch.setattr(eval_runner_module, "build_model", counted_build)
+    cache = EvalCache(
+        EvalCacheConfig(mode=EvalCacheMode.READ_WRITE, root=tmp_path / "cache")
+    )
+    multi = evaluate_suites(
+        config, ["smoke", "held_out"], checkpoint=checkpoint, cache=cache
+    )
+    assert len(build_calls) == 1
+    assert multi["checkpoint_source"] == "checkpoint"
+    assert set(multi["suites"]) == {"smoke", "held_out"}
+
+    # A complete all-suite cache hit is resolved before model construction.
+    # Output-only run identity may change without invalidating the evidence.
+    config.run_id = "gates-cache-replay"
+    replay = evaluate_suites(
+        config, ["smoke", "held_out"], checkpoint=checkpoint, cache=cache
+    )
+    assert len(build_calls) == 1
+    assert all(row["cache_replay"] for row in replay["suites"].values())
+
+    # Checkpoint sidecars participate in the preflight identity. Adding one
+    # must force the existing single shared model load rather than replaying.
+    checkpoint.with_suffix(".meta.json").write_text("{}\n", encoding="utf-8")
+    config.run_id = "gates-sidecar-change"
+    evaluate_suites(
+        config, ["smoke", "held_out"], checkpoint=checkpoint, cache=cache
+    )
+    assert len(build_calls) == 2
+
+
+def test_suite_cache_rejects_incomplete_measurements() -> None:
+    assert _suite_result_cacheable(
+        {"decode_timeout_count": 0, "incomplete_document_n": 0}
+    )
+    assert not _suite_result_cacheable(
+        {"decode_timeout_count": 1, "incomplete_document_n": 1}
+    )
+
+
+def test_preloaded_model_never_replays_checkpointless_eval_cache(
+    tmp_path: Path,
+) -> None:
+    """A live training model has no stable cache identity; recompute it."""
+    train_dir = tmp_path / "train"
+    test_dir = tmp_path / "test"
+    train_dir.mkdir()
+    (test_dir / "suites" / "smoke").mkdir(parents=True)
+    record = ExampleRecord(
+        id="cache-live-1",
+        prompt="Hero",
+        openui='root = TextContent(":slot_0")',
+        placeholders=[":slot_0"],
+        split="smoke",
+        meta={"suite": "smoke"},
+    )
+    write_jsonl(train_dir / "records.jsonl", [record])
+    write_jsonl(test_dir / "suites" / "smoke" / "records.jsonl", [record])
+    config = ModelBuildConfig(
+        train_dir=train_dir,
+        test_dir=test_dir,
+        suite="smoke",
+        run_root=tmp_path / "runs",
+        run_id="cache-live",
+        model_name="stub",
+    )
+    model = StubModel(seed=0)
+    cache = EvalCache(
+        EvalCacheConfig(mode=EvalCacheMode.READ_WRITE, root=tmp_path / "cache")
+    )
+
+    first = evaluate(config, model=model, cache=cache, publish_agentv=False)
+    assert first["cache_bypass_reason"] == "preloaded_model_without_checkpoint_identity"
+    assert not first.get("cache_replay", False)
+
+    # A second call must execute again even though the cache is writable and
+    # the dataset/policy are otherwise identical.
+    config.run_id = "cache-live-second"
+    second = evaluate(config, model=model, cache=cache, publish_agentv=False)
+    assert second["cache_bypass_reason"] == "preloaded_model_without_checkpoint_identity"
+    assert not second.get("cache_replay", False)
+
+
+def test_preloaded_model_checkpoint_identity_must_match_path(tmp_path: Path) -> None:
+    train_dir = tmp_path / "train"
+    test_dir = tmp_path / "test"
+    train_dir.mkdir()
+    (test_dir / "suites" / "smoke").mkdir(parents=True)
+    record = ExampleRecord(
+        id="cache-identity-1",
+        prompt="Hero",
+        openui='root = TextContent(":slot_0")',
+        placeholders=[":slot_0"],
+        split="smoke",
+        meta={"suite": "smoke"},
+    )
+    write_jsonl(train_dir / "records.jsonl", [record])
+    write_jsonl(test_dir / "suites" / "smoke" / "records.jsonl", [record])
+    config = ModelBuildConfig(
+        train_dir=train_dir,
+        test_dir=test_dir,
+        suite="smoke",
+        run_root=tmp_path / "runs",
+        run_id="cache-identity",
+        model_name="stub",
+    )
+    model = StubModel(seed=0)
+    checkpoint = tmp_path / "model.pt"
+    model.save(checkpoint)
+
+    with pytest.raises(ValueError, match="requires both"):
+        evaluate(
+            config,
+            model=model,
+            model_checkpoint_path=checkpoint,
+            publish_agentv=False,
+        )
+    with pytest.raises(ValueError, match="does not match"):
+        evaluate(
+            config,
+            model=model,
+            model_checkpoint_path=checkpoint,
+            model_checkpoint_sha256="0" * 64,
+            publish_agentv=False,
+        )
+
+
+def test_component_version_failure_bypasses_eval_cache(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    train_dir = tmp_path / "train"
+    test_dir = tmp_path / "test"
+    train_dir.mkdir()
+    (test_dir / "suites" / "smoke").mkdir(parents=True)
+    record = ExampleRecord(
+        id="cache-version-1",
+        prompt="Hero",
+        openui='root = TextContent(":slot_0")',
+        placeholders=[":slot_0"],
+        split="smoke",
+        meta={"suite": "smoke"},
+    )
+    write_jsonl(train_dir / "records.jsonl", [record])
+    write_jsonl(test_dir / "suites" / "smoke" / "records.jsonl", [record])
+    config = ModelBuildConfig(
+        train_dir=train_dir,
+        test_dir=test_dir,
+        suite="smoke",
+        run_root=tmp_path / "runs",
+        run_id="cache-version",
+        model_name="stub",
+    )
+    model = StubModel(seed=0)
+    checkpoint = tmp_path / "model.pt"
+    model.save(checkpoint)
+    checkpoint_sha256 = hashlib.sha256(checkpoint.read_bytes()).hexdigest()
+    cache = EvalCache(
+        EvalCacheConfig(mode=EvalCacheMode.READ_WRITE, root=tmp_path / "cache")
+    )
+    import slm_training.harnesses.model_build.eval_runner as eval_runner_module
+
+    def missing_component_version(_component_id: str) -> str:
+        raise KeyError("missing version")
+
+    monkeypatch.setattr(
+        eval_runner_module, "component_version", missing_component_version
+    )
+    metrics = evaluate(
+        config,
+        model=model,
+        model_checkpoint_path=checkpoint,
+        model_checkpoint_sha256=checkpoint_sha256,
+        cache=cache,
+        publish_agentv=False,
+    )
+
+    assert metrics["cache_bypass_reason"] == "component_version_unavailable"
+    assert not metrics.get("cache_replay", False)
+    assert not list((tmp_path / "cache").rglob("*.json"))
 
 
 def test_evaluate_supports_single_record_generation_with_stats(tmp_path: Path) -> None:
@@ -845,6 +1169,18 @@ def test_evaluate_persists_stats_when_generation_times_out(tmp_path: Path) -> No
     )
     metrics = evaluate(config, model=TimeoutModel(), publish_agentv=False)
     assert metrics["decode_timeout_count"] == 1
+    assert metrics["decode_timeout_document_count"] == 1
+    assert metrics["decode_timeout_rate"] == 1.0
+    assert metrics["completed_document_n"] == 0
+    assert metrics["incomplete_document_n"] == 1
+    # Timeout is incompleteness, not a quality zero: rates stay unmeasured.
+    assert metrics["parse_rate"] is None
+    assert metrics["meaningful_program_rate"] is None
+    assert metrics["syntax_parse_rate"] is None
+    assert metrics["empty_prediction_count"] == 0
+    assert metrics["details"][0]["decode_outcome"] == "runtime_timeout"
+    assert metrics["details"][0]["parse_ok"] is None
+    assert metrics["details"][0]["incomplete"] is True
     assert metrics["decode_stats"]["tokens_emitted_sum"] == 7.0
 
 

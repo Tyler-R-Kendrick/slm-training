@@ -1,6 +1,29 @@
 # Runtime performance notes
 
+The dashboard's normative target is now distinct from the measurements below.
+Its formula, proof boundary, levers, and the reason the former floor was
+invalid are specified in
+[certified-completion-artifact-and-tps-target.md](certified-completion-artifact-and-tps-target.md).
+Observed results never calibrate that target; profile-tagged observations may
+only be compared after calculation.
+
 Measured on `twotower_v1_ship` (CPU, scratch context, LTR primary).
+
+### Evaluation latency and cache boundary (2026-08-03)
+
+For batched evaluation, `latency_ms_p50/p95` now mean the observed request
+completion wall for the batch (every request completes when its batch returns).
+The separate `decode_amortized_ms_per_record_p50/p95` and
+`decode_records_per_second` fields are throughput signals and must not be used
+as request-latency budgets. Per-record details carry both values and the batch
+size. This distinction is required for honest comparisons when batch size or
+the final short batch changes.
+
+Suite-cache hits replay only deterministic prediction/quality evidence. Timing,
+timeouts, decoder initialization, code provenance, version stamps, and AgentV
+paths are rebuilt (or explicitly marked `cache_not_measured`) for the current
+run. Incomplete or manifest-unidentified evaluations are not written to the
+suite cache and cannot satisfy a performance gate through replay.
 
 ## Hotspots
 
@@ -12,6 +35,99 @@ Measured on `twotower_v1_ship` (CPU, scratch context, LTR primary).
 | DESIGN.md lint (repeat) | ~75ms | ~0.005ms | same |
 | Eval gold design lint | ~75ms×N | ~0 (meta) | same |
 | Cactus / NEON kernel | n/a | separate | separate |
+
+## Packed completion kernel fixture (2026-07-29)
+
+The canonical capped run
+
+```bash
+python -m scripts.run_perf_matrix --completion-kernel \
+  --completion-repetitions 5 \
+  --out-dir outputs/runs/perf_matrix/completion_kernel_20260729 \
+  --docs-out docs/design/completion-kernel-perf-results.json \
+  --docs-agentv-dir docs/design/completion-kernel-perf-agentv-20260729
+```
+
+ran on WSL2 Linux/aarch64 (Qualcomm, 12 logical CPUs), Python 3.12.3 and
+Lark 1.3.1. It is `fixture_or_scratch` evidence, not a model-quality or ship
+claim. Raw samples, dispersion, correctness digests, counters, version stamp,
+and AgentV results are in
+[`completion-kernel-perf-results.json`](completion-kernel-perf-results.json).
+The complete 95-file SDK bundle is tracked in
+[`completion-kernel-perf-agentv-20260729/`](completion-kernel-perf-agentv-20260729/):
+the 13 published cases each retain `trace.json` and `transcript.jsonl`, along
+with the spec, index, grading, timing, answer, and response artifacts. The
+archive normalizes AgentV's ignored per-case `outputs/` directories to
+`artifacts/` and machine-local paths to portable URIs; measurements, timestamps,
+trace IDs, and verdicts are unchanged.
+
+| Matched workload | V1 median | Packed median | V1 / packed |
+| --- | ---: | ---: | ---: |
+| Cold empty | 14.11 ms | 14.60 ms | 0.97× |
+| Cold `root` | 6.27 ms | 6.98 ms | 0.90× |
+| Cold `root = Card([b1` | 51.33 ms | 45.60 ms | 1.13× |
+| Cold `root = Card([b1,` | 738.29 ms | 880.92 ms | 0.84× |
+| Warm hard-domain, session only | 735.96 ms | 8.05 ms | 91.44× |
+| Choice-codec cold bounded distance | 142.07 ms | 6.75 ms | 21.04× |
+| Bounded solver fixture | 18.04 ms | 17.45 ms | 1.03× |
+| Equivalent-row compiler fixture | 2,389.07 ms | 82.01 ms | 29.13× wall |
+
+The compiler fixture deliberately compares fresh V1 rows with V2's production
+equivalent-row hard-domain cache. Its median `compiler_ms` was 2,305.72 ms
+versus 4.069 ms (568.97×); this is a warm sharing result, not a claim that one
+cold decode is thousands of times faster. The untimed cold parity payload was
+2,975.2 ms V1 versus 2,512.9 ms packed. The
+singleton fixture remained identical and performed zero neural forwards.
+
+All 13 canonical gates passed: exact V1 payload/witness parity, the identical
+12-candidate hard-prefix payload, simple-prefix regression, choice oracle
+parity, solver and compiler payload parity, zero-forward singleton behavior,
+warm zero
+full-prefix lexical bytes, warm zero candidate-engine allocations, and the
+declared latency thresholds. AgentV passed 13/13 with no execution errors.
+
+The first reconciliation run (`79a9dadf`) deliberately remains negative
+evidence. Its new batch-two compiler arm was exact, compacted 10 neural calls to
+5 at the same 10-row volume, and measured 1.030x faster, but the suite passed
+only 16/17 criteria because cold `root` measured 7.05 ms V1 versus 8.74 ms
+packed. The new multi-second neural fixture had been placed before the existing
+microbenchmarks and changed their preconditions. A locked successor moves only
+that fixture after the upstream measurements; the failed AgentV bundle is
+retained in
+[`completion-kernel-perf-agentv-20260729-reconciled/`](completion-kernel-perf-agentv-20260729-reconciled/).
+
+After moving only the new fixture behind the unchanged upstream measurements,
+the clean v7 successor passed 17/17. Warm hard-prefix reuse measured 89.81×
+and is labeled **`request_local_memo_reuse` only (E9)** — not AOT cold; see
+[adr-constrained-diffusion-topology-split.md](adr-constrained-diffusion-topology-split.md)
+and the `classification` field on `warm_card_open_comma` in the results JSON.
+Choice cold bounded-distance was 22.01×, solver 1.032×, and equivalent-row
+compiler wall/compiler time 31.06×/566.22×; singleton decode still made zero
+neural forwards. Cold empty and `root` passed at 0.902× and 0.957×.
+
+The batch-two path preserved exact output and row volume while reducing neural
+calls from 10 to 5. On this CPU fixture, compact execution was 2,743.42 ms
+versus 2,636.95 ms sequential (0.961x), so it is a call-compaction result, not
+a latency win. It cleared the preregistered <=15% regression guard. Full
+17-case traces are retained in
+[`completion-kernel-perf-agentv-20260729-reconciled-v2/`](completion-kernel-perf-agentv-20260729-reconciled-v2/).
+
+The Amdahl boundary is explicit: cold hard-prefix construction remains about
+19% slower because parser-state interning and control forks have not amortized.
+The ≥10× gate is explicitly the primed persistent-row session with its
+row-domain cache cleared before every V2 sample, not matched cold construction
+or a completed cache lookup. The large gains occur only when the exact same
+hard state is reused within a row or across equivalent rows. Future work should
+reduce cold state/fork overhead; no whole-model factor is inferred from the
+warm fixture.
+
+Development diagnostics are retained rather than promoted: the interrupted
+choice probe lacked raw samples, alternation, and a discarded warm-up; the
+discarded kernel probe compared a complete 12-path reference with an incomplete
+zero-candidate prototype. Two early canonical invocations exposed request-field
+and EOS-state integration bugs and emitted no evidence. Later complete runs
+failed 3/11 and then 1/11 latency criteria before the final matched fixture
+passed. The canonical JSON labels each of these negative/incomplete stages.
 
 ## Round 2 changes
 
@@ -66,6 +182,26 @@ admits per candidate). Round 5:
 python -m scripts.profile_generate --rounds 2
 python -m scripts.run_perf_matrix --only P0,Q9,R9,PG --limit 4
 ```
+
+## Round 7 — MaskGIT persistent state (falsified, reverted; 2026-08-03)
+
+Preregistered attempt to pass a persistent `GrammarDecodeState` + hoisted
+`admit_fill` engine through `_generate_maskgit_one`'s constrained picks
+(mirroring the LTR paths). **Falsified and reverted**: only 13% of MaskGIT
+picks are state-eligible (mask holes left of the position force the stateless
+path), `dfa_sync_ms` is ~0.05% of generate wall, and the dominant cost is
+`build_completion_forest` in the repair phase (74–94% via
+`_ltr_repair_from_bos` → `exact_forced_token_id` → `terminal_witness`).
+Discovery: `--no-incremental` (`grammar_incremental_state=False`) is
+**3–3.6× faster** on the MaskGIT path with byte-identical outputs — P1's
+LTR-derived cost profile does not transfer here. Measured on the 2026-07-30
+tree (2581bf49-era working copy); re-validated at HEAD eba6db30 (**2.29×**,
+7.49 → 3.27 s/gen). Follow-up telemetry landed: `finalize_ms` now times the
+repair/certify phase (87% of MaskGIT generate wall) and `aggregate_stats`
+reports `attributed_fraction` (0.25 → 1.0 on this profile) so dark decode
+cost fails loudly in `profile_generate` instead of needing manual cProfile.
+`grammar_incremental_state` is now a typed autoresearch knob. Full numbers:
+[`maskgit-persistent-grammar-state-20260803.md`](maskgit-persistent-grammar-state-20260803.md).
 
 ## Playground load reproduction (2026-07-15)
 

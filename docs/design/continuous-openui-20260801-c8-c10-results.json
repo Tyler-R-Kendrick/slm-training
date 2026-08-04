@@ -1,0 +1,72 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-scheduled",
+  "source_commit": "93d70fb52e4e76e2448ce2ecbc216c5eab6d0ad7",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "cycles": {
+    "continuous-loop-20260801-c8": {
+      "cycle_index": 8,
+      "primary_metric": "held_out.structural_similarity",
+      "positive": false,
+      "stack_layer": false,
+      "action": "no_stack_layer_non_positive",
+      "control": {"id": "c20260801-c8-control", "latency_ms_p50": 2583.83, "parse_rate": 1.0, "meaningful_program_rate": 0.3333333333333333},
+      "candidate": {"id": "c20260801-c8-both", "latency_ms_p50": 2595.34, "parse_rate": 1.0, "meaningful_program_rate": 0.3333333333333333},
+      "reasons": [
+        "fixture_insufficient_n:c20260801-c8-control",
+        "fixture_insufficient_n:c20260801-c8-both",
+        "primary_metric_unavailable",
+        "fixture_insufficient_n_alone"
+      ]
+    },
+    "continuous-loop-20260801-c9": {
+      "cycle_index": 9,
+      "primary_metric": "smoke.latency_ms_p50",
+      "positive": false,
+      "stack_layer": false,
+      "action": "no_stack_layer_non_positive",
+      "control": {"id": "c20260801-c9-control", "latency_ms_p50": 9463.63, "parse_rate": 1.0, "meaningful_program_rate": 1.0},
+      "candidate": {"id": "c20260801-c9-steps", "latency_ms_p50": 12729.14, "parse_rate": 1.0, "meaningful_program_rate": 0.3333333333333333},
+      "primary_delta_ms": -3265.51,
+      "reasons": [
+        "fixture_insufficient_n:c20260801-c9-steps",
+        "fixture_insufficient_n:c20260801-c9-control",
+        "primary_metric_null_or_worse:smoke.latency_ms_p50:control=9463.63 candidate=12729.14 parse=1.0->1.0 mpr=1.0->0.3333333333333333",
+        "fixture_insufficient_n_alone"
+      ],
+      "note": "Control drew mpr=1.0 on this fixture seed (best mpr observed in the loop so far); candidate (steps knob) was both slower and lower-mpr, a clean loss."
+    },
+    "continuous-loop-20260801-c10": {
+      "cycle_index": 10,
+      "primary_metric": "smoke.latency_ms_p50",
+      "positive": false,
+      "stack_layer": false,
+      "action": "no_stack_layer_non_positive",
+      "control": {"id": "c20260801-c10-control", "latency_ms_p50": 9756.03, "parse_rate": 1.0, "meaningful_program_rate": 0.0},
+      "candidate": {"id": "c20260801-c10-batch1", "latency_ms_p50": 2730.17, "parse_rate": 1.0, "meaningful_program_rate": 0.0},
+      "primary_delta_ms": 7025.86,
+      "reasons": [
+        "fixture_insufficient_n:c20260801-c10-control",
+        "fixture_insufficient_n:c20260801-c10-batch1",
+        "latency_win_rejected_low_mpr:mpr=0.0<0.333333",
+        "primary_metric_win:smoke.latency_ms_p50:9756.03->2730.17:improvement=7025.860000000001"
+      ],
+      "note": "Large raw p50 win (7.0s) again rejected by the quality-aware tradeoff gate: mpr=0.0 on both arms, same shape as c6."
+    }
+  },
+  "conclusion": "c8 (bounds+canvas) primary metric unavailable (held-out family), tied on latency and mpr with control. c9 (steps) lost on both latency and mpr against an unusually strong control draw (mpr=1.0). c10 (batch_size) repeats c6's pattern: a large raw latency win is correctly rejected because mpr is 0.0 on both arms. No positive result, no stack layer across c8-c10.",
+  "next_priorities": [
+    "c9's control mpr=1.0 draw is the strongest single data point in this loop so far; worth a repeat run at the same seed/knobs to see if it reproduces or was a fixture-sampling outlier.",
+    "Every latency-only win seen in this loop (c6, c10) has been correctly rejected for mpr=0.0; the loop needs an mpr-positive lever, not another latency-only screen, to produce a genuine positive cycle.",
+    "Continue the loop with mpr-focused levers (e.g. training data mix / longer step budget) rather than more decode-latency knobs."
+  ],
+  "recorded_at": "2026-08-01T01:57:50Z"
+}

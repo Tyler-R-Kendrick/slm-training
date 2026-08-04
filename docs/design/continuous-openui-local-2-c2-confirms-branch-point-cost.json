@@ -1,0 +1,73 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local-2",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local--c94ddb78-c2",
+  "cycle_index": 2,
+  "source_commit": "8e006b63",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "decode_timeout_seconds": 8.0,
+    "effective_decode_timeout_seconds": 24.0
+  },
+  "arms": {
+    "c2-control": {
+      "trainable_params": 1755764,
+      "status": "experiment_failed",
+      "smoke": {
+        "n": 3,
+        "document_n": 3,
+        "completed_document_n": 0,
+        "incomplete_document_n": 3,
+        "decode_timeout_count": 3,
+        "compiler_ms_mean": 23099.2
+      }
+    },
+    "c2-component-plan": {
+      "trainable_params": 1755764,
+      "status": "experiment_failed",
+      "smoke": {
+        "n": 3,
+        "document_n": 3,
+        "completed_document_n": 0,
+        "incomplete_document_n": 3,
+        "decode_timeout_count": 3,
+        "compiler_ms_mean": 23055.9
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "document as confirmatory evidence for decode-compiler-tree-branch-point-cost-finding.md; do not re-open as a fresh mystery",
+    "reasons": [
+      "measurement_incomplete:c20260804-continuous-openui-local--c94ddb78-c2-control:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "measurement_incomplete:c20260804-continuous-openui-local--c94ddb78-c2-component-plan:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "harness_failure:c20260804-continuous-openui-local--c94ddb78-c2-control:experiment_failed",
+      "harness_failure:c20260804-continuous-openui-local--c94ddb78-c2-component-plan:experiment_failed",
+      "fixture_insufficient_n:c20260804-continuous-openui-local--c94ddb78-c2-control",
+      "fixture_insufficient_n:c20260804-continuous-openui-local--c94ddb78-c2-component-plan",
+      "primary_metric_unavailable"
+    ]
+  },
+  "related_finding": {
+    "path": "docs/design/decode-compiler-tree-branch-point-cost-finding.md",
+    "note": "This cycle independently reproduces the ~23s/record symmetric compiler-tree decode timeout on a fresh checkpoint (integration commit 8e006b63), unrelated to the old gd6j83-c2/c3/c4 frozen manifest lineage. Confirms the branch-point-cost finding's central claim on new evidence rather than being a new mystery, and supplies the real-checkpoint measurement that finding's policy recommendation #2 (mode-aware timeout reservation) was waiting on."
+  },
+  "conclusion": "Continuous-openui-local-2 loop, cycle 2: the component-plan vs control pair, on a freshly-trained checkpoint under the current authority, independently reproduces the exact same ~23s/record symmetric compiler-tree decode timeout already characterized in decode-compiler-tree-branch-point-cost-finding.md as legitimate, bounded-per-branch-point cost. This is confirmatory evidence, not a new defect: the cost is a property of this recipe/hypothesis combination's branch-point count under compiler_decode_mode=tree, reproducible across independent checkpoints and sessions. No stack layer opens; routed as evidence for a future mode-aware timeout-reservation fix rather than a fresh repair_harness investigation.",
+  "next_priorities": [
+    "A dedicated improve-openui-harnesses session should implement the mode-aware fair-share timeout reservation in _effective_record_decode_timeout, sized from this and the gd6j83-c2/c3 measured compiler_ms_mean values",
+    "Treat decode_timeout_count=3 on the component-plan/tree-mode combination as a known, reproducible, non-actionable-per-cycle outcome until that fix lands",
+    "Rotate to a different screening hypothesis next"
+  ],
+  "recorded_at": "2026-08-04T20:22:45Z"
+}

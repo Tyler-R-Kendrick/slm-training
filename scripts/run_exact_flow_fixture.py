@@ -111,7 +111,9 @@ def _build_payload(
         rate_fn_names=tuple(argv_flags.get("rate_fn_names") or ARM_NAMES),
         times=tuple(argv_flags.get("times") or (0.5, 1.0, 2.0)),
         seed=argv_flags.get("seed", 0),
-        write_design_docs=True,
+        write_design_docs=argv_flags.get("write_design_docs", True),
+        design_json=argv_flags.get("design_json"),
+        design_md=argv_flags.get("design_md"),
     )
     payload = report.to_dict()
     command = "python -m scripts.run_exact_flow_fixture --mode fixture"
@@ -269,6 +271,9 @@ def main(argv: list[str] | None = None) -> int:
         "rate_fn_names": tuple(args.rate_fn_names),
         "times": tuple(args.times),
         "seed": args.seed,
+        "write_design_docs": args.write_design_docs,
+        "design_json": args.design_json,
+        "design_md": args.design_md,
     }
     payload, command = _build_payload(args.mode, output_dir, flags)
     payload["timestamp"] = _now()

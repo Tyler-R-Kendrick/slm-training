@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -51,6 +52,51 @@ def test_contract_id_is_deterministic_16_hex() -> None:
     int(first, 16)  # raises if not hex
 
 
+def test_parse_has_root_projects_official_parser_result() -> None:
+    source = 'root = TextContent(":hero.title")'
+
+    assert lang_core.parse_has_root(source) is bool(lang_core.parse(source).root)
+
+
+def test_parse_has_root_caches_false_results(monkeypatch: pytest.MonkeyPatch) -> None:
+    source = "parse-has-root-cache-false-fixture"
+    cache_key = "parse_has_root:" + hashlib.sha256(source.encode("utf-8")).hexdigest()
+    lang_core._RESULT_CACHE.pop(cache_key, None)
+    calls: list[dict[str, str]] = []
+
+    def fake_invoke(payload: dict[str, str]) -> dict[str, bool]:
+        calls.append(payload)
+        return {"ok": True, "has_root": False}
+
+    monkeypatch.setattr(lang_core, "_invoke", fake_invoke)
+
+    assert lang_core.parse_has_root(source) is False
+    assert lang_core.parse_has_root(source) is False
+    assert calls == [{"op": "parse_has_root", "source": source}]
+
+
+def test_invoke_once_clears_host_node_options(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    cli = tmp_path / "cli.mjs"
+    cli.write_text("// fixture")
+    (cli.parent / "node_modules" / "@openuidev" / "lang-core").mkdir(parents=True)
+    monkeypatch.setattr(lang_core, "_node_bin", lambda: "node")
+    monkeypatch.setattr(lang_core, "_bridge_cli", lambda: cli)
+    monkeypatch.setenv("NODE_OPTIONS", "--import tsx")
+    captured: dict[str, object] = {}
+
+    def fake_run(command, **kwargs):
+        captured["env"] = kwargs.get("env")
+        return SimpleNamespace(returncode=0, stdout=json.dumps({"ok": True}), stderr="")
+
+    monkeypatch.setattr(lang_core.subprocess, "run", fake_run)
+
+    lang_core._invoke_once({"op": "validate", "source": "root = TextContent(':x')"})
+
+    assert captured["env"]["NODE_OPTIONS"] == ""
+
+
 def test_contract_id_changes_when_surface_changes() -> None:
     base = current_contract()
     bumped = LanguageContract(
@@ -69,7 +115,7 @@ def test_to_dict_round_trips_fields() -> None:
     assert data["contract_id"] == contract.contract_id
     assert data["lang_spec"] == contract.lang_spec
     assert set(data["openui_versions"]) == {name for name, _ in contract.openui_versions}
-    assert data["output_contract_version"] == OUTPUT_CONTRACT_VERSION == 4
+    assert data["output_contract_version"] == OUTPUT_CONTRACT_VERSION == 2
 
 
 def test_symbol_only_output_contract_rejects_free_form_text() -> None:
@@ -98,9 +144,10 @@ def test_symbolic_surface_policy_preserves_closed_terms_and_declared_markers() -
     assert len(report.pack_version) == 64
     legacy_request = GenerationRequest(
         prompt="render a title",
-        slot_contract=(":hero.title",),
+        slot_contract=(":slot_0",),
     )
-    assert SymbolicSurfacePolicyV1().evaluate_request(source, legacy_request).admitted
+    legacy_source = source.replace(":hero.title", ":slot_0")
+    assert SymbolicSurfacePolicyV1().evaluate_request(legacy_source, legacy_request).admitted
 
 
 def test_symbolic_surface_policy_reports_typed_open_and_undeclared_surfaces() -> None:
@@ -290,6 +337,20 @@ def test_stream_filter_propagates_a_decode_deadline(monkeypatch) -> None:
             [0],
             [0],
         )
+
+
+def test_stream_filter_propagates_dfa_deadline(monkeypatch) -> None:
+    class Engine:
+        def set_prefix(self, _text: str) -> bool:
+            raise TimeoutError("dfa deadline")
+
+    monkeypatch.setattr(grammar, "stream_check", lambda *_args, **_kwargs: type(
+        "Status", (), {"hard_error": False}
+    )())
+    monkeypatch.setattr(grammar, "_dfa_engine", lambda: Engine())
+    tokenizer = type("Tokenizer", (), {"decode": lambda *_args: "root"})()
+    with pytest.raises(TimeoutError, match="dfa deadline"):
+        grammar.filter_ids_by_stream(tokenizer, [0], [0])
 
 
 def test_bridge_uses_matching_git_common_checkout_dependencies(

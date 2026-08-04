@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "formal_object/v1",
+  "title": "FormalObjectV1",
+  "type": "object",
+  "required": [
+    "schema",
+    "kind",
+    "object_id",
+    "statement",
+    "payload",
+    "content_digest",
+    "required_checkers",
+    "tier"
+  ],
+  "properties": {
+    "schema": { "const": "formal_object/v1" },
+    "kind": {
+      "type": "string",
+      "enum": ["support_certificate", "lean_claim", "closure_law"]
+    },
+    "object_id": { "type": "string", "minLength": 1 },
+    "statement": { "type": "object" },
+    "payload": { "type": "object" },
+    "content_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "required_checkers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "python_structural",
+          "python_reference",
+          "python_replay",
+          "lean_kernel"
+        ]
+      },
+      "minItems": 1
+    },
+    "tier": {
+      "type": "string",
+      "enum": ["production_core", "ecosystem_library"]
+    }
+  },
+  "additionalProperties": true
+}

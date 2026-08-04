@@ -51,6 +51,7 @@ def main(argv: list[str] | None = None) -> int:
         MixtureManifest,
         corpus_diagnostics,
         default_base_weights,
+        feedback_adjusted_mixture,
         fit_weight_regression,
         global_probe_candidates,
         load_mixture_manifest,
@@ -142,6 +143,28 @@ def main(argv: list[str] | None = None) -> int:
         )
         for prop in proposals:
             write_mixture_manifest(out / f"{prop.mixture_id}.json", prop)
+        best = min(
+            (row for row in scored if row.get("weighted_nll") is not None),
+            key=lambda row: float(row["weighted_nll"]),
+            default=None,
+        )
+        feedback = None
+        adaptive = None
+        if best is not None:
+            curves: dict[str, list[float]] = {}
+            for point in best.get("nll_learning_curve") or []:
+                for family, metrics in (point.get("by_family") or {}).items():
+                    value = (metrics or {}).get("mean_nll")
+                    if value is not None:
+                        curves.setdefault(str(family), []).append(float(value))
+            best_manifest = MixtureManifest(
+                mixture_id=str(best["mixture_id"]),
+                weights=dict(best["weights"]),
+                task_weights=dict(best.get("task_weights") or {}),
+                notes="best scored probe before between-run feedback",
+            )
+            adaptive, feedback = feedback_adjusted_mixture(best_manifest, curves)
+            write_mixture_manifest(out / "adaptive_next.json", adaptive)
         summary_payload = {
             "base": base_manifest.mixture_id,
             "task_weights": base_manifest.task_weights,
@@ -150,6 +173,8 @@ def main(argv: list[str] | None = None) -> int:
             "fit": fit,
             "fit_stable": len(scored) > len(fit.get("families") or []) + 1,
             "proposals": [p.mixture_id for p in proposals],
+            "adaptive_next": adaptive.mixture_id if adaptive is not None else None,
+            "adaptive_feedback": feedback,
             "scored": True,
         }
     else:

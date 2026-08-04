@@ -1,0 +1,185 @@
+{
+  "schema_version": "agentv.trace.v1",
+  "artifact_id": "execution-trace-39ef99c5d9ddd38da501",
+  "created_at": "2026-07-29T17:33:57.126Z",
+  "eval": {
+    "eval_path": "agentv-dir:///agentv/packed-completion-kernel.eval.jsonl",
+    "suite": "packed-completion-kernel.eval",
+    "test_id": "choice_exact_oracle_parity",
+    "target": "custom-task",
+    "source_target": "custom-task",
+    "attempt": 0,
+    "variant": null,
+    "run_id": "packed-completion-kernel",
+    "experiment": "packed-completion-kernel"
+  },
+  "projection_identity": {
+    "schema_version": "agentv.projection_identity.v1",
+    "id": "agentv-prj-df8f921a30ec403ef41ef200b206d640",
+    "key": "agentv.projection_identity.v1:projection_format=execution_trace|projection_version=agentv.trace.v1|run_id=packed-completion-kernel|suite=packed-completion-kernel.eval|eval_path=agentv-dir%3A%2F%2F%2Fagentv%2Fpacked-completion-kernel.eval.jsonl|test_id=choice_exact_oracle_parity|target=custom-task|source_target=custom-task|attempt=0|variant=~|envelope_id=execution-trace-39ef99c5d9ddd38da501|trace_id=9e2f1a71129d4c9ea2a14475266c627e|root_span_id=ce92eee3ef6fee01",
+    "dimensions": {
+      "run_id": "packed-completion-kernel",
+      "suite": "packed-completion-kernel.eval",
+      "eval_path": "agentv-dir:///agentv/packed-completion-kernel.eval.jsonl",
+      "test_id": "choice_exact_oracle_parity",
+      "target": "custom-task",
+      "source_target": "custom-task",
+      "attempt": 0,
+      "variant": null,
+      "envelope_id": "execution-trace-39ef99c5d9ddd38da501",
+      "trace_id": "9e2f1a71129d4c9ea2a14475266c627e",
+      "root_span_id": "ce92eee3ef6fee01",
+      "projection_format": "execution_trace",
+      "projection_version": "agentv.trace.v1"
+    }
+  },
+  "export_metadata": {
+    "duplicate_policy": "update"
+  },
+  "trace": {
+    "format": "otlp_openinference_spans",
+    "trace_id": "9e2f1a71129d4c9ea2a14475266c627e",
+    "root_span_id": "ce92eee3ef6fee01",
+    "resource": {
+      "attributes": {
+        "service.name": "agentv"
+      }
+    },
+    "scope": {
+      "name": "agentv"
+    },
+    "spans": [
+      {
+        "trace_id": "9e2f1a71129d4c9ea2a14475266c627e",
+        "span_id": "ce92eee3ef6fee01",
+        "parent_span_id": null,
+        "name": "invoke_agent custom-task",
+        "kind": "INTERNAL",
+        "start_time_unix_nano": "1785346436816000000",
+        "end_time_unix_nano": "1785346436816000000",
+        "status": {
+          "code": "OK"
+        },
+        "attributes": {
+          "gen_ai.operation.name": "invoke_agent",
+          "gen_ai.provider.name": "agentv",
+          "gen_ai.agent.name": "custom-task",
+          "openinference.span.kind": "AGENT",
+          "agentv.test_id": "choice_exact_oracle_parity",
+          "agentv.target": "custom-task",
+          "agentv.suite": "packed-completion-kernel.eval",
+          "agentv.eval_path": "agentv-dir:///agentv/packed-completion-kernel.eval.jsonl",
+          "agentv.run_id": "packed-completion-kernel",
+          "agentv.attempt": 0,
+          "agentv.execution_status": "ok",
+          "agentv.trace.duration_ms": 0
+        },
+        "events": [
+          {
+            "name": "agentv.transcript.message",
+            "attributes": {
+              "agentv.transcript.message.index": 0,
+              "agentv.transcript.message": {
+                "role": "user",
+                "content": "{\"claim\": \"behavior_preserving_packed_completion_runtime\", \"result\": {\"value\": true}}"
+              }
+            }
+          },
+          {
+            "name": "agentv.transcript.message",
+            "attributes": {
+              "agentv.transcript.message.index": 1,
+              "agentv.transcript.message": {
+                "role": "assistant",
+                "content": "{\"claim\": \"behavior_preserving_packed_completion_runtime\", \"result\": {\"value\": true}}"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "trace_id": "9e2f1a71129d4c9ea2a14475266c627e",
+        "span_id": "a5c285803eee8934",
+        "parent_span_id": "ce92eee3ef6fee01",
+        "name": "chat custom-task",
+        "kind": "INTERNAL",
+        "start_time_unix_nano": "1785346436816000000",
+        "end_time_unix_nano": "1785346436816000000",
+        "status": {
+          "code": "OK"
+        },
+        "attributes": {
+          "gen_ai.operation.name": "chat",
+          "gen_ai.provider.name": "mock",
+          "gen_ai.request.model": "custom-task",
+          "gen_ai.response.model": "custom-task",
+          "openinference.span.kind": "LLM",
+          "agentv.message.index": 1,
+          "agentv.turn_index": 0,
+          "gen_ai.output.messages": "{\"claim\": \"behavior_preserving_packed_completion_runtime\", \"result\": {\"value\": true}}"
+        },
+        "events": []
+      }
+    ]
+  },
+  "source": {
+    "kind": "agentv_run",
+    "path": "index.jsonl",
+    "provider": "mock",
+    "format": "agentv_result",
+    "version": "1",
+    "metadata": {
+      "provider": "mock",
+      "target": "custom-task",
+      "eval_case_id": "choice_exact_oracle_parity"
+    }
+  },
+  "capture": {
+    "content": "full",
+    "redaction_level": "none",
+    "redacted_fields": [],
+    "policy": {
+      "tool_arguments": "metadata",
+      "tool_results": "metadata",
+      "message_text": "metadata",
+      "screenshots": "none",
+      "thinking": "none"
+    }
+  },
+  "artifacts": {
+    "trace_path": "artifacts/trace.json",
+    "answer_path": "artifacts/answer.md",
+    "response_path": "artifacts/response.md",
+    "transcript_path": "artifacts/transcript.jsonl"
+  },
+  "scores": [
+    {
+      "name": "choice_exact_oracle_parity:domain_criterion",
+      "type": "code-grader",
+      "score": 1,
+      "weight": 1,
+      "verdict": "pass",
+      "source": "code",
+      "evaluated_at": "2026-07-29T17:33:56.839Z",
+      "target_span_id": "ce92eee3ef6fee01",
+      "evidence": {
+        "span_ids": [
+          "ce92eee3ef6fee01"
+        ],
+        "assertions": [
+          {
+            "text": "choice_exact_oracle_parity:domain_criterion",
+            "passed": true,
+            "evidence": "actual=True operator=eq expected=True"
+          }
+        ],
+        "details": {
+          "criterion_id": "choice_exact_oracle_parity:domain_criterion",
+          "actual": true,
+          "operator": "eq",
+          "expected": true
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "schema": "autotrain_continuous_cycle_results/v1",
+  "loop_id": "continuous-openui-scheduled-fe71636",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-schedu-3d42338c-c2",
+  "cycle_index": 2,
+  "source_commit": "fe716367ffdd1c15353e93338a704b21e3c851c8",
+  "integration_commit": "fe716367ffdd1c15353e93338a704b21e3c851c8",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "screening",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true,
+    "decode_timeout_seconds": 8.0
+  },
+  "arms": {
+    "control": {
+      "id": "c20260804-continuous-openui-schedu-3d42338c-c2-control",
+      "trainable_params": 1608962,
+      "exit_code": 2,
+      "train_status": "completed",
+      "eval_status": "harness_failed",
+      "eval_error": "AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER"
+    },
+    "canvas": {
+      "id": "c20260804-continuous-openui-schedu-3d42338c-c2-canvas",
+      "trainable_params": 1608962,
+      "exit_code": 2,
+      "train_status": "completed",
+      "eval_status": "harness_failed",
+      "eval_error": "AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER"
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "measurement_incomplete:c20260804-continuous-openui-schedu-3d42338c-c2-control:missing_scoreboard",
+      "measurement_incomplete:c20260804-continuous-openui-schedu-3d42338c-c2-canvas:missing_scoreboard",
+      "harness_failure:c20260804-continuous-openui-schedu-3d42338c-c2-control:experiment_failed",
+      "harness_failure:c20260804-continuous-openui-schedu-3d42338c-c2-canvas:experiment_failed",
+      "primary_metric_unavailable"
+    ]
+  },
+  "harness_signal": {
+    "family": "model_build",
+    "root_cause": "src/slm_training/evals/agentv.py _agentv_runtime hard-failed --ship-gates evaluation in a checkout that had never run `npm ci` (no node_modules/@agentv/core), so both arms trained cleanly but neither produced a scoreboard.",
+    "repair_commit": "2aedf3bae011718e6439f9a51f4cabf394962528",
+    "repair_summary": "Self-heal: when the pinned SDK is missing but package-lock.json exists, run `npm ci` once (via bridge_utils.sanitized_node_env, clearing a rejected host NODE_OPTIONS) before raising.",
+    "regression_tests": [
+      "tests/test_evals/test_agentv.py::test_agentv_runtime_bootstraps_missing_sdk_via_npm_ci",
+      "tests/test_evals/test_agentv.py::test_agentv_runtime_still_raises_when_bootstrap_fails"
+    ],
+    "version_stamp_component": "evals.agentv v7 -> v8"
+  },
+  "conclusion": "measurement_incomplete_repaired",
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "infrastructure",
+      "hypothesis": "Replay the exact frozen control/canvas arm now that the AgentV bootstrap repair is committed.",
+      "action": "retry_measurement",
+      "experiment_id": "c20260804-continuous-openui-schedu-3d42338c-c2-canvas"
+    }
+  ],
+  "recorded_at": "2026-08-04T20:37:00Z"
+}

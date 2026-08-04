@@ -1,0 +1,89 @@
+{
+  "schema": "test_cases/v1",
+  "module": "tests/test_harness_core/test_evidence_bundle.py",
+  "case_sets": {
+    "test_claim_bar_fail_closed": {
+      "parameters": [
+        "overrides",
+        "fragment"
+      ],
+      "cases": [
+        {
+          "id": "case-001",
+          "values": [
+            {
+              "min_sample_size": 0
+            },
+            "min_sample_size"
+          ]
+        },
+        {
+          "id": "case-002",
+          "values": [
+            {
+              "seeds": []
+            },
+            "seed"
+          ]
+        },
+        {
+          "id": "case-003",
+          "values": [
+            {
+              "seeds": [
+                1,
+                1
+              ]
+            },
+            "unique"
+          ]
+        },
+        {
+          "id": "case-004",
+          "values": [
+            {
+              "stop_rule": ""
+            },
+            "stop rule"
+          ]
+        },
+        {
+          "id": "case-005",
+          "values": [
+            {
+              "entry_gate": ""
+            },
+            "entry gate"
+          ]
+        },
+        {
+          "id": "case-006",
+          "values": [
+            {
+              "falsifier": ""
+            },
+            "falsifier"
+          ]
+        },
+        {
+          "id": "case-007",
+          "values": [
+            {
+              "target_metrics": {}
+            },
+            "target metric"
+          ]
+        },
+        {
+          "id": "case-008",
+          "values": [
+            {
+              "confidence_level": 1.5
+            },
+            "confidence_level"
+          ]
+        }
+      ]
+    }
+  }
+}

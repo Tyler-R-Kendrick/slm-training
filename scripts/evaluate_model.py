@@ -19,6 +19,7 @@ from slm_training.harnesses.model_build.experiment_flags import (
     apply_levers_from_mapping,
     assignments_payload,
     cli_lever_overrides,
+    cli_runtime_override_fields,
 )
 from slm_training.harnesses.model_build.eval_policy import (
     EVALUATION_POLICIES,
@@ -74,6 +75,28 @@ def _check_fail_unders(metrics: dict, args: argparse.Namespace) -> int:
     return 0
 
 
+def _load_suite_reachability(path: Path | None) -> dict[str, float] | None:
+    if path is None:
+        return None
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise SystemExit("--suite-reachability-json must contain an object")
+    result: dict[str, float] = {}
+    for suite, value in payload.items():
+        if (
+            not isinstance(suite, str)
+            or not suite
+            or isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not 0.0 <= float(value) <= 1.0
+        ):
+            raise SystemExit(
+                "--suite-reachability-json values must be finite fractions in [0, 1]"
+            )
+        result[suite] = float(value)
+    return result
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -95,6 +118,15 @@ def main(argv: list[str] | None = None) -> int:
         "--suites",
         default=None,
         help="Comma-separated suites for a scoreboard (overrides --suite).",
+    )
+    parser.add_argument(
+        "--suite-reachability-json",
+        type=Path,
+        default=None,
+        help=(
+            "Optional suite-to-reachable-fraction object from a preregistered "
+            "edit-space audit; supplied values become durable AgentEvals criteria."
+        ),
     )
     parser.add_argument("--run-root", type=Path, default=Path("outputs/runs"))
     parser.add_argument("--run-id", default="latest")
@@ -559,6 +591,16 @@ def main(argv: list[str] | None = None) -> int:
         help="Per-record decode timeout from the centralized run policy.",
     )
     parser.add_argument(
+        "--evaluation-wall-seconds",
+        type=float,
+        default=None,
+        help=(
+            "Optional cumulative evaluation wall. The canonical runner fairly "
+            "partitions it across remaining records and reserves scoreboard "
+            "finalization time."
+        ),
+    )
+    parser.add_argument(
         "--no-design-md-context",
         action="store_true",
         help="Override: do not concatenate DESIGN.md into context.",
@@ -721,6 +763,7 @@ def main(argv: list[str] | None = None) -> int:
         or ("ship_eval" if args.ship_gates else "scratch_matrix"),
         run_root=args.run_root,
         run_id=args.run_id,
+        runtime_override_fields=cli_runtime_override_fields(argv=argv),
         model_name=args.model,
         device=args.device,
         seed=int(args.seed),
@@ -791,9 +834,7 @@ def main(argv: list[str] | None = None) -> int:
         semantic_plan_typed_array_item_margin_decode_weight=(
             args.semantic_plan_typed_array_item_margin_decode_weight
         ),
-        compiler_schema_component_types=(
-            args.compiler_schema_component_types
-        ),
+        compiler_schema_component_types=(args.compiler_schema_component_types),
         request_aware_slot_reservation=args.request_aware_slot_reservation,
         slot_alias_unique_decode=args.slot_alias_unique_decode,
         visible_reference_decode_weight=args.visible_reference_decode_weight,
@@ -820,6 +861,7 @@ def main(argv: list[str] | None = None) -> int:
         ),
         compiler_search_backtrack_limit=max(0, args.compiler_search_backtrack_limit),
         decode_timeout_seconds=args.decode_timeout_seconds,
+        evaluation_wall_seconds=args.evaluation_wall_seconds,
         grammar_dsl=args.grammar_dsl,
         grammar_trust_model=args.grammar_trust_model,
         grammar_sample_decode=args.grammar_sample_decode,
@@ -850,6 +892,11 @@ def main(argv: list[str] | None = None) -> int:
         config, flag_assignments = apply_levers_from_environ(
             config, overrides=lever_overrides
         )
+    config.runtime_override_fields = frozenset(
+        set(config.runtime_override_fields or ())
+        | set(lever_overrides)
+        | {assignment.flag_key for assignment in flag_assignments}
+    )
 
     if args.check_decode_feasibility and config.test_dir is not None:
         from slm_training.harnesses.model_build.decode_feasibility import (
@@ -882,6 +929,7 @@ def main(argv: list[str] | None = None) -> int:
         from slm_training.runtime.telemetry import run_trace
 
         suites = [s.strip() for s in args.suites.split(",") if s.strip()]
+        suite_reachability = _load_suite_reachability(args.suite_reachability_json)
         with run_trace(args.run_id, "eval", run_dir=config.run_dir):
             scoreboard = evaluate_suites(
                 config,
@@ -889,6 +937,7 @@ def main(argv: list[str] | None = None) -> int:
                 checkpoint=args.checkpoint,
                 write_gates=args.ship_gates,
                 cache=cache,
+                suite_reachability=suite_reachability,
             )
         if flag_assignments:
             scoreboard["research_flags"] = assignments_payload(flag_assignments)
@@ -899,6 +948,7 @@ def main(argv: list[str] | None = None) -> int:
                 gates = write_ship_gates(
                     config.run_dir,
                     scoreboard["suites"],
+                    suite_reachability=suite_reachability,
                     evals_result=scoreboard["evals"],
                 )
             return 0 if gates.get("pass") else 8
@@ -914,9 +964,7 @@ def main(argv: list[str] | None = None) -> int:
 
     with run_trace(args.run_id, "eval", run_dir=config.run_dir):
         if args.grammar_leakage_audit:
-            audit = evaluate_grammar_leakage_audit(
-                config, checkpoint=args.checkpoint
-            )
+            audit = evaluate_grammar_leakage_audit(config, checkpoint=args.checkpoint)
             summary = {
                 "schema_version": audit["schema_version"],
                 "suite": audit["suite"],

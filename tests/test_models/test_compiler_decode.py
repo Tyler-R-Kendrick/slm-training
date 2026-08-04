@@ -6,6 +6,8 @@ import json
 from collections import Counter
 
 import pytest
+
+from tests.casefiles import case_values
 import torch
 
 from slm_training.dsl.grammar.fastpath.compiler_draft import (
@@ -18,7 +20,6 @@ from slm_training.dsl.grammar.fastpath.compiler_draft import (
     active_parent_component_ids,
     binder_reference_arities,
     bound_binder_reference_counts,
-    repeated_bound_binder_reference_positions,
     bound_binder_slot_ids,
     build_completion_forest,
     gold_compiler_decisions,
@@ -60,6 +61,21 @@ def test_canonical_valid_openui_propagates_decode_deadline(monkeypatch) -> None:
     monkeypatch.setattr(parser, "validate", _deadline)
     with pytest.raises(TimeoutError, match="decode deadline"):
         TwoTowerModel._canonical_valid_openui("root = Separator()")
+
+
+def test_compiler_batch_propagates_decode_deadline(monkeypatch) -> None:
+    from slm_training.models import decode_stats
+
+    model = _model()
+    ctx = torch.zeros((1, 2, model.config.d_model))
+    ctx_pad = torch.zeros((1, 2), dtype=torch.bool)
+    monkeypatch.setattr(
+        decode_stats,
+        "check_decode_deadline",
+        lambda: (_ for _ in ()).throw(TimeoutError("compiler deadline")),
+    )
+    with pytest.raises(TimeoutError, match="compiler deadline"):
+        model._compiler_ltr_decode_batch(ctx, ctx_pad, 8, mode="tree")
 
 
 def _model(**config_overrides) -> TwoTowerModel:
@@ -292,6 +308,55 @@ def test_compiler_tree_batches_only_ambiguous_prefills_with_bound(monkeypatch) -
     assert stats.compiler_prefill_tokens == 24
 
 
+def test_compiler_tree_cpu_default_batches_sixteen_states(monkeypatch) -> None:
+    model = _model()
+    a, b = sorted(model.tokenizer.kind_ids("component"))[:2]
+    paths = tuple(
+        CompletionPath(
+            tuple(a if bits & (1 << shift) else b for shift in range(5)),
+            "component",
+        )
+        for bits in range(32)
+    )
+    ctx, ctx_pad = model._encode_context(["card"])
+    original = model._denoiser_hidden
+    batch_sizes: list[int] = []
+
+    def hidden(ids, *args, **kwargs):
+        batch_sizes.append(int(ids.size(0)))
+        return original(ids, *args, **kwargs)
+
+    monkeypatch.setattr(model, "_denoiser_hidden", hidden)
+    with torch.no_grad():
+        selected_default = model._select_compiler_path(
+            [model.tokenizer.bos_id],
+            paths,
+            ctx,
+            ctx_pad,
+            8,
+            tree=True,
+            coverage="complete",
+        )
+
+    assert batch_sizes == [16, 15]
+
+    batch_sizes.clear()
+    model.config.compiler_prefill_max_states = 4
+    with torch.no_grad():
+        selected_four = model._select_compiler_path(
+            [model.tokenizer.bos_id],
+            paths,
+            ctx,
+            ctx_pad,
+            8,
+            tree=True,
+            coverage="complete",
+        )
+
+    assert batch_sizes == [4, 4, 4, 4, 4, 4, 4, 3]
+    assert selected_default == selected_four
+
+
 def test_compiler_empty_forest_records_bounded_dead_end_trace(monkeypatch) -> None:
     from slm_training.dsl.grammar.fastpath import compiler_draft
 
@@ -318,6 +383,104 @@ def test_compiler_empty_forest_records_bounded_dead_end_trace(monkeypatch) -> No
             "terminals": ["NAME"],
         }
     ]
+
+
+def test_compiler_tree_per_step_cost_does_not_grow_with_prefix_depth() -> None:
+    """Regression pin: gd6j83-c2/c3 compiler-tree decode-cost investigation.
+
+    docs/design/continuous-openui-local-gd6j83-c2-dual-arm-decode-timeout.md
+    and its c3 retry found real ~23s/record compiler-tree decode cost on a
+    seed-100002 fixture and asked whether that is a genuine algorithmic bug
+    (missing memoization / recomputation growing with document length) or
+    legitimate bounded-per-branch-point cost. Direct profiling (cProfile plus
+    a prefix-depth scan; see
+    docs/design/decode-compiler-tree-branch-point-cost-finding.md)
+    found the completion-forest/CompletionSession machinery's own cost is
+    driven by *branch-point count* (states with several live candidate
+    paths), each bounded by ``node_budget``/``backtrack_limit``, and does NOT
+    grow with how deep into the document the step occurs -- ruling out a
+    missing-memoization / O(n)-per-step regression as the explanation.
+
+    This pins that finding as an executable invariant: replaying an
+    increasingly deep gold prefix of the same branchy record and taking one
+    more real ``_compiler_ltr_decode_one`` step must cost roughly the same
+    ``compiler_ms`` regardless of how deep the prefix already is. A
+    regression that made per-step cost grow with prefix length (e.g. a
+    session/state-interning cache stops being reused, or a materialize-prefix
+    walk stops being amortized) would blow this bound; today's genuinely
+    bounded, branch-point-driven cost passes it with a wide margin.
+    """
+    record = ExampleRecord(
+        id="branchy-card",
+        prompt="card with four texts",
+        openui=(
+            "root = Card([b1, b2, b3, b4])\n"
+            'b1 = TextContent(":slot_0")\n'
+            'b2 = TextContent(":slot_1")\n'
+            'b3 = TextContent(":slot_2")\n'
+            'b4 = TextContent(":slot_3")\n'
+        ),
+        placeholders=[":slot_0", ":slot_1", ":slot_2", ":slot_3"],
+        split="train",
+        source="fixture",
+    )
+    config = TwoTowerConfig(
+        context_backend="scratch",
+        output_tokenizer="lexer",
+        compiler_decode_mode="tree",
+        d_model=32,
+        n_heads=2,
+        context_layers=1,
+        denoiser_layers=1,
+        max_prompt_len=32,
+        max_target_len=128,
+        grammar_ltr_max_tokens=128,
+        gen_steps=1,
+        seed=0,
+    )
+    model = TwoTowerModel.from_records(
+        [canonicalize_example_template_markers(record)], config=config, device="cpu"
+    )
+    model.eval()
+    ctx, ctx_pad = model._encode_context([record.prompt])
+    bos = int(model.tokenizer.bos_id)
+    gold_ids = [
+        int(t)
+        for t in model.tokenizer.encode(record.openui, placeholders=record.placeholders)
+    ]
+
+    def one_more_step_ms(k: int) -> float:
+        prefix = (bos, *gold_ids[:k])
+        with collect_decode_stats() as stats:
+            model._compiler_ltr_decode_one(
+                ctx,
+                ctx_pad,
+                len(prefix) + 1,
+                mode="tree",
+                slot_contract=list(record.placeholders),
+                _initial_prefix=prefix,
+            )
+        return float(stats.compiler_ms)
+
+    # Warm up: the first call pays for one-off grammar-state construction
+    # (Lark parser build), not decode search itself -- excluded from the
+    # scaling comparison below.
+    one_more_step_ms(0)
+
+    depths = [5, 15, 30]
+    depths = [k for k in depths if k < len(gold_ids) - 1]
+    assert len(depths) >= 2, "fixture record too short for a depth scan"
+    per_step_ms = [one_more_step_ms(k) for k in depths]
+
+    # A missing-memoization / recomputation-vs-prefix-length regression would
+    # make later (deeper) steps cost dramatically more than earlier ones. A
+    # generous floor absorbs measurement noise at near-zero millisecond costs
+    # while still catching genuine growth.
+    assert max(per_step_ms) <= 20.0 * (min(per_step_ms) + 5.0), (
+        f"compiler_ms grew with prefix depth: {list(zip(depths, per_step_ms))} "
+        "-- expected roughly flat per-step cost, not cost proportional to "
+        "how deep the prefix already is"
+    )
 
 
 def test_choice_gold_decisions_classify_component_roles() -> None:
@@ -440,7 +603,7 @@ def test_slot_component_bias_uses_next_unfilled_visible_slot() -> None:
             device=context.device,
         )
         for index, slot in enumerate(slots):
-            target = "Input" if slot == "content:0" else "Button"
+            target = "Input" if slot == ":slot_0" else "Button"
             rows[index, component_index[target]] = 3.0
         return rows
 
@@ -457,7 +620,7 @@ def test_slot_component_bias_uses_next_unfilled_visible_slot() -> None:
         [tokenizer.bos_id],
         candidates,
         kinds,
-        [":form.email", ":form.submit"],
+        [":slot_0", ":slot_1"],
     )
     submit_bias = model._slot_component_bias(
         ctx,
@@ -465,7 +628,7 @@ def test_slot_component_bias_uses_next_unfilled_visible_slot() -> None:
         [tokenizer.bos_id, tokenizer.sym_id(0)],
         candidates,
         kinds,
-        [":form.email", ":form.submit"],
+        [":slot_0", ":slot_1"],
     )
 
     assert email_bias is not None and email_bias[0] > email_bias[1]
@@ -1611,13 +1774,10 @@ def test_schema_open_bias_prefers_true_for_authored_visible_component() -> None:
 
 @pytest.mark.parametrize(
     "weight_name",
-    [
-        "schema_role_slot_decode_weight",
-        "slot_coverage_close_decode_weight",
-        "semantic_plan_typed_array_nonempty_margin_decode_weight",
-        "semantic_plan_typed_array_item_margin_decode_weight",
-        "semantic_plan_repeated_slot_margin_decode_weight",
-    ],
+    case_values(
+        __file__,
+        "test_contract_gated_decode_weight_without_slot_contract_decode_raises",
+    ),
 )
 def test_contract_gated_decode_weight_without_slot_contract_decode_raises(
     weight_name: str,
@@ -1631,7 +1791,7 @@ def test_contract_gated_decode_weight_without_slot_contract_decode_raises(
     weight or checkpoint quality. Fail loud instead of reproducing that footgun.
     """
     expected = (
-        "template markers are opaque"
+        "prohibited enabled levers"
         if weight_name in PROHIBITED_TEMPLATE_SEMANTIC_LEVERS
         else "requires one companion configuration"
     )
@@ -1653,9 +1813,10 @@ def test_contract_gated_decode_weight_without_slot_contract_decode_raises(
 def test_semantic_role_weight_remains_prohibited_with_contract_decode(
     enabling_flag: str,
 ) -> None:
-    with pytest.raises(ValueError, match="template markers are opaque"):
+    with pytest.raises(ValueError, match="prohibited enabled levers"):
         TwoTowerConfig(
             output_tokenizer="choice",
+            slot_contract_in_context=True,
             schema_role_slot_decode_weight=8.0,
             **{enabling_flag: True},
         )
@@ -2857,23 +3018,33 @@ def test_lexer_required_slot_root_completion_rejects_premature_close(
     )
     ctx, ctx_pad = model._encode_context(["Single label."])
 
-    selected = model._select_compiler_path(
-        prefix, paths, ctx, ctx_pad, 32, tree=tree, slot_contract=[":label"], state=state
-    )
-    assert selected == paths[1].token_ids
+    with collect_decode_stats() as stats:
+        selected = model._select_compiler_path(
+            prefix,
+            paths,
+            ctx,
+            ctx_pad,
+            32,
+            tree=tree,
+            slot_contract=[":label"],
+            state=state,
+        )
+        assert selected == paths[1].token_ids
 
-    covered = [*prefix, tokenizer.sym_id(0)]
-    monkeypatch.setattr(
-        model,
-        "_project_candidates",
-        lambda _hidden, candidate_ids: torch.tensor(
-            [1.0 if token_id == close_id else 5.0 for token_id in candidate_ids]
-        ),
-    )
-    selected = model._select_compiler_path(
-        covered, paths, ctx, ctx_pad, 32, tree=tree, slot_contract=[":label"], state=state
-    )
+        covered = [*prefix, tokenizer.sym_id(0)]
+        selected = model._select_compiler_path(
+            covered,
+            paths,
+            ctx,
+            ctx_pad,
+            32,
+            tree=tree,
+            slot_contract=[":label"],
+            state=state,
+        )
     assert selected == paths[0].token_ids
+    assert stats.required_slot_root_completion_applications == 1
+    assert stats.required_slot_root_completion_choice_changes == 1
 
 
 def test_required_slot_array_completion_rejects_nested_close_before_coverage() -> None:
@@ -2883,7 +3054,7 @@ def test_required_slot_array_completion_rejects_nested_close_before_coverage() -
     comma_id = tokenizer.token_to_id[","]
     prefix = [
         tokenizer.bos_id,
-        *tokenizer.encode("root = Form(\"$1\", b1, [b2", add_special=False),
+        *tokenizer.encode('root = Form("$1", b1, [b2', add_special=False),
     ]
     paths = (
         CompletionPath((close_id, tokenizer.token_to_id[")"]), "grammar_rsqb"),
@@ -2913,11 +3084,100 @@ def test_required_slot_array_completion_rejects_nested_close_before_coverage() -
     root_state = make_grammar_state()
     for token_id in root_prefix[1:]:
         root_state.advance_token(tokenizer, token_id)
-    assert (
-        model._required_slot_array_completion_path_bias(
-            root_prefix, paths, [":slot_0", ":slot_1"], root_state
+    assert model._required_slot_array_completion_path_bias(
+        root_prefix, paths, [":slot_0", ":slot_1"], root_state
+    ) == [-1e9, 0.0]
+
+
+def test_verified_solver_decode_skips_unpruned_forced_closure(monkeypatch) -> None:
+    from types import SimpleNamespace
+
+    from slm_training.dsl.grammar.fastpath import compiler_draft
+
+    model = _model(verified_solver_decode=True)
+    tokenizer = model.tokenizer
+    eos = int(tokenizer.eos_id)
+    forest = CompletionForest(
+        (CompletionPath((eos,), "eos"),),
+        "complete",
+    )
+    state = SimpleNamespace(remaining_tokens=None)
+
+    def forbidden_closure(_room):
+        raise AssertionError("forced closure bypassed solver pruning")
+
+    state.completion_forced_closure = forbidden_closure
+    state.advance_token = lambda *_args: None
+    state._collect_completion_stats = lambda: None
+    monkeypatch.setattr(model, "_new_grammar_states", lambda _rows: [state])
+    monkeypatch.setattr(
+        compiler_draft, "build_completion_forest", lambda *_args, **_kwargs: forest
+    )
+    monkeypatch.setattr(model, "_solver_prune_forest", lambda value, _prefix: value)
+    ctx, ctx_pad = model._encode_context(["card"])
+
+    result = model._compiler_ltr_decode_one(
+        ctx,
+        ctx_pad,
+        4,
+        mode="tree",
+        slot_contract=None,
+    )
+
+    assert int(result[1]) == eos
+
+
+def test_forced_closure_walk_charges_compiler_ms_not_unattributed(monkeypatch) -> None:
+    """Decode-cost metering: the forced-closure walk must be attributed.
+
+    ``completion_forced_closure`` re-invokes the same ``outgoing()``-edge
+    grammar-authority walk as ``build_completion_forest``, chained
+    immediately after it inside the same ``timed_ms(stats, "compiler_ms")``
+    block in ``_compiler_ltr_decode_one``. Before that block was widened to
+    cover this call too, its cost could land in ``unattributed_ms`` instead
+    (see docs/design/compiler-tree-forced-closure-decode-metering-gap.md).
+    """
+    import time
+    from types import SimpleNamespace
+
+    from slm_training.dsl.grammar.fastpath import compiler_draft
+
+    model = _model()
+    tokenizer = model.tokenizer
+    eos = int(tokenizer.eos_id)
+    forest = CompletionForest(
+        (CompletionPath((eos,), "eos"),),
+        "complete",
+    )
+    state = SimpleNamespace(remaining_tokens=None)
+    sleep_seconds = 0.05
+
+    def delayed_closure(_room):
+        time.sleep(sleep_seconds)
+        return ((eos,), state, "complete")
+
+    state.completion_forced_closure = delayed_closure
+    state.advance_token = lambda *_args: None
+    state._collect_completion_stats = lambda: None
+    monkeypatch.setattr(model, "_new_grammar_states", lambda _rows: [state])
+    monkeypatch.setattr(
+        compiler_draft, "build_completion_forest", lambda *_args, **_kwargs: forest
+    )
+    ctx, ctx_pad = model._encode_context(["card"])
+
+    with collect_decode_stats() as stats:
+        result = model._compiler_ltr_decode_one(
+            ctx,
+            ctx_pad,
+            4,
+            mode="tree",
+            slot_contract=None,
         )
-        is None
+
+    assert int(result[1]) == eos
+    assert stats.compiler_ms >= sleep_seconds * 1000 * 0.9, (
+        "completion_forced_closure's walk must be timed into compiler_ms, "
+        "not silently dropped into unattributed_ms"
     )
 
 
@@ -2950,6 +3210,30 @@ def test_lexer_required_slot_margin_uses_missing_visible_symbol(
             [1.0 if token_id == title_id else 4.0 for token_id in candidate_ids]
         ),
     )
+    if not tree:
+        monkeypatch.setattr(
+            model.denoiser,
+            "project",
+            lambda _hidden, candidate_ids=None: (
+                torch.tensor(
+                    [
+                        1.0
+                        if token_id == title_id
+                        else 4.0
+                        if token_id == body_id
+                        else 0.0
+                        for token_id in range(tokenizer.vocab_size)
+                    ]
+                )
+                if candidate_ids is None
+                else torch.tensor(
+                    [
+                        1.0 if token_id == title_id else 4.0
+                        for token_id in candidate_ids
+                    ]
+                )
+            ),
+        )
     ctx, ctx_pad = model._encode_context(["Two text fields."])
 
     with collect_decode_stats() as stats:
@@ -4633,6 +4917,41 @@ def test_projection_with_features_accepts_sliced_hidden() -> None:
         denoiser.project(hidden3[0, 2])
 
 
+def test_compiler_kind_projection_caches_are_tokenizer_identity_scoped() -> None:
+    """A proxy/deep copy must never inherit another tokenizer's authority."""
+    from slm_training.dsl.grammar.fastpath import compiler_draft
+
+    tokenizer = DSLNativeTokenizer.build()
+    component_id = int(tokenizer.token_to_id["Stack"])
+    equals_id = int(tokenizer.token_to_id["="])
+    assert compiler_draft._semantic_kind(tokenizer, component_id) == "component"
+    assert (
+        compiler_draft._grammar_terminal_kind(tokenizer, equals_id, ("EQUAL",))
+        == "grammar_equal"
+    )
+
+    class _ProjectionProxy:
+        def __init__(self, inner: DSLNativeTokenizer) -> None:
+            self._inner = inner
+
+        def __getattr__(self, name: str):
+            return getattr(self._inner, name)
+
+        def kind_of(self, token_id: int) -> str:
+            if int(token_id) in {component_id, equals_id}:
+                return "structural" if int(token_id) == component_id else "component"
+            return str(self._inner.kind_of(token_id).value)
+
+    proxy = _ProjectionProxy(tokenizer)
+    assert compiler_draft._semantic_kind(proxy, component_id) == "structural"
+    assert (
+        compiler_draft._grammar_terminal_kind(proxy, equals_id, ("EQUAL",))
+        == "component"
+    )
+    assert proxy._compiler_semantic_kind_cache[0]() is proxy
+    assert proxy._compiler_terminal_kind_cache[0]() is proxy
+
+
 def test_completion_forest_uses_active_binder_and_symbol_spaces(monkeypatch) -> None:
     from slm_training.dsl.grammar.fastpath import compiler_draft
 
@@ -4746,7 +5065,7 @@ def test_completion_forest_uses_active_binder_and_symbol_spaces(monkeypatch) -> 
     assert set(complete.candidate_ids) == {tokenizer.eos_id}
 
 
-def test_budgeted_completion_domain_exposes_only_witnessed_actions() -> None:
+def test_budgeted_completion_domain_preserves_bounded_reference_subset() -> None:
     tokenizer = DSLNativeTokenizer.build()
     prefix = (tokenizer.bos_id, tokenizer.bind_id(0), tokenizer.token_to_id["="])
     domain = GrammarCapabilityAdapterV1(get_pack("openui")).completion_domain(
@@ -4758,14 +5077,13 @@ def test_budgeted_completion_domain_exposes_only_witnessed_actions() -> None:
         )
     )
 
+    # The packed kernel retains the reference's behavior-visible, per-candidate
+    # 16-node witness allowance and therefore returns the same bounded subset.
     assert domain.status == "complete"
     assert domain.candidates
-    assert all(
-        candidate.terminal_witness[: len(candidate.token_ids)]
-        == candidate.token_ids
-        and candidate.terminal_witness[-1] == tokenizer.eos_id
-        for candidate in domain.candidates
-    )
+    assert domain.reason == "witness_pruned"
+
+
 def test_strict_picker_never_ranks_outside_pack_domain() -> None:
     tokenizer = DSLNativeTokenizer.build()
     prefix = [tokenizer.bos_id, tokenizer.bind_id(0), tokenizer.token_to_id["="]]
@@ -4867,10 +5185,81 @@ def test_complete_ast_uses_lark_when_official_parser_is_unavailable(
         lambda _source: (_ for _ in ()).throw(RuntimeError("offline")),
     )
 
-    assert compiler_draft._generated_ast_is_complete(
-        'root = TextContent(":slot_0")'
-    )
+    assert compiler_draft._generated_ast_is_complete('root = TextContent(":slot_0")')
     assert not compiler_draft._generated_ast_is_complete("root = TextContent(")
+
+
+def test_complete_ast_does_not_widen_authority_after_parse_rejection(
+    monkeypatch,
+) -> None:
+    from slm_training.dsl import lang_core
+    from slm_training.dsl.grammar import backends
+    from slm_training.dsl.grammar.fastpath import compiler_draft
+
+    compiler_draft._generated_ast_is_complete.cache_clear()
+    monkeypatch.setattr(
+        lang_core,
+        "parse",
+        lambda _source: (_ for _ in ()).throw(lang_core.ParseError("invalid")),
+    )
+    monkeypatch.setattr(
+        backends,
+        "get_backend",
+        lambda _name: (_ for _ in ()).throw(
+            AssertionError("parse rejection must not widen to Lark authority")
+        ),
+    )
+
+    assert not compiler_draft._generated_ast_is_complete("root = invalid")
+
+
+def test_completion_forest_only_parses_ast_at_terminal_states(monkeypatch) -> None:
+    from slm_training.dsl.grammar.fastpath import compiler_draft
+
+    tokenizer = DSLNativeTokenizer.build()
+    parsed: list[str] = []
+
+    def _complete(source: str) -> bool:
+        parsed.append(source)
+        return True
+
+    monkeypatch.setattr(compiler_draft, "_generated_ast_is_complete", _complete)
+
+    partial = tokenizer.encode("root=TextContent(", add_special=False)
+    build_completion_forest(tokenizer, partial, slot_contract=[":slot_0"])
+    assert parsed == []
+
+    complete = tokenizer.encode(
+        'root=TextContent(":slot_0")', add_special=False
+    )
+    forest = build_completion_forest(
+        tokenizer, complete, slot_contract=[":slot_0"]
+    )
+    assert parsed == ['root = TextContent(":sym0")']
+    assert tokenizer.eos_id in forest.candidate_ids
+
+
+def test_completion_forest_direct_feeds_reachable_candidates(monkeypatch) -> None:
+    from slm_training.dsl.grammar.fastpath import compiler_draft
+    from slm_training.dsl.grammar.fastpath.engine import OpenUIIncrementalEngine
+
+    tokenizer = DSLNativeTokenizer.build()
+
+    def _unexpected_text_advance(
+        self: OpenUIIncrementalEngine, chunk: str
+    ) -> bool:
+        raise AssertionError(f"verified candidate unexpectedly re-lexed {chunk!r}")
+
+    monkeypatch.setattr(
+        OpenUIIncrementalEngine, "advance_checked", _unexpected_text_advance
+    )
+    prefix = tokenizer.encode("root=", add_special=False)
+    forest = compiler_draft.build_completion_forest(
+        tokenizer, prefix, slot_contract=[":slot_0"]
+    )
+
+    assert forest.paths
+    assert all(path.token_ids for path in forest.paths)
 
 
 def test_completion_forest_uses_schema_property_order_for_enums(monkeypatch) -> None:
@@ -4958,9 +5347,7 @@ def test_completion_forest_has_no_lexer_string_literal_frame() -> None:
 
     tokenizer = DSLNativeTokenizer.build()
     contract = [":slot_0", ":slot_1"]
-    prefix = tokenizer.encode(
-        'root=RadioItem(":slot_0",":slot_1",', add_special=False
-    )
+    prefix = tokenizer.encode('root=RadioItem(":slot_0",":slot_1",', add_special=False)
     forest = build_completion_forest(tokenizer, prefix, slot_contract=contract)
 
     assert "LIT_STR" not in tokenizer.token_to_id
@@ -5017,9 +5404,7 @@ def test_completion_forest_keeps_numeric_literal_inside_lexer_frame() -> None:
     from slm_training.models.dsl_tokenizer import TokenKind
 
     tokenizer = DSLNativeTokenizer.build()
-    number_slot = tokenizer.encode(
-        'root=Slider("$0","discrete",', add_special=False
-    )
+    number_slot = tokenizer.encode('root=Slider("$0","discrete",', add_special=False)
     opener = tokenizer.token_to_id["LIT_NUM"]
     opening = build_completion_forest(tokenizer, number_slot, slot_contract=[":value"])
     opener_path = next(path for path in opening.paths if path.token_ids[0] == opener)
@@ -5195,7 +5580,7 @@ def test_completion_forest_tracks_forward_binder_scope() -> None:
 def test_completion_forest_propagates_typed_array_use_to_forward_declaration() -> None:
     tokenizer = DSLNativeTokenizer.build()
     prefix = tokenizer.encode(
-        'root=Tabs([b1])\nb1=',
+        "root=Tabs([b1])\nb1=",
         add_special=True,
     )[:-1]
 
@@ -5222,7 +5607,7 @@ def test_completion_forest_propagates_typed_array_use_to_forward_declaration() -
 def test_forward_declaration_without_typed_use_keeps_component_choice_open() -> None:
     tokenizer = DSLNativeTokenizer.build()
     prefix = tokenizer.encode(
-        'root=Stack([b1])\nb1=',
+        "root=Stack([b1])\nb1=",
         add_special=True,
     )[:-1]
 
@@ -5234,14 +5619,9 @@ def test_forward_declaration_without_typed_use_keeps_component_choice_open() -> 
 
 @pytest.mark.parametrize(
     ("prefix_text", "allowed", "rejected"),
-    [
-        ('root=Form("$0",', "Buttons", "Button"),
-        (
-            'root=Form("$0",Buttons([]),[FormControl(":slot_0",',
-            "Input",
-            "TextContent",
-        ),
-    ],
+    case_values(
+        __file__, "test_completion_forest_enforces_direct_component_property_schema"
+    ),
 )
 def test_completion_forest_enforces_direct_component_property_schema(
     prefix_text: str,
@@ -5273,9 +5653,7 @@ def test_completion_forest_enforces_direct_component_property_schema(
 
 def test_completion_forest_closes_untyped_optional_action_to_null() -> None:
     tokenizer = DSLNativeTokenizer.build()
-    prefix = tokenizer.encode(
-        'root = Stack([Button(":slot_1", ', add_special=True
-    )[:-1]
+    prefix = tokenizer.encode('root = Stack([Button(":slot_1", ', add_special=True)[:-1]
 
     control = build_completion_forest(tokenizer, prefix)
     assert tokenizer.token_to_id["("] in control.candidate_ids
@@ -5332,8 +5710,7 @@ def test_root_list_does_not_admit_new_binder_after_slot_inventory_consumed() -> 
 def test_completion_forest_propagates_direct_component_binder_type() -> None:
     tokenizer = DSLNativeTokenizer.build()
     prefix = tokenizer.encode(
-        'root=Form("$0",b1,[FormControl(":slot_0",'
-        'Input("$1",":slot_1"))])\nb1=',
+        'root=Form("$0",b1,[FormControl(":slot_0",Input("$1",":slot_1"))])\nb1=',
         add_special=True,
     )[:-1]
 
@@ -5383,8 +5760,7 @@ def test_completion_forest_allows_structural_id_across_distinct_roles() -> None:
 def test_completion_forest_rejects_conflicting_pending_binder_type() -> None:
     tokenizer = DSLNativeTokenizer.build()
     prefix = tokenizer.encode(
-        'root=Form("$0",b1,[FormControl(":slot_0",b2)])\n'
-        "b1=Buttons([",
+        'root=Form("$0",b1,[FormControl(":slot_0",b2)])\nb1=Buttons([',
         add_special=True,
     )[:-1]
 
@@ -5411,8 +5787,7 @@ def test_completion_forest_rejects_conflicting_pending_binder_type() -> None:
 def test_completion_forest_bounds_fresh_typed_binders_by_unused_slots() -> None:
     tokenizer = DSLNativeTokenizer.build()
     prefix = tokenizer.encode(
-        'root=Form("$0",b1,[FormControl(":slot_0",b2)])\n'
-        "b1=Buttons([b3,b4",
+        'root=Form("$0",b1,[FormControl(":slot_0",b2)])\nb1=Buttons([b3,b4',
         add_special=True,
     )[:-1]
     contract = [":slot_0", ":slot_1", ":slot_2"]
@@ -5440,9 +5815,9 @@ def test_completion_forest_bounds_fresh_typed_binders_by_unused_slots() -> None:
 
 def test_completion_forest_reserves_slots_for_required_future_components() -> None:
     tokenizer = DSLNativeTokenizer.build()
-    prefix = tokenizer.encode(
-        'root=Form("$0",b0,[b1,b2,b3,b4,b5', add_special=True
-    )[:-1]
+    prefix = tokenizer.encode('root=Form("$0",b0,[b1,b2,b3,b4,b5', add_special=True)[
+        :-1
+    ]
     contract = [f":slot_{index}" for index in range(6)]
 
     control = build_completion_forest(
@@ -5498,8 +5873,7 @@ def test_completion_forest_reserves_unresolved_typed_binder_content() -> None:
 def test_completion_forest_closes_empty_buttons_for_pending_form_capacity() -> None:
     tokenizer = DSLNativeTokenizer.build()
     prefix = tokenizer.encode(
-        'root=Stack([Form("$1",b1,[b2,b3,b4,b5,b6]),Button(":slot_0")])\n'
-        "b1=Buttons([",
+        'root=Stack([Form("$1",b1,[b2,b3,b4,b5,b6]),Button(":slot_0")])\nb1=Buttons([',
         add_special=True,
     )[:-1]
     forest = build_completion_forest(
@@ -5669,6 +6043,141 @@ def test_compiler_alignment_can_stratify_grammar_decision_kinds() -> None:
     assert metrics["compiler_alignment_grammar_rsqb_root_populated_loss"] >= 0.0
 
 
+def test_compiler_alignment_can_target_literal_close_branches_only() -> None:
+    model = _model()
+    model.config.compiler_alignment_loss_weight = 1.0
+    model.config.compiler_alignment_margin = 1.0
+    model.config.compiler_alignment_stratified = True
+    model.config.compiler_alignment_kind_filter = "literal-close"
+    record = ExampleRecord(
+        id="alignment-literal-close",
+        prompt="continuous slider",
+        openui=('root = Slider("$0", "continuous", 0, 100, 1, [40], ":slot_0")'),
+        placeholders=[":slot_0"],
+        split="train",
+        source="fixture",
+    )
+
+    loss = model.training_loss([record])
+
+    assert torch.isfinite(loss)
+    metrics = model.last_training_metrics
+    assert metrics["compiler_alignment_literal_close_filter_enabled"] == 1.0
+    assert metrics["compiler_alignment_rows"] > 0
+    assert (
+        metrics["compiler_alignment_literal_close_rows"]
+        == metrics["compiler_alignment_rows"]
+    )
+
+
+def test_literal_close_filter_excludes_string_literal_closures() -> None:
+    model = _model()
+    model.config.compiler_alignment_loss_weight = 1.0
+    model.config.compiler_alignment_stratified = True
+    model.config.compiler_alignment_kind_filter = "literal-close"
+    record = ExampleRecord(
+        id="alignment-string-close",
+        prompt="card title",
+        openui='root = TextContent(":slot_0")',
+        placeholders=[":slot_0"],
+        split="train",
+        source="fixture",
+    )
+
+    loss = model.training_loss([record])
+
+    assert torch.isfinite(loss)
+    assert model.last_training_metrics["compiler_alignment_rows"] == 0
+    assert model.last_training_metrics["compiler_alignment_literal_close_rows"] == 0
+
+
+def test_compiler_alignment_can_target_container_close_branches_only() -> None:
+    model = _model()
+    model.config.compiler_alignment_loss_weight = 1.0
+    model.config.compiler_alignment_margin = 1.0
+    model.config.compiler_alignment_stratified = True
+    model.config.compiler_alignment_kind_filter = "container-close"
+    record = ExampleRecord(
+        id="alignment-container-close",
+        prompt="stack two labels",
+        openui='root = Stack([TextContent(":slot_0"), TextContent(":slot_1")])',
+        placeholders=[":slot_0", ":slot_1"],
+        split="train",
+        source="fixture",
+    )
+
+    loss = model.training_loss([record])
+
+    assert torch.isfinite(loss)
+    metrics = model.last_training_metrics
+    assert metrics["compiler_alignment_container_close_filter_enabled"] == 1.0
+    assert metrics["compiler_alignment_rows"] > 0
+    assert (
+        metrics["compiler_alignment_container_close_rows"]
+        == metrics["compiler_alignment_rows"]
+    )
+
+
+def test_container_close_alignment_preserves_typed_family_metrics() -> None:
+    model = _model()
+    model.config.typed_family_balance_loss_weight = 0.25
+    model.config.compiler_alignment_loss_weight = 1.0
+    model.config.compiler_alignment_margin = 1.0
+    model.config.compiler_alignment_stratified = True
+    model.config.compiler_alignment_kind_filter = "container-close"
+    record = ExampleRecord(
+        id="alignment-balanced-container-close",
+        prompt="stack two labels",
+        openui='root = Stack([TextContent(":slot_0"), TextContent(":slot_1")])',
+        placeholders=[":slot_0", ":slot_1"],
+        split="train",
+        source="fixture",
+    )
+
+    loss = model.training_loss([record])
+
+    assert torch.isfinite(loss)
+    metrics = model.last_training_metrics
+    assert metrics["typed_family_balance_active_families"] == 2
+    assert metrics["typed_family_balance_aux_loss"] > 0
+    assert metrics["token_loss_component_count"] > 0
+    assert metrics["token_loss_structure_count"] > 0
+    assert metrics["compiler_alignment_container_close_rows"] > 0
+
+
+def test_compiler_alignment_can_target_component_edges_only() -> None:
+    model = _model()
+    model.config.compiler_alignment_loss_weight = 1.0
+    model.config.compiler_alignment_margin = 1.0
+    model.config.compiler_alignment_stratified = True
+    model.config.compiler_alignment_kind_filter = "component-edge"
+    record = ExampleRecord(
+        id="alignment-component-edge",
+        prompt="card with a title",
+        openui='root = Card([title])\ntitle = TextContent(":slot_0")',
+        placeholders=[":slot_0"],
+        split="train",
+        source="fixture",
+    )
+
+    loss = model.training_loss([record])
+
+    assert torch.isfinite(loss)
+    metrics = model.last_training_metrics
+    assert metrics["compiler_alignment_component_edge_filter_enabled"] == 1.0
+    assert metrics["compiler_alignment_rows"] > 0
+    assert (
+        metrics["compiler_alignment_component_edge_rows"]
+        == metrics["compiler_alignment_rows"]
+    )
+    assert metrics["compiler_alignment_candidate_count_mean"] > 1.0
+
+
+def test_compiler_alignment_kind_filter_fails_closed() -> None:
+    with pytest.raises(ValueError, match="compiler_alignment_kind_filter"):
+        TwoTowerConfig(compiler_alignment_kind_filter="unknown")
+
+
 def test_component_inventory_supervision_trains_prompt_level_component_set() -> None:
     model = _model(component_inventory_loss_weight=1.0)
     model.train()
@@ -5787,11 +6296,45 @@ def test_component_plan_bias_is_role_conditioned_and_count_aware() -> None:
         ("component_bound", "component_bound"),
     )
 
-    assert root_bias is not None and root_bias.tolist() == [0.0, 6.0]
+    assert root_bias is not None
+    assert root_bias[0].item() == 0.0
+    assert 0.0 < root_bias[1].item() <= 2.0
     assert bound_bias_before is not None
     assert bound_bias_after is not None
     assert bound_bias_before[1] > bound_bias_before[0]
     assert bound_bias_after[1] < bound_bias_before[1]
+    assert root_bias.abs().max().item() <= 2.0
+    assert bound_bias_before.abs().max().item() <= 2.0
+    assert bound_bias_after.abs().max().item() <= 2.0
+
+
+def test_component_plan_bias_bounds_untrained_extreme_logits() -> None:
+    model = _model(
+        component_plan_loss_weight=1.0,
+        component_plan_decode_weight=1.0,
+    )
+    assert model.component_plan_head is not None
+    tokenizer = model.tokenizer
+    stack = tokenizer.token_to_id["Stack"]
+    button = tokenizer.token_to_id["Button"]
+    with torch.no_grad():
+        model.component_plan_head.weight.zero_()
+        model.component_plan_head.bias.zero_()
+        vocab = tokenizer.vocab_size
+        model.component_plan_head.bias[stack] = 1_000.0
+        model.component_plan_head.bias[vocab + button] = 1_000.0
+    ctx, ctx_pad = model._encode_context(["stack with a button"])
+
+    bias = model._component_plan_bias(
+        ctx,
+        ctx_pad,
+        [stack],
+        (stack, button),
+        ("component_root", "component_bound"),
+    )
+
+    assert bias is not None
+    assert bias.abs().max().item() <= 1.0
 
 
 def test_component_edges_come_from_ast_and_partial_reference_graph() -> None:
@@ -5976,154 +6519,28 @@ def test_slot_alias_unique_decode_rejects_repeated_slot_carrying_binder() -> Non
     assert bias == [-1e9, 0.0, 0.0]
 
 
-def test_binder_slot_ownership_trains_and_penalizes_repeated_reference() -> None:
-    model = _model(
-        binder_slot_ownership_loss_weight=1.0,
-        binder_slot_ownership_decode_weight=4.0,
-    )
-    record = ExampleRecord(
-        id="binder-slot-ownership",
-        prompt="card with title and body",
-        openui=(
-            "root = Card([title, body])\n"
-            'title = TextContent(":slot_0")\n'
-            'body = TextContent(":slot_1")'
-        ),
-        placeholders=[":slot_0", ":slot_1"],
-        split="train",
-        source="fixture",
-    )
-    loss = model.training_loss([record])
-    loss.backward()
-    assert model.binder_slot_ownership_head is not None
-    assert model.binder_slot_ownership_head.weight.grad is not None
-    assert model.binder_slot_ownership_head.weight.grad.abs().sum() > 0
-    assert model.last_training_metrics["binder_slot_ownership_rows"] == 2
-
-    tokenizer = model.tokenizer
-    binder_ids = model._binder_component_token_ids()
-    title = tokenizer.bind_id(1)
-    body = tokenizer.bind_id(2)
-    with torch.no_grad():
-        model.binder_slot_ownership_head.weight.zero_()
-        model.binder_slot_ownership_head.bias.fill_(-20.0)
-        model.binder_slot_ownership_head.bias[
-            binder_ids.index(title) * tokenizer.sym_slots
-        ] = 20.0
-    ctx, ctx_pad = model._encode_context([record.prompt])
-    prefix = tokenizer.encode("root = Card([title, title,", add_special=False)
-    bias = model._binder_slot_ownership_path_bias(
-        ctx,
-        ctx_pad,
-        prefix,
-        (
-            CompletionPath((title,), "bind_reference_root"),
-            CompletionPath((body,), "bind_reference_root"),
-        ),
-        record.placeholders,
-    )
-    assert bias is not None
-    assert bias[0] < -3.9
-    assert bias[1] == 0.0
+def test_binder_slot_ownership_fails_closed_without_runtime_owner() -> None:
+    with pytest.raises(ValueError, match="no runtime owner is implemented"):
+        _model(
+            binder_slot_ownership_loss_weight=1.0,
+            binder_slot_ownership_decode_weight=4.0,
+        )
 
 
-def test_binder_slot_presence_trains_and_penalizes_repeated_reference() -> None:
-    model = _model(
-        binder_slot_presence_loss_weight=1.0,
-        binder_slot_presence_decode_weight=4.0,
-    )
-    record = ExampleRecord(
-        id="binder-slot-presence",
-        prompt="card with title and body",
-        openui=(
-            "root = Card([title, body])\n"
-            'title = TextContent(":slot_0")\n'
-            'body = TextContent(":slot_1")'
-        ),
-        placeholders=[":slot_0", ":slot_1"],
-        split="train",
-        source="fixture",
-    )
-    model.training_loss([record]).backward()
-    assert model.binder_slot_presence_head is not None
-    assert model.binder_slot_presence_head.weight.grad is not None
-    assert model.binder_slot_presence_head.weight.grad.abs().sum() > 0
-    assert model.last_training_metrics["binder_slot_presence_rows"] == 2
-
-    tokenizer = model.tokenizer
-    binder_ids = model._binder_component_token_ids()
-    title = tokenizer.bind_id(1)
-    body = tokenizer.bind_id(2)
-    with torch.no_grad():
-        model.binder_slot_presence_head.weight.zero_()
-        model.binder_slot_presence_head.bias.fill_(-20.0)
-        model.binder_slot_presence_head.bias[binder_ids.index(title)] = 20.0
-    ctx, ctx_pad = model._encode_context([record.prompt])
-    prefix = tokenizer.encode("root = Card([title, title,", add_special=False)
-    bias = model._binder_slot_presence_path_bias(
-        ctx,
-        ctx_pad,
-        prefix,
-        (
-            CompletionPath((title,), "bind_reference_root"),
-            CompletionPath((body,), "bind_reference_root"),
-        ),
-    )
-    assert bias is not None
-    assert bias[0] < -3.9
-    assert bias[1] == 0.0
+def test_binder_slot_presence_fails_closed_without_runtime_owner() -> None:
+    with pytest.raises(ValueError, match="no runtime owner is implemented"):
+        _model(
+            binder_slot_presence_loss_weight=1.0,
+            binder_slot_presence_decode_weight=4.0,
+        )
 
 
-def test_binder_reference_presence_trains_on_prefix_and_penalizes_repeated_reference() -> None:
-    model = _model(
-        binder_reference_presence_loss_weight=1.0,
-        binder_reference_presence_decode_weight=4.0,
-    )
-    record = ExampleRecord(
-        id="binder-reference-presence",
-        prompt="card with title and body",
-        openui=(
-            "root = Card([title, title, body])\n"
-            'title = TextContent(":slot_0")\n'
-            'body = TextContent(":slot_1")'
-        ),
-        placeholders=[":slot_0", ":slot_1"],
-        split="train",
-        source="fixture",
-    )
-    model.training_loss([record]).backward()
-    assert model.binder_reference_presence_head is not None
-    assert model.binder_reference_presence_head.weight.grad is not None
-    assert model.binder_reference_presence_head.weight.grad.abs().sum() > 0
-    assert model.last_training_metrics["binder_reference_presence_rows"] == 3
-
-    tokenizer = model.tokenizer
-    binder_ids = model._binder_component_token_ids()
-    title = tokenizer.bind_id(1)
-    body = tokenizer.bind_id(2)
-    with torch.no_grad():
-        model.binder_reference_presence_head.weight.zero_()
-        model.binder_reference_presence_head.bias.fill_(-20.0)
-        model.binder_reference_presence_head.bias[binder_ids.index(title)] = 20.0
-    ctx, ctx_pad = model._encode_context([record.prompt])
-    prefix = tokenizer.encode("root = Card([title, title,", add_special=False)
-    assert repeated_bound_binder_reference_positions(
-        tokenizer,
-        tokenizer.encode(record.openui, add_special=False),
-    )
-    bias = model._binder_reference_presence_path_bias(
-        ctx,
-        ctx_pad,
-        prefix,
-        (
-            CompletionPath((title,), "bind_reference_root"),
-            CompletionPath((body,), "bind_reference_root"),
-        ),
-        model.config.max_target_len,
-    )
-    assert bias is not None
-    assert bias[0] < -3.9
-    assert bias[1] == 0.0
+def test_binder_reference_presence_fails_closed_without_runtime_owner() -> None:
+    with pytest.raises(ValueError, match="no runtime owner is implemented"):
+        _model(
+            binder_reference_presence_loss_weight=1.0,
+            binder_reference_presence_decode_weight=4.0,
+        )
 
 
 def test_component_edge_supervision_and_parent_conditioned_bias() -> None:
@@ -6207,10 +6624,9 @@ def test_binder_component_plan_supervises_instances_and_biases_legal_choices() -
     assert model.binder_component_plan_head.weight.grad.abs().sum() > 0
     assert model.last_training_metrics["binder_component_plan_rows"] == 2
     assert model.last_training_metrics["binder_component_plan_loss"] > 0
-    assert (
-        model.last_training_metrics["binder_component_plan_candidate_count_mean"]
-        < len(model._component_inventory_token_ids())
-    )
+    assert model.last_training_metrics[
+        "binder_component_plan_candidate_count_mean"
+    ] < len(model._component_inventory_token_ids())
 
     tokenizer = model.tokenizer
     binders = model._binder_component_token_ids()
@@ -6250,17 +6666,12 @@ def test_binder_component_targets_match_compiler_bound_component_decisions() -> 
             'b1 = Buttons([Button(":slot_0")])\n'
             'b2 = FormControl(":slot_1", Input("$1"))'
         ),
-        (
-            'root = Tabs([b1])\n'
-            'b1 = TabItem("$0", ":slot_0", [TextContent(":slot_1")])'
-        ),
+        ('root = Tabs([b1])\nb1 = TabItem("$0", ":slot_0", [TextContent(":slot_1")])'),
     ):
         token_ids = tokenizer.encode(target, add_special=True)
         compiler_targets = tuple(
             (
-                active_declaration_binder_id(
-                    tokenizer, token_ids[: decision.position]
-                ),
+                active_declaration_binder_id(tokenizer, token_ids[: decision.position]),
                 token_ids[decision.position],
             )
             for decision in gold_compiler_decisions(tokenizer, token_ids)
@@ -6390,7 +6801,7 @@ def test_binder_arity_supervises_and_biases_continue_stop_paths() -> None:
     assert model.binder_arity_head is not None
     assert model.binder_arity_head.weight.grad is not None
     assert model.binder_arity_head.weight.grad.abs().sum() > 0
-    assert model.last_training_metrics["binder_arity_rows"] == 2
+    assert model.last_training_metrics["binder_arity_rows"] == 3
     assert model.last_training_metrics["binder_arity_loss"] > 0
 
     tokenizer = model.tokenizer
@@ -6402,9 +6813,7 @@ def test_binder_arity_supervises_and_biases_continue_stop_paths() -> None:
         model.binder_arity_head.bias.zero_()
         model.binder_arity_head.bias[bound * buckets + 2] = 3.0
     ctx, ctx_pad = model._encode_context(["card with title and body"])
-    prefix = tokenizer.encode(
-        "root = Stack([b1])\nb1 = Card([b2", add_special=False
-    )
+    prefix = tokenizer.encode("root = Stack([b1])\nb1 = Card([b2", add_special=False)
     paths = (
         CompletionPath(
             (tokenizer.token_to_id[","], tokenizer.bind_id(2)),
@@ -6419,9 +6828,7 @@ def test_binder_arity_supervises_and_biases_continue_stop_paths() -> None:
     assert bias is not None
     assert bias[0] > bias[1]
     root_prefix = tokenizer.encode("root = Card([b1", add_special=False)
-    assert model._binder_arity_path_bias(
-        ctx, ctx_pad, root_prefix, paths
-    ) is None
+    assert model._binder_arity_path_bias(ctx, ctx_pad, root_prefix, paths) is None
 
 
 def test_binder_component_plan_biases_typed_declaration_path() -> None:
@@ -6438,22 +6845,23 @@ def test_binder_component_plan_biases_typed_declaration_path() -> None:
     with torch.no_grad():
         model.binder_component_plan_head.weight.zero_()
         model.binder_component_plan_head.bias.zero_()
-        model.binder_component_plan_head.bias[
-            binder * len(components) + buttons
-        ] = 4.0
+        model.binder_component_plan_head.bias[binder * len(components) + buttons] = 4.0
     ctx, ctx_pad = model._encode_context(["form"])
-    paths = (
-        CompletionPath((tokenizer.bind_id(1),), "bind_reference_root_buttons"),
-        CompletionPath(
-            (
-                tokenizer.token_to_id["Buttons"],
-                tokenizer.token_to_id["("],
-            ),
-            "component",
-        ),
+    prefix = [
+        tokenizer.bind_id(1),
+        tokenizer.token_to_id["="],
+    ]
+    candidates = (
+        tokenizer.token_to_id["Buttons"],
+        tokenizer.token_to_id["Card"],
     )
-
-    bias = model._binder_component_declaration_path_bias(ctx, ctx_pad, paths)
+    bias = model._binder_component_plan_bias(
+        ctx,
+        ctx_pad,
+        prefix,
+        candidates,
+        ("component_bound", "component_bound"),
+    )
 
     assert bias is not None
     assert bias[0] > 0
@@ -6608,17 +7016,29 @@ def test_runtime_feature_table_uses_resolved_honest_slot_contract(monkeypatch) -
     monkeypatch.setattr(
         model,
         "_decode_ids",
-        lambda _ids: 'root = TextContent(":visible.title")',
+        lambda _ids: 'root = TextContent(":slot_0")',
     )
     monkeypatch.setattr(model, "_ensure_valid_openui", lambda text, *_a, **_k: text)
 
     model._generate_batch_once(
-        ["Card\nPlaceholders: :visible.title"],
+        ["Card\nPlaceholders: :slot_0"],
         grammar_constrained=True,
         slot_contracts=[[":stale.title"]],
     )
 
-    assert captured[-1] == [":visible.title"]
+    assert captured[-1] == [":slot_0"]
+    model._generate_batch_once(
+        ["Card"],
+        grammar_constrained=True,
+        slot_contracts=[[":slot_1"]],
+    )
+    assert captured[-1] == [":slot_1"]
+    model._generate_batch_once(
+        ["Card for :legacy.title"],
+        grammar_constrained=True,
+        slot_contracts=[[":slot_2"]],
+    )
+    assert captured[-1] == [":slot_2"]
 
 
 def test_compiler_decode_reserves_room_beyond_predicted_length(monkeypatch) -> None:
@@ -6674,16 +7094,16 @@ def test_ptrm_trajectory_policy_is_seed_reproducible() -> None:
     model = _model()
     model.config.compiler_search_mode = "ptrm"
     model.config.compiler_search_trigger = "always"
-    model.config.compiler_search_width = 4
+    model.config.compiler_search_width = 2
     model.config.compiler_search_noise = 1.0
     ctx, ctx_pad = model._encode_context(["card"])
     with collect_decode_stats() as left_stats:
         left = model._compiler_ltr_decode_one(
-            ctx, ctx_pad, 24, mode="tree", slot_contract=None
+            ctx, ctx_pad, 12, mode="tree", slot_contract=None
         )
     with collect_decode_stats() as right_stats:
         right = model._compiler_ltr_decode_one(
-            ctx, ctx_pad, 24, mode="tree", slot_contract=None
+            ctx, ctx_pad, 12, mode="tree", slot_contract=None
         )
     assert torch.equal(left, right)
     assert left_stats.compiler_lattice_trajectory_triggers > 0

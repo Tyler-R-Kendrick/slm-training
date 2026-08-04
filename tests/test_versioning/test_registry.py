@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from datetime import date
+from datetime import datetime
 from pathlib import Path
 
 from slm_training.versioning import (
@@ -37,7 +37,11 @@ def test_component_entries_are_well_formed() -> None:
         )
         for row in history:
             assert _VERSION_RE.match(row["version"]), component_id
-            date.fromisoformat(row["date"])
+            parsed_timestamp = datetime.fromisoformat(row["date"])
+            if "T" in row["date"]:
+                assert parsed_timestamp.tzinfo is not None, (
+                    f"{component_id}: datetime history entries must include a timezone"
+                )
             assert row["note"].strip(), f"{component_id}: history notes must be non-empty"
 
 

@@ -1,0 +1,160 @@
+{
+  "schema": "autotrain_measured_results/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1748",
+  "cycle_index": 1748,
+  "loop_id": "continuous-openui-20260730",
+  "run_class": "fixture_scratch",
+  "source_commit": "c0a1ad28ea47be328a6d95c2c1c443781c91acb7",
+  "source_dirty": false,
+  "upstream_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "steps": 24,
+  "batch_size": 2,
+  "seed": 101748,
+  "campaign_role": "promotion",
+  "cycle_intent": "promotion_screen_without_confirmed_champion",
+  "authoritative_role_primary": "held_out.structural_similarity",
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1748-control",
+      "status": "completed_gate_rejection",
+      "manifest_sha256": "983388ae99fa4e1718d25c600e2d8af1d2b4366c6c5a213264ef8cf0682f39bc",
+      "training": {
+        "trainable_parameters": 1755764,
+        "structural_aux_head_profile": "component-plan",
+        "component_plan_loss_weight": 0.0,
+        "last_loss": 9.815576553344727,
+        "elapsed_wall_seconds": 3.0394649999798276,
+        "checkpoint_sha256": "f66fe0ed93e8bf89b6345749cecc7789c5b9843cea3911aaf7be0bea53b71dec"
+      },
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 3,
+        "decode_timeout_count": 0,
+        "fallback_count": 0,
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "component_type_recall": 0.0,
+        "ast_node_f1": 0.0,
+        "ast_edge_f1": 0.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 1406.9
+      },
+      "held_out": {
+        "n": 5,
+        "completed_document_n": 5,
+        "decode_timeout_count": 0,
+        "fallback_count": 0,
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.43714285714285717,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.04274,
+        "component_type_recall": 0.0,
+        "ast_node_f1": 0.0,
+        "ast_edge_f1": 0.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 1315.32
+      },
+      "agentv_execution_errors": 0,
+      "ship_gates_pass": false
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1748-component-plan",
+      "status": "completed_quality_null",
+      "manifest_sha256": "9188f0caef129245ce0696d5872040f4fc71abe175fac84585ecea1aa52cd626",
+      "training": {
+        "trainable_parameters": 1755764,
+        "structural_aux_head_profile": "component-plan",
+        "component_plan_loss_weight": 1.0,
+        "last_loss": 12.70351791381836,
+        "elapsed_wall_seconds": 6.650312790006865,
+        "checkpoint_sha256": "d0507f83cedf8ac622c7fae10df4987b7a2a57f82230ee9126912060b3313a28"
+      },
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 3,
+        "decode_timeout_count": 0,
+        "fallback_count": 0,
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "component_type_recall": 0.0,
+        "ast_node_f1": 0.0,
+        "ast_edge_f1": 0.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 1357.57
+      },
+      "held_out": {
+        "n": 5,
+        "completed_document_n": 5,
+        "decode_timeout_count": 0,
+        "fallback_count": 0,
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.43714285714285717,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.04274,
+        "component_type_recall": 0.0,
+        "ast_node_f1": 0.0,
+        "ast_edge_f1": 0.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 1336.36
+      },
+      "agentv_execution_errors": 0,
+      "ship_gates_pass": false
+    }
+  ],
+  "comparison": {
+    "measurement_complete": true,
+    "size_matched": true,
+    "trainable_parameter_delta": 0,
+    "smoke_quality_delta": 0.0,
+    "held_out_quality_delta": 0.0,
+    "smoke_latency_reduction_fraction": 0.035062904258,
+    "held_out_latency_reduction_fraction": -0.015996107411,
+    "candidate_training_wall_ratio": 2.187987948554,
+    "disposition": "rejected_exact_quality_null"
+  },
+  "harness_feedback": {
+    "family": "model_and_eval",
+    "signals": [
+      "component_plan_exact_quality_null_repeated",
+      "candidate_training_loss_worse",
+      "candidate_training_wall_2_19x",
+      "smoke_latency_signal_reversed_on_held_out",
+      "zero_meaning_component_recall_and_ast_f1"
+    ],
+    "next_priority": "size_matched_component_edge_then_auxiliary_gradient_target_decode_audit"
+  },
+  "formal_evidence": {
+    "formal_preflight_status": "not_applicable:no_confirmed_champion",
+    "promotion_requirement": "actual champion promotion requires locked expectations, proved mathlib-free LeverProof preflight, and replayed metric_certificate/v2"
+  },
+  "checkpoint_documentation_required": true,
+  "checkpoint_sync": "explicit no-sync scratch",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "c0a1ad28ea47be328a6d95c2c1c443781c91acb7",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v74",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v288",
+      "dsl.completion_kernel": "v16",
+      "gates.ship": "openui_ship_gates_v6"
+    },
+    "stamped_at": "2026-08-02T10:25:47.323090+00:00"
+  }
+}

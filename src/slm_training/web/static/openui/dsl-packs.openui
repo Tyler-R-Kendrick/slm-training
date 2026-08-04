@@ -1,0 +1,31 @@
+$pack = "openui"
+data = Query("dsl_pack", { pack: $pack }, { packs: ["openui"], tiles: [], grammar: { path: "", rows: [] }, constraints: [], templates: [], boundaries: [], calculated: { tiles: [], rows: [], basis: "", unavailable: [], references: [] }, planning: { assumptions: [], machine: {}, performance_target: { status: "unavailable", profiles: [], levers: [], mismatches: [] } }, evidence: { perf: [], smoke: [], checkpoints: [], completion_kernel: { timings: [], work: [], gates: [] }, completion_artifact: { status: "missing", request_dependent_authority_excluded: [] } }, provenance: "source" }, 0)
+
+head = PageHead("DSL Packs", "Inspect each pack's grammar and constraints, configurable training parameters, and research-backed targets computable from its structural patterns.")
+packTabs = ChipTabs($pack, data.packs)
+tileRow = Grid(@Each(data.tiles, "t", StatTile(t.label, t.value, t.sub, t.accent)), "190px")
+
+grammarCols = [{ key: "id", label: "Line", align: "right" }, { key: "run_id", label: "Grammar" }]
+grammarPanel = Panel("Grammar source", [DataTable(grammarCols, data.grammar.rows)], [Note(data.grammar.path, "hint mono"), ProvenanceBadge(data.provenance)])
+
+constraintCols = [{ key: "constraint", label: "Constraint" }, { key: "value", label: "Value" }, { key: "authority", label: "Authority" }]
+constraintPanel = Panel("Additional constraints", [DataTable(constraintCols, data.constraints)])
+templateCols = [{ key: "kind", label: "Kind" }, { key: "syntax", label: "Syntax" }, { key: "authority", label: "Authority" }]
+templatePanel = Panel("Template syntax", [DataTable(templateCols, data.templates)])
+constraintRow = Row([constraintPanel, templatePanel])
+
+boundaryCols = [{ key: "scope", label: "Role" }, { key: "boundary", label: "Input" }, { key: "minimum", label: "Min", align: "right" }, { key: "maximum", label: "Max", align: "right" }, { key: "authority", label: "Authority" }]
+boundaryPanel = Panel("Pack facts and configurable parameters", [DataTable(boundaryCols, data.boundaries), Hint("Grammar limits describe the language. Training and experiment-policy rows are configurable inputs; computed targets appear only below.", true)])
+
+calculatedTiles = Grid(@Each(data.calculated.tiles, "t", StatTile(t.label, t.value, t.sub, t.accent)), "190px")
+calculatedCols = [{ key: "metric", label: "Metric" }, { key: "minimum", label: "Min", align: "right" }, { key: "maximum", label: "Max", align: "right" }, { key: "unit", label: "Unit" }, { key: "formula", label: "Formula" }, { key: "inputs", label: "Derived from" }, { key: "cap_use", label: "Cap use" }]
+calculatedPanel = Panel("Research-backed optimal targets", [calculatedTiles, DataTable(calculatedCols, data.calculated.rows), Hint(data.calculated.basis, true)])
+estimator = DslPackEstimator(data)
+
+unavailableCols = [{ key: "metric", label: "Requested target" }, { key: "reason", label: "Why it cannot be estimated" }, { key: "required", label: "Required inputs" }, { key: "formula", label: "Valid relation" }]
+unavailablePanel = Panel("Not identifiable from pack parameters", [DataTable(unavailableCols, data.calculated.unavailable)])
+
+referenceCols = [{ key: "method", label: "Method" }, { key: "reference", label: "Primary reference" }, { key: "supports", label: "Used for" }]
+referencePanel = Panel("Research basis", [DataTable(referenceCols, data.calculated.references)])
+
+root = Page([head, packTabs, tileRow, grammarPanel, constraintRow, boundaryPanel, calculatedPanel, estimator, unavailablePanel, referencePanel])

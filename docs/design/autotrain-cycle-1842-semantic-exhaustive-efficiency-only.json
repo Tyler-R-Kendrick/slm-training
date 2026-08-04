@@ -1,0 +1,67 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-202607-98199209-c1842",
+  "decision": "reject_quality_retain_efficiency_signal",
+  "claim_class": "fixture_screening",
+  "formal": {"status": "not_applicable:screening", "reason": "Lean remains mandatory for promotion only."},
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "seed": 101842,
+    "batch_size": 2,
+    "num_threads": 1,
+    "context_backend": "scratch",
+    "suite": "smoke",
+    "suite_n": 3,
+    "trainable_params": 1608962,
+    "sync_checkpoints": false
+  },
+  "arms": {
+    "control": {
+      "last_loss": 17.645666122436523,
+      "train_wall_seconds": 11.337151598010678,
+      "checkpoint_sha256": "90fa1660d3cd3ddfd6dcda317969f12df757a4de92f68940e8c27d59b1853317",
+      "effective_records": 28.57,
+      "unique_records": 32,
+      "total_draws": 40,
+      "max_repeat": 2,
+      "metrics": {"structural_similarity": 0.46749999999999997, "meaningful_program_rate": 0.3333333333333333, "component_type_recall": 0.25, "binder_reference_f1": 0.6333333333333333, "placeholder_fidelity": 0.5277777777777778, "reward_score": 0.8193333333333334, "parse_rate": 1.0, "ast_beq_rate": 0.0, "canonical_beq_rate": 0.0, "latency_ms_p50": 4296.42, "tokens_emitted_mean": 75.0, "forwards_count_mean": 12.0, "compiler_ms_mean": 11856.133}
+    },
+    "candidate": {
+      "last_loss": 17.643779754638672,
+      "train_wall_seconds": 14.493024135008454,
+      "checkpoint_sha256": "8eb323b99e6163565b9f888d7ebe691d3106c4269d40a97211853d325c993f8f",
+      "effective_records": 28.57,
+      "unique_records": 32,
+      "total_draws": 40,
+      "max_repeat": 2,
+      "metrics": {"structural_similarity": 0.46416666666666667, "meaningful_program_rate": 0.3333333333333333, "component_type_recall": 0.25, "binder_reference_f1": 0.6333333333333333, "placeholder_fidelity": 0.5277777777777778, "reward_score": 0.8073333333333332, "parse_rate": 1.0, "ast_beq_rate": 0.0, "canonical_beq_rate": 0.0, "latency_ms_p50": 2604.38, "tokens_emitted_mean": 48.0, "forwards_count_mean": 8.0, "compiler_ms_mean": 7124.629}
+    }
+  },
+  "effects": {
+    "structural_similarity": -0.0033333333333332993,
+    "meaningful_program_rate": 0.0,
+    "component_type_recall": 0.0,
+    "binder_reference_f1": 0.0,
+    "placeholder_fidelity": 0.0,
+    "reward_score": -0.012000000000000122,
+    "latency_fraction": -0.393824,
+    "compiler_time_fraction": -0.399071,
+    "tokens_emitted_fraction": -0.36,
+    "forwards_count_fraction": -0.3333333333333333,
+    "mpr_per_ms_gain_fraction": 0.64969014
+  },
+  "ship": {"eligible": false, "failures": ["smoke n=3<20", "meaningful_program_rate<0.66", "component_type_recall<0.35", "ast_beq_rate=0", "canonical_beq_rate=0", "held_out missing", "adversarial missing", "ood missing", "rico_held missing"]},
+  "successor": {
+    "experiment_slug": "capacity-aware-semantic-exhaustive-structure-token-margin",
+    "isolated_treatment": "structure_token_loss_weight",
+    "hypothesis": "Direct STRUCT-token reconstruction recovers scaffold quality on the efficient semantic-exhaustive recipe without increasing parameters or decode work."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "e60f5b135b1b5b047fdff686fde35a73ce074cc8",
+    "code_dirty": false,
+    "components": {"harness.model_build.train": "v38", "harness.model_build.eval": "v78", "harness.autoresearch.experiment_campaign": "v138", "evals.meaningful_program": "2.13.0", "evals.scoring": "v22", "model.twotower": "v304"},
+    "stamped_at": "2026-08-03T06:39:17.302919+00:00"
+  }
+}

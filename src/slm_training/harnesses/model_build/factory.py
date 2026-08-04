@@ -68,6 +68,14 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "best_of_n",
         "fidelity_loss_weight",
         "ltr_loss_weight",
+        "ltr_prefix_loss_weight",
+        "ltr_tail_loss_weight",
+        "ltr_tail_tokens",
+        "component_token_loss_weight",
+        "component_edge_token_loss_weight",
+        "compiler_decision_token_loss_weight",
+        "structure_token_loss_weight",
+        "typed_family_balance_loss_weight",
         "gen_steps",
         "parallel_unmask",
         "remask_ratio",
@@ -235,6 +243,10 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "stability_min_persistence",
         "stability_jsd_weight",
         "unmask_mode",
+        "block_diffusion_decode",
+        "block_diffusion_block_size",
+        "hybrid_span_min_run",
+        "hybrid_frontier_head",
         "cluster_attn_threshold",
         "cluster_max_size",
         "cluster_verify",
@@ -350,9 +362,7 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         recursive_detach_between_steps=getattr(
             config, "recursive_detach_between_steps", False
         ),
-        recursive_update_mode=getattr(
-            config, "recursive_update_mode", "current_v1"
-        ),
+        recursive_update_mode=getattr(config, "recursive_update_mode", "current_v1"),
         recursive_empty_f_mode=getattr(
             config, "recursive_empty_f_mode", "pass_through"
         ),
@@ -392,6 +402,24 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         ),
         slot_contract_constrained_decode=getattr(
             config, "slot_contract_constrained_decode", False
+        ),
+        required_slot_array_completion=bool(
+            getattr(config, "required_slot_array_completion", False)
+        ),
+        required_slot_root_completion=getattr(
+            config, "required_slot_root_completion", None
+        ),
+        request_aware_slot_reservation=bool(
+            getattr(config, "request_aware_slot_reservation", False)
+        ),
+        slot_alias_unique_decode=bool(
+            getattr(config, "slot_alias_unique_decode", False)
+        ),
+        binder_topology_unique_decode=bool(
+            getattr(config, "binder_topology_unique_decode", False)
+        ),
+        compiler_schema_component_types=bool(
+            getattr(config, "compiler_schema_component_types", False)
         ),
         template_fill_decode=getattr(config, "template_fill_decode", False),
         honest_slot_contract=getattr(config, "honest_slot_contract", False),
@@ -498,9 +526,22 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         ltr_prefix_loss_weight=float(
             getattr(config, "ltr_prefix_loss_weight", 0.0) or 0.0
         ),
-        ltr_tail_loss_weight=float(
-            getattr(config, "ltr_tail_loss_weight", 0.0) or 0.0
+        component_token_loss_weight=float(
+            getattr(config, "component_token_loss_weight", 0.0) or 0.0
         ),
+        component_edge_token_loss_weight=float(
+            getattr(config, "component_edge_token_loss_weight", 0.0) or 0.0
+        ),
+        compiler_decision_token_loss_weight=float(
+            getattr(config, "compiler_decision_token_loss_weight", 0.0) or 0.0
+        ),
+        structure_token_loss_weight=float(
+            getattr(config, "structure_token_loss_weight", 0.0) or 0.0
+        ),
+        typed_family_balance_loss_weight=float(
+            getattr(config, "typed_family_balance_loss_weight", 0.0) or 0.0
+        ),
+        ltr_tail_loss_weight=float(getattr(config, "ltr_tail_loss_weight", 0.0) or 0.0),
         ltr_tail_tokens=int(getattr(config, "ltr_tail_tokens", 32) or 0),
         compiler_alignment_loss_weight=float(
             getattr(config, "compiler_alignment_loss_weight", 0.0) or 0.0
@@ -514,6 +555,9 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         compiler_alignment_semantic_exhaustive=bool(
             getattr(config, "compiler_alignment_semantic_exhaustive", False)
         ),
+        compiler_alignment_kind_filter=str(
+            getattr(config, "compiler_alignment_kind_filter", "all") or "all"
+        ),
         legal_margin_mode=str(getattr(config, "legal_margin_mode", "none") or "none"),
         targeted_margin_manifest=getattr(config, "targeted_margin_manifest", None),
         targeted_margin_value=float(
@@ -524,6 +568,9 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         ),
         component_inventory_loss_weight=float(
             getattr(config, "component_inventory_loss_weight", 0.0) or 0.0
+        ),
+        structural_aux_head_profile=str(
+            getattr(config, "structural_aux_head_profile", "none") or "none"
         ),
         component_inventory_decode_weight=float(
             getattr(config, "component_inventory_decode_weight", 0.0) or 0.0
@@ -679,6 +726,24 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         binder_arity_decode_weight=float(
             getattr(config, "binder_arity_decode_weight", 0.0) or 0.0
         ),
+        binder_slot_ownership_loss_weight=float(
+            getattr(config, "binder_slot_ownership_loss_weight", 0.0) or 0.0
+        ),
+        binder_slot_ownership_decode_weight=float(
+            getattr(config, "binder_slot_ownership_decode_weight", 0.0) or 0.0
+        ),
+        binder_slot_presence_loss_weight=float(
+            getattr(config, "binder_slot_presence_loss_weight", 0.0) or 0.0
+        ),
+        binder_slot_presence_decode_weight=float(
+            getattr(config, "binder_slot_presence_decode_weight", 0.0) or 0.0
+        ),
+        binder_reference_presence_loss_weight=float(
+            getattr(config, "binder_reference_presence_loss_weight", 0.0) or 0.0
+        ),
+        binder_reference_presence_decode_weight=float(
+            getattr(config, "binder_reference_presence_decode_weight", 0.0) or 0.0
+        ),
         root_reference_arity_loss_weight=float(
             getattr(config, "root_reference_arity_loss_weight", 0.0) or 0.0
         ),
@@ -738,8 +803,7 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
             getattr(config, "abstract_plan_mode", "disabled") or "disabled"
         ),
         abstract_plan_connector_arm=str(
-            getattr(config, "abstract_plan_connector_arm", "disabled")
-            or "disabled"
+            getattr(config, "abstract_plan_connector_arm", "disabled") or "disabled"
         ),
         abstract_plan_loss_weight=float(
             getattr(config, "abstract_plan_loss_weight", 0.0) or 0.0
@@ -805,6 +869,10 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         ),
         stability_jsd_weight=float(getattr(config, "stability_jsd_weight", 1.0) or 1.0),
         unmask_mode=str(getattr(config, "unmask_mode", "positions") or "positions"),
+        block_diffusion_decode=bool(getattr(config, "block_diffusion_decode", False)),
+        block_diffusion_block_size=int(getattr(config, "block_diffusion_block_size", 4) or 4),
+        hybrid_span_min_run=int(getattr(config, "hybrid_span_min_run", 3) or 3),
+        hybrid_frontier_head=int(getattr(config, "hybrid_frontier_head", 2) or 0),
         cluster_attn_threshold=float(
             getattr(config, "cluster_attn_threshold", 0.08) or 0.08
         ),

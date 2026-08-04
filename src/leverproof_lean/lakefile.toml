@@ -1,0 +1,10 @@
+name = "leverproof-lean"
+version = "0.1.0"
+defaultTargets = ["LeverProofLean", "leverproof-lean"]
+
+[[lean_lib]]
+name = "LeverProofLean"
+
+[[lean_exe]]
+name = "leverproof-lean"
+root = "Main"

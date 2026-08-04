@@ -1,0 +1,65 @@
+{
+  "schema": "test_cases/v1",
+  "module": "tests/test_harnesses/model_build/test_twotower.py",
+  "case_sets": {
+    "test_checkpoint_rejects_missing_enabled_root_head": {
+      "parameters": [
+        "output_tokenizer",
+        "compiler_decode_mode",
+        "loss_name",
+        "head_name"
+      ],
+      "cases": [
+        {
+          "id": "case-001",
+          "values": [
+            "choice",
+            "off",
+            "root_reference_identity_loss_weight",
+            "root_reference_identity_head"
+          ]
+        },
+        {
+          "id": "case-002",
+          "values": [
+            "lexer",
+            "tree",
+            "root_reference_arity_loss_weight",
+            "root_reference_arity_head"
+          ]
+        }
+      ]
+    },
+    "test_binder_quality_profiles_make_control_capacity_match_candidate": {
+      "parameters": [
+        "profile",
+        "head_name",
+        "weights"
+      ],
+      "cases": [
+        {
+          "id": "case-001",
+          "values": [
+            "binder-arity",
+            "binder_arity_head",
+            {
+              "binder_arity_loss_weight": 1.0,
+              "binder_arity_decode_weight": 1.0
+            }
+          ]
+        },
+        {
+          "id": "case-002",
+          "values": [
+            "binder-component-plan",
+            "binder_component_plan_head",
+            {
+              "binder_component_plan_loss_weight": 1.0,
+              "binder_component_plan_decode_weight": 1.0
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

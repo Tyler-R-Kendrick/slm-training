@@ -40,6 +40,10 @@
           {
             "type": "command",
             "command": "python3 -m scripts.verify_version_stamps --post-tool-use"
+          },
+          {
+            "type": "command",
+            "command": "python3 -m scripts.refresh_test_cases --check --changed"
           }
         ]
       }

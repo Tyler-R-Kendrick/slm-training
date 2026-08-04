@@ -1,0 +1,76 @@
+{
+  "schema": "autotrain_continuous_cycle_results/v1",
+  "loop_id": "continuous-openui-scheduled-fe71636",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-schedu-3d42338c-c4",
+  "cycle_index": 4,
+  "source_commit": "fe716367ffdd1c15353e93338a704b21e3c851c8",
+  "integration_commit": "c5d5bee757a03a2660ad0938cf1bf36a77b1b91b",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "retry_measurement",
+  "replay_of_campaign": "continuous-loop-20260804-continuous-openui-schedu-3d42338c-c3",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true,
+    "decode_timeout_seconds": 12.0
+  },
+  "arms": {
+    "control": {
+      "id": "c20260804-continuous-openui-schedu-3d42338c-c4-control",
+      "trainable_params": 1608962,
+      "compiler_ms_mean": 23042.1,
+      "decode_timeout_count": 3,
+      "measurement_status": "incomplete"
+    },
+    "canvas": {
+      "id": "c20260804-continuous-openui-schedu-3d42338c-c4-canvas",
+      "trainable_params": 1608962,
+      "compiler_ms_mean": 23173.9,
+      "decode_timeout_count": 3,
+      "measurement_status": "incomplete"
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "measurement_incomplete:c20260804-continuous-openui-schedu-3d42338c-c4-control:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "measurement_incomplete:c20260804-continuous-openui-schedu-3d42338c-c4-canvas:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "harness_failure:c20260804-continuous-openui-schedu-3d42338c-c4-control:experiment_failed",
+      "harness_failure:c20260804-continuous-openui-schedu-3d42338c-c4-canvas:experiment_failed",
+      "fixture_insufficient_n:c20260804-continuous-openui-schedu-3d42338c-c4-control",
+      "fixture_insufficient_n:c20260804-continuous-openui-schedu-3d42338c-c4-canvas",
+      "primary_metric_unavailable",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "conclusion": "decode_timeout_budget_increase_insufficient",
+  "finding": "Raising screening_decode_timeout_seconds 8->12 (commit 3c30288) did not change the outcome: compiler_ms_mean is ~23042-23174ms on this cycle, statistically indistinguishable from c3's ~23080-23128ms. This rules out '8s was just barely too tight' as the explanation and confirms the real per-record compile+decode cost on this CPU-only sandbox (~23s) is roughly 2x even the raised 12s-per-record (36s combined) budget, not a narrow miss. Two consecutive cycles (c3, c4) now show the identical decode-timeout blocker with consistent measurements -- one more identical recurrence would trigger the loop law's repeated-hard-block rule.",
+  "harness_signal": {
+    "family": "model_build",
+    "status": "unresolved_pending_next_cycle",
+    "next_lever_options": [
+      "reduce screening_smoke_n below 3 so fewer records must fit the per-cycle eval wall",
+      "reduce screening training steps (currently 20) to leave more of the shared 180s MAX_RUN_MINUTES budget for eval",
+      "accept wf_smoke_v2 screening does not fit MAX_RUN_MINUTES=3 on a CPU-only sandbox and treat this loop's screening role as diagnostic-only until faster compute is authorized"
+    ],
+    "frozen_manifest_sha256": "e04c867bacf376cc23c6bed649e51ab28a273945e55b89b1d34401db8298ffb8"
+  },
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "infrastructure",
+      "hypothesis": "Timeout-value tuning is exhausted (2 consecutive identical outcomes); the next session should try a smoke_n or steps reduction instead of a further timeout bump, or accept the incompleteness and document it as a fixed structural limit of this sandbox class.",
+      "action": "repair_harness",
+      "experiment_id": "c20260804-continuous-openui-schedu-3d42338c-c4-canvas"
+    }
+  ],
+  "recorded_at": "2026-08-04T20:51:14Z"
+}

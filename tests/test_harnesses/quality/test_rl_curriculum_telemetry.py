@@ -20,7 +20,7 @@ from slm_training.harnesses.quality import (
     curriculum_mix_weights,
     sample_curriculum_batch,
     soft_corrupt_openui,
-    strip_adv_placeholders,
+    synthesize_stress_adversarial_records,
 )
 from slm_training.harnesses.rl import structure_reward, train_grpo
 from slm_training.harnesses.rl import GRPOConfig
@@ -28,11 +28,7 @@ from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 from slm_training.runtime.telemetry import CycleTelemetry, bind_telemetry, timed
 
 
-HERO = 'root = Stack([hero], "column")\nhero_title = TextContent(":hero.title")\nhero = Card([hero_title])\n'
-
-
-def test_strip_adv_placeholders() -> None:
-    assert '":item.' in strip_adv_placeholders('x = TextContent(":adv.title")')
+HERO = 'root = Stack([hero], "column")\nhero_title = TextContent(":slot_0")\nhero = Card([hero_title])\n'
 
 
 def test_curriculum_mix_keeps_b_late() -> None:
@@ -57,17 +53,27 @@ def test_sample_curriculum_batch_mix() -> None:
             ),
         ]
     )
-    # Non-C records should not keep :adv.
+    assert all(":adv." not in record.openui for record in records)
     assert all(
-        ":adv." not in r.openui
-        for r in records
-        if (r.meta or {}).get("curriculum") != "C"
+        marker.startswith(":slot_")
+        for record in records
+        for marker in record.placeholders
     )
     rng = random.Random(0)
     batch = sample_curriculum_batch(
         records, batch_size=6, step=80, total_steps=100, rng=rng, mix=True
     )
     assert len(batch) == 6
+
+
+def test_stress_records_use_opaque_markers() -> None:
+    records = synthesize_stress_adversarial_records()
+
+    assert all(
+        marker == f":slot_{index}"
+        for record in records
+        for index, marker in enumerate(record.placeholders)
+    )
 
 
 def test_dpo_loss_runs() -> None:
@@ -84,7 +90,7 @@ def test_dpo_loss_runs() -> None:
     pair = PreferencePair(
         prompt="Hero",
         chosen=HERO,
-        rejected='root = TextContent(":wrong.x")\n',
+        rejected='root = Button(":slot_0")\n',
     )
     loss = dpo_loss(model, pair, beta=0.1)
     assert float(loss.detach()) == float(loss.detach())
@@ -109,7 +115,7 @@ def test_grpo_smoke(tmp_path: Path, approved_rl_report) -> None:
         ExampleRecord(
             id="b",
             prompt="CTA",
-            openui='root = Button(":cta.label")\n',
+            openui='root = Button(":slot_0")\n',
             split="train",
         ),
     ]
@@ -153,7 +159,11 @@ def test_telemetry_spans(tmp_path: Path) -> None:
             pass
     summary = tel.summary()
     assert summary["spans"]["a"]["count"] == 2
+    assert len(summary["spans"]["a"]["samples_ns"]) == 2
+    assert all(value >= 0 for value in summary["spans"]["a"]["samples_ns"])
     assert summary["bottlenecks"]
     path = tel.write(tmp_path / "tel.json")
     data = json.loads(path.read_text(encoding="utf-8"))
     assert "total_ms" in data
+    with pytest.raises(ValueError, match="non-negative"):
+        tel.record_ms("bad", -1)

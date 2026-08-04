@@ -42,7 +42,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--record-support",
         action="store_true",
-        help="Persist grammar allowed_id_set on commits (E64 support match).",
+        help="Compatibility flag; E64 records grammar support whenever RL is enabled.",
     )
     args = parser.parse_args(argv)
     campaign_paths = (
@@ -115,7 +115,10 @@ def main(argv: list[str] | None = None) -> int:
         "--seed",
         str(args.seed),
     ]
-    if args.record_support:
+    # The learner must normalize on the rollout policy's exact grammar
+    # support.  This is mandatory for E64 and cannot be opted out of on an RL
+    # tranche; harvest-only ablations may still choose the smaller trace.
+    if args.record_support or not args.skip_rl:
         collect_argv.append("--record-support")
     collect_main(collect_argv)
 
@@ -184,6 +187,7 @@ def main(argv: list[str] | None = None) -> int:
             campaign_store=campaign_store,
             artifact_root=artifact_root,
             locked_manifest_path=locked_manifest_path,
+            promoted_candidate_id=out.name,
             meta={"policy_sha": policy_sha, "gates": gates},
         )
 

@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.casefiles import case_values
+
 torch = pytest.importorskip("torch")
 
 from slm_training.dsl import bridge_available
@@ -59,6 +61,66 @@ def test_tokenize_preserves_placeholders_and_whitespace() -> None:
     assert "Card" in tokens
 
 
+def test_compiler_timeout_folds_live_completion_session_stats(monkeypatch) -> None:
+    from slm_training.dsl.grammar.fastpath import compiler_draft
+    from slm_training.models.decode_stats import collect_decode_stats, get_active_stats
+
+    class State:
+        completion_batch_cache = None
+        remaining_tokens = None
+        collected = 0
+
+        def _collect_completion_stats(self) -> None:
+            self.collected += 1
+            stats = get_active_stats()
+            assert stats is not None
+            stats.completion_witness_states_expanded = 17
+
+    state = State()
+
+    class Model:
+        config = type(
+            "Config",
+            (),
+            {
+                "compiler_search_mode": "greedy",
+                "grammar_draft_window": 8,
+                "slot_contract_constrained_decode": False,
+            },
+        )()
+        tokenizer = type("Tokenizer", (), {"bos_id": 1})()
+        _slot_contracts = None
+
+        def _speculative_ranker(self):
+            return None
+
+        def _new_grammar_states(self, _batch_size):
+            return [state]
+
+        def _effective_min_content(self, _contract):
+            return 0
+
+        def _runtime_symbols_for_row(self, _row):
+            return ()
+
+    def interrupt(*_args, **_kwargs):
+        raise TimeoutError("deadline")
+
+    monkeypatch.setattr(compiler_draft, "build_completion_forest", interrupt)
+    with collect_decode_stats() as stats:
+        with pytest.raises(TimeoutError, match="deadline"):
+            TwoTowerModel._compiler_ltr_decode_batch(
+                Model(),
+                torch.zeros((1, 1, 1)),
+                torch.zeros((1, 1), dtype=torch.bool),
+                8,
+                mode="tree",
+            )
+
+    assert state.collected == 1
+    assert stats.completion_witness_states_expanded == 17
+
+
 def test_tokenizer_roundtrip() -> None:
     tok = OpenUITokenizer.build([HERO, CTA, "Hero card layout"])
     encoded = tok.encode(HERO)
@@ -88,6 +150,93 @@ def test_warm_start_vocab_remap_preserves_new_token_rows() -> None:
     )
 
     assert remapped.tolist() == [[9.0, 9.0], [1.0, 2.0], [7.0, 7.0]]
+
+
+def _compositional_warm_start_config() -> TwoTowerConfig:
+    return TwoTowerConfig(
+        output_tokenizer="compositional",
+        grammar_constrained=False,
+        d_model=16,
+        n_heads=4,
+        context_layers=1,
+        denoiser_layers=1,
+        max_prompt_len=32,
+        max_target_len=32,
+    )
+
+
+def test_warm_start_load_merges_context_vocab_and_remaps_shared_row(
+    tmp_path: Path,
+) -> None:
+    output = OpenUITokenizer.build([HERO])
+    source_context = OpenUITokenizer.build(["old shared"])
+    target_context = OpenUITokenizer.build(["shared new"])
+    assert source_context.token_to_id["shared"] != target_context.token_to_id["shared"]
+
+    source = TwoTowerModel(
+        output,
+        config=_compositional_warm_start_config(),
+        context_tokenizer=source_context,
+    )
+    with torch.no_grad():
+        source.context.encoder.tok.weight[source_context.token_to_id["shared"]].fill_(
+            4.25
+        )
+    checkpoint = tmp_path / "source.pt"
+    source.save(checkpoint)
+
+    target = TwoTowerModel(
+        output,
+        config=_compositional_warm_start_config(),
+        context_tokenizer=target_context,
+    )
+    new_row_before = (
+        target.context.encoder.tok.weight[target_context.token_to_id["new"]]
+        .detach()
+        .clone()
+    )
+    target.load(checkpoint, preserve_tokenizers=True)
+
+    assert set(target.context_tokenizer.token_to_id) == set(
+        source_context.token_to_id
+    ) | set(target_context.token_to_id)
+    shared_id = target.context_tokenizer.token_to_id["shared"]
+    torch.testing.assert_close(
+        target.context.encoder.tok.weight[shared_id],
+        torch.full_like(target.context.encoder.tok.weight[shared_id], 4.25),
+    )
+    torch.testing.assert_close(
+        target.context.encoder.tok.weight[target.context_tokenizer.token_to_id["new"]],
+        new_row_before,
+    )
+
+
+def test_warm_start_load_without_context_sidecar_uses_source_tokenizer(
+    tmp_path: Path,
+) -> None:
+    source_tokenizer = OpenUITokenizer.build(["old shared"])
+    source = TwoTowerModel(
+        source_tokenizer,
+        config=_compositional_warm_start_config(),
+        context_tokenizer=source_tokenizer,
+    )
+    checkpoint = tmp_path / "legacy.pt"
+    source.save(checkpoint)
+    assert not checkpoint.with_name(
+        checkpoint.stem + ".context.tokenizer.json"
+    ).exists()
+
+    target_context = OpenUITokenizer.build(["shared new"])
+    target = TwoTowerModel(
+        source_tokenizer,
+        config=_compositional_warm_start_config(),
+        context_tokenizer=target_context,
+    )
+    target.load(checkpoint, preserve_tokenizers=True)
+
+    assert set(target.context_tokenizer.token_to_id) == set(
+        source_tokenizer.token_to_id
+    ) | set(target_context.token_to_id)
 
 
 def test_warm_start_position_resize_copies_shared_prefix() -> None:
@@ -129,7 +278,9 @@ def test_history_ops_text_omitted_reproduces_prior_output_exactly() -> None:
     # new parameter must be a strict no-op when absent -- the regression
     # guard for the encoder_ops_conditioning lever staying default-off.
     prompt = "Return a boolean"
-    before = format_context_text(prompt, output_kind="lexical", output_category="boolean")
+    before = format_context_text(
+        prompt, output_kind="lexical", output_category="boolean"
+    )
     after = format_context_text(
         prompt, output_kind="lexical", output_category="boolean", history_ops_text=None
     )
@@ -261,7 +412,9 @@ def test_ltr_tail_mask_selects_only_final_real_suffix_tokens() -> None:
     )
     target = torch.tensor([[model.tokenizer.bos_id, 7, 8, 9, model.tokenizer.pad_id]])
     suffix = torch.tensor([[False, True, True, True, False]])
-    assert model._ltr_tail_mask(target, suffix).tolist() == [[False, False, True, True, False]]
+    assert model._ltr_tail_mask(target, suffix).tolist() == [
+        [False, False, True, True, False]
+    ]
 
 
 def test_model_build_config_threads_ltr_tail_controls() -> None:
@@ -274,6 +427,198 @@ def test_model_build_config_threads_ltr_tail_controls() -> None:
         )
     )
     assert (config.ltr_tail_loss_weight, config.ltr_tail_tokens) == (1.25, 2)
+
+
+def test_component_token_weight_changes_loss_and_emits_attribution() -> None:
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+    base = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            seed=7,
+            component_token_loss_weight=0.0,
+        ),
+        device="cpu",
+    )
+    weighted = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            seed=7,
+            component_token_loss_weight=1.0,
+        ),
+        device="cpu",
+    )
+
+    base_loss = base.training_loss(records)
+    weighted_loss = weighted.training_loss(records)
+
+    assert weighted.last_training_metrics["token_loss_component_count"] > 0
+    assert weighted.last_training_metrics["token_loss_component_mean_ce"] is not None
+    assert weighted_loss > base_loss
+
+
+def test_component_edge_token_weight_changes_loss_and_emits_attribution() -> None:
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+    base = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            seed=7,
+            component_edge_token_loss_weight=0.0,
+        ),
+        device="cpu",
+    )
+    weighted = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            seed=7,
+            component_edge_token_loss_weight=1.0,
+        ),
+        device="cpu",
+    )
+
+    base_loss = base.training_loss(records)
+    weighted_loss = weighted.training_loss(records)
+
+    assert sum(p.numel() for p in base.parameters()) == sum(
+        p.numel() for p in weighted.parameters()
+    )
+    assert weighted.last_training_metrics["token_loss_component_edge_count"] > 0
+    assert (
+        weighted.last_training_metrics["token_loss_component_edge_mean_ce"]
+        is not None
+    )
+    assert weighted_loss > base_loss
+
+
+def test_compiler_decision_token_weight_is_dense_and_zero_parameter() -> None:
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+    base = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            seed=7,
+            compiler_decision_token_loss_weight=0.0,
+        ),
+        device="cpu",
+    )
+    weighted = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            seed=7,
+            compiler_decision_token_loss_weight=1.0,
+        ),
+        device="cpu",
+    )
+
+    base_loss = base.training_loss(records)
+    weighted_loss = weighted.training_loss(records)
+
+    assert sum(p.numel() for p in base.parameters()) == sum(
+        p.numel() for p in weighted.parameters()
+    )
+    metrics = weighted.last_training_metrics
+    assert metrics["token_loss_compiler_decision_count"] > 0
+    assert metrics["token_loss_compiler_decision_mean_ce"] is not None
+    assert (
+        metrics["token_loss_compiler_decision_count"]
+        > metrics["token_loss_component_edge_count"]
+    )
+    assert weighted_loss > base_loss
+
+
+def test_structure_token_weight_changes_loss_and_emits_attribution() -> None:
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+    base = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            seed=7,
+            structure_token_loss_weight=0.0,
+        ),
+        device="cpu",
+    )
+    weighted = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            seed=7,
+            structure_token_loss_weight=1.0,
+        ),
+        device="cpu",
+    )
+
+    base_loss = base.training_loss(records)
+    weighted_loss = weighted.training_loss(records)
+
+    assert weighted.last_training_metrics["token_loss_structure_count"] > 0
+    assert weighted.last_training_metrics["token_loss_structure_mean_ce"] is not None
+    assert weighted_loss > base_loss
+
+
+def test_typed_family_balance_is_count_normalized_and_zero_parameter() -> None:
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+    base = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            seed=7,
+            typed_family_balance_loss_weight=0.0,
+        ),
+        device="cpu",
+    )
+    balanced = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            seed=7,
+            typed_family_balance_loss_weight=0.25,
+        ),
+        device="cpu",
+    )
+
+    base_params = sum(parameter.numel() for parameter in base.parameters())
+    balanced_params = sum(parameter.numel() for parameter in balanced.parameters())
+    base_loss = base.training_loss(records)
+    balanced_loss = balanced.training_loss(records)
+
+    assert base_params == balanced_params
+    assert balanced.last_training_metrics["typed_family_balance_active_families"] == 2
+    assert balanced.last_training_metrics["typed_family_balance_aux_loss"] > 0
+    assert balanced_loss > base_loss
 
 
 def test_checkpoint_rejects_missing_trainable_weights(tmp_path: Path) -> None:
@@ -297,20 +642,7 @@ def test_checkpoint_rejects_missing_trainable_weights(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize(
     ("output_tokenizer", "compiler_decode_mode", "loss_name", "head_name"),
-    [
-        (
-            "choice",
-            "off",
-            "root_reference_identity_loss_weight",
-            "root_reference_identity_head",
-        ),
-        (
-            "lexer",
-            "tree",
-            "root_reference_arity_loss_weight",
-            "root_reference_arity_head",
-        ),
-    ],
+    case_values(__file__, "test_checkpoint_rejects_missing_enabled_root_head"),
 )
 def test_checkpoint_rejects_missing_enabled_root_head(
     tmp_path: Path,
@@ -386,6 +718,38 @@ def test_training_loss_rechecks_opaque_role_safe_targets() -> None:
                 )
             ]
         )
+
+
+def test_structural_aux_profile_matches_trainable_capacity() -> None:
+    records = [
+        ExampleRecord(
+            id="a",
+            prompt="Hero",
+            openui=HERO,
+            placeholders=[":slot_0", ":slot_1"],
+            split="train",
+        )
+    ]
+    common = {
+        "d_model": 32,
+        "n_heads": 4,
+        "context_layers": 1,
+        "denoiser_layers": 1,
+        "output_tokenizer": "lexer",
+        "compiler_decode_mode": "tree",
+        "structural_aux_head_profile": "binder-topology",
+    }
+    control = TwoTowerModel.from_records(records, config=TwoTowerConfig(**common))
+    candidate = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(**common, binder_topology_loss_weight=0.25),
+    )
+
+    control_params = sum(p.numel() for p in control.trainable_parameters())
+    candidate_params = sum(p.numel() for p in candidate.trainable_parameters())
+    assert control.binder_topology_head is not None
+    assert candidate.binder_topology_head is not None
+    assert control_params == candidate_params
 
 
 def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) -> None:
@@ -571,6 +935,41 @@ def test_optional_heads_do_not_shift_training_rng() -> None:
     assert torch.equal(baseline, state_after(binder_topology_loss_weight=1.0))
     assert torch.equal(baseline, state_after(component_plan_loss_weight=1.0))
     assert torch.equal(baseline, state_after(abstract_plan_mode="sampled"))
+
+
+@pytest.mark.parametrize(
+    ("profile", "head_name", "weights"),
+    case_values(
+        __file__, "test_binder_quality_profiles_make_control_capacity_match_candidate"
+    ),
+)
+def test_binder_quality_profiles_make_control_capacity_match_candidate(
+    profile: str, head_name: str, weights: dict[str, float]
+) -> None:
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+
+    def model(**kwargs) -> TwoTowerModel:
+        return TwoTowerModel.from_records(
+            records,
+            config=TwoTowerConfig(
+                d_model=32,
+                n_heads=4,
+                context_layers=1,
+                denoiser_layers=1,
+                output_tokenizer="lexer",
+                structural_aux_head_profile=profile,
+                compiler_decode_mode="tree",
+                **kwargs,
+            ),
+        )
+
+    control = model()
+    candidate = model(**weights)
+    assert getattr(control, head_name) is not None
+    assert getattr(candidate, head_name) is not None
+    assert sum(parameter.numel() for parameter in control.parameters()) == sum(
+        parameter.numel() for parameter in candidate.parameters()
+    )
 
 
 def test_auxiliary_heads_do_not_change_base_optimizer_updates() -> None:
@@ -771,7 +1170,8 @@ def test_abstract_plan_trace_emits_valid_plan_for_every_enabled_mode(
     assert trace.plan_tokens.shape == (1, model.abstract_plan.rounds)
     assert bool(
         (
-            (trace.plan_tokens >= 0) & (trace.plan_tokens < model.abstract_plan.slot_count)
+            (trace.plan_tokens >= 0)
+            & (trace.plan_tokens < model.abstract_plan.slot_count)
         ).all()
     )
 
@@ -1245,9 +1645,7 @@ def test_opt_in_choice_generation_returns_exact_verified_stream(
     encoded = json.dumps(first.to_dict(), sort_keys=True, ensure_ascii=False)
     assert ChoiceGenerationResult.from_dict(json.loads(encoded)) == first
     payload = {
-        key: value
-        for key, value in first.to_dict().items()
-        if key != "fingerprint"
+        key: value for key, value in first.to_dict().items() if key != "fingerprint"
     }
     assert choice_generation_fingerprint(payload) == first.fingerprint
     for key, value in (
@@ -1303,9 +1701,7 @@ def test_choice_generation_rejects_incompatible_or_unprovable_paths(
     undeclared = GenerationRequest(
         prompt="Hero",
         slot_contract=(":slot_0",),
-        runtime_symbols=(
-            RuntimeSymbol(surface=":slot_1", role="external_entity"),
-        ),
+        runtime_symbols=(RuntimeSymbol(surface=":slot_1", role="external_entity"),),
     )
     with pytest.raises(ValueError, match="must appear in slot_contract"):
         choice.generate_batch_choice_requests([undeclared])

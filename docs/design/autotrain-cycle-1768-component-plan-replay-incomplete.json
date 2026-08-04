@@ -1,0 +1,132 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1768",
+  "cycle_index": 1768,
+  "cycle_intent": "retry_measurement",
+  "evidence_class": "fixture",
+  "decision": "infrastructure_incomplete_replay_exhausted",
+  "scoreable": false,
+  "training_reused": true,
+  "new_checkpoint_created": false,
+  "replay_source": {
+    "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1766",
+    "candidate_manifest_sha256": "bf5e918c828e08de6a2f56aa8c574d13892eb947311e8c5919ff299ef53236f5",
+    "control_manifest_sha256": "dcefb42aae3b8e360e744d443eddf7e9bcac5124839a18784fea252435757adc"
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1768-component-plan",
+      "manifest_sha256": "9efb753020baa802c98ddb09306a40c13d15acabdc74a6640b0915ad9a069d95",
+      "checkpoint_sha256": "8af2c84d30f1afa5d57ed942e18bb802be61d15762f02e93a5ead13330b6c2e3",
+      "checkpoint_source_campaign": "continuous-loop-20260802-continuous-openui-202607-98199209-c1766",
+      "params": 1755764,
+      "seed": 101766,
+      "component_plan_loss_weight": 1.0,
+      "component_plan_decode_weight": 1.0,
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 0,
+        "incomplete_document_n": 3,
+        "decode_timeout_count": 3,
+        "parse_rate": null,
+        "meaningful_program_rate": null,
+        "structural_similarity": null,
+        "binder_reference_f1": null,
+        "latency_ms_p50": null,
+        "latency_ms_p50_including_incomplete": 11179.11
+      },
+      "partial_decode_telemetry": {
+        "forwards_count_sum": 301.0,
+        "compiler_ms_sum": 9594.44,
+        "component_plan_applications_sum": 11.0,
+        "component_plan_choice_changes_sum": 3.0,
+        "completion_unique_states_sum": 110062.0,
+        "completion_transition_cache_misses_sum": 110888.0,
+        "completion_witness_states_expanded_sum": 6289.0,
+        "completion_parser_forks_sum": 115104.0
+      }
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1768-control",
+      "manifest_sha256": "f265a25f7b43f7c20c7f873f160f42fb926a847d22940b254f6134705c2ab875",
+      "checkpoint_sha256": "35869ea8c3cc64da161cb083bf20092ccaa03557e78b7c87861c95f6a7fbedd8",
+      "checkpoint_source_campaign": "continuous-loop-20260802-continuous-openui-202607-98199209-c1766",
+      "params": 1755764,
+      "seed": 101766,
+      "component_plan_loss_weight": 0.0,
+      "component_plan_decode_weight": 0.0,
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 3,
+        "incomplete_document_n": 0,
+        "decode_timeout_count": 0,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.13526666666666667,
+        "component_type_recall": 0.16666666666666666,
+        "binder_reference_f1": 0.6333333333333333,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.7653333333333334,
+        "latency_ms_p50": 1214.57
+      },
+      "decode_telemetry": {
+        "forwards_count_sum": 11.0,
+        "compiler_ms_sum": 2254.888,
+        "completion_unique_states_sum": 31115.0,
+        "completion_transition_cache_misses_sum": 31277.0,
+        "completion_witness_states_expanded_sum": 861.0,
+        "completion_parser_forks_sum": 32123.0
+      }
+    }
+  ],
+  "amplification_vs_control": {
+    "forwards": 27.363636363636363,
+    "completion_unique_states": 3.536815041941186,
+    "completion_transition_cache_misses": 3.545343862902452,
+    "completion_witness_states_expanded": 7.304297328687573,
+    "completion_parser_forks": 3.583228216542664
+  },
+  "diagnosis": {
+    "area": "model_build_runtime",
+    "signal": "component-plan changes the legal root from Button to Stack and repeatedly extends the variadic child list until the deadline",
+    "cache_conclusion": "trajectory_expansion_dominates",
+    "repair": "bound auxiliary component-plan root and count biases by configured weight",
+    "invariants_preserved": ["I1", "I2", "I5", "I6"]
+  },
+  "agentv": {
+    "suite_results_per_arm": 1,
+    "bundles_complete": true,
+    "execution_errors": 0,
+    "candidate_expected_gate_rejection": false,
+    "control_expected_gate_rejection": true
+  },
+  "ship_gates_pass": false,
+  "lean": "not_applicable:no_champion",
+  "next_priority": {
+    "area": "infrastructure",
+    "hypothesis": "Weight-bounded component-plan biases prevent auxiliary-head trajectory explosion while retaining legal plan-guided ranking.",
+    "required_controls": [
+      "exact_frozen_manifests",
+      "exact_checkpoint_reuse",
+      "complete_agentv_authority",
+      "unchanged_timeout_policy",
+      "constrained_decode",
+      "matched_control"
+    ]
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "4f9e3a937386d092474f87d69711987451103579",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v75",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v290"
+    },
+    "stamped_at": "2026-08-02T16:39:05.985064+00:00"
+  }
+}

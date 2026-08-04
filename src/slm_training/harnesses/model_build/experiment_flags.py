@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+from dataclasses import fields
 from typing import Any, Mapping, Sequence
 
 from slm_training.flags import (
@@ -97,9 +98,37 @@ def cli_lever_overrides(
     return overrides
 
 
+def cli_runtime_override_fields(
+    *, argv: Sequence[str] | None = None
+) -> frozenset[str]:
+    """Return checkpoint config fields explicitly selected on the CLI."""
+    raw_argv = tuple(sys.argv[1:] if argv is None else argv)
+
+    def supplied(option: str) -> bool:
+        return any(item == option or item.startswith(f"{option}=") for item in raw_argv)
+
+    selected = {
+        item.name
+        for item in fields(ModelBuildConfig)
+        if supplied(f"--{item.name.replace('_', '-')}")
+        or supplied(f"--no-{item.name.replace('_', '-')}")
+    }
+    aliases = {
+        "design_md_in_context": ("--design-md-context", "--no-design-md-context"),
+        "allow_unconstrained_fallback": ("--no-unconstrained-fallback",),
+    }
+    selected.update(
+        field
+        for field, options in aliases.items()
+        if any(supplied(option) for option in options)
+    )
+    return frozenset(selected)
+
+
 __all__ = [
     "apply_levers_from_environ",
     "apply_levers_from_mapping",
     "assignments_payload",
     "cli_lever_overrides",
+    "cli_runtime_override_fields",
 ]

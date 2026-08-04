@@ -6,11 +6,16 @@ import hashlib
 import json
 import math
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, Sequence
 
 from pydantic import Field, StrictInt, field_validator, model_validator
 
-from slm_training.autoresearch.schemas import CampaignBudget, StrictModel, utc_now
+from slm_training.autoresearch.schemas import (
+    CampaignBudget,
+    FormalObligationV1,
+    StrictModel,
+    utc_now,
+)
 from slm_training.lineage.records import canonical_json
 
 ClaimClass = Literal[
@@ -30,8 +35,19 @@ _PROMOTION_ARTIFACT_KINDS = frozenset(
         "holm_family",
         "agentevals",
         "agentv",
+        # Authoritative credit TCB: raw observations + locked plan + recomputed report
+        "observation_table",
+        "analysis_plan",
+        "credit_report",
     }
 )
+_CREDIT_ARTIFACT_KINDS = frozenset(
+    {"observation_table", "analysis_plan", "credit_report"}
+)
+_LEGACY_DIGEST_DEFAULTS = {
+    "replicate_ledger_schema": None,
+    "replicate_seed_floor": None,
+}
 
 
 def _unique(values: tuple[str, ...], label: str) -> None:
@@ -100,6 +116,10 @@ class ArtifactRequirementV1(StrictModel):
         "agentevals",
         "agentv",
         "ship_gates",
+        "formal_preflight",
+        "observation_table",
+        "analysis_plan",
+        "credit_report",
     ]
     minimum_count: int = Field(default=1, ge=1)
 
@@ -129,6 +149,7 @@ class ExperimentCampaignV1(StrictModel):
     promotion_gates: tuple[CampaignGateV1, ...] = Field(min_length=1)
     rollback_gates: tuple[CampaignGateV1, ...] = Field(min_length=1)
     artifact_requirements: tuple[ArtifactRequirementV1, ...] = Field(min_length=1)
+    formal_obligations: tuple[FormalObligationV1, ...] = ()
     claim_class: ClaimClass
     source_commit: str = Field(pattern=r"^[0-9a-f]{40}$")
     source_dirty: bool
@@ -146,6 +167,18 @@ class ExperimentCampaignV1(StrictModel):
     locked_eval_manifest_sha256: str | None = Field(
         default=None, pattern=r"^[0-9a-f]{64}$"
     )
+    metric_expectations_sha256: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$"
+    )
+    replay_of_manifest_sha256: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$"
+    )
+    replay_reason: str | None = Field(default=None, min_length=8)
+    replicate_ledger_schema: Literal["autotrain_promotion_replicate/v1"] | None = None
+    replicate_seed_floor: int | None = Field(default=None, ge=2)
+    # Climb / causal shape (required for promotion_candidate and ship_gate).
+    mechanism_off_arm_ids: tuple[str, ...] = ()
+    executable_kill_criteria: tuple[str, ...] = ()
 
     @field_validator("seeds", mode="before")
     @classmethod
@@ -158,6 +191,18 @@ class ExperimentCampaignV1(StrictModel):
 
     @model_validator(mode="after")
     def validate_contract(self) -> ExperimentCampaignV1:
+        if bool(self.replay_of_manifest_sha256) != bool(self.replay_reason):
+            raise ValueError(
+                "replay_of_manifest_sha256 and replay_reason must be declared together"
+            )
+        if bool(self.replicate_ledger_schema) != bool(self.replicate_seed_floor):
+            raise ValueError(
+                "replicate_ledger_schema and replicate_seed_floor must be declared together"
+            )
+        if self.replicate_ledger_schema and self.claim_class != "promotion_candidate":
+            raise ValueError(
+                "cross-campaign replicate ledgers are only valid for promotion candidates"
+            )
         endpoint_ids = tuple(item.endpoint_id for item in self.endpoints)
         arm_ids = tuple(item.arm_id for item in self.arms)
         control_ids = tuple(item.control_id for item in self.controls)
@@ -166,6 +211,12 @@ class ExperimentCampaignV1(StrictModel):
         )
         requirement_kinds = tuple(item.kind for item in self.artifact_requirements)
         family_ids = tuple(item.family_id for item in self.multiplicity_families)
+        obligation_ids = tuple(
+            item.obligation_id for item in self.formal_obligations
+        )
+        obligation_templates = tuple(
+            item.template_id for item in self.formal_obligations
+        )
         for values, label in (
             (endpoint_ids, "endpoint"),
             (arm_ids, "arm"),
@@ -173,8 +224,14 @@ class ExperimentCampaignV1(StrictModel):
             (gate_ids, "gate"),
             (requirement_kinds, "artifact requirement"),
             (family_ids, "multiplicity family"),
+            (obligation_ids, "formal obligation"),
+            (obligation_templates, "formal obligation template"),
         ):
             _unique(values, label)
+        if self.formal_obligations and "formal_preflight" not in requirement_kinds:
+            raise ValueError(
+                "formal obligations require the formal_preflight artifact requirement"
+            )
         if sum(item.role == "primary" for item in self.endpoints) != 1:
             raise ValueError("exactly one primary endpoint is required")
         if not any(item.role == "control" for item in self.arms):
@@ -227,6 +284,49 @@ class ExperimentCampaignV1(StrictModel):
                 raise ValueError(
                     f"promotion artifact requirements missing: {sorted(missing_kinds)}"
                 )
+            # Causal shape for climb (size-matched control, mechanism-off,
+            # destructive negative, executable kill criteria, multi-seed).
+            from slm_training.autoresearch.hillclimb import (
+                MIN_CLIMB_SEEDS,
+                validate_causal_campaign_shape,
+            )
+
+            seed_floor = MIN_CLIMB_SEEDS
+            require_ms = True
+            try:
+                from slm_training.autoresearch.climb_policy import (
+                    load_climb_policy,
+                    promotion_seed_floor,
+                )
+
+                seed_floor, require_ms = promotion_seed_floor(load_climb_policy())
+                if not require_ms:
+                    seed_floor = max(1, int(seed_floor) if seed_floor else 1)
+            except Exception:  # noqa: BLE001 — policy load must not block fixtures
+                seed_floor = MIN_CLIMB_SEEDS
+                require_ms = True
+            external_replicates = bool(
+                self.replicate_ledger_schema
+                and self.replicate_seed_floor
+                and self.replicate_seed_floor >= seed_floor
+            )
+            if len(self.seeds) < seed_floor and not external_replicates:
+                raise ValueError(
+                    f"promotion campaigns require at least {seed_floor} seeds "
+                    "for primary LCB (multi-seed)"
+                )
+            # Pass the same policy seed floor into causal shape so the two
+            # checks cannot disagree (hardcoded MIN_CLIMB_SEEDS vs policy).
+            causal_failures = validate_causal_campaign_shape(
+                self,
+                min_seeds=1 if external_replicates else seed_floor,
+                require_multi_seed=False if external_replicates else require_ms,
+            )
+            if causal_failures:
+                raise ValueError(
+                    "promotion campaigns require causal shape: "
+                    + ", ".join(causal_failures)
+                )
         if self.requires_rl and (
             not self.rl_readiness_report_sha256 or not self.rl_evaluation_sha256
         ):
@@ -244,11 +344,16 @@ class CampaignLockV1(StrictModel):
 
     @model_validator(mode="after")
     def verify_digest(self) -> CampaignLockV1:
-        validated = ExperimentCampaignV1.model_validate(
-            self.manifest.model_dump(mode="json")
-        )
-        actual = campaign_manifest_sha256(validated)
-        if actual != self.manifest_sha256:
+        payload = self.manifest.model_dump(mode="json")
+        actual = _campaign_payload_sha256(payload)
+        if actual == self.manifest_sha256:
+            return self
+
+        legacy_payload = dict(payload)
+        for field, default in _LEGACY_DIGEST_DEFAULTS.items():
+            if legacy_payload.get(field) == default:
+                legacy_payload.pop(field, None)
+        if _campaign_payload_sha256(legacy_payload) != self.manifest_sha256:
             raise ValueError("campaign manifest digest mismatch")
         return self
 
@@ -285,6 +390,12 @@ class CampaignResultV1(StrictModel):
     arm_seed_results: tuple[tuple[str, StrictInt], ...] = ()
     paired_example_ids: dict[str, tuple[str, ...]] = Field(default_factory=dict)
     endpoint_values: dict[str, float] = Field(default_factory=dict)
+    # Per-seed primary endpoint values for climb multi-seed LCB (required for
+    # promotion_candidate / ship_gate climb eligibility).
+    primary_endpoint_seed_values: tuple[float, ...] = ()
+    baseline_trainable_params: int | None = None
+    candidate_trainable_params: int | None = None
+    eg_params_by_seed: tuple[float, ...] = ()
     holm_results: tuple[HolmResultV1, ...] = ()
     artifacts: tuple[CampaignArtifactV1, ...] = ()
     exploratory: bool = False
@@ -311,9 +422,12 @@ class HolmResultV1(StrictModel):
         return self
 
 
-def campaign_manifest_sha256(manifest: ExperimentCampaignV1) -> str:
-    payload = manifest.model_dump(mode="json")
+def _campaign_payload_sha256(payload: dict[str, Any]) -> str:
     return hashlib.sha256(canonical_json(payload).encode("utf-8")).hexdigest()
+
+
+def campaign_manifest_sha256(manifest: ExperimentCampaignV1) -> str:
+    return _campaign_payload_sha256(manifest.model_dump(mode="json"))
 
 
 def load_ap001_certification(path: Path | None) -> AP001CertificationV1 | None:
@@ -351,6 +465,12 @@ def validate_result_claim(
     *,
     artifact_root: Path | None = None,
     locked_manifest_path: Path | None = None,
+    label_as_climb: bool | None = None,
+    primary_seed_values: Sequence[float] | None = None,
+    baseline_primary: float | None = None,
+    baseline_trainable_params: int | None = None,
+    candidate_trainable_params: int | None = None,
+    eg_params_by_seed: Sequence[float] | None = None,
 ) -> tuple[str, ...]:
     """Return fail-closed governance failures for a claimed result.
 
@@ -361,6 +481,12 @@ def validate_result_claim(
     built a manifest file are unaffected; promotion/ship call sites should
     pass the canonical path (``locked_eval_manifest.canonical_manifest_path``)
     to get the stronger, content-addressed check.
+
+    Climb eligibility is always enforced for ``promotion_candidate`` /
+    ``ship_gate`` results (multi-seed primary LCB + locked eval). Setting
+    ``label_as_climb=True`` additionally fails fixture/wiring results that try
+    to brand non-climb work as progress. ``label_as_climb=None`` (default)
+    auto-selects True for promotion-class claims.
     """
     failures: list[str] = []
     expected_sha = campaign_manifest_sha256(manifest)
@@ -372,6 +498,49 @@ def validate_result_claim(
         failures.append("manifest_sha256_mismatch")
     if result.claim_class != manifest.claim_class:
         failures.append("claim_class_mismatch")
+    climb_claim = result.claim_class in {"promotion_candidate", "ship_gate"}
+    apply_climb = climb_claim if label_as_climb is None else bool(label_as_climb)
+    if apply_climb:
+        from slm_training.autoresearch.hillclimb import climb_step_eligibility
+
+        primary = next(
+            (e for e in manifest.endpoints if e.role == "primary"), None
+        )
+        seed_vals = primary_seed_values
+        if seed_vals is None and result.primary_endpoint_seed_values:
+            seed_vals = result.primary_endpoint_seed_values
+        direction = "increase"
+        if primary is not None and getattr(primary, "direction", None) in {
+            "increase",
+            "decrease",
+        }:
+            direction = primary.direction  # type: ignore[assignment]
+        min_seeds = None
+        require_multi = True
+        try:
+            from slm_training.autoresearch.climb_policy import (
+                load_climb_policy,
+                promotion_seed_floor,
+            )
+
+            min_seeds, require_multi = promotion_seed_floor(load_climb_policy())
+        except Exception:  # noqa: BLE001
+            min_seeds, require_multi = None, True
+        climb = climb_step_eligibility(
+            claim_class=result.claim_class,
+            locked_eval_manifest_sha256=result.locked_eval_manifest_sha256
+            or manifest.locked_eval_manifest_sha256,
+            seeds=manifest.seeds,
+            primary_endpoint_seed_values=seed_vals,
+            baseline_primary=baseline_primary,
+            minimum_effect=float(primary.minimum_effect) if primary else 0.0,
+            label_as_climb=True,
+            direction=direction,  # type: ignore[arg-type]
+            min_seeds=min_seeds,
+            require_multi_seed=require_multi,
+        )
+        if not climb.eligible:
+            failures.extend(f"climb:{f}" for f in climb.failures)
     if result.claim_class not in {"promotion_candidate", "ship_gate"}:
         return tuple(failures)
     if not result.locked_eval_manifest_sha256:
@@ -425,16 +594,20 @@ def validate_result_claim(
         or set(ranks) != set(range(1, len(expected_holm) + 1))
     ):
         failures.append("incomplete_holm_family")
-    if any(
-        not _gate_matches(gate, result.endpoint_values.get(gate.endpoint_id))
-        for gate in manifest.promotion_gates
-    ):
-        failures.append("promotion_gates_not_passed")
-    if any(
-        _gate_matches(gate, result.endpoint_values.get(gate.endpoint_id))
-        for gate in manifest.rollback_gates
-    ):
-        failures.append("rollback_gates_not_passed")
+    # Promotion/ship gate outcomes are recomputed from observation_table +
+    # analysis_plan inside _validate_authoritative_credit. Caller-supplied
+    # endpoint_values must not authorize gate pass/fail for those claims.
+    if result.claim_class not in {"promotion_candidate", "ship_gate"}:
+        if any(
+            not _gate_matches(gate, result.endpoint_values.get(gate.endpoint_id))
+            for gate in manifest.promotion_gates
+        ):
+            failures.append("promotion_gates_not_passed")
+        if any(
+            _gate_matches(gate, result.endpoint_values.get(gate.endpoint_id))
+            for gate in manifest.rollback_gates
+        ):
+            failures.append("rollback_gates_not_passed")
     artifact_counts: dict[str, int] = {}
     artifact_keys: set[tuple[str, str, str]] = set()
     for artifact in result.artifacts:
@@ -459,7 +632,176 @@ def validate_result_claim(
                 failures.append(f"artifact_digest_mismatch:{artifact.kind}")
     if result.claim_class == "ship_gate" and not result.ship_gates_passed:
         failures.append("ship_gates_not_passed")
+    # Authoritative credit: recompute from observations; reject summary-only.
+    if result.claim_class in {"promotion_candidate", "ship_gate"}:
+        failures = list(failures)
+        failures.extend(
+            _validate_authoritative_credit(
+                manifest,
+                result,
+                artifact_root=artifact_root,
+            )
+        )
+        failures = list(dict.fromkeys(failures))
+    # Capacity growth must pay for itself on climb/promotion paths.
+    # Prefer explicit kwargs; fall back to fields carried on the result.
+    base_params = (
+        baseline_trainable_params
+        if baseline_trainable_params is not None
+        else result.baseline_trainable_params
+    )
+    cand_params = (
+        candidate_trainable_params
+        if candidate_trainable_params is not None
+        else result.candidate_trainable_params
+    )
+    eg_seeds: Sequence[float] | None
+    if eg_params_by_seed is not None:
+        eg_seeds = eg_params_by_seed
+    elif result.eg_params_by_seed:
+        eg_seeds = result.eg_params_by_seed
+    else:
+        eg_seeds = None
+    if base_params is not None or cand_params is not None or eg_seeds is not None:
+        from slm_training.autoresearch.hillclimb import assert_capacity_growth_allowed
+        from slm_training.autoresearch.hillclimb import HillClimbError
+
+        try:
+            assert_capacity_growth_allowed(
+                baseline_params=base_params,
+                candidate_params=cand_params,
+                eg_params_by_seed=eg_seeds,
+            )
+        except HillClimbError as exc:
+            failures = (*tuple(failures), f"eg_params:{exc}")
     return tuple(failures)
+
+
+def _validate_authoritative_credit(
+    manifest: ExperimentCampaignV1,
+    result: CampaignResultV1,
+    *,
+    artifact_root: Path | None,
+) -> tuple[str, ...]:
+    """Recompute credit from observation_table + analysis_plan; match report."""
+
+    from slm_training.autoresearch.credit_engine import (
+        CreditEngineError,
+        analysis_plan_from_mapping,
+        compute_credit_report,
+        credit_report_from_mapping,
+        load_json_artifact,
+        observation_table_from_mapping,
+        verify_credit_against_caller,
+    )
+
+    failures: list[str] = []
+    by_kind = {a.kind: a for a in result.artifacts}
+    for kind in sorted(_CREDIT_ARTIFACT_KINDS):
+        if kind not in by_kind:
+            failures.append(f"missing_credit_artifact:{kind}")
+    if failures:
+        # Summary-only promotion path
+        if not _CREDIT_ARTIFACT_KINDS.intersection(by_kind):
+            failures.append("credit_summary_only_rejected")
+        return tuple(failures)
+    if artifact_root is None:
+        return ("artifact_root_missing",)
+
+    root = artifact_root.resolve()
+    try:
+        table_art = by_kind["observation_table"]
+        plan_art = by_kind["analysis_plan"]
+        report_art = by_kind["credit_report"]
+        table_path = (root / table_art.uri).resolve()
+        plan_path = (root / plan_art.uri).resolve()
+        report_path = (root / report_art.uri).resolve()
+        for path, kind, art in (
+            (table_path, "observation_table", table_art),
+            (plan_path, "analysis_plan", plan_art),
+            (report_path, "credit_report", report_art),
+        ):
+            if root not in path.parents or not path.is_file():
+                failures.append(f"credit_artifact_unverified:{kind}")
+                continue
+            if hashlib.sha256(path.read_bytes()).hexdigest() != art.sha256:
+                failures.append(f"credit_artifact_digest_mismatch:{kind}")
+        if failures:
+            return tuple(failures)
+
+        table = observation_table_from_mapping(load_json_artifact(table_path))
+        plan = analysis_plan_from_mapping(load_json_artifact(plan_path))
+        claimed = credit_report_from_mapping(load_json_artifact(report_path))
+        if table.manifest_sha256 != result.manifest_sha256:
+            failures.append("observation_manifest_sha256_mismatch")
+        if table.campaign_id != result.campaign_id or table.experiment_id != result.experiment_id:
+            failures.append("observation_identity_mismatch")
+
+        # Gate thresholds from manifest primary promotion/rollback if present
+        promo = next((g for g in manifest.promotion_gates if g.endpoint_id), None)
+        roll = next((g for g in manifest.rollback_gates if g.endpoint_id), None)
+        recomputed = compute_credit_report(
+            table,
+            plan,
+            promotion_gate_threshold=float(promo.threshold) if promo else None,
+            promotion_gate_operator=str(promo.operator) if promo else "ge",
+            rollback_gate_threshold=float(roll.threshold) if roll else None,
+            rollback_gate_operator=str(roll.operator) if roll else "lt",
+        )
+        if recomputed.content_sha256() != claimed.content_sha256():
+            # Allow report to match recomputation field-wise with digest of claimed body
+            if (
+                recomputed.observation_table_sha256 != claimed.observation_table_sha256
+                or recomputed.analysis_plan_sha256 != claimed.analysis_plan_sha256
+                or abs(recomputed.paired_effect - claimed.paired_effect) > 1e-9
+                or recomputed.promotable_empirical != claimed.promotable_empirical
+                or recomputed.disposition != claimed.disposition
+            ):
+                failures.append("credit_report_recompute_mismatch")
+        if table.content_sha256() != claimed.observation_table_sha256:
+            failures.append("credit_report_table_digest_mismatch")
+        if plan.content_sha256() != claimed.analysis_plan_sha256:
+            failures.append("credit_report_plan_digest_mismatch")
+
+        # Caller summaries must match recomputation (or be absent of conflicts)
+        required_endpoint_ids = tuple(ep.endpoint_id for ep in manifest.endpoints)
+        caller_holm = [
+            {
+                "hypothesis_id": h.hypothesis_id,
+                "raw_p_value": h.raw_p_value,
+                "adjusted_p_value": h.adjusted_p_value,
+                "rejected": h.rejected,
+            }
+            for h in result.holm_results
+        ]
+        failures.extend(
+            verify_credit_against_caller(
+                recomputed,
+                caller_endpoints=result.endpoint_values,
+                caller_holm=caller_holm,
+                required_endpoint_ids=required_endpoint_ids,
+            )
+        )
+        # Gate outcomes from recomputed endpoint authority only.
+        for gate in manifest.promotion_gates:
+            if not _gate_matches(
+                gate, recomputed.endpoint_values.get(gate.endpoint_id)
+            ):
+                failures.append("promotion_gates_not_passed")
+                break
+        for gate in manifest.rollback_gates:
+            if _gate_matches(gate, recomputed.endpoint_values.get(gate.endpoint_id)):
+                failures.append("rollback_gates_not_passed")
+                break
+        if not recomputed.promotable_empirical:
+            failures.append("credit_not_promotable_empirical")
+        if recomputed.disposition == "inconclusive":
+            failures.append("credit_inconclusive_underpowered")
+        if not recomputed.sealed_score_once_ok:
+            failures.append("sealed_score_once_violation")
+    except CreditEngineError as exc:
+        failures.append(f"credit_engine:{exc}")
+    return tuple(dict.fromkeys(failures))
 
 
 def _gate_matches(gate: CampaignGateV1, value: float | None) -> bool:

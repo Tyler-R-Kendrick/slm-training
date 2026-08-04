@@ -1,0 +1,43 @@
+{
+  "assertions": [
+    {
+      "text": "simple_prefix_regression_le_15pct:domain_criterion",
+      "passed": false,
+      "evidence": "actual=False operator=eq expected=True"
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 1,
+    "total": 1,
+    "pass_rate": 0
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0,
+    "errors_encountered": 0
+  },
+  "graders": [
+    {
+      "name": "simple_prefix_regression_le_15pct:domain_criterion",
+      "type": "code-grader",
+      "score": 0,
+      "reasoning": "",
+      "weight": 1,
+      "verdict": "fail",
+      "assertions": [
+        {
+          "text": "simple_prefix_regression_le_15pct:domain_criterion",
+          "passed": false,
+          "evidence": "actual=False operator=eq expected=True"
+        }
+      ],
+      "details": {
+        "criterion_id": "simple_prefix_regression_le_15pct:domain_criterion",
+        "actual": false,
+        "operator": "eq",
+        "expected": true
+      }
+    }
+  ]
+}

@@ -354,7 +354,7 @@ OpenUI TwoTower, what is a real gap, what is out of scope) lives in
 | **Paper** | *Training Step-Level Reasoning Verifiers with Formal Verification Tools*, 2025. [arXiv:2505.15960](https://arxiv.org/abs/2505.15960) |
 | **Fidelity** | **Adjacent** — motivates distilling expensive formal checks into a compact process model while retaining the formal tool as authority |
 | **Code analogue** | `FastPathGate` + BackPlay-lite mining ([`dsl/grammar/fastpath/gate.py`](../../src/slm_training/dsl/grammar/fastpath/gate.py), [`trust_train.py`](../../src/slm_training/dsl/grammar/fastpath/trust_train.py)); grammar remains legality authority |
-| **Proposed** | Calibration / abstention (**E63** in the mapping doc; E53 is the shipped V6 honest champion) |
+| **Adapted (wired, unmeasured)** | Held-out Brier/ECE plus selective-risk remask threshold (**E63**; E53 is the shipped V6 honest champion) |
 
 ### MDPO / d1 (trajectory-aligned masked-diffusion RL)
 
@@ -363,7 +363,7 @@ OpenUI TwoTower, what is a real gap, what is out of scope) lives in
 | **Papers** | *MDPO: Overcoming the Training-Inference Divide of Masked Diffusion Language Models*, 2025. [arXiv:2508.13148](https://arxiv.org/abs/2508.13148). Related: d1 masked-diffusion policy optimization [arXiv:2504.12216](https://arxiv.org/abs/2504.12216); PAPO / dOPSD-style dense intermediate rewards (Adjacent) |
 | **Fidelity** | **Adjacent** — candidates to replace the GRPO-lite **Surrogate** on final strings |
 | **Code today** | [`harnesses/rl/`](../../src/slm_training/harnesses/rl/) GRPO-lite; preference stage in [`harnesses/preference/train.py`](../../src/slm_training/harnesses/preference/train.py) |
-| **Proposed** | Trajectory-aligned objective on intermediate MaskGIT states (**E64**; E54/E55 are shipped V6 grammar-honest / process stages) |
+| **Adapted (wired, unmeasured)** | Exact-support trajectory objective on intermediate MaskGIT states (**E64**; E54/E55 are shipped V6 grammar-honest / process stages) |
 
 ### Constrained diffusion decoding (LAVE / EPIC family)
 
@@ -379,7 +379,7 @@ OpenUI TwoTower, what is a real gap, what is out of scope) lives in
 | --- | --- |
 | **Papers** | PlanBench [arXiv:2206.10498](https://arxiv.org/abs/2206.10498); *On the Generalization Gap in LLM Planning* [arXiv:2601.14456](https://arxiv.org/abs/2601.14456); Chain-of-Thoughtlessness / related CoT collapse under complexity |
 | **Fidelity** | **Adjacent** — motivates **schema-level** held-out splits (unseen component families, symbol rename), not only held-out instances |
-| **Proposed** | **E65** + `toy-layout` transfer stress; see [`verifier-guided-repair.md`](verifier-guided-repair.md) §4 |
+| **Adapted (wired, unmeasured)** | **E65** unseen-family, rename, reorder, and alternate-pack transfer reports; see [`verifier-guided-repair.md`](verifier-guided-repair.md) §4 |
 
 ### LLM+P (neural formalize, symbolic search)
 
@@ -1979,6 +1979,35 @@ generation are out of scope for this issue per the LOT0-01 authorization. A
 
 The gate verdict is `inconclusive`: it authorizes no semantic-quality,
 oracle-ceiling, or causal-latent-use claim, and no LOT1 model implementation.
+
+## Packed incremental grammar completion (2026-07-29)
+
+| | |
+| --- | --- |
+| **Papers** | *Pre³: Enabling Deterministic Pushdown Automata for Faster Structured LLM Generation* ([ACL 2025](https://aclanthology.org/2025.acl-long.551/)); *XGrammar 2* ([arXiv:2601.04426](https://arxiv.org/abs/2601.04426)); *Lookahead-then-Verify* ([arXiv:2602.00612](https://arxiv.org/abs/2602.00612)); SpecInfer ([arXiv:2305.09781](https://arxiv.org/abs/2305.09781)); ACRoBat ([MLSys 2024](https://proceedings.mlsys.org/paper_files/paper/2024/hash/096b1019463f34eb241e87cfce8dfe16-Abstract-Conference.html)) |
+| **Fidelity** | **Adapted compiler/runtime mechanism** — prefix-conditioned packed transitions, request-local reusable state, verified completion lookahead, and batching of independent ambiguous rows; not a reproduction of any cited model or serving system |
+| **Code** | [`completion_kernel.py`](../../src/slm_training/dsl/grammar/fastpath/completion_kernel.py), [`semantic_state.py`](../../src/slm_training/dsl/grammar/fastpath/semantic_state.py), [`pack.py`](../../src/slm_training/dsl/pack.py), and compiler batching in [`twotower.py`](../../src/slm_training/models/twotower.py) |
+| **Evidence** | [`completion-kernel-perf-results.json`](completion-kernel-perf-results.json) and [`perf-experiment-matrix.md`](perf-experiment-matrix.md#packed-incremental-completion-kernel-2026-07-29) |
+
+The authority boundary is narrower than the systems analogies. Grammar and
+scope state remain row-local; only immutable exact domains and neural tensor
+work may be shared. An incomplete witness, failed transition, or depleted
+budget stays UNKNOWN, and an exact complete singleton bypasses inference.
+Pre³ supports the prefix-conditioned transition direction, XGrammar 2 the
+fine-grained reuse direction, LAVE verified future validity, and
+SpecInfer/ACRoBat the batched shared-compute shape under divergent control
+flow. Their reported speedups do not transfer.
+
+The first integrated run confirmed exact batch compaction but failed one
+pre-existing cold microbenchmark after the neural fixture was inserted ahead of
+it. The preregistered successor isolates the new fixture after the unchanged
+upstream measurements; this is benchmark-order correction, not an adopted
+speedup claim.
+
+That successor passed 17/17 with exact outputs and 10-to-5 neural-call
+compaction at unchanged row volume. Its tiny CPU batch was 0.961x in wall time,
+so the evidence supports the divergent-row batching mechanism but not a CPU
+latency speedup or any transfer of the cited systems' reported gains.
 
 ## Honesty rules (for docs & claims)
 

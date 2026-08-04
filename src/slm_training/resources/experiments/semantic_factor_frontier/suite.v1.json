@@ -1,0 +1,162 @@
+{
+  "schema": "sff_suite/v1",
+  "version": "v1",
+  "description": "Fixture suite for SFF: generator params + static safety/adversarial examples.",
+  "min_ranked_design": 24,
+  "ranked_families": [
+    "ranked",
+    "adversarial"
+  ],
+  "ranked_generator": {
+    "n": 24,
+    "kinds": [
+      "TextContent",
+      "Button",
+      "Input",
+      "List",
+      "CardHeader",
+      "Image"
+    ],
+    "root_kind": "Card",
+    "noise_kind": "List",
+    "baseline": {
+      "gold": 0.1,
+      "distractor_base": 0.4,
+      "distractor_step": 0.01,
+      "distractor_mod": 3,
+      "noise": 0.05
+    },
+    "binder_role": "USE",
+    "distractor_on_root_every": 5
+  },
+  "static_examples": [
+    {
+      "example_id": "singleton_root",
+      "components": [
+        [
+          "root",
+          "Card"
+        ]
+      ],
+      "binder_edges": [],
+      "legal": [
+        "="
+      ],
+      "coverage": "complete",
+      "gold": "=",
+      "baseline": {
+        "=": 1.0
+      },
+      "family": "safety"
+    },
+    {
+      "example_id": "incomplete_unknown",
+      "components": [
+        [
+          "Card",
+          "Card"
+        ]
+      ],
+      "binder_edges": [],
+      "legal": [
+        "b1",
+        "b2"
+      ],
+      "coverage": "incomplete",
+      "gold": null,
+      "baseline": {
+        "b1": 0.0,
+        "b2": 0.0
+      },
+      "family": "safety"
+    },
+    {
+      "example_id": "role_direction",
+      "components": [
+        [
+          "src",
+          "binder"
+        ],
+        [
+          "tgt",
+          "binder"
+        ],
+        [
+          "alt",
+          "binder"
+        ]
+      ],
+      "binder_edges": [
+        [
+          "src",
+          "tgt",
+          "DEFINITION"
+        ]
+      ],
+      "legal": [
+        "src",
+        "tgt",
+        "alt"
+      ],
+      "coverage": "complete",
+      "gold": "tgt",
+      "baseline": {
+        "src": 0.55,
+        "tgt": 0.4,
+        "alt": 0.1
+      },
+      "family": "adversarial"
+    },
+    {
+      "example_id": "hub_noise",
+      "components": [
+        [
+          "hub",
+          "Card"
+        ],
+        [
+          "a",
+          "TextContent"
+        ],
+        [
+          "b",
+          "Button"
+        ],
+        [
+          "noise",
+          "List"
+        ]
+      ],
+      "binder_edges": [
+        [
+          "hub",
+          "a",
+          "USE"
+        ],
+        [
+          "noise",
+          "b",
+          "USE"
+        ],
+        [
+          "noise",
+          "a",
+          "USE"
+        ]
+      ],
+      "legal": [
+        "a",
+        "b",
+        "noise"
+      ],
+      "coverage": "complete",
+      "gold": "a",
+      "baseline": {
+        "a": 0.05,
+        "b": 0.1,
+        "noise": 0.5
+      },
+      "family": "adversarial"
+    }
+  ]
+}

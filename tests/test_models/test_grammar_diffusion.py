@@ -624,3 +624,87 @@ def test_grammar_diffusion_train_eval_overfit(tmp_path: Path) -> None:
     assert metrics["placeholder_fidelity"] >= 0.5
     assert metrics["contract_precision"] >= 0.5
     assert metrics["fallback_count"] == 0
+
+
+def test_pick_constrained_production_reports_survivor_confidence() -> None:
+    """L-D fix: confidence must be the surviving candidate's probability.
+
+    Previously the unconstrained argmax's max(softmax) was returned even when
+    that candidate was rejected by the extendability check, letting an illegal
+    token's probability rank the commit order.
+    """
+    import torch as _torch
+
+    from slm_training.models.constrained_posterior import (
+        pick_constrained_production,
+    )
+
+    class _Codec:
+        pad_id = 0
+        mask_id = 1
+        id_to_production = {0: "PAD", 1: "MASK", 2: "Bad", 3: "Good"}
+
+    class _Checker:
+        def trial_extendable(self, codec, prods, slots, inv, pos, prod_id, slot_id):
+            return prod_id == 3  # only "Good" survives
+
+    logits = _torch.full((1, 1, 4), -10.0)
+    logits[0, 0, 2] = 5.0  # illegal argmax
+    logits[0, 0, 3] = 1.0  # legal survivor
+    slot_logits = _torch.zeros((1, 1, 2))
+    result = pick_constrained_production(
+        logits,
+        slot_logits,
+        position=0,
+        production_ids=[],
+        slot_ids=[],
+        slot_inventory=[],
+        codec=_Codec(),
+        checker=_Checker(),
+        top_k=4,
+    )
+    assert result is not None
+    prod_id, _slot, confidence = result
+    assert prod_id == 3
+    probs = _torch.softmax(logits[0, 0], dim=-1)
+    assert abs(confidence - float(probs[3])) < 1e-6
+    assert confidence < float(probs[2])  # NOT the rejected argmax's mass
+
+
+def test_block_diffusion_lever_generates_valid_output() -> None:
+    """L-D smoke: block-scheduled unmasking + joint validation produce a
+    grammar-valid program; lever off remains the default path."""
+    from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
+
+    records = [
+        ExampleRecord(
+            id="a",
+            prompt="Hero",
+            openui=HERO,
+            split="train",
+            placeholders=[":slot_0", ":slot_1"],
+        ),
+        ExampleRecord(
+            id="b", prompt="CTA", openui=CTA, split="train", placeholders=[":slot_0"]
+        ),
+    ]
+    cfg = TwoTowerConfig(
+        d_model=64,
+        n_heads=4,
+        context_layers=1,
+        denoiser_layers=2,
+        gen_steps=4,
+        max_target_len=64,
+        max_prompt_len=32,
+        seed=0,
+        grammar_ltr_primary=False,
+        block_diffusion_decode=True,
+        block_diffusion_block_size=4,
+    )
+    model = TwoTowerModel.from_records(records, config=cfg, device="cpu")
+    model.eval()
+    text = model.generate("Hero")
+    assert isinstance(text, str) and text.strip()
+    from slm_training.dsl.parser import validate
+
+    validate(text)  # raises on invalid OpenUI

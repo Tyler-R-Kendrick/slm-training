@@ -7,6 +7,8 @@ import argparse
 import hashlib
 import json
 import os
+import subprocess
+import time
 from pathlib import Path
 
 from slm_training.levers import MAX_RUN_MINUTES
@@ -15,10 +17,17 @@ from slm_training.autoresearch.engine import (
     create_hypothesis_feedback,
     diagnose_outcome,
     execute_commands,
+    normalized_knobs_sha256,
     validate_experiment,
     validate_hypothesis_matrix,
 )
 from slm_training.autoresearch.evidence import collect_evidence
+from slm_training.autoresearch.experiment_campaign import ExperimentCampaignV1
+from slm_training.autoresearch.formal import (
+    bind_preflight,
+    run_formal_preflight,
+    validate_formal_preflights,
+)
 from slm_training.autoresearch.hypothesizer_eval import evaluate_hypothesizer
 from slm_training.autoresearch.literature import (
     HuggingFacePapersClient,
@@ -41,6 +50,8 @@ from slm_training.autoresearch.rl_gate import (
     write_rl_readiness,
 )
 from slm_training.autoresearch.schemas import (
+    AutotrainActionReceiptV1,
+    AutotrainCycleHandoffV1,
     CampaignBudget,
     CampaignSpec,
     Diagnosis,
@@ -49,15 +60,87 @@ from slm_training.autoresearch.schemas import (
     ExperimentSpec,
     HypothesisFeedback,
     HypothesisMatrix,
+    OptimumFeedbackV1,
     ResearcherRun,
     ResearchSource,
 )
-from slm_training.autoresearch.experiment_campaign import ExperimentCampaignV1
-from slm_training.autoresearch.storage import CampaignStore
+from slm_training.autoresearch.storage import (
+    CampaignStore,
+    append_autotrain_action_receipt,
+    autotrain_action_is_execution,
+    autotrain_action_sha256,
+    bind_autotrain_action_evidence,
+    loop_result_rows,
+    loop_campaigns,
+    render_loop_result_matrix,
+)
 from slm_training.autoresearch.telemetry import TrackioSink
 from slm_training.data.mixture import MixtureManifest, write_mixture_manifest
+from slm_training.harnesses.experiments.verified_metrics import (
+    optimum_feedback,
+    sha256_file,
+    verify_metric_certificate,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def _bounded_campaign_seconds(campaign: CampaignSpec) -> float:
+    """Honor old campaign records without exceeding the current run cap."""
+    return min(
+        float(campaign.budget.max_wall_minutes * 60),
+        float(MAX_RUN_MINUTES * 60),
+    )
+
+
+def _bounded_experiment_seconds(
+    campaign: CampaignSpec, requested_seconds: float | None
+) -> float:
+    """Apply a driver's dynamic arm share inside the preregistered ceiling."""
+    campaign_seconds = _bounded_campaign_seconds(campaign)
+    if requested_seconds is None:
+        return campaign_seconds
+    requested = float(requested_seconds)
+    if requested <= 0:
+        raise ValueError("--experiment-wall-seconds must be positive")
+    return min(requested, campaign_seconds)
+
+
+def _git(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["git", *args],
+        cwd=ROOT,
+        check=check,
+        capture_output=True,
+        text=True,
+    )
+
+
+def _validate_continuous_commits(upstream: str, integration: str) -> None:
+    resolved_upstream = _git(
+        "rev-parse", "--verify", f"{upstream}^{{commit}}"
+    ).stdout.strip()
+    resolved_integration = _git(
+        "rev-parse", "--verify", f"{integration}^{{commit}}"
+    ).stdout.strip()
+    current_upstream = _git(
+        "rev-parse", "--verify", "origin/main^{commit}"
+    ).stdout.strip()
+    current_head = _git("rev-parse", "--verify", "HEAD^{commit}").stdout.strip()
+    if resolved_upstream != current_upstream:
+        raise ValueError("upstream_commit is stale; fetch origin/main before the cycle")
+    if resolved_integration != current_head:
+        raise ValueError("integration_commit must be the current checked-out HEAD")
+    if _git(
+        "merge-base",
+        "--is-ancestor",
+        resolved_upstream,
+        resolved_integration,
+        check=False,
+    ).returncode:
+        raise ValueError("integration_commit does not contain upstream_commit")
+    if _git("status", "--porcelain", "--untracked-files=no").stdout.strip():
+        raise ValueError("continuous cycle requires a clean tracked worktree")
 
 
 def _store(args: argparse.Namespace) -> CampaignStore:
@@ -74,6 +157,15 @@ def _artifact(store: CampaignStore, kind: str, path: Path | None):
 
 
 def cmd_init(args: argparse.Namespace) -> int:
+    if args.max_wall_minutes > MAX_RUN_MINUTES:
+        raise ValueError(f"--max-wall-minutes cannot exceed {MAX_RUN_MINUTES}")
+    if args.loop_id is not None:
+        if args.upstream_commit is None or args.integration_commit is None:
+            raise ValueError(
+                "continuous init requires --upstream-commit and --integration-commit"
+            )
+        _validate_continuous_commits(args.upstream_commit, args.integration_commit)
+    evidence_roots = args.evidence_root or [Path("outputs")]
     campaign = CampaignSpec(
         campaign_id=args.campaign_id,
         objective=args.objective,
@@ -81,12 +173,17 @@ def cmd_init(args: argparse.Namespace) -> int:
         track=args.track,
         researcher_mode=args.researcher_mode,
         min_hypotheses=args.min_hypotheses,
-        evidence_roots=tuple(str(path) for path in args.evidence_root),
+        evidence_roots=tuple(str(path) for path in evidence_roots),
         budget=CampaignBudget(
             max_experiments=args.max_experiments,
             max_gpu_hours=args.max_gpu_hours,
             max_wall_minutes=args.max_wall_minutes,
         ),
+        loop_id=args.loop_id,
+        cycle_index=args.cycle_index,
+        predecessor_campaign_id=args.predecessor_campaign_id,
+        upstream_commit=args.upstream_commit,
+        integration_commit=args.integration_commit,
         notes=args.notes,
     )
     path = _store(args).initialize(campaign)
@@ -151,7 +248,7 @@ def cmd_research(args: argparse.Namespace) -> int:
             timeout_seconds=(
                 args.researcher_timeout
                 if args.researcher_timeout is not None
-                else float(campaign.budget.max_wall_minutes * 60)
+                else _bounded_campaign_seconds(campaign)
             ),
         )
         run = researcher.run(campaign, evidence, sources)
@@ -327,13 +424,8 @@ def cmd_hypothesize(args: argparse.Namespace) -> int:
             else None
         )
     sources = _load_sources(source_path)
-    previous_matrix = _latest_formed_matrix(store, required=False)
-    feedback = _hypothesis_feedback(store, previous_matrix)
-    if previous_matrix is not None and not feedback:
-        raise ValueError(
-            "latest hypothesis matrix has no terminal feedback; run a matrix member "
-            "before forming its successor"
-        )
+    lineage_stores = _lineage_stores(store, campaign)
+    previous_store, previous_matrix, feedback = _feedback_context(store, lineage_stores)
     if args.provider == "agent":
         if not args.matrix:
             raise ValueError("--provider agent requires --matrix")
@@ -348,19 +440,87 @@ def cmd_hypothesize(args: argparse.Namespace) -> int:
             _load_memo(store, args.memo, required=False),
             feedback,
         )
+    authorized_replay_configs = _authorized_replay_configs(
+        args, store, campaign, lineage_stores, result.matrix
+    )
+    from slm_training.autoresearch.climb_policy import (
+        assert_recipe_null_regime_pressure,
+        infer_metric_direction,
+        load_climb_policy,
+        load_loop_exhausted_ledger,
+        loop_data_eval_identity,
+        train_eval_from_knobs,
+    )
+    from slm_training.autoresearch.hillclimb import load_exhausted_ledger
+
+    policy = load_climb_policy()
+    claim_class = str(policy.defaults.get("exploratory_claim_class") or "fixture")
+    direction = infer_metric_direction(campaign.primary_metric)
+    proposed_knobs = [
+        candidate.experiment.knobs.model_dump(exclude_none=True, mode="json")
+        for candidate in result.matrix.hypotheses
+    ]
+    train_version, eval_version = train_eval_from_knobs(proposed_knobs)
+    # Prefer loop-scoped ledger when loop lineage exists; else campaign root.
+    loop_id = campaign.loop_id
+    if loop_id:
+        exhausted_ledger = load_loop_exhausted_ledger(
+            store.root.parent, loop_id, policy
+        )
+        exhausted_identity = loop_data_eval_identity(
+            policy,
+            claim_class=claim_class,
+            train_version=train_version,
+            eval_version=eval_version,
+            primary_metric=campaign.primary_metric,
+            direction=direction,
+            data_manifest_sha256=evidence.snapshot_id,
+        )
+    else:
+        exhausted_ledger = load_exhausted_ledger(store.root)
+        exhausted_identity = loop_data_eval_identity(
+            policy,
+            claim_class=claim_class,
+            train_version=train_version,
+            eval_version=eval_version,
+            primary_metric=campaign.primary_metric,
+            direction=direction,
+            data_manifest_sha256=evidence.snapshot_id,
+        )
+    has_regime = any(
+        item.novelty.transition_kind == "regime_transition_candidate"
+        for item in result.matrix.hypotheses
+    )
+    assert_recipe_null_regime_pressure(
+        policy,
+        ledger=exhausted_ledger,
+        data_eval_identity=exhausted_identity,
+        claim_class=claim_class,
+        matrix_has_regime_transition=has_regime,
+        proposed_knobs=proposed_knobs,
+    )
     validate_hypothesis_matrix(
         campaign,
         result.matrix,
         evidence,
         list(result.sources),
-        prior_experiments=_finished_experiments(store),
+        prior_experiments=tuple(
+            experiment
+            for lineage_store in lineage_stores
+            for experiment in _finished_experiments(lineage_store)
+        ),
         prior_experiment_ids=frozenset(
             candidate.experiment.experiment_id
-            for formed in _formed_matrices(store)
+            for lineage_store in lineage_stores
+            for formed in _formed_matrices(lineage_store)
             for candidate in formed.hypotheses
         ),
         feedback=feedback,
         previous_matrix=previous_matrix,
+        exhausted_knob_ledger=exhausted_ledger,
+        exhausted_data_eval_identity=exhausted_identity,
+        exhausted_claim_class=claim_class,
+        authorized_replay_configs=authorized_replay_configs,
     )
 
     proposed = {
@@ -421,6 +581,25 @@ def _events(store: CampaignStore) -> list[dict]:
     )
 
 
+def _lineage_stores(
+    store: CampaignStore, campaign: CampaignSpec
+) -> tuple[CampaignStore, ...]:
+    if campaign.loop_id is None:
+        return (store,)
+    campaigns = loop_campaigns(store.root.parent, campaign.loop_id, last=None)
+    positions = [
+        index
+        for index, item in enumerate(campaigns)
+        if item.campaign_id == campaign.campaign_id
+    ]
+    if len(positions) != 1:
+        raise RuntimeError("continuous campaign predecessor lineage is invalid")
+    return tuple(
+        CampaignStore(item.campaign_id, store.root.parent)
+        for item in reversed(campaigns[: positions[0] + 1])
+    )
+
+
 def _finished_experiments(store: CampaignStore) -> tuple[ExperimentSpec, ...]:
     finished = {
         str(row.get("experiment_id"))
@@ -429,10 +608,177 @@ def _finished_experiments(store: CampaignStore) -> tuple[ExperimentSpec, ...]:
     }
     found = {}
     for path in (store.root / "artifacts" / "experiments").glob("*.json"):
-        experiment = ExperimentSpec.model_validate_json(path.read_text(encoding="utf-8"))
+        experiment = ExperimentSpec.model_validate_json(
+            path.read_text(encoding="utf-8")
+        )
         if experiment.experiment_id in finished:
             found[experiment.experiment_id] = experiment
     return tuple(found.values())
+
+
+def _feedback_context(
+    store: CampaignStore, lineage_stores: tuple[CampaignStore, ...]
+) -> tuple[CampaignStore, HypothesisMatrix | None, tuple[HypothesisFeedback, ...]]:
+    for index, candidate_store in enumerate(lineage_stores):
+        matrix = _latest_formed_matrix(candidate_store, required=False)
+        if matrix is None:
+            continue
+        feedback = _hypothesis_feedback(candidate_store, matrix)
+        if feedback:
+            return candidate_store, matrix, feedback
+        handoff_path = candidate_store.root / "cycle_handoff.json"
+        if handoff_path.is_file():
+            recovered = _recover_incomplete_handoff_feedback(
+                candidate_store, matrix, handoff_path
+            )
+            if recovered is not None:
+                return candidate_store, matrix, (recovered,)
+        if index == 0 or handoff_path.is_file():
+            raise ValueError(
+                "latest hypothesis matrix has no terminal feedback; run a matrix "
+                "member before forming its successor"
+            )
+    return store, None, ()
+
+
+def _recover_incomplete_handoff_feedback(
+    store: CampaignStore,
+    matrix: HypothesisMatrix,
+    handoff_path: Path,
+) -> HypothesisFeedback | None:
+    """Persist Phase-A incomplete disposition as metric-free feedback."""
+
+    try:
+        handoff = AutotrainCycleHandoffV1.model_validate_json(
+            handoff_path.read_text(encoding="utf-8")
+        )
+    except ValueError:
+        return None
+    incomplete = any(
+        reason.startswith(("measurement_incomplete:", "harness_failure:"))
+        for reason in handoff.reasons
+    )
+    infrastructure = tuple(
+        priority
+        for priority in handoff.priorities
+        if priority.area in {"harness", "infrastructure"}
+    )
+    if not incomplete or not infrastructure:
+        return None
+    experiment_id = (
+        infrastructure[0].proposed_experiment_id or matrix.recommended_experiment_id
+    )
+    candidates = {
+        item.experiment.experiment_id: item.experiment for item in matrix.hypotheses
+    }
+    experiment = candidates.get(experiment_id)
+    if experiment is None:
+        return None
+    evidence = tuple(handoff.reasons) or (
+        "Phase A classified the measurement as incomplete.",
+    )
+    actions = tuple(priority.hypothesis for priority in infrastructure)
+    signature = json.dumps(
+        experiment.knobs.model_dump(exclude_none=True, mode="json"), sort_keys=True
+    )
+    identity = {
+        "matrix_id": matrix.matrix_id,
+        "experiment_id": experiment_id,
+        "outcome_status": "stopped",
+        "diagnosis_target": "infrastructure",
+        "diagnosis_evidence": evidence,
+        "recommended_actions": actions,
+    }
+    feedback = HypothesisFeedback(
+        feedback_id=(
+            "feedback-"
+            + hashlib.sha256(
+                json.dumps(identity, sort_keys=True).encode("utf-8")
+            ).hexdigest()[:16]
+        ),
+        campaign_id=matrix.campaign_id,
+        matrix_id=matrix.matrix_id,
+        experiment_id=experiment_id,
+        hypothesis=experiment.hypothesis,
+        knob_signature=signature,
+        outcome_status="stopped",
+        diagnosis_target="infrastructure",
+        diagnosis_evidence=evidence,
+        recommended_actions=actions,
+        created_at=handoff.created_at,
+    )
+    path = store.write_artifact("hypothesizer_feedback", feedback)
+    store.append_event(
+        "hypothesizer_feedback_recorded",
+        experiment_id=experiment_id,
+        status="infrastructure",
+        artifact_sha256=path.stem,
+        detail={
+            "feedback_id": feedback.feedback_id,
+            "matrix_id": matrix.matrix_id,
+            "source": "cycle_handoff",
+        },
+    )
+    return feedback
+
+
+def _authorized_replay_configs(
+    args: argparse.Namespace,
+    store: CampaignStore,
+    campaign: CampaignSpec,
+    lineage_stores: tuple[CampaignStore, ...],
+    matrix: HypothesisMatrix,
+) -> dict[str, str]:
+    paths = tuple(getattr(args, "frozen_replay_manifest", ()) or ())
+    if not paths:
+        return {}
+    manifest_root = (store.root / "manifests").resolve()
+    source_manifests = {
+        hashlib.sha256(path.read_bytes()).hexdigest(): (lineage_store, path)
+        for lineage_store in lineage_stores[1:]
+        for path in (lineage_store.root / "manifests").glob("*.json")
+    }
+    authorized: dict[str, str] = {}
+    for path in paths:
+        resolved = path.resolve()
+        if resolved.parent != manifest_root:
+            raise ValueError(
+                "frozen replay manifest must be inside the current campaign"
+            )
+        manifest = ExperimentCampaignV1.model_validate_json(
+            resolved.read_text(encoding="utf-8")
+        )
+        if (
+            manifest.campaign_id != campaign.campaign_id
+            or manifest.source_commit != campaign.integration_commit
+            or manifest.replay_of_manifest_sha256 not in source_manifests
+        ):
+            raise ValueError("frozen replay manifest authority is invalid")
+        source_store, source_path = source_manifests[manifest.replay_of_manifest_sha256]
+        source_manifest = ExperimentCampaignV1.model_validate_json(
+            source_path.read_text(encoding="utf-8")
+        )
+        source_experiments = [
+            ExperimentSpec.model_validate_json(path.read_text(encoding="utf-8"))
+            for path in (source_store.root / "artifacts" / "experiments").glob("*.json")
+            if json.loads(path.read_text(encoding="utf-8")).get("experiment_id")
+            == source_manifest.experiment_id
+        ]
+        current = [
+            item.experiment
+            for item in matrix.hypotheses
+            if item.experiment.experiment_id == manifest.experiment_id
+        ]
+        if (
+            len(source_experiments) != 1
+            or len(current) != 1
+            or current[0].knobs != source_experiments[0].knobs
+            or manifest.arms != source_manifest.arms
+            or manifest.experiment_id in authorized
+        ):
+            raise ValueError("frozen replay manifest must authorize one unique arm")
+        authorized[manifest.experiment_id] = normalized_knobs_sha256(current[0])
+    return authorized
 
 
 def _latest_formed_matrix(
@@ -474,9 +820,11 @@ def _recorded_outcome_matches(
     if not digest:
         return False
     path = store.root / "artifacts" / "outcomes" / f"{digest}.json"
-    return path.exists() and ExperimentOutcome.model_validate_json(
-        path.read_text(encoding="utf-8")
-    ) == outcome
+    return (
+        path.exists()
+        and ExperimentOutcome.model_validate_json(path.read_text(encoding="utf-8"))
+        == outcome
+    )
 
 
 def _matrix_for_outcome(
@@ -550,8 +898,44 @@ def _require_hypothesis_matrix(
         if item.experiment.experiment_id == experiment.experiment_id
     ]
     if not matches or matches[0] != experiment:
-        raise ValueError("experiment is not an exact member of the latest hypothesis matrix")
+        raise ValueError(
+            "experiment is not an exact member of the latest hypothesis matrix"
+        )
     return matrix
+
+
+def _verified_optimum_feedback(
+    args: argparse.Namespace,
+    *,
+    campaign_manifest_sha256: str | None,
+    metric_expectations_sha256: str | None,
+) -> OptimumFeedbackV1 | None:
+    evidence = getattr(args, "metric_evidence", None)
+    certificate = getattr(args, "metric_certificate", None)
+    if evidence is None and certificate is None:
+        return None
+    if evidence is None or certificate is None:
+        raise ValueError(
+            "optimum feedback requires both --metric-evidence and --metric-certificate"
+        )
+    if campaign_manifest_sha256 is None or metric_expectations_sha256 is None:
+        raise ValueError(
+            "optimum feedback requires a locked campaign manifest with "
+            "metric_expectations_sha256"
+        )
+    verified = verify_metric_certificate(
+        evidence_path=evidence,
+        certificate_path=certificate,
+        expected_campaign_manifest_sha256=campaign_manifest_sha256,
+        expected_metric_expectations_sha256=metric_expectations_sha256,
+        checker=getattr(args, "leverproof_bin", None),
+        require_band_certificate=False,
+    )
+    return OptimumFeedbackV1(
+        **optimum_feedback(verified),
+        metric_evidence_sha256=sha256_file(evidence),
+        metric_certificate_sha256=sha256_file(certificate),
+    )
 
 
 def cmd_validate(args: argparse.Namespace) -> int:
@@ -570,6 +954,130 @@ def cmd_validate(args: argparse.Namespace) -> int:
         json.dumps({"valid": True, "experiment_id": experiment.experiment_id}, indent=2)
     )
     return 0
+
+
+def _command_flag(command: list[str], flag: str) -> str:
+    try:
+        return command[command.index(flag) + 1]
+    except (ValueError, IndexError) as exc:
+        raise ValueError(f"training command is missing required {flag}") from exc
+
+
+def _prepare_reused_training(
+    *,
+    campaign: CampaignSpec,
+    experiment: ExperimentSpec,
+    target_manifest: ExperimentCampaignV1,
+    commands: list[list[str]],
+    source_run: Path,
+    lineage_paths: tuple[Path, ...],
+) -> tuple[list[list[str]], dict[str, object]]:
+    """Replace a frozen replay's completed train stage with its bound checkpoint."""
+
+    if campaign.track != "twotower":
+        raise ValueError("training reuse currently supports only frozen TwoTower runs")
+    if (
+        target_manifest.campaign_id != experiment.campaign_id
+        or target_manifest.experiment_id != experiment.experiment_id
+    ):
+        raise ValueError("training reuse target does not match the locked experiment")
+    if not lineage_paths:
+        raise ValueError("training reuse requires at least one lineage manifest")
+    lineage: list[tuple[Path, ExperimentCampaignV1, str]] = []
+    expected_sha = target_manifest.replay_of_manifest_sha256
+    for path in lineage_paths:
+        resolved = path.resolve()
+        if not resolved.is_file():
+            raise ValueError(f"training reuse manifest is missing: {path}")
+        digest = hashlib.sha256(resolved.read_bytes()).hexdigest()
+        if expected_sha != digest:
+            raise ValueError("training reuse manifest lineage digest mismatch")
+        manifest = ExperimentCampaignV1.model_validate_json(
+            resolved.read_text(encoding="utf-8")
+        )
+        if manifest.source_dirty:
+            raise ValueError("training reuse manifest source must be clean")
+        lineage.append((resolved, manifest, digest))
+        expected_sha = manifest.replay_of_manifest_sha256
+
+    source_run = source_run.resolve()
+    source_manifest = lineage[-1][1]
+    if source_manifest.experiment_id != source_run.name:
+        raise ValueError("training reuse run does not match source manifest")
+    summary_path = source_run / "train_summary.json"
+    if not summary_path.is_file():
+        raise ValueError("training reuse requires a completed train_summary.json")
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    if summary.get("run_id") != source_manifest.experiment_id:
+        raise ValueError("training reuse summary run_id does not match source manifest")
+    if summary.get("stopped_on") != "steps":
+        raise ValueError("training reuse source did not complete its declared steps")
+    source_stamp = summary.get("version_stamp") or {}
+    if (
+        source_stamp.get("code_dirty") is not False
+        or source_stamp.get("code_commit") != source_manifest.source_commit
+    ):
+        raise ValueError(
+            "training reuse summary is not bound to its clean source commit"
+        )
+
+    train_commands = [item for item in commands if "scripts.train_model" in item]
+    eval_commands = [item for item in commands if "scripts.evaluate_model" in item]
+    if len(train_commands) != 1 or len(eval_commands) != 1:
+        raise ValueError("training reuse requires one train and one evaluation stage")
+    train = train_commands[0]
+    recipe = summary.get("recipe") or {}
+    expected_recipe = {
+        "steps_requested": int(_command_flag(train, "--steps")),
+        "batch_size": int(_command_flag(train, "--batch-size")),
+        "seed": int(_command_flag(train, "--seed")),
+        "learning_rate": float(_command_flag(train, "--lr")),
+    }
+    for key, expected in expected_recipe.items():
+        if recipe.get(key) != expected:
+            raise ValueError(f"training reuse recipe mismatch: {key}")
+    if int(summary.get("steps") or -1) != expected_recipe["steps_requested"]:
+        raise ValueError("training reuse summary has incomplete steps")
+    try:
+        trainable_params = int((summary.get("track") or {})["trainable_params"])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError("training reuse summary requires trainable_params") from exc
+    if trainable_params < 1:
+        raise ValueError("training reuse trainable_params must be positive")
+
+    checkpoint = Path(str(summary.get("checkpoint") or "")).resolve()
+    checkpoint_root = (source_run / "checkpoints").resolve()
+    if not checkpoint.is_file() or not checkpoint.is_relative_to(checkpoint_root):
+        raise ValueError("training reuse checkpoint is missing or outside its run")
+    for suffix in (".meta.json", ".tokenizer.json", ".context.tokenizer.json"):
+        sidecar = checkpoint.with_suffix(suffix)
+        if not sidecar.is_file():
+            raise ValueError(
+                f"training reuse checkpoint sidecar is missing: {sidecar.name}"
+            )
+
+    evaluate = list(eval_commands[0])
+    if "--checkpoint" in evaluate:
+        raise ValueError("training reuse cannot override an existing checkpoint")
+    evaluate.extend(["--checkpoint", str(checkpoint)])
+    receipt: dict[str, object] = {
+        "stage_kind": "reused_training",
+        "measurement_complete": True,
+        "executed": False,
+        "command": train,
+        "source_run": str(source_run),
+        "source_train_summary": str(summary_path),
+        "source_train_summary_sha256": hashlib.sha256(
+            summary_path.read_bytes()
+        ).hexdigest(),
+        "checkpoint": str(checkpoint),
+        "checkpoint_sha256": sha256_file(checkpoint),
+        "trainable_params": trainable_params,
+        "manifest_lineage": [
+            {"path": str(path), "sha256": digest} for path, _manifest, digest in lineage
+        ],
+    }
+    return [evaluate], receipt
 
 
 def cmd_run(args: argparse.Namespace) -> int:
@@ -595,6 +1103,19 @@ def cmd_run(args: argparse.Namespace) -> int:
         )
         if manifest.experiment_id != experiment.experiment_id:
             raise ValueError("campaign manifest belongs to a different experiment")
+        if campaign.loop_id is not None:
+            assert campaign.upstream_commit is not None
+            assert campaign.integration_commit is not None
+            _validate_continuous_commits(
+                campaign.upstream_commit, campaign.integration_commit
+            )
+            if manifest.source_commit != campaign.integration_commit:
+                raise ValueError(
+                    "continuous manifest source_commit must equal integration_commit"
+                )
+            if manifest.source_dirty:
+                raise ValueError("continuous manifest source must be clean")
+        validate_formal_preflights(store.root, experiment, manifest)
         lock = store.lock_experiment_campaign(manifest)
     else:
         try:
@@ -602,9 +1123,9 @@ def cmd_run(args: argparse.Namespace) -> int:
         except FileNotFoundError:
             lock = None
     if args.execute and lock is None:
-        raise ValueError(
-            "execution requires a preregistered --campaign-manifest lock"
-        )
+        raise ValueError("execution requires a preregistered --campaign-manifest lock")
+    if lock is not None and manifest_path is None:
+        validate_formal_preflights(store.root, experiment, lock.manifest)
     if lock is not None and lock.manifest.requires_rl:
         if not experiment.requires_rl or not experiment.rl_readiness_report:
             raise ValueError("RL campaign requires experiment readiness evidence")
@@ -630,11 +1151,30 @@ def cmd_run(args: argparse.Namespace) -> int:
             f"{campaign.budget.max_experiments}"
         )
     commands = compile_commands(campaign, experiment, output_root=args.root)
+    reuse_run = getattr(args, "reuse_train_run", None)
+    reuse_lineage = tuple(getattr(args, "reuse_train_manifest", ()) or ())
+    if bool(reuse_run) != bool(reuse_lineage):
+        raise ValueError(
+            "training reuse requires both --reuse-train-run and --reuse-train-manifest"
+        )
+    reuse_receipt: dict[str, object] | None = None
+    if reuse_run is not None:
+        if not args.execute or lock is None:
+            raise ValueError("training reuse requires a locked execution")
+        commands, reuse_receipt = _prepare_reused_training(
+            campaign=campaign,
+            experiment=experiment,
+            target_manifest=lock.manifest,
+            commands=commands,
+            source_run=reuse_run,
+            lineage_paths=reuse_lineage,
+        )
     plan_path = store.write_artifact(
         "execution_plans",
         {
             "commands": commands,
             "execute": args.execute,
+            "reused_training": reuse_receipt,
             "campaign_manifest_sha256": (
                 lock.manifest_sha256 if lock is not None else None
             ),
@@ -654,18 +1194,29 @@ def cmd_run(args: argparse.Namespace) -> int:
             "experiment_started",
             experiment_id=experiment.experiment_id,
             status="running",
-        detail={
-            "hypothesis_matrix_id": matrix.matrix_id,
-            "campaign_manifest_sha256": lock.manifest_sha256,
-        },
+            detail={
+                "hypothesis_matrix_id": matrix.matrix_id,
+                "campaign_manifest_sha256": lock.manifest_sha256,
+            },
         )
     outcome = execute_commands(
         experiment,
         commands,
         cwd=ROOT,
-        timeout_seconds=float(campaign.budget.max_wall_minutes * 60),
+        timeout_seconds=_bounded_experiment_seconds(
+            campaign, getattr(args, "experiment_wall_seconds", None)
+        ),
         campaign_manifest_sha256=lock.manifest_sha256,
     )
+    if reuse_receipt is not None:
+        metrics = dict(outcome.metrics)
+        metrics["trainable_params"] = float(reuse_receipt["trainable_params"])
+        outcome = outcome.model_copy(
+            update={
+                "metrics": metrics,
+                "stage_telemetry": (reuse_receipt, *outcome.stage_telemetry),
+            }
+        )
     outcome_path = store.write_artifact("outcomes", outcome)
     store.append_event(
         "experiment_finished",
@@ -685,7 +1236,25 @@ def cmd_run(args: argparse.Namespace) -> int:
         status=diagnosis.target,
         artifact_sha256=diagnosis_path.stem,
     )
-    _record_hypothesis_feedback(store, matrix, outcome, diagnosis)
+    optimum = _verified_optimum_feedback(
+        args,
+        campaign_manifest_sha256=lock.manifest_sha256,
+        metric_expectations_sha256=lock.manifest.metric_expectations_sha256,
+    )
+    feedback_path = _record_hypothesis_feedback(
+        store, matrix, outcome, diagnosis, optimum
+    )
+    if optimum is not None:
+        store.append_event(
+            "optimum_feedback_recorded",
+            experiment_id=experiment.experiment_id,
+            status=optimum.policy,
+            artifact_sha256=feedback_path.stem,
+            detail={
+                "breach_count": len(optimum.breaches),
+                "diagnosis_lanes": list(optimum.diagnosis_lanes),
+            },
+        )
     if args.trackio:
         try:
             TrackioSink(
@@ -705,7 +1274,71 @@ def cmd_run(args: argparse.Namespace) -> int:
                 detail={"error": str(exc)},
             )
     print(outcome.model_dump_json(indent=2))
+    if optimum is not None and optimum.policy == "stop":
+        return 2
     return 0 if outcome.status == "completed" else 2
+
+
+def cmd_formalize(args: argparse.Namespace) -> int:
+    store = _store(args)
+    campaign = store.load_campaign()
+    matrix = _latest_formed_matrix(store)
+    assert matrix is not None
+    if args.experiment:
+        experiment = ExperimentSpec.model_validate_json(
+            args.experiment.read_text(encoding="utf-8")
+        )
+    else:
+        experiment = next(
+            item.experiment
+            for item in matrix.hypotheses
+            if item.experiment.experiment_id == matrix.recommended_experiment_id
+        )
+    _require_hypothesis_matrix(store, campaign, experiment)
+    if not experiment.formal_claims:
+        raise ValueError("experiment declares no formal claims")
+    rows: list[dict[str, object]] = []
+    required_blocked = False
+    deadline = time.monotonic() + _bounded_campaign_seconds(campaign)
+    for claim in experiment.formal_claims:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError("formal preflight campaign budget exhausted")
+        preflight, obligation = run_formal_preflight(
+            campaign.campaign_id,
+            experiment,
+            claim,
+            timeout_seconds=remaining,
+        )
+        path = store.write_artifact("formal_preflights", preflight)
+        obligation = bind_preflight(obligation, path.stem)
+        event_type = (
+            "formal_hypothesis_refuted"
+            if preflight.status == "refuted"
+            else "formal_preflight_completed"
+        )
+        store.append_event(
+            event_type,
+            experiment_id=experiment.experiment_id,
+            status=preflight.status,
+            artifact_sha256=path.stem,
+            detail={
+                "obligation_id": obligation.obligation_id,
+                "template_id": obligation.template_id,
+                "policy": obligation.policy,
+            },
+        )
+        required_blocked |= (
+            obligation.policy == "required" and preflight.status != "proved"
+        )
+        rows.append(
+            {
+                "formal_obligation": obligation.model_dump(mode="json"),
+                "preflight": preflight.model_dump(mode="json"),
+            }
+        )
+    print(json.dumps({"results": rows}, indent=2))
+    return 2 if required_blocked else 0
 
 
 def cmd_diagnose(args: argparse.Namespace) -> int:
@@ -728,13 +1361,72 @@ def cmd_diagnose(args: argparse.Namespace) -> int:
     return 0
 
 
+def _baseline_primary_from_store(
+    store: CampaignStore,
+    *,
+    primary_metric: str,
+    exclude_experiment_id: str = "",
+) -> float | None:
+    """Best-effort matched-control primary from prior completed outcomes.
+
+    Prefers experiment ids that look like controls/baselines; otherwise uses
+    metrics that already name a baseline. Absolute candidate scores alone are
+    never treated as the baseline of themselves.
+    """
+    import math
+
+    from slm_training.autoresearch.hillclimb import resolve_baseline_primary
+
+    outcomes_dir = store.root / "artifacts" / "outcomes"
+    if not outcomes_dir.is_dir():
+        return None
+    control_values: list[float] = []
+    embedded: list[float] = []
+    for path in sorted(outcomes_dir.glob("*.json")):
+        try:
+            prior = ExperimentOutcome.model_validate_json(
+                path.read_text(encoding="utf-8")
+            )
+        except Exception:  # noqa: BLE001
+            continue
+        if prior.experiment_id == exclude_experiment_id:
+            continue
+        if prior.status != "completed":
+            continue
+        from_metrics = resolve_baseline_primary(
+            prior.metrics, primary_metric=primary_metric
+        )
+        if from_metrics is not None:
+            embedded.append(from_metrics)
+        primary_value = prior.metrics.get(primary_metric)
+        if primary_value is None:
+            continue
+        try:
+            number = float(primary_value)
+        except (TypeError, ValueError):
+            continue
+        if not math.isfinite(number):
+            continue
+        exp_id = prior.experiment_id.lower()
+        if any(token in exp_id for token in ("control", "baseline", "matched")):
+            control_values.append(number)
+    if control_values:
+        return control_values[-1]
+    if embedded:
+        return embedded[-1]
+    return None
+
+
 def _record_hypothesis_feedback(
     store: CampaignStore,
     matrix: HypothesisMatrix,
     outcome: ExperimentOutcome,
     diagnosis: Diagnosis,
+    optimum: OptimumFeedbackV1 | None = None,
 ) -> Path:
-    feedback = create_hypothesis_feedback(matrix, outcome, diagnosis)
+    feedback = create_hypothesis_feedback(
+        matrix, outcome, diagnosis, optimum_feedback=optimum
+    )
     path = store.write_artifact("hypothesizer_feedback", feedback)
     already_recorded = any(
         row.get("event_type") == "hypothesizer_feedback_recorded"
@@ -749,6 +1441,129 @@ def _record_hypothesis_feedback(
             artifact_sha256=path.stem,
             detail={"feedback_id": feedback.feedback_id, "matrix_id": matrix.matrix_id},
         )
+    # After a measured null, mark the knob signature exhausted at loop scope
+    # (policy identity fields) so successor matrices cannot replay it.
+    try:
+        campaign = store.load_campaign()
+        primary_metric = campaign.primary_metric
+        evidence_snapshot_id = matrix.evidence_snapshot_id
+        loop_id = campaign.loop_id
+        minimum_effect = 0.0
+    except Exception:  # noqa: BLE001 — never block feedback on ledger errors
+        primary_metric = "primary"
+        evidence_snapshot_id = matrix.evidence_snapshot_id
+        loop_id = None
+        minimum_effect = 0.0
+    from slm_training.autoresearch.climb_policy import (
+        is_recipe_tweak_knobs,
+        load_climb_policy,
+        load_loop_exhausted_ledger,
+        loop_data_eval_identity,
+        save_loop_exhausted_ledger,
+    )
+    from slm_training.autoresearch.hillclimb import (
+        infer_metric_direction,
+        is_measured_null_feedback,
+        load_exhausted_ledger,
+        record_null_from_knob_signature_json,
+        resolve_baseline_primary,
+        resolve_primary_effect,
+        save_exhausted_ledger,
+    )
+
+    policy = load_climb_policy()
+    claim_class = str(policy.defaults.get("exploratory_claim_class") or "fixture")
+    baseline = resolve_baseline_primary(feedback.metrics, primary_metric=primary_metric)
+    if baseline is None:
+        baseline = _baseline_primary_from_store(
+            store,
+            primary_metric=primary_metric,
+            exclude_experiment_id=outcome.experiment_id,
+        )
+    direction = infer_metric_direction(primary_metric)
+    seed_values = None
+    raw_seeds = feedback.metrics.get("primary_endpoint_seed_values")
+    if isinstance(raw_seeds, (list, tuple)) and len(raw_seeds) >= 2:
+        try:
+            seed_values = tuple(float(v) for v in raw_seeds)
+        except (TypeError, ValueError):
+            seed_values = None
+
+    null = is_measured_null_feedback(
+        outcome_status=feedback.outcome_status,
+        metrics=feedback.metrics,
+        primary_metric=primary_metric,
+        direction=direction,
+        minimum_effect=minimum_effect,
+        baseline_primary=baseline,
+        primary_seed_values=seed_values,
+    )
+    if not null and diagnosis.target == "researcher":
+        improvement, source = resolve_primary_effect(
+            feedback.metrics,
+            primary_metric=primary_metric,
+            direction=direction,
+            baseline_primary=baseline,
+        )
+        if source == "explicit_delta" and improvement is not None and improvement <= 0:
+            null = True
+    if null:
+        knobs_raw: dict = {}
+        try:
+            parsed = json.loads(feedback.knob_signature)
+            if isinstance(parsed, dict):
+                knobs_raw = parsed
+        except json.JSONDecodeError:
+            knobs_raw = {}
+        train_v = (
+            str(knobs_raw["train_version"]) if knobs_raw.get("train_version") else None
+        )
+        eval_v = (
+            str(knobs_raw["eval_version"]) if knobs_raw.get("eval_version") else None
+        )
+        identity = loop_data_eval_identity(
+            policy,
+            claim_class=claim_class,
+            train_version=train_v,
+            eval_version=eval_v,
+            primary_metric=primary_metric,
+            direction=direction,
+            data_manifest_sha256=evidence_snapshot_id,
+        )
+        recipe = is_recipe_tweak_knobs(policy, knobs_raw)
+        reason = "recipe_null" if recipe else "primary_lcb_within_noise"
+        note = "recipe_family" if recipe else ""
+        if loop_id:
+            ledger = load_loop_exhausted_ledger(store.root.parent, loop_id, policy)
+        else:
+            ledger = load_exhausted_ledger(store.root)
+        entry = record_null_from_knob_signature_json(
+            ledger,
+            knob_signature_json=feedback.knob_signature,
+            data_eval_identity=identity,
+            claim_class=claim_class,
+            reason=reason,
+            note=note,
+        )
+        if entry is not None:
+            if loop_id:
+                save_loop_exhausted_ledger(ledger, store.root.parent, loop_id, policy)
+            else:
+                save_exhausted_ledger(ledger, store.root)
+            store.append_event(
+                "exhausted_knob_recorded",
+                experiment_id=outcome.experiment_id,
+                status="null",
+                detail={
+                    "knob_signature_sha256": entry.knob_signature_sha256,
+                    "data_eval_identity": identity,
+                    "claim_class": claim_class,
+                    "baseline_primary": baseline,
+                    "reason": reason,
+                    "loop_id": loop_id,
+                    "policy_sha256": policy.sha256,
+                },
+            )
     return path
 
 
@@ -790,7 +1605,79 @@ def cmd_evaluate_hypothesizer(args: argparse.Namespace) -> int:
 
 
 def cmd_status(args: argparse.Namespace) -> int:
-    print(json.dumps(_store(args).status(), indent=2))
+    if args.loop_id:
+        limit = None if args.all else args.last
+        rows = loop_result_rows(args.root, args.loop_id, last=limit)
+        if args.matrix:
+            print(render_loop_result_matrix(args.root, args.loop_id, last=limit))
+        else:
+            campaigns = sorted(
+                [
+                    CampaignSpec.model_validate_json(path.read_text(encoding="utf-8"))
+                    for path in args.root.glob("*/campaign.json")
+                ],
+                key=lambda item: (item.cycle_index or 0, item.campaign_id),
+            )
+            campaigns = [item for item in campaigns if item.loop_id == args.loop_id]
+            print(
+                json.dumps(
+                    {
+                        "loop_id": args.loop_id,
+                        "active": True,
+                        "campaign_count": len(campaigns),
+                        "campaign_ids": [item.campaign_id for item in campaigns],
+                        "result_count": len(rows),
+                    },
+                    indent=2,
+                )
+            )
+    else:
+        if args.matrix:
+            raise ValueError("--matrix requires --loop-id")
+        if args.all or args.last != 5:
+            raise ValueError("--last/--all require --loop-id")
+        print(json.dumps(_store(args).status(), indent=2))
+    return 0
+
+
+def cmd_ack_action(args: argparse.Namespace) -> int:
+    handoff_path = args.root / args.campaign_id / "cycle_handoff.json"
+    handoff = AutotrainCycleHandoffV1.model_validate_json(
+        handoff_path.read_text(encoding="utf-8")
+    )
+    if handoff.loop_id != args.loop_id:
+        raise ValueError("handoff loop_id does not match --loop-id")
+    if handoff.campaign_id != args.campaign_id:
+        raise ValueError("handoff campaign_id does not match --campaign-id")
+    if args.action_index < 0 or args.action_index >= len(handoff.actions):
+        raise ValueError("--action-index is outside the handoff action list")
+    action = handoff.actions[args.action_index]
+    if args.status == "completed" and autotrain_action_is_execution(action):
+        raise ValueError(
+            f"{action.kind} completion is continuous-driver-owned; "
+            "operators may only record status=blocked"
+        )
+    evidence_uris = tuple(args.evidence)
+    evidence = bind_autotrain_action_evidence(
+        args.root,
+        handoff,
+        action,
+        evidence_uris,
+    )
+    receipt = AutotrainActionReceiptV1(
+        loop_id=args.loop_id,
+        campaign_id=args.campaign_id,
+        action_index=args.action_index,
+        action_sha256=autotrain_action_sha256(action),
+        action_kind=action.kind,
+        status=args.status,
+        evidence_uris=evidence_uris,
+        evidence=evidence,
+    )
+    path = append_autotrain_action_receipt(args.root, receipt)
+    print(
+        json.dumps({"receipt": str(path), **receipt.model_dump(mode="json")}, indent=2)
+    )
     return 0
 
 
@@ -877,7 +1764,11 @@ def cmd_remine(args: argparse.Namespace) -> int:
         "notes": "wiring-only fixture smoke",
     }
 
-    data = json.loads(args.config.read_text(encoding="utf-8")) if args.config else _smoke_config
+    data = (
+        json.loads(args.config.read_text(encoding="utf-8"))
+        if args.config
+        else _smoke_config
+    )
     config = RemineCampaignConfig.from_mapping(data)
 
     if args.describe or not args.smoke:
@@ -905,9 +1796,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     init.add_argument("--researcher-mode", default="agent")
     init.add_argument("--min-hypotheses", type=int, default=5)
-    init.add_argument(
-        "--evidence-root", type=Path, action="append", default=[Path("outputs")]
-    )
+    init.add_argument("--evidence-root", type=Path, action="append")
     init.add_argument("--max-experiments", type=int, default=12)
     init.add_argument("--max-gpu-hours", type=float, default=0)
     init.add_argument(
@@ -920,6 +1809,11 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     init.add_argument("--notes", default="")
+    init.add_argument("--loop-id")
+    init.add_argument("--cycle-index", type=int)
+    init.add_argument("--predecessor-campaign-id")
+    init.add_argument("--upstream-commit")
+    init.add_argument("--integration-commit")
     init.set_defaults(func=cmd_init)
 
     research = sub.add_parser("research")
@@ -960,12 +1854,17 @@ def build_parser() -> argparse.ArgumentParser:
 
     hypothesize = sub.add_parser("hypothesize")
     hypothesize.add_argument("--campaign-id", required=True)
-    hypothesize.add_argument("--provider", choices=("agent", "openai"), default="openai")
+    hypothesize.add_argument(
+        "--provider", choices=("agent", "openai"), default="openai"
+    )
     hypothesize.add_argument("--matrix", type=Path)
     hypothesize.add_argument("--memo", type=Path)
     hypothesize.add_argument("--evidence", type=Path)
     hypothesize.add_argument("--sources", type=Path)
     hypothesize.add_argument("--model", default="gpt-5.6-sol")
+    hypothesize.add_argument(
+        "--frozen-replay-manifest", type=Path, action="append", default=[]
+    )
     hypothesize.set_defaults(func=cmd_hypothesize)
 
     validate = sub.add_parser("validate")
@@ -974,6 +1873,15 @@ def build_parser() -> argparse.ArgumentParser:
     validate.add_argument("--evidence", type=Path)
     validate.add_argument("--sources", type=Path)
     validate.set_defaults(func=cmd_validate)
+
+    formalize = sub.add_parser("formalize")
+    formalize.add_argument("--campaign-id", required=True)
+    formalize.add_argument(
+        "--experiment",
+        type=Path,
+        help="Exact matrix member; defaults to the matrix recommendation.",
+    )
+    formalize.set_defaults(func=cmd_formalize)
 
     run = sub.add_parser("run")
     run.add_argument("--campaign-id", required=True)
@@ -989,6 +1897,28 @@ def build_parser() -> argparse.ArgumentParser:
         help="ExperimentCampaignV1 JSON locked before --execute.",
     )
     run.add_argument("--trackio", action="store_true")
+    run.add_argument(
+        "--experiment-wall-seconds",
+        type=float,
+        help=(
+            "Dynamic symmetric arm share from the continuous driver; capped by "
+            "the preregistered campaign and repository limits."
+        ),
+    )
+    run.add_argument(
+        "--reuse-train-run",
+        type=Path,
+        help="Completed frozen-replay run whose checkpoint replaces retraining.",
+    )
+    run.add_argument(
+        "--reuse-train-manifest",
+        type=Path,
+        action="append",
+        help="Ordered replay lineage from the immediate predecessor to the reused run.",
+    )
+    run.add_argument("--metric-evidence", type=Path)
+    run.add_argument("--metric-certificate", type=Path)
+    run.add_argument("--leverproof-bin", type=Path)
     run.set_defaults(func=cmd_run)
 
     diagnose = sub.add_parser("diagnose")
@@ -1014,7 +1944,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     benchmark.add_argument("--researcher-id", required=True)
     benchmark.add_argument("--pass-threshold", type=float, default=0.8)
-    benchmark.add_argument("--human-approve", action="store_true")
+    benchmark.add_argument(
+        "--human-approve",
+        action="store_true",
+        help="Deprecated compatibility metadata; frozen meta-gates promote automatically.",
+    )
     benchmark.add_argument("--output", type=Path, required=True)
     benchmark.set_defaults(func=cmd_evaluate_researcher)
 
@@ -1022,9 +1956,7 @@ def build_parser() -> argparse.ArgumentParser:
     hypothesis_benchmark.add_argument(
         "--cases",
         type=Path,
-        default=Path(
-            "src/slm_training/resources/autoresearch/hypothesizer_cases.json"
-        ),
+        default=Path("src/slm_training/resources/autoresearch/hypothesizer_cases.json"),
     )
     hypothesis_benchmark.add_argument("--predictions", type=Path, required=True)
     hypothesis_benchmark.add_argument(
@@ -1034,13 +1966,33 @@ def build_parser() -> argparse.ArgumentParser:
     )
     hypothesis_benchmark.add_argument("--hypothesizer-id", required=True)
     hypothesis_benchmark.add_argument("--pass-threshold", type=float, default=0.8)
-    hypothesis_benchmark.add_argument("--human-approve", action="store_true")
+    hypothesis_benchmark.add_argument(
+        "--human-approve",
+        action="store_true",
+        help="Deprecated compatibility metadata; frozen meta-gates promote automatically.",
+    )
     hypothesis_benchmark.add_argument("--output", type=Path, required=True)
     hypothesis_benchmark.set_defaults(func=cmd_evaluate_hypothesizer)
 
     status = sub.add_parser("status")
-    status.add_argument("--campaign-id", required=True)
+    status_target = status.add_mutually_exclusive_group(required=True)
+    status_target.add_argument("--campaign-id")
+    status_target.add_argument("--loop-id")
+    status.add_argument("--matrix", action="store_true")
+    status_history = status.add_mutually_exclusive_group()
+    status_history.add_argument("--last", type=int, default=5)
+    status_history.add_argument("--all", action="store_true")
     status.set_defaults(func=cmd_status)
+
+    acknowledge = sub.add_parser("ack-action")
+    acknowledge.add_argument("--loop-id", required=True)
+    acknowledge.add_argument("--campaign-id", required=True)
+    acknowledge.add_argument("--action-index", type=int, required=True)
+    acknowledge.add_argument(
+        "--status", choices=("completed", "blocked"), default="completed"
+    )
+    acknowledge.add_argument("--evidence", action="append", required=True)
+    acknowledge.set_defaults(func=cmd_ack_action)
 
     sync = sub.add_parser("sync")
     sync.add_argument("--campaign-id", required=True)

@@ -48,6 +48,10 @@ Parity across harnesses is enforced by
   note) in `src/slm_training/resources/versions.json` —
   `python -m scripts.verify_version_stamps --check` enforces it. See AGENTS.md
   “Normalized component versioning” and `docs/design/version-stamp-contract.md`.
+- **External test cases.** Agents edit mirrored JSON cases under
+  `src/slm_training/resources/test_cases/` and refresh snapshots with
+  `python -m scripts.refresh_test_cases <test-or-resource>`. Ordinary tests and
+  CI stay read-only; run `refresh_test_cases --check --changed` before finishing.
 - **Dashboard parity.** When you change a dashboard page
   (`src/apps/dashboard/src/pages/*.tsx`), keep its interpreted-mode
   `src/slm_training/web/static/openui/*.openui` program at parity and run
@@ -58,6 +62,10 @@ Parity across harnesses is enforced by
   outcomes are visible.
 - **Repository organization.** Use `organize-repository` before changing
   tracked file placement and use `git mv` for every tracked relocation.
+- **SDLC / multi-step delivery.** Multi-phase work uses the `sdlc` skill:
+  subagents with incremental check-ins, official `gh stack` stacked PRs,
+  bottom-up rubber-duck adversarial closeout (comments, CI, squash-merge),
+  and Scalar/sparse/worktree workspaces.
 
 Serena MCP (semantic code tools) is configured for this repo — prefer Serena
 symbol tools over raw grep when navigating `src/` / `scripts/`. See `AGENTS.md`

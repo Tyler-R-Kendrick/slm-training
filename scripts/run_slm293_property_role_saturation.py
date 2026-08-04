@@ -89,8 +89,8 @@ def _records() -> list[ExampleRecord]:
         ExampleRecord(
             id="slm293_card_title",
             prompt="card with title",
-            openui='root = Card([title])\ntitle = TextContent(":hero.title")',
-            placeholders=[":hero.title"],
+            openui='root = Card([title])\ntitle = TextContent(":slot_0")',
+            placeholders=[":slot_0"],
             split="train",
             source="slm293_local_capacity_control",
         ),
@@ -99,10 +99,10 @@ def _records() -> list[ExampleRecord]:
             prompt="stack with title and submit",
             openui=(
                 'root = Stack([title, submit])\n'
-                'title = TextContent(":hero.title")\n'
-                'submit = Button(":hero.submit")'
+                'title = TextContent(":slot_0")\n'
+                'submit = Button(":slot_1")'
             ),
-            placeholders=[":hero.title", ":hero.submit"],
+            placeholders=[":slot_0", ":slot_1"],
             split="train",
             source="slm293_local_capacity_control",
         ),

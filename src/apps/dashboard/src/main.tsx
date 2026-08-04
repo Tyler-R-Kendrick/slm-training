@@ -8,6 +8,7 @@ import { Data } from "./pages/Data";
 import { Experiments } from "./pages/Experiments";
 import { Smoke } from "./pages/Smoke";
 import { Checkpoints } from "./pages/Checkpoints";
+import { DslPacks } from "./pages/DslPacks";
 import { Playground } from "./pages/Playground";
 import { RunDetail } from "./pages/RunDetail";
 import { ExperimentFlagDetail } from "./pages/ExperimentFlagDetail";
@@ -28,6 +29,7 @@ const COMPILED: Record<string, React.ComponentType<{ navigate: Nav }>> = {
   "/experiments": Experiments,
   "/smoke": Smoke,
   "/checkpoints": Checkpoints,
+  "/dsl-packs": DslPacks,
   "/playground": () => <Playground />,
 };
 
@@ -37,6 +39,7 @@ const ROUTES: { path: string; label: string; icon: string }[] = [
   { path: "/experiments", label: "Experiments", icon: "⚗" },
   { path: "/smoke", label: "Smoke Runs", icon: "✷" },
   { path: "/checkpoints", label: "Checkpoints", icon: "◆" },
+  { path: "/dsl-packs", label: "DSL Packs", icon: "⌘" },
   { path: "/playground", label: "Playground", icon: "✎" },
 ];
 

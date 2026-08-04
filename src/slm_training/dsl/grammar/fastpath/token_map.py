@@ -7,6 +7,7 @@ scan) and the V5 lexer-native ``DSLNativeTokenizer`` (exact kind metadata).
 from __future__ import annotations
 
 import re
+import weakref
 from typing import Any
 
 from slm_training.models.tokenizer import OpenUITokenizer
@@ -54,32 +55,62 @@ def decode_prefix(tokenizer: OpenUITokenizer, token_ids: list[int]) -> str:
 def token_surface_piece(tokenizer: OpenUITokenizer, token_id: int) -> str:
     """Decode one token into the source fragment consumed by grammar state."""
     tid = int(token_id)
+    cache = getattr(tokenizer, "_grammar_surface_piece_cache", None)
+    owner = getattr(tokenizer, "_grammar_surface_piece_cache_owner", None)
+    cache_owned = (
+        isinstance(cache, dict)
+        and callable(owner)
+        and owner() is tokenizer
+    )
+    if cache_owned and tid in cache:
+        return str(cache[tid])
+    kind_of = getattr(tokenizer, "kind_of", None)
+    kind = getattr(kind_of(tid), "value", "") if callable(kind_of) else ""
+    cacheable = kind != "macro"
+
+    def _remember(piece: str) -> str:
+        nonlocal cache, cache_owned
+        if not cacheable:
+            return piece
+        if not cache_owned:
+            cache = {}
+            try:
+                setattr(tokenizer, "_grammar_surface_piece_cache", cache)
+                setattr(
+                    tokenizer,
+                    "_grammar_surface_piece_cache_owner",
+                    weakref.ref(tokenizer),
+                )
+            except (AttributeError, TypeError):
+                return piece
+            cache_owned = True
+        cache[tid] = piece
+        return piece
+
     if tid in {
         tokenizer.pad_id,
         tokenizer.bos_id,
         tokenizer.eos_id,
         tokenizer.mask_id,
     }:
-        return ""
+        return _remember("")
     raw = str(tokenizer.id_to_token.get(tid, ""))
     if raw == "NL":
-        return "\n"
+        return _remember("\n")
     if raw == "LIT_STR":
-        return '"'
+        return _remember('"')
     if raw in {"LIT_NUM", "LIT_END"}:
-        return ""
+        return _remember("")
     if raw.startswith("B:"):
         try:
-            return chr(int(raw[2:], 16))
+            return _remember(chr(int(raw[2:], 16)))
         except ValueError:
-            return raw
-    kind_of = getattr(tokenizer, "kind_of", None)
-    kind = getattr(kind_of(tid), "value", "") if callable(kind_of) else ""
+            return _remember(raw)
     if kind in {"sym", "bind", "state", "lit", "macro"} or not raw:
         decoded = tokenizer.decode([tid])
         if decoded:
-            return decoded
-    return raw
+            return _remember(decoded)
+    return _remember(raw)
 
 
 def allowed_id_set(
@@ -97,12 +128,15 @@ def allowed_id_set(
     if not terminals:
         return None
     if _is_dsl_native(tokenizer):
-        fingerprint = hash(tuple(sorted(tokenizer.token_to_id.items())))
-        key = (fingerprint, int(getattr(tokenizer, "version", 0)), terminals)
-        cached = _DSL_ALLOWED_CACHE.get(key) if use_cache else None
+        key: tuple[int, int, frozenset[str]] | None = None
+        cached: frozenset[int] | None = None
+        if use_cache:
+            fingerprint = hash(tuple(sorted(tokenizer.token_to_id.items())))
+            key = (fingerprint, int(getattr(tokenizer, "version", 0)), terminals)
+            cached = _DSL_ALLOWED_CACHE.get(key)
         if cached is None:
             result = _allowed_id_set_dsl(tokenizer, terminals)
-            if result is not None and use_cache:
+            if result is not None and key is not None:
                 _DSL_ALLOWED_CACHE[key] = frozenset(result)
         else:
             result = set(cached)
@@ -168,6 +202,117 @@ def apply_literal_frame(
     if candidates is None:
         return None
     return set(candidates) - byte_ids - {int(closer)}
+
+
+def dsl_direct_terminal_map(
+    tokenizer: Any,
+    grammar_terminals: Any,
+) -> dict[str, Any] | None:
+    """Verified DSL-native token-id → Lark-terminal mapping for direct feeds.
+
+    Derived at call time from the live tokenizer metadata and the grammar's
+    ``TerminalDef`` list (``Lark.terminals``) — never a hardcoded table. Every
+    emitted terminal name is checked against the actual grammar's terminal set;
+    anything unverifiable fails closed (returns ``None``) so the caller stays
+    on the canonical text path. The engine feeds only the terminals named here:
+    literal (string-pattern) terminals for punctuation, regex terminals for the
+    broad content kinds, and framed-literal openers/closer for ``STRING`` /
+    ``NUMBER`` bodies.
+
+    Returned dict keys:
+
+    - ``punct``: ``{token_id: terminal_name}`` for STRUCT punctuation + NL.
+    - ``bool`` / ``null``: ``{token_id: "BOOL"}`` / ``{token_id: "NULL"}``.
+    - ``kind_terminals``: ``{TokenKind: terminal_name}`` for COMPONENT,
+      BUILTIN, BIND (→ NAME), STATE (→ STATE_NAME), SYM (→ STRING).
+    - ``str_lit_ids``: ``{token_id: "STRING"}`` for fixed ``STR:*`` LIT rows.
+    - ``lit_str`` / ``lit_num`` / ``lit_end``: framed-literal opener/closer
+      ids (``lit_str`` may be ``None`` when the vocab has no ``LIT_STR`` row).
+    - ``skip_ids``: BOS/EOS/PAD/MASK ids — never fed, consumed as no-ops.
+    """
+    if not _is_dsl_native(tokenizer):
+        return None
+
+    from slm_training.models.dsl_tokenizer import TokenKind
+
+    by_name = {t.name: t for t in grammar_terminals}
+    required = {
+        "_NL",
+        "NAME",
+        "COMPONENT",
+        "BUILTIN",
+        "STATE_NAME",
+        "STRING",
+        "NUMBER",
+        "BOOL",
+        "NULL",
+    }
+    if not required <= set(by_name):
+        return None
+
+    # Literal (string-pattern) terminals: map the exact literal text to its
+    # verified terminal name (covers EQUAL…RBRACE plus anonymous __ANON_*).
+    literal_terminals = {
+        t.pattern.value: t.name
+        for t in grammar_terminals
+        if t.pattern.type == "str" and t.pattern.value
+    }
+    punct: dict[int, str] = {}
+    for token_id in tokenizer.kind_ids(TokenKind.STRUCT):
+        text = str(tokenizer.id_to_token.get(int(token_id), ""))
+        if text == "NL":
+            punct[int(token_id)] = "_NL"
+            continue
+        name = literal_terminals.get(text)
+        if name is None:
+            # Unverifiable punctuation row — fail closed.
+            return None
+        punct[int(token_id)] = name
+
+    t2id = tokenizer.token_to_id
+    bool_ids = {
+        int(t2id[b]): "BOOL" for b in ("true", "false") if b in t2id
+    }
+    if len(bool_ids) != 2 or "null" not in t2id:
+        return None
+    lit_num = t2id.get("LIT_NUM")
+    lit_end = t2id.get("LIT_END")
+    if lit_num is None or lit_end is None:
+        return None
+
+    kind_terminals = {
+        TokenKind.COMPONENT: "COMPONENT",
+        TokenKind.BUILTIN: "BUILTIN",
+        TokenKind.BIND: "NAME",
+        TokenKind.STATE: "STATE_NAME",
+        TokenKind.SYM: "STRING",
+    }
+    str_lit_ids = {
+        int(token_id): "STRING"
+        for token_id in tokenizer.kind_ids(TokenKind.LIT)
+        if str(tokenizer.id_to_token.get(int(token_id), "")).startswith("STR:")
+    }
+    skip_ids = {
+        int(token_id)
+        for token_id in (
+            tokenizer.bos_id,
+            tokenizer.eos_id,
+            tokenizer.pad_id,
+            tokenizer.mask_id,
+        )
+        if token_id is not None
+    }
+    return {
+        "punct": punct,
+        "bool": bool_ids,
+        "null": {int(t2id["null"]): "NULL"},
+        "kind_terminals": kind_terminals,
+        "str_lit_ids": str_lit_ids,
+        "lit_str": t2id.get("LIT_STR"),
+        "lit_num": int(lit_num),
+        "lit_end": int(lit_end),
+        "skip_ids": skip_ids,
+    }
 
 
 def terminal_equivalence_classes(

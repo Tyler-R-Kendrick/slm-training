@@ -1,0 +1,43 @@
+{
+  "stamp_schema": "version_stamp/v1",
+  "code_commit": "7bb77c9191dc1410f6b4af10670f81e27ecc43b8",
+  "code_dirty": false,
+  "components": {},
+  "stamped_at": "2026-07-28T03:34:33.876234+00:00",
+  "lever": "cpu_thread_count_nondeterminism",
+  "hypothesis": "lever-seed-rescue-steps72-measured-results.md's 'Next steps' item 2 (still open) names CPU thread-count differences across sessions as one of three unruled-out candidate causes for the s36_seed42 cross-session last_loss discrepancy (the other two: torch version drift, an uncaptured repro mistake). This run tests the thread-count candidate directly: does varying OMP_NUM_THREADS/MKL_NUM_THREADS alone change last_loss for an otherwise byte-identical, fully deterministic training recipe?",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "is_fix": false,
+  "recipe": "twotower, context-backend=scratch, train-dir=wf_smoke_v2, steps=8, seed=0, device=cpu, --no-sync-checkpoints (identical to the already-verified batch #2/#3/#4 smoke-loop rows in autotrain-loop-ledger-20260725.md)",
+  "command_template": "OMP_NUM_THREADS=<N> MKL_NUM_THREADS=<N> python -m scripts.train_model --train-dir src/slm_training/resources/data/train/wf_smoke_v2 --model twotower --context-backend scratch --steps 8 --run-id <run_id> --no-sync-checkpoints --device cpu --seed 0",
+  "environment": {
+    "python": "3.12.3",
+    "torch": "2.5.1+cu124",
+    "nproc": 4,
+    "venv": "fresh .venv-autotrain, pip install -e \".[dev,torch]\", created and torn down in this scheduled session"
+  },
+  "rows": [
+    {"run_id": "autotrain_threadcheck_t1_a", "threads": 1, "rep": "a", "last_loss": 32.61008071899414, "steps": 8, "stopped_on": "steps"},
+    {"run_id": "autotrain_threadcheck_t1_b", "threads": 1, "rep": "b", "last_loss": 32.61008071899414, "steps": 8, "stopped_on": "steps"},
+    {"run_id": "autotrain_threadcheck_t2_a", "threads": 2, "rep": "a", "last_loss": 32.61008071899414, "steps": 8, "stopped_on": "steps"},
+    {"run_id": "autotrain_threadcheck_t2_b", "threads": 2, "rep": "b", "last_loss": 32.61008071899414, "steps": 8, "stopped_on": "steps"},
+    {"run_id": "autotrain_threadcheck_t3_a", "threads": 3, "rep": "a", "last_loss": 32.610084533691406, "steps": 8, "stopped_on": "steps"},
+    {"run_id": "autotrain_threadcheck_t4_a", "threads": 4, "rep": "a", "last_loss": 32.610084533691406, "steps": 8, "stopped_on": "steps"},
+    {"run_id": "autotrain_threadcheck_t4_b", "threads": 4, "rep": "b", "last_loss": 32.610084533691406, "steps": 8, "stopped_on": "steps"}
+  ],
+  "result": {
+    "within_thread_count_determinism": "confirmed — every repeated rep at the same thread count reproduces last_loss bit-for-bit (t1: 2/2, t2: 2/2, t4: 2/2)",
+    "across_thread_count_determinism": "REFUTED — last_loss takes exactly two distinct values, bucketed by thread count: {1,2} -> 32.61008071899414; {3,4} -> 32.610084533691406",
+    "absolute_delta": 3.814697265625e-06,
+    "relative_delta": 1.1697908074796893e-07,
+    "note": "delta is float32-precision-scale (~4e-6 absolute, ~1.2e-7 relative), consistent with non-associative floating-point reduction order changing with thread count (a known torch/BLAS CPU behavior), not a bug — but real, measured, and enough to make a bit-for-bit cross-session last_loss comparison meaningless unless thread count is pinned and recorded."
+  },
+  "scope_caveat": "Does not reproduce or explain the specific s36_seed42 discrepancy from lever-seed-robustness-s36-asap-t30-measured-results.md — that used a different (undocumented, no committed reproducible command) exposure12/ASAP/decode_timeout=30 SFT+eval recipe, not wf_smoke_v2. This run generalizes the thread-count candidate using the repo's only recipe with a fully committed, reproducible command, and confirms the candidate is real in this harness rather than closing the original discrepancy's root cause. torch version drift and an uncaptured repro mistake remain unruled-out for that specific case.",
+  "next_steps": [
+    "Record thread count (or pin it, e.g. torch.set_num_threads / OMP_NUM_THREADS) alongside seed in every lever doc's recipe/environment section going forward — seed alone does not guarantee bit-for-bit last_loss reproducibility across sessions on this harness.",
+    "Repeat this same thread-count sweep against the actual exposure12/ASAP/decode_timeout=30 SFT recipe once its command is captured as a reusable script, to test whether thread-count alone can explain the original s36_seed42 0.333 vs 0.0 meaningful_program_rate gap (a larger, more consequential delta than this doc's loss-level float noise).",
+    "torch version drift across sessions remains untested and unruled-out for the original discrepancy."
+  ],
+  "captured_at": "2026-07-28T03:34:33Z"
+}

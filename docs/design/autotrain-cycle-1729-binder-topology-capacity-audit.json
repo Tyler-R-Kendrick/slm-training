@@ -1,0 +1,132 @@
+{
+  "schema": "autotrain_measured_results/v1",
+  "campaign_id": "continuous-loop-20260801-continuous-openui-202607-98199209-c1729",
+  "cycle_index": 1729,
+  "loop_id": "continuous-openui-20260730",
+  "run_class": "fixture_scratch",
+  "source_commit": "f60aea3601c91d4c1f98c0fc990447dc53a2342c",
+  "source_dirty": false,
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "steps": 23,
+  "batch_size": 2,
+  "seed": 101729,
+  "primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "experiment_id": "c20260801-continuous-openui-202607-98199209-c1729-control",
+      "status": "completed_gate_rejection",
+      "training": {
+        "trainable_parameters": 1608962,
+        "binder_topology_loss_weight": 0.0,
+        "last_loss": 10.664204597473145,
+        "elapsed_wall_seconds": 2.843596709019039,
+        "checkpoint_sha256": "e16840b55eedb1a6c5e2ed7265b6d2ca808a997bb45c04191e98a31e1b9e5b35"
+      },
+      "suite": "smoke",
+      "suite_n": 3,
+      "completed_document_n": 3,
+      "decode_timeout_count": 0,
+      "agentv_execution_errors": 0,
+      "metrics": {
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "component_type_recall": 0.0,
+        "ast_node_f1": 0.0,
+        "ast_edge_f1": 0.0,
+        "placeholder_fidelity": 0.0,
+        "latency_ms_p50": 1520.36
+      },
+      "decode_stats": {
+        "total_ms_sum": 4745.335,
+        "compiler_ms_sum": 3410.189,
+        "backbone_ms_sum": 1104.372,
+        "forwards_count_sum": 12,
+        "completion_unique_states_sum": 31483,
+        "completion_witness_states_expanded_sum": 1229,
+        "completion_parser_forks_sum": 32859
+      },
+      "ship_gates_pass": false
+    },
+    {
+      "experiment_id": "c20260801-continuous-openui-202607-98199209-c1729-binder-topology",
+      "status": "completed_null_capacity_confounded",
+      "training": {
+        "trainable_parameters": 2137346,
+        "binder_topology_loss_weight": 0.25,
+        "last_loss": 10.717714309692383,
+        "elapsed_wall_seconds": 7.911326492961962,
+        "checkpoint_sha256": "655e7e30cabc5f8419a1cbfd7cfaf547b3602c870e74495a086b2a7de008396d"
+      },
+      "suite": "smoke",
+      "suite_n": 3,
+      "completed_document_n": 3,
+      "decode_timeout_count": 0,
+      "agentv_execution_errors": 0,
+      "metrics": {
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "component_type_recall": 0.0,
+        "ast_node_f1": 0.0,
+        "ast_edge_f1": 0.0,
+        "placeholder_fidelity": 0.0,
+        "latency_ms_p50": 1532.49
+      },
+      "decode_stats": {
+        "total_ms_sum": 4812.252,
+        "compiler_ms_sum": 3424.558,
+        "backbone_ms_sum": 1123.596,
+        "forwards_count_sum": 12,
+        "completion_unique_states_sum": 31483,
+        "completion_witness_states_expanded_sum": 1229,
+        "completion_parser_forks_sum": 32859
+      },
+      "ship_gates_pass": false
+    }
+  ],
+  "comparison": {
+    "measurement_complete": true,
+    "size_matched": false,
+    "trainable_parameter_delta": 528384,
+    "trainable_parameter_ratio": 1.3284005460754162,
+    "parse_rate_delta": 0.0,
+    "binder_reference_f1_delta": 0.0,
+    "meaningful_program_rate_delta": 0.0,
+    "structural_similarity_delta": 0.0,
+    "latency_p50_ratio": 1.0079783741472524,
+    "disposition": "rejected_null_and_capacity_confounded"
+  },
+  "harness_feedback": {
+    "missing_parameter_projection": true,
+    "conditional_aux_head_capacity": true,
+    "stale_completed_priority": true,
+    "repairs": [
+      "project trainable_params into outcomes and result matrices",
+      "prebuild an identical structural auxiliary-head profile in matched controls",
+      "render post-outcome handoff priorities and rotate away from completed nulls"
+    ],
+    "next_quality_arm": "component-plan"
+  },
+  "checkpoint_documentation_required": true,
+  "checkpoint_sync": "explicit no-sync scratch",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "f60aea3601c91d4c1f98c0fc990447dc53a2342c",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "harness.autoresearch.experiment_campaign": "v49",
+      "harness.model_build.eval": "v73",
+      "model.twotower": "v277"
+    },
+    "stamped_at": "2026-08-02T03:08:51.578086+00:00"
+  }
+}

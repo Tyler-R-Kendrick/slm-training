@@ -1,0 +1,22 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1804",
+  "cycle_index": 1804,
+  "evidence_class": "fixture",
+  "decision": "measurement_incomplete_exact_frozen_replay",
+  "scoreable": false,
+  "new_checkpoint_created": true,
+  "upstream_commit": "3e12a96ba536241d3e0fef5ee67ce320ff5a2ad5",
+  "integration_commit": "c9a0193e37976e1c83ecd7f41f59d4e7149f9855",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {"experiment_id": "c20260802-continuous-openui-202607-98199209-c1804-control", "trainable_params": 1608962, "checkpoint_sha256": "f31ac8fcea5a3248d33bdbab2e7d20caaa263dd83f2ff608b47446d858bf2d99", "component_token_loss_weight": 0.0, "steps": 21, "seed": 101804, "last_loss": 14.958993911743164, "train_wall_seconds": 2.760535372013692, "token_loss_attribution": {"component_count": 7, "component_mean_ce": 22.096784591674805, "prefix_count": 2, "prefix_mean_ce": 2.9729933738708496, "non_component_count": 52, "non_component_mean_ce": 7.84478759765625}, "smoke": {"n": 3, "completed_document_n": 0, "incomplete_document_n": 3, "decode_timeout_count": 3}},
+    {"experiment_id": "c20260802-continuous-openui-202607-98199209-c1804-component-token", "trainable_params": 1608962, "checkpoint_sha256": "4edbbb7fd927b4e3316b5bc7529419120eb0e0319a6d284f9eb65cbb99e9678c", "component_token_loss_weight": 1.0, "steps": 21, "seed": 101804, "last_loss": 16.65721893310547, "train_wall_seconds": 2.4351212549954653, "token_loss_attribution": {"component_count": 7, "component_mean_ce": 17.51320457458496, "prefix_count": 2, "prefix_mean_ce": 2.9436562061309814, "non_component_count": 52, "non_component_mean_ce": 7.89615535736084}, "smoke": {"n": 3, "completed_document_n": 3, "incomplete_document_n": 0, "decode_timeout_count": 0, "parse_rate": 1.0, "meaningful_program_rate": 0.6666666666666666, "structural_similarity": 0.08173333333333334, "binder_reference_f1": 1.0, "component_type_recall": 0.3333333333333333, "placeholder_fidelity": 1.0, "reward_score": 0.927, "latency_ms_p50": 7462.88}}
+  ],
+  "comparison": {"attributable": false, "parameter_delta": 0, "reason": "control_all_records_typed_decode_timeout"},
+  "agentv": {"bundles_complete": true, "execution_errors": 0, "ship_gates_pass": false},
+  "checkpoint_policy": "local_explicit_no_sync_incomplete_not_reusable_not_promoted_not_ship",
+  "lean": "not_applicable:screening",
+  "next_priority": "exact_frozen_replay",
+  "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "c9a0193e37976e1c83ecd7f41f59d4e7149f9855", "code_dirty": false, "components": {"config.levers": "v30", "harness.model_build.eval": "v77", "harness.experiment_feature_flags": "v4", "evals.meaningful_program": "2.13.0", "evals.power_protocol": "v8", "evals.scoring": "v22", "model.twotower": "v296"}, "stamped_at": "2026-08-02T23:42:12.754840+00:00"}
+}

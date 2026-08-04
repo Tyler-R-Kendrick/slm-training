@@ -21,6 +21,7 @@ from urllib.parse import quote
 
 import torch
 
+from slm_training.data.contract import canonicalize_example_template_markers
 from slm_training.evals.agentv import publish_agentv_evaluation
 from slm_training.harnesses.experiments.slm233_recursive_campaign import (
     RecursiveCoreVerdict,
@@ -222,9 +223,13 @@ def _rewrite_agentv_paths(output_dir: Path) -> None:
 
 
 def _load_records(data_dir: Path) -> tuple[list[Any], list[Any]]:
-    smoke = {record.id: record for record in load_suite_records(data_dir, "smoke")}
+    smoke = {
+        record.id: canonicalize_example_template_markers(record)
+        for record in load_suite_records(data_dir, "smoke")
+    }
     heldout = {
-        record.id: record for record in load_suite_records(data_dir, "held_out")
+        record.id: canonicalize_example_template_markers(record)
+        for record in load_suite_records(data_dir, "held_out")
     }
     return (
         [smoke[record_id] for record_id in TRAIN_IDS],

@@ -6,8 +6,10 @@ Skeleton retrieval lives beside curriculum helpers (same conditioning surface).
 from __future__ import annotations
 
 import re
+from dataclasses import replace
 from typing import Iterable
 
+from slm_training.data.contract import canonicalize_example_template_markers
 from slm_training.dsl.openui_tokens import PREFERRED_COMPONENT_NAMES, STRUCTURAL_TOKENS
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.harnesses.quality.retrieval import (
@@ -30,7 +32,6 @@ __all__ = [
     "sample_curriculum_batch",
     "sanitize_curriculum_record",
     "soft_corrupt_openui",
-    "strip_adv_placeholders",
     "synthesize_stress_adversarial_records",
     "tag_curriculum_stage",
 ]
@@ -152,34 +153,14 @@ def curriculum_mix_weights(step: int, total_steps: int) -> dict[str, float]:
     return {"A": 0.15, "B": 0.35, "C": 0.50}
 
 
-_ADV_PLACEHOLDER = re.compile(r'":adv\.')
-
-
-def strip_adv_placeholders(openui: str) -> str:
-    """Remap adversarial placeholder namespaces so they cannot leak into smoke."""
-    return _ADV_PLACEHOLDER.sub('":item.', openui)
-
-
 def sanitize_curriculum_record(
     record: ExampleRecord, *, stage: str | None = None
 ) -> ExampleRecord:
-    """Tag stage and always strip `:adv.*` namespaces to prevent smoke leakage."""
+    """Tag a record and project all marker names to opaque ordinal identities."""
     stage = stage or tag_curriculum_stage(record)
-    openui = strip_adv_placeholders(record.openui)
-    placeholders = [
-        p.replace(":adv.", ":item.") if p.startswith(":adv.") else p
-        for p in list(record.placeholders or [])
-    ]
     meta = {**dict(record.meta or {}), "curriculum": stage}
-    return ExampleRecord(
-        id=record.id,
-        prompt=record.prompt,
-        openui=openui,
-        placeholders=placeholders,
-        split=record.split,
-        source=record.source,
-        meta=meta,
-        design_md=record.design_md,
+    return canonicalize_example_template_markers(
+        replace(record, meta=meta)
     )
 
 
@@ -263,14 +244,16 @@ def synthesize_stress_adversarial_records(
     out: list[ExampleRecord] = []
     for tid, prompt, openui, placeholders in templates[:limit]:
         out.append(
-            ExampleRecord(
-                id=f"curriculum_c_{tid}",
-                prompt=prompt,
-                openui=openui,
-                placeholders=placeholders,
-                split="train",
-                source="synth+stress",
-                meta={"curriculum": "C", "suite": "stress", "synth": "stress_adv"},
+            canonicalize_example_template_markers(
+                ExampleRecord(
+                    id=f"curriculum_c_{tid}",
+                    prompt=prompt,
+                    openui=openui,
+                    placeholders=placeholders,
+                    split="train",
+                    source="synth+stress",
+                    meta={"curriculum": "C", "suite": "stress", "synth": "stress_adv"},
+                )
             )
         )
     return out

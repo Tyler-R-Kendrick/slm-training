@@ -7,6 +7,12 @@ experiment starts.
 
 ## Contract
 
+Campaign-lock verification preserves the canonical digest of historical
+`ExperimentCampaignV1` payloads when later releases add optional defaulted
+fields. The compatibility projection is explicit and limited to those added
+defaults; all typed validation still runs, and any decision-bearing mutation
+continues to fail the digest check.
+
 Every governed experiment declares:
 
 - hypothesis and decision;
@@ -38,6 +44,39 @@ require the canonical full-suite ship gates. RL campaigns remain locked until
 the readiness report is recomputed from its referenced evaluation bytes and
 both digests match the campaign lock.
 
+## Authoritative credit (promotion / ship)
+
+Promotion_candidate and ship_gate results require content-addressed
+`observation_table`, `analysis_plan`, and `credit_report` artifacts.
+`credit_engine.compute_credit_report` recomputes paired effects, Holm rows,
+promotion/rollback gate outcomes, and empirical promotability from observation
+rows under a locked analysis plan. Recomputed endpoint values are keyed by
+**manifest `endpoint_id`** (signed paired effect for the primary), not metric
+name. Caller-supplied `endpoint_values` / Holm rows that disagree—or invent
+values not recomputed—fail closed. Kind-only placeholder observation JSON is
+rejected. Structural campaign governance **must not** clear a sole
+`sufficient_evidence` failure (`promotion.py` / HTTP evaluate).
+
+See `docs/design/authoritative-credit-one-shot-agent-prompt.md` and
+`resources/experiments/authoritative_credit/defaults.v1.json`.
+
+## Hill-climb evidence governance
+
+Consistent autotrain progress is an evidence problem, not a smarter optimizer.
+`src/slm_training/autoresearch/hillclimb.py` owns the pure predicates; campaign
+and train entrypoints enforce them fail-closed.
+
+| Gate | Rule |
+| --- | --- |
+| Climb vs non-climb | `validate_result_claim` **always** applies climb eligibility for `promotion_candidate` / `ship_gate` (locked held-out digest + multi-seed primary values for LCB). Seeds alone are insufficient (`primary_seed_values_missing`). Fixture / wiring / diagnostic / screening never count as climb progress; `label_as_climb=True` fails them closed. |
+| Causal campaign shape | Promotion-class manifests require a control arm, positive matched control, destructive negative control, `mechanism_off_arm_ids`, and `executable_kill_criteria` (plus ≥2 seeds). |
+| Exhausted knobs | `scripts/autoresearch.py` loads `exhausted_knob_ledger.json` into `validate_hypothesis_matrix` and auto-records null-measured signatures after feedback. Effects are **direction-signed** (`increase` → candidate−baseline, `decrease` → baseline−candidate) so continuous default `smoke.latency_ms_p50` (lower better) and quality metrics share one null rule: improvement ≤ minimum_effect. Absolute scores alone are never null. Same knob signature + claim class + data/eval identity is rejected until identity or claim class changes. |
+| Synthesis → SFT | `scripts/train_model.py` refuses SFT when `synthesis_feedback.json` has open recommendations without a matching action/waiver in `synthesis_feedback_actions.json` (escape: `--allow-open-synthesis-feedback`, diagnostic only). |
+| Capacity charge | `evaluate_promotion` / HTTP `/promotion/evaluate` pass trainable params + `EG_params` into `validate_result_claim`. Growth without `EG_params` LCB ≥ 1 fails closed; result objects may also carry the fields. |
+
+See also `docs/design/autoresearch-autotraining.md` for the closed-loop harness
+boundary.
+
 ## Endpoint transition
 
 Binding-aware meaning-v2 is not the default until AP-001 supplies a
@@ -68,6 +107,17 @@ This adapts:
   prospective sample-size justification and rejection of observed-power
   reasoning.
 
+## Frozen retry successors
+
+An infrastructure-incomplete measurement is never rerun by pretending its old
+`source_commit` is current. Continuous autotrain creates a new locked successor
+whose `replay_of_manifest_sha256` names the exact prior manifest. The successor
+preserves the model/data recipe, endpoints, arms, seeds, budget, stopping rules,
+controls, multiplicity family, and gates while binding execution to clean current
+main. Both matched arms must complete before the retry action is acknowledged.
+Formal obligations are not portable proof receipts: a cross-commit retry with such
+obligations stops for a fresh Lean preflight.
+
 ## SLM-337 validation
 
 The delivery is governance/fixture evidence, not a model-quality experiment
@@ -80,9 +130,12 @@ canonical campaign as the AP-007 integration seam while retaining its honest
 `wiring` claim.
 
 The first fixture preflight rejected `max_wall_minutes=3` because the canonical
-repository lever currently caps campaigns at two minutes. No simulation ran in
-that failed preflight; the bridge was corrected to the stricter two-minute
-budget before the documented fixture execution.
+repository lever capped campaigns at two minutes when that fixture ran. No
+simulation ran in that failed preflight; the bridge was corrected to the
+stricter two-minute budget before the documented fixture execution. (Historical
+record — as of 2026-08-03 the canonical cap is `MAX_RUN_MINUTES = 3` in
+`src/slm_training/levers.py`, and `CampaignBudget.max_wall_minutes` enforces
+`le=3`.)
 
 The final CPU fixture completed in 3.70 seconds:
 

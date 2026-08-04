@@ -1,0 +1,25 @@
+{
+  "schema": "sff_projection/v1",
+  "version": "v1",
+  "description": "Evidence projection role aliases and default confidences.",
+  "extractor_version": "semantic_evidence_projector/v1",
+  "default_claim_class": "fixture_or_scratch",
+  "component_role": "COMPONENT",
+  "component_confidence": 1.0,
+  "binder_confidence": 1.0,
+  "source_role_aliases": {
+    "DEF": "DEFINITION",
+    "DEFINITION": "DEFINITION",
+    "default": "SOURCE"
+  },
+  "target_role_aliases": {
+    "USE": "USE",
+    "REF": "USE",
+    "REFERENCE": "USE",
+    "default": "TARGET"
+  },
+  "member_roles": [
+    "MEMBER",
+    "COMPONENT"
+  ]
+}

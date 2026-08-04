@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LeverProof raw metric observations v1",
+  "type": "object",
+  "required": ["schema", "metrics"],
+  "properties": {
+    "schema": {"const": "metric_observations/v1"},
+    "metrics": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "array",
+        "minItems": 1,
+        "items": {"type": "integer", "minimum": 0}
+      }
+    }
+  },
+  "additionalProperties": false
+}

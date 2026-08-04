@@ -1,0 +1,300 @@
+{
+  "schema": "sff_metrics/v1",
+  "version": "v1",
+  "description": "Semantic-factor frontier scoreboard metrics: which fields to compute and how. Harness only dispatches by formula id; add metrics here without changing Python when using supported formula types.",
+  "scoreboard_kind": "semantic_factor_frontier_results/v3",
+  "metrics_contract_id": "semantic_factor_metrics/v1",
+  "timer": "time.perf_counter",
+  "wilson_z": 1.96,
+  "efficiency_gate": {
+    "max_slowdown_without_quality_gain": 10.0,
+    "quality_metric": "ranking_accuracy",
+    "runtime_metric": "wall_ms_mean"
+  },
+  "required_runtime_block": [
+    "campaign_wall_s",
+    "campaign_process_s",
+    "timer",
+    "decision_path",
+    "control_wall_ms_mean"
+  ],
+  "decision_path": "per-arm independent: project_program_factors + build_factor_representation + score + select",
+  "aggregates": [
+    {
+      "id": "n_ranked",
+      "type": "count",
+      "population": "ranked"
+    },
+    {
+      "id": "n_decisions",
+      "type": "count",
+      "population": "all"
+    },
+    {
+      "id": "ranking_accuracy",
+      "type": "mean_bool",
+      "population": "ranked",
+      "field": "correct"
+    },
+    {
+      "id": "mrr",
+      "type": "mean",
+      "population": "ranked",
+      "field": "reciprocal_rank"
+    },
+    {
+      "id": "applications",
+      "type": "sum",
+      "population": "all",
+      "field": "applications"
+    },
+    {
+      "id": "choice_changes",
+      "type": "sum_bool",
+      "population": "all",
+      "field": "choice_changed"
+    },
+    {
+      "id": "quality_improving_changes",
+      "type": "sum_bool",
+      "population": "all",
+      "field": "quality_improving"
+    },
+    {
+      "id": "quality_harming_changes",
+      "type": "sum_bool",
+      "population": "all",
+      "field": "quality_harming"
+    },
+    {
+      "id": "singleton_skips",
+      "type": "sum_bool",
+      "population": "all",
+      "field": "singleton_skip"
+    },
+    {
+      "id": "unknown_preserved",
+      "type": "sum_bool",
+      "population": "all",
+      "field": "unknown_preserved"
+    },
+    {
+      "id": "wall_ms_total",
+      "type": "sum",
+      "population": "all",
+      "field": "decision_ms"
+    },
+    {
+      "id": "wall_ms_mean",
+      "type": "mean",
+      "population": "all",
+      "field": "decision_ms"
+    },
+    {
+      "id": "wall_ms_p50",
+      "type": "percentile",
+      "population": "all",
+      "field": "decision_ms",
+      "percentile": 50
+    },
+    {
+      "id": "wall_ms_p95",
+      "type": "percentile",
+      "population": "all",
+      "field": "decision_ms",
+      "percentile": 95
+    },
+    {
+      "id": "wall_ms_min",
+      "type": "min",
+      "population": "all",
+      "field": "decision_ms"
+    },
+    {
+      "id": "wall_ms_max",
+      "type": "max",
+      "population": "all",
+      "field": "decision_ms"
+    },
+    {
+      "id": "project_ms_total",
+      "type": "sum",
+      "population": "all",
+      "field": "project_ms"
+    },
+    {
+      "id": "project_ms_mean",
+      "type": "mean",
+      "population": "all",
+      "field": "project_ms"
+    },
+    {
+      "id": "score_ms_total",
+      "type": "sum",
+      "population": "all",
+      "field": "score_ms"
+    },
+    {
+      "id": "score_ms_mean",
+      "type": "mean",
+      "population": "all",
+      "field": "score_ms"
+    }
+  ],
+  "derived": [
+    {
+      "id": "choice_change_yield",
+      "type": "ratio",
+      "numerator": "choice_changes",
+      "denominator": "applications",
+      "denominator_floor": 1
+    },
+    {
+      "id": "improving_yield",
+      "type": "ratio",
+      "numerator": "quality_improving_changes",
+      "denominator": "applications",
+      "denominator_floor": 1
+    },
+    {
+      "id": "quality_per_ms",
+      "type": "ratio",
+      "numerator": "ranking_accuracy",
+      "denominator": "wall_ms_mean",
+      "if_null_numerator": null,
+      "if_zero_denominator": null
+    },
+    {
+      "id": "delta_accuracy_vs_control",
+      "type": "minus_control",
+      "metric": "ranking_accuracy",
+      "control_arm_id": "control_none"
+    },
+    {
+      "id": "wall_ms_mean_vs_control",
+      "type": "ratio_to_control",
+      "metric": "wall_ms_mean",
+      "control_arm_id": "control_none"
+    },
+    {
+      "id": "wall_ms_total_vs_control",
+      "type": "ratio_to_control",
+      "metric": "wall_ms_total",
+      "control_arm_id": "control_none"
+    },
+    {
+      "id": "delta_accuracy_per_extra_ms",
+      "type": "delta_over_extra_ms",
+      "quality_metric": "ranking_accuracy",
+      "runtime_metric": "wall_ms_mean",
+      "control_arm_id": "control_none"
+    },
+    {
+      "id": "dominates_control_quality_runtime",
+      "type": "dominates_control",
+      "quality_metric": "ranking_accuracy",
+      "runtime_metric": "wall_ms_mean",
+      "control_arm_id": "control_none"
+    },
+    {
+      "id": "ranking_accuracy_ci95",
+      "type": "wilson_ci",
+      "success_field": "correct",
+      "population": "ranked",
+      "z_from": "wilson_z"
+    }
+  ],
+  "required_arm_fields": [
+    "arm_id",
+    "ranking_accuracy",
+    "mrr",
+    "applications",
+    "choice_changes",
+    "choice_change_yield",
+    "kill_criteria_hit",
+    "trainable_parameters",
+    "wall_ms_total",
+    "wall_ms_mean",
+    "wall_ms_p50",
+    "wall_ms_p95",
+    "wall_ms_min",
+    "wall_ms_max",
+    "project_ms_total",
+    "project_ms_mean",
+    "score_ms_total",
+    "score_ms_mean",
+    "quality_per_ms",
+    "wall_ms_mean_vs_control",
+    "wall_ms_total_vs_control",
+    "delta_accuracy_per_extra_ms",
+    "dominates_control_quality_runtime",
+    "delta_accuracy_vs_control"
+  ],
+  "endpoints": [
+    {
+      "endpoint_id": "ranking_accuracy",
+      "metric": "gold_choice_rate",
+      "role": "primary",
+      "direction": "increase",
+      "minimum_effect": 0.1
+    },
+    {
+      "endpoint_id": "mrr",
+      "metric": "mean_reciprocal_rank",
+      "role": "secondary",
+      "direction": "increase",
+      "minimum_effect": 0.0
+    },
+    {
+      "endpoint_id": "choice_change_yield",
+      "metric": "choice_changes_per_application",
+      "role": "secondary",
+      "direction": "increase",
+      "minimum_effect": 0.0
+    },
+    {
+      "endpoint_id": "wall_ms_mean",
+      "metric": "mean_decision_wall_ms",
+      "role": "secondary",
+      "direction": "decrease",
+      "minimum_effect": 0.0
+    },
+    {
+      "endpoint_id": "quality_per_ms",
+      "metric": "ranking_accuracy_per_mean_wall_ms",
+      "role": "secondary",
+      "direction": "increase",
+      "minimum_effect": 0.0
+    }
+  ],
+  "required_campaign_runtime_endpoints": [
+    "wall_ms_mean",
+    "quality_per_ms"
+  ],
+  "populations": {
+    "all": {
+      "include_families": null
+    },
+    "ranked": {
+      "include_families": [
+        "ranked",
+        "adversarial"
+      ],
+      "require_correct_not_null": true,
+      "exclude_if_true": [
+        "incomplete_skip",
+        "singleton_skip"
+      ]
+    }
+  },
+  "numerics": {
+    "ratio_zero_eps": 1e-12,
+    "dominance_acc_eps": 1e-12,
+    "dominance_ms_eps": 1e-09
+  },
+  "promotion": {
+    "delta": 0.1,
+    "min_n": 20,
+    "endpoint_id": "ranking_accuracy"
+  }
+}

@@ -2184,6 +2184,7 @@ def _maybe_trust_gate(exp: Experiment, ckpt: Path, args: argparse.Namespace) -> 
         device=args.device,
         limit=int(getattr(args, "pref_limit", 40) or 40),
         slot_aware=bool(getattr(exp, "slot_aware_trust_gate", False)),
+        calibration_records=exp.test_dir / "suites" / "held_out" / "records.jsonl",
     )
     gate_ckpt = Path(summary.get("checkpoint") or (out_dir / "checkpoints" / "last.pt"))
     if gate_ckpt.is_file():
@@ -2733,7 +2734,7 @@ def main(argv: list[str] | None = None) -> int:
         "--workers",
         type=int,
         default=1,
-        help="Parallel experiment workers (thread pool; 1 = sequential).",
+        help="Experiment workers; currently must be 1 for isolated measurement state.",
     )
     parser.add_argument(
         "--compile",
@@ -2886,6 +2887,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Run deferred E34 latent MoE placeholder (normally skipped).",
     )
     args = parser.parse_args(argv)
+    if args.workers != 1:
+        parser.error(
+            "--workers must be 1 until matrix arms use process-isolated RNG, "
+            "signal, progress, and latency state"
+        )
     if args.matrix_set == "verified-solver":
         return _run_verified_solver(args)
     if args.matrix_set == "external-ceiling":
@@ -3177,7 +3183,6 @@ def main(argv: list[str] | None = None) -> int:
     signal.signal(signal.SIGINT, _mark_interrupted)
     signal.signal(signal.SIGTERM, _mark_interrupted)
 
-    workers = max(1, int(args.workers))
     # Seed/decode overlays that depend on another run stay sequential first.
     dependent = [
         e
@@ -3204,23 +3209,9 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"status": "done", "id": exp.eid, "pass": result["pass"]}))
         return result
 
-    # Run independent train experiments possibly in parallel.
-    if workers > 1 and len(independent) > 1:
-        from concurrent.futures import as_completed
-
-        # Process pool can't pickle complex args cleanly — fall back to threads
-        # for shared-memory CPU parallelism without re-importing CUDA contexts.
-        from concurrent.futures import ThreadPoolExecutor
-
-        with ThreadPoolExecutor(max_workers=min(workers, len(independent))) as pool:
-            futs = {pool.submit(_run, exp): exp for exp in independent}
-            for fut in as_completed(futs):
-                results.append(fut.result())
-                _persist_progress("running")
-    else:
-        for exp in independent:
-            results.append(_run(exp))
-            _persist_progress("running")
+    for exp in independent:
+        results.append(_run(exp))
+        _persist_progress("running")
 
     for exp in dependent:
         results.append(_run(exp))

@@ -1,0 +1,100 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c4",
+  "cycle_index": 4,
+  "evidence_class": "fixture",
+  "decision": "positive_efficiency_win_quality_held_pending_confirmation",
+  "scoreable": true,
+  "new_checkpoint_created": true,
+  "upstream_commit": "8a1b8b47",
+  "integration_commit": "e6a232b0f7d3ac973491e8a4aac084e5db6b66df",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c4-control",
+      "trainable_params": 1755760,
+      "checkpoint_sha256": "4c3b3f187643fefdab522cfaf1e88dcc0a1cd5e790cc5e639df67f5508ec24bc",
+      "steps": 21,
+      "last_loss": 8.851954460144043,
+      "train_wall_seconds": 2.462112813999738,
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.4166666666666667,
+        "binder_reference_f1": 0.9523809523809524,
+        "component_type_recall": 0.25,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "reward_score": 0.9359999999999999,
+        "latency_ms_p50": 7209.15
+      }
+    },
+    {
+      "experiment_id": "c20260803-continuous-openui-local-8c0b60dd-c4-component-plan",
+      "trainable_params": 1755760,
+      "checkpoint_sha256": "b317fe46f6a38d7cca44425d79eac87c775d0c98eaea76f8254f6469e44a8429",
+      "steps": 21,
+      "last_loss": 12.505109786987305,
+      "train_wall_seconds": 5.824938255999768,
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.4166666666666667,
+        "binder_reference_f1": 0.9523809523809524,
+        "component_type_recall": 0.25,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "reward_score": 0.9359999999999999,
+        "latency_ms_p50": 6496.64
+      }
+    }
+  ],
+  "comparison": {
+    "attributable": true,
+    "parameter_delta": 0,
+    "structural_similarity_delta": 0.0,
+    "latency_ms_p50_delta": -712.51,
+    "mpr_per_ms_control": 4.6237536e-05,
+    "mpr_per_ms_candidate": 5.1308574e-05,
+    "mpr_per_ms_gain_fraction": 0.10967362
+  },
+  "agentv": {
+    "bundles_complete": true,
+    "execution_errors": 0,
+    "ship_gates_pass": false
+  },
+  "checkpoint_policy": "local_explicit_no_sync_candidate_queued_pending_fresh_confirmation_not_promoted_not_ship",
+  "lean": "not_applicable:screening",
+  "sdlc_phase_a": {
+    "classification": "POSITIVE",
+    "reasons": [
+      "efficiency_win:mpr_per_ms:4.6237536e-05->5.1308574e-05:gain_fraction=0.10967362:minimum=0.05",
+      "quality_held:parse=1.0 mpr=0.3333333333333333",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.4166666666666667 candidate=0.4166666666666667 improvement=0.0"
+    ],
+    "stack_layer": false,
+    "action": "positive_no_tracked_delta_skip_stack",
+    "champion_enqueue": "champ-continuous-openui-local-4-2694d77fc99953e4"
+  },
+  "next_priority": "confirm the fixture candidate on a fresh seed with the exact size-matched treatment/control recipe (c20260803-continuous-openui-local-8c0b60dd-c4-component-plan-fresh-confirmation) before any promotion or stack layer; promotion formal preflight stays locked until confirmation",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "e6a232b0f7d3ac973491e8a4aac084e5db6b66df",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v77",
+      "harness.model_build.train": "v36",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "evals.agentv": "v7",
+      "model.twotower": "v300",
+      "dsl.symbolic_surface": "v6"
+    },
+    "stamped_at": "2026-08-03T01:14:51.438572+00:00"
+  }
+}

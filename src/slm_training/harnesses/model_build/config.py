@@ -324,6 +324,11 @@ class ModelBuildConfig:
     diffusion_overallocate: int = 8
     diffusion_length_loss_weight: float = 0.1
     ltr_prefix_loss_weight: float = 0.0
+    component_token_loss_weight: float = 0.0
+    component_edge_token_loss_weight: float = 0.0
+    compiler_decision_token_loss_weight: float = 0.0
+    structure_token_loss_weight: float = 0.0
+    typed_family_balance_loss_weight: float = 0.0
     # Extra weight on final real LTR tokens (default-off; CLI: --ltr-tail-*).
     ltr_tail_loss_weight: float = 0.0
     ltr_tail_tokens: int = 32
@@ -331,12 +336,14 @@ class ModelBuildConfig:
     compiler_alignment_margin: float = 0.0
     compiler_alignment_stratified: bool = False
     compiler_alignment_semantic_exhaustive: bool = False
+    compiler_alignment_kind_filter: str = "all"
     # SLM-164: confusion-targeted legal-sibling contrast margin (default-off).
     legal_margin_mode: str = "none"
     targeted_margin_manifest: Path | None = None
     targeted_margin_value: float = 1.0
     targeted_margin_family_weights: tuple[tuple[str, float], ...] = ()
     component_inventory_loss_weight: float = 0.0
+    structural_aux_head_profile: str = "none"
     component_inventory_decode_weight: float | None = None
     component_plan_loss_weight: float = 0.0
     component_plan_decode_weight: float | None = None
@@ -461,13 +468,27 @@ class ModelBuildConfig:
     generate_max_attempts: int = 3
     # Diagnostic per-record generation timeout; None/0 preserves unlimited eval.
     decode_timeout_seconds: float | None = None
+    # Optional cumulative evaluator wall. When set, the runner partitions the
+    # remaining wall across unprocessed records so it can persist a complete
+    # scoreboard before its supervising process interrupts the stage.
+    evaluation_wall_seconds: float | None = None
     grammar_finalize_on_last_attempt_only: bool = False
     # Decode invariant I6 (docs/design/decode-invariants.md): diagnostic-only.
     allow_unconstrained_fallback: bool = False
     # V7 speculative denoising (docs/design/speculative-denoising.md)
     stability_min_persistence: int = 0  # E70 commit gate (0=off)
     stability_jsd_weight: float = 1.0  # E70 remask score mix
-    unmask_mode: str = "positions"  # positions | cluster (E71)
+    unmask_mode: str = "positions"  # positions | cluster (E71) | hybrid (HX4)
+    # Block-diffusion scheduling (L-D): when on, unmask selection groups
+    # positions into fixed blocks (BlockNoiseSchedule) and parallel step
+    # commits are jointly validated by multi_region_support (proven-impossible
+    # canvases revert to masks). Default off = existing positionwise MaskGIT.
+    block_diffusion_decode: bool = False
+    block_diffusion_block_size: int = 4
+    # HX4 hybrid unmask scheduler: minimum contiguous masked-run length that is
+    # budgeted through the block (span) lane; shorter runs use the frontier lane.
+    hybrid_span_min_run: int = 3
+    hybrid_frontier_head: int = 2
     cluster_attn_threshold: float = 0.08
     cluster_max_size: int = 4
     cluster_verify: bool = False  # E72 ordered cluster verification
@@ -516,8 +537,12 @@ class ModelBuildConfig:
     # SLM-212 (SDE5-05): default-off constraint-debt routing over decode paths.
     # All modes are default-off; routing only selects among existing MaskGIT /
     # constrained LTR / ASAp decode paths and never changes legal membership.
-    constraint_debt_routing_mode: str = "off"  # off | fixed_maskgit | fixed_ltr | fixed_asap | debt_router
-    constraint_debt_routing_signal: str = "D_legal"  # D_legal | D_good_proxy | legal_mass_deficit | pre_post_mask_kl
+    constraint_debt_routing_mode: str = (
+        "off"  # off | fixed_maskgit | fixed_ltr | fixed_asap | debt_router
+    )
+    constraint_debt_routing_signal: str = (
+        "D_legal"  # D_legal | D_good_proxy | legal_mass_deficit | pre_post_mask_kl
+    )
     constraint_debt_routing_threshold_high: float = 2.0
     constraint_debt_routing_threshold_low: float | None = None
     constraint_debt_routing_hysteresis: int = 1
@@ -535,6 +560,11 @@ class ModelBuildConfig:
     encoder_ops_conditioning: bool = False
 
     def __post_init__(self) -> None:
+        if self.eval_shards != 1:
+            raise ValueError(
+                "eval_shards must be 1 until deterministic shard execution and "
+                "exact metric/AgentV aggregation are implemented"
+            )
         if self.grammar_constrained is False:
             raise ValueError(
                 "grammar_constrained=False is unsafe for OpenUI generation"
@@ -554,8 +584,16 @@ class ModelBuildConfig:
 
         apply_evaluation_policy(self)
         if self.optimizer_name not in {"adamw", "muon_hybrid"}:
+            raise ValueError("optimizer_name must be one of: adamw, muon_hybrid")
+        if self.compiler_alignment_kind_filter not in {
+            "all",
+            "literal-close",
+            "container-close",
+            "component-edge",
+        }:
             raise ValueError(
-                "optimizer_name must be one of: adamw, muon_hybrid"
+                "compiler_alignment_kind_filter must be one of: all, "
+                "literal-close, container-close, component-edge"
             )
         # SLM-242: fail-closed numeric/schedule gate.
         try:

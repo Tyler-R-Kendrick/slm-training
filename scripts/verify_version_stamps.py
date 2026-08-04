@@ -37,7 +37,7 @@ import json
 import re
 import subprocess
 import sys
-from datetime import date
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -141,10 +141,20 @@ def lint_registry(registry: dict[str, Any]) -> list[str]:
                 row.get("version") or ""
             ):
                 errors.append(f"{where}: history row has invalid version")
+            timestamp = row.get("date") or ""
             try:
-                date.fromisoformat(row.get("date") or "")
+                parsed_timestamp = datetime.fromisoformat(timestamp)
             except ValueError:
-                errors.append(f"{where}: history row has invalid date {row.get('date')!r}")
+                errors.append(
+                    f"{where}: history row has invalid date or datetime "
+                    f"{row.get('date')!r}"
+                )
+            else:
+                if "T" in timestamp and parsed_timestamp.tzinfo is None:
+                    errors.append(
+                        f"{where}: history datetime must include a timezone offset "
+                        f"{timestamp!r}"
+                    )
             if not (row.get("note") or "").strip():
                 errors.append(f"{where}: history notes must be non-empty")
     return errors
@@ -255,6 +265,17 @@ def _is_suffix(old: list[Any], new: list[Any]) -> bool:
     return len(new) >= len(old) and (not old or new[-len(old) :] == old)
 
 
+def _is_subsequence(old: list[Any], new: list[Any]) -> bool:
+    remaining = iter(new)
+    return all(any(candidate == row for candidate in remaining) for row in old)
+
+
+def _direct_merge_parents(rev: str) -> list[str]:
+    raw = _git(["rev-list", "--parents", "-n", "1", rev]) or ""
+    parts = raw.split()
+    return parts[1:] if len(parts) > 2 else []
+
+
 def _looks_like_result(obj: Any) -> bool:
     return isinstance(obj, dict) and bool(RESULT_SHAPE_KEYS & set(obj))
 
@@ -317,16 +338,43 @@ def run_check(*, base_arg: str | None, staged: bool) -> int:
     old_components = (old_registry or {}).get("components", {})
     new_components = new_registry.get("components", {})
 
-    # Append-only history for every component present on both sides.
-    for component_id, old_entry in old_components.items():
-        new_entry = new_components.get(component_id)
-        if new_entry is None:
-            continue
-        if not _is_suffix(old_entry.get("history", []), new_entry.get("history", [])):
-            errors.append(
-                f"{component_id}: history must be append-only (new entries are "
-                "prepended; existing entries are never edited or dropped)"
+    pending_merge = resolve_base("MERGE_HEAD")
+    if pending_merge:
+        merge_parents = [pending_merge]
+    else:
+        merge_parents = _direct_merge_parents("HEAD")
+    resolved_base = resolve_base(base) if merge_parents else None
+    merge_mode = pending_merge is not None or resolved_base in merge_parents
+    history_bases = [(base, old_components)]
+    if pending_merge:
+        for parent in merge_parents:
+            parent_registry = registry_snapshot(parent)
+            if parent_registry is not None:
+                history_bases.append(
+                    (parent, parent_registry.get("components", {}))
+                )
+
+    # Ordinary commits only prepend. A merge must preserve both parents'
+    # histories in relative order because divergent prepends cannot both be
+    # literal suffixes of one linear merged list.
+    for parent, parent_components in history_bases:
+        for component_id, old_entry in parent_components.items():
+            new_entry = new_components.get(component_id)
+            if new_entry is None:
+                continue
+            old_history = old_entry.get("history", [])
+            new_history = new_entry.get("history", [])
+            preserved = (
+                _is_subsequence(old_history, new_history)
+                if merge_mode
+                else _is_suffix(old_history, new_history)
             )
+            if not preserved:
+                qualifier = "parent history preserved in order" if merge_mode else "append-only"
+                errors.append(
+                    f"{component_id}: history must be {qualifier} (new entries are "
+                    "prepended; existing entries are never edited or dropped)"
+                )
 
     for component_id, files in sorted(touched.items()):
         old_entry = old_components.get(component_id)

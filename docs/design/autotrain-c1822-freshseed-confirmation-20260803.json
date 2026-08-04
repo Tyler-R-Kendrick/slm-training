@@ -1,0 +1,77 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "autotrain-c1822-freshseed-confirmation-20260803",
+  "cycle_index": 2,
+  "decision": "fresh_seed_confirmation_failed_2_of_2",
+  "evidence_class": "fixture_screening",
+  "formal_status": "not_applicable:retry_measurement",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "e1f5e4f04944a211f7afa56540131175b94ebd1e",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v78",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v304"
+    },
+    "stamped_at": "2026-08-03T03:47:54.145054+00:00"
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "steps": 20,
+    "predecessor_campaign": "docs/design/autotrain-cycle-1822-compiler-decision-token-positive.json",
+    "sync_checkpoints": false,
+    "suites": ["smoke"],
+    "suite_n": {"smoke": 3},
+    "honesty_mode": "fixture_screening"
+  },
+  "seed_sweep": [
+    {
+      "seed": 101821,
+      "source": "docs/design/autotrain-cycle-1822-compiler-decision-token-positive.json",
+      "decode_timeout_seconds": 12.0,
+      "control": {"meaningful_program_rate": 0.0, "structural_similarity": 0.052366666666666666, "component_type_recall": 0.08333333333333333, "binder_reference_f1": 1.0, "placeholder_fidelity": 1.0, "reward_score": 0.941, "latency_ms_p50": 14011.85},
+      "candidate": {"meaningful_program_rate": 0.6666666666666666, "structural_similarity": 0.14623333333333333, "component_type_recall": 0.3333333333333333, "binder_reference_f1": 1.0, "placeholder_fidelity": 1.0, "reward_score": 0.945, "latency_ms_p50": 12386.03},
+      "mpr_effect": 0.6666666666666666,
+      "verdict": "positive_screen"
+    },
+    {
+      "seed": 202603,
+      "source": "docs/design/autotrain-c1822-freshseed-confirmation-20260803.md (cycle 1)",
+      "decode_timeout_seconds": 25.0,
+      "control": {"meaningful_program_rate": 0.0, "structural_similarity": 0.22999999999999998, "component_type_recall": 0.0, "binder_reference_f1": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0, "latency_ms_p50": 15429.78},
+      "candidate": {"meaningful_program_rate": 0.0, "structural_similarity": 0.26416666666666666, "component_type_recall": 0.25, "binder_reference_f1": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0, "latency_ms_p50": 4924.95},
+      "mpr_effect": 0.0,
+      "verdict": "null"
+    },
+    {
+      "seed": 417729,
+      "source": "this cycle",
+      "decode_timeout_seconds": 40.0,
+      "control": {"meaningful_program_rate": 0.0, "structural_similarity": 0.057499999999999996, "component_type_recall": 0.0, "binder_reference_f1": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0, "latency_ms_p50": 1790.91},
+      "candidate": {"meaningful_program_rate": 0.0, "structural_similarity": 0.1338, "component_type_recall": 0.0, "binder_reference_f1": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0, "latency_ms_p50": 37253.69},
+      "mpr_effect": 0.0,
+      "verdict": "null",
+      "checkpoint_sha256": {"control": "recorded in outputs/runs/autotrain_c1822_seed3_control (not committed)", "candidate": "recorded in outputs/runs/autotrain_c1822_seed3_candidate (not committed)"}
+    }
+  ],
+  "mpr_effect_positive_seed_count": 1,
+  "mpr_effect_null_seed_count": 2,
+  "latency_direction_reversed_across_seeds": true,
+  "ship_gates_pass": false,
+  "measurement_complete": true,
+  "sdlc_phase_a": "non_positive",
+  "sdlc_phase_a_reason": "2 of 3 seeds show mpr_effect=0.0; the one positive seed (c1822's original 101821) does not reproduce on either fresh seed tried, and the p50-latency direction itself reverses between the two fresh seeds (candidate -68% at seed 202603, +1980% at seed 417729), consistent with n=3-document CPU-decode noise rather than a real compiler_decision_token_loss_weight effect at this fixture scale",
+  "next_hypothesis": {
+    "kind": "reject_or_scale_up",
+    "authority": "observed_result",
+    "confidence": 0.75,
+    "statement": "Do not queue further single-seed confirmations of compiler-decision-token on the wf_smoke_v2 n=3 smoke suite -- 2 of 3 seeds are null and latency direction is not stable across seeds, so this suite is underpowered for this arm. Either (a) treat compiler-decision-token as not-yet-established and stop spending cycles on it at this fixture scale, or (b) if the harness owner wants to keep investigating, move straight to a larger held-out suite (20+ documents, per c1822's own honesty caveat) instead of more n=3 single-seed smoke runs."
+  }
+}

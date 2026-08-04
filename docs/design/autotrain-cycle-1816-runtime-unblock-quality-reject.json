@@ -1,0 +1,90 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1816",
+  "cycle_index": 1816,
+  "decision": "runtime_unblock_reproduced_absolute_quality_rejected",
+  "evidence_class": "fixture_promotion_replay",
+  "formal_status": "proved",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "2c672cd8fa74db547124e388a2069d0de316c215",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v77",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v300"
+    },
+    "stamped_at": "2026-08-03T01:51:45.249425+00:00"
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "steps": 20,
+    "sync_checkpoints": false,
+    "checkpoint_mode": "reuse_c1812_frozen_pair",
+    "suites": ["smoke", "held_out"],
+    "suite_n": {"smoke": 3, "held_out": 5},
+    "honesty_mode": "fixture_promotion_replay"
+  },
+  "formal_preflight": {
+    "template_id": "metrics.structural_similarity_monotone",
+    "obligation_id": "formal-7af3e9686d74ba1e",
+    "duration_seconds": 1.4457052309880964,
+    "artifact_sha256": "374d981a77d87da601d389a71cfab3ece2f9e714a8ca413301d2a43e754c23aa",
+    "proof_sha256": "1d5ba34b360d2c7fa914cae7d7c645269d602403fb9c41a35c980723cf3e444e"
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1816-control",
+      "trainable_params": 1608962,
+      "source_checkpoint_sha256": "c91414a1de04856080ecdfe59207979ebdd69246d8aa83c80b18a390f42e4aae",
+      "disposition": "runtime_reject",
+      "suites": {
+        "smoke": {"n": 3, "completed_document_n": 0, "decode_timeout_count": 3},
+        "held_out": {"n": 5, "completed_document_n": 0, "decode_timeout_count": 5}
+      }
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1816-promote",
+      "trainable_params": 1608962,
+      "source_checkpoint_sha256": "7b1d0a90167f06525372f083fb471e5164fd64c4946013996ce3031e7292cb4d",
+      "disposition": "runtime_unblock_quality_reject",
+      "suites": {
+        "smoke": {
+          "n": 3,
+          "completed_document_n": 3,
+          "decode_timeout_count": 0,
+          "meaningful_program_rate": 0.3333333333333333,
+          "structural_similarity": 0.26416666666666666,
+          "binder_reference_f1": 0.8222222222222223,
+          "component_type_recall": 0.25,
+          "placeholder_fidelity": 0.7222222222222222,
+          "latency_ms_p50": 2600.32
+        },
+        "held_out": {
+          "n": 5,
+          "completed_document_n": 5,
+          "decode_timeout_count": 0,
+          "meaningful_program_rate": 0.2,
+          "structural_similarity": 0.20316,
+          "binder_reference_f1": 0.7076190476190476,
+          "component_type_recall": 0.22857142857142856,
+          "placeholder_fidelity": 0.58,
+          "latency_ms_p50": 2639.63
+        }
+      }
+    }
+  ],
+  "ship_gates_pass": false,
+  "next_hypothesis": {
+    "kind": "distinct_size_matched_quality_objective",
+    "authority": "observed_result",
+    "confidence": 0.95,
+    "statement": "A direct exact or canonical AST/topology objective is more likely to improve meaningful program quality than another completion-only loss whose reproduced effect is runtime unblock."
+  }
+}

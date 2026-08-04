@@ -22,6 +22,12 @@ from slm_training.harness_core.promotion_engine import (
 from slm_training.harness_core.promotion_engine import (
     evaluate_promotion as _evaluate_promotion,
 )
+from slm_training.harnesses.experiments.verified_metrics import (
+    VerifiedMetricError,
+    default_metric_paths,
+    sha256_file,
+    verify_metric_certificate,
+)
 from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
     evaluate_ship_gates,
@@ -138,6 +144,9 @@ def evaluate_promotion(
     candidate_loss_report: dict[str, Any] | None = None,
     rankings: dict[str, list[str]] | None = None,
     eg_time_by_seed: Sequence[float] | None = None,
+    eg_params_by_seed: Sequence[float] | None = None,
+    baseline_trainable_params: int | None = None,
+    candidate_trainable_params: int | None = None,
     ship_suites: dict[str, dict[str, Any]] | None = None,
     criteria: PromotionCriteria | None = None,
     campaign_manifest: ExperimentCampaignV1 | dict[str, Any] | None = None,
@@ -153,6 +162,9 @@ def evaluate_promotion(
         candidate_loss_report=candidate_loss_report,
         rankings=rankings,
         eg_time_by_seed=eg_time_by_seed,
+        eg_params_by_seed=eg_params_by_seed,
+        baseline_trainable_params=baseline_trainable_params,
+        candidate_trainable_params=candidate_trainable_params,
         ship_suites=ship_suites,
         criteria=criteria,
         hard_categories=HARD_CATEGORIES,
@@ -177,6 +189,11 @@ def evaluate_promotion(
             governed_result,
             artifact_root=artifact_root,
             locked_manifest_path=locked_manifest_path,
+            # Promotion path always applies climb rules for promotion-class
+            # claims (default) and always surfaces capacity for EG_params.
+            baseline_trainable_params=baseline_trainable_params,
+            candidate_trainable_params=candidate_trainable_params,
+            eg_params_by_seed=eg_params_by_seed,
         )
         if campaign_store is None or artifact_root is None:
             governance_failures = (*governance_failures, "campaign_store_missing")
@@ -202,11 +219,15 @@ def evaluate_promotion(
         "manifest_sha256": manifest_sha,
     }
     result.setdefault("checks", {})["campaign_governance"] = governance
+    # Structural campaign governance must never substitute for missing comparative
+    # / empirical evidence (authoritative credit TCB). Keep governance status
+    # visible but do not clear sufficient_evidence or force promotable=True.
     if not governance_failures and result.get("failures") == ["sufficient_evidence"]:
-        result["checks"].pop("sufficient_evidence", None)
-        result["checks"]["governed_campaign_evidence"] = {"pass": True}
-        result["failures"] = []
-        result["promotable"] = True
+        result["checks"]["governed_campaign_evidence"] = {
+            "pass": True,
+            "note": "structural governance ok; empirical evidence still required",
+        }
+        # Leave sufficient_evidence failure and promotable=False.
     if governance_failures:
         result["promotable"] = False
         result.setdefault("failures", []).extend(governance_failures)
@@ -224,6 +245,10 @@ def register_promoted_checkpoint(
     campaign_store: CampaignStore | None = None,
     artifact_root: Path | None = None,
     locked_manifest_path: Path | None = None,
+    promoted_candidate_id: str | None = None,
+    metric_evidence_path: Path | None = None,
+    metric_certificate_path: Path | None = None,
+    leverproof_bin: Path | str | None = None,
 ) -> Path:
     """Copy/link the mid-trained anchor to ``promoted.pt`` (P1d)."""
     import shutil
@@ -272,6 +297,32 @@ def register_promoted_checkpoint(
         raise ValueError(
             "checkpoint registration requires a promotable campaign-governed result"
         )
+    if promoted_candidate_id is None:
+        raise ValueError(
+            "checkpoint registration requires the promoted LeverProof candidate id"
+        )
+    assert artifact_root is not None
+    default_evidence, default_certificate = default_metric_paths(artifact_root)
+    evidence_path = metric_evidence_path or default_evidence
+    certificate_path = metric_certificate_path or default_certificate
+    if manifest.metric_expectations_sha256 is None:
+        raise ValueError(
+            "checkpoint registration requires preregistered metric expectations"
+        )
+    try:
+        metric_certificate = verify_metric_certificate(
+            evidence_path=evidence_path,
+            certificate_path=certificate_path,
+            expected_campaign_manifest_sha256=governance["manifest_sha256"],
+            expected_metric_expectations_sha256=manifest.metric_expectations_sha256,
+            expected_selected_candidate=promoted_candidate_id,
+            checker=leverproof_bin,
+            require_band_certificate=True,
+        )
+    except VerifiedMetricError as exc:
+        raise ValueError(
+            f"checkpoint registration requires verified resource metrics: {exc}"
+        ) from exc
     checkpoint_dir = Path(checkpoint_dir)
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
     dest = checkpoint_dir / "promoted.pt"
@@ -285,6 +336,9 @@ def register_promoted_checkpoint(
         "kind": "promoted_anchor",
         "campaign_manifest_sha256": governance["manifest_sha256"],
         "locked_eval_manifest_sha256": manifest.locked_eval_manifest_sha256,
+        "metric_certificate_sha256": sha256_file(certificate_path),
+        "metric_evidence_sha256": sha256_file(evidence_path),
+        "metric_selected_candidate": metric_certificate["selected_candidate"],
     }
     meta_path.write_text(
         __import__("json").dumps(payload, indent=2) + "\n", encoding="utf-8"

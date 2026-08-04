@@ -1,3 +1,6 @@
+import json
+import subprocess
+import sys
 from types import SimpleNamespace
 
 from scripts import check_changed
@@ -59,9 +62,15 @@ def test_script_changes_include_their_domain_suite() -> None:
         "tests/test_harnesses/rl",
         "tests/test_scripts",
     ]
+    # Exact path ownership: listed script paths do not also pull scripts/.
     assert select_tests(["scripts/autoresearch.py"]) == [
         "tests/test_autoresearch",
-        "tests/test_scripts",
+    ]
+    assert select_tests(["scripts/verify_agent_surfaces.py"]) == [
+        "tests/test_scripts/test_verify_agent_surfaces.py",
+    ]
+    assert select_tests(["scripts/check_changed.py"]) == [
+        "tests/test_scripts/test_check_changed.py",
     ]
 
 
@@ -69,6 +78,7 @@ def test_hook_prefers_explicit_changed_regressions() -> None:
     assert select_changed_tests(
         [
             "src/slm_training/models/grammar.py",
+            "tests/casefiles.py",
             "tests/test_dsl/test_grammar_fastpath.py",
         ]
     ) == ["tests/test_dsl/test_grammar_fastpath.py"]
@@ -87,8 +97,28 @@ def test_version_registry_changes_run_versioning_suite() -> None:
     assert select_tests(["src/slm_training/resources/versions.json"]) == [
         "tests/test_versioning"
     ]
-    assert select_tests(["src/slm_training/versioning.py"]) == [
-        "tests/test_versioning"
+    assert select_tests(["src/slm_training/versioning.py"]) == ["tests/test_versioning"]
+
+
+def test_case_resource_selects_only_its_mirrored_test() -> None:
+    assert select_tests(
+        [
+            "src/slm_training/resources/test_cases/"
+            "test_harness_core/test_gate_engine_golden.json"
+        ]
+    ) == ["tests/test_harness_core/test_gate_engine_golden.py"]
+
+
+def test_runtime_eval_resources_select_their_consumers() -> None:
+    assert select_tests(["src/slm_training/resources/evals/loss_suite_v1.json"]) == [
+        "tests/test_evals",
+        "tests/test_harnesses/model_build",
+    ]
+    assert select_tests(
+        ["src/slm_training/resources/evals/openui_ship_gates_v5.json"]
+    ) == [
+        "tests/test_harness_core/test_gate_engine_golden.py",
+        "tests/test_harnesses/model_build/test_eval_gates.py",
     ]
 
 
@@ -116,7 +146,7 @@ def test_changed_files_can_compare_a_ci_base(monkeypatch) -> None:
     ]
 
 
-def test_changed_tests_are_collected_once_and_partitioned_by_node(monkeypatch) -> None:
+def test_changed_tests_are_collected_once_and_hash_balanced(monkeypatch) -> None:
     commands = []
 
     def fake_collect(command, **kwargs):
@@ -146,22 +176,226 @@ def test_changed_tests_are_collected_once_and_partitioned_by_node(monkeypatch) -
     assert check_changed._run_changed_tests_parallel(
         ["tests/test_a.py", "tests/test_b.py"]
     ) == 0
-    assert sorted(commands) == sorted(
+    assert len(commands) == 3
+    assert all(len(command) - 4 == 1 for command in commands)
+    assert {
+        node
+        for command in commands
+        for node in command[4:]
+    } == {
+        "tests/test_a.py::test_one",
+        "tests/test_a.py::test_two",
+        "tests/test_b.py::test_three",
+    }
+
+
+def test_changed_test_shards_balance_each_source_file() -> None:
+    nodes = [
+        *(f"tests/test_slow.py::test_{index}" for index in range(11)),
+        *(f"tests/test_fast.py::test_{index}" for index in range(5)),
+    ]
+
+    batches = check_changed._shard_test_nodes(nodes, 4)
+
+    for path in ("tests/test_slow.py", "tests/test_fast.py"):
+        counts = [
+            sum(node.startswith(f"{path}::") for node in batch)
+            for batch in batches
+        ]
+        assert max(counts) - min(counts) <= 1
+    assert {node for batch in batches for node in batch} == set(nodes)
+
+
+def test_parallel_runner_overdecomposes_for_work_stealing(monkeypatch) -> None:
+    collected_nodes = "\n".join(
+        f"tests/test_slow.py::test_{index}" for index in range(12)
+    )
+    commands = []
+
+    def fake_collect(command, **kwargs):
+        return SimpleNamespace(returncode=0, stdout=collected_nodes, stderr="")
+
+    monkeypatch.setattr(check_changed, "CHANGED_TEST_WORKERS", 2)
+    monkeypatch.setattr(check_changed.subprocess, "run", fake_collect)
+    monkeypatch.setattr(check_changed, "_run", lambda command: commands.append(command) or 0)
+
+    assert check_changed._run_changed_tests_parallel(["tests/test_slow.py"]) == 0
+    assert len(commands) == 4
+    assert {node for command in commands for node in command[4:]} == set(
+        collected_nodes.splitlines()
+    )
+
+
+def test_ci_test_shards_are_disjoint_and_complete(monkeypatch) -> None:
+    collected_nodes = "\n".join(
         [
-            [
-                check_changed.sys.executable,
-                "-m",
-                "pytest",
-                "-q",
-                "tests/test_a.py::test_one",
-                "tests/test_b.py::test_three",
-            ],
-            [
-                check_changed.sys.executable,
-                "-m",
-                "pytest",
-                "-q",
-                "tests/test_a.py::test_two",
-            ],
+            *(f"tests/test_slow.py::test_{index}" for index in range(16)),
+            *(f"tests/test_fast.py::test_{index}" for index in range(8)),
         ]
     )
+    shard_nodes = []
+
+    def fake_collect(command, **kwargs):
+        return SimpleNamespace(returncode=0, stdout=collected_nodes, stderr="")
+
+    monkeypatch.setattr(check_changed.subprocess, "run", fake_collect)
+    monkeypatch.setattr(
+        check_changed,
+        "_run",
+        lambda command: shard_nodes.extend(command[4:]) or 0,
+    )
+
+    for shard_index in range(8):
+        before = set(shard_nodes)
+        assert (
+            check_changed._run_changed_tests_parallel(
+                ["tests/test_slow.py", "tests/test_fast.py"],
+                shard_index=shard_index,
+                shard_count=8,
+            )
+            == 0
+        )
+        current = set(shard_nodes) - before
+        assert len(current) == 3
+
+    assert set(shard_nodes) == set(collected_nodes.splitlines())
+    assert len(shard_nodes) == len(set(shard_nodes))
+
+
+def test_parallel_pytest_workers_limit_native_thread_pools(monkeypatch) -> None:
+    monkeypatch.setenv("OMP_NUM_THREADS", "16")
+    monkeypatch.setenv("OPENBLAS_NUM_THREADS", "32")
+
+    env = check_changed._pytest_worker_env()
+
+    assert env["OMP_NUM_THREADS"] == "1"
+    assert env["MKL_NUM_THREADS"] == "1"
+    assert env["OPENBLAS_NUM_THREADS"] == "1"
+    assert env["NUMEXPR_NUM_THREADS"] == "1"
+
+
+def test_list_mode_needs_no_installed_dependencies() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-S",
+            "-m",
+            "scripts.check_changed",
+            "--changed-tests-only",
+            "--base-ref",
+            "HEAD",
+            "--list",
+        ],
+        cwd=check_changed.ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+
+
+def _uniform_nodes(files: int, per_file: int) -> list[str]:
+    return [
+        f"tests/test_uniform_{file_index}.py::test_{node_index}"
+        for file_index in range(files)
+        for node_index in range(per_file)
+    ]
+
+
+def test_duration_aware_shards_are_deterministic() -> None:
+    nodes = _uniform_nodes(5, 4)
+    table = {"tests/test_uniform_1.py": 30.0, "tests/test_uniform_3.py": 2.5}
+
+    first = check_changed._shard_test_nodes(nodes, 3, durations=table)
+    second = check_changed._shard_test_nodes(list(reversed(nodes)), 3, durations=table)
+
+    assert first == second
+    assert {node for batch in first for node in batch} == set(nodes)
+
+
+def test_duration_aware_shards_minimise_the_slowest_shard() -> None:
+    """The objective is the WORST shard, not heavy-file isolation.
+
+    The canonical per-job wall is enforced per shard, so a packing is good
+    exactly when its slowest shard fits. An earlier version kept each
+    measured file whole, which isolated a slow suite but made the worst shard
+    equal to the single heaviest file -- defeating the very wall the sharding
+    exists to satisfy. A heavy file's nodes must therefore be allowed to
+    spread across shards.
+    """
+    heavy = "tests/test_heavy.py"
+    light = [f"tests/test_light_{index}.py" for index in range(10)]
+    nodes = [
+        *(f"{heavy}::test_{index}" for index in range(4)),
+        *(f"{path}::test_{index}" for path in light for index in range(2)),
+    ]
+    table = {heavy: 100.0, **{path: 1.0 for path in light}}
+    weight_of = {
+        node: table[node.split("::", 1)[0]]
+        / sum(1 for other in nodes if other.split("::", 1)[0] == node.split("::", 1)[0])
+        for node in nodes
+    }
+
+    for shard_count in (2, 4, 8):
+        batches = check_changed._shard_test_nodes(nodes, shard_count, durations=table)
+        loads = [sum(weight_of[node] for node in batch) for batch in batches]
+
+        # Every node placed exactly once.
+        assert {node for batch in batches for node in batch} == set(nodes)
+        assert sum(len(batch) for batch in batches) == len(nodes)
+
+        # The heavy file must SPREAD once there are more shards than its
+        # nodes could otherwise use -- the anti-isolation property.
+        heavy_shards = sum(
+            1
+            for batch in batches
+            if any(node.startswith(f"{heavy}::") for node in batch)
+        )
+        assert heavy_shards == min(shard_count, 4), "heavy nodes must spread"
+
+        # Makespan beats the atomic-file alternative (whole 100.0 on one shard).
+        assert max(loads) < 100.0
+
+
+def test_empty_duration_table_reduces_to_node_count_balancing() -> None:
+    nodes = _uniform_nodes(6, 5)
+
+    batches = check_changed._shard_test_nodes(nodes, 4, durations={})
+
+    counts = [len(batch) for batch in batches]
+    assert max(counts) - min(counts) <= 1
+    assert {node for batch in batches for node in batch} == set(nodes)
+    # Per-file balance is preserved too, which is what the count-balanced
+    # predecessor guaranteed.
+    for file_index in range(6):
+        prefix = f"tests/test_uniform_{file_index}.py::"
+        per_file = [sum(node.startswith(prefix) for node in batch) for batch in batches]
+        assert max(per_file) - min(per_file) <= 1
+
+
+def test_committed_test_duration_table_is_schema_valid() -> None:
+    payload = json.loads(check_changed.TEST_DURATIONS_PATH.read_text(encoding="utf-8"))
+
+    assert payload["schema"] == "test_file_durations/v1"
+    assert payload["unit"] == "seconds"
+    assert payload["generated_by"]
+    durations = payload["durations"]
+    assert durations
+    for path, seconds in durations.items():
+        assert path.startswith("tests/") and path.endswith(".py"), path
+        assert isinstance(seconds, (int, float)) and seconds > 0, path
+
+    loaded = check_changed._test_file_durations()
+    assert loaded == {path: float(value) for path, value in durations.items()}
+
+
+def test_missing_duration_table_degrades_to_an_empty_weighting(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(
+        check_changed, "TEST_DURATIONS_PATH", tmp_path / "absent.json"
+    )
+    check_changed._test_file_durations.cache_clear()
+    try:
+        assert check_changed._test_file_durations() == {}
+    finally:
+        check_changed._test_file_durations.cache_clear()

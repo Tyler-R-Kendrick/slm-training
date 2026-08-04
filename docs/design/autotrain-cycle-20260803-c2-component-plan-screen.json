@@ -1,0 +1,71 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "loop_id": "continuous-openui-20260730",
+  "cycle": 2,
+  "campaign_id": "continuous-loop-20260803-continuous-openui-202607-98199209-c2",
+  "experiment": "c20260803-continuous-openui-202607-98199209-c2-component-plan",
+  "claim_class": "screening",
+  "status": "positive_fixture_screen",
+  "measurement_complete": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "backend": "scratch",
+    "batch_size": 1,
+    "honesty_mode": "strict grammar-constrained compiler-tree",
+    "suite": "smoke",
+    "suite_n": 3,
+    "trainable_params": 1755764,
+    "checkpoint_sync": "explicit no-sync local scratch"
+  },
+  "arms": [
+    {
+      "role": "control",
+      "experiment": "c20260803-continuous-openui-202607-98199209-c2-control",
+      "structural_similarity": 0.32666666666666666,
+      "meaningful_program_rate": 0.0,
+      "component_type_recall": 0.16666666666666666,
+      "binder_reference_f1": 0.0,
+      "parse_rate": 1.0,
+      "latency_ms_p50": 23124.96,
+      "decode_amortized_ms_per_record_p50": 7708.32,
+      "gates": "fail"
+    },
+    {
+      "role": "candidate",
+      "experiment": "c20260803-continuous-openui-202607-98199209-c2-component-plan",
+      "structural_similarity": 0.38280000000000003,
+      "meaningful_program_rate": 0.0,
+      "component_type_recall": 0.16666666666666666,
+      "binder_reference_f1": 0.0,
+      "parse_rate": 1.0,
+      "latency_ms_p50": 18272.11,
+      "decode_amortized_ms_per_record_p50": 6090.7,
+      "gates": "fail"
+    }
+  ],
+  "signals": {
+    "primary_delta": 0.05613333333333337,
+    "meaningful_program_delta": 0.0,
+    "semantic_exactness": "ast_beq=0, canonical_beq=0, placeholder_fidelity=0, reward=0",
+    "evidence_class": "fixture",
+    "diagnosis": "model",
+    "lean": "diagnostic-only; live lake unavailable on host",
+    "next_priority": "fresh-seed confirmation with exact size-matched treatment/control before promotion"
+  },
+  "gates": {
+    "ship": false,
+    "reason": "smoke n=3 below 20; full held_out/adversarial/ood/rico_held suites missing; meaningful and exact semantic gates fail"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "23bf0561ecd5d8487a5bd7c512af86ba70cb7ba9",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v83",
+      "harness.autoresearch.experiment_campaign": "v164",
+      "harness.autoresearch.formal": "v12",
+      "matrix.perf": "v9"
+    }
+  }
+}

@@ -6,6 +6,8 @@ import random
 
 import pytest
 
+from tests.casefiles import case_values
+
 from slm_training.harnesses.experiments.slm299_edit_reachability import (
     DEFAULT_SEED_SOURCE,
     Verdict,
@@ -31,6 +33,7 @@ SEED = DEFAULT_SEED_SOURCE  # 'root = Stack([], "column")' — the X22 minimal s
 
 
 # (a) reachable leaf replacement / addition -------------------------------
+
 
 def test_reachable_single_leaf_add_has_exact_lower_bound() -> None:
     case = analyze_reachability(
@@ -82,8 +85,8 @@ def test_extended_space_reaches_a_real_pack_property_mutation() -> None:
     ]
 
 
-
 # (b) multi-container target ----------------------------------------------
+
 
 def test_multi_container_target_needs_container_add() -> None:
     case = analyze_reachability(
@@ -112,14 +115,10 @@ def test_multi_container_target_reachable_in_extended_space() -> None:
 
 # (c) state/query/action (V0.5) program forms ------------------------------
 
+
 @pytest.mark.parametrize(
     "target",
-    [
-        'q = Query("getUser")\nroot = Stack([], "column")',
-        'a = Action("submit")\nroot = Stack([], "column")',
-        'r = State("draft")\nroot = Stack([], "column")',
-        '!v0.5\nroot = Stack([], "column")',
-    ],
+    case_values(__file__, "test_pack_feature_targets_are_unsupported"),
 )
 def test_pack_feature_targets_are_unsupported(target: str) -> None:
     case = analyze_reachability(SEED, target, slot_inventory=[":x"])
@@ -131,11 +130,11 @@ def test_pack_feature_targets_are_unsupported(target: str) -> None:
 
 _FIVE_LEAF_TARGET = (
     'root = Stack([a, b, c, d, e], "column")\n'
-    "a = TextContent(\":x\")\n"
-    "b = TextContent(\":x\")\n"
-    "c = TextContent(\":x\")\n"
-    "d = TextContent(\":x\")\n"
-    "e = TextContent(\":x\")"
+    'a = TextContent(":x")\n'
+    'b = TextContent(":x")\n'
+    'c = TextContent(":x")\n'
+    'd = TextContent(":x")\n'
+    'e = TextContent(":x")'
 )
 
 
@@ -208,6 +207,7 @@ def test_synthetic_add_container_flips_verdict_and_is_marked() -> None:
 
 # (f) transition parity with TreeEditSpace.apply ---------------------------
 
+
 def _random_statements(rng: random.Random) -> list:
     depth = rng.randint(0, 3)
     statements = parse_statements(SEED)
@@ -242,7 +242,9 @@ def test_transition_parity_with_tree_edit_space() -> None:
         n_comp = len(space.components)
         for stmt in range(len(statements)):
             for comp in range(n_comp):
-                nxt = space.apply(statements, Edit(ACTION_REPLACE, stmt, comp), inventory)
+                nxt = space.apply(
+                    statements, Edit(ACTION_REPLACE, stmt, comp), inventory
+                )
                 if nxt is not None:
                     via_reference.add(render_statements(nxt))
                 for slot in range(len(inventory)):
@@ -272,9 +274,9 @@ def test_extended_enumeration_is_superset_and_deterministic() -> None:
     ext_first = _enumerate_children(space, statements, inventory, mode="extended")
     ext_second = _enumerate_children(space, statements, inventory, mode="extended")
     assert [a for _, a in ext_first] == [a for _, a in ext_second]
-    assert [
-        render_statements(child) for child, _ in ext_first
-    ] == [render_statements(child) for child, _ in ext_second]
+    assert [render_statements(child) for child, _ in ext_first] == [
+        render_statements(child) for child, _ in ext_second
+    ]
     v1_keys = {render_statements(child) for child, _ in v1}
     ext_keys = {render_statements(child) for child, _ in ext_first}
     assert v1_keys <= ext_keys
@@ -284,8 +286,7 @@ def test_extended_enumeration_is_superset_and_deterministic() -> None:
 
 def test_v05_canonical_template_target_is_reachable_in_extended_space() -> None:
     target = (
-        'root = Stack([], "column")\n'
-        'q0 = Query("tool", {arg: $x}, {default: []}, 15)'
+        'root = Stack([], "column")\nq0 = Query("tool", {arg: $x}, {default: []}, 15)'
     )
     extended = analyze_reachability(SEED, target, slot_inventory=[":x"])
     assert extended.verdict is Verdict.PROVEN_REACHABLE
@@ -300,18 +301,23 @@ def test_v05_canonical_template_target_is_reachable_in_extended_space() -> None:
 
 # (g) ship-gate integration -------------------------------------------------
 
+
 def _gate_suites() -> dict[str, dict[str, object]]:
     from slm_training.harnesses.model_build.ship_gates import DEFAULT_SHIP_GATES
 
     suites: dict[str, dict[str, object]] = {}
     for suite, mins in DEFAULT_SHIP_GATES.items():
         suites[suite] = {
-            "n": 25,
+            "n": int(mins.get("min_n", 25)),
             "parse_rate": 1.0,
             "syntax_parse_rate": 1.0,
             "placeholder_validity": 1.0,
             "fallback_count": 0,
-            **{metric: min(1.0, floor + 0.3) for metric, floor in mins.items()},
+            **{
+                metric: min(1.0, floor + 0.3)
+                for metric, floor in mins.items()
+                if metric != "min_n"
+            },
         }
     return suites
 
@@ -319,9 +325,7 @@ def _gate_suites() -> dict[str, dict[str, object]]:
 def test_ship_gates_block_suite_with_partial_reachability() -> None:
     from slm_training.harnesses.model_build.ship_gates import evaluate_ship_gates
 
-    result = evaluate_ship_gates(
-        _gate_suites(), suite_reachability={"smoke": 0.5}
-    )
+    result = evaluate_ship_gates(_gate_suites(), suite_reachability={"smoke": 0.5})
     assert result["pass"] is False
     assert any(
         failure.startswith("reachability_unproven:smoke")
@@ -356,6 +360,7 @@ def test_ship_gates_unchanged_when_reachability_map_omitted() -> None:
 
 # (h) report determinism ----------------------------------------------------
 
+
 def _mini_corpora() -> dict[str, list[dict[str, object]]]:
     return {
         "smoke": [
@@ -376,11 +381,17 @@ def _mini_corpora() -> dict[str, list[dict[str, object]]]:
 
 def test_audit_report_is_deterministic() -> None:
     first = build_report(
-        _mini_corpora(), max_edits=8, node_budget=200, generated_at="2026-07-24T00:00:00Z",
+        _mini_corpora(),
+        max_edits=8,
+        node_budget=200,
+        generated_at="2026-07-24T00:00:00Z",
         mode="v1",
     )
     second = build_report(
-        _mini_corpora(), max_edits=8, node_budget=200, generated_at="2026-07-24T00:00:00Z",
+        _mini_corpora(),
+        max_edits=8,
+        node_budget=200,
+        generated_at="2026-07-24T00:00:00Z",
         mode="v1",
     )
     first.pop("version_stamp")
@@ -394,8 +405,12 @@ def test_audit_report_is_deterministic() -> None:
 
 def test_audit_compare_reports_old_vs_extended() -> None:
     payload = build_report(
-        _mini_corpora(), max_edits=8, node_budget=200,
-        generated_at="2026-07-24T00:00:00Z", mode="extended", compare=True,
+        _mini_corpora(),
+        max_edits=8,
+        node_budget=200,
+        generated_at="2026-07-24T00:00:00Z",
+        mode="extended",
+        compare=True,
     )
     assert payload["suites"]["smoke"]["reachable_fraction"] == 1.0
     assert payload["suites_v1"]["smoke"]["reachable_fraction"] == 0.5

@@ -32,6 +32,53 @@ def _tok() -> OpenUITokenizer:
     )
 
 
+def test_gate_calibration_selects_highest_safe_coverage() -> None:
+    from slm_training.dsl.grammar.fastpath.trust_train import gate_calibration_report
+
+    report = gate_calibration_report(
+        [0.95, 0.9, 0.7, 0.2],
+        [1.0, 1.0, 0.0, 0.0],
+        max_selective_risk=0.0,
+    )
+    assert 0.0 <= report["brier"] <= 1.0
+    assert 0.0 <= report["ece"] <= 1.0
+    assert report["operating_point"]["coverage"] == 0.5
+    assert report["operating_point"]["threshold"] == 0.9
+
+
+def test_gate_calibration_abstains_when_no_safe_threshold() -> None:
+    from slm_training.dsl.grammar.fastpath.trust_train import gate_calibration_report
+
+    report = gate_calibration_report([0.9], [0.0], max_selective_risk=0.0)
+    assert report["operating_point"] is None
+    assert report["abstain_required"] is True
+    assert gate_calibration_report([0.9], [1.0], bins=0)["ece"] < 0.11
+
+
+def test_gate_mining_scores_only_model_filled_positions() -> None:
+    from slm_training.dsl.grammar.fastpath.trust_train import mine_gate_batch
+
+    records = [
+        ExampleRecord(id="short", prompt="CTA", openui='root = Button(":slot_0")'),
+        ExampleRecord(
+            id="long",
+            prompt="Card",
+            openui='root = Card([TextContent(":slot_0")])',
+        ),
+    ]
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32, n_heads=4, context_layers=1, denoiser_layers=1, seed=0
+        ),
+        device="cpu",
+    )
+    hidden, labels, scored = mine_gate_batch(model, records, mask_rate=1.0)
+    assert hidden.shape[:2] == labels.shape == scored.shape
+    expected = sum(len(model.tokenizer.encode(record.openui)) - 1 for record in records)
+    assert int(scored.sum()) == expected
+
+
 def test_engine_force_equal_after_name() -> None:
     eng = OpenUIIncrementalEngine()
     assert eng.set_prefix("root")
@@ -92,7 +139,8 @@ def test_repeated_bound_binder_reference_positions_are_prefix_aligned() -> None:
     positions = repeated_bound_binder_reference_positions(tok, ids)
     assert positions == ((ids.index(title, ids.index(title) + 1), title),)
 
-def test_exact_force_rejects_complete_forest_with_second_candidate() -> None:
+
+def test_exact_force_accepts_complete_singleton_forest() -> None:
     from slm_training.dsl.grammar.fastpath.compiler_draft import build_completion_forest
     from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
 
@@ -103,8 +151,7 @@ def test_exact_force_rejects_complete_forest_with_second_candidate() -> None:
     forest = build_completion_forest(tokenizer, prefix, state=state)
 
     assert forest.coverage == "complete"
-    assert forced in forest.candidate_ids
-    assert any(candidate != forced for candidate in forest.candidate_ids)
+    assert forest.candidate_ids == (forced,)
 
     assert (
         exact_forced_token_id(
@@ -113,7 +160,7 @@ def test_exact_force_rejects_complete_forest_with_second_candidate() -> None:
             forced_token_id=forced,
             state=state,
         )
-        is None
+        == forced
     )
 
 
@@ -593,6 +640,23 @@ def test_cached_native_masks_intersect_active_symbols() -> None:
     assert cached - tok.kind_ids("sym") == uncached - tok.kind_ids("sym")
 
 
+def test_uncached_native_mask_skips_cache_fingerprint() -> None:
+    from slm_training.dsl.grammar.fastpath.token_map import allowed_id_set
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    class NoItemsDict(dict[str, int]):
+        def items(self):  # type: ignore[override]
+            raise AssertionError("uncached lookup must not build a cache fingerprint")
+
+    tok = DSLNativeTokenizer.build()
+    tok.token_to_id = NoItemsDict(tok.token_to_id)
+
+    allowed = allowed_id_set(tok, frozenset({"STRING"}))
+
+    assert allowed is not None
+    assert tok.sym_id(0) in allowed
+
+
 def test_native_string_terminal_excludes_non_string_literal_markers() -> None:
     from slm_training.dsl.grammar.fastpath.token_map import allowed_id_set
     from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
@@ -810,3 +874,108 @@ def test_cactus_kernel_sketch_files_exist() -> None:
     assert (root / "force_emit_sketch.hpp").is_file()
     assert (root / "maskgit_admit_sketch.hpp").is_file()
     assert (root / "README.md").is_file()
+
+
+def test_engine_reuse_across_records_matches_fresh() -> None:
+    """P1 (MaskGIT): a reused engine is observably equivalent to a fresh one.
+
+    Covers pure extension, an unrelated same-shape jump, an illegal prefix,
+    and a legal prefix after the rejected sync — no cross-record leakage.
+    """
+    prefixes = [
+        ("root", True),
+        ("root = Card", True),  # pure extension of the previous prefix
+        ("root = Row(", True),  # non-monotonic replacement
+        ("= ) root", False),  # illegal
+        ("root = Stack", True),  # legal again after a rejected sync
+    ]
+    reused = OpenUIIncrementalEngine()
+    for prefix, expect_ok in prefixes:
+        fresh = OpenUIIncrementalEngine()
+        got_reused = reused.set_prefix(prefix)
+        got_fresh = fresh.set_prefix(prefix)
+        assert got_reused == got_fresh == expect_ok, prefix
+        if not expect_ok:
+            # Post-rejection internals are unspecified; the contract is that
+            # the NEXT successful sync behaves identically (next iteration).
+            continue
+        assert reused.is_deterministic_next() == fresh.is_deterministic_next(), prefix
+        for chunk in ("(", " = ", "Card"):
+            assert reused.probe_chunk(chunk) == fresh.probe_chunk(chunk), (
+                prefix,
+                chunk,
+            )
+
+
+def test_admit_fill_engine_reuse_matches_fresh() -> None:
+    """One hoisted admit_fill engine per trajectory must match fresh engines."""
+    tok = _tok()
+    quote_id = tok.token_to_id['"']
+
+    def _masked(source: str) -> list[int]:
+        ids = tok.encode(source, add_special=True)
+        first = ids.index(quote_id)
+        second = ids.index(quote_id, first + 1)
+        for pos in range(first, second + 1):
+            ids[pos] = tok.mask_id
+        return ids
+
+    canvases = [
+        _masked(SAMPLE),
+        tok.encode('root = Row(":j")\n', add_special=True),
+        _masked(SAMPLE),  # revisit after an unrelated canvas
+        tok.encode("root = Stack([hero])\n", add_special=True),
+    ]
+    reused = OpenUIIncrementalEngine()
+    for canvas in canvases:
+        assert admit_fill(reused, tok, canvas) == admit_fill(
+            OpenUIIncrementalEngine(), tok, canvas
+        )
+
+
+def test_pick_constrained_state_parity_with_stateless() -> None:
+    """MaskGIT picks pass a persistent state; choices must match stateless."""
+    import torch
+
+    tok = _tok()
+    equal_id = tok.token_to_id["="]
+    logits = torch.zeros(tok.vocab_size)
+    logits[tok.token_to_id.get("]", equal_id)] = 10.0
+    state = make_grammar_state()
+    for text, kwargs in [
+        ("", {"top_k": 8}),
+        ("root", {"forced_token_id": equal_id}),
+        ("root = ", {"top_k": 8}),
+    ]:
+        prefix = tok.encode(text, add_special=False) if text else []
+        stateless = pick_constrained_token(logits, tok, prefix, **kwargs)
+        stateful = pick_constrained_token(logits, tok, prefix, state=state, **kwargs)
+        assert stateful == stateless, text
+
+
+def test_sync_ids_unadvertised_token_detaches_session_without_raising() -> None:
+    """A bound session rejecting an appended token detaches, never raises.
+
+    `sync_ids` append growth advances the packed session with
+    `require_advertised=False`: an unadvertised appended token (template
+    seed, external splice) clears `completion_state_id` and falls back to
+    the sessionless path instead of poisoning the sync with a RuntimeError.
+    """
+    tok = _tok()
+    state = make_grammar_state()
+    root_ids = tok.encode("root", add_special=False)
+    state.sync_ids(tok, root_ids)
+
+    class _RejectingSession:
+        def advance(self, state_id: int, token_id: int) -> None:
+            return None
+
+        def stats(self) -> dict[str, int]:
+            return {}
+
+    state.bind_completion_session(_RejectingSession(), ("k",), 0, root_ids)
+    grown = root_ids + tok.encode(" = ", add_special=False)
+    text = state.sync_ids(tok, grown)
+    assert state.completion_state_id is None
+    assert state.prefix_ids == grown
+    assert text == state.prefix_text

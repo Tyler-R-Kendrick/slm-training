@@ -53,7 +53,7 @@ def test_manifest_is_in_sync() -> None:
     )
 
 
-@pytest.mark.parametrize("slug", ["overview", "data", "experiments", "smoke", "checkpoints", "playground"])
+@pytest.mark.parametrize("slug", ["overview", "data", "experiments", "smoke", "checkpoints", "dsl-packs", "playground"])
 def test_program_has_root(slug: str) -> None:
     prog = OPENUI_DIR / f"{slug}.openui"
     assert prog.exists(), f"missing {prog.name}"

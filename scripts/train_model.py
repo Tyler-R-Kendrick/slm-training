@@ -243,10 +243,16 @@ def main(argv: list[str] | None = None) -> int:
         help="Optimizer family (default: adamw).",
     )
     parser.add_argument(
-        "--muon-lr", type=float, default=None, help="Muon learning rate (default: --lr)."
+        "--muon-lr",
+        type=float,
+        default=None,
+        help="Muon learning rate (default: --lr).",
     )
     parser.add_argument(
-        "--adamw-lr", type=float, default=None, help="AdamW learning rate (default: --lr)."
+        "--adamw-lr",
+        type=float,
+        default=None,
+        help="AdamW learning rate (default: --lr).",
     )
     parser.add_argument("--weight-decay", type=float, default=0.0)
     parser.add_argument("--muon-momentum", type=float, default=0.9)
@@ -427,6 +433,11 @@ def main(argv: list[str] | None = None) -> int:
         default=False,
     )
     parser.add_argument(
+        "--grammar-incremental-state",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    parser.add_argument(
         "--compact-active-canvas",
         action=argparse.BooleanOptionalAction,
         default=True,
@@ -558,6 +569,36 @@ def main(argv: list[str] | None = None) -> int:
         help="Extra weight for the first three LTR positions (root/early structure).",
     )
     parser.add_argument(
+        "--component-token-loss-weight",
+        type=float,
+        default=0.0,
+        help="Extra reconstruction weight for component-type output tokens.",
+    )
+    parser.add_argument(
+        "--component-edge-token-loss-weight",
+        type=float,
+        default=0.0,
+        help="Extra reconstruction weight at compiler-derived component edges.",
+    )
+    parser.add_argument(
+        "--compiler-decision-token-loss-weight",
+        type=float,
+        default=0.0,
+        help="Extra reconstruction weight at every compiler-derived decision.",
+    )
+    parser.add_argument(
+        "--structure-token-loss-weight",
+        type=float,
+        default=0.0,
+        help="Extra reconstruction weight for grammar STRUCT output tokens.",
+    )
+    parser.add_argument(
+        "--typed-family-balance-loss-weight",
+        type=float,
+        default=0.0,
+        help="Count-normalized auxiliary over component and STRUCT token means.",
+    )
+    parser.add_argument(
         "--ltr-tail-loss-weight",
         type=float,
         default=0.0,
@@ -592,10 +633,34 @@ def main(argv: list[str] | None = None) -> int:
         help="Align every grammar-derived AST-role decision; stratify structural states.",
     )
     parser.add_argument(
+        "--compiler-alignment-kind-filter",
+        choices=("all", "literal-close", "container-close", "component-edge"),
+        default="all",
+        help=(
+            "Restrict compiler alignment to all branches, numeric-frame gold "
+            "LIT_END branches, legal container closes, or component-bound edges."
+        ),
+    )
+    parser.add_argument(
         "--component-inventory-loss-weight",
         type=float,
         default=0.0,
         help="Multi-label prompt-to-gold-component inventory loss weight.",
+    )
+    parser.add_argument(
+        "--structural-aux-head-profile",
+        choices=(
+            "none",
+            "component-plan",
+            "component-edge",
+            "component-inventory",
+            "binder-topology",
+            "binder-arity",
+            "binder-component-plan",
+            "component-structure",
+        ),
+        default="none",
+        help="Prebuild structural auxiliary heads for capacity-matched controls.",
     )
     parser.add_argument(
         "--component-inventory-decode-weight",
@@ -617,13 +682,28 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--abstract-plan-mode",
-        choices=("disabled", "teacher_forced", "sampled", "oracle", "random", "shuffled"),
+        choices=(
+            "disabled",
+            "teacher_forced",
+            "sampled",
+            "oracle",
+            "random",
+            "shuffled",
+        ),
         default="disabled",
         help="Default-off discrete plan head mode.",
     )
     parser.add_argument(
         "--abstract-plan-connector-arm",
-        choices=("disabled", "learned", "oracle", "detached", "empty", "random", "shuffled"),
+        choices=(
+            "disabled",
+            "learned",
+            "oracle",
+            "detached",
+            "empty",
+            "random",
+            "shuffled",
+        ),
         default="disabled",
         help="Default-off plan-conditioning connector arm.",
     )
@@ -926,6 +1006,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Bias legal reference-list continue/stop paths by planned arity.",
     )
     parser.add_argument(
+        "--symbol-boundary-loss-weight",
+        type=float,
+        default=0.0,
+        help="Extra CE weight on opaque-symbol tokens and their immediate boundaries.",
+    )
+    parser.add_argument(
         "--root-reference-arity-loss-weight",
         type=float,
         default=0.0,
@@ -1045,11 +1131,15 @@ def main(argv: list[str] | None = None) -> int:
         help="Default-off pairwise semantic-contrast margin objective weight.",
     )
     parser.add_argument(
-        "--semantic-contrast-margin", type=float, default=1.0,
+        "--semantic-contrast-margin",
+        type=float,
+        default=1.0,
         help="Required positive-over-negative sequence-score margin.",
     )
     parser.add_argument(
-        "--semantic-contrast-fraction", type=float, default=0.0,
+        "--semantic-contrast-fraction",
+        type=float,
+        default=0.0,
         help="Fraction of each canonical batch occupied by complete contrast pairs.",
     )
     parser.add_argument(
@@ -1307,6 +1397,14 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Load the adapter as frozen (no adapter parameters train).",
     )
+    parser.add_argument(
+        "--allow-open-synthesis-feedback",
+        action="store_true",
+        help=(
+            "Diagnostic escape: allow SFT when synthesis_feedback.json still has "
+            "open recommendations without an action/waiver record. Never a fix."
+        ),
+    )
     args = parser.parse_args(argv)
     data_store = DataStore()
     if args.train_version:
@@ -1317,6 +1415,26 @@ def main(argv: list[str] | None = None) -> int:
             args.mixture_manifest = version_mixture
     else:
         args.train_dir = data_store.resolve_path("train", args.train_dir)
+    if not args.allow_open_synthesis_feedback:
+        from slm_training.autoresearch.climb_policy import load_climb_policy
+        from slm_training.autoresearch.hillclimb import (
+            HillClimbError,
+            assert_synthesis_feedback_cleared_for_sft,
+        )
+
+        try:
+            policy = load_climb_policy()
+            synth = policy.synthesis_loop
+            names = tuple(str(x) for x in (synth.get("action_filenames") or ())) or None
+            waiver = synth.get("allow_global_waiver_code", "*")
+            assert_synthesis_feedback_cleared_for_sft(
+                Path(args.train_dir),
+                allow_missing_feedback=True,
+                action_filenames=names,
+                allow_global_waiver_code=str(waiver) if waiver is not None else "*",
+            )
+        except HillClimbError as exc:
+            parser.error(str(exc))
     if args.test_dir is not None:
         args.test_dir = data_store.resolve_path("eval", args.test_dir)
     if (args.eval_every > 0 or args.loss_eval_every > 0) and not args.test_dir:
@@ -1422,6 +1540,7 @@ def main(argv: list[str] | None = None) -> int:
         grammar_completion_bounds=args.grammar_completion_bounds,
         grammar_equivalence_cache=args.grammar_equivalence_cache,
         grammar_active_symbol_bitsets=args.grammar_active_symbol_bitsets,
+        grammar_incremental_state=args.grammar_incremental_state,
         compact_active_canvas=args.compact_active_canvas,
         diffusion_policies=tuple(
             value.strip()
@@ -1467,6 +1586,13 @@ def main(argv: list[str] | None = None) -> int:
         emit_record_nll=bool(args.emit_record_nll),
         ltr_loss_weight=args.ltr_loss_weight,
         ltr_prefix_loss_weight=args.ltr_prefix_loss_weight,
+        component_token_loss_weight=args.component_token_loss_weight,
+        component_edge_token_loss_weight=args.component_edge_token_loss_weight,
+        compiler_decision_token_loss_weight=(
+            args.compiler_decision_token_loss_weight
+        ),
+        structure_token_loss_weight=args.structure_token_loss_weight,
+        typed_family_balance_loss_weight=args.typed_family_balance_loss_weight,
         ltr_tail_loss_weight=args.ltr_tail_loss_weight,
         ltr_tail_tokens=args.ltr_tail_tokens,
         compiler_alignment_loss_weight=args.compiler_alignment_loss_weight,
@@ -1475,7 +1601,9 @@ def main(argv: list[str] | None = None) -> int:
         compiler_alignment_semantic_exhaustive=(
             args.compiler_alignment_semantic_exhaustive
         ),
+        compiler_alignment_kind_filter=args.compiler_alignment_kind_filter,
         component_inventory_loss_weight=args.component_inventory_loss_weight,
+        structural_aux_head_profile=args.structural_aux_head_profile,
         component_inventory_decode_weight=args.component_inventory_decode_weight,
         component_plan_loss_weight=args.component_plan_loss_weight,
         component_plan_decode_weight=args.component_plan_decode_weight,
@@ -1549,6 +1677,7 @@ def main(argv: list[str] | None = None) -> int:
         ),
         binder_arity_loss_weight=args.binder_arity_loss_weight,
         binder_arity_decode_weight=args.binder_arity_decode_weight,
+        symbol_boundary_loss_weight=args.symbol_boundary_loss_weight,
         root_reference_arity_loss_weight=args.root_reference_arity_loss_weight,
         root_reference_arity_decode_weight=args.root_reference_arity_decode_weight,
         root_reference_identity_loss_weight=(args.root_reference_identity_loss_weight),
@@ -1561,9 +1690,7 @@ def main(argv: list[str] | None = None) -> int:
         root_reference_identity_decode_weight=(
             args.root_reference_identity_decode_weight
         ),
-        required_slot_margin_decode_weight=(
-            args.required_slot_margin_decode_weight
-        ),
+        required_slot_margin_decode_weight=(args.required_slot_margin_decode_weight),
         fidelity_loss_weight=args.fidelity_loss_weight,
         semantic_contrast_dir=args.semantic_contrast_dir,
         semantic_contrast_loss_weight=args.semantic_contrast_loss_weight,

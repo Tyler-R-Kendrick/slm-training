@@ -9,7 +9,7 @@ import re
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
-from itertools import combinations
+from itertools import combinations, permutations
 from typing import Any
 
 from slm_training.bridge_utils import repo_root
@@ -18,19 +18,20 @@ from slm_training.data.progspec.schema import ProgramSpec, emit_record
 from slm_training.data.verify import Tier, VerificationContext, verify_record
 from slm_training.dsl.lang_core import library_schema
 
-GENERATOR_VERSION = 1
+GENERATOR_VERSION = 2
 PROGRAM_FAMILY = "programspec_generated"
 _PROP_ORDER_PATH = (
-    repo_root()
-    / "src"
-    / "slm_training"
-    / "dsl"
-    / "grammars"
-    / "openui_prop_order.json"
+    repo_root() / "src" / "slm_training" / "dsl" / "grammars" / "openui_prop_order.json"
 )
 _BINDER_RE = re.compile(r"[^a-z0-9_]+")
 _LITERAL_STRING_PROPS = frozenset({"language", "value", "category", "name"})
 _DEFERRED_PATTERNS = ("state", "query", "mutation", "action", "tool")
+_FORWARD_REFERENCE_PATTERNS = frozenset(
+    {
+        "root_distinct_slot_inputs",
+        "root_shared_slot_free_input",
+    }
+)
 
 
 @dataclass(frozen=True, order=True)
@@ -166,6 +167,9 @@ class TypedProgram:
 @dataclass(frozen=True)
 class GeneratorConfig:
     components: tuple[str, ...] | None = None
+    required_components: tuple[str, ...] = ()
+    required_content_properties: tuple[tuple[str, str], ...] = ()
+    forward_reference_patterns: tuple[str, ...] = ()
     max_depth: int = 3
     max_width: int = 3
     viewports: tuple[str, ...] = ("mobile", "desktop")
@@ -186,8 +190,14 @@ class GeneratorConfig:
             raise ValueError(
                 "viewports, render_states, and content_classes must be non-empty"
             )
-        if any(not group or len(group) > self.max_width for group in self.selected_groups):
+        if any(
+            not group or len(group) > self.max_width for group in self.selected_groups
+        ):
             raise ValueError("selected_groups must be non-empty and fit max_width")
+        if len(set(self.required_components)) != len(self.required_components):
+            raise ValueError("required_components must be unique")
+        if len(self.required_components) > self.max_width:
+            raise ValueError("required_components must fit max_width")
 
 
 @dataclass(frozen=True)
@@ -207,6 +217,7 @@ class _Candidate:
     render_state: str
     content_class: str
     hints: frozenset[CoverageCell]
+    forward_reference_pattern: str | None = None
 
     def key(self) -> tuple[Any, ...]:
         return (
@@ -217,6 +228,7 @@ class _Candidate:
             self.viewport,
             self.render_state,
             self.content_class,
+            self.forward_reference_pattern,
         )
 
 
@@ -274,10 +286,17 @@ class _TypedBuilder:
         definitions: Mapping[str, Any],
         prop_order: Mapping[str, Sequence[str]],
         target: _PropTarget | None,
+        *,
+        required_components: Sequence[str] = (),
+        required_content_properties: Sequence[tuple[str, str]] = (),
+        collection_width: int = 1,
     ) -> None:
         self.definitions = definitions
         self.prop_order = prop_order
         self.target = target
+        self.required_components = tuple(required_components)
+        self.required_content_properties = frozenset(required_content_properties)
+        self.collection_width = max(1, collection_width)
         self.statements: list[TypedStatement] = []
         self.covered: set[CoverageCell] = {
             CoverageCell("production", "assignment"),
@@ -286,6 +305,7 @@ class _TypedBuilder:
             CoverageCell("production", "list"),
         }
         self._counter = 0
+        self._slot_counter = 0
 
     def _binder(self, name: str) -> str:
         self._counter += 1
@@ -297,7 +317,7 @@ class _TypedBuilder:
         self.statements.append(
             TypedStatement(
                 binder,
-                ComponentCall("TextContent", (f":{prefix}.child",)),
+                ComponentCall("TextContent", (self._placeholder(),)),
             )
         )
         self.covered.update(
@@ -309,6 +329,11 @@ class _TypedBuilder:
             }
         )
         return Reference(binder)
+
+    def _placeholder(self) -> str:
+        marker = f":slot_{self._slot_counter}"
+        self._slot_counter += 1
+        return marker
 
     def _number(self, schema: Mapping[str, Any], variant: str) -> int | float:
         minimum = schema.get("minimum", -1)
@@ -327,12 +352,28 @@ class _TypedBuilder:
         variant: str,
         stack: tuple[str, ...],
     ) -> TypedValue:
+        alternatives = schema.get("anyOf")
+        if isinstance(alternatives, list):
+            refs = tuple(
+                str(option["$ref"]).split("/")[-1]
+                for option in alternatives
+                if isinstance(option, Mapping) and "$ref" in option
+            )
+            name = next(
+                (item for item in self.required_components if item in refs),
+                refs[0] if refs else None,
+            )
+            return (
+                self.build(name, prefix, stack)
+                if name is not None
+                else self._leaf(prefix)
+            )
         enum = schema.get("enum")
         if isinstance(enum, list) and enum:
             return str(enum[-1] if variant == "last" else enum[0])
         kind = schema.get("type")
         if kind == "string":
-            return "item" if prop in _LITERAL_STRING_PROPS else f":{prefix}.{prop}"
+            return "item" if prop in _LITERAL_STRING_PROPS else self._placeholder()
         if kind == "boolean":
             return variant == "true"
         if kind == "number":
@@ -340,13 +381,51 @@ class _TypedBuilder:
         if kind == "object":
             return None
         if kind == "array":
-            if variant == "empty":
-                return ()
             item = schema.get("items")
             item = item if isinstance(item, Mapping) else {}
+            alternatives = item.get("anyOf")
+            if isinstance(alternatives, list):
+                refs = tuple(
+                    str(option["$ref"]).split("/")[-1]
+                    for option in alternatives
+                    if isinstance(option, Mapping) and "$ref" in option
+                )
+                selected = tuple(
+                    name for name in self.required_components if name in refs
+                )
+                if variant == "empty" and not selected:
+                    return ()
+                names = selected or refs[:1]
+                return tuple(
+                    self.build(name, f"{prefix}_{index}", stack)
+                    for index, name in enumerate(names)
+                )
             if "$ref" in item:
                 name = str(item["$ref"]).split("/")[-1]
-                return (self.build(name, prefix, stack),)
+                required = name in self.required_components or (
+                    name == "FormControl"
+                    and any(
+                        component
+                        in {
+                            "Input",
+                            "TextArea",
+                            "Select",
+                            "DatePicker",
+                            "Slider",
+                            "CheckBoxGroup",
+                            "RadioGroup",
+                        }
+                        for component in self.required_components
+                    )
+                )
+                if variant == "empty" and not required:
+                    return ()
+                return tuple(
+                    self.build(name, f"{prefix}_{index}", stack)
+                    for index in range(self.collection_width)
+                )
+            if variant == "empty":
+                return ()
             if item.get("type") == "array":
                 return ((self._leaf(prefix),),)
             if item.get("type") == "object":
@@ -357,7 +436,7 @@ class _TypedBuilder:
             if item.get("type") == "number":
                 return (0, 1)
             if item.get("type") == "string":
-                return (f":{prefix}.item",)
+                return (self._placeholder(),)
             return (self._leaf(prefix),)
         if "$ref" in schema:
             name = str(schema["$ref"]).split("/")[-1]
@@ -379,6 +458,11 @@ class _TypedBuilder:
         used = set(required)
         if selected is not None:
             used.add(selected.prop)
+        used.update(
+            prop
+            for component, prop in self.required_content_properties
+            if component == name
+        )
         positions = [index for index, prop in enumerate(order) if prop in used]
         upto = max(positions) if positions else -1
         args: list[TypedValue] = []
@@ -433,11 +517,51 @@ class ProgramGenerator:
         self.components = tuple(dict.fromkeys(requested))
         if not self.components:
             raise ValueError("components must be non-empty")
+        required = tuple(dict.fromkeys(config.required_components))
+        missing_required = sorted(set(required) - set(self.components))
+        if missing_required:
+            raise ValueError(f"unknown required component: {missing_required[0]}")
+        self.required_components = required
+        unknown_patterns = sorted(
+            set(config.forward_reference_patterns) - _FORWARD_REFERENCE_PATTERNS
+        )
+        if unknown_patterns:
+            raise ValueError(
+                f"unknown forward reference pattern: {unknown_patterns[0]}"
+            )
+        explicit_content = tuple(config.required_content_properties)
+        for component, prop in explicit_content:
+            schema = (
+                self.definitions.get(component, {}).get("properties", {}).get(prop, {})
+            )
+            if (
+                component not in self.components
+                or not isinstance(schema, Mapping)
+                or schema.get("type") != "string"
+                or "enum" in schema
+                or prop in _LITERAL_STRING_PROPS
+            ):
+                raise ValueError(
+                    f"{component}.{prop} is not a free-form string property"
+                )
+        if explicit_content:
+            self.required_content_properties = explicit_content
+        else:
+            self.required_content_properties = tuple(
+                (component, prop)
+                for component in required
+                for prop, schema in self.definitions[component]
+                .get("properties", {})
+                .items()
+                if isinstance(schema, Mapping)
+                and schema.get("type") == "string"
+                and "enum" not in schema
+                and prop not in _LITERAL_STRING_PROPS
+            )
         self.triples = config.selected_triples or self._default_triples()
         for triple in (*self.triples, *config.selected_groups):
-            if (
-                len(triple) > self.config.max_width
-                or not set(triple) <= set(self.components)
+            if len(triple) > self.config.max_width or not set(triple) <= set(
+                self.components
             ):
                 raise ValueError(f"invalid selected group: {triple}")
         targets, unsupported = self._target_grid()
@@ -525,6 +649,10 @@ class ProgramGenerator:
             CoverageCell("content_class", value)
             for value in self.config.content_classes
         )
+        targets.update(
+            CoverageCell("forward_reference_pattern", pattern)
+            for pattern in self.config.forward_reference_patterns
+        )
         deferred = {CoverageCell("dataflow", pattern) for pattern in _DEFERRED_PATTERNS}
         targets.update(deferred)
         unsupported.update(deferred)
@@ -581,6 +709,7 @@ class ProgramGenerator:
         prop_target: _PropTarget | None = None,
         depth: int | None = None,
         width: int | None = None,
+        forward_reference_pattern: str | None = None,
     ) -> _Candidate:
         selected = tuple(components[: self.config.max_width])
         depth = depth or 1 + index % self.config.max_depth
@@ -607,15 +736,31 @@ class ProgramGenerator:
                 state,
                 content_class,
             ),
+            forward_reference_pattern,
         )
+
+    def _required_groups(self) -> tuple[tuple[str, ...], ...]:
+        if not self.required_components:
+            return ()
+        required = set(self.required_components)
+        groups: list[tuple[str, ...]] = []
+        for size in range(len(required), self.config.max_width + 1):
+            for superset in combinations(self.components, size):
+                if required <= set(superset):
+                    groups.extend(permutations(superset))
+        return tuple(groups)
 
     def _build_candidates(self) -> tuple[_Candidate, ...]:
         candidates: list[_Candidate] = []
-        groups: list[tuple[str, ...]] = [(name,) for name in self.components]
-        if self.config.max_width >= 2:
-            groups.extend(combinations(self.components, 2))
-        groups.extend(self.triples)
-        groups.extend(self.config.selected_groups)
+        required_groups = self._required_groups()
+        if required_groups:
+            groups = list(required_groups)
+        else:
+            groups = [(name,) for name in self.components]
+            if self.config.max_width >= 2:
+                groups.extend(combinations(self.components, 2))
+            groups.extend(self.triples)
+            groups.extend(self.config.selected_groups)
         for index, group in enumerate(groups):
             candidates.append(self._candidate(group, index))
         offset = len(candidates)
@@ -625,25 +770,49 @@ class ProgramGenerator:
                 schema = schema if isinstance(schema, Mapping) else {}
                 for variant in _variants(schema, prop):
                     target = _PropTarget(name, prop, variant)
-                    candidates.append(
-                        self._candidate(
-                            (name,), offset + len(candidates), prop_target=target
+                    for group in required_groups or ((name,),):
+                        candidates.append(
+                            self._candidate(
+                                group,
+                                offset + len(candidates),
+                                prop_target=target,
+                            )
                         )
-                    )
         for depth in range(1, self.config.max_depth + 1):
             candidates.append(
-                self._candidate((self.components[0],), len(candidates), depth=depth)
+                self._candidate(
+                    required_groups[depth % len(required_groups)]
+                    if required_groups
+                    else (self.components[0],),
+                    len(candidates),
+                    depth=depth,
+                )
             )
         for width in range(1, self.config.max_width + 1):
-            selected = tuple(
-                self.components[index % len(self.components)] for index in range(width)
+            selected = (
+                required_groups[width % len(required_groups)]
+                if required_groups
+                else tuple(
+                    self.components[index % len(self.components)]
+                    for index in range(width)
+                )
             )
             candidates.append(
-                self._candidate(selected, len(candidates), depth=1, width=width)
+                self._candidate(
+                    selected,
+                    len(candidates),
+                    depth=1,
+                    width=max(width, len(self.required_components)),
+                )
             )
         for viewport in self.config.viewports:
             for state in self.config.render_states:
-                base = self._candidate((self.components[0],), len(candidates))
+                base = self._candidate(
+                    required_groups[len(candidates) % len(required_groups)]
+                    if required_groups
+                    else (self.components[0],),
+                    len(candidates),
+                )
                 candidates.append(
                     _Candidate(
                         base.components,
@@ -665,7 +834,12 @@ class ProgramGenerator:
                     )
                 )
         for content_class in self.config.content_classes:
-            base = self._candidate((self.components[0],), len(candidates))
+            base = self._candidate(
+                required_groups[len(candidates) % len(required_groups)]
+                if required_groups
+                else (self.components[0],),
+                len(candidates),
+            )
             candidates.append(
                 _Candidate(
                     base.components,
@@ -684,6 +858,14 @@ class ProgramGenerator:
                         base.render_state,
                         content_class,
                     ),
+                )
+            )
+        for pattern in self.config.forward_reference_patterns:
+            candidates.append(
+                self._candidate(
+                    ("Stack", "Input", "TextContent"),
+                    len(candidates),
+                    forward_reference_pattern=pattern,
                 )
             )
         unique = {candidate.key(): candidate for candidate in candidates}
@@ -720,13 +902,67 @@ class ProgramGenerator:
     def _topology(depth: int) -> str:
         return "star" if depth == 1 else "nested" if depth == 2 else "chain"
 
+    @staticmethod
+    def _forward_reference_program(pattern: str) -> str:
+        if pattern == "root_distinct_slot_inputs":
+            return "\n".join(
+                (
+                    'root = Stack([input1, input2], "column")',
+                    'input1 = Input("$0", ":slot_0")',
+                    'input2 = Input("$1", ":slot_1")',
+                )
+            )
+        if pattern == "root_shared_slot_free_input":
+            return "\n".join(
+                (
+                    'root = Stack([input1, input1, textcontent2, textcontent3], "column")',
+                    'input1 = Input("$0", null, "text")',
+                    'textcontent2 = TextContent(":slot_0")',
+                    'textcontent3 = TextContent(":slot_1")',
+                )
+            )
+        raise ValueError(f"unknown forward reference pattern: {pattern}")
+
+    def _top_level_components(self, selected: Sequence[str]) -> tuple[str, ...]:
+        names = tuple(selected)
+        owned: set[str] = set()
+        if "Form" in names:
+            owned.update({"FormControl", "Input", "Button"})
+        if "SwitchGroup" in names:
+            owned.add("SwitchItem")
+        if "Card" in names:
+            card_children = {
+                str(option["$ref"]).split("/")[-1]
+                for option in self.definitions["Card"]["properties"]["children"][
+                    "items"
+                ]["anyOf"]
+            }
+            if all(
+                name == "Card" or name in card_children or name in owned
+                for name in names
+            ):
+                return ("Card",)
+        return tuple(name for name in names if name not in owned)
+
     def _build_program(self, candidate: _Candidate) -> tuple[str, set[CoverageCell]]:
+        if candidate.forward_reference_pattern is not None:
+            pattern = candidate.forward_reference_pattern
+            return self._forward_reference_program(pattern), {
+                CoverageCell("forward_reference_pattern", pattern),
+                *candidate.hints,
+            }
         builder = _TypedBuilder(
-            self.definitions, self.prop_order, candidate.prop_target
+            self.definitions,
+            self.prop_order,
+            candidate.prop_target,
+            required_components=candidate.components,
+            required_content_properties=self.required_content_properties,
+            collection_width=min(3, candidate.depth),
         )
         selected = list(candidate.components)
         while len(selected) < candidate.width:
             selected.append(self.components[len(selected) % len(self.components)])
+        selected = list(self._top_level_components(selected))
         refs = [
             builder.build(
                 name,
@@ -807,6 +1043,8 @@ class ProgramGenerator:
             "render_state": candidate.render_state,
             "content_class": candidate.content_class,
         }
+        if candidate.forward_reference_pattern is not None:
+            facts["forward_reference_pattern"] = candidate.forward_reference_pattern
         spec = ProgramSpec.from_openui(
             id=f"program_{digest}",
             openui=openui,

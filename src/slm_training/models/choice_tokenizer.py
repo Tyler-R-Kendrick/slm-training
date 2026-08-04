@@ -20,8 +20,7 @@ coverage for a stable loss space; see
 from __future__ import annotations
 
 import json
-from copy import deepcopy
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable
@@ -120,6 +119,8 @@ DEFAULT_SYM_SLOTS = 64
 DEFAULT_REF_SLOTS = 64
 DEFAULT_STATE_SLOTS = 64
 DEFAULT_MAX_INT_LITERAL = 128
+_DISTANCE_CACHE_MAX_ENTRIES = 8192
+_INFEASIBLE_DISTANCE = 1 << 20
 
 _BINARY_OPS = ("||", "&&", "==", "!=", ">=", "<=", ">", "<", "+", "-", "*", "/", "%")
 
@@ -222,6 +223,219 @@ class ChoiceTokenizer:
     vocab_candidates_avoided: int = field(default=0, repr=False, compare=False)
     completion_cache_hits: int = field(default=0, repr=False, compare=False)
     completion_cache_misses: int = field(default=0, repr=False, compare=False)
+    # Process-local schema interning (canonical JSON identity -> stable int).
+    schema_intern: dict[str, int] = field(
+        default_factory=dict, repr=False, compare=False
+    )
+    schema_intern_hits: int = field(default=0, repr=False, compare=False)
+    schema_intern_misses: int = field(default=0, repr=False, compare=False)
+    component_schema_ids_cache: dict[str, tuple[int, ...]] = field(
+        default_factory=dict, repr=False, compare=False
+    )
+    # Shared completion lower-bound memo keyed by state signature.
+    distance_cache: dict[tuple[object, ...], int] = field(
+        default_factory=dict, repr=False, compare=False
+    )
+    distance_cache_hits: int = field(default=0, repr=False, compare=False)
+    distance_cache_misses: int = field(default=0, repr=False, compare=False)
+    distance_cache_evictions: int = field(default=0, repr=False, compare=False)
+    distance_cache_peak_entries: int = field(default=0, repr=False, compare=False)
+    # Copy-on-write instrumentation for ChoiceDecodeState.clone()/frame swaps.
+    clone_count: int = field(default=0, repr=False, compare=False)
+    frame_cow_copies: int = field(default=0, repr=False, compare=False)
+    # Minimal-token-cost estimates (valid lower bounds) backing
+    # ChoiceDecodeState._completion_lower_bound. Cached by interned schema id
+    # / component name; values computed under a cycle guard remain valid
+    # underestimates, so caching is always safe.
+    schema_cost_cache: dict[tuple[int, bool], int] = field(
+        default_factory=dict, repr=False, compare=False
+    )
+    component_cost_cache: dict[tuple[str, bool], int] = field(
+        default_factory=dict, repr=False, compare=False
+    )
+    element_cost_cache: dict[bool, int] = field(
+        default_factory=dict, repr=False, compare=False
+    )
+
+    def intern_schema(self, schema: dict[str, Any]) -> int:
+        """Stable process-local id for a schema's canonical JSON identity."""
+        key = json.dumps(schema, sort_keys=True, separators=(",", ":"))
+        cached = self.schema_intern.get(key)
+        if cached is not None:
+            self.schema_intern_hits += 1
+            return cached
+        self.schema_intern_misses += 1
+        schema_id = len(self.schema_intern)
+        self.schema_intern[key] = schema_id
+        return schema_id
+
+    def schema_min_tokens(
+        self,
+        schema: dict[str, Any],
+        *,
+        has_slots: bool,
+        _active: frozenset[str] = frozenset(),
+    ) -> int:
+        """Valid lower bound for one expression accepted by ``schema``."""
+        if not schema:
+            return 1
+        schema_id = self.intern_schema(schema)
+        key = (schema_id, bool(has_slots))
+        if not _active:
+            cached = self.schema_cost_cache.get(key)
+            if cached is not None:
+                return cached
+        cost = self._schema_min_tokens(schema, has_slots, _active)
+        if not _active:
+            self.schema_cost_cache[key] = cost
+        return cost
+
+    def _schema_min_tokens(
+        self, schema: dict[str, Any], has_slots: bool, active: frozenset[str]
+    ) -> int:
+        if _is_direct_placeholder_schema(schema):
+            return 1 if has_slots else _INFEASIBLE_DISTANCE
+        if "anyOf" in schema:
+            options = schema["anyOf"] or ()
+            return min(
+                (
+                    self.schema_min_tokens(
+                        dict(option), has_slots=has_slots, _active=active
+                    )
+                    for option in options
+                ),
+                default=_INFEASIBLE_DISTANCE,
+            )
+        enum_values = tuple(schema.get("enum") or ())
+        if enum_values:
+            if any(
+                f"{LIT_PREFIX}{json.dumps(value)}" in self.token_to_id
+                for value in enum_values
+            ):
+                return 1
+            # Closed enum with no in-vocab literal spelling: unreachable.
+            return _INFEASIBLE_DISTANCE
+        ref = str(schema.get("$ref") or "")
+        if ref.startswith("#/$defs/"):
+            return self.component_min_tokens(
+                ref.rsplit("/", 1)[-1],
+                has_slots=has_slots,
+                _active=active,
+            )
+        expected = schema.get("type")
+        if isinstance(expected, list):
+            return min(
+                (
+                    self._schema_type_min_tokens(
+                        item, schema, has_slots, active
+                    )
+                    for item in expected
+                ),
+                default=_INFEASIBLE_DISTANCE,
+            )
+        return self._schema_type_min_tokens(expected, schema, has_slots, active)
+
+    def _schema_type_min_tokens(
+        self,
+        expected: object,
+        schema: dict[str, Any],
+        has_slots: bool,
+        active: frozenset[str],
+    ) -> int:
+        if expected == "array":
+            return 2  # open + close (items are optional)
+        if expected == "object":
+            properties = schema.get("properties")
+            property_map = properties if isinstance(properties, dict) else {}
+            cost = 2  # open + close
+            for name in schema.get("required", ()) or ():
+                name = str(name)
+                if name in property_map:
+                    cost += 1 + self.schema_min_tokens(
+                        dict(property_map[name]),
+                        has_slots=has_slots,
+                        _active=active,
+                    )
+                elif f"{NAME_PREFIX}{name}" in self.token_to_id:
+                    cost += 2  # closed-pool key token + minimal value
+                else:
+                    # Required key is unspellable: can never close legally.
+                    return _INFEASIBLE_DISTANCE
+            return cost
+        # string / number / integer / boolean / null / untyped: one literal or
+        # slot token suffices (untyped accepts ``LIT:null``).
+        return 1
+
+    def component_min_tokens(
+        self,
+        component: str,
+        *,
+        has_slots: bool,
+        _active: frozenset[str] = frozenset(),
+    ) -> int:
+        """Valid lower bound for a complete ``element:<component>``."""
+        key = (component, bool(has_slots))
+        if not _active:
+            cached = self.component_cost_cache.get(key)
+            if cached is not None:
+                return cached
+        if component in _active:
+            return _INFEASIBLE_DISTANCE
+        contract = _component_contracts().get(component)
+        if contract is None:
+            return _INFEASIBLE_DISTANCE
+        schemas, required_args = contract
+        active = _active | {component}
+        cost = 2  # open + close
+        for schema in schemas[:required_args]:
+            cost += self.schema_min_tokens(
+                dict(schema), has_slots=has_slots, _active=active
+            )
+        if not _active:
+            self.component_cost_cache[key] = cost
+        return cost
+
+    def element_min_tokens(self, *, has_slots: bool) -> int:
+        """Valid lower bound for any complete element section."""
+        key = bool(has_slots)
+        cached = self.element_cost_cache.get(key)
+        if cached is None:
+            contracts = _component_contracts()
+            cached = min(
+                (
+                    self.component_min_tokens(
+                        component, has_slots=has_slots
+                    )
+                    for component in contracts
+                    if f"{OPEN_PREFIX}{component}" in self.token_to_id
+                ),
+                default=_INFEASIBLE_DISTANCE,
+            )
+            self.element_cost_cache[key] = cached
+        return cached
+
+    def component_schema_ids(
+        self, component: str, schemas: tuple[dict[str, Any], ...]
+    ) -> tuple[int, ...]:
+        """Intern one static component contract once."""
+        cached = self.component_schema_ids_cache.get(component)
+        if cached is None:
+            cached = tuple(self.intern_schema(schema) for schema in schemas)
+            self.component_schema_ids_cache[component] = cached
+        return cached
+
+    def cache_distance(self, key: tuple[object, ...], value: int) -> None:
+        """Store one bounded-distance result with observable bounded lifetime."""
+        if (
+            key not in self.distance_cache
+            and len(self.distance_cache) >= _DISTANCE_CACHE_MAX_ENTRIES
+        ):
+            self.distance_cache_evictions += len(self.distance_cache)
+            self.distance_cache.clear()
+        self.distance_cache[key] = int(value)
+        self.distance_cache_peak_entries = max(
+            self.distance_cache_peak_entries, len(self.distance_cache)
+        )
 
     # --- special ids -----------------------------------------------------
 
@@ -661,6 +875,12 @@ class ChoiceTokenizer:
 
 @dataclass
 class _ChoiceFrame:
+    """Pushdown frame. Treated as persistent: ChoiceDecodeState never mutates
+    a frame in place — transitions swap in ``dataclasses.replace`` copies so a
+    shallow ``clone()`` shares untouched frames safely. (Tests may still patch
+    a freshly built frame's fields before any clone/advance; that is the one
+    sanctioned in-place write.)"""
+
     kind: str
     expr_type: str
     close: str | None = None
@@ -676,6 +896,9 @@ class _ChoiceFrame:
     seen_properties: tuple[str, ...] = ()
     active_property: str | None = None
     additional_properties: bool = True
+    # Interned identities for ``schemas`` (ChoiceTokenizer.intern_schema); the
+    # cheap stand-in for per-schema JSON text in signatures.
+    schema_ids: tuple[int, ...] = ()
 
 
 @dataclass
@@ -694,11 +917,14 @@ class ChoiceDecodeState:
     literal_is_object_key: bool = False
 
     def clone(self) -> ChoiceDecodeState:
+        """O(stack) shallow copy: frames are persistent (copy-on-write), so the
+        frame list is shared, never deep-copied."""
+        self.tokenizer.clone_count += 1
         return ChoiceDecodeState(
             tokenizer=self.tokenizer,
             slot_count=self.slot_count,
             mode=self.mode,
-            frames=deepcopy(self.frames),
+            frames=list(self.frames),
             section_types=list(self.section_types),
             current_marker=self.current_marker,
             valid_root_seen=self.valid_root_seen,
@@ -706,6 +932,11 @@ class ChoiceDecodeState:
             literal_size=self.literal_size,
             literal_is_object_key=self.literal_is_object_key,
         )
+
+    def _replace_top(self, **changes: Any) -> None:
+        """Copy-on-write transition on the top frame (never in-place)."""
+        self.tokenizer.frame_cow_copies += 1
+        self.frames[-1] = replace(self.frames[-1], **changes)
 
     def can_end(self) -> bool:
         if self.frames or self.literal_frame is not None:
@@ -783,40 +1014,45 @@ class ChoiceDecodeState:
             return True
         frame = self.frames[-1]
         if frame.kind == "fixed":
-            frame.remaining -= 1
-            if frame.remaining == 0:
+            remaining = frame.remaining - 1
+            if remaining == 0:
                 self.frames.pop()
                 return self._complete_expr(frame.expr_type)
+            self._replace_top(remaining=remaining)
             return True
         elif frame.kind == "object":
             if 0 <= frame.arg_index < len(frame.schemas) and not self._schema_accepts(
                 frame.schemas[frame.arg_index], expr_type
             ):
                 return False
+            seen = frame.seen_properties
             if frame.active_property is not None:
-                frame.seen_properties = (
-                    *frame.seen_properties,
+                seen = (
+                    *seen,
                     frame.active_property,
                 )
-            frame.active_property = None
-            frame.arg_index = -1
-            frame.phase = "key"
+            self._replace_top(
+                seen_properties=seen,
+                active_property=None,
+                arg_index=-1,
+                phase="key",
+            )
             return True
         elif frame.kind == "variadic" and frame.schemas:
             item_schema = frame.schemas[0] if frame.schemas else {}
             accepted = self._schema_accepts(item_schema, expr_type)
             if accepted:
-                frame.item_count += 1
+                self._replace_top(item_count=frame.item_count + 1)
             return accepted
         elif frame.kind == "variadic":
-            frame.item_count += 1
+            self._replace_top(item_count=frame.item_count + 1)
             return True
         elif frame.kind == "component":
             if frame.arg_index >= len(frame.schemas):
                 return False
             if not self._schema_accepts(frame.schemas[frame.arg_index], expr_type):
                 return False
-            frame.arg_index += 1
+            self._replace_top(arg_index=frame.arg_index + 1)
             return True
         return True
 
@@ -844,6 +1080,9 @@ class ChoiceDecodeState:
                     schemas=schemas,
                     required_args=required_args,
                     property_names=tuple(_prop_order().get(component, ())),
+                    schema_ids=self.tokenizer.component_schema_ids(
+                        component, schemas
+                    ),
                 )
             )
             return True
@@ -867,6 +1106,7 @@ class ChoiceDecodeState:
                     "array",
                     close=LIST_CLOSE,
                     schemas=(item_schema,),
+                    schema_ids=(self.tokenizer.intern_schema(item_schema),),
                 )
             )
             return True
@@ -880,14 +1120,17 @@ class ChoiceDecodeState:
                 for name in schema.get("required", ())
                 if str(name) in property_map
             )
+            prop_schemas = tuple(dict(property_map[name]) for name in property_names)
             self.frames.append(
                 _ChoiceFrame(
                     "object",
                     "object",
                     close=OBJ_CLOSE,
                     phase="key",
-                    schemas=tuple(
-                        dict(property_map[name]) for name in property_names
+                    schemas=prop_schemas,
+                    schema_ids=tuple(
+                        self.tokenizer.intern_schema(schema)
+                        for schema in prop_schemas
                     ),
                     arg_index=-1,
                     property_names=property_names,
@@ -921,7 +1164,9 @@ class ChoiceDecodeState:
                 and self.frames[-1].kind == "variadic"
                 and self.frames[-1].expr_type == "array"
             ):
-                self.frames[-1].reference_count += 1
+                self._replace_top(
+                    reference_count=self.frames[-1].reference_count + 1
+                )
             return self._complete_expr(expr_type)
         if token.startswith(SLOT_PREFIX):
             try:
@@ -971,7 +1216,7 @@ class ChoiceDecodeState:
                 self.literal_size = 0
                 self.literal_is_object_key = False
                 if object_key:
-                    self.frames[-1].phase = "value"
+                    self._replace_top(phase="value")
                 elif marker == MEMBER_STR:
                     self.frames.append(_ChoiceFrame("fixed", "other", remaining=1))
                 else:
@@ -1020,19 +1265,21 @@ class ChoiceDecodeState:
                 if name in frame.seen_properties:
                     return False
                 if name in frame.property_names:
-                    frame.arg_index = frame.property_names.index(name)
+                    arg_index = frame.property_names.index(name)
                 elif not frame.additional_properties:
                     return False
                 else:
-                    frame.arg_index = -1
-                frame.active_property = name
-                frame.phase = "value"
+                    arg_index = -1
+                self._replace_top(
+                    arg_index=arg_index,
+                    active_property=name,
+                    phase="value",
+                )
                 return True
             if token == NAME_STR:
                 if not frame.additional_properties:
                     return False
-                frame.arg_index = -1
-                frame.active_property = None
+                self._replace_top(arg_index=-1, active_property=None)
                 self.literal_frame = token
                 self.literal_size = 0
                 self.literal_is_object_key = True
@@ -1130,19 +1377,183 @@ class ChoiceDecodeState:
             self.tokenizer.completion_cache_hits += 1
             return cached
         self.tokenizer.completion_cache_misses += 1
-        probe = self.clone()
-        result = 1025
-        for count in range(1, 1025):
-            token_id = probe._completion_id()
-            if not probe.advance_id(token_id):
-                break
-            if token_id == probe.tokenizer.eos_id:
-                result = count
-                break
+        distance = self._completion_distance(1024)
+        result = distance if distance <= 1024 else 1025
         if len(self.tokenizer.completion_cache) >= 8192:
             self.tokenizer.completion_cache.clear()
         self.tokenizer.completion_cache[key] = result
         return result
+
+    def _completion_lower_bound(self) -> int:
+        """Exact minimum completion length, including the final EOS."""
+        if self.can_end():
+            return 1
+        tok = self.tokenizer
+        has_slots = self.slot_count > 0
+
+        # A nested frame ultimately reports its expression type to its parent.
+        # If that report is impossible, no token continuation can recover.
+        for index in range(1, len(self.frames)):
+            parent = self.frames[index - 1]
+            child_type = self.frames[index].expr_type
+            if parent.kind == "component":
+                if parent.arg_index >= len(parent.schemas) or not self._schema_accepts(
+                    parent.schemas[parent.arg_index], child_type
+                ):
+                    return _INFEASIBLE_DISTANCE
+            elif parent.kind == "variadic" and parent.schemas:
+                if not self._schema_accepts(parent.schemas[0], child_type):
+                    return _INFEASIBLE_DISTANCE
+            elif parent.kind == "object":
+                if (
+                    0 <= parent.arg_index < len(parent.schemas)
+                    and not self._schema_accepts(
+                        parent.schemas[parent.arg_index], child_type
+                    )
+                ):
+                    return _INFEASIBLE_DISTANCE
+
+        literal_active = self.literal_frame is not None
+        pending = 0
+        if literal_active:
+            pending += (
+                1
+                if (self.literal_size or self.literal_frame == LIT_STR)
+                else 2
+            )
+            if self.literal_frame == MEMBER_STR:
+                pending += 1  # member target required after the framed name
+            elif self.literal_is_object_key:
+                pending += 1  # value for the additional-property key
+
+        # Every deeper frame (or the literal at the top) is the expression
+        # currently filling one pending parent position. Count that work once:
+        # via the child/literal itself, not again through the parent schema.
+        for depth, frame in enumerate(self.frames):
+            active_expr = depth + 1 < len(self.frames) or (
+                depth + 1 == len(self.frames)
+                and literal_active
+                and not self.literal_is_object_key
+            )
+            if frame.close is not None:
+                pending += 1
+            if frame.kind == "component":
+                start = max(frame.arg_index + int(active_expr), 0)
+                for index in range(
+                    start,
+                    min(frame.required_args, len(frame.schemas)),
+                ):
+                    pending += tok.schema_min_tokens(
+                        frame.schemas[index], has_slots=has_slots
+                    )
+            elif frame.kind == "fixed":
+                pending += max(0, frame.remaining - int(active_expr))
+            elif frame.kind == "object":
+                for name in frame.required_properties:
+                    if name in frame.seen_properties:
+                        continue
+                    is_active = name == frame.active_property
+                    if is_active and active_expr:
+                        continue
+                    if not is_active:
+                        pending += 1  # key token not consumed yet
+                    if name in frame.property_names:
+                        index = frame.property_names.index(name)
+                        if index < len(frame.schemas):
+                            pending += tok.schema_min_tokens(
+                                frame.schemas[index], has_slots=has_slots
+                            )
+                            continue
+                    pending += 1  # minimal out-of-schema value
+
+                # An optional selected property must still receive a value.
+                if (
+                    frame.phase == "value"
+                    and frame.active_property not in frame.required_properties
+                    and not active_expr
+                ):
+                    if 0 <= frame.arg_index < len(frame.schemas):
+                        pending += tok.schema_min_tokens(
+                            frame.schemas[frame.arg_index],
+                            has_slots=has_slots,
+                        )
+                    else:
+                        pending += 1
+
+        element = tok.element_min_tokens(has_slots=has_slots)
+        if not self.frames:
+            if literal_active:
+                expr_type = (
+                    "string"
+                    if self.literal_frame in {LIT_STR, NAME_STR}
+                    else "number"
+                )
+                return pending + self._after_root_expr_cost(expr_type, element)
+            if self.mode == "v05":
+                if self.current_marker is not None:
+                    expr_cost = (
+                        element if self.current_marker == "r=" else 1
+                    )
+                    expr_type = (
+                        "element:minimum"
+                        if self.current_marker == "r="
+                        else "null"
+                    )
+                    return pending + expr_cost + self._after_root_expr_cost(
+                        expr_type, element
+                    )
+                return pending + (1 + element + 1)
+            # Undecided and structural modes both reach the terminal predicate
+            # most cheaply with one complete element followed by EOS.
+            return pending + element + 1
+
+        return pending + self._after_root_expr_cost(
+            self.frames[0].expr_type, element
+        )
+
+    def _after_root_expr_cost(self, expr_type: str, element_cost: int) -> int:
+        """Minimum suffix after the in-progress root expression completes."""
+        if self.mode == "v05":
+            valid_root = self.valid_root_seen or (
+                self.current_marker == "r=" and expr_type.startswith("element:")
+            )
+            return 1 if valid_root else 1 + element_cost + 1
+        return 1 if expr_type.startswith("element:") else element_cost + 1
+
+    def _completion_distance(self, room: int) -> int:
+        """Bounded minimum completion distance in tokens, EOS included.
+
+        D(q) = 1 if ``can_end(q)`` (emit EOS), else
+        ``1 + min`` over admitted actions ``a`` of ``D(advance(q, a))``.
+        Computed with a strict budget: the room decreases on every edge so
+        cycles terminate; a node whose completion needs more than its room
+        reports ``room + 1`` (infeasible within budget). The room-independent
+        lower bound is memoized by signature in the tokenizer's shared cache.
+        Choice frames are a deterministic pushdown machine once optional
+        actions are omitted, so the exact distance is the sum of pending
+        required schema expressions, unmatched closes, and the terminal root
+        suffix. Values above the requested room collapse to ``room + 1``.
+        """
+        tok = self.tokenizer
+        room = max(0, int(room))
+        if self.can_end():
+            return 1 if room >= 1 else room + 1
+        root_key = self.signature()
+        cached = tok.distance_cache.get(root_key)
+        if cached is not None:
+            tok.distance_cache_hits += 1
+            return cached if cached <= room else room + 1
+        tok.distance_cache_misses += 1
+        exact = self._completion_lower_bound()
+        tok.cache_distance(root_key, exact)
+        return exact if exact <= room else room + 1
+
+    def _frame_schema_ids(self, frame: _ChoiceFrame) -> tuple[int, ...]:
+        """Interned schema identities for a frame, interning on demand for
+        frames built outside the advance paths (synthetic test frames)."""
+        if frame.schema_ids or not frame.schemas:
+            return frame.schema_ids
+        return tuple(self.tokenizer.intern_schema(schema) for schema in frame.schemas)
 
     def signature(self) -> tuple[object, ...]:
         return (
@@ -1164,10 +1575,7 @@ class ChoiceDecodeState:
                     frame.seen_properties,
                     frame.active_property,
                     frame.additional_properties,
-                    tuple(
-                        json.dumps(schema, sort_keys=True, separators=(",", ":"))
-                        for schema in frame.schemas
-                    ),
+                    self._frame_schema_ids(frame),
                 )
                 for frame in self.frames
             ),
@@ -1238,24 +1646,79 @@ class ChoiceDecodeState:
         self, candidate_ids: Iterable[int], remaining_positions: int
     ) -> set[int]:
         allowed: set[int] = set()
-        for token_id in candidate_ids:
+        budget = min(remaining_positions - 1, 1024)
+        grouped: dict[tuple[str, str], list[int]] = {}
+        probes: list[int] = []
+        for raw_token_id in candidate_ids:
+            token_id = int(raw_token_id)
+            token = self.tokenizer.id_to_token.get(token_id, UNK)
+            expr_type: str | None = None
+            category = "direct"
+            if token.startswith(REF_PREFIX):
+                expr_type = self._reference_type(token)
+                category = "reference"
+            elif token.startswith(SLOT_PREFIX):
+                try:
+                    if int(token[len(SLOT_PREFIX) :]) < self.slot_count:
+                        expr_type = "placeholder"
+                except ValueError:
+                    pass
+            elif token.startswith(STATE_REF_PREFIX):
+                expr_type = "any"
+            elif token.startswith(DIR_PREFIX):
+                expr_type = "string"
+            elif token.startswith(LIT_PREFIX):
+                payload = token[len(LIT_PREFIX) :]
+                expr_type = (
+                    "string"
+                    if payload.startswith('"')
+                    else "boolean"
+                    if payload in {"true", "false"}
+                    else "null"
+                    if payload == "null"
+                    else "number"
+                )
+            if expr_type is None:
+                probes.append(token_id)
+            else:
+                grouped.setdefault((category, expr_type), []).append(token_id)
+
+        def _admitted(token_id: int) -> bool:
             probe = self.clone()
             if not probe.advance_id(token_id):
-                continue
+                return False
             completion = (
                 0
                 if token_id == self.tokenizer.eos_id
-                else probe.minimal_completion_length()
+                else probe._completion_distance(budget)
             )
-            if completion <= remaining_positions - 1:
+            return completion <= remaining_positions - 1
+
+        for token_id in probes:
+            if _admitted(token_id):
                 allowed.add(token_id)
+        for token_ids in grouped.values():
+            if _admitted(token_ids[0]):
+                allowed.update(token_ids)
         return allowed
 
     def exhaustive_allowed_ids(self, remaining_positions: int) -> set[int]:
         """Reference implementation used to prove direct candidates exact."""
-        return self._filter_allowed(
-            self.tokenizer.id_to_token, int(remaining_positions)
-        )
+        remaining_positions = int(remaining_positions)
+        budget = min(remaining_positions - 1, 1024)
+        allowed: set[int] = set()
+        for token_id in self.tokenizer.id_to_token:
+            probe = self.clone()
+            if not probe.advance_id(int(token_id)):
+                continue
+            completion = (
+                0
+                if int(token_id) == self.tokenizer.eos_id
+                else probe._completion_distance(budget)
+            )
+            if completion <= remaining_positions - 1:
+                allowed.add(int(token_id))
+        return allowed
 
     def allowed_ids(self, remaining_positions: int) -> set[int]:
         key = (self.signature(), int(remaining_positions))

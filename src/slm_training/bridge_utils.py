@@ -2,11 +2,26 @@
 
 from __future__ import annotations
 
+import os
 import queue
 import subprocess
 import threading
 from functools import lru_cache
 from pathlib import Path
+
+
+def sanitized_node_env() -> dict[str, str]:
+    """Environment for a spawned ``node``/``npm`` bridge subprocess.
+
+    Host shells may export a ``NODE_OPTIONS`` this Node build rejects (e.g. an
+    interactive dev shell's ``--import tsx``), which makes the child exit 9
+    with no stdout and turns into a confusing "bridge returned empty output"
+    error. Every bridge subprocess spawn clears it so a host-level setting
+    never silently kills the bridge.
+    """
+    env = dict(os.environ)
+    env["NODE_OPTIONS"] = ""
+    return env
 
 
 @lru_cache(maxsize=1)

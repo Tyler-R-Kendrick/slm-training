@@ -1,0 +1,72 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-scheduled",
+  "source_commit": "7878b6edf404b7a72196cb5cfe64f760c8892ee5",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "cycles": {
+    "continuous-loop-20260801-c5": {
+      "cycle_index": 5,
+      "primary_metric": "smoke.latency_ms_p50",
+      "positive": false,
+      "stack_layer": false,
+      "action": "no_stack_layer_non_positive",
+      "control": {"id": "c20260801-c5-control", "latency_ms_p50": 3501.41, "parse_rate": 1.0, "meaningful_program_rate": 0.0},
+      "candidate": {"id": "c20260801-c5-batch1", "latency_ms_p50": 18299.83, "parse_rate": 1.0, "meaningful_program_rate": 0.0},
+      "primary_delta_ms": -14798.42,
+      "reasons": [
+        "fixture_insufficient_n:c20260801-c5-control",
+        "fixture_insufficient_n:c20260801-c5-batch1",
+        "primary_metric_null_or_worse:smoke.latency_ms_p50:control=3501.41 candidate=18299.83 parse=1.0->1.0 mpr=0.0->0.0",
+        "fixture_insufficient_n_alone"
+      ]
+    },
+    "continuous-loop-20260801-c6": {
+      "cycle_index": 6,
+      "primary_metric": "smoke.latency_ms_p50",
+      "positive": false,
+      "stack_layer": false,
+      "action": "no_stack_layer_non_positive",
+      "control": {"id": "c20260801-c6-control", "latency_ms_p50": 2725.64, "parse_rate": 1.0, "meaningful_program_rate": 0.0},
+      "candidate": {"id": "c20260801-c6-bounds", "latency_ms_p50": 2674.34, "parse_rate": 1.0, "meaningful_program_rate": 0.0},
+      "primary_delta_ms": 51.3,
+      "reasons": [
+        "fixture_insufficient_n:c20260801-c6-control",
+        "fixture_insufficient_n:c20260801-c6-bounds",
+        "latency_win_rejected_low_mpr:mpr=0.0<0.333333",
+        "primary_metric_win:smoke.latency_ms_p50:2725.64->2674.34:improvement=51.29999999999973"
+      ],
+      "note": "Raw p50 improved but rejected as non-positive: latency wins require held meaningful_program_rate >= ~1/3 (quality-aware tradeoff gate); mpr was 0.0 on both arms."
+    },
+    "continuous-loop-20260801-c7": {
+      "cycle_index": 7,
+      "primary_metric": "smoke.latency_ms_p50",
+      "positive": false,
+      "stack_layer": false,
+      "action": "no_stack_layer_non_positive",
+      "control": {"id": "c20260801-c7-control", "latency_ms_p50": 3177.8, "parse_rate": 1.0, "meaningful_program_rate": 0.0},
+      "candidate": {"id": "c20260801-c7-canvas", "latency_ms_p50": 3339.9, "parse_rate": 1.0, "meaningful_program_rate": 0.0},
+      "primary_delta_ms": -162.1,
+      "reasons": [
+        "fixture_insufficient_n:c20260801-c7-control",
+        "fixture_insufficient_n:c20260801-c7-canvas",
+        "primary_metric_null_or_worse:smoke.latency_ms_p50:control=3177.8 candidate=3339.9 parse=1.0->1.0 mpr=0.0->0.0",
+        "fixture_insufficient_n_alone"
+      ]
+    }
+  },
+  "conclusion": "c5 (batch_size knob) was much slower than control (candidate ran a larger batch, +14.8s p50) with no quality signal. c6 (bounds) shows a raw p50 improvement (+51.3ms faster) but is correctly rejected as non-positive because meaningful_program_rate is 0.0 on both arms (latency wins require held mpr >= ~1/3 under the quality-aware tradeoff gate) and both arms are fixture_insufficient_n. c7 (canvas) repeats the c1-c4 pattern of a slower candidate with mpr 0.0. No positive result and no stack layer across c5-c7.",
+  "next_priorities": [
+    "batch_size=1 (c5 candidate) is a poor screening knob at this wall cap; drop or size-match differently for future latency screens.",
+    "Re-test grammar_completion_bounds (c6) only once meaningful_program_rate is reliably > 0 at this step count, since raw latency deltas are meaningless while mpr floors at 0.0.",
+    "Still no cycle in c1-c7 clears fixture_insufficient_n; consider raising step budget or seed count within the wall cap before drawing lever conclusions."
+  ],
+  "recorded_at": "2026-08-01T01:51:17Z"
+}

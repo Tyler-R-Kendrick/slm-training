@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/TKendrick/leverproof-lean/schema/metric-evidence-v1.schema.json",
+  "title": "LeverProof metric evidence v1",
+  "type": "object",
+  "required": ["schema", "run_id", "source", "workload", "candidates"],
+  "properties": {
+    "schema": {"const": "metric_evidence/v1"},
+    "run_id": {"type": "string", "minLength": 1},
+    "source": {
+      "type": "object",
+      "required": ["evidence_sha256", "feature_flags_sha256"],
+      "properties": {
+        "evidence_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "feature_flags_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "campaign_manifest_sha256": {
+          "type": ["string", "null"],
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "additionalProperties": true
+    },
+    "workload": {
+      "type": "object",
+      "required": ["cold_requests", "warm_requests"],
+      "properties": {
+        "cold_requests": {"type": "integer", "minimum": 0},
+        "warm_requests": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "candidates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id", "hardware", "lever_snapshot_sha256", "cold_ns", "warm_ns",
+          "input_units", "passes", "successes", "quality_failures",
+          "trainable_params", "energy_uj", "cost_micro_usd"
+        ],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "hardware": {"type": "string", "minLength": 1},
+          "lever_snapshot_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "cold_ns": {"$ref": "#/$defs/samples"},
+          "warm_ns": {"$ref": "#/$defs/samples"},
+          "input_units": {"$ref": "#/$defs/samples"},
+          "passes": {"$ref": "#/$defs/samples"},
+          "successes": {"type": "integer", "minimum": 0},
+          "quality_failures": {"type": "integer", "minimum": 0},
+          "trainable_params": {"type": "integer", "minimum": 1},
+          "energy_uj": {"$ref": "#/$defs/samples"},
+          "cost_micro_usd": {"$ref": "#/$defs/samples"}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "$defs": {
+    "samples": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "integer", "minimum": 0}
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,78 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-202607-98199209-c1840",
+  "decision": "harness_failure_retry_frozen_measurement",
+  "claim_class": "fixture_promotion_measurement_incomplete",
+  "formal": {
+    "status": "proved",
+    "template_id": "metrics.structural_similarity_monotone",
+    "duration_seconds": 6.087861129955854,
+    "preflight_sha256": "930cba71298fb2884d39c43ceb29071de51b3351c9d942563284ce8c884482e9"
+  },
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "seed": 101840,
+    "batch_size": 2,
+    "num_threads": 1,
+    "context_backend": "scratch",
+    "suites": ["smoke", "held_out"],
+    "suite_n": {"smoke": 3, "held_out": 5},
+    "trainable_params": 1608962,
+    "grammar_constrained": true,
+    "sync_checkpoints": false,
+    "arm_wall_seconds": 46.66666666666667
+  },
+  "arms": {
+    "control": {
+      "steps_completed": 20,
+      "last_loss": 27.48133659362793,
+      "train_wall_seconds": 13.616418559977319,
+      "checkpoint_sha256": "1d0aa0ecb7844ba4055e6ae5682f82870275230f7026bb098d45267f074c75f5",
+      "smoke": {"complete_n": 0, "total_n": 3, "decode_timeout_count": 3},
+      "held_out": {"complete_n": 0, "total_n": 5, "status": "interrupted"},
+      "partial_decode_stats": {"n": 1, "tokens_emitted_mean": 63.0, "forwards_count_mean": 14.0, "compiler_ms_mean": 5211.675}
+    },
+    "candidate": {
+      "steps_completed": 20,
+      "last_loss": 33.20635986328125,
+      "train_wall_seconds": 13.866379252984188,
+      "checkpoint_sha256": "6834a759b874f040ad69df2673f9aa08c464fc2e1b3400a31877bf592f614cfa",
+      "smoke": {"complete_n": 0, "total_n": 3, "decode_timeout_count": 3},
+      "held_out": {"complete_n": 0, "total_n": 5, "status": "interrupted"},
+      "partial_decode_stats": {"n": 1, "tokens_emitted_mean": 63.0, "forwards_count_mean": 14.0, "compiler_ms_mean": 5325.958}
+    }
+  },
+  "measurement": {
+    "complete": false,
+    "scoreable": false,
+    "primary_metric": "held_out.structural_similarity",
+    "primary_metric_value": null,
+    "model_conclusion": null,
+    "failure": "fixed formal lane was not reclaimed after proof completed"
+  },
+  "repair": {
+    "component": "harness.autoresearch.experiment_campaign",
+    "version": "v138",
+    "behavior": "return unused proved-formal time symmetrically to both decision arms while preserving finalization reserve and hard cap",
+    "next_action": "reuse only the hash-linked completed train stages and replay both frozen evaluations"
+  },
+  "ship": {
+    "eligible": false,
+    "failures": ["smoke scoreboard missing", "held_out scoreboard missing", "primary metric unavailable", "promotion certificate incomplete"]
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "06be65aa942ad2970d895eb99c8761a1fd541017",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.train": "v38",
+      "harness.model_build.eval": "v78",
+      "harness.autoresearch.experiment_campaign": "v137",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v22",
+      "model.twotower": "v304"
+    },
+    "stamped_at": "2026-08-03T06:21:43.809768+00:00"
+  }
+}

@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import hashlib
 import json
-import subprocess
+import os
 import sys
 import time
 from pathlib import Path
-from slm_training.levers import DEFAULT_TRAIN_DATA_DIR
+from typing import Mapping
+
 from slm_training.autoresearch.rl_gate import assert_rl_ready
 from slm_training.autoresearch.schemas import (
     CampaignSpec,
@@ -18,8 +19,21 @@ from slm_training.autoresearch.schemas import (
     ExperimentSpec,
     HypothesisFeedback,
     HypothesisMatrix,
+    OptimumFeedbackV1,
     ResearchSource,
+    evaluation_completeness_failures,
+    evaluation_measurement_incomplete,
     utc_now,
+)
+from slm_training.harness_core.bounded_process import (
+    ProcessOutcome,
+    run_bounded_process,
+)
+from slm_training.levers import (
+    DEFAULT_TRAIN_DATA_DIR,
+    INTERRUPT_AFTER_SECONDS,
+    KILL_GRACE_SECONDS,
+    MAX_RUN_SECONDS,
 )
 
 
@@ -30,6 +44,22 @@ RESEARCH_SOURCE_KINDS = {
     "web",
     "researcher",
 }
+
+
+def _stage_environment(
+    experiment: ExperimentSpec, command: list[str]
+) -> dict[str, str] | None:
+    """Keep tiny scratch CPU arms from oversubscribing a shared host."""
+
+    if experiment.knobs.context_backend != "scratch" or not any(
+        module in command
+        for module in ("scripts.train_model", "scripts.evaluate_model")
+    ):
+        return None
+    env = os.environ.copy()
+    env["OMP_NUM_THREADS"] = "1"
+    env["MKL_NUM_THREADS"] = "1"
+    return env
 TRACE_EVIDENCE_KINDS = {"run_insight", "telemetry", "agentv", "feedback"}
 RESULT_EVIDENCE_KINDS = {
     "prior_run",
@@ -37,6 +67,50 @@ RESULT_EVIDENCE_KINDS = {
     "prior_campaign",
     "data_snapshot",
 }
+
+_DEFAULT_EVAL_VERSION_CANDIDATES = (
+    "e938_role_safe_all_targets_v2",
+    "e842_harness_owned_slots_v1",
+    "e827_target_slots_only_v4",
+    "e763_symbol_only_eval_r2_20260722",
+)
+
+_EVALUATION_POSTPROCESS_RESERVE_SECONDS = 5.0
+
+_TWOTOWER_RUNTIME_FLAG_FIELDS = (
+    "runtime_symbol_features",
+    "symbol_slot_augmentation",
+    "semantic_candidate_masks",
+    "constraint_graph_mode",
+    "grammar_completion_bounds",
+    "grammar_equivalence_cache",
+    "grammar_active_symbol_bitsets",
+    "compact_active_canvas",
+    "grammar_draft_window",
+)
+
+
+def default_eval_version() -> str:
+    """Return a published eval snapshot that has a smoke suite on disk."""
+    from slm_training.data.store import DataStore
+
+    store = DataStore()
+    for name in _DEFAULT_EVAL_VERSION_CANDIDATES:
+        root = store.resolve_path("eval", name)
+        if (root / "suites" / "smoke" / "records.jsonl").is_file():
+            return name
+    eval_root = store.resolve_path("eval", "e938_role_safe_all_targets_v2").parent
+    if eval_root.is_dir():
+        for child in sorted(eval_root.iterdir()):
+            if (
+                child.is_dir()
+                and (child / "suites" / "smoke" / "records.jsonl").is_file()
+            ):
+                return child.name
+    raise FileNotFoundError(
+        "no published eval snapshot with a smoke suite is available; "
+        "set ExperimentKnobs.eval_version explicitly"
+    )
 
 
 def validate_experiment(
@@ -61,6 +135,11 @@ def validate_experiment(
         assert_rl_ready(experiment.rl_readiness_report)
 
 
+def normalized_knobs_sha256(experiment: ExperimentSpec) -> str:
+    knobs = experiment.knobs.model_dump(exclude_none=True, mode="json")
+    return hashlib.sha256(json.dumps(knobs, sort_keys=True).encode("utf-8")).hexdigest()
+
+
 def validate_hypothesis_matrix(
     campaign: CampaignSpec,
     matrix: HypothesisMatrix,
@@ -70,6 +149,11 @@ def validate_hypothesis_matrix(
     prior_experiment_ids: frozenset[str] = frozenset(),
     feedback: tuple[HypothesisFeedback, ...] = (),
     previous_matrix: HypothesisMatrix | None = None,
+    *,
+    exhausted_knob_ledger: object | None = None,
+    exhausted_data_eval_identity: str | None = None,
+    exhausted_claim_class: str = "fixture",
+    authorized_replay_configs: Mapping[str, str] | None = None,
 ) -> None:
     if matrix.campaign_id != campaign.campaign_id:
         raise ValueError("hypothesis matrix campaign_id does not match campaign")
@@ -79,6 +163,8 @@ def validate_hypothesis_matrix(
         raise ValueError(
             f"hypothesis matrix requires at least {campaign.min_hypotheses} candidates"
         )
+    if campaign.loop_id is not None and not matrix.next_run_priorities:
+        raise ValueError("continuous hypothesis matrix requires next-run priorities")
     reused_ids = sorted(
         candidate.experiment.experiment_id
         for candidate in matrix.hypotheses
@@ -95,7 +181,7 @@ def validate_hypothesis_matrix(
         if previous_matrix is None:
             raise ValueError("feedback-informed matrix requires its predecessor")
         if any(
-            item.campaign_id != campaign.campaign_id
+            item.campaign_id != previous_matrix.campaign_id
             or item.matrix_id != previous_matrix.matrix_id
             for item in feedback
         ):
@@ -104,6 +190,62 @@ def validate_hypothesis_matrix(
             raise ValueError(
                 "feedback-informed matrix must identify its predecessor matrix"
             )
+        required_lanes = {
+            lane
+            for item in feedback
+            if item.optimum_feedback is not None
+            for lane in item.optimum_feedback.diagnosis_lanes
+        }
+        if any(
+            item.optimum_feedback is not None and item.optimum_feedback.policy == "stop"
+            for item in feedback
+        ):
+            raise ValueError("theorem-backed metric contradiction stops this campaign")
+        if required_lanes:
+            supplied_lanes = {
+                item.diagnosis_lane
+                for item in matrix.hypotheses
+                if item.diagnosis_lane is not None
+            }
+            if supplied_lanes != required_lanes:
+                raise ValueError(
+                    "out-of-band feedback requires one hypothesis for every "
+                    f"diagnosis lane: {sorted(required_lanes)}"
+                )
+            if campaign.loop_id is not None:
+                priority_lanes = {
+                    item.area
+                    for item in matrix.next_run_priorities
+                    if item.authority == "lean_assumption"
+                }
+                if priority_lanes != required_lanes:
+                    raise ValueError(
+                        "out-of-band feedback requires one Lean-assumption priority "
+                        f"for every diagnosis lane: {sorted(required_lanes)}"
+                    )
+        if campaign.loop_id is not None:
+            priority_evidence = {
+                evidence_id
+                for priority in matrix.next_run_priorities
+                for evidence_id in priority.evidence_ids
+            }
+            if not expected_feedback <= priority_evidence:
+                raise ValueError(
+                    "continuous priorities must cite every supplied feedback id"
+                )
+            for item in feedback:
+                if item.diagnosis_target != "harness":
+                    continue
+                if not any(
+                    priority.area == item.harness_family
+                    and priority.authority == "reproduced_harness_signal"
+                    and priority.disposition == "repair_before_run"
+                    for priority in matrix.next_run_priorities
+                ):
+                    raise ValueError(
+                        "reproduced harness feedback requires a repair priority for "
+                        f"{item.harness_family}"
+                    )
     prior_signatures = {
         json.dumps(
             experiment.knobs.model_dump(exclude_none=True, mode="json"),
@@ -111,19 +253,49 @@ def validate_hypothesis_matrix(
         )
         for experiment in prior_experiments
     }
-    repeated = [
-        candidate.experiment.experiment_id
-        for candidate in matrix.hypotheses
-        if json.dumps(
+    replay_configs = authorized_replay_configs or {}
+    repeated = []
+    for candidate in matrix.hypotheses:
+        signature = json.dumps(
             candidate.experiment.knobs.model_dump(exclude_none=True, mode="json"),
             sort_keys=True,
         )
-        in prior_signatures
-    ]
+        if signature not in prior_signatures:
+            continue
+        config_sha256 = normalized_knobs_sha256(candidate.experiment)
+        if replay_configs.get(candidate.experiment.experiment_id) != config_sha256:
+            repeated.append(candidate.experiment.experiment_id)
     if repeated:
         raise ValueError(
             f"hypothesis matrix repeats previously run knob signatures: {repeated}"
         )
+    # Optional exhausted-knob ledger (hill-climb governance): same knob signature
+    # + claim_class + data/eval identity after a measured null is rejected.
+    if exhausted_knob_ledger is not None and exhausted_data_eval_identity:
+        from slm_training.autoresearch.hillclimb import (
+            HillClimbError,
+            assert_matrix_knobs_not_exhausted,
+            knob_signature_sha256,
+        )
+
+        try:
+            assert_matrix_knobs_not_exhausted(
+                knob_signatures=[
+                    knob_signature_sha256(
+                        candidate.experiment.knobs.model_dump(
+                            exclude_none=True, mode="json"
+                        )
+                    )
+                    for candidate in matrix.hypotheses
+                    if replay_configs.get(candidate.experiment.experiment_id)
+                    != normalized_knobs_sha256(candidate.experiment)
+                ],
+                ledger=exhausted_knob_ledger,  # type: ignore[arg-type]
+                data_eval_identity=exhausted_data_eval_identity,
+                claim_class=exhausted_claim_class,
+            )
+        except HillClimbError as exc:
+            raise ValueError(str(exc)) from exc
 
     citation_roles: dict[str, set[str]] = {}
     for source in sources:
@@ -148,9 +320,7 @@ def validate_hypothesis_matrix(
         validate_experiment(campaign, candidate.experiment, evidence, sources)
         for use in candidate.evidence_uses:
             if use.role not in citation_roles.get(use.citation, set()):
-                raise ValueError(
-                    f"{use.citation} is not captured {use.role} evidence"
-                )
+                raise ValueError(f"{use.citation} is not captured {use.role} evidence")
             used_roles.add(use.role)
     available_roles = set().union(*citation_roles.values()) if citation_roles else set()
     missing_roles = available_roles - used_roles
@@ -171,11 +341,10 @@ def create_hypothesis_feedback(
     matrix: HypothesisMatrix,
     outcome: ExperimentOutcome,
     diagnosis: Diagnosis,
+    optimum_feedback: OptimumFeedbackV1 | None = None,
 ) -> HypothesisFeedback:
     """Turn one completed matrix experiment into bounded hypothesizer feedback."""
-    candidates = {
-        item.experiment.experiment_id: item for item in matrix.hypotheses
-    }
+    candidates = {item.experiment.experiment_id: item for item in matrix.hypotheses}
     candidate = candidates.get(outcome.experiment_id)
     if candidate is None:
         raise ValueError("outcome experiment is not a matrix member")
@@ -196,12 +365,21 @@ def create_hypothesis_feedback(
         "metrics": outcome.metrics,
         "data_metrics": outcome.data_metrics,
         "diagnosis_target": diagnosis.target,
+        "harness_family": diagnosis.harness_family,
         "diagnosis_evidence": diagnosis.evidence,
         "recommended_actions": diagnosis.recommended_actions,
+        "optimum_feedback": (
+            optimum_feedback.model_dump(mode="json")
+            if optimum_feedback is not None
+            else None
+        ),
     }
-    feedback_id = "feedback-" + hashlib.sha256(
-        json.dumps(identity, sort_keys=True).encode("utf-8")
-    ).hexdigest()[:16]
+    feedback_id = (
+        "feedback-"
+        + hashlib.sha256(
+            json.dumps(identity, sort_keys=True).encode("utf-8")
+        ).hexdigest()[:16]
+    )
     return HypothesisFeedback(
         feedback_id=feedback_id,
         campaign_id=matrix.campaign_id,
@@ -213,8 +391,10 @@ def create_hypothesis_feedback(
         metrics=outcome.metrics,
         data_metrics=outcome.data_metrics,
         diagnosis_target=diagnosis.target,
+        harness_family=diagnosis.harness_family,
         diagnosis_evidence=diagnosis.evidence,
         recommended_actions=diagnosis.recommended_actions,
+        optimum_feedback=optimum_feedback,
         created_at=outcome.finished_at or outcome.started_at or matrix.created_at,
     )
 
@@ -314,7 +494,13 @@ def compile_commands(
     if knobs.local_files_only:
         train.append("--local-files-only")
     if knobs.sync_checkpoints is not None:
-        train.append("--sync-checkpoints" if knobs.sync_checkpoints else "--no-sync-checkpoints")
+        train.append(
+            "--sync-checkpoints" if knobs.sync_checkpoints else "--no-sync-checkpoints"
+        )
+    if (knobs.context_backend or "hf") == "scratch" and knobs.sync_checkpoints is False:
+        # One-shot local campaign arms have no resume consumer. Keep last.pt,
+        # but do not spend the wall budget serializing optimizer/RNG state.
+        train.append("--no-full-state-checkpoint")
     if campaign.track == "grammar_diffusion":
         train.extend(["--model", "grammar_diffusion"])
         boolean_knobs = {
@@ -346,20 +532,17 @@ def compile_commands(
             if value is not None:
                 train.extend([f"--{flag}", str(value)])
     if campaign.track == "twotower":
-        symbol_fields = {
-            "runtime_symbol_features",
-            "symbol_slot_augmentation",
-            "semantic_candidate_masks",
-            "constraint_graph_mode",
-            "grammar_completion_bounds",
-            "grammar_equivalence_cache",
-            "grammar_active_symbol_bitsets",
-            "compact_active_canvas",
-        }
         if knobs.output_tokenizer:
             train.extend(["--output-tokenizer", knobs.output_tokenizer])
-        elif any(getattr(knobs, field) is not None for field in symbol_fields):
+        elif any(
+            getattr(knobs, field) is not None
+            for field in _TWOTOWER_RUNTIME_FLAG_FIELDS
+        ):
             train.extend(["--output-tokenizer", "lexer"])
+        if knobs.compiler_decode_mode:
+            train.extend(["--compiler-decode-mode", knobs.compiler_decode_mode])
+            if knobs.compiler_decode_mode != "off":
+                train.append("--grammar-ltr-primary")
         # DSL diffusion program levers (G1): typed knob -> bounded flag only.
         if knobs.mask_pattern:
             train.extend(["--mask-pattern", knobs.mask_pattern])
@@ -378,6 +561,12 @@ def compile_commands(
                     str(knobs.compiler_alignment_loss_weight),
                 ]
             )
+        if knobs.ltr_tail_loss_weight is not None:
+            train.extend(["--ltr-tail-loss-weight", str(knobs.ltr_tail_loss_weight)])
+        if knobs.ltr_prefix_loss_weight is not None:
+            train.extend(
+                ["--ltr-prefix-loss-weight", str(knobs.ltr_prefix_loss_weight)]
+            )
         if knobs.compiler_alignment_margin is not None:
             train.extend(
                 ["--compiler-alignment-margin", str(knobs.compiler_alignment_margin)]
@@ -386,11 +575,60 @@ def compile_commands(
             train.append("--compiler-alignment-stratified")
         if knobs.compiler_alignment_semantic_exhaustive:
             train.append("--compiler-alignment-semantic-exhaustive")
+        if knobs.compiler_alignment_kind_filter is not None:
+            train.extend(
+                [
+                    "--compiler-alignment-kind-filter",
+                    knobs.compiler_alignment_kind_filter,
+                ]
+            )
         if knobs.component_inventory_loss_weight is not None:
             train.extend(
                 [
                     "--component-inventory-loss-weight",
                     str(knobs.component_inventory_loss_weight),
+                ]
+            )
+        if knobs.component_token_loss_weight is not None:
+            train.extend(
+                [
+                    "--component-token-loss-weight",
+                    str(knobs.component_token_loss_weight),
+                ]
+            )
+        if knobs.component_edge_token_loss_weight is not None:
+            train.extend(
+                [
+                    "--component-edge-token-loss-weight",
+                    str(knobs.component_edge_token_loss_weight),
+                ]
+            )
+        if knobs.compiler_decision_token_loss_weight is not None:
+            train.extend(
+                [
+                    "--compiler-decision-token-loss-weight",
+                    str(knobs.compiler_decision_token_loss_weight),
+                ]
+            )
+        if knobs.structure_token_loss_weight is not None:
+            train.extend(
+                [
+                    "--structure-token-loss-weight",
+                    str(knobs.structure_token_loss_weight),
+                ]
+            )
+        if knobs.typed_family_balance_loss_weight is not None:
+            train.extend(
+                [
+                    "--typed-family-balance-loss-weight",
+                    str(knobs.typed_family_balance_loss_weight),
+                ]
+            )
+        if knobs.structural_aux_head_profile is not None:
+            train.extend(
+                [
+                    "--structural-aux-head-profile",
+                    knobs.structural_aux_head_profile,
                 ]
             )
         if knobs.component_inventory_decode_weight is not None:
@@ -411,6 +649,14 @@ def compile_commands(
                     str(knobs.component_plan_decode_weight),
                 ]
             )
+        if knobs.slot_component_loss_weight is not None:
+            train.extend(
+                ["--slot-component-loss-weight", str(knobs.slot_component_loss_weight)]
+            )
+        if knobs.slot_component_decode_weight is not None:
+            train.extend(
+                ["--slot-component-decode-weight", str(knobs.slot_component_decode_weight)]
+            )
         if knobs.component_edge_loss_weight is not None:
             train.extend(
                 ["--component-edge-loss-weight", str(knobs.component_edge_loss_weight)]
@@ -420,6 +666,26 @@ def compile_commands(
                 [
                     "--component-edge-alignment-loss-weight",
                     str(knobs.component_edge_alignment_loss_weight),
+                ]
+            )
+        if knobs.semantic_contrast_dir is not None:
+            train.extend(["--semantic-contrast-dir", knobs.semantic_contrast_dir])
+        if knobs.semantic_contrast_loss_weight is not None:
+            train.extend(
+                [
+                    "--semantic-contrast-loss-weight",
+                    str(knobs.semantic_contrast_loss_weight),
+                ]
+            )
+        if knobs.semantic_contrast_margin is not None:
+            train.extend(
+                ["--semantic-contrast-margin", str(knobs.semantic_contrast_margin)]
+            )
+        if knobs.semantic_contrast_fraction is not None:
+            train.extend(
+                [
+                    "--semantic-contrast-fraction",
+                    str(knobs.semantic_contrast_fraction),
                 ]
             )
         if knobs.component_edge_decode_weight is not None:
@@ -445,7 +711,10 @@ def compile_commands(
             )
         if knobs.binder_topology_loss_weight is not None:
             train.extend(
-                ["--binder-topology-loss-weight", str(knobs.binder_topology_loss_weight)]
+                [
+                    "--binder-topology-loss-weight",
+                    str(knobs.binder_topology_loss_weight),
+                ]
             )
         if knobs.binder_topology_decode_weight is not None:
             train.extend(
@@ -462,12 +731,37 @@ def compile_commands(
             train.extend(
                 ["--binder-arity-decode-weight", str(knobs.binder_arity_decode_weight)]
             )
+        if knobs.binder_slot_ownership_loss_weight is not None:
+            train.extend(
+                [
+                    "--binder-slot-ownership-loss-weight",
+                    str(knobs.binder_slot_ownership_loss_weight),
+                ]
+            )
+        if knobs.binder_slot_ownership_decode_weight is not None:
+            train.extend(
+                [
+                    "--binder-slot-ownership-decode-weight",
+                    str(knobs.binder_slot_ownership_decode_weight),
+                ]
+            )
+        if knobs.symbol_boundary_loss_weight is not None:
+            train.extend(
+                [
+                    "--symbol-boundary-loss-weight",
+                    str(knobs.symbol_boundary_loss_weight),
+                ]
+            )
+        if knobs.fidelity_loss_weight is not None:
+            train.extend(["--fidelity-loss-weight", str(knobs.fidelity_loss_weight)])
         if knobs.schema_in_context:
             train.append("--schema-in-context")
         if knobs.slot_contract_in_context:
             train.append("--slot-contract-in-context")
         if knobs.design_md_context is False:
             train.append("--no-design-md-context")
+        if knobs.design_md_dropout is not None:
+            train.extend(["--design-md-dropout", str(knobs.design_md_dropout)])
         for field, flag in {
             "runtime_symbol_features": "runtime-symbol-features",
             "constraint_graph_mode": "constraint-graph-mode",
@@ -481,6 +775,7 @@ def compile_commands(
             "grammar_completion_bounds": "grammar-completion-bounds",
             "grammar_equivalence_cache": "grammar-equivalence-cache",
             "grammar_active_symbol_bitsets": "grammar-active-symbol-bitsets",
+            "grammar_incremental_state": "grammar-incremental-state",
             "compact_active_canvas": "compact-active-canvas",
         }.items():
             value = getattr(knobs, field)
@@ -507,7 +802,10 @@ def compile_commands(
         )
     if knobs.mixture_total_decision_budget is not None:
         train.extend(
-            ["--mixture-total-decision-budget", str(knobs.mixture_total_decision_budget)]
+            [
+                "--mixture-total-decision-budget",
+                str(knobs.mixture_total_decision_budget),
+            ]
         )
     if knobs.mixture_per_root_cap is not None:
         train.extend(["--mixture-per-root-cap", str(knobs.mixture_per_root_cap)])
@@ -528,7 +826,7 @@ def compile_commands(
         "-m",
         "scripts.evaluate_model",
         "--test-dir",
-        knobs.eval_version or "v1",
+        knobs.eval_version or default_eval_version(),
         "--run-root",
         str(root.parent),
         "--run-id",
@@ -541,6 +839,10 @@ def compile_commands(
         evaluate.extend(["--train-version", knobs.train_version])
     else:
         evaluate.extend(["--train-dir", str(train_dir)])
+    if knobs.eval_suites:
+        evaluate.extend(["--suites", str(knobs.eval_suites)])
+    if knobs.decode_timeout_seconds is not None:
+        evaluate.extend(["--decode-timeout-seconds", str(knobs.decode_timeout_seconds)])
     commands.append(evaluate)
     if campaign.track == "grammar_diffusion":
         commands[-1].extend(["--model", "grammar_diffusion"])
@@ -553,6 +855,10 @@ def compile_commands(
             evaluate.extend(["--compiler-decode-mode", knobs.compiler_decode_mode])
             if knobs.compiler_decode_mode != "off":
                 evaluate.append("--grammar-ltr-primary")
+        if knobs.grammar_draft_window is not None:
+            evaluate.extend(
+                ["--grammar-draft-window", str(knobs.grammar_draft_window)]
+            )
         for name in (
             "compiler_search_mode",
             "compiler_search_trigger",
@@ -585,9 +891,7 @@ def execute_commands(
 ) -> ExperimentOutcome:
     started = utc_now()
     deadline = (
-        time.monotonic() + timeout_seconds
-        if timeout_seconds is not None
-        else None
+        time.monotonic() + timeout_seconds if timeout_seconds is not None else None
     )
     combined: list[str] = []
     stages: list[dict[str, object]] = []
@@ -595,9 +899,7 @@ def execute_commands(
     data_metrics: dict[str, float] = {}
     for command in commands:
         remaining_seconds = (
-            max(0.0, deadline - time.monotonic())
-            if deadline is not None
-            else None
+            max(0.0, deadline - time.monotonic()) if deadline is not None else None
         )
         if remaining_seconds == 0:
             return ExperimentOutcome(
@@ -614,24 +916,64 @@ def execute_commands(
                 finished_at=utc_now(),
                 campaign_manifest_sha256=campaign_manifest_sha256,
             )
-        try:
-            completed = subprocess.run(
-                command,
-                cwd=cwd,
-                check=False,
-                capture_output=True,
-                text=True,
-                timeout=remaining_seconds,
+        stage_total = min(
+            float(MAX_RUN_SECONDS),
+            remaining_seconds
+            if remaining_seconds is not None
+            else float(MAX_RUN_SECONDS),
+        )
+        grace = min(float(KILL_GRACE_SECONDS), stage_total * 0.1)
+        interrupt_after = min(
+            float(INTERRUPT_AFTER_SECONDS), max(0.001, stage_total - grace)
+        )
+        if (
+            "scripts.evaluate_model" in command
+            and "--evaluation-wall-seconds" not in command
+        ):
+            postprocess_reserve = min(
+                _EVALUATION_POSTPROCESS_RESERVE_SECONDS,
+                interrupt_after * 0.2,
             )
-        except subprocess.TimeoutExpired as exc:
-            stages.append(
-                {
-                    "command": command,
-                    "timed_out": True,
-                    "stdout": str(exc.stdout or "")[-8000:],
-                    "stderr": str(exc.stderr or "")[-8000:],
-                }
+            evaluation_wall = max(
+                0.1,
+                interrupt_after - postprocess_reserve,
             )
+            command.extend(["--evaluation-wall-seconds", f"{evaluation_wall:.6f}"])
+        stage_artifact = _stage_artifact_path(command, cwd=cwd)
+        artifact_revision_before = _artifact_revision(stage_artifact)
+        progress_artifact = _stage_progress_artifact_path(command, cwd=cwd)
+        progress_revision_before = _artifact_revision(progress_artifact)
+        completed = run_bounded_process(
+            command,
+            cwd=cwd,
+            env=_stage_environment(experiment, command),
+            interrupt_after_seconds=interrupt_after,
+            kill_grace_seconds=grace,
+        )
+        if getattr(completed, "timed_out", False):
+            stage: dict[str, object] = {
+                "command": command,
+                "timed_out": True,
+                "interrupted": getattr(completed, "interrupted", False),
+                "killed": getattr(completed, "killed", False),
+                "process_outcome": completed.outcome.value,
+                "stdout": completed.stdout,
+                "stderr": completed.stderr,
+                "measurement_complete": False,
+            }
+            partial = _read_changed_json(progress_artifact, progress_revision_before)
+            run_id = _command_value(command, "--run-id")
+            if (
+                isinstance(partial, dict)
+                and progress_artifact is not None
+                and partial.get("schema_version") == "DecodeProgressV1"
+                and partial.get("run_id") == run_id
+                and partial.get("measurement_complete") is False
+                and partial.get("scoreable") is False
+            ):
+                stage["partial_output"] = partial
+                stage["partial_output_source"] = str(progress_artifact)
+            stages.append(stage)
             return ExperimentOutcome(
                 experiment_id=experiment.experiment_id,
                 campaign_id=experiment.campaign_id,
@@ -646,11 +988,14 @@ def execute_commands(
                 finished_at=utc_now(),
                 campaign_manifest_sha256=campaign_manifest_sha256,
             )
-        except OSError as exc:
+        if (
+            getattr(completed, "outcome", ProcessOutcome.COMPLETED)
+            is ProcessOutcome.LAUNCH_FAILED
+        ):
             stages.append(
                 {
                     "command": command,
-                    "launch_error": str(exc),
+                    "launch_error": completed.launch_error,
                     "stdout": "",
                     "stderr": "",
                 }
@@ -662,7 +1007,10 @@ def execute_commands(
                 metrics=metrics,
                 data_metrics=data_metrics,
                 command=tuple(" ".join(item) for item in commands),
-                error=f"stage could not start: {' '.join(command)}: {exc}",
+                error=(
+                    f"stage could not start: {' '.join(command)}: "
+                    f"{completed.launch_error}"
+                ),
                 wall_time_budget_seconds=timeout_seconds,
                 stage_telemetry=tuple(stages),
                 started_at=started,
@@ -670,12 +1018,53 @@ def execute_commands(
                 campaign_manifest_sha256=campaign_manifest_sha256,
             )
         combined.extend([completed.stdout, completed.stderr])
-        parsed = _parse_json_output(completed.stdout)
+        parsed, parsed_source = _resolve_stage_output(
+            command,
+            completed.stdout,
+            cwd=cwd,
+            artifact_revision_before=artifact_revision_before,
+        )
         flattened = _numeric_metrics(parsed) if parsed is not None else {}
+        flattened.update(_suite_headline_metrics(parsed))
         if "scripts.build_train_data" in command:
             data_metrics.update(flattened)
+        elif "scripts.train_model" in command and completed.returncode == 0:
+            incomplete_reason = _incomplete_train_reason(command, parsed, cwd=cwd)
+            if incomplete_reason is not None:
+                stages.append(
+                    {
+                        "command": command,
+                        "exit_code": completed.returncode,
+                        "stdout": completed.stdout[-8000:],
+                        "stderr": completed.stderr[-8000:],
+                        "parsed_output": parsed,
+                        "parsed_output_source": parsed_source,
+                        "measurement_complete": False,
+                    }
+                )
+                return ExperimentOutcome(
+                    experiment_id=experiment.experiment_id,
+                    campaign_id=experiment.campaign_id,
+                    status="stopped",
+                    command=tuple(" ".join(item) for item in commands),
+                    exit_code=completed.returncode,
+                    error=incomplete_reason,
+                    metrics=metrics,
+                    data_metrics=data_metrics,
+                    wall_time_budget_seconds=timeout_seconds,
+                    stage_telemetry=tuple(stages),
+                    started_at=started,
+                    finished_at=utc_now(),
+                    campaign_manifest_sha256=campaign_manifest_sha256,
+                )
+            trainable_params = flattened.get("track.trainable_params")
+            if trainable_params is not None:
+                metrics["trainable_params"] = trainable_params
         elif "scripts.evaluate_model" in command:
             metrics.update(flattened)
+        expected_gate_rejection = _expected_gate_rejection(
+            command, completed.returncode, parsed, artifact_root=Path(cwd)
+        )
         stages.append(
             {
                 "command": command,
@@ -683,9 +1072,11 @@ def execute_commands(
                 "stdout": completed.stdout[-8000:],
                 "stderr": completed.stderr[-8000:],
                 "parsed_output": parsed,
+                "parsed_output_source": parsed_source,
+                "expected_gate_rejection": expected_gate_rejection,
             }
         )
-        if completed.returncode:
+        if completed.returncode and not expected_gate_rejection:
             return ExperimentOutcome(
                 experiment_id=experiment.experiment_id,
                 campaign_id=experiment.campaign_id,
@@ -717,6 +1108,154 @@ def execute_commands(
     )
 
 
+def _command_value(command: list[str], flag: str) -> str | None:
+    try:
+        return command[command.index(flag) + 1]
+    except (ValueError, IndexError):
+        return None
+
+
+def _stage_artifact_path(command: list[str], *, cwd: Path | str) -> Path | None:
+    artifact_name = None
+    if "scripts.train_model" in command:
+        artifact_name = "train_summary.json"
+    elif "scripts.evaluate_model" in command:
+        artifact_name = "scoreboard.json"
+    run_root = _command_value(command, "--run-root")
+    run_id = _command_value(command, "--run-id")
+    if artifact_name is None or run_root is None or run_id is None:
+        return None
+    root = Path(run_root)
+    if not root.is_absolute():
+        root = Path(cwd) / root
+    return root / run_id / artifact_name
+
+
+def _stage_progress_artifact_path(
+    command: list[str], *, cwd: Path | str
+) -> Path | None:
+    if "scripts.evaluate_model" not in command:
+        return None
+    run_root = _command_value(command, "--run-root")
+    run_id = _command_value(command, "--run-id")
+    if run_root is None or run_id is None:
+        return None
+    root = Path(run_root)
+    if not root.is_absolute():
+        root = Path(cwd) / root
+    return root / run_id / "decode_progress.json"
+
+
+def _read_changed_json(
+    path: Path | None, revision_before: tuple[int, int] | None
+) -> object | None:
+    revision_after = _artifact_revision(path)
+    if path is None or revision_after is None or revision_after == revision_before:
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def _artifact_revision(path: Path | None) -> tuple[int, int] | None:
+    if path is None:
+        return None
+    try:
+        stat = path.stat()
+    except OSError:
+        return None
+    return stat.st_mtime_ns, stat.st_size
+
+
+def _resolve_stage_output(
+    command: list[str],
+    stdout: str,
+    *,
+    cwd: Path | str,
+    artifact_revision_before: tuple[int, int] | None,
+) -> tuple[object | None, str | None]:
+    """Resolve typed JSON from stdout or a current-stage canonical artifact."""
+
+    parsed = _parse_json_output(stdout)
+    if parsed is not None:
+        return parsed, "stdout"
+    path = _stage_artifact_path(command, cwd=cwd)
+    revision_after = _artifact_revision(path)
+    if (
+        path is None
+        or revision_after is None
+        or revision_after == artifact_revision_before
+    ):
+        return None, None
+    try:
+        parsed = _parse_json_output(path.read_text(encoding="utf-8"))
+    except OSError:
+        return None, None
+    return parsed, str(path) if parsed is not None else None
+
+
+def _incomplete_train_reason(
+    command: list[str], parsed: object | None, *, cwd: Path | str
+) -> str | None:
+    """Return why a nominally successful train is not decision-bearing."""
+
+    if not isinstance(parsed, dict):
+        return "training produced no typed summary"
+    stopped_on = str(parsed.get("stopped_on") or "")
+    requested_raw = _command_value(command, "--steps")
+    try:
+        requested = int(requested_raw) if requested_raw is not None else None
+    except ValueError:
+        return f"training declared invalid --steps value {requested_raw!r}"
+    completed = parsed.get("steps")
+    if stopped_on != "steps":
+        return f"training stopped_on={stopped_on or 'missing'} before declared steps"
+    if requested is not None and completed != requested:
+        return f"training completed {completed!r}/{requested} declared steps"
+    checkpoint = parsed.get("checkpoint")
+    if not isinstance(checkpoint, str) or not checkpoint:
+        return "training summary omitted checkpoint"
+    checkpoint_path = Path(checkpoint)
+    if not checkpoint_path.is_absolute():
+        checkpoint_path = Path(cwd) / checkpoint_path
+    if not checkpoint_path.is_file():
+        return f"training checkpoint is missing: {checkpoint}"
+    return None
+
+
+def _expected_gate_rejection(
+    command: list[str],
+    returncode: int,
+    parsed: object | None,
+    *,
+    artifact_root: Path | None = None,
+) -> bool:
+    """Exit 8 is evidence when the typed AgentV/gate scoreboard is complete."""
+
+    if (
+        returncode != 8
+        or "scripts.evaluate_model" not in command
+        or "--ship-gates" not in command
+        or not isinstance(parsed, dict)
+    ):
+        return False
+    gates = parsed.get("gates")
+    suites = parsed.get("suites")
+    if evaluation_completeness_failures(
+        parsed,
+        require_agent_bindings=True,
+        artifact_root=artifact_root,
+    ):
+        return False
+    return bool(
+        isinstance(gates, dict)
+        and gates.get("pass") is False
+        and isinstance(suites, dict)
+        and suites
+    )
+
+
 def _parse_json_output(stdout: str) -> object | None:
     text = stdout.strip()
     if not text:
@@ -741,12 +1280,74 @@ def _numeric_metrics(value: object, prefix: str = "") -> dict[str, float]:
     return result
 
 
+def _suite_headline_metrics(value: object) -> dict[str, float]:
+    """Extract every suite headline without traversing verbose suite details."""
+
+    if not isinstance(value, dict) or not isinstance(value.get("suites"), dict):
+        return {}
+    result: dict[str, float] = {}
+    decode_headlines = (
+        "forwards_count_mean",
+        "tokens_emitted_mean",
+        "compiler_prefill_tokens_mean",
+        "canvas_tokens_mean",
+        "compiler_ms_mean",
+        "completion_shared_domain_hits_mean",
+        "completion_shared_domain_misses_mean",
+    )
+    for suite, metrics in value["suites"].items():
+        if not isinstance(metrics, dict):
+            continue
+        for name, metric in metrics.items():
+            if isinstance(metric, bool):
+                result[f"suites.{suite}.{name}"] = float(metric)
+            elif isinstance(metric, (int, float)):
+                result[f"suites.{suite}.{name}"] = float(metric)
+        decode_stats = metrics.get("decode_stats")
+        if isinstance(decode_stats, dict):
+            for name in decode_headlines:
+                metric = decode_stats.get(name)
+                if isinstance(metric, (int, float)) and not isinstance(metric, bool):
+                    result[f"suites.{suite}.{name}"] = float(metric)
+    return result
+
+
 def diagnose_outcome(outcome: ExperimentOutcome) -> Diagnosis:
     data = outcome.data_metrics
     metrics = outcome.metrics
     evidence: list[str] = []
     actions: list[str] = []
-    if outcome.status in {"failed", "stopped"} and not metrics and not data:
+    reproduced_signals = [
+        signal
+        for signal in outcome.harness_signals
+        if signal.reproduced_on_frozen_input
+    ]
+    harness_family = None
+    if reproduced_signals:
+        signal = next(
+            (item for item in reproduced_signals if item.primary),
+            reproduced_signals[0],
+        )
+        target = "harness"
+        harness_family = signal.family
+        evidence.append(f"{signal.code}: {signal.evidence_uri}")
+        actions.extend(
+            (
+                f"route to improve-openui-harnesses/{signal.family}",
+                "repair the canonical owner and replay the identical frozen model/data arm",
+            )
+        )
+        confidence = 0.95
+    elif evaluation_measurement_incomplete(metrics):
+        target = "infrastructure"
+        evidence.append(
+            "evaluation measurement is incomplete; model attribution is unavailable"
+        )
+        actions.append("repair runtime capacity and replay the identical frozen arm")
+        confidence = 0.95
+    elif outcome.status == "stopped" or (
+        outcome.status == "failed" and not metrics and not data
+    ):
         target = "infrastructure"
         evidence.append(outcome.error or "experiment process failed")
         actions.append("repair the failed harness stage and rerun the identical spec")
@@ -784,8 +1385,12 @@ def diagnose_outcome(outcome: ExperimentOutcome) -> Diagnosis:
         _metric(metrics, "ship_gates_pass", "gates.pass", "pass", default=0)
     ):
         target = "model"
-        evidence.append("experiment improved locally but still fails honest ship gates")
-        actions.append("continue SFT or architecture experiments; keep RL locked")
+        evidence.append(
+            "experiment completed locally but still fails honest ship gates"
+        )
+        actions.append(
+            "compare against the matched control; continue model experiments; keep RL locked"
+        )
         confidence = 0.75
     else:
         target = "none"
@@ -795,6 +1400,7 @@ def diagnose_outcome(outcome: ExperimentOutcome) -> Diagnosis:
     return Diagnosis(
         experiment_id=outcome.experiment_id,
         target=target,
+        harness_family=harness_family,
         confidence=confidence,
         evidence=tuple(evidence),
         recommended_actions=tuple(actions),

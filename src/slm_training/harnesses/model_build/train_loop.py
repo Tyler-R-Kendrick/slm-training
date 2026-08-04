@@ -111,11 +111,7 @@ def _rare_slot_component_owner_records(
     owners_by_record: list[set[str]] = []
     for record in records:
         owners = owner_for_source(record.openui)
-        visible = [
-            owners[slot]
-            for slot in record.placeholders
-            if slot in owners
-        ]
+        visible = [owners[slot] for slot in record.placeholders if slot in owners]
         counts.update(visible)
         owners_by_record.append(set(visible))
     rare = sorted(owner for owner, count in counts.items() if count <= threshold)
@@ -236,8 +232,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     )
     if not 0 < max_wall_minutes <= MAX_HARNESS_WALL_MINUTES:
         raise ValueError(
-            "max_wall_minutes must be positive and at most "
-            f"{MAX_HARNESS_WALL_MINUTES}"
+            f"max_wall_minutes must be positive and at most {MAX_HARNESS_WALL_MINUTES}"
         )
     wall_started = time.monotonic()
     wall_deadline = wall_started + max_wall_minutes * 60
@@ -277,21 +272,34 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     contrast_weight = float(
         getattr(config, "semantic_contrast_loss_weight", 0.0) or 0.0
     )
-    contrast_fraction = float(
-        getattr(config, "semantic_contrast_fraction", 0.0) or 0.0
-    )
+    contrast_fraction = float(getattr(config, "semantic_contrast_fraction", 0.0) or 0.0)
     contrast_pairs = []
     contrast_dir = getattr(config, "semantic_contrast_dir", None)
-    if contrast_weight > 0.0:
-        if contrast_dir is None:
-            raise ValueError("semantic_contrast_loss_weight requires semantic_contrast_dir")
+    # A matched control retains the candidate's contrast source and sampling
+    # recipe while setting only the auxiliary coefficient to zero.  Loading
+    # the pairs in both arms keeps realized records and reconstruction masks
+    # identical, so the margin term is the sole treatment difference.
+    if contrast_weight > 0.0 and contrast_dir is None:
+        raise ValueError("semantic_contrast_loss_weight requires semantic_contrast_dir")
+    if contrast_dir is not None:
         if not 0.0 < contrast_fraction <= 1.0:
             raise ValueError("semantic_contrast_fraction must be in (0, 1]")
-        if config.batch_size < 2:
-            raise ValueError("semantic contrast objective requires batch_size >= 2")
+        # A contrast pair consumes two rows and the base corpus must still
+        # contribute at least one reconstruction row.  With batch_size=2 the
+        # old sampler silently produced pair-only batches, changing both data
+        # exposure and effective CE supervision relative to the control arm.
+        if config.batch_size < 3:
+            raise ValueError(
+                "semantic contrast objective requires batch_size >= 3 "
+                "to retain a base-corpus row"
+            )
         if replay_fraction:
-            raise ValueError("semantic contrast objective cannot be combined with replay")
-        from slm_training.models.semantic_contrast_loss import load_semantic_contrast_pairs
+            raise ValueError(
+                "semantic contrast objective cannot be combined with replay"
+            )
+        from slm_training.models.semantic_contrast_loss import (
+            load_semantic_contrast_pairs,
+        )
 
         contrast_pairs = load_semantic_contrast_pairs(Path(contrast_dir))
     replay_records = []
@@ -326,9 +334,11 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "root_reference_identity_strict_subset_multiplier must be at least 1"
         )
     strict_subset_records = []
-    audit_strict_subsets = strict_subset_multiplier > 1 or float(
-        getattr(config, "root_reference_identity_loss_weight", 0.0) or 0.0
-    ) > 0.0
+    audit_strict_subsets = (
+        strict_subset_multiplier > 1
+        or float(getattr(config, "root_reference_identity_loss_weight", 0.0) or 0.0)
+        > 0.0
+    )
     if audit_strict_subsets:
         tokenizer = getattr(plugin, "tokenizer", None)
         if tokenizer is None:
@@ -463,10 +473,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         if run_otel_trace is None or progress_seconds <= 0:
             return
         now_monotonic = time.monotonic()
-        if (
-            last_progress_emit
-            and now_monotonic - last_progress_emit < progress_seconds
-        ):
+        if last_progress_emit and now_monotonic - last_progress_emit < progress_seconds:
             return
         last_progress_emit = now_monotonic
         try:
@@ -481,6 +488,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             )
         except Exception as exc:  # noqa: BLE001 - telemetry must never abort training
             warnings.warn(f"train.progress heartbeat failed: {exc}", stacklevel=2)
+
     mix_curriculum = bool(getattr(config, "mix_curriculum", True))
     curriculum_pools = None
     if getattr(config, "use_curriculum", False):
@@ -545,9 +553,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             mixture_meta["total_decision_budget"] = getattr(
                 config, "mixture_total_decision_budget", None
             )
-            mixture_meta["per_root_cap"] = getattr(
-                config, "mixture_per_root_cap", None
-            )
+            mixture_meta["per_root_cap"] = getattr(config, "mixture_per_root_cap", None)
             mixture_meta["per_template_cap"] = getattr(
                 config, "mixture_per_template_cap", None
             )
@@ -604,9 +610,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                             getattr(config, "mixture_total_decision_budget", None)
                             or target
                         ),
-                        "per_root_cap": getattr(
-                            config, "mixture_per_root_cap", None
-                        ),
+                        "per_root_cap": getattr(config, "mixture_per_root_cap", None),
                         "per_template_cap": getattr(
                             config, "mixture_per_template_cap", None
                         ),
@@ -634,9 +638,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             return batched(drawn, config.batch_size)
         shuffled = list(records)
         if strict_subset_multiplier > 1:
-            shuffled.extend(
-                strict_subset_records * (strict_subset_multiplier - 1)
-            )
+            shuffled.extend(strict_subset_records * (strict_subset_multiplier - 1))
         if owner_rare_multiplier > 1:
             shuffled.extend(owner_rare_records * (owner_rare_multiplier - 1))
         rng.shuffle(shuffled)
@@ -655,7 +657,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     if is_twotower:
         import torch
 
-        optimizer_name = str(getattr(config, "optimizer_name", "adamw") or "adamw").lower()
+        optimizer_name = str(
+            getattr(config, "optimizer_name", "adamw") or "adamw"
+        ).lower()
         if optimizer_name == "muon_hybrid":
             from slm_training.optimizers.muon import build_muon_hybrid
 
@@ -1044,6 +1048,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 "constraint_rescue_gap"
             ),
             "bits_per_char": broad.get("bits_per_char"),
+            "by_family": broad.get("by_family") or {},
             "base_suite": base_suite,
             "seen_target_tokens": seen_target_tokens,
             "ts": datetime.now(timezone.utc).isoformat(),
@@ -1067,9 +1072,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         return row
 
     stopped_on = "steps"
-    checkpoint_every_steps = int(
-        getattr(config, "checkpoint_every_steps", 0) or 0
-    )
+    checkpoint_every_steps = int(getattr(config, "checkpoint_every_steps", 0) or 0)
     mode = "a" if resumed_from else "w"
     with bind_telemetry(tel), metrics_path.open(mode, encoding="utf-8") as metrics_file:
         while step < config.steps:
@@ -1157,9 +1160,13 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                     _emit_progress(step, last_loss)
                     did_eval = _maybe_eval(step)
                     did_loss_eval = _maybe_loss_eval(step)
-                    if did_eval or did_loss_eval or (
-                        checkpoint_every_steps > 0
-                        and step % checkpoint_every_steps == 0
+                    if (
+                        did_eval
+                        or did_loss_eval
+                        or (
+                            checkpoint_every_steps > 0
+                            and step % checkpoint_every_steps == 0
+                        )
                     ):
                         _save_full_state_now()
             else:
@@ -1239,6 +1246,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             campaign_store=store,
             artifact_root=artifact_root,
             locked_manifest_path=locked_manifest_path,
+            promoted_candidate_id=config.run_id,
             meta={
                 "step": step,
                 "best_weighted_nll": (
@@ -1370,7 +1378,38 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "seed": config.seed,
             "steps_requested": config.steps,
             "batch_size": config.batch_size,
+            "mask_pattern": str(getattr(config, "mask_pattern", "random") or "random"),
+            "runtime_symbol_features": str(
+                getattr(config, "runtime_symbol_features", "none") or "none"
+            ),
+            "symbol_slot_augmentation": bool(
+                getattr(config, "symbol_slot_augmentation", False)
+            ),
+            "semantic_candidate_masks": bool(
+                getattr(config, "semantic_candidate_masks", False)
+            ),
+            "constraint_graph_mode": str(
+                getattr(config, "constraint_graph_mode", "off") or "off"
+            ),
             "ltr_loss_weight": getattr(config, "ltr_loss_weight", 0.0),
+            "ltr_prefix_loss_weight": getattr(
+                config, "ltr_prefix_loss_weight", 0.0
+            ),
+            "component_token_loss_weight": getattr(
+                config, "component_token_loss_weight", 0.0
+            ),
+            "component_edge_token_loss_weight": getattr(
+                config, "component_edge_token_loss_weight", 0.0
+            ),
+            "compiler_decision_token_loss_weight": getattr(
+                config, "compiler_decision_token_loss_weight", 0.0
+            ),
+            "structure_token_loss_weight": getattr(
+                config, "structure_token_loss_weight", 0.0
+            ),
+            "typed_family_balance_loss_weight": getattr(
+                config, "typed_family_balance_loss_weight", 0.0
+            ),
             "ltr_tail_loss_weight": getattr(config, "ltr_tail_loss_weight", 0.0),
             "ltr_tail_tokens": getattr(config, "ltr_tail_tokens", 0),
             "compiler_alignment_loss_weight": getattr(
@@ -1385,8 +1424,14 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "compiler_alignment_semantic_exhaustive": bool(
                 getattr(config, "compiler_alignment_semantic_exhaustive", False)
             ),
+            "compiler_alignment_kind_filter": str(
+                getattr(config, "compiler_alignment_kind_filter", "all") or "all"
+            ),
             "component_inventory_loss_weight": getattr(
                 config, "component_inventory_loss_weight", 0.0
+            ),
+            "structural_aux_head_profile": getattr(
+                config, "structural_aux_head_profile", "none"
             ),
             "component_inventory_decode_weight": getattr(
                 config, "component_inventory_decode_weight", 0.0
@@ -1409,8 +1454,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "slot_component_owner_rare_classes": rare_owners,
             "slot_component_owner_rare_records": len(owner_rare_records),
             "slot_component_owner_sampling_records": (
-                len(records)
-                + len(owner_rare_records) * (owner_rare_multiplier - 1)
+                len(records) + len(owner_rare_records) * (owner_rare_multiplier - 1)
             ),
             "slot_component_decode_weight": getattr(
                 config, "slot_component_decode_weight", 0.0
@@ -1496,15 +1540,16 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "root_reference_identity_strict_subset_multiplier": (
                 strict_subset_multiplier
             ),
-            "root_reference_identity_strict_subset_records": len(
-                strict_subset_records
-            ),
+            "root_reference_identity_strict_subset_records": len(strict_subset_records),
             "root_reference_identity_sampling_records": (
                 len(records)
                 + len(strict_subset_records) * (strict_subset_multiplier - 1)
             ),
             "root_reference_identity_decode_weight": getattr(
                 config, "root_reference_identity_decode_weight", 0.0
+            ),
+            "symbol_boundary_loss_weight": getattr(
+                config, "symbol_boundary_loss_weight", 0.0
             ),
             "fuse_ltr_loss": bool(getattr(config, "fuse_ltr_loss", True)),
             "fidelity_loss_weight": getattr(config, "fidelity_loss_weight", 0.0),

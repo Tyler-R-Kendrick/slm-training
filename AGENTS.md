@@ -205,8 +205,9 @@ Start: `README.md`, `docs/MODEL_CARD.md`, `docs/design/openui-twotower.md`,
 ## Skills
 
 Canonical: **`.agents/skills/<name>/SKILL.md`**. Mirrored for discovery under
-`.claude/skills/` and `.cursor/skills/` with symlinks. Edit only the canonical
-copy; Codex and GitHub Copilot discover `.agents/skills/` directly.
+`.claude/skills/`, `.cursor/skills/`, and `.grok/skills/` with symlinks. Edit
+only the canonical copy; Codex and GitHub Copilot discover `.agents/skills/`
+directly (never create `.codex/skills/`).
 
 **If a skill might apply (~1%), open and follow it before acting.**
 
@@ -217,10 +218,12 @@ copy; Codex and GitHub Copilot discover `.agents/skills/` directly.
 | `running-experiment-matrices` | Running or extending E* / X* / PQR / phase matrices |
 | `openui-autoresearch` | Evidence-grounded campaigns, data/researcher repair, telemetry persistence, and RL readiness |
 | `improve-openui-harnesses` | Enhancing canonical research, data, model, eval, preference, distill, promotion, annotation, quality, or RL harnesses without parallel paths or artifact sprawl |
+| `improve-lean-optimums` | Diagnosing or improving Lean4-calculated metric bands and out-of-band autotraining feedback |
 | `autotrain` | Running any training pipeline phase (train/test data, SFT, eval, distill, preference, RL, experiments, checkpoints, annotations, bench, autoresearch self-improvement + hypothesis loop) — per-phase references load on demand |
 | `autoresearch` | Knowledge-driven research orchestration: read/update repo + personal brains (OpenWiki / OKF / Obsidian), run the prior-work discovery loop, drive the autotrain hypothesis loop, and file ideas/experiments as Linear issues/milestones/projects — per-stage references load on demand |
 | `ponytail` (+ `-review` / `-audit` / …) | Any coding task — write the minimum that works (YAGNI ladder) |
 | `organize-repository` | Creating, moving, renaming, deleting, or duplicating tracked paths; adding modules/docs/src/apps/skills; repository-sprawl review |
+| `sdlc` | Multi-step delivery: subagents + incremental check-ins, official `gh stack` stacked PRs, Scalar/sparse worktrees, bottom-up rubber-duck adversarial closeout (comments, CI, squash-merge) |
 | `caveman` (+ `-commit` / `-review` / …) | Opt-in terse chat / short commits / one-line review comments |
 | `headroom` | Large tool outputs, logs, greps, or context pressure |
 | `rtk` | Verbose shell output — prefer `rtk <cmd>` when installed ([`RTK.md`](RTK.md)) |
@@ -231,11 +234,35 @@ copy; Codex and GitHub Copilot discover `.agents/skills/` directly.
 | `frontier-describe` | Fill train-only frozen frontier artifacts and validate leakage/coverage |
 | `dashboard-openui-parity` | Editing a dashboard page (`src/apps/dashboard/src/pages/*.tsx`) — keep its interpreted-mode `static/openui/*.openui` program at parity |
 
+### SDLC / multi-step delivery
+
+Multi-phase, multi-layer, or multi-task work uses the **`sdlc`** skill
+(`.agents/skills/sdlc/`). Activation is automatic for landable engineering
+work — not only when the user types `sdlc`.
+
+- **Parent agent** plans layers and owns official GitHub Stacked PRs
+  (`gh stack` / `gs` from `github/gh-stack`), or one PR for single-concern work.
+- **Subagents** implement layers with **incremental check-ins** (small commits
+  on the layer branch).
+- **Push is not done.** After the last intended commit, open/update PRs in the
+  same turn. Do **not** ask “want me to open a PR?” — open it.
+- **Closeout is mandatory and bottom-up:** rubber-duck + adversarial review of
+  each PR (post notes on the PR), address all comments and review feedback,
+  fix all relevant status checks (billing/budget exceeded is the only allowed
+  CI pause), then **squash-merge** every PR the parent opened unless the human
+  explicitly said not to merge.
+- **Workspaces:** `scalar register` for scale Git settings (sparse-checkout,
+  partial clones on new clones, background maintenance); prefer dedicated
+  worktrees + cone sparse-checkout per task so agents do not collide.
+
+Single-file hotfixes may stay one PR; everything larger follows `sdlc`.
+
 ### Token-efficiency stack (ponytail · caveman · headroom · rtk)
 
 Installed into **`.agents/skills/`** and discovered by Claude Code
-(`.claude/skills/`), Cursor / Codex / GitHub Copilot (project `.agents/skills/`),
-with Cursor rule files under [`.cursor/rules/`](.cursor/rules/) and GHCP under
+(`.claude/skills/`), Cursor (`.cursor/skills/`), Grok (`.grok/skills/`), and
+Codex / GitHub Copilot (project `.agents/skills/` directly), with Cursor rule
+files under [`.cursor/rules/`](.cursor/rules/) and GHCP under
 [`.github/copilot-instructions.md`](.github/copilot-instructions.md).
 
 | Layer | What it saves | Default |
@@ -277,7 +304,7 @@ Optional full Headroom proxy (heavier than the portable skill):
 Source: [huggingface/skills](https://github.com/huggingface/skills) (Cursor:
 marketplace installs `hf-cli`; additional skills via `hf skills add`).
 
-Already installed under `.agents/skills/` and symlinked for Cursor/Claude.
+Already installed under `.agents/skills/` and symlinked for Claude/Cursor/Grok.
 Refresh commands and their cleanup steps live in
 [`.agents/skills/README.md`](.agents/skills/README.md) — the single owner.
 
@@ -515,6 +542,15 @@ which revision of the constraints produced it. Contract:
 
 ## Engineering norms
 
+- JSON-shaped pytest cases live in mirrored
+  `src/slm_training/resources/test_cases/<test path>.json` files. Agents change
+  inputs there and refresh snapshots with
+  `python -m scripts.refresh_test_cases <test-or-resource>`; ordinary tests and
+  CI are read-only. Before finishing, run
+  `python -m scripts.extract_test_cases` and
+  `python -m scripts.refresh_test_cases --check --changed`. Runtime eval/gate
+  policy belongs under `src/slm_training/resources/evals/`; never weaken ship
+  gates or edit a frozen eval version in place.
 - Prefer harness/script changes over one-off notebooks.
 - Preserve train/test isolation and structural leakage checks.
 - Never reintroduce silent `gold.placeholders` channels under

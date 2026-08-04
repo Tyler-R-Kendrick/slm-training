@@ -8,9 +8,34 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  lean:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: src/leverproof_lean
+      - name: Audit LeverProof proofs and protocol fixtures
+        run: make -C src/leverproof_lean test
+
   python:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 12 shards: broad PR diffs (multi-layer stacks touching scripts/ +
+        # autoresearch + model_build) select test cross-products whose slowest
+        # count-balanced shard exceeded the canonical 3-minute job wall at 8.
+        # The per-job timeout is law (MAX_RUN_MINUTES) and stays untouched.
+        test-shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
     # Dependency setup plus the changed-test fan-out can pass just after the
     # former two-minute deadline. Keep the repository-wide three-minute cap
     # while allowing Actions to report the completed test result.
@@ -29,10 +54,53 @@ jobs:
           # The torch-heavy pip cache is about 3 GB and takes roughly 40 seconds
           # to restore, which consumes a third of this job's hard wall budget.
           # Install the constrained binary wheels directly instead.
+      - name: Cache the pinned CPU Torch wheel
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/torch-wheels
+          key: torch-2.5.1-cpu-cp312-${{ runner.os }}-${{ runner.arch }}
       - name: Install Python and Node dependencies
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
+          test_targets="$(python3 -S -m scripts.check_changed \
+            --changed-tests-only --base-ref "$BASE_SHA" --list)"
+          printf 'Selected pytest targets:\n%s\n' "${test_targets:-none}"
+
+          # tests/test_versioning is NOT torch-free: test_mirrors.py imports
+          # slm_training.evals modules that import torch at module scope, so a
+          # versions.json-only change must still install torch or collection
+          # fails with ModuleNotFoundError.
+          need_torch=true
+          if [ -z "$test_targets" ] || ! printf '%s\n' "$test_targets" | grep -Ev \
+            '^tests/test_scripts/test_(check_changed|verify_version_stamps)\.py$'; then
+            need_torch=false
+          fi
+          echo "NEED_TORCH=$need_torch" >> "$GITHUB_ENV"
+
+          if [ "$need_torch" = true ]; then
+            torch_wheels="$RUNNER_TEMP/torch-wheels"
+            mkdir -p "$torch_wheels"
+            download_torch() {
+              if compgen -G "$torch_wheels/torch-2.5.1+cpu-*.whl" > /dev/null; then
+                echo "Using cached CPU Torch wheel."
+                return 0
+              fi
+              for attempt in 1 2; do
+                if timeout --signal=INT --kill-after=5s 45s \
+                  python -m pip download --only-binary=:all: \
+                    --index-url https://download.pytorch.org/whl/cpu \
+                    --dest "$torch_wheels" "torch==2.5.1+cpu"; then
+                  return 0
+                fi
+                echo "Torch wheel download attempt $attempt timed out; retrying."
+              done
+              return 1
+            }
+            download_torch &
+            torch_pid=$!
+          fi
+
           node -e 'const major=Number(process.versions.node.split(".")[0]); if (major < 20 || major >= 23) process.exit(1)'
           npm --prefix src/apps/openui_bridge ci &
           openui_pid=$!
@@ -52,15 +120,18 @@ jobs:
           fi
           echo "NEED_NODE=$need_node" >> "$GITHUB_ENV"
 
-          python -m pip install --only-binary=:all: \
-            --index-url https://download.pytorch.org/whl/cpu \
-            "torch>=2.2,<2.6"
           python -m pip install --no-deps -e .
           python -m pip install \
             "pytest>=8,<9" "pytest-asyncio>=0.23,<2" "ruff>=0.9,<0.16" \
             "numpy>=1.26,<3" "httpx>=0.27,<1" "fastapi>=0.110,<1" \
             "lark>=1.1,<2" "openfeature-sdk>=0.10,<1" "pydantic>=2.7,<3" \
             "PyYAML>=6,<7"
+
+          if [ "$need_torch" = true ]; then
+            wait "$torch_pid"
+            python -m pip install --no-index --find-links "$torch_wheels" \
+              "torch==2.5.1+cpu"
+          fi
 
           extras=
           if ! git diff --quiet "$BASE_SHA"...HEAD -- \
@@ -86,7 +157,11 @@ jobs:
       - name: Run changed regression tests
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
-        run: python -m scripts.check_changed --changed-tests-only --base-ref "$BASE_SHA"
+        run: |
+          python -m scripts.check_changed --changed-tests-only \
+            --base-ref "$BASE_SHA" \
+            --test-shard-index "${{ matrix.test-shard }}" \
+            --test-shard-count 12
       - name: Certify tokenizer–grammar invariants
         run: python -m scripts.verify_tokenizer_grammar_invariants
 
@@ -113,6 +188,14 @@ jobs:
         run: python -m scripts.verify_decode_invariants
       - name: Certify every agent surface carries every repository law
         run: python -m scripts.verify_agent_surfaces
+      - name: Validate external test and eval cases
+        run: |
+          python -m scripts.extract_test_cases
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            python -m scripts.refresh_test_cases --check --base-ref "${{ github.event.pull_request.base.sha }}"
+          else
+            python -m scripts.refresh_test_cases --check
+          fi
       - run: ruff check .
       - run: python -m compileall -q src scripts tests
       - name: Verify checkpoint references are resolvable and provenanced
@@ -124,6 +207,21 @@ jobs:
           else
             python -m scripts.verify_version_stamps --check
           fi
+
+  lean-formal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: src/slm_training/formal/lean
+          build: true
+          test: false
+      - name: Reject proof placeholders and audit exported theorem axioms
+        run: PYTHONPATH=src python -m scripts.verify_formal_contracts
 
   data-build:
     runs-on: ubuntu-latest

@@ -27,9 +27,12 @@ the single committed source of truth:
     "gates.ship": {
       "version": "openui_ship_gates_v1",
       "kind": "gate",
-      "paths": ["src/slm_training/harnesses/model_build/ship_gates.py"],
+      "paths": [
+        "src/slm_training/harnesses/model_build/ship_gates.py",
+        "src/slm_training/resources/evals/openui_ship_gates_v5.json"
+      ],
       "history": [
-        {"version": "openui_ship_gates_v1", "date": "2026-07-18", "note": "initial registration"}
+        {"version": "openui_ship_gates_v1", "date": "2026-07-18T20:15:00+00:00", "note": "initial registration"}
       ]
     }
   }
@@ -49,6 +52,9 @@ the single committed source of truth:
   `version`. **Ordering authority is the position in `history`, never string
   comparison** — legacy encodings (`2.0.0`, `openui_ship_gates_v1`,
   `vss4-02-v1`) order correctly next to new monotonic `v1, v2, …` labels.
+- **`history[].date`** accepts legacy ISO date-only values for compatibility.
+  Every newly prepended row must preserve the event time as a timezone-aware
+  ISO 8601 datetime (for example, `2026-07-18T20:15:00+00:00`).
 - Pre-existing in-code constants (`LOSS_SUITE_VERSION`, `METRIC_VERSION`,
   `MEANINGFUL_METRIC_POLICY["threshold_version"]`, `MATRIX_VERSION`) stay
   canonical at runtime; `tests/test_versioning/test_mirrors.py` pins the
@@ -100,7 +106,9 @@ registry entry in the same change:**
   hatch: it is a reviewable file diff, survives squash-merges, and is
   greppable later.
 - History is append-only in every change — existing entries are never edited
-  or dropped.
+  or dropped. A merge of divergent prepends preserves each parent's complete
+  history in relative order; it cannot make both parent histories literal
+  suffixes of one linear merged list.
 
 When in doubt, bump: a false bump costs one registry line; a missed bump
 poisons every later comparison against the old numbers.
@@ -139,10 +147,12 @@ label their rows invalidated in the matrix markdown
 
 ## Worked examples
 
-**Tightening a ship gate** (`ship_gates.py` threshold change):
-1. Edit `ship_gates.py` (and `MEANINGFUL_METRIC_POLICY["threshold_version"]`
-   → e.g. `openui_ship_gates_v2` — the mirror test forces the pair).
+**Tightening a ship gate** (external policy change):
+1. Add the next versioned resource under `src/slm_training/resources/evals/`,
+   update the loader path, and set its `version` /
+   `meaningful_metric_policy.threshold_version` to the same filename stem.
 2. In `versions.json`, set `gates.ship.version` to `openui_ship_gates_v2` and
+   replace the watched policy path, then
    prepend `{"version": "openui_ship_gates_v2", "date": …, "note": "raised
    held_out parse bar to 0.45"}`.
 3. `python -m scripts.verify_version_stamps --stale --component gates.ship`

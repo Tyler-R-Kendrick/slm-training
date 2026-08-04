@@ -1,0 +1,60 @@
+{
+  "schema": "autotrain_runtime_preflight_results/v1",
+  "run_id": "autotrain-runtime-preflight-20260801",
+  "evidence_class": "local_reproduction",
+  "claim_scope": "promotion-proof harness runtime only; no model-quality or ship claim",
+  "host": {
+    "device": "cpu",
+    "architecture": "aarch64",
+    "lean": "4.24.0"
+  },
+  "recipe": {
+    "command": "make LAKE=/home/codex/.elan/bin/lake test",
+    "source": "src/leverproof_lean",
+    "cold_copy_excluded": ".lake",
+    "hard_cap_seconds": 180
+  },
+  "runs": [
+    {
+      "cache_state": "cold",
+      "wall_seconds": 10.29,
+      "user_seconds": 16.74,
+      "system_seconds": 5.5,
+      "max_rss_kb": 875944,
+      "exit_code": 0,
+      "proof_and_audit_passed": true
+    },
+    {
+      "cache_state": "warm",
+      "wall_seconds": 1.02,
+      "user_seconds": 0.54,
+      "system_seconds": 0.37,
+      "max_rss_kb": 800632,
+      "exit_code": 0,
+      "proof_and_audit_passed": true
+    }
+  ],
+  "diagnostic_comparator": {
+    "command": "lake build OpenUIProofs",
+    "source": "src/slm_training/formal/lean",
+    "cache_state": "warm",
+    "wall_seconds": 4.58,
+    "max_rss_kb": 852408,
+    "exit_code": 0,
+    "comparable": false,
+    "reason": "build-only Mathlib path omits the new Makefile proof and source audits"
+  },
+  "outcome": "pass",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "3328fc15d251605d1b399347523de6905ec5adea",
+    "code_dirty": true,
+    "components": {
+      "formal.leverproof": "v8",
+      "harness.autoresearch.formal": "v5",
+      "harness.autoresearch.experiment_campaign": "v31",
+      "harness.core": "v13"
+    },
+    "stamped_at": "2026-08-01T19:56:47.305411+00:00"
+  }
+}

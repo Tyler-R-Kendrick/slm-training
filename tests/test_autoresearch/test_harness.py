@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import fcntl
+import hashlib
 import json
+import os
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
@@ -8,13 +11,17 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+
+from tests.casefiles import case_values
 from pydantic import ValidationError
 
 from slm_training.autoresearch.engine import (
+    _suite_headline_metrics,
     compile_commands,
     create_hypothesis_feedback,
     diagnose_outcome,
     execute_commands,
+    normalized_knobs_sha256,
     validate_experiment,
     validate_hypothesis_matrix,
 )
@@ -33,6 +40,7 @@ from slm_training.autoresearch.evidence import collect_evidence
 from slm_training.autoresearch.literature import HuggingFacePapersClient
 from slm_training.levers import MAX_RUN_MINUTES, MAX_RUN_SECONDS
 from slm_training.autoresearch.providers import (
+    AgentHypothesisProvider,
     OpenAIHypothesizer,
     OpenAIProposalCompiler,
     OpenAIResearchProvider,
@@ -45,6 +53,10 @@ from slm_training.autoresearch.rl_gate import (
     write_rl_readiness,
 )
 from slm_training.autoresearch.schemas import (
+    AutotrainActionReceiptV1,
+    AutotrainActionV1,
+    AutotrainCycleHandoffV1,
+    AutotrainLoopStateV1,
     CampaignBudget,
     CampaignSpec,
     CategoricalNoveltyAudit,
@@ -55,14 +67,191 @@ from slm_training.autoresearch.schemas import (
     ExperimentKnobs,
     ExperimentOutcome,
     ExperimentSpec,
+    HarnessSignalV1,
     HypothesisCandidate,
     HypothesisFeedback,
     HypothesisMatrix,
+    NextRunPriorityV1,
     OpenDeepResearchConfig,
     OpenResearcherConfig,
+    OptimumFeedbackV1,
     ResearchSource,
 )
-from slm_training.autoresearch.storage import CampaignStore
+from slm_training.autoresearch.storage import (
+    CampaignStore,
+    _lean_text,
+    _markdown_cell,
+    _metrics_text,
+    _project_confirmation_queue_status,
+    _retry_measurement_evidence_is_complete,
+    _run_exposure_text,
+    append_autotrain_action_receipt,
+    autotrain_loop_state_lock,
+    autotrain_action_sha256,
+    bind_autotrain_action_evidence,
+    pending_autotrain_actions,
+    pending_autotrain_execution_actions,
+    render_loop_result_matrix,
+)
+
+
+def test_result_matrix_cells_collapse_and_bound_verbose_diagnostics() -> None:
+    rendered = _markdown_cell("first line\n" + "argparse detail " * 40)
+
+    assert "\n" not in rendered
+    assert len(rendered) <= 240
+    assert rendered.endswith("...")
+
+
+def test_result_matrix_exposure_uses_canonical_run_insight(tmp_path: Path) -> None:
+    run_dir = tmp_path / "campaign-1" / "runs" / "candidate"
+    run_dir.mkdir(parents=True)
+    (run_dir / "run_insights.json").write_text(
+        json.dumps(
+            {
+                "data_exposure": {
+                    "effective_records": 32.27,
+                    "unique_records": 37,
+                    "total_draws": 44,
+                    "max_repeat": 3,
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert _run_exposure_text(tmp_path, "campaign-1", "candidate") == (
+        "eff=32.27 unique=37/44 repeat=3"
+    )
+
+
+def test_suite_headlines_keep_decode_cost_signals_for_result_matrix() -> None:
+    metrics = _suite_headline_metrics(
+        {
+            "suites": {
+                "smoke": {
+                    "structural_similarity": 0.48,
+                    "decode_stats": {
+                        "forwards_count_mean": 15.0,
+                        "tokens_emitted_mean": 61.0,
+                        "compiler_prefill_tokens_mean": 8448.0,
+                        "canvas_tokens_mean": 3840.0,
+                        "compiler_ms_mean": 27100.0,
+                        "completion_shared_domain_hits_mean": 149.0,
+                        "completion_shared_domain_misses_mean": 0.0,
+                        "verbose_trace": ["not a headline"],
+                    },
+                }
+            }
+        }
+    )
+
+    assert metrics == {
+        "suites.smoke.structural_similarity": 0.48,
+        "suites.smoke.forwards_count_mean": 15.0,
+        "suites.smoke.tokens_emitted_mean": 61.0,
+        "suites.smoke.compiler_prefill_tokens_mean": 8448.0,
+        "suites.smoke.canvas_tokens_mean": 3840.0,
+        "suites.smoke.compiler_ms_mean": 27100.0,
+        "suites.smoke.completion_shared_domain_hits_mean": 149.0,
+        "suites.smoke.completion_shared_domain_misses_mean": 0.0,
+    }
+
+
+def test_result_matrix_orders_quality_then_runtime_mechanism() -> None:
+    rendered = _metrics_text(
+        {
+            "suites.smoke.ast_beq_rate": 0.0,
+            "suites.smoke.compiler_ms_mean": 27100.0,
+            "suites.smoke.forwards_count_mean": 51.0,
+            "suites.smoke.latency_ms_p50": 11719.0,
+            "suites.smoke.meaningful_program_rate": 0.666667,
+            "suites.smoke.structural_similarity": 0.3439,
+            "suites.smoke.tokens_emitted_mean": 201.0,
+        },
+        {},
+        omit=set(),
+    )
+
+    assert rendered.startswith(
+        "suites.smoke.meaningful_program_rate=0.666667, "
+        "suites.smoke.structural_similarity=0.3439"
+    )
+    assert rendered.index("latency_ms_p50") < rendered.index("compiler_ms_mean")
+
+
+def test_result_matrix_explains_lean_applicability() -> None:
+    assert _lean_text(None, {"cycle_role": "screening"}) == ("not_applicable:screening")
+    assert _lean_text(
+        None,
+        {"cycle_role": "screening", "cycle_intent": "retry_measurement"},
+    ) == ("not_applicable:retry_measurement")
+    assert _lean_text(None, {"cycle_role": "promotion"}) == (
+        "not_applicable:no_champion"
+    )
+    assert _lean_text(
+        None,
+        {"cycle_intent": "confirm", "cycle_role": "promotion"},
+    ) == ("not_applicable:confirmation")
+    assert _lean_text(
+        None,
+        {
+            "cycle_intent": "confirm",
+            "cycle_role": "promotion",
+            "climb_state": "rejected",
+        },
+    ) == ("not_applicable:confirmation_rejected")
+    assert _lean_text(None, {"formal_status": "proved"}) == "proved"
+
+
+def test_confirmation_matrix_projects_authoritative_queue_rejection(
+    tmp_path: Path,
+) -> None:
+    queue = tmp_path / "loops" / "loop-1" / "champion_queue.jsonl"
+    queue.parent.mkdir(parents=True)
+    queue.write_text(
+        json.dumps(
+            {
+                "confirm_campaign_id": "cycle-confirm",
+                "status": "rejected",
+            }
+        )
+        + "\n"
+    )
+
+    projected = _project_confirmation_queue_status(
+        tmp_path,
+        "loop-1",
+        "cycle-confirm",
+        {
+            "cycle_intent": "confirm",
+            "climb_state": "champion_confirmed",
+            "formal_status": "not_applicable:confirmation",
+        },
+    )
+
+    assert projected["climb_state"] == "rejected"
+    assert projected["formal_status"] == "not_applicable:confirmation_rejected"
+    assert _lean_text(None, projected) == "not_applicable:confirmation_rejected"
+
+
+def test_idle_loop_does_not_become_stale_from_old_heartbeat(tmp_path: Path) -> None:
+    state_dir = tmp_path / "loops" / "loop-1"
+    state_dir.mkdir(parents=True)
+    (state_dir / "state.json").write_text(
+        json.dumps(
+            {
+                "state": "IDLE",
+                "phase": "between_cycles",
+                "cycle_index": 1,
+                "heartbeat_at": "2000-01-01T00:00:00Z",
+            }
+        )
+    )
+
+    assert "| IDLE | between_cycles | 1 |" in render_loop_result_matrix(
+        tmp_path, "loop-1"
+    )
 
 
 def campaign() -> CampaignSpec:
@@ -72,6 +261,36 @@ def campaign() -> CampaignSpec:
         primary_metric="held_out.structural_similarity",
         researcher_mode="fixture",
     )
+
+
+def _complete_gate_scoreboard(root: Path) -> dict[str, object]:
+    root.mkdir(parents=True, exist_ok=True)
+    spec = root / "model.eval.jsonl"
+    index = root / "index.jsonl"
+    spec.write_text('{"id":"smoke"}\n', encoding="utf-8")
+    index.write_text('{"id":"smoke","scores":[]}\n', encoding="utf-8")
+    return {
+        "suites": {
+            "smoke": {
+                "n": 3,
+                "document_n": 3,
+                "completed_document_n": 3,
+                "incomplete_document_n": 0,
+                "decode_timeout_count": 0,
+                "parse_rate": 1.0,
+            }
+        },
+        "evals": {
+            "format": "AgentEvals JSONL",
+            "authority": "AgentEvals assertions",
+            "criteria": {"total": 1, "passed": 0, "failed": 1},
+            "runner": {"name": "AgentV", "execution_errors": 0},
+            "summary": {"total": 1, "executionErrors": 0},
+            "spec": str(spec),
+            "artifacts": {"indexPath": str(index)},
+        },
+        "gates": {"authority": "AgentEvals assertions", "pass": False},
+    }
 
 
 def experiment_campaign(**overrides) -> ExperimentCampaignV1:
@@ -138,9 +357,7 @@ def experiment_campaign(**overrides) -> ExperimentCampaignV1:
                 threshold=0,
             ),
         ),
-        "artifact_requirements": (
-            ArtifactRequirementV1(kind="version_stamp"),
-        ),
+        "artifact_requirements": (ArtifactRequirementV1(kind="version_stamp"),),
         "claim_class": "diagnostic",
         "source_commit": "c" * 40,
         "source_dirty": False,
@@ -224,6 +441,9 @@ def hypothesis_matrix(
     predecessor_matrix_id: str | None = None,
     feedback_ids: tuple[str, ...] = (),
     offset: int = 0,
+    diagnosis_lanes: tuple[str, ...] = (),
+    campaign_id: str = "test-campaign",
+    next_run_priorities: tuple[NextRunPriorityV1, ...] = (),
 ) -> HypothesisMatrix:
     citations = (
         "docs/design/research-lineage.md",
@@ -237,6 +457,7 @@ def hypothesis_matrix(
             HypothesisCandidate(
                 experiment=experiment(
                     experiment_id=f"hyp-{number}",
+                    campaign_id=campaign_id,
                     hypothesis=f"Distinct grounded hypothesis number {number} improves structure.",
                     citations=citations,
                     knobs=ExperimentKnobs(steps=100 + number),
@@ -277,17 +498,113 @@ def hypothesis_matrix(
                     stress_tests=("evaluate every honest suite",),
                     worthiness_criteria=("positive primary delta without regression",),
                 ),
+                diagnosis_lane=(
+                    diagnosis_lanes[index] if index < len(diagnosis_lanes) else None
+                ),
             )
         )
     return HypothesisMatrix(
         matrix_id=matrix_id,
-        campaign_id="test-campaign",
+        campaign_id=campaign_id,
         evidence_snapshot_id="evidence-matrix",
         hypotheses=tuple(candidates),
         recommended_experiment_id=f"hyp-{offset}",
         selection_rationale="Highest-information safe candidate in this matrix.",
         predecessor_matrix_id=predecessor_matrix_id,
         feedback_ids=feedback_ids,
+        next_run_priorities=next_run_priorities,
+    )
+
+
+def next_priority(
+    *,
+    experiment_id: str = "hyp-0",
+    evidence_ids: tuple[str, ...] = ("fixture://prior-run",),
+    area: str = "model",
+    authority: str = "speculative",
+    disposition: str = "experiment_next",
+    rank: int = 1,
+) -> NextRunPriorityV1:
+    return NextRunPriorityV1(
+        rank=rank,
+        area=area,
+        hypothesis=f"Test the {area} lane as the next bounded intervention.",
+        evidence_ids=evidence_ids,
+        confidence=0.5,
+        expected_information_gain="Distinguishes the leading failure mechanisms.",
+        authority=authority,
+        disposition=disposition,
+        proposed_experiment_id=(
+            experiment_id if disposition == "experiment_next" else None
+        ),
+    )
+
+
+def test_out_of_band_feedback_requires_complete_diagnosis_matrix() -> None:
+    first = hypothesis_matrix()
+    optimum = OptimumFeedbackV1(
+        policy="block_promotion_and_diagnose",
+        breaches=(
+            {
+                "metric_id": "tokens_per_step",
+                "authority": "assumption_backed",
+                "relation": "above",
+            },
+        ),
+        diagnosis_lanes=(
+            "measurement_control",
+            "training_method",
+            "architecture",
+            "lean_model",
+            "assumptions",
+        ),
+        metric_evidence_sha256="a" * 64,
+        metric_certificate_sha256="b" * 64,
+    )
+    feedback = HypothesisFeedback(
+        feedback_id="feedback-aaaaaaaaaaaaaaaa",
+        campaign_id="test-campaign",
+        matrix_id=first.matrix_id,
+        experiment_id="hyp-0",
+        hypothesis=first.hypotheses[0].experiment.hypothesis,
+        knob_signature='{"steps": 100}',
+        outcome_status="completed",
+        diagnosis_target="none",
+        diagnosis_evidence=("Observed metric exceeded its calculated band.",),
+        recommended_actions=("Run the five-lane diagnosis matrix.",),
+        optimum_feedback=optimum,
+    )
+    incomplete = hypothesis_matrix(
+        matrix_id="matrix-2",
+        predecessor_matrix_id=first.matrix_id,
+        feedback_ids=(feedback.feedback_id,),
+        offset=10,
+    )
+
+    with pytest.raises(ValueError, match="diagnosis lane"):
+        validate_hypothesis_matrix(
+            campaign(),
+            incomplete,
+            matrix_evidence(),
+            [source()],
+            feedback=(feedback,),
+            previous_matrix=first,
+        )
+
+    complete = hypothesis_matrix(
+        matrix_id="matrix-2",
+        predecessor_matrix_id=first.matrix_id,
+        feedback_ids=(feedback.feedback_id,),
+        offset=10,
+        diagnosis_lanes=optimum.diagnosis_lanes,
+    )
+    validate_hypothesis_matrix(
+        campaign(),
+        complete,
+        matrix_evidence(),
+        [source()],
+        feedback=(feedback,),
+        previous_matrix=first,
     )
 
 
@@ -375,6 +692,18 @@ def test_hypothesis_matrix_requires_five_distinct_grounded_candidates() -> None:
             [],
             prior_experiments=(matrix.hypotheses[0].experiment,),
         )
+    validate_hypothesis_matrix(
+        campaign(),
+        matrix,
+        matrix_evidence(),
+        [],
+        prior_experiments=(matrix.hypotheses[0].experiment,),
+        authorized_replay_configs={
+            matrix.hypotheses[0].experiment.experiment_id: normalized_knobs_sha256(
+                matrix.hypotheses[0].experiment
+            )
+        },
+    )
     duplicate = matrix.hypotheses[0].model_copy(
         update={
             "experiment": matrix.hypotheses[0].experiment.model_copy(
@@ -517,7 +846,9 @@ def test_campaign_store_rejects_different_relock_and_artifact_mutation(
 
     with pytest.raises(FileExistsError, match="different content"):
         store.lock_experiment_campaign(
-            manifest.model_copy(update={"hypothesis": "A different preregistered hypothesis."})
+            manifest.model_copy(
+                update={"hypothesis": "A different preregistered hypothesis."}
+            )
         )
 
     lock_event = next(
@@ -582,13 +913,16 @@ def test_campaign_store_serializes_conflicting_locks(tmp_path: Path) -> None:
     with ThreadPoolExecutor(max_workers=2) as pool:
         results = list(pool.map(attempt, (first, second)))
     assert results.count("rejected") == 1
-    assert len(
-        [
-            event
-            for event in store.verify_event_chain()
-            if event["event_type"] == "experiment_campaign_locked"
-        ]
-    ) == 1
+    assert (
+        len(
+            [
+                event
+                for event in store.verify_event_chain()
+                if event["event_type"] == "experiment_campaign_locked"
+            ]
+        )
+        == 1
+    )
 
 
 def test_campaign_store_detects_event_chain_tampering(tmp_path: Path) -> None:
@@ -732,6 +1066,83 @@ def test_run_execution_requires_lock_and_dry_plan_binds_manifest(
     assert plan["campaign_manifest_sha256"] == campaign_manifest_sha256(manifest)
 
 
+def test_frozen_training_reuse_verifies_lineage_recipe_and_checkpoint(
+    tmp_path: Path,
+) -> None:
+    from scripts.autoresearch import _command_flag, _prepare_reused_training
+
+    spec = experiment()
+    commands = compile_commands(campaign(), spec, output_root=tmp_path)
+    train = commands[0]
+    source_manifest = experiment_campaign(experiment_id="source-run")
+    source_manifest_path = tmp_path / "source-manifest.json"
+    source_manifest_path.write_text(
+        source_manifest.model_dump_json(indent=2) + "\n", encoding="utf-8"
+    )
+    source_sha = hashlib.sha256(source_manifest_path.read_bytes()).hexdigest()
+    target_manifest = experiment_campaign(
+        experiment_id=spec.experiment_id,
+        replay_of_manifest_sha256=source_sha,
+        replay_reason="Retry only the incomplete evaluation stage.",
+    )
+    run_dir = tmp_path / "source-run"
+    checkpoint = run_dir / "checkpoints" / "last.pt"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"checkpoint")
+    for suffix in (".meta.json", ".tokenizer.json", ".context.tokenizer.json"):
+        checkpoint.with_suffix(suffix).write_text("{}\n", encoding="utf-8")
+    summary = {
+        "run_id": "source-run",
+        "stopped_on": "steps",
+        "steps": int(_command_flag(train, "--steps")),
+        "checkpoint": str(checkpoint),
+        "track": {"trainable_params": 1234},
+        "version_stamp": {
+            "code_commit": source_manifest.source_commit,
+            "code_dirty": False,
+        },
+        "recipe": {
+            "steps_requested": int(_command_flag(train, "--steps")),
+            "batch_size": int(_command_flag(train, "--batch-size")),
+            "seed": int(_command_flag(train, "--seed")),
+            "learning_rate": float(_command_flag(train, "--lr")),
+        },
+    }
+    (run_dir / "train_summary.json").write_text(json.dumps(summary), encoding="utf-8")
+
+    prepared, receipt = _prepare_reused_training(
+        campaign=campaign(),
+        experiment=spec,
+        target_manifest=target_manifest,
+        commands=commands,
+        source_run=run_dir,
+        lineage_paths=(source_manifest_path,),
+    )
+
+    assert len(prepared) == 1
+    assert "scripts.evaluate_model" in prepared[0]
+    assert prepared[0][prepared[0].index("--checkpoint") + 1] == str(
+        checkpoint.resolve()
+    )
+    assert receipt["stage_kind"] == "reused_training"
+    assert receipt["measurement_complete"] is True
+    assert receipt["checkpoint_sha256"] == hashlib.sha256(b"checkpoint").hexdigest()
+    assert receipt["trainable_params"] == 1234
+
+    bad_target = target_manifest.model_copy(
+        update={"replay_of_manifest_sha256": "0" * 64}
+    )
+    with pytest.raises(ValueError, match="lineage digest mismatch"):
+        _prepare_reused_training(
+            campaign=campaign(),
+            experiment=spec,
+            target_manifest=bad_target,
+            commands=commands,
+            source_run=run_dir,
+            lineage_paths=(source_manifest_path,),
+        )
+
+
 def test_execution_budget_counts_started_experiments_not_matrix_rows(
     tmp_path: Path,
 ) -> None:
@@ -841,10 +1252,84 @@ def test_agent_hypothesizer_persists_matrix_and_formation_event(
     )
     events = [
         json.loads(line)
-        for line in (store.root / "events.jsonl").read_text(encoding="utf-8").splitlines()
+        for line in (store.root / "events.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
     ]
     assert sum(row["event_type"] == "experiment_proposed" for row in events) == 5
     assert any(row["event_type"] == "hypothesis_matrix_formed" for row in events)
+
+
+def test_agent_hypothesizer_binds_feedback_recovered_after_proposal(
+    tmp_path: Path,
+) -> None:
+    first = hypothesis_matrix()
+    feedback = HypothesisFeedback(
+        feedback_id="feedback-aaaaaaaaaaaaaaaa",
+        campaign_id="test-campaign",
+        matrix_id=first.matrix_id,
+        experiment_id="hyp-0",
+        hypothesis=first.hypotheses[0].experiment.hypothesis,
+        knob_signature='{"steps": 100}',
+        outcome_status="stopped",
+        diagnosis_target="infrastructure",
+        diagnosis_evidence=("The prior measurement was incomplete.",),
+        recommended_actions=("Replay the matched arms.",),
+    )
+    successor = hypothesis_matrix(matrix_id="matrix-2", offset=10)
+    matrix_path = tmp_path / "late-feedback.json"
+    matrix_path.write_text(successor.model_dump_json(), encoding="utf-8")
+
+    result = AgentHypothesisProvider(matrix_path).propose(
+        campaign(), matrix_evidence(), [], (feedback,)
+    )
+
+    assert result.matrix.feedback_ids == (feedback.feedback_id,)
+    assert result.matrix.predecessor_matrix_id == first.matrix_id
+    assert all(
+        feedback.feedback_id in priority.evidence_ids
+        for priority in result.matrix.next_run_priorities
+    )
+    validate_hypothesis_matrix(
+        campaign(),
+        result.matrix,
+        matrix_evidence(),
+        [],
+        feedback=(feedback,),
+        previous_matrix=first,
+    )
+
+
+def test_agent_hypothesizer_rejects_conflicting_recovered_feedback(
+    tmp_path: Path,
+) -> None:
+    feedback = HypothesisFeedback(
+        feedback_id="feedback-aaaaaaaaaaaaaaaa",
+        campaign_id="test-campaign",
+        matrix_id="matrix-1",
+        experiment_id="hyp-0",
+        hypothesis="A sufficiently detailed prior hypothesis.",
+        knob_signature='{"steps": 100}',
+        outcome_status="stopped",
+        diagnosis_target="infrastructure",
+        diagnosis_evidence=("The prior measurement was incomplete.",),
+        recommended_actions=("Replay the matched arms.",),
+    )
+    matrix_path = tmp_path / "conflicting-feedback.json"
+    matrix_path.write_text(
+        hypothesis_matrix(
+            matrix_id="matrix-2",
+            predecessor_matrix_id="other-matrix",
+            feedback_ids=("feedback-bbbbbbbbbbbbbbbb",),
+            offset=10,
+        ).model_dump_json(),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="conflicts with supplied feedback ids"):
+        AgentHypothesisProvider(matrix_path).propose(
+            campaign(), matrix_evidence(), [], (feedback,)
+        )
 
 
 def test_hypothesizer_forms_feedback_linked_successor_matrix(tmp_path: Path) -> None:
@@ -855,9 +1340,7 @@ def test_hypothesizer_forms_feedback_linked_successor_matrix(tmp_path: Path) -> 
     store.initialize(
         base_campaign.model_copy(
             update={
-                "budget": base_campaign.budget.model_copy(
-                    update={"max_experiments": 5}
-                )
+                "budget": base_campaign.budget.model_copy(update={"max_experiments": 5})
             }
         )
     )
@@ -906,7 +1389,10 @@ def test_hypothesizer_forms_feedback_linked_successor_matrix(tmp_path: Path) -> 
     )
     formed = [
         row
-        for row in (json.loads(line) for line in store.root.joinpath("events.jsonl").read_text().splitlines())
+        for row in (
+            json.loads(line)
+            for line in store.root.joinpath("events.jsonl").read_text().splitlines()
+        )
         if row["event_type"] == "hypothesis_matrix_formed"
     ]
     assert len(formed) == 2
@@ -921,8 +1407,7 @@ def test_evidence_normalizes_feedback_telemetry_and_lineage(tmp_path: Path) -> N
     (outputs / "train_telemetry.json").write_text(json.dumps({"loss": 1.2}))
     (outputs / "human_feedback.jsonl").write_text('{"reward":0.5}\n')
     feedback_dir = (
-        tmp_path
-        / "outputs/autoresearch/prior/artifacts/hypothesizer_feedback"
+        tmp_path / "outputs/autoresearch/prior/artifacts/hypothesizer_feedback"
     )
     feedback_dir.mkdir(parents=True)
     feedback_dir.joinpath("feedback.json").write_text(
@@ -990,6 +1475,466 @@ def test_research_always_captures_categorical_discovery_source() -> None:
 
     rows = _research_sources(SimpleNamespace(source_manifest=(), offline=True))
     assert [row.uri for row in rows] == ["https://arxiv.org/abs/2606.01444"]
+
+
+def test_init_explicit_evidence_roots_replace_legacy_default(tmp_path: Path) -> None:
+    from scripts.autoresearch import build_parser
+
+    parser = build_parser()
+    explicit = tmp_path / "prior-campaign"
+    args = parser.parse_args(
+        [
+            "--root",
+            str(tmp_path / "store"),
+            "init",
+            "--campaign-id",
+            "explicit-roots",
+            "--objective",
+            "Use only bounded predecessor evidence.",
+            "--primary-metric",
+            "score",
+            "--evidence-root",
+            str(explicit),
+        ]
+    )
+    assert args.func(args) == 0
+    campaign_spec = CampaignStore("explicit-roots", tmp_path / "store").load_campaign()
+    assert campaign_spec.evidence_roots == (str(explicit),)
+
+    legacy = parser.parse_args(
+        [
+            "--root",
+            str(tmp_path / "store"),
+            "init",
+            "--campaign-id",
+            "legacy-root",
+            "--objective",
+            "Retain compatibility when no explicit root is supplied.",
+            "--primary-metric",
+            "score",
+        ]
+    )
+    assert legacy.func(legacy) == 0
+    legacy_spec = CampaignStore("legacy-root", tmp_path / "store").load_campaign()
+    assert legacy_spec.evidence_roots == ("outputs",)
+
+
+def test_ack_action_receipt_closes_predecessor_prerequisite(tmp_path: Path) -> None:
+    from scripts.autoresearch import build_parser
+
+    root = tmp_path / "autoresearch"
+    campaign_id = "cycle-1"
+    handoff = AutotrainCycleHandoffV1(
+        loop_id="loop-1",
+        campaign_id=campaign_id,
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        cycle_role="screening",
+        cycle_intent="screening",
+        evidence_class="fixture",
+        climb_state="rejected",
+        ship_state="blocked",
+        primary_metric="smoke.parse_rate",
+        actions=(
+            AutotrainActionV1(
+                kind="document",
+                owner="documenting-experiment-results",
+                reason="Persist the negative result.",
+                evidence_ids=(f"campaign:{campaign_id}",),
+            ),
+            AutotrainActionV1(
+                kind="next_experiment",
+                owner="autotrain",
+                reason="Continue the bounded loop.",
+                evidence_ids=(f"campaign:{campaign_id}",),
+            ),
+        ),
+    )
+    handoff_path = root / campaign_id / "cycle_handoff.json"
+    handoff_path.parent.mkdir(parents=True)
+    handoff_path.write_text(handoff.model_dump_json(indent=2) + "\n")
+    state_path = root / "loops" / "loop-1" / "state.json"
+    state_path.parent.mkdir(parents=True)
+    state_path.write_text(
+        AutotrainLoopStateV1(
+            loop_id="loop-1",
+            state="IDLE",
+            phase="between_cycles",
+            last_completed_campaign_id=campaign_id,
+            cycle_index=1,
+            next_action="document",
+        ).model_dump_json(indent=2)
+        + "\n"
+    )
+    assert [action.kind for _, action in pending_autotrain_actions(root, handoff)] == [
+        "document"
+    ]
+    assert [
+        action.kind for _, action in pending_autotrain_execution_actions(root, handoff)
+    ] == ["next_experiment"]
+
+    driver_owned_args = build_parser().parse_args(
+        [
+            "--root",
+            str(root),
+            "ack-action",
+            "--loop-id",
+            "loop-1",
+            "--campaign-id",
+            campaign_id,
+            "--action-index",
+            "1",
+            "--evidence",
+            "docs/design/autoresearch-autotraining.md",
+        ]
+    )
+    with pytest.raises(ValueError, match="continuous-driver-owned"):
+        driver_owned_args.func(driver_owned_args)
+
+    blocked_args = build_parser().parse_args(
+        [
+            "--root",
+            str(root),
+            "ack-action",
+            "--loop-id",
+            "loop-1",
+            "--campaign-id",
+            campaign_id,
+            "--action-index",
+            "1",
+            "--status",
+            "blocked",
+            "--evidence",
+            "docs/design/autoresearch-autotraining.md",
+        ]
+    )
+    assert blocked_args.func(blocked_args) == 0
+    assert [
+        action.kind for _, action in pending_autotrain_execution_actions(root, handoff)
+    ] == ["next_experiment"]
+
+    append_autotrain_action_receipt(
+        root,
+        AutotrainActionReceiptV1(
+            loop_id="loop-1",
+            campaign_id=campaign_id,
+            action_index=0,
+            action_sha256=autotrain_action_sha256(handoff.actions[0]),
+            action_kind="document",
+            status="completed",
+            evidence_uris=("docs/design/autoresearch-autotraining.md",),
+        ),
+    )
+    assert [action.kind for _, action in pending_autotrain_actions(root, handoff)] == [
+        "document"
+    ]
+
+    invalid_args = build_parser().parse_args(
+        [
+            "--root",
+            str(root),
+            "ack-action",
+            "--loop-id",
+            "loop-1",
+            "--campaign-id",
+            campaign_id,
+            "--action-index",
+            "0",
+            "--evidence",
+            "done",
+        ]
+    )
+    with pytest.raises(ValueError, match="existing durable path or commit"):
+        invalid_args.func(invalid_args)
+
+    args = build_parser().parse_args(
+        [
+            "--root",
+            str(root),
+            "ack-action",
+            "--loop-id",
+            "loop-1",
+            "--campaign-id",
+            campaign_id,
+            "--action-index",
+            "0",
+            "--evidence",
+            "docs/design/autoresearch-autotraining.md",
+        ]
+    )
+    assert args.func(args) == 0
+    assert pending_autotrain_actions(root, handoff) == ()
+    refreshed_state = AutotrainLoopStateV1.model_validate_json(
+        state_path.read_text(encoding="utf-8")
+    )
+    assert refreshed_state.next_action == "next_experiment"
+    assert refreshed_state.phase == "between_cycles"
+    receipt_rows = [
+        json.loads(row)
+        for row in (root / "loops" / "loop-1" / "action_receipts.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
+    ]
+    assert receipt_rows[-1]["evidence"] == [
+        {
+            "uri": "docs/design/autoresearch-autotraining.md",
+            "kind": "repo_file",
+            "sha256": hashlib.sha256(
+                Path("docs/design/autoresearch-autotraining.md").read_bytes()
+            ).hexdigest(),
+        }
+    ]
+    assert [
+        action.kind for _, action in pending_autotrain_execution_actions(root, handoff)
+    ] == ["next_experiment"]
+
+    append_autotrain_action_receipt(
+        root,
+        AutotrainActionReceiptV1(
+            loop_id="loop-1",
+            campaign_id=campaign_id,
+            action_index=1,
+            action_sha256=autotrain_action_sha256(handoff.actions[1]),
+            action_kind="next_experiment",
+            status="blocked",
+            evidence_uris=("docs/design/autoresearch-autotraining.md",),
+            evidence=bind_autotrain_action_evidence(
+                root,
+                handoff,
+                handoff.actions[1],
+                ("docs/design/autoresearch-autotraining.md",),
+            ),
+        ),
+    )
+    assert [
+        action.kind
+        for _, action in pending_autotrain_execution_actions(root, handoff)
+    ] == ["next_experiment"]
+
+    stopped_handoff = handoff.model_copy(
+        update={
+            "actions": (
+                AutotrainActionV1(
+                    kind="stop_campaign",
+                    owner="autotrain",
+                    reason="A theorem disproved the campaign assumption.",
+                    evidence_ids=(f"campaign:{campaign_id}",),
+                ),
+            )
+        }
+    )
+    assert [
+        action.kind for _, action in pending_autotrain_actions(root, stopped_handoff)
+    ] == ["stop_campaign"]
+    handoff_path.write_text(stopped_handoff.model_dump_json(indent=2) + "\n")
+    invalid_stop = build_parser().parse_args(
+        [
+            "--root",
+            str(root),
+            "ack-action",
+            "--loop-id",
+            "loop-1",
+            "--campaign-id",
+            campaign_id,
+            "--action-index",
+            "0",
+            "--evidence",
+            "docs/design/autoresearch-autotraining.md",
+        ]
+    )
+    with pytest.raises(ValueError, match="campaign artifact"):
+        invalid_stop.func(invalid_stop)
+
+    theorem_artifact = root / campaign_id / "artifacts" / "formal" / "result.json"
+    theorem_artifact.parent.mkdir(parents=True)
+    theorem_artifact.write_text('{"status":"disproved"}\n', encoding="utf-8")
+    stop_args = build_parser().parse_args(
+        [
+            "--root",
+            str(root),
+            "ack-action",
+            "--loop-id",
+            "loop-1",
+            "--campaign-id",
+            campaign_id,
+            "--action-index",
+            "0",
+            "--evidence",
+            "artifacts/formal/result.json",
+        ]
+    )
+    assert stop_args.func(stop_args) == 0
+    assert pending_autotrain_actions(root, stopped_handoff) == ()
+    theorem_artifact.write_text('{"status":"changed"}\n', encoding="utf-8")
+    assert [
+        action.kind for _, action in pending_autotrain_actions(root, stopped_handoff)
+    ] == ["stop_campaign"]
+
+
+def test_loop_state_lock_is_shared_across_writers(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    lock_path = root / "loops" / "loop-1" / "state.lock"
+
+    with autotrain_loop_state_lock(root, "loop-1"):
+        competing_fd = os.open(lock_path, os.O_RDWR)
+        try:
+            with pytest.raises(BlockingIOError):
+                fcntl.flock(competing_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        finally:
+            os.close(competing_fd)
+
+    competing_fd = os.open(lock_path, os.O_RDWR)
+    try:
+        fcntl.flock(competing_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    finally:
+        fcntl.flock(competing_fd, fcntl.LOCK_UN)
+        os.close(competing_fd)
+
+
+def test_retry_receipt_requires_complete_predecessor_bound_pair(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    campaign_id = "cycle-1"
+    action = AutotrainActionV1(
+        kind="retry_measurement",
+        owner="autotrain",
+        reason="Replay the incomplete matched pair.",
+        evidence_ids=(f"campaign:{campaign_id}",),
+        frozen_manifest_sha256="a" * 64,
+    )
+    handoff = AutotrainCycleHandoffV1(
+        loop_id="loop-1",
+        campaign_id=campaign_id,
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        cycle_role="screening",
+        cycle_intent="retry_measurement",
+        evidence_class="fixture",
+        climb_state="inconclusive",
+        ship_state="blocked",
+        primary_metric="smoke.parse_rate",
+        actions=(action,),
+    )
+    successor = root / campaign_id / "successor"
+    manifests = successor / "manifests"
+    manifests.mkdir(parents=True)
+    (successor / "campaign.json").write_text(
+        json.dumps(
+            {
+                "campaign_id": "cycle-2",
+                "loop_id": "loop-1",
+                "predecessor_campaign_id": campaign_id,
+            }
+        ),
+        encoding="utf-8",
+    )
+    (successor / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "schema": "autotrain_sdlc_delivery/v1",
+                "campaign_id": "cycle-2",
+                "loop_id": "loop-1",
+                "measurement_complete": True,
+                "arm_order": ["control", "candidate"],
+            }
+        ),
+        encoding="utf-8",
+    )
+    for arm in ("control", "candidate"):
+        (manifests / f"{arm}.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": "ExperimentCampaignV1",
+                    "campaign_id": "cycle-2",
+                    "experiment_id": arm,
+                }
+            ),
+            encoding="utf-8",
+        )
+    evidence = tuple(
+        f"successor/{name}"
+        for name in (
+            "campaign.json",
+            "sdlc_delivery.json",
+            "manifests/control.json",
+            "manifests/candidate.json",
+        )
+    )
+    receipt = AutotrainActionReceiptV1(
+        loop_id="loop-1",
+        campaign_id=campaign_id,
+        action_index=0,
+        action_sha256=autotrain_action_sha256(action),
+        action_kind=action.kind,
+        status="completed",
+        evidence_uris=evidence,
+    )
+    assert _retry_measurement_evidence_is_complete(root, handoff, receipt)
+    assert not _retry_measurement_evidence_is_complete(
+        root,
+        handoff,
+        receipt.model_copy(update={"evidence_uris": ("successor/campaign.json",)}),
+    )
+
+
+def test_theorem_band_miss_stops_and_requires_formal_repair(tmp_path: Path) -> None:
+    from scripts import run_autotrain_continuous as driver
+    from scripts.autoresearch import build_parser
+
+    root = tmp_path / "autoresearch"
+    (root / "cycle-1").mkdir(parents=True)
+    handoff = driver._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="screening",
+        cycle_intent="screening",
+        primary_metric="smoke.parse_rate",
+        matrix={"next_run_priorities": []},
+        delivery={
+            "positive": False,
+            "candidate_id": "",
+            "measurement_complete": True,
+            "reasons": ["theorem_backed_band_miss:invalid_grammar_count"],
+        },
+        resolution=None,
+        formal_status=None,
+    )
+
+    assert [action.kind for action in handoff.actions[:3]] == [
+        "stop_campaign",
+        "repair_formal",
+        "document",
+    ]
+    assert {action.owner for action in handoff.actions[:2]} == {"improve-lean-optimums"}
+    assert [action.kind for _, action in pending_autotrain_actions(root, handoff)] == [
+        "stop_campaign",
+        "repair_formal",
+        "document",
+    ]
+    formal_artifact = root / "cycle-1" / "formal-result.json"
+    formal_artifact.write_text('{"status":"disproved"}\n', encoding="utf-8")
+    repair_args = build_parser().parse_args(
+        [
+            "--root",
+            str(root),
+            "ack-action",
+            "--loop-id",
+            "loop-1",
+            "--campaign-id",
+            "cycle-1",
+            "--action-index",
+            "1",
+            "--evidence",
+            "formal-result.json",
+        ]
+    )
+    with pytest.raises(ValueError, match="repair_formal evidence must be a Git commit"):
+        repair_args.func(repair_args)
 
 
 def test_dynamic_symbol_source_manifest_is_complete() -> None:
@@ -1127,6 +2072,7 @@ class FakeHypothesisResponses:
         assert kwargs["store"] is False
         assert kwargs["text_format"] is HypothesisMatrix
         assert "arXiv:2606.01444" in kwargs["input"]
+        assert "recurrence.layerscale_stability" in kwargs["input"]
         return SimpleNamespace(
             id="resp-hypotheses",
             model="gpt-test",
@@ -1174,7 +2120,9 @@ def test_openai_hypothesizer_discovers_memo_when_none_is_persisted() -> None:
     result = harness.propose(campaign(), matrix_evidence(), [], "")
     assert result.research_memo == "Cited discovery memo"
     assert result.telemetry["discovery_response_id"] == "resp-hypothesis-discovery"
-    assert any(source.uri == "https://example.com/new-paper" for source in result.sources)
+    assert any(
+        source.uri == "https://example.com/new-paper" for source in result.sources
+    )
 
 
 def test_hypothesizer_benchmark_scores_feedback_lineage(
@@ -1213,7 +2161,9 @@ def test_hypothesizer_benchmark_scores_feedback_lineage(
     )
     predictions_path = tmp_path / "predictions.jsonl"
     predictions_path.write_text(
-        json.dumps({"case_id": "feedback-case", "matrix": matrix.model_dump(mode="json")})
+        json.dumps(
+            {"case_id": "feedback-case", "matrix": matrix.model_dump(mode="json")}
+        )
         + "\n",
         encoding="utf-8",
     )
@@ -1230,7 +2180,8 @@ def test_hypothesizer_benchmark_scores_feedback_lineage(
     )
     assert report.passed
     assert report.feedback_lineage_rate == 1.0
-    assert not report.promotable
+    assert report.promotable
+    assert report.promotion_policy == "automated_frozen_meta_gate_v1"
 
 
 def test_hypothesizer_benchmark_threshold_allows_partial_case_passes(
@@ -1249,8 +2200,14 @@ def test_hypothesizer_benchmark_threshold_allows_partial_case_passes(
                 "criteria": "Form a grounded candidate matrix.",
                 "evidence": [
                     {"uri": "docs/design/research-lineage.md", "role": "research"},
-                    {"uri": "outputs/runs/prior/run_insights.json", "role": "prior_trace"},
-                    {"uri": "outputs/runs/prior/scoreboard.json", "role": "prior_result"},
+                    {
+                        "uri": "outputs/runs/prior/run_insights.json",
+                        "role": "prior_trace",
+                    },
+                    {
+                        "uri": "outputs/runs/prior/scoreboard.json",
+                        "role": "prior_result",
+                    },
                 ],
                 "required_roles": ["research", "prior_trace", "prior_result"],
                 "expected_knobs": ["steps" if index == 0 else "lr"],
@@ -1259,7 +2216,10 @@ def test_hypothesizer_benchmark_threshold_allows_partial_case_passes(
             }
         )
         predictions.append(
-            {"case_id": f"case-{index}", "matrix": hypothesis_matrix().model_dump(mode="json")}
+            {
+                "case_id": f"case-{index}",
+                "matrix": hypothesis_matrix().model_dump(mode="json"),
+            }
         )
     cases_path = tmp_path / "cases.json"
     cases_path.write_text(json.dumps(cases), encoding="utf-8")
@@ -1497,6 +2457,1503 @@ def test_compile_is_typed_and_diagnosis_routes_bad_data() -> None:
     assert "immutable data snapshot" in diagnosis.recommended_actions[0]
 
 
+def test_compile_commands_routes_typed_ltr_tail_training_lever() -> None:
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            train_version="wf_smoke_v2",
+            steps=20,
+            ltr_tail_loss_weight=2.0,
+        )
+    )
+
+    commands = compile_commands(campaign(), spec)
+    train = next(command for command in commands if "scripts.train_model" in command)
+    assert train[train.index("--ltr-tail-loss-weight") + 1] == "2.0"
+
+
+def test_compile_commands_routes_typed_ltr_prefix_training_lever() -> None:
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            train_version="wf_smoke_v2",
+            steps=20,
+            ltr_prefix_loss_weight=1.0,
+        )
+    )
+
+    commands = compile_commands(campaign(), spec)
+    train = next(command for command in commands if "scripts.train_model" in command)
+    assert train[train.index("--ltr-prefix-loss-weight") + 1] == "1.0"
+
+
+def test_compile_commands_routes_typed_component_token_training_lever() -> None:
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            train_version="wf_smoke_v2",
+            steps=20,
+            component_token_loss_weight=1.0,
+        )
+    )
+
+    commands = compile_commands(campaign(), spec)
+    train = next(command for command in commands if "scripts.train_model" in command)
+    assert train[train.index("--component-token-loss-weight") + 1] == "1.0"
+
+
+def test_compile_commands_routes_component_edge_token_training_lever() -> None:
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            train_version="wf_smoke_v2",
+            steps=20,
+            component_edge_token_loss_weight=1.0,
+        )
+    )
+
+    commands = compile_commands(campaign(), spec)
+    train = next(command for command in commands if "scripts.train_model" in command)
+    assert train[train.index("--component-edge-token-loss-weight") + 1] == "1.0"
+
+
+def test_compile_commands_routes_compiler_decision_token_training_lever() -> None:
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            train_version="wf_smoke_v2",
+            steps=20,
+            compiler_decision_token_loss_weight=1.0,
+        )
+    )
+
+    commands = compile_commands(campaign(), spec)
+    train = next(command for command in commands if "scripts.train_model" in command)
+    assert train[train.index("--compiler-decision-token-loss-weight") + 1] == "1.0"
+
+
+def test_compile_commands_routes_typed_structure_token_training_lever() -> None:
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            train_version="wf_smoke_v2",
+            steps=20,
+            structure_token_loss_weight=1.0,
+        )
+    )
+
+    commands = compile_commands(campaign(), spec)
+    train = next(command for command in commands if "scripts.train_model" in command)
+    assert train[train.index("--structure-token-loss-weight") + 1] == "1.0"
+
+
+def test_compile_commands_routes_typed_family_balance_training_lever() -> None:
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            train_version="wf_smoke_v2",
+            steps=20,
+            typed_family_balance_loss_weight=0.25,
+        )
+    )
+
+    commands = compile_commands(campaign(), spec)
+    train = next(command for command in commands if "scripts.train_model" in command)
+    assert train[train.index("--typed-family-balance-loss-weight") + 1] == "0.25"
+
+
+def test_compile_commands_routes_container_close_alignment_filter() -> None:
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            train_version="wf_smoke_v2",
+            steps=20,
+            compiler_alignment_loss_weight=1.0,
+            compiler_alignment_margin=1.0,
+            compiler_alignment_stratified=True,
+            compiler_alignment_kind_filter="container-close",
+        )
+    )
+
+    commands = compile_commands(campaign(), spec)
+    train = next(command for command in commands if "scripts.train_model" in command)
+    assert (
+        train[train.index("--compiler-alignment-kind-filter") + 1]
+        == "container-close"
+    )
+
+
+def test_compile_commands_routes_component_edge_alignment_filter() -> None:
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            train_version="wf_smoke_v2",
+            steps=20,
+            compiler_alignment_loss_weight=1.0,
+            compiler_alignment_margin=1.0,
+            compiler_alignment_stratified=True,
+            compiler_alignment_kind_filter="component-edge",
+        )
+    )
+
+    commands = compile_commands(campaign(), spec)
+    train = next(command for command in commands if "scripts.train_model" in command)
+    assert (
+        train[train.index("--compiler-alignment-kind-filter") + 1]
+        == "component-edge"
+    )
+
+
+def test_campaign_loop_lineage_is_strict() -> None:
+    first = CampaignSpec(
+        campaign_id="cycle-1",
+        objective="Continue a bounded evidence-driven campaign.",
+        primary_metric="score",
+        loop_id="continuous-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+    )
+    assert first.predecessor_campaign_id is None
+    with pytest.raises(ValidationError, match="later loop cycles require"):
+        CampaignSpec(
+            campaign_id="cycle-2",
+            objective="Continue a bounded evidence-driven campaign.",
+            primary_metric="score",
+            loop_id="continuous-1",
+            cycle_index=2,
+            upstream_commit="a" * 40,
+            integration_commit="b" * 40,
+        )
+
+
+def test_continuous_matrix_requires_ranked_priorities() -> None:
+    loop_campaign = CampaignSpec(
+        campaign_id="cycle-1",
+        objective="Continue a bounded evidence-driven campaign.",
+        primary_metric="score",
+        loop_id="continuous-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+    )
+    without_priorities = hypothesis_matrix(campaign_id="cycle-1")
+    with pytest.raises(ValueError, match="next-run priorities"):
+        validate_hypothesis_matrix(
+            loop_campaign, without_priorities, matrix_evidence(), []
+        )
+
+    with_priorities = hypothesis_matrix(
+        campaign_id="cycle-1",
+        next_run_priorities=(next_priority(experiment_id="hyp-0"),),
+    )
+    validate_hypothesis_matrix(loop_campaign, with_priorities, matrix_evidence(), [])
+
+
+def test_continuous_commit_validation_requires_latest_integrated_head(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from scripts import autoresearch
+
+    upstream = "a" * 40
+    integration = "b" * 40
+
+    def fake_git(*args: str, check: bool = True):
+        if args[:2] == ("rev-parse", "--verify"):
+            ref = args[2]
+            value = (
+                upstream
+                if ref in {f"{upstream}^{{commit}}", "origin/main^{commit}"}
+                else integration
+            )
+            return subprocess.CompletedProcess(args, 0, value + "\n", "")
+        if args[:2] == ("merge-base", "--is-ancestor"):
+            return subprocess.CompletedProcess(args, 0, "", "")
+        return subprocess.CompletedProcess(args, 0, "", "")
+
+    monkeypatch.setattr(autoresearch, "_git", fake_git)
+    autoresearch._validate_continuous_commits(upstream, integration)
+
+    def stale_git(*args: str, check: bool = True):
+        result = fake_git(*args, check=check)
+        if args == ("rev-parse", "--verify", "origin/main^{commit}"):
+            return subprocess.CompletedProcess(args, 0, "c" * 40 + "\n", "")
+        return result
+
+    monkeypatch.setattr(autoresearch, "_git", stale_git)
+    with pytest.raises(ValueError, match="stale"):
+        autoresearch._validate_continuous_commits(upstream, integration)
+
+
+def test_continuous_run_binds_manifest_to_integration_commit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from scripts import autoresearch
+
+    loop_campaign = CampaignSpec(
+        campaign_id="cycle-1",
+        objective="Run from the exact fetched and integrated source revision.",
+        primary_metric="score",
+        loop_id="loop-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+    )
+    store = CampaignStore("cycle-1", tmp_path)
+    store.initialize(loop_campaign)
+    matrix = hypothesis_matrix(
+        campaign_id="cycle-1",
+        next_run_priorities=(next_priority(experiment_id="hyp-0"),),
+    )
+    matrix_path = store.write_artifact("hypothesis_matrices", matrix)
+    store.append_event("hypothesis_matrix_formed", artifact_sha256=matrix_path.stem)
+    manifest = experiment_campaign(
+        campaign_id="cycle-1",
+        experiment_id="hyp-0",
+        source_commit="c" * 40,
+    )
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(manifest.model_dump_json(), encoding="utf-8")
+    monkeypatch.setattr(
+        autoresearch, "_validate_continuous_commits", lambda *_args: None
+    )
+
+    with pytest.raises(ValueError, match="integration_commit"):
+        autoresearch.cmd_run(
+            SimpleNamespace(
+                campaign_id="cycle-1",
+                root=tmp_path,
+                experiment=None,
+                campaign_manifest=manifest_path,
+                execute=False,
+                trackio=False,
+            )
+        )
+
+
+def test_continuous_successor_accepts_cross_campaign_feedback(
+    tmp_path: Path,
+) -> None:
+    from scripts.autoresearch import cmd_hypothesize
+
+    first_campaign = CampaignSpec(
+        campaign_id="cycle-1",
+        objective="Run the first bounded evidence-driven campaign.",
+        primary_metric="score",
+        loop_id="loop-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+    )
+    first_store = CampaignStore("cycle-1", tmp_path)
+    first_store.initialize(first_campaign)
+    first = hypothesis_matrix(campaign_id="cycle-1")
+    first_path = first_store.write_artifact("hypothesis_matrices", first)
+    first_store.append_event(
+        "hypothesis_matrix_formed", artifact_sha256=first_path.stem
+    )
+    feedback = HypothesisFeedback(
+        feedback_id="feedback-aaaaaaaaaaaaaaaa",
+        campaign_id="cycle-1",
+        matrix_id=first.matrix_id,
+        experiment_id="hyp-0",
+        hypothesis=first.hypotheses[0].experiment.hypothesis,
+        knob_signature='{"steps": 100}',
+        outcome_status="completed",
+        diagnosis_target="model",
+        diagnosis_evidence=("The matched run remained below its gate.",),
+        recommended_actions=("Test a bounded model repair.",),
+    )
+    feedback_path = first_store.write_artifact("hypothesizer_feedback", feedback)
+    first_store.append_event(
+        "hypothesizer_feedback_recorded",
+        experiment_id="hyp-0",
+        artifact_sha256=feedback_path.stem,
+    )
+
+    second_campaign = CampaignSpec(
+        campaign_id="cycle-2",
+        objective="Continue from the predecessor campaign feedback.",
+        primary_metric="score",
+        loop_id="loop-1",
+        cycle_index=2,
+        predecessor_campaign_id="cycle-1",
+        upstream_commit="c" * 40,
+        integration_commit="d" * 40,
+    )
+    second_store = CampaignStore("cycle-2", tmp_path)
+    second_store.initialize(second_campaign)
+    second_store.write_artifact("evidence", matrix_evidence())
+    sources = second_store.write_artifact("research_sources", {"sources": []})
+    successor = hypothesis_matrix(
+        matrix_id="matrix-2",
+        campaign_id="cycle-2",
+        predecessor_matrix_id=first.matrix_id,
+        feedback_ids=(feedback.feedback_id,),
+        offset=10,
+        next_run_priorities=(
+            next_priority(
+                experiment_id="hyp-10",
+                evidence_ids=(feedback.feedback_id,),
+            ),
+        ),
+    )
+    matrix_path = tmp_path / "successor.json"
+    matrix_path.write_text(successor.model_dump_json(), encoding="utf-8")
+
+    assert (
+        cmd_hypothesize(
+            SimpleNamespace(
+                campaign_id="cycle-2",
+                root=tmp_path,
+                evidence=None,
+                sources=sources,
+                provider="agent",
+                matrix=matrix_path,
+                model="unused",
+                memo=None,
+            )
+        )
+        == 0
+    )
+    formed = [
+        event
+        for event in second_store.verify_event_chain()
+        if event["event_type"] == "hypothesis_matrix_formed"
+    ]
+    assert len(formed) == 1
+
+
+def test_lineage_recovers_only_an_interrupted_skipped_cycle(tmp_path: Path) -> None:
+    from scripts.autoresearch import _lineage_stores
+
+    first = CampaignSpec(
+        campaign_id="cycle-1",
+        objective="Start a bounded campaign.",
+        primary_metric="score",
+        loop_id="loop-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+    )
+    skipped = first.model_copy(
+        update={
+            "campaign_id": "cycle-2",
+            "cycle_index": 2,
+            "predecessor_campaign_id": "cycle-1",
+        }
+    )
+    successor = first.model_copy(
+        update={
+            "campaign_id": "cycle-3",
+            "cycle_index": 3,
+            "predecessor_campaign_id": "cycle-1",
+        }
+    )
+    stores = []
+    for spec in (first, skipped, successor):
+        campaign_store = CampaignStore(spec.campaign_id, tmp_path)
+        campaign_store.initialize(spec)
+        stores.append(campaign_store)
+
+    recovered = _lineage_stores(stores[-1], successor)
+    assert tuple(item.root.name for item in recovered) == (
+        "cycle-3",
+        "cycle-2",
+        "cycle-1",
+    )
+
+    (stores[1].root / "cycle_handoff.json").write_text("{}\n")
+    with pytest.raises(RuntimeError, match="predecessor chain"):
+        _lineage_stores(stores[-1], successor)
+
+
+def test_feedback_context_skips_only_initialized_incomplete_cycles(
+    tmp_path: Path,
+) -> None:
+    from scripts.autoresearch import _feedback_context, _lineage_stores
+
+    first = CampaignSpec(
+        campaign_id="cycle-1",
+        objective="Start a bounded campaign.",
+        primary_metric="score",
+        loop_id="loop-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+    )
+    second = first.model_copy(
+        update={
+            "campaign_id": "cycle-2",
+            "cycle_index": 2,
+            "predecessor_campaign_id": "cycle-1",
+        }
+    )
+    third = first.model_copy(
+        update={
+            "campaign_id": "cycle-3",
+            "cycle_index": 3,
+            "predecessor_campaign_id": "cycle-2",
+        }
+    )
+    stores = []
+    for spec in (first, second, third):
+        campaign_store = CampaignStore(spec.campaign_id, tmp_path)
+        campaign_store.initialize(spec)
+        stores.append(campaign_store)
+
+    first_matrix = hypothesis_matrix(campaign_id="cycle-1")
+    first_matrix_path = stores[0].write_artifact("hypothesis_matrices", first_matrix)
+    stores[0].append_event(
+        "hypothesis_matrix_formed", artifact_sha256=first_matrix_path.stem
+    )
+    feedback = HypothesisFeedback(
+        feedback_id="feedback-aaaaaaaaaaaaaaaa",
+        campaign_id="cycle-1",
+        matrix_id=first_matrix.matrix_id,
+        experiment_id="hyp-0",
+        hypothesis=first_matrix.hypotheses[0].experiment.hypothesis,
+        knob_signature='{"steps": 100}',
+        outcome_status="completed",
+        diagnosis_target="model",
+        diagnosis_evidence=("The bounded arm completed.",),
+        recommended_actions=("Replay the frozen measurement.",),
+    )
+    feedback_path = stores[0].write_artifact("hypothesizer_feedback", feedback)
+    stores[0].append_event(
+        "hypothesizer_feedback_recorded",
+        experiment_id="hyp-0",
+        artifact_sha256=feedback_path.stem,
+    )
+    interrupted_matrix = hypothesis_matrix(
+        matrix_id="matrix-2", campaign_id="cycle-2", offset=10
+    )
+    interrupted_path = stores[1].write_artifact(
+        "hypothesis_matrices", interrupted_matrix
+    )
+    stores[1].append_event(
+        "hypothesis_matrix_formed", artifact_sha256=interrupted_path.stem
+    )
+
+    context_store, context_matrix, context_feedback = _feedback_context(
+        stores[2], _lineage_stores(stores[2], third)
+    )
+    assert context_store.root.name == "cycle-1"
+    assert context_matrix == first_matrix
+    assert context_feedback == (feedback,)
+
+    (stores[1].root / "cycle_handoff.json").write_text("{}\n")
+    with pytest.raises(ValueError, match="no terminal feedback"):
+        _feedback_context(stores[2], _lineage_stores(stores[2], third))
+
+
+def test_feedback_context_recovers_typed_incomplete_handoff(
+    tmp_path: Path,
+) -> None:
+    from scripts.autoresearch import _feedback_context, _lineage_stores
+
+    first = CampaignSpec(
+        campaign_id="cycle-1",
+        objective="Run a bounded comparison.",
+        primary_metric="score",
+        loop_id="loop-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+    )
+    second = first.model_copy(
+        update={
+            "campaign_id": "cycle-2",
+            "cycle_index": 2,
+            "predecessor_campaign_id": "cycle-1",
+        }
+    )
+    first_store = CampaignStore("cycle-1", tmp_path)
+    first_store.initialize(first)
+    second_store = CampaignStore("cycle-2", tmp_path)
+    second_store.initialize(second)
+    matrix = hypothesis_matrix(campaign_id="cycle-1")
+    matrix_path = first_store.write_artifact("hypothesis_matrices", matrix)
+    first_store.append_event(
+        "hypothesis_matrix_formed", artifact_sha256=matrix_path.stem
+    )
+    candidate_id = matrix.recommended_experiment_id
+    handoff = AutotrainCycleHandoffV1(
+        loop_id="loop-1",
+        campaign_id="cycle-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        cycle_role="screening",
+        cycle_intent="confirm",
+        evidence_class="fixture",
+        climb_state="harness_failure",
+        ship_state="blocked",
+        primary_metric="score",
+        reasons=("measurement_incomplete:control:missing_scoreboard",),
+        priorities=(
+            NextRunPriorityV1(
+                rank=1,
+                area="infrastructure",
+                hypothesis="Replay the exact frozen pair.",
+                evidence_ids=("campaign:cycle-1",),
+                confidence=0.95,
+                expected_information_gain="Complete the comparison.",
+                authority="observed_result",
+                disposition="experiment_next",
+                proposed_experiment_id=candidate_id,
+            ),
+        ),
+        actions=(
+            AutotrainActionV1(
+                kind="retry_measurement",
+                owner="autotrain",
+                reason="Replay the incomplete pair.",
+                evidence_ids=("campaign:cycle-1",),
+                frozen_manifest_sha256="c" * 64,
+            ),
+        ),
+    )
+    (first_store.root / "cycle_handoff.json").write_text(
+        handoff.model_dump_json(indent=2) + "\n", encoding="utf-8"
+    )
+
+    context_store, context_matrix, feedback = _feedback_context(
+        second_store, _lineage_stores(second_store, second)
+    )
+
+    assert context_store.root == first_store.root
+    assert context_matrix == matrix
+    assert len(feedback) == 1
+    assert feedback[0].outcome_status == "stopped"
+    assert feedback[0].diagnosis_target == "infrastructure"
+    assert feedback[0].metrics == {}
+    assert list(
+        (first_store.root / "artifacts" / "hypothesizer_feedback").glob("*.json")
+    )
+
+
+def test_replay_config_authority_is_content_bound_to_lineage(tmp_path: Path) -> None:
+    from scripts.autoresearch import (
+        _authorized_replay_configs,
+        _lineage_stores,
+    )
+
+    first = CampaignSpec(
+        campaign_id="cycle-1",
+        objective="Start a bounded campaign.",
+        primary_metric="score",
+        loop_id="loop-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+    )
+    second = first.model_copy(
+        update={
+            "campaign_id": "cycle-2",
+            "cycle_index": 2,
+            "predecessor_campaign_id": "cycle-1",
+            "integration_commit": "d" * 40,
+        }
+    )
+    first_store = CampaignStore("cycle-1", tmp_path)
+    first_store.initialize(first)
+    second_store = CampaignStore("cycle-2", tmp_path)
+    second_store.initialize(second)
+    source = experiment_campaign(campaign_id="cycle-1", experiment_id="old-arm")
+    source_experiment = (
+        hypothesis_matrix()
+        .hypotheses[0]
+        .experiment.model_copy(
+            update={"campaign_id": "cycle-1", "experiment_id": "old-arm"}
+        )
+    )
+    first_store.write_artifact("experiments", source_experiment)
+    source_path = first_store.root / "manifests" / "old-arm.json"
+    source_path.parent.mkdir()
+    source_path.write_text(source.model_dump_json(indent=2) + "\n")
+    source_sha = hashlib.sha256(source_path.read_bytes()).hexdigest()
+    successor = source.model_copy(
+        update={
+            "campaign_id": "cycle-2",
+            "experiment_id": "new-arm",
+            "source_commit": second.integration_commit,
+            "replay_of_manifest_sha256": source_sha,
+            "replay_reason": "Retry the exact frozen arm on current main.",
+        }
+    )
+    successor_path = second_store.root / "manifests" / "new-arm.json"
+    successor_path.parent.mkdir()
+    successor_path.write_text(successor.model_dump_json(indent=2) + "\n")
+    args = SimpleNamespace(frozen_replay_manifest=[successor_path])
+    proposed = hypothesis_matrix(campaign_id="cycle-2")
+    replay_candidate = proposed.hypotheses[0].model_copy(
+        update={
+            "experiment": source_experiment.model_copy(
+                update={"campaign_id": "cycle-2", "experiment_id": "new-arm"}
+            )
+        }
+    )
+    proposed = proposed.model_copy(
+        update={
+            "hypotheses": (replay_candidate, *proposed.hypotheses[1:]),
+            "recommended_experiment_id": "new-arm",
+        }
+    )
+
+    assert _authorized_replay_configs(
+        args,
+        second_store,
+        second,
+        _lineage_stores(second_store, second),
+        proposed,
+    ) == {"new-arm": normalized_knobs_sha256(replay_candidate.experiment)}
+
+    forged = successor.model_copy(update={"replay_of_manifest_sha256": "f" * 64})
+    successor_path.write_text(forged.model_dump_json(indent=2) + "\n")
+    with pytest.raises(ValueError, match="authority is invalid"):
+        _authorized_replay_configs(
+            args,
+            second_store,
+            second,
+            _lineage_stores(second_store, second),
+            proposed,
+        )
+
+
+def test_continuous_lean_miss_requires_five_priority_lanes() -> None:
+    first = hypothesis_matrix(campaign_id="cycle-1")
+    optimum = OptimumFeedbackV1(
+        policy="block_promotion_and_diagnose",
+        breaches=(
+            {
+                "metric_id": "latency",
+                "authority": "assumption_backed",
+                "relation": "above",
+            },
+        ),
+        diagnosis_lanes=(
+            "measurement_control",
+            "training_method",
+            "architecture",
+            "lean_model",
+            "assumptions",
+        ),
+        metric_evidence_sha256="a" * 64,
+        metric_certificate_sha256="b" * 64,
+    )
+    feedback = HypothesisFeedback(
+        feedback_id="feedback-aaaaaaaaaaaaaaaa",
+        campaign_id="cycle-1",
+        matrix_id=first.matrix_id,
+        experiment_id="hyp-0",
+        hypothesis=first.hypotheses[0].experiment.hypothesis,
+        knob_signature='{"steps": 100}',
+        outcome_status="completed",
+        diagnosis_target="none",
+        diagnosis_evidence=("Latency exceeded its assumption-backed band.",),
+        recommended_actions=("Run all five controlled diagnosis lanes.",),
+        optimum_feedback=optimum,
+    )
+    loop_campaign = CampaignSpec(
+        campaign_id="cycle-2",
+        objective="Diagnose every lane implicated by the certified band miss.",
+        primary_metric="score",
+        loop_id="loop-1",
+        cycle_index=2,
+        predecessor_campaign_id="cycle-1",
+        upstream_commit="c" * 40,
+        integration_commit="d" * 40,
+    )
+    priorities = tuple(
+        next_priority(
+            experiment_id="hyp-10",
+            evidence_ids=(feedback.feedback_id,),
+            area=lane,
+            authority="lean_assumption",
+            disposition="experiment_next" if rank == 1 else "block_promotion",
+            rank=rank,
+        )
+        for rank, lane in enumerate(optimum.diagnosis_lanes, start=1)
+    )
+    complete = hypothesis_matrix(
+        matrix_id="matrix-2",
+        campaign_id="cycle-2",
+        predecessor_matrix_id=first.matrix_id,
+        feedback_ids=(feedback.feedback_id,),
+        offset=10,
+        diagnosis_lanes=optimum.diagnosis_lanes,
+        next_run_priorities=priorities,
+    )
+    validate_hypothesis_matrix(
+        loop_campaign,
+        complete,
+        matrix_evidence(),
+        [],
+        feedback=(feedback,),
+        previous_matrix=first,
+    )
+
+    missing_lane = complete.model_copy(update={"next_run_priorities": priorities[:-1]})
+    with pytest.raises(ValueError, match="Lean-assumption priority"):
+        validate_hypothesis_matrix(
+            loop_campaign,
+            missing_lane,
+            matrix_evidence(),
+            [],
+            feedback=(feedback,),
+            previous_matrix=first,
+        )
+
+
+def test_continuous_harness_feedback_requires_repair_priority() -> None:
+    first = hypothesis_matrix(campaign_id="cycle-1")
+    feedback = HypothesisFeedback(
+        feedback_id="feedback-aaaaaaaaaaaaaaaa",
+        campaign_id="cycle-1",
+        matrix_id=first.matrix_id,
+        experiment_id="hyp-0",
+        hypothesis=first.hypotheses[0].experiment.hypothesis,
+        knob_signature='{"steps": 100}',
+        outcome_status="failed",
+        diagnosis_target="harness",
+        harness_family="model_build",
+        diagnosis_evidence=("Frozen replay reproduced the evaluator failure.",),
+        recommended_actions=("Repair the canonical evaluator and replay.",),
+    )
+    loop_campaign = CampaignSpec(
+        campaign_id="cycle-2",
+        objective="Repair the reproduced canonical harness failure.",
+        primary_metric="score",
+        loop_id="loop-1",
+        cycle_index=2,
+        predecessor_campaign_id="cycle-1",
+        upstream_commit="c" * 40,
+        integration_commit="d" * 40,
+    )
+    wrong = hypothesis_matrix(
+        matrix_id="matrix-2",
+        campaign_id="cycle-2",
+        predecessor_matrix_id=first.matrix_id,
+        feedback_ids=(feedback.feedback_id,),
+        offset=10,
+        next_run_priorities=(
+            next_priority(
+                experiment_id="hyp-10",
+                evidence_ids=(feedback.feedback_id,),
+            ),
+        ),
+    )
+    with pytest.raises(ValueError, match="repair priority"):
+        validate_hypothesis_matrix(
+            loop_campaign,
+            wrong,
+            matrix_evidence(),
+            [],
+            feedback=(feedback,),
+            previous_matrix=first,
+        )
+
+    repair = wrong.model_copy(
+        update={
+            "next_run_priorities": (
+                next_priority(
+                    evidence_ids=(feedback.feedback_id,),
+                    area="model_build",
+                    authority="reproduced_harness_signal",
+                    disposition="repair_before_run",
+                ),
+            )
+        }
+    )
+    validate_hypothesis_matrix(
+        loop_campaign,
+        repair,
+        matrix_evidence(),
+        [],
+        feedback=(feedback,),
+        previous_matrix=first,
+    )
+
+
+def test_frozen_harness_signal_routes_one_canonical_owner() -> None:
+    diagnosis = diagnose_outcome(
+        ExperimentOutcome(
+            experiment_id="exp-1",
+            campaign_id="test-campaign",
+            status="failed",
+            error="evaluation crashed",
+            harness_signals=(
+                HarnessSignalV1(
+                    family="model_build",
+                    code="fixture-replay-crash",
+                    evidence_uri="outputs/repro/frozen.json",
+                    reproduced_on_frozen_input=True,
+                    primary=True,
+                ),
+            ),
+        )
+    )
+    assert diagnosis.target == "harness"
+    assert diagnosis.harness_family == "model_build"
+    assert "identical frozen model/data arm" in diagnosis.recommended_actions[1]
+
+    unconfirmed = diagnose_outcome(
+        ExperimentOutcome(
+            experiment_id="exp-2",
+            campaign_id="test-campaign",
+            status="failed",
+            harness_signals=(
+                HarnessSignalV1(
+                    family="model_build",
+                    code="suspected-crash",
+                    evidence_uri="outputs/repro/unconfirmed.json",
+                    reproduced_on_frozen_input=False,
+                ),
+            ),
+        )
+    )
+    assert unconfirmed.target == "infrastructure"
+
+
+def test_loop_result_matrix_is_derived_from_verified_campaign_chain(
+    tmp_path: Path,
+) -> None:
+    loop_campaign = CampaignSpec(
+        campaign_id="cycle-1",
+        objective="Improve one declared metric with bounded evidence.",
+        primary_metric="held_out.structural_similarity",
+        loop_id="loop-1",
+        cycle_index=1,
+        upstream_commit="c" * 40,
+        integration_commit="d" * 40,
+    )
+    store = CampaignStore(loop_campaign.campaign_id, tmp_path)
+    store.initialize(loop_campaign)
+    manifest = experiment_campaign(
+        campaign_id="cycle-1",
+        experiment_id="hyp-0",
+        source_commit="d" * 40,
+    )
+    store.lock_experiment_campaign(manifest)
+    outcome = ExperimentOutcome(
+        experiment_id="hyp-0",
+        campaign_id="cycle-1",
+        status="completed",
+        metrics={
+            "held_out.n": 3,
+            "held_out.document_n": 3,
+            "held_out.completed_document_n": 3,
+            "held_out.incomplete_document_n": 0,
+            "held_out.decode_timeout_count": 0,
+            "held_out.structural_similarity": 0.75,
+            "smoke.n": 3,
+            "smoke.document_n": 3,
+            "smoke.completed_document_n": 3,
+            "smoke.incomplete_document_n": 0,
+            "smoke.decode_timeout_count": 0,
+            "smoke.parse_rate": 1.0,
+            "trainable_params": 1234,
+            "ship_gates_pass": 1,
+        },
+    )
+    outcome_path = store.write_artifact("outcomes", outcome)
+    store.append_event(
+        "experiment_finished",
+        experiment_id="hyp-0",
+        status="completed",
+        artifact_sha256=outcome_path.stem,
+        detail={"campaign_manifest_sha256": campaign_manifest_sha256(manifest)},
+    )
+    diagnosis = Diagnosis(
+        experiment_id="hyp-0",
+        target="none",
+        confidence=0.6,
+        evidence=("no defect",),
+        recommended_actions=("retain evidence",),
+    )
+    diagnosis_path = store.write_artifact("diagnoses", diagnosis)
+    store.append_event(
+        "outcome_diagnosed",
+        experiment_id="hyp-0",
+        status="none",
+        artifact_sha256=diagnosis_path.stem,
+    )
+    (tmp_path / loop_campaign.campaign_id / "cycle_handoff.json").write_text(
+        json.dumps({"primary_metric": "smoke.parse_rate"}),
+        encoding="utf-8",
+    )
+
+    matrix = render_loop_result_matrix(tmp_path, "loop-1")
+    assert "Liveness" in matrix
+    assert "| 1 | cccccccc | dddddddd | hyp-0 | 1234 | — | 1 |" in matrix
+    assert (
+        "| — | pass | complete | none | fixture | — | blocked | completed |" in matrix
+    )
+    assert len(matrix.encode("utf-8")) < 64 * 1024
+
+
+def test_loop_result_matrix_recovers_content_bound_reused_params(
+    tmp_path: Path,
+) -> None:
+    campaign = CampaignSpec(
+        campaign_id="cycle-reuse",
+        objective="Render the frozen checkpoint size in the result matrix.",
+        primary_metric="held_out.structural_similarity",
+        loop_id="loop-1",
+        cycle_index=1,
+        upstream_commit="c" * 40,
+        integration_commit="d" * 40,
+    )
+    store = CampaignStore(campaign.campaign_id, tmp_path)
+    store.initialize(campaign)
+    summary_path = tmp_path / "source" / "train_summary.json"
+    summary_path.parent.mkdir()
+    summary_path.write_text(
+        json.dumps({"track": {"trainable_params": 1_608_962}}),
+        encoding="utf-8",
+    )
+    outcome = ExperimentOutcome(
+        experiment_id="replay",
+        campaign_id=campaign.campaign_id,
+        status="completed",
+        metrics={},
+        stage_telemetry=(
+            {
+                "stage_kind": "reused_training",
+                "source_train_summary": str(summary_path),
+                "source_train_summary_sha256": hashlib.sha256(
+                    summary_path.read_bytes()
+                ).hexdigest(),
+            },
+            {
+                "parsed_output": {
+                    "suites": {"held_out": {"structural_similarity": 0.75}}
+                }
+            },
+        ),
+    )
+    artifact = store.write_artifact("outcomes", outcome)
+    store.append_event(
+        "experiment_finished",
+        experiment_id="replay",
+        status="completed",
+        artifact_sha256=artifact.stem,
+    )
+
+    rendered = render_loop_result_matrix(tmp_path, "loop-1")
+    assert "| replay | 1608962 | — | 0.75 |" in rendered
+
+    summary_path.write_text(
+        json.dumps({"track": {"trainable_params": 9_999_999}}),
+        encoding="utf-8",
+    )
+    assert "| replay | — | — | 0.75 |" in render_loop_result_matrix(
+        tmp_path, "loop-1"
+    )
+
+
+def test_loop_result_matrix_marks_timeout_measurement_incomplete(
+    tmp_path: Path,
+) -> None:
+    campaign = CampaignSpec(
+        campaign_id="cycle-1",
+        objective="Expose timeout incompleteness without blaming the model.",
+        primary_metric="smoke.parse_rate",
+        loop_id="loop-1",
+        cycle_index=1,
+        upstream_commit="c" * 40,
+        integration_commit="d" * 40,
+    )
+    store = CampaignStore(campaign.campaign_id, tmp_path)
+    store.initialize(campaign)
+    outcome = ExperimentOutcome(
+        experiment_id="hyp-0",
+        campaign_id=campaign.campaign_id,
+        status="completed",
+        metrics={"smoke.completed_document_n": 0, "smoke.decode_timeout_count": 3},
+    )
+    artifact = store.write_artifact("outcomes", outcome)
+    store.append_event(
+        "experiment_finished",
+        experiment_id="hyp-0",
+        status="completed",
+        artifact_sha256=artifact.stem,
+    )
+    diagnosis = Diagnosis(
+        experiment_id="hyp-0",
+        target="infrastructure",
+        confidence=0.95,
+        evidence=("measurement incomplete",),
+        recommended_actions=("retry frozen arm",),
+    )
+    artifact = store.write_artifact("diagnoses", diagnosis)
+    store.append_event(
+        "outcome_diagnosed",
+        experiment_id="hyp-0",
+        status="infrastructure",
+        artifact_sha256=artifact.stem,
+    )
+
+    rendered = render_loop_result_matrix(tmp_path, "loop-1")
+    assert "| incomplete | infrastructure |" in rendered
+
+
+@pytest.mark.parametrize(
+    ("outcome_status", "exit_code"), (("failed", 8), ("completed", 0))
+)
+def test_loop_result_matrix_projects_complete_gate_rejection(
+    tmp_path: Path, outcome_status: str, exit_code: int
+) -> None:
+    commit = "d" * 40
+    campaign = CampaignSpec(
+        campaign_id="cycle-gate-reject",
+        objective="Keep a complete honest gate rejection as model evidence.",
+        primary_metric="smoke.parse_rate",
+        loop_id="loop-1",
+        cycle_index=1,
+        upstream_commit="c" * 40,
+        integration_commit=commit,
+    )
+    store = CampaignStore(campaign.campaign_id, tmp_path)
+    store.initialize(campaign)
+    outcome = ExperimentOutcome(
+        experiment_id="control",
+        campaign_id=campaign.campaign_id,
+        status=outcome_status,
+        exit_code=exit_code,
+        metrics={
+            "smoke.n": 3,
+            "smoke.document_n": 3,
+            "smoke.completed_document_n": 3,
+            "smoke.incomplete_document_n": 0,
+            "smoke.decode_timeout_count": 0,
+            "smoke.parse_rate": 1,
+        },
+    )
+    artifact = store.write_artifact("outcomes", outcome)
+    store.append_event(
+        "experiment_finished",
+        experiment_id=outcome.experiment_id,
+        status=outcome.status,
+        artifact_sha256=artifact.stem,
+    )
+    run_dir = store.root / "runs" / outcome.experiment_id
+    run_dir.mkdir(parents=True)
+    scoreboard = _complete_gate_scoreboard(run_dir / "agentv")
+    scoreboard.update(
+        {
+            "run_id": outcome.experiment_id,
+            "version_stamp": {"code_commit": commit, "code_dirty": False},
+        }
+    )
+    (run_dir / "scoreboard.json").write_text(json.dumps(scoreboard))
+
+    rendered = render_loop_result_matrix(tmp_path, "loop-1")
+    assert "| fail | complete (gate reject) |" in rendered
+    assert "| blocked | completed |" in rendered
+
+
+def test_loop_result_matrix_marks_partial_measurement_incomplete(
+    tmp_path: Path,
+) -> None:
+    campaign = CampaignSpec(
+        campaign_id="cycle-partial",
+        objective="Expose partial measurements without blaming the model.",
+        primary_metric="smoke.parse_rate",
+        loop_id="loop-1",
+        cycle_index=1,
+        upstream_commit="c" * 40,
+        integration_commit="d" * 40,
+    )
+    store = CampaignStore(campaign.campaign_id, tmp_path)
+    store.initialize(campaign)
+    outcome = ExperimentOutcome(
+        experiment_id="hyp-partial",
+        campaign_id=campaign.campaign_id,
+        status="completed",
+        metrics={
+            "smoke.n": 3,
+            "smoke.completed_document_n": 1,
+            "smoke.incomplete_document_n": 2,
+        },
+    )
+    artifact = store.write_artifact("outcomes", outcome)
+    store.append_event(
+        "experiment_finished",
+        experiment_id=outcome.experiment_id,
+        status=outcome.status,
+        artifact_sha256=artifact.stem,
+    )
+
+    assert "incomplete" in render_loop_result_matrix(tmp_path, "loop-1")
+
+
+def test_loop_result_matrix_marks_missing_paired_arm_as_harness_incomplete(
+    tmp_path: Path,
+) -> None:
+    campaign = CampaignSpec(
+        campaign_id="cycle-missing-arm",
+        objective="Never present a one-arm campaign as model evidence.",
+        primary_metric="smoke.parse_rate",
+        loop_id="loop-1",
+        cycle_index=1,
+        upstream_commit="c" * 40,
+        integration_commit="d" * 40,
+    )
+    store = CampaignStore(campaign.campaign_id, tmp_path)
+    store.initialize(campaign)
+    outcome = ExperimentOutcome(
+        experiment_id="candidate",
+        campaign_id=campaign.campaign_id,
+        status="completed",
+        metrics={"smoke.n": 3, "smoke.parse_rate": 0.5},
+    )
+    artifact = store.write_artifact("outcomes", outcome)
+    store.append_event(
+        "experiment_finished",
+        experiment_id=outcome.experiment_id,
+        status=outcome.status,
+        artifact_sha256=artifact.stem,
+    )
+    (tmp_path / campaign.campaign_id / "cycle_handoff.json").write_text(
+        json.dumps(
+            {
+                "primary_metric": "smoke.parse_rate",
+                "reasons": ["arm_order:control,candidate"],
+                "evidence_class": "fixture",
+                "climb_state": "rejected",
+                "ship_state": "blocked",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    rendered = render_loop_result_matrix(tmp_path, "loop-1")
+    assert "incomplete (campaign arm missing)" in rendered
+    assert "incomplete (arm not run)" in rendered
+    assert "| control |" in rendered
+
+
+def test_loop_result_matrix_relabels_reproduced_candidate_runtime_rejection(
+    tmp_path: Path,
+) -> None:
+    campaign = CampaignSpec(
+        campaign_id="cycle-runtime-reject",
+        objective="Retire a candidate-only frozen runtime failure.",
+        primary_metric="smoke.structural_similarity",
+        loop_id="loop-1",
+        cycle_index=1,
+        upstream_commit="c" * 40,
+        integration_commit="d" * 40,
+    )
+    store = CampaignStore(campaign.campaign_id, tmp_path)
+    store.initialize(campaign)
+    outcome = ExperimentOutcome(
+        experiment_id="candidate",
+        campaign_id=campaign.campaign_id,
+        status="failed",
+        exit_code=2,
+        metrics={
+            "smoke.n": 3,
+            "smoke.completed_document_n": 0,
+            "smoke.incomplete_document_n": 3,
+            "smoke.decode_timeout_count": 3,
+        },
+    )
+    artifact = store.write_artifact("outcomes", outcome)
+    store.append_event(
+        "experiment_finished",
+        experiment_id=outcome.experiment_id,
+        status=outcome.status,
+        artifact_sha256=artifact.stem,
+    )
+    diagnosis = Diagnosis(
+        experiment_id=outcome.experiment_id,
+        target="infrastructure",
+        confidence=0.95,
+        evidence=("measurement incomplete",),
+        recommended_actions=("retry frozen arm",),
+    )
+    artifact = store.write_artifact("diagnoses", diagnosis)
+    store.append_event(
+        "outcome_diagnosed",
+        experiment_id=outcome.experiment_id,
+        status="infrastructure",
+        artifact_sha256=artifact.stem,
+    )
+    handoff = AutotrainCycleHandoffV1(
+        loop_id="loop-1",
+        campaign_id=campaign.campaign_id,
+        cycle_index=1,
+        upstream_commit="c" * 40,
+        integration_commit="d" * 40,
+        cycle_role="screening",
+        cycle_intent="retry_measurement",
+        evidence_class="fixture",
+        climb_state="rejected",
+        ship_state="blocked",
+        primary_metric="smoke.structural_similarity",
+        reasons=(
+            "candidate_runtime_rejected_after_frozen_replay:candidate",
+        ),
+        actions=(
+            AutotrainActionV1(
+                kind="next_experiment",
+                owner="autotrain",
+                reason="Retire the runtime-rejected arm.",
+                evidence_ids=("campaign:cycle-runtime-reject",),
+            ),
+        ),
+    )
+    (store.root / "cycle_handoff.json").write_text(
+        handoff.model_dump_json(indent=2) + "\n"
+    )
+
+    rendered = render_loop_result_matrix(tmp_path, "loop-1")
+
+    assert "complete (runtime reject)" in rendered
+    assert "model_runtime" in rendered
+    assert "candidate-only decode timeout reproduced" in rendered
+    assert "retry frozen arm" not in rendered
+
+
+def test_loop_result_matrix_relabels_reproduced_control_runtime_rejection(
+    tmp_path: Path,
+) -> None:
+    campaign = CampaignSpec(
+        campaign_id="cycle-control-runtime-reject",
+        objective="Retire a control-only frozen runtime failure.",
+        primary_metric="smoke.structural_similarity",
+        loop_id="loop-1",
+        cycle_index=1,
+        upstream_commit="c" * 40,
+        integration_commit="d" * 40,
+    )
+    store = CampaignStore(campaign.campaign_id, tmp_path)
+    store.initialize(campaign)
+    for experiment_id, status, metrics in (
+        (
+            "candidate",
+            "completed",
+            {
+                "smoke.n": 3,
+                "smoke.completed_document_n": 3,
+                "smoke.meaningful_program_rate": 0.0,
+            },
+        ),
+        (
+            "control",
+            "failed",
+            {
+                "smoke.n": 3,
+                "smoke.completed_document_n": 0,
+                "smoke.incomplete_document_n": 3,
+                "smoke.decode_timeout_count": 3,
+            },
+        ),
+    ):
+        outcome = ExperimentOutcome(
+            experiment_id=experiment_id,
+            campaign_id=campaign.campaign_id,
+            status=status,
+            exit_code=0 if status == "completed" else 2,
+            metrics=metrics,
+        )
+        artifact = store.write_artifact("outcomes", outcome)
+        store.append_event(
+            "experiment_finished",
+            experiment_id=experiment_id,
+            status=status,
+            artifact_sha256=artifact.stem,
+        )
+        diagnosis = Diagnosis(
+            experiment_id=experiment_id,
+            target="infrastructure",
+            confidence=0.95,
+            evidence=("measurement incomplete",),
+            recommended_actions=("repair harness",),
+        )
+        artifact = store.write_artifact("diagnoses", diagnosis)
+        store.append_event(
+            "outcome_diagnosed",
+            experiment_id=experiment_id,
+            status="infrastructure",
+            artifact_sha256=artifact.stem,
+        )
+    handoff = AutotrainCycleHandoffV1(
+        loop_id="loop-1",
+        campaign_id=campaign.campaign_id,
+        cycle_index=1,
+        upstream_commit="c" * 40,
+        integration_commit="d" * 40,
+        cycle_role="screening",
+        cycle_intent="retry_measurement",
+        evidence_class="fixture",
+        climb_state="rejected",
+        ship_state="blocked",
+        primary_metric="smoke.structural_similarity",
+        reasons=(
+            "control_runtime_rejected_after_frozen_replay:control",
+            "candidate_runtime_unblock_reproduced:candidate",
+        ),
+        actions=(
+            AutotrainActionV1(
+                kind="next_experiment",
+                owner="autotrain",
+                reason="Retire this comparison.",
+                evidence_ids=("campaign:cycle-control-runtime-reject",),
+            ),
+        ),
+    )
+    (store.root / "cycle_handoff.json").write_text(
+        handoff.model_dump_json(indent=2) + "\n"
+    )
+
+    rendered = render_loop_result_matrix(tmp_path, "loop-1")
+
+    assert "complete (runtime unblock; quality reject)" in rendered
+    assert "complete (runtime reject)" in rendered
+    assert "candidate completed while the matched control decode timeout" in rendered
+    assert "control-only decode timeout reproduced" in rendered
+    assert "repair harness" not in rendered
+
+
+def test_loop_tables_surface_lean_authority_and_stop_priority(tmp_path: Path) -> None:
+    loop_campaign = CampaignSpec(
+        campaign_id="cycle-1",
+        objective="Classify a preregistered theorem-backed metric band.",
+        primary_metric="score",
+        loop_id="loop-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+    )
+    store = CampaignStore("cycle-1", tmp_path)
+    store.initialize(loop_campaign)
+    outcome = ExperimentOutcome(
+        experiment_id="hyp-0",
+        campaign_id="cycle-1",
+        status="completed",
+        metrics={"score": 1.0},
+    )
+    outcome_path = store.write_artifact("outcomes", outcome)
+    store.append_event(
+        "experiment_finished",
+        experiment_id="hyp-0",
+        artifact_sha256=outcome_path.stem,
+    )
+    optimum = OptimumFeedbackV1(
+        policy="stop",
+        breaches=(
+            {
+                "metric_id": "invalid_grammar_count",
+                "authority": "theorem",
+                "relation": "above",
+            },
+        ),
+        diagnosis_lanes=(
+            "measurement_control",
+            "training_method",
+            "architecture",
+            "lean_model",
+            "assumptions",
+        ),
+        metric_evidence_sha256="c" * 64,
+        metric_certificate_sha256="d" * 64,
+    )
+    feedback = HypothesisFeedback(
+        feedback_id="feedback-aaaaaaaaaaaaaaaa",
+        campaign_id="cycle-1",
+        matrix_id="matrix-1",
+        experiment_id="hyp-0",
+        hypothesis="The exact grammar invariant remains inside its proved band.",
+        knob_signature='{"steps": 100}',
+        outcome_status="completed",
+        diagnosis_target="none",
+        diagnosis_evidence=("Lean replay found a theorem-backed contradiction.",),
+        recommended_actions=("Stop and repair the measurement or formal model.",),
+        optimum_feedback=optimum,
+    )
+    feedback_path = store.write_artifact("hypothesizer_feedback", feedback)
+    store.append_event(
+        "hypothesizer_feedback_recorded",
+        experiment_id="hyp-0",
+        artifact_sha256=feedback_path.stem,
+    )
+
+    rendered = render_loop_result_matrix(tmp_path, "loop-1")
+    assert "Run Results" in rendered
+    assert "Diagnostic Signals" in rendered
+    assert "Speculative Next-Run Priorities" in rendered
+    assert "invalid_grammar_count:above[theorem]" in rendered
+    assert "e:cccccccc c:dddddddd" in rendered
+    assert "lean_theorem" in rendered
+    assert "stop_campaign" in rendered
+
+
+def test_loop_result_matrix_rejects_broken_predecessor_chain(tmp_path: Path) -> None:
+    CampaignStore("cycle-1", tmp_path).initialize(
+        CampaignSpec(
+            campaign_id="cycle-1",
+            objective="Run the first bounded continuous campaign.",
+            primary_metric="score",
+            loop_id="loop-1",
+            cycle_index=1,
+            upstream_commit="a" * 40,
+            integration_commit="b" * 40,
+        )
+    )
+    CampaignStore("cycle-2", tmp_path).initialize(
+        CampaignSpec(
+            campaign_id="cycle-2",
+            objective="Run the next bounded continuous campaign.",
+            primary_metric="score",
+            loop_id="loop-1",
+            cycle_index=2,
+            predecessor_campaign_id="wrong-cycle",
+            upstream_commit="c" * 40,
+            integration_commit="d" * 40,
+        )
+    )
+    with pytest.raises(RuntimeError, match="predecessor chain"):
+        render_loop_result_matrix(tmp_path, "loop-1")
+
+
+def test_loop_result_matrix_recovers_only_initialized_predecessor_gap(
+    tmp_path: Path,
+) -> None:
+    specs = (
+        CampaignSpec(
+            campaign_id="cycle-1",
+            objective="Run the first bounded continuous campaign.",
+            primary_metric="score",
+            loop_id="loop-1",
+            cycle_index=1,
+            upstream_commit="a" * 40,
+            integration_commit="b" * 40,
+        ),
+        CampaignSpec(
+            campaign_id="cycle-2",
+            objective="Initialize an interrupted continuous campaign.",
+            primary_metric="score",
+            loop_id="loop-1",
+            cycle_index=2,
+            predecessor_campaign_id="cycle-1",
+            upstream_commit="c" * 40,
+            integration_commit="d" * 40,
+        ),
+        CampaignSpec(
+            campaign_id="cycle-3",
+            objective="Recover after the interrupted campaign.",
+            primary_metric="score",
+            loop_id="loop-1",
+            cycle_index=3,
+            predecessor_campaign_id="cycle-1",
+            upstream_commit="e" * 40,
+            integration_commit="f" * 40,
+        ),
+    )
+    for spec in specs:
+        CampaignStore(spec.campaign_id, tmp_path).initialize(spec)
+
+    assert "Run Results" in render_loop_result_matrix(tmp_path, "loop-1")
+    (tmp_path / "cycle-3" / "cycle_handoff.json").write_text("{}\n")
+    with pytest.raises(RuntimeError, match="predecessor chain"):
+        render_loop_result_matrix(tmp_path, "loop-1")
+
+
 def test_compile_resolves_canonical_published_train_version() -> None:
     spec = experiment(
         knobs=ExperimentKnobs(
@@ -1509,10 +3966,13 @@ def test_compile_resolves_canonical_published_train_version() -> None:
             compiler_alignment_margin=1.0,
             compiler_alignment_stratified=True,
             compiler_alignment_semantic_exhaustive=True,
+            compiler_alignment_kind_filter="literal-close",
             component_inventory_loss_weight=1.0,
             component_inventory_decode_weight=0.75,
             component_plan_loss_weight=1.25,
             component_plan_decode_weight=0.5,
+            slot_component_loss_weight=1.1,
+            slot_component_decode_weight=0.7,
             component_edge_loss_weight=1.5,
             component_edge_alignment_loss_weight=1.75,
             component_edge_decode_weight=0.25,
@@ -1522,6 +3982,14 @@ def test_compile_resolves_canonical_published_train_version() -> None:
             binder_topology_decode_weight=0.4,
             binder_arity_loss_weight=1.2,
             binder_arity_decode_weight=0.3,
+            binder_slot_ownership_loss_weight=1.4,
+            binder_slot_ownership_decode_weight=0.6,
+            symbol_boundary_loss_weight=1.0,
+            fidelity_loss_weight=1.5,
+            semantic_contrast_dir="resources/contrast",
+            semantic_contrast_loss_weight=0.25,
+            semantic_contrast_margin=1.0,
+            semantic_contrast_fraction=0.5,
             compiler_decode_mode="tree",
             compiler_search_mode="ptrm",
             compiler_search_trigger="stagnation",
@@ -1532,6 +4000,7 @@ def test_compile_resolves_canonical_published_train_version() -> None:
             schema_in_context=True,
             slot_contract_in_context=True,
             design_md_context=False,
+            design_md_dropout=0.25,
             local_files_only=True,
             sync_checkpoints=False,
             mixture_sampling_policy="capacity_aware",
@@ -1549,25 +4018,77 @@ def test_compile_resolves_canonical_published_train_version() -> None:
     assert "--compiler-alignment-stratified" in commands[0]
     assert commands[0][commands[0].index("--compiler-alignment-margin") + 1] == "1.0"
     assert "--compiler-alignment-semantic-exhaustive" in commands[0]
-    assert commands[0][commands[0].index("--component-inventory-loss-weight") + 1] == "1.0"
-    assert commands[0][commands[0].index("--component-inventory-decode-weight") + 1] == "0.75"
+    assert (
+        commands[0][commands[0].index("--compiler-alignment-kind-filter") + 1]
+        == "literal-close"
+    )
+    assert (
+        commands[0][commands[0].index("--component-inventory-loss-weight") + 1] == "1.0"
+    )
+    assert (
+        commands[0][commands[0].index("--component-inventory-decode-weight") + 1]
+        == "0.75"
+    )
     assert commands[0][commands[0].index("--component-plan-loss-weight") + 1] == "1.25"
     assert commands[0][commands[0].index("--component-plan-decode-weight") + 1] == "0.5"
+    assert commands[0][commands[0].index("--slot-component-loss-weight") + 1] == "1.1"
+    assert commands[0][commands[0].index("--slot-component-decode-weight") + 1] == "0.7"
     assert commands[0][commands[0].index("--component-edge-loss-weight") + 1] == "1.5"
-    assert commands[0][commands[0].index("--component-edge-alignment-loss-weight") + 1] == "1.75"
-    assert commands[0][commands[0].index("--component-edge-decode-weight") + 1] == "0.25"
-    assert commands[0][commands[0].index("--binder-component-plan-loss-weight") + 1] == "1.1"
-    assert commands[0][commands[0].index("--binder-component-plan-decode-weight") + 1] == "0.2"
+    assert (
+        commands[0][commands[0].index("--component-edge-alignment-loss-weight") + 1]
+        == "1.75"
+    )
+    assert (
+        commands[0][commands[0].index("--component-edge-decode-weight") + 1] == "0.25"
+    )
+    assert (
+        commands[0][commands[0].index("--binder-component-plan-loss-weight") + 1]
+        == "1.1"
+    )
+    assert (
+        commands[0][commands[0].index("--binder-component-plan-decode-weight") + 1]
+        == "0.2"
+    )
     assert commands[0][commands[0].index("--binder-topology-loss-weight") + 1] == "1.3"
-    assert commands[0][commands[0].index("--binder-topology-decode-weight") + 1] == "0.4"
+    assert (
+        commands[0][commands[0].index("--binder-topology-decode-weight") + 1] == "0.4"
+    )
     assert commands[0][commands[0].index("--binder-arity-loss-weight") + 1] == "1.2"
     assert commands[0][commands[0].index("--binder-arity-decode-weight") + 1] == "0.3"
+    assert (
+        commands[0][commands[0].index("--binder-slot-ownership-loss-weight") + 1]
+        == "1.4"
+    )
+    assert (
+        commands[0][commands[0].index("--binder-slot-ownership-decode-weight") + 1]
+        == "0.6"
+    )
+    assert commands[0][commands[0].index("--symbol-boundary-loss-weight") + 1] == (
+        "1.0"
+    )
+    assert commands[0][commands[0].index("--fidelity-loss-weight") + 1] == "1.5"
+    assert commands[0][commands[0].index("--semantic-contrast-dir") + 1] == (
+        "resources/contrast"
+    )
+    assert commands[0][commands[0].index("--semantic-contrast-loss-weight") + 1] == (
+        "0.25"
+    )
+    assert commands[0][commands[0].index("--semantic-contrast-margin") + 1] == "1.0"
+    assert commands[0][commands[0].index("--semantic-contrast-fraction") + 1] == (
+        "0.5"
+    )
+    assert commands[0][commands[0].index("--compiler-decode-mode") + 1] == "tree"
+    assert "--grammar-ltr-primary" in commands[0]
     assert "--schema-in-context" in commands[0]
     assert "--slot-contract-in-context" in commands[0]
     assert "--no-design-md-context" in commands[0]
+    assert commands[0][commands[0].index("--design-md-dropout") + 1] == "0.25"
     assert "--local-files-only" in commands[0]
     assert "--no-sync-checkpoints" in commands[0]
-    assert commands[0][commands[0].index("--mixture-sampling-policy") + 1] == "capacity_aware"
+    assert (
+        commands[0][commands[0].index("--mixture-sampling-policy") + 1]
+        == "capacity_aware"
+    )
     assert commands[-1][commands[-1].index("--compiler-decode-mode") + 1] == "tree"
     assert commands[-1][commands[-1].index("--compiler-search-mode") + 1] == "ptrm"
     assert commands[-1][commands[-1].index("--compiler-search-width") + 1] == "4"
@@ -1585,13 +4106,176 @@ def test_execute_records_process_launch_failure() -> None:
     assert outcome.stage_telemetry[0]["launch_error"]
 
 
-def test_experiment_wall_budget_defaults_to_two_minutes_and_is_capped() -> None:
+def test_execute_ingests_fresh_decode_progress_on_stage_timeout(
+    tmp_path: Path, monkeypatch
+) -> None:
+    import slm_training.autoresearch.engine as engine
+    from slm_training.harness_core.bounded_process import (
+        BoundedProcessResult,
+        ProcessOutcome,
+    )
+
+    run_root = tmp_path / "runs"
+    run_id = "interrupted-eval"
+    progress_path = run_root / run_id / "decode_progress.json"
+
+    def timed_out(command, **_kwargs):
+        progress_path.parent.mkdir(parents=True)
+        progress_path.write_text(
+            json.dumps(
+                {
+                    "schema_version": "DecodeProgressV1",
+                    "run_id": run_id,
+                    "measurement_complete": False,
+                    "scoreable": False,
+                    "decode_stats": {"completion_witness_states_expanded_sum": 9},
+                }
+            )
+        )
+        return BoundedProcessResult(
+            command=tuple(command),
+            outcome=ProcessOutcome.INTERRUPTED,
+            returncode=130,
+            stdout="",
+            stderr="interrupted",
+            duration_seconds=1.0,
+            timed_out=True,
+            interrupted=True,
+        )
+
+    monkeypatch.setattr(engine, "run_bounded_process", timed_out)
+    outcome = execute_commands(
+        experiment(),
+        [
+            [
+                "python",
+                "-m",
+                "scripts.evaluate_model",
+                "--run-root",
+                str(run_root),
+                "--run-id",
+                run_id,
+            ]
+        ],
+        cwd=tmp_path,
+    )
+
+    assert outcome.status == "stopped"
+    stage = outcome.stage_telemetry[0]
+    assert stage["measurement_complete"] is False
+    assert stage["partial_output_source"] == str(progress_path)
+    assert stage["partial_output"]["scoreable"] is False
+    assert (
+        stage["partial_output"]["decode_stats"][
+            "completion_witness_states_expanded_sum"
+        ]
+        == 9
+    )
+
+
+@pytest.mark.parametrize("sidecar_case", ["unchanged", "invalid"])
+def test_execute_rejects_untrusted_decode_progress_on_stage_timeout(
+    tmp_path: Path, monkeypatch, sidecar_case: str
+) -> None:
+    import slm_training.autoresearch.engine as engine
+    from slm_training.harness_core.bounded_process import (
+        BoundedProcessResult,
+        ProcessOutcome,
+    )
+
+    run_root = tmp_path / "runs"
+    run_id = "interrupted-eval"
+    progress_path = run_root / run_id / "decode_progress.json"
+    if sidecar_case == "unchanged":
+        progress_path.parent.mkdir(parents=True)
+        progress_path.write_text(
+            json.dumps(
+                {
+                    "schema_version": "DecodeProgressV1",
+                    "run_id": run_id,
+                    "measurement_complete": False,
+                    "scoreable": False,
+                }
+            )
+        )
+
+    def timed_out(command, **_kwargs):
+        if sidecar_case == "invalid":
+            progress_path.parent.mkdir(parents=True)
+            progress_path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "DecodeProgressV1",
+                        "run_id": run_id,
+                        "measurement_complete": False,
+                        "scoreable": True,
+                    }
+                )
+            )
+        return BoundedProcessResult(
+            command=tuple(command),
+            outcome=ProcessOutcome.INTERRUPTED,
+            returncode=130,
+            stdout="",
+            stderr="interrupted",
+            duration_seconds=1.0,
+            timed_out=True,
+            interrupted=True,
+        )
+
+    monkeypatch.setattr(engine, "run_bounded_process", timed_out)
+    outcome = execute_commands(
+        experiment(),
+        [
+            [
+                "python",
+                "-m",
+                "scripts.evaluate_model",
+                "--run-root",
+                str(run_root),
+                "--run-id",
+                run_id,
+            ]
+        ],
+        cwd=tmp_path,
+    )
+
+    assert outcome.status == "stopped"
+    stage = outcome.stage_telemetry[0]
+    assert stage["measurement_complete"] is False
+    assert "partial_output" not in stage
+    assert "partial_output_source" not in stage
+
+
+def test_experiment_wall_budget_reads_history_but_execution_is_capped() -> None:
     assert CampaignBudget().max_wall_minutes == float(MAX_RUN_MINUTES)
     assert CampaignBudget(max_wall_minutes=0.25).max_wall_minutes == 0.25
-    with pytest.raises(
-        ValidationError, match=f"less than or equal to {MAX_RUN_MINUTES}"
-    ):
-        CampaignBudget(max_wall_minutes=MAX_RUN_MINUTES + 0.01)
+    historical = CampaignSpec(
+        campaign_id="historical-long-wall",
+        objective="Read a legacy campaign artifact.",
+        primary_metric="score",
+        budget=CampaignBudget(max_wall_minutes=12),
+    )
+    from scripts.autoresearch import _bounded_campaign_seconds
+
+    assert _bounded_campaign_seconds(historical) == float(MAX_RUN_MINUTES * 60)
+
+
+def test_dynamic_experiment_wall_is_bounded_by_campaign_ceiling() -> None:
+    from scripts.autoresearch import _bounded_experiment_seconds
+
+    bounded = CampaignSpec(
+        campaign_id="bounded-dynamic-wall",
+        objective="Bound a dynamic experiment arm share.",
+        primary_metric="score",
+        budget=CampaignBudget(max_wall_minutes=2),
+    )
+
+    assert _bounded_experiment_seconds(bounded, 73.25) == 73.25
+    assert _bounded_experiment_seconds(bounded, 180) == 120
+    assert _bounded_experiment_seconds(bounded, None) == 120
+    with pytest.raises(ValueError, match="must be positive"):
+        _bounded_experiment_seconds(bounded, 0)
 
 
 def test_execute_shares_one_wall_budget_across_stages(monkeypatch) -> None:
@@ -1603,10 +4287,12 @@ def test_execute_shares_one_wall_budget_across_stages(monkeypatch) -> None:
     monkeypatch.setattr(engine.time, "monotonic", lambda: next(time_reads))
 
     def complete(command, **kwargs):
-        timeouts.append(kwargs["timeout"])
+        timeouts.append(
+            kwargs["interrupt_after_seconds"] + kwargs["kill_grace_seconds"]
+        )
         return subprocess.CompletedProcess(command, 0, stdout="{}", stderr="")
 
-    monkeypatch.setattr(engine.subprocess, "run", complete)
+    monkeypatch.setattr(engine, "run_bounded_process", complete)
     outcome = execute_commands(
         experiment(),
         [["stage-one"], ["stage-two"]],
@@ -1616,6 +4302,502 @@ def test_execute_shares_one_wall_budget_across_stages(monkeypatch) -> None:
     assert outcome.status == "completed"
     assert timeouts == [4.0, 1.5]
     assert outcome.wall_time_budget_seconds == 5.0
+
+
+def test_execute_limits_threads_for_scratch_cpu_stages(monkeypatch) -> None:
+    import slm_training.autoresearch.engine as engine
+
+    monkeypatch.setenv("OMP_NUM_THREADS", "11")
+    monkeypatch.setenv("MKL_NUM_THREADS", "11")
+    scratch = experiment().model_copy(
+        update={
+            "knobs": experiment().knobs.model_copy(
+                update={"context_backend": "scratch"}
+            )
+        }
+    )
+
+    train_env = engine._stage_environment(
+        scratch, ["python", "-m", "scripts.train_model"]
+    )
+    eval_env = engine._stage_environment(
+        scratch, ["python", "-m", "scripts.evaluate_model"]
+    )
+
+    assert train_env and train_env["OMP_NUM_THREADS"] == "1"
+    assert train_env["MKL_NUM_THREADS"] == "1"
+    assert eval_env and eval_env["OMP_NUM_THREADS"] == "1"
+    assert engine._stage_environment(
+        scratch, ["python", "-m", "scripts.build_train_data"]
+    ) is None
+
+
+def test_execute_passes_inner_wall_to_evaluation(monkeypatch) -> None:
+    import slm_training.autoresearch.engine as engine
+
+    calls: list[list[str]] = []
+    interrupt_walls: list[float] = []
+
+    def complete(command, **kwargs):
+        calls.append(command)
+        interrupt_walls.append(kwargs["interrupt_after_seconds"])
+        return subprocess.CompletedProcess(
+            command,
+            0,
+            stdout=json.dumps({"suites": {}, "gates": {"pass": False}}),
+            stderr="",
+        )
+
+    monkeypatch.setattr(engine, "run_bounded_process", complete)
+    execute_commands(
+        experiment(),
+        [["python", "-m", "scripts.evaluate_model"]],
+        timeout_seconds=30.0,
+    )
+
+    assert "--evaluation-wall-seconds" in calls[0]
+    inner_wall = float(calls[0][calls[0].index("--evaluation-wall-seconds") + 1])
+    assert 0 < inner_wall < 30.0
+    assert interrupt_walls[0] - inner_wall == pytest.approx(5.0)
+
+
+def test_execute_rejects_partial_train_before_evaluation(
+    tmp_path: Path, monkeypatch
+) -> None:
+    import slm_training.autoresearch.engine as engine
+
+    calls: list[list[str]] = []
+
+    def complete(command, **kwargs):
+        del kwargs
+        calls.append(command)
+        return subprocess.CompletedProcess(
+            command,
+            0,
+            stdout=json.dumps(
+                {
+                    "steps": 7,
+                    "stopped_on": "wall_time_budget",
+                    "checkpoint": "unused.pt",
+                }
+            ),
+            stderr="",
+        )
+
+    monkeypatch.setattr(engine, "run_bounded_process", complete)
+    outcome = execute_commands(
+        experiment(),
+        [
+            ["python", "-m", "scripts.train_model", "--steps", "20"],
+            ["python", "-m", "scripts.evaluate_model", "--ship-gates"],
+        ],
+        cwd=tmp_path,
+    )
+
+    assert outcome.status == "stopped"
+    assert outcome.error == "training stopped_on=wall_time_budget before declared steps"
+    assert len(calls) == 1
+    assert outcome.stage_telemetry[0]["measurement_complete"] is False
+
+
+def test_execute_rejects_invalid_declared_training_steps(
+    tmp_path: Path, monkeypatch
+) -> None:
+    import slm_training.autoresearch.engine as engine
+
+    monkeypatch.setattr(
+        engine,
+        "run_bounded_process",
+        lambda *args, **kwargs: subprocess.CompletedProcess(
+            [],
+            0,
+            stdout=json.dumps(
+                {
+                    "steps": 20,
+                    "stopped_on": "steps",
+                    "checkpoint": "unused.pt",
+                }
+            ),
+            stderr="",
+        ),
+    )
+    outcome = execute_commands(
+        experiment(),
+        [["python", "-m", "scripts.train_model", "--steps", "many"]],
+        cwd=tmp_path,
+    )
+
+    assert outcome.status == "stopped"
+    assert outcome.error == "training declared invalid --steps value 'many'"
+
+
+def test_execute_resolves_truncated_train_stdout_from_canonical_summary(
+    tmp_path: Path, monkeypatch
+) -> None:
+    import slm_training.autoresearch.engine as engine
+
+    run_root = tmp_path / "runs"
+    run_id = "truncated-summary"
+    run_dir = run_root / run_id
+    checkpoint = run_dir / "checkpoints" / "last.pt"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"checkpoint")
+    train_summary = {
+        "steps": 20,
+        "stopped_on": "steps",
+        "checkpoint": str(checkpoint),
+        "track": {"trainable_params": 12345},
+        "version_stamp": {
+            "stamp_schema": "version_stamp/v1",
+            "code_commit": "a" * 40,
+            "code_dirty": False,
+            "components": {},
+        },
+        "large_payload": "x" * 100_000,
+    }
+    evaluation = _complete_gate_scoreboard(run_dir / "agentv")
+    evaluation["suites"]["smoke"]["task_scoreboard"] = {
+        f"verbose_{index}": float(index) for index in range(350)
+    }
+    evaluation["suites"]["held_out"] = {
+        "n": 5,
+        "document_n": 5,
+        "completed_document_n": 5,
+        "incomplete_document_n": 0,
+        "decode_timeout_count": 0,
+        "structural_similarity": 0.8,
+    }
+    evaluation["large_payload"] = "y" * 100_000
+    replies = iter(
+        (
+            subprocess.CompletedProcess([], 0, stdout='"tail":"truncated"}', stderr=""),
+            subprocess.CompletedProcess(
+                [],
+                8,
+                stdout='"tail":"truncated"}',
+                stderr="",
+            ),
+        )
+    )
+
+    def run_stage(*args, **kwargs):
+        reply = next(replies)
+        artifact = (
+            run_dir / "train_summary.json"
+            if not (run_dir / "train_summary.json").exists()
+            else run_dir / "scoreboard.json"
+        )
+        artifact.write_text(
+            json.dumps(
+                train_summary if artifact.name == "train_summary.json" else evaluation
+            )
+        )
+        return reply
+
+    monkeypatch.setattr(engine, "run_bounded_process", run_stage)
+
+    outcome = execute_commands(
+        experiment(),
+        [
+            [
+                "python",
+                "-m",
+                "scripts.train_model",
+                "--steps",
+                "20",
+                "--run-root",
+                str(run_root),
+                "--run-id",
+                run_id,
+            ],
+            [
+                "python",
+                "-m",
+                "scripts.evaluate_model",
+                "--ship-gates",
+                "--run-root",
+                str(run_root),
+                "--run-id",
+                run_id,
+            ],
+        ],
+        cwd=tmp_path,
+    )
+
+    assert outcome.status == "completed"
+    assert outcome.metrics["trainable_params"] == 12345
+    assert outcome.metrics["suites.held_out.structural_similarity"] == 0.8
+    assert outcome.stage_telemetry[0]["parsed_output_source"] == str(
+        run_dir / "train_summary.json"
+    )
+    assert outcome.stage_telemetry[1]["parsed_output_source"] == str(
+        run_dir / "scoreboard.json"
+    )
+
+
+def test_execute_rejects_unchanged_canonical_summary_from_prior_attempt(
+    tmp_path: Path, monkeypatch
+) -> None:
+    import slm_training.autoresearch.engine as engine
+
+    run_root = tmp_path / "runs"
+    run_id = "stale-summary"
+    run_dir = run_root / run_id
+    checkpoint = run_dir / "checkpoints" / "last.pt"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"checkpoint")
+    (run_dir / "train_summary.json").write_text(
+        json.dumps(
+            {
+                "steps": 20,
+                "stopped_on": "steps",
+                "checkpoint": str(checkpoint),
+            }
+        )
+    )
+    monkeypatch.setattr(
+        engine,
+        "run_bounded_process",
+        lambda *args, **kwargs: subprocess.CompletedProcess(
+            [], 0, stdout='"tail":"truncated"}', stderr=""
+        ),
+    )
+
+    outcome = execute_commands(
+        experiment(),
+        [
+            [
+                "python",
+                "-m",
+                "scripts.train_model",
+                "--steps",
+                "20",
+                "--run-root",
+                str(run_root),
+                "--run-id",
+                run_id,
+            ]
+        ],
+        cwd=tmp_path,
+    )
+
+    assert outcome.status == "stopped"
+    assert outcome.error == "training produced no typed summary"
+    assert outcome.stage_telemetry[0]["parsed_output_source"] is None
+
+
+def test_execute_keeps_typed_ship_gate_rejection_as_completed_evidence(
+    tmp_path: Path, monkeypatch
+) -> None:
+    import slm_training.autoresearch.engine as engine
+
+    checkpoint = tmp_path / "last.pt"
+    checkpoint.write_bytes(b"checkpoint")
+    evaluation = _complete_gate_scoreboard(tmp_path / "agentv")
+    replies = iter(
+        (
+            subprocess.CompletedProcess(
+                [],
+                0,
+                stdout=json.dumps(
+                    {
+                        "steps": 20,
+                        "stopped_on": "steps",
+                        "checkpoint": str(checkpoint),
+                    }
+                ),
+                stderr="",
+            ),
+            subprocess.CompletedProcess(
+                [],
+                8,
+                stdout=json.dumps(evaluation),
+                stderr="",
+            ),
+        )
+    )
+    monkeypatch.setattr(
+        engine, "run_bounded_process", lambda *args, **kwargs: next(replies)
+    )
+
+    outcome = execute_commands(
+        experiment(),
+        [
+            ["python", "-m", "scripts.train_model", "--steps", "20"],
+            ["python", "-m", "scripts.evaluate_model", "--ship-gates"],
+        ],
+        cwd=tmp_path,
+    )
+
+    assert outcome.status == "completed"
+    assert outcome.metrics["gates.pass"] == 0.0
+    assert outcome.stage_telemetry[-1]["expected_gate_rejection"] is True
+
+
+@pytest.mark.parametrize(
+    "missing_counter",
+    case_values(
+        __file__, "test_expected_gate_rejection_requires_every_completeness_counter"
+    ),
+)
+def test_expected_gate_rejection_requires_every_completeness_counter(
+    tmp_path: Path, missing_counter: str
+) -> None:
+    from slm_training.autoresearch.engine import _expected_gate_rejection
+
+    scoreboard = _complete_gate_scoreboard(tmp_path / "agentv")
+    del scoreboard["suites"]["smoke"][missing_counter]  # type: ignore[index]
+
+    assert not _expected_gate_rejection(
+        ["python", "-m", "scripts.evaluate_model", "--ship-gates"],
+        8,
+        scoreboard,
+        artifact_root=tmp_path,
+    )
+
+
+@pytest.mark.parametrize("missing_binding", ("spec", "indexPath"))
+def test_expected_gate_rejection_requires_agentv_artifact_bindings(
+    tmp_path: Path, missing_binding: str
+) -> None:
+    from slm_training.autoresearch.engine import _expected_gate_rejection
+
+    scoreboard = _complete_gate_scoreboard(tmp_path / "agentv")
+    evals = scoreboard["evals"]  # type: ignore[assignment]
+    if missing_binding == "spec":
+        del evals["spec"]
+    else:
+        del evals["artifacts"][missing_binding]
+
+    assert not _expected_gate_rejection(
+        ["python", "-m", "scripts.evaluate_model", "--ship-gates"],
+        8,
+        scoreboard,
+        artifact_root=tmp_path,
+    )
+
+
+def test_execute_rejects_partial_ship_gate_scoreboard(
+    tmp_path: Path, monkeypatch
+) -> None:
+    import slm_training.autoresearch.engine as engine
+
+    checkpoint = tmp_path / "last.pt"
+    checkpoint.write_bytes(b"checkpoint")
+    evaluation = _complete_gate_scoreboard(tmp_path / "agentv")
+    evaluation["suites"]["smoke"].update(  # type: ignore[index]
+        {
+            "completed_document_n": 1,
+            "incomplete_document_n": 2,
+            "decode_timeout_count": 2,
+        }
+    )
+    replies = iter(
+        (
+            subprocess.CompletedProcess(
+                [],
+                0,
+                stdout=json.dumps(
+                    {
+                        "steps": 20,
+                        "stopped_on": "steps",
+                        "checkpoint": str(checkpoint),
+                    }
+                ),
+                stderr="",
+            ),
+            subprocess.CompletedProcess(
+                [],
+                8,
+                stdout=json.dumps(evaluation),
+                stderr="",
+            ),
+        )
+    )
+    monkeypatch.setattr(
+        engine, "run_bounded_process", lambda *args, **kwargs: next(replies)
+    )
+
+    outcome = execute_commands(
+        experiment(),
+        [
+            ["python", "-m", "scripts.train_model", "--steps", "20"],
+            ["python", "-m", "scripts.evaluate_model", "--ship-gates"],
+        ],
+        cwd=tmp_path,
+    )
+
+    assert outcome.status == "failed"
+    assert outcome.stage_telemetry[-1]["expected_gate_rejection"] is False
+
+
+def test_decode_timeout_scoreboard_routes_to_infrastructure() -> None:
+    diagnosis = diagnose_outcome(
+        ExperimentOutcome(
+            experiment_id="c1707-control",
+            campaign_id="continuous-loop-c1707",
+            status="completed",
+            metrics={
+                "suites.smoke.n": 3,
+                "suites.smoke.document_n": 3,
+                "suites.smoke.completed_document_n": 0,
+                "suites.smoke.decode_timeout_count": 3,
+                "gates.pass": 0,
+            },
+        )
+    )
+
+    assert diagnosis.target == "infrastructure"
+    assert "model attribution is unavailable" in diagnosis.evidence[0]
+
+
+def test_gate_failure_diagnosis_rejects_missing_completeness_counters() -> None:
+    diagnosis = diagnose_outcome(
+        ExperimentOutcome(
+            experiment_id="quality-null",
+            campaign_id="continuous-loop",
+            status="completed",
+            metrics={"suites.smoke.parse_rate": 1, "gates.pass": 0},
+        )
+    )
+
+    assert diagnosis.target == "infrastructure"
+    assert "model attribution is unavailable" in diagnosis.evidence[0]
+
+
+def test_partial_decode_scoreboard_routes_to_infrastructure() -> None:
+    diagnosis = diagnose_outcome(
+        ExperimentOutcome(
+            experiment_id="partial-candidate",
+            campaign_id="partial-cycle",
+            status="completed",
+            metrics={
+                "suites.smoke.n": 3,
+                "suites.smoke.document_n": 3,
+                "suites.smoke.completed_document_n": 1,
+                "suites.smoke.incomplete_document_n": 2,
+                "gates.pass": 0,
+            },
+        )
+    )
+
+    assert diagnosis.target == "infrastructure"
+
+
+def test_stopped_eval_with_training_metrics_routes_to_infrastructure() -> None:
+    diagnosis = diagnose_outcome(
+        ExperimentOutcome(
+            experiment_id="partial-candidate",
+            campaign_id="partial-cycle",
+            status="stopped",
+            metrics={"train.last_loss": 1.25},
+            error="stage exceeded wall-time limit: evaluate_model",
+        )
+    )
+
+    assert diagnosis.target == "infrastructure"
+    assert "wall-time" in diagnosis.evidence[0]
+    assert "identical spec" in diagnosis.recommended_actions[0]
 
 
 def test_train_version_and_data_build_are_mutually_exclusive() -> None:
@@ -1684,12 +4866,13 @@ def test_compile_dynamic_symbol_campaign_uses_typed_flags() -> None:
             constraint_graph_mode="hybrid",
             grammar_equivalence_cache=True,
             compact_active_canvas=False,
+            grammar_draft_window=16,
         )
     )
-    train = next(
-        command
-        for command in compile_commands(campaign(), spec)
-        if "scripts.train_model" in command
+    commands = compile_commands(campaign(), spec)
+    train = next(command for command in commands if "scripts.train_model" in command)
+    evaluate = next(
+        command for command in commands if "scripts.evaluate_model" in command
     )
     assert train[train.index("--output-tokenizer") + 1] == "lexer"
     assert train[train.index("--runtime-symbol-features") + 1] == "role_gated"
@@ -1698,6 +4881,8 @@ def test_compile_dynamic_symbol_campaign_uses_typed_flags() -> None:
     assert "--semantic-candidate-masks" in train
     assert "--grammar-equivalence-cache" in train
     assert "--no-compact-active-canvas" in train
+    assert evaluate[evaluate.index("--grammar-draft-window") + 1] == "16"
+    assert "--flags-json" not in evaluate
 
 
 def test_rl_readiness_is_fail_closed() -> None:
@@ -1753,7 +4938,9 @@ def test_compile_action_alias_knobs() -> None:
         for command in compile_commands(campaign(), spec)
         if "scripts.train_model" in command
     )
-    assert train[train.index("--action-embedding-init") + 1] == "alias_aware_description"
+    assert (
+        train[train.index("--action-embedding-init") + 1] == "alias_aware_description"
+    )
     assert train[train.index("--action-embedding-train") + 1] == "frozen"
     assert train[train.index("--action-alias-mode") + 1] == "fixed"
     assert train[train.index("--action-alias-manifest") + 1] == "/tmp/alias_map.json"
@@ -1761,3 +4948,57 @@ def test_compile_action_alias_knobs() -> None:
         train[train.index("--action-description-name-mode") + 1]
         == "alias_aware_description"
     )
+
+
+def test_compile_structural_aux_head_profile() -> None:
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            steps=2,
+            structural_aux_head_profile="binder-topology",
+        )
+    )
+    train = next(
+        command
+        for command in compile_commands(campaign(), spec)
+        if "scripts.train_model" in command
+    )
+    assert train[train.index("--structural-aux-head-profile") + 1] == "binder-topology"
+
+
+def test_default_eval_version_resolves_published_smoke_suite() -> None:
+    from slm_training.autoresearch.engine import default_eval_version
+    from slm_training.data.store import DataStore
+
+    name = default_eval_version()
+    root = DataStore().resolve_path("eval", name)
+    assert (root / "suites" / "smoke" / "records.jsonl").is_file()
+
+
+def test_compile_commands_default_eval_is_not_missing_v1() -> None:
+    from slm_training.autoresearch.engine import compile_commands
+    from slm_training.autoresearch.schemas import (
+        CampaignSpec,
+        ExperimentKnobs,
+        ExperimentSpec,
+    )
+
+    campaign = CampaignSpec(
+        campaign_id="eval-default",
+        objective="Ensure continuous eval defaults resolve.",
+        primary_metric="smoke.parse_rate",
+    )
+    experiment = ExperimentSpec(
+        experiment_id="eval-default-1",
+        campaign_id="eval-default",
+        hypothesis="Default eval points at a published smoke suite.",
+        rationale="Continuous loops must not die on missing v1.",
+        expected_effect="evaluate_model receives a resolvable test-dir.",
+        falsification_criteria=("Default still points at missing v1.",),
+        stop_conditions=("Stop after plan compile.",),
+        citations=("docs/design/research-lineage.md",),
+        knobs=ExperimentKnobs(train_version="wf_smoke_v2", steps=2, seed=0),
+    )
+    commands = compile_commands(campaign, experiment)
+    evaluate = next(cmd for cmd in commands if "scripts.evaluate_model" in cmd)
+    test_dir = evaluate[evaluate.index("--test-dir") + 1]
+    assert test_dir != "v1"

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import time
 from collections import defaultdict
 from contextlib import contextmanager
@@ -18,9 +19,20 @@ class SpanStats:
     count: int = 0
     total_ms: float = 0.0
     max_ms: float = 0.0
+    samples_ns: list[int] = field(default_factory=list)
 
     def add(self, ms: float) -> None:
+        value = float(ms)
+        if not math.isfinite(value) or value < 0:
+            raise ValueError("span duration must be finite and non-negative")
+        self.add_ns(round(value * 1_000_000))
+
+    def add_ns(self, ns: int) -> None:
+        if ns < 0:
+            raise ValueError("span duration must be non-negative")
+        ms = ns / 1_000_000
         self.count += 1
+        self.samples_ns.append(ns)
         self.total_ms += ms
         if ms > self.max_ms:
             self.max_ms = ms
@@ -35,6 +47,7 @@ class SpanStats:
             "total_ms": round(self.total_ms, 3),
             "mean_ms": round(self.mean_ms, 3),
             "max_ms": round(self.max_ms, 3),
+            "samples_ns": list(self.samples_ns),
             "pct": None,  # filled by CycleTelemetry.summary
         }
 
@@ -52,11 +65,11 @@ class CycleTelemetry:
         if not self.enabled:
             yield
             return
-        t0 = time.perf_counter()
+        t0 = time.perf_counter_ns()
         try:
             yield
         finally:
-            self.spans[name].add((time.perf_counter() - t0) * 1000.0)
+            self.spans[name].add_ns(time.perf_counter_ns() - t0)
 
     def record_ms(self, name: str, ms: float) -> None:
         if self.enabled:

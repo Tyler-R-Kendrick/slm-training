@@ -36,6 +36,116 @@ def test_agentv_runtime_uses_git_common_checkout_for_worktree_sdk(
     assert _agentv_runtime(worktree) == (runner, common_root)
 
 
+def test_agentv_runtime_bootstraps_missing_sdk_via_npm_ci(
+    tmp_path, monkeypatch
+) -> None:
+    root = tmp_path / "repo"
+    runner = root / "scripts/run_agentv_eval.mjs"
+    lockfile = root / "package-lock.json"
+    sdk = root / "node_modules/@agentv/core/package.json"
+    runner.parent.mkdir(parents=True)
+    runner.write_text("// runner")
+    lockfile.write_text("{}")
+    monkeypatch.delenv("AGENTV_RUNNER", raising=False)
+    monkeypatch.setattr(agentv_module, "checkout_roots", lambda root: (root,))
+
+    captured = {}
+
+    def fake_run(command, **kwargs):
+        captured["command"] = command
+        captured["env"] = kwargs.get("env")
+        sdk.parent.mkdir(parents=True, exist_ok=True)
+        sdk.write_text("{}")
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(agentv_module.subprocess, "run", fake_run)
+
+    assert _agentv_runtime(root) == (runner, root)
+    assert captured["command"] == ["npm", "ci"]
+    assert captured["env"]["NODE_OPTIONS"] == ""
+
+
+def test_agentv_runtime_still_raises_when_bootstrap_fails(
+    tmp_path, monkeypatch
+) -> None:
+    root = tmp_path / "repo"
+    runner = root / "scripts/run_agentv_eval.mjs"
+    runner.parent.mkdir(parents=True)
+    runner.write_text("// runner")
+    (root / "package-lock.json").write_text("{}")
+    monkeypatch.delenv("AGENTV_RUNNER", raising=False)
+    monkeypatch.setattr(agentv_module, "checkout_roots", lambda root: (root,))
+    monkeypatch.setattr(
+        agentv_module.subprocess,
+        "run",
+        lambda *a, **k: SimpleNamespace(returncode=1, stdout="", stderr="boom"),
+    )
+
+    try:
+        _agentv_runtime(root)
+    except RuntimeError as exc:
+        assert "npm ci" in str(exc)
+        assert "boom" in str(exc)  # bootstrap failure detail is not discarded
+    else:  # pragma: no cover - failure path must raise
+        raise AssertionError("expected RuntimeError when bootstrap fails")
+
+
+def test_agentv_runtime_bootstraps_common_checkout_before_worktree(
+    tmp_path, monkeypatch
+) -> None:
+    """Neither root has the SDK: install in the shared common checkout, not the worktree."""
+    common_root = tmp_path / "repo"
+    worktree = tmp_path / "worktree"
+    for root in (common_root, worktree):
+        (root / "scripts").mkdir(parents=True)
+        (root / "scripts/run_agentv_eval.mjs").write_text("// runner")
+        (root / "package-lock.json").write_text("{}")
+    monkeypatch.delenv("AGENTV_RUNNER", raising=False)
+    monkeypatch.setattr(
+        agentv_module, "checkout_roots", lambda root: (worktree, common_root)
+    )
+
+    bootstrapped_roots = []
+
+    def fake_run(command, *, cwd, **kwargs):
+        bootstrapped_roots.append(Path(cwd))
+        sdk = Path(cwd) / "node_modules/@agentv/core/package.json"
+        sdk.parent.mkdir(parents=True, exist_ok=True)
+        sdk.write_text("{}")
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(agentv_module.subprocess, "run", fake_run)
+
+    runner, root = _agentv_runtime(worktree)
+    assert root == common_root
+    assert bootstrapped_roots == [common_root]  # never installed into the worktree
+
+
+def test_agentv_runtime_reuses_existing_sdk_without_bootstrapping(
+    tmp_path, monkeypatch
+) -> None:
+    common_root = tmp_path / "repo"
+    worktree = tmp_path / "worktree"
+    runner = common_root / "scripts/run_agentv_eval.mjs"
+    sdk = common_root / "node_modules/@agentv/core/package.json"
+    runner.parent.mkdir(parents=True)
+    sdk.parent.mkdir(parents=True)
+    runner.write_text("// runner")
+    sdk.write_text("{}")
+    worktree.mkdir()
+    monkeypatch.delenv("AGENTV_RUNNER", raising=False)
+    monkeypatch.setattr(
+        agentv_module, "checkout_roots", lambda root: (worktree, common_root)
+    )
+
+    def fail_if_called(*args, **kwargs):  # pragma: no cover - must not run
+        raise AssertionError("npm ci must not run when an SDK is already installed")
+
+    monkeypatch.setattr(agentv_module.subprocess, "run", fail_if_called)
+
+    assert _agentv_runtime(worktree) == (runner, common_root)
+
+
 def test_model_ship_cases_fail_closed_on_missing_suites() -> None:
     cases = model_ship_gate_cases(
         {
@@ -44,6 +154,8 @@ def test_model_ship_cases_fail_closed_on_missing_suites() -> None:
                 "parse_rate": 1.0,
                 "structural_similarity": 1.0,
                 "component_type_recall": 1.0,
+                "ast_beq_rate": 1.0,
+                "canonical_beq_rate": 1.0,
                 "placeholder_fidelity": 1.0,
                 "reward_score": 1.0,
                 "fallback_count": 0,
@@ -70,6 +182,37 @@ def test_model_ship_cases_fail_closed_on_missing_suites() -> None:
         ]
         for case in cases[1:]
     )
+
+
+def test_model_ship_cases_publish_reachability_as_raw_assertion() -> None:
+    cases = model_ship_gate_cases(
+        {
+            "smoke": {
+                "n": 32,
+                "meaningful_program_rate": 1.0,
+                "structural_similarity": 1.0,
+                "component_type_recall": 1.0,
+                "placeholder_fidelity": 1.0,
+                "reward_score": 1.0,
+                "fallback_count": 0,
+            }
+        },
+        include_missing_suites=False,
+        suite_reachability={"smoke": 0.5},
+    )
+
+    assertion = next(
+        item
+        for item in cases[0]["assertions"]
+        if item["id"] == "smoke:reachability_unproven"
+    )
+    assert assertion == {
+        "id": "smoke:reachability_unproven",
+        "suite": "smoke",
+        "actual": 0.5,
+        "operator": "eq",
+        "expected": 1.0,
+    }
 
 
 def test_publish_agentv_evaluation_uses_sdk_and_jsonl(tmp_path) -> None:
@@ -166,6 +309,34 @@ def test_agentv_forwards_w3c_trace_id_to_the_node_runner(tmp_path, monkeypatch) 
     ]
 
 
+def test_agentv_clears_node_options_for_the_runner_subprocess(
+    tmp_path, monkeypatch
+) -> None:
+    runner = tmp_path / "runner.mjs"
+    runner.write_text("// fixture")
+    sdk_root = tmp_path / "sdk-root"
+    captured = {}
+    monkeypatch.setattr(agentv_module, "_agentv_runtime", lambda _: (runner, sdk_root))
+    monkeypatch.setenv("NODE_OPTIONS", "--import tsx")
+
+    def fake_run(command, **kwargs):
+        captured["env"] = kwargs.get("env")
+        return SimpleNamespace(
+            returncode=0,
+            stdout=json.dumps({"summary": {}, "artifacts": {}}),
+            stderr="",
+        )
+
+    monkeypatch.setattr(agentv_module.subprocess, "run", fake_run)
+    publish_agentv_evaluation(
+        tmp_path,
+        name="node-options",
+        claim="fixture_wiring_not_ship",
+        cases=[{"id": "case", "criteria": "passes", "pass": True}],
+    )
+    assert captured["env"]["NODE_OPTIONS"] == ""
+
+
 def test_agentv_model_bundle_cannot_pass_a_smoke_only_run(tmp_path) -> None:
     published = publish_model_evaluation(
         tmp_path,
@@ -175,6 +346,8 @@ def test_agentv_model_bundle_cannot_pass_a_smoke_only_run(tmp_path) -> None:
                 "parse_rate": 1.0,
                 "structural_similarity": 1.0,
                 "component_type_recall": 1.0,
+                "ast_beq_rate": 1.0,
+                "canonical_beq_rate": 1.0,
                 "placeholder_fidelity": 1.0,
                 "reward_score": 1.0,
                 "fallback_count": 0,
@@ -182,6 +355,6 @@ def test_agentv_model_bundle_cannot_pass_a_smoke_only_run(tmp_path) -> None:
             }
         },
     )
-    assert published["criteria"]["passed"] == 7
+    assert published["criteria"]["passed"] == 9
     assert published["criteria"]["failed"] == 4
     assert published["criteria"]["pass"] is False
