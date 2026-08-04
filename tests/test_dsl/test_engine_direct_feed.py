@@ -610,3 +610,27 @@ def test_decode_state_failed_text_resync_clears_direct_sync_marker() -> None:
     state.advance_token(tok, tok.token_to_id["Card"])
 
     assert state.engine_ids_len is None
+
+
+def test_rejected_sync_never_vouches_for_later_syncs() -> None:
+    """Three false-admit pins (campaign L-A, I6):
+
+    1. Retrying the exact text of a rejected sync must stay False (the
+       rejected ``_prefix`` used to satisfy the already-synced fast path).
+    2. A rejected incremental delta must report False even though the engine
+       resyncs itself to the previous good prefix (the resync's own success
+       used to leak out as the caller's answer).
+    3. The engine must remain fully usable after either rejection.
+    """
+    from slm_training.dsl.grammar.fastpath.engine import OpenUIIncrementalEngine
+
+    e = OpenUIIncrementalEngine()
+    assert e.set_prefix("root)") is False
+    assert e.set_prefix("root)") is False
+    assert e.set_prefix("root = Card(") is True
+
+    e2 = OpenUIIncrementalEngine()
+    assert e2.set_prefix("root") is True
+    assert e2.set_prefix("root = = ") is False
+    assert OpenUIIncrementalEngine().set_prefix("root = = ") is False
+    assert e2.set_prefix("root = Card(") is True

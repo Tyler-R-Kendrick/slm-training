@@ -51,7 +51,10 @@ class ExtendabilityChecker:
         True when the leftmost unmasked span can still complete in the grammar.
 
         Mirrors the MaskGIT ``admit_fill`` specialization: tokens after the
-        first hole are ignored because holes may rewrite the suffix.
+        first hole are ignored. HONESTY: that makes this a left-prefix
+        over-approximation — with the shipped default ``remask_ratio=0.0``
+        committed suffix tokens are never rewritten, so True does not certify
+        the joint fixed canvas is completable.
         """
         text = codec.decode(
             production_ids,

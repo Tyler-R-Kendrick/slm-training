@@ -131,6 +131,10 @@ class OpenUIIncrementalEngine:
         self._parser = _load_parser(self._resolved)
         self._lexer = _load_lexer(self._resolved)
         self._prefix = ""
+        # True only when ``_prefix`` was accepted by a successful sync; a
+        # rejected sync leaves ``_prefix`` set for diagnostics but must never
+        # satisfy the already-synced fast paths (false-admit hazard).
+        self._synced_ok = True
         # ``None`` means dirty: accepts are recomputed lazily on first query.
         # Lark's ``InteractiveParser.accepts()`` costs milliseconds, so the
         # sync paths mark dirty instead of refreshing eagerly — probe/advance
@@ -195,6 +199,7 @@ class OpenUIIncrementalEngine:
 
     def reset(self) -> None:
         self._prefix = ""
+        self._synced_ok = True
         self._ip = self._parser.parse_interactive()
         if self._control_only:
             self._ip = self._ip_control_copy()
@@ -274,6 +279,7 @@ class OpenUIIncrementalEngine:
         self._full_syncs += 1
         self._frame = None  # text route owns lexical state now
         self._prefix = prefix
+        self._synced_ok = False  # set True only on the success path below
         self._ip = self._parser.parse_interactive()
         if self._control_only:
             self._ip = self._ip_control_copy()
@@ -310,6 +316,7 @@ class OpenUIIncrementalEngine:
             else prefix
         )
         self._accepts = None  # dirty — computed lazily on first query
+        self._synced_ok = True
         return True
 
     def _incremental_sync(self, prefix: str) -> bool:
@@ -332,11 +339,16 @@ class OpenUIIncrementalEngine:
             self._fed_tokens = keys[: self._fed_token_count]
         except UnexpectedToken:
             # InteractiveParser is poisoned after a rejected feed — full resync
-            # back to the last good prefix so shared row state stays usable.
-            return self._full_sync(prev_prefix)
+            # back to the last good prefix so shared row state stays usable,
+            # then REPORT THE REJECTION. Returning the resync's own success
+            # here was a false admit: set_prefix("root = = ") on an engine
+            # synced at "root" answered True while a fresh engine says False.
+            self._full_sync(prev_prefix)
+            return False
         except UnexpectedEOF:
             self._fed_tokens = keys[: self._fed_token_count]
         self._prefix = prefix
+        self._synced_ok = True
         self._incremental_advances += 1
         self._fed_lark = list(tokens[: self._fed_token_count])
         self._fed_buffers_shared = False
@@ -354,6 +366,7 @@ class OpenUIIncrementalEngine:
         try:
             if (
                 self._ip is not None
+                and self._synced_ok
                 and prefix.startswith(self._prefix)
                 and len(prefix) >= len(self._prefix)
             ):
@@ -481,6 +494,7 @@ class OpenUIIncrementalEngine:
             self._tail_clean = tail_clean
             self._tail = tail
             self._prefix = new_prefix
+            self._synced_ok = True
             self._incremental_advances += 1
             self._accepts = None  # dirty — computed lazily on first query
             return True
@@ -607,6 +621,7 @@ class OpenUIIncrementalEngine:
         ):
             self._prefix += " "
         self._prefix += piece
+        self._synced_ok = True
 
     def _feed_terminal_direct(
         self,
@@ -934,6 +949,7 @@ class OpenUIIncrementalEngine:
         fork._parser = self._parser
         fork._lexer = self._lexer
         fork._prefix = self._prefix
+        fork._synced_ok = self._synced_ok
         fork._accepts = self._accepts
         fork._ip = (
             self._ip_control_copy()
