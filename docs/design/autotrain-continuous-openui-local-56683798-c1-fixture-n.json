@@ -1,0 +1,65 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local--c2fc9438-c1",
+  "loop_id": "continuous-openui-local-56683798",
+  "cycle_index": 1,
+  "cycle_intent": "screening",
+  "evidence_class": "fixture",
+  "decision": "reject_fixture_insufficient_n",
+  "scoreable": true,
+  "measurement_complete": true,
+  "new_checkpoint_created": true,
+  "upstream_commit": "0abaf07fece6ce8796f75ba6aeff8f086f9dcdea",
+  "integration_commit": "0abaf07fece6ce8796f75ba6aeff8f086f9dcdea",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "train_version": "wf_smoke_v2",
+  "arms": [
+    {
+      "experiment_id": "c20260804-continuous-openui-local--c2fc9438-c1-control",
+      "trainable_params": 1608962,
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 4153.06
+      }
+    },
+    {
+      "experiment_id": "c20260804-continuous-openui-local--c2fc9438-c1-bounds",
+      "trainable_params": 1608962,
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 4715.05
+      }
+    }
+  ],
+  "comparison": {
+    "attributable": false,
+    "reason": "matched-knob control/bounds arms; identical smoke.structural_similarity (0.0575 == 0.0575), no attributable delta this cycle"
+  },
+  "checkpoint_policy": "local_explicit_no_sync_rejected_not_reusable_not_promoted_not_ship",
+  "lean": "not_applicable:screening",
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "reasons": [
+      "fixture_insufficient_n:c20260804-continuous-openui-local--c2fc9438-c1-control",
+      "fixture_insufficient_n:c20260804-continuous-openui-local--c2fc9438-c1-bounds",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.057499999999999996 candidate=0.057499999999999996 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "note": "Fresh loop-id (continuous-openui-local-56683798) chosen to avoid colliding with the concurrently-active continuous-openui-local lineage (cycles already landed via PR #1425/#1429 on this same objective). This cycle ran on current main after PR #1354 (this session's own AgentV/NODE_OPTIONS fix) was closed as superseded by #1429/#1360/#1425 -- confirms the already-landed fix works cleanly: measurement_complete=true, 0 AgentV execution errors, honest fixture-n gate rejection (not an infra failure).",
+  "next_priority": "distinct size-matched 'component-plan' quality hypothesis (c20260804-continuous-openui-local--c2fc9438-c1-component-plan) per the driver's ranked priorities",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "0abaf07fece6ce8796f75ba6aeff8f086f9dcdea",
+    "code_dirty": false
+  }
+}
