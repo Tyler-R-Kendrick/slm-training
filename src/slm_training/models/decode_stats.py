@@ -205,6 +205,11 @@ class DecodeStats:
     witness_pruned_unknown: int = 0
     witness_materialized: int = 0
     witness_kept: int = 0
+    # A domain query ending with exactly ONE proven candidate while >=1
+    # UNKNOWN (budget-exhausted) candidate was dropped: the survivor then
+    # looks deterministically forced to exact_forced_token_id and bypasses
+    # the model (I2), though the alternative was unproven, not impossible.
+    witness_false_singleton_risk: int = 0
     # L-D/HX4: joint verdicts that came back without proof authority (node
     # budget exhausted). Commits are kept — counted so the fail-open share of
     # the joint validator is observable instead of silent.
@@ -644,6 +649,7 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "witness_pruned_unknown",
         "witness_materialized",
         "witness_kept",
+        "witness_false_singleton_risk",
         "block_joint_unknowns",
         "hybrid_span_commits",
         "hybrid_frontier_commits",

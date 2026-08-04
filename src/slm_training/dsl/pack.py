@@ -290,6 +290,7 @@ def _note_witness(
     kept: bool = False,
     pruned_unknown: bool = False,
     pruned_unsupported: bool = False,
+    false_singleton: bool = False,
 ) -> None:
     """Advisory witness-outcome accounting (HV-A / HV-2).
 
@@ -312,6 +313,8 @@ def _note_witness(
         stats.witness_pruned_unknown += 1
     if pruned_unsupported:
         stats.witness_pruned_unsupported += 1
+    if false_singleton:
+        stats.witness_false_singleton_risk += 1
 
 
 def _openui_completion_domain(request: Any) -> Any:
@@ -461,6 +464,8 @@ def _openui_completion_domain(request: Any) -> Any:
 
     candidates: list[Any] = []
     unsupported = False
+    # [unknown_dropped, proven_kept] for this query.
+    query_witness_tally = [0, 0]
     for path in initial.paths:
         tokens = tuple(int(token_id) for token_id in path.token_ids)
         if not tokens or len(tokens) > budget:
@@ -489,6 +494,7 @@ def _openui_completion_domain(request: Any) -> Any:
                 # ("UNKNOWN never licenses candidate removal", keep_and_rank).
                 # Counted separately so the two causes are distinguishable.
                 _note_witness(pruned_unknown=True)
+                query_witness_tally[0] += 1
                 unsupported = True
                 continue
             if proof.status is WitnessStatus.UNSUPPORTED:
@@ -502,6 +508,7 @@ def _openui_completion_domain(request: Any) -> Any:
                 unsupported = True
                 continue
         _note_witness(kept=True)
+        query_witness_tally[1] += 1
         candidates.append(
             CompletionDomainCandidateV1(
                 token_ids=tokens,
@@ -518,6 +525,12 @@ def _openui_completion_domain(request: Any) -> Any:
                 reason="terminal_witness_unavailable",
             )
         )
+    if query_witness_tally[0] and query_witness_tally[1] == 1:
+        # Exactly one proven candidate survived while an unproven one was
+        # dropped: downstream singleton detection cannot distinguish this from
+        # a genuine deterministic force, so the model is bypassed on the
+        # strength of a budget limit rather than a proof.
+        _note_witness(false_singleton=True)
     return _finish(
         CompletionDomainV1(
             status="complete",

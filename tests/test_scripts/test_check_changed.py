@@ -314,26 +314,48 @@ def test_duration_aware_shards_are_deterministic() -> None:
     assert {node for batch in first for node in batch} == set(nodes)
 
 
-def test_duration_aware_shards_isolate_a_heavy_file() -> None:
+def test_duration_aware_shards_minimise_the_slowest_shard() -> None:
+    """The objective is the WORST shard, not heavy-file isolation.
+
+    The canonical per-job wall is enforced per shard, so a packing is good
+    exactly when its slowest shard fits. An earlier version kept each
+    measured file whole, which isolated a slow suite but made the worst shard
+    equal to the single heaviest file -- defeating the very wall the sharding
+    exists to satisfy. A heavy file's nodes must therefore be allowed to
+    spread across shards.
+    """
     heavy = "tests/test_heavy.py"
     light = [f"tests/test_light_{index}.py" for index in range(10)]
     nodes = [
-        *(f"{heavy}::test_{index}" for index in range(3)),
+        *(f"{heavy}::test_{index}" for index in range(4)),
         *(f"{path}::test_{index}" for path in light for index in range(2)),
     ]
     table = {heavy: 100.0, **{path: 1.0 for path in light}}
+    weight_of = {
+        node: table[node.split("::", 1)[0]]
+        / sum(1 for other in nodes if other.split("::", 1)[0] == node.split("::", 1)[0])
+        for node in nodes
+    }
 
     for shard_count in (2, 4, 8):
         batches = check_changed._shard_test_nodes(nodes, shard_count, durations=table)
-        heavy_batches = [
-            batch for batch in batches if any(node.startswith(f"{heavy}::") for node in batch)
-        ]
+        loads = [sum(weight_of[node] for node in batch) for batch in batches]
 
-        assert len(heavy_batches) == 1, "a measured file must stay on one shard"
-        assert sorted(heavy_batches[0]) == sorted(
-            node for node in nodes if node.startswith(f"{heavy}::")
-        )
+        # Every node placed exactly once.
         assert {node for batch in batches for node in batch} == set(nodes)
+        assert sum(len(batch) for batch in batches) == len(nodes)
+
+        # The heavy file must SPREAD once there are more shards than its
+        # nodes could otherwise use -- the anti-isolation property.
+        heavy_shards = sum(
+            1
+            for batch in batches
+            if any(node.startswith(f"{heavy}::") for node in batch)
+        )
+        assert heavy_shards == min(shard_count, 4), "heavy nodes must spread"
+
+        # Makespan beats the atomic-file alternative (whole 100.0 on one shard).
+        assert max(loads) < 100.0
 
 
 def test_empty_duration_table_reduces_to_node_count_balancing() -> None:

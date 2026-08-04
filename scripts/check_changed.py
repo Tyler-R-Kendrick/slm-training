@@ -513,12 +513,23 @@ def _shard_test_nodes(
     workers: int,
     durations: dict[str, float] | None = None,
 ) -> list[list[str]]:
-    """Pack test nodes into ``workers`` shards, heaviest measured file first.
+    """Pack test nodes into ``workers`` shards, heaviest node first.
 
-    Files with a committed duration weight stay whole so a known-slow suite
-    never shares a shard with another slow suite; unmeasured files keep their
-    historical per-node granularity (one unit of weight each), which makes an
-    empty weights table reduce exactly to count-balanced round-robin.
+    The objective is **minimising the slowest shard**, because the canonical
+    per-job wall (``MAX_RUN_MINUTES``) is enforced per shard: a packing is
+    good exactly when its worst shard fits.
+
+    A measured file's weight is therefore spread across its own nodes rather
+    than kept whole. Keeping files atomic (the original duration-aware
+    packing) isolates a slow suite but makes the worst shard *equal to the
+    single heaviest file* -- on the committed table that is 429s on one shard
+    versus 143s when the same file's nodes are allowed to spread, i.e. the
+    isolation objective actively defeats the wall the sharding exists to
+    satisfy. Unmeasured files keep one unit of weight per node, so an empty
+    weights table still reduces exactly to count-balanced round-robin.
+
+    Node-level splitting cannot help a file whose weight sits in a single
+    test; those are irreducible by any packing and need their own remedy.
     """
     table = _test_file_durations() if durations is None else durations
     by_file: dict[str, list[str]] = {}
@@ -530,15 +541,16 @@ def _shard_test_nodes(
             by_file[path],
             key=lambda node: hashlib.sha256(node.encode()).digest(),
         )
-        # A lone file has nothing to be isolated from, so keep splitting it
-        # across shards instead of serialising the whole suite onto one.
-        weight = None if len(by_file) < 2 else table.get(path)
-        if weight is None:
-            units.extend((1.0, path, index, [node]) for index, node in enumerate(group))
-        else:
-            units.append((float(weight), path, 0, group))
-    # Longest-processing-time-first: the heaviest unit picks the emptiest shard,
-    # so a multi-ten-second file lands alone and the rest fill in around it.
+        weight = table.get(path)
+        # Spread a measured file's cost over its own nodes so LPT can split it
+        # across shards; an unmeasured file falls back to one unit per node.
+        per_node = 1.0 if weight is None else float(weight) / max(1, len(group))
+        units.extend(
+            (per_node, path, index, [node]) for index, node in enumerate(group)
+        )
+    # Longest-processing-time-first: the heaviest node picks the emptiest
+    # shard, which is the standard greedy approximation for minimising the
+    # makespan (worst shard).
     units.sort(key=lambda unit: (-unit[0], unit[1], unit[2]))
     batches: list[list[str]] = [[] for _ in range(workers)]
     loads = [0.0] * workers
