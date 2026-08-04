@@ -1,0 +1,147 @@
+{
+  "schema": "autotrain_measured_results/v1",
+  "campaign_id": "continuous-loop-20260801-continuous-openui-a6r56e-05c9cc71-c2",
+  "cycle_index": 2,
+  "loop_id": "continuous-openui-a6r56e",
+  "run_class": "fixture_scratch",
+  "source_commit": "09ab77cb7221188b0d16838f4d25f9cd732ed42c",
+  "source_dirty": true,
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "primary_metric": "held_out.structural_similarity",
+  "frozen_manifest_sha256": "7e3757a041104ffdfe51edb6bf5620690dd42ddf1e32ca4cd0a9fb63f5b59d6d",
+  "diagnostic_signal": {
+    "target": "infrastructure",
+    "observed_stack": "terminal_witness -> outgoing -> _build_openui_completion_forest_direct -> _decision_kind -> _grammar_terminal_kind -> allowed_id_set -> hash(tuple(sorted(tokenizer.token_to_id.items())))",
+    "authority": "observed_interrupt_trace",
+    "confidence": 0.95,
+    "reproduced_on": "09ab77cb7221188b0d16838f4d25f9cd732ed42c (identical unpatched arm, 2 independent replays: control + canvas)"
+  },
+  "repair": {
+    "harness_family": "model_build",
+    "component": "model.twotower",
+    "version_before": "v271",
+    "version_after": "v272",
+    "file": "src/slm_training/dsl/grammar/fastpath/token_map.py",
+    "function": "allowed_id_set",
+    "scope": "Only compute the sorted-vocabulary fingerprint and cache key when use_cache=True. Every terminal-witness completion-forest call site in compiler_draft.py passes use_cache=False (the default), so the fingerprint/cache lookup was pure unconditional overhead on the decode hot path, not a cache-hit optimization.",
+    "microbenchmark": {
+      "vocab_size": 569,
+      "n_calls": 20000,
+      "old_fingerprint_only_us_per_call": 77.23,
+      "new_uncached_call_us_per_call": 3.06,
+      "note": "measured on this container; old cost isolated by timing hash(tuple(sorted(tokenizer.token_to_id.items()))) alone, new cost is the full post-fix allowed_id_set(use_cache=False) call"
+    },
+    "regression_tests": {
+      "tests/test_models/test_compiler_decode.py": "223 passed, 0 failed",
+      "tests/test_dsl/": "1289 passed, 6 skipped, 11 failed (all 11 reproduced identically on unpatched HEAD 09ab77c and are unrelated fixture/contract-version drift, not caused by this change; verified via git stash)"
+    }
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260801-continuous-openui-a6r56e-05c9cc71-c2-control",
+      "levers": "bounds off",
+      "training": {
+        "executed": true,
+        "steps": 22,
+        "stopped_on": "steps",
+        "last_loss": 14.390222549438477,
+        "record_count": 101
+      },
+      "evaluation_before_fix": {
+        "process_outcome": "interrupted",
+        "wall_s": ">180 (killed at MAX_RUN_MINUTES=3 wall cap)",
+        "scoreboard": null,
+        "failure": "KeyboardInterrupt inside allowed_id_set fingerprint computation, zero records scored"
+      },
+      "evaluation_after_fix": {
+        "process_outcome": "completed",
+        "wall_s": 81.8,
+        "suite_n": 3,
+        "metrics": {
+          "insufficient_n": 3,
+          "decode_timeout_count": 3,
+          "meaningful_program_rate": null,
+          "structural_similarity": null
+        },
+        "ship_gates_pass": false,
+        "note": "all 3 smoke records individually exceeded the unrelated --decode-timeout-seconds 24.0 per-record budget, so quality metrics are unmeasured (None); this is now an honest per-record diagnostic instead of a whole-process crash"
+      }
+    },
+    {
+      "experiment_id": "c20260801-continuous-openui-a6r56e-05c9cc71-c2-canvas",
+      "levers": "bounds on (grammar_completion_bounds=True)",
+      "training": {
+        "executed": true,
+        "record_count": 101
+      },
+      "evaluation_before_fix": {
+        "process_outcome": "interrupted",
+        "wall_s": ">180 (killed at MAX_RUN_MINUTES=3 wall cap)",
+        "scoreboard": null,
+        "failure": "KeyboardInterrupt inside allowed_id_set fingerprint computation, zero records scored"
+      },
+      "evaluation_after_fix": {
+        "process_outcome": "completed",
+        "wall_s": 81.5,
+        "suite_n": 3,
+        "metrics": {
+          "insufficient_n": 3,
+          "decode_timeout_count": 2,
+          "meaningful_program_rate": 0.0,
+          "structural_similarity": 0.175
+        },
+        "ship_gates_pass": false,
+        "note": "1 of 3 records completed decode within the per-record budget and scored; 2 of 3 still individually timed out"
+      }
+    }
+  ],
+  "disposition": {
+    "measurement_complete": true,
+    "climb_state": "inconclusive",
+    "ship_state": "blocked",
+    "promotion": "not_attempted",
+    "sdlc_positive": false,
+    "sdlc_positive_reason": "fix_verified_but_not_committed: replay evidence shows executable_unblocking (interrupted -> completed scoreboard on both frozen arms), but the diff itself is NOT in this commit -- landing it would bump model.twotower and trigger .githooks/pre-commit's full tests/test_dsl + tests/test_harnesses/model_build + tests/test_versioning run, which already fails on unpatched main HEAD 09ab77c for 13 unrelated pre-existing reasons (see blocking_pre_existing_failures). Not claiming a landed positive result; this doc + the embedded diff in the markdown twin is the handoff for a follow-up session.",
+    "blocking_pre_existing_failures": [
+      "tests/test_dsl/test_language_contract.py::test_to_dict_round_trips_fields",
+      "tests/test_dsl/test_language_contract.py::test_symbolic_surface_policy_preserves_closed_terms_and_declared_markers",
+      "tests/test_dsl/test_language_contract.py::test_symbolic_surface_evidence_hashes_match_committed_sources",
+      "tests/test_dsl/test_latent_pack.py::test_synthesized_pack_honest_none_slots_fail_closed",
+      "tests/test_dsl/test_packs.py::test_pack_fixture_loop_generate_train_eval",
+      "tests/test_dsl/test_production_codec.py::test_generation_request_from_record",
+      "tests/test_dsl/test_production_codec.py::test_normalize_switchitem_and_slider_signatures",
+      "tests/test_dsl/test_production_codec.py::test_fixture_settings_schema_consistency",
+      "tests/test_dsl/test_production_codec.py::test_normalize_full_slider_signature_from_generated_schema",
+      "tests/test_dsl/test_speculative_rank.py::test_committed_table_matches_its_builder",
+      "tests/test_dsl/test_speculative_rank.py::test_committed_table_ranks_real_branch_points_confidently",
+      "tests/test_harnesses/model_build/test_full_state_resume.py::test_initialize_from_unions_context_vocab_for_filtered_corpus",
+      "tests/test_harnesses/model_build/test_train_model_cli_decode_weights.py::test_train_model_cli_threads_decode_weights_into_model_build_config"
+    ],
+    "next_run": "the per-record 24s decode-timeout on this fixture is a separate, still-open diagnostic (2/3 and 3/3 records individually time out); investigate per-record decode latency next. Separately, triage the 13 blocking_pre_existing_failures above (likely 4+ independent root causes) before any model.twotower-touching commit can pass this repo's local pre-commit gate again."
+  },
+  "next_run_priorities": [
+    {
+      "rank": 1,
+      "area": "infrastructure",
+      "hypothesis": "Per-record decode still exceeds a 24s budget on this CPU fixture even after removing the O(vocab log vocab) fingerprint hot-path cost; profile the remaining decode-forest construction cost per record.",
+      "authority": "observed_result",
+      "confidence": 0.75
+    },
+    {
+      "rank": 2,
+      "area": "model",
+      "hypothesis": "Re-run the bounds-on vs bounds-off comparison once per-record decode reliably completes within budget so structural_similarity / meaningful_program_rate become comparable across all 3 records, not just the ones that happen to finish in time.",
+      "authority": "speculative",
+      "confidence": 0.55
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "09ab77cb7221188b0d16838f4d25f9cd732ed42c",
+    "code_dirty": false,
+    "components": {},
+    "note": "This measurement was taken with the fix applied locally (uncommitted). The commit at code_commit above does NOT include the fix; model.twotower stays v271 in this commit. v272 is the target version the embedded diff (in the markdown twin) would produce once applied."
+  }
+}
