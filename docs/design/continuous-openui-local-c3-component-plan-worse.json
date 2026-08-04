@@ -1,0 +1,40 @@
+{
+  "schema_version": "autotrain_measured_results/v1",
+  "loop_id": "continuous-openui-local",
+  "cycle_index": 3,
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c3",
+  "upstream_commit": "bf31eb7a3a4f7306cf2abecee76c1e2be433a57e",
+  "integration_commit": "edf58aad3ede12ce837a45c3eaa271717b1d3671",
+  "role": "screening",
+  "positive": false,
+  "primary_metric": "smoke.structural_similarity",
+  "arms": {
+    "control": {
+      "structural_similarity": 0.23083333333333333,
+      "meaningful_program_rate": 0.3333333333333333,
+      "binder_reference_f1": 0.7333333333333334,
+      "parse_rate": 1.0,
+      "latency_ms_p50": 2448.75,
+      "n": 3
+    },
+    "component-plan": {
+      "structural_similarity": 0.1725,
+      "meaningful_program_rate": 0.0,
+      "binder_reference_f1": 0.6333333333333333,
+      "parse_rate": 1.0,
+      "latency_ms_p50": 2323.1,
+      "n": 3
+    }
+  },
+  "delta": {
+    "smoke.structural_similarity": -0.05833333333333335,
+    "binder_reference_f1": -0.10000000000000009,
+    "verdict": "candidate_worse_plus_binder_regression"
+  },
+  "params": 1755764,
+  "gates": "fail (expected fixture insufficient_n)",
+  "climb": "rejected",
+  "ship": "blocked",
+  "next": "component-edge thrash",
+  "recorded_at": "2026-08-04T21:59:09.435437+00:00"
+}

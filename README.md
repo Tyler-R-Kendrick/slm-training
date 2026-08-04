@@ -63,6 +63,7 @@ checkpoint, roster, training default, champion, or promotion status changes.
 
 | Role | Checkpoint | Where | Claim |
 | --- | --- | --- | --- |
+| Autotrain continuous-openui-local c3 | local fixture component-plan worse | structure drop — **not ship** ([full card](docs/MODEL_CARD.md)) |
 | Autotrain continuous-openui-local c2 | local fixture canvas null | structure `.327` tie, n=3 — **not ship** ([full card](docs/MODEL_CARD.md)) |
 | Autotrain scheduled-loop `fe71636` c2 AgentV harness failure | 2 size-matched 1,608,962-param CPU scratch checkpoints | `outputs/autoresearch/continuous-loop-20260804-continuous-openui-schedu-3d42338c-c2/runs/` (local, explicit no-sync) | Both arms trained (22 steps) but `--ship-gates` eval crashed on missing AgentV SDK before any scoreboard; repaired (`2aedf3b`, self-heal `npm ci` bootstrap), replay in c3 completed but hit decode timeouts (n=3, all incomplete). **No model attribution; harness-repair-only** ([results](docs/design/continuous-openui-scheduled-fe71636-c2-results.md)) |
 | SLM-303 tiny v2 fresh baseline | `slm303_tiny_v2_fresh/last.pt` | `outputs/runs/…` (local, no-sync) | 4800-step CPU scratch baseline on rebuilt strict fixture corpus `slm230_symbol_only_v2` (final loss 0.014); smoke suite empty (n=0)—fixture wiring only, not promoted or ship ([results](docs/design/iter-slm303-tiny-v2-20260728.md)) |
