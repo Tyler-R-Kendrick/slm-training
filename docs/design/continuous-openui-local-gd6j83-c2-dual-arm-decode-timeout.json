@@ -81,11 +81,30 @@
     "signal": "AgentV finalized every record disposition and reported an internal decode timeout on both arms symmetrically",
     "related_prior_finding": "docs/design/autotrain-cycle-c5-c6-replay-blocked-follow-up.md"
   },
-  "conclusion": "Continuous-openui-local loop, cycle 2 (session gd6j83): both the control and component-plan arms (1,755,764 params, seed 100002) finalized every smoke record inside a typed decode timeout (3/3 incomplete on each arm), with compiler_ms_mean jumping ~5-6x symmetrically vs cycle 1's control (seed 100001). This reproduces the same class of seed-dependent compiler-tree decode pathology already left open, unresolved, in the c5/c6 follow-up doc. Per the loop law, this is routed to improve-openui-harnesses for real profiling/repair rather than a speculative knob change or auto-retire shortcut (which was previously tried and correctly reverted). No stack layer opens.",
+  "conclusion": "Continuous-openui-local loop, cycle 2 (session gd6j83): both the control and component-plan arms (1,755,764 params, seed 100002) finalized every smoke record inside a typed decode timeout (3/3 incomplete on each arm), with compiler_ms_mean jumping ~5-6x symmetrically vs cycle 1's control and bounds arms (seed 100001, compiler_ms_mean ~3,930-3,980ms -- see docs/design/continuous-openui-local-gd6j83-c1-results.json, same metric, now recorded there). This reproduces the same class of seed-dependent compiler-tree decode pathology already left open, unresolved, in the c5/c6 follow-up doc. CORRECTION (added after review, superseding the cross-cycle mechanism explanation in docs/design/compiler-tree-forced-closure-decode-metering-gap.md): that later doc attributed part of this gap to cycle 1 decoding via a different, then-unmetered compiler_decode_mode='off' path. Cycle 1's own scoreboard.json evaluation_policy.compiler_decode_mode field reads 'tree' for both the control and bounds arms, not 'off', so that specific mechanism explanation is not confirmed by the evidence on hand; it may still be correct if the checkpoint's actually-executed decode mode diverges from what evaluation_policy reports (the metering-gap doc's own hypothesis for why this could happen), but this record does not independently verify that. The observed compiler_ms_mean jump itself (same metric, both cycles) stands; only the specific 'different mechanism' explanation for it is uncertain and is left to further profiling. Per the loop law, this is routed to improve-openui-harnesses for real profiling/repair rather than a speculative knob change or auto-retire shortcut (which was previously tried and correctly reverted). No stack layer opens.",
   "next_priorities": [
     "Profile strict_compiler_tree decode under the seed-100002 fixture records to determine why compiler search cost jumps ~5-6x symmetrically (model_build harness family, frozen manifest becbf08d...)",
+    "Independently verify (do not assume) which decode mechanism each checkpoint actually executes through, rather than reading evaluation_policy.compiler_decode_mode from scoreboard.json at face value",
     "Add a regression test for the repaired path before replaying the identical frozen c2 arm (retry_measurement)",
     "Do not auto-retire symmetric dual-arm timeouts; do not re-attempt the same seed speculatively without the repair"
   ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "c877a1499c5c18d49ec68b9b6ecdf33b8fbce267",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v88",
+      "harness.model_build.train": "v42",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v23",
+      "evals.agentv": "v7",
+      "model.twotower": "v309",
+      "dsl.symbolic_surface": "v6"
+    },
+    "stamped_at": "2026-08-04T18:33:44Z"
+  },
   "recorded_at": "2026-08-04T18:33:44Z"
 }

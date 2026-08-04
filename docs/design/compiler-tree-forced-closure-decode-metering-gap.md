@@ -15,11 +15,36 @@ left open, unresolved, in
 
 ## What this session found
 
-Reproducing the frozen control checkpoints directly (`evaluate_model.py
---ship-gates`, `--eval-limit 1`, decode timeout raised to 60s purely so the
-record finishes instead of being cut off — never used to claim a ship-gate
-pass) surfaced something neither prior session checked: **the two cycles'
-checkpoints decode through two different mechanisms.** The seed-100001
+Reproduction commands (raw, runnable; `--decode-timeout-seconds 60` is a real
+`evaluate_model.py` CLI flag, raised from the recipe's normal `8.0` purely so
+each single record finishes instead of being cut off mid-measurement — never
+used to claim a ship-gate pass):
+
+```
+python -m scripts.evaluate_model \
+  --checkpoint outputs/autoresearch/continuous-loop-20260804-continuous-openui-local-8c0b60dd-c1/runs/c20260804-continuous-openui-local-8c0b60dd-c1-control/checkpoints/last.pt \
+  --train-version wf_smoke_v2 \
+  --test-dir src/slm_training/resources/data/eval/e938_role_safe_all_targets_v2 \
+  --suite smoke --eval-limit 1 --decode-timeout-seconds 60 --ship-gates
+
+python -m scripts.evaluate_model \
+  --checkpoint outputs/autoresearch/continuous-loop-20260804-continuous-openui-local-8c0b60dd-c2/runs/c20260804-continuous-openui-local-8c0b60dd-c2-control/checkpoints/last.pt \
+  --train-version wf_smoke_v2 \
+  --test-dir src/slm_training/resources/data/eval/e938_role_safe_all_targets_v2 \
+  --suite smoke --eval-limit 1 --decode-timeout-seconds 60 --ship-gates
+```
+
+`before_fix` ran the first command at clean commit `4e137321` (pre-repair).
+`after_fix` ran it again with the grammar.py/twotower.py timing changes
+applied, now committed as `0e27e47`/`3aad7fe` and merged at clean commit
+`6280d2d` — see the JSON's `before_fix_version_stamp` /
+`after_fix_version_stamp` for the exact, non-dirty commit each measurement is
+bound to.
+
+This surfaced something neither prior session checked: **the two cycles'
+checkpoints decode through two different mechanisms** (per each checkpoint's
+own persisted config, read directly at reproduction time — see the caveat
+below for how this compares to the `scoreboard.json` field). The seed-100001
 control checkpoint's own persisted config declares `compiler_decode_mode:
 "off"` (it decodes via the legacy LTR/`exact_forced_token_id` deterministic-
 singleton bypass in `models/grammar.py`); the seed-100002 checkpoints declare
@@ -146,17 +171,25 @@ passes after the fix.
 ## Conclusion
 
 This is a genuine, now-fixed decode-cost **metering** defect, not evidence of
-a runaway or exponential compiler-tree search. It directly undermines the
-specific evidence chain the c5 and gd6j83-c2 docs relied on ("`compiler_ms_mean`
-jumped ~5-6x symmetrically"): that comparison silently pitted a fully-metered
-decode (`compiler_decode_mode=tree`) against an almost-entirely-unmetered one
-(`compiler_decode_mode=off`), because the two checkpoints/cycles happened to
-decode through different mechanisms and `evaluate_model.py --ship-gates`
-does not force one uniformly without an explicit `--compiler-decode-mode`
-flag. Once metered identically, the seed-100001 control's real per-record
-grammar-authority cost (~38s in this single-record reproduction) is
-comparable to or larger than seed-100002's (~15-23s/record) — the two are
-not obviously different regimes once measured on the same basis.
+a runaway or exponential compiler-tree search. Once metered identically, the
+seed-100001 control's real per-record grammar-authority cost (~38s in this
+single-record reproduction) is comparable to or larger than seed-100002's
+(~15-23s/record) — the two are not obviously different regimes once measured
+on the same basis.
+
+**Caveat (added after review):** the claim above that the c5/gd6j83-c2
+"`compiler_ms_mean` jumped ~5-6x symmetrically" comparison is specifically
+explained by c1 decoding via `compiler_decode_mode="off"` vs. c2's `"tree"`
+is **not independently confirmed** against the continuous-loop run's own
+`scoreboard.json` — that file's `evaluation_policy.compiler_decode_mode`
+field reads `"tree"` for **both** c1 arms (control and bounds), not `"off"`.
+See
+[`continuous-openui-local-gd6j83-c2-dual-arm-decode-timeout.md`](continuous-openui-local-gd6j83-c2-dual-arm-decode-timeout.md)
+for the correction. This does not undermine the metering fix itself or the
+before/after single-record reproduction numbers above, which are
+independently verified and stand; only the specific cross-cycle-mechanism
+explanation for the original ~5-6x comparison is unconfirmed and left to
+further profiling.
 
 This finding neither confirms nor rules out that the gd6j83-c2 dual-arm
 timeout itself would reproduce identically under corrected metering; per the

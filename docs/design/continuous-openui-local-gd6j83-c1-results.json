@@ -26,7 +26,8 @@
         "component_type_recall": null,
         "binder_reference_f1": 0.6333333333333333,
         "placeholder_fidelity": 0.5277777777777778,
-        "latency_ms_p50": 4319.1
+        "latency_ms_p50": 4319.1,
+        "compiler_ms_mean": 3979.7
       }
     },
     "c1-bounds": {
@@ -39,7 +40,8 @@
         "component_type_recall": 0.0,
         "binder_reference_f1": 0.6333333333333333,
         "placeholder_fidelity": 0.5277777777777778,
-        "latency_ms_p50": 4167.49
+        "latency_ms_p50": 4167.49,
+        "compiler_ms_mean": 3929.62
       }
     }
   },
@@ -63,5 +65,23 @@
     "Keep the matched control fixed every cycle (rank 2, confidence 0.70)",
     "Rotate thrash recommendation across the lever bank rather than repeating bounds-only (rank 3, confidence 0.65)"
   ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "4e137321054f590f5dc5518d18f166bbc37109ed",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v88",
+      "harness.model_build.train": "v42",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v23",
+      "evals.agentv": "v7",
+      "model.twotower": "v309",
+      "dsl.symbolic_surface": "v6"
+    },
+    "stamped_at": "2026-08-04T18:30:17Z"
+  },
   "recorded_at": "2026-08-04T18:30:17Z"
 }

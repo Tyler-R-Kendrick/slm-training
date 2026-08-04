@@ -3029,6 +3029,60 @@ def test_verified_solver_decode_skips_unpruned_forced_closure(monkeypatch) -> No
     assert int(result[1]) == eos
 
 
+def test_forced_closure_walk_charges_compiler_ms_not_unattributed(monkeypatch) -> None:
+    """Decode-cost metering: the forced-closure walk must be attributed.
+
+    ``completion_forced_closure`` re-invokes the same ``outgoing()``-edge
+    grammar-authority walk as ``build_completion_forest``, chained
+    immediately after it inside the same ``timed_ms(stats, "compiler_ms")``
+    block in ``_compiler_ltr_decode_one``. Before that block was widened to
+    cover this call too, its cost could land in ``unattributed_ms`` instead
+    (see docs/design/compiler-tree-forced-closure-decode-metering-gap.md).
+    """
+    import time
+    from types import SimpleNamespace
+
+    from slm_training.dsl.grammar.fastpath import compiler_draft
+
+    model = _model()
+    tokenizer = model.tokenizer
+    eos = int(tokenizer.eos_id)
+    forest = CompletionForest(
+        (CompletionPath((eos,), "eos"),),
+        "complete",
+    )
+    state = SimpleNamespace(remaining_tokens=None)
+    sleep_seconds = 0.05
+
+    def delayed_closure(_room):
+        time.sleep(sleep_seconds)
+        return ((eos,), state, "complete")
+
+    state.completion_forced_closure = delayed_closure
+    state.advance_token = lambda *_args: None
+    state._collect_completion_stats = lambda: None
+    monkeypatch.setattr(model, "_new_grammar_states", lambda _rows: [state])
+    monkeypatch.setattr(
+        compiler_draft, "build_completion_forest", lambda *_args, **_kwargs: forest
+    )
+    ctx, ctx_pad = model._encode_context(["card"])
+
+    with collect_decode_stats() as stats:
+        result = model._compiler_ltr_decode_one(
+            ctx,
+            ctx_pad,
+            4,
+            mode="tree",
+            slot_contract=None,
+        )
+
+    assert int(result[1]) == eos
+    assert stats.compiler_ms >= sleep_seconds * 1000 * 0.9, (
+        "completion_forced_closure's walk must be timed into compiler_ms, "
+        "not silently dropped into unattributed_ms"
+    )
+
+
 @pytest.mark.parametrize("tree", [False, True])
 def test_lexer_required_slot_margin_uses_missing_visible_symbol(
     monkeypatch, tree: bool

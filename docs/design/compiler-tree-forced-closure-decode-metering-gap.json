@@ -15,12 +15,26 @@
     ]
   },
   "reproduction": {
-    "method": "python -m scripts.evaluate_model --ship-gates --train-version wf_smoke_v2 --test-dir e938_role_safe_all_targets_v2 --suite smoke --eval-limit 1 against the frozen c1/c2 control checkpoints, decode-timeout raised to 60s so the record finishes instead of being cut off (diagnostic only, never used to claim a passing ship-gate).",
+    "command": "python -m scripts.evaluate_model --checkpoint outputs/autoresearch/continuous-loop-20260804-continuous-openui-local-8c0b60dd-c1/runs/c20260804-continuous-openui-local-8c0b60dd-c1-control/checkpoints/last.pt --train-version wf_smoke_v2 --test-dir src/slm_training/resources/data/eval/e938_role_safe_all_targets_v2 --suite smoke --eval-limit 1 --decode-timeout-seconds 60 --ship-gates",
+    "command_second_checkpoint": "python -m scripts.evaluate_model --checkpoint outputs/autoresearch/continuous-loop-20260804-continuous-openui-local-8c0b60dd-c2/runs/c20260804-continuous-openui-local-8c0b60dd-c2-control/checkpoints/last.pt --train-version wf_smoke_v2 --test-dir src/slm_training/resources/data/eval/e938_role_safe_all_targets_v2 --suite smoke --eval-limit 1 --decode-timeout-seconds 60 --ship-gates",
+    "notes": "--decode-timeout-seconds 60 is a real evaluate_model.py CLI flag (scripts/evaluate_model.py:588), raised from the recipe's normal decode_timeout_seconds=8.0 only so each single record finishes instead of being cut off mid-measurement; this is diagnostic-only instrumentation and was never used to claim a passing ship-gate. before_fix ran this exact command at code_commit 4e137321054f590f5dc5518d18f166bbc37109ed (clean, pre-repair). after_fix ran it again with the two grammar.py/twotower.py timing changes applied, which are now committed as 0e27e47/3aad7fe and merged at 6280d2db31b891977327ac00e51434015d8eac24 (also clean at that commit) -- see per-measurement version_stamp fields below instead of a single ambiguous dirty-tree stamp.",
     "checkpoints_used": [
       "outputs/autoresearch/continuous-loop-20260804-continuous-openui-local-8c0b60dd-c1/runs/c20260804-continuous-openui-local-8c0b60dd-c1-control/checkpoints/last.pt (seed 100001)",
       "outputs/autoresearch/continuous-loop-20260804-continuous-openui-local-8c0b60dd-c2/runs/c20260804-continuous-openui-local-8c0b60dd-c2-control/checkpoints/last.pt (seed 100002)"
     ],
-    "key_discovery": "the c1 control checkpoint's own persisted config declares compiler_decode_mode='off' (it decodes through the legacy LTR/exact_forced_token_id I2-bypass path), while the c2 control/component-plan checkpoints declare compiler_decode_mode='tree' (the compiler-tree greedy path). evaluate_model.py --ship-gates does not force compiler_decode_mode onto a checkpoint unless --compiler-decode-mode is also passed explicitly as a CLI flag (making it a runtime_override_field); otherwise eval_runner.evaluate() restores the checkpoint's own declared value after build_model(). The two prior cycle docs' 'compiler_ms_mean jumped ~5-6x, symmetric across arms' comparison was therefore comparing two DIFFERENT decode mechanisms, not the same search at two seeds."
+    "key_discovery": "the c1 control checkpoint's own persisted config declares compiler_decode_mode='off' (it decodes through the legacy LTR/exact_forced_token_id I2-bypass path), while the c2 control/component-plan checkpoints declare compiler_decode_mode='tree' (the compiler-tree greedy path). evaluate_model.py --ship-gates does not force compiler_decode_mode onto a checkpoint unless --compiler-decode-mode is also passed explicitly as a CLI flag (making it a runtime_override_field); otherwise eval_runner.evaluate() restores the checkpoint's own declared value after build_model(). The two prior cycle docs' 'compiler_ms_mean jumped ~5-6x, symmetric across arms' comparison was therefore comparing two DIFFERENT decode mechanisms, not the same search at two seeds. CAVEAT (added after review): this key_discovery describes the checkpoint's own persisted config as read at reproduction time, which is a distinct value from evaluation_policy.compiler_decode_mode as reported in the c1/c2 scoreboard.json files -- that reported field reads 'tree' for both c1 arms in the actual continuous-loop run's scoreboard.json, not 'off'. This finding's before_fix/after_fix single-record numbers below are reproduced directly and stand on their own; the broader claim that this fully explains the c1-vs-c2 cross-cycle compiler_ms_mean gap is not independently re-verified against the scoreboard.json evaluation_policy field and should be treated as not yet confirmed (see docs/design/continuous-openui-local-gd6j83-c2-dual-arm-decode-timeout.md for the correction).",
+    "before_fix_version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "code_commit": "4e137321054f590f5dc5518d18f166bbc37109ed",
+      "code_dirty": false,
+      "components": {"model.twotower": "v309"}
+    },
+    "after_fix_version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "code_commit": "6280d2db31b891977327ac00e51434015d8eac24",
+      "code_dirty": false,
+      "components": {"model.twotower": "v310"}
+    }
   },
   "before_fix": {
     "c1_control_seed100001_one_record": {
@@ -83,7 +97,7 @@
     "repo_policy": "python -m scripts.repo_policy -- ok",
     "version_stamps": "python -m scripts.verify_version_stamps --check -- ok after model.twotower v309 -> v310 bump"
   },
-  "conclusion": "This is a genuine, now-fixed decode-cost METERING defect in the canonical model_build/twotower decode-stats instrumentation, not evidence of a runaway or exponential compiler-tree search. It directly undermines the specific evidence chain the c5 and gd6j83-c2 docs used ('compiler_ms_mean jumped ~5-6x symmetrically'): that comparison silently pitted a fully-metered decode (compiler_decode_mode=tree) against an almost-entirely-unmetered one (compiler_decode_mode=off), because those two checkpoints/cycles happened to decode through different mechanisms and evaluate_model.py --ship-gates does not force one uniformly without an explicit --compiler-decode-mode flag. Once metered identically, the seed-100001 control's real per-record grammar-authority cost (~38s in this single-record reproduction) is comparable to or larger than seed-100002's (~15-23s/record) -- the two are not obviously different regimes once measured on the same basis. This finding neither confirms nor rules out that the gd6j83-c2 dual-arm timeout itself would reproduce identically under corrected metering; that determination is left to the queued retry_measurement replay per the loop's existing rule (never auto-retire a symmetric dual-arm timeout; require repair first, which this is).",
+  "conclusion": "This is a genuine, now-fixed decode-cost METERING defect in the canonical model_build/twotower decode-stats instrumentation, not evidence of a runaway or exponential compiler-tree search. Once metered identically, the seed-100001 control's real per-record grammar-authority cost (~38s in this single-record reproduction) is comparable to or larger than seed-100002's (~15-23s/record) -- the two are not obviously different regimes once measured on the same basis. This finding neither confirms nor rules out that the gd6j83-c2 dual-arm timeout itself would reproduce identically under corrected metering; that determination is left to the queued retry_measurement replay per the loop's existing rule (never auto-retire a symmetric dual-arm timeout; require repair first, which this is). CAVEAT (added after review): the claim that the c5/gd6j83-c2 'compiler_ms_mean jumped ~5-6x' comparison was specifically explained by c1 decoding via compiler_decode_mode='off' vs c2's 'tree' is NOT independently confirmed against the continuous-loop run's own scoreboard.json -- that file's evaluation_policy.compiler_decode_mode field reads 'tree' for both c1 arms, not 'off' (see docs/design/continuous-openui-local-gd6j83-c2-dual-arm-decode-timeout.md for the correction). The metering fix itself (grammar.py/twotower.py timing) and the before/after single-record reproduction numbers above are independently verified and stand; only the specific cross-cycle-mechanism explanation is unconfirmed pending further profiling.",
   "next_steps": [
     "retry_measurement on the identical frozen c2 arm (already queued by the loop) now that compiler_ms/unattributed_ms correctly reflect both decode mechanisms",
     "when comparing compiler_ms_mean across cycles/arms going forward, also check each arm's evaluation_policy.compiler_decode_mode -- a symmetric comparison requires both arms to be decoding through the same mechanism, which is not guaranteed by --ship-gates alone",
@@ -91,8 +105,8 @@
   ],
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "4e137321054f590f5dc5518d18f166bbc37109ed",
-    "code_dirty": true,
+    "code_commit": "6280d2db31b891977327ac00e51434015d8eac24",
+    "code_dirty": false,
     "components": {
       "config.levers": "v30",
       "harness.model_build.eval": "v88",

@@ -10,10 +10,28 @@ reported a decode timeout on **all 3/3** smoke records on **both** arms
 ship-gate outcome exists for either arm — this is not evidence about the
 `component-plan` model hypothesis.
 
-`compiler_ms_mean` jumped from ~3,900-4,300ms (cycle 1, seed 100001, same
-`wf_smoke_v2` control recipe) to ~23,100ms (cycle 2, seed 100002) on **both**
-arms — a ~5-6x slowdown that is symmetric across control and candidate, so it
-is not attributable to the `component-plan` knob change itself.
+`compiler_ms_mean` jumped from ~3,930-3,980ms (cycle 1, seed 100001, same
+`wf_smoke_v2` control/bounds recipe — see
+[`continuous-openui-local-gd6j83-c1-results.json`](continuous-openui-local-gd6j83-c1-results.json),
+same metric, both cycles) to ~23,080-23,150ms (cycle 2, seed 100002) on
+**both** arms — a ~5-6x slowdown that is symmetric across control and
+candidate, so it is not attributable to the `component-plan` knob change
+itself.
+
+**Correction (added after review):**
+[`compiler-tree-forced-closure-decode-metering-gap.md`](compiler-tree-forced-closure-decode-metering-gap.md)
+attributes part of this gap to cycle 1 decoding through a different,
+then-unmetered `compiler_decode_mode="off"` path. Cycle 1's own
+`scoreboard.json` `evaluation_policy.compiler_decode_mode` field reads
+`"tree"` for **both** the control and bounds arms, not `"off"` — so that
+specific mechanism explanation is not confirmed by the evidence recorded
+here. It may still hold if the checkpoint's actually-executed decode mode
+diverges from what `evaluation_policy` reports (the metering-gap doc's own
+hypothesis for why that field could be misleading), but this doc does not
+independently verify that either way. The observed `compiler_ms_mean` jump
+itself is real and same-metric across both cycles; only the specific
+"different mechanism" explanation for it remains open and is left to further
+profiling.
 
 ## Same failure class as a previously documented, still-unresolved blocker
 
