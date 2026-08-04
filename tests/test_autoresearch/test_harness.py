@@ -685,8 +685,30 @@ def test_generate_batch_size_knob_is_accepted() -> None:
     # screening hypothesis fails HypothesisMatrix validation.
     knobs = ExperimentKnobs(generate_batch_size=1)
     assert knobs.generate_batch_size == 1
+    assert ExperimentKnobs(generate_batch_size=1024).generate_batch_size == 1024
     with pytest.raises(ValidationError):
         ExperimentKnobs(generate_batch_size=0)
+    with pytest.raises(ValidationError):
+        ExperimentKnobs(generate_batch_size=1025)
+
+
+def test_compile_commands_routes_generate_batch_size_eval_override() -> None:
+    # The knob must reach evaluate_model.py's --generate-batch-size flag, not
+    # just pass ExperimentKnobs validation, or #1433's fair-share screening
+    # fix is silently inert.
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            train_version="wf_smoke_v2",
+            steps=20,
+            generate_batch_size=1,
+        )
+    )
+
+    commands = compile_commands(campaign(), spec)
+    evaluate = next(
+        command for command in commands if "scripts.evaluate_model" in command
+    )
+    assert evaluate[evaluate.index("--generate-batch-size") + 1] == "1"
 
 
 def test_hypothesis_matrix_requires_five_distinct_grounded_candidates() -> None:

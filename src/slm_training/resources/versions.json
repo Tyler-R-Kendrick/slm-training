@@ -2729,7 +2729,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v181",
+      "version": "v182",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2770,6 +2770,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v182",
+          "note": "fix: compile_commands never forwarded knobs.generate_batch_size to evaluate_model.py's --generate-batch-size flag, so even after v181 accepted the knob it was silently dropped and #1433/#1408's fair-share screening chunking fix never actually reached the eval command; wired it through and added a compile_commands regression test",
+          "date": "2026-08-04"
+        },
         {
           "version": "v181",
           "note": "fix: declare generate_batch_size on ExperimentKnobs so #1433's screening batch-size=1 knob no longer fails HypothesisMatrix validation (every hypothesis in every screening cycle was rejected with 'Extra inputs are not permitted')",
