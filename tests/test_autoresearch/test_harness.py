@@ -2471,6 +2471,25 @@ def test_compile_commands_routes_typed_ltr_tail_training_lever() -> None:
     assert train[train.index("--ltr-tail-loss-weight") + 1] == "2.0"
 
 
+def test_compile_commands_routes_generate_batch_size_eval_lever() -> None:
+    """Screening knobs must forward generate_batch_size to evaluate_model."""
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            train_version="wf_smoke_v2",
+            steps=20,
+            generate_batch_size=1,
+            decode_timeout_seconds=30.0,
+        )
+    )
+
+    commands = compile_commands(campaign(), spec)
+    evaluate = next(
+        command for command in commands if "scripts.evaluate_model" in command
+    )
+    assert evaluate[evaluate.index("--generate-batch-size") + 1] == "1"
+    assert evaluate[evaluate.index("--decode-timeout-seconds") + 1] == "30.0"
+
+
 def test_compile_commands_routes_typed_ltr_prefix_training_lever() -> None:
     spec = experiment(
         knobs=ExperimentKnobs(

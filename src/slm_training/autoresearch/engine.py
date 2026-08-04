@@ -843,6 +843,8 @@ def compile_commands(
         evaluate.extend(["--suites", str(knobs.eval_suites)])
     if knobs.decode_timeout_seconds is not None:
         evaluate.extend(["--decode-timeout-seconds", str(knobs.decode_timeout_seconds)])
+    if knobs.generate_batch_size is not None:
+        evaluate.extend(["--generate-batch-size", str(int(knobs.generate_batch_size))])
     commands.append(evaluate)
     if campaign.track == "grammar_diffusion":
         commands[-1].extend(["--model", "grammar_diffusion"])

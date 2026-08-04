@@ -655,6 +655,10 @@ def test_matrix_confirm_path_same_levers_new_seed() -> None:
     assert cand["seed"] == ctrl["seed"] == 100_000 + 9
     assert cand["steps"] == 81
     assert ctrl["steps"] == 80
+    # Screening injects generate_batch_size=1 so fair-share decode timeouts
+    # work on tiny smoke suites (#1433 / #1408); schema must accept it.
+    assert cand["generate_batch_size"] == 1
+    assert ctrl["generate_batch_size"] == 1
 
 
 def test_matrix_steps_confirm_preserves_distinct_source_control_recipe() -> None:
