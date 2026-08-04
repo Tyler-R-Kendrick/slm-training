@@ -1,0 +1,64 @@
+{
+  "schema": "autotrain_continuous_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c1",
+  "session_label": "529a06",
+  "cycle_index": 1,
+  "source_commit": "98d1fb2cfc042b125b1994dc13e4c9b3788f7a6d",
+  "integration_commit": "98d1fb2cfc042b125b1994dc13e4c9b3788f7a6d",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "screening",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true
+  },
+  "arms": {
+    "control": {
+      "id": "c20260804-continuous-openui-local-8c0b60dd-c1-control",
+      "trainable_params": 1608962,
+      "structural_similarity": 0.057499999999999996,
+      "meaningful_program_rate": 0.0,
+      "binder_reference_f1": 0.6333333333333333,
+      "latency_ms_p50": 4863.41,
+      "gates_pass": false
+    },
+    "bounds": {
+      "id": "c20260804-continuous-openui-local-8c0b60dd-c1-bounds",
+      "trainable_params": 1608962,
+      "structural_similarity": 0.057499999999999996,
+      "meaningful_program_rate": 0.0,
+      "binder_reference_f1": 0.6333333333333333,
+      "latency_ms_p50": 5198.6,
+      "gates_pass": false
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c1-control",
+      "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c1-bounds",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.057499999999999996 candidate=0.057499999999999996 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "conclusion": "null_delta_bounds_knob",
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "model",
+      "hypothesis": "Test the distinct size-matched 'component-plan' quality hypothesis next.",
+      "action": "experiment_next",
+      "experiment_id": "c20260804-continuous-openui-local-8c0b60dd-c1-component-plan"
+    }
+  ],
+  "recorded_at": "2026-08-04T21:32:05Z"
+}
