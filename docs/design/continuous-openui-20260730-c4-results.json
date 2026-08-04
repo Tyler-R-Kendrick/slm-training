@@ -1,0 +1,39 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260730",
+  "campaign_id": "continuous-loop-20260801-continuous-openui-202607-98199209-c2",
+  "cycle_index": 4,
+  "source_commit": "9afc974a1cb1d16518547279cc3f6ff9149432dd",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "batch_size": 2,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "objective": "Rotate the thrash lever bank to 'canvas' (compact_active_canvas) per cycle-3 handoff rank-1 priority"
+  },
+  "arms": {
+    "c20260801-continuous-openui-202607-98199209-c2-control": {
+      "status": "infrastructure_timeout",
+      "reason": "evaluate_model exceeded the 3-minute MAX_RUN_MINUTES wall cap; process was interrupted mid-decode with no typed train_summary/eval.json"
+    },
+    "c20260801-continuous-openui-202607-98199209-c2-canvas": {
+      "status": "infrastructure_timeout",
+      "reason": "evaluate_model exceeded the 3-minute MAX_RUN_MINUTES wall cap; process was interrupted mid-decode with no typed train_summary/eval.json"
+    }
+  },
+  "primary_metric": "smoke.binder_reference_f1",
+  "primary_delta": null,
+  "conclusion": "Both the size-matched control and the 'canvas' candidate hit the wall-time cap during evaluate_model decode on this run, so no comparative evidence exists this cycle. Because both arms failed identically (not just the candidate), this reads as environment/resource variance in this session rather than a compact_active_canvas-specific regression -- SDLC Phase A classifies non-positive/inconclusive (wall_timeout, empty_metrics, primary_metric_unavailable). No stack layer opened.",
+  "next_priorities": [
+    "Retry the identical control + canvas arms once before treating this as a repeated hard blocker (autotrain continuous.md requires 3 consecutive identical failures before reporting blocked)",
+    "If the timeout reproduces on the control arm alone (no lever difference), treat as an infra/perf HarnessSignalV1 for model_build eval, not a model hypothesis",
+    "Keep rotating away from grammar_completion_bounds regardless (already null on quality twice)"
+  ],
+  "recorded_at": "2026-08-01T21:34:59+00:00"
+}

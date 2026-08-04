@@ -1,0 +1,49 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260730",
+  "campaign_id": "continuous-loop-20260801-continuous-openui-202607-98199209-c5",
+  "cycle_index": 7,
+  "source_commit": "f63a25b36612147ee1b777bfa33a641b87a92549",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "batch_size": 2,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "cycle_role": "screening",
+    "objective": "Rotate the thrash lever bank to 'batch1' (batch_size=1) per handoff priority"
+  },
+  "arms": {
+    "c20260801-continuous-openui-202607-98199209-c5-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.05625,
+        "binder_reference_f1": 0.7333333333333333,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 3149.53
+      }
+    },
+    "c20260801-continuous-openui-202607-98199209-c5-batch1": {
+      "status": "infrastructure_timeout",
+      "reason": "evaluate_model exceeded the 3-minute MAX_RUN_MINUTES wall cap; interrupted inside the pure-Python lark parser fallback (openui-lark JS bridge unavailable: 'Install bridge deps: cd src/apps/openui_bridge && npm ci')"
+    }
+  },
+  "primary_metric": "smoke.binder_reference_f1",
+  "primary_delta": null,
+  "conclusion": "Control completed cleanly (binder_reference_f1=0.7333, consistent with cycle 5's control at 0.7222 and cycle 3's control at 0.6333 -- three different training runs, each producing a slightly different score, confirming this metric is sensitive to training randomness at this fixture scale, not just lever choice). The 'batch1' candidate timed out inside the pure-Python Lark AST-completeness fallback (the compiled JS openui-lark bridge is not installed in this session's venv: 'npm ci' was never run under src/apps/openui_bridge, per README's optional-acceleration setup step). The same fallback-path log line appears in every completed run this session too (cycles 3, 5, 6's control), so the missing npm bridge is not by itself the failure cause -- it is consistently slower, and batch_size=1 combined with that slow fallback pushed this specific arm over the 3-minute cap. No comparative primary-metric evidence for 'batch1' this cycle.",
+  "next_priorities": [
+    "Installing the openui_bridge JS dependency (`cd src/apps/openui_bridge && npm ci`) would remove the slow pure-Python Lark fallback and should reduce future promotion/batch1-class timeouts -- an environment-setup fix, not a code change, and out of scope to force in an unattended docs-only cycle",
+    "binder_reference_f1 varies materially run-to-run at this fixture scale (0.63-0.73 across three untouched controls) -- any future comparative claim on this metric needs multiple seeds, not a single paired arm",
+    "Continue rotating the lever bank; batch1 is now inconclusive (not rejected) and should be retried once the JS bridge is installed"
+  ],
+  "recorded_at": "2026-08-01T21:44:51+00:00"
+}
