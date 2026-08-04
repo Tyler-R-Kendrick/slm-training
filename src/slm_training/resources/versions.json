@@ -2729,7 +2729,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v180",
+      "version": "v181",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2770,6 +2770,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v181",
+          "note": "fix: declare generate_batch_size on ExperimentKnobs so #1433's screening batch-size=1 knob no longer fails HypothesisMatrix validation (every hypothesis in every screening cycle was rejected with 'Extra inputs are not permitted')",
+          "date": "2026-08-04"
+        },
         {
           "version": "v180",
           "note": "gate Phase A primary wins on matched suite completion + promote formal terminal block feedback",

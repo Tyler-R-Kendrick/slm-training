@@ -679,6 +679,16 @@ def test_strict_schema_and_allowlist() -> None:
         validate_experiment(restricted, experiment(), evidence(), [source()])
 
 
+def test_generate_batch_size_knob_is_accepted() -> None:
+    # run_autotrain_continuous.py sets generate_batch_size=1 for fair-share
+    # screening timeouts (#1433); the field must stay declared here or every
+    # screening hypothesis fails HypothesisMatrix validation.
+    knobs = ExperimentKnobs(generate_batch_size=1)
+    assert knobs.generate_batch_size == 1
+    with pytest.raises(ValidationError):
+        ExperimentKnobs(generate_batch_size=0)
+
+
 def test_hypothesis_matrix_requires_five_distinct_grounded_candidates() -> None:
     with pytest.raises(ValidationError, match="at least 5 items"):
         hypothesis_matrix(4)
