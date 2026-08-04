@@ -7895,6 +7895,11 @@
         {
           "version": "v3",
           "date": "2026-08-04",
+          "note": "no-bump: record the continuous-openui-scheduled c4 decode-timeout confirmation (corrects c3's cold-sandbox hypothesis) in the model card and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-04",
           "note": "no-bump: record the continuous-openui-scheduled c3 decode-timeout diagnostic (frozen replay of c2) in the model card and README; SLM-228 behavior is unchanged."
         },
         {

@@ -1,0 +1,51 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-schedu-1e62ecf9-c4",
+  "loop_id": "continuous-openui-scheduled",
+  "cycle_index": 4,
+  "cycle_intent": "retry_measurement",
+  "evidence_class": "fixture",
+  "decision": "measurement_incomplete_sandbox_decode_speed_confirmed",
+  "scoreable": false,
+  "new_checkpoint_created": false,
+  "upstream_commit": "eba6db3044076285581b80cfe5294a2ecbcee8a1",
+  "integration_commit": "3ce1b5858c7798c4e892a7c0e0063661b8487703",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "frozen_manifest_sha256": "00574c47f6362eaae01b999e28683e721f092026d1c561e5669ef22a0a811210",
+  "arms": [
+    {
+      "experiment_id": "c20260804-continuous-openui-schedu-1e62ecf9-c4-control",
+      "trainable_params": 1608962,
+      "status": "eval_timed_out",
+      "failure_stage": "agentv_smoke_decode",
+      "compiler_ms_mean": 23216.8,
+      "decode_timeout_seconds_fitted": 8.0,
+      "decode_timeout_count": 3,
+      "smoke_n": 3
+    },
+    {
+      "experiment_id": "c20260804-continuous-openui-schedu-1e62ecf9-c4-canvas",
+      "trainable_params": 1608962,
+      "status": "eval_timed_out",
+      "failure_stage": "agentv_smoke_decode",
+      "compiler_ms_mean": 23100.9,
+      "decode_timeout_seconds_fitted": 8.0,
+      "decode_timeout_count": 3,
+      "smoke_n": 3
+    }
+  ],
+  "comparison": {
+    "attributable": false
+  },
+  "diagnosis": {
+    "harness_family": "model_build",
+    "hard_defect_found": false,
+    "corrects_prior_cycle": "autotrain-cycle-continuous-openui-scheduled-c3-decode-timeout-diagnostic",
+    "reasoning": "c3 hypothesized cold-sandbox decode latency and recommended a warm retry. c4's warm-process replay measured compiler_ms_mean within 1% of c3 (23216.8/23100.9 vs 23165.5/23242.0) on an uncontended 4-vCPU host (/proc/loadavg 0.56 1.15 1.29). Two consecutive near-identical measurements on an uncontended host rule out cold-start noise: this sandbox's decode throughput is genuinely ~6-8x this repo's historical smoke-decode range. The arm's wall budget (arm_wall_seconds~52.76s) cannot accommodate 3 records at ~23s each (69s) plus the 20s train floor and 8s overhead (97s total) regardless of the decode-timeout knob value.",
+    "code_change": "none; global screening_decode_timeout_seconds default is tuned to this repo's broad historical evidence and is not changed from a single sandbox class's measurement",
+    "recommendation": "no further retry_measurement on this sandbox; a future retry on faster/GPU-backed compute, or a deliberately reviewed thrash-recipe recalibration backed by multi-sandbox evidence, can reopen this arm"
+  },
+  "checkpoint_policy": "no_new_checkpoint_frozen_replay_of_c2",
+  "lean": "not_applicable:retry_measurement",
+  "next_action": "none: stop retrying this arm on this sandbox class; continue other autotrain loop iterations"
+}
