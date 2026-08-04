@@ -1,0 +1,63 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 2,
+  "upstream_commit": "45d78cb4251a9ea3b32a6e8f01b409b71978a6f6",
+  "integration_commit_at_cycle_start": "14a748cabfb4db91a61e361c5fe9ec61a42ac7f9",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 22,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "ship_gates": true,
+    "seed": 100002
+  },
+  "arms": {
+    "c2-component-plan": {
+      "status": "completed_eval_gates_failed",
+      "trainable_params": 1755764,
+      "checkpoint_sha256": "20e573b14e3216132d27101e98f5c49dfe634acd0101b2ce18b5f9f0f8a8e741",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.38280000000000003,
+        "binder_reference_f1": 0.0,
+        "placeholder_fidelity": 0.0,
+        "component_type_recall": 0.16666666666666666,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "reward_score": 0.0,
+        "latency_ms_p50": 23961.35
+      }
+    },
+    "c2-control": {
+      "status": "arm_not_executed",
+      "reason": "integration_commit must be the current checked-out HEAD"
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "root_cause": "operator_git_mutation_mid_cycle",
+  "root_cause_detail": "The cycle-2 driver captured integration_commit=14a748ca (the tip of the cycle-1 docs commit) when it started. Before the control arm ran, this session amended that same commit (git commit --amend -S, producing de14a9d0) to add a required SSH signature after stop-hook feedback -- a git HEAD mutation concurrent with an in-flight supervised cycle. scripts/autoresearch.py's _validate_continuous_commits then correctly rejected the control arm's run because HEAD no longer matched the campaign's locked integration_commit. This is an operator process error (mutating git state while a cycle is running), not a canonical-harness defect -- no HarnessSignalV1 or improve-openui-harnesses routing applies.",
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "continue loop; local commits/docs only",
+    "reasons": [
+      "measurement_incomplete:c20260803-continuous-openui-local-8c0b60dd-c2-control:missing_scoreboard",
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c2-component-plan",
+      "primary_metric_unavailable",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "conclusion": "Continuous-openui-local loop, cycle 2 (session ctyadc, scheduled): the component-plan candidate arm completed and lands on structural_similarity=.3828, matching the value independently reproduced across sessions ts5ofk/j48f8u/ctyadc's own cycle-1 successor priority -- but the matched control arm failed to execute because this session amended the git commit the campaign had locked as its integration_commit partway through the cycle (to add a missing commit signature per stop-hook feedback). SDLC Phase A classifies this NON_POSITIVE (measurement_incomplete); no stack layer opens. The driver's own handoff queues a typed retry_measurement action: replay the identical frozen c2 control+component-plan arms (frozen_manifest_sha256 1c312e8c...df9bb0f) in cycle 3 before attempting any new hypothesis. No further git history mutation will occur mid-cycle for the remainder of this loop.",
+  "next_priorities": [
+    "Replay the exact frozen c2 control + component-plan arms in cycle 3 (rank 1, confidence 0.95) rather than starting a new hypothesis -- the candidate measurement is real but unattributed without its control."
+  ],
+  "recorded_at": "2026-08-03T13:35:54Z"
+}
