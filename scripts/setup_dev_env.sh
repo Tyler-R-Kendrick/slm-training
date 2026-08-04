@@ -17,4 +17,10 @@ python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2
 # AgentV SDK for evaluate_model.py --ship-gates (scripts/run_agentv_eval.mjs).
 env -u NODE_OPTIONS npm ci
 
+# lang-core (@openuidev/lang-core) bridge for validate()/parse() — G2 schema gate.
+env -u NODE_OPTIONS npm ci --prefix src/apps/openui_bridge
+
+# DESIGN.md lint bridge (@google/design.md).
+env -u NODE_OPTIONS npm ci --prefix src/apps/design_md_bridge
+
 echo "Ready: source .venv/bin/activate"

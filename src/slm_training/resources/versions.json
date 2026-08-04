@@ -2726,6 +2726,11 @@
         {
           "version": "v178",
           "date": "2026-08-04",
+          "note": "no-bump: pointer comment in _fit_screening_decode_timeout_seconds's docstring recording the c3 cold-sandbox decode-timeout diagnostic (docs/design/autotrain-cycle-continuous-openui-scheduled-c3-decode-timeout-diagnostic.md); no behavior change"
+        },
+        {
+          "version": "v178",
+          "date": "2026-08-04",
           "note": "Self-heal a missing AgentV SDK (node_modules/@agentv/core not installed) at run_cycle startup by running 'npm ci' with sanitized NODE_OPTIONS, mirroring scripts/setup_dev_env.sh, instead of burning a full experiment cycle on evaluate_model.py's RuntimeError"
         },
         {
@@ -7887,6 +7892,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-04",
+          "note": "no-bump: record the continuous-openui-scheduled c3 decode-timeout diagnostic (frozen replay of c2) in the model card and README; SLM-228 behavior is unchanged."
+        },
         {
           "version": "v3",
           "date": "2026-08-04",

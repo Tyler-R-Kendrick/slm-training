@@ -13,9 +13,15 @@ from __future__ import annotations
 import json
 import math
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from slm_training.harnesses.distill.grammar_trace import GrammarDecisionTrace
+if TYPE_CHECKING:
+    # Deferred: slm_training.harnesses.distill eagerly imports torch (SPV2-05's
+    # tiny learned repair model), and this package is torch-free at import
+    # time (test_analysis_package_is_torch_free). GrammarDecisionTrace is used
+    # only as a type annotation, evaluated lazily via ``from __future__ import
+    # annotations`` above, so this never needs to import at runtime.
+    from slm_training.harnesses.distill.grammar_trace import GrammarDecisionTrace
 
 SCHEMA_VERSION = "sde2-06.v1"
 

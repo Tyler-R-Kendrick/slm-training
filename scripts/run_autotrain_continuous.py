@@ -307,6 +307,15 @@ def _fit_screening_decode_timeout_seconds(
 
     Timeouts are optima: if this clamp always binds, either the arm share model
     or the thrash recipe (steps/n) needs recalibration — not silent wall++.
+
+    A single cycle where every record hits this clamp (e.g. compiler_ms_mean
+    far above the fitted budget) is not on its own evidence of miscalibration:
+    the ~8s default assumes the ~1-4s smoke decode latency measured throughout
+    this repo's history, and a cold sandbox (freshly bootstrapped venv/npm,
+    first decode of the process) can transiently run much slower. Diagnose
+    across repeated cycles before touching the default; see
+    docs/design/autotrain-cycle-continuous-openui-scheduled-c3-decode-timeout-diagnostic.md
+    for the reference investigation.
     """
     from slm_training.autoresearch.climb_policy import (
         decode_timeout_seconds_for_role,

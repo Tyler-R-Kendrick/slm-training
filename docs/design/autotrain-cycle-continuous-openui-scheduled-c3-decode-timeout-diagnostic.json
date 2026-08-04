@@ -1,0 +1,50 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-schedu-1e62ecf9-c3",
+  "loop_id": "continuous-openui-scheduled",
+  "cycle_index": 3,
+  "cycle_intent": "retry_measurement",
+  "evidence_class": "fixture",
+  "decision": "measurement_incomplete_cold_sandbox_decode_timeout",
+  "scoreable": false,
+  "new_checkpoint_created": false,
+  "upstream_commit": "eba6db3044076285581b80cfe5294a2ecbcee8a1",
+  "integration_commit": "2aedec92fac3a8f6cad47b4d5a69b537194509d9",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "frozen_manifest_sha256": "00574c47f6362eaae01b999e28683e721f092026d1c561e5669ef22a0a811210",
+  "arms": [
+    {
+      "experiment_id": "c20260804-continuous-openui-schedu-1e62ecf9-c3-control",
+      "trainable_params": 1608962,
+      "status": "eval_timed_out",
+      "failure_stage": "agentv_smoke_decode",
+      "compiler_ms_mean": 23165.5,
+      "decode_timeout_seconds_fitted": 8.0,
+      "decode_timeout_count": 3,
+      "smoke_n": 3
+    },
+    {
+      "experiment_id": "c20260804-continuous-openui-schedu-1e62ecf9-c3-canvas",
+      "trainable_params": 1608962,
+      "status": "eval_timed_out",
+      "failure_stage": "agentv_smoke_decode",
+      "compiler_ms_mean": 23242.0,
+      "decode_timeout_seconds_fitted": 8.0,
+      "decode_timeout_count": 3,
+      "smoke_n": 3
+    }
+  ],
+  "comparison": {
+    "attributable": false
+  },
+  "diagnosis": {
+    "harness_family": "model_build",
+    "hard_defect_found": false,
+    "reasoning": "compiler_ms_mean (~23.2s) is 6-8x this repo's historical smoke-decode range (~0.9-4.0s p50 across many prior documented cycles); the 8s screening decode-timeout default and its <=12.0s clamp ceiling (test_fit_screening_decode_fits_arm_wall) are already tuned to that historical range. Single-cycle anomaly consistent with a cold sandbox (venv + npm ci had just completed in this process) rather than a reproducible policy miscalibration.",
+    "code_change": "docstring-only pointer comment in scripts/run_autotrain_continuous.py:_fit_screening_decode_timeout_seconds; no behavior change (no-bump)",
+    "recommendation": "retry_measurement on the identical frozen arm with a warm process; reopen this harness family only if the clamp binds again on a warm retry"
+  },
+  "checkpoint_policy": "no_new_checkpoint_frozen_replay_of_c2",
+  "lean": "not_applicable:retry_measurement",
+  "next_action": "retry_measurement: replay c3 identical frozen arms with a warm process"
+}
