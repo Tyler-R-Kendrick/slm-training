@@ -11105,6 +11105,10 @@ class TwoTowerModel(nn.Module):
             state.remaining_tokens = length - len(prefix)
             if stats is not None and search_mode != "greedy":
                 stats.compiler_lattice_recurrences += 1
+            forced_closure: tuple[int, ...] = ()
+            verified_solver_decode = bool(
+                getattr(self.config, "verified_solver_decode", False)
+            )
             with timed_ms(stats, "compiler_ms"):
                 forest = build_completion_forest(
                     self.tokenizer,
@@ -11118,18 +11122,21 @@ class TwoTowerModel(nn.Module):
                     remaining_tokens=length - len(prefix),
                     runtime_symbols=self._runtime_symbols_for_row(_plan_row),
                 )
-            forced_closure: tuple[int, ...] = ()
-            verified_solver_decode = bool(
-                getattr(self.config, "verified_solver_decode", False)
-            )
-            if forest.coverage == "complete" and not verified_solver_decode:
-                closure = state.completion_forced_closure(length - len(prefix))
-                if closure is not None:
-                    closure_tokens, _closure_state, closure_coverage = closure
-                    if closure_coverage == "complete" and closure_tokens:
-                        forced_closure = tuple(
-                            int(token_id) for token_id in closure_tokens
-                        )
+                # The forced-singleton chain walk (completion_forced_closure)
+                # re-invokes the same outgoing()-edge grammar-authority
+                # computation as build_completion_forest, in a loop that can
+                # span the entire remaining canvas. It is the same
+                # compiler-tree search cost as the call it chains from and
+                # must not silently fall into unattributed_ms — see
+                # docs/design/compiler-tree-forced-closure-decode-metering-gap.md.
+                if forest.coverage == "complete" and not verified_solver_decode:
+                    closure = state.completion_forced_closure(length - len(prefix))
+                    if closure is not None:
+                        closure_tokens, _closure_state, closure_coverage = closure
+                        if closure_coverage == "complete" and closure_tokens:
+                            forced_closure = tuple(
+                                int(token_id) for token_id in closure_tokens
+                            )
             if verified_solver_decode:
                 # VSS1-03: certified exact closure prunes the forest to the live
                 # subset before any soft ranking. Disabled by default (guard above),
@@ -11618,6 +11625,10 @@ class TwoTowerModel(nn.Module):
                 prefix = prefixes[row]
                 state = states[row]
                 state.remaining_tokens = length - len(prefix)
+                forced_closure: tuple[int, ...] = ()
+                verified_solver_decode = bool(
+                    getattr(self.config, "verified_solver_decode", False)
+                )
                 with timed_ms(stats, "compiler_ms"):
                     try:
                         forest = build_completion_forest(
@@ -11630,21 +11641,28 @@ class TwoTowerModel(nn.Module):
                             remaining_tokens=length - len(prefix),
                             runtime_symbols=self._runtime_symbols_for_row(row),
                         )
+                        # The forced-singleton chain walk re-invokes the same
+                        # outgoing()-edge grammar-authority computation as
+                        # build_completion_forest, in a loop that can span the
+                        # entire remaining canvas. It is the same
+                        # compiler-tree search cost as the call it chains from
+                        # and must not silently fall into unattributed_ms —
+                        # see docs/design/compiler-tree-forced-closure-decode-metering-gap.md.
+                        if forest.coverage == "complete" and not verified_solver_decode:
+                            closure = state.completion_forced_closure(
+                                length - len(prefix)
+                            )
+                            if closure is not None:
+                                closure_tokens, _closure_state, closure_coverage = (
+                                    closure
+                                )
+                                if closure_coverage == "complete" and closure_tokens:
+                                    forced_closure = tuple(
+                                        int(token_id) for token_id in closure_tokens
+                                    )
                     finally:
                         state._collect_completion_stats()
                 check_decode_deadline()
-                forced_closure: tuple[int, ...] = ()
-                verified_solver_decode = bool(
-                    getattr(self.config, "verified_solver_decode", False)
-                )
-                if forest.coverage == "complete" and not verified_solver_decode:
-                    closure = state.completion_forced_closure(length - len(prefix))
-                    if closure is not None:
-                        closure_tokens, _closure_state, closure_coverage = closure
-                        if closure_coverage == "complete" and closure_tokens:
-                            forced_closure = tuple(
-                                int(token_id) for token_id in closure_tokens
-                            )
                 if verified_solver_decode:
                     forest = self._solver_prune_forest(forest, prefix)
                 forests[row] = forest
