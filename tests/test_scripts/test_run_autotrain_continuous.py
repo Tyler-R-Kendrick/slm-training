@@ -7541,6 +7541,22 @@ def test_fit_screening_decode_fits_arm_wall() -> None:
     assert fitted <= 12.0  # thrash-calibrated, not ship 24s
 
 
+def test_screening_decode_timeout_covers_observed_aux_head_cost() -> None:
+    """Structural-aux-head screening arms measured ~23.2s/chunk decode cost
+    (continuous-openui-local c2, 2026-08-04: both control and candidate hit
+    smoke:decode_timeout_count=3/3 under the prior 8s x 3 = 24s chunk budget).
+    The fitted chunk budget must leave real margin over that observed cost so
+    an ordinary-size aux head does not make every screening record time out.
+    """
+    from slm_training.autoresearch.climb_policy import load_climb_policy
+
+    policy = load_climb_policy()
+    fitted, meta = _mod._fit_screening_decode_timeout_seconds(policy)
+    smoke_n = int(meta["smoke_n"])
+    observed_chunk_seconds = 23.2
+    assert fitted * smoke_n > observed_chunk_seconds + 1.0
+
+
 def test_screening_matrix_uses_fitted_decode_and_thrash_steps() -> None:
     matrix = _mod._matrix(
         campaign_id="continuous-loop-timing-c1",

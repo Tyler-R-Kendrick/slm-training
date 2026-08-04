@@ -357,9 +357,14 @@ def decode_timeout_seconds_for_role(policy: ClimbPolicy, role: str) -> float:
         default = 24.0
     else:
         key = "screening_decode_timeout_seconds"
-        # Default 8s: with smoke n=3 and ~70s arm share under MAX_RUN=3m,
-        # 24s×3 already exceeds the arm wall (empty scoreboards).
-        default = 8.0
+        # Default 10s: fits n=3 x ~70s arm share under MAX_RUN=3m (24s×3
+        # already exceeds the arm wall). Raised from 8s after
+        # continuous-openui-local c2 (2026-08-04) measured structural-aux-head
+        # arms (structural_aux_head_profile != "none") at ~23.2s/chunk in
+        # both control and candidate — the prior 8s x 3 = 24s chunk budget
+        # left under a second of margin over that observed cost and timed
+        # out on every record under ordinary CPU jitter.
+        default = 10.0
     value = float(measurement.get(key, default))
     if value <= 0:
         raise ClimbPolicyError(f"measurement.{key} must be > 0, got {value}")

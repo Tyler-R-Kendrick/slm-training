@@ -37,7 +37,7 @@
   "measurement": {
     "screening_stage_wall_minutes": 3,
     "promotion_stage_wall_minutes": 3,
-    "screening_decode_timeout_seconds": 8,
+    "screening_decode_timeout_seconds": 10,
     "promotion_decode_timeout_seconds": 24,
     "screening_smoke_n": 3,
     "max_consecutive_frozen_replays": 1,

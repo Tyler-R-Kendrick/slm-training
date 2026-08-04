@@ -2683,7 +2683,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v177",
+      "version": "v178",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2723,6 +2723,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v178",
+          "date": "2026-08-04",
+          "note": "Raise screening_decode_timeout_seconds default 8s->10s: continuous-openui-local c2 measured structural-aux-head arms at ~23.2s/chunk decode cost, and the prior 8s x smoke_n(3) = 24s chunk budget left under a second of margin, timing out every record on ordinary CPU jitter. Still clamped by _fit_screening_decode_timeout_seconds to the arm wall."
+        },
         {
           "version": "v177",
           "date": "2026-08-04",
