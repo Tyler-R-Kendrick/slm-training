@@ -1,0 +1,55 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c3",
+  "decision": "measurement_incomplete_harness_signal_confirmed",
+  "claim_class": "fixture_screening",
+  "formal": {"status": "not_applicable:retry_measurement"},
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "suite": "smoke",
+    "suite_n": 3,
+    "trainable_params": {"control": 1755764, "candidate": 1755764},
+    "sync_checkpoints": false,
+    "candidate_lever": "component_plan_decode_weight",
+    "replay_of": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c2",
+    "reused_checkpoints": true
+  },
+  "arms": {
+    "control": {
+      "checkpoint_sha256": "6abf57d4898e8fe7cb1dace959d3ce5fec463f816b3686c99ad18abf6db3512b",
+      "status": "measurement_incomplete",
+      "document_n": 3,
+      "completed_document_n": 0,
+      "incomplete_document_n": 3,
+      "decode_timeout_count": 3,
+      "latency_ms_p50_including_incomplete": 24157.64,
+      "metrics": null
+    },
+    "candidate": {
+      "checkpoint_sha256": "20e573b14e3216132d27101e98f5c49dfe634acd0101b2ce18b5f9f0f8a8e741",
+      "status": "measurement_incomplete",
+      "document_n": 3,
+      "completed_document_n": 0,
+      "incomplete_document_n": 3,
+      "decode_timeout_count": 3,
+      "metrics": null
+    }
+  },
+  "effects": {"measurement_complete": false},
+  "ship": {"eligible": false, "failures": ["identical to cycle 2: 0/3 completed on both arms", "primary metric unavailable"]},
+  "diagnosis": {
+    "confirms_prior": "docs/design/autotrain-cycle-20260804-c2-component-plan-decode-timeout.md",
+    "finding": "Frozen replay reused the exact cycle-2 checkpoints (identical checkpoint_sha256) and failed identically. Observed wall time landed at ~24.16s against the 24.0s chunk budget -- an overshoot of ~157ms (~0.65%), consistent with the historical 2026-08-03 run of the same recipe family completing at up to 23.1s. This is a reproducible, marginal-capacity signal (not transient container noise, since two independent replays landed within the same narrow band), but it is too close to the noise floor to justify a reactive numeric change to the fair-share timeout formula without a dedicated, separately-tested harness change.",
+    "action_taken": "None beyond cycle 2's clarity fix + regression test. A third blind replay of the identical frozen arm would not produce new information (2 consecutive identical outcomes already establish the pattern) and the repeated-blocker threshold is 3 -- so the self-heal choice for the next cycle is to pivot to a different, lighter-weight hypothesis (e.g. the c1-style bounds family, which completed comfortably at ~4.6s compiler time) rather than a third replay of a recipe already confirmed to sit at this capacity edge."
+  },
+  "successor": {
+    "experiment_slug": "component-plan",
+    "next_action": "defer further component-plan measurement to a dedicated harness session that can properly recalibrate the screening chunk timeout margin (e.g. per-family chunk-size=1, or a measured eval_overhead_seconds correction) with its own tests; meanwhile pivot subsequent cycles to lighter-weight hypotheses that fit the current budget"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "c1f47741e6c6f6d167ed79c08e2d660c9f790470",
+    "code_dirty": false
+  }
+}
