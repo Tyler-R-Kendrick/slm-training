@@ -1,0 +1,70 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c1",
+  "cycle_index": 1,
+  "evidence_class": "fixture",
+  "decision": "infrastructure_failure_not_a_model_result",
+  "scoreable": false,
+  "new_checkpoint_created": false,
+  "upstream_commit": "eba6db3044076285581b80cfe5294a2ecbcee8a1",
+  "integration_commit": "eba6db3044076285581b80cfe5294a2ecbcee8a1",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "experiment_id": "c20260804-continuous-openui-local-8c0b60dd-c1-control",
+      "status": "failed",
+      "exit_code": 2,
+      "failure_stage": "evaluate_model",
+      "failure_reason": "RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER (fresh sandbox had no node_modules yet, so publish_agentv_evaluation() could not resolve @agentv/core)",
+      "smoke": {
+        "latency_ms_p50": 4386.55,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333
+      }
+    },
+    {
+      "experiment_id": "c20260804-continuous-openui-local-8c0b60dd-c1-bounds",
+      "status": "failed",
+      "exit_code": 2,
+      "failure_stage": "evaluate_model",
+      "failure_reason": "RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER (fresh sandbox had no node_modules yet, so publish_agentv_evaluation() could not resolve @agentv/core)",
+      "smoke": {
+        "latency_ms_p50": 4357.33,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333
+      }
+    }
+  ],
+  "comparison": {
+    "attributable": false
+  },
+  "agentv": {
+    "bundles_complete": false,
+    "execution_errors": 2,
+    "ship_gates_pass": false
+  },
+  "checkpoint_policy": "no_checkpoint_created_infrastructure_failure",
+  "lean": "not_applicable:screening",
+  "harness_repair": {
+    "harness_family": "model_build",
+    "diagnosis": "This fresh sandbox never ran the AgentV half of scripts/setup_dev_env.sh (`env -u NODE_OPTIONS npm ci`) before the cycle started, so both arms trained and produced decode/parse/structural-similarity telemetry, then crashed inside publish_agentv_evaluation() -> _agentv_runtime() with the pre-existing actionable RuntimeError (from commit 72fdffaf, cycle c1-torch-missing-infra-failure) instead of completing a ship-gate scoreboard.",
+    "fix_commit": null,
+    "fix_summary": "No code change was needed: src/slm_training/evals/agentv.py already fails closed with an actionable message, and scripts/setup_dev_env.sh already runs `npm ci`. The gap was operational -- this agent ran `env -u NODE_OPTIONS npm ci` in-session (node_modules/@agentv/core now present) instead of authoring a redundant fix. Not acknowledged as a repair_harness receipt: the evidence contract requires a commit after this campaign's integration_commit, and no new commit was warranted for an already-fixed, already-documented gap.",
+    "regression_test": "tests/test_runtime/accel/test_accel.py::test_detect_device_missing_torch_raises_actionable_error (covers the same fail-closed pattern for the sibling torch gap; no analogous AgentV-specific regression test exists yet)"
+  },
+  "next_priority": "replay identical frozen arm (retry_measurement) now that node_modules/@agentv/core is installed in this sandbox",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "eba6db3044076285581b80cfe5294a2ecbcee8a1",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.train": "v42",
+      "harness.experiment_feature_flags": "v4"
+    },
+    "stamped_at": "2026-08-04T09:31:33.430261+00:00"
+  }
+}
