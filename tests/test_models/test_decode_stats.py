@@ -176,3 +176,60 @@ def test_decode_stats_aggregates_slot_coverage_close_counts() -> None:
     summary = aggregate_stats([stats])
     assert summary["slot_coverage_close_applications_sum"] == 3.0
     assert summary["slot_coverage_close_choice_changes_sum"] == 2.0
+
+
+def test_collect_engine_stats_folds_engine_counters() -> None:
+    from slm_training.models.decode_stats import collect_engine_stats
+
+    class _Engine:
+        stats = {
+            "full_syncs": 2,
+            "incremental_advances": 5,
+            "copy_probes": 3,
+            "copy_probe_fallbacks": 1,
+            "sync_ms": 1.5,
+            "full_sync_fallbacks": 4,
+            "full_prefix_lex_bytes": 128,
+            "parser_forks": 7,  # engine-only key: not folded here
+        }
+
+    stats = DecodeStats()
+    collect_engine_stats(_Engine(), stats)
+    assert stats.dfa_full_syncs == 2
+    assert stats.dfa_incremental_advances == 5
+    assert stats.dfa_copy_probes == 3
+    assert stats.dfa_copy_probe_fallbacks == 1
+    assert stats.dfa_engine_sync_ms == 1.5
+    assert stats.dfa_full_sync_fallbacks == 4
+    assert stats.dfa_full_prefix_lex_bytes == 128
+
+    summary = aggregate_stats([stats])
+    assert summary["dfa_full_syncs_sum"] == 2.0
+    assert summary["dfa_incremental_advances_mean"] == 5.0
+    # Zero counters are omitted from the aggregate summary.
+    empty = aggregate_stats([DecodeStats()])
+    assert "dfa_full_syncs_sum" not in empty
+
+
+def test_attributed_time_summary_flags_dark_cost() -> None:
+    from slm_training.models.decode_stats import attributed_time_summary
+
+    # 90% dark: only 100ms of 1000ms is covered by phase spans.
+    dark = DecodeStats(total_ms=1000.0, denoiser_ms=60.0, pick_ms=40.0)
+    out = attributed_time_summary([dark])
+    assert out["attributed_ms_sum"] == 100.0
+    assert out["unattributed_ms_sum"] == 900.0
+    assert out["attributed_fraction"] == 0.1
+
+    # Fully covered (overlap clamps at 1.0, never negative residual).
+    covered = DecodeStats(
+        total_ms=100.0, denoiser_ms=60.0, pick_ms=30.0, finalize_ms=30.0
+    )
+    out = attributed_time_summary([covered])
+    assert out["attributed_fraction"] == 1.0
+    assert out["unattributed_ms_sum"] == 0.0
+
+    assert attributed_time_summary([]) == {}
+    # Aggregate summary carries the coverage fields.
+    agg = aggregate_stats([dark])
+    assert agg["attributed_fraction"] == 0.1

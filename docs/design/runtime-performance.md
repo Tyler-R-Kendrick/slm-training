@@ -196,7 +196,11 @@ Discovery: `--no-incremental` (`grammar_incremental_state=False`) is
 **3–3.6× faster** on the MaskGIT path with byte-identical outputs — P1's
 LTR-derived cost profile does not transfer here. Measured on the 2026-07-30
 tree (2581bf49-era working copy); re-validated at HEAD eba6db30 (**2.29×**,
-7.49 → 3.27 s/gen). Full numbers:
+7.49 → 3.27 s/gen). Follow-up telemetry landed: `finalize_ms` now times the
+repair/certify phase (87% of MaskGIT generate wall) and `aggregate_stats`
+reports `attributed_fraction` (0.25 → 1.0 on this profile) so dark decode
+cost fails loudly in `profile_generate` instead of needing manual cProfile.
+`grammar_incremental_state` is now a typed autoresearch knob. Full numbers:
 [`maskgit-persistent-grammar-state-20260803.md`](maskgit-persistent-grammar-state-20260803.md).
 
 ## Playground load reproduction (2026-07-15)

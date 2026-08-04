@@ -2102,6 +2102,22 @@ class TwoTowerModel(nn.Module):
             for _ in range(batch_size)
         ]
 
+    @staticmethod
+    def _fold_state_engine_stats(states: list | None) -> None:
+        """Fold each state engine's lifetime counters into the active stats.
+
+        Called once when a decode path's request-local states go out of
+        scope; engines are per-state, so a single fold never double-counts.
+        """
+        if not states:
+            return
+        from slm_training.models.decode_stats import collect_engine_stats
+
+        for state in states:
+            engine = getattr(state, "engine", None)
+            if engine is not None:
+                collect_engine_stats(engine)
+
     def clear_train_caches(self) -> None:
         self._context_text_cache.clear()
         self._target_ids_cache.clear()
@@ -5500,6 +5516,7 @@ class TwoTowerModel(nn.Module):
                 unknown=unknown[0].tolist(),
                 commits=repair_commits,
             )
+        self._fold_state_engine_stats(states)
         return ids
 
     def _ltr_canvases(self, length: int) -> list[int]:
@@ -12840,6 +12857,7 @@ class TwoTowerModel(nn.Module):
                 break
 
         assert ids is not None
+        self._fold_state_engine_stats(states)
         return ids
 
     def _resolve_slot_contract(
@@ -12985,17 +13003,18 @@ class TwoTowerModel(nn.Module):
             )
             row_ids[0, 0] = self.tokenizer.bos_id
             unknown = row_ids.eq(self.tokenizer.mask_id)
-            filled = self._constrained_ltr_repair(
-                row_ids,
-                unknown,
-                ctx[i : i + 1],
-                ctx_pad[i : i + 1],
-                slot_contract=(
-                    slot_contracts[i]
-                    if slot_contracts and i < len(slot_contracts)
-                    else None
-                ),
-            )
+            with timed_ms(get_active_stats(), "finalize_ms"):
+                filled = self._constrained_ltr_repair(
+                    row_ids,
+                    unknown,
+                    ctx[i : i + 1],
+                    ctx_pad[i : i + 1],
+                    slot_contract=(
+                        slot_contracts[i]
+                        if slot_contracts and i < len(slot_contracts)
+                        else None
+                    ),
+                )
             repaired.append(self._decode_ids(filled[0]))
         return repaired
 
@@ -14037,17 +14056,18 @@ class TwoTowerModel(nn.Module):
                     if self._slot_contracts and i < len(self._slot_contracts)
                     else None
                 )
-                certified.append(
-                    self._ensure_valid_openui(
-                        text,
-                        ctx[i : i + 1],
-                        ctx_pad[i : i + 1],
-                        length,
-                        attempts=ensure_attempts,
-                        slot_contract=contract,
-                        require_valid=True,
+                with timed_ms(get_active_stats(), "finalize_ms"):
+                    certified.append(
+                        self._ensure_valid_openui(
+                            text,
+                            ctx[i : i + 1],
+                            ctx_pad[i : i + 1],
+                            length,
+                            attempts=ensure_attempts,
+                            slot_contract=contract,
+                            require_valid=True,
+                        )
                     )
-                )
             return certified
 
         # Fall back to per-item MaskGIT for non-LTR-primary path.
@@ -15061,13 +15081,14 @@ class TwoTowerModel(nn.Module):
 
         if unknown.any():
             if use_grammar:
-                ids = self._constrained_ltr_repair(
-                    ids,
-                    unknown,
-                    ctx,
-                    ctx_pad,
-                    slot_contract=slot_contract,
-                )
+                with timed_ms(get_active_stats(), "finalize_ms"):
+                    ids = self._constrained_ltr_repair(
+                        ids,
+                        unknown,
+                        ctx,
+                        ctx_pad,
+                        slot_contract=slot_contract,
+                    )
             else:
                 logits = self.denoiser(
                     ids, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
@@ -15091,21 +15112,22 @@ class TwoTowerModel(nn.Module):
         if rec is not None:
             rec.end(canvas=ids[0].tolist(), text=text)
         if use_grammar:
-            repaired = self._repair_surface_syntax(text)
-            canonical = self._canonical_valid_openui(repaired)
-            if canonical is not None:
-                return canonical
-            return self._ensure_valid_openui(
-                text,
-                ctx,
-                ctx_pad,
-                length,
-                attempts=max(
-                    1, int(getattr(self.config, "generate_max_attempts", 3) or 3)
-                ),
-                slot_contract=slot_contract,
-                require_valid=True,
-            )
+            with timed_ms(get_active_stats(), "finalize_ms"):
+                repaired = self._repair_surface_syntax(text)
+                canonical = self._canonical_valid_openui(repaired)
+                if canonical is not None:
+                    return canonical
+                return self._ensure_valid_openui(
+                    text,
+                    ctx,
+                    ctx_pad,
+                    length,
+                    attempts=max(
+                        1, int(getattr(self.config, "generate_max_attempts", 3) or 3)
+                    ),
+                    slot_contract=slot_contract,
+                    require_valid=True,
+                )
         return text
 
     @torch.inference_mode()

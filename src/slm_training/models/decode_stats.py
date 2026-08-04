@@ -138,6 +138,16 @@ class DecodeStats:
     completion_scope_reference_scans_avoided: int = 0
     completion_shared_domain_hits: int = 0
     completion_shared_domain_misses: int = 0
+    # Incremental DFA engine lifetime counters (engine.py `stats`), folded once
+    # per request-local engine via `collect_engine_stats`. Zero on paths that
+    # never fold an engine.
+    dfa_full_syncs: int = 0
+    dfa_incremental_advances: int = 0
+    dfa_copy_probes: int = 0
+    dfa_copy_probe_fallbacks: int = 0
+    dfa_engine_sync_ms: float = 0.0
+    dfa_full_sync_fallbacks: int = 0
+    dfa_full_prefix_lex_bytes: int = 0
     trie_nodes: int = 0
     restricted_projections: int = 0
     full_projections: int = 0
@@ -331,6 +341,81 @@ def collect_completion_session_delta(
     return current
 
 
+_ENGINE_COUNTER_FIELDS = {
+    "full_syncs": "dfa_full_syncs",
+    "incremental_advances": "dfa_incremental_advances",
+    "copy_probes": "dfa_copy_probes",
+    "copy_probe_fallbacks": "dfa_copy_probe_fallbacks",
+    "sync_ms": "dfa_engine_sync_ms",
+    "full_sync_fallbacks": "dfa_full_sync_fallbacks",
+    "full_prefix_lex_bytes": "dfa_full_prefix_lex_bytes",
+}
+
+
+def collect_engine_stats(engine: Any, stats: DecodeStats | None = None) -> None:
+    """Fold a request-local incremental engine's lifetime counters once.
+
+    Engines are allocated per request/state (`engine_for_dsl` returns a fresh
+    instance), so folding the lifetime snapshot exactly once when the engine
+    goes out of scope needs no delta bookkeeping.
+    """
+    bucket = stats if stats is not None else get_active_stats()
+    if bucket is None:
+        return
+    try:
+        current = dict(engine.stats)
+    except Exception:  # noqa: BLE001
+        return
+    for counter, field_name in _ENGINE_COUNTER_FIELDS.items():
+        value = current.get(counter, 0)
+        if not isinstance(value, (int, float)) or value <= 0:
+            continue
+        if field_name == "dfa_engine_sync_ms":
+            bucket.dfa_engine_sync_ms += float(value)
+        else:
+            setattr(bucket, field_name, int(getattr(bucket, field_name)) + int(value))
+
+
+# Coarse phase spans used for the advisory unattributed-time metric. These are
+# top-level phases of a generate call; nested sliver charges (a pick inside the
+# repair phase, dfa syncs inside a pick) can overlap by a few percent, so the
+# derived fraction is a dark-cost detector, not precision accounting.
+ATTRIBUTED_PHASE_FIELDS = (
+    "context_ms",
+    "denoiser_ms",
+    "pick_ms",
+    "compiler_ms",
+    "solver_ms",
+    "trie_ms",
+    "finalize_ms",
+    "dfa_sync_ms",
+    "stream_check_ms",
+    "detok_ms",
+)
+
+
+def attributed_time_summary(rows: list["DecodeStats"]) -> dict[str, float]:
+    """Advisory coverage of total_ms by the coarse phase spans.
+
+    `attributed_fraction` near 1.0 means the phase spans explain the wall
+    time; a low value means a dominant cost has no span (the slm304 failure
+    mode: build_completion_forest was 74% of eval cost and invisible to
+    telemetry). Overlap can push the raw sum past total; the fraction is
+    clamped to 1.0 and `unattributed_ms` to 0.
+    """
+    total = sum(float(getattr(r, "total_ms", 0.0)) for r in rows)
+    attributed = sum(
+        float(getattr(r, name, 0.0)) for r in rows for name in ATTRIBUTED_PHASE_FIELDS
+    )
+    if total <= 0.0:
+        return {}
+    return {
+        "attributed_ms_sum": round(min(attributed, total), 3),
+        "unattributed_ms_sum": round(max(0.0, total - attributed), 3),
+        "attributed_fraction": round(min(1.0, attributed / total), 4),
+    }
+
+
 def set_active_stats(stats: DecodeStats | None) -> DecodeStats | None:
     global _ACTIVE
     prev = _ACTIVE
@@ -470,6 +555,13 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "completion_scope_reference_scans_avoided",
         "completion_shared_domain_hits",
         "completion_shared_domain_misses",
+        "dfa_full_syncs",
+        "dfa_incremental_advances",
+        "dfa_copy_probes",
+        "dfa_copy_probe_fallbacks",
+        "dfa_engine_sync_ms",
+        "dfa_full_sync_fallbacks",
+        "dfa_full_prefix_lex_bytes",
         "trie_nodes",
         "restricted_projections",
         "full_projections",
@@ -565,14 +657,18 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
     out["newline_commit_traces"] = [
         trace for row in rows for trace in row.newline_commit_traces
     ]
+    out.update(attributed_time_summary(rows))
     return out
 
 
 __all__ = [
+    "ATTRIBUTED_PHASE_FIELDS",
     "DecodeStats",
     "aggregate_stats",
+    "attributed_time_summary",
     "collect_completion_session_delta",
     "collect_decode_stats",
+    "collect_engine_stats",
     "get_active_stats",
     "set_active_stats",
     "timed_ms",

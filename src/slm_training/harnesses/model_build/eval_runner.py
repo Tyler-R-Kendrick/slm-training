@@ -10,6 +10,7 @@ import re
 import signal
 import sys
 import time
+from collections import Counter
 from dataclasses import dataclass, fields
 from datetime import UTC, datetime
 from functools import lru_cache
@@ -196,6 +197,27 @@ def _persist_decode_progress(
     tmp.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     tmp.replace(path)
     return path
+
+
+def _prediction_diversity(predictions: list[str]) -> dict[str, Any]:
+    """Advisory degenerate-output summary over a suite's predictions.
+
+    Empty predictions are excluded (already counted by
+    ``empty_prediction_count``); the share answers "how much of this suite's
+    evidence rests on one identical output". Not a gate.
+    """
+    nonempty = [p for p in predictions if p.strip()]
+    if not nonempty:
+        return {
+            "distinct_prediction_count": 0,
+            "most_common_prediction_share": None,
+        }
+    counts = Counter(nonempty)
+    _, top_count = counts.most_common(1)[0]
+    return {
+        "distinct_prediction_count": len(counts),
+        "most_common_prediction_share": round(top_count / len(nonempty), 4),
+    }
 
 
 def _evaluation_version_components(config: ModelBuildConfig) -> tuple[str, ...]:
@@ -1806,6 +1828,22 @@ def evaluate(
         detail = None
         if outcome == MODEL_VALID and parse_ok is None:
             detail = "parse_not_evaluated"
+        if timed_out and stats is not None:
+            # Advisory sub-cause: which instrumented phase the censored decode
+            # spent its wall in (dark cost shows up as a low dominant share).
+            from slm_training.models.decode_stats import ATTRIBUTED_PHASE_FIELDS
+
+            phases = {
+                name: float(getattr(stats, name, 0.0) or 0.0)
+                for name in ATTRIBUTED_PHASE_FIELDS
+            }
+            total = float(getattr(stats, "total_ms", 0.0) or 0.0)
+            if any(phases.values()):
+                dominant = max(phases, key=phases.get)  # type: ignore[arg-type]
+                detail = (
+                    f"timeout_dominant_phase={dominant}"
+                    f"({phases[dominant]:.0f}ms/{total:.0f}ms)"
+                )
         return {
             "decode_outcome": outcome,
             "stop_reason": stop_reason,
@@ -2462,6 +2500,11 @@ def evaluate(
         "decode_outcome_counts": outcome_counts(
             [str(row.get("decode_outcome")) for row in details]
         ),
+        # Advisory degenerate-output signal (no gate): a suite whose
+        # predictions collapse to one constant string scores every quality
+        # metric on the same output; a high most_common share flags that the
+        # measurement, not the model, may be what a verdict is about.
+        **_prediction_diversity([str(row.get("prediction") or "") for row in details]),
         "details": details,
         "generation_evidence_schemas": sorted(
             {
