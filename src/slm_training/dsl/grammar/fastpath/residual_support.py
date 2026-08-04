@@ -33,6 +33,7 @@ from slm_training.dsl.grammar.fastpath.maskgit_constrain import admit_fill
 __all__ = [
     "ResidualSupportResult",
     "joint_multi_hole_support",
+    "multi_region_support",
     "rank_inside_legal_residual",
 ]
 
@@ -57,8 +58,10 @@ class ResidualSupportResult:
             raise ValueError("soft legality is forbidden under I6")
         if self.authority not in {
             "exact",
+            "exact_multi_region",
             "honest_overapprox",
             "left_prefix_overapprox",
+            "unknown",
         }:
             raise ValueError(f"unknown residual authority: {self.authority}")
 
@@ -141,3 +144,99 @@ def rank_inside_legal_residual(
             best_s = value
             best_i = i
     return best_i, tuple(masked)
+
+
+def multi_region_support(
+    tokenizer: Any,
+    token_ids: Sequence[int],
+    *,
+    mask_id: int | None = None,
+    node_budget: int = 5000,
+) -> ResidualSupportResult:
+    """Exact multi-region completability under decode semantics (bounded).
+
+    Decides whether SOME assignment of one token per hole makes the ENTIRE
+    fixed canvas (committed suffixes included) a valid incomplete prefix —
+    the question ``admit_fill`` over-approximates by checking only the span
+    left of the first hole. Exactness is relative to the system's own
+    decode-then-parse semantics: each position's token contributes its
+    surface piece (empty-piece tokens act as epsilon fills, which is why a
+    comment byte can legalize a same-line suffix but not one behind a
+    newline).
+
+    Memoized DFS keyed on ``(position, parser_state_key)``; hole branching is
+    restricted to currently-lexable candidates plus one epsilon fill. Budget
+    exhaustion returns ``authority="unknown"`` with ``admitted=False`` —
+    fail-closed for callers gating commits, and never conflated with a
+    proven rejection (``reason`` distinguishes them).
+    """
+    from slm_training.dsl.grammar.fastpath.token_map import (
+        allowed_id_set,
+        token_surface_piece,
+    )
+
+    ids = [int(t) for t in token_ids]
+    effective_mask = (
+        int(mask_id)
+        if mask_id is not None
+        else int(getattr(tokenizer, "mask_id", -1))
+    )
+    base = OpenUIIncrementalEngine()
+    if not base.set_prefix(""):
+        raise RuntimeError("empty prefix must sync")
+
+    budget = {"nodes": int(node_budget), "exhausted": False}
+    memo: dict[tuple[int, tuple], bool] = {}
+
+    def search(engine: OpenUIIncrementalEngine, pos: int) -> bool:
+        if pos == len(ids):
+            return True
+        key = (pos, engine.parser_state_key())
+        hit = memo.get(key)
+        if hit is not None:
+            return hit
+        if budget["nodes"] <= 0:
+            budget["exhausted"] = True
+            return False
+        budget["nodes"] -= 1
+        token = ids[pos]
+        if token != effective_mask:
+            piece = token_surface_piece(tokenizer, token)
+            fork = engine.copy()
+            ok = fork.advance_checked(piece) if piece else True
+            result = bool(ok) and search(fork if piece else engine, pos + 1)
+        else:
+            # Epsilon fill first (an empty-piece token in the hole).
+            result = search(engine, pos + 1)
+            if not result:
+                terminals = engine.next_terminals()
+                candidates = (
+                    allowed_id_set(tokenizer, terminals, use_cache=True) or set()
+                )
+                for fill in sorted(candidates):
+                    piece = token_surface_piece(tokenizer, int(fill))
+                    if not piece:
+                        continue  # epsilon already tried
+                    fork = engine.copy()
+                    if fork.advance_checked(piece) and search(fork, pos + 1):
+                        result = True
+                        break
+        memo[key] = result
+        return result
+
+    admitted = search(base, 0)
+    if budget["exhausted"] and not admitted:
+        return ResidualSupportResult(
+            admitted=False,
+            authority="unknown",
+            gamma_leaf_filters=True,
+            reason="multi_region_budget_exhausted",
+        )
+    return ResidualSupportResult(
+        admitted=bool(admitted),
+        authority="exact_multi_region",
+        gamma_leaf_filters=True,
+        reason=(
+            "multi_region_supported" if admitted else "multi_region_unsupported"
+        ),
+    )

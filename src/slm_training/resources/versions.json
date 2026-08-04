@@ -1168,7 +1168,7 @@
       ]
     },
     "dsl.completion_kernel": {
-      "version": "v18",
+      "version": "v19",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/grammar/fastpath/engine.py",
@@ -1195,6 +1195,11 @@
         "docs/design/adr-constrained-diffusion-topology-split.md"
       ],
       "history": [
+        {
+          "version": "v19",
+          "date": "2026-08-04",
+          "note": "multi_region_support: exact bounded multi-region completability under decode semantics (memoized DFS on (position, parser_state_key); epsilon fills for empty-piece tokens; budget exhaustion returns authority=unknown, fail-closed). Differential tests prove it rejects the left-prefix counterexample and agrees on completable canvases. Measured on real fixture canvases: 100 percent of admit probes are in the suffix-blind configuration but 0/60 sampled admits were jointly impossible - the gap's teeth are parallel block commits."
+        },
         {
           "version": "v18",
           "date": "2026-08-04",
@@ -9939,7 +9944,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v86",
+      "version": "v88",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -9960,6 +9965,16 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v88",
+          "date": "2026-08-04",
+          "note": "Add block_joint_rejections counter (parallel block-step commits reverted on proven joint impossibility); additive telemetry."
+        },
+        {
+          "version": "v87",
+          "date": "2026-08-04",
+          "note": "HX1 blast-radius advisory counters: admit_probe_canvases / admit_probe_committed_suffix count MaskGIT admit probes whose canvas holds committed tokens after the first hole (the left-prefix-unvalidatable configuration). Measured 442/442 = 100 percent on the profile fixture; additive telemetry only."
+        },
         {
           "version": "v86",
           "date": "2026-08-04",
@@ -12386,7 +12401,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v308",
+      "version": "v309",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -12431,6 +12446,16 @@
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
       "history": [
+        {
+          "version": "v309",
+          "date": "2026-08-04",
+          "note": "block_diffusion_decode lever (default off): block-grouped unmask scheduling via BlockNoiseSchedule with parallel step commits jointly validated by multi_region_support (proven-impossible canvases revert to masks; unknown keeps commits). Fix pick_constrained_production to report the SURVIVING candidate's probability instead of the unconstrained argmax's. Lever-off fixture outputs byte-identical."
+        },
+        {
+          "version": "v308",
+          "date": "2026-08-04",
+          "note": "no-bump: _note_admit_canvas advisory counter calls before the two MaskGIT admit_fill sites; byte-identical fixture outputs."
+        },
         {
           "version": "v308",
           "date": "2026-08-04",

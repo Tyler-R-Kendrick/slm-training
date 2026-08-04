@@ -129,3 +129,67 @@ def test_empty_left_span_admits_unconditionally(tok: DSLNativeTokenizer) -> None
     result = joint_multi_hole_support(engine, tok, canvas)
     assert result.admitted is True
     assert result.authority == "left_prefix_overapprox"
+
+
+def test_multi_region_rejects_the_counterexample(tok: DSLNativeTokenizer) -> None:
+    """The exact checker proves what the left-prefix probe cannot see:
+    `root [HOLE] \\n )` has NO fill (visible or epsilon) preserving the
+    fixed suffix, while admit_fill admits it."""
+    from slm_training.dsl.grammar.fastpath.residual_support import (
+        multi_region_support,
+    )
+
+    root_ids = list(tok.encode("root", add_special=False))
+    close_ids = list(tok.encode("\n)", add_special=False))
+    canvas = [*root_ids, tok.mask_id, *close_ids]
+
+    left_prefix = joint_multi_hole_support(OpenUIIncrementalEngine(), tok, canvas)
+    exact = multi_region_support(tok, canvas)
+    assert left_prefix.admitted is True  # the over-approximation
+    assert exact.admitted is False
+    assert exact.authority == "exact_multi_region"
+    assert exact.reason == "multi_region_unsupported"
+
+
+def test_multi_region_supports_a_completable_canvas(tok: DSLNativeTokenizer) -> None:
+    """`root [HOLE] Card(` is completable (fill `=`) — exact checker agrees
+    with the left-prefix probe here, proving it is not merely stricter."""
+    from slm_training.dsl.grammar.fastpath.residual_support import (
+        multi_region_support,
+    )
+
+    root_ids = list(tok.encode("root", add_special=False))
+    tail_ids = list(tok.encode(" Card(", add_special=False))
+    canvas = [*root_ids, tok.mask_id, *tail_ids]
+    exact = multi_region_support(tok, canvas)
+    assert exact.admitted is True
+    assert exact.authority == "exact_multi_region"
+
+
+def test_multi_region_multiple_holes(tok: DSLNativeTokenizer) -> None:
+    """Two holes with fixed structure between them resolve jointly."""
+    from slm_training.dsl.grammar.fastpath.residual_support import (
+        multi_region_support,
+    )
+
+    # root [HOLE] Card( [HOLE] )  — fills `=` and e.g. a symbol/empty arg.
+    a = list(tok.encode("root", add_special=False))
+    b = list(tok.encode(" Card(", add_special=False))
+    c = list(tok.encode(")", add_special=False))
+    canvas = [*a, tok.mask_id, *b, tok.mask_id, *c]
+    exact = multi_region_support(tok, canvas)
+    assert exact.admitted is True
+
+
+def test_multi_region_budget_exhaustion_is_unknown(tok: DSLNativeTokenizer) -> None:
+    from slm_training.dsl.grammar.fastpath.residual_support import (
+        multi_region_support,
+    )
+
+    a = list(tok.encode("root", add_special=False))
+    close_ids = list(tok.encode("\n)", add_special=False))
+    canvas = [*a, tok.mask_id, *close_ids]
+    starved = multi_region_support(tok, canvas, node_budget=1)
+    assert starved.admitted is False
+    assert starved.authority == "unknown"
+    assert starved.reason == "multi_region_budget_exhausted"
