@@ -1,0 +1,72 @@
+{
+    "schema": "continuous_autotrain_cycle_results/v1",
+    "loop_id": "continuous-openui-local",
+    "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c1",
+    "cycle_index": 1,
+    "source_commit": "5ba8e430",
+    "honesty": "fixture_or_scratch",
+    "not_ship_claim": true,
+    "recipe": {
+        "device": "cpu",
+        "steps": 20,
+        "train_version": "wf_smoke_v2",
+        "eval_version": "e938_role_safe_all_targets_v2",
+        "ship_gates": true,
+        "seed": 100001,
+        "trainable_params": 1608962
+    },
+    "arms": {
+        "c1-control": {
+            "trainable_params": 1608962,
+            "status": "completed_eval_gates_failed",
+            "smoke": {
+                "n": 3,
+                "parse_rate": 1.0,
+                "meaningful_program_rate": 0.0,
+                "structural_similarity": 0.057499999999999996,
+                "binder_reference_f1": 0.6333333333333333,
+                "ast_beq_rate": 0.0,
+                "canonical_beq_rate": 0.0,
+                "reward_score": 0.0,
+                "latency_ms_p50": 3758.99
+            }
+        },
+        "c1-bounds": {
+            "trainable_params": 1608962,
+            "status": "completed_eval_gates_failed",
+            "smoke": {
+                "n": 3,
+                "parse_rate": 1.0,
+                "meaningful_program_rate": 0.0,
+                "structural_similarity": 0.057499999999999996,
+                "binder_reference_f1": 0.6333333333333333,
+                "ast_beq_rate": 0.0,
+                "canonical_beq_rate": 0.0,
+                "reward_score": 0.0,
+                "latency_ms_p50": 3610.88
+            }
+        }
+    },
+    "primary_metric": "smoke.structural_similarity",
+    "primary_delta": 0.0,
+    "sdlc_phase_a": {
+        "positive": false,
+        "stack_layer": false,
+        "stack_action": "no_stack_layer_non_positive",
+        "agent_required": "local commits + docs only; no new stack layer",
+        "reasons": [
+            "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c1-control",
+            "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c1-bounds",
+            "primary_metric_null_or_worse:smoke.structural_similarity:control=0.057499999999999996 candidate=0.057499999999999996 improvement=0.0",
+            "fixture_insufficient_n_alone"
+        ]
+    },
+    "conclusion": "Continuous-openui-local loop, cycle 1 (this session, branch claude/great-dirac-2h858w, scheduled autotrain routine): the 'bounds' knob arm again reproduces its size-matched control's smoke quality metrics exactly (structural_similarity=.0575, meaningful_program_rate=0, binder_reference_f1=.63333, ast_beq_rate=0, canonical_beq_rate=0, reward_score=0 on both arms) -- the same tie observed by multiple independent same-loop sessions on 2026-08-03. The only difference is p50 decode latency (bounds 3610.88ms vs control 3758.99ms, ~3.9% faster), a pure latency delta with no accompanying quality or held/mpr signal, so per the SDLC quality-aware tradeoff rule it is not a metric win. Ship gates fail as expected on this fixture-scale smoke suite: insufficient_n (n=3, need>=20) plus every quality threshold and the missing held_out/adversarial/ood/rico_held production suites. SDLC Phase A classifies this cycle NON_POSITIVE; no stacked PR layer opened -- local commit + docs only.",
+    "next_priorities": [
+        "The completed non-positive 'bounds' arm is exhausted; test the distinct size-matched 'component-plan' quality hypothesis next (rank 1, confidence 0.90)",
+        "Keep the matched control as the size-matched baseline every cycle (rank 2, confidence 0.70)",
+        "Rotate thrash recommendation across the lever bank rather than bounds-only (rank 3, confidence 0.65)",
+        "Soft ship-gate fails on fixture n never stop the continuous loop (rank 4, confidence 0.80)"
+    ],
+    "recorded_at": "2026-08-04T15:31:39Z"
+}
