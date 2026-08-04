@@ -1,0 +1,83 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 2,
+  "source_commit": "eba6db3044076285581b80cfe5294a2ecbcee8a1",
+  "integration_commit": "4e9f27d3b05789005edf21261329c26183571dac",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "seed": 100002
+  },
+  "arms": {
+    "c2-control": {
+      "status": "measurement_incomplete",
+      "trainable_params": 1755764,
+      "smoke": {
+        "n": 3,
+        "decode_timeout_count": 3,
+        "decode_timeout_rate": 1.0,
+        "effective_decode_timeout_seconds": 24.0,
+        "requested_decode_timeout_seconds_per_record": 8.0,
+        "generate_batch_size_configured": 16,
+        "decode_batch_size_max": 3,
+        "evaluation_wall_seconds": 51.815429,
+        "compiler_ms_sum_partial": 23341.878,
+        "compiler_prefill_states_partial": 33,
+        "compiler_prefill_tokens_partial": 8448,
+        "compiler_candidates_partial": 291
+      }
+    },
+    "c2-component-plan": {
+      "status": "measurement_incomplete",
+      "trainable_params": 1755764,
+      "smoke": {
+        "n": 3,
+        "decode_timeout_count": 3,
+        "decode_timeout_rate": 1.0,
+        "effective_decode_timeout_seconds": 24.0,
+        "requested_decode_timeout_seconds_per_record": 8.0,
+        "generate_batch_size_configured": 16
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "continue loop; local commits/docs only",
+    "reasons": [
+      "measurement_incomplete:c20260804-continuous-openui-local-8c0b60dd-c2-control:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "measurement_incomplete:c20260804-continuous-openui-local-8c0b60dd-c2-component-plan:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "harness_failure:c20260804-continuous-openui-local-8c0b60dd-c2-component-plan:experiment_failed",
+      "harness_failure:c20260804-continuous-openui-local-8c0b60dd-c2-control:experiment_failed",
+      "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c2-control",
+      "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c2-component-plan",
+      "primary_metric_unavailable",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "harness_signal": {
+    "handoff_action": "repair_harness",
+    "harness_family": "model_build",
+    "frozen_manifest_sha256": "5b2ed5b92b6d16fbba411d6f65a6a93e1151519e7333d5532c0a0c515e6f8153",
+    "root_cause_hypothesis": "AgentV finalized every record disposition and reported an internal decode timeout on BOTH arms identically (not component-plan-specific -- control failed the same way), so this is not a model/lever regression. Forensic evidence from eval.json/scoreboard.json: the smoke suite has n=3 documents; the model's baked generate_batch_size=16 (TwoTowerConfig default) exceeds n, so eval_runner.py's chunking loop (src/slm_training/harnesses/model_build/eval_runner.py:2154-2158, batch_size from getattr(plugin.config, 'generate_batch_size', 8)) groups all 3 documents into ONE decode chunk instead of 3 individually-timed chunks. The per-chunk timeout is requested_decode_timeout_seconds(8.0) * chunk_record_n(3) = 24.0s (matches observed effective_decode_timeout_seconds_min/max=24.0 exactly). decode_stats shows the constrained-decode compiler search alone consumed 23,341.878ms (23.3s) of that 24s chunk budget on largely just the first bundled document (compiler_prefill_states=33, compiler_prefill_tokens=8448, compiler_candidates=291), leaving no time for generation or the remaining two documents, so all 3 are marked timed_out together even though only one appears to be compiler-heavy. This defeats eval_runner.py's own per-record adaptive redistribution (_effective_record_decode_timeout, eval_runner.py:1187-1208), which is designed to reallocate unused wall time across remaining records but only functions at chunk granularity -- with chunk_record_n==n(3) there is only one chunk, so there is nothing to redistribute across.",
+    "candidate_minimal_fix": "Let eval-time config override the model's baked generate_batch_size for the decode chunking loop (independent of TwoTowerConfig/checkpoint architecture), then set it to 1 for the screening role so each smoke document gets its own chunk and the existing fair-share redistribution logic actually applies. This requires, in order: (1) src/slm_training/harnesses/model_build/config.py -- add ModelBuildConfig.generate_batch_size: int | None = None; (2) src/slm_training/harnesses/model_build/eval_runner.py:1513-1519 -- prefer getattr(config, 'generate_batch_size', None) over the plugin-config fallback when set; (3) scripts/evaluate_model.py -- add a --generate-batch-size CLI flag wired to ModelBuildConfig(generate_batch_size=...); (4) src/slm_training/autoresearch/schemas.py -- register generate_batch_size on ExperimentKnobs (int, ge=1) and add it to DEFAULT_ALLOWED_KNOBS (schemas.py is a StrictModel with extra='forbid', so an unregistered knob key raises a validation error for every campaign, not just this one -- do not add the knob to run_autotrain_continuous.py's screening base dict before this lands); (5) scripts/run_autotrain_continuous.py's _matrix()/knobs() -- set generate_batch_size=1 only when role=='screening'. Also verify the translation path from the continuous driver's knobs dict through scripts.autoresearch execution into the evaluate_model.py CLI invocation (not fully traced in this cycle) before landing. Add a regression test proving a ModelBuildConfig(generate_batch_size=1) override produces per-record (not per-suite) decode chunks. This is deliberately deferred to a dedicated improve-openui-harnesses session rather than a speculative same-cycle edit, matching this loop's own precedent for multi-file, cross-schema harness changes (see continuous-openui-local-ts5ofk-c2-results.md, which deferred a similarly-scoped two-bug frozen-replay fix)."
+  },
+  "conclusion": "Continuous-openui-local loop, cycle 2 (session ixpohr): both control and component-plan arms (matched, 1,755,764 params, seed 100002) hit decode_timeout_count=3/3 on the smoke suite -- AgentV finalized every record disposition, so this is a measurement-incomplete harness signal, not a model quality result. Root-cause forensics (decode_batch_size_max=3, effective_decode_timeout_seconds=24.0 = requested 8.0s/record x chunk_record_n=3, and 23.3s of that 24s chunk budget consumed by one document's constrained-decode compiler search alone) show the smoke suite's tiny n=3 gets fully batched into a single decode chunk under the eval-time default generate_batch_size=16, which defeats eval_runner.py's own per-record fair-share timeout redistribution. Both arms fail identically, so this is not attributable to the component-plan lever specifically. Per continuous.md, this typed repair_harness action (family=model_build) is not completed this cycle -- the minimal fix requires coordinated changes across a StrictModel(extra='forbid') schema, a new config field, a new CLI flag, and the continuous driver's screening knob builder, which this cycle scopes and documents but defers to a dedicated harness session rather than landing a speculative, only-partially-verified multi-file change from an unsupervised iteration.",
+  "next_priorities": [
+    "Dedicated improve-openui-harnesses session: implement the five-file generate_batch_size override described in harness_signal.candidate_minimal_fix, with a regression test, before replaying the identical frozen c2 arm (frozen_manifest_sha256 5b2ed5b92b6d16fbba411d6f65a6a93e1151519e7333d5532c0a0c515e6f8153).",
+    "Do not retry the identical c2 recipe speculatively -- it will fail identically (deterministic wall-bound timeout), not a stochastic flake.",
+    "Once repaired, prefer a distinct successor hypothesis to the exhausted c1 bounds-only arm per c1's own priority ranking (docs/design/continuous-openui-local-ixpohr-c1-results.md)."
+  ],
+  "recorded_at": "2026-08-04T06:35:29Z"
+}
