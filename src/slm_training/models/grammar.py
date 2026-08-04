@@ -742,10 +742,11 @@ def contract_allowed_token_ids(
             table = SymbolTable.from_placeholders(
                 slot_contract, max_slots=tokenizer.sym_slots
             )
+            prefix_id_set = set(prefix_ids)
             allowed: set[int] = set()
             for i, _ph in enumerate(table.placeholders):
                 token_id = tokenizer.sym_id(i)
-                if token_id not in prefix_ids:
+                if token_id not in prefix_id_set:
                     allowed.add(token_id)
             return allowed
     except Exception:  # noqa: BLE001

@@ -141,6 +141,15 @@ class CompletionSession:
         # are never persisted.
         self._witness_roots: dict[tuple[int, int], WitnessResult] = {}
         self._forced: dict[tuple[int, int], tuple[tuple[int, ...], int, str]] = {}
+        # L2 (precompiled-grammar-admissibility campaign): the candidate
+        # branch walk (fork + feed + forced-suffix chase) is a pure function
+        # of the parent engine's control key, the candidate sequence, the
+        # initial literal-frame flag, and the path-token cap.  Interned
+        # (control, semantic) states share control keys, so this memo reuses
+        # branch drafts the state-id-keyed ``_outgoing`` cache cannot.  It
+        # stores draft results only — semantic filtering and path labeling
+        # stay live per state; authority is unchanged.
+        self._branch_memo: dict[tuple, tuple[str, tuple[int, ...] | None]] = {}
         self._counters: dict[str, int] = {
             "session_starts": 1,
             "state_intern_hits": 0,
@@ -162,6 +171,8 @@ class CompletionSession:
             "parser_forks": 0,
             "candidate_engine_allocations": 0,
             "scope_reference_scans_avoided": 0,
+            "branch_memo_hits": 0,
+            "branch_memo_misses": 0,
         }
 
     # --- introspection ----------------------------------------------------
@@ -178,6 +189,7 @@ class CompletionSession:
         self._outgoing.clear()
         self._witness_roots.clear()
         self._forced.clear()
+        self._branch_memo.clear()
         self._semantic_arena.clear()
 
     def __del__(self) -> None:
@@ -448,10 +460,15 @@ class CompletionSession:
             explain=self._explain,
             semantic_state=record.semantic,
             scan_counter=scan_counter,
+            branch_memo=None if state is not None else self._branch_memo,
         )
         check_decode_deadline()
         self._counters["edges_built"] += 1
         self._counters["scope_reference_scans_avoided"] += scan_counter["avoided"]
+        self._counters["branch_memo_hits"] += scan_counter.get("branch_memo_hits", 0)
+        self._counters["branch_memo_misses"] += scan_counter.get(
+            "branch_memo_misses", 0
+        )
         if state is None:
             self._outgoing[state_id] = forest
         return forest
