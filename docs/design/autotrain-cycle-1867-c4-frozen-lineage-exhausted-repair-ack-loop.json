@@ -1,0 +1,63 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-schedu-6699f447-c4",
+  "loop_id": "continuous-openui-scheduled-72bc0d",
+  "cycle_index": 4,
+  "decision": "blocked_frozen_lineage_exhausted",
+  "claim_class": "fixture_screening",
+  "formal": {
+    "status": "not_applicable:screening"
+  },
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "suite": "smoke",
+    "suite_n": 3,
+    "integration_commit": "7dedb8e51812f7c847b5fe2ba0d4b0339205170d"
+  },
+  "arms": {
+    "control": {
+      "experiment_id": "c20260804-continuous-openui-schedu-6699f447-c4-control",
+      "status": "measurement_incomplete",
+      "decode_timeout_count": 3,
+      "effective_decode_timeout_seconds": 24.0,
+      "decode_amortized_ms_per_record_p50": 8304.49
+    },
+    "candidate": {
+      "experiment_id": "c20260804-continuous-openui-schedu-6699f447-c4-component-plan",
+      "status": "measurement_incomplete",
+      "decode_timeout_count": 3,
+      "effective_decode_timeout_seconds": 24.0
+    }
+  },
+  "sdlc_phase_a": {
+    "classification": "NON_POSITIVE",
+    "reasons": [
+      "measurement_incomplete:c20260804-continuous-openui-schedu-6699f447-c4-control:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "measurement_incomplete:c20260804-continuous-openui-schedu-6699f447-c4-component-plan:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "fixture_insufficient_n_alone"
+    ],
+    "stack_layer": false
+  },
+  "repeated_blocker": {
+    "occurrences": [
+      "continuous-loop-20260804-continuous-openui-schedu-6699f447-c2 (cycle 2, original)",
+      "continuous-loop-20260804-continuous-openui-schedu-6699f447-c3 (cycle 3, retry_measurement)",
+      "continuous-loop-20260804-continuous-openui-schedu-6699f447-c4 (cycle 4, retry_measurement)"
+    ],
+    "same_hard_blocker": true,
+    "new_information_exhausted": true,
+    "finding": "Acknowledging repair_harness resets max_consecutive_frozen_replays and re-queues a replay of the SAME frozen c2 manifest, which pins decode_timeout_seconds=8 at freeze time and never adopts a later policy change. There is no remaining code fix for the c1865 recalibration (already correct, regression-tested); the hillclimb/hypothesizer keeps ranking 'replay the frozen arm' above composing a fresh non-replay hypothesis, so acking repeatedly does not converge.",
+    "recommended_followup": "harness change to the hillclimb/hypothesizer frozen-replay exhaustion path: retire a lineage after N replay attempts against an unchanged frozen manifest and force a fresh (non-replay_of_manifest_sha256) hypothesis for the same experiment slug, owner=improve-openui-harnesses harness_family=autoresearch or experiments"
+  },
+  "action_this_cycle": "repair_harness NOT acknowledged (no code left to fix); loop halts on this lineage for this session per the repeated-hard-block law",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "7dedb8e51812f7c847b5fe2ba0d4b0339205170d",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v179"
+    },
+    "stamped_at": "2026-08-04T17:51:01Z"
+  }
+}
