@@ -1168,7 +1168,7 @@
       ]
     },
     "dsl.completion_kernel": {
-      "version": "v18",
+      "version": "v19",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/grammar/fastpath/engine.py",
@@ -1195,6 +1195,11 @@
         "docs/design/adr-constrained-diffusion-topology-split.md"
       ],
       "history": [
+        {
+          "version": "v19",
+          "date": "2026-08-04",
+          "note": "multi_region_support: exact bounded multi-region completability under decode semantics (memoized DFS on (position, parser_state_key); epsilon fills for empty-piece tokens; budget exhaustion returns authority=unknown, fail-closed). Differential tests prove it rejects the left-prefix counterexample and agrees on completable canvases. Measured on real fixture canvases: 100 percent of admit probes are in the suffix-blind configuration but 0/60 sampled admits were jointly impossible - the gap's teeth are parallel block commits."
+        },
         {
           "version": "v18",
           "date": "2026-08-04",
