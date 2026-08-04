@@ -3770,6 +3770,11 @@
         {
           "version": "v14",
           "date": "2026-08-03",
+          "note": "no-bump: CI no-torch fast path excludes tests/test_versioning again — test_mirrors.py imports torch transitively, so versions.json-only PRs failed collection; formal-contract behavior unchanged."
+        },
+        {
+          "version": "v14",
+          "date": "2026-08-03",
           "note": "Keep the standalone formal-contract verifier dependency-light in Lean CI while preserving the canonical process-group cap and Lake project lock."
         },
         {
