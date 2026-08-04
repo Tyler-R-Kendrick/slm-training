@@ -63,6 +63,7 @@ checkpoint, roster, training default, champion, or promotion status changes.
 
 | Role | Checkpoint | Where | Claim |
 | --- | --- | --- | --- |
+| Autotrain continuous-openui-local c5 | incomplete decode timeout — repair then replay |
 | Autotrain continuous-openui-local c4 | local fixture component-edge null | structure `.417` tie — **not ship** |
 | Autotrain continuous-openui-local c3 | local fixture component-plan worse | structure drop — **not ship** ([full card](docs/MODEL_CARD.md)) |
 | Autotrain continuous-openui-local c2 | local fixture canvas null | structure `.327` tie, n=3 — **not ship** ([full card](docs/MODEL_CARD.md)) |

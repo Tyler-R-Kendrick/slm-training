@@ -2729,7 +2729,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v181",
+      "version": "v182",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2770,6 +2770,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v182",
+          "note": "recalibrate screening thrash decode budget (18s) after c5 component-plan candidate-only timeouts",
+          "date": "2026-08-04"
+        },
         {
           "version": "v181",
           "note": "accept generate_batch_size ExperimentKnob for screening fair-share decode batches; forward to evaluate_model",
