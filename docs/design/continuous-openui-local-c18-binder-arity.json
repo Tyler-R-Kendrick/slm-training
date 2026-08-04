@@ -1,0 +1,37 @@
+{
+  "schema_version": "autotrain_measured_results/v1",
+  "loop_id": "continuous-openui-local",
+  "cycle_index": 18,
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c18",
+  "positive": false,
+  "arms": {
+    "binder-arity": {
+      "structural_similarity": 0.3125,
+      "meaningful_program_rate": 0.5,
+      "binder_reference_f1": 1.0,
+      "parse_rate": 1.0,
+      "latency_ms_p50": 4509.32,
+      "decode_timeout_count": 1
+    },
+    "control": {
+      "structural_similarity": 0.3125,
+      "meaningful_program_rate": 0.5,
+      "binder_reference_f1": 1.0,
+      "parse_rate": 1.0,
+      "latency_ms_p50": 4459.52,
+      "decode_timeout_count": 1
+    }
+  },
+  "delta_struct": 0.0,
+  "sdlc_reasons": [
+    "measurement_incomplete:c20260804-continuous-openui-local-8c0b60dd-c18-control:smoke:incomplete_document_n=1:decode_timeout_count=1",
+    "measurement_incomplete:c20260804-continuous-openui-local-8c0b60dd-c18-binder-arity:smoke:incomplete_document_n=1:decode_timeout_count=1",
+    "harness_failure:c20260804-continuous-openui-local-8c0b60dd-c18-control:experiment_failed",
+    "harness_failure:c20260804-continuous-openui-local-8c0b60dd-c18-binder-arity:experiment_failed",
+    "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c18-control",
+    "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c18-binder-arity",
+    "primary_metric_null_or_worse:smoke.structural_similarity:control=0.3125 candidate=0.3125 improvement=0.0",
+    "fixture_insufficient_n_alone"
+  ],
+  "recorded_at": "2026-08-04T23:01:12.359645+00:00"
+}

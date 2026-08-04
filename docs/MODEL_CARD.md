@@ -91,6 +91,7 @@ scratch baseline.
 | Role | Run id | Kind | Location | Status |
 | --- | --- | --- | --- | --- |
 | Autotrain continuous-openui-local c10 confirm reject | `…-c10-{control,confirm}` | fresh seed of c9 inventory | local | **Confirmation rejected** — c9 win not reheld ([results](design/continuous-openui-local-c10-confirm-rejected.md)) |
+| Autotrain continuous-openui-local c18 binder-arity | `…-c18` | fixture thrash Δstruct=0.0 | local | **fixture only; never promote/sync/ship** ([results](design/continuous-openui-local-c18-binder-arity.md)) |
 | Autotrain continuous-openui-local c17 binder-topology | `…-c17` | fixture thrash null | local | structure `.174` tie; **not ship** ([results](design/continuous-openui-local-c17-binder-topology.md)) |
 | Autotrain continuous-openui-local c9 component-inventory candidate | `c20260804-continuous-openui-local-8c0b60dd-c9-{control,component-inventory}` | CPU scratch TwoTower, size-matched ~1,682,360 params; component-inventory thrash | `outputs/autoresearch/continuous-loop-20260804-continuous-openui-local-8c0b60dd-c9/runs/` (local, no-sync) | Structure `0.277→0.448`, MPR held `.667`, binder `1.0`, p50 efficiency win; smoke n=3. **Fixture candidate; fresh-seed confirmation required; never promote/sync/ship yet** ([results](design/continuous-openui-local-c9-component-inventory-positive.md)) |
 | Autotrain continuous-openui-local c8 component-plan null | `…-c8` | raised decode budget | local | structure `.174` tie complete; **not ship** ([results](design/continuous-openui-local-c8-component-plan-null.md)) |
