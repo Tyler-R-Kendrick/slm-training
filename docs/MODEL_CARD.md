@@ -90,6 +90,7 @@ scratch baseline.
 
 | Role | Run id | Kind | Location | Status |
 | --- | --- | --- | --- | --- |
+| Autotrain continuous-openui-local c8 component-plan null | `…-c8` | raised decode budget | local | structure `.174` tie complete; **not ship** ([results](design/continuous-openui-local-c8-component-plan-null.md)) |
 | Autotrain continuous-openui-local c7 component-edge null | `…-c7-{{control,component-edge}}` | post decode-budget raise | local | structure `{c['structural_similarity']:.3f}` tie; **not ship** ([results](design/continuous-openui-local-c7-component-edge-null.md)) |
 | Autotrain continuous-openui-local c6 component-plan runtime reject | `…-c6-{control,component-plan}` | frozen replay of c5 | local | Candidate-only decode timeout reproduced; arm retired. **Not ship** ([results](design/continuous-openui-local-c6-component-plan-runtime-reject.md)) |
 | Autotrain continuous-openui-local c5 component-plan timeout | `c20260804-continuous-openui-local-8c0b60dd-c5-{control,component-plan}` | CPU scratch; candidate-only decode timeout 2/3 at 12s ceiling | `outputs/autoresearch/continuous-loop-20260804-continuous-openui-local-8c0b60dd-c5/runs/` (local) | **Incomplete measurement; thrash decode budget recalibrated; never promote/sync/ship** ([results](design/continuous-openui-local-c5-component-plan-decode-timeout.md)) |
