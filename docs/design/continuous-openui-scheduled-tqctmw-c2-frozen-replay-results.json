@@ -1,0 +1,68 @@
+{
+  "schema": "autotrain_sdlc_delivery/v1",
+  "loop_id": "continuous-openui-scheduled-tqctmw",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-schedu-f4406faa-c2",
+  "finished_at": "2026-08-04T14:40:20Z",
+  "sdlc_phase": "A",
+  "positive": false,
+  "stack_layer": false,
+  "has_tracked_delta": true,
+  "stack_action": "no_stack_layer_non_positive",
+  "replay_of_campaign_id": "continuous-loop-20260804-continuous-openui-schedu-f4406faa-c1",
+  "cycle_intent": "retry_measurement",
+  "arm_order": [
+    "c20260804-continuous-openui-schedu-f4406faa-c2-bounds",
+    "c20260804-continuous-openui-schedu-f4406faa-c2-control"
+  ],
+  "arm_seed": 100001,
+  "arm_exits": {
+    "c20260804-continuous-openui-schedu-f4406faa-c2-bounds": 0,
+    "c20260804-continuous-openui-schedu-f4406faa-c2-control": 0
+  },
+  "reasons": [
+    "fixture_insufficient_n:c20260804-continuous-openui-schedu-f4406faa-c2-control",
+    "fixture_insufficient_n:c20260804-continuous-openui-schedu-f4406faa-c2-bounds",
+    "primary_metric_null_or_worse:smoke.structural_similarity:control=0.057499999999999996 candidate=0.057499999999999996 improvement=0.0",
+    "fixture_insufficient_n_alone"
+  ],
+  "primary_metric": "smoke.structural_similarity",
+  "direction": "increase",
+  "role": "screening",
+  "control_metrics": {
+    "latency_ms_p50": 4746.75,
+    "parse_rate": 1.0,
+    "meaningful_program_rate": 0.0,
+    "structural_similarity": 0.057499999999999996,
+    "binder_reference_f1": 0.6333333333333333
+  },
+  "candidate_metrics": {
+    "latency_ms_p50": 4857.57,
+    "parse_rate": 1.0,
+    "meaningful_program_rate": 0.0,
+    "structural_similarity": 0.057499999999999996,
+    "binder_reference_f1": 0.6333333333333333
+  },
+  "control_id": "c20260804-continuous-openui-schedu-f4406faa-c2-control",
+  "candidate_id": "c20260804-continuous-openui-schedu-f4406faa-c2-bounds",
+  "baseline_trainable_params": 1608962,
+  "candidate_trainable_params": 1608962,
+  "fixture_volume_gate_hits": 2,
+  "measurement_complete": true,
+  "honesty_mode": "ship-gates on, honest-slot-contract, slot-contract-constrained-decode",
+  "suite": "smoke",
+  "suite_n": 3,
+  "gate_result": "reject (expected on fixture n=3 scale)",
+  "gate_failures": [
+    "smoke:insufficient_n actual=3 need>=20",
+    "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+    "smoke:structural_similarity actual=0.0575 need>=0.35",
+    "smoke:component_type_recall actual=0.0 need>=0.35",
+    "smoke:ast_beq_rate actual=0.0 need>=0.2",
+    "smoke:canonical_beq_rate actual=0.0 need>=0.1",
+    "smoke:reward_score actual=0.0 need>=0.3",
+    "held_out:missing_suite",
+    "adversarial:missing_suite",
+    "ood:missing_suite",
+    "rico_held:missing_suite"
+  ]
+}
