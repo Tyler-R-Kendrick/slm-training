@@ -874,3 +874,108 @@ def test_cactus_kernel_sketch_files_exist() -> None:
     assert (root / "force_emit_sketch.hpp").is_file()
     assert (root / "maskgit_admit_sketch.hpp").is_file()
     assert (root / "README.md").is_file()
+
+
+def test_engine_reuse_across_records_matches_fresh() -> None:
+    """P1 (MaskGIT): a reused engine is observably equivalent to a fresh one.
+
+    Covers pure extension, an unrelated same-shape jump, an illegal prefix,
+    and a legal prefix after the rejected sync — no cross-record leakage.
+    """
+    prefixes = [
+        ("root", True),
+        ("root = Card", True),  # pure extension of the previous prefix
+        ("root = Row(", True),  # non-monotonic replacement
+        ("= ) root", False),  # illegal
+        ("root = Stack", True),  # legal again after a rejected sync
+    ]
+    reused = OpenUIIncrementalEngine()
+    for prefix, expect_ok in prefixes:
+        fresh = OpenUIIncrementalEngine()
+        got_reused = reused.set_prefix(prefix)
+        got_fresh = fresh.set_prefix(prefix)
+        assert got_reused == got_fresh == expect_ok, prefix
+        if not expect_ok:
+            # Post-rejection internals are unspecified; the contract is that
+            # the NEXT successful sync behaves identically (next iteration).
+            continue
+        assert reused.is_deterministic_next() == fresh.is_deterministic_next(), prefix
+        for chunk in ("(", " = ", "Card"):
+            assert reused.probe_chunk(chunk) == fresh.probe_chunk(chunk), (
+                prefix,
+                chunk,
+            )
+
+
+def test_admit_fill_engine_reuse_matches_fresh() -> None:
+    """One hoisted admit_fill engine per trajectory must match fresh engines."""
+    tok = _tok()
+    quote_id = tok.token_to_id['"']
+
+    def _masked(source: str) -> list[int]:
+        ids = tok.encode(source, add_special=True)
+        first = ids.index(quote_id)
+        second = ids.index(quote_id, first + 1)
+        for pos in range(first, second + 1):
+            ids[pos] = tok.mask_id
+        return ids
+
+    canvases = [
+        _masked(SAMPLE),
+        tok.encode('root = Row(":j")\n', add_special=True),
+        _masked(SAMPLE),  # revisit after an unrelated canvas
+        tok.encode("root = Stack([hero])\n", add_special=True),
+    ]
+    reused = OpenUIIncrementalEngine()
+    for canvas in canvases:
+        assert admit_fill(reused, tok, canvas) == admit_fill(
+            OpenUIIncrementalEngine(), tok, canvas
+        )
+
+
+def test_pick_constrained_state_parity_with_stateless() -> None:
+    """MaskGIT picks pass a persistent state; choices must match stateless."""
+    import torch
+
+    tok = _tok()
+    equal_id = tok.token_to_id["="]
+    logits = torch.zeros(tok.vocab_size)
+    logits[tok.token_to_id.get("]", equal_id)] = 10.0
+    state = make_grammar_state()
+    for text, kwargs in [
+        ("", {"top_k": 8}),
+        ("root", {"forced_token_id": equal_id}),
+        ("root = ", {"top_k": 8}),
+    ]:
+        prefix = tok.encode(text, add_special=False) if text else []
+        stateless = pick_constrained_token(logits, tok, prefix, **kwargs)
+        stateful = pick_constrained_token(logits, tok, prefix, state=state, **kwargs)
+        assert stateful == stateless, text
+
+
+def test_sync_ids_unadvertised_token_detaches_session_without_raising() -> None:
+    """A bound session rejecting an appended token detaches, never raises.
+
+    `sync_ids` append growth advances the packed session with
+    `require_advertised=False`: an unadvertised appended token (template
+    seed, external splice) clears `completion_state_id` and falls back to
+    the sessionless path instead of poisoning the sync with a RuntimeError.
+    """
+    tok = _tok()
+    state = make_grammar_state()
+    root_ids = tok.encode("root", add_special=False)
+    state.sync_ids(tok, root_ids)
+
+    class _RejectingSession:
+        def advance(self, state_id: int, token_id: int) -> None:
+            return None
+
+        def stats(self) -> dict[str, int]:
+            return {}
+
+    state.bind_completion_session(_RejectingSession(), ("k",), 0, root_ids)
+    grown = root_ids + tok.encode(" = ", add_special=False)
+    text = state.sync_ids(tok, grown)
+    assert state.completion_state_id is None
+    assert state.prefix_ids == grown
+    assert text == state.prefix_text

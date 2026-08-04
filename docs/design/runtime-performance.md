@@ -183,6 +183,22 @@ python -m scripts.profile_generate --rounds 2
 python -m scripts.run_perf_matrix --only P0,Q9,R9,PG --limit 4
 ```
 
+## Round 7 — MaskGIT persistent state (falsified, reverted; 2026-08-03)
+
+Preregistered attempt to pass a persistent `GrammarDecodeState` + hoisted
+`admit_fill` engine through `_generate_maskgit_one`'s constrained picks
+(mirroring the LTR paths). **Falsified and reverted**: only 13% of MaskGIT
+picks are state-eligible (mask holes left of the position force the stateless
+path), `dfa_sync_ms` is ~0.05% of generate wall, and the dominant cost is
+`build_completion_forest` in the repair phase (74–94% via
+`_ltr_repair_from_bos` → `exact_forced_token_id` → `terminal_witness`).
+Discovery: `--no-incremental` (`grammar_incremental_state=False`) is
+**3–3.6× faster** on the MaskGIT path with byte-identical outputs — P1's
+LTR-derived cost profile does not transfer here. Measured on the 2026-07-30
+tree (2581bf49-era working copy); re-validated at HEAD eba6db30 (**2.29×**,
+7.49 → 3.27 s/gen). Full numbers:
+[`maskgit-persistent-grammar-state-20260803.md`](maskgit-persistent-grammar-state-20260803.md).
+
 ## Playground load reproduction (2026-07-15)
 
 The [runtime reproduction](playground-runtime-reproduction-results.json) found
