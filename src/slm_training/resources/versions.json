@@ -2683,7 +2683,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v176",
+      "version": "v177",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2723,6 +2723,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v177",
+          "date": "2026-08-04",
+          "note": "Automatic climb promote re-cert on harness/policy authority change: stamp promote_authority_sha256; cycle startup recertifies promoted/climb_accepted under current dispose rules"
+        },
         {
           "version": "v176",
           "date": "2026-08-03",
