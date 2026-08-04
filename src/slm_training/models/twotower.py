@@ -9,6 +9,7 @@ import random
 import re
 import warnings
 from collections import Counter, defaultdict
+from collections.abc import Mapping, Sequence
 from contextvars import ContextVar
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -63,6 +64,7 @@ from slm_training.models.decode_stats import (
 from slm_training.runtime.decode_schedule import plan_prefill, record_plan
 from slm_training.models.grammar import (
     CompletionBatchCache,
+    GrammarDecodeState,
     apply_structural_bias,
     exact_forced_token_id,
     filter_ids_by_stream,
@@ -732,10 +734,14 @@ class TwoTowerConfig:
     # remask_policy="stability" ranks remasks by persistence + inter-step JSD.
     stability_min_persistence: int = 0
     stability_jsd_weight: float = 1.0
-    # E71 DAPD/DAWN-lite: positions (classic) | cluster (attention clusters).
+    # E71 DAPD/DAWN-lite: positions (classic) | cluster (attention clusters)
+    # | hybrid (HX4: block-scheduled span lane + frontier-first position lane).
     unmask_mode: str = "positions"
     block_diffusion_decode: bool = False
     block_diffusion_block_size: int = 4
+    # HX4: minimum contiguous masked-run length that qualifies for the hybrid
+    # span lane. Shorter runs fall through to the frontier (positionwise) lane.
+    hybrid_span_min_run: int = 3
     cluster_attn_threshold: float = 0.08
     cluster_max_size: int = 4
     # E72: verify clusters in anchor order; outcome (j, repair).
@@ -929,6 +935,68 @@ def _pad_batch(
     if device is not None:
         out = out.to(device)
     return out
+
+
+def hybrid_mask_runs(
+    unknown_row: Sequence[bool],
+    ids_row: Sequence[int],
+    *,
+    eos_id: int,
+    pad_id: int,
+) -> list[list[int]]:
+    """Contiguous masked-position runs, trimmed at the EOS/PAD boundary (HX4).
+
+    The canvas suffix after the first EOS (or PAD) is not part of the program,
+    so a span must never cross that boundary: positions at or after the first
+    EOS/PAD token are dropped and a run straddling it is truncated. Returns
+    runs in left-to-right order; each run is the list of its absolute positions.
+    """
+    limit = len(unknown_row)
+    for index, token_id in enumerate(ids_row):
+        value = int(token_id)
+        if value == int(eos_id) or value == int(pad_id):
+            limit = index
+            break
+    limit = min(limit, len(unknown_row))
+    runs: list[list[int]] = []
+    current: list[int] = []
+    for position in range(limit):
+        if bool(unknown_row[position]):
+            current.append(position)
+        elif current:
+            runs.append(current)
+            current = []
+    if current:
+        runs.append(current)
+    return runs
+
+
+def hybrid_frontier_order(
+    positions: Sequence[int],
+    unknown_row: Sequence[bool],
+    confidences: Mapping[int, float],
+) -> list[int]:
+    """Frontier-first ordering for the HX4 positionwise lane.
+
+    A position whose LEFT neighbour is already committed (or position 1, right
+    after BOS) extends the verified prefix, so it outranks interior holes. Ties
+    inside each group break on descending confidence, then on position so the
+    order is total and deterministic.
+    """
+
+    def _key(position: int) -> tuple[int, float, int]:
+        left_committed = position == 1 or (
+            position > 0
+            and position - 1 < len(unknown_row)
+            and not bool(unknown_row[position - 1])
+        )
+        return (
+            0 if left_committed else 1,
+            -float(confidences.get(position, 0.0)),
+            int(position),
+        )
+
+    return sorted((int(p) for p in positions), key=_key)
 
 
 def _truncate_with_eos(ids: list[int], max_len: int, eos_id: int) -> list[int]:
@@ -5102,8 +5170,14 @@ class TwoTowerModel(nn.Module):
         ctx: torch.Tensor,
         ctx_pad: torch.Tensor,
         length: int,
+        *,
+        state: "GrammarDecodeState | None" = None,
     ) -> str:
-        """Speculative LTR decode from BOS with force-emit + constrained picks."""
+        """Speculative LTR decode from BOS with force-emit + constrained picks.
+
+        HX5: ``state`` is passed straight through so an attempt loop can share
+        one grammar session; the caller keeps ownership (and folds its stats).
+        """
         device = self.device_name
         repair_len = min(length, max(8, int(self.config.grammar_ltr_max_tokens)))
         repaired = torch.full(
@@ -5114,7 +5188,9 @@ class TwoTowerModel(nn.Module):
         )
         repaired[0, 0] = self.tokenizer.bos_id
         unknown_r = repaired.eq(self.tokenizer.mask_id)
-        repaired = self._constrained_ltr_repair(repaired, unknown_r, ctx, ctx_pad)
+        repaired = self._constrained_ltr_repair(
+            repaired, unknown_r, ctx, ctx_pad, state=state
+        )
         return self._decode_ids(repaired[0])
 
     def _ensure_valid_openui(
@@ -5165,11 +5241,31 @@ class TwoTowerModel(nn.Module):
         ):
             return text
         last = text
-        for _ in range(max(0, int(attempts))):
-            last = self._ltr_repair_from_bos(ctx, ctx_pad, length)
-            ser = self._canonical_valid_openui(last)
-            if ser is not None:
-                return ser
+        # HX5: one grammar session for the whole attempt loop (each attempt
+        # re-decodes from BOS, so the DFA/completion caches are re-usable), and
+        # one engine-stats fold for the session that owns them.
+        state_rows = self._new_grammar_states(1) if int(attempts) > 0 else None
+        shared_state = state_rows[0] if state_rows else None
+        try:
+            previous: str | None = None
+            for _ in range(max(0, int(attempts))):
+                last = self._ltr_repair_from_bos(
+                    ctx, ctx_pad, length, state=shared_state
+                )
+                ser = self._canonical_valid_openui(last)
+                if ser is not None:
+                    return ser
+                if (
+                    not bool(getattr(self.config, "grammar_sample_decode", False))
+                    and previous is not None
+                    and last == previous
+                ):
+                    # Deterministic decode: attempts 2..N are bit-identical
+                    # recomputations of a repair that already failed.
+                    break
+                previous = last
+        finally:
+            self._fold_state_engine_stats(state_rows)
         if self.config.grammar_finalize_validate or require_valid:
             fallback = self._minimal_valid_openui(slot_contract)
             if fallback is not None:
@@ -5190,8 +5286,15 @@ class TwoTowerModel(nn.Module):
         ctx_pad: torch.Tensor,
         *,
         slot_contract: list[str] | None = None,
+        state: "GrammarDecodeState | None" = None,
     ) -> torch.Tensor:
         """Fill remaining masks left-to-right with streaming-parser filtering.
+
+        HX5: ``state`` lets a caller that repairs repeatedly (the
+        ``_ensure_valid_openui`` attempt loop) reuse ONE grammar session across
+        attempts instead of rebuilding the DFA/completion caches per attempt.
+        The owner of a passed-in state also owns folding its engine counters,
+        so this method never folds a state it did not allocate.
 
         R4: honor ``grammar_multitoken_accept`` + ``grammar_canvas_lookahead``
         so repair/BOS certify share the same forward budget as greedy LTR.
@@ -5205,8 +5308,14 @@ class TwoTowerModel(nn.Module):
         contract = slot_contract if use_contract else None
         length = ids.size(1)
         use_fast = bool(getattr(self.config, "grammar_fastpath", True))
-        states = self._new_grammar_states(1)
-        st = states[0] if states is not None else None
+        if state is not None:
+            states = None
+            st = state
+            owns_states = False
+        else:
+            states = self._new_grammar_states(1)
+            st = states[0] if states is not None else None
+            owns_states = True
         pick_kw = self._pick_kwargs()
         multitoken = bool(getattr(self.config, "grammar_multitoken_accept", False))
         multitoken_max = max(
@@ -5537,7 +5646,8 @@ class TwoTowerModel(nn.Module):
                 unknown=unknown[0].tolist(),
                 commits=repair_commits,
             )
-        self._fold_state_engine_stats(states)
+        if owns_states:
+            self._fold_state_engine_stats(states)
         return ids
 
     def _ltr_canvases(self, length: int) -> list[int]:
@@ -14375,12 +14485,20 @@ class TwoTowerModel(nn.Module):
             unknown[0, :] = False
             if len(seed) < length:
                 ids[0, len(seed) :] = self.tokenizer.pad_id
+            template_slots = 0
             for t in template_mask_positions(seed, self.tokenizer):
                 if 0 < t < length:
                     ids[0, t] = self.tokenizer.mask_id
                     unknown[0, t] = True
+                    template_slots += 1
             ids[0, 0] = self.tokenizer.bos_id
             unknown[0, 0] = False
+            if template_slots:
+                # E20 telemetry: how many holes the skeleton actually left the
+                # denoiser (one fold per generate, never per step).
+                active = get_active_stats()
+                if active is not None:
+                    active.template_slot_positions += template_slots
 
         steps = max(1, self.config.gen_steps)
         remask_ratio = float(getattr(self.config, "remask_ratio", 0.0) or 0.0)
@@ -14391,9 +14509,16 @@ class TwoTowerModel(nn.Module):
         stability_min_persistence = int(
             getattr(self.config, "stability_min_persistence", 0) or 0
         )
-        cluster_mode = (
-            str(getattr(self.config, "unmask_mode", "positions") or "positions").lower()
-            == "cluster"
+        unmask_mode_cfg = str(
+            getattr(self.config, "unmask_mode", "positions") or "positions"
+        ).lower()
+        cluster_mode = unmask_mode_cfg == "cluster"
+        # HX4: span lane (block-budgeted contiguous runs) + frontier lane
+        # (positionwise, prefix-extending first). Default "positions" is
+        # untouched; "cluster" keeps the V7 path.
+        hybrid_mode = unmask_mode_cfg == "hybrid"
+        hybrid_min_run = max(
+            1, int(getattr(self.config, "hybrid_span_min_run", 3) or 3)
         )
         cluster_verify = cluster_mode and bool(
             getattr(self.config, "cluster_verify", False)
@@ -14662,6 +14787,66 @@ class TwoTowerModel(nn.Module):
                     for p in block_positions(int(blk), length, bsize)
                     if bool(unknown[0, p])
                 ]
+            # HX4 hybrid scheduling: two lanes over the SAME commit/admit
+            # machinery. Long contiguous holes are budgeted as spans (block
+            # schedule); everything else is revealed positionwise, frontier
+            # first, so the verified prefix grows instead of fragmenting.
+            hybrid_span_set: set[int] = set()
+            if flat_idx and not cluster_mode and hybrid_mode:
+                from slm_training.models.block_noise import (
+                    BlockNoiseSchedule,
+                    select_blocks_to_unmask,
+                )
+
+                unknown_row = [bool(v) for v in unknown[0].tolist()]
+                runs = hybrid_mask_runs(
+                    unknown_row,
+                    [int(v) for v in ids[0].tolist()],
+                    eos_id=int(self.tokenizer.eos_id),
+                    pad_id=int(self.tokenizer.pad_id),
+                )
+                span_runs = [run for run in runs if len(run) >= hybrid_min_run]
+                if span_runs:
+                    schedule = BlockNoiseSchedule(
+                        block_size=hybrid_min_run, gen_steps=max(1, steps)
+                    )
+                    run_conf = torch.full(
+                        (1, len(span_runs)), -1.0, device=conf.device
+                    )
+                    run_unknown = torch.ones(
+                        (1, len(span_runs)), dtype=torch.bool, device=conf.device
+                    )
+                    for i, run in enumerate(span_runs):
+                        run_conf[0, i] = float(
+                            sum(float(conf_for_unmask[0, p]) for p in run) / len(run)
+                        )
+                    chosen_runs = select_blocks_to_unmask(
+                        run_conf,
+                        run_unknown,
+                        step=step,
+                        schedule=schedule,
+                        mode=str(
+                            getattr(self.config, "parallel_unmask", "adaptive")
+                            or "adaptive"
+                        ),
+                    )
+                    for flat in chosen_runs:
+                        run = span_runs[int(flat) % len(span_runs)]
+                        hybrid_span_set.update(int(p) for p in run)
+                frontier_candidates = [
+                    t
+                    for t in range(length)
+                    if unknown_row[t] and t not in hybrid_span_set
+                ]
+                frontier_budget = max(
+                    1, math.ceil(remaining / max(1, steps - step))
+                )
+                frontier = hybrid_frontier_order(
+                    frontier_candidates,
+                    unknown_row,
+                    {t: float(conf_for_unmask[0, t]) for t in frontier_candidates},
+                )[:frontier_budget]
+                flat_idx = [*sorted(hybrid_span_set), *frontier]
             # E70: only commit predictions whose argmax has persisted.
             if tracker is not None and stability_min_persistence > 0 and flat_idx:
                 flat_idx = tracker.filter_commit_indices(
@@ -14826,6 +15011,18 @@ class TwoTowerModel(nn.Module):
                                 except Exception:  # noqa: BLE001
                                     pass
                             step_commits.append(commit)
+                # HX4: attribute this step's commits to their lane before the
+                # joint validator runs, so a region-scoped revert knows which
+                # positions belong to a span.
+                newly_span: list[int] = []
+                newly_frontier: list[int] = list(newly)
+                if hybrid_mode and newly:
+                    newly_span = [t for t in newly if t in hybrid_span_set]
+                    newly_frontier = [t for t in newly if t not in hybrid_span_set]
+                    lane_stats = get_active_stats()
+                    if lane_stats is not None:
+                        lane_stats.hybrid_span_commits += len(newly_span)
+                        lane_stats.hybrid_frontier_commits += len(newly_frontier)
                 # L-D joint validation: parallel block commits can jointly
                 # produce a canvas no fill completes even though each commit
                 # passed its own left-prefix admit (100% of admit probes are
@@ -14836,11 +15033,19 @@ class TwoTowerModel(nn.Module):
                 if (
                     len(newly) > 1
                     and use_grammar
-                    and bool(getattr(self.config, "block_diffusion_decode", False))
+                    and (
+                        bool(getattr(self.config, "block_diffusion_decode", False))
+                        or hybrid_mode
+                    )
                 ):
                     from slm_training.dsl.grammar.fastpath.residual_support import (
                         multi_region_support,
                     )
+
+                    def _revert(positions: list[int]) -> None:
+                        for t in positions:
+                            ids[0, t] = self.tokenizer.mask_id
+                            unknown[0, t] = True
 
                     verdict = multi_region_support(
                         self.tokenizer, ids[0].tolist(), node_budget=2000
@@ -14852,11 +15057,44 @@ class TwoTowerModel(nn.Module):
                         active_stats = get_active_stats()
                         if active_stats is not None:
                             active_stats.block_joint_rejections += 1
-                        for t in newly:
-                            ids[0, t] = self.tokenizer.mask_id
-                            unknown[0, t] = True
-                        newly = []
-                        step_commits = []
+                        if hybrid_mode and newly_span:
+                            # HX4 region-scoped revert: the span lane is the
+                            # wide, suffix-blind bet, so it pays first. The
+                            # frontier lane only pays when the canvas is STILL
+                            # proven impossible without the span.
+                            _revert(newly_span)
+                            if active_stats is not None:
+                                active_stats.hybrid_span_reverts += 1
+                            reverted = set(newly_span)
+                            newly = list(newly_frontier)
+                            step_commits = [
+                                c
+                                for c in step_commits
+                                if int(c.get("t", -1)) not in reverted
+                            ]
+                            second = multi_region_support(
+                                self.tokenizer, ids[0].tolist(), node_budget=2000
+                            )
+                            if (
+                                not second.admitted
+                                and second.authority == "exact_multi_region"
+                            ):
+                                _revert(newly_frontier)
+                                newly = []
+                                step_commits = []
+                            elif second.authority == "unknown":
+                                if active_stats is not None:
+                                    active_stats.block_joint_unknowns += 1
+                        else:
+                            _revert(newly)
+                            newly = []
+                            step_commits = []
+                    elif verdict.authority == "unknown":
+                        # Fail-open by design (budget, not proof) — the commits
+                        # stand; count it so the open share stays visible.
+                        active_stats = get_active_stats()
+                        if active_stats is not None:
+                            active_stats.block_joint_unknowns += 1
             else:
                 # --- V7 cluster path (E71/E72/E73/E74); single-sequence B=1 ---
                 proposals: dict[int, int] = {}
