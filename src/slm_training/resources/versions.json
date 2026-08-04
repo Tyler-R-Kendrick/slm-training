@@ -2683,7 +2683,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v178",
+      "version": "v179",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2723,6 +2723,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v179",
+          "date": "2026-08-04",
+          "note": "code review (PR #1408): forward --generate-batch-size for grammar_diffusion evaluations too, not only twotower -- it moved out of the twotower-only for-loop into the track-agnostic evaluate-command section alongside decode_timeout_seconds/eval_suites"
+        },
         {
           "version": "v178",
           "date": "2026-08-04",
@@ -12350,7 +12355,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v308",
+      "version": "v309",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -12395,6 +12400,11 @@
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
       "history": [
+        {
+          "version": "v309",
+          "date": "2026-08-04",
+          "note": "code review (PR #1408): enforce the documented 1..64 bound on generate_batch_size (shared by TwoTowerConfig and ModelBuildConfig) in validate_numeric_config so an oversized CLI/direct-config value fails closed at construction instead of only being handled downstream by the decode chunking loop"
+        },
         {
           "version": "v308",
           "date": "2026-08-04",

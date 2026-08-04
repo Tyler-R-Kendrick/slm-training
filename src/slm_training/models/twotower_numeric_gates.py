@@ -301,7 +301,7 @@ def validate_numeric_config(
         "batch_size", "d_model", "n_heads", "context_layers",
         "denoiser_layers", "max_prompt_len", "max_target_len", "gen_steps",
         "recursive_steps", "grammar_top_k", "grammar_ltr_max_tokens",
-        "grammar_block_size", "generate_batch_size", "grad_accum_steps",
+        "grammar_block_size", "grad_accum_steps",
         "parallel_workers", "design_md_budget", "diffusion_overallocate",
         "topology_max_nodes", "topology_max_active", "topology_max_arity",
         "topology_max_depth", "topology_max_phases",
@@ -426,6 +426,18 @@ def validate_numeric_config(
                             value,
                             f"must be at most {MAX_RUN_MINUTES} minutes",
                         )
+                report.record(name, True)
+            except NumericValidationError as exc:
+                report.record(name, False, exc.reason)
+        elif name in {"generate_batch_size"}:
+            # Shared by TwoTowerConfig (baked architecture default) and
+            # ModelBuildConfig (eval-time decode-chunking override, None
+            # keeps the baked default). ExperimentKnobs documents 1..64;
+            # enforce the same bound here so an oversized CLI/direct-config
+            # value fails closed instead of only reaching a chunking loop
+            # that would otherwise silently accept it.
+            try:
+                interval_scalar(name, value, 1, 64)
                 report.record(name, True)
             except NumericValidationError as exc:
                 report.record(name, False, exc.reason)

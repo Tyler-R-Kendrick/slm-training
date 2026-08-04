@@ -846,6 +846,8 @@ def compile_commands(
         evaluate.extend(["--suites", str(knobs.eval_suites)])
     if knobs.decode_timeout_seconds is not None:
         evaluate.extend(["--decode-timeout-seconds", str(knobs.decode_timeout_seconds)])
+    if knobs.generate_batch_size is not None:
+        evaluate.extend(["--generate-batch-size", str(knobs.generate_batch_size)])
     commands.append(evaluate)
     if campaign.track == "grammar_diffusion":
         commands[-1].extend(["--model", "grammar_diffusion"])
@@ -867,7 +869,6 @@ def compile_commands(
             "compiler_search_noise",
             "compiler_search_stagnation_patience",
             "compiler_search_backtrack_limit",
-            "generate_batch_size",
         ):
             value = getattr(knobs, name)
             if value is not None:

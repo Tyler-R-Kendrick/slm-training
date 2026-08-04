@@ -3,10 +3,18 @@
 **Loop:** `continuous-openui-local`
 **Campaign:** `continuous-loop-20260804-continuous-openui-local-8c0b60dd-c3`
 **Integration commit:** `e113f5b9` (this session's `generate_batch_size` harness fix, on top of `main` tip `eba6db30`)
-**Cycle intent:** `retry_measurement` — frozen replay of c2's locked manifest
-(`5b2ed5b9...`), per the `repair_harness` → `retry_measurement` handoff chain
-from
+**Cycle intent:** `retry_measurement` — frozen replay of c2's locked manifest,
+per the `repair_harness` → `retry_measurement` handoff chain from
 [`continuous-openui-local-ixpohr-c2-results.md`](continuous-openui-local-ixpohr-c2-results.md).
+
+Two distinct manifest identities appear below — do not conflate them:
+
+- `recipe.source_frozen_manifest_sha256` = `5b2ed5b9...` — c2's original
+  locked manifest, the one this cycle replays byte-for-byte.
+- `harness_signal.replay_manifest_sha256` = `9cf48c80...513daf4e` — **this
+  cycle's own** (c3's) locked manifest identity, produced by executing the
+  source manifest under `retry_measurement`. It is not the source; it is
+  what a future `repair_harness` action against c3 itself would cite.
 
 **Verdict:** measurement incomplete again — `decode_timeout_count=3/3` on both
 arms, identical to c2. This is **not a fix failure**. It confirms a
@@ -41,7 +49,7 @@ The underlying recipe's compiler cost (`component-plan`/`control` at
 cannot complete under `decode_timeout_seconds=8.0` without the batch-size
 fix — which this frozen arm structurally cannot receive. Continuing to
 acknowledge `repair_harness` receipts against this exact
-`frozen_manifest_sha256` (`9cf48c80...513daf4e`) would not converge; it
+`replay_manifest_sha256` (`9cf48c80...513daf4e`) would not converge; it
 would just consume another `max_consecutive_frozen_replays` budget for a
 predictable identical failure.
 

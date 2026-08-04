@@ -4820,6 +4820,7 @@ def test_compile_grammar_topology_campaign_uses_typed_knobs() -> None:
             topology_max_nodes=128,
             topology_max_active=24,
             topology_accept_threshold=0.4,
+            generate_batch_size=1,
         )
     )
     commands = compile_commands(grammar_campaign, spec)
@@ -4834,6 +4835,10 @@ def test_compile_grammar_topology_campaign_uses_typed_knobs() -> None:
     assert train[train.index("--topology-max-active") + 1] == "24"
     assert train[train.index("--topology-accept-threshold") + 1] == "0.4"
     assert evaluate[evaluate.index("--model") + 1] == "grammar_diffusion"
+    # generate_batch_size is track-agnostic (eval_runner reads it off
+    # ModelBuildConfig regardless of model class) and must reach
+    # grammar_diffusion evaluations too, not only the twotower branch.
+    assert evaluate[evaluate.index("--generate-batch-size") + 1] == "1"
 
 
 def test_compile_scope_campaign_builds_contract_data_and_flags() -> None:
