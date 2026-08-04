@@ -1842,7 +1842,7 @@
       ]
     },
     "evals.agentv": {
-      "version": "v7",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "src/slm_training/evals/agentv.py",
@@ -1850,6 +1850,11 @@
         "tests/test_evals/test_agentv.py"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-08-04",
+          "note": "Self-heal _agentv_runtime: when the pinned SDK is missing but a package-lock.json exists, run npm ci once (sanitized_node_env) before failing, so a fresh checkout's first --ship-gates eval no longer hard-fails on missing node_modules."
+        },
         {
           "version": "v7",
           "date": "2026-08-03",
