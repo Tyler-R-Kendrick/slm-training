@@ -1,0 +1,77 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c2",
+  "decision": "measurement_incomplete_harness_signal",
+  "claim_class": "fixture_screening",
+  "formal": {"status": "not_applicable:screening"},
+  "recipe": {
+    "device": "cpu",
+    "steps": 21,
+    "context_backend": "scratch",
+    "suite": "smoke",
+    "suite_n": 3,
+    "trainable_params": {"control": 1755764, "candidate": 1755764},
+    "sync_checkpoints": false,
+    "candidate_lever": "component_plan_decode_weight",
+    "decode_timeout_seconds_configured": 8.0,
+    "decode_batch_size_max": 3,
+    "effective_decode_timeout_seconds_min_max": 24.0
+  },
+  "arms": {
+    "control": {
+      "checkpoint_sha256": "6abf57d4898e8fe7cb1dace959d3ce5fec463f816b3686c99ad18abf6db3512b",
+      "status": "measurement_incomplete",
+      "document_n": 3,
+      "completed_document_n": 0,
+      "incomplete_document_n": 3,
+      "decode_timeout_count": 3,
+      "compiler_ms_mean": 23342.9,
+      "metrics": null
+    },
+    "candidate": {
+      "checkpoint_sha256": "20e573b14e3216132d27101e98f5c49dfe634acd0101b2ce18b5f9f0f8a8e741",
+      "status": "measurement_incomplete",
+      "document_n": 3,
+      "completed_document_n": 0,
+      "incomplete_document_n": 3,
+      "decode_timeout_count": 3,
+      "compiler_ms_mean": 23275.8,
+      "metrics": null
+    }
+  },
+  "effects": {"measurement_complete": false},
+  "ship": {
+    "eligible": false,
+    "failures": [
+      "all 3 smoke documents decode-timed-out on both arms; zero completed",
+      "primary metric unavailable (no attribution possible)",
+      "smoke n=3<20",
+      "production suites missing"
+    ]
+  },
+  "diagnosis": {
+    "root_cause_investigated": true,
+    "finding": "Not a harness code defect. Screening decode_timeout_seconds is fitted per-record (8.0s here, well under the thrash-calibrated <=12.0s test ceiling); the scoreboard's effective_decode_timeout_seconds_min/max reports the whole-chunk budget (8.0 x decode_batch_size_max=3 = 24.0), which was initially misread as a per-record timeout during triage. The component-plan recipe's compiler_ms_mean (~23.3s) is genuinely right at that 24s chunk budget on this container's CPU throughput -- a capacity edge, not a regression: this exact recipe family completed near-identical latencies (p50 18.3-23.1s) in the 2026-08-03 c2 run without a code change in between.",
+    "action_taken": "Added a clarifying comment at the effective_decode_timeout_seconds_min/max computation in eval_runner.py and a pinned regression test (test_screening_chunk_timeout_is_per_chunk_not_per_record) locking in the exact decode_timeout_seconds=8.0/chunk=3 -> 24.0 scenario, to prevent future misdiagnosis of chunk-level totals as per-record timeouts. No timeout value, gate, or budget was loosened.",
+    "harness_family": "model_build",
+    "frozen_manifest_sha256": "2ea993ec6cd66682c2bf5e47214af8f85f4d720e55e0e0fc0223e77e5752b43a"
+  },
+  "successor": {
+    "experiment_slug": "component-plan",
+    "next_action": "replay exact frozen control and candidate arm (retry_measurement); if timeout recurs across further replays, escalate to a capacity recalibration (e.g. per-family chunk-size reduction) rather than raising decode_timeout_seconds"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "506f598988912074b877df1161459cdb5aff92ea",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v84",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v23",
+      "model.twotower": "v308"
+    }
+  }
+}

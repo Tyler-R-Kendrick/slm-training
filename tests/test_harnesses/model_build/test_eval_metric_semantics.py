@@ -110,6 +110,28 @@ def test_eval_wall_fairly_caps_each_remaining_record() -> None:
     )
 
 
+def test_screening_chunk_timeout_is_per_chunk_not_per_record() -> None:
+    """Pin the autotrain continuous-loop screening scenario.
+
+    The continuous driver fits a per-record screening decode budget (e.g. 8s)
+    via ``_fit_screening_decode_timeout_seconds`` and passes it as
+    ``--decode-timeout-seconds``. With no ``evaluation_deadline`` and a
+    ``decode_batch_size_max``-sized chunk of 3 records, the scoreboard's
+    ``effective_decode_timeout_seconds_min/max`` reports the whole-chunk
+    budget (8.0 * 3 = 24.0), not the 8.0s per-record request. A diagnosis that
+    reads 24.0 as "the per-record timeout was loosened to ship's 24s" is
+    misreading a chunk total as a per-record value.
+    """
+
+    assert _effective_record_decode_timeout(
+        8.0,
+        evaluation_deadline=None,
+        remaining_record_n=3,
+        chunk_record_n=3,
+        now=60.0,
+    ) == pytest.approx(24.0)
+
+
 def _record(**overrides: object) -> ExampleRecord:
     data = {
         "id": "r1",

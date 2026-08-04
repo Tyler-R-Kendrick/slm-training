@@ -2307,6 +2307,11 @@ def evaluate(
         "seed": int(getattr(config, "seed", 0) or 0),
         "diagnostic_subset": suite_limit is not None or suite_offset > 0,
         "evaluation_wall_seconds": config.evaluation_wall_seconds,
+        # Per-*chunk* budget (requested decode_timeout_seconds x chunk_record_n
+        # when no evaluation_deadline caps it — see
+        # `_effective_record_decode_timeout`), not a per-record timeout. A
+        # decode_batch_size_max=3 chunk under an 8s/record config reports 24.0
+        # here even though no single record was individually budgeted 24s.
         "effective_decode_timeout_seconds_min": (
             min(effective_decode_timeouts) if effective_decode_timeouts else None
         ),

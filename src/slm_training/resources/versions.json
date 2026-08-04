@@ -7885,6 +7885,11 @@
         {
           "version": "v3",
           "date": "2026-08-04",
+          "note": "no-bump: record continuous-openui-local 8c0b60dd cycle 2 (component-plan decode-timeout, measurement incomplete) in the model card and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-04",
           "note": "no-bump: record continuous-openui-local 8c0b60dd cycle 1 (non-positive bounds screen, SDLC Phase A NON_POSITIVE) in the model card and README; SLM-228 behavior is unchanged."
         },
         {
@@ -9929,6 +9934,11 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v84",
+          "date": "2026-08-04",
+          "note": "no-bump: clarify that effective_decode_timeout_seconds_min/max is a per-chunk (not per-record) budget and pin the screening decode_timeout_seconds=8.0/chunk=3 -> 24.0 scenario with a regression test; behavior is unchanged."
+        },
         {
           "version": "v84",
           "date": "2026-08-03",
