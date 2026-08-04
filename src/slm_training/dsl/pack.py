@@ -284,6 +284,36 @@ def _openui_completion_frontier(prefix: str) -> frozenset[str]:
     return engine.next_terminals()
 
 
+def _note_witness(
+    *,
+    materialized: bool = False,
+    kept: bool = False,
+    pruned_unknown: bool = False,
+    pruned_unsupported: bool = False,
+) -> None:
+    """Advisory witness-outcome accounting (HV-A / HV-2).
+
+    Distinguishes the two reasons a candidate is dropped by the completion
+    domain: a certified UNSUPPORTED witness (sound) versus a budget-exhausted
+    UNKNOWN one (a false reject that silently narrows the legal domain). Also
+    records how many witnesses are built versus kept, which bounds what a
+    lazy-materialization design could save. Counters only; no behavior change.
+    """
+    from slm_training.models.decode_stats import get_active_stats
+
+    stats = get_active_stats()
+    if stats is None:
+        return
+    if materialized:
+        stats.witness_materialized += 1
+    if kept:
+        stats.witness_kept += 1
+    if pruned_unknown:
+        stats.witness_pruned_unknown += 1
+    if pruned_unsupported:
+        stats.witness_pruned_unsupported += 1
+
+
 def _openui_completion_domain(request: Any) -> Any:
     """Build OpenUI's scoped finite domain and prove each action reaches EOS.
 
@@ -444,21 +474,34 @@ def _openui_completion_domain(request: Any) -> Any:
                 unsupported = True
                 continue
             proof = session.terminal_witness(child, budget - len(tokens))
+            _note_witness(materialized=True)
             if proof.status is WitnessStatus.UNKNOWN:
                 # Preserve V1's behavior-visible per-candidate expansion
                 # discipline: an unproven candidate is omitted while proven
                 # siblings remain available. UNKNOWN itself is never cached
                 # as a negative kernel fact.
+                #
+                # HONESTY (HV-A): this is NOT a soundness-preserving rejection.
+                # UNKNOWN means the bounded witness search exhausted its node
+                # budget, not that no completion exists, so dropping the
+                # candidate silently narrows the legal domain (a false reject).
+                # ``dsl/solver`` states the opposite law for its own verdicts
+                # ("UNKNOWN never licenses candidate removal", keep_and_rank).
+                # Counted separately so the two causes are distinguishable.
+                _note_witness(pruned_unknown=True)
                 unsupported = True
                 continue
             if proof.status is WitnessStatus.UNSUPPORTED:
+                _note_witness(pruned_unsupported=True)
                 unsupported = True
                 continue
             suffix = tuple(int(token_id) for token_id in proof.witness)
             witness = tokens + suffix
             if not suffix:
+                _note_witness(pruned_unsupported=True)
                 unsupported = True
                 continue
+        _note_witness(kept=True)
         candidates.append(
             CompletionDomainCandidateV1(
                 token_ids=tokens,
@@ -730,8 +773,12 @@ def _openui_completion_domain_reference(request: Any) -> Any:
             else tokens + (_tail_from(prefix + tokens, budget - len(tokens)) or ())
         )
         if not witness or (path.kind != "eos" and len(witness) == len(tokens)):
+            # Bounded tail search found nothing within budget: same
+            # UNKNOWN-flavoured false-reject risk as the session path.
+            _note_witness(materialized=True, pruned_unknown=True)
             unwitnessed = True
             continue
+        _note_witness(materialized=True, kept=True)
         candidates.append(
             CompletionDomainCandidateV1(
                 token_ids=tokens,

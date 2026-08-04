@@ -1364,6 +1364,11 @@
       "history": [
         {
           "version": "v12",
+          "date": "2026-08-04",
+          "note": "no-bump: add the _note_witness advisory counter helper and its call sites in dsl/pack.py, splitting the previously collapsed UNKNOWN vs UNSUPPORTED witness-prune verdicts. Telemetry only - the drop behavior, candidate sets, and emitted domains are unchanged (measured byte-identical on the profile fixture)."
+        },
+        {
+          "version": "v12",
           "date": "2026-08-02",
           "note": "Treat empty pack-owned tree-edit inventories as unavailable in filled_slots, matching their fail-closed DslPack contract and dashboard capability reporting."
         },
@@ -7314,6 +7319,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-08-04",
+          "note": "no-bump: correct a stale fixed-output-vocab figure (296 -> 569) in docs/design/quality-experiment-matrix.md; the registry pins vocab_size 569 and the wrong number had misled an external reviewer. Documentation only."
+        },
+        {
+          "version": "v1",
           "date": "2026-08-03",
           "note": "no-bump: reconcile the shared E60-E65 status table after their canonical substrates landed; SLM-197 behavior is unchanged."
         },
@@ -9950,7 +9960,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v89",
+      "version": "v90",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -9971,6 +9981,11 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v90",
+          "date": "2026-08-04",
+          "note": "Advisory witness-outcome counters: witness_materialized / witness_kept / witness_pruned_unknown / witness_pruned_unsupported, plus aggregate keys. Distinguishes a certified UNSUPPORTED rejection from a budget-exhausted UNKNOWN one in the completion-domain filter (the two were collapsed into a single witness_pruned reason). Counters only; no gate or metric semantics change; fixture outputs byte-identical."
+        },
         {
           "version": "v89",
           "date": "2026-08-04",

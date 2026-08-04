@@ -627,7 +627,9 @@ python -m scripts.run_quality_matrix --matrix v5 --only E40,E41,E44,E46 \
 
 See [quality-matrix-results.json](quality-matrix-results.json) (`matrix_set: v5`).
 Tokenizer diagnostic on `src/slm_training/resources/train_seeds.jsonl`: compositional mean 72.6
-tokens → lexer+symtable **46.3** (ratio **0.64**); fixed output vocab **296**.
+tokens → lexer+symtable **46.3** (ratio **0.64**); fixed output vocab **569**
+(registry-pinned; this line read **296** until 2026-08-04 — see
+docs/design/dsl-native-tokenizer.md).
 
 | ID | Smoke parse | Smoke fid | Smoke reward | Notes |
 | --- | --- | --- | --- | --- |
