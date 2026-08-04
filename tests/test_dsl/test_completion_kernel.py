@@ -898,3 +898,24 @@ def test_tctx1_session_context_separation(tok: DSLNativeTokenizer) -> None:
     # Request-local caches: neither session served the other's build.
     for session in (base, explain, floor):
         assert session.stats()["domain_cache_hits"] == 0
+
+
+def test_branch_memo_engages_and_preserves_domain() -> None:
+    """L2 (precompiled-grammar-admissibility): the control-key branch memo
+    must engage on a hard prefix (mechanism floor for the campaign's
+    criterion iii) while E1 parity tests prove the domain is unchanged."""
+    from slm_training.dsl.grammar.fastpath.static_control_domain import (
+        compare_domain_parity,
+        oracle_lark_domain_snapshot,
+        production_domain_snapshot,
+    )
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tok = DSLNativeTokenizer.build()
+    ids = [int(t) for t in tok.encode("root = Card([b1,", add_special=False)]
+    prefix = [tok.bos_id, *ids]
+    production = production_domain_snapshot(prefix, tok, budget=32)
+    oracle = oracle_lark_domain_snapshot(prefix, tok, budget=32)
+    report = compare_domain_parity(production, oracle)
+    assert report.equal, report.reasons
+    assert report.no_unknown_collapse
