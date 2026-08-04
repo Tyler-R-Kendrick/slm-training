@@ -1,0 +1,109 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 2,
+  "cycle_intent": "retry_measurement",
+  "replay_of_manifest_sha256": "47de63eca7855f4451ff8f6cf5decf10a9eb0ebd0976fd6c1dfe9f3682747920",
+  "evidence_class": "fixture",
+  "decision": "reject_quality_neutral",
+  "scoreable": true,
+  "new_checkpoint_created": false,
+  "upstream_commit": "eba6db3044076285581b80cfe5294a2ecbcee8a1",
+  "integration_commit": "ca25b0d772ea5aff939fe7fc430a91992eb54db8",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "experiment_id": "c20260804-continuous-openui-local-8c0b60dd-c2-control",
+      "trainable_params": 1608962,
+      "checkpoint_sha256": "d2f2dc4b2d43876ad4ce3751aa64d271cf7818b76201214a6ce2f8f8c557e44b",
+      "reused_from_campaign": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c1",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "component_type_recall": 0.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.0,
+        "latency_ms_p50": 4077.1
+      }
+    },
+    {
+      "experiment_id": "c20260804-continuous-openui-local-8c0b60dd-c2-bounds",
+      "trainable_params": 1608962,
+      "checkpoint_sha256": "eb81529a4473ef2be232e86958fcb74ed110f590541e19a7b8efba025b224a2",
+      "reused_from_campaign": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c1",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "component_type_recall": 0.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.0,
+        "latency_ms_p50": 3951.35
+      }
+    }
+  ],
+  "comparison": {
+    "attributable": true,
+    "parameter_delta": 0,
+    "structural_similarity_delta": 0.0,
+    "latency_ms_p50_delta": -125.75
+  },
+  "agentv": {
+    "bundles_complete": true,
+    "execution_errors": 0,
+    "ship_gates_pass": false
+  },
+  "gates": {
+    "authority": "AgentEvals assertions",
+    "pass": false,
+    "evidence_volume_failures": [
+      "smoke:insufficient_n actual=3 need>=20",
+      "held_out:missing_suite",
+      "adversarial:missing_suite",
+      "ood:missing_suite",
+      "rico_held:missing_suite"
+    ],
+    "quality_threshold_failures": [
+      "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+      "smoke:structural_similarity actual=0.0575 need>=0.35",
+      "smoke:component_type_recall actual=0.0 need>=0.35",
+      "smoke:ast_beq_rate actual=0.0 need>=0.2",
+      "smoke:canonical_beq_rate actual=0.0 need>=0.1",
+      "smoke:reward_score actual=0.0 need>=0.3"
+    ]
+  },
+  "checkpoint_policy": "local_explicit_no_sync_not_reusable_not_promoted_not_ship",
+  "lean": "not_applicable:retry_measurement",
+  "sdlc_phase_a": "non_positive",
+  "sdlc_reasons": [
+    "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c2-control",
+    "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c2-bounds",
+    "primary_metric_null_or_worse:smoke.structural_similarity:control=0.0575:candidate=0.0575:improvement=0.0",
+    "fixture_insufficient_n_alone"
+  ],
+  "next_priority": "test the distinct size-matched 'component-plan' quality hypothesis (c20260804-continuous-openui-local-8c0b60dd-c2-component-plan) rather than re-selecting the exhausted bounds/control pair",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "ca25b0d772ea5aff939fe7fc430a91992eb54db8",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v84",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v23",
+      "model.twotower": "v308"
+    },
+    "stamped_at": "2026-08-04T06:38:16.022557+00:00"
+  }
+}

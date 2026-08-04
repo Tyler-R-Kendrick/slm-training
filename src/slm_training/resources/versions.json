@@ -7890,6 +7890,11 @@
         {
           "version": "v3",
           "date": "2026-08-04",
+          "note": "no-bump: added an autotrain cycle-status row (8c0b60dd-c2, bounds/control quality-neutral replay) to the README status table; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-04",
           "note": "no-bump: added an autotrain cycle-status row (8c0b60dd-c1, AgentV npm-ci infra failure) to the README status table; SLM-228 behavior is unchanged."
         },
         {
