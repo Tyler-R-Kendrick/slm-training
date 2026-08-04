@@ -1,0 +1,68 @@
+{
+  "schema": "autotrain_continuous_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c4",
+  "cycle_index": 4,
+  "source_commit": "4e137321054f590f5dc5518d18f166bbc37109ed",
+  "integration_commit": "2b6365e616dbc0760daeb503927b62127c747df1",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "screening",
+  "hypothesis": "component-edge",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true,
+    "decode_timeout_seconds": 8.0
+  },
+  "arms": {
+    "control": {
+      "id": "c20260804-continuous-openui-local-8c0b60dd-c4-control",
+      "trainable_params": 1766990,
+      "compiler_ms_mean": 23150.1,
+      "decode_timeout_count": 3,
+      "measurement_status": "incomplete"
+    },
+    "component_edge": {
+      "id": "c20260804-continuous-openui-local-8c0b60dd-c4-component-edge",
+      "trainable_params": 1766990,
+      "compiler_ms_mean": 23109.1,
+      "decode_timeout_count": 3,
+      "measurement_status": "incomplete"
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "measurement_incomplete:c20260804-continuous-openui-local-8c0b60dd-c4-control:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "measurement_incomplete:c20260804-continuous-openui-local-8c0b60dd-c4-component-edge:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "harness_failure:c20260804-continuous-openui-local-8c0b60dd-c4-control:experiment_failed",
+      "harness_failure:c20260804-continuous-openui-local-8c0b60dd-c4-component-edge:experiment_failed",
+      "primary_metric_unavailable"
+    ]
+  },
+  "harness_signal": {
+    "family": "model_build",
+    "root_cause_hypothesis": "all 3 smoke records decode-timed-out at the 8.0s cap; compiler_ms_mean grew from ~12.7s (c3, component-plan) to ~23.1-23.2s (c4, component-edge) on this session's CPU-only .venv-smoke container -- likely CPU decode throughput on this host rather than a code regression, but unconfirmed pending a repair_harness investigation",
+    "status": "unresolved_pending_next_cycle",
+    "frozen_manifest_sha256": "a93a331f677fe321dcf9ebff69caf58605708ed512bbc3959a0b552827495440"
+  },
+  "conclusion": "measurement_incomplete_decode_timeout",
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "infrastructure",
+      "hypothesis": "Investigate compiler/decode wall growth (12.7s->23.1s) on this CPU host before replaying the frozen component-edge arm; likely needs a larger decode-timeout-seconds budget for CPU-only continuous sessions rather than a code fix.",
+      "action": "repair_harness",
+      "experiment_id": "c20260804-continuous-openui-local-8c0b60dd-c4-component-edge"
+    }
+  ],
+  "recorded_at": "2026-08-04T16:48:45Z"
+}
