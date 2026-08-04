@@ -89,4 +89,21 @@ default-off) and pruning moves to the Phase-2 re-baseline campaign.
 
 ## Results
 
-(to be filled per layer — no claims before measurement)
+Campaign log (interim; final criterion evaluation happens at L5 with the
+kernel-fixture arms):
+
+| layer | hard-prefix cold query | end-to-end (default) | end-to-end (`--no-incremental`) | outputs |
+| --- | --- | --- | --- | --- |
+| baseline (365078c) | 2.9 s (agent profile) | 8.93 s/gen, finalize 7,624 ms | 4.92 s/gen, finalize 3,588 ms | — |
+| L1+L2 | **0.48 s**, 12 candidates identical, forks 9,866→4,968 | 7.96 s/gen (−11%), finalize 6,719 ms (−12%) | **3.42 s/gen (−30%)**, finalize 2,428 ms (−32%) | byte-identical, both configs |
+
+Mechanism (L2): `branch_memo_hits` 446 / misses 4,299 on one cold
+hard-prefix query (9.4% cold; the ≥50% floor is evaluated on the fixture's
+warm arm at L5, with the cold rate disclosed). E1 oracle parity green with
+the memo active.
+
+Interim honesty note: L1+L2 alone do NOT clear the preregistered (ii)
+thresholds on the default config — the campaign proceeds to L3
+(transition-cost attack) as designed; no claims made.
+
+(per-layer rows continue below as they land)
