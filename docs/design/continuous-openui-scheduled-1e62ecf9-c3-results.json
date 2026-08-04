@@ -1,0 +1,106 @@
+{
+  "schema": "autotrain_continuous_cycle_results/v1",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "1f28f6efaf7abb10c7adf572218d0949142e644f",
+    "code_dirty": true,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v181"
+    },
+    "stamped_at": "2026-08-04T22:43:15.341481+00:00"
+  },
+  "loop_id": "continuous-openui-scheduled",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-schedu-1e62ecf9-c3",
+  "cycle_index": 3,
+  "predecessor_campaign_id": "continuous-loop-20260804-continuous-openui-schedu-1e62ecf9-c2",
+  "upstream_commit": "34111e6e9d5be7036257467e27cd772549ddaa72",
+  "integration_commit": "1f28f6efaf7abb10c7adf572218d0949142e644f",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "screening",
+  "harness_repair": {
+    "blocked_campaigns": [
+      "continuous-loop-20260804-continuous-openui-schedu-1e62ecf9-c1",
+      "continuous-loop-20260804-continuous-openui-schedu-1e62ecf9-c2"
+    ],
+    "signal": "hypotheses.N.experiment.knobs.generate_batch_size: Extra inputs are not permitted [extra_forbidden]",
+    "hypotheses_rejected": "56/56 (0/5 valid, min_hypotheses=5)",
+    "root_cause": "ExperimentKnobs (StrictModel) and DEFAULT_ALLOWED_KNOBS in src/slm_training/autoresearch/schemas.py never declared generate_batch_size, but scripts/run_autotrain_continuous.py sets base['generate_batch_size']=1 on every screening-role hypothesis (v180 salvage of PR #1408, commit 01767f1)",
+    "fix_commit": "1f28f6e",
+    "fix_summary": "added generate_batch_size: int | None (ge=1, le=1024) to ExperimentKnobs and DEFAULT_ALLOWED_KNOBS; bumped harness.autoresearch.experiment_campaign v180 -> v181",
+    "regression_tests": "tests/test_autoresearch/test_harness.py + tests/test_scripts/test_run_autotrain_continuous.py: 352 passed, 1 skipped",
+    "classification": "executable_unblocking"
+  },
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true
+  },
+  "arms": {
+    "control": {
+      "id": "c20260804-continuous-openui-schedu-1e62ecf9-c3-control",
+      "trainable_params": 1608962,
+      "structural_similarity": 0.23083333333333333,
+      "meaningful_program_rate": 0.3333333333333333,
+      "binder_reference_f1": 0.7333333333333334,
+      "parse_rate": 1.0,
+      "latency_ms_p50": 8694.25,
+      "checkpoint_sha256": "b17e6a45af82506304d55adcc84abbcc61d5ee6c98a7c14b4db0e15555f69ae7"
+    },
+    "both": {
+      "id": "c20260804-continuous-openui-schedu-1e62ecf9-c3-both",
+      "trainable_params": 1608962,
+      "structural_similarity": 0.23083333333333333,
+      "meaningful_program_rate": 0.3333333333333333,
+      "binder_reference_f1": 0.7333333333333334,
+      "parse_rate": 1.0,
+      "latency_ms_p50": 9178.28,
+      "checkpoint_sha256": "9b13d8e26fb62f98c53c50aa14bc680ab4bcbb15d0d4307965cdce90b82c699d"
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "gates": {
+    "authority": "AgentEvals assertions",
+    "pass": false,
+    "failures": [
+      "smoke:insufficient_n actual=3 need>=20",
+      "smoke:meaningful_program_rate actual=0.3333333333333333 need>=0.66",
+      "smoke:structural_similarity actual=0.23083333333333333 need>=0.35",
+      "smoke:component_type_recall actual=0.16666666666666666 need>=0.35",
+      "smoke:ast_beq_rate actual=0.0 need>=0.2",
+      "smoke:canonical_beq_rate actual=0.0 need>=0.1",
+      "held_out:missing_suite",
+      "adversarial:missing_suite",
+      "ood:missing_suite",
+      "rico_held:missing_suite"
+    ]
+  },
+  "sdlc_phase_a": {
+    "positive_harness_fix": true,
+    "positive_harness_fix_reason": "executable_unblocking: 2 consecutive identical hard blocks (c1, c2) removed, identical knob bank now completes with a usable scoreboard",
+    "positive_model": false,
+    "stack_layer": false,
+    "stack_action": "plain_infra_fix_pr",
+    "reasons": [
+      "fixture_insufficient_n:c20260804-continuous-openui-schedu-1e62ecf9-c3-both",
+      "fixture_insufficient_n:c20260804-continuous-openui-schedu-1e62ecf9-c3-control",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.23083333333333333 candidate=0.23083333333333333 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "conclusion": "schema_self_heal_unblocked_loop_screening_null",
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "model",
+      "hypothesis": "The completed non-positive arm is exhausted; test the distinct size-matched 'component-plan' quality hypothesis next.",
+      "action": "experiment_next",
+      "experiment_id": "c20260804-continuous-openui-schedu-1e62ecf9-c3-component-plan"
+    }
+  ],
+  "recorded_at": "2026-08-04T22:39:27Z"
+}

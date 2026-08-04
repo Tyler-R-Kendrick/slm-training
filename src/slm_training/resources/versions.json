@@ -7982,6 +7982,11 @@
         {
           "version": "v3",
           "date": "2026-08-04",
+          "note": "no-bump: record scheduled loop 1e62ecf9 c3's control/both scratch checkpoint provenance (generate_batch_size schema self-heal unblocked the loop; screening result a null tie) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-04",
           "note": "no-bump: record scheduled loop fe71636 c2's control/canvas scratch checkpoint provenance (AgentV harness failure, repaired, replay still decode-timeout incomplete) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
