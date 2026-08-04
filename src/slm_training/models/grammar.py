@@ -626,19 +626,29 @@ def exact_forced_token_id(
             from slm_training.dsl.grammar.fastpath.compiler_draft import (
                 build_completion_forest,
             )
+            from slm_training.models.decode_stats import get_active_stats, timed_ms
 
-            forest = build_completion_forest(
-                tokenizer,
-                prefix_ids,
-                state=state,
-                slot_contract=slot_contract,
-                remaining_tokens=(
-                    remaining_tokens
-                    if remaining_tokens is not None
-                    else getattr(state, "remaining_tokens", None)
-                ),
-                runtime_symbols=runtime_symbols,
-            )
+            # This is the same exact grammar-authority computation the
+            # compiler-tree decode path times as "compiler_ms" (twotower.py's
+            # _compiler_ltr_decode_one/_compiler_ltr_decode_batch). The legacy
+            # LTR-repair loop calls it once per token via this function; left
+            # unwrapped, that real cost fell entirely into unattributed_ms,
+            # making compiler_ms_mean incomparable across checkpoints that
+            # decode through different mechanisms (see docs/design/
+            # compiler-tree-forced-closure-decode-metering-gap.md).
+            with timed_ms(get_active_stats(), "compiler_ms"):
+                forest = build_completion_forest(
+                    tokenizer,
+                    prefix_ids,
+                    state=state,
+                    slot_contract=slot_contract,
+                    remaining_tokens=(
+                        remaining_tokens
+                        if remaining_tokens is not None
+                        else getattr(state, "remaining_tokens", None)
+                    ),
+                    runtime_symbols=runtime_symbols,
+                )
             candidates = set(forest.candidate_ids)
             if forest.coverage == "complete":
                 # A complete domain is authoritative in both directions: one

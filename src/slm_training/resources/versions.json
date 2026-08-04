@@ -12472,7 +12472,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v310",
+      "version": "v311",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -12517,6 +12517,16 @@
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
       "history": [
+        {
+          "version": "v311",
+          "date": "2026-08-04T20:05:00+00:00",
+          "note": "no-bump-collision-renumber: this branch's decode-metering fix (below) and origin/main's HX4/HX5 change (also below) independently bumped model.twotower to v310 in parallel; origin/main's PR merged to main first, so on merging origin/main into this branch the top-level version is renumbered v310->v311 to keep the sequence unique. Neither underlying entry's content is edited -- both original v310 history entries are preserved verbatim below, in each side's original relative order, per the version-stamp merge contract."
+        },
+        {
+          "version": "v310",
+          "date": "2026-08-04T20:00:00+00:00",
+          "note": "fix(decode-metering): exact_forced_token_id (models/grammar.py), used by the legacy non-compiler-tree LTR decode path, called build_completion_forest with zero timed_ms instrumentation, so a checkpoint that decodes via compiler_decode_mode='off' (its own persisted config) could spend nearly all of its real decode wall time in that call while compiler_ms stayed 0.0 and the cost silently fell into unattributed_ms. Also widened the compiler-tree timed_ms(compiler_ms) block in twotower.py's _compiler_ltr_decode_one/_compiler_ltr_decode_batch to cover completion_forced_closure, the same outgoing()-edge grammar-authority walk chained off the same call. Pure additive timing instrumentation: no decode/generation-output behavior changes, only decode_stats attribution (compiler_ms up, unattributed_ms down for previously-unmetered calls). See docs/design/compiler-tree-forced-closure-decode-metering-gap.md."
+        },
         {
           "version": "v310",
           "date": "2026-08-04",
