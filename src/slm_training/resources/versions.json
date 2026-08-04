@@ -2729,7 +2729,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v179",
+      "version": "v180",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2770,6 +2770,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v180",
+          "note": "gate Phase A primary wins on matched suite completion + promote formal terminal block feedback",
+          "date": "2026-08-04"
+        },
         {
           "version": "v179",
           "date": "2026-08-04",
@@ -2823,7 +2828,7 @@
         {
           "version": "v170",
           "date": "2026-08-03",
-          "note": "Thrash never binds handoff-pred feedback_ids (handoff pred ≠ hypothesize lineage); only confirm/promote/replay bind; fixes CYCLE_ERROR conflicts with supplied feedback ids after incomplete successor"
+          "note": "Thrash never binds handoff-pred feedback_ids (handoff pred \u2260 hypothesize lineage); only confirm/promote/replay bind; fixes CYCLE_ERROR conflicts with supplied feedback ids after incomplete successor"
         },
         {
           "version": "v169",
@@ -2833,7 +2838,7 @@
         {
           "version": "v168",
           "date": "2026-08-03",
-          "note": "Pareto thrash timing: screening decode 8s + thrash steps 40 so n×decode fits 70s arm wall; thrash_timing/v1 telemetry; incomplete rate drives recalibration not wall++"
+          "note": "Pareto thrash timing: screening decode 8s + thrash steps 40 so n\u00d7decode fits 70s arm wall; thrash_timing/v1 telemetry; incomplete rate drives recalibration not wall++"
         },
         {
           "version": "v167",
@@ -3643,7 +3648,7 @@
         {
           "version": "v27",
           "date": "2026-08-01",
-          "note": "Promote formal timeout 600s → timed_out / promotion_inconclusive (not failed); refund promote_attempts on timeout"
+          "note": "Promote formal timeout 600s \u2192 timed_out / promotion_inconclusive (not failed); refund promote_attempts on timeout"
         },
         {
           "version": "v26",
@@ -3837,7 +3842,7 @@
         {
           "version": "v14",
           "date": "2026-08-03",
-          "note": "no-bump: CI no-torch fast path excludes tests/test_versioning again — test_mirrors.py imports torch transitively, so versions.json-only PRs failed collection; formal-contract behavior unchanged."
+          "note": "no-bump: CI no-torch fast path excludes tests/test_versioning again \u2014 test_mirrors.py imports torch transitively, so versions.json-only PRs failed collection; formal-contract behavior unchanged."
         },
         {
           "version": "v14",
@@ -10012,7 +10017,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v91",
+      "version": "v92",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -10033,6 +10038,11 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v92",
+          "note": "eval generate_batch_size override for fair-share screening decode timeouts",
+          "date": "2026-08-04"
+        },
         {
           "version": "v91",
           "date": "2026-08-04",
@@ -10098,7 +10108,7 @@
           "date": "2026-08-03",
           "note": "Fail closed on suite-cache reuse for mutable preloaded models without a checkpoint identity; expose the bypass reason for attribution."
         },
-    {
+        {
           "version": "v78",
           "date": "2026-08-02",
           "note": "no-bump: clarify that the scaled timeout is a whole decode-chunk budget; evaluation behavior is unchanged."
@@ -10851,7 +10861,7 @@
       ]
     },
     "harness.preference.remine_campaign": {
-      "version": "v4",
+      "version": "v5",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/preference/remine_campaign.py",
@@ -10863,6 +10873,11 @@
         "docs/design/ldi3-04-remine-intervene-campaign-report-20260718.json"
       ],
       "history": [
+        {
+          "version": "v5",
+          "note": "autoresearch block subcommand for terminal feedback on unstarted arms",
+          "date": "2026-08-04"
+        },
         {
           "version": "v4",
           "date": "2026-08-03",
@@ -11618,7 +11633,7 @@
         {
           "version": "v9",
           "date": "2026-08-03",
-          "note": "no-bump: Round 7 follow-up docs — record the landed finalize_ms/attributed_fraction telemetry and HEAD re-validation numbers in runtime-performance.md; matrix behavior unchanged."
+          "note": "no-bump: Round 7 follow-up docs \u2014 record the landed finalize_ms/attributed_fraction telemetry and HEAD re-validation numbers in runtime-performance.md; matrix behavior unchanged."
         },
         {
           "version": "v9",
@@ -12494,7 +12509,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v311",
+      "version": "v312",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -12539,6 +12554,11 @@
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
       "history": [
+        {
+          "version": "v312",
+          "note": "ModelBuildConfig.generate_batch_size eval-time override field",
+          "date": "2026-08-04"
+        },
         {
           "version": "v311",
           "date": "2026-08-04T20:05:00+00:00",
