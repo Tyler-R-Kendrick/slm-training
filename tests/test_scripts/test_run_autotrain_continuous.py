@@ -5822,6 +5822,24 @@ def test_predecessor_without_stack_delta_does_not_block_on_deliver_stack(
     _mod._require_predecessor_actions(root, "loop-1", "cycle-1")
 
 
+def test_require_agentv_sdk_available_fails_fast_without_node_modules(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(RuntimeError, match="cycle preflight"):
+        _mod._require_agentv_sdk_available(tmp_path)
+
+
+def test_require_agentv_sdk_available_passes_when_sdk_present(tmp_path: Path) -> None:
+    runner = tmp_path / "scripts" / "run_agentv_eval.mjs"
+    runner.parent.mkdir(parents=True)
+    runner.write_text("// runner", encoding="utf-8")
+    sdk = tmp_path / "node_modules" / "@agentv" / "core" / "package.json"
+    sdk.parent.mkdir(parents=True)
+    sdk.write_text("{}", encoding="utf-8")
+
+    _mod._require_agentv_sdk_available(tmp_path)
+
+
 def test_cycle_handoff_routes_exhausted_bank_to_model_build_repair(
     tmp_path: Path,
 ) -> None:

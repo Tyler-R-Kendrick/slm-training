@@ -15,7 +15,11 @@ import subprocess
 import threading
 from typing import Any
 
-from slm_training.bridge_utils import readline_with_timeout, repo_root
+from slm_training.bridge_utils import (
+    readline_with_timeout,
+    repo_root,
+    sanitized_node_env,
+)
 
 _BRIDGE_DIR = repo_root() / "src" / "apps" / "design_md_bridge"
 _CLI = _BRIDGE_DIR / "cli.mjs"
@@ -73,6 +77,7 @@ def _ensure_repl() -> subprocess.Popen[str]:
         text=True,
         bufsize=1,
         cwd=str(_BRIDGE_DIR),
+        env=sanitized_node_env(),
     )
     return _REPL_PROC
 
@@ -82,14 +87,13 @@ def _invoke_once(payload: dict[str, Any], *, timeout: float = 30.0) -> dict[str,
         raise RuntimeError(
             "DESIGN.md bridge unavailable; run: cd src/apps/design_md_bridge && npm ci"
         )
-    env = os.environ.copy()
     proc = subprocess.run(
         ["node", str(_CLI)],
         input=json.dumps(payload).encode("utf-8"),
         capture_output=True,
         timeout=timeout,
         cwd=str(_BRIDGE_DIR),
-        env=env,
+        env=sanitized_node_env(),
         check=False,
     )
     raw = (proc.stdout or b"").decode("utf-8").strip()

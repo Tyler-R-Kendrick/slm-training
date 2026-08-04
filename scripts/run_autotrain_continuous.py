@@ -7575,6 +7575,21 @@ def _require_predecessor_actions(
         )
 
 
+def _require_agentv_sdk_available(cwd: Path) -> None:
+    """Fail before spending a training wall budget on an eval that can't publish.
+
+    A fresh checkout without ``npm ci`` only discovers the missing AgentV SDK
+    deep inside ``--ship-gates`` evaluation, after training already spent its
+    wall budget. Surface the same actionable error at cycle start instead.
+    """
+    from slm_training.evals.agentv import _agentv_runtime
+
+    try:
+        _agentv_runtime(cwd)
+    except RuntimeError as exc:
+        raise RuntimeError(f"cycle preflight: {exc}") from exc
+
+
 def _matrix(
     *,
     campaign_id: str,
@@ -8669,6 +8684,7 @@ def run_cycle(
         stage="sync-clean-status",
     ):
         raise RuntimeError("loop worktree is dirty; continuous requires a clean tree")
+    _require_agentv_sdk_available(cwd)
     upstream = _git(
         "rev-parse",
         "origin/main",

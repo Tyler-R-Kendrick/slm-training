@@ -2683,7 +2683,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v177",
+      "version": "v178",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2723,6 +2723,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v178",
+          "date": "2026-08-04",
+          "note": "run_cycle preflights the AgentV SDK (node_modules/@agentv/core) right after the clean-tree check via _require_agentv_sdk_available, so a fresh checkout without npm ci fails fast instead of burning a training wall budget before --ship-gates discovers it during eval"
+        },
         {
           "version": "v177",
           "date": "2026-08-04",
