@@ -436,6 +436,28 @@ requires deeper context-loading than a single bounded scheduled iteration
 safely affords in one pass, so a future iteration should budget for reading
 the relevant harness files first rather than rushing a training claim.
 
+## Seed=44 hang non-reproduction (2026-07-28, scheduled autotrain-loop session)
+
+The DSH5-10 replay-preference SFT/preference thread named above closed in the
+interim (SLM-418 final disposition,
+[iter-slm418-dsh5-10-disposition-20260727.md](iter-slm418-dsh5-10-disposition-20260727.md):
+`no_held_out_benefit_at_fixture_scale_retain_dag_only` — no training
+complexity added). This session instead picked up the other still-open
+thread named in
+[lever-seed-rescue-steps72-measured-results.md](lever-seed-rescue-steps72-measured-results.md)'s
+next steps: the seed=44 eval hang. Installed `py-spy`, retrained a fresh
+`seed=44, steps=72` checkpoint, and attempted 3 reproductions of the
+offset=1 hang with `py-spy` armed to capture a stack trace. **The hang did
+not reproduce** (31.2s / 31.7s wall, both landing near but not past the 30s
+decode timeout, vs. the original 170s/178s zero-stdout kills) — full
+write-up, including what this narrows (not what it fixes), in the finding
+doc's new
+["Non-reproduction attempt with `py-spy`"](decode-timeout-hang-seed44-steps72-finding.md#non-reproduction-attempt-with-py-spy-2026-07-28-scheduled-autotrain-loop-session)
+section. Still open: the `s36_seed42` cross-session discrepancy and the
+original hang itself (a non-reproduction is not a fix). Next queued
+`AP-007+` campaign arm remains the other actually-open thread for a future
+iteration.
+
 ## CPU thread-count determinism check (2026-07-28, scheduled autotrain-loop session)
 
 DSH5-10 closed for real in the interim (`iter-slm418-dsh5-10-disposition-20260727.md`,
