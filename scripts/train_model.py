@@ -433,6 +433,11 @@ def main(argv: list[str] | None = None) -> int:
         default=False,
     )
     parser.add_argument(
+        "--grammar-incremental-state",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    parser.add_argument(
         "--compact-active-canvas",
         action=argparse.BooleanOptionalAction,
         default=True,
@@ -1535,6 +1540,7 @@ def main(argv: list[str] | None = None) -> int:
         grammar_completion_bounds=args.grammar_completion_bounds,
         grammar_equivalence_cache=args.grammar_equivalence_cache,
         grammar_active_symbol_bitsets=args.grammar_active_symbol_bitsets,
+        grammar_incremental_state=args.grammar_incremental_state,
         compact_active_canvas=args.compact_active_canvas,
         diffusion_policies=tuple(
             value.strip()

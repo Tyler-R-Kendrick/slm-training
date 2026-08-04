@@ -775,6 +775,7 @@ def compile_commands(
             "grammar_completion_bounds": "grammar-completion-bounds",
             "grammar_equivalence_cache": "grammar-equivalence-cache",
             "grammar_active_symbol_bitsets": "grammar-active-symbol-bitsets",
+            "grammar_incremental_state": "grammar-incremental-state",
             "compact_active_canvas": "compact-active-canvas",
         }.items():
             value = getattr(knobs, field)

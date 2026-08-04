@@ -302,6 +302,7 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "grammar_completion_bounds",
         "grammar_equivalence_cache",
         "grammar_active_symbol_bitsets",
+        "grammar_incremental_state",
         "compact_active_canvas",
         "grammar_draft_window",
         "decode_timeout_seconds",
@@ -614,6 +615,10 @@ class ExperimentKnobs(StrictModel):
     grammar_completion_bounds: bool | None = None
     grammar_equivalence_cache: bool | None = None
     grammar_active_symbol_bitsets: bool | None = None
+    # P1 persistent-decode-state lever: disabling it measured 2.3-3.6x faster
+    # MaskGIT decode wall with byte-identical outputs (see
+    # docs/design/maskgit-persistent-grammar-state-20260803.md).
+    grammar_incremental_state: bool | None = None
     compact_active_canvas: bool | None = None
     grammar_draft_window: int | None = Field(default=None, ge=1, le=64)
     # Continuous measurement knobs (screening smoke-only + decode budget).
