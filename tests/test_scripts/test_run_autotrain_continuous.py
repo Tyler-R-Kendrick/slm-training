@@ -7541,6 +7541,29 @@ def test_fit_screening_decode_fits_arm_wall() -> None:
     assert fitted <= 12.0  # thrash-calibrated, not ship 24s
 
 
+def test_screening_decode_timeout_has_margin_over_observed_record_cap() -> None:
+    """Regression for continuous-loop-20260804-...-c2: both arms hit
+    decode_timeout_count=3/3 at exactly the 8000ms/record cap (evaluate_model
+    grants the timeout per-chunk, so screening_decode_timeout_seconds=8 gave
+    every record precisely 8.0s). Pin the recalibrated 10s budget and confirm
+    it stays inside the arm-wall ceiling _fit_screening_decode_timeout_seconds
+    would otherwise clamp to.
+    """
+    from slm_training.autoresearch.climb_policy import (
+        decode_timeout_seconds_for_role,
+        load_climb_policy,
+    )
+
+    policy = load_climb_policy()
+    configured = decode_timeout_seconds_for_role(policy, "screening")
+    observed_worst_record_cap_seconds = 8.0
+    assert configured == 10.0
+    assert configured > observed_worst_record_cap_seconds
+
+    fitted, _meta = _mod._fit_screening_decode_timeout_seconds(policy)
+    assert fitted == configured  # not clamped by the arm-wall budget
+
+
 def test_screening_matrix_uses_fitted_decode_and_thrash_steps() -> None:
     matrix = _mod._matrix(
         campaign_id="continuous-loop-timing-c1",

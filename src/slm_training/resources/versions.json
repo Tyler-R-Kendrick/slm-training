@@ -2698,7 +2698,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v178",
+      "version": "v179",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2739,6 +2739,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v179",
+          "date": "2026-08-04",
+          "note": "Recalibrate screening_decode_timeout_seconds 8->10 (policy.v1.json v4->v5): campaign continuous-loop-20260804-continuous-openui-schedu-6699f447-c2 hit decode_timeout_count=3/3 on both arms at the exact 8000ms/record cap (evaluate_model grants the timeout per-chunk, so effective screening budget was 8s x 3 records = 24.0s). The arm-wall budget (_fit_screening_decode_timeout_seconds ceiling, smoke_n=3) allows up to 14s/record without exceeding the symmetric screening arm wall; 10s keeps the existing pinned test ceilings (fitted<=12.0, knob<=10.0 in test_run_autotrain_continuous.py) while giving real headroom over the observed cap."
+        },
         {
           "version": "v178",
           "date": "2026-08-03",
