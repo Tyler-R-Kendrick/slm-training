@@ -11133,6 +11133,11 @@
       "history": [
         {
           "version": "v2",
+          "date": "2026-08-04",
+          "note": "no-bump: re-pin the src/slm_training/dsl/pack.py source identity in the DSH0-02 symbolic-surface evidence record after telemetry-only witness counters were added there, and document the re-validation (closed GraphQL fixture still admitted, language-contract + minimal-witness suites 27/27). Surface-policy behavior, acceptance criteria, and the dsl.symbolic_surface/v1 authority are unchanged."
+        },
+        {
+          "version": "v2",
           "date": "2026-08-03",
           "note": "no-bump: refresh the pinned language-contract test hash after adding compiler/stream deadline regression coverage; staged harness behavior is unchanged."
         },
