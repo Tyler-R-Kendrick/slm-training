@@ -18,6 +18,34 @@ confirmed `compiler_ms` was already an honest measurement for
 quadratic-in-length blowup, a pathological grammar shape), or genuine bounded
 cost from this decode mode's own design.
 
+**Related prior investigation of this same cost budget (added after review,
+not read during the original session):**
+[`decode-compiler-tree-lexer-rebuild-cost-finding.md`](decode-compiler-tree-lexer-rebuild-cost-finding.md)
+(PR #1172) and its fix
+[`decode-compiler-tree-lexer-cache-fix.md`](decode-compiler-tree-lexer-cache-fix.md)
+already found and closed a real, distinct defect in this same call chain:
+`OpenUIIncrementalEngine._lex_tokens` was rebuilding the Lark lexer/scanner
+from scratch on every `_sync` call (thousands of times for one
+`build_completion_forest` query), which the cache fix eliminated
+(`_build_scanner` calls: thousands-per-query → 0 after process warm-up,
+~2-2.1x wall-time win on the finding's own micro-benchmark). That fix's own
+"Scope note" left one thing explicitly open: `_incremental_sync` still
+re-lexes the *entire* current prefix (not just newly-appended text) through
+the now-cached lexer object, and flagged "further wall-time headroom likely
+remains there for long prefixes" as an unmeasured next step. This session's
+depth-scaling probe (§3 below) is relevant new evidence on exactly that open
+question: per-step `compiler_ms` stays flat across an 8x growth in prefix
+depth, which is consistent with re-lexing a already-short-in-practice prefix
+through a cached, pre-compiled scanner being cheap in absolute terms (as
+opposed to the earlier, now-fixed defect where the *scanner itself* was
+being rebuilt from scratch each time) — i.e. the lexer-cache fix likely
+already closed most of the practically-reachable headroom from full-prefix
+re-lexing, and the branch-point witness search this session profiles is the
+dominant remaining cost. This session did not re-run the earlier finding's
+own before/after benchmark to confirm that inference directly; it is offered
+as the most likely reconciliation, not an independently re-verified
+measurement.
+
 ## Constraint on this session's reproduction
 
 The campaign checkpoints referenced by the gd6j83-c2/c3 docs

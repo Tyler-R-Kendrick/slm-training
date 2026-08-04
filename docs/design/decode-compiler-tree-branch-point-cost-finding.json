@@ -5,6 +5,13 @@
   "is_fix": false,
   "regression_test_added": true,
   "task": "improve-openui-harnesses follow-up routed from docs/design/continuous-openui-local-gd6j83-c2-dual-arm-decode-timeout.md and its c3 retry: determine whether the ~23s/record compiler-tree decode cost for seed-100002 wf_smoke_v2 smoke records is a real algorithmic bug (missing memoization, quadratic-in-length blowup, pathological grammar shape) or legitimate bounded cost, after the metering-gap fix (docs/design/compiler-tree-forced-closure-decode-metering-gap.md) confirmed compiler_ms was already an honest measurement for compiler_decode_mode=tree.",
+  "related_prior_findings": {
+    "note": "Added after review, not read during the original investigation session. decode-compiler-tree-lexer-rebuild-cost-finding.md (PR #1172) and its fix decode-compiler-tree-lexer-cache-fix.md already closed a distinct, real defect in this same call chain (OpenUIIncrementalEngine._lex_tokens rebuilding the Lark lexer/scanner from scratch on every _sync call). That fix's own scope note left one item open: _incremental_sync still re-lexes the entire current prefix (not just new text) through the now-cached lexer, with unmeasured headroom for long prefixes. This session's flat-per-step-cost-vs-depth result is consistent with that remaining re-lex being cheap in absolute terms now that the scanner itself is cached, making the branch-point witness search this session profiles the dominant remaining cost -- offered as the most likely reconciliation, not independently re-verified against the earlier finding's own benchmark.",
+    "paths": [
+      "docs/design/decode-compiler-tree-lexer-rebuild-cost-finding.md",
+      "docs/design/decode-compiler-tree-lexer-cache-fix.md"
+    ]
+  },
   "workspace_constraint": {
     "claim": "The gd6j83-c2/c3 campaign checkpoints (frozen manifests becbf08df082ca96a0f5b686cbd81d21130ca5be60637b95ac8601945f2adf7e / 6953396f2355c70665437a02e075d3f8a67d146b7875e36a0b8b1a6ed2f36597) are not present in this workspace.",
     "evidence": "No outputs/ directory exists at all in this worktree (no outputs/autoresearch/, outputs/runs/). The identical frozen arm cannot be replayed here; this session instead exercises the same production code paths against real wf_smoke_v2 fixture content with an untrained probe model."

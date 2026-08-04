@@ -394,7 +394,7 @@ def test_compiler_tree_per_step_cost_does_not_grow_with_prefix_depth() -> None:
     (missing memoization / recomputation growing with document length) or
     legitimate bounded-per-branch-point cost. Direct profiling (cProfile plus
     a prefix-depth scan; see
-    docs/design/compiler-tree-decode-branch-point-cost-not-position-dependent.md)
+    docs/design/decode-compiler-tree-branch-point-cost-finding.md)
     found the completion-forest/CompletionSession machinery's own cost is
     driven by *branch-point count* (states with several live candidate
     paths), each bounded by ``node_budget``/``backtrack_limit``, and does NOT
