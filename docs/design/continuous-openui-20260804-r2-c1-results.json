@@ -1,0 +1,40 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local-r2",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local--84ea77f4-c1",
+  "cycle_index": 1,
+  "source_commit": "0abaf07f",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "cycle_role": "screening",
+  "cycle_intent": "screening",
+  "recipe": {
+    "device": "cpu",
+    "steps": 21,
+    "batch_size": 2,
+    "seed": 100001,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2"
+  },
+  "arms": {
+    "control": {
+      "status": "measurement_complete",
+      "levers": {"grammar_completion_bounds": false},
+      "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.0575, "binder_reference_f1": 0.6333333333333333, "latency_ms_p50": 5061.57}
+    },
+    "bounds": {
+      "status": "measurement_complete",
+      "levers": {"grammar_completion_bounds": true},
+      "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.0575, "binder_reference_f1": 0.6333333333333333, "latency_ms_p50": 4243.04}
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "conclusion": "First cycle of a fresh loop-id (continuous-openui-local-r2) run directly against current main (0abaf07f), after PR #1322 (this session's prior continuous-openui-local lineage, campaigns c1-c4) was closed as superseded by #1429/#1425 -- a better version of the same AgentV NODE_OPTIONS self-heal, plus decode-timeout evidence, already landed on main from a concurrent loop instance (loop_id continuous-openui-202608, id 39ee9cf7). This cycle confirms both fixes hold: no NODE_OPTIONS crash and no decode timeout. grammar_completion_bounds is again an exact structural_similarity tie with the matched control (0.0575, parse 1.0, meaningful 0.0, binder F1 0.6333). Latency this run went the OPPOSITE direction from the PR #1322 c1/c3 findings -- bounds is 16.2% FASTER here (4243.04 vs 5061.57 ms p50) versus ~5.7% SLOWER previously -- and absolute latencies are ~3x higher than the earlier PR #1322 runs (4200-5000ms vs 1500-1600ms), consistent with this being CPU-sandbox timing noise rather than an attributable lever effect, matching the other loop instance's own conclusion that retry-to-retry latency deltas on this fixture are not attributable.",
+  "next_priorities": [
+    "Do not treat this run's bounds latency win as a real effect; it reverses sign from the prior PR #1322 measurement on the same lever, confirming latency is dominated by sandbox timing noise at this fixture scale",
+    "Test the size-matched component-plan quality hypothesis next per the driver's ranked priorities",
+    "Do not promote or ship either checkpoint; both remain screening-scale fixture artifacts"
+  ],
+  "recorded_at": "2026-08-04T21:27:34Z"
+}
