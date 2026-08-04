@@ -1,0 +1,69 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-scheduled-zflz88",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-schedu-486913c8-c3",
+  "cycle_index": 3,
+  "source_commit": "2ee5621a5945aa3c88dca21794ec096d101579a0",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "cycle_intent": "retry_measurement",
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3.0,
+    "ship_gates": true,
+    "candidate_lever": "component_plan",
+    "trainable_params": {
+      "control": 1755764,
+      "component_plan": 1755764
+    }
+  },
+  "arms": {
+    "c3-control": {
+      "status": "measurement_incomplete_decode_timeout",
+      "smoke": {
+        "n": 3,
+        "decode_timeout_count": 3,
+        "compiler_ms_mean_partial": 23285.4,
+        "tokens_emitted_mean_partial": 54,
+        "forwards_count_mean_partial": 11
+      }
+    },
+    "c3-component-plan": {
+      "status": "measurement_incomplete_decode_timeout",
+      "smoke": {
+        "n": 3,
+        "decode_timeout_count": 3,
+        "compiler_ms_mean_partial": 23227.2,
+        "tokens_emitted_mean_partial": 75,
+        "forwards_count_mean_partial": 14
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "measurement_incomplete:c20260804-continuous-openui-schedu-486913c8-c3-control:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "measurement_incomplete:c20260804-continuous-openui-schedu-486913c8-c3-component-plan:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "harness_failure:c20260804-continuous-openui-schedu-486913c8-c3-control:experiment_failed",
+      "harness_failure:c20260804-continuous-openui-schedu-486913c8-c3-component-plan:experiment_failed",
+      "fixture_insufficient_n:c20260804-continuous-openui-schedu-486913c8-c3-control",
+      "fixture_insufficient_n:c20260804-continuous-openui-schedu-486913c8-c3-component-plan",
+      "primary_metric_unavailable",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "conclusion": "Continuous-openui-scheduled loop, cycle 3 (session zflz88): identical retry of the frozen c2 arms (1,755,764-param control/component-plan) reproduces the same decode_timeout_count=3/3 on both arms with compiler_ms_mean landing at 23.2-23.3s again -- a second consecutive occurrence of the same environment-speed blocker (rank 2 of 3 before the loop law's repeated-blocker threshold). This confirms the c2 diagnosis: this container's current CPU headroom cannot fit a 1,755,764-param train(20 steps)+eval(3 records) inside the fixed 180s MAX_RUN_MINUTES cap today, independent of which arm (control or component-plan) runs. Session zflz88 stops retrying this specific size-matched pair and pivots any further cycles this session to a distinct, smaller-capacity or non-decode-bound hypothesis so the session makes forward model progress instead of exhausting the loop on a resource ceiling a code change cannot fix.",
+  "next_priorities": [
+    "Do not retry the identical 1,755,764-param component-plan/control pair a third time in this session; a future session on a less-loaded container is the right venue",
+    "Screen a distinct, smaller-capacity (<=1.6M param) hypothesis for any remaining cycles this session so real model signal is produced",
+    "If a future session reproduces decode_timeout_count=3/3 on size-matched (>1.6M param) arms a third independent time under unchanged code, escalate to improve-openui-harnesses for a genuine decode-budget allocation fix (e.g. per-arm wall-time reservation proportional to param count) rather than treating it as one-off environment noise again"
+  ],
+  "recorded_at": "2026-08-04T11:43:58Z"
+}
