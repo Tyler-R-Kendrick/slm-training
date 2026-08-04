@@ -136,6 +136,8 @@ class DecodeStats:
     completion_parser_forks: int = 0
     completion_candidate_engine_allocations: int = 0
     completion_scope_reference_scans_avoided: int = 0
+    completion_branch_memo_hits: int = 0
+    completion_branch_memo_misses: int = 0
     completion_shared_domain_hits: int = 0
     completion_shared_domain_misses: int = 0
     # Incremental DFA engine lifetime counters (engine.py `stats`), folded once
@@ -316,6 +318,8 @@ _COMPLETION_COUNTER_FIELDS = {
     "parser_forks": "completion_parser_forks",
     "candidate_engine_allocations": "completion_candidate_engine_allocations",
     "scope_reference_scans_avoided": "completion_scope_reference_scans_avoided",
+    "branch_memo_hits": "completion_branch_memo_hits",
+    "branch_memo_misses": "completion_branch_memo_misses",
 }
 
 
@@ -553,6 +557,8 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "completion_parser_forks",
         "completion_candidate_engine_allocations",
         "completion_scope_reference_scans_avoided",
+        "completion_branch_memo_hits",
+        "completion_branch_memo_misses",
         "completion_shared_domain_hits",
         "completion_shared_domain_misses",
         "dfa_full_syncs",

@@ -1658,6 +1658,7 @@ def _build_openui_completion_forest_direct(
     explain: bool = False,
     semantic_state: Any | None = None,
     scan_counter: Any | None = None,
+    branch_memo: Any | None = None,
 ) -> CompletionForest:
     """Enumerate every mapped, globally extendable action at ``prefix_ids``.
 
@@ -2555,6 +2556,19 @@ def _build_openui_completion_forest_direct(
         if enum_sequences is not None
         else tuple((candidate,) for candidate in sorted(candidates - specials))
     )
+    # L2 branch memo: the branch walk below is a pure function of the parent
+    # engine's control key + candidate sequence + initial literal-frame flag +
+    # path cap (feed_token_id / advance_checked / next_terminals /
+    # force_next_token_id read only the parser).  Semantic labeling
+    # (_decision_kind) and evidence rows are reconstructed live per state.
+    memo_control_key = None
+    memo_frame_open = None
+    if branch_memo is not None and engine is not None:
+        try:
+            memo_control_key = engine.parser_state_key()
+            memo_frame_open = bool(_literal_frame_open_view())
+        except Exception:  # noqa: BLE001 — memo is an accelerator only
+            memo_control_key = None
     for sequence in candidate_sequences:
         if not sequence:
             continue
@@ -2562,6 +2576,66 @@ def _build_openui_completion_forest_direct(
         if candidate == int(tokenizer.eos_id):
             paths.append(CompletionPath((candidate,), "eos"))
             continue
+        memo_key = None
+        if memo_control_key is not None:
+            memo_key = (
+                memo_control_key,
+                tuple(int(token_id) for token_id in sequence),
+                memo_frame_open,
+                max_path_tokens,
+            )
+            hit = branch_memo.get(memo_key)
+            if hit is not None:
+                if scan_counter is not None:
+                    scan_counter["branch_memo_hits"] = (
+                        scan_counter.get("branch_memo_hits", 0) + 1
+                    )
+                verdict, memo_drafted = hit
+                if verdict == "prefix_rejected":
+                    _record_one(
+                        ConstraintStage.GRAMMAR,
+                        "branch_prefix_rejected",
+                        candidate,
+                        admitted=False,
+                    )
+                    continue
+                if verdict == "unreachable":
+                    _record_one(
+                        ConstraintStage.GRAMMAR,
+                        "branch_unreachable",
+                        candidate,
+                        admitted=False,
+                    )
+                    continue
+                paths.append(
+                    CompletionPath(
+                        tuple(memo_drafted),
+                        _decision_kind(
+                            tokenizer,
+                            candidate,
+                            prefix_ids,
+                            tuple(sorted(str(term) for term in terminals)),
+                            engine,
+                            schema,
+                            semantic_state=sstate,
+                        ),
+                    )
+                )
+                if evidence is not None:
+                    evidence.append(
+                        ConstraintEvidence(
+                            candidate,
+                            tuple(memo_drafted),
+                            ConstraintStage.GRAMMAR,
+                            True,
+                            "admitted",
+                        )
+                    )
+                continue
+            if scan_counter is not None:
+                scan_counter["branch_memo_misses"] = (
+                    scan_counter.get("branch_memo_misses", 0) + 1
+                )
         # Structural reuse: fork the already-synced parent engine instead of
         # re-lexing+re-feeding the whole prefix per candidate.  ``set_prefix``
         # below is then a same-text no-op, so the branch behaves exactly like
@@ -2570,6 +2644,8 @@ def _build_openui_completion_forest_direct(
         branch = engine.copy()
         if not ids_synced and not branch.set_prefix(prefix_text):
             _record_one(ConstraintStage.GRAMMAR, "branch_prefix_rejected", candidate, admitted=False)
+            if memo_key is not None:
+                branch_memo[memo_key] = ("prefix_rejected", None)
             continue
         branch_text = prefix_text
         admitted = True
@@ -2604,6 +2680,8 @@ def _build_openui_completion_forest_direct(
         # terminal, which is the exact CFG reachability guarantee we need.
         if not admitted or not branch.next_terminals():
             _record_one(ConstraintStage.GRAMMAR, "branch_unreachable", candidate, admitted=False)
+            if memo_key is not None:
+                branch_memo[memo_key] = ("unreachable", None)
             continue
         drafted = [int(token_id) for token_id in sequence]
         # The fork + per-sequence ``advance_checked`` above left ``branch``
@@ -2637,6 +2715,8 @@ def _build_openui_completion_forest_direct(
                 break
             branch_text += piece
             branch_synced = True
+        if memo_key is not None:
+            branch_memo[memo_key] = ("ok", tuple(drafted))
         paths.append(
             CompletionPath(
                 tuple(drafted),
