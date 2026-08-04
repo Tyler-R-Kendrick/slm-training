@@ -2734,7 +2734,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v182",
+      "version": "v183",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2775,6 +2775,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v183",
+          "note": "raise screening decode budget after c18 dual-arm timeouts",
+          "date": "2026-08-04"
+        },
         {
           "version": "v182",
           "note": "recalibrate screening thrash decode budget (18s) after c5 component-plan candidate-only timeouts",

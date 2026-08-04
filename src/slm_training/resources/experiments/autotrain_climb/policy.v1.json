@@ -37,7 +37,7 @@
   "measurement": {
     "screening_stage_wall_minutes": 3,
     "promotion_stage_wall_minutes": 3,
-    "screening_decode_timeout_seconds": 18,
+    "screening_decode_timeout_seconds": 24,
     "promotion_decode_timeout_seconds": 24,
     "screening_smoke_n": 3,
     "max_consecutive_frozen_replays": 1,
@@ -50,12 +50,12 @@
     ],
     "thrash_timing": {
       "schema": "thrash_timing_policy/v1",
-      "description": "Pareto-calibrated thrash budgets: timeouts \u2248 p95(work)+margin. Recalibrated 2026-08-04 after continuous-openui-local c5 component-plan candidate-only decode timeouts at 12s (control p95\u224810.8s, candidate hit ceiling on 2/3 docs). Raised screening decode budget by lowering train-floor/overhead so n\u00d7decode still fits the 70s arm wall.",
+      "description": "Pareto-calibrated thrash budgets: timeouts \u2248 p95(work)+margin. Recalibrated 2026-08-04 after continuous-openui-local c5 component-plan candidate-only decode timeouts at 12s (control p95\u224810.8s, candidate hit ceiling on 2/3 docs). Raised screening decode budget by lowering train-floor/overhead so n\u00d7decode still fits the 70s arm wall. Recalibrated again 2026-08-04 after c18 dual-arm decode timeouts (both arms timeout_count=1).",
       "incomplete_rate_high": 0.15,
       "incomplete_rate_low": 0.05,
       "p95_margin": 0.15,
-      "min_train_floor_seconds": 12,
-      "eval_overhead_seconds": 6,
+      "min_train_floor_seconds": 8,
+      "eval_overhead_seconds": 5,
       "screening_thrash_steps": 40
     }
   },
