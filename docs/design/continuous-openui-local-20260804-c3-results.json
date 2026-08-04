@@ -1,0 +1,53 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c3",
+  "cycle_index": 3,
+  "cycle_intent": "screening",
+  "source_commit": "eba6db3044076285581b80cfe5294a2ecbcee8a1",
+  "integration_commit": "675c29db",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "honest_slot_contract": true,
+    "slot_contract_constrained_decode": true,
+    "compiler_decode_mode": "off",
+    "hypothesis": "component-plan-decode weighting improves structural_similarity vs the size-matched control"
+  },
+  "arms": {
+    "c3-control": {
+      "status": "complete_gate_reject",
+      "structural_similarity": 0.23083333333333333,
+      "meaningful_program_rate": 0.3333333333333333,
+      "parse_rate": 1.0,
+      "binder_reference_f1": 0.7333333333333334,
+      "latency_ms_p50": 12685.96,
+      "trainable_params": 1755764
+    },
+    "c3-component-plan": {
+      "status": "complete_gate_reject",
+      "structural_similarity": 0.1725,
+      "meaningful_program_rate": 0.0,
+      "parse_rate": 1.0,
+      "binder_reference_f1": 0.6333333333333333,
+      "latency_ms_p50": 11866.74,
+      "trainable_params": 1755764
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": -0.05833333333333335,
+  "conclusion": "The component-plan-decode candidate regresses both the primary metric (structural_similarity 0.2308->0.1725) and a guarded non-regression metric (binder_reference_f1 0.7333->0.6333, meaningful_program_rate 0.333->0.0) against its size-matched control (both 1,755,764 trainable params). Per sdlc autotrain-iteration-delivery this is non-positive (primary metric moved in the wrong direction, plus fixture insufficient_n on smoke n=3) -- no stacked PR opens for this cycle.",
+  "repair": null,
+  "known_debt_discovered": null,
+  "next_priorities": [
+    "model: the completed non-positive arm is exhausted; test the distinct size-matched 'component-edge' quality hypothesis next (rank 1, confidence 0.90)",
+    "evaluation: keep the matched control as the size-matched baseline every cycle (rank 2, confidence 0.70)"
+  ],
+  "recorded_at": "2026-08-04T07:50:00+00:00"
+}
