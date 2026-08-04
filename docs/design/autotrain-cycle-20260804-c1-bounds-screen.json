@@ -1,0 +1,99 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "cycle": 1,
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c1",
+  "experiment": "bounds",
+  "claim_class": "fixture_screen",
+  "status": "rejected",
+  "measurement_complete": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "backend": "scratch TwoTower",
+    "matrix_set": "continuous-openui-local",
+    "train_version": "wf_smoke_v2",
+    "honesty_mode": "grammar_constrained_strict_compiler_tree",
+    "suite_n": {"smoke": 3, "held_out": 0, "adversarial": 0, "ood": 0, "rico_held": 0}
+  },
+  "arms": {
+    "control": {
+      "id": "c20260804-continuous-openui-local-8c0b60dd-c1-control",
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "structural_similarity": 0.057499999999999996,
+      "binder_reference_f1": 0.6333333333333333,
+      "placeholder_fidelity": 0.5277777777777778,
+      "latency_ms_p50": 4726.59,
+      "checkpoint_sha256": "d2f2dc4b2d43876ad4ce3751aa64d271cf7818b76201214a6ce2f8f8c557e44b",
+      "exit": 0
+    },
+    "candidate": {
+      "id": "c20260804-continuous-openui-local-8c0b60dd-c1-bounds",
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "structural_similarity": 0.057499999999999996,
+      "binder_reference_f1": 0.6333333333333333,
+      "placeholder_fidelity": 0.5277777777777778,
+      "latency_ms_p50": 4614.58,
+      "checkpoint_sha256": "eb81529a4473ef2be232e86958fcb74ed110f590541e19a7b8efba025b224a2f",
+      "exit": 0
+    }
+  },
+  "gates": {
+    "pass": false,
+    "failures": [
+      "smoke:insufficient_n",
+      "smoke:meaningful_program_rate",
+      "smoke:structural_similarity",
+      "smoke:component_type_recall",
+      "smoke:ast_beq_rate",
+      "smoke:canonical_beq_rate",
+      "smoke:reward_score",
+      "held_out:missing_suite",
+      "adversarial:missing_suite",
+      "ood:missing_suite",
+      "rico_held:missing_suite"
+    ]
+  },
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c1-control",
+      "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c1-bounds",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.057499999999999996 candidate=0.057499999999999996 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "signals": {
+    "attribution": "matched pair; quality null; candidate p50 -2.37% (within fixture noise)",
+    "prevention": ["fixture n=3", "no held-out/OOD/RICO suites", "meaningful rate 0"],
+    "next_priorities": [
+      "component-plan quality arm with exact matched control",
+      "retain the control every cycle",
+      "rotate thrash recommendation across the lever bank (not bounds-only)"
+    ]
+  },
+  "checkpoint_paths": [
+    "runs/c20260804-continuous-openui-local-8c0b60dd-c1-bounds/checkpoints/last.pt",
+    "runs/c20260804-continuous-openui-local-8c0b60dd-c1-control/checkpoints/last.pt"
+  ],
+  "checkpoint_role": "local_fixture_screen_not_promotable",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "eba6db3044076285581b80cfe5294a2ecbcee8a1",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v84",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v23",
+      "model.twotower": "v308"
+    },
+    "stamped_at": "2026-08-04T04:31:59.577235+00:00"
+  }
+}
