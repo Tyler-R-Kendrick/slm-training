@@ -47,14 +47,40 @@ this session's first occurrence, not three consecutive identical failures,
 so the loop continues with a different, non-decode-timeout-affected
 hypothesis next rather than stopping.
 
+## New diagnostic: this occurrence is budget-bound, not (only) flaky
+
+`_fit_screening_decode_timeout_seconds`
+(`scripts/run_autotrain_continuous.py:261`) *clamps down* the configured
+screening decode timeout to fit `MAX_RUN_MINUTES` (`= 3` in
+`src/slm_training/levers.py`); it never raises the timeout for a
+slower-to-decode hypothesis. This cycle's own telemetry shows
+`component-edge`'s `compiler_ms_mean` at **~23.3-23.4s/record** — roughly
+**3x** `component-plan`'s ~8.7-9.0s in cycle 3, and well past the ~8s clamp
+this wall budget derives. The function's own docstring already names the
+fix category: *"if this clamp always binds, either the arm share model or
+the thrash recipe (steps/n) needs recalibration — not silent wall++."*
+Raising the timeout would just mask the real signal (this hypothesis is
+structurally more expensive to decode) and was correctly not attempted here.
+
+Recalibrating the arm share model / thrash recipe for decode-heavy
+hypotheses like `component-edge` is a real, scoped harness change, but one
+that needs its own investigation into fairness across arms (a blanket
+timeout bump would silently advantage slow arms over the `MAX_RUN_MINUTES`
+cap) plus a regression test — out of scope to improvise inside a general
+continuous cycle, consistent with why this blocker (in its seed-`100005`
+form) was left for a dedicated session twice already.
+
 ## Next priorities
 
-1. Route a **dedicated** `improve-openui-harnesses` session to profile
-   decode wall-time under `--decode-timeout-seconds 8.0` on CPU-only sandbox
-   hardware across both occurrences (seed `100005` `-confirm` arm; this
-   session's `component-edge`/`control` pair) before attempting a code fix.
+1. Route a **dedicated** `improve-openui-harnesses` session to recalibrate
+   the screening arm share model / thrash recipe for decode-heavy hypotheses
+   (`component-edge` measured here; profile the seed-`100005` `-confirm` arm
+   too) so per-arm decode budget scales with measured compile cost instead of
+   a single fixed clamp — with a regression test pinning the new allocation.
 2. Do not retry the identical `component-edge`/`control` frozen arm pair
-   speculatively; continue with a fresh hypothesis this loop.
+   speculatively, and do not raise `--decode-timeout-seconds` as a point fix;
+   continue with a fresh hypothesis this loop once the predecessor gate is
+   repaired.
 
 Machine evidence:
 [`continuous-openui-local-io35qa-c4-results.json`](continuous-openui-local-io35qa-c4-results.json).
