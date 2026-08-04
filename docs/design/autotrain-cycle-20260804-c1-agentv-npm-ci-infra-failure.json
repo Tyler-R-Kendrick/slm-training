@@ -1,0 +1,77 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c1",
+  "cycle_index": 1,
+  "evidence_class": "fixture",
+  "decision": "infrastructure_failure_not_a_model_result",
+  "scoreable": false,
+  "new_checkpoint_created": true,
+  "upstream_commit": "eba6db3044076285581b80cfe5294a2ecbcee8a1",
+  "integration_commit": "eba6db3044076285581b80cfe5294a2ecbcee8a1",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "experiment_id": "c20260804-continuous-openui-local-8c0b60dd-c1-control",
+      "trainable_params": 1608962,
+      "steps": 21,
+      "last_loss": 22.621936798095703,
+      "train_wall_seconds": 4.249680883999986,
+      "checkpoint_sha256": "d2f2dc4b2d43876ad4ce3751aa64d271cf7818b76201214a6ce2f8f8c557e44b",
+      "status": "trained_eval_failed",
+      "failure_stage": "evaluate_model",
+      "failure_reason": "RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER",
+      "smoke": null
+    },
+    {
+      "experiment_id": "c20260804-continuous-openui-local-8c0b60dd-c1-bounds",
+      "trainable_params": 1608962,
+      "steps": 21,
+      "last_loss": 22.621936798095703,
+      "train_wall_seconds": 4.249680883999986,
+      "checkpoint_sha256": "eb81529a4473ef2be232e86958fcb74ed110f590541e19a7b8efba025b224a2",
+      "status": "trained_eval_failed",
+      "failure_stage": "evaluate_model",
+      "failure_reason": "RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER",
+      "smoke": null
+    }
+  ],
+  "comparison": {
+    "attributable": false
+  },
+  "agentv": {
+    "bundles_complete": false,
+    "execution_errors": 2,
+    "ship_gates_pass": false
+  },
+  "checkpoint_policy": "local_explicit_no_sync_not_reusable_not_promoted_not_ship_eval_incomplete",
+  "lean": "not_applicable:screening",
+  "harness_repair": {
+    "harness_family": "model_build",
+    "frozen_manifest_sha256": "47de63eca7855f4451ff8f6cf5decf10a9eb0ebd0976fd6c1dfe9f3682747920",
+    "diagnosis": "This sandbox's checkout is freshly cloned each session; npm ci had never been run at the repo root or in either bridge subdir, so node_modules/@agentv/core did not exist and evaluate_model.py --ship-gates crashed in publish_model_evaluation before producing a scoreboard for either arm. This is the same failure class already documented for cycle c2 on 2026-08-03 (docs/design/autotrain-cycle-c2-agentv-missing-infra-failure.md); the fix committed then (scripts/setup_dev_env.sh running npm ci, and bridge_utils.sanitized_node_env() wired into lang_core.py and evals/agentv.py) did not prevent a *later* fresh container from hitting the identical bare-checkout gap, because nothing in the continuous driver enforced the SDK precondition before starting a cycle. Investigating the same gap surfaced a second, independent bug: src/slm_training/dsl/design_md/__init__.py's node bridge (DESIGN.md lint, used by build_train_data's default-DESIGN.md attachment) never adopted sanitized_node_env() when the sibling lang_core/graphql-js/agentv bridges did, so a host NODE_OPTIONS value this Node build rejects (--import tsx) broke it silently (8 tests failing in tests/test_scripts/test_build_train_data_cli.py, tests/test_scripts/test_slm_cli.py before the fix).",
+    "fix_commits": [
+      "b82fdf7133c273182809e5981a1dc7eea7f15abc"
+    ],
+    "fix_summary": "Added scripts.run_autotrain_continuous._require_agentv_sdk_available as a cycle-start preflight (called from run_cycle right after the clean-tree check) so a missing AgentV SDK fails in under a second instead of after training already spent its wall budget. Brought src/slm_training/dsl/design_md/__init__.py's node subprocess spawns (REPL and one-shot invoke) in line with the lang_core/graphql-js/agentv bridges by using bridge_utils.sanitized_node_env() instead of a raw os.environ.copy(). Environment setup itself (npm ci at repo root, src/apps/openui_bridge, src/apps/design_md_bridge) was re-run per scripts/setup_dev_env.sh / README Quick start for this session's fresh checkout; that step is not new code, it is the documented precondition the preflight now enforces automatically.",
+    "regression_tests": [
+      "tests/test_scripts/test_run_autotrain_continuous.py::test_require_agentv_sdk_available_fails_fast_without_node_modules",
+      "tests/test_scripts/test_run_autotrain_continuous.py::test_require_agentv_sdk_available_passes_when_sdk_present"
+    ]
+  },
+  "version_stamp_bump": {
+    "component": "harness.autoresearch.experiment_campaign",
+    "from": "v177",
+    "to": "v178"
+  },
+  "next_priority": "replay identical frozen arm (retry_measurement, manifest 47de63eca7855f4451ff8f6cf5decf10a9eb0ebd0976fd6c1dfe9f3682747920) now that the AgentV SDK is installed and preflighted",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "eba6db3044076285581b80cfe5294a2ecbcee8a1",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.train": "v42",
+      "harness.experiment_feature_flags": "v4"
+    },
+    "stamped_at": "2026-08-04T05:32:19.910686+00:00"
+  }
+}
