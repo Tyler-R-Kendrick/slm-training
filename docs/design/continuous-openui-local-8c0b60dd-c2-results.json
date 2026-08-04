@@ -1,0 +1,67 @@
+{
+  "schema": "autotrain_continuous_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 2,
+  "source_commit": "36719aeb137074166169b3361615e81a0cfdd367",
+  "integration_commit": "3911ebce50087421aeee61a7aee011c73e09e610",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "retry_measurement",
+  "replay_of_campaign": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c1",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true
+  },
+  "arms": {
+    "control": {
+      "id": "c20260804-continuous-openui-local-8c0b60dd-c2-control",
+      "trainable_params": 1608962,
+      "seed": 100001,
+      "structural_similarity": 0.057499999999999996,
+      "meaningful_program_rate": 0.0,
+      "binder_reference_f1": 0.6333333333333333,
+      "latency_ms_p50": 5331.89,
+      "gates_pass": false
+    },
+    "bounds": {
+      "id": "c20260804-continuous-openui-local-8c0b60dd-c2-bounds",
+      "trainable_params": 1608962,
+      "seed": 100001,
+      "structural_similarity": 0.057499999999999996,
+      "meaningful_program_rate": 0.0,
+      "binder_reference_f1": 0.6333333333333333,
+      "latency_ms_p50": 6016.32,
+      "gates_pass": false
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c2-control",
+      "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c2-bounds",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.057499999999999996 candidate=0.057499999999999996 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "infrastructure_note": "The AgentV bootstrap repair (commit 26083c60713a40653033a98659fdd52be65c518d) unblocked this replay: both arms now produce a complete scoreboard.json and honest gate rejection instead of harness_failure/missing_scoreboard.",
+  "conclusion": "replay_confirmed_null_delta",
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "model",
+      "hypothesis": "Test the distinct size-matched 'component-plan' quality hypothesis next.",
+      "action": "experiment_next",
+      "experiment_id": "c20260804-continuous-openui-local-8c0b60dd-c2-component-plan"
+    }
+  ],
+  "recorded_at": "2026-08-04T16:43:10Z"
+}
