@@ -7885,6 +7885,11 @@
         {
           "version": "v3",
           "date": "2026-08-04",
+          "note": "no-bump: record continuous-openui-scheduled c2 (session zflz88) decode-timeout infra-blocked component-plan screen (measurement incomplete, no code fix forced) in the model card; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-04",
           "note": "no-bump: record continuous-openui-scheduled c1 (session zflz88) null-delta bounds screen scratch checkpoints in the model card; SLM-228 behavior is unchanged."
         },
         {
