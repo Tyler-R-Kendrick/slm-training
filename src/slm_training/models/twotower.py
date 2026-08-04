@@ -2102,6 +2102,25 @@ class TwoTowerModel(nn.Module):
             for _ in range(batch_size)
         ]
 
+    def _note_admit_canvas(self, trial: list[int]) -> None:
+        """HX1 advisory: count admit probes whose canvas has committed tokens
+        after the first hole (the span admit_fill cannot validate)."""
+        stats = get_active_stats()
+        if stats is None:
+            return
+        stats.admit_probe_canvases += 1
+        mask = int(self.tokenizer.mask_id)
+        try:
+            first_mask = trial.index(mask)
+        except ValueError:
+            return
+        pad = int(self.tokenizer.pad_id)
+        for token_id in trial[first_mask + 1 :]:
+            value = int(token_id)
+            if value != pad and value != mask:
+                stats.admit_probe_committed_suffix += 1
+                return
+
     @staticmethod
     def _fold_state_engine_stats(states: list | None) -> None:
         """Fold each state engine's lifetime counters into the active stats.
@@ -14465,6 +14484,7 @@ class TwoTowerModel(nn.Module):
 
                             engine = engine_for_dsl(active_dsl())
                             if engine is not None:
+                                self._note_admit_canvas(trial)
                                 admitted = bool(
                                     admit_fill(engine, self.tokenizer, trial)
                                 )
@@ -14685,6 +14705,7 @@ class TwoTowerModel(nn.Module):
                     if admit_on and engine is not None and b == 0:
                         trial = ids[0].tolist()
                         trial[t] = candidate
+                        self._note_admit_canvas(trial)
                         try:
                             if not admit_fill(engine, self.tokenizer, trial):
                                 if asap is not None:
