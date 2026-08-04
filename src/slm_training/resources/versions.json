@@ -1365,6 +1365,11 @@
         {
           "version": "v12",
           "date": "2026-08-04",
+          "note": "no-bump: per-query witness tally in dsl/pack.py feeding the false-singleton counter; telemetry only, decode behavior unchanged (witness counters reproduce the merged baseline 2180/2104/88 with byte-identical outputs)."
+        },
+        {
+          "version": "v12",
+          "date": "2026-08-04",
           "note": "no-bump: add the _note_witness advisory counter helper and its call sites in dsl/pack.py, splitting the previously collapsed UNKNOWN vs UNSUPPORTED witness-prune verdicts. Telemetry only - the drop behavior, candidate sets, and emitted domains are unchanged (measured byte-identical on the profile fixture)."
         },
         {
@@ -1913,6 +1918,11 @@
         "docs/design/dsh5-03-bulk-operator-crossover.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-04",
+          "note": "no-bump: mark test_run_dsh5_03_bulk_operator_crossover's single test @pytest.mark.slow. Its ~252s run_local_preflight cost sits in one test node, so no shard packing fits it under MAX_RUN_MINUTES; it was cancelled on every CI run, producing no evidence. Deselected by default (addopts) and run explicitly with -m slow. Coverage reduction stated in docs/design/false-singleton-and-shard-makespan-20260804.md; harness behavior unchanged."
+        },
         {
           "version": "v1",
           "date": "2026-07-26",
@@ -9980,7 +9990,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v90",
+      "version": "v91",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -10001,6 +10011,11 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v91",
+          "date": "2026-08-04",
+          "note": "Add witness_false_singleton_risk: flags a completion-domain query that ends with exactly one PROVEN candidate while >=1 UNKNOWN (budget-exhausted) candidate was dropped, i.e. a survivor that looks deterministically forced to exact_forced_token_id and bypasses the model under I2 on the strength of a search budget rather than a proof. Reads zero on the profile fixture; a unit test proves the detector fires. Counter only."
+        },
         {
           "version": "v90",
           "date": "2026-08-04",
@@ -11151,6 +11166,11 @@
         "docs/design/dsh0-08-foundation-disposition-20260723.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-04",
+          "note": "no-bump: second same-day re-pin of the dsl/pack.py source identity in the DSH0-02 symbolic-surface evidence record after the telemetry-only false-singleton tally; acceptance criteria re-exercised and green."
+        },
         {
           "version": "v2",
           "date": "2026-08-04",

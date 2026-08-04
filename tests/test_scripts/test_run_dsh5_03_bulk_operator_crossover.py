@@ -5,7 +5,16 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 
+
+# ``run_local_preflight`` measures ~250s on an idle machine in a SINGLE test
+# node, so no shard packing can fit it under the canonical per-job wall
+# (MAX_RUN_MINUTES = 3). Before this marker it was cancelled on every CI run,
+# which produced no evidence at all while reddening a shard; deselecting it by
+# default turns a silent timeout into a documented deferral. Run explicitly:
+#   python -m pytest tests/test_scripts/test_run_dsh5_03_bulk_operator_crossover.py -m slow
+@pytest.mark.slow
 def test_preflight_writes_versioned_unavailable_evidence(tmp_path: Path, monkeypatch) -> None:
     from scripts import run_dsh5_03_bulk_operator_crossover as script
 

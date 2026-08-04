@@ -94,3 +94,8 @@ with `pack_id == "graphql"`, and the language-contract and minimal-witness
 suites pass 26/26 (the hash assertion being the only prior failure). The
 policy's normative authority remains its component version
 (`dsl.symbolic_surface/v1`), which is unchanged.
+
+A second re-pin on the same day added the `witness_false_singleton_risk`
+tally to the same completion-domain filter (still telemetry-only, still
+byte-identical on the decode profile). The acceptance re-validation above
+was repeated and again passed.
