@@ -6135,31 +6135,70 @@ def test_ensure_agentv_sdk_noop_when_already_installed(
     def _boom(*args: object, **kwargs: object) -> None:
         raise AssertionError("npm ci must not run when the SDK is already present")
 
-    monkeypatch.setattr(_mod.subprocess, "run", _boom)
+    monkeypatch.setattr(_mod, "_stage_command", _boom)
     _mod._ensure_agentv_sdk(tmp_path)
 
 
-def test_ensure_agentv_sdk_self_heals_via_npm_ci(
+def test_stage_command_forwards_env_to_bounded_process(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """_stage_command/_bounded_command must pass env through unchanged."""
+    captured: dict[str, object] = {}
+
+    def _fake_run_bounded_process(cmd, **kwargs: object) -> SimpleNamespace:
+        captured.update(kwargs)
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(_mod, "run_bounded_process", _fake_run_bounded_process)
+    sentinel_env = {"NODE_OPTIONS": "", "PATH": "/usr/bin"}
+    _mod._stage_command(["true"], cwd=tmp_path, env=sentinel_env)
+    assert captured["env"] == sentinel_env
+
+
+def test_ensure_agentv_sdk_self_heals_via_bounded_stage_command(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """npm ci must go through the cycle-bounded stage path, not a raw subprocess."""
     from slm_training import bridge_utils
 
     marker = tmp_path / _mod._AGENTV_SDK_MARKER
     monkeypatch.setattr(bridge_utils, "checkout_roots", lambda root: (tmp_path,))
+    captured: dict[str, object] = {}
 
-    def _fake_run(
-        cmd: list[str], *, cwd: Path, env: dict[str, str], **kwargs: object
+    def _fake_stage_command(
+        cmd: list[str],
+        *,
+        cwd: Path,
+        deadline: float | None = None,
+        root: Path | None = None,
+        loop_id: str | None = None,
+        stage: str | None = None,
+        env: dict[str, str] | None = None,
     ) -> SimpleNamespace:
-        assert cmd == ["npm", "ci"]
-        assert cwd == tmp_path
-        assert env.get("NODE_OPTIONS") == ""
+        captured.update(
+            cmd=cmd, cwd=cwd, deadline=deadline, root=root, loop_id=loop_id,
+            stage=stage, env=env,
+        )
         marker.parent.mkdir(parents=True)
         marker.write_text("{}")
         return SimpleNamespace(returncode=0, stdout="", stderr="")
 
-    monkeypatch.setattr(_mod.subprocess, "run", _fake_run)
-    _mod._ensure_agentv_sdk(tmp_path)
+    monkeypatch.setattr(_mod, "_stage_command", _fake_stage_command)
+    sentinel_deadline = 12345.0
+    sentinel_root = tmp_path / "artifacts"
+    _mod._ensure_agentv_sdk(
+        tmp_path, deadline=sentinel_deadline, root=sentinel_root, loop_id="loop-x"
+    )
+
     assert marker.is_file()
+    assert captured["cmd"] == ["npm", "ci"]
+    assert captured["cwd"] == tmp_path
+    # Deadline propagation: the caller's remaining cycle budget, not a fresh
+    # fixed MAX_RUN_SECONDS timeout, must reach the bounded process path.
+    assert captured["deadline"] == sentinel_deadline
+    assert captured["root"] == sentinel_root
+    assert captured["loop_id"] == "loop-x"
+    assert captured["env"]["NODE_OPTIONS"] == ""
 
 
 def test_ensure_agentv_sdk_raises_when_npm_ci_fails(
@@ -6169,10 +6208,10 @@ def test_ensure_agentv_sdk_raises_when_npm_ci_fails(
 
     monkeypatch.setattr(bridge_utils, "checkout_roots", lambda root: (tmp_path,))
 
-    def _fake_run(*args: object, **kwargs: object) -> SimpleNamespace:
+    def _fake_stage_command(*args: object, **kwargs: object) -> SimpleNamespace:
         return SimpleNamespace(returncode=1, stdout="", stderr="network unreachable")
 
-    monkeypatch.setattr(_mod.subprocess, "run", _fake_run)
+    monkeypatch.setattr(_mod, "_stage_command", _fake_stage_command)
     with pytest.raises(RuntimeError, match="SELF_HEAL_AGENTV_SDK_FAILED"):
         _mod._ensure_agentv_sdk(tmp_path)
 

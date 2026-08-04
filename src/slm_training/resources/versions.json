@@ -2683,7 +2683,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v178",
+      "version": "v179",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2723,6 +2723,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v179",
+          "date": "2026-08-04",
+          "note": "Route _ensure_agentv_sdk's npm ci through the cycle-bounded _stage_command path (deadline, root, loop_id, sanitized env) instead of a raw subprocess.run with a fixed MAX_RUN_SECONDS timeout, so SDK recovery cannot silently exceed the caller's remaining cycle budget (PR #1410 review)"
+        },
         {
           "version": "v178",
           "date": "2026-08-04",
@@ -7892,6 +7897,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-04",
+          "note": "no-bump: correct c3's control/canvas compiler_ms_mean values in the model card (were swapped, per PR #1410 review); SLM-228 behavior is unchanged."
+        },
         {
           "version": "v3",
           "date": "2026-08-04",

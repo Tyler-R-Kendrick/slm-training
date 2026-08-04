@@ -138,6 +138,7 @@ def _stage_command(
     root: Path | None = None,
     loop_id: str | None = None,
     stage: str | None = None,
+    env: Mapping[str, str] | None = None,
 ) -> BoundedProcessResult:
     on_start, on_heartbeat = _stage_process_callbacks(
         root=root, loop_id=loop_id, stage=stage
@@ -148,6 +149,7 @@ def _stage_command(
         deadline=deadline,
         on_start=on_start,
         on_heartbeat=on_heartbeat,
+        env=env,
     )
 
 
@@ -174,7 +176,13 @@ def _git(
 _AGENTV_SDK_MARKER = Path("node_modules") / "@agentv" / "core" / "package.json"
 
 
-def _ensure_agentv_sdk(cwd: Path) -> None:
+def _ensure_agentv_sdk(
+    cwd: Path,
+    *,
+    deadline: float | None = None,
+    root: Path | None = None,
+    loop_id: str | None = None,
+) -> None:
     """Self-heal a missing AgentV SDK (npm ci not yet run) before eval needs it.
 
     ``evaluate_model.py --ship-gates`` hard-fails with ``AgentV SDK is
@@ -185,23 +193,30 @@ def _ensure_agentv_sdk(cwd: Path) -> None:
     ``scripts/setup_dev_env.sh`` for humans bootstrapping a checkout; the
     continuous driver must apply the same fix itself rather than burning a
     full experiment cycle on a precondition an operator forgot to run.
+
+    Runs through the same cycle-bounded process path as every other stage
+    (``MAX_RUN_MINUTES``, the configured interrupt/kill-grace values, and the
+    caller's remaining ``deadline``) instead of a raw ``subprocess.run`` with
+    a fixed ``MAX_RUN_SECONDS`` timeout, so recovery cannot silently consume
+    more than the cycle's remaining budget.
     """
     from slm_training.bridge_utils import checkout_roots, sanitized_node_env
 
     roots = checkout_roots(cwd)
-    if any((root / _AGENTV_SDK_MARKER).is_file() for root in roots):
+    if any((r / _AGENTV_SDK_MARKER).is_file() for r in roots):
         return
     print("SELF_HEAL_AGENTV_SDK_MISSING npm ci", flush=True)
-    result = subprocess.run(
+    result = _stage_command(
         ["npm", "ci"],
         cwd=cwd,
+        deadline=deadline,
+        root=root,
+        loop_id=loop_id,
+        stage="self-heal-agentv-sdk",
         env=sanitized_node_env(),
-        capture_output=True,
-        text=True,
-        timeout=MAX_RUN_SECONDS,
     )
     if result.returncode != 0 or not any(
-        (root / _AGENTV_SDK_MARKER).is_file() for root in roots
+        (r / _AGENTV_SDK_MARKER).is_file() for r in roots
     ):
         raise RuntimeError(
             "SELF_HEAL_AGENTV_SDK_FAILED: npm ci did not install the AgentV SDK "
@@ -249,6 +264,7 @@ def _bounded_command(
     deadline: float | None = None,
     on_start: Callable[[int], None] | None = None,
     on_heartbeat: Callable[[int], None] | None = None,
+    env: Mapping[str, str] | None = None,
 ) -> BoundedProcessResult:
     total = _remaining_timeout(deadline)
     grace = min(float(KILL_GRACE_SECONDS), total * 0.1)
@@ -260,6 +276,7 @@ def _bounded_command(
         kill_grace_seconds=grace,
         on_start=on_start,
         on_heartbeat=on_heartbeat,
+        env=env,
     )
 
 
@@ -8746,7 +8763,7 @@ def run_cycle(
             stage="sync-ancestry",
         )
 
-    _ensure_agentv_sdk(cwd)
+    _ensure_agentv_sdk(cwd, deadline=deadline, root=root, loop_id=loop_id)
 
     recovered_campaign = _finalize_terminal_interrupted_replay(
         cwd=cwd,

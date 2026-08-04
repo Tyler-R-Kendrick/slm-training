@@ -6,8 +6,8 @@ arms (`00574c47f6362eaae01b999e28683e721f092026d1c561e5669ef22a0a811210`) now
 reached AgentV (the SDK self-heal from
 [`autotrain-cycle-continuous-openui-scheduled-c2-agentv-missing-recurrence.md`](autotrain-cycle-continuous-openui-scheduled-c2-agentv-missing-recurrence.md)
 worked), but every smoke record (`3/3`) hit the per-record decode timeout on
-both arms: `suites.smoke.compiler_ms_mean≈23,242` (control) /
-`≈23,166` (canvas) against a fitted `screening_decode_timeout_seconds≈8.0`
+both arms: `suites.smoke.compiler_ms_mean≈23,166` (control) /
+`≈23,242` (canvas) against a fitted `screening_decode_timeout_seconds≈8.0`
 (`scripts/run_autotrain_continuous.py:_fit_screening_decode_timeout_seconds`,
 `arm_wall_seconds≈52.76`, `min_train_floor_seconds=20`,
 `eval_overhead_seconds=8`, `smoke_n=3`).
