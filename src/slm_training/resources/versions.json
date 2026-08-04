@@ -9944,7 +9944,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v87",
+      "version": "v88",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -9965,6 +9965,11 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v88",
+          "date": "2026-08-04",
+          "note": "Add block_joint_rejections counter (parallel block-step commits reverted on proven joint impossibility); additive telemetry."
+        },
         {
           "version": "v87",
           "date": "2026-08-04",
@@ -12396,7 +12401,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v308",
+      "version": "v309",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -12441,6 +12446,11 @@
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
       "history": [
+        {
+          "version": "v309",
+          "date": "2026-08-04",
+          "note": "block_diffusion_decode lever (default off): block-grouped unmask scheduling via BlockNoiseSchedule with parallel step commits jointly validated by multi_region_support (proven-impossible canvases revert to masks; unknown keeps commits). Fix pick_constrained_production to report the SURVIVING candidate's probability instead of the unconstrained argmax's. Lever-off fixture outputs byte-identical."
+        },
         {
           "version": "v308",
           "date": "2026-08-04",

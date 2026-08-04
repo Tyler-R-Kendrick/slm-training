@@ -193,6 +193,9 @@ class DecodeStats:
     # cannot validate (left-prefix over-approximation; see residual_support).
     admit_probe_canvases: int = 0
     admit_probe_committed_suffix: int = 0
+    # L-D: parallel block-step commits reverted because the joint canvas was
+    # PROVEN uncompletable by multi_region_support (never on unknown/budget).
+    block_joint_rejections: int = 0
     asap_positions: int = 0
     constraint_graph_edges: int = 0
     completion_bound_known: int = 0
@@ -615,6 +618,7 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "asap_penalties",
         "admit_probe_canvases",
         "admit_probe_committed_suffix",
+        "block_joint_rejections",
         "asap_positions",
         "constraint_graph_edges",
         "completion_bound_known",

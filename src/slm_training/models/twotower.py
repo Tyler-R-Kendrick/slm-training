@@ -734,6 +734,8 @@ class TwoTowerConfig:
     stability_jsd_weight: float = 1.0
     # E71 DAPD/DAWN-lite: positions (classic) | cluster (attention clusters).
     unmask_mode: str = "positions"
+    block_diffusion_decode: bool = False
+    block_diffusion_block_size: int = 4
     cluster_attn_threshold: float = 0.08
     cluster_max_size: int = 4
     # E72: verify clusters in anchor order; outcome (j, repair).
@@ -14610,6 +14612,56 @@ class TwoTowerModel(nn.Module):
                 if remaining > 0
                 else []
             )
+            # L-D block-diffusion scheduling: group unmask selection into
+            # fixed blocks. Positionwise commit/admit machinery below is
+            # untouched — this changes WHICH positions a step reveals, and
+            # step commits are jointly validated after the commit loop.
+            if (
+                flat_idx
+                and not cluster_mode
+                and bool(getattr(self.config, "block_diffusion_decode", False))
+            ):
+                from slm_training.models.block_noise import (
+                    BlockNoiseSchedule,
+                    block_positions,
+                    num_blocks,
+                )
+
+                bsize = max(
+                    1, int(getattr(self.config, "block_diffusion_block_size", 4) or 4)
+                )
+                nblocks = num_blocks(length, bsize)
+                schedule = BlockNoiseSchedule(
+                    block_size=bsize, gen_steps=max(1, steps)
+                )
+                block_conf = torch.full((1, nblocks), -1.0, device=conf.device)
+                block_unknown = torch.zeros(
+                    (1, nblocks), dtype=torch.bool, device=conf.device
+                )
+                for blk in range(nblocks):
+                    span = list(block_positions(blk, length, bsize))
+                    span_unknown = [p for p in span if bool(unknown[0, p])]
+                    if not span_unknown:
+                        continue
+                    block_unknown[0, blk] = True
+                    block_conf[0, blk] = float(
+                        sum(float(conf_for_unmask[0, p]) for p in span_unknown)
+                        / len(span_unknown)
+                    )
+                from slm_training.models.block_noise import select_blocks_to_unmask
+
+                chosen = select_blocks_to_unmask(
+                    block_conf,
+                    block_unknown,
+                    step=step,
+                    schedule=schedule,
+                )
+                flat_idx = [
+                    p
+                    for blk in chosen
+                    for p in block_positions(int(blk), length, bsize)
+                    if bool(unknown[0, p])
+                ]
             # E70: only commit predictions whose argmax has persisted.
             if tracker is not None and stability_min_persistence > 0 and flat_idx:
                 flat_idx = tracker.filter_commit_indices(
@@ -14774,6 +14826,37 @@ class TwoTowerModel(nn.Module):
                                 except Exception:  # noqa: BLE001
                                     pass
                             step_commits.append(commit)
+                # L-D joint validation: parallel block commits can jointly
+                # produce a canvas no fill completes even though each commit
+                # passed its own left-prefix admit (100% of admit probes are
+                # in the suffix-blind configuration; see campaign L-B).
+                # Proven-impossible canvases revert this step's commits to
+                # masks. Fail-closed direction only: authority "unknown"
+                # (budget) keeps the commits — parity with today's behavior.
+                if (
+                    len(newly) > 1
+                    and use_grammar
+                    and bool(getattr(self.config, "block_diffusion_decode", False))
+                ):
+                    from slm_training.dsl.grammar.fastpath.residual_support import (
+                        multi_region_support,
+                    )
+
+                    verdict = multi_region_support(
+                        self.tokenizer, ids[0].tolist(), node_budget=2000
+                    )
+                    if (
+                        not verdict.admitted
+                        and verdict.authority == "exact_multi_region"
+                    ):
+                        active_stats = get_active_stats()
+                        if active_stats is not None:
+                            active_stats.block_joint_rejections += 1
+                        for t in newly:
+                            ids[0, t] = self.tokenizer.mask_id
+                            unknown[0, t] = True
+                        newly = []
+                        step_commits = []
             else:
                 # --- V7 cluster path (E71/E72/E73/E74); single-sequence B=1 ---
                 proposals: dict[int, int] = {}
