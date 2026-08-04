@@ -1,0 +1,93 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-scheduled",
+  "source_commit": "2a64db996754d2ce25edcc0d82ee448f7843cd85",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "cycles": {
+    "continuous-loop-20260801-c1": {
+      "cycle_index": 1,
+      "role": "screening",
+      "primary_metric": "smoke.latency_ms_p50",
+      "positive": false,
+      "stack_layer": false,
+      "action": "no_stack_layer_non_positive",
+      "control": {"id": "c20260801-c1-control", "latency_ms_p50": 3159.94, "parse_rate": 1.0, "meaningful_program_rate": 0.0},
+      "candidate": {"id": "c20260801-c1-bounds", "latency_ms_p50": 3346.18, "parse_rate": 1.0, "meaningful_program_rate": 0.0},
+      "primary_delta_ms": 186.24,
+      "reasons": [
+        "empty_metrics:e2113f58e4177f07a3479c93583fd7e34c4ff13c7b42770a36f0ca412afef561",
+        "empty_metrics:4b21cee0c0d21e691fed3c74663cebce92988b3dd27323a3e9aa93914a1fed64",
+        "primary_metric_null_or_worse:smoke.latency_ms_p50:control=3159.94 candidate=3346.18 parse=1.0->1.0 mpr=0.0->0.0"
+      ]
+    },
+    "continuous-loop-20260801-c2": {
+      "cycle_index": 2,
+      "role": "screening",
+      "primary_metric": "smoke.latency_ms_p50",
+      "positive": false,
+      "stack_layer": false,
+      "action": "no_stack_layer_non_positive",
+      "control": {"id": "c20260801-c2-control", "latency_ms_p50": 22072.23, "parse_rate": 1.0, "meaningful_program_rate": 0.0},
+      "candidate": {"id": "c20260801-c2-canvas", "latency_ms_p50": 23405.01, "parse_rate": 1.0, "meaningful_program_rate": 0.0},
+      "primary_delta_ms": 1332.78,
+      "reasons": [
+        "empty_metrics:1ae830a11b7e88022a0ffc1ea7bdf957d532371882ea288f112a2cb96a4d5ed8",
+        "empty_metrics:84039d372d78099d18adae2893b5e38dedb5a1eea1341bd3e47d5c4f9a4363b1",
+        "primary_metric_null_or_worse:smoke.latency_ms_p50:control=22072.23 candidate=23405.01 parse=1.0->1.0 mpr=0.0->0.0"
+      ]
+    },
+    "continuous-loop-20260801-c3": {
+      "cycle_index": 3,
+      "role": "screening",
+      "primary_metric": "smoke.latency_ms_p50",
+      "positive": false,
+      "stack_layer": false,
+      "action": "no_stack_layer_non_positive",
+      "control": {"id": "c20260801-c3-control", "latency_ms_p50": 7825.55, "parse_rate": 1.0, "meaningful_program_rate": 0.0},
+      "candidate": {"id": "c20260801-c3-both", "latency_ms_p50": 7987.23, "parse_rate": 1.0, "meaningful_program_rate": 0.0},
+      "primary_delta_ms": 161.68,
+      "reasons": [
+        "empty_metrics:a12e2a60df11ed72f4d6db1c479db370aaf9e477bb1a6cf2231e051ade10ad9b",
+        "empty_metrics:474bf7211ac0928c2718e98a8b680ca202adee66d438f443c2865d529f710b61",
+        "primary_metric_null_or_worse:smoke.latency_ms_p50:control=7825.55 candidate=7987.23 parse=1.0->1.0 mpr=0.0->0.0"
+      ]
+    },
+    "continuous-loop-20260801-c4": {
+      "cycle_index": 4,
+      "role": "promotion",
+      "primary_metric": "held_out.structural_similarity",
+      "positive": true,
+      "stack_layer": false,
+      "action": "positive_no_tracked_delta_skip_stack",
+      "control": {"id": "c20260801-c4-control", "latency_ms_p50": 21636.11, "parse_rate": 1.0, "meaningful_program_rate": 0.3333333333333333},
+      "candidate": {"id": "c20260801-c4-steps", "latency_ms_p50": 11930.55, "parse_rate": 1.0, "meaningful_program_rate": 0.3333333333333333},
+      "reasons": [
+        "fixture_insufficient_n:c20260801-c4-steps",
+        "fixture_insufficient_n:c20260801-c4-control",
+        "efficiency_win:mpr_per_ms:1.5406343e-05->2.7939478e-05",
+        "primary_metric_unavailable",
+        "fixture_insufficient_n_alone"
+      ]
+    }
+  },
+  "environment_self_heal": {
+    "issue": "held_out/AgentV-backed eval arms in c1-c3 raised RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER (src/slm_training/evals/agentv.py::_agentv_runtime), contributing to the empty_metrics reasons above.",
+    "fix": "ran `npm ci` in the checkout to install node_modules/@agentv/core (package.json already pinned it; nothing in tracked source changed).",
+    "effect": "c4 ran with AgentV available; meaningful_program_rate moved from 0.0 (c1-c3) to 0.333 (c4 control and candidate) and mpr_per_ms improved 1.54e-05 -> 2.79e-05. This is consistent with the eval path now succeeding rather than a genuine model quality change across cycles run under different random draws; not a controlled A/B of the fix itself."
+  },
+  "conclusion": "None of grammar_completion_bounds (c1), compact_active_canvas (c2), or both together (c3) improved smoke decode p50 latency on this size-matched 20-step fixture; all three candidates were slower than their matched control with parse_rate held at 1.0 and meaningful_program_rate at 0.0 (too few steps for a meaningful program yet, independent of the eval-runtime gap). c4 (steps knob screening after the AgentV self-heal) shows a fixture-scale efficiency win (mpr_per_ms) but is fixture_insufficient_n on both arms and carries no tracked code/docs delta, so no stack layer was opened.",
+  "next_priorities": [
+    "Re-test grammar_completion_bounds / compact_active_canvas at a higher step budget within the wall cap now that AgentV eval is available end-to-end.",
+    "Do not promote from c1-c4; all arms are fixture_insufficient_n or non-positive.",
+    "Track node_modules/@agentv/core availability as a continuous-loop preflight (fail closed with a clear message rather than surfacing as empty_metrics) so future cycles do not silently lose the held_out metric family."
+  ],
+  "recorded_at": "2026-08-01T01:43:37Z"
+}
