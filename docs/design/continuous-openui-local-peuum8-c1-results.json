@@ -1,0 +1,88 @@
+{
+  "schema": "autotrain_continuous_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c1",
+  "cycle_index": 1,
+  "source_commit": "98d1fb2cfc042b125b1994dc13e4c9b3788f7a6d",
+  "integration_commit": "98d1fb2cfc042b125b1994dc13e4c9b3788f7a6d",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "screening",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true
+  },
+  "arms": {
+    "control": {
+      "id": "c20260804-continuous-openui-local-8c0b60dd-c1-control",
+      "trainable_params": 1608962,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete_gate_reject",
+      "metrics": {
+        "latency_ms_p50": 4391.05,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0575,
+        "binder_reference_f1": 0.6333333333333333
+      }
+    },
+    "bounds": {
+      "id": "c20260804-continuous-openui-local-8c0b60dd-c1-bounds",
+      "trainable_params": 1608962,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete_gate_reject",
+      "metrics": {
+        "latency_ms_p50": 3536.21,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0575,
+        "binder_reference_f1": 0.6333333333333333
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "gate_failures": [
+    "smoke:insufficient_n actual=3 need>=20",
+    "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+    "smoke:structural_similarity actual=0.0575 need>=0.35",
+    "smoke:component_type_recall actual=0.0 need>=0.35",
+    "smoke:ast_beq_rate actual=0.0 need>=0.2",
+    "smoke:canonical_beq_rate actual=0.0 need>=0.1",
+    "smoke:reward_score actual=0.0 need>=0.3",
+    "held_out:missing_suite",
+    "adversarial:missing_suite",
+    "ood:missing_suite",
+    "rico_held:missing_suite"
+  ],
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c1-control",
+      "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c1-bounds",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.0575 candidate=0.0575 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "climb_state": "rejected",
+  "ship_state": "blocked",
+  "conclusion": "non_positive_fixture_screening",
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "model",
+      "hypothesis": "The completed non-positive 'bounds' arm is exhausted; test the distinct size-matched 'component-plan' quality hypothesis next.",
+      "action": "experiment_next",
+      "experiment_id": "c20260804-continuous-openui-local-8c0b60dd-c1-component-plan"
+    }
+  ],
+  "recorded_at": "2026-08-04T21:33:00Z"
+}
