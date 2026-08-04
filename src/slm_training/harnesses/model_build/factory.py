@@ -243,6 +243,8 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "stability_min_persistence",
         "stability_jsd_weight",
         "unmask_mode",
+        "block_diffusion_decode",
+        "block_diffusion_block_size",
         "cluster_attn_threshold",
         "cluster_max_size",
         "cluster_verify",
@@ -865,6 +867,8 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         ),
         stability_jsd_weight=float(getattr(config, "stability_jsd_weight", 1.0) or 1.0),
         unmask_mode=str(getattr(config, "unmask_mode", "positions") or "positions"),
+        block_diffusion_decode=bool(getattr(config, "block_diffusion_decode", False)),
+        block_diffusion_block_size=int(getattr(config, "block_diffusion_block_size", 4) or 4),
         cluster_attn_threshold=float(
             getattr(config, "cluster_attn_threshold", 0.08) or 0.08
         ),
