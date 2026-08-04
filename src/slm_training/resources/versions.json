@@ -7885,6 +7885,11 @@
         {
           "version": "v3",
           "date": "2026-08-04",
+          "note": "no-bump: record continuous-openui-local cycle c4 (component-edge decode-timeout blocked on CPU-only sandbox) scratch checkpoints in the model card and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-04",
           "note": "no-bump: record continuous-openui-local cycles c1-c3 (npm-ci harness repair, frozen replay, component-plan regression) scratch checkpoints in the model card and README; SLM-228 behavior is unchanged."
         },
         {

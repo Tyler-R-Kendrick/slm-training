@@ -1,0 +1,49 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c4",
+  "cycle_index": 4,
+  "cycle_intent": "screening",
+  "source_commit": "eba6db3044076285581b80cfe5294a2ecbcee8a1",
+  "integration_commit": "c7be4cb80bca42674b7e69fc6d2111bcf91287c5",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "decode_timeout_seconds": 8.0,
+    "hypothesis": "component-edge decode weighting improves structural_similarity vs the size-matched control"
+  },
+  "arms": {
+    "c4-control": {
+      "status": "measurement_incomplete",
+      "reason": "smoke:decode_timeout_count=3 of 3 documents; compiler_ms_mean=23166 far exceeds the 8.0s decode-timeout wall",
+      "trainable_params": 1766990
+    },
+    "c4-component-edge": {
+      "status": "measurement_incomplete",
+      "reason": "smoke:decode_timeout_count=3 of 3 documents; compiler_ms_mean=23014.2 far exceeds the 8.0s decode-timeout wall",
+      "trainable_params": 1766990
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "conclusion": "Both arms (1,766,990 params, largest size-matched pair this loop) failed evaluation before AgentV could score them: every smoke document hit the 8.0s decode-timeout wall (compiler_ms_mean ~23s -- about 3x the per-doc timeout budget). This is a real per-cycle wall-time/decode-timeout-budget signal on this session's CPU-only sandbox, distinct from the cycle 1 AgentV-SDK-missing gap: the harness ran, but the constrained decode step itself could not finish in time on this hardware for a model of this size. Classified as harness_failure / measurement_incomplete, not a model result; primary metric unavailable.",
+  "repair": {
+    "harness_family": "model_build",
+    "frozen_manifest_sha256": "e5843026820010a38e16e67c279a6dd52a7993cdef6694d4e19a82f332b45373",
+    "actions_taken": [],
+    "status": "blocked_external",
+    "blocker": "This scheduled-task sandbox is CPU-only (no GPU) and, at 1,766,990 trainable params, per-document decode/compile cost (~23s) exceeds the 8.0s decode-timeout wall the eval harness computes from the shared 3-minute MAX_RUN_MINUTES cap. Not a code defect confirmed this cycle; needs a dedicated improve-openui-harnesses pass to decide whether to raise decode-timeout-seconds for larger size-matched arms, shrink the smoke suite further, or accept smaller arms only on CPU-only sandboxes.",
+    "regression_coverage": null
+  },
+  "known_debt_discovered": null,
+  "next_priorities": [
+    "infrastructure: replay the identical frozen c4-control/c4-component-edge arms once decode-timeout-seconds or arm size is repaired for CPU-only sandboxes (rank 1, confidence 0.95)"
+  ],
+  "recorded_at": "2026-08-04T07:52:00+00:00"
+}
