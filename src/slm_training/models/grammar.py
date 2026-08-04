@@ -362,6 +362,10 @@ class GrammarDecodeState:
         eng = self.engine
         if eng is None or getattr(eng, "_ip", None) is None:
             return False
+        if not getattr(eng, "_synced_ok", True):
+            # A rejected sync leaves ``_prefix`` set for diagnostics; it must
+            # never vouch for an in-sync engine (false-admit hazard).
+            return False
         if getattr(eng, "_prefix", None) == prefix_text:
             return True
         return self.engine_ids_len is not None and self.engine_ids_len == len(
@@ -559,6 +563,7 @@ def force_emit_token_id(
         else (
             getattr(engine, "_prefix", None) == prefix_text
             and getattr(engine, "_ip", None) is not None
+            and getattr(engine, "_synced_ok", True)
         )
     )
     t0 = time.perf_counter()

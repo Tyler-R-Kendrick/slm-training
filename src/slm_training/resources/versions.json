@@ -1168,7 +1168,7 @@
       ]
     },
     "dsl.completion_kernel": {
-      "version": "v17",
+      "version": "v18",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/grammar/fastpath/engine.py",
@@ -1195,6 +1195,11 @@
         "docs/design/adr-constrained-diffusion-topology-split.md"
       ],
       "history": [
+        {
+          "version": "v18",
+          "date": "2026-08-04",
+          "note": "Fix two engine false-admit bugs (retrying a rejected set_prefix text returned True via the already-synced fast path; a rejected incremental delta returned the recovery resync's success) with a _synced_ok flag copied across forks and honored by engine_in_sync; relabel residual multi-hole support so canvases containing holes carry authority=left_prefix_overapprox (never exact) with the a-HOLE-c counterexample proven by bounded enumeration in tests."
+        },
         {
           "version": "v17",
           "date": "2026-08-04",
@@ -12426,6 +12431,11 @@
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
       "history": [
+        {
+          "version": "v308",
+          "date": "2026-08-04",
+          "note": "no-bump: engine_in_sync and the stateless already-synced check additionally require the engine's _synced_ok flag so a rejected sync can never vouch for reuse; identical results on valid prefixes, byte-identical fixture outputs."
+        },
         {
           "version": "v308",
           "date": "2026-08-04",
