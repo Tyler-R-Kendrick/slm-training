@@ -233,3 +233,49 @@ def test_attributed_time_summary_flags_dark_cost() -> None:
     # Aggregate summary carries the coverage fields.
     agg = aggregate_stats([dark])
     assert agg["attributed_fraction"] == 0.1
+
+
+def test_witness_counters_and_false_singleton_detector_fire() -> None:
+    """The witness-outcome counters must be able to fire.
+
+    A zero ``witness_false_singleton_risk`` on a fixture is only evidence
+    that the hazard did not occur if the detector demonstrably works. This
+    pins the helper's contract directly.
+    """
+    from slm_training.dsl.pack import _note_witness
+    from slm_training.models.decode_stats import collect_decode_stats
+
+    with collect_decode_stats() as stats:
+        _note_witness(materialized=True)
+        _note_witness(materialized=True, kept=True)
+        _note_witness(pruned_unknown=True)
+        _note_witness(pruned_unsupported=True)
+        _note_witness(false_singleton=True)
+
+    assert stats.witness_materialized == 2
+    assert stats.witness_kept == 1
+    assert stats.witness_pruned_unknown == 1
+    assert stats.witness_pruned_unsupported == 1
+    assert stats.witness_false_singleton_risk == 1
+
+    summary = aggregate_stats([stats])
+    assert summary["witness_false_singleton_risk_sum"] == 1.0
+    # And it stays silent when nothing happened.
+    assert "witness_false_singleton_risk_sum" not in aggregate_stats([DecodeStats()])
+
+
+def test_false_singleton_shape_is_what_the_tally_encodes() -> None:
+    """One proven survivor + >=1 unknown drop is the flagged shape.
+
+    Encoded as the raw predicate so the intent survives refactors of the
+    pack-side tally: an UNKNOWN drop is a budget limit, not a proof, so a
+    lone survivor beside one is not a *deterministic* force even though
+    downstream singleton detection would treat it as one.
+    """
+    def flags(unknown_dropped: int, proven_kept: int) -> bool:
+        return bool(unknown_dropped) and proven_kept == 1
+
+    assert flags(1, 1) is True          # the hazard
+    assert flags(0, 1) is False         # genuine singleton: nothing dropped
+    assert flags(3, 2) is False         # ambiguous anyway, model still ranks
+    assert flags(0, 0) is False

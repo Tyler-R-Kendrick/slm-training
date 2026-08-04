@@ -39,7 +39,7 @@
     },
     {
       "path": "src/slm_training/dsl/pack.py",
-      "sha256": "2461d584e117cdc1b82bbb08dbc1cdbc6d414eab266b01e5567be27a31ec60a5"
+      "sha256": "65ad24dfd8705fe3fe3c3759c6a5f35a45643900720b8b4c4c3cc38e1c52565f"
     },
     {
       "path": "src/slm_training/data/contract.py",
