@@ -1969,7 +1969,7 @@ def _build_openui_completion_forest_direct(
         return tuple(sorted(sequences))
 
     terminals = engine.next_terminals()
-    candidates = allowed_id_set(tokenizer, terminals) or set()
+    candidates = allowed_id_set(tokenizer, terminals, use_cache=True) or set()
     kind_ids = getattr(tokenizer, "kind_ids", None)
     try:
         component_ids = (
