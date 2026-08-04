@@ -60,6 +60,8 @@ def _stage_environment(
     env["OMP_NUM_THREADS"] = "1"
     env["MKL_NUM_THREADS"] = "1"
     return env
+
+
 TRACE_EVIDENCE_KINDS = {"run_insight", "telemetry", "agentv", "feedback"}
 RESULT_EVIDENCE_KINDS = {
     "prior_run",
@@ -535,8 +537,7 @@ def compile_commands(
         if knobs.output_tokenizer:
             train.extend(["--output-tokenizer", knobs.output_tokenizer])
         elif any(
-            getattr(knobs, field) is not None
-            for field in _TWOTOWER_RUNTIME_FLAG_FIELDS
+            getattr(knobs, field) is not None for field in _TWOTOWER_RUNTIME_FLAG_FIELDS
         ):
             train.extend(["--output-tokenizer", "lexer"])
         if knobs.compiler_decode_mode:
@@ -655,7 +656,10 @@ def compile_commands(
             )
         if knobs.slot_component_decode_weight is not None:
             train.extend(
-                ["--slot-component-decode-weight", str(knobs.slot_component_decode_weight)]
+                [
+                    "--slot-component-decode-weight",
+                    str(knobs.slot_component_decode_weight),
+                ]
             )
         if knobs.component_edge_loss_weight is not None:
             train.extend(
@@ -855,9 +859,7 @@ def compile_commands(
             if knobs.compiler_decode_mode != "off":
                 evaluate.append("--grammar-ltr-primary")
         if knobs.grammar_draft_window is not None:
-            evaluate.extend(
-                ["--grammar-draft-window", str(knobs.grammar_draft_window)]
-            )
+            evaluate.extend(["--grammar-draft-window", str(knobs.grammar_draft_window)])
         for name in (
             "compiler_search_mode",
             "compiler_search_trigger",
@@ -865,6 +867,7 @@ def compile_commands(
             "compiler_search_noise",
             "compiler_search_stagnation_patience",
             "compiler_search_backtrack_limit",
+            "generate_batch_size",
         ):
             value = getattr(knobs, name)
             if value is not None:

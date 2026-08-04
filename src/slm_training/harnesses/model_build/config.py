@@ -466,6 +466,11 @@ class ModelBuildConfig:
     # CAP3-05: optional target byte budget for equal-byte ladder points.
     byte_budget: int | None = None
     generate_max_attempts: int = 3
+    # Eval-time override for the decode chunking loop's batch size. None
+    # keeps the checkpoint's baked TwoTowerConfig.generate_batch_size (16
+    # CPU / 32 GPU auto-pack). Distinct from training batch_size; only
+    # changes how many records are grouped into one timed decode chunk.
+    generate_batch_size: int | None = None
     # Diagnostic per-record generation timeout; None/0 preserves unlimited eval.
     decode_timeout_seconds: float | None = None
     # Optional cumulative evaluator wall. When set, the runner partitions the

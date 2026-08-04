@@ -3997,6 +3997,7 @@ def test_compile_resolves_canonical_published_train_version() -> None:
             compiler_search_noise=1.0,
             compiler_search_stagnation_patience=2,
             compiler_search_backtrack_limit=8,
+            generate_batch_size=1,
             schema_in_context=True,
             slot_contract_in_context=True,
             design_md_context=False,
@@ -4092,6 +4093,7 @@ def test_compile_resolves_canonical_published_train_version() -> None:
     assert commands[-1][commands[-1].index("--compiler-decode-mode") + 1] == "tree"
     assert commands[-1][commands[-1].index("--compiler-search-mode") + 1] == "ptrm"
     assert commands[-1][commands[-1].index("--compiler-search-width") + 1] == "4"
+    assert commands[-1][commands[-1].index("--generate-batch-size") + 1] == "1"
     assert "--grammar-ltr-primary" in commands[-1]
     assert "--no-unconstrained-fallback" in commands[-1]
     assert "--honest-slot-contract" in commands[-1]

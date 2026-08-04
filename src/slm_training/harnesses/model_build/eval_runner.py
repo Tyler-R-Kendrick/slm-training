@@ -1512,10 +1512,16 @@ def evaluate(
             time.perf_counter() - initialization_started
         ) * 1000.0
     if callable(generate_batch_requests) or callable(generate_batch):
+        config_batch_size = getattr(config, "generate_batch_size", None)
+        plugin_batch_size = (
+            getattr(getattr(plugin, "config", None), "generate_batch_size", 8) or 8
+        )
         batch_size = max(
             1,
             int(
-                getattr(getattr(plugin, "config", None), "generate_batch_size", 8) or 8
+                config_batch_size
+                if config_batch_size is not None
+                else plugin_batch_size
             ),
         )
     # Prefer the production batch API when a plugin exposes both interfaces.

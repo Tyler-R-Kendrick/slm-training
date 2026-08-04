@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -259,6 +260,38 @@ def test_dual_interface_model_keeps_batched_decode_and_stats(tmp_path: Path) -> 
     assert metrics["details"][0]["request_completion_latency_ms"] >= metrics[
         "details"
     ][0]["amortized_batch_latency_ms"]
+
+
+def test_config_generate_batch_size_overrides_plugin_default(tmp_path: Path) -> None:
+    """A small suite (n < baked generate_batch_size) must not be bundled into
+    one all-or-nothing decode chunk when the eval config explicitly requests
+    per-record chunking -- a single compiler-heavy record would otherwise
+    time out its batch-mates too (autotrain-cycle continuous-openui-local
+    8c0b60dd-c2, session ixpohr)."""
+    config = _smoke_config(tmp_path)
+    config = dataclasses.replace(config, generate_batch_size=1)
+    records = [
+        _record(id=f"smoke-{index}", split="smoke", meta={"suite": "smoke"})
+        for index in range(3)
+    ]
+    write_jsonl(config.test_dir / "suites" / "smoke" / "records.jsonl", records)
+
+    class DualInterfaceModel:
+        config = SimpleNamespace(generate_batch_size=8)
+
+        def __init__(self) -> None:
+            self.batch_calls: list[int] = []
+
+        def generate_batch_requests(self, requests: list[object]) -> list[str]:
+            self.batch_calls.append(len(requests))
+            return [_GOLD for _ in requests]
+
+    model = DualInterfaceModel()
+    metrics = evaluate(config, model=model, publish_agentv=False)
+
+    assert model.batch_calls == [1, 1, 1]
+    assert metrics["decode_batch_size_configured"] == 1
+    assert metrics["decode_chunk_n"] == 3
 
 
 def test_empty_suite_aggregates_to_none_not_zero(tmp_path: Path) -> None:

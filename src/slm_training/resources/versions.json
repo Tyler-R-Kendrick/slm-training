@@ -2683,7 +2683,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v177",
+      "version": "v178",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2723,6 +2723,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v178",
+          "date": "2026-08-04",
+          "note": "Register generate_batch_size on ExperimentKnobs/DEFAULT_ALLOWED_KNOBS and wire it through compile_commands as --generate-batch-size; screening recipes set it to 1 so a tiny smoke suite (n < baked generate_batch_size) is not bundled into one all-or-nothing decode chunk that lets a single compiler-heavy document time out its batch-mates too"
+        },
         {
           "version": "v177",
           "date": "2026-08-04",
@@ -9913,7 +9918,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v84",
+      "version": "v85",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -9934,6 +9939,11 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v85",
+          "date": "2026-08-04",
+          "note": "ModelBuildConfig.generate_batch_size overrides the checkpoint's baked TwoTowerConfig.generate_batch_size for the decode chunking loop only, via --generate-batch-size; None keeps prior behavior"
+        },
         {
           "version": "v84",
           "date": "2026-08-03",
@@ -12385,6 +12395,11 @@
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
       "history": [
+        {
+          "version": "v308",
+          "date": "2026-08-04",
+          "note": "no-bump: add ModelBuildConfig.generate_batch_size (default None) for the eval decode-chunking override; TwoTowerConfig and model forward/decode behavior are unchanged, harness.model_build.eval carries the behavioral bump for this change"
+        },
         {
           "version": "v308",
           "date": "2026-08-03",

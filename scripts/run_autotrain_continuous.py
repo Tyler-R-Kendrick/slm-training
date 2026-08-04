@@ -1362,7 +1362,8 @@ def _thrash_lever_signature(extras: dict[str, Any] | None) -> str:
     raw = {
         k: v
         for k, v in (extras or {}).items()
-        if not str(k).startswith("_") and k not in {"seed", "steps", "decode_timeout_seconds"}
+        if not str(k).startswith("_")
+        and k not in {"seed", "steps", "decode_timeout_seconds", "generate_batch_size"}
     }
     # Prefer registered lever subset when present so static/dynamic arms align.
     levers = _lever_knobs(raw)
@@ -7733,6 +7734,17 @@ def _matrix(
             "decode_timeout_seconds": decode_timeout,
             "eval_suites": eval_suites,
         }
+        if role == "screening":
+            # Screening smoke suites are tiny (n=3): the checkpoint's baked
+            # generate_batch_size=16 groups every document into one decode
+            # chunk, so the per-record fair-share timeout redistribution in
+            # eval_runner._effective_record_decode_timeout never fires and
+            # one compiler-heavy document times out the whole arm
+            # (measurement_incomplete for all n, not just the heavy one).
+            # Per-record chunking lets the fair-share budget redistribute
+            # across documents as intended. See autotrain-cycle c2
+            # (continuous-openui-local-ixpohr-c2-results.md) for the forensics.
+            base["generate_batch_size"] = 1
         base.update(extra_map)
         return base
 
@@ -8182,7 +8194,13 @@ def _matrix(
                 {
                     k: v
                     for k, v in control_knobs.items()
-                    if k not in {"seed", "steps", "decode_timeout_seconds"}
+                    if k
+                    not in {
+                        "seed",
+                        "steps",
+                        "decode_timeout_seconds",
+                        "generate_batch_size",
+                    }
                 }
             )
         )

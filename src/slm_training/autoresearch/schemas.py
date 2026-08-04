@@ -305,6 +305,7 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "compact_active_canvas",
         "grammar_draft_window",
         "decode_timeout_seconds",
+        "generate_batch_size",
         "eval_suites",
         "action_embedding_init",
         "action_embedding_train",
@@ -526,12 +527,8 @@ class ExperimentKnobs(StrictModel):
     ) = None
     component_inventory_loss_weight: float | None = Field(default=None, ge=0, le=20)
     component_token_loss_weight: float | None = Field(default=None, ge=0, le=20)
-    component_edge_token_loss_weight: float | None = Field(
-        default=None, ge=0, le=20
-    )
-    compiler_decision_token_loss_weight: float | None = Field(
-        default=None, ge=0, le=20
-    )
+    component_edge_token_loss_weight: float | None = Field(default=None, ge=0, le=20)
+    compiler_decision_token_loss_weight: float | None = Field(default=None, ge=0, le=20)
     structure_token_loss_weight: float | None = Field(default=None, ge=0, le=20)
     typed_family_balance_loss_weight: float | None = Field(default=None, ge=0, le=20)
     structural_aux_head_profile: (
@@ -567,7 +564,9 @@ class ExperimentKnobs(StrictModel):
     binder_slot_ownership_decode_weight: float | None = Field(default=None, ge=0, le=20)
     symbol_boundary_loss_weight: float | None = Field(default=None, ge=0, le=20)
     fidelity_loss_weight: float | None = Field(default=None, ge=0, le=20)
-    semantic_contrast_dir: str | None = Field(default=None, min_length=1, max_length=512)
+    semantic_contrast_dir: str | None = Field(
+        default=None, min_length=1, max_length=512
+    )
     semantic_contrast_loss_weight: float | None = Field(default=None, ge=0, le=20)
     semantic_contrast_margin: float | None = Field(default=None, ge=0, le=20)
     semantic_contrast_fraction: float | None = Field(default=None, gt=0, le=1)
@@ -618,6 +617,11 @@ class ExperimentKnobs(StrictModel):
     grammar_draft_window: int | None = Field(default=None, ge=1, le=64)
     # Continuous measurement knobs (screening smoke-only + decode budget).
     decode_timeout_seconds: float | None = Field(default=None, gt=0, le=600)
+    # Decode chunking override: how many records share one timed decode
+    # chunk. None keeps the checkpoint's baked default. A small suite
+    # otherwise gets grouped into one chunk sharing a combined timeout,
+    # defeating eval_runner's per-record fair-share redistribution.
+    generate_batch_size: int | None = Field(default=None, ge=1, le=64)
     eval_suites: str | None = Field(
         default=None,
         description="Comma-separated evaluate_model --suites (e.g. smoke).",
