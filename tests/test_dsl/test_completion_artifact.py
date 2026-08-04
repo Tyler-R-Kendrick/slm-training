@@ -8,6 +8,9 @@ import pytest
 from slm_training.dsl.grammar.fastpath.completion_artifact import (
     DEFAULT_ARTIFACT_PATH,
     DEFAULT_MANIFEST_PATH,
+    _decode_safetensors,
+    _encode_safetensors,
+    _sha256_bytes,
     build_completion_artifact,
     completion_artifact_checkpoint_identity,
     load_checked_completion_artifact,
@@ -67,6 +70,61 @@ def test_checker_rejects_corrupt_artifact(tmp_path: Path) -> None:
             grammar_path=engine.grammar_path,
             artifact_path=artifact,
             manifest_path=manifest,
+        )
+
+
+def test_committed_artifact_carries_certified_rule_and_bound_tensors() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    engine = OpenUIIncrementalEngine()
+    checked = load_checked_completion_artifact(
+        tokenizer, engine._parser, grammar_path=engine.grammar_path
+    )
+    tensors, _metadata = _decode_safetensors(DEFAULT_ARTIFACT_PATH.read_bytes())
+    rules = list(engine._parser.rules)
+
+    assert len(tensors["rule_origins"]) == len(rules)
+    assert len(tensors["rule_lengths"]) == len(rules)
+    assert checked.manifest["lalr_rule_count"] == len(rules)
+    assert len(tensors["state_min_terminals"]) == checked.manifest["lalr_state_count"]
+    bound = checked.manifest["state_min_terminals"]
+    assert bound["kind"] == "control_only_lower_bound"
+    assert bound["direction"] == "negative_only"
+    assert bound["consumed_by"] == []
+    assert bound["trivial"] is (bound["max"] <= 0)
+    assert "LOWER bound" in checked.manifest["proof_obligations"]["state_min_terminals"]
+    assert checked.lalr is not None
+    assert checked.lalr.start_stack() == (
+        checked.manifest["control"]["start_states"]["start"],
+    )
+
+
+@pytest.mark.parametrize(
+    "tensor", ["rule_origins", "rule_lengths", "state_min_terminals"]
+)
+def test_checker_rejects_tampered_control_tensor(tmp_path: Path, tensor: str) -> None:
+    """Re-derivation, not just the digest, catches a rewritten tensor."""
+
+    raw = DEFAULT_ARTIFACT_PATH.read_bytes()
+    tensors, metadata = _decode_safetensors(raw)
+    assert _encode_safetensors(tensors, metadata) == raw
+    tensors[tensor] = [value + 1 for value in tensors[tensor]]
+    tampered = _encode_safetensors(tensors, metadata)
+    manifest = json.loads(DEFAULT_MANIFEST_PATH.read_text())
+    # Keep every digest honest so the failure can only come from the deep check.
+    manifest["artifact_sha256"] = _sha256_bytes(tampered)
+    artifact_path = tmp_path / "tampered.safetensors"
+    manifest_path = tmp_path / "tampered.manifest.json"
+    artifact_path.write_bytes(tampered)
+    manifest_path.write_text(json.dumps(manifest))
+    engine = OpenUIIncrementalEngine()
+
+    with pytest.raises(ValueError, match=f"control table mismatch for {tensor}"):
+        load_checked_completion_artifact(
+            DSLNativeTokenizer.build(),
+            engine._parser,
+            grammar_path=engine.grammar_path,
+            artifact_path=artifact_path,
+            manifest_path=manifest_path,
         )
 
 
