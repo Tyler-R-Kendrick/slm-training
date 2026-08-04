@@ -57,7 +57,7 @@
     "tests/test_dsl/test_surface_realization.py": 0.85,
     "tests/test_dsl/test_template_sufficiency.py": 0.2,
     "tests/test_dsl/test_tokenizer_grammar_invariants.py": 1.6,
-    "tests/test_dsl/test_topology_apply.py": 429.05,
+    "tests/test_dsl/test_topology_apply.py": 4726.16,
     "tests/test_harnesses/model_build/test_adapter_factory.py": 0.08,
     "tests/test_harnesses/model_build/test_decode_deadline.py": 0.11,
     "tests/test_harnesses/model_build/test_decode_feasibility.py": 0.11,
