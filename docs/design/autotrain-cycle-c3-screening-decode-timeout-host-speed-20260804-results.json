@@ -1,0 +1,144 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c3",
+  "cycle_index": 3,
+  "source_commit": "54d37fe886895053f59f88c640436f219be41958",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 22,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "honest_slot_contract": true,
+    "slot_contract_constrained_decode": true,
+    "compiler_decode_mode": "off",
+    "decode_timeout_seconds_configured": 8.0
+  },
+  "arms": {
+    "c3-control": {
+      "status": "measurement_incomplete_decode_timeout",
+      "manifest_sha256": "a20f67d2b2794a79d831b69348981257f85cf90e4a83203c464b3a4801bf9520",
+      "checkpoint_sha256": "1bc6370f72ec70fe0697414fa7614e2fc446d9795e91a8ae043bd95fe8b9286e",
+      "checkpoint_provenance": "frozen_replay_reused_c2_checkpoint_not_retrained",
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "54d37fe886895053f59f88c640436f219be41958",
+        "code_dirty": false,
+        "components": {
+          "config.levers": "v30",
+          "harness.model_build.eval": "v84",
+          "harness.experiment_feature_flags": "v4",
+          "evals.meaningful_program": "2.13.0",
+          "evals.power_protocol": "v8",
+          "evals.scoring": "v23",
+          "model.twotower": "v308"
+        },
+        "stamped_at": "2026-08-04T03:38:19.294451+00:00"
+      },
+      "smoke": {
+        "n": 3,
+        "document_n": 3,
+        "completed_document_n": 0,
+        "incomplete_document_n": 3,
+        "decode_timeout_count": 3,
+        "decode_timeout_rate": 1.0,
+        "effective_decode_timeout_seconds_min": 24.0,
+        "effective_decode_timeout_seconds_max": 24.0,
+        "decode_batch_size_max": 3,
+        "evaluation_wall_seconds": 57.999999,
+        "decode_total_ms_sum": 24265.219,
+        "decode_compiler_ms_sum": 23447.649
+      },
+      "gates": {
+        "pass": false,
+        "evidence_volume_failures": [
+          "smoke:insufficient_n actual=3 need>=20",
+          "held_out:missing_suite",
+          "adversarial:missing_suite",
+          "ood:missing_suite",
+          "rico_held:missing_suite"
+        ],
+        "measurement_integrity_failures": [
+          "smoke:meaningful_program_rate actual=None need>=0.66",
+          "smoke:structural_similarity actual=None need>=0.35",
+          "smoke:component_type_recall actual=None need>=0.35",
+          "smoke:ast_beq_rate actual=None need>=0.2",
+          "smoke:canonical_beq_rate actual=None need>=0.1",
+          "smoke:placeholder_fidelity actual=None need>=0.25",
+          "smoke:reward_score actual=None need>=0.3"
+        ],
+        "runtime_failures": [
+          "smoke:decode_timeout_count actual=3 need=0"
+        ]
+      }
+    },
+    "c3-canvas": {
+      "status": "measurement_incomplete_decode_timeout",
+      "manifest_sha256": "74be089bb2215fd0db676016cd0b8aec2d5e21a9fa48fcd2a595dd25061555d9",
+      "checkpoint_sha256": "9f73b7a8466b7ab117988b2ab7516dffce7c9ac4f4d0ad7204a580d71053b1a4",
+      "checkpoint_provenance": "frozen_replay_reused_c2_checkpoint_not_retrained",
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "54d37fe886895053f59f88c640436f219be41958",
+        "code_dirty": false,
+        "components": {
+          "config.levers": "v30",
+          "harness.model_build.eval": "v84",
+          "harness.experiment_feature_flags": "v4",
+          "evals.meaningful_program": "2.13.0",
+          "evals.power_protocol": "v8",
+          "evals.scoring": "v23",
+          "model.twotower": "v308"
+        },
+        "stamped_at": "2026-08-04T03:38:58.052168+00:00"
+      },
+      "smoke": {
+        "n": 3,
+        "document_n": 3,
+        "completed_document_n": 0,
+        "incomplete_document_n": 3,
+        "decode_timeout_count": 3,
+        "decode_timeout_rate": 1.0,
+        "effective_decode_timeout_seconds_min": 24.0,
+        "effective_decode_timeout_seconds_max": 24.0,
+        "decode_batch_size_max": 3,
+        "evaluation_wall_seconds": 57.999998,
+        "decode_total_ms_sum": 24000.173,
+        "decode_compiler_ms_sum": 23127.349
+      },
+      "gates": {
+        "pass": false,
+        "evidence_volume_failures": [
+          "smoke:insufficient_n actual=3 need>=20",
+          "held_out:missing_suite",
+          "adversarial:missing_suite",
+          "ood:missing_suite",
+          "rico_held:missing_suite"
+        ],
+        "measurement_integrity_failures": [
+          "smoke:meaningful_program_rate actual=None need>=0.66",
+          "smoke:structural_similarity actual=None need>=0.35",
+          "smoke:component_type_recall actual=None need>=0.35",
+          "smoke:ast_beq_rate actual=None need>=0.2",
+          "smoke:canonical_beq_rate actual=None need>=0.1",
+          "smoke:placeholder_fidelity actual=None need>=0.25",
+          "smoke:reward_score actual=None need>=0.3"
+        ],
+        "runtime_failures": [
+          "smoke:decode_timeout_count actual=3 need=0"
+        ]
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "conclusion": "Frozen replay of the c2 checkpoints (retry_measurement, no retraining): both arms hit decode_timeout_count=3/3 (100% incomplete; smoke n=3 vs required >=20). Root cause is NOT a 3x host-speed mismatch -- the effective per-chunk decode budget is screening_decode_timeout_seconds(8) x chunk_record_n(3) = 24.0s (see src/slm_training/harnesses/model_build/eval_runner.py:_effective_record_decode_timeout), and every arm's actual decode wall time landed at 24000-24461ms -- a 0-461ms (0-1.9%) miss, not a gross mismatch. See docs/design/autotrain-thrash-timing-pareto-20260804-recalibration.md for the evidence-bound recalibration (screening_decode_timeout_seconds 8->10, policy.v1.json v4->v5, harness.autoresearch.experiment_campaign v178) this finding justified.",
+  "next_priorities": [
+    "Retry the identical class of screening cycle under the recalibrated 10s (30s batch) budget to confirm it clears the smoke suite on this host"
+  ],
+  "recorded_at": "2026-08-04T03:46:00+00:00"
+}

@@ -357,9 +357,14 @@ def decode_timeout_seconds_for_role(policy: ClimbPolicy, role: str) -> float:
         default = 24.0
     else:
         key = "screening_decode_timeout_seconds"
-        # Default 8s: with smoke n=3 and ~70s arm share under MAX_RUN=3m,
-        # 24s×3 already exceeds the arm wall (empty scoreboards).
-        default = 8.0
+        # Default 10s: with smoke n=3 and ~70s arm share under MAX_RUN=3m,
+        # 24s×3 already exceeds the arm wall (empty scoreboards). Raised
+        # from the original 8s (autotrain-thrash-timing-pareto-20260803.md)
+        # after four same-session runs on a slower CPU host all missed the
+        # 8s×3=24s batch budget by 0-460ms (100% incomplete rate, well past
+        # the policy's own 15% recalculate trigger) —
+        # docs/design/autotrain-thrash-timing-pareto-20260804-recalibration.md.
+        default = 10.0
     value = float(measurement.get(key, default))
     if value <= 0:
         raise ClimbPolicyError(f"measurement.{key} must be > 0, got {value}")

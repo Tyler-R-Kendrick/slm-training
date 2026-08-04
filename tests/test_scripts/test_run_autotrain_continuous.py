@@ -7541,6 +7541,30 @@ def test_fit_screening_decode_fits_arm_wall() -> None:
     assert fitted <= 12.0  # thrash-calibrated, not ship 24s
 
 
+def test_screening_decode_timeout_has_margin_over_20260804_recalibration_evidence() -> (
+    None
+):
+    """screening_decode_timeout_seconds must clear the observed near-miss.
+
+    Four same-session runs (continuous-openui-local c3/c4, both arms) on a
+    slower CPU host each missed the prior 8s x 3-record batch budget by
+    0-460ms (100% incomplete rate; see
+    docs/design/autotrain-thrash-timing-pareto-20260804-recalibration.md).
+    Pin real headroom over that observed near-miss so a future silent
+    revert to 8s reproduces the same insufficient_n failure.
+    """
+    from slm_training.autoresearch.climb_policy import (
+        decode_timeout_seconds_for_role,
+        load_climb_policy,
+    )
+
+    policy = load_climb_policy()
+    smoke_n = 3
+    observed_batch_seconds_needed = 24.461  # worst observed sample (c4-control)
+    configured = decode_timeout_seconds_for_role(policy, "screening")
+    assert configured * smoke_n >= observed_batch_seconds_needed + 1.0
+
+
 def test_screening_matrix_uses_fitted_decode_and_thrash_steps() -> None:
     matrix = _mod._matrix(
         campaign_id="continuous-loop-timing-c1",

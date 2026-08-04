@@ -12,6 +12,7 @@
   "arms": [
     {
       "experiment_id": "c20260804-continuous-openui-local-8c0b60dd-c2-control",
+      "manifest_sha256": "ed3ecb300e23ee10a875a95af0ff14af3d9a33fe00dec16ebf1c733021f96c03",
       "trainable_params": 1608962,
       "steps": 22,
       "last_loss": 14.390223503112793,
@@ -24,6 +25,7 @@
     },
     {
       "experiment_id": "c20260804-continuous-openui-local-8c0b60dd-c2-canvas",
+      "manifest_sha256": "209115b1ea6962ff702df035b514d57be16a737bda7e17ec50b9f53b4911d223",
       "trainable_params": 1608962,
       "steps": 22,
       "last_loss": 14.390223503112793,
@@ -49,7 +51,7 @@
     "harness_family": "model_build",
     "diagnosis": "Reproduction of the previously documented docs/design/autotrain-cycle-c2-agentv-missing-infra-failure.json (fixed by commits 1faeff44/8da7b777 on 2026-08-03) in a fresh ephemeral remote-execution container. Neither scripts/setup_dev_env.sh nor its equivalent had been run yet for this container's checkout: no .venv, no torch, no repo-root node_modules (no @agentv/core), and no node_modules under src/apps/openui_bridge or src/apps/design_md_bridge. evaluate_model.py --ship-gates crashed in publish_model_evaluation before producing a scoreboard for both arms, identical to the prior finding.",
     "fix_commits": [],
-    "fix_summary": "No code change required — the fix already lives in scripts/setup_dev_env.sh from the prior repair (#1360). Ran the equivalent bootstrap for this session: `python3.12 -m venv .venv && pip install -e \".[dev]\"` (pulls the pinned CPU torch wheel via the dev extra), `env -u NODE_OPTIONS npm ci` at the repo root (installs @agentv/core), and `env -u NODE_OPTIONS npm ci` in src/apps/openui_bridge and src/apps/design_md_bridge. Verified node_modules/@agentv/core/package.json exists afterward. This is an expected one-time bootstrap cost on every fresh ephemeral container, not a regression.",
+    "fix_summary": "No code change required — the fix already lives in scripts/setup_dev_env.sh from the prior repair (#1360). Ran the equivalent bootstrap for this session: `python3.12 -m venv .venv && .venv/bin/python -m pip install -e \".[dev]\"` (pulls the pinned CPU torch wheel via the dev extra), `env -u NODE_OPTIONS npm ci` at the repo root (installs @agentv/core), and `env -u NODE_OPTIONS npm ci` in src/apps/openui_bridge and src/apps/design_md_bridge. Verified node_modules/@agentv/core/package.json exists afterward. This is an expected one-time bootstrap cost on every fresh ephemeral container, not a regression.",
     "regression_tests": [
       "tests/test_bridge_utils.py::test_sanitized_node_env_clears_host_node_options",
       "tests/test_dsl/test_language_contract.py::test_invoke_once_clears_host_node_options",

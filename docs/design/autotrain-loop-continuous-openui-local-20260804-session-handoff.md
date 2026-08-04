@@ -14,52 +14,46 @@ Scheduled-routine iteration summary. Loop `continuous-openui-local`, branch
    (`pip install -e ".[dev]"`, `npm ci` at repo root +
    `src/apps/openui_bridge` + `src/apps/design_md_bridge`). See
    [`autotrain-cycle-c2-agentv-missing-infra-failure-20260804.json`](autotrain-cycle-c2-agentv-missing-infra-failure-20260804.json)/`.md`.
-2. **c3** — replay: training fine, AgentV now runs, but the smoke suite hit
-   the per-record decode timeout on all 3 documents
-   (`compiler_ms_mean≈23.1–23.4s` vs the locked
-   `screening_decode_timeout_seconds=8.0`). Diagnosed as a host-speed
-   characteristic of this specific container, not a defect — the 8s default
-   was deliberately Pareto-calibrated
-   ([`autotrain-thrash-timing-pareto-20260803.md`](autotrain-thrash-timing-pareto-20260803.md))
-   against a faster host, and that doc explicitly forbids ad-hoc
-   widening from a single failed cycle. See
-   [`autotrain-cycle-c3-screening-decode-timeout-host-speed-20260804.md`](autotrain-cycle-c3-screening-decode-timeout-host-speed-20260804.md).
-3. **c4** — `retry_measurement` replay of the identical frozen arm
-   reproduced the identical timeout (`compiler_ms_mean≈23.1–23.6s`,
-   `decode_timeout_count=3/3` both arms) — confirms c3's diagnosis was not a
-   one-off cold-start effect; this container's compiler wall time is
-   consistently ~3x the locked screening budget.
-
-## Why the loop is pausing here, not spinning on c5/c6/...
-
-A third identical replay of the same frozen manifest would deterministically
-reproduce the same timeout again (same steps, same decode budget, same seed)
-— not new information, and the locked Pareto policy explicitly rejects
-reactive per-cycle wall/timeout widening. Real recalibration needs either:
-
-- **Shrink the recipe** (the Pareto doc's preferred first lever — lower
-  `compiler_search_*` cost knobs for the screening role so per-document
-  compile time drops under budget on slower hosts), or
-- **Accumulated telemetry** across multiple sessions/containers in
-  `thrash_timing.jsonl` showing a persistently high incomplete rate before
-  an evidence-bound, version-bumped policy change — not two cycles in one
-  session on one container.
-
-Both are harness-design work larger than a single soft-failure repair receipt
-and are left as the next priority rather than forced through in this
-iteration. Per the continuous-mode absolute loop law, timeouts are a soft
-failure and never a hard stop — the next scheduled iteration should pick a
-**new** screening hypothesis/knob set (not a third identical replay) or take
-up the recipe-shrink work above.
+2. **c3** — `retry_measurement` frozen replay of the c2 checkpoints: AgentV
+   now runs, but the smoke suite hit `decode_timeout_count=3/3` on both
+   arms.
+3. **c4** — a second `retry_measurement` replay reproduced the identical
+   timeout shape on both arms.
+4. Digging into c3/c4's exact numbers (prompted by review feedback asking
+   for the committed per-arm result JSON — see
+   [`autotrain-cycle-c3-screening-decode-timeout-host-speed-20260804-results.json`](autotrain-cycle-c3-screening-decode-timeout-host-speed-20260804-results.json)/[`c4...json`](autotrain-cycle-c4-screening-decode-timeout-host-speed-20260804-results.json))
+   found the initial diagnosis was wrong: `evaluate_model`'s decode timeout
+   is granted per-*chunk*, not per-record, so the real effective budget for
+   the 3-record screening chunk was `8s × 3 = 24.0s`, and every arm's actual
+   decode wall time landed at 24000–24461ms — a 0–461ms (≤1.9%) miss, not a
+   "host is 3x too slow" mismatch. Four same-session arm-measurements at a
+   100% incomplete rate, all landing in that same narrow band, crossed the
+   locked Pareto policy's own **"High (≫15%) incomplete rate → recalculate"**
+   threshold (`autotrain-thrash-timing-pareto-20260803.md`), so this
+   iteration applied an evidence-bound recalibration:
+   `screening_decode_timeout_seconds` `8 → 10` (`policy.v1.json` `v4 → v5`,
+   `harness.autoresearch.experiment_campaign` `v177 → v178`), with a
+   regression test pinning real margin over the worst observed sample. Full
+   writeup:
+   [`autotrain-thrash-timing-pareto-20260804-recalibration.md`](autotrain-thrash-timing-pareto-20260804-recalibration.md).
 
 ## State for the next iteration
 
 - Loop id `continuous-openui-local`; last completed campaign
-  `continuous-loop-20260804-continuous-openui-local-8c0b60dd-c4`.
-- No positive result yet this loop-id/session — no stacked PR opened for
-  training results (per `autotrain` continuous-mode SDLC rule: stacked PRs
-  only after a positive-result run). The branch PR for this session covers
-  the infra bootstrap + honest diagnosis docs only.
+  `continuous-loop-20260804-continuous-openui-local-8c0b60dd-c4`; this
+  iteration additionally landed the `screening_decode_timeout_seconds`
+  recalibration above (code/policy change, not just docs).
+- **Next action:** run a fresh screening cycle (c5) under the recalibrated
+  10s budget to confirm it clears the smoke suite on this host — if it does,
+  that produces the first real `smoke.structural_similarity` measurement for
+  this loop-id/session and unblocks actual model comparison; if it still
+  times out, that is new accumulated evidence for a further round.
+- No positive **training** result yet this loop-id/session — no stacked PR
+  opened for a training win (per `autotrain` continuous-mode SDLC rule:
+  stacked PRs only after a positive-result run). The branch PR for this
+  session covers the infra bootstrap, the timeout recalibration (code +
+  policy + test), and the honest diagnosis docs, including the correction
+  above.
 - Container bootstrap (`.venv`, torch, `node_modules` incl. `@agentv/core`,
   `openui_bridge`, `design_md_bridge`) is now warm for this container's
   lifetime; a fresh container will need `scripts/setup_dev_env.sh` again.

@@ -2683,7 +2683,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v177",
+      "version": "v178",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2723,6 +2723,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v178",
+          "date": "2026-08-04",
+          "note": "Raise policy.v1.json screening_decode_timeout_seconds 8->10 (batch budget 24s->30s): four same-session continuous-openui-local c3/c4 runs (both arms) missed the prior 8s x3 batch budget by 0-460ms, a 100% incomplete rate past the thrash_timing policy's own 15% recalculate trigger. See docs/design/autotrain-thrash-timing-pareto-20260804-recalibration.md"
+        },
         {
           "version": "v177",
           "date": "2026-08-04",

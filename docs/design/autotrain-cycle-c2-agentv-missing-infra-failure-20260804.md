@@ -19,7 +19,7 @@ shipped in `scripts/setup_dev_env.sh` (commits `1faeff44`/`8da7b777`, #1360)
 from the prior occurrence; it just hadn't been run yet in this fresh
 container. No code change was needed this cycle — ran the bootstrap:
 
-```
+```bash
 python3.12 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"                 # pulls torch via the dev extra
 env -u NODE_OPTIONS npm ci               # repo root: installs @agentv/core
@@ -36,7 +36,11 @@ ship evidence. Lean is `not_applicable:screening`.
 Next: replay the identical frozen `canvas` arm (`retry_measurement`,
 `frozen_manifest_sha256=209115b1ea6962ff702df035b514d57be16a737bda7e17ec50b9f53b4911d223`)
 now that training, evaluation dependencies, and the Node bridges are sound in
-this container.
+this container. Done in c3/c4 — both replays hit a decode timeout on every
+document; see
+[`autotrain-cycle-c3-screening-decode-timeout-host-speed-20260804.md`](autotrain-cycle-c3-screening-decode-timeout-host-speed-20260804.md)
+for that finding and the resulting
+[`screening_decode_timeout_seconds` recalibration](autotrain-thrash-timing-pareto-20260804-recalibration.md).
 
 Machine evidence:
 [`autotrain-cycle-c2-agentv-missing-infra-failure-20260804.json`](autotrain-cycle-c2-agentv-missing-infra-failure-20260804.json).
