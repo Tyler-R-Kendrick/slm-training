@@ -1,73 +1,63 @@
 {
   "schema": "continuous_autotrain_cycle_results/v1",
-  "loop_id": "continuous-openui-local",
+  "loop_id": "continuous-openui-20260801",
   "campaign_id": "continuous-loop-20260801-c4",
   "cycle_index": 4,
-  "predecessor_campaign_id": "continuous-loop-20260801-c3",
-  "source_commit": "1bdfb14ebcf2393976a7c969e7bdd449fc5ada39",
+  "source_commit": "c1c4eca349b66f05684975575a3640ced50051ea",
   "honesty": "fixture_or_scratch",
   "not_ship_claim": true,
   "recipe": {
     "device": "cpu",
+    "steps": 20,
+    "context_backend": "scratch",
     "train_version": "wf_smoke_v2",
     "eval_version": "e938_role_safe_all_targets_v2",
-    "eval_suites": ["smoke", "held_out"],
     "max_wall_minutes": 3,
-    "ship_gates": true,
-    "role": "promotion",
-    "primary_metric": "held_out.structural_similarity",
-    "primary_direction": "increase"
+    "ship_gates": true
   },
-  "hypothesis": "Doubling steps without other levers only raises cost and does not improve unit decode latency.",
+  "role": "promotion",
   "arms": {
     "c20260801-c4-control": {
       "status": "completed_eval_gates_failed",
       "smoke": {
+        "latency_ms_p50": 19807.48,
         "parse_rate": 1.0,
         "meaningful_program_rate": 0.3333333333333333,
-        "structural_similarity": 0.4166666666666667,
-        "latency_ms_p50": 19694.76
+        "structural_similarity": 0.4166666666666667
       },
       "held_out": {
+        "latency_ms_p50": 20777.56,
         "parse_rate": 1.0,
         "meaningful_program_rate": 0.0,
-        "structural_similarity": 0.38248,
-        "latency_ms_p50": 19385.1
+        "structural_similarity": 0.38248
       }
     },
     "c20260801-c4-steps": {
       "status": "completed_eval_gates_failed",
+      "levers": {
+        "steps": "increased vs. control (see manifest for exact value)"
+      },
       "smoke": {
+        "latency_ms_p50": 11153.18,
         "parse_rate": 1.0,
         "meaningful_program_rate": 0.3333333333333333,
-        "structural_similarity": 0.51,
-        "latency_ms_p50": 10244.61
+        "structural_similarity": 0.51
       },
       "held_out": {
+        "latency_ms_p50": 11075.73,
         "parse_rate": 1.0,
         "meaningful_program_rate": 0.0,
-        "structural_similarity": 0.37006,
-        "latency_ms_p50": 10256.33
+        "structural_similarity": 0.37006
       }
     }
   },
   "primary_metric": "held_out.structural_similarity",
   "primary_delta": -0.012419999999999987,
-  "sdlc_phase_a": {
-    "classification": "NON_POSITIVE",
-    "stack_layer": false,
-    "reasons": [
-      "fixture_insufficient_n:c20260801-c4-steps",
-      "fixture_insufficient_n:c20260801-c4-control",
-      "primary_metric_null_or_worse:held_out.structural_similarity:control=0.38248 candidate=0.37006 improvement=-0.012419999999999987",
-      "fixture_insufficient_n_alone"
-    ]
-  },
-  "conclusion": "The steps arm nearly halved latency on both smoke and held_out (19694.76ms -> 10244.61ms smoke p50; 19385.1ms -> 10256.33ms held_out p50) and raised smoke structural_similarity (0.417 -> 0.51), but the locked primary endpoint (held_out.structural_similarity) moved the wrong way (0.38248 -> 0.37006, -0.0124), below the 0.01 minimum-effect threshold in the losing direction. SDLC Phase A correctly rejects this as non-positive on the locked held-out primary despite the attractive smoke-only numbers -- a reminder that smoke deltas are not a substitute for the preregistered held-out endpoint.",
+  "conclusion": "The 'steps' candidate roughly halved latency on both smoke and held_out suites (held_out.latency_ms_p50 20777.56ms -> 11075.73ms) and lifted smoke.structural_similarity (0.4167 -> 0.51), but this cycle's role is 'promotion' with primary_metric=held_out.structural_similarity, which moved the wrong direction (0.38248 -> 0.37006, -0.0124). Per the quality-aware tradeoff policy, a latency win does not substitute for a primary-metric regression on a promotion-role cycle. Classified non-positive; both arms also fail ship gates on fixture insufficient_n at this scale.",
   "next_priorities": [
-    "Do not promote the steps-only variant; held_out primary regressed",
-    "Investigate whether the smoke-suite improvement (mpr, structural_similarity) is fixture overfitting given n=3 per suite",
-    "Re-run with a larger held-out fixture before drawing conclusions about the steps lever"
+    "The steps lever's large latency win is worth re-screening at 'screening' role (primary_metric=latency) with parse/mpr held, separate from this promotion-role read",
+    "Re-run the steps candidate at a larger held_out suite size before drawing a structural_similarity conclusion -- n is fixture-scale here",
+    "Do not promote on the held_out.structural_similarity regression regardless of the latency improvement"
   ],
-  "recorded_at": "2026-08-01T05:41:02Z"
+  "recorded_at": "2026-08-01T13:44:07.000000+00:00"
 }

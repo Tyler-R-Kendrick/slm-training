@@ -1,0 +1,105 @@
+{
+  "schema": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1745",
+  "loop_id": "continuous-openui-20260730",
+  "cycle_index": 1745,
+  "campaign_role": "screening",
+  "cycle_intent": "retry_measurement",
+  "run_class": "fixture_scratch_incomplete",
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "steps": 22,
+  "seed": 101737,
+  "checkpoint_reuse": "exact frozen c1737 checkpoints",
+  "upstream_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "integration_commit": "92c709b6e96ed868c3997007bd0265936f1d1705",
+  "primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "label": "matched control",
+      "trainable_parameters": 1608962,
+      "compact_active_canvas": false,
+      "suite_n": 3,
+      "completed_document_n": 2,
+      "incomplete_document_n": 1,
+      "decode_timeout_count": 1,
+      "parse_rate_completed": 1.0,
+      "meaningful_program_rate_completed": 0.5,
+      "structural_similarity_completed": 0.11665,
+      "binder_reference_f1_completed": 1.0,
+      "latency_ms_p50_completed": 7897.19,
+      "latency_ms_p50_including_incomplete": 17712.37,
+      "decode_initialization_ms": 150.168,
+      "forwards_count_sum": 137,
+      "tokens_emitted_sum": 220,
+      "compiler_ms_sum": 37208.117,
+      "completion_unique_states_sum": 313900,
+      "completion_witness_states_expanded_sum": 23770,
+      "completion_parser_forks_sum": 353708,
+      "total_eval_ms": 49611.19,
+      "scoreable_comparison": false
+    },
+    {
+      "label": "compact active canvas",
+      "trainable_parameters": 1608962,
+      "compact_active_canvas": true,
+      "suite_n": 3,
+      "completed_document_n": 2,
+      "incomplete_document_n": 1,
+      "decode_timeout_count": 1,
+      "parse_rate_completed": 1.0,
+      "meaningful_program_rate_completed": 0.5,
+      "structural_similarity_completed": 0.11665,
+      "binder_reference_f1_completed": 1.0,
+      "latency_ms_p50_completed": 8130.19,
+      "latency_ms_p50_including_incomplete": 17855.21,
+      "decode_initialization_ms": 176.644,
+      "forwards_count_sum": 138,
+      "tokens_emitted_sum": 221,
+      "compiler_ms_sum": 37597.975,
+      "completion_unique_states_sum": 313916,
+      "completion_witness_states_expanded_sum": 23794,
+      "completion_parser_forks_sum": 353736,
+      "total_eval_ms": 49987.32,
+      "scoreable_comparison": false
+    }
+  ],
+  "comparison": {
+    "parameter_matched": true,
+    "measurement_complete": false,
+    "quality_delta": "unavailable",
+    "completed_document_efficiency_gain_fraction": -0.02865839,
+    "minimum_efficiency_effect_fraction": 0.05,
+    "efficiency_disposition": "rejected_regression_and_incomplete",
+    "disposition": "inconclusive_runtime_repair_then_exact_frozen_retry"
+  },
+  "harness_feedback": {
+    "signal": "Both scoreboards retain one timeout; v14 lowers control completed-document latency relative to c1744 but canvas regresses within c1745.",
+    "repair": "Re-profile v14/v287 and test semantic-state interning or decision-classification reuse only if the measured current hot path clears the optimization threshold.",
+    "component_version": "dsl.completion_kernel/v14"
+  },
+  "formal_evidence": {
+    "status": "not_applicable:incomplete_screening",
+    "latest_validation": "145 exact completion tests passed; Build completed successfully (2947 jobs); formal contracts build and axiom audit passed",
+    "validation_required_after_repair": "python -m scripts.verify_formal_contracts"
+  },
+  "next_action": {
+    "kind": "profile_harness_then_repair_and_retry_measurement",
+    "priority": "measure_semantic_state_interning_and_decision_classification",
+    "frozen_manifest_sha256": "d6703ae556cdbf591923a365abef3adba255b96368da56ff63f46c0445a0d120"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "92c709b6e96ed868c3997007bd0265936f1d1705",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v59",
+      "harness.model_build.eval": "v74",
+      "model.twotower": "v287",
+      "dsl.completion_kernel": "v14",
+      "dsl.symbolic_surface": "v5"
+    }
+  },
+  "checkpoint_documentation_required": false,
+  "ship_eligible": false
+}

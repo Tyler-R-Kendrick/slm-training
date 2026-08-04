@@ -1,0 +1,110 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1810",
+  "cycle_index": 1810,
+  "decision": "champion_confirmed_for_promotion_suite",
+  "evidence_class": "fixture_confirmation",
+  "formal_status": "not_applicable:confirmation",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "cb8861df41eee69466869f6c0ed0ae7514d50a7e",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.autoresearch.experiment_campaign": "v108",
+      "harness.model_build.eval": "v77",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v300"
+    },
+    "stamped_at": "2026-08-03T00:52:10.455521+00:00"
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "steps": 20,
+    "seed": 101810,
+    "batch_size": 2,
+    "sync_checkpoints": false,
+    "suite": "smoke",
+    "suite_n": 3,
+    "honesty_mode": "fixture_confirmation"
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1810-control",
+      "trainable_params": 1608962,
+      "checkpoint_sha256": "274e7d3448ba815074c7d24b2c974d38996b180c66e7cad7e318665dfacd2a1d",
+      "typed_family_balance_loss_weight": 0.0,
+      "compiler_alignment_loss_weight": 0.0,
+      "last_loss": 19.392065048217773,
+      "train_wall_seconds": 3.059527126024477,
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0964,
+        "binder_reference_f1": 0.0,
+        "component_type_recall": 0.08333333333333333,
+        "placeholder_fidelity": 0.0,
+        "reward_score": 0.0,
+        "latency_ms_p50": 906.83
+      },
+      "decode_trace": {
+        "tokens_emitted": 24,
+        "forwards_count": 4,
+        "compiler_ms": 2172.363,
+        "completion_unique_states": 31111,
+        "completion_parser_forks": 32115
+      }
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1810-confirm",
+      "trainable_params": 1608962,
+      "checkpoint_sha256": "f5d05181ba4761cb5e7ed3d6253e4daf16e98b362ccbf82a77d5f2733254cb00",
+      "typed_family_balance_loss_weight": 0.25,
+      "compiler_alignment_loss_weight": 1.0,
+      "compiler_alignment_margin": 1.0,
+      "compiler_alignment_kind_filter": "container-close",
+      "last_loss": 25.940677642822266,
+      "train_wall_seconds": 7.885185837047175,
+      "final_batch_attribution": {
+        "component_token_count": 8,
+        "component_mean_ce": 22.31886100769043,
+        "structure_token_count": 42,
+        "structure_mean_ce": 11.489082336425781,
+        "typed_family_balance_aux_loss": 4.2259931564331055,
+        "container_close_rows": 5,
+        "compiler_alignment_loss": 0.0000013589813079306623,
+        "compiler_alignment_margin_violation_rate": 0.0
+      },
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.17416666666666666,
+        "binder_reference_f1": 0.6333333333333333,
+        "component_type_recall": 0.25,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.7653333333333334,
+        "latency_ms_p50": 983.8
+      },
+      "decode_trace": {
+        "tokens_emitted": 24,
+        "forwards_count": 4,
+        "compiler_ms": 2202.685,
+        "completion_unique_states": 31118,
+        "completion_parser_forks": 32126
+      }
+    }
+  ],
+  "next_hypothesis": {
+    "kind": "promotion_suite_with_lean_preflight",
+    "authority": "observed_result",
+    "confidence": 0.9,
+    "statement": "The confirmed size-matched champion retains its gain under the next promotion suite and passes Lean preflight."
+  }
+}

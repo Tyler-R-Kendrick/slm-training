@@ -1,0 +1,56 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260802",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202608-39ee9cf7-c2",
+  "cycle_index": 2,
+  "note": "This resumed-session cycle 2 shares a campaign_id string with the earlier same-day continuous-openui-20260802-c2-results.json (campaign_id is deterministic sha256(loop_id)[:8] + cycle_index, not time-based, and outputs/autoresearch is gitignored so the earlier session's local state was not available to this fresh container). It is a distinct campaign run against a different source_commit; see continuous-openui-20260802-c2-results.md for the original.",
+  "source_commit": "189ef062050878a3afdf0bfa41df39d043c18d27",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "honest_slot_contract": true,
+    "slot_contract_constrained_decode": true,
+    "compiler_decode_mode": "off"
+  },
+  "arms": {
+    "c2-control": {
+      "status": "completed",
+      "reason": "eval completed; ship gates fail (insufficient n, quality thresholds)",
+      "metrics": {
+        "latency_ms_p50": 1419.78,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333
+      }
+    },
+    "c2-bounds": {
+      "status": "completed",
+      "reason": "eval completed; ship gates fail (insufficient n, quality thresholds)",
+      "metrics": {
+        "latency_ms_p50": 1370.23,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "conclusion": "This is the retry_measurement replay of cycle 1's frozen control/bounds pair, now that node_modules/@agentv/core was restored (npm ci). Both arms completed a real evaluation with a scoreboard. Ship gates fail as expected diagnostics on a 3-example smoke fixture: insufficient_n (need >= 20, have 3) plus quality-threshold misses (meaningful_program_rate, structural_similarity, component_type_recall, ast_beq_rate, canonical_beq_rate, reward_score all below floor). This is fixture_insufficient_n_alone -- a soft failure per the continuous-mode contract, not a loop terminator. primary_metric (smoke.structural_similarity) is identical between control and bounds (0.0575), so the driver correctly classified this cycle non-positive with no tracked code delta -- no stack layer.",
+  "repair": null,
+  "known_debt_discovered": null,
+  "next_priorities": [
+    "model: test the distinct size-matched 'component-plan' lever next (c20260802-continuous-openui-202608-39ee9cf7-c2-component-plan) -- the bounds/control pair is now exhausted and cannot be replayed again without a new preregistered hypothesis.",
+    "evaluation: keep the matched control as the size-matched baseline every cycle.",
+    "infrastructure: soft ship-gate fails on fixture n never stop the continuous loop."
+  ],
+  "recorded_at": "2026-08-02T22:38:30+00:00"
+}

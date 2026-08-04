@@ -5,14 +5,18 @@ from __future__ import annotations
 
 import argparse
 import json
-import subprocess
 import tempfile
 from pathlib import Path
 
 from slm_training.harnesses.experiments.verified_metrics import (
     IN_REPO_CHECKER,
     VerifiedMetricError,
+    _checker_project_root,
     optimum_feedback,
+    formal_process_budget,
+    FormalProjectLock,
+    ProcessOutcome,
+    run_formal_process,
     verify_metric_certificate,
     write_metric_evidence,
 )
@@ -68,20 +72,32 @@ def _cmd_certify(args: argparse.Namespace) -> int:
     ) as handle:
         temporary = Path(handle.name)
     try:
-        with temporary.open("w", encoding="utf-8") as output:
-            try:
-                completed = subprocess.run(
+        project_root = _checker_project_root(checker)
+        total, _interrupt_after, _grace = formal_process_budget(
+            INTERRUPT_AFTER_SECONDS
+        )
+        try:
+            with FormalProjectLock(project_root, timeout_seconds=total) as lock:
+                completed = run_formal_process(
                     [str(checker), "check", str(args.evidence)],
-                    stdout=output,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                    check=False,
-                    timeout=INTERRUPT_AFTER_SECONDS,
+                    cwd=project_root,
+                    timeout_seconds=max(0.001, total - lock.wait_seconds),
                 )
-            except subprocess.TimeoutExpired as exc:
-                raise VerifiedMetricError(
-                    "LeverProof certification exceeded the run cap"
-                ) from exc
+        except TimeoutError as exc:
+            raise VerifiedMetricError(
+                f"LeverProof certification lock timed out: {exc}"
+            ) from exc
+        if completed.timed_out:
+            raise VerifiedMetricError("LeverProof certification exceeded the run cap")
+        if completed.outcome is ProcessOutcome.LAUNCH_FAILED:
+            raise VerifiedMetricError(
+                f"LeverProof certification could not start: {completed.launch_error}"
+            )
+        if completed.stdout_truncated:
+            raise VerifiedMetricError(
+                "LeverProof certification output exceeded the bounded capture"
+            )
+        temporary.write_text(completed.stdout, encoding="utf-8")
         if completed.returncode != 0:
             raise VerifiedMetricError(
                 "LeverProof rejected evidence: "

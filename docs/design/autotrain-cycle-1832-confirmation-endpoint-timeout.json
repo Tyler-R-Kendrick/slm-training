@@ -1,0 +1,85 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1832",
+  "decision": "retry_confirmation_after_endpoint_boundary_repair",
+  "claim_class": "incomplete_fixture_confirmation",
+  "formal": {
+    "status": "not_applicable:confirmation_incomplete",
+    "reason": "The unconfirmed champion must remain on screening endpoints; promotion formal preflight was not reached."
+  },
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "steps": 20,
+    "seed": 101832,
+    "batch_size": 2,
+    "context_backend": "scratch",
+    "requested_suites": ["smoke", "held_out"],
+    "sync_checkpoints": false,
+    "max_run_seconds": 180,
+    "arm_count": 2
+  },
+  "arms": {
+    "candidate": {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1832-confirm",
+      "trainable_params": 1608962,
+      "train_steps_completed": 20,
+      "last_loss": 17.602327346801758,
+      "checkpoint_sha256": "a39052590d61583fceb9cb4e408260cd38480f8c5cd42c6416b9d90d85a5cd54",
+      "effective_records": 25.81,
+      "unique_records": 30,
+      "total_draws": 40,
+      "max_repeat": 3,
+      "eval": {
+        "suite": "smoke",
+        "document_n": 3,
+        "completed_document_n": 0,
+        "incomplete_document_n": 3,
+        "decode_timeout_count": 3,
+        "evaluation_wall_seconds": 24.954569,
+        "metrics_defined": false
+      },
+      "exit_code": 124
+    },
+    "control": {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1832-control",
+      "trainable_params": 1608962,
+      "train_steps_completed": 2,
+      "checkpoint_written": false,
+      "eval_started": false,
+      "exit_code": 124
+    }
+  },
+  "diagnosis": {
+    "model_signal": "none_comparable",
+    "root_cause": "Confirmation inherited a promotion cadence role and changed to held-out endpoints before the screening result was confirmed.",
+    "ledger_bug": "The incomplete comparison was labeled rejected instead of confirmation_inconclusive.",
+    "repair": "Pin confirmation to screening endpoints and keep incomplete confirmation entries retryable.",
+    "gate_weakened": false,
+    "cap_changed": false
+  },
+  "ship": {
+    "eligible": false,
+    "failures": [
+      "control training incomplete",
+      "candidate smoke 0/3 complete",
+      "held_out not reached",
+      "scoreboards missing",
+      "AgentV evidence missing",
+      "fresh-seed confirmation incomplete",
+      "formal preflight not reached"
+    ]
+  },
+  "next_hypothesis": "Run the exact capacity-aware tail candidate and matched control on a new seed using the original smoke screening endpoint; only then open held-out and Lean-backed promotion.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "f49c2cb8559e48ab84b261716f7397ab76e128a0",
+    "code_dirty": true,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v129",
+      "harness.model_build.train": "v38",
+      "harness.experiment_feature_flags": "v4"
+    },
+    "stamped_at": "2026-08-03T04:53:00+00:00"
+  }
+}

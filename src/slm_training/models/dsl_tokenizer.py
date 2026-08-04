@@ -140,6 +140,13 @@ class TokenKind(str, Enum):
     ABSTRACT = "abstract"
 
 
+def _token_kind_or_special(raw: str | None) -> TokenKind:
+    try:
+        return TokenKind(raw)
+    except (TypeError, ValueError):
+        return TokenKind.SPECIAL
+
+
 # Fixed-vocabulary kinds a macro expansion may contain (C3). Dynamic
 # per-example rows (SYM/BIND/STATE) are excluded by construction so every
 # expansion is context-free and the α-equivalence pitfall documented in
@@ -529,6 +536,18 @@ class DSLNativeTokenizer:
     abstract_plan_slots: int = 0
     # Overflow counter (byte-path used when symbol table is full).
     overflow_count: int = 0
+    _kind_ids_cache: dict[str, frozenset[int]] = field(
+        default_factory=dict,
+        init=False,
+        repr=False,
+        compare=False,
+    )
+    _token_kind_cache: tuple[TokenKind, ...] = field(
+        default=(),
+        init=False,
+        repr=False,
+        compare=False,
+    )
 
     @property
     def pad_id(self) -> int:
@@ -555,15 +574,31 @@ class DSLNativeTokenizer:
         return len(self.token_to_id)
 
     def kind_of(self, token_id: int) -> TokenKind:
-        raw = self.id_to_kind.get(int(token_id), TokenKind.SPECIAL.value)
-        try:
-            return TokenKind(raw)
-        except ValueError:
-            return TokenKind.SPECIAL
+        tid = int(token_id)
+        cache = getattr(self, "_token_kind_cache", ())
+        if not cache:  # checkpoints serialized before this immutable lookup table
+            cache = tuple(
+                _token_kind_or_special(self.id_to_kind.get(i))
+                for i in range(self.vocab_size)
+            )
+            self._token_kind_cache = cache
+        if 0 <= tid < len(cache):
+            return cache[tid]
+        return TokenKind.SPECIAL
 
     def kind_ids(self, kind: TokenKind | str) -> set[int]:
         want = kind.value if isinstance(kind, TokenKind) else str(kind)
-        return {i for i, k in self.id_to_kind.items() if k == want}
+        cache = getattr(self, "_kind_ids_cache", None)
+        if cache is None:  # checkpoints serialized before the cache field existed
+            cache = {}
+            self._kind_ids_cache = cache
+        cached = cache.get(want)
+        if cached is None:
+            cached = frozenset(
+                i for i, value in self.id_to_kind.items() if value == want
+            )
+            cache[want] = cached
+        return set(cached)
 
     def is_sym_id(self, tid: int) -> bool:
         return self.kind_of(tid) == TokenKind.SYM

@@ -7,18 +7,28 @@ import fcntl
 import hashlib
 import json
 import os
+import subprocess
 import tempfile
+from contextlib import contextmanager
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 from pydantic import BaseModel
 
 from slm_training.autoresearch.schemas import (
+    AutotrainActionEvidenceV1,
+    AutotrainActionReceiptV1,
+    AutotrainActionV1,
+    AutotrainCycleHandoffV1,
+    AutotrainLoopStateV1,
     CampaignSpec,
     Diagnosis,
     ExperimentOutcome,
     HypothesisFeedback,
     HypothesisMatrix,
+    evaluation_completeness_failures,
+    evaluation_measurement_incomplete,
     utc_now,
 )
 from slm_training.autoresearch.experiment_campaign import (
@@ -30,6 +40,7 @@ from slm_training.autoresearch.experiment_campaign import (
     validate_result_claim,
 )
 from slm_training.lineage.records import canonical_json
+from slm_training.levers import MAX_RUN_SECONDS
 
 _OUTCOME_BOUNDARY_EVENTS = frozenset(
     {
@@ -39,6 +50,389 @@ _OUTCOME_BOUNDARY_EVENTS = frozenset(
         "hypothesizer_feedback_recorded",
     }
 )
+_PREREQUISITE_ACTION_KINDS = frozenset(
+    {
+        "stop_campaign",
+        "repair_harness",
+        "repair_formal",
+        "rebuild_data",
+        "document",
+        "deliver_stack",
+    }
+)
+_EXECUTION_ACTION_KINDS = frozenset({"retry_measurement", "next_experiment", "monitor"})
+_REPAIR_ACTION_KINDS = frozenset({"repair_harness", "repair_formal"})
+_DATA_EVIDENCE_NAMES = frozenset(
+    {"data_manifest.json", "quality_report.json", "synthesis_feedback.json"}
+)
+_MATRIX_CELL_MAX_CHARS = 240
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+
+
+def autotrain_action_sha256(action: AutotrainActionV1) -> str:
+    return _sha(action.model_dump(mode="json"))
+
+
+def autotrain_action_is_execution(action: AutotrainActionV1) -> bool:
+    """Return whether only the continuous driver may complete this action."""
+
+    return action.kind in _EXECUTION_ACTION_KINDS
+
+
+@contextmanager
+def autotrain_loop_state_lock(root: Path | str, loop_id: str) -> Iterator[None]:
+    """Serialize short-lived state writes and receipt reconciliation per loop."""
+
+    path = Path(root) / "loops" / loop_id / "state.lock"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lock_fd = os.open(path, os.O_CREAT | os.O_RDWR, 0o644)
+    try:
+        fcntl.flock(lock_fd, fcntl.LOCK_EX)
+        yield
+    finally:
+        fcntl.flock(lock_fd, fcntl.LOCK_UN)
+        os.close(lock_fd)
+
+
+def append_autotrain_action_receipt(
+    root: Path | str, receipt: AutotrainActionReceiptV1
+) -> Path:
+    path = Path(root) / "loops" / receipt.loop_id / "action_receipts.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with autotrain_loop_state_lock(root, receipt.loop_id):
+        lock_fd = os.open(path.with_suffix(".lock"), os.O_CREAT | os.O_RDWR, 0o644)
+        try:
+            fcntl.flock(lock_fd, fcntl.LOCK_EX)
+            with path.open("a", encoding="utf-8") as stream:
+                stream.write(receipt.model_dump_json() + "\n")
+                stream.flush()
+                os.fsync(stream.fileno())
+        finally:
+            fcntl.flock(lock_fd, fcntl.LOCK_UN)
+            os.close(lock_fd)
+        _refresh_loop_state_after_receipt(Path(root), receipt)
+    return path
+
+
+def _refresh_loop_state_after_receipt(
+    root: Path, receipt: AutotrainActionReceiptV1
+) -> None:
+    """Keep the human-facing loop state aligned with durable action receipts.
+
+    Handoffs and receipts are the authority for gating, but ``state.json`` is
+    what operators see in the result matrix.  Without this reconciliation an
+    acknowledged prerequisite remains displayed as the next action until the
+    next campaign rewrites the state, which makes a healthy loop look stuck.
+    Only an idle/between-cycle state for the acknowledged campaign is updated;
+    an active driver owns its running state and must not be clobbered.
+    """
+
+    handoff_path = root / receipt.campaign_id / "cycle_handoff.json"
+    state_path = root / "loops" / receipt.loop_id / "state.json"
+    if not handoff_path.is_file() or not state_path.is_file():
+        return
+    try:
+        handoff = AutotrainCycleHandoffV1.model_validate_json(
+            handoff_path.read_text(encoding="utf-8")
+        )
+        state = AutotrainLoopStateV1.model_validate_json(
+            state_path.read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        return
+    if handoff.loop_id != receipt.loop_id or handoff.campaign_id != receipt.campaign_id:
+        return
+    # Reconcile only the exact completed campaign while the driver is idle.
+    # A stale receipt from an older handoff must never rewrite the operator
+    # view for a newer cycle (or a state file that is still transitioning).
+    if (
+        state.active_campaign_id is not None
+        or state.state == "RUNNING"
+        or state.phase != "between_cycles"
+        or state.last_completed_campaign_id != receipt.campaign_id
+    ):
+        return
+
+    pending_required = pending_autotrain_actions(root, handoff)
+    if pending_required:
+        next_action = pending_required[0][1].kind
+    else:
+        pending_execution = pending_autotrain_execution_actions(root, handoff)
+        next_action = (
+            pending_execution[0][1].kind
+            if pending_execution
+            else "run bounded campaign"
+        )
+    updated = state.model_copy(
+        update={
+            "state": "IDLE",
+            "phase": "between_cycles",
+            "next_action": next_action,
+            "heartbeat_at": utc_now(),
+        }
+    )
+    tmp = state_path.with_suffix(".json.tmp")
+    try:
+        tmp.write_text(updated.model_dump_json(indent=2) + "\n", encoding="utf-8")
+        tmp.replace(state_path)
+    except OSError:
+        try:
+            tmp.unlink()
+        except OSError:
+            pass
+
+
+def _git(*args: str) -> subprocess.CompletedProcess[bytes]:
+    return subprocess.run(
+        ["git", "-C", str(_REPO_ROOT), *args],
+        check=False,
+        capture_output=True,
+        timeout=MAX_RUN_SECONDS,
+    )
+
+
+def _git_commit_evidence(
+    uri: str, handoff: AutotrainCycleHandoffV1, action: AutotrainActionV1
+) -> AutotrainActionEvidenceV1:
+    commit = _git("cat-file", "commit", uri)
+    if commit.returncode:
+        raise ValueError(f"receipt evidence is not a Git commit: {uri}")
+    if action.kind == "deliver_stack":
+        if _git("merge-base", "--is-ancestor", uri, "origin/main").returncode:
+            raise ValueError(
+                "deliver_stack evidence must be a commit merged into origin/main"
+            )
+    elif action.kind in _REPAIR_ACTION_KINDS:
+        if (
+            uri == handoff.integration_commit
+            or _git(
+                "merge-base", "--is-ancestor", handoff.integration_commit, uri
+            ).returncode
+        ):
+            raise ValueError(
+                f"{action.kind} evidence must be a repair commit after the campaign"
+            )
+    else:
+        raise ValueError(f"{action.kind} evidence must be a durable file")
+    return AutotrainActionEvidenceV1(
+        uri=uri,
+        kind="git_commit",
+        sha256=hashlib.sha256(commit.stdout).hexdigest(),
+    )
+
+
+def _file_evidence(
+    root: Path,
+    handoff: AutotrainCycleHandoffV1,
+    action: AutotrainActionV1,
+    uri: str,
+) -> AutotrainActionEvidenceV1:
+    campaign_root = (root / handoff.campaign_id).resolve()
+    repo_root = _REPO_ROOT.resolve()
+    candidates = (
+        (campaign_root / uri, "campaign_artifact"),
+        (repo_root / uri, "repo_file"),
+    )
+    resolved = next(
+        (
+            (candidate.resolve(), kind)
+            for candidate, kind in candidates
+            if candidate.is_file()
+            and candidate.resolve().is_relative_to(
+                campaign_root if kind == "campaign_artifact" else repo_root
+            )
+        ),
+        None,
+    )
+    if resolved is None:
+        raise ValueError(
+            f"receipt evidence must be an existing durable path or commit: {uri}"
+        )
+    path, kind = resolved
+    if action.kind in _REPAIR_ACTION_KINDS or action.kind == "deliver_stack":
+        raise ValueError(f"{action.kind} evidence must be a Git commit")
+    if action.kind == "stop_campaign" and kind != "campaign_artifact":
+        raise ValueError("stop_campaign evidence must be a campaign artifact")
+    if action.kind == "rebuild_data" and path.name not in _DATA_EVIDENCE_NAMES:
+        raise ValueError(
+            "rebuild_data evidence must be a data manifest or quality/feedback report"
+        )
+    if action.kind == "document":
+        if kind != "repo_file":
+            raise ValueError("document evidence must be tracked in the repository")
+        relative = path.relative_to(repo_root)
+        if _git("ls-files", "--error-unmatch", str(relative)).returncode:
+            raise ValueError("document evidence must be tracked in the repository")
+    return AutotrainActionEvidenceV1(
+        uri=uri,
+        kind=kind,
+        sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
+    )
+
+
+def bind_autotrain_action_evidence(
+    root: Path | str,
+    handoff: AutotrainCycleHandoffV1,
+    action: AutotrainActionV1,
+    evidence_uris: tuple[str, ...],
+) -> tuple[AutotrainActionEvidenceV1, ...]:
+    """Resolve, authorize, and content-bind evidence for one action."""
+
+    artifact_root = Path(root)
+    return tuple(
+        _git_commit_evidence(uri, handoff, action)
+        if len(uri) == 40 and all(char in "0123456789abcdef" for char in uri)
+        else _file_evidence(artifact_root, handoff, action, uri)
+        for uri in evidence_uris
+    )
+
+
+def _receipt_satisfies_action(
+    root: Path | str,
+    handoff: AutotrainCycleHandoffV1,
+    action: AutotrainActionV1,
+    receipt: AutotrainActionReceiptV1,
+) -> bool:
+    if not receipt.evidence or receipt.action_kind != action.kind:
+        return False
+    try:
+        current = bind_autotrain_action_evidence(
+            root, handoff, action, receipt.evidence_uris
+        )
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return False
+    if current != receipt.evidence:
+        return False
+    if action.kind not in _EXECUTION_ACTION_KINDS:
+        return True
+    if action.kind != "retry_measurement":
+        return False
+    return _retry_measurement_evidence_is_complete(root, handoff, receipt)
+
+
+def _retry_measurement_evidence_is_complete(
+    root: Path | str,
+    handoff: AutotrainCycleHandoffV1,
+    receipt: AutotrainActionReceiptV1,
+) -> bool:
+    """Require a complete, predecessor-bound successor pair for retry completion."""
+
+    campaign_root = (Path(root) / handoff.campaign_id).resolve()
+    repo_root = _REPO_ROOT.resolve()
+
+    def resolve(uri: str) -> Path | None:
+        for base in (campaign_root, repo_root):
+            path = (base / uri).resolve()
+            if path.is_file() and path.is_relative_to(base):
+                return path
+        return None
+
+    paths = tuple(resolve(uri) for uri in receipt.evidence_uris)
+    if any(path is None for path in paths):
+        return False
+    evidence_paths = tuple(path for path in paths if path is not None)
+    campaign_paths = tuple(path for path in evidence_paths if path.name == "campaign.json")
+    delivery_paths = tuple(path for path in evidence_paths if path.name == "sdlc_delivery.json")
+    manifest_paths = tuple(
+        path for path in evidence_paths if path.suffix == ".json" and path.parent.name == "manifests"
+    )
+    if len(campaign_paths) != 1 or len(delivery_paths) != 1 or len(manifest_paths) != 2:
+        return False
+    campaign_path = campaign_paths[0]
+    delivery_path = delivery_paths[0]
+    if campaign_path.parent != delivery_path.parent or any(
+        path.parent.parent != delivery_path.parent for path in manifest_paths
+    ):
+        return False
+    try:
+        campaign = json.loads(campaign_path.read_text(encoding="utf-8"))
+        delivery = json.loads(delivery_path.read_text(encoding="utf-8"))
+        manifests = tuple(json.loads(path.read_text(encoding="utf-8")) for path in manifest_paths)
+    except (OSError, json.JSONDecodeError):
+        return False
+    successor_id = delivery.get("campaign_id")
+    arm_order = delivery.get("arm_order")
+    if (
+        delivery.get("schema") != "autotrain_sdlc_delivery/v1"
+        or delivery.get("measurement_complete") is not True
+        or delivery.get("loop_id") != handoff.loop_id
+        or not isinstance(successor_id, str)
+        or successor_id == handoff.campaign_id
+        or not isinstance(arm_order, list)
+        or len(arm_order) != 2
+        or len(set(arm_order)) != 2
+        or campaign.get("campaign_id") != successor_id
+        or campaign.get("loop_id") != handoff.loop_id
+        or campaign.get("predecessor_campaign_id") != handoff.campaign_id
+    ):
+        return False
+    return {path.stem for path in manifest_paths} == set(arm_order) and all(
+        manifest.get("schema_version") == "ExperimentCampaignV1"
+        and manifest.get("campaign_id") == successor_id
+        and manifest.get("experiment_id") in arm_order
+        for manifest in manifests
+    )
+
+
+def _pending_autotrain_actions(
+    root: Path | str,
+    handoff: AutotrainCycleHandoffV1,
+    *,
+    kinds: frozenset[str],
+    acknowledged_statuses: frozenset[str] = frozenset({"completed"}),
+) -> tuple[tuple[int, AutotrainActionV1], ...]:
+    path = Path(root) / "loops" / handoff.loop_id / "action_receipts.jsonl"
+    completed: set[tuple[int, str]] = set()
+    if path.is_file():
+        for line in path.read_text(encoding="utf-8").splitlines():
+            try:
+                receipt = AutotrainActionReceiptV1.model_validate_json(line)
+            except ValueError:
+                continue
+            if (
+                receipt.campaign_id == handoff.campaign_id
+                and receipt.status in acknowledged_statuses
+                and receipt.action_index < len(handoff.actions)
+                and _receipt_satisfies_action(
+                    root,
+                    handoff,
+                    handoff.actions[receipt.action_index],
+                    receipt,
+                )
+            ):
+                completed.add((receipt.action_index, receipt.action_sha256))
+    return tuple(
+        (index, action)
+        for index, action in enumerate(handoff.actions)
+        if action.kind in kinds
+        and (index, autotrain_action_sha256(action)) not in completed
+    )
+
+
+def pending_autotrain_actions(
+    root: Path | str, handoff: AutotrainCycleHandoffV1
+) -> tuple[tuple[int, AutotrainActionV1], ...]:
+    """Return unacknowledged actions that block successor initialization."""
+
+    return _pending_autotrain_actions(root, handoff, kinds=_PREREQUISITE_ACTION_KINDS)
+
+
+def pending_autotrain_execution_actions(
+    root: Path | str, handoff: AutotrainCycleHandoffV1
+) -> tuple[tuple[int, AutotrainActionV1], ...]:
+    """Return unacknowledged steering actions for the successor cycle.
+
+    A blocked execution receipt is diagnostic evidence, not completion. It
+    remains pending so the supervisor cannot advance past an incomplete
+    matched measurement by recording ``status=blocked``.
+    """
+
+    return _pending_autotrain_actions(
+        root,
+        handoff,
+        kinds=_EXECUTION_ACTION_KINDS,
+        acknowledged_statuses=frozenset({"completed"}),
+    )
 
 
 def _payload(value: BaseModel | dict[str, Any]) -> dict[str, Any]:
@@ -436,16 +830,60 @@ def loop_result_rows(
     for run in _loop_runs(root, loop_id, last=last):
         campaign = run["campaign"]
         outcome = run["outcome"]
+        diagnosis = run["diagnosis"]
         feedback = run["feedback"]
         optimum = feedback.optimum_feedback if feedback is not None else None
+        handoff_path = Path(root) / campaign.campaign_id / "cycle_handoff.json"
+        handoff: dict[str, Any] = {}
+        if handoff_path.is_file():
+            try:
+                handoff = json.loads(handoff_path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                handoff = {}
+        handoff = _project_confirmation_queue_status(
+            root,
+            loop_id,
+            campaign.campaign_id,
+            handoff,
+        )
+        runtime_disposition = _runtime_replay_disposition(
+            handoff, outcome.experiment_id
+        )
+        runtime_rejected = runtime_disposition in {
+            "candidate_rejected",
+            "control_rejected",
+        }
+        runtime_unblock = runtime_disposition == "candidate_unblock"
+        gate_rejection = _completed_gate_rejection(root, campaign, outcome)
+        exposure = _run_exposure_text(
+            root, campaign.campaign_id, outcome.experiment_id
+        )
+        params = _metric_text(outcome.metrics, "trainable_params")
+        if params == "—":
+            summary_path = (
+                Path(root)
+                / campaign.campaign_id
+                / "runs"
+                / outcome.experiment_id
+                / "train_summary.json"
+            )
+            try:
+                summary = json.loads(summary_path.read_text(encoding="utf-8"))
+                params = str(int(summary["track"]["trainable_params"]))
+            except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError):
+                params = _reused_training_params(outcome)
         rows.append(
             {
                 "cycle": campaign.cycle_index,
                 "upstream": (campaign.upstream_commit or "")[:8] or "—",
                 "integrated": (campaign.integration_commit or "")[:8] or "—",
                 "experiment": outcome.experiment_id,
-                "params": _metric_text(outcome.metrics, "trainable_params"),
-                "primary": _metric_text(outcome.metrics, campaign.primary_metric),
+                "params": params,
+                "exposure": exposure,
+                "primary": _outcome_metric_text(
+                    outcome,
+                    str(handoff.get("primary_metric") or campaign.primary_metric),
+                ),
                 "metrics": _metrics_text(
                     outcome.metrics,
                     outcome.data_metrics,
@@ -456,12 +894,118 @@ def loop_result_rows(
                         "gates.pass",
                     },
                 ),
-                "lean": _lean_text(optimum),
-                "gates": _gate_text(outcome.metrics),
-                "status": outcome.status,
+                "lean": _lean_text(optimum, handoff),
+                "gates": "fail" if gate_rejection else _gate_text(outcome.metrics),
+                "measurement": (
+                    "complete (runtime reject)"
+                    if runtime_rejected
+                    else (
+                        "complete (runtime unblock; quality reject)"
+                        if runtime_unblock
+                        else (
+                            "complete (gate reject)"
+                            if gate_rejection
+                            else _measurement_text(outcome)
+                        )
+                    )
+                ),
+                "diagnosis": (
+                    "model_runtime"
+                    if runtime_rejected or runtime_unblock
+                    else diagnosis.target
+                    if diagnosis is not None
+                    else "—"
+                ),
+                "evidence_class": handoff.get("evidence_class", "fixture"),
+                "climb": handoff.get("climb_state", "—"),
+                "ship": handoff.get("ship_state", "blocked"),
+                "status": (
+                    "rejected"
+                    if runtime_rejected or runtime_unblock
+                    else "completed"
+                    if gate_rejection
+                    else outcome.status
+                ),
                 "campaign_id": campaign.campaign_id,
             }
         )
+    # A campaign is a paired decision, not a collection of independently
+    # completed rows.  Older drivers can finish one arm and still write a
+    # handoff whose ``arm_order`` names both expected experiments.  Overlay
+    # that durable expectation so a candidate-only/control-only run cannot be
+    # rendered as completed model evidence.
+    by_campaign: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        by_campaign.setdefault(str(row["campaign_id"]), []).append(row)
+    for campaign in loop_campaigns(Path(root), loop_id, last=last):
+        handoff_path = Path(root) / campaign.campaign_id / "cycle_handoff.json"
+        if not handoff_path.is_file():
+            continue
+        try:
+            handoff = json.loads(handoff_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        expected: tuple[str, ...] = ()
+        # Prefer the append-only execution binding.  The handoff arm_order
+        # reason remains a compatibility fallback for campaigns created before
+        # decision_arms_bound was introduced.
+        events = CampaignStore(campaign.campaign_id, Path(root)).verify_event_chain()
+        for event in reversed(events):
+            if event.get("event_type") != "decision_arms_bound":
+                continue
+            detail = event.get("detail")
+            bound = detail.get("expected_arm_ids") if isinstance(detail, dict) else None
+            if (
+                isinstance(bound, list)
+                and len(bound) == 2
+                and all(isinstance(item, str) and item for item in bound)
+                and len(set(bound)) == 2
+            ):
+                expected = tuple(bound)
+            break
+        for reason in handoff.get("reasons", ()) or ():
+            if expected:
+                break
+            text = str(reason)
+            if text.startswith("arm_order:"):
+                expected = tuple(
+                    item.strip() for item in text.removeprefix("arm_order:").split(",")
+                    if item.strip()
+                )
+                break
+        if not expected:
+            continue
+        actual = {str(row["experiment"]) for row in by_campaign.get(campaign.campaign_id, ())}
+        missing = tuple(item for item in expected if item not in actual)
+        if not missing:
+            continue
+        for row in by_campaign.get(campaign.campaign_id, ()):
+            row["measurement"] = "incomplete (campaign arm missing)"
+            row["diagnosis"] = "harness"
+            row["status"] = "incomplete"
+            row["ship"] = "blocked"
+        for experiment_id in missing:
+            rows.append(
+                {
+                    "cycle": campaign.cycle_index,
+                    "upstream": (campaign.upstream_commit or "")[:8] or "—",
+                    "integrated": (campaign.integration_commit or "")[:8] or "—",
+                    "experiment": experiment_id,
+                    "params": "—",
+                    "exposure": "—",
+                    "primary": "—",
+                    "metrics": "arm not executed",
+                    "lean": "—",
+                    "gates": "not evaluated",
+                    "measurement": "incomplete (arm not run)",
+                    "diagnosis": "harness",
+                    "evidence_class": handoff.get("evidence_class", "fixture"),
+                    "climb": handoff.get("climb_state", "—"),
+                    "ship": handoff.get("ship_state", "blocked"),
+                    "status": "incomplete",
+                    "campaign_id": campaign.campaign_id,
+                }
+            )
     return sorted(
         rows,
         key=lambda row: (
@@ -472,11 +1016,203 @@ def loop_result_rows(
     )
 
 
+def _run_exposure_text(
+    root: Path | str, campaign_id: str, experiment_id: str
+) -> str:
+    """Render compact effective-sampling evidence from the canonical insight."""
+    path = (
+        Path(root)
+        / campaign_id
+        / "runs"
+        / experiment_id
+        / "run_insights.json"
+    )
+    try:
+        exposure = json.loads(path.read_text(encoding="utf-8"))["data_exposure"]
+        effective = float(exposure["effective_records"])
+        unique = int(exposure["unique_records"])
+        draws = int(exposure["total_draws"])
+        repeat = int(exposure["max_repeat"])
+    except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError):
+        return "—"
+    return f"eff={effective:g} unique={unique}/{draws} repeat={repeat}"
+
+
+def _reused_training_params(outcome: ExperimentOutcome) -> str:
+    """Recover content-bound parameter evidence from a frozen training reuse."""
+
+    for stage in outcome.stage_telemetry:
+        if stage.get("stage_kind") != "reused_training":
+            continue
+        params = stage.get("trainable_params")
+        if isinstance(params, int) and not isinstance(params, bool) and params > 0:
+            return str(params)
+        summary_path = stage.get("source_train_summary")
+        expected_sha = stage.get("source_train_summary_sha256")
+        if not isinstance(summary_path, str) or not isinstance(expected_sha, str):
+            continue
+        try:
+            raw = Path(summary_path).read_bytes()
+        except OSError:
+            continue
+        if hashlib.sha256(raw).hexdigest() != expected_sha:
+            continue
+        try:
+            summary_params = json.loads(raw)["track"]["trainable_params"]
+        except (KeyError, TypeError, json.JSONDecodeError):
+            continue
+        if (
+            isinstance(summary_params, int)
+            and not isinstance(summary_params, bool)
+            and summary_params > 0
+        ):
+            return str(summary_params)
+    return "—"
+
+
+def _outcome_metric_text(outcome: ExperimentOutcome, name: str) -> str:
+    """Read a primary from flattened metrics or its content-bound stage payload."""
+
+    value = _metric_text(outcome.metrics, name)
+    if value != "—":
+        return value
+    parts = name.split(".", maxsplit=1)
+    if len(parts) != 2:
+        return "—"
+    suite, metric = parts
+    for stage in reversed(outcome.stage_telemetry):
+        parsed = stage.get("parsed_output")
+        if not isinstance(parsed, dict):
+            continue
+        suites = parsed.get("suites")
+        suite_metrics = suites.get(suite) if isinstance(suites, dict) else None
+        candidate = (
+            suite_metrics.get(metric) if isinstance(suite_metrics, dict) else None
+        )
+        if isinstance(candidate, bool):
+            return f"{float(candidate):g}"
+        if isinstance(candidate, (int, float)):
+            return f"{candidate:g}"
+    return "—"
+
+
+def _project_confirmation_queue_status(
+    root: Path | str,
+    loop_id: str,
+    campaign_id: str,
+    handoff: dict[str, Any],
+) -> dict[str, Any]:
+    """Overlay a historical confirmation row with its authoritative queue state."""
+
+    if handoff.get("cycle_intent") != "confirm":
+        return handoff
+    queue_path = Path(root) / "loops" / loop_id / "champion_queue.jsonl"
+    if not queue_path.is_file():
+        return handoff
+    status: str | None = None
+    for line in queue_path.read_text(encoding="utf-8").splitlines():
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if (
+            isinstance(row, dict)
+            and row.get("confirm_campaign_id") == campaign_id
+        ):
+            status = str(row.get("status") or "") or None
+    if status is None:
+        return handoff
+    projected = dict(handoff)
+    if status == "rejected":
+        projected["climb_state"] = "rejected"
+        projected["formal_status"] = "not_applicable:confirmation_rejected"
+    elif status == "harness_failure":
+        projected["climb_state"] = "harness_failure"
+        projected["formal_status"] = "not_applicable:confirmation_harness_failure"
+    elif status in {
+        "confirmed",
+        "promoting",
+        "promotion_inconclusive",
+        "promotion_failed",
+        "climb_accepted",
+    }:
+        projected["climb_state"] = "champion_confirmed"
+    return projected
+
+
+def _runtime_replay_disposition(
+    handoff: dict[str, Any], experiment_id: str
+) -> str | None:
+    """Return the authoritative frozen-replay disposition for one arm."""
+
+    prefixes = (
+        ("candidate_runtime_rejected_after_frozen_replay:", "candidate_rejected"),
+        ("control_runtime_rejected_after_frozen_replay:", "control_rejected"),
+        ("candidate_runtime_unblock_reproduced:", "candidate_unblock"),
+    )
+    for reason in handoff.get("reasons") or []:
+        text = str(reason)
+        for prefix, disposition in prefixes:
+            if text == f"{prefix}{experiment_id}":
+                return disposition
+    return None
+
+
+def _completed_gate_rejection(
+    root: Path | str,
+    campaign: CampaignSpec,
+    outcome: ExperimentOutcome,
+) -> bool:
+    """Project a complete canonical AgentV gate rejection."""
+
+    if (
+        outcome.status not in {"completed", "failed"}
+        or (outcome.status == "failed" and outcome.exit_code != 8)
+        or evaluation_completeness_failures(outcome.metrics)
+    ):
+        return False
+    path = (
+        Path(root)
+        / campaign.campaign_id
+        / "runs"
+        / outcome.experiment_id
+        / "scoreboard.json"
+    )
+    try:
+        scoreboard = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    gates = scoreboard.get("gates")
+    evals = scoreboard.get("evals")
+    runner = evals.get("runner") if isinstance(evals, dict) else None
+    stamp = scoreboard.get("version_stamp")
+    if evaluation_completeness_failures(
+        scoreboard,
+        require_agent_bindings=True,
+        artifact_root=_REPO_ROOT,
+    ):
+        return False
+    return bool(
+        scoreboard.get("run_id") == outcome.experiment_id
+        and isinstance(gates, dict)
+        and gates.get("authority") == "AgentEvals assertions"
+        and gates.get("pass") is False
+        and isinstance(runner, dict)
+        and runner.get("name") == "AgentV"
+        and runner.get("execution_errors") == 0
+        and isinstance(scoreboard.get("suites"), dict)
+        and scoreboard["suites"]
+        and isinstance(stamp, dict)
+        and stamp.get("code_commit") == campaign.integration_commit
+        and stamp.get("code_dirty") is False
+    )
+
+
 def _loop_runs(
     root: Path | str, loop_id: str, *, last: int | None
 ) -> list[dict[str, Any]]:
     root = Path(root)
-    campaigns = _loop_campaigns(root, loop_id, last=last)
+    campaigns = loop_campaigns(root, loop_id, last=last)
     runs: list[dict[str, Any]] = []
     for campaign in campaigns:
         store = CampaignStore(campaign.campaign_id, root)
@@ -540,9 +1276,7 @@ def _loop_runs(
     )
 
 
-def _loop_campaigns(
-    root: Path, loop_id: str, *, last: int | None
-) -> list[CampaignSpec]:
+def loop_campaigns(root: Path, loop_id: str, *, last: int | None) -> list[CampaignSpec]:
     campaigns = sorted(
         (
             CampaignSpec.model_validate_json(path.read_text(encoding="utf-8"))
@@ -551,14 +1285,32 @@ def _loop_campaigns(
         key=lambda item: (item.cycle_index or 0, item.campaign_id),
     )
     campaigns = [item for item in campaigns if item.loop_id == loop_id]
+    positions = {
+        campaign.campaign_id: index for index, campaign in enumerate(campaigns)
+    }
     for expected_cycle, campaign in enumerate(campaigns, start=1):
         if campaign.cycle_index != expected_cycle:
             raise RuntimeError("loop campaign cycles must be unique and contiguous")
         expected_predecessor = (
             campaigns[expected_cycle - 2].campaign_id if expected_cycle > 1 else None
         )
-        if campaign.predecessor_campaign_id != expected_predecessor:
+        if campaign.predecessor_campaign_id == expected_predecessor:
+            continue
+        declared = positions.get(str(campaign.predecessor_campaign_id))
+        current = expected_cycle - 1
+        if declared is None or declared >= current - 1:
             raise RuntimeError("loop campaign predecessor chain is broken")
+        bridge = campaigns[declared + 1 : current]
+        prior = campaigns[declared].campaign_id
+        if (root / campaign.campaign_id / "cycle_handoff.json").is_file():
+            raise RuntimeError("loop campaign predecessor chain is broken")
+        for interrupted in bridge:
+            if (
+                interrupted.predecessor_campaign_id != prior
+                or (root / interrupted.campaign_id / "cycle_handoff.json").is_file()
+            ):
+                raise RuntimeError("loop campaign predecessor chain is broken")
+            prior = interrupted.campaign_id
     if last is not None:
         if last < 1:
             raise ValueError("last must be at least one")
@@ -575,7 +1327,48 @@ def loop_diagnostic_rows(
         outcome = run["outcome"]
         diagnosis = run["diagnosis"]
         feedback = run["feedback"]
-        if diagnosis is not None:
+        handoff_path = Path(root) / campaign.campaign_id / "cycle_handoff.json"
+        handoff: dict[str, Any] = {}
+        if handoff_path.is_file():
+            try:
+                handoff = json.loads(handoff_path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                handoff = {}
+        runtime_disposition = _runtime_replay_disposition(
+            handoff, outcome.experiment_id
+        )
+        runtime_rejected = runtime_disposition in {
+            "candidate_rejected",
+            "control_rejected",
+        }
+        runtime_unblock = runtime_disposition == "candidate_unblock"
+        if runtime_rejected or runtime_unblock:
+            signal = (
+                "candidate completed while the matched control decode timeout "
+                "reproduced; absolute candidate quality rejected"
+                if runtime_unblock
+                else "candidate-only decode timeout reproduced while the matched "
+                "control completed"
+                if runtime_disposition == "candidate_rejected"
+                else "control-only decode timeout reproduced while the matched "
+                "candidate completed"
+            )
+            rows.append(
+                {
+                    "cycle": campaign.cycle_index,
+                    "source": "frozen_replay",
+                    "area": "model_runtime",
+                    "signal": signal,
+                    "authority": "reproduced",
+                    "confidence": "1.00",
+                    "disposition": "retire arm; test a distinct hypothesis",
+                    "evidence": f"campaign:{campaign.campaign_id}",
+                }
+            )
+        if diagnosis is not None and not (
+            (runtime_rejected or runtime_unblock)
+            and diagnosis.target == "infrastructure"
+        ):
             rows.append(
                 {
                     "cycle": campaign.cycle_index,
@@ -643,7 +1436,18 @@ def loop_diagnostic_rows(
                     "evidence": evidence,
                 }
             )
-    return rows
+    unique: list[dict[str, Any]] = []
+    seen: set[tuple[Any, ...]] = set()
+    for row in rows:
+        key = tuple(
+            row.get(name)
+            for name in ("cycle", "source", "area", "signal", "authority", "evidence")
+        )
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(row)
+    return unique
 
 
 def loop_priority_rows(
@@ -652,10 +1456,9 @@ def loop_priority_rows(
     runs = _loop_runs(root, loop_id, last=last)
     campaigns = {
         campaign.campaign_id: campaign
-        for campaign in _loop_campaigns(Path(root), loop_id, last=last)
+        for campaign in loop_campaigns(Path(root), loop_id, last=last)
     }
     matrices: list[tuple[CampaignSpec, HypothesisMatrix]] = []
-    finished_ids = {run["outcome"].experiment_id for run in runs}
     for campaign in campaigns.values():
         store = CampaignStore(campaign.campaign_id, Path(root))
         for event in store.verify_event_chain():
@@ -672,12 +1475,18 @@ def loop_priority_rows(
     }
     rows: list[dict[str, Any]] = []
     for campaign, matrix in matrices:
-        if any(
-            candidate.experiment.experiment_id in finished_ids
-            for candidate in matrix.hypotheses
-        ):
-            continue
-        for priority in sorted(matrix.next_run_priorities, key=lambda item: item.rank):
+        handoff_path = Path(root) / campaign.campaign_id / "cycle_handoff.json"
+        priorities = matrix.next_run_priorities
+        if handoff_path.is_file():
+            try:
+                handoff = AutotrainCycleHandoffV1.model_validate_json(
+                    handoff_path.read_text(encoding="utf-8")
+                )
+            except (OSError, ValueError):
+                handoff = None
+            if handoff is not None and handoff.priorities:
+                priorities = handoff.priorities
+        for priority in sorted(priorities, key=lambda item: item.rank):
             rows.append(
                 {
                     "cycle": campaign.cycle_index,
@@ -740,23 +1549,32 @@ def loop_priority_rows(
                     "action": "repair_before_run",
                 }
             )
-    return rows
+    if not rows:
+        return []
+    latest_cycle = max(int(row.get("cycle") or 0) for row in rows)
+    return [row for row in rows if int(row.get("cycle") or 0) == latest_cycle]
 
 
 def render_loop_result_matrix(
     root: Path | str, loop_id: str, *, last: int | None = None
 ) -> str:
-    """Render three canonical between-run views from verified event chains."""
+    """Render canonical liveness, result, diagnostic, and priority views."""
     result_columns = (
         ("cycle", "Cycle"),
         ("upstream", "Upstream"),
         ("integrated", "Integrated"),
         ("experiment", "Experiment"),
         ("params", "Params"),
+        ("exposure", "Exposure"),
         ("primary", "Primary"),
         ("metrics", "Metrics"),
         ("lean", "Lean bands"),
         ("gates", "Gates"),
+        ("measurement", "Measurement"),
+        ("diagnosis", "Diagnosis"),
+        ("evidence_class", "Evidence"),
+        ("climb", "Climb"),
+        ("ship", "Ship"),
         ("status", "Status"),
     )
     diagnostic_columns = (
@@ -780,8 +1598,57 @@ def render_loop_result_matrix(
         ("experiment", "Experiment"),
         ("action", "Action"),
     )
+    state_path = Path(root) / "loops" / loop_id / "state.json"
+    state: dict[str, Any] = {}
+    if state_path.is_file():
+        try:
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            state = {}
+    recorded_state = str(state.get("state") or "UNKNOWN")
+    driver_pid = state.get("pid")
+    if recorded_state == "RUNNING" and not _pid_exists(driver_pid):
+        recorded_state = "DEAD"
+    heartbeat = str(state.get("heartbeat_at") or "—")
+    if heartbeat != "—" and recorded_state == "RUNNING":
+        try:
+            stamp = datetime.fromisoformat(heartbeat.replace("Z", "+00:00"))
+            age = (datetime.now(timezone.utc) - stamp).total_seconds()
+            if age > 2 * MAX_RUN_SECONDS:
+                recorded_state = "STALE"
+        except ValueError:
+            recorded_state = "STALE"
+    liveness_columns = (
+        ("state", "State"),
+        ("phase", "Phase"),
+        ("cycle", "Cycle"),
+        ("active", "Active"),
+        ("last", "Last complete"),
+        ("next", "Next action"),
+        ("blockers", "Blockers"),
+        ("pid", "Driver PID"),
+        ("stage", "Active stage"),
+        ("child", "Child PID"),
+        ("heartbeat", "Heartbeat"),
+    )
+    liveness_rows = [
+        {
+            "state": recorded_state,
+            "phase": state.get("phase", "—"),
+            "cycle": state.get("cycle_index", "—"),
+            "active": state.get("active_campaign_id") or "—",
+            "last": state.get("last_completed_campaign_id") or "—",
+            "next": state.get("next_action") or "—",
+            "blockers": state.get("blocker_count", 0),
+            "pid": driver_pid or "—",
+            "stage": state.get("active_stage") or "—",
+            "child": state.get("child_pid") or "—",
+            "heartbeat": heartbeat,
+        }
+    ]
     return "\n\n".join(
         (
+            _render_table("Liveness", liveness_columns, liveness_rows),
             _render_table(
                 "Run Results",
                 result_columns,
@@ -820,6 +1687,30 @@ def _render_table(
         for row in rows
     )
     return "\n".join(lines)
+
+
+def _pid_exists(pid: object) -> bool:
+    if not isinstance(pid, int) or pid < 1:
+        return False
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def _measurement_text(outcome: ExperimentOutcome) -> str:
+    if outcome.status != "completed":
+        return "incomplete"
+    if any(
+        stage.get("measurement_complete") is False for stage in outcome.stage_telemetry
+    ):
+        return "incomplete"
+    if evaluation_measurement_incomplete(outcome.metrics):
+        return "incomplete"
+    return "complete"
 
 
 def _event_artifact(
@@ -861,19 +1752,62 @@ def _metrics_text(
     def omitted(name: str) -> bool:
         return any(name == item or name.endswith(f".{item}") for item in omit)
 
-    values = [
-        f"{name}={value:g}"
-        for name, value in sorted(metrics.items())
-        if not omitted(name)
-    ]
+    priority = (
+        "meaningful_program_rate",
+        "structural_similarity",
+        "binder_reference_f1",
+        "latency_ms_p50",
+        "tokens_emitted_mean",
+        "forwards_count_mean",
+        "compiler_ms_mean",
+        "completion_shared_domain_hits_mean",
+        "completion_shared_domain_misses_mean",
+        "compiler_prefill_tokens_mean",
+        "canvas_tokens_mean",
+        "n",
+        "parse_rate",
+        "ast_beq_rate",
+        "canonical_beq_rate",
+    )
+    allow = set(priority)
+
+    def allowed(name: str) -> bool:
+        return name.split(".")[-1] in allow
+
+    values = []
+    for suffix in priority:
+        values.extend(
+            f"{name}={value:g}"
+            for name, value in sorted(metrics.items())
+            if name.split(".")[-1] == suffix and not omitted(name)
+        )
     values.extend(
-        f"data.{name}={value:g}" for name, value in sorted(data_metrics.items())
+        f"data.{name}={value:g}"
+        for name, value in sorted(data_metrics.items())
+        if allowed(name)
     )
     return ", ".join(values) or "—"
 
 
-def _lean_text(optimum: Any | None) -> str:
+def _lean_text(optimum: Any | None, handoff: dict[str, Any] | None = None) -> str:
     if optimum is None:
+        handoff = handoff or {}
+        if (
+            handoff.get("cycle_intent") == "confirm"
+            and handoff.get("climb_state") == "rejected"
+        ):
+            return "not_applicable:confirmation_rejected"
+        formal_status = handoff.get("formal_status")
+        if formal_status:
+            return str(formal_status)
+        if handoff.get("cycle_intent") == "confirm":
+            return "not_applicable:confirmation"
+        if handoff.get("cycle_intent") == "retry_measurement":
+            return "not_applicable:retry_measurement"
+        if handoff.get("cycle_role") == "promotion":
+            return "not_applicable:no_champion"
+        if handoff.get("cycle_role") == "screening":
+            return "not_applicable:screening"
         return "—"
     if not optimum.breaches:
         return optimum.policy
@@ -892,4 +1826,7 @@ def _gate_text(metrics: dict[str, float]) -> str:
 
 
 def _markdown_cell(value: Any) -> str:
-    return str(value).replace("|", r"\|").replace("\n", " ")
+    text = " ".join(str(value).split())
+    if len(text) > _MATRIX_CELL_MAX_CHARS:
+        text = text[: _MATRIX_CELL_MAX_CHARS - 3].rstrip() + "..."
+    return text.replace("|", r"\|")

@@ -263,6 +263,39 @@ def test_macro_expansion_feeds_iteratively() -> None:
     assert engine.parser_state_key() == key
 
 
+def test_macro_surface_piece_tracks_mutable_expansion_table() -> None:
+    tok = _tok()
+    macro_id = tok.macro_id(0)
+    before = token_surface_piece(tok, macro_id)
+    tok.set_macro_expansions([["Card", "(", ")"]])
+    after = token_surface_piece(tok, macro_id)
+    assert after == tok.decode([macro_id])
+    assert after != before
+    assert macro_id not in getattr(tok, "_grammar_surface_piece_cache", {})
+
+
+def test_surface_piece_cache_is_tokenizer_identity_scoped() -> None:
+    tok = DSLNativeTokenizer.build()
+    token_id = int(tok.token_to_id["Stack"])
+    assert token_surface_piece(tok, token_id) == "Stack"
+
+    class _SurfaceProxy:
+        def __init__(self, inner: DSLNativeTokenizer) -> None:
+            self._inner = inner
+            self.id_to_token = dict(inner.id_to_token)
+            self.id_to_token[token_id] = "Panel"
+
+        def __getattr__(self, name: str):
+            return getattr(self._inner, name)
+
+        def kind_of(self, _token_id: int) -> str:
+            return "structural"
+
+    proxy = _SurfaceProxy(tok)
+    assert token_surface_piece(proxy, token_id) == "Panel"
+    assert proxy._grammar_surface_piece_cache_owner() is proxy
+
+
 def test_mutually_recursive_macro_expansion_fails_closed() -> None:
     tok = _tok()
     tok.macro_expansions = (("<MACRO_1>", "Card"), ("<MACRO_0>", "("))
@@ -384,6 +417,80 @@ def test_forks_do_not_rebuild_or_alex() -> None:
         assert fork.parser_state_key() != key_before
 
 
+def test_disposable_fork_rejection_skips_redundant_snapshot() -> None:
+    """An isolated throwaway branch need not clone itself before rejection."""
+    tok = _tok()
+    source = OpenUIIncrementalEngine()
+    source.reset()
+    branch = source.copy_control()
+    source_key = source.parser_state_key()
+    source_terminals = source.next_terminals()
+
+    def _unexpected_snapshot():
+        raise AssertionError("disposable branch took a rollback snapshot")
+
+    branch._snapshot = _unexpected_snapshot  # type: ignore[method-assign]
+    assert (
+        branch.feed_token_id(
+            tok,
+            tok.token_to_id["="],
+            _restore_on_reject=False,
+        )
+        is False
+    )
+    # The rejected branch is disposable; the source remains exact and usable.
+    assert source.parser_state_key() == source_key
+    assert source.next_terminals() == source_terminals
+
+
+def test_control_fork_reuses_callback_free_parser_configuration() -> None:
+    """Only feed-mutated parser stacks copy after callbacks are suppressed."""
+    source = OpenUIIncrementalEngine()
+    source.reset()
+    control = source.copy_control()
+    descendant = control.copy()
+
+    source_conf = source._ip.parser_state.parse_conf
+    control_conf = control._ip.parser_state.parse_conf
+    descendant_conf = descendant._ip.parser_state.parse_conf
+    assert control_conf is not source_conf
+    assert control_conf.callbacks == {}
+    assert descendant_conf is control_conf
+    assert descendant._ip.parser_state.state_stack is not control._ip.parser_state.state_stack
+    assert control._ip.lexer_thread is not source._ip.lexer_thread
+    assert descendant._ip.lexer_thread is control._ip.lexer_thread
+
+
+def test_fork_fed_history_detaches_on_commit() -> None:
+    """Append-only token history is shared until either fork mutates it."""
+    tok = _tok()
+    source = OpenUIIncrementalEngine()
+    source.reset()
+    assert source.feed_token_id(tok, tok.token_to_id["<BIND_0>"]) is True
+    branch = source.copy_control()
+
+    assert branch._fed_tokens is source._fed_tokens
+    assert branch._fed_lark is source._fed_lark
+    source_history = list(source._fed_tokens)
+    assert branch.feed_token_id(tok, tok.token_to_id["="]) is True
+    assert source._fed_tokens == source_history
+    assert branch._fed_tokens is not source._fed_tokens
+
+
+def test_fork_direct_map_cache_detaches_on_new_tokenizer() -> None:
+    first = _tok()
+    source = OpenUIIncrementalEngine()
+    source.reset()
+    assert source._direct_map(first) is not None
+    branch = source.copy_control()
+    assert source._direct_map_cache is branch._direct_map_cache
+
+    second = _tok()
+    assert branch._direct_map(second) is not None
+    assert source._direct_map_cache is not branch._direct_map_cache
+    assert id(second) not in source._direct_map_cache
+
+
 def test_decode_state_append_path_uses_direct_feed() -> None:
     """GrammarDecodeState.advance_token commits via direct feed: zero full
     syncs after ``reset`` and grammar state identical to the text baseline."""
@@ -503,3 +610,27 @@ def test_decode_state_failed_text_resync_clears_direct_sync_marker() -> None:
     state.advance_token(tok, tok.token_to_id["Card"])
 
     assert state.engine_ids_len is None
+
+
+def test_rejected_sync_never_vouches_for_later_syncs() -> None:
+    """Three false-admit pins (campaign L-A, I6):
+
+    1. Retrying the exact text of a rejected sync must stay False (the
+       rejected ``_prefix`` used to satisfy the already-synced fast path).
+    2. A rejected incremental delta must report False even though the engine
+       resyncs itself to the previous good prefix (the resync's own success
+       used to leak out as the caller's answer).
+    3. The engine must remain fully usable after either rejection.
+    """
+    from slm_training.dsl.grammar.fastpath.engine import OpenUIIncrementalEngine
+
+    e = OpenUIIncrementalEngine()
+    assert e.set_prefix("root)") is False
+    assert e.set_prefix("root)") is False
+    assert e.set_prefix("root = Card(") is True
+
+    e2 = OpenUIIncrementalEngine()
+    assert e2.set_prefix("root") is True
+    assert e2.set_prefix("root = = ") is False
+    assert OpenUIIncrementalEngine().set_prefix("root = = ") is False
+    assert e2.set_prefix("root = Card(") is True

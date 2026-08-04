@@ -19,6 +19,7 @@ from slm_training.autoresearch.experiment_campaign import (
     select_primary_endpoint,
     validate_result_claim,
 )
+from slm_training.lineage.records import canonical_json
 HEX_40 = "a" * 40
 HEX_64 = "b" * 64
 
@@ -123,6 +124,20 @@ def _manifest_payload(**updates: object) -> dict[str, object]:
     }
     payload.update(updates)
     return payload
+
+
+def test_replay_manifest_requires_content_bound_reason() -> None:
+    with pytest.raises(ValidationError, match="must be declared together"):
+        ExperimentCampaignV1.model_validate(
+            _manifest_payload(replay_of_manifest_sha256=HEX_64)
+        )
+    replay = ExperimentCampaignV1.model_validate(
+        _manifest_payload(
+            replay_of_manifest_sha256=HEX_64,
+            replay_reason="Current-main successor of an incomplete frozen measurement.",
+        )
+    )
+    assert replay.replay_of_manifest_sha256 == HEX_64
 
 
 def _manifest(**updates: object) -> ExperimentCampaignV1:
@@ -333,6 +348,41 @@ def test_manifest_digest_and_lock_roundtrip() -> None:
     restored = CampaignLockV1.model_validate_json(lock.model_dump_json())
     assert restored == lock
     assert restored.manifest_sha256 == campaign_manifest_sha256(restored.manifest)
+
+
+def test_lock_accepts_digest_from_before_optional_replicate_fields() -> None:
+    payload = _manifest().model_dump(mode="json")
+    payload.pop("replicate_ledger_schema")
+    payload.pop("replicate_seed_floor")
+    digest = hashlib.sha256(canonical_json(payload).encode("utf-8")).hexdigest()
+
+    lock = CampaignLockV1.model_validate(
+        {
+            "manifest_sha256": digest,
+            "manifest": payload,
+            "locked_at": "2026-07-23T00:01:00Z",
+        }
+    )
+    restored = CampaignLockV1.model_validate_json(lock.model_dump_json())
+
+    assert restored == lock
+
+
+def test_legacy_lock_digest_still_rejects_manifest_mutation() -> None:
+    payload = _manifest().model_dump(mode="json")
+    payload.pop("replicate_ledger_schema")
+    payload.pop("replicate_seed_floor")
+    digest = hashlib.sha256(canonical_json(payload).encode("utf-8")).hexdigest()
+    payload["decision"] = "Reject unless the mutated historical plan passes."
+
+    with pytest.raises(ValidationError, match="campaign manifest digest mismatch"):
+        CampaignLockV1.model_validate(
+            {
+                "manifest_sha256": digest,
+                "manifest": payload,
+                "locked_at": "2026-07-23T00:01:00Z",
+            }
+        )
 
 
 def test_decision_bearing_mutation_changes_digest() -> None:

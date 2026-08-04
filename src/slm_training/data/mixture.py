@@ -8,7 +8,7 @@ import math
 import random
 import re
 from collections import Counter
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -885,6 +885,74 @@ def propose_from_fit(
             ).normalized()
         )
     return proposals
+
+
+def feedback_adjusted_mixture(
+    base: MixtureManifest,
+    family_curves: Mapping[str, Iterable[float]],
+    *,
+    max_relative_change: float = 0.2,
+    min_weight: float = 0.01,
+) -> tuple[MixtureManifest, dict[str, Any]]:
+    """Bounded between-run scheduler from per-family learning curves.
+
+    High-but-learning families receive more mass; high-and-flat or already
+    near-certain families receive less.  The scheduler never changes weights
+    within a confirmatory run, so causal attribution and bit-exact resume stay
+    intact.  Its complete signal table is returned for the next-run matrix.
+    """
+    manifest = base.normalized()
+    bound = min(0.9, max(0.0, float(max_relative_change)))
+    weights = dict(manifest.weights)
+    signals: dict[str, dict[str, Any]] = {}
+    for family in sorted(weights):
+        curve = [float(value) for value in family_curves.get(family, ())]
+        factor = 1.0
+        disposition = "hold_no_signal"
+        if curve:
+            start, final = curve[0], curve[-1]
+            gain = start - final
+            relative_gain = gain / max(abs(start), 1e-9)
+            if final <= 0.05:
+                factor = 1.0 - bound
+                disposition = "downweight_near_certain"
+            elif relative_gain > 0.02:
+                factor = 1.0 + bound
+                disposition = "upweight_learning"
+            elif relative_gain <= 0.005 and final >= 1.0:
+                factor = 1.0 - bound
+                disposition = "downweight_high_flat"
+            else:
+                disposition = "hold"
+            signals[family] = {
+                "start_nll": start,
+                "final_nll": final,
+                "relative_gain": relative_gain,
+                "factor": factor,
+                "disposition": disposition,
+            }
+        else:
+            signals[family] = {
+                "start_nll": None,
+                "final_nll": None,
+                "relative_gain": None,
+                "factor": factor,
+                "disposition": disposition,
+            }
+        weights[family] = max(float(min_weight), weights[family] * factor)
+    adjusted = MixtureManifest(
+        mixture_id=f"{manifest.mixture_id}_feedback_next",
+        weights=weights,
+        task_weights=manifest.task_weights,
+        notes="bounded per-family learning-curve feedback; apply next run only",
+    ).normalized()
+    return adjusted, {
+        "policy": "between_run_learning_curve_v1",
+        "max_relative_change": bound,
+        "signals": signals,
+        "base_weights": manifest.weights,
+        "next_weights": adjusted.weights,
+    }
 
 
 def _solve_linear(a: list[list[float]], b: list[float]) -> list[float]:

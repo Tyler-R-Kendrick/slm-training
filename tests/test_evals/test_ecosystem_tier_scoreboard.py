@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from slm_training.dsl.ecosystem_tier import (
     CORE_FORMAL_MODULES,
     ECOSYSTEM_FORMAL_MODULES,
@@ -12,6 +14,8 @@ from slm_training.evals.ecosystem_tier_scoreboard import (
     build_ecosystem_tier_scoreboard,
     scoreboard_markdown,
 )
+from slm_training.harness_core.bounded_process import BoundedProcessResult, ProcessOutcome
+from slm_training.evals import ecosystem_tier_scoreboard as scoreboard
 
 
 def test_aggregate_generation_rows_means() -> None:
@@ -69,3 +73,23 @@ def test_scoreboard_from_rows_only() -> None:
         board["ecosystem_library"]["generation_metrics"]["component_type_recall"]
         == 0.5
     )
+
+
+def test_probe_lean_timeout_is_fail_closed(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        scoreboard,
+        "run_formal_process",
+        lambda *args, **kwargs: BoundedProcessResult(
+            command=tuple(args[0]),
+            outcome=ProcessOutcome.TIMED_OUT,
+            returncode=124,
+            stdout="",
+            stderr="",
+            duration_seconds=0.0,
+            timed_out=True,
+        ),
+    )
+
+    statuses = scoreboard.probe_lean_formal_statuses(timeout_s=1.0)
+
+    assert set(statuses.values()) == {"error:TimeoutExpired"}

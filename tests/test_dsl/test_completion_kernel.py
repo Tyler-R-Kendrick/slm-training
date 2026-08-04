@@ -158,18 +158,41 @@ def test_convergent_suffix_states_expand_once(packed_graph: dict) -> None:
     # D is reachable via both B and C; its subtree carries no witness, so the
     # DP evaluates (D, room) under several rooms across one query.  The
     # outgoing forest for D is still built exactly once (shared domain memo);
-    # a second query reuses that packed graph without persisting a
-    # behavior-changing positive-witness shortcut.
+    # a second identical top-level query reuses its completed exact verdict.
+    # Nested subproblems remain query-local, preserving the per-candidate
+    # expansion budget and first-path order.
     session = _GraphSession(packed_graph)
     assert session.terminal_witness(session.sid("A"), 5) == _supported(
         (1, 3, 7, 14, 13)
     )
     assert session.builds > 0
     builds_after_first_query = session.builds
+    expanded_after_first_query = session.stats()["witness_states_expanded"]
     assert session.terminal_witness(session.sid("A"), 5) == _supported(
         (1, 3, 7, 14, 13)
     )
     assert session.builds == builds_after_first_query
+    assert session.stats()["witness_states_expanded"] == expanded_after_first_query
+    assert session.stats()["reachability_cache_hits"] > 0
+
+
+def test_child_prefixes_are_persistent_until_authority_scan(
+    tok: DSLNativeTokenizer,
+) -> None:
+    """Transition-only states do not copy the full token prefix eagerly."""
+    prefix = tuple(tok.encode("root = Card()", add_special=False))
+    session = CompletionSession(tok)
+    seed = session.seed(prefix[:1])
+    current = seed
+    for token_id in prefix[1:]:
+        child = session.advance(current, int(token_id))
+        assert child is not None
+        current = child
+
+    assert session._states[seed].prefix_ids == prefix[:1]
+    assert session._states[current].prefix_ids is None
+    assert session.prefix_ids_of(current) == prefix
+    assert session._states[current].prefix_ids == prefix
 
 
 def test_witness_matches_bruteforce_everywhere(packed_graph: dict) -> None:
@@ -875,3 +898,24 @@ def test_tctx1_session_context_separation(tok: DSLNativeTokenizer) -> None:
     # Request-local caches: neither session served the other's build.
     for session in (base, explain, floor):
         assert session.stats()["domain_cache_hits"] == 0
+
+
+def test_branch_memo_engages_and_preserves_domain() -> None:
+    """L2 (precompiled-grammar-admissibility): the control-key branch memo
+    must engage on a hard prefix (mechanism floor for the campaign's
+    criterion iii) while E1 parity tests prove the domain is unchanged."""
+    from slm_training.dsl.grammar.fastpath.static_control_domain import (
+        compare_domain_parity,
+        oracle_lark_domain_snapshot,
+        production_domain_snapshot,
+    )
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tok = DSLNativeTokenizer.build()
+    ids = [int(t) for t in tok.encode("root = Card([b1,", add_special=False)]
+    prefix = [tok.bos_id, *ids]
+    production = production_domain_snapshot(prefix, tok, budget=32)
+    oracle = oracle_lark_domain_snapshot(prefix, tok, budget=32)
+    report = compare_domain_parity(production, oracle)
+    assert report.equal, report.reasons
+    assert report.no_unknown_collapse

@@ -109,6 +109,14 @@ def main(argv: list[str] | None = None) -> int:
     wall_s = time.perf_counter() - wall_t0
 
     summary = aggregate_stats(rows)
+    fraction = summary.get("attributed_fraction")
+    if fraction is not None and float(fraction) < 0.7:
+        print(
+            f"WARNING: only {float(fraction):.0%} of decode wall time is attributed "
+            "to instrumented phase spans — a dominant cost has no telemetry field "
+            f"(unattributed {summary.get('unattributed_ms_sum', 0.0):.0f} ms). "
+            "Profile with cProfile before trusting per-phase numbers."
+        )
     report = {
         "checkpoint": str(args.checkpoint),
         "device": args.device,

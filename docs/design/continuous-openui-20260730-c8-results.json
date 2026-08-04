@@ -1,0 +1,61 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260730",
+  "campaign_id": "continuous-loop-20260801-continuous-openui-202607-98199209-c6",
+  "cycle_index": 8,
+  "source_commit": "fa01c48e05ea3cd69058f2fd7edd2a8d5790aff2",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "batch_size": 2,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "cycle_role": "screening",
+    "objective": "Confirm the cycle-7 root cause: replay grammar_completion_bounds now that src/apps/openui_bridge JS deps are installed"
+  },
+  "arms": {
+    "c20260801-continuous-openui-202607-98199209-c6-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0964,
+        "binder_reference_f1": 0.8222222222222223,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 2278.16
+      }
+    },
+    "c20260801-continuous-openui-202607-98199209-c6-bounds": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0964,
+        "binder_reference_f1": 0.8222222222222223,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 2349.55
+      },
+      "levers": {
+        "grammar_completion_bounds": true
+      }
+    }
+  },
+  "primary_metric": "smoke.binder_reference_f1",
+  "primary_delta": 0.0,
+  "conclusion": "Confirms the cycle-7 diagnosis: with src/apps/openui_bridge and src/apps/design_md_bridge JS deps installed (npm ci), the evaluate_model stage that previously timed out for the 'canvas', 'steps', and 'batch1' arms (cycles 4, 6, 7) now completes in ~22s wall for both arms -- no timeout. This is an environment-setup fix (this session's venv only), not a tracked code change, so it earns no stack layer, but it durably removes the dominant infra blocker seen across cycles 2/4/6/7 this session. Quality-wise, grammar_completion_bounds again shows a null delta vs control (fourth consecutive null result on this lever alone/combined: cycles 2, 3, 5(partial), 8).",
+  "next_priorities": [
+    "grammar_completion_bounds has now shown 4 consecutive null quality deltas; retire it from the active thrash rotation until a new hypothesis motivates revisiting it",
+    "Document the npm ci setup step as a required (not optional) autotrain-continuous prerequisite so future sessions don't rediscover this timeout root cause",
+    "Continue the loop with the remaining untested lever(s) in the bank"
+  ],
+  "recorded_at": "2026-08-01T21:48:27+00:00"
+}

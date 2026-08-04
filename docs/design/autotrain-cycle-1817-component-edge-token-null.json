@@ -1,0 +1,96 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1817",
+  "cycle_index": 1817,
+  "decision": "reject_component_edge_token_null",
+  "evidence_class": "fixture_screening",
+  "formal_status": "not_applicable:screening",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "9be0f2db914e695295f387d9b21d8058325348c6",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v77",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v301"
+    },
+    "stamped_at": "2026-08-03T02:06:35.975715+00:00"
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "steps": 22,
+    "seed": 101817,
+    "batch_size": 2,
+    "seen_target_tokens": 2004,
+    "sync_checkpoints": false,
+    "suites": ["smoke"],
+    "suite_n": {"smoke": 3},
+    "honesty_mode": "fixture_screening"
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1817-control",
+      "trainable_params": 1608962,
+      "component_edge_token_loss_weight": 0.0,
+      "checkpoint_sha256": "5a349a4b5629ca9e03cceb8ef963c1013d4a380c38946902e2dafea12064d0c1",
+      "last_loss": 10.645026206970215,
+      "train_wall_seconds": 3.1215459649683908,
+      "final_edge_token_count": 0,
+      "suites": {
+        "smoke": {
+          "n": 3,
+          "parse_rate": 1.0,
+          "meaningful_program_rate": 0.3333333333333333,
+          "structural_similarity": 0.17416666666666666,
+          "binder_reference_f1": 0.6333333333333333,
+          "component_type_recall": 0.25,
+          "placeholder_fidelity": 0.5277777777777778,
+          "reward_score": 0.7653333333333334,
+          "ast_beq_rate": 0.0,
+          "canonical_beq_rate": 0.0,
+          "latency_ms_p50": 962.44
+        }
+      }
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1817-component-edge-token",
+      "trainable_params": 1608962,
+      "component_edge_token_loss_weight": 1.0,
+      "checkpoint_sha256": "d68ff57150dfa1310d2d2d28aacfb9fc8102a416f8d687355fe526e8b90027fe",
+      "last_loss": 11.447078704833984,
+      "train_wall_seconds": 6.512161872989964,
+      "final_edge_token_count": 3,
+      "final_edge_token_mean_ce": 11.785057067871094,
+      "suites": {
+        "smoke": {
+          "n": 3,
+          "parse_rate": 1.0,
+          "meaningful_program_rate": 0.3333333333333333,
+          "structural_similarity": 0.17416666666666666,
+          "binder_reference_f1": 0.6333333333333333,
+          "component_type_recall": 0.25,
+          "placeholder_fidelity": 0.5277777777777778,
+          "reward_score": 0.7653333333333334,
+          "ast_beq_rate": 0.0,
+          "canonical_beq_rate": 0.0,
+          "latency_ms_p50": 960.07
+        }
+      }
+    }
+  ],
+  "quality_effect": 0.0,
+  "efficiency_gain_fraction": 0.00246857,
+  "ship_gates_pass": false,
+  "next_hypothesis": {
+    "kind": "denser_structured_topology_signal",
+    "authority": "observed_result",
+    "confidence": 0.9,
+    "statement": "Topology-error mining or a parent-child-span consistency target with measured dense coverage is more promising than increasing the null edge-token scalar."
+  }
+}

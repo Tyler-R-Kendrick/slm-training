@@ -1,0 +1,119 @@
+{
+  "schema": "autotrain_measured_results/v1",
+  "campaign_id": "continuous-loop-20260801-continuous-openui-202607-98199209-c1723",
+  "cycle_index": 1723,
+  "loop_id": "continuous-openui-20260730",
+  "run_class": "fixture_scratch",
+  "source_commit": "7c2929811c710542e824ca7eb96f6f862695e13c",
+  "source_dirty": false,
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "primary_metric": "smoke.binder_reference_f1",
+  "frozen_manifest_sha256": "660b0d42508d9bbcda9b91f43dec4b3a2a050d4d0e783d3e9b5adc66c1e353f2",
+  "arms": [
+    {
+      "experiment_id": "c20260801-continuous-openui-202607-98199209-c1723-control",
+      "status": "completed_gate_rejection",
+      "training": {
+        "executed": false,
+        "parameter_count": 1608962,
+        "source_campaign": "continuous-loop-20260801-continuous-openui-202607-98199209-c1717"
+      },
+      "suite": "smoke",
+      "suite_n": 3,
+      "metrics": {
+        "parse_rate": 1.0,
+        "binder_reference_f1": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.36556666666666665,
+        "latency_ms_p50": 2643.74
+      },
+      "decode_stats": {
+        "backbone_ms_sum": 4198.729,
+        "compiler_ms_sum": 4052.322,
+        "forwards_count_sum": 58,
+        "completion_unique_states_sum": 31405,
+        "completion_transition_cache_hits_sum": 398,
+        "completion_transition_cache_misses_sum": 31575,
+        "completion_witness_states_expanded_sum": 1395,
+        "completion_parser_forks_sum": 32690
+      },
+      "ship_gates_pass": false,
+      "claim_boundary": "three-document fixture; missing ship suites and quality thresholds"
+    },
+    {
+      "experiment_id": "c20260801-continuous-openui-202607-98199209-c1723-batch1",
+      "status": "stopped",
+      "training": {
+        "executed": false,
+        "parameter_count": 1608962,
+        "source_campaign": "continuous-loop-20260801-continuous-openui-202607-98199209-c1716"
+      },
+      "suite_n": 0,
+      "metrics": {},
+      "progress": {
+        "schema_version": "DecodeProgressV1",
+        "measurement_complete": false,
+        "scoreable": false,
+        "processed_record_n": 2,
+        "active_record_ids": [
+          "smoke_callout_01"
+        ]
+      },
+      "decode_stats": {
+        "n": 3,
+        "total_ms_sum": 42699.279,
+        "latency_ms_p50_including_partial": 9178.302108019125,
+        "backbone_ms_sum": 7853.528,
+        "compiler_ms_sum": 34421.11,
+        "forwards_count_sum": 83,
+        "compiler_prefill_tokens_sum": 21248,
+        "completion_unique_states_sum": 214614,
+        "completion_edges_built_sum": 9358,
+        "completion_transition_cache_hits_sum": 1476,
+        "completion_transition_cache_misses_sum": 215766,
+        "completion_domain_cache_hits_sum": 1319,
+        "completion_domain_cache_misses_sum": 9358,
+        "completion_witness_states_expanded_sum": 10424,
+        "completion_parser_forks_sum": 225127
+      },
+      "ship_gates_pass": null,
+      "claim_boundary": "partial exceptional telemetry; never quality evidence"
+    }
+  ],
+  "harness_diagnosis": {
+    "classification": "supervisor_arm_budget_exhaustion",
+    "repository_command_cap_seconds": 180,
+    "previous_arm_wall_seconds": 51.666666666666664,
+    "candidate_stage_elapsed_seconds": 44.520025,
+    "captured_partial_decode_seconds": 42.699279,
+    "unused_reserve_seconds_approx": 36.66666666666667,
+    "repair_arm_wall_seconds": 70.0,
+    "repair_finalization_reserve_seconds": 15,
+    "frozen_recipe_changed": false
+  },
+  "handoff": {
+    "measurement_complete": false,
+    "climb_state": "inconclusive",
+    "ship_state": "blocked",
+    "required_actions": [
+      "repair_harness",
+      "retry_measurement",
+      "document"
+    ],
+    "next_run": "exact frozen replay after merged canonical supervisor-budget repair"
+  },
+  "checkpoint_documentation_required": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "7c2929811c710542e824ca7eb96f6f862695e13c",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v46",
+      "harness.model_build.eval": "v73",
+      "model.twotower": "v275"
+    },
+    "stamped_at": "2026-08-02T01:29:12.850639+00:00"
+  }
+}

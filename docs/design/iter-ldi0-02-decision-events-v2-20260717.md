@@ -4,6 +4,10 @@ Date: 2026-07-17
 Status: **schema + materializers + V1 migration, with tests; no event mining,
 no trainer change, no checkpoint, and no model-quality or ship claim.**
 
+Current-status addendum (2026-08-03): later canonical work added exact-state
+counterfactual mining/replay and consumers without changing this historical
+iteration's result. No checkpoint or model-quality claim follows from that wiring.
+
 ## What and why
 
 `DecisionEventV2` (`src/slm_training/harnesses/preference/decision_events_v2.py`)

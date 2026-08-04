@@ -1,0 +1,127 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1765",
+  "cycle_index": 1765,
+  "evidence_class": "fixture",
+  "decision": "rejected_quality_regression",
+  "scoreable": true,
+  "comparison": {
+    "matched_dimensions": [
+      "train_version",
+      "steps",
+      "batch_size",
+      "seed",
+      "context_backend",
+      "parameter_count",
+      "eval_suite",
+      "decode_policy"
+    ],
+    "treatment": "compiler_alignment loss_weight 0 -> 1, margin 0 -> 1, stratified false -> true, kind_filter all -> literal-close",
+    "parameter_delta": 0,
+    "train_wall_ratio_candidate_over_control": 2.450717
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1765-literal-margin",
+      "manifest_sha256": "6c052bd0c9204da860df396364a7a0fa1baad109a7a5c9ebfd076e8c0496c8ec",
+      "checkpoint_sha256": "3aa095457778780a05e6623bc2132870fea37227f583572119863dccc9e45b13",
+      "params": 1608962,
+      "steps_requested": 20,
+      "step_records": 21,
+      "batch_size": 2,
+      "seed": 101765,
+      "last_weighted_loss": 12.739362716674805,
+      "train_wall_seconds": 6.623267090006266,
+      "compiler_alignment": {
+        "loss_weight": 1.0,
+        "margin": 1.0,
+        "stratified": true,
+        "kind_filter": "literal-close",
+        "active_step_n": 3,
+        "eligible_row_n": 3,
+        "margin_violation_rates": [1.0, 1.0, 0.0],
+        "active_row_losses": [39.47998809814453, 51.601478576660156, 0.0736660361289978]
+      },
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 3,
+        "incomplete_document_n": 0,
+        "decode_timeout_count": 0,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.11499999999999999,
+        "component_type_recall": 0.0,
+        "binder_reference_f1": 0.0,
+        "placeholder_fidelity": 0.0,
+        "reward_score": 0.0,
+        "latency_ms_p50": 1022.87
+      }
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1765-control",
+      "manifest_sha256": "37e83688a3693cb44db282bb078b1c6cbf5ebc839e4aa68c30b49d252c2a8e6b",
+      "checkpoint_sha256": "178ea75c4350186858b8c55d1c698ad6fcf96117c8a0f2aea7155b5ecd5effbd",
+      "params": 1608962,
+      "steps_requested": 20,
+      "step_records": 21,
+      "batch_size": 2,
+      "seed": 101765,
+      "last_weighted_loss": 14.169325828552246,
+      "train_wall_seconds": 2.7033480100217275,
+      "compiler_alignment": {
+        "loss_weight": 0.0,
+        "margin": 0.0,
+        "stratified": false,
+        "kind_filter": "all"
+      },
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 3,
+        "incomplete_document_n": 0,
+        "decode_timeout_count": 0,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.14776666666666669,
+        "component_type_recall": 0.16666666666666666,
+        "binder_reference_f1": 0.5,
+        "placeholder_fidelity": 0.4444444444444444,
+        "reward_score": 0.5379999999999999,
+        "latency_ms_p50": 1134.45
+      }
+    }
+  ],
+  "agentv": {
+    "suite_results_per_arm": 1,
+    "bundles_complete": true,
+    "execution_errors": 0
+  },
+  "ship_gates_pass": false,
+  "lean": "not_applicable:no_champion",
+  "next_priority": {
+    "area": "harness",
+    "hypothesis": "Stricter evaluation completeness and content-bound AB/BA promotion evidence prevent false model attribution before the next distinct quality experiment.",
+    "required_controls": [
+      "size_matched",
+      "complete_agentv_authority",
+      "content_bound_replicates",
+      "ab_ba_ordering",
+      "remaining_time_formal_budget",
+      "constrained_decode"
+    ]
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "1f6f619b86c4bd78fa836f87acc110fe5b2f1cc9",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v75",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v290"
+    },
+    "stamped_at": "2026-08-02T16:14:22.389092+00:00"
+  }
+}

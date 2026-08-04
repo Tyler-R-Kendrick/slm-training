@@ -1,0 +1,94 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1761",
+  "cycle_index": 1761,
+  "evidence_class": "fixture",
+  "decision": "frozen_replay_measurement_incomplete",
+  "scoreable": false,
+  "train_cache": {
+    "control": "reused c1760 completed train",
+    "candidate": "reused c1760 completed train",
+    "new_checkpoints": 0
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1761-batch1",
+      "manifest_sha256": "0024db54422bc1bb51e8099f0e8be2b4f8ee524a09ca7b14b15f87ef21b06953",
+      "reused_checkpoint_sha256": "da3c04625d68e7660e4231f60694839214c843ef7dbfbec84dd477e5f9bcdcc9",
+      "params": 1608962,
+      "batch_size": 1,
+      "evaluation": {
+        "status": "interrupted",
+        "measurement_complete": false,
+        "scoreable": false,
+        "suite": "smoke",
+        "processed_record_n": 1,
+        "active_record_ids": [
+          "smoke_button_01"
+        ],
+        "diagnostic_decode_stats": {
+          "n": 2,
+          "tokens_emitted_sum": 299.0,
+          "forwards_count_sum": 289.0,
+          "total_ms_sum": 37963.896,
+          "backbone_ms_sum": 27810.343,
+          "compiler_ms_sum": 9508.347,
+          "completion_witness_states_expanded_sum": 29616.0
+        }
+      }
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1761-control",
+      "manifest_sha256": "74039c40102badeabe8a862eada728a024129fc5654a41a874ba2cbb6e94c39e",
+      "reused_checkpoint_sha256": "bd95d451cbbe624ac91339bf6fa21e743061ab66eeb9c42655fc7d4848b549dc",
+      "params": 1608962,
+      "batch_size": 2,
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 3,
+        "incomplete_document_n": 0,
+        "decode_timeout_count": 0,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.13526666666666667,
+        "component_type_recall": 0.16666666666666666,
+        "latency_ms_p50": 1382.5770200346597
+      },
+      "held_out": {
+        "n": 5,
+        "completed_document_n": 5,
+        "incomplete_document_n": 0,
+        "decode_timeout_count": 0,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.060239999999999995,
+        "component_type_recall": 0.02857142857142857,
+        "latency_ms_p50": 1370.7022999878973
+      },
+      "agentv": {
+        "suite_results": 2,
+        "passed": 0,
+        "failed": 2,
+        "execution_errors": 0
+      }
+    }
+  ],
+  "ship_gates_pass": false,
+  "lean": "not_applicable:no_champion",
+  "next_priority": "canonical model-build repair, then replay the exact frozen manifest; one reproduced failure now exhausts the unmodified replay allowance",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "8b6ddd099048f6e3bc643fac66896150e78beaaf",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v74",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v289"
+    },
+    "stamped_at": "2026-08-02T14:23:27.512733+00:00"
+  }
+}

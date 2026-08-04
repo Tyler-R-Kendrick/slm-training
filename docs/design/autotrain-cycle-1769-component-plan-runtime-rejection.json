@@ -1,0 +1,113 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1769",
+  "cycle_index": 1769,
+  "cycle_intent": "retry_measurement",
+  "evidence_class": "fixture",
+  "decision": "model_runtime_rejected",
+  "scoreable": false,
+  "training_reused": true,
+  "new_checkpoint_created": false,
+  "repair_hypothesis": {
+    "change": "bound component-plan root and count decode biases by configured weight",
+    "model_component": "v291",
+    "verdict": "rejected_no_runtime_improvement"
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1769-component-plan",
+      "manifest_sha256": "c42b490d228aae170be626cbd2eed8b7d91e0a550737ad49ce512e75fd5066bd",
+      "checkpoint_sha256": "8af2c84d30f1afa5d57ed942e18bb802be61d15762f02e93a5ead13330b6c2e3",
+      "params": 1755764,
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 0,
+        "incomplete_document_n": 3,
+        "decode_timeout_count": 3,
+        "meaningful_program_rate": null,
+        "structural_similarity": null,
+        "binder_reference_f1": null,
+        "latency_ms_p50": null,
+        "latency_ms_p50_including_incomplete": 11219.33
+      },
+      "partial_decode_telemetry": {
+        "forwards_count_sum": 306.0,
+        "compiler_ms_sum": 9666.633,
+        "component_plan_applications_sum": 11.0,
+        "component_plan_choice_changes_sum": 3.0,
+        "completion_unique_states_sum": 110081.0,
+        "completion_transition_cache_misses_sum": 110910.0,
+        "completion_witness_states_expanded_sum": 6334.0,
+        "completion_parser_forks_sum": 115143.0
+      },
+      "root_choices": ["Stack", "Stack", "Stack"]
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1769-control",
+      "manifest_sha256": "05e7af711838afb1628ed4c0814f62148c0b3b0cff559f5b194ef8f96faef10d",
+      "checkpoint_sha256": "35869ea8c3cc64da161cb083bf20092ccaa03557e78b7c87861c95f6a7fbedd8",
+      "params": 1755764,
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 3,
+        "incomplete_document_n": 0,
+        "decode_timeout_count": 0,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.13526666666666667,
+        "component_type_recall": 0.16666666666666666,
+        "binder_reference_f1": 0.6333333333333333,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.7653333333333334,
+        "latency_ms_p50": 1146.04
+      },
+      "decode_telemetry": {
+        "forwards_count_sum": 11.0,
+        "completion_unique_states_sum": 31115.0,
+        "completion_transition_cache_misses_sum": 31277.0,
+        "completion_witness_states_expanded_sum": 861.0,
+        "completion_parser_forks_sum": 32123.0
+      }
+    }
+  ],
+  "classification": {
+    "quality_attribution": "unavailable",
+    "runtime_attribution": "candidate_model_arm",
+    "reason": "exact frozen candidate timed out while exact matched control completed under repaired runtime",
+    "next_action": "retire_arm_and_test_distinct_hypothesis"
+  },
+  "agentv": {
+    "bundles_complete": true,
+    "execution_errors": 0,
+    "candidate_expected_gate_rejection": false,
+    "control_expected_gate_rejection": true
+  },
+  "ship_gates_pass": false,
+  "lean": "not_applicable:no_champion",
+  "next_priority": {
+    "area": "model",
+    "hypothesis": "A distinct size-matched quality arm can improve the primary without the exhausted component-plan runtime trajectory.",
+    "required_controls": [
+      "new_preregistered_arm",
+      "matched_parameter_count",
+      "complete_agentv_authority",
+      "constrained_decode",
+      "unchanged_timeout_policy"
+    ]
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "844e648fec9cefc63638c1ddd2d8d761959ec01d",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v75",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v291"
+    },
+    "stamped_at": "2026-08-02T16:54:14.877095+00:00"
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260802",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202608-39ee9cf7-c3",
+  "cycle_index": 3,
+  "note": "Resumed-session cycle; see continuous-openui-20260802-resume-c2-results.md for why this loop's campaign_id namespace collides with the earlier same-day c2/c3/c4 docs.",
+  "source_commit": "26b913a71f2591d2094440aa8a8c62e1100cdd60",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "honest_slot_contract": true,
+    "slot_contract_constrained_decode": true,
+    "compiler_decode_mode": "off"
+  },
+  "arms": {
+    "c3-control": {
+      "status": "completed",
+      "reason": "eval completed; ship gates fail (insufficient n)",
+      "metrics": {
+        "latency_ms_p50": 3257.35,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.23083333333333333,
+        "binder_reference_f1": 0.7333333333333334
+      }
+    },
+    "c3-component-plan": {
+      "status": "completed",
+      "reason": "eval completed; ship gates fail (insufficient n + quality floors); rejected by non-regression check",
+      "metrics": {
+        "latency_ms_p50": 3117.64,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.1725,
+        "binder_reference_f1": 0.6333333333333333
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": -0.05833333333333335,
+  "conclusion": "Tested the size-matched 'component-plan' lever (same trainable_params=1755764 as control) against the matched control. The candidate regressed on every quality axis: structural_similarity -0.0583 (0.2308 -> 0.1725), meaningful_program_rate 0.333 -> 0.0, and binder_reference_f1 0.733 -> 0.633 (flagged non_regression_fail). This is a clean negative screening result -- the component-plan lever is rejected for promotion. fixture_insufficient_n_alone also applies (n=3 < 20), so this stays a soft/non-terminal fixture diagnostic, but the primary_metric regression is real and sufficient on its own to reject this lever. Correctly classified non-positive: no stack layer.",
+  "repair": null,
+  "known_debt_discovered": null,
+  "next_priorities": [
+    "model: the completed non-positive component-plan arm is exhausted; test the distinct size-matched 'component-edge' lever next (c3-component-edge).",
+    "evaluation: keep the matched control as the size-matched baseline every cycle.",
+    "infrastructure: soft ship-gate fails on fixture n never stop the continuous loop."
+  ],
+  "recorded_at": "2026-08-02T22:41:20+00:00"
+}

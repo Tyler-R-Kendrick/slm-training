@@ -1,0 +1,68 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 2,
+  "source_commit": "1cb9ef56",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "seed": 100002
+  },
+  "arms": {
+    "c2-control": {
+      "trainable_params": 1755764,
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.32666666666666666,
+        "component_type_recall": null,
+        "binder_reference_f1": 0.0,
+        "placeholder_fidelity": 0.0,
+        "latency_ms_p50": 9416.83
+      }
+    },
+    "c2-component-plan": {
+      "trainable_params": 1755764,
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.38280000000000003,
+        "component_type_recall": 0.16666666666666666,
+        "binder_reference_f1": 0.0,
+        "placeholder_fidelity": 0.0,
+        "latency_ms_p50": 8369.16
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.05613333333333337,
+  "sdlc_phase_a": {
+    "positive": true,
+    "stack_layer": true,
+    "stack_action": "deliver_stack_after_documentation",
+    "agent_required": "document, then open/update a stacked PR for the positive result",
+    "reasons": [
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c2-control",
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c2-component-plan",
+      "primary_metric_win:smoke.structural_similarity:0.32666666666666666->0.38280000000000003:improvement=0.05613333333333337"
+    ]
+  },
+  "conclusion": "Continuous-openui-local loop, cycle 2: the size-matched 'component-plan' arm (1,755,764 trainable params, seed 100002) beats its matched control on the declared primary, smoke.structural_similarity, by +0.0561 (0.3267 -> 0.3828), and also improves component_type_recall (0 -> .1667) and p50 latency (9416.83ms -> 8369.16ms). meaningful_program_rate, binder_reference_f1, and placeholder_fidelity are 0 on both arms at this seed -- the win is confined to raw structural similarity and component-type recall, not full program meaningfulness. This is the same 'component-plan' hypothesis and the same trainable-param count (1,755,764) previously flagged in the c5/c6 blocker follow-up as needing fresh-seed confirmation before any promotion; this cycle is itself a first, independent measurement under a brand-new campaign (not a replay), so it does not yet satisfy that confirmation requirement on its own. Ship gates fail as expected (insufficient_n=3, missing held_out/adversarial/ood/rico_held). SDLC Phase A classifies this cycle POSITIVE (primary_metric_win); per sdlc autotrain-iteration-delivery, documenting this result creates the reviewable delta required to open a stacked PR.",
+  "next_priorities": [
+    "Fresh-seed confirmation of component-plan vs control with the identical size-matched recipe before any promotion or Lean preflight (rank 1, confidence 0.95)",
+    "Keep promotion formal preflight locked until fresh confirmation establishes a champion (rank 2, lean_assumption, confidence 1.0)",
+    "Do not conflate this screening win with ship readiness -- ast_beq_rate, canonical_beq_rate, meaningful_program_rate, binder_reference_f1, and placeholder_fidelity all remain 0 on both arms"
+  ],
+  "recorded_at": "2026-08-03T04:36:01Z"
+}

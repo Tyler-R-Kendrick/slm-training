@@ -7,6 +7,12 @@ experiment starts.
 
 ## Contract
 
+Campaign-lock verification preserves the canonical digest of historical
+`ExperimentCampaignV1` payloads when later releases add optional defaulted
+fields. The compatibility projection is explicit and limited to those added
+defaults; all typed validation still runs, and any decision-bearing mutation
+continues to fail the digest check.
+
 Every governed experiment declares:
 
 - hypothesis and decision;
@@ -101,6 +107,17 @@ This adapts:
   prospective sample-size justification and rejection of observed-power
   reasoning.
 
+## Frozen retry successors
+
+An infrastructure-incomplete measurement is never rerun by pretending its old
+`source_commit` is current. Continuous autotrain creates a new locked successor
+whose `replay_of_manifest_sha256` names the exact prior manifest. The successor
+preserves the model/data recipe, endpoints, arms, seeds, budget, stopping rules,
+controls, multiplicity family, and gates while binding execution to clean current
+main. Both matched arms must complete before the retry action is acknowledged.
+Formal obligations are not portable proof receipts: a cross-commit retry with such
+obligations stops for a fresh Lean preflight.
+
 ## SLM-337 validation
 
 The delivery is governance/fixture evidence, not a model-quality experiment
@@ -113,9 +130,12 @@ canonical campaign as the AP-007 integration seam while retaining its honest
 `wiring` claim.
 
 The first fixture preflight rejected `max_wall_minutes=3` because the canonical
-repository lever currently caps campaigns at two minutes. No simulation ran in
-that failed preflight; the bridge was corrected to the stricter two-minute
-budget before the documented fixture execution.
+repository lever capped campaigns at two minutes when that fixture ran. No
+simulation ran in that failed preflight; the bridge was corrected to the
+stricter two-minute budget before the documented fixture execution. (Historical
+record — as of 2026-08-03 the canonical cap is `MAX_RUN_MINUTES = 3` in
+`src/slm_training/levers.py`, and `CampaignBudget.max_wall_minutes` enforces
+`le=3`.)
 
 The final CPU fixture completed in 3.70 seconds:
 

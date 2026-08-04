@@ -316,13 +316,19 @@ class GrammarDecodeState:
             int(restore(state_id)) if callable(restore) else int(state_id)
         )
 
-    def _advance_completion_token(self, token_id: int) -> None:
+    def _advance_completion_token(
+        self, token_id: int, *, require_advertised: bool = True
+    ) -> None:
         session = self.completion_session
         state_id = self.completion_state_id
         if session is None or state_id is None:
             return
         child_id = session.advance(int(state_id), int(token_id))
         if child_id is None:
+            if not require_advertised:
+                self.completion_state_id = None
+                self._collect_completion_stats()
+                return
             raise RuntimeError(
                 "packed completion session rejected an advertised decode token "
                 f"{int(token_id)} at prefix {tuple(self.prefix_ids)}"
@@ -356,6 +362,10 @@ class GrammarDecodeState:
         eng = self.engine
         if eng is None or getattr(eng, "_ip", None) is None:
             return False
+        if not getattr(eng, "_synced_ok", True):
+            # A rejected sync leaves ``_prefix`` set for diagnostics; it must
+            # never vouch for an in-sync engine (false-admit hazard).
+            return False
         if getattr(eng, "_prefix", None) == prefix_text:
             return True
         return self.engine_ids_len is not None and self.engine_ids_len == len(
@@ -388,7 +398,9 @@ class GrammarDecodeState:
                 for token_id in extra:
                     self.prefix_ids.append(int(token_id))
                     if int(token_id) != int(tokenizer.eos_id):
-                        self._advance_completion_token(int(token_id))
+                        self._advance_completion_token(
+                            int(token_id), require_advertised=False
+                        )
                 self.prefix_ids = list(prefix_ids)
         else:
             self.prefix_ids = list(prefix_ids)
@@ -401,7 +413,13 @@ class GrammarDecodeState:
             stats.detok_ms += (time.perf_counter() - t0) * 1000.0
         return self.prefix_text
 
-    def advance_token(self, tokenizer: OpenUITokenizer, token_id: int) -> str:
+    def advance_token(
+        self,
+        tokenizer: OpenUITokenizer,
+        token_id: int,
+        *,
+        require_completion_advertised: bool = True,
+    ) -> str:
         """Append one emitted token to the cached prefix.
 
         DSL-native tokenizers advance the DFA engine by direct terminal feed
@@ -480,7 +498,10 @@ class GrammarDecodeState:
         # EOS is a terminal certificate edge, not an incremental parser
         # state. The row is complete and will not query another domain.
         if int(token_id) != int(tokenizer.eos_id):
-            self._advance_completion_token(int(token_id))
+            self._advance_completion_token(
+                int(token_id),
+                require_advertised=require_completion_advertised,
+            )
         self.clear_position_memo()
         return self.prefix_text
 
@@ -542,6 +563,7 @@ def force_emit_token_id(
         else (
             getattr(engine, "_prefix", None) == prefix_text
             and getattr(engine, "_ip", None) is not None
+            and getattr(engine, "_synced_ok", True)
         )
     )
     t0 = time.perf_counter()
@@ -604,19 +626,29 @@ def exact_forced_token_id(
             from slm_training.dsl.grammar.fastpath.compiler_draft import (
                 build_completion_forest,
             )
+            from slm_training.models.decode_stats import get_active_stats, timed_ms
 
-            forest = build_completion_forest(
-                tokenizer,
-                prefix_ids,
-                state=state,
-                slot_contract=slot_contract,
-                remaining_tokens=(
-                    remaining_tokens
-                    if remaining_tokens is not None
-                    else getattr(state, "remaining_tokens", None)
-                ),
-                runtime_symbols=runtime_symbols,
-            )
+            # This is the same exact grammar-authority computation the
+            # compiler-tree decode path times as "compiler_ms" (twotower.py's
+            # _compiler_ltr_decode_one/_compiler_ltr_decode_batch). The legacy
+            # LTR-repair loop calls it once per token via this function; left
+            # unwrapped, that real cost fell entirely into unattributed_ms,
+            # making compiler_ms_mean incomparable across checkpoints that
+            # decode through different mechanisms (see docs/design/
+            # compiler-tree-forced-closure-decode-metering-gap.md).
+            with timed_ms(get_active_stats(), "compiler_ms"):
+                forest = build_completion_forest(
+                    tokenizer,
+                    prefix_ids,
+                    state=state,
+                    slot_contract=slot_contract,
+                    remaining_tokens=(
+                        remaining_tokens
+                        if remaining_tokens is not None
+                        else getattr(state, "remaining_tokens", None)
+                    ),
+                    runtime_symbols=runtime_symbols,
+                )
             candidates = set(forest.candidate_ids)
             if forest.coverage == "complete":
                 # A complete domain is authoritative in both directions: one
@@ -725,10 +757,11 @@ def contract_allowed_token_ids(
             table = SymbolTable.from_placeholders(
                 slot_contract, max_slots=tokenizer.sym_slots
             )
+            prefix_id_set = set(prefix_ids)
             allowed: set[int] = set()
             for i, _ph in enumerate(table.placeholders):
                 token_id = tokenizer.sym_id(i)
-                if token_id not in prefix_ids:
+                if token_id not in prefix_id_set:
                     allowed.add(token_id)
             return allowed
     except Exception:  # noqa: BLE001
@@ -841,6 +874,8 @@ def dfa_admits_token(
             t0 = time.perf_counter()
             try:
                 eng.set_prefix(prefix_text)  # type: ignore[union-attr]
+            except (TimeoutError, KeyboardInterrupt):
+                raise
             except Exception:  # noqa: BLE001
                 pass
             if stats is not None:
@@ -1313,15 +1348,14 @@ def pick_constrained_token(
                 return False
         if not stream:
             return True
-        # Once the DFA has admitted the candidate, the optional stream probe is
-        # redundant.  In particular, broad terminals used to call the
-        # LangCore subprocess for every candidate even when
-        # ``skip_exact_stream_probe`` was enabled, making constrained decode
-        # effectively unbounded on CPU.  Keep the name for checkpoint/API
-        # compatibility, but honor it for all DFA-admitted candidates.
-        if not (skip_exact or exact_terminals) and not _stream_probe_ok(
-            tokenizer, prefix_ids, tid, prefix_text=prefix_text
-        ):
+        # A complete compiler certificate subsumes the semantic probe. When
+        # the compiler is unavailable/partial, however, a broad identifier DFA
+        # terminal does not prove component-schema membership. Never let the
+        # performance-oriented skip widen that uncertain frontier.
+        needs_semantic_probe = compiler_candidates is None and token.isidentifier()
+        if (
+            needs_semantic_probe or not (skip_exact or exact_terminals)
+        ) and not _stream_probe_ok(tokenizer, prefix_ids, tid, prefix_text=prefix_text):
             return False
         return True
 
@@ -1586,6 +1620,8 @@ def filter_ids_by_stream(
             try:
                 if not engine.set_prefix(text):
                     return list(newly_filled)
+            except (TimeoutError, KeyboardInterrupt):
+                raise
             except Exception:  # noqa: BLE001
                 pass
         return []

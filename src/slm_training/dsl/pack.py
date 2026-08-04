@@ -142,7 +142,18 @@ class DslPack:
     completion_artifact: str | None = None
 
     def filled_slots(self) -> tuple[str, ...]:
-        return tuple(f.name for f in fields(self) if getattr(self, f.name) is not None)
+        empty_means_unavailable = {
+            "leaf_components",
+            "container_components",
+            "component_property_domains",
+            "statement_templates",
+        }
+        return tuple(
+            item.name
+            for item in fields(self)
+            if (value := getattr(self, item.name)) is not None
+            and (item.name not in empty_means_unavailable or bool(value))
+        )
 
     def require(self, slot: str) -> Any:
         """Return the named slot, failing closed when the pack omits it."""
@@ -271,6 +282,39 @@ def _openui_completion_frontier(prefix: str) -> frozenset[str]:
     if not engine.set_prefix(prefix):
         return frozenset()
     return engine.next_terminals()
+
+
+def _note_witness(
+    *,
+    materialized: bool = False,
+    kept: bool = False,
+    pruned_unknown: bool = False,
+    pruned_unsupported: bool = False,
+    false_singleton: bool = False,
+) -> None:
+    """Advisory witness-outcome accounting (HV-A / HV-2).
+
+    Distinguishes the two reasons a candidate is dropped by the completion
+    domain: a certified UNSUPPORTED witness (sound) versus a budget-exhausted
+    UNKNOWN one (a false reject that silently narrows the legal domain). Also
+    records how many witnesses are built versus kept, which bounds what a
+    lazy-materialization design could save. Counters only; no behavior change.
+    """
+    from slm_training.models.decode_stats import get_active_stats
+
+    stats = get_active_stats()
+    if stats is None:
+        return
+    if materialized:
+        stats.witness_materialized += 1
+    if kept:
+        stats.witness_kept += 1
+    if pruned_unknown:
+        stats.witness_pruned_unknown += 1
+    if pruned_unsupported:
+        stats.witness_pruned_unsupported += 1
+    if false_singleton:
+        stats.witness_false_singleton_risk += 1
 
 
 def _openui_completion_domain(request: Any) -> Any:
@@ -420,6 +464,8 @@ def _openui_completion_domain(request: Any) -> Any:
 
     candidates: list[Any] = []
     unsupported = False
+    # [unknown_dropped, proven_kept] for this query.
+    query_witness_tally = [0, 0]
     for path in initial.paths:
         tokens = tuple(int(token_id) for token_id in path.token_ids)
         if not tokens or len(tokens) > budget:
@@ -433,21 +479,36 @@ def _openui_completion_domain(request: Any) -> Any:
                 unsupported = True
                 continue
             proof = session.terminal_witness(child, budget - len(tokens))
+            _note_witness(materialized=True)
             if proof.status is WitnessStatus.UNKNOWN:
                 # Preserve V1's behavior-visible per-candidate expansion
                 # discipline: an unproven candidate is omitted while proven
                 # siblings remain available. UNKNOWN itself is never cached
                 # as a negative kernel fact.
+                #
+                # HONESTY (HV-A): this is NOT a soundness-preserving rejection.
+                # UNKNOWN means the bounded witness search exhausted its node
+                # budget, not that no completion exists, so dropping the
+                # candidate silently narrows the legal domain (a false reject).
+                # ``dsl/solver`` states the opposite law for its own verdicts
+                # ("UNKNOWN never licenses candidate removal", keep_and_rank).
+                # Counted separately so the two causes are distinguishable.
+                _note_witness(pruned_unknown=True)
+                query_witness_tally[0] += 1
                 unsupported = True
                 continue
             if proof.status is WitnessStatus.UNSUPPORTED:
+                _note_witness(pruned_unsupported=True)
                 unsupported = True
                 continue
             suffix = tuple(int(token_id) for token_id in proof.witness)
             witness = tokens + suffix
             if not suffix:
+                _note_witness(pruned_unsupported=True)
                 unsupported = True
                 continue
+        _note_witness(kept=True)
+        query_witness_tally[1] += 1
         candidates.append(
             CompletionDomainCandidateV1(
                 token_ids=tokens,
@@ -464,6 +525,12 @@ def _openui_completion_domain(request: Any) -> Any:
                 reason="terminal_witness_unavailable",
             )
         )
+    if query_witness_tally[0] and query_witness_tally[1] == 1:
+        # Exactly one proven candidate survived while an unproven one was
+        # dropped: downstream singleton detection cannot distinguish this from
+        # a genuine deterministic force, so the model is bypassed on the
+        # strength of a budget limit rather than a proof.
+        _note_witness(false_singleton=True)
     return _finish(
         CompletionDomainV1(
             status="complete",
@@ -719,8 +786,12 @@ def _openui_completion_domain_reference(request: Any) -> Any:
             else tokens + (_tail_from(prefix + tokens, budget - len(tokens)) or ())
         )
         if not witness or (path.kind != "eos" and len(witness) == len(tokens)):
+            # Bounded tail search found nothing within budget: same
+            # UNKNOWN-flavoured false-reject risk as the session path.
+            _note_witness(materialized=True, pruned_unknown=True)
             unwitnessed = True
             continue
+        _note_witness(materialized=True, kept=True)
         candidates.append(
             CompletionDomainCandidateV1(
                 token_ids=tokens,

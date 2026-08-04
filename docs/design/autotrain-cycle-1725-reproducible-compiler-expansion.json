@@ -1,0 +1,112 @@
+{
+  "schema": "autotrain_measured_results/v1",
+  "campaign_id": "continuous-loop-20260801-continuous-openui-202607-98199209-c1725",
+  "cycle_index": 1725,
+  "loop_id": "continuous-openui-20260730",
+  "run_class": "fixture_scratch",
+  "source_commit": "10c3e6e3dd901c5cb6c6e9a32639a7065a7ff8d9",
+  "source_dirty": false,
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "primary_metric": "smoke.binder_reference_f1",
+  "frozen_manifest_sha256": "d5943f8e0bc45fe785c5c356f97baf6f19c0f0ce55d3f68705d90eb3d75c1e56",
+  "arms": [
+    {
+      "experiment_id": "c20260801-continuous-openui-202607-98199209-c1725-control",
+      "status": "completed_gate_rejection",
+      "training": {
+        "executed": false,
+        "parameter_count": 1608962,
+        "source_campaign": "continuous-loop-20260801-continuous-openui-202607-98199209-c1717"
+      },
+      "suite": "smoke",
+      "suite_n": 3,
+      "completed_document_n": 3,
+      "decode_timeout_count": 0,
+      "metrics": {
+        "parse_rate": 1.0,
+        "binder_reference_f1": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.36556666666666665,
+        "latency_ms_p50": 2940.73
+      },
+      "decode_stats": {
+        "total_ms_sum": 9132.086,
+        "backbone_ms_sum": 4646.989,
+        "compiler_ms_sum": 4133.445,
+        "forwards_count_sum": 58,
+        "completion_unique_states_sum": 31405,
+        "completion_transition_cache_hits_sum": 398,
+        "completion_transition_cache_misses_sum": 31575,
+        "completion_witness_states_expanded_sum": 1395,
+        "completion_parser_forks_sum": 32690
+      },
+      "ship_gates_pass": false,
+      "claim_boundary": "three-document fixture; missing ship suites and quality thresholds"
+    },
+    {
+      "experiment_id": "c20260801-continuous-openui-202607-98199209-c1725-batch1",
+      "status": "finalized_incomplete_timeout",
+      "training": {
+        "executed": false,
+        "parameter_count": 1608962,
+        "source_campaign": "continuous-loop-20260801-continuous-openui-202607-98199209-c1716"
+      },
+      "suite": "smoke",
+      "suite_n": 3,
+      "completed_document_n": 2,
+      "incomplete_document_n": 1,
+      "decode_timeout_count": 1,
+      "metrics_completed_subset_only": {
+        "parse_rate": 1.0,
+        "binder_reference_f1": 1.0,
+        "meaningful_program_rate": 0.5,
+        "structural_similarity": 0.1869,
+        "latency_ms_p50": 8986.38
+      },
+      "latency_ms_p50_including_incomplete": 19868.99,
+      "decode_stats": {
+        "total_ms_sum": 53079.406,
+        "backbone_ms_sum": 10124.883,
+        "compiler_ms_sum": 42482.752,
+        "forwards_count_sum": 115,
+        "completion_unique_states_sum": 264558,
+        "completion_transition_cache_hits_sum": 2087,
+        "completion_transition_cache_misses_sum": 265991,
+        "completion_witness_states_expanded_sum": 13728,
+        "completion_parser_forks_sum": 278189
+      },
+      "ship_gates_pass": false,
+      "claim_boundary": "quality metrics exclude one typed runtime timeout; no arm comparison or promotion"
+    }
+  ],
+  "reproduction_verdict": {
+    "exact_failure_reproduced": true,
+    "comparison_cycle": 1724,
+    "identical_candidate_unique_states": true,
+    "identical_candidate_parser_forks": true,
+    "identical_candidate_forwards": true,
+    "identical_candidate_transition_counts": true,
+    "next_failure_boundary": "deterministic_completion_forest_expansion"
+  },
+  "handoff_repair": {
+    "classification": "finalized_agentv_decode_timeout",
+    "quality_measurement_complete": false,
+    "owner": "improve-openui-harnesses",
+    "harness_family": "model_build",
+    "next_action": "remove redundant rollback snapshots from disposable exact parser branches, then replay the frozen arm"
+  },
+  "checkpoint_documentation_required": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "10c3e6e3dd901c5cb6c6e9a32639a7065a7ff8d9",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v48",
+      "harness.model_build.eval": "v73",
+      "model.twotower": "v275"
+    },
+    "stamped_at": "2026-08-02T02:01:39.828467+00:00"
+  }
+}

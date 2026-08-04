@@ -7,7 +7,7 @@ import json
 import re
 from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import Any, Iterable, Literal
+from typing import Any, Iterable, Literal, Mapping
 
 from slm_training.data.structure import strip_style_literals
 from slm_training.dsl.lang_core import library_schema
@@ -67,6 +67,15 @@ def project_template_markers(text: str | None, markers: Iterable[str]) -> str | 
     if text is None:
         return None
     mapping = {marker: f":slot_{index}" for index, marker in enumerate(markers)}
+    return _project_template_marker_mapping(text, mapping)
+
+
+def _project_template_marker_mapping(
+    text: str | None,
+    mapping: Mapping[str, str],
+) -> str | None:
+    if text is None:
+        return None
     if not mapping:
         return text
     pattern = re.compile(
@@ -75,7 +84,13 @@ def project_template_markers(text: str | None, markers: Iterable[str]) -> str | 
     return pattern.sub(lambda match: mapping[match.group(0)], text)
 
 
-def canonicalize_example_template_markers(record: ExampleRecord) -> ExampleRecord:
+def canonicalize_example_template_markers(
+    record: ExampleRecord,
+    *,
+    marker_order: Iterable[str] | None = None,
+    marker_projection: Mapping[str, str] | None = None,
+    slot_contract_size: int | None = None,
+) -> ExampleRecord:
     """Rewrite every persisted record marker to an opaque ordinal identity.
 
     The rewrite covers structured metadata as well as model-facing strings so
@@ -99,9 +114,17 @@ def canonicalize_example_template_markers(record: ExampleRecord) -> ExampleRecor
             for marker in _extract_template_markers(surface)
         )
     )
+    if marker_order is not None and marker_projection is not None:
+        raise ValueError("marker_order and marker_projection are mutually exclusive")
+    declared_order = list(dict.fromkeys(marker_order or ()))
+    if declared_order and set(declared_order) != set(target_markers):
+        raise ValueError(
+            "explicit marker order must contain exactly the target marker inventory"
+        )
     markers = list(
         dict.fromkeys(
-            target_markers
+            declared_order
+            + target_markers
             + list(record.placeholders or ())
             + [
                 marker
@@ -110,9 +133,31 @@ def canonicalize_example_template_markers(record: ExampleRecord) -> ExampleRecor
             ]
         )
     )
+    projection = dict(marker_projection or {})
+    if projection:
+        if any(marker not in projection for marker in target_markers):
+            raise ValueError("explicit marker projection must cover every target marker")
+        target_slots = {projection[marker] for marker in target_markers}
+        contract_size = (
+            int(slot_contract_size)
+            if slot_contract_size is not None
+            else len(target_slots)
+        )
+        expected_slots = {f":slot_{index}" for index in range(contract_size)}
+        if not target_slots <= expected_slots:
+            raise ValueError(
+                "explicit marker projection target slots must belong to the contract"
+            )
+        if any(not is_canonical_template_marker(slot) for slot in projection.values()):
+            raise ValueError("explicit marker projection values must be opaque slots")
+    else:
+        if slot_contract_size is not None:
+            raise ValueError("slot_contract_size requires marker_projection")
+        contract_size = len(target_markers)
+        projection = {marker: f":slot_{index}" for index, marker in enumerate(markers)}
 
     def projected(text: str) -> str:
-        return project_template_markers(text, markers) or ""
+        return _project_template_marker_mapping(text, projection) or ""
 
     def project_value(value: Any) -> Any:
         if isinstance(value, str):
@@ -131,12 +176,12 @@ def canonicalize_example_template_markers(record: ExampleRecord) -> ExampleRecor
         record,
         prompt=projected(record.prompt),
         design_md=(
-            project_template_markers(record.design_md, markers)
+            _project_template_marker_mapping(record.design_md, projection)
             if record.design_md is not None
             else None
         ),
         openui=projected(record.openui),
-        placeholders=[f":slot_{index}" for index in range(len(target_markers))],
+        placeholders=[f":slot_{index}" for index in range(contract_size)],
         meta=project_value(record.meta),
         accepted_outputs=[
             OutputTarget(

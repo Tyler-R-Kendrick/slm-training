@@ -1,0 +1,74 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-202607-98199209-c1857",
+  "decision": "measurement_incomplete_harness_failure",
+  "claim_class": "fixture_screening",
+  "formal": {"status": "not_applicable:screening"},
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "seed": 101857,
+    "batch_size": 2,
+    "num_threads": 1,
+    "context_backend": "scratch",
+    "suite": "smoke",
+    "suite_n": 3,
+    "trainable_params": {"control": 1608962, "candidate": null},
+    "sync_checkpoints": false,
+    "candidate_lever": "slot_contract_in_context"
+  },
+  "arms": {
+    "control": {
+      "last_loss": 7.9205641746521,
+      "checkpoint_sha256": "765302d0f59b3b4b19669bd6a1beed836a0ea8e49b572680a4febe26bec3fe27",
+      "metrics": {
+        "parse_rate": 1.0,
+        "structural_similarity": 0.17416666666666666,
+        "meaningful_program_rate": 0.3333333333333333,
+        "component_type_recall": 0.25,
+        "binder_reference_f1": 0.6333333333333333,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.7653333333333334,
+        "latency_ms_p50": 853.23,
+        "tokens_emitted_mean": 21.0,
+        "forwards_count_mean": 4.0,
+        "compiler_ms_mean": 2223.16
+      }
+    },
+    "candidate": {
+      "status": "failed_before_scoreboard",
+      "error": "ValueError: persisted template markers must be contiguous, declared opaque ordinals",
+      "checkpoint_sha256": "",
+      "metrics": null
+    }
+  },
+  "effects": {"measurement_complete": false},
+  "ship": {
+    "eligible": false,
+    "failures": [
+      "candidate training failed before scoreboard",
+      "prompt slot extraction incorrectly included incidental DESIGN.md :slot_4 example",
+      "no attributable treatment effect",
+      "smoke n=3<20",
+      "production suites missing"
+    ]
+  },
+  "successor": {
+    "experiment_slug": "slot-contract-context",
+    "next_action": "replay exact frozen control and candidate after harness repair"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "50fa0976ba7c9f59ffaa92f7949dc2762933322b",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.train": "v38",
+      "harness.autoresearch.experiment_campaign": "v154",
+      "harness.model_build.eval": "v79",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v22",
+      "model.twotower": "v304"
+    },
+    "stamped_at": "2026-08-03T08:36:30Z"
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "schema": "autotrain_measured_results/v1",
+  "campaign_id": "continuous-loop-20260801-continuous-openui-202607-98199209-c1724",
+  "cycle_index": 1724,
+  "loop_id": "continuous-openui-20260730",
+  "run_class": "fixture_scratch",
+  "source_commit": "df143648f504a64eac784f0e6feffe89e804ebfc",
+  "source_dirty": false,
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "primary_metric": "smoke.binder_reference_f1",
+  "frozen_manifest_sha256": "f515644bd64a4fc64b33995cdf208c24222d5adc759a8c2468c982b1a0c8fec9",
+  "arms": [
+    {
+      "experiment_id": "c20260801-continuous-openui-202607-98199209-c1724-control",
+      "status": "completed_gate_rejection",
+      "training": {
+        "executed": false,
+        "parameter_count": 1608962,
+        "source_campaign": "continuous-loop-20260801-continuous-openui-202607-98199209-c1717"
+      },
+      "suite": "smoke",
+      "suite_n": 3,
+      "completed_document_n": 3,
+      "decode_timeout_count": 0,
+      "metrics": {
+        "parse_rate": 1.0,
+        "binder_reference_f1": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.36556666666666665,
+        "latency_ms_p50": 2913.22
+      },
+      "decode_stats": {
+        "total_ms_sum": 8981.184,
+        "backbone_ms_sum": 4595.425,
+        "compiler_ms_sum": 4041.231,
+        "forwards_count_sum": 58,
+        "completion_unique_states_sum": 31405,
+        "completion_transition_cache_hits_sum": 398,
+        "completion_transition_cache_misses_sum": 31575,
+        "completion_witness_states_expanded_sum": 1395,
+        "completion_parser_forks_sum": 32690
+      },
+      "ship_gates_pass": false,
+      "claim_boundary": "three-document fixture; missing ship suites and quality thresholds"
+    },
+    {
+      "experiment_id": "c20260801-continuous-openui-202607-98199209-c1724-batch1",
+      "status": "finalized_incomplete_timeout",
+      "training": {
+        "executed": false,
+        "parameter_count": 1608962,
+        "source_campaign": "continuous-loop-20260801-continuous-openui-202607-98199209-c1716"
+      },
+      "suite": "smoke",
+      "suite_n": 3,
+      "completed_document_n": 2,
+      "incomplete_document_n": 1,
+      "decode_timeout_count": 1,
+      "metrics_completed_subset_only": {
+        "parse_rate": 1.0,
+        "binder_reference_f1": 1.0,
+        "meaningful_program_rate": 0.5,
+        "structural_similarity": 0.1869,
+        "latency_ms_p50": 9109.77
+      },
+      "latency_ms_p50_including_incomplete": 20015.95,
+      "decode_stats": {
+        "total_ms_sum": 53665.387,
+        "backbone_ms_sum": 10473.313,
+        "compiler_ms_sum": 42713.798,
+        "forwards_count_sum": 115,
+        "completion_unique_states_sum": 264558,
+        "completion_transition_cache_hits_sum": 2087,
+        "completion_transition_cache_misses_sum": 265991,
+        "completion_witness_states_expanded_sum": 13728,
+        "completion_parser_forks_sum": 278189
+      },
+      "ship_gates_pass": false,
+      "claim_boundary": "quality metrics exclude one typed runtime timeout; no arm comparison or promotion"
+    }
+  ],
+  "supervisor_repair_verdict": {
+    "confirmed": true,
+    "arm_wall_seconds": 70.0,
+    "candidate_evaluator_finalized": true,
+    "agentv_execution_errors": 0,
+    "next_failure_boundary": "internal_constrained_decode_runtime"
+  },
+  "handoff_repair": {
+    "classification": "finalized_agentv_decode_timeout",
+    "quality_measurement_complete": false,
+    "owner": "improve-openui-harnesses",
+    "harness_family": "model_build",
+    "next_action": "repair canonical runtime then replay exact frozen arm"
+  },
+  "checkpoint_documentation_required": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "df143648f504a64eac784f0e6feffe89e804ebfc",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v47",
+      "harness.model_build.eval": "v73",
+      "model.twotower": "v275"
+    },
+    "stamped_at": "2026-08-02T01:50:34.118751+00:00"
+  }
+}

@@ -31,19 +31,19 @@
   "source_identities": [
     {
       "path": "src/slm_training/dsl/language_contract.py",
-      "sha256": "6cb40e7640d784cdc78ba069e2d1219fc2bb6a39afc51414b55c8c2a6f6d4b08"
+      "sha256": "638608134d6d15dab38aeaccf966da0d9f5f900178d422cd5f0f66b78c711462"
     },
     {
       "path": "tests/test_dsl/test_language_contract.py",
-      "sha256": "6ead8ef6a462fe1a27510bd54410fe59e4d7236ee0890ff89da989f9a80cd416"
+      "sha256": "44da381f501a3c277bcd1d6d8e802df9e757325c968699b7e2aa44fd61b9315d"
     },
     {
       "path": "src/slm_training/dsl/pack.py",
-      "sha256": "082770d348e3ffb8099ab5339c40e3f8e14edfd599db1078b90ac2b8f4554c3c"
+      "sha256": "65ad24dfd8705fe3fe3c3759c6a5f35a45643900720b8b4c4c3cc38e1c52565f"
     },
     {
       "path": "src/slm_training/data/contract.py",
-      "sha256": "0925351745f002d05daed1bbc18e8ca73a9ca35232df63366bf4118f9060f064"
+      "sha256": "6fdcad7182e2511f1bbb3d68852cd3e092a6b9012c5d22517b73388b8f01141d"
     },
     {
       "path": "src/slm_training/dsl/scope_env.py",
@@ -51,7 +51,7 @@
     },
     {
       "path": "docs/design/symbol-only-output-contract.md",
-      "sha256": "1a7c7c7bad85d8e9f852fa205e4e51994a78bf34d804400a5dab13a9471061fc"
+      "sha256": "6890d44bd68546f403424e5fa6ab07bd722331cf34aaf9dd3a3e6889cad1372e"
     }
   ],
   "fixture_results": [

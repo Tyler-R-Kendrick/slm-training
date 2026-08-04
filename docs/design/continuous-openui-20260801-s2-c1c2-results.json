@@ -1,0 +1,34 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260801",
+  "session_note": "second independent container instance of today's continuous-openui-20260801 loop (cycle numbering restarts locally because outputs/autoresearch state is gitignored and not shared across sessions); see continuous-openui-20260801-s2-summary.md for cross-session context",
+  "campaigns": ["continuous-loop-20260801-c1", "continuous-loop-20260801-c2"],
+  "cycle_index": [1, 2],
+  "source_commit": "1bdfb14ebcf2393976a7c969e7bdd449fc5ada39",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "batch_size": 2,
+    "seed": 7,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c1-control": {"status": "failed", "reason": "ModuleNotFoundError: No module named 'torch' (torch is an optional extra; venv lacked it)"},
+    "c1-bounds": {"status": "failed", "reason": "same torch import failure"},
+    "c2-control": {"status": "failed", "reason": "RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER"},
+    "c2-canvas": {"status": "failed", "reason": "same AgentV SDK unavailable failure"}
+  },
+  "primary_metric": "smoke.latency_ms_p50",
+  "primary_delta_ms": null,
+  "conclusion": "Both cycles were pure environment-bootstrap blockers in a fresh container, not lever findings: (1) the repo venv had no torch installed (torch is declared as an optional `[torch]` extra in pyproject.toml, not a base dependency) -- fixed with `uv pip install -e \".[torch]\"`; (2) the AgentV eval publisher requires the Node/TS toolchain from `npm ci`, which failed until `NODE_OPTIONS` (preset to `--import tsx --max-old-space-size=8192` in this environment) was unset for the npm invocation, since Node rejects `--import` inside NODE_OPTIONS for `npm ci`'s bootstrap phase. Both are self-heal, not harness bugs to file. Cycles c3-c5 in this session ran with a working environment.",
+  "next_priorities": [
+    "Consider documenting the two-step bootstrap (uv pip install -e '.[torch]'; NODE_OPTIONS= npm ci) in a setup script or session-start hook so future fresh containers don't burn a cycle each on the same two blockers"
+  ],
+  "recorded_at": "2026-08-01T08:34:49+00:00"
+}

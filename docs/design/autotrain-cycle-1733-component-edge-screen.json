@@ -1,0 +1,123 @@
+{
+  "schema": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1733",
+  "loop_id": "continuous-openui-20260730",
+  "cycle_index": 1733,
+  "campaign_role": "screening",
+  "cycle_intent": "screening",
+  "run_class": "fixture_scratch",
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "steps": 24,
+  "seed": 101733,
+  "batch_size": 2,
+  "checkpoint_sync": "explicit no-sync scratch",
+  "upstream_commit": "c0762b45f169162a5e7db3f37bd3be0cf65c45e4",
+  "integration_commit": "a88ea74133115d0ed8850bc0bf49ab5456d7828d",
+  "primary_metric": "smoke.structural_similarity",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "a88ea74133115d0ed8850bc0bf49ab5456d7828d",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v73",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v284"
+    },
+    "stamped_at": "2026-08-02T05:14:14.820880+00:00"
+  },
+  "gate_version": "openui_ship_gates_v6",
+  "arms": [
+    {
+      "label": "matched control",
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1733-control",
+      "status": "completed_gate_rejection",
+      "training": {
+        "trainable_parameters": 1766987,
+        "structural_aux_head_profile": "component-edge",
+        "component_edge_loss_weight": 0.0,
+        "last_loss": 8.0219087600708,
+        "elapsed_wall_seconds": 3.450081159011461,
+        "checkpoint_sha256": "19033055638f7033742d4698bc4ed22de71e3276445d5c4bd813814f2eafd52b"
+      },
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "binder_reference_f1": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.20693333333333333,
+        "component_type_recall": 0.08333333333333333,
+        "ast_node_f1": 0.05128205128205127,
+        "ast_edge_f1": 0.0,
+        "placeholder_fidelity": 1.0,
+        "reward_score": 0.0,
+        "latency_ms_p50": 6136.43
+      },
+      "decode_stats": {
+        "forwards_count_sum": 82,
+        "completion_unique_states_sum": 88203,
+        "completion_witness_states_expanded_sum": 7330,
+        "completion_parser_forks_sum": 95213
+      },
+      "agentv_execution_errors": 0,
+      "ship_gates_pass": false
+    },
+    {
+      "label": "component-edge loss 1.0",
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1733-component-edge",
+      "status": "completed_quality_null",
+      "training": {
+        "trainable_parameters": 1766987,
+        "structural_aux_head_profile": "component-edge",
+        "component_edge_loss_weight": 1.0,
+        "last_loss": 9.029166221618652,
+        "elapsed_wall_seconds": 3.287609469029121,
+        "checkpoint_sha256": "f6f4d361f63847f5d09d0cc5c19ca07ccae9ed1ec653a8a2173242afa306cfe6"
+      },
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "binder_reference_f1": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.20693333333333333,
+        "component_type_recall": 0.08333333333333333,
+        "ast_node_f1": 0.05128205128205127,
+        "ast_edge_f1": 0.0,
+        "placeholder_fidelity": 1.0,
+        "reward_score": 0.0,
+        "latency_ms_p50": 6005.56
+      },
+      "decode_stats": {
+        "forwards_count_sum": 82,
+        "completion_unique_states_sum": 88203,
+        "completion_witness_states_expanded_sum": 7330,
+        "completion_parser_forks_sum": 95213
+      },
+      "agentv_execution_errors": 0,
+      "ship_gates_pass": false
+    }
+  ],
+  "comparison": {
+    "parameter_matched": true,
+    "quality_delta": 0.0,
+    "latency_improvement_fraction": 0.021327,
+    "minimum_efficiency_gain_fraction": 0.05,
+    "disposition": "quality_null_efficiency_below_floor_rejected"
+  },
+  "formal_evidence": {
+    "status": "not_applicable:screening",
+    "reason": "Lean promotion proof is required only for a confirmed champion promotion"
+  },
+  "harness_feedback": {
+    "signal": "successor priority returned to the previously exhausted component-plan family",
+    "repair": "cool down complete non-positive arms across one predecessor-chain bank window and choose the next unexhausted quality family",
+    "repaired_next_hypothesis": "component-inventory"
+  },
+  "checkpoint_documentation_required": true,
+  "checkpoint_reuse": "forbidden",
+  "ship_eligible": false
+}

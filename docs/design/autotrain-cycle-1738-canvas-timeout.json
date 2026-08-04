@@ -1,0 +1,92 @@
+{
+  "schema": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1738",
+  "loop_id": "continuous-openui-20260730",
+  "cycle_index": 1738,
+  "campaign_role": "screening",
+  "cycle_intent": "retry_measurement",
+  "run_class": "fixture_scratch_incomplete",
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "steps": 22,
+  "seed": 101737,
+  "checkpoint_reuse": "exact frozen c1737 checkpoints",
+  "upstream_commit": "62f315565318479b83e6352e1b0d75ab66011b9b",
+  "integration_commit": "1a196a2a79466a29b93670306180bbc10772897f",
+  "primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "label": "matched control",
+      "trainable_parameters": 1608962,
+      "compact_active_canvas": false,
+      "suite_n": 3,
+      "completed_document_n": 2,
+      "incomplete_document_n": 1,
+      "decode_timeout_count": 1,
+      "parse_rate_completed": 1.0,
+      "meaningful_program_rate_completed": 0.5,
+      "structural_similarity_completed": 0.11665,
+      "binder_reference_f1_completed": 1.0,
+      "latency_ms_p50_including_incomplete": 22379.94,
+      "forwards_count_sum": 107,
+      "completion_unique_states_sum": 297345,
+      "completion_witness_states_expanded_sum": 22080,
+      "completion_parser_forks_sum": 335814,
+      "scoreable_comparison": false
+    },
+    {
+      "label": "compact active canvas",
+      "trainable_parameters": 1608962,
+      "compact_active_canvas": true,
+      "suite_n": 3,
+      "completed_document_n": 2,
+      "incomplete_document_n": 1,
+      "decode_timeout_count": 1,
+      "parse_rate_completed": 1.0,
+      "meaningful_program_rate_completed": 0.5,
+      "structural_similarity_completed": 0.11665,
+      "binder_reference_f1_completed": 1.0,
+      "latency_ms_p50_including_incomplete": 22530.74,
+      "forwards_count_sum": 107,
+      "completion_unique_states_sum": 297158,
+      "completion_witness_states_expanded_sum": 21935,
+      "completion_parser_forks_sum": 335482,
+      "scoreable_comparison": false
+    }
+  ],
+  "comparison": {
+    "parameter_matched": true,
+    "measurement_complete": false,
+    "quality_delta": "unavailable",
+    "latency_delta": "unavailable",
+    "disposition": "inconclusive_runtime_repair_then_exact_frozen_retry"
+  },
+  "harness_feedback": {
+    "signal": "Both AgentV suites finalized typed per-record dispositions, but each authoritative suite contains one runtime timeout.",
+    "repair": "Require complete authoritative scoreboards for positive SDLC delivery and repair canonical compiler runtime before exact replay.",
+    "component_version": "harness.autoresearch.experiment_campaign/v58"
+  },
+  "formal_evidence": {
+    "status": "not_applicable:incomplete_screening",
+    "validation_required": "python -m scripts.verify_formal_contracts"
+  },
+  "next_action": {
+    "kind": "repair_harness_then_retry_measurement",
+    "frozen_manifest_sha256": "960f0214ec36b6b3da3eff6e4e68ec7d182e1dac1e09186192da5a0576a8c923"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "1a196a2a79466a29b93670306180bbc10772897f",
+    "code_dirty": true,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v58",
+      "harness.model_build.eval": "v74",
+      "model.twotower": "v285",
+      "dsl.completion_kernel": "v7",
+      "dsl.symbolic_surface": "v5"
+    }
+  },
+  "checkpoint_documentation_required": false,
+  "ship_eligible": false
+}
+

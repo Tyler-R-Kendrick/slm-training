@@ -1,0 +1,94 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1793",
+  "cycle_index": 1793,
+  "cycle_intent": "confirm",
+  "evidence_class": "fixture",
+  "decision": "confirmation_rejected_primary_quality_not_reheld",
+  "scoreable": true,
+  "new_checkpoint_created": true,
+  "raw_harness_disposition": "false_positive_champion_confirmed_reclassified_by_campaign_v91",
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1793-confirm",
+      "fidelity_loss_weight": 1.5,
+      "trainable_params": 1608962,
+      "steps": 23,
+      "seed": 101793,
+      "last_loss": 23.515151977539062,
+      "elapsed_wall_seconds": 3.603306943026837,
+      "checkpoint_sha256": "590fa756ea8c10ff796fad567cd190b1c1cdbc2f14c5eedc16056e69017ca1af",
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 3,
+        "incomplete_document_n": 0,
+        "decode_timeout_count": 0,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.4458333333333333,
+        "binder_reference_f1": 0.6333333333333333,
+        "component_type_recall": 0.25,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.8033333333333333,
+        "latency_ms_p50": 2344.24
+      }
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1793-control",
+      "fidelity_loss_weight": 0.5,
+      "trainable_params": 1608962,
+      "steps": 23,
+      "seed": 101793,
+      "last_loss": 14.829252243041992,
+      "elapsed_wall_seconds": 2.8346543820225634,
+      "checkpoint_sha256": "54348049b062d08760e51774491cbce8070fb4293300dfce7bbfb8c527ae4c84",
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 3,
+        "incomplete_document_n": 0,
+        "decode_timeout_count": 0,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.4575,
+        "binder_reference_f1": 0.9523809523809524,
+        "component_type_recall": 0.25,
+        "placeholder_fidelity": 0.9166666666666666,
+        "reward_score": 0.9199999999999999,
+        "latency_ms_p50": 5018.29
+      }
+    }
+  ],
+  "comparison": {
+    "attributable": true,
+    "structural_similarity_delta": -0.011666666666666714,
+    "binder_reference_f1_delta": -0.31904761904761914,
+    "component_type_recall_delta": 0.0,
+    "placeholder_fidelity_delta": -0.38888888888888884,
+    "reward_score_delta": -0.11666666666666659,
+    "latency_fraction_change": -0.5328538205245162,
+    "parameter_delta": 0
+  },
+  "agentv": {
+    "bundles_complete": true,
+    "execution_errors": 0,
+    "ship_gates_pass": false
+  },
+  "checkpoint_policy": "local_explicit_no_sync_confirmation_rejected_not_reusable_not_promoted_not_ship",
+  "lean": "not_applicable:confirmation_rejected",
+  "next_priority": "retire_false_confirmation_then_size_matched_stochasticity_diagnostic",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "175bf81187c9c75747dea64c886495cead4fa54a",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v76",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v293"
+    },
+    "stamped_at": "2026-08-02T20:32:48.351696+00:00"
+  }
+}

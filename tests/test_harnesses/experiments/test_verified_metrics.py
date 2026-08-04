@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -14,6 +13,7 @@ from slm_training.autoresearch.experiment_campaign import (
     CampaignResultV1,
     campaign_manifest_sha256,
 )
+from slm_training.harness_core.bounded_process import BoundedProcessResult, ProcessOutcome
 from slm_training.harnesses.experiments import verified_metrics
 from slm_training.harnesses.experiments.promotion import (
     register_promoted_checkpoint,
@@ -171,10 +171,15 @@ def test_verify_metric_certificate_replays_checker(
     certificate_path.write_text(json.dumps(certificate), encoding="utf-8")
     checker = _write(tmp_path / "leverproof", b"")
     monkeypatch.setattr(
-        verified_metrics.subprocess,
-        "run",
-        lambda *args, **kwargs: subprocess.CompletedProcess(
-            args=args[0], returncode=0, stdout="verified\n", stderr=""
+        verified_metrics,
+        "run_formal_process",
+        lambda *args, **kwargs: BoundedProcessResult(
+            command=tuple(args[0]),
+            outcome=ProcessOutcome.COMPLETED,
+            returncode=0,
+            stdout="verified\n",
+            stderr="",
+            duration_seconds=0.0,
         ),
     )
 
@@ -189,6 +194,42 @@ def test_verify_metric_certificate_replays_checker(
     )
 
     assert actual["verified"] is True
+
+
+def test_verify_metric_certificate_rejects_bounded_timeout(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    evidence = _evidence(tmp_path)
+    certificate = _certificate(evidence)
+    evidence_path = tmp_path / "metric-evidence.json"
+    certificate_path = tmp_path / "metric-certificate.json"
+    evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
+    certificate_path.write_text(json.dumps(certificate), encoding="utf-8")
+    checker = _write(tmp_path / "leverproof", b"")
+    monkeypatch.setattr(
+        verified_metrics,
+        "run_formal_process",
+        lambda *args, **kwargs: BoundedProcessResult(
+            command=tuple(args[0]),
+            outcome=ProcessOutcome.TIMED_OUT,
+            returncode=124,
+            stdout="",
+            stderr="",
+            duration_seconds=0.0,
+            timed_out=True,
+        ),
+    )
+
+    with pytest.raises(VerifiedMetricError, match="replay exceeded"):
+        verify_metric_certificate(
+            evidence_path=evidence_path,
+            certificate_path=certificate_path,
+            expected_campaign_manifest_sha256=evidence["source"][
+                "campaign_manifest_sha256"
+            ],
+            expected_selected_candidate="candidate",
+            checker=checker,
+        )
 
 
 def test_band_evidence_binds_expectations_and_observations(tmp_path: Path) -> None:

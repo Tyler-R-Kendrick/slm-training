@@ -21,6 +21,90 @@ from slm_training.dsl.schema import ExampleRecord, load_jsonl
 from slm_training.models.twotower import TwoTowerModel
 
 
+def gate_calibration_report(
+    probabilities: list[float],
+    labels: list[float],
+    *,
+    bins: int = 10,
+    max_selective_risk: float = 0.05,
+) -> dict[str, Any]:
+    """Brier/ECE plus a calibrated keep-vs-remask operating point (E63)."""
+    if len(probabilities) != len(labels) or not probabilities:
+        raise ValueError("gate calibration requires equal non-empty vectors")
+    pairs = [
+        (min(1.0, max(0.0, float(p))), 1.0 if float(y) >= 0.5 else 0.0)
+        for p, y in zip(probabilities, labels)
+    ]
+    n = len(pairs)
+    brier = sum((p - y) ** 2 for p, y in pairs) / n
+    ece = 0.0
+    bin_count = max(1, int(bins))
+    for index in range(bin_count):
+        lo, hi = index / bin_count, (index + 1) / bin_count
+        bucket = [
+            (p, y)
+            for p, y in pairs
+            if lo <= p and (p <= hi if index == bin_count - 1 else p < hi)
+        ]
+        if bucket:
+            confidence = sum(p for p, _ in bucket) / len(bucket)
+            accuracy = sum(y for _, y in bucket) / len(bucket)
+            ece += len(bucket) / n * abs(confidence - accuracy)
+    curve: list[dict[str, float]] = []
+    thresholds = sorted({p for p, _ in pairs}, reverse=True)
+    for threshold in thresholds:
+        kept = [(p, y) for p, y in pairs if p >= threshold]
+        risk = sum(1.0 - y for _, y in kept) / len(kept)
+        curve.append(
+            {
+                "threshold": threshold,
+                "coverage": len(kept) / n,
+                "selective_risk": risk,
+            }
+        )
+    feasible = [row for row in curve if row["selective_risk"] <= max_selective_risk]
+    chosen = max(feasible, key=lambda row: row["coverage"]) if feasible else None
+    return {
+        "n": n,
+        "brier": brier,
+        "ece": ece,
+        "max_selective_risk": max_selective_risk,
+        "operating_point": chosen,
+        "abstain_required": chosen is None,
+        "risk_coverage": curve,
+    }
+
+
+def calibrate_trust_gate(
+    model: TwoTowerModel,
+    records: list[ExampleRecord],
+    *,
+    batch_size: int = 8,
+    max_selective_risk: float = 0.05,
+) -> dict[str, Any]:
+    """Calibrate the remask threshold on a disjoint record slice."""
+    probabilities: list[float] = []
+    labels: list[float] = []
+    for start in range(0, len(records), max(1, batch_size)):
+        hidden, target, scored = mine_gate_batch(
+            model, records[start : start + batch_size]
+        )
+        model.trust_gate.eval()
+        with torch.no_grad():
+            trust = model.trust_gate(hidden)
+        probabilities.extend(float(value) for value in trust[scored].cpu())
+        labels.extend(float(value) for value in target[scored].cpu())
+    report = gate_calibration_report(
+        probabilities,
+        labels,
+        max_selective_risk=max_selective_risk,
+    )
+    point = report["operating_point"]
+    if point is not None:
+        model.config.fastpath_gate_threshold = float(point["threshold"])
+    return report
+
+
 def _placeholder_token_mask(
     model: TwoTowerModel,
     target_ids: torch.Tensor,
@@ -50,7 +134,7 @@ def mine_gate_batch(
     records: list[ExampleRecord],
     *,
     mask_rate: float = 0.4,
-) -> tuple[torch.Tensor, torch.Tensor]:
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """
     Run a frozen denoiser forward and build trust labels.
 
@@ -127,7 +211,10 @@ def mine_gate_batch(
                 # Soft: mark all placeholder positions in this row as untrusted.
                 labels[i] = torch.where(ph_mask[i], torch.zeros_like(labels[i]), labels[i])
 
-    return hidden.detach(), labels.detach()
+    # Only model-filled positions are an honest keep-vs-remask population.
+    # Visible gold tokens and padding are certain by construction and would
+    # otherwise swamp both training and calibration with synthetic positives.
+    return hidden.detach(), labels.detach(), noise.detach()
 
 
 def train_trust_gate(
@@ -154,10 +241,10 @@ def train_trust_gate(
         batch = records[start : start + batch_size]
         if len(batch) < batch_size:
             batch = batch + records[: batch_size - len(batch)]
-        hidden, labels = mine_gate_batch(model, batch)
+        hidden, labels, scored = mine_gate_batch(model, batch)
         model.trust_gate.train()
         trust = model.trust_gate(hidden)
-        loss = F.binary_cross_entropy(trust, labels)
+        loss = F.binary_cross_entropy(trust[scored], labels[scored])
         opt.zero_grad(set_to_none=True)
         loss.backward()
         opt.step()
@@ -185,6 +272,8 @@ def train_trust_gate_from_paths(
     device: str = "cpu",
     limit: int = 64,
     slot_aware: bool = False,
+    calibration_records: Path | str | None = None,
+    max_selective_risk: float = 0.05,
 ) -> dict[str, Any]:
     ckpt = Path(checkpoint)
     out = Path(out_dir)
@@ -196,6 +285,15 @@ def train_trust_gate_from_paths(
     summary = train_trust_gate(
         model, records, steps=steps, batch_size=batch_size, device=device
     )
+    if calibration_records is not None:
+        calibration = load_jsonl(Path(calibration_records))[: max(1, limit)]
+        summary["calibration"] = calibrate_trust_gate(
+            model,
+            calibration,
+            batch_size=batch_size,
+            max_selective_risk=max_selective_risk,
+        )
+        summary["fastpath_gate_threshold"] = model.config.fastpath_gate_threshold
     dest = out / "checkpoints" / "last.pt"
     dest.parent.mkdir(parents=True, exist_ok=True)
     model.save(dest)

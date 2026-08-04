@@ -1,0 +1,105 @@
+{
+  "schema": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1744",
+  "loop_id": "continuous-openui-20260730",
+  "cycle_index": 1744,
+  "campaign_role": "screening",
+  "cycle_intent": "retry_measurement",
+  "run_class": "fixture_scratch_incomplete",
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "steps": 22,
+  "seed": 101737,
+  "checkpoint_reuse": "exact frozen c1737 checkpoints",
+  "upstream_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "integration_commit": "e937b4f93d7326dd97f0ac01891937b775f2e3c6",
+  "primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "label": "matched control",
+      "trainable_parameters": 1608962,
+      "compact_active_canvas": false,
+      "suite_n": 3,
+      "completed_document_n": 2,
+      "incomplete_document_n": 1,
+      "decode_timeout_count": 1,
+      "parse_rate_completed": 1.0,
+      "meaningful_program_rate_completed": 0.5,
+      "structural_similarity_completed": 0.11665,
+      "binder_reference_f1_completed": 1.0,
+      "latency_ms_p50_completed": 8263.62,
+      "latency_ms_p50_including_incomplete": 18155.82,
+      "decode_initialization_ms": 175.557,
+      "forwards_count_sum": 129,
+      "tokens_emitted_sum": 209,
+      "compiler_ms_sum": 38505.055,
+      "completion_unique_states_sum": 313735,
+      "completion_witness_states_expanded_sum": 23501,
+      "completion_parser_forks_sum": 353421,
+      "total_eval_ms": 50420.89,
+      "scoreable_comparison": false
+    },
+    {
+      "label": "compact active canvas",
+      "trainable_parameters": 1608962,
+      "compact_active_canvas": true,
+      "suite_n": 3,
+      "completed_document_n": 2,
+      "incomplete_document_n": 1,
+      "decode_timeout_count": 1,
+      "parse_rate_completed": 1.0,
+      "meaningful_program_rate_completed": 0.5,
+      "structural_similarity_completed": 0.11665,
+      "binder_reference_f1_completed": 1.0,
+      "latency_ms_p50_completed": 8231.85,
+      "latency_ms_p50_including_incomplete": 18275.56,
+      "decode_initialization_ms": 144.462,
+      "forwards_count_sum": 134,
+      "tokens_emitted_sum": 217,
+      "compiler_ms_sum": 38095.735,
+      "completion_unique_states_sum": 313834,
+      "completion_witness_states_expanded_sum": 23686,
+      "completion_parser_forks_sum": 353592,
+      "total_eval_ms": 50508.34,
+      "scoreable_comparison": false
+    }
+  ],
+  "comparison": {
+    "parameter_matched": true,
+    "measurement_complete": false,
+    "quality_delta": "unavailable",
+    "completed_document_efficiency_gain_fraction": 0.0038593998,
+    "minimum_efficiency_effect_fraction": 0.05,
+    "efficiency_disposition": "rejected_min_effect_and_incomplete",
+    "disposition": "inconclusive_runtime_repair_then_exact_frozen_retry"
+  },
+  "harness_feedback": {
+    "signal": "Both scoreboards retain one timeout, but v13 lowers completed-document latency and advances more certified work under the unchanged wall.",
+    "repair": "Profile immutable SemanticState/frame replacement and replace reflection-heavy constructors only if exact parity, timeout propagation, and Lean validation stay green.",
+    "component_version": "dsl.completion_kernel/v13"
+  },
+  "formal_evidence": {
+    "status": "not_applicable:incomplete_screening",
+    "latest_validation": "145 exact completion tests passed; Build completed successfully (2947 jobs); formal contracts build and axiom audit passed",
+    "validation_required_after_repair": "python -m scripts.verify_formal_contracts"
+  },
+  "next_action": {
+    "kind": "profile_harness_then_repair_and_retry_measurement",
+    "priority": "semantic_state_frame_constructor_cost",
+    "frozen_manifest_sha256": "055c01e1613bf639db8b80bef59118a106444dc64d2dbe26873727135fe358a6"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "e937b4f93d7326dd97f0ac01891937b775f2e3c6",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v59",
+      "harness.model_build.eval": "v74",
+      "model.twotower": "v286",
+      "dsl.completion_kernel": "v13",
+      "dsl.symbolic_surface": "v5"
+    }
+  },
+  "checkpoint_documentation_required": false,
+  "ship_eligible": false
+}

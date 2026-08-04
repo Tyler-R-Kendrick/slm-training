@@ -1,0 +1,93 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c3",
+  "cycle_index": 3,
+  "source_commit": "6280d2db",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "seed": 100002,
+    "decode_timeout_seconds": 8.0,
+    "effective_decode_timeout_seconds": 24.0,
+    "cycle_role": "retry_measurement",
+    "predecessor_campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c2"
+  },
+  "arms": {
+    "c3-control": {
+      "trainable_params": 1755764,
+      "status": "experiment_failed",
+      "smoke": {
+        "n": 3,
+        "document_n": 3,
+        "completed_document_n": 0,
+        "incomplete_document_n": 3,
+        "decode_timeout_count": 3,
+        "compiler_ms_mean": 23287.1,
+        "compiler_decode_mode": "tree",
+        "evaluation_wall_seconds": 57.999999,
+        "parse_rate": null,
+        "meaningful_program_rate": null,
+        "structural_similarity": null
+      }
+    },
+    "c3-component-plan": {
+      "trainable_params": 1755764,
+      "status": "experiment_failed",
+      "smoke": {
+        "n": 3,
+        "document_n": 3,
+        "completed_document_n": 0,
+        "incomplete_document_n": 3,
+        "decode_timeout_count": 3,
+        "compiler_ms_mean": 23180.8,
+        "compiler_decode_mode": "tree",
+        "evaluation_wall_seconds": 57.999999,
+        "parse_rate": null,
+        "meaningful_program_rate": null,
+        "structural_similarity": null
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "route repair_harness (model_build, frozen manifest 6953396f...) through improve-openui-harnesses; document only for this cycle",
+    "reasons": [
+      "measurement_incomplete:c20260804-continuous-openui-local-8c0b60dd-c3-control:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "measurement_incomplete:c20260804-continuous-openui-local-8c0b60dd-c3-component-plan:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "harness_failure:c20260804-continuous-openui-local-8c0b60dd-c3-component-plan:experiment_failed",
+      "harness_failure:c20260804-continuous-openui-local-8c0b60dd-c3-control:experiment_failed",
+      "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c3-component-plan",
+      "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c3-control",
+      "primary_metric_unavailable",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "harness_signal": {
+    "family": "model_build",
+    "frozen_manifest_sha256": "6953396f2355c70665437a02e075d3f8a67d146b7875e36a0b8b1a6ed2f36597",
+    "signal": "Retry of the identical frozen c2 arm, after the compiler_ms metering fix, still times out on both arms with unchanged ~23s/record cost -- the metering fix was necessary but not sufficient",
+    "related_prior_findings": [
+      "docs/design/continuous-openui-local-gd6j83-c2-dual-arm-decode-timeout.md",
+      "docs/design/compiler-tree-forced-closure-decode-metering-gap.md",
+      "docs/design/autotrain-cycle-c5-c6-replay-blocked-follow-up.md"
+    ]
+  },
+  "conclusion": "Continuous-openui-local loop, cycle 3 (session gd6j83, retry_measurement of the frozen c2 arm): after the compiler_ms decode-cost metering fix (v310), both control and component-plan arms (seed 100002, compiler_decode_mode='tree' on both -- already-instrumented before the fix) still time out on all 3/3 smoke records with compiler_ms_mean unchanged at ~23.2s/record. This confirms the earlier metering-gap fix was necessary but not sufficient: these specific seed-100002 fixture records genuinely cost ~23s/record in compiler-tree search, independent of any attribution bug. A second, distinct repair_harness action is now queued (frozen manifest 6953396f...) to profile why this specific record shape is this expensive and determine a real fix or an evidence-based timeout/exclusion policy. No stack layer opens for this non-positive cycle.",
+  "next_priorities": [
+    "Profile the compiler-tree search itself (node/edge counts, backtracking depth, grammar-ambiguity shape) for the seed-100002 fixture records to find the real per-record cost driver (model_build harness family, frozen manifest 6953396f...)",
+    "Do not attempt a third automatic retry on this frozen arm without that investigation",
+    "If the cost is confirmed legitimate (not a bug), propose an evidence-based decode_timeout_seconds policy or flag the record(s) as excluded from smoke-scale wall-capped runs, rather than silently raising the timeout"
+  ],
+  "recorded_at": "2026-08-04T19:26:55Z"
+}

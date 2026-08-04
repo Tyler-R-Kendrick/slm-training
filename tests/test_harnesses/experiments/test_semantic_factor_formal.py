@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 
 import numpy as np
@@ -77,6 +78,22 @@ def test_committed_preflights_are_formal_preflight_v1() -> None:
         path = SFF_FORMAL_DIR / f"{pf.template_id.replace('.', '_')}.json"
         raw = json.loads(path.read_text(encoding="utf-8"))
         FormalPreflightV1.model_validate(raw)
+
+
+def test_committed_preflights_reject_proof_digest_tampering(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from slm_training.harnesses.experiments import semantic_factor_formal as sff
+
+    shutil.copytree(SFF_FORMAL_DIR, tmp_path, dirs_exist_ok=True)
+    path = tmp_path / "sff_advisory-keys-legal.json"
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["proof_sha256"] = "0" * 64
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    monkeypatch.setattr(sff, "SFF_FORMAL_DIR", tmp_path)
+
+    with pytest.raises(SFFFormalError, match="proof digest stale"):
+        sff.validate_committed_preflights()
 
 
 def test_formal_sources_present() -> None:

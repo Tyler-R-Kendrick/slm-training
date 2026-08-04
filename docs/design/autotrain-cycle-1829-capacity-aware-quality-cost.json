@@ -1,0 +1,122 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1829",
+  "decision": "reject_quality_win_over_latency_budget",
+  "claim_class": "fixture_screening",
+  "formal": {
+    "status": "not_applicable:screening",
+    "reason": "No confirmation, promotion, or theorem-backed claim is made."
+  },
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "steps": 22,
+    "seed": 101829,
+    "batch_size": 2,
+    "context_backend": "scratch",
+    "suite": "smoke",
+    "suite_n": 3,
+    "sync_checkpoints": false
+  },
+  "arms": {
+    "control": {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1829-control",
+      "trainable_params": 1608962,
+      "mixture_sampling_policy": "with_replacement",
+      "last_loss": 21.560623168945312,
+      "train_wall_seconds": 12.271584547997918,
+      "checkpoint_sha256": "e284b1759cc312df201085ea484fae0eb03404011dd016a9313215d7d9185333",
+      "effective_records": 24.82,
+      "unique_records": 30,
+      "total_draws": 44,
+      "max_repeat": 3,
+      "metrics": {
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.41973333333333335,
+        "component_type_recall": 0.16666666666666666,
+        "binder_reference_f1": 0.6333333333333333,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.8073333333333332,
+        "parse_rate": 1.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 2838.6,
+        "tokens_emitted_mean": 54.0,
+        "forwards_count_mean": 9.0,
+        "compiler_ms_mean": 6927.359,
+        "compiler_prefill_tokens_mean": 6656.0,
+        "canvas_tokens_mean": 2304.0
+      }
+    },
+    "candidate": {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1829-capacity-aware-compiler-decision-margin",
+      "trainable_params": 1608962,
+      "mixture_sampling_policy": "capacity_aware",
+      "last_loss": 17.814754486083984,
+      "train_wall_seconds": 10.815222860022914,
+      "checkpoint_sha256": "da2863d6aa3d710721002695456370ba1f3771b908bf9b88d0a165561a429a9c",
+      "effective_records": 32.27,
+      "unique_records": 37,
+      "total_draws": 44,
+      "max_repeat": 3,
+      "metrics": {
+        "meaningful_program_rate": 0.6666666666666666,
+        "structural_similarity": 0.5299999999999999,
+        "component_type_recall": 0.4166666666666667,
+        "binder_reference_f1": 0.8222222222222223,
+        "placeholder_fidelity": 0.7222222222222222,
+        "reward_score": 0.8776666666666667,
+        "parse_rate": 1.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 4680.28,
+        "tokens_emitted_mean": 75.0,
+        "forwards_count_mean": 13.0,
+        "compiler_ms_mean": 11585.333,
+        "compiler_prefill_tokens_mean": 9472.0,
+        "canvas_tokens_mean": 3328.0
+      }
+    }
+  },
+  "effects": {
+    "effective_records_fraction": 0.300161,
+    "unique_records_fraction": 0.233333,
+    "structural_similarity": 0.11026666666666657,
+    "meaningful_program_rate": 0.3333333333333333,
+    "component_type_recall": 0.25,
+    "binder_reference_f1": 0.18888888888888888,
+    "latency_regression_fraction": 0.648799,
+    "compiler_time_regression_fraction": 0.672403,
+    "tokens_emitted_regression_fraction": 0.388889,
+    "forwards_count_regression_fraction": 0.444444
+  },
+  "ship": {
+    "eligible": false,
+    "failures": [
+      "smoke n=3<20",
+      "latency budget exceeded",
+      "ast_beq_rate=0",
+      "canonical_beq_rate=0",
+      "held_out missing",
+      "adversarial missing",
+      "ood missing",
+      "rico_held missing"
+    ]
+  },
+  "next_hypothesis": "Retain capacity-aware sampling and the all-family margin, then add tail-weighted scaffold supervision to preserve quality while reducing legal over-continuation, emitted tokens, forwards, and latency.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "78d0800e215ae783ec7c3eecea497151a7ca1f56",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v78",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v304"
+    },
+    "stamped_at": "2026-08-03T04:13:53.863223+00:00"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1770",
+  "cycle_index": 1770,
+  "cycle_intent": "screening",
+  "evidence_class": "fixture",
+  "decision": "measurement_incomplete",
+  "scoreable": false,
+  "new_checkpoint_created": true,
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1770-component-edge",
+      "manifest_sha256": "1d96a0b8f6d1aac6ee3456b9c721a9396b3fe4fd28cc3b50b6c2c6d7a077612b",
+      "checkpoint_sha256": "eb3cccf78504bc66117e1ef7ca8fa8d8d3f1f489761ea6a636456095dd6723ed",
+      "params": 1766987,
+      "train": {"steps": 20, "last_loss": 14.196941375732422, "elapsed_wall_seconds": 3.3275247500278056},
+      "smoke": {"n": 3, "completed_document_n": 0, "incomplete_document_n": 3, "decode_timeout_count": 3, "quality": null, "latency_ms_p50_including_incomplete": 8815.105310000945},
+      "partial_decode_telemetry": {"forwards_count_sum": 203.0, "completion_unique_states_sum": 35832.0, "completion_transition_cache_misses_sum": 37985.0, "completion_witness_states_expanded_sum": 21071.0, "completion_parser_forks_sum": 43548.0}
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1770-control",
+      "manifest_sha256": "aa6097c852b2d70420ec994a2d36e8a7aa358acf344555b476ae0a2bcff2d595",
+      "checkpoint_sha256": "5d1a9dd8e90f334eaeebe7f04a6cde8bf708eb4eb31958f67008394b324b0559",
+      "params": 1766987,
+      "train": {"steps": 20, "last_loss": 12.969259262084961, "elapsed_wall_seconds": 3.3685253799776547},
+      "smoke": {"n": 3, "completed_document_n": 0, "incomplete_document_n": 3, "decode_timeout_count": 3, "quality": null, "latency_ms_p50_including_incomplete": 8858.578740037046},
+      "partial_decode_telemetry": {"forwards_count_sum": 202.0, "completion_unique_states_sum": 35822.0, "completion_transition_cache_misses_sum": 37965.0, "completion_witness_states_expanded_sum": 20984.0, "completion_parser_forks_sum": 43518.0}
+    }
+  ],
+  "diagnosis": {"area": "model_build", "signal": "numeric_literal_close_starvation", "authority": "observed_result", "confidence": 0.95, "cache_regression_supported": false},
+  "agentv": {"bundles_complete": true, "execution_errors": 0, "ship_gates_pass": false},
+  "checkpoint_policy": "local_explicit_no_sync_not_reusable_not_promoted_not_ship",
+  "lean": "not_applicable:no_champion",
+  "next_priority": {"experiment": "literal-close", "candidate_ltr_tail_loss_weight": 2.0, "control_ltr_tail_loss_weight": 0.0, "size_matched": true, "preserve_constrained_decode": true, "preserve_timeout_policy": true},
+  "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "88bd53ae20ee6b25f9a6c342c870ae7c10ce063f", "code_dirty": false, "components": {"config.levers": "v30", "harness.model_build.eval": "v75", "harness.experiment_feature_flags": "v4", "evals.meaningful_program": "2.13.0", "evals.power_protocol": "v8", "evals.scoring": "v22", "model.twotower": "v291"}, "stamped_at": "2026-08-02T17:04:50.117288+00:00"}
+}

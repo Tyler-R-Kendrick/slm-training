@@ -1,0 +1,119 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1796",
+  "cycle_index": 1796,
+  "cycle_intent": "promotion",
+  "evidence_class": "fixture",
+  "decision": "inconclusive_incomplete_decode_measurement",
+  "scoreable": false,
+  "new_checkpoint_created": true,
+  "upstream_commit": "c9144577938ff407e1bbe401649f580ad3cec2c3",
+  "integration_commit": "5f002fab0dc5bbaf76289325d5242df29326d6d0",
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1796-semantic-contrast",
+      "semantic_contrast_loss_weight": 0.25,
+      "semantic_contrast_pair_count": 835,
+      "semantic_contrast_margin": 1.0,
+      "semantic_contrast_fraction": 0.5,
+      "trainable_params": 1608962,
+      "steps": 22,
+      "batch_size": 2,
+      "seed": 101796,
+      "last_loss": 12.146001815795898,
+      "elapsed_wall_seconds": 6.241282651026268,
+      "checkpoint_sha256": "feb745fc464348d43d61a0777efde1437b262cd59b4b331b768eda64670defb4",
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 1,
+        "incomplete_document_n": 2,
+        "decode_timeout_count": 2,
+        "partial_metrics_scoreable": false,
+        "structural_similarity": 0.06,
+        "binder_reference_f1": 0.0,
+        "latency_ms_p50": 1189.26
+      },
+      "held_out": {
+        "n": 5,
+        "completed_document_n": 4,
+        "incomplete_document_n": 1,
+        "decode_timeout_count": 1,
+        "partial_metrics_scoreable": false,
+        "structural_similarity": 0.16535,
+        "binder_reference_f1": 0.45,
+        "latency_ms_p50": 1357.44
+      }
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1796-control",
+      "semantic_contrast_loss_weight": 0.0,
+      "semantic_contrast_pair_count": 835,
+      "semantic_contrast_margin": 1.0,
+      "semantic_contrast_fraction": 0.5,
+      "trainable_params": 1608962,
+      "steps": 22,
+      "batch_size": 2,
+      "seed": 101796,
+      "last_loss": 11.910722732543945,
+      "elapsed_wall_seconds": 7.014400604006369,
+      "checkpoint_sha256": "8ad84a58c9fdaf9c3a6892eb330f9e1e9df8b7256f19b77cf7ddbba0fff84be0",
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 1,
+        "incomplete_document_n": 2,
+        "decode_timeout_count": 2,
+        "partial_metrics_scoreable": false,
+        "structural_similarity": 0.18,
+        "binder_reference_f1": 1.0,
+        "latency_ms_p50": 2501.42
+      },
+      "held_out": {
+        "n": 5,
+        "completed_document_n": 0,
+        "incomplete_document_n": 5,
+        "decode_timeout_count": 5,
+        "partial_metrics_scoreable": false,
+        "structural_similarity": null,
+        "binder_reference_f1": null,
+        "latency_ms_p50": null
+      }
+    }
+  ],
+  "comparison": {
+    "attributable": false,
+    "reason": "both arms have typed decode timeouts and completed different record subsets",
+    "parameter_delta": 0,
+    "quality_deltas": null
+  },
+  "runtime_diagnosis": {
+    "evaluation_wall_seconds_min": 26.836028,
+    "evaluation_wall_seconds_max": 27.6073,
+    "effective_decode_timeout_seconds_min": 2.949020010136467,
+    "effective_decode_timeout_seconds_max": 3.348010463329653,
+    "stage_leak": "fresh arm evaluated on promotion suites without a confirmed screening winner",
+    "repair": "empty promotion cadence slots fall back to smoke-only screening"
+  },
+  "agentv": {
+    "bundles_complete": true,
+    "execution_errors": 0,
+    "ship_gates_pass": false
+  },
+  "checkpoint_policy": "local_explicit_no_sync_incomplete_not_reusable_not_promoted_not_ship",
+  "lean": "not_applicable:no_champion",
+  "next_priority": "exact_frozen_replay_then_terminal_runtime_disposition_or_score",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "5f002fab0dc5bbaf76289325d5242df29326d6d0",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v76",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v294"
+    },
+    "stamped_at": "2026-08-02T21:27:04.815001+00:00"
+  }
+}

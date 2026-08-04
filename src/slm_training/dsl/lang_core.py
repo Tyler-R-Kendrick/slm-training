@@ -14,7 +14,12 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-from slm_training.bridge_utils import checkout_roots, readline_with_timeout, repo_root
+from slm_training.bridge_utils import (
+    checkout_roots,
+    readline_with_timeout,
+    repo_root,
+    sanitized_node_env,
+)
 from slm_training.dsl.language_contract import contract_id
 from slm_training.dsl.placeholders import extract_placeholders
 
@@ -155,6 +160,7 @@ def _ensure_repl() -> subprocess.Popen[str]:
         stderr=subprocess.PIPE,
         text=True,
         bufsize=1,
+        env=sanitized_node_env(),
     )
     return _REPL_PROC
 
@@ -178,6 +184,7 @@ def _invoke_once(payload: dict[str, Any], timeout_s: float = 30.0) -> dict[str, 
         text=True,
         timeout=timeout_s,
         check=False,
+        env=sanitized_node_env(),
     )
     stdout = (proc.stdout or "").strip()
     if not stdout:
@@ -282,6 +289,25 @@ def parse(source: str) -> Program:
     )
     _cache_put(cache_key, program)
     return program
+
+
+def parse_has_root(source: str) -> bool:
+    """Ask the official parser only whether it produced a root AST node.
+
+    Completion search needs this single bit, not the serialized AST,
+    placeholders, policy walk, or sidecar metadata returned by :func:`parse`.
+    The bridge executes the identical parser and returns only that projection.
+    """
+    cache_key = "parse_has_root:" + hashlib.sha256(source.encode("utf-8")).hexdigest()
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return bool(cached)
+    result = _invoke({"op": "parse_has_root", "source": source})
+    if result.get("error"):
+        raise ParseError(result["error"])
+    value = bool(result.get("has_root"))
+    _cache_put(cache_key, value)
+    return value
 
 
 def validate(source: str) -> Program:

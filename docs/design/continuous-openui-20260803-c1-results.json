@@ -1,0 +1,63 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c1",
+  "cycle_index": 1,
+  "source_commit": "e1f5e4f0",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c1-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 1200.65
+      }
+    },
+    "c1-bounds": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 1021.45
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "continue loop; local commits/docs only",
+    "reasons": [
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c1-control",
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c1-bounds",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.057499999999999996 candidate=0.057499999999999996 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "conclusion": "Fresh continuous-openui-local loop, cycle 1 (bounds hypothesis vs matched control), integrated at main HEAD e1f5e4f -- the same base commit two other open PRs (#1367, #1368) already branched from. Both arms parse all 3 smoke documents at 1,608,962 matched params but tie exactly on the primary (structural_similarity=0.0575) and on meaningful_program_rate=0.0/binder_reference_f1=0.6333, so the 'bounds' knob produced no measurable structural effect at this fixture scale; only latency moved (1200.65ms -> 1021.45ms control->candidate), which is not a declared primary and is not evidence of a real win at n=3. Ship gates fail as expected (insufficient_n, missing held_out/adversarial/ood/rico_held suites). Per the driver's own ranked successor priorities, the 'bounds' arm is now exhausted and should not be re-selected without a new hypothesis.",
+  "next_priorities": [
+    "component-plan quality hypothesis is next in the ranked matrix (c20260803-continuous-openui-local-8c0b60dd-c1-component-plan) per the driver's speculative priorities",
+    "Keep the matched control as the size-matched baseline every cycle",
+    "Do not re-run single-seed n=3 compiler-decision-token confirmations -- open PR #1367 already found 2 of 3 fresh seeds null for that candidate",
+    "PR #1368 (open, unmerged) already claims cycles c1823-c1830 on a capacity/exposure objective from this same base commit -- avoid duplicating that hypothesis space until it merges or is superseded"
+  ],
+  "recorded_at": "2026-08-03T04:32:31Z"
+}

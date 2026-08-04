@@ -28,11 +28,11 @@ from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 
 HERO = (
     'root = Stack([hero], "column")\n'
-    'hero_title = TextContent(":hero.title")\n'
-    'hero_body = TextContent(":hero.body")\n'
+    'hero_title = TextContent(":slot_0")\n'
+    'hero_body = TextContent(":slot_1")\n'
     "hero = Card([hero_title, hero_body])"
 )
-CTA = 'root = Stack([cta])\ncta = Button(":cta.label")'
+CTA = 'root = Stack([cta])\ncta = Button(":slot_0")'
 
 
 def _records(split: str = "held_out") -> list[ExampleRecord]:
@@ -42,14 +42,14 @@ def _records(split: str = "held_out") -> list[ExampleRecord]:
             prompt="Hero",
             openui=HERO,
             split=split,
-            placeholders=[":hero.title", ":hero.body"],
+            placeholders=[":slot_0", ":slot_1"],
         ),
         ExampleRecord(
             id="h2",
             prompt="CTA",
             openui=CTA,
             split=split,
-            placeholders=[":cta.label"],
+            placeholders=[":slot_0"],
         ),
     ]
 
@@ -148,7 +148,7 @@ def test_legal_support_decomposition() -> None:
 
 def test_position_filters_partition_sensibly() -> None:
     model = _model()
-    ids = model._encode_openui(HERO, placeholders=[":hero.title", ":hero.body"])
+    ids = model._encode_openui(HERO, placeholders=[":slot_0", ":slot_1"])
     binding = binding_positions(model, _records()[0], ids)
     structural = structural_positions(model, _records()[0], ids)
     assert binding and structural

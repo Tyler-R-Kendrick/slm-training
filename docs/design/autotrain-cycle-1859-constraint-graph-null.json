@@ -1,0 +1,17 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-202607-98199209-c1859",
+  "decision": "reject_constraint_graph_fixture_null",
+  "claim_class": "fixture_screening",
+  "formal": {"status": "not_applicable:screening"},
+  "recipe": {"device": "cpu", "steps": 22, "seed": 101859, "batch_size": 2, "num_threads": 1, "context_backend": "scratch", "suite": "smoke", "suite_n": 3, "trainable_params": {"control": 1608962, "candidate": 1608962}, "sync_checkpoints": false, "candidate_lever": "constraint_graph_mode=grammar"},
+  "arms": {
+    "control": {"last_loss": 12.406167984008789, "checkpoint_sha256": "f127590de4f60611bb766b1cbd1dbdba1c68a617ebc9787f9a4b3d484b1c73a5", "metrics": {"parse_rate": 1.0, "structural_similarity": 0.30583333333333335, "meaningful_program_rate": 0.3333333333333333, "component_type_recall": 0.25, "binder_reference_f1": 0.9523809523809523, "placeholder_fidelity": 0.9166666666666666, "reward_score": 0.9239999999999999, "ast_beq_rate": 0.0, "canonical_beq_rate": 0.0, "latency_ms_p50": 2535.5, "tokens_emitted_mean": 87.0, "forwards_count_mean": 18.0, "compiler_ms_mean": 6297.48}},
+    "candidate": {"last_loss": 12.406167984008789, "checkpoint_sha256": "56b36b21e52a9721a01737a331e414740209e1364922fadae0fb4974db304b50", "metrics": {"parse_rate": 1.0, "structural_similarity": 0.30583333333333335, "meaningful_program_rate": 0.3333333333333333, "component_type_recall": 0.25, "binder_reference_f1": 0.9523809523809523, "placeholder_fidelity": 0.9166666666666666, "reward_score": 0.9239999999999999, "ast_beq_rate": 0.0, "canonical_beq_rate": 0.0, "latency_ms_p50": 2622.99, "tokens_emitted_mean": 87.0, "forwards_count_mean": 18.0, "compiler_ms_mean": 6332.0}
+    }
+  },
+  "effects": {"structural_similarity": 0.0, "meaningful_program_rate": 0.0, "latency_fraction": 0.03436889962532045, "tokens_fraction": 0.0, "forwards_fraction": 0.0, "params_fraction": 0.0},
+  "ship": {"eligible": false, "failures": ["smoke n=3<20", "all guarded quality metrics tie below gates", "AST/canonical exact rates 0", "candidate p50 regresses 3.44%", "production suites missing"]},
+  "successor": {"experiment_slug": "new distinct size-matched quality objective", "next_action": "preregister and wire a new objective before another screening run"},
+  "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "8558897a1829523f50f8f1b3df35dbe6c5cbdd83", "code_dirty": false, "components": {"harness.model_build.train": "v38", "harness.autoresearch.experiment_campaign": "v155", "harness.model_build.eval": "v79", "evals.meaningful_program": "2.13.0", "evals.scoring": "v22", "model.twotower": "v305"}, "stamped_at": "2026-08-03T08:49:34Z"}
+}
