@@ -63,6 +63,7 @@ checkpoint, roster, training default, champion, or promotion status changes.
 
 | Role | Checkpoint | Where | Claim |
 | --- | --- | --- | --- |
+| Autotrain continuous-openui-local c17 | binder-topology null — **not ship** |
 | Autotrain continuous-openui-local c9 | fixture component-inventory win structure `.277→.448` — confirm next |
 | Autotrain continuous-openui-local c5 | incomplete decode timeout — repair then replay |
 | Autotrain continuous-openui-local c4 | local fixture component-edge null | structure `.417` tie — **not ship** |
