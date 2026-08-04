@@ -2734,7 +2734,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v180",
+      "version": "v181",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2775,6 +2775,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v181",
+          "note": "ExperimentKnobs/DEFAULT_ALLOWED_KNOBS was missing generate_batch_size, which run_autotrain_continuous._eval_knobs sets on every screening-role hypothesis (v180 salvage of PR #1408). Every screening hypothesis on the continuous-openui-scheduled loop cycle 2 (2026-08-04) failed CampaignSpec validation with extra_forbidden, dropping hypothesis count to 0/5 and hard-blocking campaign init. Added generate_batch_size: int | None (ge=1, le=1024) to ExperimentKnobs and DEFAULT_ALLOWED_KNOBS so screening hypotheses validate.",
+          "date": "2026-08-04"
+        },
         {
           "version": "v180",
           "note": "gate Phase A primary wins on matched suite completion + promote formal terminal block feedback",
