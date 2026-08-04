@@ -488,6 +488,7 @@ class ModelBuildConfig:
     # HX4 hybrid unmask scheduler: minimum contiguous masked-run length that is
     # budgeted through the block (span) lane; shorter runs use the frontier lane.
     hybrid_span_min_run: int = 3
+    hybrid_frontier_head: int = 2
     cluster_attn_threshold: float = 0.08
     cluster_max_size: int = 4
     cluster_verify: bool = False  # E72 ordered cluster verification

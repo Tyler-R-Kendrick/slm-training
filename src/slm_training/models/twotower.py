@@ -742,6 +742,9 @@ class TwoTowerConfig:
     # HX4: minimum contiguous masked-run length that qualifies for the hybrid
     # span lane. Shorter runs fall through to the frontier (positionwise) lane.
     hybrid_span_min_run: int = 3
+    # Positions at a run's committed edge handled positionwise (HX4): keeps
+    # both lanes live on an unfragmented canvas.
+    hybrid_frontier_head: int = 2
     cluster_attn_threshold: float = 0.08
     cluster_max_size: int = 4
     # E72: verify clusters in anchor order; outcome (j, repair).
@@ -14805,7 +14808,22 @@ class TwoTowerModel(nn.Module):
                     eos_id=int(self.tokenizer.eos_id),
                     pad_id=int(self.tokenizer.pad_id),
                 )
-                span_runs = [run for run in runs if len(run) >= hybrid_min_run]
+                # A run that touches committed context (or the BOS edge) hands
+                # its leading positions to the positionwise lane: that edge is
+                # where left grammar context is richest and where a
+                # block-parallel commit is most likely to be rejected. The
+                # interior remainder stays span-eligible. Without this carve
+                # the two lanes degenerate into a threshold-flipped binary
+                # switch — a fresh all-mask canvas is one run, so everything
+                # is a "span" and the frontier lane never engages.
+                head_n = max(0, int(getattr(self.config, "hybrid_frontier_head", 2)))
+                span_runs: list[list[int]] = []
+                for run in runs:
+                    at_frontier = run[0] == 0 or not bool(unknown_row[run[0] - 1])
+                    head = run[:head_n] if at_frontier else []
+                    tail = run[len(head) :]
+                    if len(tail) >= hybrid_min_run:
+                        span_runs.append(tail)
                 if span_runs:
                     schedule = BlockNoiseSchedule(
                         block_size=hybrid_min_run, gen_steps=max(1, steps)

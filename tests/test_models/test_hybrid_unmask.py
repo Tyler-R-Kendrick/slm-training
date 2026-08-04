@@ -215,3 +215,33 @@ def test_hybrid_counters_present_in_decode_stats_and_aggregate() -> None:
     agg = aggregate_stats([stats])
     for name in names:
         assert f"{name}_sum" in agg or name in agg, agg.get("counters_omitted_zero")
+
+
+def test_frontier_head_keeps_both_lanes_live_on_one_run() -> None:
+    """Regression: an unfragmented canvas must not collapse into one lane.
+
+    A fresh canvas is a single contiguous masked run, so before the
+    frontier-head carve EVERY position classified as a span and the
+    positionwise lane never engaged — a threshold-flipped binary switch, not
+    a hybrid (measured: 64 span / 0 frontier at every span threshold). The
+    carve hands the leading positions of any run touching committed context
+    (or the BOS edge) to the positionwise lane, so both lanes stay live.
+    """
+    from slm_training.models.twotower import hybrid_mask_runs
+
+    length = 24
+    unknown_row = [False] + [True] * (length - 1)  # BOS committed, rest masked
+    ids_row = [7] + [999] * (length - 1)  # 999 = mask sentinel, no EOS/PAD
+    runs = hybrid_mask_runs(unknown_row, ids_row, eos_id=2, pad_id=0)
+    assert len(runs) == 1 and len(runs[0]) == length - 1
+
+    # Replicate the scheduler's carve: the run touches the committed BOS edge.
+    for head_n in (1, 2, 4):
+        run = runs[0]
+        at_frontier = run[0] == 0 or not unknown_row[run[0] - 1]
+        assert at_frontier
+        head, tail = run[:head_n], run[head_n:]
+        assert len(head) == head_n, "frontier lane must receive the leading edge"
+        assert len(tail) >= 3, "interior must remain span-eligible"
+        assert set(head).isdisjoint(tail), "lanes must partition, never overlap"
+        assert sorted([*head, *tail]) == run, "carve must lose no position"
