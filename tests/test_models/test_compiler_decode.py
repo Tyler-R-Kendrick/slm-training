@@ -385,6 +385,104 @@ def test_compiler_empty_forest_records_bounded_dead_end_trace(monkeypatch) -> No
     ]
 
 
+def test_compiler_tree_per_step_cost_does_not_grow_with_prefix_depth() -> None:
+    """Regression pin: gd6j83-c2/c3 compiler-tree decode-cost investigation.
+
+    docs/design/continuous-openui-local-gd6j83-c2-dual-arm-decode-timeout.md
+    and its c3 retry found real ~23s/record compiler-tree decode cost on a
+    seed-100002 fixture and asked whether that is a genuine algorithmic bug
+    (missing memoization / recomputation growing with document length) or
+    legitimate bounded-per-branch-point cost. Direct profiling (cProfile plus
+    a prefix-depth scan; see
+    docs/design/compiler-tree-decode-branch-point-cost-not-position-dependent.md)
+    found the completion-forest/CompletionSession machinery's own cost is
+    driven by *branch-point count* (states with several live candidate
+    paths), each bounded by ``node_budget``/``backtrack_limit``, and does NOT
+    grow with how deep into the document the step occurs -- ruling out a
+    missing-memoization / O(n)-per-step regression as the explanation.
+
+    This pins that finding as an executable invariant: replaying an
+    increasingly deep gold prefix of the same branchy record and taking one
+    more real ``_compiler_ltr_decode_one`` step must cost roughly the same
+    ``compiler_ms`` regardless of how deep the prefix already is. A
+    regression that made per-step cost grow with prefix length (e.g. a
+    session/state-interning cache stops being reused, or a materialize-prefix
+    walk stops being amortized) would blow this bound; today's genuinely
+    bounded, branch-point-driven cost passes it with a wide margin.
+    """
+    record = ExampleRecord(
+        id="branchy-card",
+        prompt="card with four texts",
+        openui=(
+            "root = Card([b1, b2, b3, b4])\n"
+            'b1 = TextContent(":slot_0")\n'
+            'b2 = TextContent(":slot_1")\n'
+            'b3 = TextContent(":slot_2")\n'
+            'b4 = TextContent(":slot_3")\n'
+        ),
+        placeholders=[":slot_0", ":slot_1", ":slot_2", ":slot_3"],
+        split="train",
+        source="fixture",
+    )
+    config = TwoTowerConfig(
+        context_backend="scratch",
+        output_tokenizer="lexer",
+        compiler_decode_mode="tree",
+        d_model=32,
+        n_heads=2,
+        context_layers=1,
+        denoiser_layers=1,
+        max_prompt_len=32,
+        max_target_len=128,
+        grammar_ltr_max_tokens=128,
+        gen_steps=1,
+        seed=0,
+    )
+    model = TwoTowerModel.from_records(
+        [canonicalize_example_template_markers(record)], config=config, device="cpu"
+    )
+    model.eval()
+    ctx, ctx_pad = model._encode_context([record.prompt])
+    bos = int(model.tokenizer.bos_id)
+    gold_ids = [
+        int(t)
+        for t in model.tokenizer.encode(record.openui, placeholders=record.placeholders)
+    ]
+
+    def one_more_step_ms(k: int) -> float:
+        prefix = (bos, *gold_ids[:k])
+        with collect_decode_stats() as stats:
+            model._compiler_ltr_decode_one(
+                ctx,
+                ctx_pad,
+                len(prefix) + 1,
+                mode="tree",
+                slot_contract=list(record.placeholders),
+                _initial_prefix=prefix,
+            )
+        return float(stats.compiler_ms)
+
+    # Warm up: the first call pays for one-off grammar-state construction
+    # (Lark parser build), not decode search itself -- excluded from the
+    # scaling comparison below.
+    one_more_step_ms(0)
+
+    depths = [5, 15, 30]
+    depths = [k for k in depths if k < len(gold_ids) - 1]
+    assert len(depths) >= 2, "fixture record too short for a depth scan"
+    per_step_ms = [one_more_step_ms(k) for k in depths]
+
+    # A missing-memoization / recomputation-vs-prefix-length regression would
+    # make later (deeper) steps cost dramatically more than earlier ones. A
+    # generous floor absorbs measurement noise at near-zero millisecond costs
+    # while still catching genuine growth.
+    assert max(per_step_ms) <= 20.0 * (min(per_step_ms) + 5.0), (
+        f"compiler_ms grew with prefix depth: {list(zip(depths, per_step_ms))} "
+        "-- expected roughly flat per-step cost, not cost proportional to "
+        "how deep the prefix already is"
+    )
+
+
 def test_choice_gold_decisions_classify_component_roles() -> None:
     from slm_training.models.choice_tokenizer import ChoiceTokenizer
 
