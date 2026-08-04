@@ -1,0 +1,50 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-schedu-1e62ecf9-c5",
+  "loop_id": "continuous-openui-scheduled",
+  "cycle_index": 5,
+  "cycle_intent": "retry_measurement",
+  "evidence_class": "fixture",
+  "decision": "blocked_repeated_decode_timeout_3x",
+  "scoreable": false,
+  "new_checkpoint_created": false,
+  "upstream_commit": "eba6db3044076285581b80cfe5294a2ecbcee8a1",
+  "integration_commit": "485ec53f12a8ed3aba278959efbe25eb610e0f42",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "frozen_manifest_sha256": "00574c47f6362eaae01b999e28683e721f092026d1c561e5669ef22a0a811210",
+  "arms": [
+    {
+      "experiment_id": "c20260804-continuous-openui-schedu-1e62ecf9-c5-control",
+      "trainable_params": 1608962,
+      "status": "eval_timed_out",
+      "compiler_ms_mean": 21295.7,
+      "decode_timeout_count": 3,
+      "smoke_n": 3
+    },
+    {
+      "experiment_id": "c20260804-continuous-openui-schedu-1e62ecf9-c5-canvas",
+      "trainable_params": 1608962,
+      "status": "eval_timed_out",
+      "compiler_ms_mean": 23279.4,
+      "decode_timeout_count": 3,
+      "smoke_n": 3
+    }
+  ],
+  "repeated_blocker": {
+    "loop_law_threshold_met": true,
+    "consecutive_cycles": ["c3", "c4", "c5"],
+    "compiler_ms_mean_by_cycle": {
+      "c3": [23165.5, 23242.0],
+      "c4": [23216.8, 23100.9],
+      "c5": [21295.7, 23279.4]
+    },
+    "self_heal_recoveries_this_iteration": [
+      "commit 1c48ac9: AgentV SDK missing (c2)",
+      "commit 3ce1b58: design_md NODE_OPTIONS bug + dsl.analysis.arity torch leak"
+    ],
+    "remaining_blocker": "sandbox decode throughput too slow for screening role wall-budget arithmetic; not a code defect"
+  },
+  "disposition": "blocked; stop retrying this frozen arm on this sandbox; no autotrain stack layers opened (all cycles non-positive per policy); delivery is local commits + PR #1410",
+  "checkpoint_policy": "no_new_checkpoint_frozen_replay_of_c2",
+  "lean": "not_applicable:retry_measurement"
+}
