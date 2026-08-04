@@ -121,6 +121,12 @@ class TestEditKindMapping:
         assert map_operator_to_edit_kind("openui.nonexistent") is None
 
 
+# Measured on an idle machine: this class alone exceeds the canonical
+# per-job wall (MAX_RUN_MINUTES = 3), and its individual test nodes run
+# ~100s+ each, so no shard packing can fit it. Deselected by default;
+# run explicitly with -m slow. See
+# docs/design/false-singleton-and-shard-makespan-20260804.md.
+@pytest.mark.slow
 class TestDefaultOff:
     def test_off_mode_always_defers(self):
         pack, state, context, library, legal_set = _fixture()
@@ -149,6 +155,12 @@ class TestDefaultOff:
         assert TopologyApplyConfigV1.from_dict(config.to_dict()) == config
 
 
+# Measured on an idle machine: this class alone exceeds the canonical
+# per-job wall (MAX_RUN_MINUTES = 3), and its individual test nodes run
+# ~100s+ each, so no shard packing can fit it. Deselected by default;
+# run explicitly with -m slow. See
+# docs/design/false-singleton-and-shard-makespan-20260804.md.
+@pytest.mark.slow
 class TestDirectApply:
     def test_direct_apply_matches_authoritative_tree_with_fewer_passes(self):
         pack, state, context, library, legal_set = _fixture()
@@ -203,6 +215,12 @@ class TestDirectApply:
             pack, state, context, library, legal_set = _fixture(state.source)
 
 
+# Measured on an idle machine: this class alone exceeds the canonical
+# per-job wall (MAX_RUN_MINUTES = 3), and its individual test nodes run
+# ~100s+ each, so no shard packing can fit it. Deselected by default;
+# run explicitly with -m slow. See
+# docs/design/false-singleton-and-shard-makespan-20260804.md.
+@pytest.mark.slow
 class TestStaleInvalidation:
     def test_stale_state_digest_fails_closed(self):
         pack, state, context, library, legal_set = _fixture()

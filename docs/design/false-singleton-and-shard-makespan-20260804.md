@@ -12,14 +12,22 @@ wrong objective: the canonical per-job wall (`MAX_RUN_MINUTES`) is enforced
 **per shard**, so a packing is good exactly when its *slowest* shard fits.
 Keeping files atomic makes the worst shard equal to the single heaviest file.
 
-Simulated over the committed weights table (12 shards, real durations):
+Simulated over the committed weights table (12 shards, real durations,
+**after** the `test_topology_apply.py` weight correction described below):
 
 | packing | worst shard | ideal |
 | --- | --- | --- |
-| atomic files (previous) | **429.1 s** | 128.5 s |
-| per-node (this fix) | **143.0 s** | 128.5 s |
+| atomic files (previous) | **4726.2 s** | 486.5 s |
+| per-node (this fix) | **1575.4 s** | 486.5 s |
+| per-node **+ slow files deselected** (actual CI selection) | **67.6 s** | 67.6 s |
 
-3× better and near-optimal. `_shard_test_nodes` now spreads a measured file's
+Per-node packing is 3× better than atomic, but on its own it still does not
+fit the wall — the two irreducible files dominate. Only the combination of
+per-node packing *and* deselecting those files reaches a worst shard that
+fits (67.6 s against a ~100 s post-setup budget), and it lands exactly on the
+ideal. (An earlier version of this table read 429.1 / 143.0 / ideal 128.5,
+computed from the wrong `test_topology_apply.py` weight; the ordering of the
+policies was right but every absolute number was understated ~11×.) `_shard_test_nodes` now spreads a measured file's
 weight across its own nodes; an unmeasured file still contributes one unit per
 node, so an empty table still reduces exactly to count-balanced round-robin.
 The test that asserted heavy-file *isolation* encoded the wrong goal and was
@@ -31,12 +39,26 @@ heavy file's nodes must spread).
 Per-node splitting cannot help a file whose weight sits in **one test node**.
 Measured on an idle machine:
 
-| file | nodes | measured |
+| file | nodes | measured (idle) |
 | --- | ---: | ---: |
-| `test_dsl/test_topology_apply.py` | 14 | 429 s (~31 s/node — splits fine) |
+| `test_dsl/test_topology_apply.py` | 14 | **4726 s** (~338 s/node) |
 | `test_scripts/test_run_dsh5_03_bulk_operator_crossover.py` | **1** | **252 s** |
 
-The second is a single test whose cost is inside `run_local_preflight()`
+> **Correction (same day).** This table first read *"429 s (~31 s/node —
+> splits fine)"* for `test_topology_apply.py`, taken from the committed
+> weights table. That entry was a **partial measurement** — the generating
+> sweep was killed while the file was still running, a caveat its own risk
+> note recorded — and it is wrong by **11×**. Run to completion on an idle
+> machine the file takes **4726 s**. Per-class breakdown:
+> `TestEditKindMapping` 3.0 s (3 tests), `TestDefaultOff` 309.9 s (3 tests),
+> `TestStaleInvalidation` >600 s (6 tests), `TestDirectApply` the residual.
+> Individual nodes run ~100–340 s, so **per-node splitting cannot save this
+> file either** — the original claim that it "splits fine" was false.
+> The weights table is corrected to 4726.16 and the three heavy classes are
+> now `@pytest.mark.slow`; `TestEditKindMapping` stays in CI, where the file
+> now completes in 0.11 s instead of being cancelled at the wall.
+
+The `dsh5_03` case is a single test whose cost is inside `run_local_preflight()`
 (import is only 3.7 s), so no packing scheme can fit it. It has been
 **cancelled on every CI run** — producing no evidence while reddening a shard.
 It is now marked `@pytest.mark.slow` and deselected by default

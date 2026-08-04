@@ -1610,6 +1610,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-08-04",
+          "note": "no-bump: mark TestDefaultOff / TestDirectApply / TestStaleInvalidation @pytest.mark.slow. Run to completion on an idle machine the file takes 4726s (the committed CI weight said 429s -- a partial measurement, wrong by 11x), with individual nodes at ~100-340s, so no shard packing fits it under MAX_RUN_MINUTES; those tests were cancelled on every CI run. TestEditKindMapping (3.0s) stays in CI, where the file now completes in 0.11s. Test selection only; no source or behavior change."
+        },
+        {
+          "version": "v1",
           "date": "2026-07-25",
           "note": "SLM-384 (DSH3-16) wiring-only, default-off integration mapping exact compiler-verified ActionEffectV1 transitions to topology expand/contract/move/rewrite edits over typed topology nodes; exact legal-set membership only, singleton/DEFER authority untouched, stale request/branch/state identity fails closed"
         }
