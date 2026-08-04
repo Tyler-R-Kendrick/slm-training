@@ -2683,7 +2683,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v177",
+      "version": "v178",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2723,6 +2723,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v178",
+          "date": "2026-08-04",
+          "note": "Self-heal a missing AgentV SDK (node_modules/@agentv/core not installed) at run_cycle startup by running 'npm ci' with sanitized NODE_OPTIONS, mirroring scripts/setup_dev_env.sh, instead of burning a full experiment cycle on evaluate_model.py's RuntimeError"
+        },
         {
           "version": "v177",
           "date": "2026-08-04",

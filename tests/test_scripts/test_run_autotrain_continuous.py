@@ -6121,6 +6121,62 @@ def test_self_heal_cycle_error_recovers_bank_exhaust(tmp_path: Path) -> None:
     assert state["blocker_count"] == 0
 
 
+def test_ensure_agentv_sdk_noop_when_already_installed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from slm_training import bridge_utils
+
+    marker = tmp_path / _mod._AGENTV_SDK_MARKER
+    marker.parent.mkdir(parents=True)
+    marker.write_text("{}")
+
+    monkeypatch.setattr(bridge_utils, "checkout_roots", lambda root: (tmp_path,))
+
+    def _boom(*args: object, **kwargs: object) -> None:
+        raise AssertionError("npm ci must not run when the SDK is already present")
+
+    monkeypatch.setattr(_mod.subprocess, "run", _boom)
+    _mod._ensure_agentv_sdk(tmp_path)
+
+
+def test_ensure_agentv_sdk_self_heals_via_npm_ci(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from slm_training import bridge_utils
+
+    marker = tmp_path / _mod._AGENTV_SDK_MARKER
+    monkeypatch.setattr(bridge_utils, "checkout_roots", lambda root: (tmp_path,))
+
+    def _fake_run(
+        cmd: list[str], *, cwd: Path, env: dict[str, str], **kwargs: object
+    ) -> SimpleNamespace:
+        assert cmd == ["npm", "ci"]
+        assert cwd == tmp_path
+        assert env.get("NODE_OPTIONS") == ""
+        marker.parent.mkdir(parents=True)
+        marker.write_text("{}")
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(_mod.subprocess, "run", _fake_run)
+    _mod._ensure_agentv_sdk(tmp_path)
+    assert marker.is_file()
+
+
+def test_ensure_agentv_sdk_raises_when_npm_ci_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from slm_training import bridge_utils
+
+    monkeypatch.setattr(bridge_utils, "checkout_roots", lambda root: (tmp_path,))
+
+    def _fake_run(*args: object, **kwargs: object) -> SimpleNamespace:
+        return SimpleNamespace(returncode=1, stdout="", stderr="network unreachable")
+
+    monkeypatch.setattr(_mod.subprocess, "run", _fake_run)
+    with pytest.raises(RuntimeError, match="SELF_HEAL_AGENTV_SDK_FAILED"):
+        _mod._ensure_agentv_sdk(tmp_path)
+
+
 def test_repeated_timeouts_remain_soft_and_never_block(tmp_path: Path) -> None:
     root = tmp_path / "autoresearch"
     for _ in range(4):

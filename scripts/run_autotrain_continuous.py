@@ -171,6 +171,45 @@ def _git(
     return result.stdout.strip()
 
 
+_AGENTV_SDK_MARKER = Path("node_modules") / "@agentv" / "core" / "package.json"
+
+
+def _ensure_agentv_sdk(cwd: Path) -> None:
+    """Self-heal a missing AgentV SDK (npm ci not yet run) before eval needs it.
+
+    ``evaluate_model.py --ship-gates`` hard-fails with ``AgentV SDK is
+    unavailable`` when ``node_modules/@agentv/core`` is absent — the same
+    infra failure documented in
+    ``docs/design/autotrain-cycle-c2-agentv-missing-infra-failure.md``. The
+    fix (``env -u NODE_OPTIONS npm ci``) is already scripted in
+    ``scripts/setup_dev_env.sh`` for humans bootstrapping a checkout; the
+    continuous driver must apply the same fix itself rather than burning a
+    full experiment cycle on a precondition an operator forgot to run.
+    """
+    from slm_training.bridge_utils import checkout_roots, sanitized_node_env
+
+    roots = checkout_roots(cwd)
+    if any((root / _AGENTV_SDK_MARKER).is_file() for root in roots):
+        return
+    print("SELF_HEAL_AGENTV_SDK_MISSING npm ci", flush=True)
+    result = subprocess.run(
+        ["npm", "ci"],
+        cwd=cwd,
+        env=sanitized_node_env(),
+        capture_output=True,
+        text=True,
+        timeout=MAX_RUN_SECONDS,
+    )
+    if result.returncode != 0 or not any(
+        (root / _AGENTV_SDK_MARKER).is_file() for root in roots
+    ):
+        raise RuntimeError(
+            "SELF_HEAL_AGENTV_SDK_FAILED: npm ci did not install the AgentV SDK "
+            f"(exit={result.returncode}); stderr={result.stderr[-2000:]}"
+        )
+    print("SELF_HEAL_AGENTV_SDK_INSTALLED", flush=True)
+
+
 def _run(
     cmd: list[str],
     *,
@@ -8697,6 +8736,8 @@ def run_cycle(
             loop_id=loop_id,
             stage="sync-ancestry",
         )
+
+    _ensure_agentv_sdk(cwd)
 
     recovered_campaign = _finalize_terminal_interrupted_replay(
         cwd=cwd,
