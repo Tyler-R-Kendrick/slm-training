@@ -3,11 +3,20 @@
 The artifact contains only request-independent facts:
 
 * the compiled LALR control table;
+* the rule tensors (origin symbol + expansion length per canonical rule id)
+  that make the reduce actions executable;
+* a control-only *lower bound* on how many terminals must still be consumed
+  before the parse can accept, consumed by nothing;
 * the frozen tokenizer-id to grammar-terminal projection.
 
 Scope, symbol visibility, literal bodies, macro expansions, and semantic state
 remain request-local.  The loader accepts an artifact only after hashes and an
 independent reconstruction from the live grammar/tokenizer agree exactly.
+
+``StaticLalrAdapter`` executes the control arrays, but Lark remains the parser
+authority: the adapter is import-only until
+``static_control_domain.require_certified_static_lalr`` proves accepts-set
+equality against the live ``InteractiveParser`` in lockstep.
 """
 
 from __future__ import annotations
@@ -47,6 +56,7 @@ class CompletionArtifact:
 
     manifest: dict[str, Any]
     direct_map: dict[str, Any]
+    lalr: "StaticLalrAdapter | None" = None
 
     @property
     def digest(self) -> str:
@@ -235,9 +245,12 @@ def _reconstruct_direct_map(
 
 def _parse_table_arrays(parser: Any) -> tuple[dict[str, list[int]], dict[str, Any]]:
     table = parser.parser.parser._parse_table
-    symbols = sorted({str(symbol) for row in table.states.values() for symbol in row})
-    symbol_index = {symbol: index for index, symbol in enumerate(symbols)}
     rules = list(parser.rules)
+    symbols = sorted(
+        {str(symbol) for row in table.states.values() for symbol in row}
+        | {str(rule.origin.name) for rule in rules}
+    )
+    symbol_index = {symbol: index for index, symbol in enumerate(symbols)}
     rule_key = {repr(rule): index for index, rule in enumerate(rules)}
 
     # Lark's numeric state ids depend on Python set iteration and can change
@@ -329,6 +342,8 @@ def _parse_table_arrays(parser: Any) -> tuple[dict[str, list[int]], dict[str, An
             else:
                 raise ValueError(f"unsupported LALR action {action_name!r}")
         offsets.append(len(edge_symbols))
+    rule_origins = [symbol_index[str(rule.origin.name)] for rule in rules]
+    rule_lengths = [len(rule.expansion) for rule in rules]
     metadata = {
         "symbols": symbols,
         "rules": [repr(rule) for rule in rules],
@@ -339,14 +354,228 @@ def _parse_table_arrays(parser: Any) -> tuple[dict[str, list[int]], dict[str, An
             str(name): colors[state] for name, state in table.end_states.items()
         },
     }
-    return {
+    tensors = {
         "lalr_state_ids": list(range(len(canonical_rows))),
         "lalr_state_colors": state_colors,
         "lalr_state_offsets": offsets,
         "lalr_edge_symbols": edge_symbols,
         "lalr_action_kinds": action_kinds,
         "lalr_action_targets": action_targets,
-    }, metadata
+        "rule_origins": rule_origins,
+        "rule_lengths": rule_lengths,
+    }
+    tensors["state_min_terminals"] = _state_min_terminals(tensors, metadata)
+    return tensors, metadata
+
+
+# ---------------------------------------------------------------------------
+# Acceptance-length lower bound (control-only; consumed by nothing)
+# ---------------------------------------------------------------------------
+
+_UNREACHABLE_MIN_TERMINALS = -1
+
+
+def _control_rows(
+    tensors: dict[str, list[int]],
+) -> dict[int, tuple[tuple[int, int, int], ...]]:
+    """Map canonical state color -> ``(symbol_index, action_kind, target)`` rows."""
+
+    offsets = tensors["lalr_state_offsets"]
+    rows: dict[int, tuple[tuple[int, int, int], ...]] = {}
+    for index, color in enumerate(tensors["lalr_state_colors"]):
+        row = tuple(
+            (
+                tensors["lalr_edge_symbols"][slot],
+                tensors["lalr_action_kinds"][slot],
+                tensors["lalr_action_targets"][slot],
+            )
+            for slot in range(offsets[index], offsets[index + 1])
+        )
+        previous = rows.setdefault(int(color), row)
+        if previous != row:
+            raise ValueError("canonical color collision with differing control rows")
+    return rows
+
+
+def _state_min_terminals(
+    tensors: dict[str, list[int]], metadata: dict[str, Any]
+) -> list[int]:
+    """Sound LOWER bound on terminals still needed before the parse can accept.
+
+    Acceptance is a property of the whole stack, not of the top state, so an
+    exact per-state table does not exist.  This computes a *relaxation*: a
+    reduction may expose any state that carries a goto on the reduced rule's
+    origin, not only the state the real stack would expose.  The relaxed
+    transition relation is a superset of every real one and reductions consume
+    no terminals, therefore the fixpoint is ``<=`` the true stack-dependent
+    minimum for every stack topped by that state — a lower bound, usable only
+    for negative-direction reasoning ("fewer than this many tokens cannot
+    finish").  Nothing in production consumes it yet.
+    """
+
+    rows = _control_rows(tensors)
+    symbols = list(metadata["symbols"])
+    rule_origins = tensors["rule_origins"]
+    end_state = int(metadata["end_states"]["start"])
+
+    goto_targets: dict[int, set[int]] = {}
+    for row in rows.values():
+        for symbol, kind, target in row:
+            if kind == 0 and not symbols[symbol].isupper():
+                goto_targets.setdefault(symbol, set()).add(int(target))
+
+    infinity = len(rows) + 1
+    cost = {color: infinity for color in rows}
+    cost[end_state] = 0
+    for _ in range(len(rows) + 2):
+        changed = False
+        for color, row in rows.items():
+            best = cost[color]
+            for symbol, kind, target in row:
+                name = symbols[symbol]
+                if kind == 0:
+                    if not name.isupper() or name == "$END":
+                        continue  # goto edges are traversed through reductions
+                    candidate = cost[int(target)] + 1
+                else:
+                    origin = rule_origins[int(target)]
+                    candidate = min(
+                        (cost[state] for state in goto_targets.get(origin, ())),
+                        default=infinity,
+                    )
+                best = min(best, candidate)
+            if best < cost[color]:
+                cost[color] = best
+                changed = True
+        if not changed:
+            break
+    else:  # pragma: no cover - monotone fixpoint converges in <= state count
+        raise RuntimeError("acceptance-length fixpoint did not converge")
+
+    return [
+        (
+            _UNREACHABLE_MIN_TERMINALS
+            if cost[int(color)] >= infinity
+            else int(cost[int(color)])
+        )
+        for color in tensors["lalr_state_colors"]
+    ]
+
+
+@dataclass(frozen=True)
+class StaticLalrAdapter:
+    """Executable shift/reduce over the certified control arrays.
+
+    This is a *checked* adapter, never an authority: it is import-only until a
+    lockstep certification against the live Lark ``InteractiveParser`` passes
+    (see ``static_control_domain.require_certified_static_lalr``).  Nothing in
+    the decode path consumes it.  ``$END`` follows Lark's end handling: the
+    reduction chain runs until the end state is exposed.
+    """
+
+    symbols: tuple[str, ...]
+    rows: dict[int, tuple[tuple[int, int, int], ...]]
+    rule_origins: tuple[int, ...]
+    rule_lengths: tuple[int, ...]
+    start_state: int
+    end_state: int
+    state_min_terminals: tuple[int, ...]
+
+    END_SYMBOL = "$END"
+
+    @classmethod
+    def from_arrays(
+        cls,
+        tensors: dict[str, list[int]],
+        metadata: dict[str, Any],
+        *,
+        start: str = "start",
+    ) -> StaticLalrAdapter:
+        rows = _control_rows(tensors)
+        colors = tensors["lalr_state_colors"]
+        minimums = tensors["state_min_terminals"]
+        by_color: dict[int, int] = {}
+        for color, value in zip(colors, minimums, strict=True):
+            if by_color.setdefault(int(color), int(value)) != int(value):
+                raise ValueError("state_min_terminals disagrees within a color")
+        if sorted(by_color) != list(range(len(by_color))):
+            raise ValueError("canonical state colors are not densely numbered")
+        return cls(
+            symbols=tuple(str(name) for name in metadata["symbols"]),
+            rows=rows,
+            rule_origins=tuple(int(value) for value in tensors["rule_origins"]),
+            rule_lengths=tuple(int(value) for value in tensors["rule_lengths"]),
+            start_state=int(metadata["start_states"][start]),
+            end_state=int(metadata["end_states"][start]),
+            state_min_terminals=tuple(by_color[color] for color in sorted(by_color)),
+        )
+
+    def start_stack(self) -> tuple[int, ...]:
+        return (int(self.start_state),)
+
+    def _action(self, state: int, terminal: str) -> tuple[int, int] | None:
+        for symbol, kind, target in self.rows[int(state)]:
+            if self.symbols[symbol] == terminal:
+                return int(kind), int(target)
+        return None
+
+    def step(
+        self, stack: tuple[int, ...], terminal_name: str
+    ) -> tuple[int, ...] | None:
+        """Advance the stack over one terminal, or ``None`` when rejected."""
+
+        working = [int(state) for state in stack]
+        if not working:
+            return None
+        is_end = terminal_name == self.END_SYMBOL
+        for _ in range(len(self.rows) * len(self.rule_lengths) + 8):
+            action = self._action(working[-1], terminal_name)
+            if action is None:
+                return None
+            kind, target = action
+            if kind == 0:  # Shift
+                if is_end:
+                    # Lark never shifts $END; treat it as a rejection instead of
+                    # inventing an acceptance the live parser would not grant.
+                    return None
+                working.append(target)
+                return tuple(working)
+            if not 0 <= target < len(self.rule_lengths):
+                raise ValueError(f"reduce action targets unknown rule id {target}")
+            size = self.rule_lengths[target]
+            if size:
+                if len(working) <= size:
+                    return None
+                del working[-size:]
+            goto = self._action(working[-1], self.symbols[self.rule_origins[target]])
+            if goto is None or goto[0] != 0:
+                return None
+            working.append(goto[1])
+            if is_end and working[-1] == self.end_state:
+                return tuple(working)
+        raise RuntimeError("static LALR adapter reduction chain did not terminate")
+
+    def accepts(self, stack: tuple[int, ...]) -> frozenset[str]:
+        """Terminals the control table actually advances on from ``stack``.
+
+        Mirrors ``InteractiveParser.accepts``: a terminal counts only when its
+        whole reduction chain succeeds, not merely when the top state's row
+        carries an entry for it.
+        """
+
+        names = {
+            self.symbols[symbol] for symbol, _kind, _target in self.rows[stack[-1]]
+        }
+        return frozenset(
+            name
+            for name in names
+            if name.isupper() and self.step(stack, name) is not None
+        )
+
+    def min_terminals(self, state: int) -> int:
+        """Lower bound on remaining terminals; ``-1`` when no bound is known."""
+
+        return int(self.state_min_terminals[int(state)])
 
 
 def _encode_safetensors(
@@ -442,13 +671,38 @@ def build_completion_artifact(
         "vocab_size": int(tokenizer.vocab_size),
         "lalr_state_count": len(tensors["lalr_state_ids"]),
         "lalr_edge_count": len(tensors["lalr_edge_symbols"]),
+        "lalr_rule_count": len(tensors["rule_lengths"]),
         "direct_token_count": sum(role != _ROLE_NONE for role in roles),
         "control": control_metadata,
+        "state_min_terminals": {
+            "kind": "control_only_lower_bound",
+            "direction": "negative_only",
+            "trivial": all(value <= 0 for value in tensors["state_min_terminals"]),
+            "unknown_sentinel": _UNREACHABLE_MIN_TERMINALS,
+            "max": max(tensors["state_min_terminals"]),
+            "consumed_by": [],
+        },
         "proof_obligations": {
             "soundness": "artifact projection equals live grammar/tokenizer projection",
             "completeness": "all live direct-feed rows occur exactly once",
             "serialization": "decoded tensors reproduce all certified arrays",
             "request_overlay": "scope and semantic authority are excluded",
+            "rule_tensors": (
+                "rule_origins/rule_lengths are ordered by the same canonical rule "
+                "ids the reduce actions target"
+            ),
+            "state_min_terminals": (
+                "control-only LOWER bound on terminals remaining before the parse "
+                "can accept, computed by a monotone fixpoint that relaxes every "
+                "reduction to any state carrying the origin goto; acceptance is "
+                "stack-dependent, so this bound is safe for negative-direction "
+                "pruning only and is consumed by nothing"
+            ),
+            "static_lalr_adapter": (
+                "StaticLalrAdapter is import-only and is not an authority until "
+                "lockstep certification against the live Lark InteractiveParser "
+                "passes; Lark remains the parser authority"
+            ),
         },
         "request_dependent_authority_excluded": [
             "runtime symbols",
@@ -513,7 +767,11 @@ def load_checked_completion_artifact(
             raise ValueError(f"artifact control table mismatch for {name}")
     if manifest.get("control") != control_metadata:
         raise ValueError("artifact control metadata mismatch")
-    return CompletionArtifact(manifest=manifest, direct_map=reconstructed)
+    return CompletionArtifact(
+        manifest=manifest,
+        direct_map=reconstructed,
+        lalr=StaticLalrAdapter.from_arrays(tensors, control_metadata),
+    )
 
 
 __all__ = [
@@ -522,6 +780,7 @@ __all__ = [
     "CompletionArtifact",
     "DEFAULT_ARTIFACT_PATH",
     "DEFAULT_MANIFEST_PATH",
+    "StaticLalrAdapter",
     "build_completion_artifact",
     "completion_artifact_checkpoint_identity",
     "load_checked_completion_artifact",
