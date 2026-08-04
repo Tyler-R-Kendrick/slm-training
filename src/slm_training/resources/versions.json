@@ -2683,7 +2683,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v178",
+      "version": "v179",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2723,6 +2723,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v179",
+          "date": "2026-08-04",
+          "note": "Frozen replay (_apply_frozen_replay) re-samples decode_timeout_seconds from the freshly built matrix instead of freezing the predecessor arm's stale value: continuous-openui-local c3 replayed the c2 frozen manifest byte-for-byte (including its pre-repair 8s decode timeout) and reproduced the identical decode_timeout_count=3/3 failure even after the v178 policy repair, because decode_timeout_seconds is documented elsewhere (_LEVER_KNOB_KEYS, _thrash_lever_signature) as a measurement knob, not part of frozen experimental identity. Promotion/confirmation/screening replays now all re-sample it; every other knob stays byte-identical to the frozen arm."
+        },
         {
           "version": "v178",
           "date": "2026-08-04",

@@ -7438,6 +7438,11 @@ def _apply_frozen_replay(
         if target is None:
             raise RuntimeError(f"frozen replay target is absent from matrix: {new_id}")
         frozen = replay[role]["experiment"]
+        # decode_timeout_seconds is a measurement knob, not a lever knob (see
+        # _LEVER_KNOB_KEYS / _thrash_lever_signature) -- re-sample it from the
+        # freshly built matrix's current-policy value instead of freezing a
+        # possibly-since-repaired infra budget across the replay.
+        fresh_decode_timeout = (target.get("knobs") or {}).get("decode_timeout_seconds")
         for key in (
             "hypothesis",
             "rationale",
@@ -7447,7 +7452,16 @@ def _apply_frozen_replay(
             "knobs",
             "formal_claims",
         ):
-            target[key] = frozen.get(key, []) if key == "formal_claims" else frozen[key]
+            if key == "formal_claims":
+                target[key] = frozen.get(key, [])
+                continue
+            if key == "knobs":
+                knobs = dict(frozen[key])
+                if fresh_decode_timeout is not None:
+                    knobs["decode_timeout_seconds"] = fresh_decode_timeout
+                target[key] = knobs
+                continue
+            target[key] = frozen[key]
     matrix["recommended_experiment_id"] = new_ids["candidate"]
     matrix["selection_rationale"] = (
         "Current-main successor replay of the incomplete frozen measurement; "

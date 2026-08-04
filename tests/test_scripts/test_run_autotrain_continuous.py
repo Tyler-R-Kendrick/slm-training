@@ -6319,8 +6319,14 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor(
         experiment_id=f"c20260801-loop-12345678-c1710-{candidate_slug}",
         campaign_id=old_campaign,
     )
-    old_control["knobs"].update(steps=80, seed=101710, batch_size=2)
-    old_candidate["knobs"].update(steps=80, seed=101710, batch_size=1)
+    # A stale decode_timeout_seconds simulates a frozen arm minted before a
+    # harness repair raised the policy default.
+    old_control["knobs"].update(
+        steps=80, seed=101710, batch_size=2, decode_timeout_seconds=1.0
+    )
+    old_candidate["knobs"].update(
+        steps=80, seed=101710, batch_size=1, decode_timeout_seconds=1.0
+    )
     old_commit = "a" * 40
     control_manifest = _mod._manifest(old_campaign, old_control, old_commit)
     candidate_manifest = _mod._manifest(old_campaign, old_candidate, old_commit)
@@ -6337,13 +6343,25 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor(
         },
     }
 
+    pre_replay_decode_timeout = next(
+        row["experiment"]["knobs"]["decode_timeout_seconds"]
+        for row in matrix["hypotheses"]
+        if row["experiment"]["experiment_id"] == matrix["recommended_experiment_id"]
+    )
+    assert pre_replay_decode_timeout != 1.0
     replay_manifests = _mod._apply_frozen_replay(matrix, replay, new_campaign)
     recommended = next(
         row["experiment"]
         for row in matrix["hypotheses"]
         if row["experiment"]["experiment_id"] == matrix["recommended_experiment_id"]
     )
-    assert recommended["knobs"] == old_candidate["knobs"]
+    # decode_timeout_seconds is a measurement knob: the replay re-samples it
+    # from the current policy instead of freezing the frozen arm's stale
+    # value; every other knob stays byte-identical to the frozen arm.
+    assert recommended["knobs"]["decode_timeout_seconds"] == pre_replay_decode_timeout
+    assert {
+        k: v for k, v in recommended["knobs"].items() if k != "decode_timeout_seconds"
+    } == {k: v for k, v in old_candidate["knobs"].items() if k != "decode_timeout_seconds"}
     current_commit = "d" * 40
     successor = _mod._replay_successor_manifest(
         replay_manifests[matrix["recommended_experiment_id"]]["manifest"],
@@ -6452,7 +6470,16 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor(
         if item["experiment"]["experiment_id"]
         == promotion_matrix["recommended_experiment_id"]
     )
-    assert promoted["knobs"] == promote_experiment["knobs"]
+    # decode_timeout_seconds is re-sampled from the (stable, 24s) promotion
+    # policy default, not frozen at the stale 1.0 the frozen arm carried.
+    assert promoted["knobs"]["decode_timeout_seconds"] == 24.0
+    assert {
+        k: v for k, v in promoted["knobs"].items() if k != "decode_timeout_seconds"
+    } == {
+        k: v
+        for k, v in promote_experiment["knobs"].items()
+        if k != "decode_timeout_seconds"
+    }
     assert promoted["formal_claims"] == promote_experiment["formal_claims"]
 
     confirm_experiment = json.loads(json.dumps(old_candidate))
@@ -6487,6 +6514,10 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor(
         role="screening",
         recommended_slug="batch1",
     )
+    pre_replay_confirm_decode_timeout = confirmation_matrix["hypotheses"][0][
+        "experiment"
+    ]["knobs"]["decode_timeout_seconds"]
+    assert pre_replay_confirm_decode_timeout != 1.0
     applied = _mod._apply_frozen_replay(
         confirmation_matrix, confirmation_replay, new_campaign
     )
@@ -6497,7 +6528,15 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor(
         if item["experiment"]["experiment_id"]
         == confirmation_matrix["recommended_experiment_id"]
     )
-    assert confirmed["knobs"] == confirm_experiment["knobs"]
+    # decode_timeout_seconds is re-sampled fresh, not frozen at the stale 1.0.
+    assert confirmed["knobs"]["decode_timeout_seconds"] == pre_replay_confirm_decode_timeout
+    assert {
+        k: v for k, v in confirmed["knobs"].items() if k != "decode_timeout_seconds"
+    } == {
+        k: v
+        for k, v in confirm_experiment["knobs"].items()
+        if k != "decode_timeout_seconds"
+    }
     assert confirmation_matrix["recommended_experiment_id"] in applied
 
 
