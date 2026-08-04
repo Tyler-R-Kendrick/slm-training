@@ -1,0 +1,95 @@
+{
+  "schema": "autotrain_continuous_cycle_results/v1",
+  "loop_id": "continuous-openui-local-r3",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local--c8650581-c5",
+  "cycle_index": 5,
+  "source_commit": "34111e6e",
+  "integration_commit": "1825fb54",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "retry_measurement",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true
+  },
+  "frozen_replay_of": {
+    "source_campaign": "continuous-loop-20260804-continuous-openui-local--c8650581-c4",
+    "frozen_manifest_sha256": "ec197e9107e56d008ae1bf461b5b17794f4c3edd17c9fde8b79b6d3b712651b4",
+    "note": "identical arm replayed after the cycle-4 node_modules repair (repair_harness action acked at commit 1825fb54); measurement_complete is now true where cycle 4 had missing_scoreboard on both arms"
+  },
+  "arms": {
+    "control": {
+      "id": "c20260804-continuous-openui-local--c8650581-c5-control",
+      "trainable_params": 1608962,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete_gate_reject",
+      "metrics": {
+        "latency_ms_p50": 34049.67,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.4166666666666667,
+        "binder_reference_f1": 0.9523809523809524
+      }
+    },
+    "steps": {
+      "id": "c20260804-continuous-openui-local--c8650581-c5-steps",
+      "trainable_params": 1608962,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete_gate_reject",
+      "metrics": {
+        "latency_ms_p50": 19160.68,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.51,
+        "binder_reference_f1": 0.8222222222222223
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.09333333333333332,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260804-continuous-openui-local--c8650581-c5-control",
+      "fixture_insufficient_n:c20260804-continuous-openui-local--c8650581-c5-steps",
+      "efficiency_win:mpr_per_ms:9.7896201e-06->1.7396738e-05:gain_fraction=0.77705958:minimum=0.05",
+      "quality_held:parse=1.0 mpr=0.3333333333333333",
+      "non_regression_fail:binder_reference_f1:0.9523809523809524->0.8222222222222223",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.4166666666666667 candidate=0.51 improvement=0.09333333333333332",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "climb_state": "rejected",
+  "ship_state": "blocked",
+  "conclusion": "fixture_n3_insufficient_evidence_binder_f1_regression",
+  "caveats": [
+    "Measurement is now complete and honest for both arms (unlike cycle 4). Both fail ship gates only on fixture insufficient_n (actual=3, need>=20) plus the usual smoke-scale quality thresholds -- expected at this suite size, not a promotable result.",
+    "structural_similarity improved control->steps (0.41667->0.51, +0.0933) but binder_reference_f1 regressed (0.95238->0.82222): a mixed-metric outcome, not a clean quality win, so this stays non-positive per the quality-aware tradeoff classifier.",
+    "meaningful_program_rate is tied at 0.3333 for both arms; ast_beq_rate and canonical_beq_rate are both 0.0 for the steps arm at this fixture scale."
+  ],
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "model",
+      "hypothesis": "The completed frozen replay rejects the prior arm; test the distinct size-matched 'component-plan' quality hypothesis next.",
+      "action": "experiment_next",
+      "experiment_id": "c20260804-continuous-openui-local--c8650581-c5-component-plan"
+    },
+    {
+      "rank": 2,
+      "area": "evaluation",
+      "hypothesis": "Keep the matched control as the size-matched baseline every cycle.",
+      "action": "experiment_next",
+      "experiment_id": "c20260804-continuous-openui-local--c8650581-c5-control"
+    }
+  ],
+  "recorded_at": "2026-08-04T23:49:24Z"
+}
