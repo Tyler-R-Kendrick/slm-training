@@ -711,3 +711,50 @@ def test_continuous_manifest_promotion_uses_held_out_primary() -> None:
         stage_wall_minutes_for_role(policy, "promotion")
     )
     assert len(screen.seeds) == 1
+
+
+def test_classify_positive_rejects_partial_suite_completion() -> None:
+    """A control arm that only finished part of the suite must not win or lose
+    against a candidate that finished the full suite -- the averaged metric
+    reflects which documents happened to complete under the wall cap, not a
+    real effect of the candidate's levers."""
+    policy = load_climb_policy()
+    result = classify_positive_metrics(
+        policy,
+        role="promotion",
+        control_metrics={
+            "held_out.structural_similarity": 0.3417,
+            "held_out.completed_document_n": 1,
+            "held_out.n": 5,
+        },
+        candidate_metrics={
+            "held_out.structural_similarity": 0.37006,
+            "held_out.completed_document_n": 5,
+            "held_out.n": 5,
+        },
+    )
+    assert result["positive"] is False
+    assert any(
+        r.startswith("primary_metric_incomparable_partial_suite")
+        for r in result["reasons"]
+    )
+    assert not any(r.startswith("primary_metric_win") for r in result["reasons"])
+    assert not any(r.startswith("primary_metric_null_or_worse") for r in result["reasons"])
+
+    # Both arms completing the full suite is unaffected by the gate.
+    full = classify_positive_metrics(
+        policy,
+        role="promotion",
+        control_metrics={
+            "held_out.structural_similarity": 0.30,
+            "held_out.completed_document_n": 5,
+            "held_out.n": 5,
+        },
+        candidate_metrics={
+            "held_out.structural_similarity": 0.40,
+            "held_out.completed_document_n": 5,
+            "held_out.n": 5,
+        },
+    )
+    assert full["positive"] is True
+    assert any(r.startswith("primary_metric_win") for r in full["reasons"])

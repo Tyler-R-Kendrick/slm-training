@@ -601,6 +601,16 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     parser.add_argument(
+        "--generate-batch-size",
+        type=int,
+        default=None,
+        help=(
+            "Override how many records the decode loop groups into one "
+            "timed chunk. None keeps the checkpoint's baked "
+            "generate_batch_size."
+        ),
+    )
+    parser.add_argument(
         "--no-design-md-context",
         action="store_true",
         help="Override: do not concatenate DESIGN.md into context.",
@@ -861,6 +871,7 @@ def main(argv: list[str] | None = None) -> int:
         ),
         compiler_search_backtrack_limit=max(0, args.compiler_search_backtrack_limit),
         decode_timeout_seconds=args.decode_timeout_seconds,
+        generate_batch_size=args.generate_batch_size,
         evaluation_wall_seconds=args.evaluation_wall_seconds,
         grammar_dsl=args.grammar_dsl,
         grammar_trust_model=args.grammar_trust_model,

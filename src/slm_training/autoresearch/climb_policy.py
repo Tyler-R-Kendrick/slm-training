@@ -754,6 +754,23 @@ def classify_positive_metrics(
     if c_val is None or t_val is None:
         reasons.append("primary_metric_unavailable")
     else:
+        # Suite-completion gate: mismatched completed_document_n vs n means
+        # the suite average is not a fair primary-metric comparison (wall-clock
+        # race). Reject before scoring win/regression. Continuous driver also
+        # pre-checks incompletes; this keeps direct classify_positive_metrics
+        # callers fail-closed.
+        suite = metric.split(".")[0] if "." in metric else None
+        c_completed = _metric_from_map(control_metrics, f"{suite}.completed_document_n")
+        c_n = _metric_from_map(control_metrics, f"{suite}.n")
+        t_completed = _metric_from_map(candidate_metrics, f"{suite}.completed_document_n")
+        t_n = _metric_from_map(candidate_metrics, f"{suite}.n")
+        partial_suite = (
+            suite is not None
+            and (
+                (c_completed is not None and c_n is not None and c_completed < c_n)
+                or (t_completed is not None and t_n is not None and t_completed < t_n)
+            )
+        )
         raw = t_val - c_val
         improvement = improvement_signed(raw, direction)  # type: ignore[arg-type]
         non_reg_ok = True
@@ -771,7 +788,13 @@ def classify_positive_metrics(
             if nr_imp < nr_min:
                 non_reg_ok = False
                 reasons.append(f"non_regression_fail:{nr_metric}:{c_nr}->{t_nr}")
-        if improvement > minimum_effect and non_reg_ok:
+        if partial_suite:
+            reasons.append(
+                f"primary_metric_incomparable_partial_suite:{metric}:"
+                f"control_completed={c_completed}/{c_n}:"
+                f"candidate_completed={t_completed}/{t_n}"
+            )
+        elif improvement > minimum_effect and non_reg_ok:
             positive = True
             reasons.append(
                 f"primary_metric_win:{metric}:{c_val}->{t_val}"

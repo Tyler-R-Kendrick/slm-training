@@ -1362,7 +1362,7 @@ def _thrash_lever_signature(extras: dict[str, Any] | None) -> str:
     raw = {
         k: v
         for k, v in (extras or {}).items()
-        if not str(k).startswith("_") and k not in {"seed", "steps", "decode_timeout_seconds"}
+        if not str(k).startswith("_") and k not in {"seed", "steps", "decode_timeout_seconds", "generate_batch_size"}
     }
     # Prefer registered lever subset when present so static/dynamic arms align.
     levers = _lever_knobs(raw)
@@ -7733,6 +7733,11 @@ def _matrix(
             "decode_timeout_seconds": decode_timeout,
             "eval_suites": eval_suites,
         }
+        if role == "screening":
+            # Screening smoke suites are tiny: baked generate_batch_size groups
+            # every document into one decode chunk, defeating per-record
+            # fair-share timeout redistribution.
+            base["generate_batch_size"] = 1
         base.update(extra_map)
         return base
 
@@ -9483,6 +9488,21 @@ def run_cycle(
                 flush=True,
             )
             order = []
+            # Promote arm never runs → no terminal hypothesizer feedback via
+            # `run --execute`. Record it so successor hypothesize can chain.
+            _run(
+                [
+                    *ar,
+                    "block",
+                    "--campaign-id",
+                    campaign_id,
+                    "--experiment-id",
+                    str(matrix["recommended_experiment_id"]),
+                    "--reason",
+                    f"promote formal preflight blocked: status={promote_formal_status}",
+                ],
+                cwd=cwd,
+            )
     elif replay_formal_required and (
         promote_formal_status != "proved" or not promote_preflight_sha
     ):
