@@ -1,0 +1,60 @@
+{
+  "schema": "autotrain_sdlc_delivery/v1",
+  "loop_id": "continuous-openui-scheduled-tqctmw",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-schedu-f4406faa-c1",
+  "finished_at": "2026-08-04T14:33:15Z",
+  "sdlc_phase": "A",
+  "positive": false,
+  "stack_layer": false,
+  "has_tracked_delta": true,
+  "stack_action": "no_stack_layer_non_positive",
+  "agent_required": "continue loop; local commits/docs only",
+  "arm_order": [
+    "c20260804-continuous-openui-schedu-f4406faa-c1-control",
+    "c20260804-continuous-openui-schedu-f4406faa-c1-bounds"
+  ],
+  "arm_seed": 100001,
+  "arm_exits": {
+    "c20260804-continuous-openui-schedu-f4406faa-c1-control": 2,
+    "c20260804-continuous-openui-schedu-f4406faa-c1-bounds": 2
+  },
+  "arm_skipped": {},
+  "reasons": [
+    "measurement_incomplete:c20260804-continuous-openui-schedu-f4406faa-c1-control:missing_scoreboard",
+    "measurement_incomplete:c20260804-continuous-openui-schedu-f4406faa-c1-bounds:missing_scoreboard",
+    "harness_failure:c20260804-continuous-openui-schedu-f4406faa-c1-control:experiment_failed",
+    "harness_failure:c20260804-continuous-openui-schedu-f4406faa-c1-bounds:experiment_failed",
+    "primary_metric_null_or_worse:smoke.structural_similarity:control=0.057499999999999996 candidate=0.057499999999999996 improvement=0.0"
+  ],
+  "primary_metric": "smoke.structural_similarity",
+  "direction": "increase",
+  "role": "screening",
+  "control_metrics": {
+    "latency_ms_p50": 3786.37,
+    "parse_rate": 1.0,
+    "meaningful_program_rate": 0.0,
+    "structural_similarity": 0.057499999999999996,
+    "binder_reference_f1": 0.6333333333333333
+  },
+  "candidate_metrics": {
+    "latency_ms_p50": 3872.18,
+    "parse_rate": 1.0,
+    "meaningful_program_rate": 0.0,
+    "structural_similarity": 0.057499999999999996,
+    "binder_reference_f1": 0.6333333333333333
+  },
+  "policy_version": "v4",
+  "control_id": "c20260804-continuous-openui-schedu-f4406faa-c1-control",
+  "candidate_id": "c20260804-continuous-openui-schedu-f4406faa-c1-bounds",
+  "baseline_trainable_params": 1608962,
+  "candidate_trainable_params": 1608962,
+  "fixture_volume_gate_hits": 0,
+  "measurement_complete": false,
+  "cycle_role": "screening",
+  "cycle_index": 1,
+  "cycle_intent": "screening",
+  "root_cause": "Fresh ephemeral sandbox checkout had no node_modules; evaluate_model.py --ship-gates crashed for both arms with RuntimeError: AgentV SDK is unavailable, before either arm produced a scoreboard. Training itself completed for both arms (1,608,962 params, seed 100001).",
+  "repair_commit": "6968d13d00b95137c1fb78f9a85499cafc82522d",
+  "repair_summary": "src/slm_training/evals/agentv.py _agentv_runtime now self-heals: on a missing pinned SDK it attempts one bounded, NODE_OPTIONS-sanitized `npm ci` per process per root (opt out via AGENTV_NO_AUTO_PROVISION) before falling through to the existing RuntimeError. evals.agentv bumped v7 -> v8.",
+  "next_action": "retry_measurement: replay the identical frozen -bounds/-control arms now that the SDK self-heals in this sandbox."
+}
