@@ -1,0 +1,90 @@
+{
+  "schema": "autotrain_continuous_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c3",
+  "cycle_index": 3,
+  "source_commit": "0c2c6bc7",
+  "integration_commit": "ad41bbf0",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "confirm",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true
+  },
+  "arms": {
+    "control": {
+      "id": "c20260804-continuous-openui-local-8c0b60dd-c3-control",
+      "trainable_params": 1755764,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete_gate_reject",
+      "metrics": {
+        "latency_ms_p50": 8331.53,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.23083333333333333,
+        "binder_reference_f1": 0.488888888888888893
+      }
+    },
+    "confirm": {
+      "id": "c20260804-continuous-openui-local-8c0b60dd-c3-confirm",
+      "trainable_params": 1755764,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete_gate_reject",
+      "metrics": {
+        "latency_ms_p50": 8161.84,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.23083333333333333,
+        "binder_reference_f1": 0.26666666666666666
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "champion_fingerprint": "6cfba5d6fd08579f",
+  "champion_status": "rejected",
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c3-confirm",
+      "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c3-control",
+      "efficiency_win_rejected_min_effect:mpr_per_ms:4.0008658e-05->4.0840464e-05:gain_fraction=0.020790655<0.05",
+      "non_regression_fail:binder_reference_f1:0.48888888888888893->0.26666666666666666",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.23083333333333333 candidate=0.23083333333333333 improvement=0.0",
+      "fixture_insufficient_n_alone",
+      "confirmation_rejected:primary_quality_not_reheld"
+    ]
+  },
+  "climb_state": "rejected",
+  "ship_state": "blocked",
+  "conclusion": "fresh_seed_confirmation_rejected_champion",
+  "caveats": [
+    "cycle 2's component-plan structural_similarity win (0.32667->0.38280) did not reproduce on a fresh seed: exact tie (0.23083 both arms) here",
+    "confirm arm additionally regressed binder_reference_f1 vs control (0.48889 -> 0.26667), a non-regression gate fail",
+    "champion fingerprint 6cfba5d6fd08579f from cycle 2 is now exhausted/rejected; do not requeue without a new hypothesis"
+  ],
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "model",
+      "hypothesis": "Fresh-seed confirmation rejected the champion fingerprint; exhaust it and test a distinct size-matched hypothesis next.",
+      "action": "monitor",
+      "experiment_id": null
+    },
+    {
+      "rank": 3,
+      "area": "experiments",
+      "hypothesis": "Run the next non-exhausted batch-size arm only as a runtime diagnostic while a new quality-targeted objective is preregistered.",
+      "action": "experiment_next",
+      "experiment_id": "c20260804-continuous-openui-local-8c0b60dd-c3-batch1"
+    }
+  ],
+  "recorded_at": "2026-08-04T21:38:41Z"
+}
