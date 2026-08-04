@@ -1842,7 +1842,7 @@
       ]
     },
     "evals.agentv": {
-      "version": "v8",
+      "version": "v9",
       "kind": "harness",
       "paths": [
         "src/slm_training/evals/agentv.py",
@@ -1850,6 +1850,11 @@
         "tests/test_evals/test_agentv.py"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-08-04",
+          "note": "Address CodeRabbit review on #1429: check all checkout roots for an already-installed SDK before bootstrapping any of them, and bootstrap starting from the Git common checkout (last root) so a worktree with a tracked package-lock.json never installs a redundant node_modules copy. Surface the npm ci failure detail (stderr/stdout) in the raised RuntimeError instead of discarding it."
+        },
         {
           "version": "v8",
           "date": "2026-08-04",
@@ -7944,6 +7949,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-04",
+          "note": "no-bump: record scheduled loop fe71636 c2's control/canvas scratch checkpoint provenance (AgentV harness failure, repaired, replay still decode-timeout incomplete) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
         {
           "version": "v3",
           "date": "2026-08-03",

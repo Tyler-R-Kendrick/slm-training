@@ -4,7 +4,7 @@
   "campaign_id": "continuous-loop-20260804-continuous-openui-schedu-3d42338c-c4",
   "cycle_index": 4,
   "source_commit": "fe716367ffdd1c15353e93338a704b21e3c851c8",
-  "integration_commit": "c5d5bee74fbe3f6ef9df3d21ee2b0f2ecdfad4a5b",
+  "integration_commit": "c5d5bee757a03a2660ad0938cf1bf36a77b1b91b",
   "honesty": "fixture",
   "not_ship_claim": true,
   "cycle_intent": "retry_measurement",

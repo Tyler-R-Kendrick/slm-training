@@ -85,8 +85,65 @@ def test_agentv_runtime_still_raises_when_bootstrap_fails(
         _agentv_runtime(root)
     except RuntimeError as exc:
         assert "npm ci" in str(exc)
+        assert "boom" in str(exc)  # bootstrap failure detail is not discarded
     else:  # pragma: no cover - failure path must raise
         raise AssertionError("expected RuntimeError when bootstrap fails")
+
+
+def test_agentv_runtime_bootstraps_common_checkout_before_worktree(
+    tmp_path, monkeypatch
+) -> None:
+    """Neither root has the SDK: install in the shared common checkout, not the worktree."""
+    common_root = tmp_path / "repo"
+    worktree = tmp_path / "worktree"
+    for root in (common_root, worktree):
+        (root / "scripts").mkdir(parents=True)
+        (root / "scripts/run_agentv_eval.mjs").write_text("// runner")
+        (root / "package-lock.json").write_text("{}")
+    monkeypatch.delenv("AGENTV_RUNNER", raising=False)
+    monkeypatch.setattr(
+        agentv_module, "checkout_roots", lambda root: (worktree, common_root)
+    )
+
+    bootstrapped_roots = []
+
+    def fake_run(command, *, cwd, **kwargs):
+        bootstrapped_roots.append(Path(cwd))
+        sdk = Path(cwd) / "node_modules/@agentv/core/package.json"
+        sdk.parent.mkdir(parents=True, exist_ok=True)
+        sdk.write_text("{}")
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(agentv_module.subprocess, "run", fake_run)
+
+    runner, root = _agentv_runtime(worktree)
+    assert root == common_root
+    assert bootstrapped_roots == [common_root]  # never installed into the worktree
+
+
+def test_agentv_runtime_reuses_existing_sdk_without_bootstrapping(
+    tmp_path, monkeypatch
+) -> None:
+    common_root = tmp_path / "repo"
+    worktree = tmp_path / "worktree"
+    runner = common_root / "scripts/run_agentv_eval.mjs"
+    sdk = common_root / "node_modules/@agentv/core/package.json"
+    runner.parent.mkdir(parents=True)
+    sdk.parent.mkdir(parents=True)
+    runner.write_text("// runner")
+    sdk.write_text("{}")
+    worktree.mkdir()
+    monkeypatch.delenv("AGENTV_RUNNER", raising=False)
+    monkeypatch.setattr(
+        agentv_module, "checkout_roots", lambda root: (worktree, common_root)
+    )
+
+    def fail_if_called(*args, **kwargs):  # pragma: no cover - must not run
+        raise AssertionError("npm ci must not run when an SDK is already installed")
+
+    monkeypatch.setattr(agentv_module.subprocess, "run", fail_if_called)
+
+    assert _agentv_runtime(worktree) == (runner, common_root)
 
 
 def test_model_ship_cases_fail_closed_on_missing_suites() -> None:
