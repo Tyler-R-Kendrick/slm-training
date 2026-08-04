@@ -15,6 +15,8 @@ LINEAGE_DOCS = (
     Path("docs/design/research-lineage.md"),
     Path("docs/design/quality-experiment-matrix.md"),
     Path("docs/design/perf-experiment-matrix.md"),
+    Path("docs/design/perf-matrix-results.json"),
+    Path("docs/design/completion-kernel-perf-results.json"),
     Path("docs/design/nemo-rl-autoresearch.md"),
 )
 SUPPORTED_SUFFIXES = {".json", ".jsonl", ".md", ".tsv"}
