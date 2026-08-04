@@ -1,0 +1,70 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 2,
+  "evidence_class": "fixture",
+  "decision": "infrastructure_failure_not_a_model_result",
+  "scoreable": false,
+  "new_checkpoint_created": true,
+  "upstream_commit": "eba6db3044076285581b80cfe5294a2ecbcee8a1",
+  "integration_commit": "eba6db3044076285581b80cfe5294a2ecbcee8a1",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "experiment_id": "c20260804-continuous-openui-local-8c0b60dd-c2-control",
+      "trainable_params": 1608962,
+      "steps": 22,
+      "last_loss": 14.390223503112793,
+      "train_wall_seconds": 2.9760482130000128,
+      "checkpoint_sha256": "1bc6370f72ec70fe0697414fa7614e2fc446d9795e91a8ae043bd95fe8b9286e",
+      "status": "trained_eval_failed",
+      "failure_stage": "evaluate_model",
+      "failure_reason": "RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER",
+      "smoke": null
+    },
+    {
+      "experiment_id": "c20260804-continuous-openui-local-8c0b60dd-c2-canvas",
+      "trainable_params": 1608962,
+      "steps": 22,
+      "last_loss": 14.390223503112793,
+      "train_wall_seconds": null,
+      "checkpoint_sha256": "9f73b7a8466b7ab117988b2ab7516dffce7c9ac4f4d0ad7204a580d71053b1a4",
+      "status": "trained_eval_failed",
+      "failure_stage": "evaluate_model",
+      "failure_reason": "RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER",
+      "smoke": null
+    }
+  ],
+  "comparison": {
+    "attributable": false
+  },
+  "agentv": {
+    "bundles_complete": false,
+    "execution_errors": 2,
+    "ship_gates_pass": false
+  },
+  "checkpoint_policy": "local_explicit_no_sync_not_reusable_not_promoted_not_ship_eval_incomplete",
+  "lean": "not_applicable:screening",
+  "harness_repair": {
+    "harness_family": "model_build",
+    "diagnosis": "Reproduction of the previously documented docs/design/autotrain-cycle-c2-agentv-missing-infra-failure.json (fixed by commits 1faeff44/8da7b777 on 2026-08-03) in a fresh ephemeral remote-execution container. Neither scripts/setup_dev_env.sh nor its equivalent had been run yet for this container's checkout: no .venv, no torch, no repo-root node_modules (no @agentv/core), and no node_modules under src/apps/openui_bridge or src/apps/design_md_bridge. evaluate_model.py --ship-gates crashed in publish_model_evaluation before producing a scoreboard for both arms, identical to the prior finding.",
+    "fix_commits": [],
+    "fix_summary": "No code change required — the fix already lives in scripts/setup_dev_env.sh from the prior repair (#1360). Ran the equivalent bootstrap for this session: `python3.12 -m venv .venv && pip install -e \".[dev]\"` (pulls the pinned CPU torch wheel via the dev extra), `env -u NODE_OPTIONS npm ci` at the repo root (installs @agentv/core), and `env -u NODE_OPTIONS npm ci` in src/apps/openui_bridge and src/apps/design_md_bridge. Verified node_modules/@agentv/core/package.json exists afterward. This is an expected one-time bootstrap cost on every fresh ephemeral container, not a regression.",
+    "regression_tests": [
+      "tests/test_bridge_utils.py::test_sanitized_node_env_clears_host_node_options",
+      "tests/test_dsl/test_language_contract.py::test_invoke_once_clears_host_node_options",
+      "tests/test_evals/test_agentv.py::test_agentv_clears_node_options_for_the_runner_subprocess"
+    ]
+  },
+  "next_priority": "replay identical frozen arm (retry_measurement, frozen_manifest_sha256=209115b1ea6962ff702df035b514d57be16a737bda7e17ec50b9f53b4911d223) now that torch, the AgentV SDK, and the openui/design_md node bridges are installed for this container and evaluate_model.py should reach a real scoreboard",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "eba6db3044076285581b80cfe5294a2ecbcee8a1",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.train": "v42",
+      "harness.experiment_feature_flags": "v4"
+    },
+    "stamped_at": "2026-08-04T03:32:59.607166+00:00"
+  }
+}
