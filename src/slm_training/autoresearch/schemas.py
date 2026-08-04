@@ -306,6 +306,7 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "compact_active_canvas",
         "grammar_draft_window",
         "decode_timeout_seconds",
+        "generate_batch_size",
         "eval_suites",
         "action_embedding_init",
         "action_embedding_train",

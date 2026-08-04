@@ -2734,7 +2734,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v181",
+      "version": "v182",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2775,6 +2775,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v182",
+          "note": "add generate_batch_size to DEFAULT_ALLOWED_KNOBS (schemas.py), next to decode_timeout_seconds. v181 declared the field on ExperimentKnobs but validate_experiment() separately checks changed knobs against campaign.allowed_knobs (DEFAULT_ALLOWED_KNOBS for continuous campaigns); without this the same screening-role hypotheses that started validating under v181 immediately failed the replayed identical arm with 'experiment changes forbidden knobs: [generate_batch_size]' (loop continuous-openui-local-r3, cycle 3). Discovered replaying the frozen arm from the v181 fix in the same debug session.",
+          "date": "2026-08-04"
+        },
         {
           "version": "v181",
           "note": "add generate_batch_size to ExperimentKnobs (schemas.py); run_autotrain_continuous.py's screening role has baked base[\"generate_batch_size\"]=1 onto every hypothesis since the decode-timeout fair-share change, but the strict schema never declared the field, so every screening-role hypothesis failed validate() with extra_forbidden and blocked continuous cycle 1 (loop continuous-openui-local-r3) before any run could execute. Field is eval/decode mechanics, not a trained lever: matches decode_timeout_seconds' existing exclusion from _LEVER_KNOB_KEYS/_thrash_lever_signature, so no comparative-lever behavior changes.",
