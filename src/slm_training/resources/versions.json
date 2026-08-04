@@ -2734,7 +2734,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v180",
+      "version": "v181",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2775,6 +2775,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v181",
+          "note": "add generate_batch_size to ExperimentKnobs (schemas.py); run_autotrain_continuous.py's screening role has baked base[\"generate_batch_size\"]=1 onto every hypothesis since the decode-timeout fair-share change, but the strict schema never declared the field, so every screening-role hypothesis failed validate() with extra_forbidden and blocked continuous cycle 1 (loop continuous-openui-local-r3) before any run could execute. Field is eval/decode mechanics, not a trained lever: matches decode_timeout_seconds' existing exclusion from _LEVER_KNOB_KEYS/_thrash_lever_signature, so no comparative-lever behavior changes.",
+          "date": "2026-08-04"
+        },
         {
           "version": "v180",
           "note": "gate Phase A primary wins on matched suite completion + promote formal terminal block feedback",

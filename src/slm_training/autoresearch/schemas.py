@@ -623,6 +623,7 @@ class ExperimentKnobs(StrictModel):
     grammar_draft_window: int | None = Field(default=None, ge=1, le=64)
     # Continuous measurement knobs (screening smoke-only + decode budget).
     decode_timeout_seconds: float | None = Field(default=None, gt=0, le=600)
+    generate_batch_size: int | None = Field(default=None, ge=1, le=64)
     eval_suites: str | None = Field(
         default=None,
         description="Comma-separated evaluate_model --suites (e.g. smoke).",

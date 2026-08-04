@@ -679,6 +679,17 @@ def test_strict_schema_and_allowlist() -> None:
         validate_experiment(restricted, experiment(), evidence(), [source()])
 
 
+def test_generate_batch_size_is_a_valid_measurement_knob() -> None:
+    """Continuous screening role bakes generate_batch_size=1 onto every
+    hypothesis (run_autotrain_continuous.py) so tiny smoke suites decode one
+    record per chunk instead of one baked batch; the knob must round-trip
+    through the strict schema like its sibling decode_timeout_seconds."""
+    knobs = ExperimentKnobs(generate_batch_size=1, decode_timeout_seconds=30.0)
+    assert knobs.generate_batch_size == 1
+    with pytest.raises(ValidationError):
+        ExperimentKnobs(generate_batch_size=0)
+
+
 def test_hypothesis_matrix_requires_five_distinct_grounded_candidates() -> None:
     with pytest.raises(ValidationError, match="at least 5 items"):
         hypothesis_matrix(4)
