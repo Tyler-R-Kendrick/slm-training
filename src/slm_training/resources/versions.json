@@ -7889,6 +7889,11 @@
       "history": [
         {
           "version": "v3",
+          "date": "2026-08-04",
+          "note": "no-bump: record the continuous-openui-scheduled c2 AgentV infra-failure recurrence and self-heal in the model card and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
           "date": "2026-08-03",
           "note": "no-bump: reconcile verifier-guided research-lineage status after E63-E65 wiring; SLM-228 behavior is unchanged."
         },

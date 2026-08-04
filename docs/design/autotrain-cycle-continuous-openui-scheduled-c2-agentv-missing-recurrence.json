@@ -1,0 +1,71 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-schedu-1e62ecf9-c2",
+  "loop_id": "continuous-openui-scheduled",
+  "cycle_index": 2,
+  "evidence_class": "fixture",
+  "decision": "infrastructure_failure_not_a_model_result",
+  "scoreable": false,
+  "new_checkpoint_created": true,
+  "upstream_commit": "eba6db3044076285581b80cfe5294a2ecbcee8a1",
+  "integration_commit": "eba6db3044076285581b80cfe5294a2ecbcee8a1",
+  "effective_primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "experiment_id": "c20260804-continuous-openui-schedu-1e62ecf9-c2-control",
+      "trainable_params": 1608962,
+      "steps": 22,
+      "last_loss": 14.390223503112793,
+      "train_wall_seconds": 3.0865956630000255,
+      "checkpoint_sha256": "1bc6370f72ec70fe0697414fa7614e2fc446d9795e91a8ae043bd95fe8b9286e",
+      "status": "trained_eval_failed",
+      "failure_stage": "evaluate_model",
+      "failure_reason": "RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER",
+      "smoke": null
+    },
+    {
+      "experiment_id": "c20260804-continuous-openui-schedu-1e62ecf9-c2-canvas",
+      "trainable_params": 1608962,
+      "steps": 22,
+      "last_loss": 14.390223503112793,
+      "train_wall_seconds": 3.735768511999993,
+      "checkpoint_sha256": "9f73b7a8466b7ab117988b2ab7516dffce7c9ac4f4d0ad7204a580d71053b1a4",
+      "status": "trained_eval_failed",
+      "failure_stage": "evaluate_model",
+      "failure_reason": "RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER",
+      "smoke": null
+    }
+  ],
+  "comparison": {
+    "attributable": false
+  },
+  "agentv": {
+    "bundles_complete": false,
+    "execution_errors": 2,
+    "ship_gates_pass": false
+  },
+  "checkpoint_policy": "local_explicit_no_sync_not_reusable_not_promoted_not_ship_eval_incomplete",
+  "lean": "not_applicable:screening",
+  "harness_repair": {
+    "harness_family": "model_build",
+    "diagnosis": "This is a recurrence of the exact infra failure documented in docs/design/autotrain-cycle-c2-agentv-missing-infra-failure.md: a fresh checkout (this scheduled-routine sandbox) never ran scripts/setup_dev_env.sh, so node_modules/@agentv/core was absent and evaluate_model.py --ship-gates crashed before producing a scoreboard for either arm. The prior fix (npm ci with sanitized NODE_OPTIONS) already existed for a human running setup_dev_env.sh, but scripts/run_autotrain_continuous.py itself had no self-heal path and would repeat this failure on every fresh checkout invoked by the continuous driver directly (e.g. a scheduled routine that never calls the human bootstrap script).",
+    "fix_commits": [
+      "1c48ac95d89f53595a2776359e1a3c1d5ec0cc25"
+    ],
+    "fix_summary": "Added scripts/run_autotrain_continuous.py:_ensure_agentv_sdk(), called at the start of run_cycle before experiments run. It checks node_modules/@agentv/core/package.json across checkout_roots() and, if missing, self-heals by running `npm ci` with slm_training.bridge_utils.sanitized_node_env() (the same fix scripts/setup_dev_env.sh applies for humans), failing closed with a clear SELF_HEAL_AGENTV_SDK_FAILED error if npm ci itself fails.",
+    "regression_tests": [
+      "tests/test_scripts/test_run_autotrain_continuous.py::test_ensure_agentv_sdk_noop_when_already_installed",
+      "tests/test_scripts/test_run_autotrain_continuous.py::test_ensure_agentv_sdk_self_heals_via_npm_ci",
+      "tests/test_scripts/test_run_autotrain_continuous.py::test_ensure_agentv_sdk_raises_when_npm_ci_fails"
+    ]
+  },
+  "next_action": "retry_measurement: replay the identical frozen c2 control/canvas arms now that the AgentV SDK self-heal is in place",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "1c48ac95d89f53595a2776359e1a3c1d5ec0cc25",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v178"
+    }
+  }
+}
