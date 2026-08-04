@@ -7926,6 +7926,11 @@
         {
           "version": "v3",
           "date": "2026-08-04",
+          "note": "no-bump: record c1865's decode-timeout harness failure and same-cycle repair (continuous-openui-scheduled-72bc0d) in the model card and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-04",
           "note": "no-bump: record c1864's rejected grammar_completion_bounds latency-only screen (continuous-openui-scheduled-72bc0d) in the model card and README; SLM-228 behavior is unchanged."
         },
         {

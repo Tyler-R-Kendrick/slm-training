@@ -1,0 +1,86 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-schedu-6699f447-c2",
+  "loop_id": "continuous-openui-scheduled-72bc0d",
+  "cycle_index": 2,
+  "decision": "measurement_incomplete_harness_repaired",
+  "claim_class": "fixture_screening",
+  "formal": {
+    "status": "not_applicable:screening"
+  },
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "seed": 100001,
+    "batch_size": 2,
+    "context_backend": "scratch",
+    "suite": "smoke",
+    "suite_n": 3,
+    "trainable_params": {
+      "control": 1755764,
+      "candidate": 1755764
+    },
+    "sync_checkpoints": false,
+    "candidate_lever": "component_plan_loss_weight / component_plan_decode_weight",
+    "hypothesis": "The completed non-positive c1 bounds arm is exhausted; test the distinct size-matched component-plan quality hypothesis next.",
+    "code_commit": "4e137321054f590f5dc5518d18f166bbc37109ed",
+    "integration_commit": "03624aaf36c52b7aebdf662c748894eb0ccfa562",
+    "model_component": "model.twotower:v309"
+  },
+  "arms": {
+    "control": {
+      "experiment_id": "c20260804-continuous-openui-schedu-6699f447-c2-control",
+      "status": "measurement_incomplete",
+      "decode_timeout_count": 3,
+      "decode_timeout_document_count": 3,
+      "decode_timeout_rate": 1.0,
+      "decode_amortized_ms_per_record_p50": 8000.33,
+      "n": 3
+    },
+    "candidate": {
+      "experiment_id": "c20260804-continuous-openui-schedu-6699f447-c2-component-plan",
+      "status": "measurement_incomplete",
+      "decode_timeout_count": 3,
+      "decode_timeout_document_count": 3,
+      "decode_timeout_rate": 1.0,
+      "n": 3
+    }
+  },
+  "sdlc_phase_a": {
+    "classification": "NON_POSITIVE",
+    "reasons": [
+      "measurement_incomplete:c20260804-continuous-openui-schedu-6699f447-c2-control:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "measurement_incomplete:c20260804-continuous-openui-schedu-6699f447-c2-component-plan:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "harness_failure:c20260804-continuous-openui-schedu-6699f447-c2-control:experiment_failed",
+      "harness_failure:c20260804-continuous-openui-schedu-6699f447-c2-component-plan:experiment_failed",
+      "fixture_insufficient_n:c20260804-continuous-openui-schedu-6699f447-c2-control",
+      "fixture_insufficient_n:c20260804-continuous-openui-schedu-6699f447-c2-component-plan",
+      "primary_metric_unavailable",
+      "fixture_insufficient_n_alone"
+    ],
+    "stack_layer": false
+  },
+  "root_cause": "evaluate_model.py grants the decode timeout per-chunk, not per-record: screening_decode_timeout_seconds=8 gave the 3-record smoke chunk an effective 24.0s total budget, and every one of the 6 documents (both arms) was clipped at exactly 8000ms (decode_amortized_ms_per_record_p50=8000.33), i.e. zero margin, not variance.",
+  "repair": {
+    "kind": "repair_harness",
+    "harness_family": "model_build",
+    "owner": "improve-openui-harnesses",
+    "commit": "eecb83043e5e3a9a3ccccfaf7faf12ceec25465b",
+    "change": "screening_decode_timeout_seconds 8->10 in policy.v1.json (v4->v5); harness.autoresearch.experiment_campaign v178->v179 in versions.json; new regression test test_screening_decode_timeout_has_margin_over_observed_record_cap pinning the recalibrated value and confirming it stays under the _fit_screening_decode_timeout_seconds arm-wall ceiling (14s for smoke_n=3 at this policy's screening_stage_wall_minutes=3).",
+    "acknowledged_action_index": 0,
+    "note": "This is the same root cause and fix already implemented (unmerged) in open PR #1403 on this repository; applied independently on this session's branch so the frozen c2 arm can be replayed."
+  },
+  "successor": {
+    "experiment_slug": "retry_measurement (identical frozen c2 control + component-plan arms) under the recalibrated 10s screening decode timeout",
+    "next_action": "replay the frozen arm; if still incomplete, treat as new evidence for a further recalibration rather than assuming host variance"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "eecb83043e5e3a9a3ccccfaf7faf12ceec25465b",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v179"
+    },
+    "stamped_at": "2026-08-04T17:44:09Z"
+  }
+}
