@@ -1,0 +1,24 @@
+{
+  "schema_version": "autotrain_measured_results/v1",
+  "loop_id": "continuous-openui-local",
+  "cycle_index": 6,
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c6",
+  "intent": "retry_measurement",
+  "positive": false,
+  "verdict": "candidate_runtime_rejected_after_frozen_replay",
+  "arms": {
+    "control": {
+      "structural_similarity": 0.0431,
+      "decode_timeout_count": 0,
+      "status": "completed"
+    },
+    "component-plan": {
+      "structural_similarity": 0.0167,
+      "decode_timeout_count": 2,
+      "status": "runtime_reject"
+    }
+  },
+  "note": "Frozen knobs retain decode_timeout=12s; policy recalibration applies to future thrash only. Reproduced candidate-only timeout \u2192 retire arm.",
+  "next": "component-edge thrash",
+  "recorded_at": "2026-08-04T22:08:30.220886+00:00"
+}
