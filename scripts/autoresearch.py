@@ -1361,6 +1361,79 @@ def cmd_diagnose(args: argparse.Namespace) -> int:
     return 0
 
 
+
+def cmd_block_experiment(args: argparse.Namespace) -> int:
+    """Record a matrix member that could not execute at all (e.g. a promote
+    arm fail-closed on an unproved formal preflight) as terminal feedback.
+
+    Without this, the locked matrix has no terminal
+    hypothesizer_feedback_recorded event, and a successor campaign that names
+    this one as its predecessor fails ``hypothesize`` with "latest hypothesis
+    matrix has no terminal feedback" even though the block was expected and
+    already disposed by the caller (e.g. the continuous champion-promote
+    path). Idempotent: replays cleanly if the experiment was already closed.
+    """
+    store = _store(args)
+    matrix = _latest_formed_matrix(store)
+    assert matrix is not None
+    if not any(
+        item.experiment.experiment_id == args.experiment_id
+        for item in matrix.hypotheses
+    ):
+        raise ValueError(
+            f"{args.experiment_id} is not a member of the latest formed matrix"
+        )
+    started = {
+        row.get("experiment_id")
+        for row in _events(store)
+        if row.get("event_type") == "experiment_started"
+    }
+    if args.experiment_id not in started:
+        store.append_event(
+            "experiment_started",
+            experiment_id=args.experiment_id,
+            status="running",
+            detail={"hypothesis_matrix_id": matrix.matrix_id},
+        )
+    finished = {
+        row.get("experiment_id")
+        for row in _events(store)
+        if row.get("event_type") == "experiment_finished"
+    }
+    outcome = ExperimentOutcome(
+        experiment_id=args.experiment_id,
+        campaign_id=args.campaign_id,
+        status="failed",
+        error=args.reason,
+    )
+    if args.experiment_id not in finished:
+        outcome_path = store.write_artifact("outcomes", outcome)
+        store.append_event(
+            "experiment_finished",
+            experiment_id=args.experiment_id,
+            status=outcome.status,
+            artifact_sha256=outcome_path.stem,
+            detail={"exit_code": None, "blocked": True, "reason": args.reason},
+        )
+    diagnosis = diagnose_outcome(outcome)
+    diagnosis_path = store.write_artifact("diagnoses", diagnosis)
+    already_diagnosed = any(
+        row.get("event_type") == "outcome_diagnosed"
+        and row.get("experiment_id") == args.experiment_id
+        for row in _events(store)
+    )
+    if not already_diagnosed:
+        store.append_event(
+            "outcome_diagnosed",
+            experiment_id=args.experiment_id,
+            status=diagnosis.target,
+            artifact_sha256=diagnosis_path.stem,
+        )
+    _record_hypothesis_feedback(store, matrix, outcome, diagnosis)
+    print(diagnosis.model_dump_json(indent=2))
+    return 0
+
+
 def _baseline_primary_from_store(
     store: CampaignStore,
     *,
@@ -1925,6 +1998,12 @@ def build_parser() -> argparse.ArgumentParser:
     diagnose.add_argument("--campaign-id", required=True)
     diagnose.add_argument("--outcome", type=Path, required=True)
     diagnose.set_defaults(func=cmd_diagnose)
+
+    block = sub.add_parser("block")
+    block.add_argument("--campaign-id", required=True)
+    block.add_argument("--experiment-id", required=True)
+    block.add_argument("--reason", required=True)
+    block.set_defaults(func=cmd_block_experiment)
 
     readiness = sub.add_parser("validate-rl")
     readiness.add_argument("--evaluation", type=Path, required=True)
