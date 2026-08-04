@@ -1,0 +1,86 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "cycle": 3,
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c3",
+  "experiment": "component-plan",
+  "claim_class": "fixture_screen",
+  "status": "rejected",
+  "measurement_complete": true,
+  "predecessor_campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c2",
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "backend": "scratch TwoTower",
+    "matrix_set": "continuous-openui-local",
+    "honesty_mode": "grammar_constrained_strict_compiler_tree",
+    "suite_n": {"smoke": 3, "held_out": 0, "adversarial": 0, "ood": 0, "rico_held": 0}
+  },
+  "arms": {
+    "control": {
+      "id": "c20260804-continuous-openui-local-8c0b60dd-c3-control",
+      "trainable_params": 1755760,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "structural_similarity": 0.23083333333333333,
+      "binder_reference_f1": 0.7333333333333334,
+      "latency_ms_p50": 10896.6,
+      "exit": 0
+    },
+    "candidate": {
+      "id": "c20260804-continuous-openui-local-8c0b60dd-c3-component-plan",
+      "trainable_params": 1755760,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "structural_similarity": 0.1725,
+      "binder_reference_f1": 0.6333333333333333,
+      "latency_ms_p50": 14912.8,
+      "exit": 0
+    }
+  },
+  "gates": {
+    "pass": false,
+    "failures": [
+      "smoke:insufficient_n actual=3 need>=20",
+      "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+      "smoke:structural_similarity actual=0.1725 need>=0.35",
+      "smoke:component_type_recall actual=0.0 need>=0.35",
+      "smoke:ast_beq_rate actual=0.0 need>=0.2",
+      "smoke:canonical_beq_rate actual=0.0 need>=0.1",
+      "held_out:missing_suite",
+      "adversarial:missing_suite",
+      "ood:missing_suite",
+      "rico_held:missing_suite"
+    ]
+  },
+  "signals": {
+    "attribution": "matched pair; candidate regresses primary metric and binder F1 vs control",
+    "prevention": ["fixture n=3", "no held-out/OOD/RICO suites", "candidate meaningful rate 0 (control 0.333)"],
+    "reasons": [
+      "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c3-component-plan",
+      "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c3-control",
+      "non_regression_fail:binder_reference_f1:0.7333333333333334->0.6333333333333333",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.23083333333333333 candidate=0.1725 improvement=-0.05833333333333335"
+    ],
+    "next_priorities": [
+      "distinct size-matched component-edge quality arm (c20260804-continuous-openui-local-8c0b60dd-c3-component-edge)",
+      "retain the matched control every cycle",
+      "rotate thrash recommendation across the lever bank, not bounds-only"
+    ]
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "34b0ebf2314c12c648ca3466ee6f0fa68c719ab9",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v84",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v23",
+      "model.twotower": "v308"
+    },
+    "stamped_at": "2026-08-04T12:16:42.198651+00:00"
+  }
+}
