@@ -11479,6 +11479,11 @@
         {
           "version": "v9",
           "date": "2026-08-03",
+          "note": "no-bump: Round 7 docs record of the preregistered-and-falsified MaskGIT persistent-grammar-state experiment (reverted; see maskgit-persistent-grammar-state-20260803.md); matrix behavior and measured evidence files are unchanged by this entry."
+        },
+        {
+          "version": "v9",
+          "date": "2026-08-03",
           "note": "Document observed batched request latency separately from amortized throughput and prohibit stale runtime cache telemetry from performance interpretation."
         },
         {
@@ -12390,6 +12395,11 @@
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
       "history": [
+        {
+          "version": "v308",
+          "date": "2026-08-03",
+          "note": "no-bump: add regression tests pinning engine-reuse equivalence, admit_fill reuse, stateful pick parity, and unadvertised-append session detach (from the falsified MaskGIT persistent-state experiment); no source behavior change."
+        },
         {
           "version": "v308",
           "date": "2026-08-03",
