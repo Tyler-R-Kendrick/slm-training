@@ -37,7 +37,7 @@ numbers/inventory without re-authoring classifiers.
 
 | Surface | Behavior |
 | --- | --- |
-| `scripts/run_autotrain_continuous.py` | Cycle role from cadence; Phase A uses `classify_positive_metrics` |
+| `scripts/run_autotrain_continuous.py` | Cycle role from cadence; Phase A uses `classify_positive_metrics`; every cycle re-certifies climb promotions when promote authority (policy / locked expectations / harness component version) changes |
 | `scripts/autoresearch.py` hypothesize | Loop-scoped exhausted ledger + recipe-null regime pressure |
 | `scripts/autoresearch.py` feedback | Records nulls with policy identity + recipe_null reason when pure recipe |
 | `hillclimb.py` | Shared direction-signed effect, synthesis SFT gate, EG_params |

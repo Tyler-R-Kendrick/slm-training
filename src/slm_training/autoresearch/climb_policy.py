@@ -32,10 +32,12 @@ from slm_training.levers import MAX_RUN_MINUTES
 __all__ = [
     "CLIMB_POLICY_SCHEMA",
     "CLIMB_RESOURCE_DIR",
+    "PROMOTE_AUTHORITY_SCHEMA",
     "ClimbPolicy",
     "ClimbPolicyError",
     "load_climb_policy",
     "climb_policy_content_digest",
+    "promote_authority_sha256",
     "loop_data_eval_identity",
     "loop_ledger_path",
     "load_loop_exhausted_ledger",
@@ -60,7 +62,9 @@ _PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 CLIMB_RESOURCE_DIR = _PACKAGE_ROOT / "resources" / "experiments" / "autotrain_climb"
 _REPO_ROOT = _PACKAGE_ROOT.parents[1]
 CLIMB_POLICY_SCHEMA = "autotrain_climb_policy/v1"
+PROMOTE_AUTHORITY_SCHEMA = "autotrain_promote_authority/v1"
 _DEFAULT_POLICY_PATH = CLIMB_RESOURCE_DIR / "policy.v1.json"
+_PROMOTE_AUTHORITY_HARNESS_COMPONENT = "harness.autoresearch.experiment_campaign"
 
 
 class ClimbPolicyError(ValueError):
@@ -165,6 +169,7 @@ class ClimbPolicy:
             "require_dual_arm_metrics": True,
             "require_parse_non_regression": True,
             "ignore_ship_insufficient_n_for_climb": True,
+            "recertify_on_authority_change": True,
         }
         if isinstance(raw, Mapping):
             base.update(dict(raw))
@@ -195,6 +200,32 @@ def climb_policy_content_digest(payload: Mapping[str, Any]) -> str:
     """Stable digest of policy content (excludes path-only identity)."""
 
     body = {k: v for k, v in payload.items() if k not in {"path", "sha256"}}
+    return hashlib.sha256(canonical_json(body).encode("utf-8")).hexdigest()
+
+
+def promote_authority_sha256(
+    *,
+    climb_policy_sha256: str,
+    locked_expectations_sha256: str,
+    harness_component_version: str,
+    harness_component: str = _PROMOTE_AUTHORITY_HARNESS_COMPONENT,
+) -> str:
+    """Content hash for climb-promote authority under current harness/policy.
+
+    Climb ``promoted`` / ``climb_accepted`` rows must carry this digest. When
+    climb policy, locked promote expectations, or the continuous/promote
+    harness component version changes, the digest changes and historical
+    promotions must re-certify under current dispose rules before remaining
+    authoritative.
+    """
+
+    body = {
+        "schema": PROMOTE_AUTHORITY_SCHEMA,
+        "climb_policy_sha256": str(climb_policy_sha256 or ""),
+        "locked_expectations_sha256": str(locked_expectations_sha256 or ""),
+        "harness_component": str(harness_component or _PROMOTE_AUTHORITY_HARNESS_COMPONENT),
+        "harness_component_version": str(harness_component_version or ""),
+    }
     return hashlib.sha256(canonical_json(body).encode("utf-8")).hexdigest()
 
 

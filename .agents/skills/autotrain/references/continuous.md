@@ -24,6 +24,14 @@ persistence is the host goal and the append-only campaign event chains.
      `loops/<id>/dynamic_thrash_arms.jsonl` (`SELF_HEAL_BANK_EXHAUST`)
    - causal CAP emptying multi-seed-open arms → `THRASH_CAUSAL_CAP_RELAX`
    - harness-blocked champions after tip change → rearm promote
+   - climb `promoted` / `climb_accepted` under a **stale promote authority**
+     (climb policy, locked promote expectations, or
+     `harness.autoresearch.experiment_campaign` component version changed) →
+     automatic re-cert under **current** dispose rules
+     (`CHAMPION_PROMOTE_RECERT_*`); keep only if paper dispose still
+     `climb_accepted`, else `promotion_failed` or requeue `confirmed` for a
+     live promote re-run. Never leave unstamped legacy promotions authoritative
+     after a harness update.
    - startup `BLOCKED` with a healable fingerprint → clear blocker and continue
    Repair named harness families via owner skills when evidence requires code
    change; otherwise change knobs and re-run. **Do not** wait for the user to
@@ -311,6 +319,28 @@ No human approval for ordinary local promotion. Researcher/hypothesizer or
 harness changes promote only after frozen benchmarks pass. Judge/threshold
 changes need a separate preregistered meta-campaign with unchanged held-out
 controls. Never lower gates, train on frozen cases, or weaken decode invariants.
+
+### Promote authority re-cert (harness-update law)
+
+Every successful climb promote stamps
+`promote_authority_sha256` = digest of climb-policy file sha + locked promote
+expectations sha + `harness.autoresearch.experiment_campaign` component version
+(`autotrain_promote_authority/v1`). On **every** continuous cycle startup the
+driver re-certifies any `promoted` / `climb_accepted` row whose stamp is missing
+or differs from the current digest:
+
+| Paper dispose under **current** rules | Queue action |
+| --- | --- |
+| still `climb_accepted` | keep + restamp (`CHAMPION_PROMOTE_RECERT_KEEP`) |
+| `promotion_failed` | demote + audit (`CHAMPION_PROMOTE_RECERT_FAIL`) |
+| incomplete evidence / inconclusive | requeue `confirmed` + `recert_required` for live promote |
+
+Audit lines append to `loops/<id>/historical_reclassification.jsonl`. Policy
+knob: `promotion_dispose.recertify_on_authority_change` (default true). This is
+not optional process folklore — it runs in
+`scripts/run_autotrain_continuous.py` next to open/confirmed champion
+revalidation. One-off `repair_vacuous_promotes` remains a historical backfill
+only.
 
 ## When training stops (SDLC Phase B — mandatory)
 

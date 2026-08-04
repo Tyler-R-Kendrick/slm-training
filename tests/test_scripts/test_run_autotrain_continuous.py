@@ -4777,6 +4777,153 @@ def test_open_champion_is_revalidated_under_current_policy(tmp_path: Path) -> No
     )
 
 
+def test_promote_authority_digest_changes_with_harness_version() -> None:
+    from slm_training.autoresearch.climb_policy import promote_authority_sha256
+
+    a = promote_authority_sha256(
+        climb_policy_sha256="p" * 64,
+        locked_expectations_sha256="e" * 64,
+        harness_component_version="v176",
+    )
+    b = promote_authority_sha256(
+        climb_policy_sha256="p" * 64,
+        locked_expectations_sha256="e" * 64,
+        harness_component_version="v177",
+    )
+    assert a != b
+    assert len(a) == 64
+
+
+def test_recertify_promoted_requeues_when_evidence_missing(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-recert"
+    (root / "loops" / loop_id).mkdir(parents=True)
+    entries = [
+        {
+            "entry_id": "champ-legacy",
+            "status": "promoted",
+            "knobs_fingerprint": "abc",
+            # no promote_authority_sha256, no promotion campaign
+            "resolve_reasons": ["cert_policy:continue", "phase_a_positive"],
+        }
+    ]
+    assert (
+        _mod._recertify_promoted_champion_entries(root, loop_id, entries) is True
+    )
+    assert entries[0]["status"] == "confirmed"
+    assert entries[0].get("recert_required") is True
+    assert any(
+        "recert_required" in str(r) for r in entries[0].get("resolve_reasons") or []
+    )
+    audit = (
+        root / "loops" / loop_id / "historical_reclassification.jsonl"
+    ).read_text(encoding="utf-8")
+    assert "promote_authority_recert" in audit
+    assert "requeue" in audit
+
+
+def test_recertify_promoted_fails_null_primary_under_current_rules(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-recert-fail"
+    camp = root / "promote-camp"
+    camp.mkdir(parents=True)
+    exp_sha = _mod.locked_promote_expectations_sha256()
+    (camp / "metric-certificate.json").write_text(
+        json.dumps(_v2_cert(exp_sha=exp_sha, relation="in_band")), encoding="utf-8"
+    )
+    (camp / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "measurement_complete": True,
+                "positive": True,
+                "control_id": "c-control",
+                "candidate_id": "c-promote",
+                "control_metrics": {
+                    "structural_similarity": 0.25,
+                    "held_out.structural_similarity": 0.25,
+                    "parse_rate": 1.0,
+                },
+                "candidate_metrics": {
+                    "structural_similarity": 0.25,
+                    "held_out.structural_similarity": 0.25,
+                    "parse_rate": 1.0,
+                },
+                "reasons": ["cert_policy:continue"],
+            }
+        ),
+        encoding="utf-8",
+    )
+    entries = [
+        {
+            "entry_id": "champ-vacuous",
+            "status": "promoted",
+            "promotion_campaign_id": camp.name,
+            "formal_preflight_status": "proved",
+            "resolve_reasons": ["cert_policy:continue", "phase_a_positive"],
+        }
+    ]
+    assert (
+        _mod._recertify_promoted_champion_entries(root, loop_id, entries) is True
+    )
+    assert entries[0]["status"] == "promotion_failed"
+    assert any(
+        "recert_under_current_policy" in str(r)
+        for r in entries[0].get("resolve_reasons") or []
+    )
+
+
+def test_recertify_promoted_keeps_and_restamps_valid_win(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-recert-keep"
+    camp = root / "promote-camp-win"
+    camp.mkdir(parents=True)
+    exp_sha = _mod.locked_promote_expectations_sha256()
+    (camp / "metric-certificate.json").write_text(
+        json.dumps(_v2_cert(exp_sha=exp_sha, relation="in_band")), encoding="utf-8"
+    )
+    control, candidate = _held_out_win_metrics()
+    (camp / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "measurement_complete": True,
+                "positive": True,
+                "control_id": "c-control",
+                "candidate_id": "c-promote",
+                "control_metrics": control,
+                "candidate_metrics": candidate,
+                "reasons": ["cert_policy:continue", "promote_primary_win:held_out"],
+            }
+        ),
+        encoding="utf-8",
+    )
+    entries = [
+        {
+            "entry_id": "champ-valid",
+            "status": "climb_accepted",
+            "promotion_campaign_id": camp.name,
+            "formal_preflight_status": "proved",
+            "promote_authority_sha256": "stale" * 16,
+            "resolve_reasons": ["cert_policy:continue"],
+        }
+    ]
+    assert (
+        _mod._recertify_promoted_champion_entries(root, loop_id, entries) is True
+    )
+    assert entries[0]["status"] == "climb_accepted"
+    assert entries[0].get("promote_authority_sha256")
+    assert entries[0]["promote_authority_sha256"] != "stale" * 16
+    assert any(
+        "recertified_under_current_promote_authority" in str(r)
+        for r in entries[0].get("resolve_reasons") or []
+    )
+    # Second pass with current stamp is a no-op.
+    assert (
+        _mod._recertify_promoted_champion_entries(root, loop_id, entries) is False
+    )
+
+
 def test_classify_positive_marks_finalized_decode_timeout_incomplete(
     tmp_path: Path,
 ) -> None:

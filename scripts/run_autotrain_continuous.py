@@ -2076,6 +2076,400 @@ def _revalidate_confirmed_champion_entries(
     return changed
 
 
+_PROMOTE_AUTHORITY_STATUSES = frozenset({"promoted", "climb_accepted"})
+_PROMOTE_AUTHORITY_HARNESS_COMPONENT = "harness.autoresearch.experiment_campaign"
+
+
+def _experiment_campaign_component_version() -> str:
+    """Current continuous/promote harness component version from versions.json."""
+    path = (
+        Path(__file__).resolve().parents[1]
+        / "src"
+        / "slm_training"
+        / "resources"
+        / "versions.json"
+    )
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        components = payload.get("components") or {}
+        row = components.get(_PROMOTE_AUTHORITY_HARNESS_COMPONENT) or {}
+        version = str(row.get("version") or "").strip()
+        return version or "unknown"
+    except (OSError, TypeError, ValueError, json.JSONDecodeError):
+        return "unknown"
+
+
+def current_promote_authority() -> dict[str, str]:
+    """Identity of current climb-promote rules + harness (for recert stamps)."""
+    from slm_training.autoresearch.climb_policy import (
+        load_climb_policy,
+        promote_authority_sha256,
+    )
+
+    climb = load_climb_policy()
+    try:
+        locked = locked_promote_expectations_sha256()
+    except OSError:
+        locked = ""
+    harness_version = _experiment_campaign_component_version()
+    sha = promote_authority_sha256(
+        climb_policy_sha256=str(climb.sha256),
+        locked_expectations_sha256=locked,
+        harness_component_version=harness_version,
+        harness_component=_PROMOTE_AUTHORITY_HARNESS_COMPONENT,
+    )
+    return {
+        "schema": "autotrain_promote_authority/v1",
+        "sha256": sha,
+        "climb_policy_sha256": str(climb.sha256),
+        "locked_expectations_sha256": locked,
+        "harness_component": _PROMOTE_AUTHORITY_HARNESS_COMPONENT,
+        "harness_component_version": harness_version,
+    }
+
+
+def _stamp_promote_authority(row: dict[str, Any], authority: dict[str, str]) -> None:
+    row["promote_authority_sha256"] = authority["sha256"]
+    row["promote_authority"] = {
+        "schema": authority.get("schema"),
+        "climb_policy_sha256": authority.get("climb_policy_sha256"),
+        "locked_expectations_sha256": authority.get("locked_expectations_sha256"),
+        "harness_component": authority.get("harness_component"),
+        "harness_component_version": authority.get("harness_component_version"),
+    }
+    row["promote_authority_stamped_at"] = time.strftime(
+        "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
+    )
+
+
+def _append_historical_reclassification(
+    root: Path,
+    loop_id: str,
+    event: dict[str, Any],
+) -> None:
+    path = root / "loops" / loop_id / "historical_reclassification.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(event, sort_keys=True) + "\n")
+
+
+def _paper_recert_promote_entry(
+    root: Path,
+    row: dict[str, Any],
+) -> tuple[str, list[str], dict[str, Any] | None]:
+    """Re-run current dispose rules on stored promote evidence.
+
+    Returns ``(action, reasons, disposition)`` where action is one of:
+    ``keep`` (still climb-valid), ``fail`` (promotion_failed), or
+    ``requeue`` (needs a live promote re-run under current rules).
+    """
+    campaign_id = str(
+        row.get("promotion_campaign_id") or row.get("confirm_campaign_id") or ""
+    )
+    if not campaign_id:
+        return (
+            "requeue",
+            ["recert_required:missing_promotion_campaign"],
+            None,
+        )
+    camp = root / campaign_id
+    if not camp.is_dir():
+        return (
+            "requeue",
+            [f"recert_required:missing_campaign_dir:{campaign_id}"],
+            None,
+        )
+
+    delivery = _read_json(camp / "sdlc_delivery.json")
+    formal = str(
+        row.get("formal_preflight_status")
+        or _formal_preflight_status(camp)
+        or ""
+    )
+    certificate = _load_promote_certificate(camp)
+    if formal != "proved" or certificate is None:
+        return (
+            "requeue",
+            [
+                f"recert_required:incomplete_evidence:formal={formal!r}:"
+                f"certificate={'yes' if certificate is not None else 'no'}"
+            ],
+            None,
+        )
+
+    control_id = str(delivery.get("control_id") or "")
+    candidate_id = str(delivery.get("candidate_id") or "")
+    ctrl_metrics = delivery.get("control_metrics")
+    cand_metrics = delivery.get("candidate_metrics")
+    if not isinstance(ctrl_metrics, dict) or not isinstance(cand_metrics, dict):
+        ctrl_metrics = (
+            _run_metrics(camp, control_id, prefer_held_out=True) if control_id else {}
+        )
+        cand_metrics = (
+            _run_metrics(camp, candidate_id, prefer_held_out=True)
+            if candidate_id
+            else {}
+        )
+    if not isinstance(ctrl_metrics, dict) or not isinstance(cand_metrics, dict):
+        return (
+            "requeue",
+            ["recert_required:missing_dual_arm_metrics"],
+            None,
+        )
+
+    try:
+        locked = locked_promote_expectations_sha256()
+    except OSError as exc:
+        return (
+            "fail",
+            [f"promote_locked_expectations_unreadable:{exc}"],
+            None,
+        )
+
+    reasons_in = list(delivery.get("reasons") or row.get("resolve_reasons") or [])
+    phase_a_positive = bool(delivery.get("positive"))
+    phase_a_quality = _quality_held_reasons(reasons_in) or any(
+        str(r).startswith("primary_metric_win:")
+        or str(r).startswith("quality_metric_win:")
+        for r in reasons_in
+    )
+    from slm_training.autoresearch.climb_policy import load_climb_policy
+
+    climb = load_climb_policy()
+    disposition = dispose_champion_promote(
+        formal_preflight_status=formal,
+        certificate=certificate,
+        locked_expectations_sha256=locked,
+        phase_a_positive=phase_a_positive,
+        phase_a_quality_held=phase_a_quality,
+        control_metrics=ctrl_metrics,  # type: ignore[arg-type]
+        candidate_metrics=cand_metrics,  # type: ignore[arg-type]
+        promotion_primary=dict(climb.promotion_primary),
+        promotion_dispose=dict(climb.promotion_dispose),
+    )
+    status = str(disposition.get("status") or "")
+    reasons = [str(r) for r in disposition.get("reasons") or []]
+    if status == "climb_accepted":
+        return "keep", reasons, disposition
+    if disposition.get("inconclusive") or status == "promotion_inconclusive":
+        return (
+            "requeue",
+            ["recert_required:promotion_inconclusive", *reasons],
+            disposition,
+        )
+    if status in {"promotion_failed", "rejected"}:
+        return "fail", reasons, disposition
+    return (
+        "requeue",
+        [f"recert_required:unhandled_dispose_status:{status}", *reasons],
+        disposition,
+    )
+
+
+def _recertify_promoted_champion_entries(
+    root: Path,
+    loop_id: str,
+    entries: list[dict[str, Any]],
+    *,
+    authority: dict[str, str] | None = None,
+) -> bool:
+    """Re-certify climb promotions when promote authority (policy/harness) changes.
+
+    Built into every cycle startup so harness or climb-policy updates cannot leave
+    historical ``promoted`` / ``climb_accepted`` rows authoritative under stale
+    dispose rules. Actions:
+
+    - stamp matches current authority → no-op
+    - paper dispose still ``climb_accepted`` → restamp keep
+    - paper dispose fails → ``promotion_failed`` + audit
+    - incomplete evidence under current rules → requeue as ``confirmed`` for live
+      promote re-run (``recert_required``)
+    """
+    from slm_training.autoresearch.climb_policy import load_climb_policy
+
+    climb = load_climb_policy()
+    dispose_cfg = dict(climb.promotion_dispose)
+    if not bool(dispose_cfg.get("recertify_on_authority_change", True)):
+        return False
+
+    authority = authority or current_promote_authority()
+    auth_sha = str(authority.get("sha256") or "")
+    if not auth_sha:
+        return False
+
+    changed = False
+    now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    for row in entries:
+        if row.get("status") not in _PROMOTE_AUTHORITY_STATUSES:
+            continue
+        stamped = str(row.get("promote_authority_sha256") or "")
+        if stamped and stamped == auth_sha:
+            continue
+
+        before_status = str(row.get("status") or "")
+        before_stamp = stamped or None
+        action, reasons, disposition = _paper_recert_promote_entry(root, row)
+        base_reasons = [
+            "promote_authority_changed"
+            if stamped
+            else "promote_authority_unstamped_legacy",
+            f"promote_authority_was={before_stamp or 'none'}",
+            f"promote_authority_now={auth_sha[:16]}",
+            f"harness_component_version={authority.get('harness_component_version')}",
+            *reasons,
+        ]
+
+        if action == "keep":
+            _stamp_promote_authority(row, authority)
+            if disposition is not None:
+                row["cert_policy"] = disposition.get("cert_policy")
+                row["primary_improvement"] = disposition.get("primary_improvement")
+                row["promotion_primary_met"] = disposition.get("promotion_primary_met")
+            row["resolve_reasons"] = [
+                "recertified_under_current_promote_authority",
+                *base_reasons,
+            ]
+            row["historical_recertified_at"] = now
+            row["historical_reclassification"] = (
+                f"{before_status}→{before_status}:recert_keep"
+            )
+            changed = True
+            print(
+                "CHAMPION_PROMOTE_RECERT_KEEP "
+                f"entry_id={row.get('entry_id')} "
+                f"authority={auth_sha[:12]}",
+                flush=True,
+            )
+            _append_historical_reclassification(
+                root,
+                loop_id,
+                {
+                    "schema": "autotrain_historical_reclassification/v1",
+                    "kind": "champion_queue",
+                    "repair": "promote_authority_recert",
+                    "loop_id": loop_id,
+                    "entry_id": row.get("entry_id"),
+                    "campaign_id": row.get("promotion_campaign_id")
+                    or row.get("confirm_campaign_id"),
+                    "before_status": before_status,
+                    "after_status": before_status,
+                    "action": "keep",
+                    "authority_sha256": auth_sha,
+                    "reclassified_at": now,
+                    "reasons": base_reasons[:12],
+                },
+            )
+            continue
+
+        if action == "fail":
+            row["status"] = "promotion_failed"
+            row["resolved_at"] = now
+            row["promotion_primary_met"] = False
+            row["resolve_reasons"] = [
+                "historical_reclassification:"
+                f"{before_status}→promotion_failed:recert_under_current_policy",
+                *base_reasons,
+            ]
+            row["historical_reclassified_at"] = now
+            row["historical_reclassification"] = (
+                f"{before_status}→promotion_failed:recert_under_current_policy"
+            )
+            # Clear authority stamp — failed under current rules.
+            row.pop("promote_authority_sha256", None)
+            changed = True
+            print(
+                "CHAMPION_PROMOTE_RECERT_FAIL "
+                f"entry_id={row.get('entry_id')} "
+                f"was={before_status}",
+                flush=True,
+            )
+            _append_historical_reclassification(
+                root,
+                loop_id,
+                {
+                    "schema": "autotrain_historical_reclassification/v1",
+                    "kind": "champion_queue",
+                    "repair": "promote_authority_recert",
+                    "loop_id": loop_id,
+                    "entry_id": row.get("entry_id"),
+                    "campaign_id": row.get("promotion_campaign_id")
+                    or row.get("confirm_campaign_id"),
+                    "before_status": before_status,
+                    "after_status": "promotion_failed",
+                    "action": "fail",
+                    "authority_sha256": auth_sha,
+                    "reclassified_at": now,
+                    "reasons": base_reasons[:12],
+                },
+            )
+            # Append ledger event for observability.
+            ledger = root / "loops" / loop_id / "learning_certificate_ledger.jsonl"
+            ledger.parent.mkdir(parents=True, exist_ok=True)
+            with ledger.open("a", encoding="utf-8") as fh:
+                fh.write(
+                    json.dumps(
+                        {
+                            "schema": "autotrain_learning_event/v1",
+                            "loop_id": loop_id,
+                            "campaign_id": row.get("promotion_campaign_id")
+                            or row.get("confirm_campaign_id"),
+                            "entry_id": row.get("entry_id"),
+                            "knobs_fingerprint": row.get("knobs_fingerprint"),
+                            "outcome": "promotion_failed",
+                            "reasons": base_reasons[:20],
+                            "recert": True,
+                            "promote_authority_sha256": auth_sha,
+                            "finished_at": now,
+                        },
+                        sort_keys=True,
+                    )
+                    + "\n"
+                )
+            continue
+
+        # requeue for live promote under current authority
+        row["status"] = "confirmed"
+        row.pop("resolved_at", None)
+        row["recert_required"] = True
+        row["recert_required_at"] = now
+        row["recert_from_status"] = before_status
+        row["resolve_reasons"] = [
+            "recert_required_under_current_promote_authority",
+            *base_reasons,
+        ]
+        row["historical_reclassified_at"] = now
+        row["historical_reclassification"] = (
+            f"{before_status}→confirmed:recert_required"
+        )
+        row.pop("promote_authority_sha256", None)
+        changed = True
+        print(
+            "CHAMPION_PROMOTE_RECERT_REQUEUE "
+            f"entry_id={row.get('entry_id')} was={before_status}",
+            flush=True,
+        )
+        _append_historical_reclassification(
+            root,
+            loop_id,
+            {
+                "schema": "autotrain_historical_reclassification/v1",
+                "kind": "champion_queue",
+                "repair": "promote_authority_recert",
+                "loop_id": loop_id,
+                "entry_id": row.get("entry_id"),
+                "campaign_id": row.get("promotion_campaign_id")
+                or row.get("confirm_campaign_id"),
+                "before_status": before_status,
+                "after_status": "confirmed",
+                "action": "requeue",
+                "authority_sha256": auth_sha,
+                "reclassified_at": now,
+                "reasons": base_reasons[:12],
+            },
+        )
+    return changed
+
+
 def _refresh_champion_source_recipes(root: Path, entries: list[dict[str, Any]]) -> bool:
     """Restore lever-complete queue recipes from immutable source experiments.
 
@@ -4490,6 +4884,16 @@ def _resolve_promotion_result(
                 )
                 row["last_arm_order"] = delivery.get("arm_order")
                 row["last_arm_seed"] = delivery.get("arm_seed")
+                # Stamp promote authority so future harness/policy updates force
+                # automatic re-certification under current dispose rules.
+                if status in _PROMOTE_AUTHORITY_STATUSES:
+                    try:
+                        _stamp_promote_authority(row, current_promote_authority())
+                    except Exception as exc:  # noqa: BLE001 — never skip promote write
+                        row["promote_authority_stamp_error"] = str(exc)[:200]
+                    row.pop("recert_required", None)
+                    row.pop("recert_required_at", None)
+                    row.pop("recert_from_status", None)
                 # Incomplete measurement is never a spent promote attempt.
                 # Formal timeouts and harness failures (deadline_reserve,
                 # missing_promote_run, cert incomplete because arms never ran)
@@ -8336,6 +8740,11 @@ def run_cycle(
     confirmations_revalidated = _revalidate_confirmed_champion_entries(
         root, queue_entries
     )
+    # Harness / climb-policy / locked-expectations changes invalidate climb
+    # promotions until re-certified under current dispose rules.
+    promotions_recertified = _recertify_promoted_champion_entries(
+        root, loop_id, queue_entries
+    )
     if (
         recipes_refreshed
         or reconciled_replays
@@ -8343,6 +8752,7 @@ def run_cycle(
         or harness_rearmed
         or revalidated
         or confirmations_revalidated
+        or promotions_recertified
     ):
         _write_champion_queue(queue_path, queue_entries)
     replayed_confirmation = _confirmation_replay_entry(queue_entries, replay)
