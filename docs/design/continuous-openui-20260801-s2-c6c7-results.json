@@ -1,0 +1,34 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260801",
+  "campaigns": ["continuous-loop-20260801-c6", "continuous-loop-20260801-c7"],
+  "cycle_index": [6, 7],
+  "cycle_role": "screening",
+  "source_commit": "1bdfb14ebcf2393976a7c969e7bdd449fc5ada39",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "batch_size": 2,
+    "seed": 7,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c6-control": {"smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.0964, "latency_ms_p50": 3212.18}},
+    "c6-bounds": {"smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.0964, "latency_ms_p50": 3251.19}, "levers": {"grammar_completion_bounds": true}},
+    "c7-control": {"smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.0575, "latency_ms_p50": 3830.66}},
+    "c7-canvas": {"smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.0575, "latency_ms_p50": 3781.32}, "levers": {"compact_active_canvas": true}}
+  },
+  "primary_metric": "smoke.latency_ms_p50",
+  "conclusion": "c6: grammar_completion_bounds alone made smoke p50 latency 39ms worse (3212.18ms -> 3251.19ms) with structural_similarity unchanged (0.0964 both arms) -- primary_metric_null_or_worse, non-positive. c7: compact_active_canvas alone shaved 49ms off smoke p50 latency (3830.66ms -> 3781.32ms) but structural_similarity was identical on both arms (0.0575) and meaningful_program_rate stayed 0.0 -- latency_win_rejected_low_mpr, non-positive (same pattern as cycle 3's combined-lever run: compact_active_canvas is latency-only at this fixture scale, isolating it here shows it -- not grammar_completion_bounds -- is the source of cycle 3's latency improvement).",
+  "next_priorities": [
+    "grammar_completion_bounds shows no quality or latency benefit in isolation (c6); do not prioritize it alone",
+    "compact_active_canvas isolated (c7) reproduces roughly the same latency-only improvement seen in cycle 3's combined run, suggesting it (not grammar_completion_bounds) drives that pairing's latency win -- still rejected as a free win at mpr=0.0"
+  ],
+  "recorded_at": "2026-08-01T08:53:29+00:00"
+}

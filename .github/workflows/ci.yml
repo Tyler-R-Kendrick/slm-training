@@ -31,7 +31,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test-shard: [0, 1, 2, 3, 4, 5, 6, 7]
+        # 12 shards: broad PR diffs (multi-layer stacks touching scripts/ +
+        # autoresearch + model_build) select test cross-products whose slowest
+        # count-balanced shard exceeded the canonical 3-minute job wall at 8.
+        # The per-job timeout is law (MAX_RUN_MINUTES) and stays untouched.
+        test-shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
     # Dependency setup plus the changed-test fan-out can pass just after the
     # former two-minute deadline. Keep the repository-wide three-minute cap
     # while allowing Actions to report the completed test result.
@@ -63,9 +67,13 @@ jobs:
             --changed-tests-only --base-ref "$BASE_SHA" --list)"
           printf 'Selected pytest targets:\n%s\n' "${test_targets:-none}"
 
+          # tests/test_versioning is NOT torch-free: test_mirrors.py imports
+          # slm_training.evals modules that import torch at module scope, so a
+          # versions.json-only change must still install torch or collection
+          # fails with ModuleNotFoundError.
           need_torch=true
           if [ -z "$test_targets" ] || ! printf '%s\n' "$test_targets" | grep -Ev \
-            '^(tests/test_versioning($|/)|tests/test_scripts/test_(check_changed|verify_version_stamps)\.py$)'; then
+            '^tests/test_scripts/test_(check_changed|verify_version_stamps)\.py$'; then
             need_torch=false
           fi
           echo "NEED_TORCH=$need_torch" >> "$GITHUB_ENV"
@@ -153,7 +161,7 @@ jobs:
           python -m scripts.check_changed --changed-tests-only \
             --base-ref "$BASE_SHA" \
             --test-shard-index "${{ matrix.test-shard }}" \
-            --test-shard-count 8
+            --test-shard-count 12
       - name: Certify tokenizer–grammar invariants
         run: python -m scripts.verify_tokenizer_grammar_invariants
 

@@ -354,7 +354,7 @@ OpenUI TwoTower, what is a real gap, what is out of scope) lives in
 | **Paper** | *Training Step-Level Reasoning Verifiers with Formal Verification Tools*, 2025. [arXiv:2505.15960](https://arxiv.org/abs/2505.15960) |
 | **Fidelity** | **Adjacent** — motivates distilling expensive formal checks into a compact process model while retaining the formal tool as authority |
 | **Code analogue** | `FastPathGate` + BackPlay-lite mining ([`dsl/grammar/fastpath/gate.py`](../../src/slm_training/dsl/grammar/fastpath/gate.py), [`trust_train.py`](../../src/slm_training/dsl/grammar/fastpath/trust_train.py)); grammar remains legality authority |
-| **Proposed** | Calibration / abstention (**E63** in the mapping doc; E53 is the shipped V6 honest champion) |
+| **Adapted (wired, unmeasured)** | Held-out Brier/ECE plus selective-risk remask threshold (**E63**; E53 is the shipped V6 honest champion) |
 
 ### MDPO / d1 (trajectory-aligned masked-diffusion RL)
 
@@ -363,7 +363,7 @@ OpenUI TwoTower, what is a real gap, what is out of scope) lives in
 | **Papers** | *MDPO: Overcoming the Training-Inference Divide of Masked Diffusion Language Models*, 2025. [arXiv:2508.13148](https://arxiv.org/abs/2508.13148). Related: d1 masked-diffusion policy optimization [arXiv:2504.12216](https://arxiv.org/abs/2504.12216); PAPO / dOPSD-style dense intermediate rewards (Adjacent) |
 | **Fidelity** | **Adjacent** — candidates to replace the GRPO-lite **Surrogate** on final strings |
 | **Code today** | [`harnesses/rl/`](../../src/slm_training/harnesses/rl/) GRPO-lite; preference stage in [`harnesses/preference/train.py`](../../src/slm_training/harnesses/preference/train.py) |
-| **Proposed** | Trajectory-aligned objective on intermediate MaskGIT states (**E64**; E54/E55 are shipped V6 grammar-honest / process stages) |
+| **Adapted (wired, unmeasured)** | Exact-support trajectory objective on intermediate MaskGIT states (**E64**; E54/E55 are shipped V6 grammar-honest / process stages) |
 
 ### Constrained diffusion decoding (LAVE / EPIC family)
 
@@ -379,7 +379,7 @@ OpenUI TwoTower, what is a real gap, what is out of scope) lives in
 | --- | --- |
 | **Papers** | PlanBench [arXiv:2206.10498](https://arxiv.org/abs/2206.10498); *On the Generalization Gap in LLM Planning* [arXiv:2601.14456](https://arxiv.org/abs/2601.14456); Chain-of-Thoughtlessness / related CoT collapse under complexity |
 | **Fidelity** | **Adjacent** — motivates **schema-level** held-out splits (unseen component families, symbol rename), not only held-out instances |
-| **Proposed** | **E65** + `toy-layout` transfer stress; see [`verifier-guided-repair.md`](verifier-guided-repair.md) §4 |
+| **Adapted (wired, unmeasured)** | **E65** unseen-family, rename, reorder, and alternate-pack transfer reports; see [`verifier-guided-repair.md`](verifier-guided-repair.md) §4 |
 
 ### LLM+P (neural formalize, symbolic search)
 

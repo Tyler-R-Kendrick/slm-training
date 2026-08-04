@@ -46,7 +46,7 @@ before continuous or multi-run work.
 | Rule | Required behavior |
 | --- | --- |
 | Hands-off | No confirmation prompts; no “say continue” |
-| Non-terminating | Cycle N finish → cycle N+1 start immediately |
+| Non-terminating | An unbudgeted host goal owns persistence; each bounded cycle returns control before cycle N+1 |
 | Self-heal | Fix path/knob/harness failures from evidence; re-run |
 | Soft failures | Fixture ship-gate fails / null deltas / single timeouts → next cycle |
 | Hard block only | Same unrecoverable blocker 3× with no new info → report blocked |
@@ -56,9 +56,14 @@ before continuous or multi-run work.
 | Get latest between runs | `git fetch` + `gh stack sync` / merge `origin/main`; resolve conflicts |
 | Remote compute default | No paid GPU / HF write without prior user authority |
 | Training stopped | Full `sdlc` bottom-up closeout of open positive layers (review → CI → squash-merge) — not a resume paste |
-| **Matrix to the user** | After every cycle (and whenever reporting status): paste the three-table matrix from `status --loop-id <id> --matrix --last 5` (or `/tmp/autotrain-report.sh` / `/tmp/autotrain-loop-dashboard.md`) into the chat. **Never** claim progress without it |
-| **Liveness proof** | Prove RUNNING with `driver_state` + PID + top child + latest campaign from `/tmp/autotrain-loop-status.txt` (or `autotrain-report.sh`). **Never** use Grok “background ops” UI as liveness |
+| **Matrix to the user** | After every cycle (and whenever reporting status): paste the compact four-table view (liveness, results, diagnostics, priorities) from `status --loop-id <id> --matrix --last 5` (or `/tmp/autotrain-report.sh` / `/tmp/autotrain-loop-dashboard.md`) into the chat. **Never** claim progress without it |
+| **Liveness proof** | Prove state with the host goal plus `loops/<loop-id>/state.json` heartbeat, phase, next action, and child PID. Legacy drivers may also use `/tmp/autotrain-loop-status.txt`. **Never** use Grok “background ops” UI as liveness |
 | **Never kill the loop** | Do **not** `kill`/`pkill`/`kill -9` `run_autotrain_continuous`, its children, or the continuous worktree processes to ship skills, fix CI, merge PRs, or “restart cleanly.” Side work uses another worktree/branch |
+
+After each supervised cycle, validate `cycle_handoff.json` and execute its typed
+actions in order: theorem stop → harness repair → formal repair → data repair →
+docs/delivery → successor experiment. The handoff owner names the required skill;
+do not reduce it to a prose recommendation.
 
 Full procedure: [references/continuous.md](references/continuous.md).  
 Delivery: [`../sdlc/references/autotrain-iteration-delivery.md`](../sdlc/references/autotrain-iteration-delivery.md).  

@@ -1,0 +1,57 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260801",
+  "campaign_id": "continuous-loop-20260801-c4",
+  "cycle_index": 4,
+  "cycle_role": "promotion",
+  "source_commit": "1bdfb14ebcf2393976a7c969e7bdd449fc5ada39",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps_configured": "20 (control) vs 40 (candidate, doubled-steps lever)",
+    "batch_size": 2,
+    "seed": 7,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c4-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {"n": 3, "completed_document_n": 1, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.4167, "latency_ms_p50": 13700.22, "latency_ms_p95": 13700.22},
+      "held_out": {"n": 5, "completed_document_n": 1, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.3417, "latency_ms_p50": 19458.37, "latency_ms_p95": 19458.37},
+      "levers": {"steps": 21}
+    },
+    "c4-steps": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {"n": 3, "completed_document_n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.3333333333333333, "structural_similarity": 0.51, "latency_ms_p50": 14430.36, "latency_ms_p95": 14938.97},
+      "held_out": {"n": 5, "completed_document_n": 5, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.37006, "latency_ms_p50": 13944.15, "latency_ms_p95": 14425.06},
+      "levers": {"steps": 42}
+    }
+  },
+  "primary_metric": "held_out.structural_similarity",
+  "primary_delta": 0.02836,
+  "sdlc_local_verdict": "positive (matches this container's own driver classification: primary_metric_win, held_out.structural_similarity 0.3417 -> 0.37006)",
+  "cross_session_synthesis": {
+    "claim": "This session's c4 numerically replicates continuous-openui-20260801-c4-results (open PR #1248, 'steps lever mpr win', branch claude/great-dirac-1lxqx7) to 4+ decimal places on both arms. A THIRD parallel session running the SAME nominal cycle 4 recipe (open PR #1247, branch claude/great-dirac-csq5iq, 'held-out regression') measured c4-control.held_out.structural_similarity = 0.38248 and a NEGATIVE primary delta of -0.0124 -- the opposite sign.",
+    "root_cause_hypothesis": "c4-control only completed 1 of 5 held_out documents within the 3-minute wall cap in both this session and PR #1248 (completed_document_n=1), while PR #1247's control run apparently completed more documents before the same wall cap (its control held_out.structural_similarity of 0.38248 differs from the 1-document values seen here and in #1248). c4-steps (doubled training steps) reliably completes all 5/5 held_out documents in every session observed so far (structural_similarity pinned at 0.37006 across this session and #1248). The steps lever's apparent effect on held_out.structural_similarity is confounded with, and may be entirely explained by, how many held_out documents the CONTROL arm happens to finish before the shared 3-minute wall -- a real-machine-speed race, not a property of the steps lever itself.",
+    "evidence_for_confound": "held_out latency_ms_p50 for control clusters near 19.1-19.5s across all three sessions (0.3417@19067.94ms here-matching-#1248, 0.3417@19458.37ms this session, 0.38248@19385.10ms in #1247) -- consistent with a single slow first document dominating a small/partial completed sample, so the *value* of structural_similarity swings with *which* document(s) happened to finish, not with a stable multi-document average.",
+    "recommendation": "Do not credit the steps lever with the held_out.structural_similarity delta until the harness either (a) requires held_out.completed_document_n == n on both arms before comparing structural_similarity as a primary endpoint, or (b) raises the promotion-cycle wall cap enough that control reliably completes the full held_out suite. This is a measurement-integrity gap in the model_build/eval harness family (partial-suite averaging under a wall-clock race), not a validated positive lever result -- flagging for improve-openui-harnesses rather than treating as ship-relevant evidence."
+  },
+  "conclusion": "This container's own driver classified c4 positive on held_out.structural_similarity, exactly reproducing PR #1248's numbers. But a third open PR (#1247) measured the opposite sign on the same nominal cycle with a fuller control-arm completion. Given all three sessions' control arms show high variance tied to partial held_out completion under the wall cap, this cycle's 'positive' result is treated as UNRELIABLE pending a harness fix, not as grounds for a new stacked layer -- see cross_session_synthesis above.",
+  "next_priorities": [
+    "File/route a harness signal (family: model_build) to improve-openui-harnesses: gate primary-metric comparisons on completed_document_n == n for the compared suite before Phase A calls a primary_metric_win, or raise the promotion-cycle wall cap so held_out suites complete reliably on both arms",
+    "Until that lands, do not promote or further stack on the steps=42 vs steps=21 held_out finding from any of the three open PRs (#1246, #1247, #1248) touching this cycle",
+    "Re-run steps=42 vs steps=21 only after the completion-gate fix, at the same or larger held_out n, to get an actually comparable delta"
+  ],
+  "related_open_prs": [
+    "https://github.com/Tyler-R-Kendrick/slm-training/pull/1246",
+    "https://github.com/Tyler-R-Kendrick/slm-training/pull/1247",
+    "https://github.com/Tyler-R-Kendrick/slm-training/pull/1248",
+    "https://github.com/Tyler-R-Kendrick/slm-training/pull/1249"
+  ],
+  "recorded_at": "2026-08-01T08:43:38+00:00"
+}

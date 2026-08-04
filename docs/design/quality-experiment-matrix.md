@@ -13,9 +13,33 @@
 
 **Architecture:** Each row is an isolatable lever (plus a stacked `combo` run). All runs use scratch context on CPU by default; HF is optional when cached.
 
+**Execution integrity:** `--workers` is currently required to equal `1`. The prior
+threaded path shared stdout redirection and mutable result/version state, so it
+could corrupt attribution. Parallel matrix execution stays fail-closed until each
+row runs in a process-isolated worker with independently owned artifacts.
+
 **Tech stack:** TwoTower, OpenUI grammar, ship_gates, preference composite reward.
 **Research map:** [research-lineage.md](research-lineage.md) (MaskGIT, constrained diffusion, DPO/GRPO surrogates);
 correction / remask candidates: [research-correction-critics.md](research-correction-critics.md).
+
+## Latest autotrain signal (c1838)
+
+The capacity-aware tail-supervision arm repeated its narrow fixture structure
+gain on seed 101836: structural similarity `.40193→.43723` and binder F1
+`.8000→.8222` at matched 1,608,962 parameters and matched exposure. Fidelity
+`.7500→.7222`, reward `.8740→.8657`, and p50 latency `3552→3733` ms regress,
+while exact AST and canonical equality remain zero. This confirms that the
+training objective changes learned behavior; it does not establish a useful or
+shippable model. Promotion now requires the registered held-out suites and Lean
+formal preflight. See [c1838 measured results](autotrain-cycle-1838-capacity-aware-tail-confirmed.md).
+
+c1839 then produced a third-seed exact quality/work null with +3.8% candidate
+latency, so the tail objective is seed-sensitive and closed for further
+screening. Its successor is a preregistered, size-matched capacity-aware
+semantic-exhaustive compiler-alignment arm: it changes only whether every
+semantic compiler decision is supervised, targeting the still-zero exact AST
+and canonical rates without changing parameters, decoding legality, or gates.
+See [c1839 measured results](autotrain-cycle-1839-capacity-aware-tail-null.md).
 
 ---
 
@@ -603,7 +627,9 @@ python -m scripts.run_quality_matrix --matrix v5 --only E40,E41,E44,E46 \
 
 See [quality-matrix-results.json](quality-matrix-results.json) (`matrix_set: v5`).
 Tokenizer diagnostic on `src/slm_training/resources/train_seeds.jsonl`: compositional mean 72.6
-tokens → lexer+symtable **46.3** (ratio **0.64**); fixed output vocab **296**.
+tokens → lexer+symtable **46.3** (ratio **0.64**); fixed output vocab **569**
+(registry-pinned; this line read **296** until 2026-08-04 — see
+docs/design/dsl-native-tokenizer.md).
 
 | ID | Smoke parse | Smoke fid | Smoke reward | Notes |
 | --- | --- | --- | --- | --- |
@@ -3246,8 +3272,8 @@ score increase. Evidence:
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
-[verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
-E60–E61 and E63–E65 remain proposed.
+[verifier-guided-repair.md](verifier-guided-repair.md). **E60–E65 are wired but
+unmeasured**: implementation is not a positive model-quality result.
 The inner-loop prerequisites (deterministic denoising-NLL suites, token
 budgets, full-state resume, source-family manifests, decode trajectory
 store) plus the P1–P3 staged plan (mixture search, scaling ladders,
@@ -3258,12 +3284,12 @@ self-distillation, trajectory RL) are in
 
 | ID | Approach | Primary lever | Status |
 | --- | --- | --- | --- |
-| E60 | Differential validation | Dual lang-core + Lark parse; quarantine disagreement | proposed |
-| E61 | Failure-cone remask | Remask first hard error + structural dependents | proposed |
+| E60 | Differential validation | Dual lang-core + Lark parse; quarantine disagreement | wired; matched result pending |
+| E61 | Failure-cone remask | Sound verifier slice; localized loss freezes certified prefix | wired; matched result pending |
 | E62 | Minimal hard negatives | `data/corrupt` verified invalid→clean repair taxonomy; wiring only, no quality result yet | wired |
-| E63 | Gate calibration | ECE / selective accuracy / abstention on `FastPathGate` | proposed |
-| E64 | Trajectory-aligned RL | MDPO/d1-style on intermediate MaskGIT states | proposed |
-| E65 | Schema generalization | Held-out schemas / rename / `toy-layout` transfer | proposed |
+| E63 | Gate calibration | Held-out Brier/ECE/selective-risk threshold on `FastPathGate` | wired; matched result pending |
+| E64 | Trajectory-aligned RL | Exact-support intermediate MaskGIT objective; readiness-gated | wired; matched result pending |
+| E65 | Schema generalization | Held-out families / rename / reorder / alternate grammar | wired; locked model suite pending |
 
 ## LDI (local decision interventions) index
 

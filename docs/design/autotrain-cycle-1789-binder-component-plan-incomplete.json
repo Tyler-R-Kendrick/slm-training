@@ -1,0 +1,103 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1789",
+  "cycle_index": 1789,
+  "cycle_intent": "screening",
+  "evidence_class": "fixture",
+  "decision": "inconclusive_control_typed_decode_timeout",
+  "scoreable": false,
+  "new_checkpoint_created": true,
+  "frozen_manifest_sha256": "b0c287c80dcc7a97b41f46de2bcd5b0c29c9e4b7c947ba472e59ce5ef2699855",
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1789-binder-component-plan",
+      "checkpoint_sha256": "d60d6493ed54a07c1cf051e21ebffabceebdd8478728bf4e56972b0b7647893f",
+      "params": 1897922,
+      "train": {
+        "device": "cpu",
+        "context_backend": "scratch",
+        "steps": 23,
+        "batch_size": 2,
+        "seed": 101789,
+        "last_loss": 13.690508842468262,
+        "elapsed_wall_seconds": 7.272334903012961
+      },
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 3,
+        "incomplete_document_n": 0,
+        "decode_timeout_count": 0,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.29666666666666663,
+        "binder_reference_f1": 0.8222222222222223,
+        "component_type_recall": 0.16666666666666666,
+        "placeholder_fidelity": 0.7222222222222222,
+        "reward_score": 0.8776666666666667,
+        "latency_ms_p50": 4155.15
+      }
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1789-control",
+      "checkpoint_sha256": "36ef2b0447e9bfa729a39940dfa541bde7eb64e873e498778d99c79e6ec4ac45",
+      "params": 1897922,
+      "train": {
+        "device": "cpu",
+        "context_backend": "scratch",
+        "steps": 23,
+        "batch_size": 2,
+        "seed": 101789,
+        "last_loss": 10.484664916992188,
+        "elapsed_wall_seconds": 3.8489031689823605
+      },
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 2,
+        "incomplete_document_n": 1,
+        "decode_timeout_count": 1,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.12,
+        "binder_reference_f1": 1.0,
+        "component_type_recall": 0.0,
+        "placeholder_fidelity": 1.0,
+        "reward_score": 0.973,
+        "latency_ms_p50": 3169.52
+      }
+    }
+  ],
+  "comparison": {
+    "attributable": false,
+    "reason": "control_incomplete_document_n_1_decode_timeout_count_1",
+    "diagnostic_structural_similarity_delta": 0.17666666666666664,
+    "diagnostic_meaningful_program_rate_delta": 0.3333333333333333,
+    "diagnostic_binder_reference_f1_delta": -0.1777777777777777,
+    "diagnostic_candidate_latency_fraction_change": 0.31097137736944386,
+    "candidate_train_wall_fraction_change": 0.8894564460907824,
+    "candidate_loss_fraction_change": 0.3057650340623149,
+    "trainable_params_matched": true
+  },
+  "agentv": {
+    "bundles_complete": true,
+    "execution_errors": 0,
+    "ship_gates_pass": false
+  },
+  "checkpoint_policy": "local_explicit_no_sync_incomplete_not_reusable_not_promoted_not_ship",
+  "lean": "not_applicable:incomplete_measurement",
+  "next_priority": "exact_frozen_binder_component_plan_replay",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "6f23f8a20f990354b2081015342cb85b18c0122b",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v76",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v293"
+    },
+    "stamped_at": "2026-08-02T19:50:46.542384+00:00"
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "schema": "autotrain_measured_results/v1",
+  "campaign_id": "continuous-loop-20260801-continuous-openui-202607-98199209-c1722",
+  "cycle_index": 1722,
+  "loop_id": "continuous-openui-20260730",
+  "run_class": "fixture_scratch",
+  "source_commit": "cb4e49e1a41e7df55519b0a9e89b4c071a914842",
+  "source_dirty": false,
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "primary_metric": "smoke.binder_reference_f1",
+  "frozen_manifest_sha256": "1a29206c015305e3714134675bf867f7c7351bac755ccaedde021675258b06e1",
+  "arms": [
+    {
+      "experiment_id": "c20260801-continuous-openui-202607-98199209-c1722-control",
+      "status": "completed_gate_rejection",
+      "training": {"executed": false, "parameter_count": 1608962, "source_campaign": "continuous-loop-20260801-continuous-openui-202607-98199209-c1717"},
+      "suite": "smoke",
+      "suite_n": 3,
+      "metrics": {"parse_rate": 1.0, "binder_reference_f1": 1.0, "meaningful_program_rate": 0.3333333333333333, "structural_similarity": 0.36556666666666665, "latency_ms_p50": 2768.64},
+      "decode_stats": {"backbone_ms_sum": 3496.638, "compiler_ms_sum": 4061.875, "forwards_count_sum": 58, "completion_unique_states_sum": 31405, "completion_transition_cache_hits_sum": 213, "completion_transition_cache_misses_sum": 31575, "completion_witness_states_expanded_sum": 1395, "completion_parser_forks_sum": 32726},
+      "ship_gates_pass": false,
+      "claim_boundary": "three-document fixture; missing ship suites and quality thresholds"
+    },
+    {
+      "experiment_id": "c20260801-continuous-openui-202607-98199209-c1722-batch1",
+      "status": "stopped",
+      "training": {"executed": false, "parameter_count": 1608962, "source_campaign": "continuous-loop-20260801-continuous-openui-202607-98199209-c1716"},
+      "suite_n": 0,
+      "metrics": {},
+      "progress": {"schema_version": "DecodeProgressV1", "measurement_complete": false, "scoreable": false, "processed_record_n": 2, "active_record_ids": ["smoke_callout_01"]},
+      "decode_stats": {"n": 3, "total_ms_sum": 42526.331, "latency_ms_p50_including_partial": 9410.65263596829, "backbone_ms_sum": 7382.205, "compiler_ms_sum": 34716.45, "forwards_count_sum": 83, "compiler_prefill_tokens_sum": 21248, "completion_unique_states_sum": 221688, "completion_edges_built_sum": 9395, "completion_transition_cache_hits_sum": 1476, "completion_transition_cache_misses_sum": 222879, "completion_domain_cache_hits_sum": 1319, "completion_domain_cache_misses_sum": 9395, "completion_witness_states_expanded_sum": 10461, "completion_parser_forks_sum": 232277},
+      "ship_gates_pass": null,
+      "claim_boundary": "partial exceptional telemetry; never quality evidence"
+    }
+  ],
+  "rejected_hypothesis": {
+    "name": "exact request-local witness memo",
+    "dirty_diagnostic": true,
+    "same_checkpoint": true,
+    "completed_document_n": 2,
+    "incomplete_document_n": 1,
+    "decode_timeout_count": 1,
+    "decode_stats": {"compiler_ms_sum": 42726.925, "backbone_ms_sum": 10262.063, "completion_witness_memo_hits_sum": 16, "completion_witness_memo_misses_sum": 233190, "completion_witness_memo_nodes_charged_sum": 71, "completion_unique_states_sum": 263128, "completion_parser_forks_sum": 276732},
+    "local_python_tests": "57 passed",
+    "mathlib_free_lean": "passed",
+    "openui_mathlib_lean": "interrupted at 1004/2954 jobs; not evidence",
+    "implementation_retained": false,
+    "reason": "negligible exact-query reuse and unchanged timeout"
+  },
+  "disposition": {"measurement_complete": false, "climb_state": "inconclusive", "ship_state": "blocked", "promotion": "rejected_pending_complete_frozen_replay", "next_run": "measure branch roles and preregister size-matched EOS/continuation calibration"},
+  "checkpoint_documentation_required": false,
+  "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "cb4e49e1a41e7df55519b0a9e89b4c071a914842", "code_dirty": false, "components": {"harness.model_build.eval": "v73", "model.twotower": "v275"}, "stamped_at": "2026-08-02T00:53:10.358152+00:00"}
+}

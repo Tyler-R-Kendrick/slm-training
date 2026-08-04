@@ -1,0 +1,60 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c4",
+  "cycle_index": 4,
+  "source_commit": "965ba4f7",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "cycle_role": "retry_measurement",
+    "predecessor_campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c3"
+  },
+  "arms": {
+    "c4-control": {
+      "status": "experiment_failed",
+      "error": "ValueError: checkpoint completion artifact does not match the installed grammar/tokenizer authority",
+      "raised_by": "require_checkpoint_completion_artifact (src/slm_training/dsl/grammar/fastpath/completion_artifact.py)"
+    },
+    "c4-component-plan": {
+      "status": "experiment_failed",
+      "error": "ValueError: checkpoint completion artifact does not match the installed grammar/tokenizer authority",
+      "raised_by": "require_checkpoint_completion_artifact (src/slm_training/dsl/grammar/fastpath/completion_artifact.py)"
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "acknowledge repair_harness as blocked (not repairable without weakening a decode invariant); start a fresh screening cycle instead of a further retry",
+    "reasons": [
+      "measurement_incomplete:c20260804-continuous-openui-local-8c0b60dd-c4-control:missing_scoreboard",
+      "measurement_incomplete:c20260804-continuous-openui-local-8c0b60dd-c4-component-plan:missing_scoreboard",
+      "harness_failure:c20260804-continuous-openui-local-8c0b60dd-c4-component-plan:experiment_failed",
+      "harness_failure:c20260804-continuous-openui-local-8c0b60dd-c4-control:experiment_failed",
+      "primary_metric_unavailable"
+    ]
+  },
+  "harness_signal": {
+    "family": "model_build",
+    "frozen_manifest_sha256": "ce373a5aea9425b95f35844e363d372bcc1cd45c52e9f14dc9ca213f9a77ae03",
+    "signal": "checkpoint completion artifact does not match the installed grammar/tokenizer authority",
+    "disposition": "blocked_by_design_not_repairable",
+    "root_cause": "origin/main commit 807d4f8 (HX4/HX5, merged this session per the loop's get-latest rule) rebuilt the committed completion-artifact authority (src/slm_training/resources/decode/openui_completion_v1.manifest.json / .safetensors). The cycle-2 frozen checkpoint's embedded completion_artifact identity was hash-bound to the pre-807d4f8 authority and now legitimately fails require_checkpoint_completion_artifact's fail-closed check -- the same class of protection as I3/I6 (never silently reuse a stale grammar/decode authority). Weakening this check to force the old checkpoint to load would violate the repo's non-negotiable architecture invariants."
+  },
+  "conclusion": "Continuous-openui-local loop, cycle 4 (session gd6j83, second retry attempt on the gd6j83-c2/c3 frozen manifest lineage): the retry fails at model load, before any decode, because the required post-cycle-3 merge of origin/main (807d4f8, an unrelated HX4/HX5 PR) rebuilt the grammar/completion-artifact authority the frozen checkpoint was hash-bound to at save time. This is require_checkpoint_completion_artifact working as designed -- not a bug, and not something improve-openui-harnesses can or should fix by weakening the check. The gd6j83-c2/c3/c4 frozen-arm lineage is now permanently closed at any commit at or after 807d4f8; a fresh train under the current authority would be needed to pursue the same hypothesis further, not another replay of this manifest. No stack layer opens.",
+  "next_priorities": [
+    "Do not attempt a further retry_measurement on frozen manifests becbf08d.../6953396f.../ce373a5... -- that lineage is closed by an upstream authority change, not by a repairable defect",
+    "Start a fresh screening cycle (new train, current authority) for the next hypothesis",
+    "If the branch-point-cost question needs re-confirming against the real seed-100002 checkpoint (rather than the probe-model evidence in decode-compiler-tree-branch-point-cost-finding.md), retrain a fresh checkpoint with the same recipe/seed under the current authority"
+  ],
+  "recorded_at": "2026-08-04T20:12:29Z"
+}

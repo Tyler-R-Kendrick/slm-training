@@ -1,0 +1,127 @@
+{
+  "schema": "autotrain_measured_results/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1750",
+  "cycle_index": 1750,
+  "loop_id": "continuous-openui-20260730",
+  "run_class": "fixture_scratch",
+  "source_commit": "73ed42c96a461fbdb61ae70b73a8124e7bc5bb57",
+  "source_dirty": false,
+  "upstream_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "steps": 23,
+  "batch_size": 2,
+  "seed": 101750,
+  "campaign_role": "screening",
+  "primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1750-control",
+      "status": "completed_gate_rejection",
+      "manifest_sha256": "3430e2e69f0e0a4343af8fab411e43ff5f693d3f43d4c867589d53847c38c1b1",
+      "training": {
+        "trainable_parameters": 1682363,
+        "component_inventory_loss_weight": 0.0,
+        "component_inventory_decode_weight": 0.0,
+        "last_loss": 10.506088256835938,
+        "elapsed_wall_seconds": 3.066873370029498,
+        "checkpoint_sha256": "4731e2c0d8029e8ae6208fa6b74870cda6144f18ac472a21747dbc79ae0d01a1"
+      },
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 3,
+        "decode_timeout_count": 0,
+        "fallback_count": 0,
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.17416666666666666,
+        "component_type_recall": 0.25,
+        "ast_node_f1": 0.2619047619047619,
+        "ast_edge_f1": 0.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 1164.7
+      },
+      "agentv_execution_errors": 0,
+      "ship_gates_pass": false
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1750-component-inventory",
+      "status": "completed_quality_null",
+      "manifest_sha256": "0dcc606fc24c7131dd8019f4360b689bebe4ece772653422a9e027f8d1df4b9c",
+      "training": {
+        "trainable_parameters": 1682363,
+        "component_inventory_loss_weight": 1.0,
+        "component_inventory_decode_weight": 0.0,
+        "last_loss": 11.544340133666992,
+        "elapsed_wall_seconds": 2.8593010600307025,
+        "checkpoint_sha256": "b58d5de7e010cfc78add17504878d2f2e1b031d92af7e0a2b806cc9d4f2ad0e7",
+        "late_step_component_inventory_topk_recall_range": [0.4333333373069763, 0.75],
+        "late_step_component_inventory_positive_count_mean_range": [2.5, 4.0]
+      },
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 3,
+        "decode_timeout_count": 0,
+        "fallback_count": 0,
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.17416666666666666,
+        "component_type_recall": 0.25,
+        "ast_node_f1": 0.2619047619047619,
+        "ast_edge_f1": 0.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 1123.96
+      },
+      "agentv_execution_errors": 0,
+      "ship_gates_pass": false
+    }
+  ],
+  "comparison": {
+    "measurement_complete": true,
+    "size_matched": true,
+    "trainable_parameter_delta": 0,
+    "smoke_quality_delta": 0.0,
+    "latency_reduction_fraction": 0.034979822272,
+    "candidate_training_wall_ratio": 0.932318,
+    "disposition": "rejected_exact_quality_null_efficiency_below_floor"
+  },
+  "harness_feedback": {
+    "family": "autoresearch_screening",
+    "signals": [
+      "third_distinct_structural_auxiliary_exact_quality_null",
+      "auxiliary_targets_present_and_head_learning_signal_nonzero",
+      "trained_auxiliary_decode_weight_zero",
+      "efficiency_gain_below_5_percent_floor"
+    ],
+    "repair": "couple structural auxiliary loss arms to matching nonzero decode weights and retain those knobs through confirm and promotion fingerprints",
+    "next_priority": "coupled_binder_topology_then_legal_branch_score_delta_audit"
+  },
+  "formal_evidence": {
+    "formal_preflight_status": "not_applicable:screening",
+    "promotion_requirement": "actual champion promotion requires locked expectations, proved mathlib-free LeverProof preflight, and replayed metric_certificate/v2"
+  },
+  "checkpoint_documentation_required": true,
+  "checkpoint_sync": "explicit no-sync scratch",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "73ed42c96a461fbdb61ae70b73a8124e7bc5bb57",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v74",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v288",
+      "dsl.completion_kernel": "v16",
+      "gates.ship": "openui_ship_gates_v6"
+    },
+    "stamped_at": "2026-08-02T10:39:17.893646+00:00"
+  }
+}

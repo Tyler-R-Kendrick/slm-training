@@ -1,0 +1,118 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-202607-98199209-c1843",
+  "decision": "reject_quality_and_efficiency_null",
+  "claim_class": "fixture_screening",
+  "formal": {
+    "status": "not_applicable:screening",
+    "reason": "Lean remains mandatory for promotion only."
+  },
+  "recipe": {
+    "device": "cpu",
+    "steps": 21,
+    "seed": 101843,
+    "batch_size": 2,
+    "num_threads": 1,
+    "context_backend": "scratch",
+    "suite": "smoke",
+    "suite_n": 3,
+    "trainable_params": 1608962,
+    "sync_checkpoints": false
+  },
+  "arms": {
+    "control": {
+      "last_loss": 13.885383605957031,
+      "train_wall_seconds": 18.563677894009743,
+      "checkpoint_sha256": "4558d7212b9c667b033448da60a4de9a65862f7b3001141a81c444dc2084d3d1",
+      "effective_records": 31.5,
+      "unique_records": 36,
+      "total_draws": 42,
+      "max_repeat": 3,
+      "metrics": {
+        "structural_similarity": 0.46416666666666667,
+        "meaningful_program_rate": 0.3333333333333333,
+        "component_type_recall": 0.25,
+        "binder_reference_f1": 0.6333333333333333,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.8073333333333332,
+        "parse_rate": 1.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 2606.55,
+        "tokens_emitted_mean": 48.0,
+        "forwards_count_mean": 8.0,
+        "compiler_ms_mean": 7108.84
+      }
+    },
+    "candidate": {
+      "last_loss": 16.84967041015625,
+      "train_wall_seconds": 18.425970651966054,
+      "checkpoint_sha256": "aa032e939fa72b7a0b8f9945c5bc762162d668eca20f2bff698749a5fdab00c8",
+      "effective_records": 31.5,
+      "unique_records": 36,
+      "total_draws": 42,
+      "max_repeat": 3,
+      "metrics": {
+        "structural_similarity": 0.46416666666666667,
+        "meaningful_program_rate": 0.3333333333333333,
+        "component_type_recall": 0.25,
+        "binder_reference_f1": 0.6333333333333333,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.8073333333333332,
+        "parse_rate": 1.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 2550.83,
+        "tokens_emitted_mean": 48.0,
+        "forwards_count_mean": 8.0,
+        "compiler_ms_mean": 6944.874
+      }
+    }
+  },
+  "effects": {
+    "structural_similarity": 0.0,
+    "meaningful_program_rate": 0.0,
+    "component_type_recall": 0.0,
+    "binder_reference_f1": 0.0,
+    "placeholder_fidelity": 0.0,
+    "reward_score": 0.0,
+    "latency_fraction": -0.021376,
+    "compiler_time_fraction": -0.023064,
+    "tokens_emitted_fraction": 0.0,
+    "forwards_count_fraction": 0.0,
+    "mpr_per_ms_gain_fraction": 0.02184387
+  },
+  "ship": {
+    "eligible": false,
+    "failures": [
+      "smoke n=3<20",
+      "meaningful_program_rate<0.66",
+      "component_type_recall<0.35",
+      "ast_beq_rate=0",
+      "canonical_beq_rate=0",
+      "held_out missing",
+      "adversarial missing",
+      "ood missing",
+      "rico_held missing"
+    ]
+  },
+  "successor": {
+    "experiment_slug": "exposure-targeted-compiler-decision-margin",
+    "isolated_treatment": "mixture_sampling_policy: capacity_aware -> exposure_targeted",
+    "hypothesis": "Default-derived rare-action exposure improves guarded structural and semantic quality at fixed model size, loss, and decode authority."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "36da4c084cf3d3c1c868e2388542af7789548e6e",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.train": "v38",
+      "harness.model_build.eval": "v78",
+      "harness.autoresearch.experiment_campaign": "v139",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v22",
+      "model.twotower": "v304"
+    },
+    "stamped_at": "2026-08-03T06:45:39.848922+00:00"
+  }
+}

@@ -97,7 +97,7 @@ Keep one primary CTA per section.
 
 ## Do's and Don'ts
 
-- Do: keep user-facing strings as placeholders (`:hero.title`) until a copy model fills them.
+- Do: keep user-facing strings as placeholder slots (slot-N ordinals) until a copy model fills them.
 - Do: evaluate structure (components, nesting, direction, placeholders) — not color or gap.
 - Don't: put hex colors, typography sizes, or gap tokens into OpenUI gold.
 - Don't: treat DESIGN.md lint warnings (unused style tokens) as model or ship failures.

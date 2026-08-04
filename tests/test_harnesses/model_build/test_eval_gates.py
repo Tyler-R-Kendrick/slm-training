@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from dataclasses import fields
 from pathlib import Path
@@ -21,10 +22,12 @@ from slm_training.harnesses.model_build.data import (
     load_suite_records,
     load_train_records,
 )
+from slm_training.harness_core.eval_cache import EvalCache, EvalCacheConfig, EvalCacheMode
 from slm_training.harnesses.model_build.eval_runner import (
     _effective_evaluation_policy,
     _is_meaningful_program,
     _record_langsmith_evaluation,
+    _suite_result_cacheable,
     component_type_recall,
     evaluate,
     evaluate_grammar_leakage_audit,
@@ -154,6 +157,11 @@ def test_new_model_build_config_rejects_unsafe_generation_flags(
 ) -> None:
     with pytest.raises(ValueError, match="unsafe|stochastic"):
         ModelBuildConfig(train_dir=Path("train"), **unsafe)
+
+
+def test_model_build_rejects_unimplemented_eval_sharding() -> None:
+    with pytest.raises(ValueError, match="deterministic shard execution"):
+        ModelBuildConfig(train_dir=Path("train"), eval_shards=2)
 
 
 def test_evaluation_policy_snapshots_every_loaded_model_config_field() -> None:
@@ -517,7 +525,10 @@ def test_ship_gates_fail_on_syntax_alone() -> None:
     )
     result = evaluate_ship_gates(suites)
     assert result["pass"] is False
-    assert any(":ast_beq_rate" in f or ":component_type_recall" in f for f in result["failures"])
+    assert any(
+        ":ast_beq_rate" in f or ":component_type_recall" in f
+        for f in result["failures"]
+    )
 
 
 def test_ship_gates_fail_when_ast_beq_collapses() -> None:
@@ -742,9 +753,7 @@ def test_write_ship_gates_binds_reachability_to_agentevals(
     reachability = {"smoke": 0.75}
     results = [
         {**criterion, "pass": criterion["id"] != "smoke:reachability_unproven"}
-        for case in model_ship_gate_cases(
-            suites, suite_reachability=reachability
-        )
+        for case in model_ship_gate_cases(suites, suite_reachability=reachability)
         for criterion in case["assertions"]
     ]
     evals_result = {
@@ -886,6 +895,210 @@ def test_evaluate_suites_scoreboard(
     assert loaded["checkpoint_source"] == "checkpoint"
     assert loaded["suites"]["smoke"]["checkpoint_sha256"] == loaded["checkpoint_sha256"]
     assert (tmp_path / "runs" / "gates" / "scoreboard.json").exists()
+
+    # A checkpoint-backed multi-suite evaluation must construct the model once,
+    # then reuse that immutable instance for every suite.
+    (test_dir / "suites" / "held_out").mkdir(parents=True)
+    write_jsonl(
+        test_dir / "suites" / "held_out" / "records.jsonl",
+        [
+            ExampleRecord(
+                id="h1",
+                prompt="Hero",
+                openui=hero,
+                placeholders=[":slot_0", ":slot_1"],
+                split="held_out",
+                meta={"suite": "held_out"},
+            )
+        ],
+    )
+    import slm_training.harnesses.model_build.eval_runner as eval_runner_module
+
+    original_build_model = eval_runner_module.build_model
+    build_calls: list[Path] = []
+
+    def counted_build(*args, **kwargs):
+        build_calls.append(kwargs["checkpoint"])
+        return original_build_model(*args, **kwargs)
+
+    monkeypatch.setattr(eval_runner_module, "build_model", counted_build)
+    cache = EvalCache(
+        EvalCacheConfig(mode=EvalCacheMode.READ_WRITE, root=tmp_path / "cache")
+    )
+    multi = evaluate_suites(
+        config, ["smoke", "held_out"], checkpoint=checkpoint, cache=cache
+    )
+    assert len(build_calls) == 1
+    assert multi["checkpoint_source"] == "checkpoint"
+    assert set(multi["suites"]) == {"smoke", "held_out"}
+
+    # A complete all-suite cache hit is resolved before model construction.
+    # Output-only run identity may change without invalidating the evidence.
+    config.run_id = "gates-cache-replay"
+    replay = evaluate_suites(
+        config, ["smoke", "held_out"], checkpoint=checkpoint, cache=cache
+    )
+    assert len(build_calls) == 1
+    assert all(row["cache_replay"] for row in replay["suites"].values())
+
+    # Checkpoint sidecars participate in the preflight identity. Adding one
+    # must force the existing single shared model load rather than replaying.
+    checkpoint.with_suffix(".meta.json").write_text("{}\n", encoding="utf-8")
+    config.run_id = "gates-sidecar-change"
+    evaluate_suites(
+        config, ["smoke", "held_out"], checkpoint=checkpoint, cache=cache
+    )
+    assert len(build_calls) == 2
+
+
+def test_suite_cache_rejects_incomplete_measurements() -> None:
+    assert _suite_result_cacheable(
+        {"decode_timeout_count": 0, "incomplete_document_n": 0}
+    )
+    assert not _suite_result_cacheable(
+        {"decode_timeout_count": 1, "incomplete_document_n": 1}
+    )
+
+
+def test_preloaded_model_never_replays_checkpointless_eval_cache(
+    tmp_path: Path,
+) -> None:
+    """A live training model has no stable cache identity; recompute it."""
+    train_dir = tmp_path / "train"
+    test_dir = tmp_path / "test"
+    train_dir.mkdir()
+    (test_dir / "suites" / "smoke").mkdir(parents=True)
+    record = ExampleRecord(
+        id="cache-live-1",
+        prompt="Hero",
+        openui='root = TextContent(":slot_0")',
+        placeholders=[":slot_0"],
+        split="smoke",
+        meta={"suite": "smoke"},
+    )
+    write_jsonl(train_dir / "records.jsonl", [record])
+    write_jsonl(test_dir / "suites" / "smoke" / "records.jsonl", [record])
+    config = ModelBuildConfig(
+        train_dir=train_dir,
+        test_dir=test_dir,
+        suite="smoke",
+        run_root=tmp_path / "runs",
+        run_id="cache-live",
+        model_name="stub",
+    )
+    model = StubModel(seed=0)
+    cache = EvalCache(
+        EvalCacheConfig(mode=EvalCacheMode.READ_WRITE, root=tmp_path / "cache")
+    )
+
+    first = evaluate(config, model=model, cache=cache, publish_agentv=False)
+    assert first["cache_bypass_reason"] == "preloaded_model_without_checkpoint_identity"
+    assert not first.get("cache_replay", False)
+
+    # A second call must execute again even though the cache is writable and
+    # the dataset/policy are otherwise identical.
+    config.run_id = "cache-live-second"
+    second = evaluate(config, model=model, cache=cache, publish_agentv=False)
+    assert second["cache_bypass_reason"] == "preloaded_model_without_checkpoint_identity"
+    assert not second.get("cache_replay", False)
+
+
+def test_preloaded_model_checkpoint_identity_must_match_path(tmp_path: Path) -> None:
+    train_dir = tmp_path / "train"
+    test_dir = tmp_path / "test"
+    train_dir.mkdir()
+    (test_dir / "suites" / "smoke").mkdir(parents=True)
+    record = ExampleRecord(
+        id="cache-identity-1",
+        prompt="Hero",
+        openui='root = TextContent(":slot_0")',
+        placeholders=[":slot_0"],
+        split="smoke",
+        meta={"suite": "smoke"},
+    )
+    write_jsonl(train_dir / "records.jsonl", [record])
+    write_jsonl(test_dir / "suites" / "smoke" / "records.jsonl", [record])
+    config = ModelBuildConfig(
+        train_dir=train_dir,
+        test_dir=test_dir,
+        suite="smoke",
+        run_root=tmp_path / "runs",
+        run_id="cache-identity",
+        model_name="stub",
+    )
+    model = StubModel(seed=0)
+    checkpoint = tmp_path / "model.pt"
+    model.save(checkpoint)
+
+    with pytest.raises(ValueError, match="requires both"):
+        evaluate(
+            config,
+            model=model,
+            model_checkpoint_path=checkpoint,
+            publish_agentv=False,
+        )
+    with pytest.raises(ValueError, match="does not match"):
+        evaluate(
+            config,
+            model=model,
+            model_checkpoint_path=checkpoint,
+            model_checkpoint_sha256="0" * 64,
+            publish_agentv=False,
+        )
+
+
+def test_component_version_failure_bypasses_eval_cache(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    train_dir = tmp_path / "train"
+    test_dir = tmp_path / "test"
+    train_dir.mkdir()
+    (test_dir / "suites" / "smoke").mkdir(parents=True)
+    record = ExampleRecord(
+        id="cache-version-1",
+        prompt="Hero",
+        openui='root = TextContent(":slot_0")',
+        placeholders=[":slot_0"],
+        split="smoke",
+        meta={"suite": "smoke"},
+    )
+    write_jsonl(train_dir / "records.jsonl", [record])
+    write_jsonl(test_dir / "suites" / "smoke" / "records.jsonl", [record])
+    config = ModelBuildConfig(
+        train_dir=train_dir,
+        test_dir=test_dir,
+        suite="smoke",
+        run_root=tmp_path / "runs",
+        run_id="cache-version",
+        model_name="stub",
+    )
+    model = StubModel(seed=0)
+    checkpoint = tmp_path / "model.pt"
+    model.save(checkpoint)
+    checkpoint_sha256 = hashlib.sha256(checkpoint.read_bytes()).hexdigest()
+    cache = EvalCache(
+        EvalCacheConfig(mode=EvalCacheMode.READ_WRITE, root=tmp_path / "cache")
+    )
+    import slm_training.harnesses.model_build.eval_runner as eval_runner_module
+
+    def missing_component_version(_component_id: str) -> str:
+        raise KeyError("missing version")
+
+    monkeypatch.setattr(
+        eval_runner_module, "component_version", missing_component_version
+    )
+    metrics = evaluate(
+        config,
+        model=model,
+        model_checkpoint_path=checkpoint,
+        model_checkpoint_sha256=checkpoint_sha256,
+        cache=cache,
+        publish_agentv=False,
+    )
+
+    assert metrics["cache_bypass_reason"] == "component_version_unavailable"
+    assert not metrics.get("cache_replay", False)
+    assert not list((tmp_path / "cache").rglob("*.json"))
 
 
 def test_evaluate_supports_single_record_generation_with_stats(tmp_path: Path) -> None:

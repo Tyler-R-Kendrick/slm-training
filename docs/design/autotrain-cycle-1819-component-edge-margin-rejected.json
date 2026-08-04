@@ -1,0 +1,104 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1819",
+  "cycle_index": 1819,
+  "decision": "reject_component_edge_margin_quality_regression",
+  "recorded_driver_disposition": "positive",
+  "corrected_policy_disposition": "rejected_by_campaign_v117",
+  "evidence_class": "fixture_screening",
+  "formal_status": "not_applicable:retry_measurement",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "33164786da51b91ddbb55504ff8053a6c6ecb562",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v77",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v303"
+    },
+    "stamped_at": "2026-08-03T02:25:07.720638+00:00"
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "steps": 20,
+    "seed": 101818,
+    "batch_size": 2,
+    "seen_target_tokens": 1767,
+    "sync_checkpoints": false,
+    "suites": ["smoke"],
+    "suite_n": {"smoke": 3},
+    "honesty_mode": "fixture_screening"
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1819-control",
+      "trainable_params": 1608962,
+      "training_reused_from_campaign": "continuous-loop-20260802-continuous-openui-202607-98199209-c1818",
+      "checkpoint_sha256": "b97e7424475464b9a99d78d608f569649234a64b30e0427cfe03a9742b502215",
+      "last_loss": 15.243729591369629,
+      "suites": {
+        "smoke": {
+          "n": 3,
+          "parse_rate": 1.0,
+          "meaningful_program_rate": 0.6666666666666666,
+          "structural_similarity": 0.40443333333333337,
+          "binder_reference_f1": 0.9523809523809524,
+          "component_type_recall": 0.3333333333333333,
+          "placeholder_fidelity": 0.9166666666666666,
+          "reward_score": 0.9199999999999999,
+          "ast_beq_rate": 0.0,
+          "canonical_beq_rate": 0.0,
+          "latency_ms_p50": 3772.85
+        }
+      }
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1819-component-edge-margin",
+      "trainable_params": 1608962,
+      "compiler_alignment_loss_weight": 1.0,
+      "compiler_alignment_margin": 1.0,
+      "compiler_alignment_kind_filter": "component-edge",
+      "checkpoint_sha256": "68c7d02bb5b3e36fe3089d23e5af21abe3157ae40760a3f6bcf93e342cc02f0d",
+      "last_loss": 69.44171142578125,
+      "train_wall_seconds": 7.4154118479928,
+      "final_alignment_rows": 2,
+      "final_alignment_candidate_count_mean": 32.0,
+      "final_alignment_loss": 38.68611526489258,
+      "final_alignment_cross_entropy": 19.093265533447266,
+      "final_alignment_margin_loss": 19.592845916748047,
+      "final_alignment_margin_violation_rate": 0.5,
+      "suites": {
+        "smoke": {
+          "n": 3,
+          "parse_rate": 1.0,
+          "meaningful_program_rate": 0.3333333333333333,
+          "structural_similarity": 0.17416666666666666,
+          "binder_reference_f1": 0.6333333333333333,
+          "component_type_recall": 0.25,
+          "placeholder_fidelity": 0.5277777777777778,
+          "reward_score": 0.7653333333333334,
+          "ast_beq_rate": 0.0,
+          "canonical_beq_rate": 0.0,
+          "latency_ms_p50": 1074.57
+        }
+      }
+    }
+  ],
+  "primary_effect": -0.2302666666666667,
+  "mpr_effect": -0.3333333333333333,
+  "binder_reference_f1_effect": -0.31904761904761914,
+  "recorded_efficiency_gain_fraction": 0.75551616,
+  "ship_gates_pass": false,
+  "next_hypothesis": {
+    "kind": "denser_structured_quality_signal",
+    "authority": "observed_result",
+    "confidence": 0.95,
+    "statement": "After v117 reclassifies c1819, test a distinct size-matched objective with denser typed coverage; do not increase the rejected component-edge margin scalar."
+  }
+}

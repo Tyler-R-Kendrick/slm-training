@@ -332,8 +332,8 @@
   "eval_manifests": [],
   "evaluator_versions": {
     "@agentv/core": "4.42.4",
-    "agentv_owner_sha256": "67a681afbaf6d057d21411c56203bea43cbd494f420539ee1f17ec1dedc243c9",
-    "evals.scoring": "v22"
+    "agentv_owner_sha256": "4282222b1d78ec134d35397ca1a6d6dd923a24f8703bf80610a527550e89f45f",
+    "evals.scoring": "v23"
   },
   "evidence": [
     {
@@ -393,7 +393,7 @@
     }
   ],
   "evidence_cutoff": "2026-07-21T04:15:30.006965Z",
-  "gate_hash": "618d81ea7e315ae2b9ee4306bbb07fc469a924939ac3b2459f818fdc6f6b8fbf",
+  "gate_hash": "56733d8a08b7c48d5c3835473c573f23115d5eec84651f9b168a07b6ef83d52a",
   "generated_at": "2026-07-23T07:03:22.541155Z",
   "legacy_meaning_v1_by_suite": {},
   "metric_versions": {
@@ -448,7 +448,7 @@
     "code_commit": "c74ceb7601f5e8b9dea960970d5313cc2ace2f40",
     "code_dirty": true,
     "components": {
-      "harness.experiments": "v143",
+      "harness.experiments": "v147",
       "harness.experiments.semantic_floor_gate": "v1"
     },
     "stamp_schema": "version_stamp/v1",

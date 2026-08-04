@@ -86,7 +86,9 @@ class _StateRecord:
 
     engine: OpenUIIncrementalEngine
     semantic: Any
-    prefix_ids: tuple[int, ...]
+    prefix_ids: tuple[int, ...] | None
+    parent_state_id: int | None = None
+    token_id: int | None = None
 
 
 class CompletionSession:
@@ -131,7 +133,23 @@ class CompletionSession:
         self._intern: dict[tuple[Any, Any], int] = {}
         self._transitions: dict[tuple[int, int], int | None] = {}
         self._outgoing: dict[int, CompletionForest] = {}
+        # Exact top-level witness queries recur across sibling completion
+        # domains.  Cache only a fully returned verdict for the identical
+        # (interned state, room) request.  Nested subproblems remain
+        # query-local so the historical per-candidate node allowance and
+        # first-path ordering are unchanged; UNKNOWN and interrupted queries
+        # are never persisted.
+        self._witness_roots: dict[tuple[int, int], WitnessResult] = {}
         self._forced: dict[tuple[int, int], tuple[tuple[int, ...], int, str]] = {}
+        # L2 (precompiled-grammar-admissibility campaign): the candidate
+        # branch walk (fork + feed + forced-suffix chase) is a pure function
+        # of the parent engine's control key, the candidate sequence, the
+        # initial literal-frame flag, and the path-token cap.  Interned
+        # (control, semantic) states share control keys, so this memo reuses
+        # branch drafts the state-id-keyed ``_outgoing`` cache cannot.  It
+        # stores draft results only — semantic filtering and path labeling
+        # stay live per state; authority is unchanged.
+        self._branch_memo: dict[tuple, tuple[str, tuple[int, ...] | None]] = {}
         self._counters: dict[str, int] = {
             "session_starts": 1,
             "state_intern_hits": 0,
@@ -153,6 +171,8 @@ class CompletionSession:
             "parser_forks": 0,
             "candidate_engine_allocations": 0,
             "scope_reference_scans_avoided": 0,
+            "branch_memo_hits": 0,
+            "branch_memo_misses": 0,
         }
 
     # --- introspection ----------------------------------------------------
@@ -167,7 +187,9 @@ class CompletionSession:
         self._intern.clear()
         self._transitions.clear()
         self._outgoing.clear()
+        self._witness_roots.clear()
         self._forced.clear()
+        self._branch_memo.clear()
         self._semantic_arena.clear()
 
     def __del__(self) -> None:
@@ -192,16 +214,29 @@ class CompletionSession:
         self,
         engine: OpenUIIncrementalEngine,
         semantic: Any,
-        prefix_ids: tuple[int, ...],
+        prefix_ids: tuple[int, ...] | None,
+        *,
+        parent_state_id: int | None = None,
+        token_id: int | None = None,
     ) -> int:
         key = (engine.parser_state_key(), semantic)
         state_id = self._intern.get(key)
         if state_id is not None:
             self._counters["state_intern_hits"] += 1
             return state_id
+        if prefix_ids is None and (parent_state_id is None or token_id is None):
+            raise ValueError("a deferred prefix requires its parent state and token")
         state_id = len(self._states)
         self._intern[key] = state_id
-        self._states.append(_StateRecord(engine, semantic, prefix_ids))
+        self._states.append(
+            _StateRecord(
+                engine,
+                semantic,
+                prefix_ids,
+                parent_state_id=parent_state_id,
+                token_id=token_id,
+            )
+        )
         self._counters["state_intern_misses"] += 1
         self._counters["unique_states"] += 1
         return state_id
@@ -266,7 +301,25 @@ class CompletionSession:
         return self._intern_state(positioned, semantic, ids)
 
     def prefix_ids_of(self, state_id: int) -> tuple[int, ...]:
-        return self._states[int(state_id)].prefix_ids
+        return self._materialize_prefix(int(state_id))
+
+    def _materialize_prefix(self, state_id: int) -> tuple[int, ...]:
+        """Materialize one persistent prefix only when an authority scan needs it."""
+        record = self._states[int(state_id)]
+        if record.prefix_ids is not None:
+            return record.prefix_ids
+        suffix: list[int] = []
+        cursor = int(state_id)
+        while True:
+            ancestor = self._states[cursor]
+            if ancestor.prefix_ids is not None:
+                prefix = ancestor.prefix_ids + tuple(reversed(suffix))
+                record.prefix_ids = prefix
+                return prefix
+            if ancestor.parent_state_id is None or ancestor.token_id is None:
+                raise RuntimeError("deferred completion prefix has no concrete ancestor")
+            suffix.append(int(ancestor.token_id))
+            cursor = int(ancestor.parent_state_id)
 
     def semantic_of(self, state_id: int) -> Any:
         return self._states[int(state_id)].semantic
@@ -314,11 +367,8 @@ class CompletionSession:
             self._transitions[key] = None
             return None
         kind_of = getattr(self._tokenizer, "kind_of", None)
-        kind = (
-            str(getattr(kind_of(tid), "value", ""))
-            if callable(kind_of)
-            else ""
-        )
+        raw_kind = kind_of(tid) if callable(kind_of) else None
+        kind = str(getattr(raw_kind, "value", ""))
         if kind == "macro":
             expand = getattr(self._tokenizer, "expand_macros", None)
             expanded = list(expand([tid])) if callable(expand) else []
@@ -326,7 +376,15 @@ class CompletionSession:
                 self._transitions[key] = None
                 return None
         child = self._fork(record.engine)
-        outcome = child.feed_token_id(self._tokenizer, tid)
+        # ``child`` is already an isolated control fork and is discarded when
+        # the feed rejects.  Avoid cloning it a second time solely to restore
+        # a branch that cannot be observed again.
+        outcome = child.feed_token_id(
+            self._tokenizer,
+            tid,
+            _restore_on_reject=False,
+            _token_kind=raw_kind,
+        )
         if outcome is None:
             # Ambiguous junction — canonical text route.
             self._counters["full_sync_fallbacks"] += 1
@@ -344,9 +402,14 @@ class CompletionSession:
             self._tokenizer,
             schema=self._schema,
             arena=self._semantic_arena,
+            _token_kind=kind,
         )
         child_id = self._intern_state(
-            child, semantic, record.prefix_ids + (tid,)
+            child,
+            semantic,
+            None,
+            parent_state_id=int(state_id),
+            token_id=tid,
         )
         self._transitions[key] = child_id
         return child_id
@@ -385,7 +448,7 @@ class CompletionSession:
         scan_counter: dict[str, int] = {"avoided": 0}
         forest = _build_openui_completion_forest_direct(
             self._tokenizer,
-            list(record.prefix_ids),
+            list(self._materialize_prefix(state_id)),
             state=state,
             engine=engine,
             slot_contract=list(self._slot_contract),
@@ -397,10 +460,15 @@ class CompletionSession:
             explain=self._explain,
             semantic_state=record.semantic,
             scan_counter=scan_counter,
+            branch_memo=None if state is not None else self._branch_memo,
         )
         check_decode_deadline()
         self._counters["edges_built"] += 1
         self._counters["scope_reference_scans_avoided"] += scan_counter["avoided"]
+        self._counters["branch_memo_hits"] += scan_counter.get("branch_memo_hits", 0)
+        self._counters["branch_memo_misses"] += scan_counter.get(
+            "branch_memo_misses", 0
+        )
         if state is None:
             self._outgoing[state_id] = forest
         return forest
@@ -418,6 +486,13 @@ class CompletionSession:
         """
         sid = int(state_id)
         rm = max(0, int(room))
+        check_decode_deadline()
+        root_key = (sid, rm)
+        root_cached = self._witness_roots.get(root_key)
+        if root_cached is not None:
+            self._counters["reachability_cache_hits"] += 1
+            return root_cached
+
         nodes_left = self._node_budget
         query_cache: OrderedDict[tuple[int, int], WitnessResult] = OrderedDict()
 
@@ -467,7 +542,10 @@ class CompletionSession:
                 query_cache.popitem(last=False)
             return result
 
-        return _eval(sid, rm)
+        result = _eval(sid, rm)
+        if result.status is not WitnessStatus.UNKNOWN:
+            self._witness_roots[root_key] = result
+        return result
 
     # --- forced singleton closure ---------------------------------------------
 

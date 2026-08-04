@@ -1,0 +1,118 @@
+{
+  "schema": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1735",
+  "loop_id": "continuous-openui-20260730",
+  "cycle_index": 1735,
+  "campaign_role": "screening",
+  "cycle_intent": "screening",
+  "run_class": "fixture_scratch",
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "steps": 23,
+  "seed": 101735,
+  "batch_size": 2,
+  "checkpoint_sync": "explicit no-sync scratch",
+  "upstream_commit": "d2c3b97c1148bd503773a169890a2d5310ab3cdb",
+  "integration_commit": "3cb2dc107960119e9e75c50f322c21c0eb8039c3",
+  "primary_metric": "smoke.structural_similarity",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "3cb2dc107960119e9e75c50f322c21c0eb8039c3",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v73",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v284"
+    },
+    "stamped_at": "2026-08-02T05:35:39.223476+00:00"
+  },
+  "gate_version": "openui_ship_gates_v6",
+  "arms": [
+    {
+      "label": "matched control",
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1735-control",
+      "trainable_parameters": 1913789,
+      "component_plan_loss_weight": 0.0,
+      "component_edge_loss_weight": 0.0,
+      "last_loss": 18.682159423828125,
+      "training_wall_seconds": 2.9036996939685196,
+      "checkpoint_sha256": "927220daa95845baddc581c6fd88e85f95329389ae2eb3ec5ebd4062c6e7b5e9",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.17416666666666666,
+        "component_type_recall": 0.25,
+        "ast_node_f1": 0.2619047619047619,
+        "ast_edge_f1": 0.0,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.7653333333333334,
+        "latency_ms_p50": 1509.1
+      },
+      "decode_stats": {
+        "forwards_count_sum": 11,
+        "completion_unique_states_sum": 31118,
+        "completion_witness_states_expanded_sum": 861,
+        "completion_parser_forks_sum": 32126
+      },
+      "agentv_execution_errors": 0,
+      "ship_gates_pass": false
+    },
+    {
+      "label": "component-plan plus component-edge loss 1.0",
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1735-component-structure",
+      "trainable_parameters": 1913789,
+      "component_plan_loss_weight": 1.0,
+      "component_edge_loss_weight": 1.0,
+      "last_loss": 24.210338592529297,
+      "training_wall_seconds": 8.812837223988026,
+      "checkpoint_sha256": "f5b3f51c083e86e36876d999c36607f8e00d7d53a31eec8e41b6d8757ad6a52c",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.17416666666666666,
+        "component_type_recall": 0.25,
+        "ast_node_f1": 0.2619047619047619,
+        "ast_edge_f1": 0.0,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.7653333333333334,
+        "latency_ms_p50": 1589.07
+      },
+      "decode_stats": {
+        "forwards_count_sum": 11,
+        "completion_unique_states_sum": 31118,
+        "completion_witness_states_expanded_sum": 861,
+        "completion_parser_forks_sum": 32126
+      },
+      "agentv_execution_errors": 0,
+      "ship_gates_pass": false
+    }
+  ],
+  "comparison": {
+    "parameter_matched": true,
+    "quality_delta": 0.0,
+    "latency_regression_fraction": 0.052992,
+    "training_wall_ratio": 3.035,
+    "disposition": "quality_null_slower_rejected"
+  },
+  "formal_evidence": {
+    "status": "not_applicable:screening",
+    "reason": "Lean promotion proof is required only for a confirmed champion promotion"
+  },
+  "harness_feedback": {
+    "signal": "runtime bounds successor was mislabeled as a quality hypothesis",
+    "repair": "derive successor area and wording from the selected arm hypothesis",
+    "repaired_next_area": "experiments",
+    "repaired_next_hypothesis": "grammar_completion_bounds latency diagnostic"
+  },
+  "checkpoint_documentation_required": true,
+  "checkpoint_reuse": "forbidden",
+  "ship_eligible": false
+}

@@ -120,7 +120,10 @@ record family so related counterfactuals cannot cross train/held-out boundaries.
 per-action verdict table so multiple good/bad actions at one state each carry an
 explicit counterfactual verdict, targeting the objective/action-partition blocker
 below. It extends `DecisionEventV1`; it does not replace the trace store or the
-objective, and it is specified — not implemented — by this contract.
+objective. The original contract was specification-only; DecisionEventV2,
+counterfactual replay/mining, and trainable objective-view materialization are
+now implemented under `harnesses/preference/`. This statement still makes no
+checkpoint or quality claim.
 
 ## Objectives and locality
 

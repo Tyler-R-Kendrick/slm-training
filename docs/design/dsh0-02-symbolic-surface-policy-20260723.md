@@ -72,3 +72,30 @@ test, pack, runtime-symbol, scope, and contract source hashes remain exact.
 
 Proceed to SLM-347 by making `SynthesisPlanV1` require this policy version and
 reject any plan whose requested capability or target surface lacks authority.
+
+## Source-identity re-pin (2026-08-04)
+
+`src/slm_training/dsl/pack.py` was re-pinned in `source_identities` after
+advisory witness-outcome counters were added to the completion-domain filter
+(`_note_witness`; see
+[`witness-prune-honesty-20260804.md`](witness-prune-honesty-20260804.md)).
+The change is telemetry-only: it adds counter increments beside existing
+control-flow decisions and changes no drop behavior, candidate set, or
+emitted domain (verified byte-identical on the decode profile fixture).
+
+Re-pinning — rather than silently editing the hash or dropping `pack.py`
+from the list — follows the G0 precedent above, with one deliberate
+difference: `versions.json` was *removed* because an append-only registry
+can never be a stable identity, whereas `pack.py` carries real policy logic
+and should keep triggering this drift detector on future changes. Before
+re-pinning, the record's acceptance criteria were re-exercised: the closed
+GraphQL fixture is still admitted under `SymbolicSurfacePolicyV1("graphql")`
+with `pack_id == "graphql"`, and the language-contract and minimal-witness
+suites pass 26/26 (the hash assertion being the only prior failure). The
+policy's normative authority remains its component version
+(`dsl.symbolic_surface/v1`), which is unchanged.
+
+A second re-pin on the same day added the `witness_false_singleton_risk`
+tally to the same completion-domain filter (still telemetry-only, still
+byte-identical on the decode profile). The acceptance re-validation above
+was repeated and again passed.

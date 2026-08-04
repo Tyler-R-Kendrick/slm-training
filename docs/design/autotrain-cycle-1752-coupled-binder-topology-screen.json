@@ -1,0 +1,113 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1752",
+  "cycle_index": 1752,
+  "evidence_class": "fixture",
+  "scoreable": true,
+  "decision": "rejected_quality_null",
+  "primary_metric": "held_out.structural_similarity",
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1752-control",
+      "status": "completed_gate_rejection",
+      "manifest_sha256": "dfacec9a626a4eaadeac16eebf984b965abe61ea90c45a992ba45af1d8b60364",
+      "training": {
+        "trainable_parameters": 2137346,
+        "steps": 22,
+        "last_loss": 12.057918548583984,
+        "elapsed_wall_seconds": 3.0004478900227696,
+        "binder_topology_loss_weight": 0.0,
+        "binder_topology_decode_weight": 0.0,
+        "compiler_decode_mode": "tree",
+        "checkpoint_sha256": "eddaf8dd76d34881048e047f2ced7294674ac9d424d18d941be2763721d135d7"
+      },
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.8222222222222223,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.51,
+        "component_type_recall": 0.25,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 4398.12
+      },
+      "held_out": {
+        "n": 5,
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.7076190476190476,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.37006,
+        "component_type_recall": 0.1619047619047619,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 4573.57
+      }
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1752-binder-topology",
+      "status": "completed_quality_null",
+      "manifest_sha256": "54a1e0997c4e1d2296402e77895ea8df0fef34c809978067780dfb458deaa63a",
+      "training": {
+        "trainable_parameters": 2137346,
+        "steps": 22,
+        "last_loss": 12.109542846679688,
+        "elapsed_wall_seconds": 6.658570269995835,
+        "binder_topology_loss_weight": 0.25,
+        "binder_topology_decode_weight": 1.0,
+        "compiler_decode_mode": "tree",
+        "checkpoint_sha256": "a38b762357beaf783d051e8267701068e58cd829b9fae6bc4e73aa5a39f43e04"
+      },
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.8222222222222223,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.51,
+        "component_type_recall": 0.25,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 4663.12
+      },
+      "held_out": {
+        "n": 5,
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.7076190476190476,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.37006,
+        "component_type_recall": 0.1619047619047619,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 4614.14
+      }
+    }
+  ],
+  "deltas": {
+    "held_out_structural_similarity": 0.0,
+    "smoke_structural_similarity": 0.0,
+    "smoke_latency_percent": 6.0253,
+    "held_out_latency_percent": 0.8871,
+    "train_wall_ratio": 2.2192
+  },
+  "ship_gates_pass": false,
+  "lean": {
+    "status": "not_applicable:no_champion",
+    "promotion_requirement": "fresh proved certificate remains required"
+  },
+  "next_priority": "coupled component-structure with matched compiler path and capacity",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "b3920eaf109d0e2e686e7664bfa8c31c54682c01",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v74",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v288"
+    },
+    "stamped_at": "2026-08-02T11:00:42.361541+00:00"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-202607-98199209-c1852",
+  "decision": "reject_fixture_null_and_capacity_cost",
+  "claim_class": "fixture_screening",
+  "formal": {"status": "not_applicable:screening"},
+  "recipe": {"device": "cpu", "steps": 21, "seed": 101852, "batch_size": 2, "num_threads": 1, "context_backend": "scratch", "suite": "smoke", "suite_n": 3, "trainable_params": {"control": 1608962, "candidate": 1613477}, "sync_checkpoints": false, "sampling_policy": "capacity_aware"},
+  "arms": {
+    "control": {"last_loss": 12.00273609161377, "checkpoint_sha256": "07637aa173122e0654ee04b6b2db0f7a469c69c649ddb20a7a213b4db0c93766", "metrics": {"parse_rate": 1.0, "structural_similarity": 0.17416666666666666, "meaningful_program_rate": 0.3333333333333333, "component_type_recall": 0.25, "binder_reference_f1": 0.6333333333333333, "placeholder_fidelity": 0.5277777777777778, "reward_score": 0.7653333333333334, "ast_beq_rate": 0.0, "canonical_beq_rate": 0.0, "latency_ms_p50": 909.85, "tokens_emitted_mean": 21.0, "forwards_count_mean": 4.0, "compiler_ms_mean": 2361.397}},
+    "candidate": {"last_loss": 24.157896041870117, "checkpoint_sha256": "075585c23a6f5fcdab8b334017216937400bdd96e198ada8e72817e1061728c2", "metrics": {"parse_rate": 1.0, "structural_similarity": 0.17416666666666666, "meaningful_program_rate": 0.3333333333333333, "component_type_recall": 0.25, "binder_reference_f1": 0.6333333333333333, "placeholder_fidelity": 0.5277777777777778, "reward_score": 0.7653333333333334, "ast_beq_rate": 0.0, "canonical_beq_rate": 0.0, "latency_ms_p50": 965.94, "tokens_emitted_mean": 30.0, "forwards_count_mean": 5.0, "compiler_ms_mean": 2439.986}}
+  },
+  "effects": {"structural_similarity": 0.0, "latency_fraction": 0.061647524317195175, "tokens_fraction": 0.4285714285714286, "forwards_fraction": 0.25, "params_fraction": 0.0028061570130307615},
+  "ship": {"eligible": false, "failures": ["smoke n=3<20", "all guarded quality metrics identical", "latency regression", "parameter growth lacks EG_params evidence", "production suites missing"]},
+  "successor": {"experiment_slug": "new distinct objective after slot-component-fidelity null", "next_action": "retain matched control; do not promote or grow capacity without parameter-efficiency evidence"},
+  "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "a65663836677e576e08a0191594403055790c62c", "code_dirty": false, "components": {"harness.model_build.train": "v38", "harness.autoresearch.experiment_campaign": "v148", "harness.model_build.eval": "v79", "evals.meaningful_program": "2.13.0", "evals.scoring": "v22", "model.twotower": "v304"}, "stamped_at": "2026-08-03T08:04:52.278134+00:00"}
+}

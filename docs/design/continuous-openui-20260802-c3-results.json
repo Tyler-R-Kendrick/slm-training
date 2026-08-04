@@ -1,0 +1,64 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260802",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202608-39ee9cf7-c3",
+  "cycle_index": 3,
+  "source_commit": "451785f59599c14bea42fefbd153d12a054b4f76",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "honest_slot_contract": true,
+    "slot_contract_constrained_decode": true,
+    "compiler_decode_mode": "off"
+  },
+  "arms": {
+    "c3-control": {
+      "status": "harness_failure",
+      "reason": "measurement_incomplete: smoke n=3, decode_timeout_count=3 -- typed model decode did not finish within the wall cap for this arm"
+    },
+    "c3-canvas": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.23083333333333333,
+        "component_type_recall": 0.16666666666666666,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "binder_reference_f1": 0.7333333333333333,
+        "latency_ms_p50": 4059.54
+      },
+      "gates": {
+        "pass": false,
+        "failures": [
+          "smoke:insufficient_n actual=3 need>=20",
+          "smoke:meaningful_program_rate actual=0.333 need>=0.66",
+          "smoke:structural_similarity actual=0.231 need>=0.35",
+          "smoke:component_type_recall actual=0.167 need>=0.35",
+          "smoke:ast_beq_rate actual=0.0 need>=0.2",
+          "smoke:canonical_beq_rate actual=0.0 need>=0.1",
+          "held_out:missing_suite",
+          "adversarial:missing_suite",
+          "ood:missing_suite",
+          "rico_held:missing_suite"
+        ]
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "conclusion": "First cycle since the AgentV harness repair (see continuous-openui-20260802-c2-results): the c3-canvas arm completed end-to-end and produced a real AgentEvals scoreboard -- confirming the fix (executable_unblock:candidate_completed_after_control_error). c3-control instead hit a decode timeout (typed model decode did not finish within the 3-minute wall cap; n=3 documents only), a separate infrastructure issue from the AgentV SDK gap. Ship gates fail as expected at fixture scale (n=3 vs required >=20); this is not model evidence and not a promotion signal. Driver classified this cycle SDLC_PHASE_A NON_POSITIVE overall (control measurement incomplete, fixture insufficient_n) despite the executable_unblock reason being present -- treated as authoritative per repo policy.",
+  "next_priorities": [
+    "Retry the identical frozen c3-control/c3-canvas pair once to check whether the control decode timeout reproduces or was a one-run timing artifact (queued retry_measurement)",
+    "If the control timeout reproduces consistently, open a repair_harness lane (model_build) for decode wall-budget headroom under the 3-minute cap rather than continuing to retry",
+    "Separately: dedicated repair pass for the 64 pre-existing tests/test_evals failures on main flagged in cycle 2's doc"
+  ],
+  "recorded_at": "2026-08-02T18:30:00+00:00"
+}

@@ -1,68 +1,59 @@
-# Continuous autotrain cycle — 2026-08-01, campaign `continuous-loop-20260801-c2`
+# Continuous autotrain cycle 2 results (2026-08-01)
 
 **Honesty:** `fixture_or_scratch` only. **Not a ship claim.**
 
 | Field | Value |
 | --- | --- |
-| Loop | `continuous-openui-20260730` |
-| Campaign | `continuous-loop-20260801-c2` (cycle 2, predecessor `continuous-loop-20260801-c1`) |
-| Source | `1bdfb14ebcf2393976a7c969e7bdd449fc5ada39` |
+| Loop | `continuous-openui-20260801` |
+| Campaign | `continuous-loop-20260801-c2` |
+| Source | `c1c4eca349b66f05684975575a3640ced50051ea` |
 | Device | CPU |
-| Steps | 20 / batch 2 |
+| Steps | 20 |
 | Train | `wf_smoke_v2` |
 | Eval | `e938_role_safe_all_targets_v2` |
 | Wall cap | 3 minutes |
+| Hypothesis | `compact_active_canvas` reduces smoke `latency_ms_p50` vs. matched control without lowering `parse_rate` |
 
 ## Run matrix
 
 | Arm | Levers | smoke n | parse_rate | meaningful_program_rate | latency_ms_p50 | Status |
 | --- | --- | ---: | ---: | ---: | ---: | --- |
-| c20260801-c2-control | canvas off | 3 | 1.0 | 0.0 | 21586.91 | eval completed; ship gates fail (insufficient n + quality) |
-| c20260801-c2-canvas | canvas **on** | 3 | 1.0 | 0.0 | 21350.87 | eval completed; ship gates fail (same) |
+| c2-control | canvas off | 3 | 1.0 | 0.0 | 20845.04 | eval completed; ship gates fail (insufficient n + quality) |
+| c2-canvas | `compact_active_canvas=true` | 3 | 1.0 | 0.0 | 21207.37 | eval completed; ship gates fail (same) |
 
-Primary delta (canvas − control) p50 latency: **-236.04 ms** (canvas faster).
-
-## SDLC Phase A classification
-
-- `positive: false`, `stack_layer: false` — **no stacked PR opened this cycle.**
-- Reasons: `fixture_insufficient_n` on both arms (n=3, need >= 20), and
-  `latency_win_rejected_low_mpr` (meaningful_program_rate 0.0 < 0.333 quality
-  floor) — the 236ms latency win is not counted as positive per the
-  quality-aware tradeoff policy (a pure latency win with zero meaningful-
-  program rate is explicitly excluded).
+Primary delta (canvas − control) p50 latency: **+362.33 ms** (candidate slower;
+null/negative lever delta).
 
 ## Diagnostics
 
-1. Unlike the 2026-07-30 c2 cycle, `eval_version` resolved correctly to
-   `e938_role_safe_all_targets_v2` on the first try — the previously
-   documented default-`v1`-suite footgun did not recur (harness fixes in
-   #1242–#1245 plus explicit `--primary-metric`/`--objective` wiring cover it).
-2. `compact_active_canvas=True` shows a directionally faster smoke p50
-   (21350.87ms vs 21586.91ms) but `meaningful_program_rate` is 0.0 for both
-   arms at this 20-step/batch-2 fixture size — too small to say anything
-   about program quality, so the latency delta stays a screening signal only.
-3. Ship gates correctly fail closed on `insufficient_n` (fixture n=3 vs
-   required n>=20) and the `held_out`/`adversarial`/`ood`/`rico_held` suites
-   report `missing_suite` at this train_version/eval_version pairing — none
-   of this is promotion evidence.
+1. AgentV SDK is installed and working this cycle (see
+   `continuous-openui-20260801-c1-results.md` for the self-heal); both arms
+   produced full `@agentv/core` scoreboards and ship-gate outcomes instead of
+   crashing.
+2. Control fails ship gates purely on fixture scale: `insufficient_n`
+   (n=3 < 20) plus every quality threshold that depends on volume. This is
+   the expected outcome for a 20-step `wf_smoke_v2` fixture run, not a model
+   regression.
+3. `compact_active_canvas` did **not** reduce smoke p50 latency under this
+   size-matched 20-step recipe (delta +362.33 ms, i.e. slower); `parse_rate`
+   and `meaningful_program_rate` were unchanged (1.0→1.0, 0.0→0.0).
+4. SDLC Phase A classification: **non-positive** — `fixture_insufficient_n`
+   on both arms plus `primary_metric_null_or_worse` for the candidate. No
+   stack layer opened (`stack_layer=false`,
+   `outputs/autoresearch/sdlc_delivery_ledger.jsonl`).
 
 ## Next-run priorities
 
-1. **model:** re-run `compact_active_canvas` at a step/data budget large
-   enough to raise `meaningful_program_rate` above 0 and suite `n` above the
-   fixture floor before trusting the latency delta.
-2. **infrastructure:** none outstanding for this path this cycle (see the
-   companion `continuous-openui-20260801-c1-results.md` for the separate
-   AgentV SDK / `npm ci` setup gap hit earlier in this session).
-3. **evaluation:** keep ship gates fail-closed; do not promote off n=3
-   fixture evidence.
+1. **model:** do not promote `compact_active_canvas` from this screening
+   result; the delta is negative, not just insufficient-n.
+2. **model:** re-screen other continuous hypothesis-matrix candidates
+   (`bounds`, `steps`, `batch1`) from this loop before spending more cycles
+   on canvas.
+3. **evaluation:** keep ship gates honest; fixture `insufficient_n` stays an
+   expected diagnostic, never a loop terminator.
 
 ## Artifacts
 
 - Campaign: `outputs/autoresearch/continuous-loop-20260801-c2/`
 - Runs: `.../runs/c20260801-c2-control/`, `.../runs/c20260801-c2-canvas/`
 - JSON twin: `continuous-openui-20260801-c2-results.json`
-- SDLC Phase A ledger: `outputs/autoresearch/continuous-loop-20260801-c2/sdlc_delivery.json`
-- AgentEvals JSONL (pinned `@agentv/core@4.42.4`):
-  - control: `outputs/autoresearch/continuous-loop-20260801-c2/runs/c20260801-c2-control/agentv/openui-model-ship-gates-2026-08-01t04-34-32-704820-00-00.eval.jsonl` (bundle `openui-model-ship-gates-2026-08-01t04-34-32-704820-00-00`)
-  - canvas: `outputs/autoresearch/continuous-loop-20260801-c2/runs/c20260801-c2-canvas/agentv/openui-model-ship-gates-2026-08-01t04-35-44-617261-00-00.eval.jsonl` (bundle `openui-model-ship-gates-2026-08-01t04-35-44-617261-00-00`)

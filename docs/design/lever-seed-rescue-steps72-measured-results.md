@@ -121,7 +121,16 @@ held-out generalization claim, and the fixture-build confound above means the
    now that fixture non-determinism has been ruled out (floating-point
    non-determinism vs. `torch` version drift vs. an uncaptured repro mistake
    — see the correction above) before drawing any conclusion that depends on
-   comparing magnitudes across sessions/PRs.
+   comparing magnitudes across sessions/PRs. **Partial follow-up (2026-07-28):**
+   [`lever-cpu-thread-count-nondeterminism-measured-results.md`](lever-cpu-thread-count-nondeterminism-measured-results.md)
+   confirms CPU thread count is a real, measured, reproducible source of
+   `last_loss` non-determinism on this harness even with a fixed seed — but
+   on a different, fully-reproducible recipe (`wf_smoke_v2`, not the
+   original undocumented exposure12/ASAP recipe), and at a much smaller
+   scale (`~1e-7` relative loss delta) than the original 0.333→0.0
+   `meaningful_program_rate` swing. Narrows the candidate list; does not
+   close it. `torch` version drift and an uncaptured repro mistake remain
+   untested.
 3. Per the original PR #1135 note once step-count brittleness is genuinely
    covered: move off `wf_smoke_v2` onto real held-out data or the DSH5-10 /
    `AP-007+` threads — this smoke-scale seed check should not keep

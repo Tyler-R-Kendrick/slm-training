@@ -1,53 +1,45 @@
-# Continuous autotrain cycle — 2026-08-01, campaign `continuous-loop-20260801-c3`
+# Continuous autotrain cycle 3 results (2026-08-01)
 
 **Honesty:** `fixture_or_scratch` only. **Not a ship claim.**
 
 | Field | Value |
 | --- | --- |
-| Loop | `continuous-openui-20260730` |
-| Campaign | `continuous-loop-20260801-c3` (cycle 3, predecessor `continuous-loop-20260801-c2`) |
-| Source | `1bdfb14ebcf2393976a7c969e7bdd449fc5ada39` |
+| Loop | `continuous-openui-20260801` |
+| Campaign | `continuous-loop-20260801-c3` |
+| Source | `c1c4eca349b66f05684975575a3640ced50051ea` |
 | Device | CPU |
-| Steps | 20 / batch 2 |
+| Steps | 20 |
 | Train | `wf_smoke_v2` |
 | Eval | `e938_role_safe_all_targets_v2` |
 | Wall cap | 3 minutes |
 
 ## Run matrix
 
-| Arm | Levers | smoke n | mpr | latency_ms_p50 | Status |
-| --- | --- | ---: | ---: | ---: | --- |
-| c20260801-c3-control | bounds/canvas off | 3 | 0.0 | 6512.57 | eval completed; gates fail |
-| c20260801-c3-both | bounds **on**, canvas **on** | 3 | 0.0 | 6442.73 | eval completed; gates fail |
+| Arm | Levers | latency_ms_p50 | parse_rate | Status |
+| --- | --- | ---: | ---: | --- |
+| c3-control | both off | 7111.38 | 1.0 | eval completed; ship gates fail (insufficient n) |
+| c3-both | `grammar_completion_bounds=true`, `compact_active_canvas=true` | 7340.17 | 1.0 | eval completed; ship gates fail (same) |
 
-Primary delta (both − control) p50 latency: **-69.84 ms** (both faster).
-
-## SDLC Phase A classification
-
-`positive: false`, `stack_layer: false` — same rejection class as
-`continuous-loop-20260801-c2`: `fixture_insufficient_n` (n=3 < 20) on both
-arms plus `latency_win_rejected_low_mpr` (mpr 0.0 < 0.333 floor).
+Primary delta (both − control) p50 latency: **+228.79 ms** (candidate slower).
 
 ## Diagnostics
 
-Third consecutive screening cycle at steps=20/batch=2 where
-`meaningful_program_rate` stays at 0.0 for every lever combination tried so
-far (bounds, canvas, both). The fixture is simply too small to produce a
-non-zero mpr; latency deltas at this scale are screening-only signals, not
-evidence of a real quality/latency tradeoff.
+1. Combining both levers regresses latency, consistent with each lever
+   screened alone: `bounds` alone was +89.01ms worse (c1), `canvas` alone was
+   +362.33ms worse (c2), and `both` together is +228.79ms worse (this cycle).
+2. `parse_rate` and `meaningful_program_rate` are unchanged across all three
+   screens — the regression is pure latency, not a quality/latency tradeoff.
+3. Ship gates fail on fixture `insufficient_n` as expected at this scale.
 
 ## Next-run priorities
 
-1. **model:** none of bounds/canvas/both has moved mpr off 0.0 — either the
-   fixture needs to grow or these latency deltas should be treated as
-   screening-only until a larger `train_version` is used.
-2. **process:** thrash rotation correctly advanced from `canvas` (c2) to
-   `both` (c3) per the climb policy bank order.
+1. **model:** deprioritize `grammar_completion_bounds` and
+   `compact_active_canvas` for this recipe — three independent screens (c1,
+   c2, c3) all show a latency regression, no quality offset.
+2. **model:** screen the remaining hypothesis-matrix candidates from this
+   loop (`steps`, `batch1`) instead.
 
 ## Artifacts
 
 - Campaign: `outputs/autoresearch/continuous-loop-20260801-c3/`
 - JSON twin: `continuous-openui-20260801-c3-results.json`
-- AgentEvals JSONL (pinned `@agentv/core@4.42.4`):
-  - control: `outputs/autoresearch/continuous-loop-20260801-c3/runs/c20260801-c3-control/agentv/openui-model-ship-gates-2026-08-01t04-39-26-867840-00-00.eval.jsonl` (bundle `openui-model-ship-gates-2026-08-01t04-39-26-867840-00-00`)
-  - both: `outputs/autoresearch/continuous-loop-20260801-c3/runs/c20260801-c3-both/agentv/openui-model-ship-gates-2026-08-01t04-39-56-792765-00-00.eval.jsonl` (bundle `openui-model-ship-gates-2026-08-01t04-39-56-792765-00-00`)

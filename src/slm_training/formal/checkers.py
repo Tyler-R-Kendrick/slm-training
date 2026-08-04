@@ -14,10 +14,13 @@ Backends
 
 from __future__ import annotations
 
-import subprocess
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+import fcntl
+import hashlib
 from pathlib import Path
+import tempfile
+import time
 from typing import Any
 
 from slm_training.formal.objects import FormalObjectKind, FormalObjectV1
@@ -27,7 +30,16 @@ from slm_training.formal.structural import (
     check_support_certificate_reference,
     check_support_certificate_structure,
 )
-from slm_training.levers import MAX_RUN_SECONDS
+from slm_training.levers import (
+    INTERRUPT_AFTER_SECONDS,
+    KILL_GRACE_SECONDS,
+    MAX_RUN_SECONDS,
+)
+from slm_training.harness_core.bounded_process import (
+    BoundedProcessResult,
+    ProcessOutcome,
+    run_bounded_process,
+)
 
 CHECKER_PYTHON_STRUCTURAL = "python_structural"
 CHECKER_PYTHON_REFERENCE = "python_reference"
@@ -54,6 +66,94 @@ class CheckerResult:
             "detail": self.detail,
             "skipped": self.skipped,
         }
+
+
+class FormalProjectLock:
+    """Process-shared lock for a mutable Lake project build directory.
+
+    Lake's incremental artifacts are shared by every formal surface.  The lock
+    is keyed by the canonical project path and stored outside the repository so
+    an interrupted process cannot leave a tracked lock artifact behind.
+    """
+
+    def __init__(self, project_root: Path, *, timeout_seconds: float) -> None:
+        self.project_root = project_root.resolve()
+        self.timeout_seconds = max(0.001, float(timeout_seconds))
+        digest = hashlib.sha256(str(self.project_root).encode("utf-8")).hexdigest()
+        self.lock_path = (
+            Path(tempfile.gettempdir()) / f"slm-formal-{digest[:24]}.lock"
+        )
+        self.wait_seconds = 0.0
+        self._handle: Any | None = None
+
+    def __enter__(self) -> "FormalProjectLock":
+        started = time.monotonic()
+        handle = self.lock_path.open("a+")
+        deadline = started + self.timeout_seconds
+        try:
+            while True:
+                try:
+                    fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    self._handle = handle
+                    self.wait_seconds = time.monotonic() - started
+                    return self
+                except BlockingIOError:
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise TimeoutError(
+                            "formal project lock timed out after "
+                            f"{self.timeout_seconds:.3f}s: {self.project_root}"
+                        )
+                    time.sleep(min(0.05, remaining))
+        except BaseException:
+            handle.close()
+            raise
+
+    def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
+        handle = self._handle
+        self._handle = None
+        if handle is not None:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+            handle.close()
+
+
+def formal_process_budget(timeout_seconds: float | None) -> tuple[float, float, float]:
+    """Return total, interrupt, and kill-grace seconds under the repo cap."""
+
+    requested = (
+        float(timeout_seconds)
+        if timeout_seconds is not None
+        else min(120.0, float(MAX_RUN_SECONDS) - 1.0)
+    )
+    total = min(float(MAX_RUN_SECONDS), max(0.001, requested))
+    grace = min(float(KILL_GRACE_SECONDS), total * 0.1)
+    interrupt_after = min(
+        float(INTERRUPT_AFTER_SECONDS), max(0.001, total - grace)
+    )
+    return total, interrupt_after, grace
+
+
+def run_formal_process(
+    command: Sequence[str],
+    *,
+    cwd: Path,
+    timeout_seconds: float | None,
+    on_start: Callable[[int], None] | None = None,
+    on_heartbeat: Callable[[int], None] | None = None,
+) -> BoundedProcessResult:
+    """Run a formal command in a bounded, process-group-owned subprocess."""
+
+    _total, interrupt_after, grace = formal_process_budget(timeout_seconds)
+    kwargs: dict[str, Any] = {
+        "cwd": cwd,
+        "interrupt_after_seconds": interrupt_after,
+        "kill_grace_seconds": grace,
+    }
+    if on_start is not None:
+        kwargs["on_start"] = on_start
+    if on_heartbeat is not None:
+        kwargs["on_heartbeat"] = on_heartbeat
+    return run_bounded_process(command, **kwargs)
 
 
 # Optional injectable replay context: (state, expander, verifier)
@@ -210,30 +310,44 @@ def check_lean_kernel(
             detail=f"lean package missing at {LEAN_ROOT}",
         )
 
-    remaining = max(
-        1.0,
-        float(timeout_s)
-        if timeout_s is not None
-        else min(120.0, MAX_RUN_SECONDS - 1),
-    )
+    # The formal checker is an eval-adjacent subprocess and must obey the same
+    # repository wall cap as every other run.  ``subprocess.run(timeout=...)``
+    # does not reap descendants and previously allowed callers to pass a
+    # timeout larger than MAX_RUN_SECONDS.  Use the canonical process-group
+    # runner so Lake/Lean children are interrupted and reaped within the
+    # derived interrupt + kill-grace budget.
+    total, _interrupt_after, _grace = formal_process_budget(timeout_s)
     try:
-        proc = subprocess.run(
-            ["lake", "build", "LeverProofLean"],
-            cwd=LEAN_ROOT,
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=remaining,
-        )
-    except (OSError, subprocess.SubprocessError) as exc:
+        with FormalProjectLock(LEAN_ROOT, timeout_seconds=total) as lock:
+            remaining = max(0.001, total - lock.wait_seconds)
+            bounded = run_formal_process(
+                ["lake", "build", "LeverProofLean"],
+                cwd=LEAN_ROOT,
+                timeout_seconds=remaining,
+            )
+    except TimeoutError as exc:
         return CheckerResult(
             checker_id=CHECKER_LEAN_KERNEL,
             backend=CHECKER_LEAN_KERNEL,
             ok=False,
-            detail=f"lean build error: {type(exc).__name__}: {exc}",
+            detail=str(exc),
         )
-    if proc.returncode != 0:
-        tail = (proc.stderr or proc.stdout or "")[-500:]
+    if bounded.outcome is ProcessOutcome.LAUNCH_FAILED:
+        return CheckerResult(
+            checker_id=CHECKER_LEAN_KERNEL,
+            backend=CHECKER_LEAN_KERNEL,
+            ok=False,
+            detail=f"lean build launch failed: {bounded.launch_error or 'unknown error'}",
+        )
+    if bounded.timed_out:
+        return CheckerResult(
+            checker_id=CHECKER_LEAN_KERNEL,
+            backend=CHECKER_LEAN_KERNEL,
+            ok=False,
+            detail=f"lean build timed out after {total:.3f}s",
+        )
+    if int(bounded.returncode or 0) != 0:
+        tail = (bounded.stderr or bounded.stdout or "")[-500:]
         return CheckerResult(
             checker_id=CHECKER_LEAN_KERNEL,
             backend=CHECKER_LEAN_KERNEL,
@@ -244,7 +358,10 @@ def check_lean_kernel(
         checker_id=CHECKER_LEAN_KERNEL,
         backend=CHECKER_LEAN_KERNEL,
         ok=True,
-        detail="lake build LeverProofLean ok",
+        detail=(
+            "lake build LeverProofLean ok "
+            f"(project_lock_wait_s={lock.wait_seconds:.3f})"
+        ),
     )
 
 
@@ -299,10 +416,13 @@ __all__ = [
     "CHECKER_PYTHON_REPLAY",
     "CHECKER_PYTHON_STRUCTURAL",
     "CheckerResult",
+    "FormalProjectLock",
     "ReplayProvider",
     "check_lean_kernel",
     "check_python_reference",
     "check_python_replay",
     "check_python_structural",
+    "formal_process_budget",
+    "run_formal_process",
     "run_checkers",
 ]

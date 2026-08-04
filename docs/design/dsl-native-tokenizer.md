@@ -117,7 +117,14 @@ python -m scripts.diagnose_tokenizer --fixtures
 ```
 
 Fixture seeds (n=20): compositional mean **72.6** tokens → lexer+symtable **46.3**
-(ratio **0.64**); fixed output vocab **296**, context vocab stays corpus-sized.
+(ratio **0.64**); fixed output vocab **569**, context vocab stays corpus-sized.
+(Historical note: this line read **296** until 2026-08-04. The authority is
+`src/slm_training/resources/tokenizer_layout_registry.json` →
+`codecs.dsl_native.vocab_size: 569`, `version: 5`, `layout_sha256:
+381a05d0…`; `DSLNativeTokenizer.build()` yields 569 = 132 lit + 96 byte +
+64 sym + 64 bind + 64 state + 64 macro + 35 component + 26 struct + 19
+builtin + 5 special. The stale 296 counted only the fixed-symbol subset and
+misled an external reviewer.)
 
 ## Recommended default going forward
 

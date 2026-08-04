@@ -80,7 +80,7 @@ def test_pack_fixture_loop_generate_train_eval() -> None:
     config = TwoTowerConfig(
         output_tokenizer="lexer",
         context_backend="scratch",
-        grammar_constrained=False,
+            grammar_constrained=True,
         d_model=32,
         n_heads=4,
         context_layers=1,

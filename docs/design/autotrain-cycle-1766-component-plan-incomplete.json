@@ -1,0 +1,131 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1766",
+  "cycle_index": 1766,
+  "evidence_class": "fixture",
+  "decision": "infrastructure_incomplete",
+  "scoreable": false,
+  "comparison": {
+    "matched_dimensions": [
+      "train_version",
+      "steps",
+      "batch_size",
+      "seed",
+      "context_backend",
+      "parameter_count",
+      "eval_suite",
+      "decode_policy"
+    ],
+    "treatment": "component_plan_loss_weight and component_plan_decode_weight: 0 -> 1",
+    "parameter_delta": 0,
+    "primary_metric_available": false
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1766-component-plan",
+      "manifest_sha256": "bf5e918c828e08de6a2f56aa8c574d13892eb947311e8c5919ff299ef53236f5",
+      "checkpoint_sha256": "8af2c84d30f1afa5d57ed942e18bb802be61d15762f02e93a5ead13330b6c2e3",
+      "params": 1755764,
+      "steps_requested": 20,
+      "batch_size": 2,
+      "seed": 101766,
+      "component_plan_loss_weight": 1.0,
+      "component_plan_decode_weight": 1.0,
+      "last_weighted_loss": 21.377809524536133,
+      "train_wall_seconds": 7.589635570009705,
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 0,
+        "incomplete_document_n": 3,
+        "decode_timeout_count": 3,
+        "parse_rate": null,
+        "meaningful_program_rate": null,
+        "structural_similarity": null,
+        "binder_reference_f1": null,
+        "latency_ms_p50": null,
+        "latency_ms_p50_including_incomplete": 7538.38
+      },
+      "partial_decode_telemetry": {
+        "forwards_count_sum": 173.0,
+        "compiler_ms_sum": 9202.628,
+        "component_plan_applications_sum": 11.0,
+        "component_plan_choice_changes_sum": 3.0,
+        "completion_unique_states_sum": 109682.0,
+        "completion_transition_cache_misses_sum": 110398.0,
+        "completion_witness_states_expanded_sum": 5024.0,
+        "completion_parser_forks_sum": 114270.0
+      }
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1766-control",
+      "manifest_sha256": "dcefb42aae3b8e360e744d443eddf7e9bcac5124839a18784fea252435757adc",
+      "checkpoint_sha256": "35869ea8c3cc64da161cb083bf20092ccaa03557e78b7c87861c95f6a7fbedd8",
+      "params": 1755764,
+      "steps_requested": 20,
+      "batch_size": 2,
+      "seed": 101766,
+      "component_plan_loss_weight": 0.0,
+      "component_plan_decode_weight": 0.0,
+      "last_weighted_loss": 17.65676498413086,
+      "train_wall_seconds": 3.22917836997658,
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 3,
+        "incomplete_document_n": 0,
+        "decode_timeout_count": 0,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.13526666666666667,
+        "component_type_recall": 0.16666666666666666,
+        "binder_reference_f1": 0.6333333333333333,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.7653333333333334,
+        "latency_ms_p50": 1135.88
+      },
+      "decode_telemetry": {
+        "forwards_count_sum": 11.0,
+        "compiler_ms_sum": 2237.452,
+        "completion_unique_states_sum": 31115.0,
+        "completion_transition_cache_misses_sum": 31277.0,
+        "completion_witness_states_expanded_sum": 861.0,
+        "completion_parser_forks_sum": 32123.0
+      }
+    }
+  ],
+  "agentv": {
+    "suite_results_per_arm": 1,
+    "bundles_complete": true,
+    "execution_errors": 0,
+    "candidate_expected_gate_rejection": false,
+    "control_expected_gate_rejection": true
+  },
+  "ship_gates_pass": false,
+  "lean": "not_applicable:no_champion",
+  "next_priority": {
+    "area": "infrastructure",
+    "hypothesis": "Reusing both completed train stages gives the content-bound frozen replay enough bounded evaluation capacity to distinguish a slow arm from a nonterminating search path.",
+    "frozen_manifest_sha256": "bf5e918c828e08de6a2f56aa8c574d13892eb947311e8c5919ff299ef53236f5",
+    "required_controls": [
+      "exact_frozen_manifests",
+      "checkpoint_reuse",
+      "complete_agentv_authority",
+      "no_timeout_default_change",
+      "constrained_decode"
+    ]
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "17606b9e5a8742a00f200aad062d80cf6b40bd4e",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v75",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v290"
+    },
+    "stamped_at": "2026-08-02T16:27:03.048205+00:00"
+  }
+}

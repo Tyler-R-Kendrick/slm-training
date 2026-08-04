@@ -13,10 +13,16 @@ from slm_training.formal.checkers import (
     CHECKER_LEAN_KERNEL,
     CHECKER_PYTHON_REFERENCE,
     CHECKER_PYTHON_STRUCTURAL,
+    FormalProjectLock,
     check_python_reference,
     check_python_structural,
     run_checkers,
 )
+from slm_training.harness_core.bounded_process import (
+    BoundedProcessResult,
+    ProcessOutcome,
+)
+from slm_training.levers import INTERRUPT_AFTER_SECONDS, MAX_RUN_SECONDS
 from slm_training.formal.loop import (
     close_formal_loop,
     loop_requires_multi_backend,
@@ -184,3 +190,75 @@ def test_reference_backend_independent() -> None:
     b = check_python_reference(obj)
     assert a.ok and b.ok
     assert a.backend != b.backend
+
+
+def test_lean_kernel_clamps_timeout_and_reaps_with_canonical_budget(
+    monkeypatch, tmp_path
+) -> None:
+    """A caller cannot make the optional Lean checker exceed the run cap."""
+
+    import slm_training.formal.checkers as checkers
+
+    obj = export_lean_claim("ExactClosure.closePass_subset")
+    monkeypatch.setattr(checkers, "LEAN_ROOT", tmp_path)
+    calls: dict[str, float] = {}
+
+    def fake_runner(command, *, cwd, interrupt_after_seconds, kill_grace_seconds):
+        assert command == ["lake", "build", "LeverProofLean"]
+        assert cwd == tmp_path
+        calls["interrupt"] = interrupt_after_seconds
+        calls["grace"] = kill_grace_seconds
+        return BoundedProcessResult(
+            command=tuple(command),
+            outcome=ProcessOutcome.COMPLETED,
+            returncode=0,
+            stdout="",
+            stderr="",
+            duration_seconds=0.0,
+        )
+
+    monkeypatch.setattr(checkers, "run_bounded_process", fake_runner)
+    result = checkers.check_lean_kernel(
+        obj, timeout_s=MAX_RUN_SECONDS * 100, enabled=True
+    )
+
+    assert result.ok
+    assert calls["interrupt"] <= INTERRUPT_AFTER_SECONDS
+    assert calls["interrupt"] + calls["grace"] <= MAX_RUN_SECONDS
+
+
+def test_lean_kernel_timeout_is_not_success(monkeypatch, tmp_path) -> None:
+    import slm_training.formal.checkers as checkers
+
+    obj = export_lean_claim("ExactClosure.closePass_subset")
+    monkeypatch.setattr(checkers, "LEAN_ROOT", tmp_path)
+    monkeypatch.setattr(
+        checkers,
+        "run_bounded_process",
+        lambda *args, **kwargs: BoundedProcessResult(
+            command=("lake", "build", "LeverProofLean"),
+            outcome=ProcessOutcome.TIMED_OUT,
+            returncode=124,
+            stdout="",
+            stderr="",
+            duration_seconds=0.0,
+            timed_out=True,
+        ),
+    )
+
+    result = checkers.check_lean_kernel(obj, timeout_s=1.0, enabled=True)
+
+    assert not result.ok
+    assert "timed out" in result.detail
+
+
+def test_formal_project_lock_times_out_while_another_holder_is_active(
+    tmp_path,
+) -> None:
+    with FormalProjectLock(tmp_path, timeout_seconds=1.0) as held:
+        assert held.wait_seconds < 1.0
+        try:
+            with FormalProjectLock(tmp_path, timeout_seconds=0.02):
+                raise AssertionError("lock unexpectedly re-entered")
+        except TimeoutError as exc:
+            assert "formal project lock timed out" in str(exc)

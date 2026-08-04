@@ -1,0 +1,56 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260802",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202608-39ee9cf7-c2",
+  "cycle_index": 2,
+  "source_commit": "b2b8bef22a82403a760373ab0eedc6dff9c4bb35",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "honest_slot_contract": true,
+    "slot_contract_constrained_decode": true,
+    "compiler_decode_mode": "off"
+  },
+  "arms": {
+    "c2-control": {
+      "status": "harness_failure",
+      "reason": "evaluate_model exit=1: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER (node_modules/@agentv/core missing in this fresh session checkout)"
+    },
+    "c2-canvas": {
+      "status": "harness_failure",
+      "reason": "evaluate_model exit=1: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER (node_modules/@agentv/core missing in this fresh session checkout)"
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "conclusion": "Both preregistered arms trained (20 steps, cpu) but evaluation never produced a scoreboard: the fresh session checkout had not run `npm ci`, so scripts/evaluate_model.py's AgentV publish step (src/slm_training/evals/agentv.py:_agentv_runtime) raised RuntimeError before any ship-gate assertion ran. This is a harness_failure, not a model measurement -- primary metric is unavailable for this cycle. Root cause was environment bootstrap, not a code defect (CI's ci.yml already runs npm ci before the agentv-touching test shard). Investigating also surfaced that the AgentV smoke-suite ship-gate fixtures in tests/test_evals/test_agentv.py predated the v6 policy's ast_beq_rate/canonical_beq_rate floors, which would have produced a second, unrelated harness_failure on replay once the SDK was present.",
+  "repair": {
+    "harness_family": "model_build",
+    "frozen_manifest_sha256": "6d6d01837abf80191cb5e81a786865dbf65f660b68c109c3154911acaaa05acc",
+    "actions_taken": [
+      "ran `npm ci` in the checkout to restore node_modules/@agentv/core (pinned 4.42.4)",
+      "fixed two stale AgentV ship-gate test fixtures (missing ast_beq_rate/canonical_beq_rate) in tests/test_evals/test_agentv.py -- commit 7003208459c56fa6b26d555f103ba725b340fda6"
+    ],
+    "regression_coverage": "tests/test_evals/test_agentv.py (7/7 passing after fix)"
+  },
+  "known_debt_discovered": {
+    "summary": "tests/test_evals/ has 64 failing tests and 5 errors on origin/main (27a8134) unrelated to this cycle's harness_failure -- oracle_scoring_replay, operator_systems_benchmark, semantic_fidelity, semantic_failure, meaningful_program v2, metric_gaming. Confirmed pre-existing (clean diff before any edits) and NOT caught by CI because ci.yml only runs the changed-tests-only shard (scripts.check_changed --changed-tests-only) rather than the full suite on every push. Out of scope for this cycle; flagged for a dedicated harness-repair pass.",
+    "sample_failures": [
+      "tests/test_evals/test_semantic_fidelity.py::test_ast_beq_true_for_style_normalized_match -- ast_beq(...) returns False for a whitespace-only reordering that should compare equal",
+      "tests/test_evals/test_oracle_scoring_replay.py::test_variant_rows_count_and_coverage -- ValueError: persisted template markers must use opaque :slot_<ordinal> identities",
+      "tests/test_evals/test_operator_systems_benchmark.py::test_run_operator_systems_benchmark_end_to_end_small -- OperatorAuthorityError: pack static/schema oracle rejected source"
+    ]
+  },
+  "next_priorities": [
+    "Replay the identical c2-control/c2-canvas arms now that the harness is repaired (queued: c20260802-continuous-openui-202608-39ee9cf7-c2-canvas)",
+    "Open a dedicated repair_harness pass for the 64 pre-existing tests/test_evals failures on main, starting with ast_beq's whitespace-normalization bug",
+    "Consider adding a full (non-changed-only) scheduled test run so eval-harness regressions like this don't go undetected between touches"
+  ],
+  "recorded_at": "2026-08-02T18:20:00+00:00"
+}

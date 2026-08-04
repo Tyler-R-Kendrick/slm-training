@@ -1,0 +1,56 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-202607-98199209-c1834",
+  "decision": "retry_after_feedback_lineage_repair",
+  "claim_class": "pre_execution_harness_failure",
+  "formal": {
+    "status": "not_applicable:pre_execution",
+    "reason": "No arm executed and promotion formal preflight was not reached."
+  },
+  "execution": {
+    "upstream_commit": "9dcfa7e68eab9a1055a6585da759511a3b755bd0",
+    "integration_commit": "0eda59d9e526e6853a95332537783dda905a3023",
+    "primary_metric": "smoke.structural_similarity",
+    "champion_attempt": "2/2",
+    "research_completed": true,
+    "hypothesis_matrix_completed": false,
+    "arms_started": 0,
+    "train_completed": false,
+    "eval_completed": false,
+    "agentevals_emitted": false,
+    "checkpoint_written": false,
+    "failure_type": "CalledProcessError",
+    "failure_message": "latest hypothesis matrix has no terminal feedback; run a matrix member before forming its successor",
+    "failure_fingerprint": "8ada734ccdda664e0320fe63cf1461aa799cfb45d1dfa52321204e75d0aa1453",
+    "recorded_at": "2026-08-03T05:02:09Z"
+  },
+  "diagnosis": {
+    "model_signal": "none",
+    "root_cause": "Phase A persisted an incomplete handoff and retry priority but no terminal hypothesis feedback because both experiment envelopes were interrupted before outcome finalization.",
+    "repair": "Recover durable metric-free stopped feedback from typed incomplete handoffs and append its canonical event.",
+    "fabricated_metrics": false,
+    "gate_weakened": false,
+    "cap_changed": false
+  },
+  "ship": {
+    "eligible": false,
+    "failures": [
+      "no training arm executed",
+      "no evaluation executed",
+      "no AgentV evidence",
+      "fresh-seed confirmation pending",
+      "formal preflight not reached"
+    ]
+  },
+  "next_hypothesis": "Retry the capacity-aware tail candidate and matched control on a new seed using the smoke screening endpoint with recovered infrastructure feedback.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "0eda59d9e526e6853a95332537783dda905a3023",
+    "code_dirty": true,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v131",
+      "harness.preference.remine_campaign": "v3"
+    },
+    "stamped_at": "2026-08-03T05:04:00+00:00"
+  }
+}

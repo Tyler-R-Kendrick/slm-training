@@ -1,41 +1,53 @@
-# Continuous autotrain cycle — 2026-08-01, campaign `continuous-loop-20260801-c1`
+# Continuous autotrain cycle 1 results (2026-08-01)
 
 **Honesty:** `fixture_or_scratch` only. **Not a ship claim.**
 
 | Field | Value |
 | --- | --- |
-| Loop | `continuous-openui-20260730` |
-| Campaign | `continuous-loop-20260801-c1` (cycle 1) |
-| Source | `1bdfb14ebcf2393976a7c969e7bdd449fc5ada39` |
+| Loop | `continuous-openui-20260801` |
+| Campaign | `continuous-loop-20260801-c1` |
+| Source | `c1c4eca349b66f05684975575a3640ced50051ea` |
 | Device | CPU |
-| Steps | 20 / batch 2 |
+| Steps | 20 |
 | Train | `wf_smoke_v2` |
 | Eval | `e938_role_safe_all_targets_v2` |
 | Wall cap | 3 minutes |
 
 ## Run matrix
 
-| Arm | Levers | Status | Failure |
-| --- | --- | --- | --- |
-| c20260801-c1-control | bounds off | **failed** (exit 1) | `evaluate_model` crashed in `evals.agentv._agentv_runtime`: AgentV SDK unavailable |
-| c20260801-c1-bounds | bounds **on** | **failed** (exit 1) | same crash |
+| Arm | Levers | latency_ms_p50 | parse_rate | Status |
+| --- | --- | ---: | ---: | --- |
+| c1-control | bounds off | 2784.59 | 1.0 | **failed** — AgentV SDK unavailable (infrastructure) |
+| c1-bounds | bounds on | 2873.60 | 1.0 | **failed** — same infrastructure blocker |
 
-Partial pre-crash latency (diagnostic only, not gate-evaluated): control 2425.26ms p50, bounds 2388.75ms p50.
+Primary delta (bounds − control) p50 latency: **89.01 ms** — not meaningful; neither
+arm produced a ship-gate scoreboard.
 
 ## Diagnostics
 
-1. This container's checkout had no `node_modules`; `evaluate_model --ship-gates` calls into `publish_model_evaluation` → `agentv.py::_agentv_runtime`, which raises when the AgentV SDK package isn't installed.
-2. `npm ci` initially failed with `node: --import tsx is not allowed in NODE_OPTIONS` — the ambient `NODE_OPTIONS="--import tsx" --max-old-space-size=8192` is rejected by this node build for plain `node`/`npm` invocations. Running with `NODE_OPTIONS` unset (`env -u NODE_OPTIONS npm ci`) succeeded (267 packages installed).
-3. The `eval_version` footgun documented in `continuous-openui-20260730-c2-results.md` did **not** recur — `eval_version=e938_role_safe_all_targets_v2` resolved to a real published suite; the crash was purely the missing AgentV SDK, not a path/suite error.
+1. Fresh container had no `node_modules` for the AgentEvals/`@agentv/core` eval
+   runner: `RuntimeError: AgentV SDK is unavailable; run npm ci in the
+   checkout or set AGENTV_RUNNER` (`src/slm_training/evals/agentv.py`).
+2. The ambient `NODE_OPTIONS` env var (`--import tsx" --max-old-space-size=8192`)
+   is malformed and breaks bare `node`/`npm` invocations independent of the
+   AgentV gap.
+3. Self-healed in-session: ran `npm ci` with `NODE_OPTIONS` unset for the
+   subprocess. No repository code change was required for this session — an
+   open PR (#1254, "sanitize AgentV NODE_OPTIONS") already carries the
+   in-harness fix pending merge.
+4. Re-ran the identical `train_version`/`eval_version` recipe as cycle c2
+   (below) after the fix; evals published successfully there.
 
 ## Next-run priorities
 
-1. **infrastructure:** consider a fail-closed AgentV-availability pre-flight in `run_autotrain_continuous` (or document `npm ci` as a required setup step for fresh checkouts) so a missing SDK reports as a clear setup blocker rather than a mid-eval traceback.
-2. **model:** re-run bounds/canvas to completion — done immediately after in campaign `continuous-loop-20260801-c2` (see that doc).
+1. **infrastructure:** land #1254 so continuous-loop containers don't need a
+   manual `npm ci` self-heal.
+2. **model:** do not use this cycle's pre-crash latency numbers as model
+   evidence — treat cycle c2 as the first clean read for this loop.
+3. **process:** empty-metrics / infrastructure-diagnosed arms stay
+   `harness_failure`, never `rejected`.
 
 ## Artifacts
 
 - Campaign: `outputs/autoresearch/continuous-loop-20260801-c1/`
-- Runs: `.../runs/c20260801-c1-control/`, `.../runs/c20260801-c1-bounds/`
 - JSON twin: `continuous-openui-20260801-c1-results.json`
-- SDLC Phase A: non-positive (`empty_metrics` on both arms) — no stack layer opened.

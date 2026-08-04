@@ -1,0 +1,66 @@
+{
+    "schema": "continuous_autotrain_cycle_results/v1",
+    "loop_id": "continuous-openui-local",
+    "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c5",
+    "cycle_index": 5,
+    "source_commit": "5222947e",
+    "honesty": "fixture_or_scratch",
+    "not_ship_claim": true,
+    "recipe": {
+        "device": "cpu",
+        "steps": 20,
+        "train_version": "wf_smoke_v2",
+        "eval_version": "e938_role_safe_all_targets_v2",
+        "max_wall_minutes": 3,
+        "ship_gates": true,
+        "seed": 100005
+    },
+    "arms": {
+        "c5-control": {
+            "trainable_params": 1766987,
+            "status": "completed_eval_gates_failed",
+            "smoke": {
+                "n": 3,
+                "parse_rate": 1.0,
+                "meaningful_program_rate": 0.0,
+                "structural_similarity": 0.04306666666666666,
+                "binder_reference_f1": 0.8222222222222223,
+                "latency_ms_p50": 4415.73
+            }
+        },
+        "c5-component-edge": {
+            "trainable_params": 1766987,
+            "status": "completed_eval_gates_failed",
+            "smoke": {
+                "n": 3,
+                "parse_rate": 1.0,
+                "meaningful_program_rate": 0.0,
+                "structural_similarity": 0.04306666666666666,
+                "binder_reference_f1": 0.8222222222222223,
+                "latency_ms_p50": 4409.37
+            }
+        }
+    },
+    "primary_metric": "smoke.structural_similarity",
+    "primary_delta": 0.0,
+    "sdlc_phase_a": {
+        "positive": false,
+        "stack_layer": false,
+        "stack_action": "no_stack_layer_non_positive",
+        "agent_required": "continue loop; local commits/docs only",
+        "reasons": [
+            "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c5-control",
+            "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c5-component-edge",
+            "primary_metric_null_or_worse:smoke.structural_similarity:control=0.04306666666666666 candidate=0.04306666666666666 improvement=0.0",
+            "fixture_insufficient_n_alone"
+        ]
+    },
+    "conclusion": "The 'component-edge' knob is size-matched against the control (1,766,987 params, wf_smoke_v2, steps=20, n=3, seed 100005) and produces an exact tie on the declared primary (smoke.structural_similarity=0.04307) and every other quality metric (meaningful_program_rate=0.0, binder_reference_f1=0.8222 on both arms); p50 latency is also statistically indistinguishable (4415.73ms vs 4409.37ms). Ship gates fail as expected (insufficient_n, missing held_out/adversarial/ood/rico_held suites). The 'component-edge' knob is now exhausted for this recipe.",
+    "next_priorities": [
+        "component-inventory quality hypothesis is next in the ranked matrix (c20260803-continuous-openui-local-8c0b60dd-c5-component-inventory) per the driver's speculative priorities",
+        "Keep the matched control as the size-matched baseline every cycle",
+        "Rotate thrash recommendation across the lever bank",
+        "Do not re-select the now-exhausted 'component-edge' arm without a new preregistered hypothesis"
+    ],
+    "recorded_at": "2026-08-03T07:46:00Z"
+}

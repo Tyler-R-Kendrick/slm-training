@@ -70,6 +70,49 @@
       "dashboard_build": "blocked by missing locked dependency @openfeature/web-sdk; dependency installation was rejected by the automatic-review service before execution"
     }
   },
+  "npm_ci_repair_verification": {
+    "date": "2026-08-02",
+    "trigger": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c1 (loop continuous-openui-local) ship-gate evaluation failed identically on both control and bounds arms with RuntimeError('AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER') from src/slm_training/evals/agentv.py:_agentv_runtime",
+    "repair_command": "npm ci",
+    "npm_ci_exit_code": 0,
+    "packages_added": 267,
+    "runtime_resolution_check": {
+      "method": "direct call to slm_training.evals.agentv._agentv_runtime(repo_root) with AGENTV_RUNNER unset",
+      "resolved_runner": "scripts/run_agentv_eval.mjs",
+      "resolved_root": ".",
+      "sdk_marker_present": "node_modules/@agentv/core/package.json",
+      "result": "resolves without AGENTV_RUNNER override"
+    },
+    "git_tree_after_npm_ci": "clean (npm ci touched only gitignored node_modules; package.json/package-lock.json unchanged)",
+    "replay_attempt": {
+      "command": "python -m scripts.run_autotrain_continuous --loop-id continuous-openui-local --supervised --max-cycles 1 --train-version wf_smoke_v2 --steps 20",
+      "bounded_by": "MAX_RUN_MINUTES=3 (src/slm_training/levers.py)",
+      "outcome": "CYCLE_ERROR before any campaign init or arm replay",
+      "error": "RuntimeError(\"predecessor continuous-loop-20260802-continuous-openui-local-8c0b60dd-c1 has unacknowledged actions: 0:repair_harness, 2:document\")",
+      "blocking_gate": "storage.pending_autotrain_actions() over AutotrainCycleHandoffV1.actions for the predecessor campaign",
+      "why_unresolvable_here": "action_index 0 (repair_harness) requires AutotrainActionReceiptV1 evidence that is a Git commit strictly descending from integration_commit c9144577938ff407e1bbe401649f580ad3cec2c3 (storage._git_commit_evidence); action_index 2 (document) requires evidence that is a Git-tracked repo file (storage._file_evidence). Both require a real git commit, which is out of scope for this operational (npm-only) repair and was not created. HEAD at the time of the attempt equalled integration_commit itself, confirming no repair commit exists to cite.",
+      "loop_state_after": {
+        "state": "IDLE",
+        "phase": "between_cycles",
+        "active_campaign_id": null,
+        "cycle_index": 1,
+        "blocker_count": 1
+      },
+      "new_campaign_created": false
+    },
+    "classification": "NON_POSITIVE",
+    "reason": "AgentV SDK unavailability was fully repaired and independently verified, but the continuous-loop successor-gating invariant (unacknowledged repair_harness/document actions) blocked frozen-replay-at-eval or any retrain for this loop pending a durable git-commit receipt this task was not authorized to create.",
+    "version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "code_commit": "c9144577938ff407e1bbe401649f580ad3cec2c3",
+      "code_dirty": false,
+      "components": {
+        "evals.agentv": "v6",
+        "harness.autoresearch.experiment_campaign": "v93"
+      },
+      "stamped_at": "2026-08-02T21:39:11+00:00"
+    }
+  },
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
     "code_commit": "5404017417ce5189617b6da270dbe02980e2cbcf",

@@ -1,15 +1,14 @@
 {
   "schema": "continuous_autotrain_cycle_results/v1",
-  "loop_id": "continuous-openui-20260730",
+  "loop_id": "continuous-openui-20260801",
   "campaign_id": "continuous-loop-20260801-c1",
   "cycle_index": 1,
-  "source_commit": "1bdfb14ebcf2393976a7c969e7bdd449fc5ada39",
+  "source_commit": "c1c4eca349b66f05684975575a3640ced50051ea",
   "honesty": "fixture_or_scratch",
   "not_ship_claim": true,
   "recipe": {
     "device": "cpu",
     "steps": 20,
-    "batch_size": 2,
     "context_backend": "scratch",
     "train_version": "wf_smoke_v2",
     "eval_version": "e938_role_safe_all_targets_v2",
@@ -19,29 +18,37 @@
   "arms": {
     "c20260801-c1-control": {
       "status": "failed",
-      "exit_code": 1,
-      "reason": "RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER",
-      "partial_latency_ms_p50": 2425.26
+      "diagnosis": "infrastructure",
+      "reason": "AgentV SDK unavailable: fresh container had no npm-installed node_modules for the AgentEvals/AgentV runner (RuntimeError in src/slm_training/evals/agentv.py::_agentv_runtime)",
+      "smoke": {
+        "latency_ms_p50": 2784.59,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0575
+      }
     },
     "c20260801-c1-bounds": {
       "status": "failed",
-      "exit_code": 1,
-      "reason": "RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER",
+      "diagnosis": "infrastructure",
+      "reason": "same AgentV SDK unavailability as control (identical harness blocker, not a model result)",
       "levers": {
-        "grammar_completion_bounds": true,
-        "compact_active_canvas": false
+        "grammar_completion_bounds": true
       },
-      "partial_latency_ms_p50": 2388.75
+      "smoke": {
+        "latency_ms_p50": 2873.6,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0575
+      }
     }
   },
-  "version_stamp": null,
-  "version_stamp_note": "Both arms crashed inside publish_model_evaluation before scripts.evaluate_model wrote scoreboard.json, so no canonical-writer version_stamp/v1 was ever generated for this campaign. Recording code_commit only: 1bdfb14ebcf2393976a7c969e7bdd449fc5ada39 (matches source_commit above). Do not fabricate a stamp for a run that never reached the stamping step.",
   "primary_metric": "smoke.latency_ms_p50",
-  "primary_delta_ms": null,
-  "conclusion": "Both arms crashed inside evaluate_model's AgentV publish step (node_modules not installed in this fresh checkout) before ship gates could run; the c2 eval_version footgun from the 2026-07-30 cycle did not recur (eval_version resolved to a real published suite). Partial pre-crash latency numbers (2425.26ms control vs 2388.75ms bounds) are diagnostic only, not gate-passing evidence. Self-heal: ran `npm ci` (with NODE_OPTIONS unset, since --import tsx is rejected by this node build) and re-ran as campaign continuous-loop-20260801-c2.",
+  "primary_delta_ms": 89.01000000000024,
+  "conclusion": "Both arms failed closed on a harness infrastructure gap, not a model result: the fresh container had no `node_modules` for the AgentV/@agentv/core eval runner, and the ambient NODE_OPTIONS env var (`--import tsx ...`) was malformed, which also breaks bare `node`/`npm`. Self-healed in-session by running `npm ci` with NODE_OPTIONS unset for the subprocess (no repository code change required); cycle c2 in this same loop reran the identical recipe successfully after the fix. Pre-crash scoreboard metrics (parse_rate, latency) were still captured but ship gates never published, so this cycle is infrastructure-diagnosed, not a quality result.",
   "next_priorities": [
-    "infrastructure: pin/document that continuous-loop driver runs require `npm ci` in a fresh checkout before AgentV-backed eval; consider a fail-closed pre-flight check in run_autotrain_continuous",
-    "model: re-run bounds/canvas arms to completion (done in continuous-loop-20260801-c2)"
+    "Confirm PR #1254 (open, base 51227b0..) 'sanitize AgentV NODE_OPTIONS' lands so future continuous-loop containers do not require a manual npm-ci self-heal step",
+    "Re-run the identical bounds/control arms now that AgentV is installed (see continuous-openui-20260801-c2-results.json) before drawing any model conclusion from this cycle",
+    "Do not treat empty_metrics/infrastructure-diagnosed arms as model evidence"
   ],
-  "recorded_at": "2026-08-01T04:37:24+00:00"
+  "recorded_at": "2026-08-01T13:31:23.286845+00:00"
 }

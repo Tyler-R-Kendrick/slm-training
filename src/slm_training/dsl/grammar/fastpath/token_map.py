@@ -7,6 +7,7 @@ scan) and the V5 lexer-native ``DSLNativeTokenizer`` (exact kind metadata).
 from __future__ import annotations
 
 import re
+import weakref
 from typing import Any
 
 from slm_training.models.tokenizer import OpenUITokenizer
@@ -54,32 +55,62 @@ def decode_prefix(tokenizer: OpenUITokenizer, token_ids: list[int]) -> str:
 def token_surface_piece(tokenizer: OpenUITokenizer, token_id: int) -> str:
     """Decode one token into the source fragment consumed by grammar state."""
     tid = int(token_id)
+    cache = getattr(tokenizer, "_grammar_surface_piece_cache", None)
+    owner = getattr(tokenizer, "_grammar_surface_piece_cache_owner", None)
+    cache_owned = (
+        isinstance(cache, dict)
+        and callable(owner)
+        and owner() is tokenizer
+    )
+    if cache_owned and tid in cache:
+        return str(cache[tid])
+    kind_of = getattr(tokenizer, "kind_of", None)
+    kind = getattr(kind_of(tid), "value", "") if callable(kind_of) else ""
+    cacheable = kind != "macro"
+
+    def _remember(piece: str) -> str:
+        nonlocal cache, cache_owned
+        if not cacheable:
+            return piece
+        if not cache_owned:
+            cache = {}
+            try:
+                setattr(tokenizer, "_grammar_surface_piece_cache", cache)
+                setattr(
+                    tokenizer,
+                    "_grammar_surface_piece_cache_owner",
+                    weakref.ref(tokenizer),
+                )
+            except (AttributeError, TypeError):
+                return piece
+            cache_owned = True
+        cache[tid] = piece
+        return piece
+
     if tid in {
         tokenizer.pad_id,
         tokenizer.bos_id,
         tokenizer.eos_id,
         tokenizer.mask_id,
     }:
-        return ""
+        return _remember("")
     raw = str(tokenizer.id_to_token.get(tid, ""))
     if raw == "NL":
-        return "\n"
+        return _remember("\n")
     if raw == "LIT_STR":
-        return '"'
+        return _remember('"')
     if raw in {"LIT_NUM", "LIT_END"}:
-        return ""
+        return _remember("")
     if raw.startswith("B:"):
         try:
-            return chr(int(raw[2:], 16))
+            return _remember(chr(int(raw[2:], 16)))
         except ValueError:
-            return raw
-    kind_of = getattr(tokenizer, "kind_of", None)
-    kind = getattr(kind_of(tid), "value", "") if callable(kind_of) else ""
+            return _remember(raw)
     if kind in {"sym", "bind", "state", "lit", "macro"} or not raw:
         decoded = tokenizer.decode([tid])
         if decoded:
-            return decoded
-    return raw
+            return _remember(decoded)
+    return _remember(raw)
 
 
 def allowed_id_set(
@@ -97,12 +128,15 @@ def allowed_id_set(
     if not terminals:
         return None
     if _is_dsl_native(tokenizer):
-        fingerprint = hash(tuple(sorted(tokenizer.token_to_id.items())))
-        key = (fingerprint, int(getattr(tokenizer, "version", 0)), terminals)
-        cached = _DSL_ALLOWED_CACHE.get(key) if use_cache else None
+        key: tuple[int, int, frozenset[str]] | None = None
+        cached: frozenset[int] | None = None
+        if use_cache:
+            fingerprint = hash(tuple(sorted(tokenizer.token_to_id.items())))
+            key = (fingerprint, int(getattr(tokenizer, "version", 0)), terminals)
+            cached = _DSL_ALLOWED_CACHE.get(key)
         if cached is None:
             result = _allowed_id_set_dsl(tokenizer, terminals)
-            if result is not None and use_cache:
+            if result is not None and key is not None:
                 _DSL_ALLOWED_CACHE[key] = frozenset(result)
         else:
             result = set(cached)

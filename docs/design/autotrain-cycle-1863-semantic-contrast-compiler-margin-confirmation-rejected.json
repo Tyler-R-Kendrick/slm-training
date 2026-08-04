@@ -1,0 +1,25 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-202607-98199209-c1863",
+  "decision": "reject_confirmation_quality_cost",
+  "claim_class": "fixture_screening",
+  "formal": {"status": "not_applicable:confirmation_rejected"},
+  "recipe": {
+    "device": "cpu", "steps": 20, "seed": 101863, "batch_size": 2,
+    "num_threads": 1, "context_backend": "scratch", "suite": "smoke",
+    "suite_n": 3, "trainable_params": {"control": 1608962, "candidate": 1608962},
+    "sync_checkpoints": false,
+    "candidate_lever": "semantic_contrast_loss_weight=.25 + compiler_alignment_loss_weight=1.0",
+    "code_commit": "2cb7f6a7bbbc8fb5539b28bc2f051202ab129349",
+    "model_component": "model.twotower:v306"
+  },
+  "arms": {
+    "control": {"status": "complete_gate_reject", "checkpoint_sha256": "e9073e9dee6e25118dc17ec1c4e8c1d3fa71488ccf5483e807d7154bb1c89b53", "metrics": {"parse_rate": 1.0, "structural_similarity": 0.17416666666666666, "meaningful_program_rate": 0.3333333333333333, "component_type_recall": 0.25, "binder_reference_f1": 0.6333333333333333, "placeholder_fidelity": 0.5277777777777778, "reward_score": 0.7653333333333334, "ast_beq_rate": 0.0, "canonical_beq_rate": 0.0, "latency_ms_p50": 909.35, "tokens_emitted_mean": 30.0, "forwards_count_mean": 5.0, "compiler_ms_mean": 2292.89}},
+    "candidate": {"status": "complete_gate_reject", "checkpoint_sha256": "9b381c9dafa70f6503075ac81d07433bf8e69d55d6d354d524c73de92e3918db", "metrics": {"parse_rate": 1.0, "structural_similarity": 0.28986666666666666, "meaningful_program_rate": 0.3333333333333333, "component_type_recall": 0.25, "binder_reference_f1": 1.0, "placeholder_fidelity": 1.0, "reward_score": 0.945, "ast_beq_rate": 0.0, "canonical_beq_rate": 0.0, "latency_ms_p50": 4874.74, "tokens_emitted_mean": 137.0, "forwards_count_mean": 35.0, "compiler_ms_mean": 12193.067}}
+  },
+  "effects": {"structural_similarity_delta": 0.1157, "meaningful_program_rate_delta": 0.0, "latency_fraction": 4.3607, "tokens_fraction": 3.5667, "forwards_fraction": 6.0, "params_fraction": 0.0},
+  "ship": {"eligible": false, "failures": ["smoke n=3<20", "MPR .333<.66", "structure .290<.35", "exact AST/canonical rates 0", "candidate p50 exceeds cost guardrail", "held-out/adversarial/OOD/RICO suites missing"]},
+  "learning_interpretation": "fresh-seed fixture quality signal rejected for cost and failure to improve meaningful-program rate",
+  "successor": {"experiment_slug": "distinct size-matched quality objective", "next_action": "exhaust this fingerprint and prioritize broader semantic/exact supervision"},
+  "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "2cb7f6a7bbbc8fb5539b28bc2f051202ab129349", "code_dirty": false, "components": {"config.levers": "v30", "harness.model_build.eval": "v80", "harness.experiment_feature_flags": "v4", "evals.meaningful_program": "2.13.0", "evals.power_protocol": "v8", "evals.scoring": "v22", "model.twotower": "v306"}, "stamped_at": "2026-08-03T09:52:00Z"}
+}

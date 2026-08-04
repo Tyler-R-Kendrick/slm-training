@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import weakref
 from collections import Counter
 from dataclasses import dataclass
 from enum import Enum
@@ -201,23 +202,61 @@ def unresolved_binder_reference_pieces(
 
 
 def _semantic_kind(tokenizer: Any, token_id: int) -> str:
+    tid = int(token_id)
+    cached = getattr(tokenizer, "_compiler_semantic_kind_cache", None)
+    cache = (
+        cached[1]
+        if isinstance(cached, tuple)
+        and len(cached) == 2
+        and callable(cached[0])
+        and cached[0]() is tokenizer
+        and isinstance(cached[1], dict)
+        else None
+    )
+    if cache is not None and tid in cache:
+        return str(cache[tid])
     kind_of = getattr(tokenizer, "kind_of", None)
     if callable(kind_of):
         try:
-            kind = kind_of(int(token_id))
-            return str(getattr(kind, "value", kind))
+            raw_kind = kind_of(tid)
+            kind = str(getattr(raw_kind, "value", raw_kind))
+            if cache is None:
+                cache = {}
+                try:
+                    setattr(
+                        tokenizer,
+                        "_compiler_semantic_kind_cache",
+                        (weakref.ref(tokenizer), cache),
+                    )
+                except (AttributeError, TypeError):
+                    return kind
+            cache[tid] = kind
+            return kind
         except (TimeoutError, KeyboardInterrupt):
             raise
         except Exception:  # noqa: BLE001
             pass
-    piece = _token_piece(tokenizer, token_id)
+    piece = _token_piece(tokenizer, tid)
     if piece[:1].isupper() and piece.isidentifier():
-        return "component"
-    if piece[:1].islower() and piece.isidentifier():
-        return "binder"
-    if piece.startswith(":") or piece.startswith("<SYM_"):
-        return "symbol"
-    return "structural"
+        kind = "component"
+    elif piece[:1].islower() and piece.isidentifier():
+        kind = "binder"
+    elif piece.startswith(":") or piece.startswith("<SYM_"):
+        kind = "symbol"
+    else:
+        kind = "structural"
+    if cache is None:
+        cache = {}
+        try:
+            setattr(
+                tokenizer,
+                "_compiler_semantic_kind_cache",
+                (weakref.ref(tokenizer), cache),
+            )
+        except (AttributeError, TypeError):
+            return kind
+    cache[tid] = kind
+    return kind
 
 
 def _grammar_terminal_kind(
@@ -229,19 +268,54 @@ def _grammar_terminal_kind(
     semantic_state: Any | None = None,
 ) -> str:
     """Classify structural choices by the active Lark terminal."""
-    semantic = _semantic_kind(tokenizer, token_id)
-    if semantic not in {"struct", "structural"}:
-        return semantic
-    matches = [
-        terminal
-        for terminal in terminals
-        if token_id
-        in (allowed_id_set(tokenizer, frozenset({terminal})) or set())
-    ]
-    if not matches:
-        return semantic
-    terminal = min(matches)
-    kind = f"grammar_{terminal.lower().strip('_').replace('$', 'end_')}"
+    tid = int(token_id)
+    cached = getattr(tokenizer, "_compiler_terminal_kind_cache", None)
+    cache = (
+        cached[1]
+        if isinstance(cached, tuple)
+        and len(cached) == 2
+        and callable(cached[0])
+        and cached[0]() is tokenizer
+        and isinstance(cached[1], dict)
+        else None
+    )
+    key = (tid, terminals)
+    projection = cache.get(key) if cache is not None else None
+    if projection is None:
+        semantic = _semantic_kind(tokenizer, tid)
+        terminal = None
+        kind = semantic
+        if semantic in {"struct", "structural"}:
+            matches = [
+                candidate_terminal
+                for candidate_terminal in terminals
+                if tid
+                in (
+                    allowed_id_set(
+                        tokenizer, frozenset({candidate_terminal})
+                    )
+                    or set()
+                )
+            ]
+            if matches:
+                terminal = min(matches)
+                kind = (
+                    f"grammar_{terminal.lower().strip('_').replace('$', 'end_')}"
+                )
+        projection = (kind, terminal)
+        if cache is None:
+            cache = {}
+            try:
+                setattr(
+                    tokenizer,
+                    "_compiler_terminal_kind_cache",
+                    (weakref.ref(tokenizer), cache),
+                )
+            except (AttributeError, TypeError):
+                cache = None
+        if cache is not None:
+            cache[key] = projection
+    kind, terminal = projection
     if terminal == "RSQB":
         if semantic_state is not None:
             from slm_training.dsl.grammar.fastpath import semantic_state as _ss
@@ -1173,8 +1247,7 @@ def _generated_ast_is_complete(prefix_text: str) -> bool:
     try:
         from slm_training.dsl import lang_core
 
-        program = lang_core.parse(prefix_text)
-        return isinstance(program.root, dict) and bool(program.root)
+        return lang_core.parse_has_root(prefix_text)
     except (TimeoutError, KeyboardInterrupt):
         raise
     except lang_core.ParseError:
@@ -1585,6 +1658,7 @@ def _build_openui_completion_forest_direct(
     explain: bool = False,
     semantic_state: Any | None = None,
     scan_counter: Any | None = None,
+    branch_memo: Any | None = None,
 ) -> CompletionForest:
     """Enumerate every mapped, globally extendable action at ``prefix_ids``.
 
@@ -1896,14 +1970,39 @@ def _build_openui_completion_forest_direct(
         return tuple(sorted(sequences))
 
     terminals = engine.next_terminals()
-    candidates = allowed_id_set(tokenizer, terminals) or set()
+    candidates = allowed_id_set(tokenizer, terminals, use_cache=True) or set()
+    kind_ids = getattr(tokenizer, "kind_ids", None)
+    try:
+        component_ids = (
+            set(int(token_id) for token_id in kind_ids("component"))
+            if callable(kind_ids)
+            else {
+                int(token_id)
+                for token_id in candidates
+                if _semantic_kind(tokenizer, token_id) == "component"
+            }
+        )
+    except (TimeoutError, KeyboardInterrupt):
+        raise
+    except Exception:  # noqa: BLE001
+        component_ids = {
+            int(token_id)
+            for token_id in candidates
+            if _semantic_kind(tokenizer, token_id) == "component"
+        }
     before_stage = _snapshot()
     if prefix_ids and tokenizer.id_to_token.get(int(prefix_ids[-1])) == "NL":
         newline_id = tokenizer.token_to_id.get("NL")
         if newline_id is not None:
             candidates.discard(int(newline_id))
     _record_excluded(ConstraintStage.GRAMMAR, "grammar_newline_repeat", before_stage)
-    ast_complete = _generated_ast_is_complete(prefix_text)
+    # The official AST parser is terminal authority, so it is only relevant
+    # when the grammar can actually end at this state.  Terminal-witness search
+    # visits many nonterminal prefixes; parsing those prefixes cannot admit EOS
+    # and needlessly turns exact reachability into repeated bridge round trips.
+    ast_complete = (
+        _generated_ast_is_complete(prefix_text) if "$END" in terminals else False
+    )
     references_resolved = _references_resolved_view()
     # A4: withhold EOS while the layout has fewer than ``min_content`` components,
     # but only when the grammar still offers a non-EOS continuation (never create
@@ -1962,7 +2061,7 @@ def _build_openui_completion_forest_direct(
         candidates = {
             token_id
             for token_id in candidates
-            if _semantic_kind(tokenizer, token_id) != "component"
+            if token_id not in component_ids
             or _token_piece(tokenizer, token_id) in component_names
         }
         active_containers = sum(
@@ -1973,7 +2072,7 @@ def _build_openui_completion_forest_direct(
             candidates = {
                 token_id
                 for token_id in candidates
-                if _semantic_kind(tokenizer, token_id) != "component"
+                if token_id not in component_ids
                 or not _schema_component_accepts_components(
                     _token_piece(tokenizer, token_id), schema
                 )
@@ -2002,7 +2101,7 @@ def _build_openui_completion_forest_direct(
                 token_id
                 for token_id in candidates
                 if (
-                    _semantic_kind(tokenizer, token_id) == "component"
+                    token_id in component_ids
                     and _token_piece(tokenizer, token_id) in slot_components
                 )
                 or token_id in typed_binders
@@ -2026,7 +2125,7 @@ def _build_openui_completion_forest_direct(
             candidates = {
                 token_id
                 for token_id in candidates
-                if _semantic_kind(tokenizer, token_id) != "component"
+                if token_id not in component_ids
                 or _token_piece(tokenizer, token_id) in required_components
             }
             _record_excluded(
@@ -2042,7 +2141,7 @@ def _build_openui_completion_forest_direct(
             candidates = {
                 token_id
                 for token_id in candidates
-                if _semantic_kind(tokenizer, token_id) != "component"
+                if token_id not in component_ids
                 or not _component_requires_available_content(
                     _token_piece(tokenizer, token_id)
                 )
@@ -2302,7 +2401,7 @@ def _build_openui_completion_forest_direct(
                 token_id
                 for token_id in candidates
                 if (
-                    _semantic_kind(tokenizer, token_id) != "component"
+                    token_id not in component_ids
                     or _token_piece(tokenizer, token_id) in array_item_components
                 )
                 and (
@@ -2355,10 +2454,10 @@ def _build_openui_completion_forest_direct(
         try:
             from slm_training.models.dsl_tokenizer import TokenKind
 
-            bind_ids = set(tokenizer.kind_ids(TokenKind.BIND))
-            state_ids = set(tokenizer.kind_ids(TokenKind.STATE))
-            builtin_ids = set(tokenizer.kind_ids(TokenKind.BUILTIN))
-            sym_ids = set(tokenizer.kind_ids(TokenKind.SYM))
+            bind_ids = tokenizer.kind_ids(TokenKind.BIND)
+            state_ids = tokenizer.kind_ids(TokenKind.STATE)
+            builtin_ids = tokenizer.kind_ids(TokenKind.BUILTIN)
+            sym_ids = tokenizer.kind_ids(TokenKind.SYM)
             declarations, references, active_declaration = _binder_scope_view()
             last = prefix_ids[-1] if prefix_ids else None
             # LTR/compiler prefixes include BOS, which is not a source token.
@@ -2435,7 +2534,7 @@ def _build_openui_completion_forest_direct(
         candidates = {
             token_id
             for token_id in candidates
-            if _semantic_kind(tokenizer, token_id) == "component"
+            if token_id in component_ids
         }
         _record_excluded(
             ConstraintStage.SCHEMA, "declaration_value_requires_component", before_stage
@@ -2457,6 +2556,19 @@ def _build_openui_completion_forest_direct(
         if enum_sequences is not None
         else tuple((candidate,) for candidate in sorted(candidates - specials))
     )
+    # L2 branch memo: the branch walk below is a pure function of the parent
+    # engine's control key + candidate sequence + initial literal-frame flag +
+    # path cap (feed_token_id / advance_checked / next_terminals /
+    # force_next_token_id read only the parser).  Semantic labeling
+    # (_decision_kind) and evidence rows are reconstructed live per state.
+    memo_control_key = None
+    memo_frame_open = None
+    if branch_memo is not None and engine is not None:
+        try:
+            memo_control_key = engine.parser_state_key()
+            memo_frame_open = bool(_literal_frame_open_view())
+        except Exception:  # noqa: BLE001 — memo is an accelerator only
+            memo_control_key = None
     for sequence in candidate_sequences:
         if not sequence:
             continue
@@ -2464,6 +2576,66 @@ def _build_openui_completion_forest_direct(
         if candidate == int(tokenizer.eos_id):
             paths.append(CompletionPath((candidate,), "eos"))
             continue
+        memo_key = None
+        if memo_control_key is not None:
+            memo_key = (
+                memo_control_key,
+                tuple(int(token_id) for token_id in sequence),
+                memo_frame_open,
+                max_path_tokens,
+            )
+            hit = branch_memo.get(memo_key)
+            if hit is not None:
+                if scan_counter is not None:
+                    scan_counter["branch_memo_hits"] = (
+                        scan_counter.get("branch_memo_hits", 0) + 1
+                    )
+                verdict, memo_drafted = hit
+                if verdict == "prefix_rejected":
+                    _record_one(
+                        ConstraintStage.GRAMMAR,
+                        "branch_prefix_rejected",
+                        candidate,
+                        admitted=False,
+                    )
+                    continue
+                if verdict == "unreachable":
+                    _record_one(
+                        ConstraintStage.GRAMMAR,
+                        "branch_unreachable",
+                        candidate,
+                        admitted=False,
+                    )
+                    continue
+                paths.append(
+                    CompletionPath(
+                        tuple(memo_drafted),
+                        _decision_kind(
+                            tokenizer,
+                            candidate,
+                            prefix_ids,
+                            tuple(sorted(str(term) for term in terminals)),
+                            engine,
+                            schema,
+                            semantic_state=sstate,
+                        ),
+                    )
+                )
+                if evidence is not None:
+                    evidence.append(
+                        ConstraintEvidence(
+                            candidate,
+                            tuple(memo_drafted),
+                            ConstraintStage.GRAMMAR,
+                            True,
+                            "admitted",
+                        )
+                    )
+                continue
+            if scan_counter is not None:
+                scan_counter["branch_memo_misses"] = (
+                    scan_counter.get("branch_memo_misses", 0) + 1
+                )
         # Structural reuse: fork the already-synced parent engine instead of
         # re-lexing+re-feeding the whole prefix per candidate.  ``set_prefix``
         # below is then a same-text no-op, so the branch behaves exactly like
@@ -2472,6 +2644,8 @@ def _build_openui_completion_forest_direct(
         branch = engine.copy()
         if not ids_synced and not branch.set_prefix(prefix_text):
             _record_one(ConstraintStage.GRAMMAR, "branch_prefix_rejected", candidate, admitted=False)
+            if memo_key is not None:
+                branch_memo[memo_key] = ("prefix_rejected", None)
             continue
         branch_text = prefix_text
         admitted = True
@@ -2488,9 +2662,17 @@ def _build_openui_completion_forest_direct(
                 crossed_literal_boundary = True
                 continue
             piece = _token_piece(tokenizer, int(token_id))
-            # Single-pass test-and-commit: same accept/reject outcome as the
-            # probe_chunk + advance pair, with one lex and one delta feed.
-            admitted = branch.advance_checked(piece)
+            # Prefer the checked static token→terminal map.  Ambiguous or
+            # unsupported junctions retain the canonical text path exactly;
+            # verified direct feeds avoid re-lexing every witness branch.
+            direct = branch.feed_token_id(
+                tokenizer,
+                int(token_id),
+                _restore_on_reject=False,
+            )
+            admitted = (
+                branch.advance_checked(piece) if direct is None else bool(direct)
+            )
             if not admitted:
                 break
             branch_text += piece
@@ -2498,6 +2680,8 @@ def _build_openui_completion_forest_direct(
         # terminal, which is the exact CFG reachability guarantee we need.
         if not admitted or not branch.next_terminals():
             _record_one(ConstraintStage.GRAMMAR, "branch_unreachable", candidate, admitted=False)
+            if memo_key is not None:
+                branch_memo[memo_key] = ("unreachable", None)
             continue
         drafted = [int(token_id) for token_id in sequence]
         # The fork + per-sequence ``advance_checked`` above left ``branch``
@@ -2518,11 +2702,21 @@ def _build_openui_completion_forest_direct(
                 break
             drafted.append(int(forced))
             piece = _token_piece(tokenizer, forced)
-            if not branch.advance_checked(piece):
+            direct = branch.feed_token_id(
+                tokenizer,
+                int(forced),
+                _restore_on_reject=False,
+            )
+            admitted = (
+                branch.advance_checked(piece) if direct is None else bool(direct)
+            )
+            if not admitted:
                 drafted.pop()
                 break
             branch_text += piece
             branch_synced = True
+        if memo_key is not None:
+            branch_memo[memo_key] = ("ok", tuple(drafted))
         paths.append(
             CompletionPath(
                 tuple(drafted),
@@ -2543,9 +2737,8 @@ def _build_openui_completion_forest_direct(
                     candidate, tuple(drafted), ConstraintStage.GRAMMAR, True, "admitted"
                 )
             )
-
     if not paths:
-        coverage: Coverage = "partial" if terminals else "none"
+        coverage = "partial" if terminals else "none"
     elif inventory_complete and _known_terminal_coverage(tokenizer, terminals):
         coverage = "complete"
     else:

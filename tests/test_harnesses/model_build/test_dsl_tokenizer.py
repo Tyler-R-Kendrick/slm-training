@@ -72,6 +72,35 @@ def test_vocab_is_fixed_and_typed(tok: DSLNativeTokenizer) -> None:
     assert " " not in tok.token_to_id
 
 
+def test_kind_ids_cache_preserves_fresh_set_and_legacy_checkpoint_contract(
+    tok: DSLNativeTokenizer,
+) -> None:
+    expected = {i for i, value in tok.id_to_kind.items() if value == "bind"}
+    first = tok.kind_ids(TokenKind.BIND)
+    assert first == expected
+    assert tok._kind_ids_cache["bind"] == frozenset(expected)
+    first.clear()
+    assert tok.kind_ids("bind") == expected
+
+    del tok._kind_ids_cache
+    assert tok.kind_ids(TokenKind.BIND) == expected
+
+
+def test_kind_of_uses_immutable_table_and_supports_legacy_checkpoints(
+    tok: DSLNativeTokenizer,
+) -> None:
+    component_id = tok.token_to_id["Stack"]
+    assert tok._token_kind_cache == ()
+    assert tok.kind_of(component_id) is TokenKind.COMPONENT
+    assert len(tok._token_kind_cache) == tok.vocab_size
+    assert tok.kind_of(-1) is TokenKind.SPECIAL
+    assert tok.kind_of(tok.vocab_size) is TokenKind.SPECIAL
+
+    del tok._token_kind_cache
+    assert tok.kind_of(component_id) is TokenKind.COMPONENT
+    assert len(tok._token_kind_cache) == tok.vocab_size
+
+
 def test_round_trip_with_symbol_table(tok: DSLNativeTokenizer) -> None:
     table = SymbolTable.from_placeholders([":hero.title", ":hero.body"])
     ids = tok.encode(HERO, table=table, use_symbol_table=True)
