@@ -12401,7 +12401,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v309",
+      "version": "v310",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -12446,6 +12446,11 @@
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
       "history": [
+        {
+          "version": "v310",
+          "date": "2026-08-04T20:00:00+00:00",
+          "note": "fix(decode-metering): exact_forced_token_id (models/grammar.py), used by the legacy non-compiler-tree LTR decode path, called build_completion_forest with zero timed_ms instrumentation, so a checkpoint that decodes via compiler_decode_mode='off' (its own persisted config) could spend nearly all of its real decode wall time in that call while compiler_ms stayed 0.0 and the cost silently fell into unattributed_ms. Also widened the compiler-tree timed_ms(compiler_ms) block in twotower.py's _compiler_ltr_decode_one/_compiler_ltr_decode_batch to cover completion_forced_closure, the same outgoing()-edge grammar-authority walk chained off the same call. Pure additive timing instrumentation: no decode/generation-output behavior changes, only decode_stats attribution (compiler_ms up, unattributed_ms down for previously-unmetered calls). See docs/design/compiler-tree-forced-closure-decode-metering-gap.md."
+        },
         {
           "version": "v309",
           "date": "2026-08-04",
