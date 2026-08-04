@@ -7982,6 +7982,11 @@
         {
           "version": "v3",
           "date": "2026-08-04",
+          "note": "no-bump: record scheduled loop 1e62ecf9 c5's control/component-edge scratch checkpoint provenance (quality-neutral null, latency-only delta) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-04",
           "note": "no-bump: record scheduled loop 1e62ecf9 c4's control/component-plan scratch checkpoint provenance (quality-neutral null with a latency regression) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {

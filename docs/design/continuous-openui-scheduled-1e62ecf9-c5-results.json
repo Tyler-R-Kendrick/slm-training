@@ -1,0 +1,75 @@
+{
+  "schema": "autotrain_continuous_cycle_results/v1",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "a9a1c5271154987a5d8bcfeba1d195ec4d994de5",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v181"
+    },
+    "stamped_at": "2026-08-04T22:50:40.626771+00:00"
+  },
+  "loop_id": "continuous-openui-scheduled",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-schedu-1e62ecf9-c5",
+  "cycle_index": 5,
+  "predecessor_campaign_id": "continuous-loop-20260804-continuous-openui-schedu-1e62ecf9-c4",
+  "upstream_commit": "34111e6e9d5be7036257467e27cd772549ddaa72",
+  "integration_commit": "a9a1c5271154987a5d8bcfeba1d195ec4d994de5",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "screening",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true
+  },
+  "arms": {
+    "control": {
+      "id": "c20260804-continuous-openui-schedu-1e62ecf9-c5-control",
+      "trainable_params": 1766987,
+      "structural_similarity": 0.04306666666666666,
+      "meaningful_program_rate": 0.0,
+      "binder_reference_f1": 0.8222222222222223,
+      "parse_rate": 1.0,
+      "latency_ms_p50": 16174.65,
+      "checkpoint_sha256": "0e3d1953c500155696814acc0bcf72fb5285ad39b076e9be3653167008e64ca2"
+    },
+    "component-edge": {
+      "id": "c20260804-continuous-openui-schedu-1e62ecf9-c5-component-edge",
+      "trainable_params": 1766987,
+      "structural_similarity": 0.04306666666666666,
+      "meaningful_program_rate": 0.0,
+      "binder_reference_f1": 0.8222222222222223,
+      "parse_rate": 1.0,
+      "latency_ms_p50": 14592.06,
+      "checkpoint_sha256": "aebbafec07f56353fdb99448b1f5e6f4ccef6594bc54a74b3b96a64d1d8416c0"
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260804-continuous-openui-schedu-1e62ecf9-c5-control",
+      "fixture_insufficient_n:c20260804-continuous-openui-schedu-1e62ecf9-c5-component-edge",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.04306666666666666 candidate=0.04306666666666666 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "conclusion": "component_edge_quality_neutral_latency_only",
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "model",
+      "hypothesis": "Rotation proposes re-testing component-plan with a fresh seed next.",
+      "action": "experiment_next",
+      "experiment_id": "c20260804-continuous-openui-schedu-1e62ecf9-c5-component-plan"
+    }
+  ],
+  "recorded_at": "2026-08-04T22:50:23Z"
+}
