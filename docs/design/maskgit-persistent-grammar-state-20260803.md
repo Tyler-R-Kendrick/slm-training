@@ -91,15 +91,39 @@ Follow-up candidates (not acted on, need their own preregistered runs):
   `completion_domain` (`terminal_witness` recursion) — the actual 74–94% cost
   center, unchanged since SLM-304.
 
-## Telemetry gap (still open)
+## Telemetry gap — CLOSED (2026-08-03, follow-up on HEAD eba6db30)
 
-Engine counters `full_syncs` / `incremental_advances` / `copy_probes` /
-`sync_ms` (`OpenUIIncrementalEngine.stats`) are computed but consumed nowhere
-in `decode_stats.py`; the incremental-vs-full-sync ratio cannot be read from
-any shipped telemetry. The experiment's temporary fold worked and was
-reverted with the wiring; re-adding it is trivial if a future experiment
-needs it (map the seven counters into `DecodeStats` next to
-`collect_completion_session_delta`).
+The gap this experiment exposed is now instrumented (advisory-only, no gate,
+no behavior change — outputs byte-identical to the uninstrumented baseline):
+
+- `finalize_ms` (previously a dead field) now wraps the four top-level
+  repair/certify call sites (`_constrained_ltr_repair` on the MaskGIT and
+  compiler-fallback paths, `_ensure_valid_openui` on the certify paths).
+- `aggregate_stats` emits `attributed_ms_sum` / `unattributed_ms_sum` /
+  `attributed_fraction` over the coarse phase spans
+  (`ATTRIBUTED_PHASE_FIELDS`); `scripts/profile_generate.py` warns below 0.7.
+  Nested sliver overlap is documented and clamped — this is a dark-cost
+  detector, not precision accounting.
+- Engine lifetime counters fold via `collect_engine_stats` (`dfa_full_syncs`,
+  `dfa_incremental_advances`, `dfa_copy_probes`, `dfa_copy_probe_fallbacks`,
+  `dfa_engine_sync_ms`, `dfa_full_sync_fallbacks`,
+  `dfa_full_prefix_lex_bytes`) at the repair and greedy-LTR decode exits.
+- Eval summaries add an advisory degenerate-output signal
+  (`distinct_prediction_count`, `most_common_prediction_share`) and censored
+  decodes carry a dominant-phase sub-cause in `decode_outcome_detail`
+  (`timeout_dominant_phase=<field>(x ms/y ms)`).
+
+**Measured proof** (`outputs/runs/profile_maskgit_head_instr.json` vs
+`profile_maskgit_head_inc.json`, same checkpoint/config): outputs
+byte-identical; `attributed_fraction` **0.25 → 1.0**; `finalize_ms` mean
+**5,886 ms of 6,736 ms total (87%)** — the shipped telemetry now names the
+repair/certify phase as the dominant cost, matching the manual cProfile
+attribution above without requiring one.
+
+Loop exposure: `grammar_incremental_state` is now a typed autoresearch knob
+(allowlist + argv compile + `--grammar-incremental-state` train CLI), so the
+2.3–3.6× decode-cost lever this experiment surfaced is directly testable by
+preregistered campaigns.
 
 ## Kept artifacts
 
