@@ -1,0 +1,85 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-scheduled-zflz88",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-schedu-486913c8-c1",
+  "cycle_index": 1,
+  "source_commit": "eba6db3044076285581b80cfe5294a2ecbcee8a1",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 1.1666666666666667,
+    "ship_gates": true,
+    "seed": 100001
+  },
+  "arms": {
+    "c1-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 4248.82,
+        "placeholder_fidelity": 0.5277777777777778,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "reward_score": 0.0
+      }
+    },
+    "c1-bounds": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 3826.3,
+        "placeholder_fidelity": 0.5277777777777778,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "reward_score": 0.0
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "eba6db3044076285581b80cfe5294a2ecbcee8a1",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v84",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v23",
+      "model.twotower": "v308"
+    }
+  },
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "continue loop; local commits/docs only",
+    "reasons": [
+      "fixture_insufficient_n:c20260804-continuous-openui-schedu-486913c8-c1-bounds",
+      "fixture_insufficient_n:c20260804-continuous-openui-schedu-486913c8-c1-control",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.057499999999999996:candidate=0.057499999999999996:improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "conclusion": "Continuous-openui-scheduled loop, cycle 1 (session zflz88, branch claude/great-dirac-zflz88): the 'bounds' knob-rotation arm ties its size-matched control exactly on the declared primary, smoke.structural_similarity (0.0575 both arms, seed 100001) -- a null delta, not a regression, not a win. parse_rate=1.0 and binder_reference_f1=0.6333 also match exactly on both arms; meaningful_program_rate stays 0 on both. Ship gates fail as expected (fixture_insufficient_n, n=3 vs the required 20). SDLC Phase A classifies this cycle NON_POSITIVE (primary_metric_null_or_worse); per sdlc autotrain-iteration-delivery, no new stack layer opens for this cycle -- docs land, loop continues with cycle 2 testing the ranked 'component-plan' successor hypothesis.",
+  "next_priorities": [
+    "The completed 'bounds' arm is exhausted (null delta); test the distinct size-matched 'component-plan' quality hypothesis next (rank 1, confidence 0.9) -- this hypothesis has independently reproduced a structural_similarity win across multiple prior sessions (see continuous-openui-local-j48f8u-c2-results.md, continuous-openui-local-ts5ofk-c1-results.md)",
+    "Keep the matched control as the size-matched baseline every cycle (rank 2, confidence 0.7)",
+    "Rotate thrash recommendation across the lever bank, not bounds-only (rank 3, confidence 0.65)"
+  ],
+  "recorded_at": "2026-08-04T11:31:04Z"
+}
