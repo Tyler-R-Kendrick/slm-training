@@ -30,10 +30,14 @@ def main() -> int:
         artifact_path=args.artifact,
         manifest_path=args.manifest,
     )
+    bound = manifest["state_min_terminals"]
     print(
         f"{args.artifact}: {manifest['lalr_state_count']} states, "
         f"{manifest['lalr_edge_count']} edges, "
-        f"{manifest['direct_token_count']} direct token rows"
+        f"{manifest['lalr_rule_count']} rules, "
+        f"{manifest['direct_token_count']} direct token rows, "
+        f"acceptance-length lower bound max={bound['max']} "
+        f"(trivial={bound['trivial']}, consumed by nothing)"
     )
     return 0
 

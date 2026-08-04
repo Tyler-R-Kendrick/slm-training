@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures
+import functools
 import hashlib
 import json
 import os
@@ -19,6 +20,11 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 CHANGED_TEST_WORKERS: int | None = None
+# Read as a plain repo-relative path rather than importlib.resources so the
+# table resolves in worktrees and uninstalled checkouts too.
+TEST_DURATIONS_PATH = (
+    ROOT / "src" / "slm_training" / "resources" / "ci" / "test_durations_v1.json"
+)
 
 
 # Editing any instruction surface re-certifies the whole parity matrix; the
@@ -480,21 +486,66 @@ def _changed_test_workers() -> int:
     return configured_workers
 
 
-def _shard_test_nodes(nodes: list[str], workers: int) -> list[list[str]]:
-    """Hash-shard each test file independently so slow suites stay balanced."""
-    batches: list[list[str]] = [[] for _ in range(workers)]
+@functools.lru_cache(maxsize=1)
+def _test_file_durations() -> dict[str, float]:
+    """Committed per-file wall-clock weights; empty when absent or unreadable.
+
+    Duration weights only reorder the shard packing, so a missing or corrupt
+    table degrades to the historical count-balanced behaviour instead of
+    failing the run.
+    """
+    try:
+        payload = json.loads(TEST_DURATIONS_PATH.read_text(encoding="utf-8"))
+        durations = payload["durations"]
+    except (OSError, ValueError, KeyError, TypeError):
+        return {}
+    if not isinstance(durations, dict):
+        return {}
+    return {
+        str(path): float(seconds)
+        for path, seconds in durations.items()
+        if isinstance(seconds, (int, float)) and float(seconds) > 0.0
+    }
+
+
+def _shard_test_nodes(
+    nodes: list[str],
+    workers: int,
+    durations: dict[str, float] | None = None,
+) -> list[list[str]]:
+    """Pack test nodes into ``workers`` shards, heaviest measured file first.
+
+    Files with a committed duration weight stay whole so a known-slow suite
+    never shares a shard with another slow suite; unmeasured files keep their
+    historical per-node granularity (one unit of weight each), which makes an
+    empty weights table reduce exactly to count-balanced round-robin.
+    """
+    table = _test_file_durations() if durations is None else durations
     by_file: dict[str, list[str]] = {}
     for node in nodes:
         by_file.setdefault(node.split("::", 1)[0], []).append(node)
-    offset = 0
+    units: list[tuple[float, str, int, list[str]]] = []
     for path in sorted(by_file):
         group = sorted(
             by_file[path],
             key=lambda node: hashlib.sha256(node.encode()).digest(),
         )
-        for index, node in enumerate(group):
-            batches[(offset + index) % workers].append(node)
-        offset = (offset + len(group)) % workers
+        # A lone file has nothing to be isolated from, so keep splitting it
+        # across shards instead of serialising the whole suite onto one.
+        weight = None if len(by_file) < 2 else table.get(path)
+        if weight is None:
+            units.extend((1.0, path, index, [node]) for index, node in enumerate(group))
+        else:
+            units.append((float(weight), path, 0, group))
+    # Longest-processing-time-first: the heaviest unit picks the emptiest shard,
+    # so a multi-ten-second file lands alone and the rest fill in around it.
+    units.sort(key=lambda unit: (-unit[0], unit[1], unit[2]))
+    batches: list[list[str]] = [[] for _ in range(workers)]
+    loads = [0.0] * workers
+    for weight, _path, _index, group in units:
+        target = min(range(workers), key=lambda shard: (loads[shard], shard))
+        batches[target].extend(group)
+        loads[target] += weight
     return batches
 
 

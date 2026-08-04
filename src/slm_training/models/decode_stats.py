@@ -196,6 +196,18 @@ class DecodeStats:
     # L-D: parallel block-step commits reverted because the joint canvas was
     # PROVEN uncompletable by multi_region_support (never on unknown/budget).
     block_joint_rejections: int = 0
+    # L-D/HX4: joint verdicts that came back without proof authority (node
+    # budget exhausted). Commits are kept — counted so the fail-open share of
+    # the joint validator is observable instead of silent.
+    block_joint_unknowns: int = 0
+    # HX4 hybrid unmask scheduler (unmask_mode="hybrid"): positions committed
+    # through the block-scheduled span lane vs the frontier (positionwise) lane,
+    # and span-only reverts taken before the all-or-nothing fallback.
+    hybrid_span_commits: int = 0
+    hybrid_frontier_commits: int = 0
+    hybrid_span_reverts: int = 0
+    # E20: masked slot positions seeded from the slot-contract template.
+    template_slot_positions: int = 0
     asap_positions: int = 0
     constraint_graph_edges: int = 0
     completion_bound_known: int = 0
@@ -619,6 +631,11 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "admit_probe_canvases",
         "admit_probe_committed_suffix",
         "block_joint_rejections",
+        "block_joint_unknowns",
+        "hybrid_span_commits",
+        "hybrid_frontier_commits",
+        "hybrid_span_reverts",
+        "template_slot_positions",
         "asap_positions",
         "constraint_graph_edges",
         "completion_bound_known",
