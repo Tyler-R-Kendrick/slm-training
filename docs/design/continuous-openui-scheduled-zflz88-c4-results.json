@@ -1,0 +1,69 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-scheduled-zflz88",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-schedu-486913c8-c4",
+  "cycle_index": 4,
+  "source_commit": "adc03310721566930ccde09e5f714300021d2c83",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "cycle_intent": "retry_measurement",
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3.0,
+    "ship_gates": true,
+    "candidate_lever": "component_plan",
+    "trainable_params": {
+      "control": 1755764,
+      "component_plan": 1755764
+    }
+  },
+  "arms": {
+    "c4-control": {
+      "status": "measurement_incomplete_decode_timeout",
+      "smoke": {"n": 3, "decode_timeout_count": 3, "compiler_ms_mean_partial": 23238.2}
+    },
+    "c4-component-plan": {
+      "status": "measurement_incomplete_decode_timeout",
+      "smoke": {"n": 3, "decode_timeout_count": 3, "compiler_ms_mean_partial": 24003.4}
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "measurement_incomplete:c20260804-continuous-openui-schedu-486913c8-c4-control:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "measurement_incomplete:c20260804-continuous-openui-schedu-486913c8-c4-component-plan:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "harness_failure:c20260804-continuous-openui-schedu-486913c8-c4-control:experiment_failed",
+      "harness_failure:c20260804-continuous-openui-schedu-486913c8-c4-component-plan:experiment_failed",
+      "fixture_insufficient_n:c20260804-continuous-openui-schedu-486913c8-c4-control",
+      "fixture_insufficient_n:c20260804-continuous-openui-schedu-486913c8-c4-component-plan",
+      "primary_metric_unavailable",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "loop_law_disposition": {
+    "rule": "autotrain continuous.md Absolute loop law #4",
+    "occurrences": 3,
+    "campaigns": [
+      "continuous-loop-20260804-continuous-openui-schedu-486913c8-c2",
+      "continuous-loop-20260804-continuous-openui-schedu-486913c8-c3",
+      "continuous-loop-20260804-continuous-openui-schedu-486913c8-c4"
+    ],
+    "verdict": "hard_block_reached",
+    "action": "repair_harness handoff action for c4 is left genuinely unacknowledged (not fake-completed) so this loop lineage (continuous-openui-scheduled-zflz88) correctly stays fail-closed at this frozen arm; a self-correction note is recorded below regarding c2/c3's repair_harness acks.",
+    "self_correction_note": "c2 and c3's repair_harness actions were acknowledged status=completed with a documentation commit as evidence. That was a process error: per storage.py, an acknowledged repair_harness receipt resets the consecutive-frozen-replay count, which is why the driver kept re-queuing the identical arm for 3 more cycles instead of escalating after the first reproduction. No further repair_harness actions should be acked completed without an actual code change to the model_build harness family; this doc records that correction for the next session/cycle."
+  },
+  "conclusion": "Continuous-openui-scheduled loop, cycle 4 (session zflz88): third consecutive identical retry of the frozen component-plan/control pair (1,755,764 params) again reproduces decode_timeout_count=3/3 on both arms. This is the 3rd consecutive occurrence of the same hard blocker with no new information, meeting the autotrain continuous-loop law's repeated-blocker threshold. This session stops retrying this frozen arm. The c4 repair_harness handoff action is left genuinely unacknowledged so the loop lineage stays fail-closed pending either a real harness fix or a future session with more container CPU headroom -- unlike c2/c3, whose repair_harness acks (status=completed, doc-commit evidence) are noted here as a process error that inadvertently reset the driver's consecutive-replay counter each time, which is the mechanical reason the identical arm kept re-queuing instead of surfacing this block after the first reproduction.",
+  "next_priorities": [
+    "Do not ack any further repair_harness action for this frozen arm without an actual code change to src/slm_training/harnesses/model_build/eval_runner.py (or a sibling model_build-family file)",
+    "A future session should either (a) genuinely fix decode-budget allocation for >1.6M-param arms in improve-openui-harnesses, or (b) retry on a container with more CPU headroom -- and record which by acking c4's repair_harness action truthfully",
+    "This session's remaining work is documentation/delivery closeout only; no further train/eval cycles against this frozen arm"
+  ],
+  "recorded_at": "2026-08-04T11:47:03Z"
+}
