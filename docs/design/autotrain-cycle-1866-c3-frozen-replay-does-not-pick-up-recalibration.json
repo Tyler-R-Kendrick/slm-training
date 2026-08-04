@@ -1,0 +1,75 @@
+{
+  "schema_version": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-schedu-6699f447-c3",
+  "loop_id": "continuous-openui-scheduled-72bc0d",
+  "cycle_index": 3,
+  "decision": "measurement_incomplete_frozen_replay_expected",
+  "claim_class": "fixture_screening",
+  "formal": {
+    "status": "not_applicable:screening"
+  },
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "suite": "smoke",
+    "suite_n": 3,
+    "trainable_params": {
+      "control": 1755764,
+      "candidate": 1755764
+    },
+    "replay_of_manifest_sha256": "e3bafd97656d7fdf735d34916362e6e2f605ddaa4dfbe63c18d47b0a9b3e1d3b",
+    "code_commit": "eecb83043e5e3a9a3ccccfaf7faf12ceec25465b"
+  },
+  "arms": {
+    "control": {
+      "experiment_id": "c20260804-continuous-openui-schedu-6699f447-c3-control",
+      "status": "measurement_incomplete",
+      "decode_timeout_count": 3,
+      "decode_timeout_rate": 1.0,
+      "effective_decode_timeout_seconds": 24.0,
+      "decode_amortized_ms_per_record_p50": 8097.56,
+      "n": 3
+    },
+    "candidate": {
+      "experiment_id": "c20260804-continuous-openui-schedu-6699f447-c3-component-plan",
+      "status": "measurement_incomplete",
+      "decode_timeout_count": 3,
+      "decode_timeout_rate": 1.0,
+      "effective_decode_timeout_seconds": 24.0,
+      "decode_amortized_ms_per_record_p50": 8000.41,
+      "n": 3
+    }
+  },
+  "sdlc_phase_a": {
+    "classification": "NON_POSITIVE",
+    "reasons": [
+      "measurement_incomplete:c20260804-continuous-openui-schedu-6699f447-c3-control:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "measurement_incomplete:c20260804-continuous-openui-schedu-6699f447-c3-component-plan:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "harness_failure:c20260804-continuous-openui-schedu-6699f447-c3-control:experiment_failed",
+      "harness_failure:c20260804-continuous-openui-schedu-6699f447-c3-component-plan:experiment_failed",
+      "fixture_insufficient_n_alone"
+    ],
+    "stack_layer": false
+  },
+  "finding": "effective_decode_timeout_seconds stayed 24.0 (=8s pre-repair x 3), not the recalibrated 30.0 (=10s x 3) from commit eecb8304. Frozen replays reproduce the identical pinned manifest by design; a policy change after freezing does not retroactively apply. Not a new defect - no code change made this cycle. The c1865 fix is unchanged and correct (regression test still passes); validation defers to the next fresh (non-replay) hypothesis.",
+  "repair": {
+    "kind": "repair_harness_acknowledged_no_new_change",
+    "harness_family": "model_build",
+    "owner": "improve-openui-harnesses",
+    "commit": "eecb83043e5e3a9a3ccccfaf7faf12ceec25465b",
+    "note": "Same commit as c1865's repair; nothing further to fix. max_consecutive_frozen_replays=1 was spent on this c2->c3 replay, which is why the driver re-requested a repair_harness action; acknowledging resets the frozen-replay bank for the successor cycle."
+  },
+  "successor": {
+    "experiment_slug": "fresh component-plan hypothesis (not a replay) under the recalibrated 10s screening decode timeout",
+    "next_action": "confirm effective_decode_timeout_seconds reads 30.0 on the next cycle's scoreboard; if decode still times out at that budget, that is new evidence of a genuinely slower pipeline for this lever, not a repeat of the same blocker"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "eecb83043e5e3a9a3ccccfaf7faf12ceec25465b",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v179"
+    },
+    "stamped_at": "2026-08-04T17:47:41Z"
+  }
+}
