@@ -1,0 +1,87 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c1",
+  "cycle_index": 1,
+  "source_commit": "eba6db30",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 21,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "seed": 100001,
+    "trainable_params": 1608962
+  },
+  "arms": {
+    "c1-control": {
+      "trainable_params": 1608962,
+      "last_loss": 22.621936798095703,
+      "checkpoint_sha256": "d2f2dc4b2d43876ad4ce3751aa64d271cf7818b76201214a6ce2f8f8c557e44b",
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "component_type_recall": 0.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "placeholder_fidelity": 0.5277777777777778,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "reward_score": 0.0,
+        "latency_ms_p50": 3461.75
+      }
+    },
+    "c1-bounds": {
+      "trainable_params": 1608962,
+      "last_loss": 22.621936798095703,
+      "checkpoint_sha256": "eb81529a4473ef2be232e86958fcb74ed110f590541e19a7b8efba025b224a2f",
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "component_type_recall": 0.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "placeholder_fidelity": 0.5277777777777778,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "reward_score": 0.0,
+        "latency_ms_p50": 3123.35
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "local commits + docs only; no new stack layer",
+    "reasons": [
+      "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c1-control",
+      "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c1-bounds",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.057499999999999996 candidate=0.057499999999999996 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "duplicate_of": {
+    "note": "This session (branch claude/great-dirac-babec8, scheduled autotrain-loop task) independently generated the identical deterministic campaign_id continuous-loop-20260804-continuous-openui-local-8c0b60dd-c1 (loop_id hash is session-independent: sha256('continuous-openui-local')[:8]) and reproduced byte-identical checkpoint SHAs and smoke metrics to session krjpdg's same-day cycle 1, already committed on open PR #1401 (docs/design/continuous-openui-local-krjpdg-c1-results.json). Documented here only to satisfy the driver's per-cycle document-action receipt requirement before cycle 2 can proceed; no new evidence.",
+    "duplicate_of_pr": 1401,
+    "duplicate_of_doc": "docs/design/continuous-openui-local-krjpdg-c1-results.json"
+  },
+  "conclusion": "Continuous-openui-local loop, cycle 1 (this session, branch claude/great-dirac-babec8, scheduled autotrain-loop task): the 'bounds' knob arm reproduces its size-matched control byte-for-byte on training (identical last_loss=22.6219, 1,608,962 trainable params, seed 100001, identical checkpoint SHAs) and ties exactly on every smoke quality metric (structural_similarity=.0575, meaningful_program_rate=0, component_type_recall=0, binder_reference_f1=.63333, placeholder_fidelity=.52778, ast_beq_rate=0, canonical_beq_rate=0, reward_score=0 on both arms). p50 decode latency differs (bounds 3123.35ms vs control 3461.75ms) but is a pure latency delta with no accompanying quality/held/mpr signal, so per the SDLC quality-aware tradeoff rule it is not treated as a metric win. Ship gates fail as expected on this fixture-scale smoke suite: insufficient_n (n=3, need>=20) plus every quality threshold and the missing held_out/adversarial/ood/rico_held production suites. SDLC Phase A classifies this cycle NON_POSITIVE; no stacked PR layer is opened -- local commit + docs only. This is a byte-identical duplicate of already-committed same-day evidence (PR #1401); see duplicate_of above. The deterministic campaign_id collision across independent same-day sessions (loop_id hash, not session/time, drives the id) is a real harness inefficiency worth a dedicated repair session but is out of scope for this cycle.",
+  "next_priorities": [
+    "Test the distinct size-matched 'component-plan' quality hypothesis next (rank 1, confidence 0.90) instead of re-running the now-exhausted 'bounds' arm",
+    "Keep the matched control as the size-matched baseline every cycle (rank 2, confidence 0.70)",
+    "Rotate thrash recommendation across the lever bank rather than bounds-only (rank 3, confidence 0.65)",
+    "Soft ship-gate fails on fixture n never stop the continuous loop (rank 4, confidence 0.80)",
+    "Consider scoping continuous-loop campaign_id by session/branch (not only loop_id+date) so independent same-day sessions stop re-measuring and re-documenting byte-identical cycles (new, this session)"
+  ],
+  "recorded_at": "2026-08-04T02:32:39Z"
+}
