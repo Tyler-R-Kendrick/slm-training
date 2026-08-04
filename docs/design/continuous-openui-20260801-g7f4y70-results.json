@@ -1,0 +1,98 @@
+{
+  "schema_version": "continuous-loop-results/v1",
+  "loop_id": "continuous-openui-local",
+  "date": "2026-08-01",
+  "source_commit": "41d874c76b9ed68f4c6d375366ea4398b95a0429",
+  "honesty_mode": "fixture_or_scratch",
+  "is_ship_claim": false,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "environment_setup": {
+    "note": "Fresh container had no Python package install and no AgentV Node SDK installed; both are session-local setup, not code bugs.",
+    "actions": [
+      "python3.12 -m venv .venv-autotrain && pip install -e \".[dev]\"",
+      "npm ci (repo root) for node_modules/@agentv/core, required by src/slm_training/evals/agentv.py"
+    ],
+    "known_related_fix": "PR #1264 (open, unmerged as of this session, branch claude/great-dirac-37mit6) already fixes the root cause of the c1 harness_failure below: this sandbox's session-level NODE_OPTIONS is a malformed \"--import tsx\" --max-old-space-size=8192 (literal quotes), which crashes the AgentV runner subprocess with exit 9. This session worked around it by overriding NODE_OPTIONS on the command line for each run rather than re-patching src/slm_training/evals/agentv.py, to avoid duplicating an already-open fix."
+  },
+  "cycles": [
+    {
+      "cycle": 1,
+      "campaign_id": "continuous-loop-20260801-c1",
+      "status": "harness_failure",
+      "blocker": "RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER -- node_modules/@agentv/core was not installed in this fresh container",
+      "action": "ran npm ci at repo root; NODE_OPTIONS override on subsequent invocations (see known_related_fix)",
+      "positive": false
+    },
+    {
+      "cycle": 2,
+      "campaign_id": "continuous-loop-20260801-c2",
+      "status": "completed",
+      "primary_metric": "smoke.latency_ms_p50",
+      "arms": [
+        {"id": "c20260801-c2-control", "levers": "compact_active_canvas=off", "smoke_n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.28, "latency_ms_p50": 22467.2},
+        {"id": "c20260801-c2-canvas", "levers": "compact_active_canvas=on", "smoke_n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.28, "latency_ms_p50": 22147.61}
+      ],
+      "primary_metric_delta_ms": 319.59,
+      "mpr_at_delta": 0.0,
+      "classification": "latency_win_rejected_low_mpr",
+      "sdlc_phase_a_reasons": [
+        "fixture_insufficient_n:c20260801-c2-control",
+        "fixture_insufficient_n:c20260801-c2-canvas",
+        "latency_win_rejected_low_mpr:mpr=0.0<0.333333",
+        "primary_metric_win:smoke.latency_ms_p50:22467.2->22147.61:improvement=319.59"
+      ],
+      "positive": false
+    },
+    {
+      "cycle": 3,
+      "campaign_id": "continuous-loop-20260801-c3",
+      "status": "completed",
+      "primary_metric": "smoke.latency_ms_p50",
+      "arms": [
+        {"id": "c20260801-c3-control", "levers": "grammar_completion_bounds=off", "smoke_n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.1725, "latency_ms_p50": 7787.5},
+        {"id": "c20260801-c3-both", "levers": "grammar_completion_bounds=on", "smoke_n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.1725, "latency_ms_p50": 7944.33}
+      ],
+      "primary_metric_delta_ms": -156.83,
+      "classification": "primary_metric_null_or_worse",
+      "sdlc_phase_a_reasons": [
+        "fixture_insufficient_n:c20260801-c3-both",
+        "fixture_insufficient_n:c20260801-c3-control",
+        "primary_metric_null_or_worse:smoke.latency_ms_p50:control=7787.5 candidate=7944.33 improvement=-156.83",
+        "fixture_insufficient_n_alone"
+      ],
+      "positive": false
+    },
+    {
+      "cycle": 4,
+      "campaign_id": "continuous-loop-20260801-c4",
+      "status": "completed",
+      "intent": "promotion",
+      "primary_metric": "held_out.structural_similarity",
+      "arms": [
+        {"id": "c20260801-c4-control", "smoke_meaningful_program_rate": 0.5, "smoke_structural_similarity": 0.3625, "held_out_n": 5, "held_out_structural_similarity": 0.38248},
+        {"id": "c20260801-c4-steps", "smoke_meaningful_program_rate": 0.3333333333333333, "smoke_structural_similarity": 0.51, "held_out_n": 5, "held_out_structural_similarity": 0.37006}
+      ],
+      "primary_metric_delta": -0.01242,
+      "classification": "primary_metric_null_or_worse",
+      "sdlc_phase_a_reasons": [
+        "fixture_insufficient_n:c20260801-c4-steps",
+        "fixture_insufficient_n:c20260801-c4-control",
+        "primary_metric_null_or_worse:held_out.structural_similarity:control=0.38248 candidate=0.37006 improvement=-0.01242",
+        "fixture_insufficient_n_alone"
+      ],
+      "positive": false
+    }
+  ],
+  "next_run_priorities": [
+    "infrastructure: rebase this loop-id onto PR #1264 once merged so future cycles don't need the manual NODE_OPTIONS override.",
+    "harness: the published 'smoke' suite is fixed at n=3 (need>=20), so insufficient_n will fail on every screening cycle by construction; this is an expected fixture-scale diagnostic, not a blocker to chase further from this loop.",
+    "model: per the repo's own autotrain-loop-ledger-20260725.md diminishing-returns notes, single-variable smoke-fixture lever sweeps (steps/seed/batch-size/canvas/bounds) are now well covered across many prior sessions; a future iteration of this loop should pick up an actually-open thread (DSH5-10 preference-training scope, or the next queued AP-007+ campaign arm) rather than another identical wf_smoke_v2 screening pass."
+  ]
+}
