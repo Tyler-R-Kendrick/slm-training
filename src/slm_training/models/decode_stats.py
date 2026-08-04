@@ -196,6 +196,15 @@ class DecodeStats:
     # L-D: parallel block-step commits reverted because the joint canvas was
     # PROVEN uncompletable by multi_region_support (never on unknown/budget).
     block_joint_rejections: int = 0
+    # HV-A: the completion-domain filter drops a candidate for BOTH a
+    # certified UNSUPPORTED witness and a budget-exhausted UNKNOWN one
+    # (dsl/pack.py). Only the first is a soundness-preserving rejection;
+    # the second silently narrows the legal domain. Split so the two are
+    # distinguishable, plus how many witnesses were built and kept.
+    witness_pruned_unsupported: int = 0
+    witness_pruned_unknown: int = 0
+    witness_materialized: int = 0
+    witness_kept: int = 0
     # L-D/HX4: joint verdicts that came back without proof authority (node
     # budget exhausted). Commits are kept — counted so the fail-open share of
     # the joint validator is observable instead of silent.
@@ -631,6 +640,10 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "admit_probe_canvases",
         "admit_probe_committed_suffix",
         "block_joint_rejections",
+        "witness_pruned_unsupported",
+        "witness_pruned_unknown",
+        "witness_materialized",
+        "witness_kept",
         "block_joint_unknowns",
         "hybrid_span_commits",
         "hybrid_frontier_commits",
