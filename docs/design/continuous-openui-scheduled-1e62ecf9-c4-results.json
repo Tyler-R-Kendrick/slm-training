@@ -1,0 +1,75 @@
+{
+  "schema": "autotrain_continuous_cycle_results/v1",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "0f4f55206c1c0603bd464b87c0a70c9a6277614f",
+    "code_dirty": true,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v181"
+    },
+    "stamped_at": "2026-08-04T22:47:54.978429+00:00"
+  },
+  "loop_id": "continuous-openui-scheduled",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-schedu-1e62ecf9-c4",
+  "cycle_index": 4,
+  "predecessor_campaign_id": "continuous-loop-20260804-continuous-openui-schedu-1e62ecf9-c3",
+  "upstream_commit": "34111e6e9d5be7036257467e27cd772549ddaa72",
+  "integration_commit": "0f4f55206c1c0603bd464b87c0a70c9a6277614f",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "screening",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true
+  },
+  "arms": {
+    "control": {
+      "id": "c20260804-continuous-openui-schedu-1e62ecf9-c4-control",
+      "trainable_params": 1755764,
+      "structural_similarity": 0.4166666666666667,
+      "meaningful_program_rate": 0.3333333333333333,
+      "binder_reference_f1": 0.9523809523809524,
+      "parse_rate": 1.0,
+      "latency_ms_p50": 22500.28,
+      "checkpoint_sha256": "7cad65d11dffc1dfe7a41501337030c1bb52e3c0abac381adc1382ed42f5a989"
+    },
+    "component-plan": {
+      "id": "c20260804-continuous-openui-schedu-1e62ecf9-c4-component-plan",
+      "trainable_params": 1755764,
+      "structural_similarity": 0.4166666666666667,
+      "meaningful_program_rate": 0.3333333333333333,
+      "binder_reference_f1": 0.9523809523809524,
+      "parse_rate": 1.0,
+      "latency_ms_p50": 26692.86,
+      "checkpoint_sha256": "25b81d11520c5e4c2c9497bf791df9c7e2b3e444263cf65deee4fb2861c8f27c"
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260804-continuous-openui-schedu-1e62ecf9-c4-control",
+      "fixture_insufficient_n:c20260804-continuous-openui-schedu-1e62ecf9-c4-component-plan",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.4166666666666667 candidate=0.4166666666666667 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "conclusion": "component_plan_quality_neutral_latency_regression",
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "model",
+      "hypothesis": "The completed non-positive arm is exhausted; test the distinct size-matched 'component-edge' quality hypothesis next.",
+      "action": "experiment_next",
+      "experiment_id": "c20260804-continuous-openui-schedu-1e62ecf9-c4-component-edge"
+    }
+  ],
+  "recorded_at": "2026-08-04T22:47:14Z"
+}
