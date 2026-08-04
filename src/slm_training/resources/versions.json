@@ -5745,6 +5745,11 @@
         {
           "version": "v1",
           "date": "2026-08-03",
+          "note": "no-bump: regenerate the committed gate artifact after upstream component bumps (evals.scoring v23, harness.experiments v147) so publish --check passes again; verdict stays inconclusive, thresholds and gate behavior unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-08-03",
           "note": "no-bump: refresh the committed inconclusive gate narrative and owner hash; thresholds and gate behavior are unchanged"
         },
         {
