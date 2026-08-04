@@ -63,9 +63,13 @@ jobs:
             --changed-tests-only --base-ref "$BASE_SHA" --list)"
           printf 'Selected pytest targets:\n%s\n' "${test_targets:-none}"
 
+          # tests/test_versioning is NOT torch-free: test_mirrors.py imports
+          # slm_training.evals modules that import torch at module scope, so a
+          # versions.json-only change must still install torch or collection
+          # fails with ModuleNotFoundError.
           need_torch=true
           if [ -z "$test_targets" ] || ! printf '%s\n' "$test_targets" | grep -Ev \
-            '^(tests/test_versioning($|/)|tests/test_scripts/test_(check_changed|verify_version_stamps)\.py$)'; then
+            '^tests/test_scripts/test_(check_changed|verify_version_stamps)\.py$'; then
             need_torch=false
           fi
           echo "NEED_TORCH=$need_torch" >> "$GITHUB_ENV"
