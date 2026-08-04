@@ -1,0 +1,65 @@
+{
+  "schema": "autotrain_continuous_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c3",
+  "cycle_index": 3,
+  "source_commit": "4e137321",
+  "integration_commit": "8ebf6fcc",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "screening",
+  "hypothesis": "component-plan",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true
+  },
+  "arms": {
+    "control": {
+      "id": "c20260804-continuous-openui-local-8c0b60dd-c3-control",
+      "trainable_params": 1755760,
+      "structural_similarity": 0.23083333333333333,
+      "meaningful_program_rate": 0.3333333333333333,
+      "binder_reference_f1": 0.7333333333333334,
+      "latency_ms_p50": 11886.1,
+      "gates_pass": false
+    },
+    "component_plan": {
+      "id": "c20260804-continuous-openui-local-8c0b60dd-c3-component-plan",
+      "trainable_params": 1755760,
+      "structural_similarity": 0.1725,
+      "meaningful_program_rate": 0.0,
+      "binder_reference_f1": 0.6333333333333333,
+      "latency_ms_p50": 12734.3,
+      "gates_pass": false
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": -0.05833333333333335,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c3-component-plan",
+      "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c3-control",
+      "non_regression_fail:binder_reference_f1:0.7333333333333334->0.6333333333333333",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.23083333333333333 candidate=0.1725 improvement=-0.05833333333333335",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "conclusion": "component_plan_regression",
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "model",
+      "hypothesis": "Test the distinct size-matched 'component-edge' quality hypothesis next.",
+      "action": "experiment_next",
+      "experiment_id": "c20260804-continuous-openui-local-8c0b60dd-c3-component-edge"
+    }
+  ],
+  "recorded_at": "2026-08-04T16:46:10Z"
+}
