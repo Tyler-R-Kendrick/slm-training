@@ -1,0 +1,56 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260802",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202608-39ee9cf7-c5",
+  "cycle_index": 5,
+  "note": "Resumed-session cycle; see continuous-openui-20260802-resume-c2-results.md for why this loop's campaign_id namespace collides with the earlier same-day c2/c3/c4 docs.",
+  "source_commit": "e09ea3daa73c4b8dffe20dff947a60b4c227c045",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "honest_slot_contract": true,
+    "slot_contract_constrained_decode": true,
+    "compiler_decode_mode": "off"
+  },
+  "arms": {
+    "c5-control": {
+      "status": "completed",
+      "reason": "eval completed; ship gates fail (insufficient n)",
+      "metrics": {
+        "latency_ms_p50": 7600.2,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.4166666666666667,
+        "binder_reference_f1": 0.9523809523809523
+      }
+    },
+    "c5-component-edge": {
+      "status": "completed",
+      "reason": "eval completed; ship gates fail (insufficient n)",
+      "metrics": {
+        "latency_ms_p50": 7347.03,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.4166666666666667,
+        "binder_reference_f1": 0.9523809523809523
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "conclusion": "This is the retry_measurement replay of cycle 4's frozen control/component-edge pair. The cycle-4 control-only decode timeout did NOT reproduce -- both arms completed cleanly this time with identical quality metrics (structural_similarity=0.4167, meaningful_program_rate=0.333, binder_reference_f1=0.9524 on both arms). This resolves cycle 4's open question: component-edge's apparently strong numbers were an artifact of comparing against a broken (timed-out) control, not a real quality win over control -- with a valid control in the same cycle, the primary metric delta is exactly 0.0. A small latency improvement (7600.2ms -> 7347.03ms, ~3.4% gain) was also evaluated and rejected under efficiency_win_rejected_min_effect (gain_fraction=0.0345 < the 0.05 minimum-effect floor). Correctly classified non-positive: component-edge does not beat the matched control on any axis that clears the minimum-effect bar.",
+  "repair": null,
+  "known_debt_discovered": null,
+  "next_priorities": [
+    "model: test the distinct size-matched 'component-inventory' lever next (c5-component-inventory) -- component-edge is now a confirmed null result and exhausted.",
+    "evaluation: keep the matched control as the size-matched baseline every cycle.",
+    "infrastructure: soft ship-gate fails on fixture n never stop the continuous loop."
+  ],
+  "recorded_at": "2026-08-02T22:46:13+00:00"
+}

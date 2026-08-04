@@ -1,0 +1,75 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260730",
+  "campaign_id": "continuous-loop-20260801-continuous-openui-202607-98199209-c1",
+  "cycle_index": 3,
+  "source_commit": "64893fc40e98bd81e20daed36b483e71ee383a56",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "batch_size": 2,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "smoke (published suite)",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "objective": "On a size-matched fixture TwoTower arm under the wall cap, improve the current certified OpenUI quality primary without lowering parse_rate."
+  },
+  "arms": {
+    "c20260801-continuous-openui-202607-98199209-c1-control": {
+      "status": "completed_eval_gates_failed",
+      "params": 1608962,
+      "steps": 21,
+      "stopped_on": "steps",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0575,
+        "binder_reference_f1": 0.6333333333333333,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 2463.32,
+        "latency_ms_p95": 3495.95
+      },
+      "levers": {
+        "grammar_completion_bounds": false,
+        "decode_canvas_cap": 256
+      },
+      "checkpoint_sha256": "60d16f90d0a954aa159e3b0825da9bd329d4a58a1810253f05fb44883cc65582"
+    },
+    "c20260801-continuous-openui-202607-98199209-c1-bounds": {
+      "status": "completed_eval_gates_failed",
+      "params": 1608962,
+      "steps": 21,
+      "stopped_on": "steps",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0575,
+        "binder_reference_f1": 0.6333333333333333,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 2437.62,
+        "latency_ms_p95": 3631.18
+      },
+      "levers": {
+        "grammar_completion_bounds": true,
+        "decode_canvas_cap": 256
+      },
+      "checkpoint_sha256": "1dde4811551ab18cca2fdb7710048de187f5d98cc611fc642530762ec5c88cbf"
+    }
+  },
+  "primary_metric": "smoke.binder_reference_f1",
+  "primary_delta": 0.0,
+  "conclusion": "grammar_completion_bounds moved smoke p50 latency by -25.70ms (bounds faster) but left binder_reference_f1, parse_rate, meaningful_program_rate, and structural_similarity byte-for-byte identical to the size-matched control (same 1,608,962-param checkpoint recipe, 21/21 steps). No quality effect is attributable to the lever on this fixture; both arms fail ship gates on fixture n/quality as expected. Classified SDLC Phase A non-positive (primary_metric_null_or_worse).",
+  "next_priorities": [
+    "Rotate the thrash recommendation across the lever bank instead of re-testing bounds-only (rank 3 handoff priority)",
+    "Keep the matched control every cycle to guard against recipe drift (rank 2 handoff priority)",
+    "Do not promote RL or any champion off this screening evidence; ship gates fail by design on fixture n"
+  ],
+  "recorded_at": "2026-08-01T21:30:16.771023+00:00"
+}

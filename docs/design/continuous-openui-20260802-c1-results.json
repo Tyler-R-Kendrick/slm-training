@@ -1,0 +1,53 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260802",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202608-39ee9cf7-c1",
+  "cycle_index": 1,
+  "source_commit": "f9bd228807cb05687de485ff159c975a864411fe",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "honest_slot_contract": true,
+    "slot_contract_constrained_decode": true,
+    "compiler_decode_mode": "off"
+  },
+  "arms": {
+    "c1-control": {
+      "status": "harness_failure",
+      "reason": "evaluate_model exit=1: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER (node_modules/@agentv/core missing in this fresh session checkout)"
+    },
+    "c1-bounds": {
+      "status": "harness_failure",
+      "reason": "evaluate_model exit=1: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER (node_modules/@agentv/core missing in this fresh session checkout)"
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "conclusion": "This is a fresh scheduled-agent container (loop_id continuous-openui-20260802 resuming after the c2/c3/c4 cycles documented earlier the same day); outputs/autoresearch is gitignored so the prior loop state.json and node_modules were not present. Both preregistered arms (c1-control, c1-bounds) trained (20 steps, cpu) but evaluation never produced a scoreboard: scripts/evaluate_model.py's AgentV publish step (src/slm_training/evals/agentv.py:_agentv_runtime) raised RuntimeError before any ship-gate assertion ran because node_modules/@agentv/core was missing. This is the exact same harness_failure class already diagnosed and repaired in the c2 cycle (commit 3cb06385d95769bbcde2e5b0b0e0f16138b1d3c8, 2026-08-02): a fresh-checkout bootstrap gap, not a code defect -- ci.yml already runs npm ci ahead of the AgentV-touching shard. This recurrence is expected for every fresh container/session and is resolved by running npm ci, not by further code changes.",
+  "repair": {
+    "harness_family": "model_build",
+    "frozen_manifest_sha256": "c229ddf96c4ded4b7b1491650261c1bf16a10c616e7298f40e429e02a9edeed7",
+    "actions_taken": [
+      "ran `npm ci` in the checkout to restore node_modules/@agentv/core (pinned 4.42.4)",
+      "confirmed the v6 ship-gate fixture fix from the c2 cycle (commit 3cb06385d95769bbcde2e5b0b0e0f16138b1d3c8) is already present on this commit -- no further fixture change needed",
+      "noted a separate, pre-existing environment defect: the session's exported NODE_OPTIONS (\"--import tsx\" --max-old-space-size=8192) is malformed and node/npm refuse it (\"--import tsx is not allowed in NODE_OPTIONS\"); worked around it with `env -u NODE_OPTIONS` for npm/python invocations in this session -- this is a session environment issue, not a repo defect, and is out of scope to fix in-repo"
+    ],
+    "regression_coverage": "tests/test_evals/test_agentv.py already covers the v6 gate fixtures (fixed in commit 3cb06385d95769bbcde2e5b0b0e0f16138b1d3c8); no new regression test needed for this recurrence since the root cause is bootstrap-only"
+  },
+  "known_debt_discovered": {
+    "summary": "Same pre-existing tests/test_evals/ failures flagged in the c2/c4 cycle docs remain out of scope for this cycle; not re-verified this run.",
+    "sample_failures": []
+  },
+  "next_priorities": [
+    "Replay the identical c1-control/c1-bounds arms now that node_modules/@agentv/core is restored (queued: c20260802-continuous-openui-202608-39ee9cf7-c1-bounds retry_measurement)",
+    "Continue the ranked matrix from the c4 cycle doc (component-plan lever) once this retry completes",
+    "Consider persisting node_modules / a venv marker outside outputs/ so fresh scheduled sessions don't re-pay the npm ci + pip install -e bootstrap cost every cycle"
+  ],
+  "recorded_at": "2026-08-02T22:40:00+00:00"
+}

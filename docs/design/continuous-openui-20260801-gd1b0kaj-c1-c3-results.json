@@ -1,0 +1,197 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260801-gd1b0kaj",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "c1c4eca349b66f05684975575a3640ced50051ea",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v71",
+      "harness.experiment_feature_flags": "v3",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v269"
+    },
+    "stamped_at": "2026-08-01T14:41:36.826241+00:00"
+  },
+  "cycles": [
+    {
+      "campaign_id": "continuous-loop-20260801-c1",
+      "cycle_index": 1,
+      "source_commit": "c1c4eca349b66f05684975575a3640ced50051ea",
+      "recipe": {
+        "device": "cpu",
+        "steps": 20,
+        "batch_size": 2,
+        "context_backend": "scratch",
+        "train_version": "wf_smoke_v2",
+        "eval_version": "e938_role_safe_all_targets_v2",
+        "max_wall_minutes": 3,
+        "ship_gates": true
+      },
+      "arms": {
+        "c1-control": {
+          "lever": "baseline (thrash rotation)",
+          "status": "completed_eval_gates_failed_at_first_pass_then_hard_crash_at_publish",
+          "first_pass_metrics": {
+            "n": 3,
+            "parse_rate": 1.0,
+            "meaningful_program_rate": 0.0,
+            "structural_similarity": 0.0575,
+            "latency_ms_p50": 3683.87
+          }
+        },
+        "c1-bounds": {
+          "lever": "grammar_completion_bounds=true",
+          "status": "completed_eval_gates_failed_at_first_pass_then_hard_crash_at_publish",
+          "first_pass_metrics": {
+            "n": 3,
+            "parse_rate": 1.0,
+            "meaningful_program_rate": 0.0,
+            "structural_similarity": 0.0575,
+            "latency_ms_p50": 3847.99
+          }
+        }
+      },
+      "primary_metric": "smoke.latency_ms_p50",
+      "primary_delta_ms": -164.12,
+      "positive": false,
+      "stack_layer": false,
+      "reasons": [
+        "empty_metrics (AgentV publish crash truncated evals block)",
+        "primary_metric_null_or_worse:smoke.latency_ms_p50:control=3683.87 candidate=3847.99 improvement=-164.12"
+      ],
+      "harness_signal": {
+        "family": "environment (not one of the nine owned harness families)",
+        "signal": "publish_agentv_evaluation (src/slm_training/evals/agentv.py:103) crashes with RuntimeError('AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER') because node_modules/@agentv/core was never installed in this checkout AND the inherited shell NODE_OPTIONS=\"--import tsx\" ... makes plain `node` refuse to start once installed.",
+        "reproduced_first": "already diagnosed by a concurrent session, docs/design/autotrain-continuous-loop-blockers-20260801.md on open PR #1254 (branch claude/great-dirac-wcu1ad, not yet merged)",
+        "reconfirmed_this_session": true
+      }
+    },
+    {
+      "campaign_id": "continuous-loop-20260801-c2",
+      "cycle_index": 2,
+      "source_commit": "c1c4eca349b66f05684975575a3640ced50051ea",
+      "recipe": {
+        "device": "cpu",
+        "steps": 20,
+        "batch_size": 2,
+        "context_backend": "scratch",
+        "train_version": "wf_smoke_v2",
+        "eval_version": "e938_role_safe_all_targets_v2",
+        "max_wall_minutes": 3,
+        "ship_gates": true
+      },
+      "environment_change": "NODE_OPTIONS sanitized to empty in the shell before this cycle + `npm ci` run once to install node_modules/@agentv/core@4.42.4 (session-local environment fix only; no tracked code changed for this cycle).",
+      "arms": {
+        "c2-control": {
+          "lever": "baseline (thrash rotation)",
+          "status": "completed_eval_gates_failed",
+          "metrics": {
+            "n": 3,
+            "decode_timeout_count": 3,
+            "parse_rate": null,
+            "meaningful_program_rate": null
+          }
+        },
+        "c2-canvas": {
+          "lever": "compact_active_canvas=true",
+          "status": "completed_eval_gates_failed",
+          "metrics": {
+            "n": 3,
+            "decode_timeout_count": 3,
+            "parse_rate": null,
+            "meaningful_program_rate": null
+          }
+        }
+      },
+      "primary_metric": "smoke.latency_ms_p50",
+      "primary_delta_ms": null,
+      "positive": false,
+      "stack_layer": false,
+      "reasons": [
+        "fixture_insufficient_n:c20260801-c2-control",
+        "fixture_insufficient_n:c20260801-c2-canvas",
+        "measurement_incomplete:no_smoke_metrics",
+        "primary_metric_unavailable"
+      ],
+      "conclusion": "compact_active_canvas could not be evaluated: all 3 smoke-suite decodes hit the 24s decode timeout under the CPU/scratch fixture recipe, so no parse/mpr/latency signal was produced for either arm. This is a wall-clock-vs-fixture-scale mismatch, not evidence about the lever."
+    },
+    {
+      "campaign_id": "continuous-loop-20260801-c3",
+      "cycle_index": 3,
+      "source_commit": "c1c4eca349b66f05684975575a3640ced50051ea",
+      "recipe": {
+        "device": "cpu",
+        "steps": 20,
+        "batch_size": 2,
+        "context_backend": "scratch",
+        "train_version": "wf_smoke_v2",
+        "eval_version": "e938_role_safe_all_targets_v2",
+        "max_wall_minutes": 3,
+        "ship_gates": true
+      },
+      "arms": {
+        "c3-control": {
+          "lever": "baseline (thrash rotation)",
+          "status": "completed_eval_gates_failed",
+          "metrics": {
+            "n": 3,
+            "parse_rate": 1.0,
+            "meaningful_program_rate": 0.0,
+            "structural_similarity": 0.1725,
+            "latency_ms_p50": 10099.38
+          }
+        },
+        "c3-both": {
+          "lever": "grammar_completion_bounds=true, compact_active_canvas=true",
+          "status": "completed_eval_gates_failed",
+          "metrics": {
+            "n": 3,
+            "parse_rate": 1.0,
+            "meaningful_program_rate": 0.0,
+            "structural_similarity": 0.1725,
+            "latency_ms_p50": 10328.97
+          }
+        }
+      },
+      "primary_metric": "smoke.latency_ms_p50",
+      "primary_delta_ms": -229.59,
+      "positive": false,
+      "stack_layer": false,
+      "reasons": [
+        "fixture_insufficient_n:c20260801-c3-both",
+        "fixture_insufficient_n:c20260801-c3-control",
+        "primary_metric_null_or_worse:smoke.latency_ms_p50:control=10099.38 candidate=10328.97 improvement=-229.59"
+      ],
+      "conclusion": "Combining grammar_completion_bounds and compact_active_canvas regressed smoke latency again, consistent with cycles 1-2 individually. Ran clean end-to-end (no AgentV crash) confirming the session-local NODE_OPTIONS environment fix held across cycles. structural_similarity moved to 0.1725 for both arms (vs. 0.0575 in cycle 1) -- identical for control and candidate, so this is checkpoint/seed variance across cycles, not a lever effect."
+    }
+  ],
+  "executable_unblocking_replay": {
+    "claim": "The AgentV NODE_OPTIONS fix already prepared (not yet landed) on open PR #1254 is still correct and still blocked from landing by the same pre-existing, unrelated test failures documented there.",
+    "method": "Re-ran the exact c1-control evaluate_model command (identical args, same run-root/run-id/checkpoint) with NODE_OPTIONS sanitized in-shell and node_modules/@agentv/core installed. Previously: hard RuntimeError crash before any scoreboard. After: completed run, wrote gates.json with a full (fixture-scale, gate-failing) scoreboard.",
+    "output": "outputs/autoresearch/continuous-loop-20260801-c1/runs/c20260801-c1-control/gates.json",
+    "code_fix_status": "NOT landed in this PR. Applied the identical `env.pop(\"NODE_OPTIONS\", None)` patch from PR #1254's doc locally, reconfirmed it flips 2 of the same 4 previously-failing tests/test_evals/test_agentv.py cases to pass, then reverted it: `python -m scripts.check_changed --base-ref <parent>` still requires the full test_evals + model_build directories (evals.py is check_changed-mapped there) and 9 of those tests still fail on this exact commit for reasons unrelated to NODE_OPTIONS (dsl grammar-backend serialization gap + a model_build lever_capability_compatibility validation error) -- landing the code fix here would flip CI red for reasons this PR did not cause. Left the code fix to PR #1254, which already owns the diagnosis and the reversible patch text.",
+    "9_preexisting_failures_reconfirmed": [
+      "tests/test_evals/test_ambiguous_operator_followups.py::test_corpus_covers_all_seven_named_relations_at_least_once",
+      "tests/test_evals/test_cap2_operator.py::test_missing_prediction_fails_closed_with_confidence_bounds",
+      "tests/test_evals/test_denoising_nll.py::test_loss_suites_clear_stale_runtime_symbol_features",
+      "tests/test_evals/test_meaningful_program.py::test_binding_aware_v2_gaming_corpus",
+      "tests/test_evals/test_metric_gaming.py::test_retry_first_selected_oracle_metrics_differ",
+      "tests/test_evals/test_operator_systems_benchmark.py::test_partial_stratum_never_forces_regardless_of_bypass_toggle",
+      "tests/test_evals/test_oracle_scoring_replay.py::test_score_prediction_keys_and_production_path",
+      "tests/test_evals/test_semantic_fidelity.py::test_ast_beq_true_for_style_normalized_match",
+      "tests/test_harnesses/model_build/test_train_model_cli_decode_weights.py::test_train_model_cli_threads_decode_weights_into_model_build_config"
+    ]
+  },
+  "next_priorities": [
+    "Land PR #1254's NODE_OPTIONS patch once the dsl grammar-backend serialization gap (LarkBackend.serialize() does not normalize whitespace) and the model_build lever_capability_compatibility validation failure are repaired -- these unblock check_changed's evals-mapped test scope for every future evals/agentv.py change, not just this one.",
+    "Re-run compact_active_canvas at a larger step/token budget or a higher decode-timeout-seconds so the smoke suite can produce at least one non-timed-out decode before drawing a conclusion about the lever",
+    "Three arms (bounds, canvas, both) all regressed or produced no signal at this fixture scale -- rotate the next screening cycle onto an untested lever from allowed_knobs rather than re-testing this trio again",
+    "Continue thrash rotation through remaining untested levers now that node_modules/@agentv/core is installed in this checkout for the remainder of this session"
+  ]
+}

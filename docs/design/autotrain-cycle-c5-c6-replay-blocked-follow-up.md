@@ -1,7 +1,7 @@
 # Autotrain c5/c6: two distinct blockers, follow-up needed (finding, not a fix)
 
-**Status:** blocked, needs dedicated follow-up session. Do not keep
-re-attempting automatically.
+**Status:** Blocker 1 still open, needs a dedicated profiling session.
+**Blocker 2 is resolved** (see update below) — do not re-investigate it.
 
 ## Blocker 1 — dual-arm decode timeout (c5)
 
@@ -42,15 +42,29 @@ arms distinct from screening arms).
 
 ## Recommendation
 
-Both blockers need `improve-openui-harnesses` attention in a dedicated
-session with room to profile compiler-tree decode at seed `100005` (blocker
-1) and to extend `_apply_frozen_replay`'s slug registry or add a
-confirmation-arm-specific branch (blocker 2), each with its own regression
-test. Do not attempt further speculative fixes to either without that
-investigation; in particular, do not resurrect the auto-retire-on-symmetric-
-timeout routing change for blocker 1 — it was tried and correctly reverted.
+Blocker 1 still needs `improve-openui-harnesses` attention in a dedicated
+session with room to profile compiler-tree decode at seed `100005`. Do not
+attempt speculative fixes without that investigation; in particular, do not
+resurrect the auto-retire-on-symmetric-timeout routing change — it was tried
+and correctly reverted.
 
 The c4 efficiency finding
 ([`autotrain-cycle-c4-component-plan-efficiency-win.md`](autotrain-cycle-c4-component-plan-efficiency-win.md))
 remains queued (`champ-continuous-openui-local-4-2694d77fc99953e4`),
-unconfirmed, pending resolution of blocker 2 at minimum.
+unconfirmed, pending resolution of Blocker 1.
+
+## Update 2026-08-03 — Blocker 2 resolved
+
+Re-checked while resuming the continuous loop: `_apply_frozen_replay` in
+`scripts/run_autotrain_continuous.py` (current `confirmation_replay =
+old_candidate_id.endswith("-confirm")` branch) already recognizes
+`-confirm`-suffixed arm IDs and maps them to the `confirm` slug instead of
+raising `unsupported automatic frozen replay arm`. This was fixed by
+`fix(autotrain): complete fresh-seed confirmation flow` (#1370, commit
+`318492c`), which landed the day after this doc was written and is included
+in the current `main` history. A dedicated regression test already covers
+this exact path
+(`tests/test_scripts/test_run_autotrain_continuous.py`, the
+`-confirm` frozen-replay case around line 6194) and passes on current `main`
+(`pytest tests/test_scripts/test_run_autotrain_continuous.py -k confirm` →
+21 passed). No further action needed for Blocker 2; do not re-open it.

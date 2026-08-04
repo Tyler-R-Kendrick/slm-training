@@ -1,0 +1,71 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260803-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 2,
+  "session_note": "second continuous-openui-local session on 2026-08-03; deterministic campaign_id/arm_seed collide with the earlier same-day continuous-openui-20260803-c2-results.json (already merged via #1369) -- suffixed s2 to avoid overwriting that doc.",
+  "source_commit": "5512bad7",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "seed": 100002
+  },
+  "arms": {
+    "s2-c2-control": {
+      "trainable_params": 1755764,
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.32666666666666666,
+        "component_type_recall": null,
+        "binder_reference_f1": 0.0,
+        "placeholder_fidelity": 0.0,
+        "latency_ms_p50": 9940.47
+      }
+    },
+    "s2-c2-component-plan": {
+      "trainable_params": 1755764,
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.38280000000000003,
+        "component_type_recall": 0.16666666666666666,
+        "binder_reference_f1": 0.0,
+        "placeholder_fidelity": 0.0,
+        "latency_ms_p50": 7800.08
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.05613333333333337,
+  "sdlc_phase_a": {
+    "positive": true,
+    "stack_layer": false,
+    "has_tracked_delta": false,
+    "stack_action": "positive_no_tracked_delta_skip_stack",
+    "agent_required": "metric win recorded; no code/docs delta -- skip stack PR; continue loop",
+    "reasons": [
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c2-control",
+      "fixture_insufficient_n:c20260803-continuous-openui-local-8c0b60dd-c2-component-plan",
+      "primary_metric_win:smoke.structural_similarity:0.32666666666666666->0.38280000000000003:improvement=0.05613333333333337"
+    ]
+  },
+  "not_an_independent_confirmation": "arm_seed=100002 is identical to the earlier same-day session's c2 (same deterministic seed-selection-by-cycle-index, not a randomized fresh seed), and structural_similarity/component_type_recall/parse_rate/binder_reference_f1/placeholder_fidelity reproduce that run bit-for-bit; only wall-clock-dependent latency differs. This is a bit-exact replay of the already-merged c2 finding (#1369), not a new independent measurement -- it does NOT satisfy the outstanding 'fresh-seed confirmation before promotion' requirement from that PR's own next_priorities. The driver's own SDLC classification agrees: positive with has_tracked_delta=false, so no new stack layer.",
+  "conclusion": "Second continuous-openui-local session on 2026-08-03, cycle 2: the size-matched 'component-plan' arm (1,755,764 params, seed 100002) again beats its matched control on the primary by +0.0561 (0.3267 -> 0.3828), reproducing the already-merged #1369 c2 finding exactly on every deterministic metric. Because the driver reselects the identical seed for a given cycle_index rather than drawing a fresh one, this cycle cannot serve as the independent fresh-seed confirmation that #1369's own next_priorities called for -- a genuinely different seed (or an explicit --seed override) is still needed before promotion.",
+  "next_priorities": [
+    "Run component-plan vs control again with an explicitly different seed (not the cycle-index-derived default) to get a real independent confirmation",
+    "Keep promotion formal preflight locked until that confirmation exists",
+    "Merge PR #1351 (AgentV NODE_OPTIONS + missing-SDK fix) so this session's local-only workaround does not have to be repeated again"
+  ],
+  "recorded_at": "2026-08-03T05:48:05Z"
+}

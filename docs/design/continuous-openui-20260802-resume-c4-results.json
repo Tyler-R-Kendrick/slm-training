@@ -1,0 +1,49 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260802",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202608-39ee9cf7-c4",
+  "cycle_index": 4,
+  "note": "Resumed-session cycle; see continuous-openui-20260802-resume-c2-results.md for why this loop's campaign_id namespace collides with the earlier same-day c2/c3/c4 docs.",
+  "source_commit": "ef4bc4e9a4f260ca474d410a31221e72a9b1a1fa",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "honest_slot_contract": true,
+    "slot_contract_constrained_decode": true,
+    "compiler_decode_mode": "off"
+  },
+  "arms": {
+    "c4-control": {
+      "status": "measurement_incomplete",
+      "reason": "decode_timeout_count=3 on all 3 smoke docs; scoreboard produced but every quality metric is None (measurement_integrity_failures); classified harness_failure/experiment_failed"
+    },
+    "c4-component-edge": {
+      "status": "completed",
+      "reason": "eval completed; ship gates fail (insufficient n)",
+      "metrics": {
+        "latency_ms_p50": 7703.69,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.4166666666666667,
+        "binder_reference_f1": 0.9523809523809523
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "conclusion": "Same pattern already observed in the earlier same-day session's c3->c4 cycle: the control arm hit a typed decode timeout on all 3 smoke docs (decode_timeout_count=3) so its scoreboard has every quality metric as None -- a measurement_incomplete harness_failure, not a real control measurement. The size-matched component-edge candidate (trainable_params=1766992) completed normally with strong numbers (structural_similarity=0.4167, binder_reference_f1=0.9524, meaningful_program_rate=0.333) -- the best smoke numbers seen across this session's cycles so far -- but without a valid control, primary_metric is unavailable and this cycle is inconclusive, not positive. sdlc classified it non-positive with an executable_unblock signal (candidate completed after control error): no stack layer, retry the identical frozen pair before treating component-edge as a real win.",
+  "repair": null,
+  "known_debt_discovered": null,
+  "next_priorities": [
+    "infrastructure: retry_measurement -- replay the exact frozen c4-control/c4-component-edge pair once to test whether the control-only decode timeout reproduces (queued).",
+    "model: component-edge's strong smoke numbers are promising but unconfirmed until a valid matched control exists in the same cycle.",
+    "infrastructure: soft ship-gate fails and single-run decode timeouts never stop the continuous loop."
+  ],
+  "recorded_at": "2026-08-02T22:44:04+00:00"
+}
