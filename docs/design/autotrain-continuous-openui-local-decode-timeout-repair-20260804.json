@@ -1,0 +1,88 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 2,
+  "cycle_intent": "screening",
+  "cycle_role": "screening",
+  "evidence_class": "fixture",
+  "decision": "measurement_incomplete",
+  "climb_state": "inconclusive",
+  "ship_state": "blocked",
+  "scoreable": false,
+  "new_checkpoint_created": true,
+  "upstream_commit": "eba6db3044076285581b80cfe5294a2ecbcee8a1",
+  "integration_commit": "e55955ba364b32cd3321e3dde3d652f54247d47d",
+  "train_version": "wf_smoke_v2",
+  "eval_suite": "smoke",
+  "primary_metric": "smoke.structural_similarity",
+  "frozen_manifest_sha256": "2fd7771dab610c8ddc6c6d32cba0eedfc24bd549471b7d946b26d7be5df70581",
+  "arms": [
+    {
+      "experiment_id": "c20260804-continuous-openui-local-8c0b60dd-c2-control",
+      "role": "control",
+      "run_id": "c20260804-continuous-openui-local-8c0b60dd-c2-control",
+      "checkpoint": "runs/c20260804-continuous-openui-local-8c0b60dd-c2-control/checkpoints/last.pt",
+      "params": 1755764,
+      "structural_aux_head_profile": "component-plan",
+      "component_plan_decode_weight": 0.0,
+      "metrics": {
+        "smoke.decode_timeout_count": 3,
+        "smoke.incomplete_document_n": 3,
+        "smoke.compiler_ms_mean": 23151.0,
+        "smoke.compiler_prefill_tokens_mean": 11520,
+        "smoke.evaluation_wall_seconds": 53.303445,
+        "smoke.effective_decode_timeout_seconds": 24.0
+      },
+      "gates_pass": false,
+      "gate_failure_reason": "measurement_incomplete"
+    },
+    {
+      "experiment_id": "c20260804-continuous-openui-local-8c0b60dd-c2-component-plan",
+      "role": "candidate",
+      "run_id": "c20260804-continuous-openui-local-8c0b60dd-c2-component-plan",
+      "checkpoint": "runs/c20260804-continuous-openui-local-8c0b60dd-c2-component-plan/checkpoints/last.pt",
+      "params": 1755764,
+      "structural_aux_head_profile": "component-plan",
+      "component_plan_decode_weight": 1.0,
+      "metrics": {
+        "smoke.decode_timeout_count": 3,
+        "smoke.incomplete_document_n": 3,
+        "smoke.compiler_ms_mean": 23198.9,
+        "smoke.compiler_prefill_tokens_mean": 11520,
+        "smoke.effective_decode_timeout_seconds": 24.0
+      },
+      "gates_pass": false,
+      "gate_failure_reason": "measurement_incomplete"
+    }
+  ],
+  "reasons": [
+    "measurement_incomplete:c20260804-continuous-openui-local-8c0b60dd-c2-control:smoke:incomplete_document_n=3:decode_timeout_count=3",
+    "measurement_incomplete:c20260804-continuous-openui-local-8c0b60dd-c2-component-plan:smoke:incomplete_document_n=3:decode_timeout_count=3",
+    "harness_failure:c20260804-continuous-openui-local-8c0b60dd-c2-control:experiment_failed",
+    "harness_failure:c20260804-continuous-openui-local-8c0b60dd-c2-component-plan:experiment_failed",
+    "primary_metric_unavailable"
+  ],
+  "sdlc_phase_a": "NON_POSITIVE",
+  "stack_layer": false,
+  "harness_signal": {
+    "schema": "HarnessSignalV1",
+    "harness_family": "model_build",
+    "signal": "AgentV finalized every record disposition and reported an internal decode timeout; canonical model-build screening decode timeout budget did not account for structural-aux-head arm decode cost",
+    "reproduced_on": "both control and candidate of the frozen c2 manifest",
+    "root_cause": "screening_decode_timeout_seconds policy default (8s) x smoke_n (3) = 24s chunk budget left under 1s margin over the observed ~23.2s/chunk decode cost of a structural_aux_head_profile-bearing arm (cost tracks head attachment, not component_plan_decode_weight, since control measured the same cost at decode_weight=0)",
+    "repair_component": "harness.autoresearch.experiment_campaign",
+    "repair_version": "v177 -> v178",
+    "repair_commit": "a17419c",
+    "repair_files": [
+      "src/slm_training/autoresearch/climb_policy.py",
+      "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json",
+      "tests/test_scripts/test_run_autotrain_continuous.py"
+    ],
+    "regression_test": "tests/test_scripts/test_run_autotrain_continuous.py::test_screening_decode_timeout_covers_observed_aux_head_cost",
+    "new_default_seconds": 10.0,
+    "new_chunk_budget_seconds": 30.0
+  },
+  "next_action": "retry_measurement: replay frozen manifest 2fd7771dab610c8ddc6c6d32cba0eedfc24bd549471b7d946b26d7be5df70581 under repaired timeout before any new hypothesis",
+  "lean": "not_applicable:screening"
+}
