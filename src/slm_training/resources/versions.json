@@ -1168,7 +1168,7 @@
       ]
     },
     "dsl.completion_kernel": {
-      "version": "v16",
+      "version": "v17",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/grammar/fastpath/engine.py",
@@ -1195,6 +1195,11 @@
         "docs/design/adr-constrained-diffusion-topology-split.md"
       ],
       "history": [
+        {
+          "version": "v17",
+          "date": "2026-08-04",
+          "note": "L1+L2 of the precompiled-grammar-admissibility campaign: cached allowed-id expansion on the forest path and a session-scoped control-key branch memo (parser_state_key x sequence x literal-frame x path cap). Draft reuse only; semantic filters, path labels, and authority unchanged; E1 oracle parity green; new branch_memo_hits/misses counters."
+        },
         {
           "version": "v16",
           "date": "2026-08-02",
@@ -9929,7 +9934,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v85",
+      "version": "v86",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -9950,6 +9955,11 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v86",
+          "date": "2026-08-04",
+          "note": "Fold the completion session's new branch_memo_hits/misses counters into DecodeStats (completion_branch_memo_hits/misses); additive telemetry only."
+        },
         {
           "version": "v85",
           "date": "2026-08-03",
@@ -12416,6 +12426,11 @@
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
       "history": [
+        {
+          "version": "v308",
+          "date": "2026-08-04",
+          "note": "no-bump: contract_allowed_token_ids prefix membership via a set instead of an O(prefix) list scan; identical results, pure work-skipping (campaign L1)."
+        },
         {
           "version": "v308",
           "date": "2026-08-03",
