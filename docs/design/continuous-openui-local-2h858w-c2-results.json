@@ -1,0 +1,62 @@
+{
+    "schema": "continuous_autotrain_cycle_results/v1",
+    "loop_id": "continuous-openui-local",
+    "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c2",
+    "cycle_index": 2,
+    "source_commit": "d38b45a9",
+    "honesty": "fixture_or_scratch",
+    "not_ship_claim": true,
+    "recipe": {
+        "device": "cpu",
+        "steps": 20,
+        "train_version": "wf_smoke_v2",
+        "eval_version": "e938_role_safe_all_targets_v2",
+        "ship_gates": true,
+        "seed": 100002,
+        "trainable_params": 1755764,
+        "arm_wall_seconds": 70.0,
+        "fitted_decode_timeout_seconds": 8.0
+    },
+    "arms": {
+        "c2-control": {
+            "trainable_params": 1755764,
+            "status": "measurement_incomplete",
+            "smoke": {
+                "n": 3,
+                "decode_timeout_count": 3,
+                "compiler_ms_mean": 23249.0
+            }
+        },
+        "c2-component-plan": {
+            "trainable_params": 1755764,
+            "status": "measurement_incomplete",
+            "smoke": {
+                "n": 3,
+                "decode_timeout_count": 3,
+                "compiler_ms_mean": 23149.9
+            }
+        }
+    },
+    "primary_metric": "smoke.structural_similarity",
+    "primary_delta": null,
+    "sdlc_phase_a": {
+        "positive": false,
+        "stack_layer": false,
+        "stack_action": "no_stack_layer_non_positive",
+        "agent_required": "continue loop; local commits/docs only",
+        "reasons": [
+            "measurement_incomplete:c20260804-continuous-openui-local-8c0b60dd-c2-control:smoke:incomplete_document_n=3:decode_timeout_count=3",
+            "measurement_incomplete:c20260804-continuous-openui-local-8c0b60dd-c2-component-plan:smoke:incomplete_document_n=3:decode_timeout_count=3",
+            "harness_failure:c20260804-continuous-openui-local-8c0b60dd-c2-control:experiment_failed",
+            "harness_failure:c20260804-continuous-openui-local-8c0b60dd-c2-component-plan:experiment_failed",
+            "primary_metric_unavailable"
+        ]
+    },
+    "conclusion": "Both arms of the size-matched 'component-plan' hypothesis (1,755,764 params, seed 100002 -- the same recipe/seed that produced a reproduced +0.05613 structural_similarity win in three independent prior sessions, most recently PR #1376) hit decode_timeout_count=3/3 on this container and produced no scoreboard. thrash_timing.json records arm_wall_seconds=70.0, fitted_decode_timeout_seconds=8.0 (unclamped -- the fitting formula did not further reduce the policy-configured 8s/record budget), min_train_floor_seconds=20.0, eval_overhead_seconds=8.0. The measured compiler_ms_mean on both arms (~23.1-23.2s) is 6-7x this container's per-record 8s decode budget and 1.6-1.9x the entire prior-session run's measured end-to-end p50 latency for the identical recipe (control 14554.69ms, component-plan 12549.58ms, docs/design/continuous-openui-local-j48f8u-c2-results.md). Since the identical frozen recipe already completed within budget on other same-loop sessions, this reads as environmental slowness specific to this container (likely residual CPU contention right after this session's venv/torch/npm bootstrap) rather than a code-level harness defect requiring a canonical-owner change. repair_harness handoff action acknowledged blocked with this diagnostic evidence rather than claimed fixed; retry_measurement (frozen replay of the identical arm) is the next step, not a speculative change to the decode-timeout fitting formula or a wall-time bump -- scripts/run_autotrain_continuous.py's own comment on _fit_screening_decode_timeout_seconds explicitly warns against 'silent wall++' as a fix for a clamp that always binds.",
+    "next_priorities": [
+        "Frozen-replay the identical c2-component-plan / c2-control arms (retry_measurement) once container load has settled, before trying a new hypothesis.",
+        "If decode timeouts persist across >=3 consecutive frozen replays with no new information, escalate to a dedicated improve-openui-harnesses session to recalibrate the screening arm-wall/decode-timeout share model for size-matched arms above ~1.75M params (the fitting formula assumes a flat per-role wall regardless of arm size).",
+        "Do not raise decode_timeout_seconds or arm wall speculatively without that dedicated investigation."
+    ],
+    "recorded_at": "2026-08-04T15:35:28Z"
+}
