@@ -12,6 +12,27 @@ from typing import Any, Sequence
 from slm_training.bridge_utils import checkout_roots, sanitized_node_env
 
 
+def _bootstrap_agentv_sdk(root: Path) -> bool:
+    """Run ``npm ci`` once in ``root`` if it has a lockfile but no installed SDK.
+
+    A freshly cloned checkout has no ``node_modules`` until someone runs
+    ``npm ci``. Rather than fail every eval in a fresh checkout, install once
+    (clearing ``NODE_OPTIONS`` so a host shell's ``--import tsx`` can't make
+    npm's own node invocation exit 9) and let the caller re-check the SDK.
+    """
+    if not (root / "package-lock.json").is_file():
+        return False
+    result = subprocess.run(
+        ["npm", "ci"],
+        cwd=root,
+        env=sanitized_node_env(),
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    return result.returncode == 0
+
+
 def _agentv_runtime(repo_root: Path) -> tuple[Path, Path]:
     """Resolve the pinned SDK from this checkout or its Git common checkout."""
     override = os.getenv("AGENTV_RUNNER")
@@ -20,13 +41,19 @@ def _agentv_runtime(repo_root: Path) -> tuple[Path, Path]:
         return runner, runner.parents[1]
 
     checkout_runner = repo_root / "scripts" / "run_agentv_eval.mjs"
-    for root in checkout_roots(repo_root):
+    roots = checkout_roots(repo_root)
+    bootstrapped = False
+    for root in roots:
         runner = (
             checkout_runner
             if checkout_runner.is_file()
             else root / "scripts" / "run_agentv_eval.mjs"
         )
         sdk = root / "node_modules" / "@agentv" / "core" / "package.json"
+        if runner.is_file() and not sdk.is_file() and not bootstrapped:
+            bootstrapped = _bootstrap_agentv_sdk(root)
+            if bootstrapped and sdk.is_file():
+                return runner, root
         if runner.is_file() and sdk.is_file():
             return runner, root
     raise RuntimeError(

@@ -36,6 +36,59 @@ def test_agentv_runtime_uses_git_common_checkout_for_worktree_sdk(
     assert _agentv_runtime(worktree) == (runner, common_root)
 
 
+def test_agentv_runtime_bootstraps_missing_sdk_via_npm_ci(
+    tmp_path, monkeypatch
+) -> None:
+    root = tmp_path / "repo"
+    runner = root / "scripts/run_agentv_eval.mjs"
+    lockfile = root / "package-lock.json"
+    sdk = root / "node_modules/@agentv/core/package.json"
+    runner.parent.mkdir(parents=True)
+    runner.write_text("// runner")
+    lockfile.write_text("{}")
+    monkeypatch.delenv("AGENTV_RUNNER", raising=False)
+    monkeypatch.setattr(agentv_module, "checkout_roots", lambda root: (root,))
+
+    captured = {}
+
+    def fake_run(command, **kwargs):
+        captured["command"] = command
+        captured["env"] = kwargs.get("env")
+        sdk.parent.mkdir(parents=True, exist_ok=True)
+        sdk.write_text("{}")
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(agentv_module.subprocess, "run", fake_run)
+
+    assert _agentv_runtime(root) == (runner, root)
+    assert captured["command"] == ["npm", "ci"]
+    assert captured["env"]["NODE_OPTIONS"] == ""
+
+
+def test_agentv_runtime_still_raises_when_bootstrap_fails(
+    tmp_path, monkeypatch
+) -> None:
+    root = tmp_path / "repo"
+    runner = root / "scripts/run_agentv_eval.mjs"
+    runner.parent.mkdir(parents=True)
+    runner.write_text("// runner")
+    (root / "package-lock.json").write_text("{}")
+    monkeypatch.delenv("AGENTV_RUNNER", raising=False)
+    monkeypatch.setattr(agentv_module, "checkout_roots", lambda root: (root,))
+    monkeypatch.setattr(
+        agentv_module.subprocess,
+        "run",
+        lambda *a, **k: SimpleNamespace(returncode=1, stdout="", stderr="boom"),
+    )
+
+    try:
+        _agentv_runtime(root)
+    except RuntimeError as exc:
+        assert "npm ci" in str(exc)
+    else:  # pragma: no cover - failure path must raise
+        raise AssertionError("expected RuntimeError when bootstrap fails")
+
+
 def test_model_ship_cases_fail_closed_on_missing_suites() -> None:
     cases = model_ship_gate_cases(
         {
