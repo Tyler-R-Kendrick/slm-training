@@ -10,6 +10,39 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from slm_training.bridge_utils import checkout_roots, sanitized_node_env
+from slm_training.levers import MAX_RUN_SECONDS
+
+_AGENTV_AUTO_PROVISION_ATTEMPTED: set[Path] = set()
+
+
+def _try_auto_provision_agentv_sdk(root: Path) -> bool:
+    """Best-effort ``npm ci`` for a fresh checkout missing the pinned SDK.
+
+    Every ephemeral sandbox clones a checkout with no ``node_modules``; without
+    this, each one burns a full documented train+eval cycle on the same known
+    infra gap (see
+    ``docs/design/autotrain-cycle-c2-agentv-missing-infra-failure.md``) before
+    an agent notices and reruns ``npm ci`` by hand. Attempted once per process
+    per root; any failure (no network, no npm, timeout) silently falls through
+    to the existing ``RuntimeError`` so callers keep their honest failure mode.
+    """
+    if os.getenv("AGENTV_NO_AUTO_PROVISION") or root in _AGENTV_AUTO_PROVISION_ATTEMPTED:
+        return False
+    _AGENTV_AUTO_PROVISION_ATTEMPTED.add(root)
+    if not (root / "package.json").is_file():
+        return False
+    try:
+        subprocess.run(
+            ["npm", "ci"],
+            cwd=root,
+            env=sanitized_node_env(),
+            check=True,
+            capture_output=True,
+            timeout=MAX_RUN_SECONDS,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return (root / "node_modules" / "@agentv" / "core" / "package.json").is_file()
 
 
 def _agentv_runtime(repo_root: Path) -> tuple[Path, Path]:
@@ -28,6 +61,12 @@ def _agentv_runtime(repo_root: Path) -> tuple[Path, Path]:
         )
         sdk = root / "node_modules" / "@agentv" / "core" / "package.json"
         if runner.is_file() and sdk.is_file():
+            return runner, root
+        if (
+            runner.is_file()
+            and not sdk.is_file()
+            and _try_auto_provision_agentv_sdk(root)
+        ):
             return runner, root
     raise RuntimeError(
         "AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER"

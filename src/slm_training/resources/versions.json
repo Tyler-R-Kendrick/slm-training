@@ -1816,7 +1816,7 @@
       ]
     },
     "evals.agentv": {
-      "version": "v7",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "src/slm_training/evals/agentv.py",
@@ -1824,6 +1824,11 @@
         "tests/test_evals/test_agentv.py"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-08-04",
+          "note": "Self-heal: _agentv_runtime auto-provisions a missing pinned SDK via a bounded, sanitized-env `npm ci` (once per process per root) instead of failing the whole train+eval cycle in a fresh ephemeral checkout; opt out with AGENTV_NO_AUTO_PROVISION. Falls through to the existing RuntimeError on any provisioning failure."
+        },
         {
           "version": "v7",
           "date": "2026-08-03",

@@ -36,6 +36,58 @@ def test_agentv_runtime_uses_git_common_checkout_for_worktree_sdk(
     assert _agentv_runtime(worktree) == (runner, common_root)
 
 
+def test_agentv_runtime_auto_provisions_missing_sdk_via_npm_ci(
+    tmp_path, monkeypatch
+) -> None:
+    root = tmp_path / "repo"
+    runner = root / "scripts/run_agentv_eval.mjs"
+    sdk = root / "node_modules/@agentv/core/package.json"
+    runner.parent.mkdir(parents=True)
+    (root / "package.json").write_text("{}")
+    runner.write_text("// runner")
+    monkeypatch.delenv("AGENTV_RUNNER", raising=False)
+    monkeypatch.delenv("AGENTV_NO_AUTO_PROVISION", raising=False)
+    monkeypatch.setattr(agentv_module, "checkout_roots", lambda r: (root,))
+    agentv_module._AGENTV_AUTO_PROVISION_ATTEMPTED.clear()
+
+    calls: list[list[str]] = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        sdk.parent.mkdir(parents=True, exist_ok=True)
+        sdk.write_text("{}")
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setattr(agentv_module.subprocess, "run", fake_run)
+
+    assert _agentv_runtime(root) == (runner, root)
+    assert calls == [["npm", "ci"]]
+
+
+def test_agentv_runtime_auto_provision_disabled_by_env(tmp_path, monkeypatch) -> None:
+    root = tmp_path / "repo"
+    runner = root / "scripts/run_agentv_eval.mjs"
+    runner.parent.mkdir(parents=True)
+    (root / "package.json").write_text("{}")
+    runner.write_text("// runner")
+    monkeypatch.delenv("AGENTV_RUNNER", raising=False)
+    monkeypatch.setenv("AGENTV_NO_AUTO_PROVISION", "1")
+    monkeypatch.setattr(agentv_module, "checkout_roots", lambda r: (root,))
+    agentv_module._AGENTV_AUTO_PROVISION_ATTEMPTED.clear()
+
+    def fail_run(cmd, **kwargs):
+        raise AssertionError("npm ci must not run when auto-provision is disabled")
+
+    monkeypatch.setattr(agentv_module.subprocess, "run", fail_run)
+
+    try:
+        _agentv_runtime(root)
+        raised = False
+    except RuntimeError:
+        raised = True
+    assert raised
+
+
 def test_model_ship_cases_fail_closed_on_missing_suites() -> None:
     cases = model_ship_gate_cases(
         {
