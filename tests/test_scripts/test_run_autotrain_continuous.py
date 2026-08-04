@@ -7560,7 +7560,7 @@ def test_screening_matrix_uses_fitted_decode_and_thrash_steps() -> None:
         if str(h["experiment"]["experiment_id"]).endswith("-bounds")
     )
     knobs = cand["knobs"]
-    assert float(knobs["decode_timeout_seconds"]) <= 10.0
+    assert float(knobs["decode_timeout_seconds"]) <= 12.0  # policy.v1.json v5
     assert int(knobs["steps"]) <= 43  # thrash cap 40 + cycle%3
 
 

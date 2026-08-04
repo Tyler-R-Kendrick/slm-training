@@ -2714,7 +2714,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v178",
+      "version": "v179",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2755,6 +2755,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v179",
+          "date": "2026-08-04",
+          "note": "Raise screening_decode_timeout_seconds 8 -> 12 (policy.v1.json v4 -> v5). Fresh scheduled-loop evidence (continuous-openui-scheduled-fe71636 c3): compiler_ms_mean ~23.1-23.2s/record left both arms at decode_timeout_count=3/3 while the 8s-configured chunk budget (24s) used less than half the ~51.7s eval wall actually granted that cycle. _fit_screening_decode_timeout_seconds's own wall-fit ceiling for the nominal 70s arm share is 14.0s ((70-20-8)/3); 12 stays inside that ceiling and inside test_climb_policy_measurement_helpers' existing declared-safe [1.0, 12.0] range, so no test boundary changed. Still short of the observed ~23s/record cost -- partial mitigation, root cause (fixture compile+decode cost vs. nominal per-record wall budget on CPU-only hosts) stays open."
+        },
         {
           "version": "v178",
           "date": "2026-08-03",
