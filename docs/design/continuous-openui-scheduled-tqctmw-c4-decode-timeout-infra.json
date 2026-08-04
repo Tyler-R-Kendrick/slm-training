@@ -1,0 +1,61 @@
+{
+  "schema": "autotrain_sdlc_delivery/v1",
+  "loop_id": "continuous-openui-scheduled-tqctmw",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-schedu-f4406faa-c4",
+  "finished_at": "2026-08-04T14:46:21Z",
+  "sdlc_phase": "A",
+  "positive": false,
+  "stack_layer": false,
+  "has_tracked_delta": false,
+  "stack_action": "no_stack_layer_non_positive",
+  "agent_required": "continue loop; local commits/docs only",
+  "arm_order": [
+    "c20260804-continuous-openui-schedu-f4406faa-c4-component-edge",
+    "c20260804-continuous-openui-schedu-f4406faa-c4-control"
+  ],
+  "arm_seed": 100004,
+  "arm_exits": {
+    "c20260804-continuous-openui-schedu-f4406faa-c4-component-edge": 2,
+    "c20260804-continuous-openui-schedu-f4406faa-c4-control": 2
+  },
+  "arm_skipped": {},
+  "reasons": [
+    "measurement_incomplete:c20260804-continuous-openui-schedu-f4406faa-c4-control:smoke:incomplete_document_n=3:decode_timeout_count=3",
+    "measurement_incomplete:c20260804-continuous-openui-schedu-f4406faa-c4-component-edge:smoke:incomplete_document_n=3:decode_timeout_count=3",
+    "harness_failure:c20260804-continuous-openui-schedu-f4406faa-c4-control:experiment_failed",
+    "harness_failure:c20260804-continuous-openui-schedu-f4406faa-c4-component-edge:experiment_failed",
+    "fixture_insufficient_n:c20260804-continuous-openui-schedu-f4406faa-c4-component-edge",
+    "fixture_insufficient_n:c20260804-continuous-openui-schedu-f4406faa-c4-control",
+    "primary_metric_unavailable",
+    "fixture_insufficient_n_alone"
+  ],
+  "primary_metric": "smoke.structural_similarity",
+  "direction": "increase",
+  "role": "screening",
+  "control_metrics": {
+    "latency_ms_p50": null,
+    "parse_rate": null,
+    "meaningful_program_rate": null,
+    "structural_similarity": null,
+    "binder_reference_f1": null
+  },
+  "candidate_metrics": {
+    "latency_ms_p50": null,
+    "parse_rate": null,
+    "meaningful_program_rate": null,
+    "structural_similarity": null,
+    "binder_reference_f1": null
+  },
+  "policy_sha256": "6783c9cd942a637fde9b03ad9b2e5e5a00fcbe487ad95928f9cd166608d2d4ae",
+  "policy_version": "v4",
+  "control_id": "c20260804-continuous-openui-schedu-f4406faa-c4-control",
+  "candidate_id": "c20260804-continuous-openui-schedu-f4406faa-c4-component-edge",
+  "baseline_trainable_params": 1766987,
+  "candidate_trainable_params": 1766987,
+  "fixture_volume_gate_hits": 2,
+  "measurement_complete": false,
+  "cycle_role": "screening",
+  "cycle_index": 4,
+  "cycle_intent": "screening",
+  "climb_policy_sha256": "6783c9cd942a637fde9b03ad9b2e5e5a00fcbe487ad95928f9cd166608d2d4ae"
+}
