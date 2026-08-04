@@ -91,6 +91,7 @@ scratch baseline.
 | Role | Run id | Kind | Location | Status |
 | --- | --- | --- | --- | --- |
 | Autotrain continuous-openui-local c10 confirm reject | `…-c10-{control,confirm}` | fresh seed of c9 inventory | local | **Confirmation rejected** — c9 win not reheld ([results](design/continuous-openui-local-c10-confirm-rejected.md)) |
+| Autotrain continuous-openui-local c20 binder-arity | `…-c20` | fixture thrash Δstruct=0.0 | local | **fixture only; never promote/sync/ship** ([results](design/continuous-openui-local-c20-binder-arity.md)) |
 | Autotrain continuous-openui-local c19 binder-arity | `…-c19` | fixture thrash Δstruct=0.0 | local | **fixture only; never promote/sync/ship** ([results](design/continuous-openui-local-c19-binder-arity.md)) |
 | Autotrain continuous-openui-local c18 binder-arity | `…-c18` | fixture thrash Δstruct=0.0 | local | **fixture only; never promote/sync/ship** ([results](design/continuous-openui-local-c18-binder-arity.md)) |
 | Autotrain continuous-openui-local c17 binder-topology | `…-c17` | fixture thrash null | local | structure `.174` tie; **not ship** ([results](design/continuous-openui-local-c17-binder-topology.md)) |
