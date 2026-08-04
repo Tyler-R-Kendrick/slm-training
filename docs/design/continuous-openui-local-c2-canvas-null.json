@@ -1,0 +1,57 @@
+{
+  "schema_version": "autotrain_measured_results/v1",
+  "loop_id": "continuous-openui-local",
+  "cycle_index": 2,
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c2",
+  "upstream_commit": "bf31eb7a3a4f7306cf2abecee76c1e2be433a57e",
+  "integration_commit": "07274048ff587082a47edb16f086296185e279e8",
+  "role": "screening",
+  "intent": "screening",
+  "positive": false,
+  "sdlc_stack_layer": false,
+  "primary_metric": "smoke.structural_similarity",
+  "train_version": "wf_smoke_v2",
+  "eval": {
+    "suites": "smoke",
+    "n": 3,
+    "honesty": "fixture"
+  },
+  "recipe": {
+    "device": "cpu",
+    "steps": 22,
+    "batch_size": 2,
+    "seed": 100002,
+    "backend": "scratch",
+    "params": 1608960,
+    "generate_batch_size": 1
+  },
+  "arms": {
+    "control": {
+      "experiment_id": "c20260804-continuous-openui-local-8c0b60dd-c2-control",
+      "structural_similarity": 0.32666666666666666,
+      "meaningful_program_rate": 0.0,
+      "binder_reference_f1": 0.0,
+      "parse_rate": 1.0,
+      "latency_ms_p50": 7358.62
+    },
+    "canvas": {
+      "experiment_id": "c20260804-continuous-openui-local-8c0b60dd-c2-canvas",
+      "structural_similarity": 0.32666666666666666,
+      "meaningful_program_rate": 0.0,
+      "binder_reference_f1": 0.0,
+      "parse_rate": 1.0,
+      "latency_ms_p50": 7388.48,
+      "lever": "compact_active_canvas thrash"
+    }
+  },
+  "delta": {
+    "smoke.structural_similarity": 0.0,
+    "verdict": "null_delta"
+  },
+  "gates": "fail (expected fixture insufficient_n + quality)",
+  "climb": "rejected",
+  "ship": "blocked",
+  "harness_note": "First completed cycle after generate_batch_size schema repair (c1 harness failure). Matrix validation + dual-arm train/eval succeeded.",
+  "next": "thrash component-plan (ranked successor)",
+  "recorded_at": "2026-08-04T21:55:53.301489+00:00"
+}
