@@ -7885,6 +7885,11 @@
         {
           "version": "v3",
           "date": "2026-08-04",
+          "note": "no-bump: record honest continuous-openui-local 8c0b60dd-c2 (session babec8) component-plan eval decode-timeout checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-04",
           "note": "no-bump: record honest continuous-openui-local 8c0b60dd-c1 (session babec8) exact-tie checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {

@@ -1,0 +1,75 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 2,
+  "source_commit": "d7f494a0",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "seed": 100002,
+    "trainable_params": 1755764
+  },
+  "arms": {
+    "c2-control": {
+      "trainable_params": 1755764,
+      "checkpoint_sha256": "6abf57d4898e8fe7cb1dace959d3ce5fec463f816b3686c99ad18abf6db3512b",
+      "status": "measurement_incomplete",
+      "exit_code": 2,
+      "smoke": {
+        "n": 3,
+        "decode_timeout_count": 3,
+        "incomplete_document_n": 3,
+        "compiler_ms_mean": 23191.2
+      }
+    },
+    "c2-component-plan": {
+      "trainable_params": 1755764,
+      "checkpoint_sha256": "20e573b14e3216132d27101e98f5c49dfe634acd0101b2ce18b5f9f0f8a8e741",
+      "status": "measurement_incomplete",
+      "exit_code": 2,
+      "smoke": {
+        "n": 3,
+        "decode_timeout_count": 3,
+        "incomplete_document_n": 3,
+        "compiler_ms_mean": 23205.0
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "local commits + docs only; no new stack layer",
+    "reasons": [
+      "measurement_incomplete:c20260804-continuous-openui-local-8c0b60dd-c2-control:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "measurement_incomplete:c20260804-continuous-openui-local-8c0b60dd-c2-component-plan:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "harness_failure:c20260804-continuous-openui-local-8c0b60dd-c2-control:experiment_failed",
+      "harness_failure:c20260804-continuous-openui-local-8c0b60dd-c2-component-plan:experiment_failed",
+      "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c2-control",
+      "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c2-component-plan",
+      "primary_metric_unavailable",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "handoff_repair_action": {
+    "kind": "repair_harness",
+    "harness_family": "model_build",
+    "frozen_manifest_sha256": "ca1716f1ea70539f26f175efd34f90a36f9833f8c1aae166cf123012091c2ce3",
+    "status": "deferred",
+    "reason": "Third independent same-day/near-same-week session (after j48f8u and krjpdg-adjacent occurrences) to hit an internal AgentV decode timeout (~23.2s/record compiler_ms_mean) on this exact 1,755,764-param control/component-plan pair, always at the same seed/checkpoint. Root cause (container CPU-speed/wall-budget headroom for this param size vs. a naive routing fix) was already investigated and a drafted auto-retire-on-symmetric-timeout fix was correctly reverted in a prior session for violating a deliberate test contract (tests/test_scripts/test_run_autotrain_continuous.py::test_replayed_dual_arm_timeouts_remain_inconclusive_and_require_repair). Per that prior finding's explicit recommendation, this session does not attempt a further speculative fix without a dedicated profiling session; repair_harness is left unacknowledged/deferred, which blocks this loop's automatic cycle 3 in this session. See autotrain-cycle-c5-c6-replay-blocked-follow-up.md."
+  },
+  "conclusion": "Continuous-openui-local loop, cycle 2 (this session, branch claude/great-dirac-babec8): both the size-matched control and the 'component-plan' quality-hypothesis candidate (rank-1 priority carried over from cycle 1) reproduce byte-identical training checkpoints to session j48f8u's confirmed component-plan structural-similarity win, but eval hits an internal AgentV decode timeout on all 3 smoke records for both arms (compiler_ms_mean ~23.2s/record). No quality metric is available for either arm -- the comparison is inconclusive, not a model result. This is an infrastructure/measurement signal, not a model-quality regression. SDLC Phase A classifies this cycle NON_POSITIVE; no stacked PR layer is opened for the cycle itself -- local commit + docs only. The driver's typed handoff requires an acknowledged repair_harness action (with a real code commit + regression test) before cycle 3 can start automatically; per prior sessions' explicit finding not to attempt a further speculative fix without a dedicated profiling investigation, this session defers that repair and stops automatic cycling here rather than rushing an unvalidated change.",
+  "next_priorities": [
+    "Dedicated improve-openui-harnesses session: profile compiler-tree decode cost at ~1.7-1.8M params on this container class and calibrate _effective_record_decode_timeout's fair-share budget (or the underlying MAX_RUN_MINUTES-bounded evaluation_wall_seconds allocation) so this reproducible timeout stops recurring across independent sessions (confidence 0.85, new this session)",
+    "Once repaired, replay the exact frozen control and component-plan candidate (seed 100002, 1,755,764 params, frozen manifest ca1716f1...2091c2ce3) before testing any new hypothesis (confidence 0.95, carried over)"
+  ],
+  "recorded_at": "2026-08-04T02:40:20Z"
+}
