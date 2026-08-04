@@ -245,6 +245,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "unmask_mode",
         "block_diffusion_decode",
         "block_diffusion_block_size",
+        "hybrid_span_min_run",
         "cluster_attn_threshold",
         "cluster_max_size",
         "cluster_verify",
@@ -869,6 +870,7 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         unmask_mode=str(getattr(config, "unmask_mode", "positions") or "positions"),
         block_diffusion_decode=bool(getattr(config, "block_diffusion_decode", False)),
         block_diffusion_block_size=int(getattr(config, "block_diffusion_block_size", 4) or 4),
+        hybrid_span_min_run=int(getattr(config, "hybrid_span_min_run", 3) or 3),
         cluster_attn_threshold=float(
             getattr(config, "cluster_attn_threshold", 0.08) or 0.08
         ),
