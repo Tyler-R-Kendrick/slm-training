@@ -1,0 +1,76 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c3",
+  "cycle_index": 3,
+  "source_commit": "bdf143cd",
+  "integration_commit": "7630868f",
+  "predecessor_campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c2",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_role": "screening",
+  "cycle_intent": "screening",
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "seed": 100001
+  },
+  "arms": {
+    "c3-control": {
+      "id": "c20260805-continuous-openui-local-8c0b60dd-c3-control",
+      "trainable_params": 1755764,
+      "exit_code": 0,
+      "status": "complete_gate_reject",
+      "smoke": {
+        "latency_ms_p50": 20301.3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.23083333333333333,
+        "binder_reference_f1": 0.7333333333333334
+      }
+    },
+    "c3-component-plan": {
+      "id": "c20260805-continuous-openui-local-8c0b60dd-c3-component-plan",
+      "trainable_params": 1755764,
+      "exit_code": 0,
+      "status": "complete_gate_reject",
+      "smoke": {
+        "latency_ms_p50": 12259.6,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.1725,
+        "binder_reference_f1": 0.6333333333333333
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": -0.05833333333333335,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c3-component-plan",
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c3-control",
+      "non_regression_fail:binder_reference_f1:0.7333333333333334->0.6333333333333333",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.23083333333333333:candidate=0.1725:improvement=-0.05833333333333335",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "note": "This is the inverse of the earlier j48f8u-c2 session's component-plan result (which reproduced a +.05613 structural win three independent times at seed 100002). At this session's seed 100001, component-plan REGRESSES both structural_similarity (-0.0583) and binder_reference_f1 (0.7333->0.6333) relative to control, and meaningful_program_rate drops to 0. This is a genuine seed-sensitivity finding for the component-plan hypothesis, not a measurement artifact (both arms completed cleanly, exit=0).",
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "model",
+      "hypothesis": "Test the distinct size-matched 'component-edge' quality hypothesis next.",
+      "authority": "observed_result",
+      "confidence": 0.9,
+      "disposition": "experiment_next",
+      "proposed_experiment_id": "c20260805-continuous-openui-local-8c0b60dd-c3-component-edge"
+    }
+  ]
+}
