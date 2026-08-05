@@ -1,0 +1,73 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c4",
+  "cycle_index": 4,
+  "source_commit": "1a65c9a22867ff25be8d927a387e4c06d96a438c",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "screening_decode_timeout_seconds": 12,
+    "compiler_decode_mode": "off",
+    "ship_gates": true,
+    "seed": 100002
+  },
+  "arms": {
+    "c4-control": {
+      "status": "decode_timeout_all_records",
+      "exit_code": 2,
+      "smoke": {
+        "n": 3,
+        "decode_timeout_count": 3,
+        "compiler_ms_mean": 34453.6,
+        "structural_similarity": null,
+        "meaningful_program_rate": null
+      }
+    },
+    "c4-canvas": {
+      "status": "decode_timeout_all_records",
+      "exit_code": 2,
+      "smoke": {
+        "n": 3,
+        "decode_timeout_count": 3,
+        "compiler_ms_mean": 34327.2,
+        "structural_similarity": null,
+        "meaningful_program_rate": null
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "repair_harness ack'd as blocked (structural capacity ceiling, no safe fix this session); continue loop",
+    "reasons": [
+      "measurement_incomplete:c20260805-continuous-openui-local-8c0b60dd-c4-control:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "measurement_incomplete:c20260805-continuous-openui-local-8c0b60dd-c4-canvas:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "harness_failure:c20260805-continuous-openui-local-8c0b60dd-c4-control:experiment_failed",
+      "harness_failure:c20260805-continuous-openui-local-8c0b60dd-c4-canvas:experiment_failed"
+    ]
+  },
+  "harness_signal": {
+    "family": "model_build",
+    "component": "harnesses/model_build/eval_runner.py + models/decode_stats.py (compiler_ms phase span)",
+    "symptom": "gates.json: smoke:decode_timeout_count actual=3 need=0 on both arms; suites.smoke.compiler_ms_mean ~34.3-34.5s/record",
+    "investigation": "Ran the improve-openui-harnesses diagnostic path (not a hasty knob bump). compiler_ms is the mandatory grammar/symbol-table compilation phase span (models/decode_stats.py ATTRIBUTED_PHASE_FIELDS) that AGENTS.md's non-negotiable decode invariants require ('speculation ranks only over forward-calculated symbol tables and always verifies before commit') -- it is not gated by --compiler-decode-mode off, which only toggles an optional additional search mode (eval_runner.py compiler_decode_mode: off/tree), not the base compile cost. _fit_screening_decode_timeout_seconds's wall-fit ceiling for this 70s arm share is 14.0s ((70-20-8)/3); screening_stage_wall_minutes is already pinned at policy.v1.json's max allowed value == MAX_RUN_MINUTES=3, so there is no legal room to raise the arm wall budget without violating the repository's hard MAX_RUN_MINUTES run cap. Raising screening_decode_timeout_seconds toward the 14s ceiling would still fall far short of the observed ~34s/record cost.",
+    "verdict": "Same already-open root cause first flagged in harness.autoresearch.experiment_campaign v179 (compiler_ms_mean ~23s/record vs an 8->12s bump that stayed short) -- this session's compiler_ms_mean (~34.3-34.5s) is higher still, consistent with a slower/shared CPU host rather than a new code regression (no tracked file governs this cost path changed; compiler_decode_mode off is correctly set). No safe, wall-fit-respecting knob change exists this session. Deferred to a dedicated improve-openui-harnesses investigation into reducing the base compiler_ms cost itself (the only lever that can close this gap without breaking MAX_RUN_MINUTES), matching how prior blockers (autotrain-cycle-c5-c6-replay-blocked-follow-up.md) were explicitly routed rather than patched speculatively.",
+    "frozen_manifest_sha256": "ab248f6d5538504e6e4795f0d4d5c1bab297e1ba85587b1d00aadb3b562d4d8f"
+  },
+  "conclusion": "Continuous-openui-local loop, cycle 4 (scheduled routine session sched02, branch claude/great-dirac-m25gcv): both arms trained cleanly but every smoke record timed out during ship-gated evaluate_model (decode_timeout_count=3/3), with compiler_ms_mean ~34.3-34.5s/record -- the mandatory grammar/symbol-table compile phase, not the optional compiler_decode_mode search path (already off). The wall-fit ceiling for this arm's 70s screening budget caps any safe decode-timeout knob at 14s, and screening_stage_wall_minutes is already pinned at the repo's hard MAX_RUN_MINUTES=3 cap, so no policy change can legally close a ~34s-vs-14s gap. This reproduces and slightly worsens the same open capacity limitation first documented in v179 (then ~23s/record); most plausibly explained by this sandbox's CPU being slower or more contended than prior sessions', not a new code regression. No tracked file governing this cost path changed. Per the improve-openui-harnesses diagnostic pass, this is deferred as a genuinely open, structurally-capped issue rather than forced with a speculative bump.",
+  "next_priorities": [
+    "Route the underlying compiler_ms cost-reduction question (not the wall/timeout knobs) to a dedicated improve-openui-harnesses session with profiling time -- e.g. whether the symbol-table forward-calculation path itself has a genuine optimization opportunity distinct from any legality-weakening shortcut",
+    "Continue the continuous loop by rotating to a different screening hypothesis/knob that does not depend on the frozen decode-timeout-bound arm reproducing cleanly on this host",
+    "Do not attempt the blocked '-confirm'/'-fresh-confirmation' frozen-replay path or the seed-100005 dual-arm decode timeout speculatively; both remain routed to a dedicated improve-openui-harnesses session per autotrain-cycle-c5-c6-replay-blocked-follow-up.md"
+  ],
+  "recorded_at": "2026-08-05T04:52:00Z"
+}
