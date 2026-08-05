@@ -1852,7 +1852,7 @@
       ]
     },
     "evals.agentv": {
-      "version": "v9",
+      "version": "v10",
       "kind": "harness",
       "paths": [
         "src/slm_training/evals/agentv.py",
@@ -1860,6 +1860,11 @@
         "tests/test_evals/test_agentv.py"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-08-05",
+          "note": "Fix false-positive SDK reuse: an @agentv/core/package.json existing was trusted as a working install even when node_modules was stale/partial (observed: typebox 1.3.6 installed without build/typebox.mjs, every eval failing ERR_MODULE_NOT_FOUND instead of self-healing). Cross-check node_modules/.package-lock.json against package-lock.json for every non-optional package before reuse; platform-mismatched optional deps are excluded since npm legitimately skips those."
+        },
         {
           "version": "v9",
           "date": "2026-08-04",

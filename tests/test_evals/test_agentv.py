@@ -14,17 +14,28 @@ from slm_training.evals.agentv import (
 )
 
 
+def _write_installed_sdk(root: Path, *, packages: dict | None = None) -> None:
+    """Write an `@agentv/core` install whose lockfile marker matches the
+    checked-in lockfile, i.e. a genuinely completed `npm ci`."""
+    packages = packages if packages is not None else {"node_modules/@agentv/core": {}}
+    sdk = root / "node_modules/@agentv/core/package.json"
+    sdk.parent.mkdir(parents=True, exist_ok=True)
+    sdk.write_text("{}")
+    (root / "package-lock.json").write_text(json.dumps({"packages": packages}))
+    (root / "node_modules/.package-lock.json").write_text(
+        json.dumps({"packages": packages})
+    )
+
+
 def test_agentv_runtime_uses_git_common_checkout_for_worktree_sdk(
     tmp_path, monkeypatch
 ) -> None:
     common_root = tmp_path / "repo"
     worktree = tmp_path / "worktree"
     runner = common_root / "scripts/run_agentv_eval.mjs"
-    sdk = common_root / "node_modules/@agentv/core/package.json"
     runner.parent.mkdir(parents=True)
-    sdk.parent.mkdir(parents=True)
     runner.write_text("// runner")
-    sdk.write_text("{}")
+    _write_installed_sdk(common_root)
     worktree.mkdir()
     monkeypatch.delenv("AGENTV_RUNNER", raising=False)
     monkeypatch.setattr(
@@ -34,6 +45,89 @@ def test_agentv_runtime_uses_git_common_checkout_for_worktree_sdk(
     )
 
     assert _agentv_runtime(worktree) == (runner, common_root)
+
+
+def test_agentv_runtime_bootstraps_when_sdk_present_but_lockfile_drifted(
+    tmp_path, monkeypatch
+) -> None:
+    """A `package.json` for @agentv/core existing is not proof of a working
+    install: a stale/partial `node_modules` (e.g. copied without a matching
+    install) can have that one file present while a transitive dependency's
+    build output is missing (regression: ERR_MODULE_NOT_FOUND on typebox).
+    The lockfile marker mismatch must still trigger a bootstrap."""
+    root = tmp_path / "repo"
+    runner = root / "scripts/run_agentv_eval.mjs"
+    runner.parent.mkdir(parents=True)
+    runner.write_text("// runner")
+    sdk = root / "node_modules/@agentv/core/package.json"
+    sdk.parent.mkdir(parents=True, exist_ok=True)
+    sdk.write_text("{}")
+    (root / "package-lock.json").write_text(
+        json.dumps({"packages": {"node_modules/@agentv/core": {"version": "4.42.4"}}})
+    )
+    # No node_modules/.package-lock.json marker: this install never completed
+    # cleanly, so it must not be trusted as-is.
+    monkeypatch.delenv("AGENTV_RUNNER", raising=False)
+    monkeypatch.setattr(agentv_module, "checkout_roots", lambda root: (root,))
+
+    bootstrapped = {}
+
+    def fake_run(command, **kwargs):
+        bootstrapped["ran"] = True
+        _write_installed_sdk(
+            root, packages={"node_modules/@agentv/core": {"version": "4.42.4"}}
+        )
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(agentv_module.subprocess, "run", fake_run)
+
+    assert _agentv_runtime(root) == (runner, root)
+    assert bootstrapped.get("ran") is True
+
+
+def test_agentv_runtime_tolerates_platform_skipped_optional_deps(
+    tmp_path, monkeypatch
+) -> None:
+    """npm legitimately omits optional deps that don't match the current
+    platform (e.g. a darwin-only binary skipped on a linux-x64 install).
+    That must not be mistaken for a drifted/broken install."""
+    root = tmp_path / "repo"
+    runner = root / "scripts/run_agentv_eval.mjs"
+    runner.parent.mkdir(parents=True)
+    runner.write_text("// runner")
+    sdk = root / "node_modules/@agentv/core/package.json"
+    sdk.parent.mkdir(parents=True, exist_ok=True)
+    sdk.write_text("{}")
+    (root / "package-lock.json").write_text(
+        json.dumps(
+            {
+                "packages": {
+                    "node_modules/@agentv/core": {"version": "4.42.4"},
+                    "node_modules/fsevents": {
+                        "version": "2.3.3",
+                        "optional": True,
+                        "os": ["darwin"],
+                    },
+                }
+            }
+        )
+    )
+    (root / "node_modules/.package-lock.json").write_text(
+        json.dumps(
+            {"packages": {"node_modules/@agentv/core": {"version": "4.42.4"}}}
+        )
+    )
+    monkeypatch.delenv("AGENTV_RUNNER", raising=False)
+    monkeypatch.setattr(agentv_module, "checkout_roots", lambda root: (root,))
+    monkeypatch.setattr(
+        agentv_module.subprocess,
+        "run",
+        lambda *a, **k: (_ for _ in ()).throw(  # pragma: no cover - must not run
+            AssertionError("npm ci must not run for a platform-skipped optional dep")
+        ),
+    )
+
+    assert _agentv_runtime(root) == (runner, root)
 
 
 def test_agentv_runtime_bootstraps_missing_sdk_via_npm_ci(
@@ -56,6 +150,9 @@ def test_agentv_runtime_bootstraps_missing_sdk_via_npm_ci(
         captured["env"] = kwargs.get("env")
         sdk.parent.mkdir(parents=True, exist_ok=True)
         sdk.write_text("{}")
+        (root / "node_modules/.package-lock.json").write_text(
+            json.dumps({"packages": {}})
+        )
         return SimpleNamespace(returncode=0, stdout="", stderr="")
 
     monkeypatch.setattr(agentv_module.subprocess, "run", fake_run)
@@ -109,9 +206,7 @@ def test_agentv_runtime_bootstraps_common_checkout_before_worktree(
 
     def fake_run(command, *, cwd, **kwargs):
         bootstrapped_roots.append(Path(cwd))
-        sdk = Path(cwd) / "node_modules/@agentv/core/package.json"
-        sdk.parent.mkdir(parents=True, exist_ok=True)
-        sdk.write_text("{}")
+        _write_installed_sdk(Path(cwd))
         return SimpleNamespace(returncode=0, stdout="", stderr="")
 
     monkeypatch.setattr(agentv_module.subprocess, "run", fake_run)
@@ -127,11 +222,9 @@ def test_agentv_runtime_reuses_existing_sdk_without_bootstrapping(
     common_root = tmp_path / "repo"
     worktree = tmp_path / "worktree"
     runner = common_root / "scripts/run_agentv_eval.mjs"
-    sdk = common_root / "node_modules/@agentv/core/package.json"
     runner.parent.mkdir(parents=True)
-    sdk.parent.mkdir(parents=True)
     runner.write_text("// runner")
-    sdk.write_text("{}")
+    _write_installed_sdk(common_root)
     worktree.mkdir()
     monkeypatch.delenv("AGENTV_RUNNER", raising=False)
     monkeypatch.setattr(

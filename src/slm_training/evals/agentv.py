@@ -56,12 +56,45 @@ def _agentv_runtime(repo_root: Path) -> tuple[Path, Path]:
     def _sdk_for(root: Path) -> Path:
         return root / "node_modules" / "@agentv" / "core" / "package.json"
 
+    def _sdk_installed(root: Path) -> bool:
+        # `@agentv/core/package.json` alone is not proof the SDK actually
+        # works: a stale or partially-provisioned `node_modules` (e.g. an
+        # image layer copied without a matching install) can have that one
+        # package.json present while a transitive dependency's build output
+        # is missing, so real imports fail with ERR_MODULE_NOT_FOUND. npm
+        # writes `node_modules/.package-lock.json` mirroring the resolved
+        # tree only when an install actually completed, so cross-check every
+        # required (non-optional) package the checked-in lockfile names
+        # against it to catch a drifted/broken install. Optional entries are
+        # excluded because npm legitimately skips platform-mismatched
+        # optional deps (e.g. darwin/win32 binaries on a linux-x64 install).
+        if not _sdk_for(root).is_file():
+            return False
+        lockfile = root / "package-lock.json"
+        marker = root / "node_modules" / ".package-lock.json"
+        if not lockfile.is_file() or not marker.is_file():
+            return False
+        try:
+            lock_packages = json.loads(lockfile.read_text()).get("packages", {})
+            marker_packages = json.loads(marker.read_text()).get("packages", {})
+        except (OSError, json.JSONDecodeError):
+            return False
+        for name, entry in lock_packages.items():
+            if not name or entry.get("optional"):
+                continue
+            marker_entry = marker_packages.get(name)
+            if marker_entry is None or marker_entry.get("version") != entry.get(
+                "version"
+            ):
+                return False
+        return True
+
     # First pass: reuse an already-installed SDK from any root before
     # installing anything, so a worktree never re-bootstraps a copy the
     # Git common checkout already has.
     for root in roots:
         runner = _runner_for(root)
-        if runner.is_file() and _sdk_for(root).is_file():
+        if runner.is_file() and _sdk_installed(root):
             return runner, root
 
     # No root has the SDK installed. Bootstrap starting from the last root
@@ -73,7 +106,7 @@ def _agentv_runtime(repo_root: Path) -> tuple[Path, Path]:
         if not runner.is_file():
             continue
         bootstrapped, bootstrap_detail = _bootstrap_agentv_sdk(root)
-        if bootstrapped and _sdk_for(root).is_file():
+        if bootstrapped and _sdk_installed(root):
             return runner, root
     raise RuntimeError(
         "AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER"
