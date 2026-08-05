@@ -32,5 +32,5 @@
     "quality_win_rejected_latency_budget:mpr=0.3333333333333333->1.0 lat=888.63->3520.63",
     "primary_metric_win:smoke.structural_similarity:0.13526666666666667->0.3275:improvement=0.19223333333333334"
   ],
-  "recorded_at": "2026-08-05T17:40:17.778173+00:00"
+  "recorded_at": "2026-08-05T17:40:29.745211+00:00"
 }
