@@ -91,6 +91,7 @@ scratch baseline.
 | Role | Run id | Kind | Location | Status |
 | --- | --- | --- | --- | --- |
 | Autotrain continuous-openui-local c10 confirm reject | `…-c10-{control,confirm}` | fresh seed of c9 inventory | local | **Confirmation rejected** — c9 win not reheld ([results](design/continuous-openui-local-c10-confirm-rejected.md)) |
+| Autotrain continuous-openui-local c33 slot-component-fidelity-coupling | `…-c33` | fixture thrash Δstruct=-0.057499999999999996 | local | **fixture only; never promote/sync/ship** ([results](design/continuous-openui-local-c33-slot-component-fidelity-coupling.md)) |
 | Autotrain continuous-openui-local c32 slot-component-inventory-coupling | `…-c32` | fixture thrash Δstruct=0.0 | local | **fixture only; never promote/sync/ship** ([results](design/continuous-openui-local-c32-slot-component-inventory-coupling.md)) |
 | Autotrain continuous-openui-local c31 slot-component-fidelity-coupling | `…-c31` | fixture thrash Δstruct=-0.035466666666666646 | local | **fixture only; never promote/sync/ship** ([results](design/continuous-openui-local-c31-slot-component-fidelity-coupling.md)) |
 | Autotrain continuous-openui-local c30 slot-component-fidelity-coupling | `…-c30` | fixture thrash Δstruct=-0.035466666666666646 | local | **fixture only; never promote/sync/ship** ([results](design/continuous-openui-local-c30-slot-component-fidelity-coupling.md)) |
