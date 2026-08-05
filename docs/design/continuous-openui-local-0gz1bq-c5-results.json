@@ -1,0 +1,82 @@
+{
+  "schema": "autotrain_continuous_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c5",
+  "cycle_index": 5,
+  "source_commit": "bdf143cd",
+  "integration_commit": "f60785db",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "screening",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true,
+    "decode_timeout_seconds": 36.0
+  },
+  "arms": {
+    "control": {
+      "id": "c20260805-continuous-openui-local-8c0b60dd-c5-control",
+      "trainable_params": 1755760,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete_gate_reject",
+      "checkpoint_sha256": "b3d0565c970a23259984c51896a81a64163a10d01f461b9c4a8a883b45267abf",
+      "metrics": {
+        "latency_ms_p50": 15070.99,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.04306666666666666,
+        "binder_reference_f1": 0.8222222222222223,
+        "component_type_recall": 0.0,
+        "placeholder_fidelity": 0.7222222222222222,
+        "reward_score": 0.31033333333333335
+      }
+    },
+    "component-plan": {
+      "id": "c20260805-continuous-openui-local-8c0b60dd-c5-component-plan",
+      "trainable_params": 1755760,
+      "exit_code": 2,
+      "train_status": "completed",
+      "eval_status": "incomplete",
+      "checkpoint_sha256": "ba6c555ad4f33181d646a4ef214e9268207d6f48c8eb791fa9caaff6a9b109e9",
+      "metrics": {},
+      "decode_timeout_count": 3,
+      "incomplete_document_n": 3
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "measurement_incomplete:c20260805-continuous-openui-local-8c0b60dd-c5-component-plan:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "harness_failure:c20260805-continuous-openui-local-8c0b60dd-c5-component-plan:experiment_failed",
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c5-control",
+      "primary_metric_unavailable"
+    ]
+  },
+  "climb_state": "inconclusive",
+  "ship_state": "blocked",
+  "conclusion": "component_plan_decode_timeout_all_3_docs",
+  "caveats": [
+    "control completed cleanly (compiler_ms_mean ~12.4s, well under the 36s decode-timeout ceiling); component-plan's candidate arm timed out on all 3/3 documents (its observed compiler_ms_mean of ~34.4s across the incomplete attempts sits right at the 36s ceiling), so no quality comparison is possible this cycle.",
+    "This looks like a genuine capacity/runtime signal specific to component-plan's heavier decode path on this CPU-only sandbox, not a transient system-load blip: the pre-timeout compiler_ms_mean is consistently close to the ceiling rather than scattered.",
+    "No code/harness change made; per the driver's own diagnosis (target=infrastructure, harness_family=null) this is a repair-runtime-capacity signal, not a typed HarnessSignalV1 requiring a code fix in a named harness family.",
+    "Six independent measurements of the component-plan hypothesis to date (this session's c3 plus five prior sessions/cycles) now include: 1 win, 1 tie, 1 regression, 1 timeout — no longer treated as a reliable lever at this fixture scale."
+  ],
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "infrastructure",
+      "hypothesis": "The measurement is incomplete; replay the exact frozen control and candidate before testing a new hypothesis.",
+      "action": "experiment_next",
+      "experiment_id": "c20260805-continuous-openui-local-8c0b60dd-c5-component-plan"
+    }
+  ],
+  "recorded_at": "2026-08-05T05:46:09Z"
+}

@@ -7982,6 +7982,11 @@
         {
           "version": "v3",
           "date": "2026-08-05",
+          "note": "no-bump: record continuous-loop-local session 0gz1bq c5 checkpoint provenance (component-plan decode timeout, measurement incomplete, capacity signal not a code defect) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-05",
           "note": "no-bump: record continuous-loop-local session 0gz1bq c4 checkpoint provenance (component-edge byte-identical quality, pure cost regression) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
