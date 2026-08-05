@@ -1,0 +1,62 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 2,
+  "source_commit": "6e0a5c7ce10614adf8af859119dbc207399a359c",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "seed": 100002
+  },
+  "arms": {
+    "c2-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.32666666666666666,
+        "binder_reference_f1": 0.0,
+        "latency_ms_p50": 32894.43
+      }
+    },
+    "c2-component-plan": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.38280000000000003,
+        "binder_reference_f1": 0.0,
+        "latency_ms_p50": 31507.49
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.05613333333333337,
+  "sdlc_phase_a": {
+    "positive": true,
+    "stack_layer": false,
+    "stack_action": "positive_no_tracked_delta_skip_stack",
+    "agent_required": "metric win recorded; no code/docs delta -- skip stack PR; continue loop",
+    "reasons": [
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c2-control",
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c2-component-plan",
+      "primary_metric_win:smoke.structural_similarity:0.32666666666666666->0.38280000000000003:improvement=0.05613333333333337"
+    ]
+  },
+  "conclusion": "Continuous-openui-local loop, cycle 2 (scheduled routine session oj6ymg, branch claude/great-dirac-oj6ymg): the size-matched 'component-plan' arm beats its matched control on smoke.structural_similarity by +0.05613 (0.32667 -> 0.38280), at seed 100002 -- byte-identical to the primary-metric delta already independently measured and merged to main by at least six prior sessions (docs/design/continuous-openui-20260803-c2-results.md PR #1369; docs/design/autotrain-cycle-c4-component-plan-efficiency-win.md; docs/design/continuous-openui-local-j48f8u-c2-results.md PR #1376; docs/design/continuous-openui-local-ts5ofk-c2-results.md PR #1378; docs/design/continuous-openui-local-peuum8-c4-results.md; docs/design/continuous-openui-local-sched01-c2-results.md PR #1384). Unlike the sched01/j48f8u/ts5ofk sessions, this session does NOT open a new stacked PR for this reproduction: the driver's own classifier (sdlc_delivery.json) already marks stack_layer=false / positive_no_tracked_delta_skip_stack for this exact case (no new code or harness delta produced this cycle's metric win), and origin/main currently carries 17 open, unmerged autotrain PRs from sessions in the preceding ~16 hours -- opening an eighth PR to restate an already-merged, byte-identical fact adds to that backlog rather than new information. This local doc satisfies the iron-law documentation requirement without adding a stack layer. meaningful_program_rate stays 0 on both arms and binder_reference_f1 reads 0 on both arms this cycle. Ship gates fail as expected (insufficient_n=3; held_out/adversarial/ood/rico_held not run). MODEL_CARD.md is not updated for this cycle, consistent with the merged sched01/j48f8u/ts5ofk precedent (PR #1384 etc. did not touch MODEL_CARD.md for this same local scratch/fixture screening checkpoint class).",
+  "next_priorities": [
+    "Do not open a stacked PR for further byte-identical reproductions of this exact hypothesis; route any confirmation/promotion attempt through a dedicated improve-openui-harnesses session that first fixes the known blockers (the '-confirm'/'-fresh-confirmation' frozen-replay slug bug and the seed-100005 dual-arm decode timeout)",
+    "Prioritize an sdlc Phase B closeout pass over the 17 open autotrain PRs before further scheduled sessions add non-positive or duplicate-positive layers",
+    "Keep promotion formal preflight locked until fresh confirmation establishes a champion"
+  ],
+  "recorded_at": "2026-08-05T13:52:02Z"
+}
