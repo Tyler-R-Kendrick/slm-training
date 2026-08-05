@@ -2734,7 +2734,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v181",
+      "version": "v182",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2775,6 +2775,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v182",
+          "note": "test_autoresearch/test_harness.py: add test_feedback_context_recovers_model_build_incomplete_handoff, regression coverage for the scripts/autoresearch.py _recover_incomplete_handoff_feedback fix (see harness.preference.remine_campaign v6).",
+          "date": "2026-08-05"
+        },
         {
           "version": "v181",
           "note": "Register generate_batch_size (v1433 screening fair-share-decode-timeout knob) on ExperimentKnobs + DEFAULT_ALLOWED_KNOBS; every role='screening' _matrix() hypothesis was failing HypothesisMatrix strict validation (extra_forbidden), blocking every default continuous-openui-local cycle.",
@@ -10883,6 +10888,11 @@
         "docs/design/ldi3-04-remine-intervene-campaign-report-20260718.json"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-08-05",
+          "note": "no-bump: scripts/autoresearch.py _recover_incomplete_handoff_feedback now recovers a measurement_incomplete handoff regardless of NextRunPriorityV1.area (e.g. area=\"model_build\" for a wall/decode-timeout retry_measurement), gated on proposed_experiment_id instead of an area allowlist; preference remine campaign behavior is unchanged (see harness.autoresearch.experiment_campaign v182)."
+        },
         {
           "version": "v5",
           "note": "autoresearch block subcommand for terminal feedback on unstarted arms",
