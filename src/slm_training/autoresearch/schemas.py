@@ -204,6 +204,7 @@ class CampaignBudget(StrictModel):
 DEFAULT_ALLOWED_KNOBS = frozenset(
     {
         "batch_size",
+        "generate_batch_size",
         "allow_unconstrained_fallback",
         "asap_decode",
         "bind_encoding",
@@ -509,6 +510,7 @@ class ExperimentKnobs(StrictModel):
     mixture_max_importance_weight: float | None = Field(default=None, ge=1.0)
     steps: int | None = Field(default=None, ge=1, le=100_000)
     batch_size: int | None = Field(default=None, ge=1, le=1024)
+    generate_batch_size: int | None = Field(default=None, ge=1, le=1024)
     lr: float | None = Field(default=None, gt=0, le=1)
     ltr_prefix_loss_weight: float | None = Field(default=None, ge=0, le=20)
     ltr_tail_loss_weight: float | None = Field(default=None, ge=0, le=20)
