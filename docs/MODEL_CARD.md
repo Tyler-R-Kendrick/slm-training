@@ -91,6 +91,7 @@ scratch baseline.
 | Role | Run id | Kind | Location | Status |
 | --- | --- | --- | --- | --- |
 | Autotrain continuous-openui-local c10 confirm reject | `…-c10-{control,confirm}` | fresh seed of c9 inventory | local | **Confirmation rejected** — c9 win not reheld ([results](design/continuous-openui-local-c10-confirm-rejected.md)) |
+| Autotrain continuous-openui-local c46 semantic-contrast-compiler-margin | `…-c46` | fixture thrash Δstruct=0.19223333333333334 | local | **fixture only; never promote/sync/ship** ([results](design/continuous-openui-local-c46-semantic-contrast-compiler-margin.md)) |
 | Autotrain continuous-openui-local c45 semantic-contrast | `…-c45` | fixture thrash Δstruct=0.0 | local | **fixture only; never promote/sync/ship** ([results](design/continuous-openui-local-c45-semantic-contrast.md)) |
 | Autotrain continuous-openui-local c44 semantic-contrast-compiler-margin | `…-c44` | fixture thrash Δstruct=0.2683333333333333 | local | **fixture only; never promote/sync/ship** ([results](design/continuous-openui-local-c44-semantic-contrast-compiler-margin.md)) |
 | Autotrain continuous-openui-local c43 semantic-contrast | `…-c43` | fixture thrash Δstruct=0.0 | local | **fixture only; never promote/sync/ship** ([results](design/continuous-openui-local-c43-semantic-contrast.md)) |
