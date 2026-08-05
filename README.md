@@ -89,6 +89,7 @@ checkpoint, roster, training default, champion, or promotion status changes.
 | Autotrain continuous-openui-local c41 | fidelity fixture — **not ship** |
 | Autotrain continuous-openui-local c42 | edge-alignment fixture — **not ship** |
 | Autotrain continuous-openui-local c43 | semantic-contrast fixture — **not ship** |
+| Autotrain continuous-openui-local c44 | semantic-contrast-compiler-margin fixture — **not ship** |
 | Autotrain continuous-openui-local c17 | binder-topology null — **not ship** |
 | Autotrain continuous-openui-local c9 | fixture component-inventory win structure `.277→.448` — confirm next |
 | Autotrain continuous-openui-local c5 | incomplete decode timeout — repair then replay |
