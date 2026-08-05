@@ -2777,6 +2777,11 @@
       "history": [
         {
           "version": "v181",
+          "note": "no-bump: add optional --skip-slugs CLI flag (run_autotrain_continuous.main -> run_cycle(extra_skip_slugs=...)), unioned into skip_slugs alongside the existing local-lineage closure computation. Diagnosed root cause of repeated duplicate screening cycles across fresh scheduled sessions: _recent_completed_nonpositive_slugs walks predecessor_campaign_id chains under outputs/autoresearch/, which is gitignored and empty on every fresh checkout, so a fresh container's cycle 1 always re-selects the bank's first arm ('bounds') even when that arm (and 'component-plan', 'component-edge') were already conclusively closed in the same day's still-open PRs (#1436-#1451). Default omitted flag is behavior-neutral (empty frozenset); this is an agent-driven manual override, not an automatic cross-session ledger, so the underlying gap remains open for a proper durable-ledger fix.",
+          "date": "2026-08-05"
+        },
+        {
+          "version": "v181",
           "note": "Register generate_batch_size (v1433 screening fair-share-decode-timeout knob) on ExperimentKnobs + DEFAULT_ALLOWED_KNOBS; every role='screening' _matrix() hypothesis was failing HypothesisMatrix strict validation (extra_forbidden), blocking every default continuous-openui-local cycle.",
           "date": "2026-08-05"
         },

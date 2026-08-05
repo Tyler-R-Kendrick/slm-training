@@ -781,6 +781,14 @@ def test_confirmation_never_inherits_promotion_role() -> None:
     )
 
 
+def test_parse_skip_slugs_from_cli_value() -> None:
+    assert _mod._parse_skip_slugs("") == frozenset()
+    assert _mod._parse_skip_slugs("bounds") == frozenset({"bounds"})
+    assert _mod._parse_skip_slugs("bounds, component-plan ,,component-edge") == (
+        frozenset({"bounds", "component-plan", "component-edge"})
+    )
+
+
 def test_select_recommended_slug_rotates_and_skips() -> None:
     # cycle 1 → first bank arm (bounds)
     assert _mod._select_recommended_slug(1) == "bounds"

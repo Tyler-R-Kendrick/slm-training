@@ -8618,6 +8618,7 @@ def run_cycle(
     sync_git: bool = True,
     startup_commit: str | None = None,
     require_action_receipts: bool = True,
+    extra_skip_slugs: frozenset[str] = frozenset(),
 ) -> str:
     from slm_training.autoresearch.climb_policy import (
         assert_cycle_cadence,
@@ -8766,6 +8767,7 @@ def run_cycle(
     skip_slugs = (
         _skip_arm_slugs(queue_entries, integration_commit=integration)
         | recent_exhausted
+        | extra_skip_slugs
     )
     # Causal-family CAP must not hard-kill thrash when multi-seed-open arms
     # remain (confirm rejects on noisy fixture burned literal-close CAP while
@@ -9907,6 +9909,11 @@ def run_cycle(
     return campaign_id
 
 
+def _parse_skip_slugs(raw: str) -> frozenset[str]:
+    """Parse a comma-separated ``--skip-slugs`` value into a slug set."""
+    return frozenset(slug.strip() for slug in raw.split(",") if slug.strip())
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--loop-id", default="continuous-openui-local")
@@ -9932,7 +9939,18 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     parser.add_argument("--primary-metric", default="smoke.latency_ms_p50")
+    parser.add_argument(
+        "--skip-slugs",
+        default="",
+        help=(
+            "Comma-separated screening arm slugs to skip in addition to the "
+            "local campaign-lineage closure state (e.g. slugs already known "
+            "exhausted from prior sessions' committed docs/design results, "
+            "since the local lineage under --root resets on a fresh checkout)."
+        ),
+    )
     args = parser.parse_args(argv)
+    extra_skip_slugs = _parse_skip_slugs(args.skip_slugs)
     cwd = Path.cwd()
     root = args.root if args.root.is_absolute() else cwd / args.root
     root.mkdir(parents=True, exist_ok=True)
@@ -10010,6 +10028,7 @@ def main(argv: list[str] | None = None) -> int:
                     sync_git=not args.supervised,
                     startup_commit=code_sha,
                     require_action_receipts=args.supervised,
+                    extra_skip_slugs=extra_skip_slugs,
                 )
             except _CodeUpdated as exc:
                 print(f"CODE_UPDATED {exc}; re-executing driver", flush=True)
