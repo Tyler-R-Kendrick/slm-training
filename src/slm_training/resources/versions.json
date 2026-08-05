@@ -2734,7 +2734,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v184",
+      "version": "v185",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2772,9 +2772,17 @@
         "tests/test_scripts/test_run_autotrain_continuous.py",
         "scripts/run_autotrain_continuous.py",
         "scripts/report_autotrain_continuous.sh",
-        "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
+        "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json",
+        "src/slm_training/autoresearch/thrash_regime.py",
+        "docs/design/dual-arm-decode-timeout-escape-20260805.md",
+        "docs/design/dual-regime-thrash-20260804.md"
       ],
       "history": [
+        {
+          "version": "v185",
+          "date": "2026-08-05",
+          "note": "dual-arm decode timeout \u2192 next_experiment + decode residual thrash priority (escape freeze-replay deadlock)"
+        },
         {
           "version": "v184",
           "note": "raise screening decode budget again after c19 dual-arm frozen-replay timeouts",

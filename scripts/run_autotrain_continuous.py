@@ -3034,11 +3034,27 @@ def _recent_completed_nonpositive_slugs(
     }
 
 
+# Decode-cost residual thrash arms (constrained; never unconstrained/off).
+_DECODE_RESIDUAL_SLUGS: tuple[str, ...] = (
+    "bounds",
+    "canvas",
+    "both",
+    "cached-compiler-decision-margin",
+)
+
+
 def _select_recommended_slug(
     cycle: int,
     skip: set[str] | None = None,
+    *,
+    prefer_decode_residual: bool = False,
 ) -> str:
     """Rotate screening arms without reopening a multi-seed-closed approach."""
+    skip = skip or set()
+    if prefer_decode_residual:
+        for slug in _DECODE_RESIDUAL_SLUGS:
+            if slug not in skip:
+                return slug
     # Evidence-triggered and successor quality arms do not perturb the stable
     # cycle-number rotation of the original screening bank. They become the
     # fail-forward path only after older approaches are closed.
@@ -6228,6 +6244,28 @@ def _predecessor_priority_slug(
     matrix_path = camp_dir / "matrix-proposal.json"
     if delivery_path.is_file() and matrix_path.is_file():
         delivery = _read_json(delivery_path)
+        # Dual-arm / compiler_ms timeouts → prefer decode residual thrash next.
+        reasons_blob = " ".join(str(r) for r in delivery.get("reasons") or [])
+        ctrl_to = _has_finalized_decode_timeout(
+            camp_dir, str(delivery.get("control_id") or "")
+        )
+        cand_to = _has_finalized_decode_timeout(
+            camp_dir, str(delivery.get("candidate_id") or "")
+        )
+        if (
+            (ctrl_to and cand_to)
+            or "timeout_dominant_phase=compiler_ms" in reasons_blob
+            or (
+                "decode_timeout_count" in reasons_blob
+                and "measurement_incomplete" in reasons_blob
+                and "compiler_ms" in reasons_blob
+            )
+        ):
+            residual = _select_recommended_slug(
+                1, skip=set(skip) | set(closed), prefer_decode_residual=True
+            )
+            if residual and residual not in closed and residual not in skip:
+                return residual
         current = _classify_positive(
             camp_dir=camp_dir,
             primary_metric=str(handoff.get("primary_metric") or ""),
@@ -6406,6 +6444,19 @@ def _write_cycle_handoff(
         and cycle_intent == "retry_measurement"
         and frozen_replay_count >= frozen_replay_limit
     )
+    # Dual-arm decode timeouts (control AND candidate) are infrastructure cost,
+    # not a candidate-only runtime reject. Freezing the same seed forever blocks
+    # continuous thrash; after one repair they must advance to next_experiment.
+    dual_arm_decode_timeout = bool(
+        finalized_decode_timeout and control_decode_timeout
+    )
+    dual_arm_timeout_exhausted = bool(
+        dual_arm_decode_timeout
+        and (
+            cycle_intent == "retry_measurement"
+            or frozen_replay_count >= max(1, frozen_replay_limit)
+        )
+    )
     if status in {"promoted", "climb_accepted"}:
         climb_state = "climb_accepted"
     elif status == "confirmed":
@@ -6421,6 +6472,8 @@ def _write_cycle_handoff(
         # while its matched control completes is a decisive runtime rejection
         # of this model arm.  Quality remains unavailable, but the loop must not
         # misroute the same trajectory into an unbounded harness-repair cycle.
+        climb_state = "rejected"
+    elif dual_arm_timeout_exhausted:
         climb_state = "rejected"
     elif measurement_incomplete:
         climb_state = "inconclusive"
@@ -6706,6 +6759,33 @@ def _write_cycle_handoff(
                     evidence_ids=(evidence_id,),
                 )
             )
+        elif dual_arm_decode_timeout:
+            # Both arms timed out under compiler_ms cost → thrash decode residual
+            # trajectory (bounds/canvas/both/cache), never freeze dual-arm seed.
+            actions[0:0] = [
+                AutotrainActionV1(
+                    kind="repair_harness",
+                    owner="improve-openui-harnesses",
+                    reason=(
+                        "dual-arm decode timeout (control+candidate); repair "
+                        "decode-cost thrash routing so the next cycle prefers "
+                        "decode residual arms instead of frozen dual-arm replay"
+                    ),
+                    evidence_ids=(evidence_id,),
+                    harness_family="model_build",
+                    frozen_manifest_sha256=manifest_sha,
+                ),
+                AutotrainActionV1(
+                    kind="next_experiment",
+                    owner="autotrain",
+                    reason=(
+                        "dual-arm compiler-side timeout: advance thrash to a "
+                        "decode residual arm (bounds/canvas/both/cache) rather "
+                        "than freeze-replay the same incomplete seed"
+                    ),
+                    evidence_ids=(evidence_id,),
+                ),
+            ]
         else:
             actions[0:0] = [
                 AutotrainActionV1(
