@@ -1,0 +1,72 @@
+{
+  "schema": "autotrain_continuous_cycle_results/v1",
+  "loop_id": "continuous-openui-scheduled-gmyilq",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-schedu-a88a1f21-c3",
+  "cycle_index": 3,
+  "source_commit": "bdf143cdcae7416e6eb6f8ef1da4d643f38aa613",
+  "integration_commit": "3caf6fe559cd624a534a01de751f3f3d16e390b5",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "retry_measurement",
+  "replay_of_campaign": "continuous-loop-20260805-continuous-openui-schedu-a88a1f21-c2",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true,
+    "decode_timeout_seconds": 12.0
+  },
+  "arms": {
+    "control": {
+      "id": "c20260805-continuous-openui-schedu-a88a1f21-c3-control",
+      "trainable_params": 1608962,
+      "compiler_ms_mean": 32872.9,
+      "decode_timeout_count": 3,
+      "measurement_status": "incomplete"
+    },
+    "canvas": {
+      "id": "c20260805-continuous-openui-schedu-a88a1f21-c3-canvas",
+      "trainable_params": 1608962,
+      "compiler_ms_mean": 34534.8,
+      "decode_timeout_count": 3,
+      "measurement_status": "incomplete"
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "measurement_incomplete:c20260805-continuous-openui-schedu-a88a1f21-c3-control:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "measurement_incomplete:c20260805-continuous-openui-schedu-a88a1f21-c3-canvas:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "harness_failure:c20260805-continuous-openui-schedu-a88a1f21-c3-control:experiment_failed",
+      "harness_failure:c20260805-continuous-openui-schedu-a88a1f21-c3-canvas:experiment_failed",
+      "fixture_insufficient_n:c20260805-continuous-openui-schedu-a88a1f21-c3-canvas",
+      "fixture_insufficient_n:c20260805-continuous-openui-schedu-a88a1f21-c3-control",
+      "primary_metric_unavailable",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "conclusion": "agentv_harness_fix_confirmed_new_blocker_is_decode_wall_capacity",
+  "finding": "Replaying the frozen c2 control/canvas arms after the evals.agentv v10 fix (commit 9a53ea83) confirms the harness repair worked: both arms now run through scripts.evaluate_model --ship-gates to completion and produce a real gates.json instead of crashing with ERR_MODULE_NOT_FOUND. However both arms hit a second, independent blocker: all 3 smoke records timed out during decode (decode_timeout_count=3, need=0), leaving every quality metric (parse_rate, structural_similarity, meaningful_program_rate, etc.) null/unmeasured. compiler_ms_mean is ~32.9s (control) / ~34.5s (canvas) per record against a 12.0s decode_timeout_seconds budget -- consistent with the same CPU-only per-record compile+decode capacity gap a prior session (loop continuous-openui-scheduled-fe71636, cycles c3/c4) diagnosed and declared 'timeout-value tuning is exhausted' on: raising the timeout alone will not close a ~3x gap. That prior session's unattempted next levers were (1) reduce screening_smoke_n below 3, (2) reduce screening steps to leave more of the shared 180s MAX_RUN_MINUTES wall for eval, or (3) accept wf_smoke_v2 screening does not fit this sandbox class and treat it as diagnostic-only. This cycle tries lever (2): steps 20 -> 10 for the next cycle, since a genuinely untried knob is not a repeat of the exhausted lever and the loop law's repeated-hard-block rule requires three *identical* consecutive recurrences, which this is not (this loop's first occurrence of the decode-capacity blocker; a different loop hit it previously).",
+  "harness_signal": {
+    "family": "model_build",
+    "status": "unresolved_new_blocker_after_prior_fix",
+    "frozen_manifest_sha256": "01309fb1871a51262c31dbd50630c0c7a23024b143b041bf3685b7f08f3158fb",
+    "prior_investigation": "docs/design/continuous-openui-scheduled-fe71636-c4-results.md"
+  },
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "infrastructure",
+      "hypothesis": "Reduce screening steps (20 -> 10) to leave more of the shared MAX_RUN_MINUTES budget for eval, per the prior session's untried next-lever list.",
+      "action": "retry_measurement_with_reduced_steps",
+      "experiment_id": "c20260805-continuous-openui-schedu-a88a1f21-c3-canvas"
+    }
+  ],
+  "recorded_at": "2026-08-05T06:55:44Z"
+}
