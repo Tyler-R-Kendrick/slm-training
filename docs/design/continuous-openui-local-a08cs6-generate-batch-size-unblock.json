@@ -1,0 +1,69 @@
+{
+  "schema": "autotrain_harness_signal_result/v1",
+  "loop_id": "continuous-openui-local",
+  "session": "a08cs6",
+  "harness_family": "autoresearch",
+  "component": "harness.autoresearch.experiment_campaign",
+  "component_version_before": "v180",
+  "component_version_after": "v181",
+  "blocked_campaigns": [
+    "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c1",
+    "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c2"
+  ],
+  "unblocked_replay_campaign": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c3",
+  "reproduction": {
+    "command": "python -m scripts.run_autotrain_continuous --loop-id continuous-openui-local --supervised --max-cycles 1 --train-version wf_smoke_v2 --steps 20",
+    "stage": "scripts.autoresearch research --offline",
+    "exit_code": 2,
+    "error": "pydantic.ValidationError: hypotheses.N.experiment.knobs.generate_batch_size Extra inputs are not permitted [type=extra_forbidden]",
+    "hypotheses_valid": 0,
+    "hypotheses_required": 5
+  },
+  "root_cause": "scripts/run_autotrain_continuous.py _matrix() sets base['generate_batch_size'] = 1 for every role='screening' hypothesis (the screening fair-share decode-timeout fix landed in PR #1433), but generate_batch_size was never added to ExperimentKnobs or DEFAULT_ALLOWED_KNOBS in src/slm_training/autoresearch/schemas.py. Every default (role='screening') continuous cycle failed HypothesisMatrix strict validation before an experiment could be locked.",
+  "pre_existing_test_regression": {
+    "note": "5 tests in tests/test_scripts/test_run_autotrain_continuous.py already failed this way on tip of main (34111e6e) before this fix, confirmed by reverting the schema change and re-running.",
+    "failing_before_fix": [
+      "test_matrix_confirm_path_same_levers_new_seed",
+      "test_matrix_steps_confirm_preserves_distinct_source_control_recipe",
+      "test_matrix_thrash_rotation_recommends_non_bounds",
+      "test_thrash_matrix_dedupes_compose_vs_static_knob_signatures",
+      "test_thrash_matrix_strips_stale_feedback_when_no_live_feedback"
+    ]
+  },
+  "fix": {
+    "files": [
+      "src/slm_training/autoresearch/schemas.py",
+      "tests/test_scripts/test_run_autotrain_continuous.py",
+      "src/slm_training/resources/versions.json"
+    ],
+    "change": "Registered generate_batch_size as ExperimentKnobs field (int | None, ge=1, le=1024, matching the existing batch_size field) and added it to DEFAULT_ALLOWED_KNOBS.",
+    "new_regression_test": "test_screening_role_generate_batch_size_is_a_registered_knob",
+    "commit": "421603fc4d6304d942b9fdb7603ee568296db0ed"
+  },
+  "replay_evidence": {
+    "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c3",
+    "upstream_commit": "34111e6e9d5be7036257467e27cd772549ddaa72",
+    "integration_commit": "421603fc4d6304d942b9fdb7603ee568296db0ed",
+    "predecessor_campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c2",
+    "arms": ["c20260805-continuous-openui-local-8c0b60dd-c3-control", "c20260805-continuous-openui-local-8c0b60dd-c3-both"],
+    "arm_exit_codes": {"c20260805-continuous-openui-local-8c0b60dd-c3-control": 0, "c20260805-continuous-openui-local-8c0b60dd-c3-both": 0},
+    "scoreboard_produced": true,
+    "honesty": "fixture",
+    "not_ship_claim": true
+  },
+  "classification": {
+    "sdlc_criterion": "executable_unblocking",
+    "positive": true,
+    "note": "The identical arm (control + candidate) that previously could not even lock a manifest now completes with a usable, honestly-gated fixture scoreboard. The model-level outcome of that replayed cycle (c3) is itself non-positive (null primary-metric delta) and is documented separately; this record covers the harness unblock only, per autotrain-iteration-delivery.md's third positive-result criterion."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "421603fc4d6304d942b9fdb7603ee568296db0ed",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v181"
+    },
+    "stamped_at": "2026-08-05T02:41:38.780225+00:00"
+  },
+  "recorded_at": "2026-08-05T02:41:38Z"
+}
