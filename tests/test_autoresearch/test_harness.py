@@ -60,6 +60,7 @@ from slm_training.autoresearch.schemas import (
     CampaignBudget,
     CampaignSpec,
     CategoricalNoveltyAudit,
+    DEFAULT_ALLOWED_KNOBS,
     Diagnosis,
     EvidenceUse,
     EvidenceItem,
@@ -677,6 +678,29 @@ def test_strict_schema_and_allowlist() -> None:
     restricted = campaign().model_copy(update={"allowed_knobs": frozenset({"lr"})})
     with pytest.raises(ValueError, match="forbidden"):
         validate_experiment(restricted, experiment(), evidence(), [source()])
+
+
+def test_generate_batch_size_knob_is_declared_and_allowlisted() -> None:
+    # Regression: the continuous driver's screening role pins
+    # knobs["generate_batch_size"] = 1 (run_autotrain_continuous.py) to
+    # defeat per-record fair-share timeout redistribution on tiny smoke
+    # suites. ExperimentKnobs previously omitted the field, so every
+    # screening-role HypothesisMatrix failed strict validation with
+    # extra_forbidden and the continuous loop could never produce a valid
+    # hypothesis batch.
+    knobs = ExperimentKnobs(generate_batch_size=1)
+    assert knobs.generate_batch_size == 1
+    with pytest.raises(ValidationError):
+        ExperimentKnobs(generate_batch_size=0)
+    assert "generate_batch_size" in DEFAULT_ALLOWED_KNOBS
+
+
+def test_experiment_knobs_fields_stay_synced_with_default_allowed_knobs() -> None:
+    # Historical read-only fields accepted on old matrices but never offered
+    # to new hypotheses are the only allowed drift.
+    read_only_legacy_fields = {"screening_regime_epoch"}
+    knob_fields = set(ExperimentKnobs.model_fields) - read_only_legacy_fields
+    assert knob_fields == set(DEFAULT_ALLOWED_KNOBS)
 
 
 def test_hypothesis_matrix_requires_five_distinct_grounded_candidates() -> None:

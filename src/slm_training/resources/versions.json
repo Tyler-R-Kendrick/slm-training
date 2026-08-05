@@ -2734,7 +2734,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v180",
+      "version": "v181",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2775,6 +2775,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v181",
+          "date": "2026-08-05",
+          "note": "Declare generate_batch_size on ExperimentKnobs and DEFAULT_ALLOWED_KNOBS. run_autotrain_continuous.py's screening role has pinned knobs['generate_batch_size']=1 since v178-era continuous cycles, but the strict schema never declared the field, so every screening-role HypothesisMatrix failed validation with 57x extra_forbidden (blocked continuous-openui-scheduled at blocker_count=2). Added a model_fields<->DEFAULT_ALLOWED_KNOBS parity regression test."
+        },
         {
           "version": "v180",
           "note": "gate Phase A primary wins on matched suite completion + promote formal terminal block feedback",

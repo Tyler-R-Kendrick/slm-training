@@ -306,6 +306,7 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "compact_active_canvas",
         "grammar_draft_window",
         "decode_timeout_seconds",
+        "generate_batch_size",
         "eval_suites",
         "action_embedding_init",
         "action_embedding_train",
@@ -623,6 +624,10 @@ class ExperimentKnobs(StrictModel):
     grammar_draft_window: int | None = Field(default=None, ge=1, le=64)
     # Continuous measurement knobs (screening smoke-only + decode budget).
     decode_timeout_seconds: float | None = Field(default=None, gt=0, le=600)
+    # Eval-time override for the decode chunking loop's batch size
+    # (model_build/config.py TrainKnobs.generate_batch_size); screening role
+    # pins this to 1 to defeat per-record fair-share timeout redistribution.
+    generate_batch_size: int | None = Field(default=None, ge=1, le=1024)
     eval_suites: str | None = Field(
         default=None,
         description="Comma-separated evaluate_model --suites (e.g. smoke).",
