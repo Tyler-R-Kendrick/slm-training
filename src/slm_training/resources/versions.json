@@ -7987,6 +7987,11 @@
         {
           "version": "v3",
           "date": "2026-08-05",
+          "note": "no-bump: record continuous-openui-local c2 component-inventory screen (session dsz5wf) scratch checkpoint provenance (both arms trained, AgentV decode-timeout before either scoreboard completed, harness-incomplete not a model result) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-05",
           "note": "no-bump: record continuous-openui-local c1 bounds screen (session dsz5wf, independent same-day reproduction of PR #1450's c1) scratch checkpoint provenance (4th exact quality tie, 3rd+ latency sign-reversal, rejected/exhausted) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
