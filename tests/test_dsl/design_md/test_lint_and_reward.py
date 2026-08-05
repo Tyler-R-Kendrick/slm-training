@@ -36,6 +36,23 @@ def test_invoke_once_sanitizes_host_node_options(monkeypatch) -> None:
     assert captured["env"]["NODE_OPTIONS"] == ""
 
 
+def test_ensure_repl_sanitizes_host_node_options(monkeypatch) -> None:
+    monkeypatch.setattr(design_md, "bridge_available", lambda: True)
+    monkeypatch.setattr(design_md, "_REPL_PROC", None)
+    monkeypatch.setenv("NODE_OPTIONS", "--import tsx")
+    captured: dict[str, object] = {}
+
+    def fake_popen(command, **kwargs):
+        captured["env"] = kwargs.get("env")
+        return SimpleNamespace(poll=lambda: None)
+
+    monkeypatch.setattr(design_md.subprocess, "Popen", fake_popen)
+
+    design_md._ensure_repl()
+
+    assert captured["env"]["NODE_OPTIONS"] == ""
+
+
 def test_composite_reward_prefers_valid_openui() -> None:
     good = (
         'root = Stack([cta], "column")\n'

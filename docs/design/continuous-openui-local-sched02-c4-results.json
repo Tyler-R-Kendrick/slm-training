@@ -4,6 +4,14 @@
   "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c4",
   "cycle_index": 4,
   "source_commit": "1a65c9a22867ff25be8d927a387e4c06d96a438c",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "d93b96ed74ba77d3339c85ae20b784afa5889eb5",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v181"
+    }
+  },
   "honesty": "fixture_or_scratch",
   "not_ship_claim": true,
   "recipe": {

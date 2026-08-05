@@ -7,7 +7,7 @@
 **Verdict:** not a model result. Both `control` and `canvas` arms trained
 cleanly but failed identically at the ship-gated `evaluate_model` stage with:
 
-```
+```text
 node:internal/modules/esm/resolve:275
 Error [ERR_MODULE_NOT_FOUND]: Cannot find module
   '/home/user/slm-training/node_modules/typebox/build/typebox.mjs'
