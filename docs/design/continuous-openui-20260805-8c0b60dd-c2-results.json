@@ -1,0 +1,53 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 2,
+  "source_commit": "8e33c6cf",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "cycle_role": "screening",
+  "cycle_intent": "screening",
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2"
+  },
+  "arms": {
+    "control": {
+      "status": "measurement_incomplete",
+      "levers": {
+        "component_plan": false
+      },
+      "smoke": {
+        "n": 3,
+        "decode_timeout_count": 3,
+        "meaningful_program_rate": null,
+        "structural_similarity": null
+      }
+    },
+    "component-plan": {
+      "status": "measurement_complete",
+      "levers": {
+        "component_plan": true
+      },
+      "smoke": {
+        "n": 3,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.3828,
+        "binder_reference_f1": 0.0,
+        "latency_ms_p50": 30226.1
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "conclusion": "Second cycle against integration commit 8e33c6cf (this session's own c1 doc commit). Tested the ranked component-plan quality hypothesis. The component-plan candidate completed a full measurement (structural_similarity 0.3828, matching the c2 component-plan screen precedent from #1384/#1387/2026-08-03), but the matched control hit 3/3 typed decode timeouts and never produced a scoreboard -- an infrastructure/runtime measurement failure, not a model result. No primary-metric delta is attributable because the control side is missing. Executable-unblock disposition is also rejected on its own terms (component-plan mpr=0.0). Driver recommends retry_measurement: replay the exact frozen pair to determine whether the control-only timeout reproduces (systematic) or was a one-run timing artifact.",
+  "next_priorities": [
+    "Replay the exact frozen c2 control/component-plan pair once before drawing any conclusion about component-plan's structural_similarity gain",
+    "If the control timeout reproduces, file a typed HarnessSignalV1 for the eval/decode-timeout family rather than treating it as a model result",
+    "Do not promote, sync, or ship either checkpoint; this cycle is inconclusive"
+  ],
+  "recorded_at": "2026-08-05T08:36:54Z"
+}

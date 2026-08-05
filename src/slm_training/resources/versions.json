@@ -7982,6 +7982,11 @@
         {
           "version": "v3",
           "date": "2026-08-05",
+          "note": "no-bump: record continuous-openui-local c2 (8c0b60dd) component-plan screen scratch checkpoint provenance (control decode-timeout incomplete, candidate completed but inconclusive without a matched control) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-05",
           "note": "no-bump: record continuous-openui-local c1 (8c0b60dd) bounds-screen scratch checkpoint provenance (3rd exact quality tie, 2nd latency sign-reversal, rejected/exhausted) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
