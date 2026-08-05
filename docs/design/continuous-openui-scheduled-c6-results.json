@@ -1,0 +1,80 @@
+{
+  "schema": "autotrain_continuous_cycle_results/v1",
+  "loop_id": "continuous-openui-scheduled",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-schedu-1e62ecf9-c6",
+  "cycle_index": 6,
+  "source_commit": "34111e6e9d5be7036257467e27cd772549ddaa72",
+  "integration_commit": "e0014796f2e4aa84b33f22c9f69553cf89fe29a7",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "screening",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true
+  },
+  "arms": {
+    "component-plan": {
+      "id": "c20260805-continuous-openui-schedu-1e62ecf9-c6-component-plan",
+      "trainable_params_approx": 1755760,
+      "primary_metric_value": 0.0964,
+      "smoke_metrics": {
+        "meaningful_program_rate": 0.0,
+        "binder_reference_f1": 0.8222222222222223,
+        "latency_ms_p50": 3611.6,
+        "tokens_emitted_mean": 30,
+        "forwards_count_mean": 5,
+        "compiler_ms_mean": 3329.09
+      },
+      "measurement_status": "complete",
+      "ship_gates_pass": false,
+      "expected_gate_rejection": true
+    },
+    "control": {
+      "id": "c20260805-continuous-openui-schedu-1e62ecf9-c6-control",
+      "trainable_params_approx": 1755760,
+      "primary_metric_value": 0.0964,
+      "smoke_metrics": {
+        "meaningful_program_rate": 0.0,
+        "binder_reference_f1": 0.8222222222222223,
+        "latency_ms_p50": 3554,
+        "tokens_emitted_mean": 30,
+        "forwards_count_mean": 5,
+        "compiler_ms_mean": 3255.36
+      },
+      "measurement_status": "complete",
+      "ship_gates_pass": false,
+      "expected_gate_rejection": true
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260805-continuous-openui-schedu-1e62ecf9-c6-component-plan",
+      "fixture_insufficient_n:c20260805-continuous-openui-schedu-1e62ecf9-c6-control",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.0964 candidate=0.0964 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "conclusion": "component_plan_hypothesis_exact_tie_rejected",
+  "finding": "The 'component-plan' quality hypothesis (proposed by c5's ranked priority 1) produced an exact tie with its matched control on every measured smoke metric (structural_similarity, meaningful_program_rate, binder_reference_f1) -- improvement=0.0. meaningful_program_rate dropped to 0 for both arms relative to c4/c5 (0.333), consistent with this being a distinct, smaller/faster (fewer forwards_count_mean=5 vs 21, lower latency) but not-yet-competitive configuration. No stack layer; local-commit-only record.",
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "model",
+      "hypothesis": "The completed non-positive arm is exhausted; test the distinct size-matched 'component-edge' quality hypothesis next.",
+      "authority": "observed_result",
+      "confidence": 0.9,
+      "action": "experiment_next",
+      "experiment_id": "c20260805-continuous-openui-schedu-1e62ecf9-c6-component-edge"
+    }
+  ],
+  "recorded_at": "2026-08-05T00:48:59Z"
+}
