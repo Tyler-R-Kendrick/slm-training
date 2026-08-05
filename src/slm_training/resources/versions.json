@@ -7982,6 +7982,11 @@
         {
           "version": "v3",
           "date": "2026-08-05",
+          "note": "no-bump: record continuous loop c3d4f8 cycle 6's control/component-edge scratch checkpoint provenance (null-delta screen) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-05",
           "note": "no-bump: record continuous loop c3d4f8 cycle 4's control-only scratch checkpoint provenance (component-plan candidate exceeded MAX_RUN_MINUTES before starting, retry_measurement queued) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
