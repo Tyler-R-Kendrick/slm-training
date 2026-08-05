@@ -26,6 +26,7 @@
       "eval_status": "complete (gate reject)",
       "metrics": {
         "latency_ms_p50": 22109.8,
+        "parse_rate": 1.0,
         "meaningful_program_rate": 0.3333333333333333,
         "structural_similarity": 0.4166666666666667,
         "binder_reference_f1": 0.9523809523809523
@@ -39,6 +40,7 @@
       "eval_status": "complete (gate reject)",
       "metrics": {
         "latency_ms_p50": 22688.8,
+        "parse_rate": 1.0,
         "meaningful_program_rate": 0.3333333333333333,
         "structural_similarity": 0.4166666666666667,
         "binder_reference_f1": 0.9523809523809523
