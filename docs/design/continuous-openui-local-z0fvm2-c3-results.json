@@ -1,5 +1,23 @@
 {
-  "schema": "autotrain_continuous_cycle_results/v1",
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "b369306176372dca22990f65b5f7f364d9f7878a",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v92",
+      "harness.model_build.train": "v42",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v23",
+      "evals.agentv": "v9",
+      "model.twotower": "v312",
+      "dsl.symbolic_surface": "v6"
+    },
+    "stamped_at": "2026-08-05T03:46:31.645081+00:00"
+  },
   "loop_id": "continuous-openui-local",
   "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c3",
   "cycle_index": 3,
@@ -26,6 +44,10 @@
       "train_status": "completed",
       "eval_status": "complete_gate_reject",
       "structural_aux_head_profile": null,
+      "knobs_delta": {
+        "component_plan_decode_weight": 0.0,
+        "component_plan_loss_weight": 0.0
+      },
       "metrics": {
         "latency_ms_p50": 35231.83,
         "parse_rate": 1.0,
