@@ -77,15 +77,15 @@ def _agentv_runtime(repo_root: Path) -> tuple[Path, Path]:
         try:
             lock_packages = json.loads(lockfile.read_text()).get("packages", {})
             marker_packages = json.loads(marker.read_text()).get("packages", {})
-        except (OSError, json.JSONDecodeError):
+        except (OSError, json.JSONDecodeError, AttributeError, TypeError):
             return False
         for name, entry in lock_packages.items():
-            if not name or entry.get("optional"):
+            if not name or not isinstance(entry, dict) or entry.get("optional"):
                 continue
             marker_entry = marker_packages.get(name)
-            if marker_entry is None or marker_entry.get("version") != entry.get(
+            if not isinstance(marker_entry, dict) or marker_entry.get(
                 "version"
-            ):
+            ) != entry.get("version"):
                 return False
         return True
 

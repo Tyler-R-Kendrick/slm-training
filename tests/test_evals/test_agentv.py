@@ -47,6 +47,45 @@ def test_agentv_runtime_uses_git_common_checkout_for_worktree_sdk(
     assert _agentv_runtime(worktree) == (runner, common_root)
 
 
+def test_agentv_runtime_bootstraps_on_malformed_marker_entry(
+    tmp_path, monkeypatch
+) -> None:
+    """A hand-edited or corrupted node_modules/.package-lock.json can have a
+    non-dict entry for a package the checked-in lockfile requires. The reuse
+    check must fail closed (return False, trigger a bootstrap) rather than
+    let AttributeError/TypeError from `.get()` on a non-dict value escape
+    and crash the caller."""
+    root = tmp_path / "repo"
+    runner = root / "scripts/run_agentv_eval.mjs"
+    runner.parent.mkdir(parents=True)
+    runner.write_text("// runner")
+    sdk = root / "node_modules/@agentv/core/package.json"
+    sdk.parent.mkdir(parents=True, exist_ok=True)
+    sdk.write_text("{}")
+    (root / "package-lock.json").write_text(
+        json.dumps({"packages": {"node_modules/@agentv/core": {"version": "4.42.4"}}})
+    )
+    (root / "node_modules/.package-lock.json").write_text(
+        json.dumps({"packages": {"node_modules/@agentv/core": "not-a-dict"}})
+    )
+    monkeypatch.delenv("AGENTV_RUNNER", raising=False)
+    monkeypatch.setattr(agentv_module, "checkout_roots", lambda root: (root,))
+
+    bootstrapped = {}
+
+    def fake_run(command, **kwargs):
+        bootstrapped["ran"] = True
+        _write_installed_sdk(
+            root, packages={"node_modules/@agentv/core": {"version": "4.42.4"}}
+        )
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(agentv_module.subprocess, "run", fake_run)
+
+    assert _agentv_runtime(root) == (runner, root)
+    assert bootstrapped.get("ran") is True
+
+
 def test_agentv_runtime_bootstraps_when_sdk_present_but_lockfile_drifted(
     tmp_path, monkeypatch
 ) -> None:

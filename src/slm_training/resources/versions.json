@@ -1852,7 +1852,7 @@
       ]
     },
     "evals.agentv": {
-      "version": "v10",
+      "version": "v11",
       "kind": "harness",
       "paths": [
         "src/slm_training/evals/agentv.py",
@@ -1860,6 +1860,11 @@
         "tests/test_evals/test_agentv.py"
       ],
       "history": [
+        {
+          "version": "v11",
+          "date": "2026-08-05",
+          "note": "CodeRabbit review on #1448: guard _sdk_installed against non-dict lockfile/marker entries (malformed or hand-edited package-lock.json) so a .get() on a non-dict value returns False (fail closed, triggers bootstrap) instead of letting AttributeError/TypeError escape. Added a regression test for a malformed marker entry."
+        },
         {
           "version": "v10",
           "date": "2026-08-05",
