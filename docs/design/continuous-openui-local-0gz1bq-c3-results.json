@@ -1,0 +1,89 @@
+{
+  "schema": "autotrain_continuous_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c3",
+  "cycle_index": 3,
+  "source_commit": "bdf143cd",
+  "integration_commit": "9b79c04a",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "screening",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true
+  },
+  "arms": {
+    "control": {
+      "id": "c20260805-continuous-openui-local-8c0b60dd-c3-control",
+      "trainable_params": 1755760,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete_gate_reject",
+      "checkpoint_sha256": "c443ac62ec96bfe15d541d5e0c3e09e824ed0d46f3a305960cc10aa9ed34d6fa",
+      "metrics": {
+        "latency_ms_p50": 9744.79,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.23083333333333333,
+        "binder_reference_f1": 0.7333333333333334,
+        "component_type_recall": 0.16666666666666666,
+        "placeholder_fidelity": 0.6388888888888888,
+        "reward_score": 0.8406666666666666
+      }
+    },
+    "component-plan": {
+      "id": "c20260805-continuous-openui-local-8c0b60dd-c3-component-plan",
+      "trainable_params": 1755760,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete_gate_reject",
+      "checkpoint_sha256": "776f7054c68a14afa49907758c71a890fc0d1df74b7c9564bcc0ad029f99cabf",
+      "metrics": {
+        "latency_ms_p50": 8818.61,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.1725,
+        "binder_reference_f1": 0.6333333333333333,
+        "component_type_recall": 0.0,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.8073333333333332
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": -0.05833333333333335,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c3-component-plan",
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c3-control",
+      "non_regression_fail:binder_reference_f1:0.7333333333333334->0.6333333333333333",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.23083333333333333 candidate=0.1725 improvement=-0.05833333333333335",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "climb_state": "rejected",
+  "ship_state": "blocked",
+  "conclusion": "component_plan_regresses_fifth_independent_measurement",
+  "caveats": [
+    "This is a fifth independent fresh-seed measurement of the 'component-plan' hypothesis. It won +0.05613 in session j48f8u (cycle 2); it tied 0.0 in session peuum8's fresh-seed confirmation (cycle 3, with binder_reference_f1 regressing 0.48889->0.26667); here (session 0gz1bq, cycle 3) it regresses structural_similarity by -0.05833 and binder_reference_f1 by -0.1 vs control.",
+    "meaningful_program_rate and component_type_recall both drop from a real value on control (0.3333/0.1667) to zero on component-plan — a clearer negative signal than the previous two non-positive confirmations.",
+    "component-plan is also faster (8818.61ms vs 9744.79ms p50), but this is not a valid tradeoff per the SDLC quality-aware rule since it is not a latency win with held quality — quality itself regresses.",
+    "Across 3 independent sessions (j48f8u win, peuum8 tie, 0gz1bq regression) this hypothesis no longer looks like a reliable positive lever; treat as exhausted pending a distinct size-matched reformulation.",
+    "Smoke n=3 only; held_out/adversarial/ood/rico_held suites missing — fixture screening evidence only, not a ship claim."
+  ],
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "model",
+      "hypothesis": "The completed non-positive arm is exhausted; test the distinct size-matched 'component-edge' quality hypothesis next.",
+      "action": "experiment_next",
+      "experiment_id": "c20260805-continuous-openui-local-8c0b60dd-c3-component-edge"
+    }
+  ],
+  "recorded_at": "2026-08-05T05:39:03Z"
+}

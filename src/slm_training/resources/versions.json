@@ -7982,6 +7982,11 @@
         {
           "version": "v3",
           "date": "2026-08-05",
+          "note": "no-bump: record continuous-loop-local session 0gz1bq c3 checkpoint provenance (component-plan fresh-seed regression, fifth independent measurement disagreeing in sign) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-05",
           "note": "no-bump: record continuous-loop-local session 0gz1bq c1/c2 checkpoint provenance (torch-missing infra failure self-healed, then frozen-replay exact-tie confirmation of grammar-completion-bounds) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
