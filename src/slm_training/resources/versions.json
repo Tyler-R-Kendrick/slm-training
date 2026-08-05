@@ -2792,8 +2792,8 @@
         },
         {
           "version": "v181",
-          "note": "accept generate_batch_size ExperimentKnob for screening fair-share decode batches; forward to evaluate_model",
-          "date": "2026-08-04"
+          "note": "Register generate_batch_size (v1433 screening fair-share-decode-timeout knob) on ExperimentKnobs + DEFAULT_ALLOWED_KNOBS; every role='screening' _matrix() hypothesis was failing HypothesisMatrix strict validation (extra_forbidden), blocking every default continuous-openui-local cycle.",
+          "date": "2026-08-05"
         },
         {
           "version": "v180",
@@ -2824,11 +2824,6 @@
           "version": "v175",
           "date": "2026-08-03",
           "note": "Fix StopIteration hard-block when dynamic compose thrash successors are selected for completed-candidate priority steering; look up arms via _all_screening_arm_bank"
-        },
-        {
-          "version": "v174",
-          "date": "2026-08-03",
-          "note": "no-bump: isolate dynamic thrash bank module cache between continuous tests (fixture-only)"
         },
         {
           "version": "v174",
@@ -2928,22 +2923,7 @@
         {
           "version": "v155",
           "date": "2026-08-03",
-          "note": "no-bump: document c1859's constraint-graph fixture null and exhausted-objective handoff; campaign behavior unchanged."
-        },
-        {
-          "version": "v155",
-          "date": "2026-08-03",
           "note": "Add a second distinct constraint-graph quality arm after slot-contract-context replay exhaustion so continuous screening has a registered implemented successor."
-        },
-        {
-          "version": "v154",
-          "date": "2026-08-03",
-          "note": "no-bump: document c1858's frozen slot-contract-context replay null and successor priorities; campaign behavior unchanged."
-        },
-        {
-          "version": "v154",
-          "date": "2026-08-03",
-          "note": "no-bump: document c1857's incomplete slot-contract-context harness failure and replay receipt; campaign behavior unchanged."
         },
         {
           "version": "v154",
@@ -3083,11 +3063,6 @@
         {
           "version": "v127",
           "date": "2026-08-03",
-          "note": "no-bump: record the c1830 capacity-aware tail fixture positive and confirmation requirement; campaign behavior is unchanged"
-        },
-        {
-          "version": "v127",
-          "date": "2026-08-03",
           "note": "After c1829 tied higher effective exposure to guarded quality and excess continuation cost, surface exposure in the terminal matrix and add a size-matched capacity-aware tail-supervision successor."
         },
         {
@@ -3124,11 +3099,6 @@
           "version": "v120",
           "date": "2026-08-02",
           "note": "Reserve a third formal lane from actual promote intent or frozen manifest obligations, allowing confirmation during promotion cadence to retain the full symmetric two-arm budget."
-        },
-        {
-          "version": "v119",
-          "date": "2026-08-03",
-          "note": "no-bump: document the c1822 exact-replay fixture result and fresh-seed confirmation disposition; campaign behavior is unchanged"
         },
         {
           "version": "v119",
@@ -3211,11 +3181,6 @@
           "note": "no-bump: record c1804 incomplete component-token fixture evidence and its exact frozen replay requirement; campaign behavior is unchanged"
         },
         {
-          "version": "v104",
-          "date": "2026-08-02",
-          "note": "Add direct component-token reconstruction weighting and per-step token-family loss attribution after prefix supervision was null."
-        },
-        {
           "version": "v103",
           "date": "2026-08-02",
           "note": "Add a zero-parameter prefix-LTR scaffold objective after DESIGN context dropout regressed structural quality."
@@ -3289,11 +3254,6 @@
           "version": "v89",
           "date": "2026-08-02",
           "note": "Close complete non-positive frozen-replay arms across lineage, reclassify complete historical receipts under current promotion policy so stale positives cannot reopen rejected approaches, bound terminal result-matrix cells, and add a size-matched placeholder-fidelity successor objective after bank exhaustion."
-        },
-        {
-          "version": "v88",
-          "date": "2026-08-02",
-          "note": "no-bump: move the binder-quality control parity parameter rows into the canonical external case resource; assertions and harness behavior are unchanged."
         },
         {
           "version": "v88",
@@ -3401,24 +3361,14 @@
           "note": "Detect finalized numeric-literal termination starvation, expose the existing size-matched LTR tail-loss lever to governed campaigns, and steer the next cycle to a new constrained literal-close arm instead of replaying the stalled checkpoint."
         },
         {
-          "version": "v68",
-          "date": "2026-08-02",
-          "note": "Add a governed size-matched literal-margin arm that aligns only grammar-derived numeric-frame LIT_END decisions against legal byte alternatives and steer a completed literal-close null directly to it."
-        },
-        {
           "version": "v67",
           "date": "2026-08-02",
           "note": "Detect finalized numeric-literal termination starvation, expose the existing size-matched LTR tail-loss lever to governed campaigns, and steer the next cycle to a new constrained literal-close arm instead of replaying the stalled checkpoint."
         },
         {
-          "version": "v67",
-          "date": "2026-08-02",
-          "note": "Reserve five seconds inside the supervised evaluation stage for scoreboard binding, gates, AgentV, outcome persistence, and feedback after the inner evaluator stops."
-        },
-        {
           "version": "v66",
           "date": "2026-08-02",
-          "note": "Pass the remaining experiment-stage wall into model-build evaluation so it can finalize typed per-record outcomes before the outer supervisor interrupt."
+          "note": "Reserve five seconds inside the supervised evaluation stage for scoreboard binding, gates, AgentV, outcome persistence, and feedback after the inner evaluator stops."
         },
         {
           "version": "v65",
@@ -3433,47 +3383,12 @@
         {
           "version": "v63",
           "date": "2026-08-02",
-          "note": "Preserve matched-control recipes for champion confirmation and promotion, including steps-only candidates, and reclaim attempts that fail before experiment execution starts."
-        },
-        {
-          "version": "v66",
-          "date": "2026-08-02",
-          "note": "Reserve five seconds inside the supervised evaluation stage for scoreboard binding, gates, AgentV, outcome persistence, and feedback after the inner evaluator stops."
-        },
-        {
-          "version": "v65",
-          "date": "2026-08-02",
-          "note": "Pass the remaining experiment-stage wall into model-build evaluation so it can finalize typed per-record outcomes before the outer supervisor interrupt."
-        },
-        {
-          "version": "v64",
-          "date": "2026-08-02",
-          "note": "Require canonical harness repair after one hash-linked cached reproduction of an incomplete measurement instead of spending a second identical replay wall."
-        },
-        {
-          "version": "v63",
-          "date": "2026-08-02",
           "note": "Replace stale preregistration-time confirmation priorities with outcome-conditioned promotion or rejection steering, including explicit loss-quality divergence and diagnostic-only runtime successors."
         },
         {
           "version": "v62",
           "date": "2026-08-02",
           "note": "Preserve matched-control recipes for champion confirmation and promotion, including steps-only candidates, and reclaim attempts that fail before experiment execution starts."
-        },
-        {
-          "version": "v62",
-          "date": "2026-08-02",
-          "note": "Combine v61 continuous successor integrity with v61 historical campaign-lock digest compatibility."
-        },
-        {
-          "version": "v61",
-          "date": "2026-08-02",
-          "note": "Validate historical campaign-lock digests against an explicit projection that omits only replicate-ledger defaults added after those locks were written."
-        },
-        {
-          "version": "v61",
-          "date": "2026-08-02",
-          "note": "no-bump: merge the already-versioned v60 supervisor integrity changes into the later v61 continuous branch without additional behavior changes."
         },
         {
           "version": "v61",
@@ -3483,22 +3398,7 @@
         {
           "version": "v60",
           "date": "2026-08-02",
-          "note": "no-bump: externalize the completeness-counter regression inputs without changing harness behavior."
-        },
-        {
-          "version": "v60",
-          "date": "2026-08-02",
           "note": "Require complete AgentV-bound evaluation counters, SHA-bound action receipts, theorem-repair handoffs, bounded supervised child stages, symmetric formal and arm budgets, counterbalanced serialized arms, and content-revalidated promotion replicates."
-        },
-        {
-          "version": "v60",
-          "date": "2026-08-02",
-          "note": "Couple structural auxiliary screening losses to their trained legal-candidate decode rankers and retain decode weights through confirmation and promotion after three loss-only quality nulls"
-        },
-        {
-          "version": "v59",
-          "date": "2026-08-02",
-          "note": "no-bump: move the invalid and empty scoreboard parameter table into the canonical external test-case resource; assertions and harness behavior are unchanged."
         },
         {
           "version": "v59",
@@ -3593,11 +3493,6 @@
         {
           "version": "v41",
           "date": "2026-08-01",
-          "note": "no-bump: align the recovery artifact documentation, remove a redundant lineage guard, and pin rejection of non-diagnostic replay recovery"
-        },
-        {
-          "version": "v41",
-          "date": "2026-08-01",
           "note": "Recover terminal handoff-less diagnostic replays without rerunning arms, share initialized-gap lineage validation across status and feedback, and classify eval gate rejection from the complete scoreboard"
         },
         {
@@ -3624,11 +3519,6 @@
           "version": "v36",
           "date": "2026-08-01",
           "note": "Materialize pending frozen measurement retries as current-main successor campaigns with exact plan and recipe lineage, fresh-Lean fail-closed handling, completion-bound receipts, and recovery from initialized-only campaigns"
-        },
-        {
-          "version": "v35",
-          "date": "2026-08-01",
-          "note": "no-bump: document the openui_bridge/design_md_bridge npm ci prerequisite in continuous.md (prose-only; no behavior change to the continuous driver)"
         },
         {
           "version": "v35",
@@ -3683,27 +3573,12 @@
         {
           "version": "v25",
           "date": "2026-08-01",
-          "note": "no-bump: CI-safe skip for LeverProof cert integration test when checker binary is not built"
-        },
-        {
-          "version": "v25",
-          "date": "2026-08-01",
           "note": "Close promote funnel gap: enqueue all thrash levers (steps/batch1); skip only open champions; export LeverProof v2 cert from suite metrics on promote path"
-        },
-        {
-          "version": "v24",
-          "date": "2026-08-01",
-          "note": "no-bump: promote fail-closed locked expectations digest (required, never optional); content-addressed formal preflight SHA binding + formal_claims on promote experiment (fix placeholder 0*64 obligations)"
         },
         {
           "version": "v24",
           "date": "2026-07-31",
           "note": "Proof-driven continuous promote: formal preflight required+proved, locked metric_expectations.promote.v1 digest, LeverProof v2 optimum_feedback disposition; Phase A smoke alone cannot promote; assumption miss emits five-lane successor matrix"
-        },
-        {
-          "version": "v23",
-          "date": "2026-07-31",
-          "note": "no-bump: regression test that published wf_smoke_v2 synthesis_feedback_actions clear the SFT gate (behavior-neutral harness coverage)"
         },
         {
           "version": "v23",
@@ -3736,16 +3611,6 @@
           "note": "Phase A positive classification is quality-aware: reject pure latency blips with empty meaning; accept quality/efficiency wins under a bounded latency tradeoff so latency-primary does not fail better mpr arms"
         },
         {
-          "version": "v18",
-          "date": "2026-07-31",
-          "note": "Climb policy drives train/eval identity, synthesis filenames/waiver, promotion min_seeds, continuous promotion manifests (held-out primary+multi-seed), and rung gate on cadence"
-        },
-        {
-          "version": "v18",
-          "date": "2026-07-31",
-          "note": "Externalized autotrain climb policy (policy.v1.json): screening/promotion primaries, cadence, loop-scoped exhaust identity, recipe-null regime pressure, Phase A classify_positive_metrics + EG_params"
-        },
-        {
           "version": "v17",
           "date": "2026-07-31",
           "note": "Hill-climb fail-closed follow-ups: corrupt synthesis_feedback blocks SFT; waiver-only global *; direction-aware LCB/UCB; baseline-prefix exclusion; atomic exhausted ledger write"
@@ -3756,19 +3621,9 @@
           "note": "Hill-climb production wiring: auto-enforce climb LCB on promotion claims, require primary seed values, load/record exhausted-knob ledger on autoresearch matrix path, surface EG_params from result fields"
         },
         {
-          "version": "v16",
-          "date": "2026-07-31",
-          "note": "Hill-climb evidence governance: climb vs fixture claim-class gates, multi-seed LCB, exhausted-knob ledger, synthesis-feedback SFT hard gate, causal campaign shape, EG_params fail-closed"
-        },
-        {
           "version": "v15",
           "date": "2026-07-30",
           "note": "Continuous agent law: never kill live loop; mandatory matrix paste via autotrain-report; liveness from status file not host UI"
-        },
-        {
-          "version": "v14",
-          "date": "2026-07-30",
-          "note": "no-bump: stack_layer also requires a tracked code/docs delta so pure knob-only metric blips do not open empty stacked PRs"
         },
         {
           "version": "v14",
@@ -3804,11 +3659,6 @@
           "version": "v8",
           "date": "2026-07-30",
           "note": "Make bare autotrain a continuous local loop over bounded campaigns, route frozen reproduced signals to canonical harness owners, derive between-run matrices from verified event chains, and replace human promotion with automated frozen meta-gates"
-        },
-        {
-          "version": "v8",
-          "date": "2026-07-30",
-          "note": "Add tiered formal obligations to ExperimentSpec and immutable ExperimentCampaignV1 locks; required proof claims now fail closed before execution unless their bound preflight is proved"
         },
         {
           "version": "v7",

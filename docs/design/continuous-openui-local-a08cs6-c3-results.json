@@ -1,0 +1,90 @@
+{
+  "schema": "autotrain_continuous_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c3",
+  "cycle_index": 3,
+  "source_commit": "34111e6e",
+  "integration_commit": "421603fc",
+  "predecessor_campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c2",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "screening",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true
+  },
+  "arms": {
+    "control": {
+      "id": "c20260805-continuous-openui-local-8c0b60dd-c3-control",
+      "trainable_params": 1608962,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete_gate_reject",
+      "metrics": {
+        "latency_ms_p50": 10847.95,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.23083333333333333,
+        "binder_reference_f1": 0.7333333333333334
+      }
+    },
+    "both": {
+      "id": "c20260805-continuous-openui-local-8c0b60dd-c3-both",
+      "trainable_params": 1608962,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete_gate_reject",
+      "metrics": {
+        "latency_ms_p50": 9116.46,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.23083333333333333,
+        "binder_reference_f1": 0.7333333333333334
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c3-both",
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c3-control",
+      "efficiency_win:mpr_per_ms:3.0727772e-05->3.65639e-05:gain_fraction=0.18993008:minimum=0.05",
+      "quality_held:parse=1.0 mpr=0.3333333333333333",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.23083333333333333 candidate=0.23083333333333333 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "climb_state": "rejected",
+  "ship_state": "blocked",
+  "conclusion": "harness_unblocked_but_model_delta_null",
+  "caveats": [
+    "This cycle only became runnable because of the generate_batch_size schema fix in the same commit (see continuous-openui-local-a08cs6-generate-batch-size-unblock.md); the cycle's own model-level result is a null primary-metric tie, not a quality win.",
+    "candidate ('both' arm) was faster p50 (9116.46ms vs 10847.95ms) with an efficiency_win reason logged, but gain_fraction alone (0.18993) does not clear the bar without a held mpr improvement, so the cycle stays non-positive per the quality-aware tradeoff classifier.",
+    "Fixture n=3 on all arms; honest ship gates fail as expected (smoke:insufficient_n need>=20; held_out/adversarial/ood/rico_held missing_suite)."
+  ],
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "model",
+      "hypothesis": "The completed non-positive arm is exhausted; test the distinct size-matched 'component-plan' quality hypothesis next.",
+      "action": "experiment_next",
+      "experiment_id": "c20260805-continuous-openui-local-8c0b60dd-c3-component-plan"
+    },
+    {
+      "rank": 2,
+      "area": "evaluation",
+      "hypothesis": "Keep the matched control as the size-matched baseline every cycle.",
+      "action": "experiment_next",
+      "experiment_id": "c20260805-continuous-openui-local-8c0b60dd-c3-control"
+    }
+  ],
+  "recorded_at": "2026-08-05T02:39:29Z"
+}

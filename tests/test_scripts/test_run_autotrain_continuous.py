@@ -1117,6 +1117,28 @@ def test_matrix_thrash_rotation_recommends_non_bounds() -> None:
     assert "c20260731-c2-literal-close" in ids
 
 
+def test_screening_role_generate_batch_size_is_a_registered_knob() -> None:
+    """`_matrix(role="screening")` bakes generate_batch_size=1 into every
+    hypothesis (fair-share decode timeout fix); ExperimentKnobs must accept
+    it or every default continuous cycle fails HypothesisMatrix validation."""
+    from slm_training.autoresearch.schemas import HypothesisMatrix
+
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-20260805-c1",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1,
+        role="screening",
+    )
+    HypothesisMatrix.model_validate(matrix)
+    for row in matrix["hypotheses"]:
+        assert row["experiment"]["knobs"]["generate_batch_size"] == 1
+
+
 def test_literal_close_arm_is_size_matched_and_changes_only_tail_loss() -> None:
     matrix = _mod._matrix(
         campaign_id="continuous-loop-20260802-c1764",
