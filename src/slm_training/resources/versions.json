@@ -7982,6 +7982,11 @@
         {
           "version": "v3",
           "date": "2026-08-05",
+          "note": "no-bump: record continuous-openui-local c2 (session ttvqzi, retry_measurement) control/bounds scratch checkpoint provenance (clean frozen replay, bounds rejected as exact tie) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-05",
           "note": "no-bump: record continuous-openui-local c1 (session ttvqzi) control/bounds scratch checkpoint provenance (measurement incomplete, control killed by MAX_RUN_MINUTES wall cap) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {

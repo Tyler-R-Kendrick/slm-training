@@ -1,0 +1,76 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 2,
+  "source_commit": "bdf143cd",
+  "integration_commit": "860f1358",
+  "predecessor_campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c1",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_role": "retry_measurement",
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "seed": 100001,
+    "cycle_role": "retry_measurement",
+    "note": "control frozen-reused the training run from c1's identical control (FROZEN_TRAIN_REUSE), so this cycle only re-ran evaluation for control and trained+evaluated bounds fresh."
+  },
+  "arms": {
+    "c2-control": {
+      "id": "c20260805-continuous-openui-local-8c0b60dd-c2-control",
+      "trainable_params": 1608962,
+      "exit_code": 0,
+      "status": "complete_gate_reject",
+      "smoke": {
+        "latency_ms_p50": 5018.91,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333
+      }
+    },
+    "c2-bounds": {
+      "id": "c20260805-continuous-openui-local-8c0b60dd-c2-bounds",
+      "trainable_params": 1608962,
+      "exit_code": 0,
+      "status": "complete_gate_reject",
+      "smoke": {
+        "latency_ms_p50": 4977.59,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c2-bounds",
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c2-control",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.0575:candidate=0.0575:improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "note": "Unlike c1, this cycle's frozen replay completed cleanly for both arms (FROZEN_REPLAY_ACK) -- a genuine measurement, not a wall-cap timeout. The 'bounds' hypothesis (widened structural bounds) is an exact fixture tie against control; rejected as null, same conclusion as the earlier j48f8u-c1 bounds screen on this same identity.",
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "model",
+      "hypothesis": "Test the distinct size-matched 'component-plan' quality hypothesis next.",
+      "authority": "observed_result",
+      "confidence": 0.9,
+      "disposition": "experiment_next",
+      "proposed_experiment_id": "c20260805-continuous-openui-local-8c0b60dd-c2-component-plan"
+    }
+  ]
+}
