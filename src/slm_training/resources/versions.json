@@ -2777,6 +2777,11 @@
       "history": [
         {
           "version": "v181",
+          "note": "no-bump: document repo-root `npm ci` as a fresh-checkout prerequisite in continuous.md (AgentV SDK ship-gate eval needs it; observed ERR_MODULE_NOT_FOUND for typebox on a fresh sandbox checkout, continuous-openui-local sched02 c3). Doc-only, behavior-neutral.",
+          "date": "2026-08-05"
+        },
+        {
+          "version": "v181",
           "note": "Register generate_batch_size (v1433 screening fair-share-decode-timeout knob) on ExperimentKnobs + DEFAULT_ALLOWED_KNOBS; every role='screening' _matrix() hypothesis was failing HypothesisMatrix strict validation (extra_forbidden), blocking every default continuous-openui-local cycle.",
           "date": "2026-08-05"
         },
