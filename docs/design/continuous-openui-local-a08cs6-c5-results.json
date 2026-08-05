@@ -1,0 +1,64 @@
+{
+  "schema": "autotrain_continuous_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c5",
+  "cycle_index": 5,
+  "source_commit": "bdf143cd",
+  "integration_commit": "5ff54717",
+  "predecessor_campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c4",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "screening",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true,
+    "seed": 100005
+  },
+  "arms": {
+    "control": {
+      "id": "c20260805-continuous-openui-local-8c0b60dd-c5-control",
+      "trainable_params": 1766987,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete_gate_reject",
+      "metrics": {"latency_ms_p50": 15454.79, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.04306666666666666, "binder_reference_f1": 0.8222222222222223}
+    },
+    "component-edge": {
+      "id": "c20260805-continuous-openui-local-8c0b60dd-c5-component-edge",
+      "trainable_params": 1766987,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete_gate_reject",
+      "metrics": {"latency_ms_p50": 15915.4, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.04306666666666666, "binder_reference_f1": 0.8222222222222223}
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c5-control",
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c5-component-edge",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.04306666666666666 candidate=0.04306666666666666 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "climb_state": "rejected",
+  "ship_state": "blocked",
+  "conclusion": "component_edge_exact_tie_low_seed_baseline",
+  "caveats": [
+    "component-edge arm (priority rank 1 from cycle c4) tested vs control; exact tie again, but this seed's control (0.0430667 structural_similarity, meaningful_program_rate=0.0) is much weaker than cycle 4's control (0.416667) -- fixture seed variance at n=3, not a lever regression, since both arms degraded equally.",
+    "Fixture n=3 on all arms; honest ship gates fail as expected."
+  ],
+  "next_priorities": [
+    {"rank": 1, "area": "model", "hypothesis": "The completed non-positive arm is exhausted; test the distinct size-matched 'component-plan' quality hypothesis next.", "action": "experiment_next", "experiment_id": "c20260805-continuous-openui-local-8c0b60dd-c5-component-plan"},
+    {"rank": 2, "area": "evaluation", "hypothesis": "Keep the matched control as the size-matched baseline every cycle.", "action": "experiment_next", "experiment_id": "c20260805-continuous-openui-local-8c0b60dd-c5-control"}
+  ],
+  "recorded_at": "2026-08-05T02:51:05Z"
+}
