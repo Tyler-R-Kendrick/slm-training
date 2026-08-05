@@ -679,6 +679,20 @@ def test_strict_schema_and_allowlist() -> None:
         validate_experiment(restricted, experiment(), evidence(), [source()])
 
 
+def test_generate_batch_size_knob_is_declared() -> None:
+    # Regression for the continuous driver's screening-role knob baking
+    # (run_autotrain_continuous._knob_base sets generate_batch_size=1 for
+    # role == "screening" so fair-share decode-timeout redistribution isn't
+    # defeated by one oversized decode chunk). ExperimentKnobs is a
+    # StrictModel, so an undeclared field previously made every screening
+    # hypothesis fail HypothesisMatrix validation with extra_forbidden.
+    knobs = ExperimentKnobs(steps=10, generate_batch_size=1)
+    assert knobs.generate_batch_size == 1
+    assert "generate_batch_size" in campaign().allowed_knobs
+    with pytest.raises(ValidationError):
+        ExperimentKnobs(generate_batch_size=0)
+
+
 def test_hypothesis_matrix_requires_five_distinct_grounded_candidates() -> None:
     with pytest.raises(ValidationError, match="at least 5 items"):
         hypothesis_matrix(4)

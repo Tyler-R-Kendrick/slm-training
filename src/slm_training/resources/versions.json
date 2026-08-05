@@ -2734,7 +2734,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v180",
+      "version": "v181",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2775,6 +2775,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v181",
+          "note": "Declare generate_batch_size on ExperimentKnobs + DEFAULT_ALLOWED_KNOBS. v180 (#1433) added screening-role generate_batch_size=1 baking to run_autotrain_continuous._knob_base but never declared the field on ExperimentKnobs (StrictModel forbids extra fields), so every screening hypothesis failed HypothesisMatrix validation with extra_forbidden and every continuous cycle hit hypotheses='too_short' (repro: continuous-openui-c3d4f8 c1/c2, blocker_fingerprint 0a501eb8...). Fix is additive-only (new optional knob field, ge=1/le=1024); no existing knob semantics changed.",
+          "date": "2026-08-05"
+        },
         {
           "version": "v180",
           "note": "gate Phase A primary wins on matched suite completion + promote formal terminal block feedback",

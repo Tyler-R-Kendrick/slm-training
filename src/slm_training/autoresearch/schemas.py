@@ -307,6 +307,7 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "grammar_draft_window",
         "decode_timeout_seconds",
         "eval_suites",
+        "generate_batch_size",
         "action_embedding_init",
         "action_embedding_train",
         "action_alias_mode",
@@ -628,6 +629,10 @@ class ExperimentKnobs(StrictModel):
         description="Comma-separated evaluate_model --suites (e.g. smoke).",
         pattern=r"^[A-Za-z0-9_,]+$",
     )
+    # Screening smoke suites bake generate_batch_size=1 so fair-share decode
+    # timeout redistribution isn't defeated by one oversized decode chunk
+    # (run_autotrain_continuous._knob_base, role == "screening").
+    generate_batch_size: int | None = Field(default=None, ge=1, le=1024)
     action_embedding_init: (
         Literal[
             "none",
