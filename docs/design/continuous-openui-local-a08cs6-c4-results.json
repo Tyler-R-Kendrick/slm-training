@@ -1,0 +1,88 @@
+{
+  "schema": "autotrain_continuous_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c4",
+  "cycle_index": 4,
+  "source_commit": "34111e6e",
+  "integration_commit": "038934ea",
+  "predecessor_campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c3",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "screening",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true
+  },
+  "arms": {
+    "control": {
+      "id": "c20260805-continuous-openui-local-8c0b60dd-c4-control",
+      "trainable_params": 1755764,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete_gate_reject",
+      "metrics": {
+        "latency_ms_p50": 22274.34,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.4166666666666667,
+        "binder_reference_f1": 0.9523809523809524
+      }
+    },
+    "component-plan": {
+      "id": "c20260805-continuous-openui-local-8c0b60dd-c4-component-plan",
+      "trainable_params": 1755764,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete_gate_reject",
+      "metrics": {
+        "latency_ms_p50": 22792.94,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.4166666666666667,
+        "binder_reference_f1": 0.9523809523809524
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c4-component-plan",
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c4-control",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.4166666666666667 candidate=0.4166666666666667 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "climb_state": "rejected",
+  "ship_state": "blocked",
+  "conclusion": "component_plan_exact_tie",
+  "caveats": [
+    "component-plan arm (priority rank 1 from cycle c3) tested a distinct size-matched quality hypothesis vs control; result was an exact structural_similarity tie (0.416667 vs 0.416667), not a reproduction of the historical peuum8-session c2 component-plan win, which was itself rejected on fresh-seed confirmation in that session's c3.",
+    "candidate was marginally slower (22792.94ms vs 22274.34ms p50) with no quality delta.",
+    "Fixture n=3 on all arms; honest ship gates fail as expected (smoke:insufficient_n need>=20; held_out/adversarial/ood/rico_held missing_suite)."
+  ],
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "model",
+      "hypothesis": "The completed non-positive arm is exhausted; test the distinct size-matched 'component-edge' quality hypothesis next.",
+      "action": "experiment_next",
+      "experiment_id": "c20260805-continuous-openui-local-8c0b60dd-c4-component-edge"
+    },
+    {
+      "rank": 2,
+      "area": "evaluation",
+      "hypothesis": "Keep the matched control as the size-matched baseline every cycle.",
+      "action": "experiment_next",
+      "experiment_id": "c20260805-continuous-openui-local-8c0b60dd-c4-control"
+    }
+  ],
+  "recorded_at": "2026-08-05T02:46:56Z"
+}
