@@ -2734,7 +2734,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v180",
+      "version": "v181",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2775,6 +2775,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v181",
+          "note": "Register generate_batch_size (v1433 screening fair-share-decode-timeout knob) on ExperimentKnobs + DEFAULT_ALLOWED_KNOBS; every role='screening' _matrix() hypothesis was failing HypothesisMatrix strict validation (extra_forbidden), blocking every default continuous-openui-local cycle.",
+          "date": "2026-08-05"
+        },
         {
           "version": "v180",
           "note": "gate Phase A primary wins on matched suite completion + promote formal terminal block feedback",
