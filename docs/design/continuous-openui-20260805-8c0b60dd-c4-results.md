@@ -38,8 +38,13 @@ Every guarded quality metric is an **exact tie**. Primary metric
 1. `component-edge` vs matched control is a quality tie with a
    latency-only signal — not sufficient for a positive classification on
    its own.
-2. Test the distinct size-matched `component-plan` quality hypothesis next
-   per the driver's ranked priorities.
+2. Do **not** re-test `component-plan` at this recipe: c3 (this cohort)
+   already conclusively rejected/retired it (reproduced control timeout +
+   rejected candidate absolute quality). The driver's raw ranked-priority
+   output repeats a generic "test component-plan next" suggestion that
+   does not track lineage exhaustion — select a genuinely untested lever
+   (or an explicitly distinct recipe/lever variant of component-plan) for
+   c5, not this pairing verbatim.
 3. Do not promote or ship either checkpoint.
 
 ## Artifacts
