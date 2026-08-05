@@ -66,6 +66,7 @@ checkpoint, roster, training default, champion, or promotion status changes.
 | Autotrain continuous-openui-local c18 | binder-arity fixture — **not ship** |
 | Autotrain continuous-openui-local c19 | binder-arity fixture — **not ship** |
 | Autotrain continuous-openui-local c20 | binder-arity fixture — **not ship** |
+| Autotrain continuous-openui-local c21 | run fixture — **not ship** |
 | Autotrain continuous-openui-local c17 | binder-topology null — **not ship** |
 | Autotrain continuous-openui-local c9 | fixture component-inventory win structure `.277→.448` — confirm next |
 | Autotrain continuous-openui-local c5 | incomplete decode timeout — repair then replay |
