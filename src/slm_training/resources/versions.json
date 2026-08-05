@@ -2734,7 +2734,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v185",
+      "version": "v186",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2775,9 +2775,16 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json",
         "src/slm_training/autoresearch/thrash_regime.py",
         "docs/design/dual-arm-decode-timeout-escape-20260805.md",
-        "docs/design/dual-regime-thrash-20260804.md"
+        "docs/design/dual-regime-thrash-20260804.md",
+        "docs/design/decode-timeout-repair-self-heal-20260805.md",
+        "docs/design/decode-timeout-repair-self-heal-receipt.md"
       ],
       "history": [
+        {
+          "version": "v186",
+          "date": "2026-08-05",
+          "note": "self-heal unacked decode-timeout repair_harness: commit receipt + retire freeze-replay to next_experiment/decode residual"
+        },
         {
           "version": "v185",
           "date": "2026-08-05",

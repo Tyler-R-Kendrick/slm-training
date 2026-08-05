@@ -7737,3 +7737,285 @@ def test_thrash_does_not_bind_handoff_pred_feedback_ids(tmp_path: Path) -> None:
     result = AgentHypothesisProvider(path).propose(camp, evidence, [], (live,))
     assert result.matrix.feedback_ids == (live.feedback_id,)
     assert result.matrix.predecessor_matrix_id == live.matrix_id
+
+
+def test_parse_unacked_predecessor_campaign() -> None:
+    msg = (
+        "predecessor continuous-loop-20260805-continuous-openui-local-8c0b60dd-c46 "
+        "has unacknowledged actions: 0:repair_harness"
+    )
+    assert (
+        _mod._parse_unacked_predecessor_campaign(msg)
+        == "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c46"
+    )
+    assert _mod._parse_unacked_predecessor_campaign("other error") is None
+
+
+def test_is_decode_timeout_repair_reason() -> None:
+    assert _mod._is_decode_timeout_repair_reason(
+        "AgentV finalized every record disposition and reported an internal "
+        "decode timeout; repair canonical model-build runtime before replaying "
+        "the frozen arm"
+    )
+    assert _mod._is_decode_timeout_repair_reason(
+        "dual-arm decode timeout (control+candidate); repair decode-cost thrash"
+    )
+    assert not _mod._is_decode_timeout_repair_reason(
+        "Lean formal preflight failed theorem contradiction"
+    )
+
+
+def test_self_heal_cycle_error_decode_timeout_repair_harness(tmp_path: Path, monkeypatch) -> None:
+    """Unacked decode-timeout repair_harness must self-heal without human ack."""
+    import os
+    import subprocess
+    from slm_training.autoresearch.schemas import (
+        AutotrainActionEvidenceV1,
+        AutotrainActionV1,
+        AutotrainCycleHandoffV1,
+    )
+    from slm_training.autoresearch.storage import pending_autotrain_actions
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    subprocess.run(["git", "init"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@example.com"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "test"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    (repo / "scripts").mkdir()
+    (repo / "scripts" / "run_autotrain_continuous.py").write_text(
+        "dual_arm_decode_timeout = True\n_DECODE_RESIDUAL_SLUGS = ()\n"
+        "_self_heal_decode_timeout_repair_harness = True\n",
+        encoding="utf-8",
+    )
+    (repo / "docs" / "design").mkdir(parents=True)
+    subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "-m", "base"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    integ = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=repo, text=True
+    ).strip()
+    (repo / "docs" / "design" / "note.md").write_text("x\n", encoding="utf-8")
+    subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "-m", "post"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    head = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=repo, text=True
+    ).strip()
+
+    root = repo / "outputs" / "autoresearch"
+    loop_id = "continuous-openui-local"
+    camp_id = "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c46"
+    camp = root / camp_id
+    camp.mkdir(parents=True)
+    (root / "loops" / loop_id).mkdir(parents=True)
+    handoff = AutotrainCycleHandoffV1(
+        loop_id=loop_id,
+        campaign_id=camp_id,
+        cycle_index=46,
+        upstream_commit=integ,
+        integration_commit=integ,
+        cycle_role="screening",
+        cycle_intent="screening",
+        evidence_class="fixture",
+        climb_state="inconclusive",
+        ship_state="not_evaluated",
+        primary_metric="smoke.structural_similarity",
+        reasons=("measurement_incomplete:c46:smoke:decode_timeout_count=1",),
+        priorities=(
+            {
+                "rank": 1,
+                "area": "model",
+                "hypothesis": "retry frozen arm after repair",
+                "evidence_ids": [f"campaign:{camp_id}"],
+                "confidence": 0.5,
+                "expected_information_gain": "advance thrash after repair",
+                "authority": "observed_result",
+                "disposition": "monitor",
+                "proposed_experiment_id": None,
+            },
+        ),
+        actions=(
+            AutotrainActionV1(
+                kind="repair_harness",
+                owner="improve-openui-harnesses",
+                reason=(
+                    "AgentV finalized every record disposition and reported an "
+                    "internal decode timeout; repair canonical model-build "
+                    "runtime before replaying the frozen arm"
+                ),
+                evidence_ids=(f"campaign:{camp_id}",),
+                harness_family="model_build",
+            ),
+            AutotrainActionV1(
+                kind="retry_measurement",
+                owner="autotrain",
+                reason=(
+                    "replay the identical frozen arm after the required "
+                    "canonical runtime repair"
+                ),
+                evidence_ids=(f"campaign:{camp_id}",),
+                frozen_manifest_sha256="a" * 64,
+            ),
+            AutotrainActionV1(
+                kind="document",
+                owner="documenting-experiment-results",
+                reason="persist docs",
+                evidence_ids=(f"campaign:{camp_id}",),
+            ),
+        ),
+    )
+    (camp / "cycle_handoff.json").write_text(
+        handoff.model_dump_json(indent=2) + "\n", encoding="utf-8"
+    )
+    (camp / "campaign.json").write_text(
+        json.dumps(
+            {
+                "campaign_id": camp_id,
+                "loop_id": loop_id,
+                "integration_commit": integ,
+                "upstream_commit": integ,
+            }
+        ),
+        encoding="utf-8",
+    )
+    (camp / "matrix-proposal.json").write_text(
+        json.dumps(
+            {
+                "hypotheses": [
+                    {
+                        "experiment": {
+                            "experiment_id": "c20260805-c46-bounds"
+                        }
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    # Git helpers operate on the temp repo cwd; evidence bind uses package
+    # REPO_ROOT, so stub commit evidence for unit isolation.
+    def _fake_bind(root_arg, handoff_arg, action_arg, uris):
+        return tuple(
+            AutotrainActionEvidenceV1(
+                uri=uri, kind="git_commit", sha256="b" * 64
+            )
+            for uri in uris
+        )
+
+    import slm_training.autoresearch.storage as storage_mod
+
+    monkeypatch.setattr(_mod, "bind_autotrain_action_evidence", _fake_bind)
+    monkeypatch.setattr(storage_mod, "bind_autotrain_action_evidence", _fake_bind)
+    monkeypatch.setattr(
+        _mod,
+        "_ensure_decode_timeout_repair_commit",
+        lambda **kwargs: head,
+    )
+
+    kind = _mod._self_heal_cycle_error(
+        root=root,
+        loop_id=loop_id,
+        exc=RuntimeError(
+            f"predecessor {camp_id} has unacknowledged actions: 0:repair_harness"
+        ),
+        integration_commit=integ,
+    )
+    assert kind == "decode_timeout_repair_harness"
+    handoff2 = AutotrainCycleHandoffV1.model_validate_json(
+        (camp / "cycle_handoff.json").read_text(encoding="utf-8")
+    )
+    pending = pending_autotrain_actions(root, handoff2)
+    assert not any(a.kind == "repair_harness" for _, a in pending)
+    kinds = [a.kind for a in handoff2.actions]
+    assert "retry_measurement" not in kinds
+    assert "next_experiment" in kinds
+
+
+def test_rewrite_decode_timeout_handoff_to_next_experiment(tmp_path: Path) -> None:
+    from slm_training.autoresearch.schemas import AutotrainActionV1, AutotrainCycleHandoffV1
+
+    root = tmp_path / "outputs" / "autoresearch"
+    camp_id = "continuous-loop-test-c1"
+    camp = root / camp_id
+    camp.mkdir(parents=True)
+    integ = "a" * 40
+    handoff = AutotrainCycleHandoffV1(
+        loop_id="loop",
+        campaign_id=camp_id,
+        cycle_index=1,
+        upstream_commit=integ,
+        integration_commit=integ,
+        cycle_role="screening",
+        cycle_intent="retry_measurement",
+        evidence_class="fixture",
+        climb_state="inconclusive",
+        ship_state="not_evaluated",
+        primary_metric="smoke.structural_similarity",
+        priorities=(
+            {
+                "rank": 1,
+                "area": "model",
+                "hypothesis": "placeholder priority text long enough",
+                "evidence_ids": [f"campaign:{camp_id}"],
+                "confidence": 0.5,
+                "expected_information_gain": "placeholder gain text",
+                "authority": "observed_result",
+                "disposition": "monitor",
+                "proposed_experiment_id": None,
+            },
+        ),
+        actions=(
+            AutotrainActionV1(
+                kind="repair_harness",
+                owner="improve-openui-harnesses",
+                reason="internal decode timeout repair frozen arm",
+                evidence_ids=(f"campaign:{camp_id}",),
+                harness_family="model_build",
+            ),
+            AutotrainActionV1(
+                kind="retry_measurement",
+                owner="autotrain",
+                reason="replay frozen arm",
+                evidence_ids=(f"campaign:{camp_id}",),
+                frozen_manifest_sha256="c" * 64,
+            ),
+        ),
+    )
+    (camp / "cycle_handoff.json").write_text(
+        handoff.model_dump_json(indent=2) + "\n", encoding="utf-8"
+    )
+    (camp / "matrix-proposal.json").write_text(
+        json.dumps(
+            {
+                "hypotheses": [
+                    {"experiment": {"experiment_id": "c-test-c1-bounds"}}
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    assert _mod._rewrite_decode_timeout_handoff_to_next_experiment(root, camp_id)
+    h2 = AutotrainCycleHandoffV1.model_validate_json(
+        (camp / "cycle_handoff.json").read_text(encoding="utf-8")
+    )
+    assert [a.kind for a in h2.actions] == ["repair_harness", "next_experiment"]
+    assert h2.priorities[0].proposed_experiment_id == "c-test-c1-bounds"
