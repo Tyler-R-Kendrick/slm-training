@@ -1,0 +1,69 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-c3d4f8",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-c3d4f8-986c6dc3-c7",
+  "cycle_index": 7,
+  "source_commit": "45bd590e",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 1.1666666666666667,
+    "ship_gates": true
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "45bd590e",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v181"
+    }
+  },
+  "arms": {
+    "c7-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 4695.94
+      }
+    },
+    "c7-component-plan": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 4733.17
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "continue loop; local commits/docs only",
+    "reasons": [
+      "fixture_insufficient_n:c20260805-continuous-openui-c3d4f8-986c6dc3-c7-control",
+      "fixture_insufficient_n:c20260805-continuous-openui-c3d4f8-986c6dc3-c7-component-plan",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.057499999999999996:candidate=0.057499999999999996:improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "conclusion": "Cycle 7 (my loop's 5th and final supervised invocation this session) re-screened the 'component-plan' hypothesis at a fresh seed (1,755,764 size-matched params): another exact tie on the declared primary (structural_similarity=.0575 both arms), parse_rate=1.0, binder_reference_f1=.6333, meaningful_program_rate=0 on both. Ship gates fail as expected. SDLC Phase A classifies NON_POSITIVE; no new stack layer. This session's harness repair (commit 5381238) has now been replay-proven across 5 consecutive cycles without recurrence of the original generate_batch_size blocker.",
+  "next_priorities": [
+    "The completed non-positive arm is exhausted; test the distinct size-matched 'component-edge' quality hypothesis next (rank 1, confidence 0.9)",
+    "Keep the matched control as the size-matched baseline every cycle (rank 2, confidence 0.7)"
+  ],
+  "recorded_at": "2026-08-05T01:58:56Z"
+}
