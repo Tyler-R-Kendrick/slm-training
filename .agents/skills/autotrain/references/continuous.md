@@ -22,6 +22,10 @@ persistence is the host goal and the append-only campaign event chains.
    driver must recover in-process when it can:
    - thrash bank multi-seed exhaust → compose size-matched successors under
      `loops/<id>/dynamic_thrash_arms.jsonl` (`SELF_HEAL_BANK_EXHAUST`)
+   - unacked decode-timeout `repair_harness` (AgentV / `compiler_ms` / dual-arm)
+     → post-integration receipt commit + ack + rewrite freeze-replay to
+     `next_experiment` / decode residual (`SELF_HEAL_DECODE_TIMEOUT_REPAIR`);
+     formal/Lean repairs stay human/skill-acked
    - causal CAP emptying multi-seed-open arms → `THRASH_CAUSAL_CAP_RELAX`
    - harness-blocked champions after tip change → rearm promote
    - climb `promoted` / `climb_accepted` under a **stale promote authority**
