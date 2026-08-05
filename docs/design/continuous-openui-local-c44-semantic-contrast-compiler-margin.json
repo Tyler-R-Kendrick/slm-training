@@ -29,5 +29,5 @@
     "primary_quality_win_rejected_latency_budget:smoke.structural_similarity:lat=872.91->4448.18",
     "primary_metric_win:smoke.structural_similarity:0.13526666666666667->0.40359999999999996:improvement=0.2683333333333333"
   ],
-  "recorded_at": "2026-08-05T17:36:41.405527+00:00"
+  "recorded_at": "2026-08-05T17:36:51.916995+00:00"
 }
