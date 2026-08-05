@@ -17,7 +17,7 @@ This cycle exercises the new `--skip-slugs component-plan,component-edge`
 override so the driver's rotation lands on a genuinely untested arm
 (`component-inventory`) instead of re-running an already-closed one:
 
-```
+```text
 THRASH_ROTATE cycle=2 recommended=component-inventory skip=['component-edge', 'component-plan']
 ```
 

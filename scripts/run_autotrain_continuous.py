@@ -8781,6 +8781,7 @@ def run_cycle(
                 include_causal_cap=False,
             )
             | recent_exhausted
+            | extra_skip_slugs
         )
         if thrash_open - soft_skip:
             relaxed = sorted(thrash_open - soft_skip)
