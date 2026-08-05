@@ -7982,6 +7982,11 @@
         {
           "version": "v3",
           "date": "2026-08-05",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled c7 component-edge exact-tie null scratch checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-05",
           "note": "no-bump: record scheduled loop continuous-openui-scheduled c4-c6 scratch checkpoint provenance (generate_batch_size harness unblock, frozen-replay non-regression reject, component-plan exact-tie null) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {

@@ -1,0 +1,89 @@
+{
+  "schema": "autotrain_continuous_cycle_results/v1",
+  "loop_id": "continuous-openui-scheduled",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-schedu-1e62ecf9-c7",
+  "cycle_index": 7,
+  "source_commit": "34111e6e9d5be7036257467e27cd772549ddaa72",
+  "integration_commit": "78b5b67ba65b8548a0bbbdc2285b1f0d2f48075d",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "screening",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true
+  },
+  "arms": {
+    "component-edge": {
+      "id": "c20260805-continuous-openui-schedu-1e62ecf9-c7-component-edge",
+      "trainable_params_approx": 1766990,
+      "primary_metric_value": 0.0575,
+      "smoke_metrics": {
+        "meaningful_program_rate": 0.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 3857.25,
+        "tokens_emitted_mean": 27,
+        "forwards_count_mean": 4,
+        "compiler_ms_mean": 3624.76
+      },
+      "measurement_status": "complete",
+      "ship_gates_pass": false,
+      "expected_gate_rejection": true
+    },
+    "control": {
+      "id": "c20260805-continuous-openui-schedu-1e62ecf9-c7-control",
+      "trainable_params_approx": 1766990,
+      "primary_metric_value": 0.0575,
+      "smoke_metrics": {
+        "meaningful_program_rate": 0.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 3972.84,
+        "tokens_emitted_mean": 27,
+        "forwards_count_mean": 4,
+        "compiler_ms_mean": 3740.77
+      },
+      "measurement_status": "complete",
+      "ship_gates_pass": false,
+      "expected_gate_rejection": true
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260805-continuous-openui-schedu-1e62ecf9-c7-component-edge",
+      "fixture_insufficient_n:c20260805-continuous-openui-schedu-1e62ecf9-c7-control",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.0575 candidate=0.0575 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "conclusion": "component_edge_hypothesis_exact_tie_rejected",
+  "finding": "The 'component-edge' quality hypothesis produced another exact tie with its matched control on every measured smoke metric -- the second consecutive exact-tie null in this loop (c6 component-plan was also an exact tie). Both c6 and c7 exercise structural_aux_head_profile-family knobs at fixture n=3/steps=20 scale and both show zero measured effect. This raises (but does not confirm) a hypothesis for a future session: either these aux-head knobs are genuine no-ops at this tiny fixture scale, or there is a wiring gap where the knob is accepted but not actually applied to the model/training path. Not escalated as a HarnessSignalV1 this cycle -- two data points is suggestive, not a reproduced, single-family, frozen-input signal yet. Flagged for the next session's priority queue instead.",
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "model",
+      "hypothesis": "The completed non-positive arm is exhausted; test the distinct size-matched 'component-plan' quality hypothesis next.",
+      "authority": "observed_result",
+      "confidence": 0.9,
+      "action": "experiment_next",
+      "experiment_id": "c20260805-continuous-openui-schedu-1e62ecf9-c7-component-plan"
+    },
+    {
+      "rank": 2,
+      "area": "infrastructure",
+      "hypothesis": "Two consecutive structural_aux_head_profile-family hypotheses (c6 component-plan, c7 component-edge) both produced exact ties with their matched control. If a third such hypothesis also ties exactly, escalate a HarnessSignalV1 investigating whether structural_aux_head_profile knobs are actually wired into the twotower training/eval path at this fixture scale, rather than continuing to treat each as an independent model null.",
+      "authority": "observed_result",
+      "confidence": 0.55,
+      "action": "monitor",
+      "experiment_id": null
+    }
+  ],
+  "recorded_at": "2026-08-05T00:53:52Z"
+}
