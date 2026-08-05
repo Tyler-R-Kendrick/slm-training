@@ -1,0 +1,94 @@
+{
+  "schema": "autotrain_continuous_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c4",
+  "cycle_index": 4,
+  "source_commit": "bdf143cd",
+  "integration_commit": "139b4ad0",
+  "predecessor_campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c3",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "confirm",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true
+  },
+  "arms": {
+    "control": {
+      "id": "c20260805-continuous-openui-local-8c0b60dd-c4-control",
+      "trainable_params": 1755760,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete_gate_reject",
+      "metrics": {
+        "latency_ms_p50": 9198.84,
+        "meaningful_program_rate": 0.3333333333333333,
+        "binder_reference_f1": 0.6333333333333333,
+        "structural_similarity": 0.46416666666666667
+      }
+    },
+    "confirm": {
+      "id": "c20260805-continuous-openui-local-8c0b60dd-c4-confirm",
+      "trainable_params": 1755760,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete_gate_reject",
+      "structural_aux_head_profile": "component-plan",
+      "metrics": {
+        "latency_ms_p50": 9632.88,
+        "meaningful_program_rate": 0.3333333333333333,
+        "binder_reference_f1": 0.6333333333333333,
+        "structural_similarity": 0.46416666666666667
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c4-confirm",
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c4-control",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.46416666666666667:candidate=0.46416666666666667:improvement=0.0",
+      "fixture_insufficient_n_alone",
+      "confirmation_rejected:primary_quality_not_reheld"
+    ]
+  },
+  "climb_state": "rejected",
+  "ship_state": "blocked",
+  "conclusion": "component_plan_champion_falsified_on_fresh_seed_confirmation",
+  "champion_status_event": {
+    "entry_id": "champ-continuous-openui-local-3-6cfba5d6fd08579f",
+    "status": "rejected",
+    "campaign": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c4"
+  },
+  "caveats": [
+    "This cycle re-ran the c3 component-plan champion fingerprint (champ-continuous-openui-local-3-6cfba5d6fd08579f) against a fresh-seed control under the driver's automatic confirmation step; the primary-metric win did NOT re-hold (exact tie, both arms structural_similarity=0.46416666666666667, meaningful_program_rate=0.3333333333333333).",
+    "Champion status transitioned to 'rejected' (CHAMPION_STATUS entry_id=champ-continuous-openui-local-3-6cfba5d6fd08579f status=rejected). This falsifies the c3 candidate_queued entry rather than promoting it, consistent with the same candidate's confirmation history in other sessions of this shared loop (e.g. commits 6d97009, 528311e, 7b2f64c).",
+    "Both arms here score meaningfully higher than c1/c3 baselines on this fresh seed (structural_similarity=0.4642 vs ~0.33 previously) purely from seed variance, illustrating why single-seed screening wins are not promotion evidence.",
+    "Fixture n=3; honest ship gates fail as expected."
+  ],
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "model",
+      "hypothesis": "Fresh-seed confirmation rejected the champion fingerprint; exhaust it and test a distinct size-matched hypothesis.",
+      "action": "monitor",
+      "experiment_id": null
+    },
+    {
+      "rank": 2,
+      "area": "evaluation",
+      "hypothesis": "Training loss and certified program quality diverged on the confirmation; retain loss as a diagnostic, not a promotion proxy.",
+      "action": "monitor",
+      "experiment_id": null
+    }
+  ],
+  "recorded_at": "2026-08-05T03:43:11Z"
+}
