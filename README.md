@@ -80,6 +80,7 @@ checkpoint, roster, training default, champion, or promotion status changes.
 | Autotrain continuous-openui-local c32 | slot-component-inventory-coupling fixture — **not ship** |
 | Autotrain continuous-openui-local c33 | slot-component-fidelity-coupling fixture — **not ship** |
 | Autotrain continuous-openui-local c34 | slot-component-inventory-coupling fixture — **not ship** |
+| Autotrain continuous-openui-local c35 | slot-contract-context fixture — **not ship** |
 | Autotrain continuous-openui-local c17 | binder-topology null — **not ship** |
 | Autotrain continuous-openui-local c9 | fixture component-inventory win structure `.277→.448` — confirm next |
 | Autotrain continuous-openui-local c5 | incomplete decode timeout — repair then replay |
