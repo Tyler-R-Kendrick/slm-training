@@ -1,0 +1,96 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 2,
+  "source_commit": "9614a54",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "seed": 100002
+  },
+  "arms": {
+    "c2-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.32666666666666666,
+        "component_type_recall": 0.16666666666666666,
+        "binder_reference_f1": 0.0,
+        "placeholder_fidelity": 0.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "reward_score": 0.0,
+        "latency_ms_p50": 35873.13
+      }
+    },
+    "c2-component-plan": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.38280000000000003,
+        "component_type_recall": 0.16666666666666666,
+        "binder_reference_f1": 0.0,
+        "placeholder_fidelity": 0.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "reward_score": 0.0,
+        "latency_ms_p50": 32179.22
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.05613333333333337,
+  "sdlc_phase_a": {
+    "positive": true,
+    "stack_layer": false,
+    "stack_action": "positive_no_tracked_delta_skip_stack",
+    "agent_required": "metric win recorded; no code/docs delta -- skip stack PR; continue loop",
+    "reasons": [
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c2-control",
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c2-component-plan",
+      "primary_metric_win:smoke.structural_similarity:0.32666666666666666->0.38280000000000003:improvement=0.05613333333333337"
+    ]
+  },
+  "champion_enqueue": {
+    "entry_id": "champ-continuous-openui-local-2-6cfba5d6fd08579f",
+    "fingerprint": "6cfba5d6fd08579f",
+    "candidate": "c20260805-continuous-openui-local-8c0b60dd-c2-component-plan",
+    "climb_state": "candidate_queued",
+    "lean_gate": "confirmation locked until fresh-seed reproduction"
+  },
+  "conclusion": "Continuous-openui-local loop, cycle 2 (session 8c0b60dd): the size-matched 'component-plan' arm beats its control on the declared primary, smoke.structural_similarity (0.32667 -> 0.38280, +0.0561) at seed 100002 -- this is the same structural quality win independently reproduced at least six prior times across sessions (ce27597, 4549cd8, and predecessors), and rejected each time it reached fresh-seed confirmation (most recently 6d97009, session peuum8). SDLC Phase A classifies this cycle POSITIVE on the primary-metric-win gate, but stack_layer=False (positive_no_tracked_delta_skip_stack): the win used only existing knobs, no tracked code/doc delta beyond this results record, so no stacked PR opens. The candidate is enqueued (champ-continuous-openui-local-2-6cfba5d6fd08579f) but promotion stays formally locked (Lean assumption, confidence 1.00) until a fresh-seed confirmation run reproduces the win under the exact size-matched treatment/control recipe. Ship gates fail as expected on fixture n=3 (need >=20) plus missing held_out/adversarial/ood/rico_held suites; this is not ship evidence.",
+  "next_priorities": [
+    "Confirm the fixture candidate on a fresh seed with the exact size-matched treatment and control recipes before promotion (rank 1, confidence 0.95)",
+    "Keep promotion formal preflight locked until fresh confirmation establishes a champion (rank 2, confidence 1.00, lean_assumption)"
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "9614a54130d01439daa3c675a45f774c046e0dc5",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v92",
+      "harness.model_build.train": "v42",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v23",
+      "evals.agentv": "v9",
+      "model.twotower": "v312",
+      "dsl.symbolic_surface": "v6"
+    },
+    "stamped_at": "2026-08-05T11:41:32Z"
+  },
+  "recorded_at": "2026-08-05T11:41:32Z"
+}
