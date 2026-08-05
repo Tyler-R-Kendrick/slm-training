@@ -91,6 +91,7 @@ scratch baseline.
 | Role | Run id | Kind | Location | Status |
 | --- | --- | --- | --- | --- |
 | Autotrain continuous-openui-local c10 confirm reject | `…-c10-{control,confirm}` | fresh seed of c9 inventory | local | **Confirmation rejected** — c9 win not reheld ([results](design/continuous-openui-local-c10-confirm-rejected.md)) |
+| Autotrain continuous-openui-local c39 fidelity | `…-c39` | fixture thrash Δstruct=-0.12156666666666667 | local | **fixture only; never promote/sync/ship** ([results](design/continuous-openui-local-c39-fidelity.md)) |
 | Autotrain continuous-openui-local c38 constraint-graph | `…-c38` | fixture thrash Δstruct=0.0 | local | **fixture only; never promote/sync/ship** ([results](design/continuous-openui-local-c38-constraint-graph.md)) |
 | Autotrain continuous-openui-local c37 slot-contract-context | `…-c37` | fixture thrash Δstruct=0.0 | local | **fixture only; never promote/sync/ship** ([results](design/continuous-openui-local-c37-slot-contract-context.md)) |
 | Autotrain continuous-openui-local c36 constraint-graph | `…-c36` | fixture thrash Δstruct=0.0 | local | **fixture only; never promote/sync/ship** ([results](design/continuous-openui-local-c36-constraint-graph.md)) |
