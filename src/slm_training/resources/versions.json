@@ -7982,6 +7982,11 @@
         {
           "version": "v3",
           "date": "2026-08-05",
+          "note": "no-bump: record scheduled loop 0805a c4's control/batch1 scratch checkpoint provenance (runtime-only throughput diagnostic, tied structural_similarity, non-positive) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-05",
           "note": "no-bump: record scheduled loop 0805a c3's control/confirm scratch checkpoint provenance (fresh-seed confirmation rejected the c2 component-plan champion; primary metric null, binder_reference_f1 regression) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
