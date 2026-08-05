@@ -1,0 +1,93 @@
+{
+  "schema": "autotrain_continuous_cycle_results/v1",
+  "loop_id": "continuous-openui-scheduled",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-schedu-1e62ecf9-c5",
+  "cycle_index": 5,
+  "source_commit": "34111e6e9d5be7036257467e27cd772549ddaa72",
+  "integration_commit": "eaf8e16fb716b3ad2d075e9516654c79f01a6a2d",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "retry_measurement",
+  "replay_of_campaign": "continuous-loop-20260805-continuous-openui-schedu-1e62ecf9-c4",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true
+  },
+  "arms": {
+    "control": {
+      "id": "c20260805-continuous-openui-schedu-1e62ecf9-c5-control",
+      "trainable_params_approx": 1608960,
+      "primary_metric_value": 0.4166666666666667,
+      "smoke_metrics": {
+        "meaningful_program_rate": 0.3333333333333333,
+        "binder_reference_f1": 0.9523809523809524,
+        "latency_ms_p50": 34482.6,
+        "tokens_emitted_mean": 100,
+        "forwards_count_mean": 21,
+        "compiler_ms_mean": 33002
+      },
+      "measurement_status": "complete",
+      "ship_gates_pass": false,
+      "expected_gate_rejection": true
+    },
+    "steps": {
+      "id": "c20260805-continuous-openui-schedu-1e62ecf9-c5-steps",
+      "trainable_params_approx": 1608960,
+      "primary_metric_value": 0.51,
+      "smoke_metrics": {
+        "meaningful_program_rate": 0.3333333333333333,
+        "binder_reference_f1": 0.8222222222222223,
+        "latency_ms_p50": 14581.2,
+        "tokens_emitted_mean": 69,
+        "forwards_count_mean": 13,
+        "compiler_ms_mean": 13737
+      },
+      "measurement_status": "complete",
+      "ship_gates_pass": false,
+      "expected_gate_rejection": true
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.09333333333333332,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260805-continuous-openui-schedu-1e62ecf9-c5-control",
+      "fixture_insufficient_n:c20260805-continuous-openui-schedu-1e62ecf9-c5-steps",
+      "efficiency_win:mpr_per_ms:9.6667252e-06->2.2860518e-05:gain_fraction=1.3648669:minimum=0.05",
+      "quality_held:parse=1.0 mpr=0.3333333333333333",
+      "non_regression_fail:binder_reference_f1:0.9523809523809524->0.8222222222222223",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.4166666666666667 candidate=0.51 improvement=0.09333333333333332",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "conclusion": "frozen_replay_complete_candidate_rejected_on_non_regression",
+  "finding": "This is the frozen retry_measurement replay of c4's incomplete arms; both control and candidate ('steps') arms now ran to a complete honest measurement (previously the candidate arm never executed in c4). The candidate arm shows a higher primary_metric (0.51 vs. 0.416667, +0.0933 raw) and a latency/efficiency win (mpr_per_ms +136%), but non_regression_fail on binder_reference_f1 (0.952381 -> 0.822222, a real quality regression) means this is NOT a positive result under this repo's quality-aware tradeoff classifier -- a pure latency/primary-metric win that trades away a non_regression-tracked quality signal does not qualify. Combined with fixture_insufficient_n (n=3, need >=20) on both arms, SDLC Phase A correctly classifies this as non-positive. No stacked layer for this cycle; this doc is a local-commit-only record.",
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "model",
+      "hypothesis": "The completed frozen replay rejects the prior arm; test the distinct size-matched 'component-plan' quality hypothesis next.",
+      "authority": "observed_result",
+      "confidence": 0.9,
+      "action": "experiment_next",
+      "experiment_id": "c20260805-continuous-openui-schedu-1e62ecf9-c5-component-plan"
+    },
+    {
+      "rank": 2,
+      "area": "evaluation",
+      "hypothesis": "Keep the matched control as the size-matched baseline every cycle.",
+      "authority": "observed_result",
+      "confidence": 0.7,
+      "action": "experiment_next",
+      "experiment_id": "c20260805-continuous-openui-schedu-1e62ecf9-c5-control"
+    }
+  ],
+  "recorded_at": "2026-08-05T00:45:52Z"
+}
