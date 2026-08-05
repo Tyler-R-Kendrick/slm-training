@@ -1,0 +1,33 @@
+{
+  "schema_version": "autotrain_measured_results/v1",
+  "loop_id": "continuous-openui-local",
+  "cycle_index": 47,
+  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c47",
+  "positive": false,
+  "arms": {
+    "bounds": {
+      "structural_similarity": 0.0964,
+      "meaningful_program_rate": 0.0,
+      "binder_reference_f1": 0.6333333333333333,
+      "parse_rate": 1.0,
+      "latency_ms_p50": 869.17,
+      "decode_timeout_count": 0
+    },
+    "control": {
+      "structural_similarity": 0.0964,
+      "meaningful_program_rate": 0.0,
+      "binder_reference_f1": 0.6333333333333333,
+      "parse_rate": 1.0,
+      "latency_ms_p50": 858.33,
+      "decode_timeout_count": 0
+    }
+  },
+  "delta_struct": 0.0,
+  "sdlc_reasons": [
+    "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c47-bounds",
+    "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c47-control",
+    "primary_metric_null_or_worse:smoke.structural_similarity:control=0.0964 candidate=0.0964 improvement=0.0",
+    "fixture_insufficient_n_alone"
+  ],
+  "recorded_at": "2026-08-05T22:17:20.677833+00:00"
+}

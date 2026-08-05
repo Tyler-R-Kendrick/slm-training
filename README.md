@@ -92,6 +92,7 @@ checkpoint, roster, training default, champion, or promotion status changes.
 | Autotrain continuous-openui-local c44 | semantic-contrast-compiler-margin fixture — **not ship** |
 | Autotrain continuous-openui-local c45 | semantic-contrast fixture — **not ship** |
 | Autotrain continuous-openui-local c46 | semantic-contrast-compiler-margin fixture — **not ship** |
+| Autotrain continuous-openui-local c47 | bounds fixture — **not ship** |
 | Autotrain continuous-openui-local c17 | binder-topology null — **not ship** |
 | Autotrain continuous-openui-local c9 | fixture component-inventory win structure `.277→.448` — confirm next |
 | Autotrain continuous-openui-local c5 | incomplete decode timeout — repair then replay |
