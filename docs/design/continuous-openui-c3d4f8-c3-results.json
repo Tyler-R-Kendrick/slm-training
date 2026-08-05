@@ -1,0 +1,90 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-c3d4f8",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-c3d4f8-986c6dc3-c3",
+  "cycle_index": 3,
+  "source_commit": "53812385f22a7f65e7571fafe4142258fa851f61",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 1.1666666666666667,
+    "ship_gates": true
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "53812385f22a7f65e7571fafe4142258fa851f61",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v92",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v23",
+      "model.twotower": "v312",
+      "harness.autoresearch.experiment_campaign": "v181"
+    }
+  },
+  "harness_repair": {
+    "family": "autoresearch",
+    "signal": "HypothesisMatrix validation extra_forbidden on every screening hypothesis's generate_batch_size knob (0/56 candidates survived, tuple too_short)",
+    "blocked_cycles": [
+      "continuous-loop-20260805-continuous-openui-c3d4f8-986c6dc3-c1",
+      "continuous-loop-20260805-continuous-openui-c3d4f8-986c6dc3-c2"
+    ],
+    "blocker_fingerprint": "0a501eb8a241c4ce8f7ca7ef4044a50c29be7b334c228e605c285641e60d424c",
+    "repair_commit": "53812385f22a7f65e7571fafe4142258fa851f61",
+    "repair_summary": "Declared generate_batch_size on ExperimentKnobs (StrictModel) and DEFAULT_ALLOWED_KNOBS in src/slm_training/autoresearch/schemas.py; v180 (#1433) had started baking generate_batch_size=1 into screening-role knobs (run_autotrain_continuous._knob_base) without declaring the field, so every screening candidate failed matrix validation before any experiment could run. Additive-only (new optional int knob, ge=1/le=1024); no existing knob semantics changed. Bumped harness.autoresearch.experiment_campaign v180 -> v181.",
+    "regression_test": "tests/test_autoresearch/test_harness.py::test_generate_batch_size_knob_is_declared",
+    "replay_result": "identical arm (role=screening, train_version=wf_smoke_v2, steps=20) completed with a usable scoreboard on the next supervised invocation (this cycle, c3) -- executable unblocking proven."
+  },
+  "arms": {
+    "c3-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.23083333333333333,
+        "binder_reference_f1": 0.7333333333333334,
+        "latency_ms_p50": 13815.51
+      }
+    },
+    "c3-both": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.23083333333333333,
+        "binder_reference_f1": 0.7333333333333334,
+        "latency_ms_p50": 14385.19
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "continue loop; local commits/docs only",
+    "reasons": [
+      "fixture_insufficient_n:c20260805-continuous-openui-c3d4f8-986c6dc3-c3-control",
+      "fixture_insufficient_n:c20260805-continuous-openui-c3d4f8-986c6dc3-c3-both",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.23083333333333333:candidate=0.23083333333333333:improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "conclusion": "Scheduled-routine loop continuous-openui-c3d4f8, cycle 3 (branch claude/great-dirac-v3usx9): cycles 1 and 2 hard-blocked before any experiment could be selected -- every screening-role hypothesis failed HypothesisMatrix pydantic validation with extra_forbidden on generate_batch_size (added to knob baking in v180/#1433 but never declared on ExperimentKnobs), leaving 0/56 candidates and failing the matrix's minimum-5 requirement. This is a genuine autoresearch-family harness bug, not a model result -- self-heal (thrash-bank knob rotation) cannot fix a schema mismatch, so it repeated identically on cycle 2 (blocker_fingerprint 0a501eb8..., blocker_count=2). Fixed by declaring the field (commit 5381238) with a regression test, then replayed on cycle 3: the identical screening arm (wf_smoke_v2, steps=20, seed-matched control+both) now completes end-to-end with a usable scoreboard, proving the harness repair. The model result itself is unremarkable and expected on fixture scale: control and 'both' tie exactly on the declared primary (structural_similarity=0.23083, parse_rate=1.0, binder_reference_f1=0.73333), a null delta. Ship gates fail as expected (fixture_insufficient_n, n=3 vs required 20; meaningful_program_rate/structural_similarity/component_type_recall/ast_beq_rate/canonical_beq_rate all below smoke thresholds). SDLC Phase A classifies NON_POSITIVE (primary_metric_null_or_worse + fixture_insufficient_n_alone); no new stack layer opens for the model result. The harness fix is committed locally per Phase A A1 (incremental commit for every green unit) but does not by itself meet the positive-result bar for opening a stacked PR, since the cycle it unblocked produced a null-delta fixture result -- kept as a local commit on the loop branch pending a future cycle with a genuine metric win or ship-quality clear.",
+  "next_priorities": [
+    "The completed 'both' arm is exhausted (null delta); test the distinct size-matched 'component-plan' quality hypothesis next (rank 1, confidence 0.9)",
+    "Keep the matched control as the size-matched baseline every cycle (rank 2, confidence 0.7)",
+    "Rotate thrash recommendation across the full lever bank, not bounds-only (rank 3, confidence 0.65)"
+  ],
+  "recorded_at": "2026-08-05T01:39:08Z"
+}
