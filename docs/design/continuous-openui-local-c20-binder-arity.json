@@ -34,5 +34,5 @@
     "primary_metric_null_or_worse:smoke.structural_similarity:control=0.3125 candidate=0.3125 improvement=0.0",
     "fixture_insufficient_n_alone"
   ],
-  "recorded_at": "2026-08-05T01:55:52.200312+00:00"
+  "recorded_at": "2026-08-05T01:56:19.536901+00:00"
 }
