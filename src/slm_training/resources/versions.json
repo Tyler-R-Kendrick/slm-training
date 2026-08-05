@@ -7982,6 +7982,11 @@
         {
           "version": "v3",
           "date": "2026-08-05",
+          "note": "no-bump: record scheduled loop 0805a c2's control/component-plan scratch checkpoint provenance (fixture-positive structural_similarity win, no tracked code delta, candidate queued for fresh-seed confirmation) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-05",
           "note": "no-bump: record scheduled loop 0805a c1's control/bounds scratch checkpoint provenance (non-positive fixture screen, honest ship-gate reject, null primary-metric delta) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
