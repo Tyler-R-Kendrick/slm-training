@@ -2757,7 +2757,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v185",
+      "version": "v186",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2802,6 +2802,11 @@
         "tests/test_autoresearch/test_thrash_regime.py"
       ],
       "history": [
+        {
+          "version": "v186",
+          "date": "2026-08-06",
+          "note": "soft thrash residual includes incomplete replay budget exhaust / missing_scoreboard (not bare measurement_incomplete alone)"
+        },
         {
           "version": "v185",
           "date": "2026-08-06",

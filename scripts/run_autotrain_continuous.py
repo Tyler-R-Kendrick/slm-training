@@ -1573,7 +1573,19 @@ def _delivery_is_thrash_timeout_residual(
         "timeout residual",
         "internal decode timeout",
     )
-    return timeout_exit or any(m in joined for m in timeout_markers)
+    # Incomplete thrash measurement with exhausted frozen-replay budget is also
+    # a residual (missing scoreboard / wall race), not a true harness crash —
+    # unless hard harness markers already matched above.
+    incomplete_residual_markers = (
+        "incomplete replay budget exhausted",
+        "missing_scoreboard",
+        "primary_metric_unavailable",
+    )
+    return (
+        timeout_exit
+        or any(m in joined for m in timeout_markers)
+        or any(m in joined for m in incomplete_residual_markers)
+    )
 
 
 def _exception_is_soft_continuous(exc: BaseException) -> bool:
