@@ -2762,7 +2762,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v189",
+      "version": "v190",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2808,6 +2808,11 @@
         "tests/test_autoresearch/test_thrash_regime.py"
       ],
       "history": [
+        {
+          "version": "v190",
+          "date": "2026-08-06",
+          "note": "continuous skill documents repo-root npm ci + NODE_OPTIONS= for AgentV; design_md NODE_OPTIONS sanitization"
+        },
         {
           "version": "v189",
           "date": "2026-08-06",

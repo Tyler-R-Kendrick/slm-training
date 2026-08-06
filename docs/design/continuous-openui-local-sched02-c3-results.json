@@ -1,0 +1,68 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c3",
+  "cycle_index": 3,
+  "source_commit": "b19ced32b714a89eb6fccf54e09df708e92c1211",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "d93b96ed74ba77d3339c85ae20b784afa5889eb5",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v181"
+    }
+  },
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "seed": 100002
+  },
+  "arms": {
+    "c3-control": {
+      "status": "harness_failure_agentv_sdk_module_not_found",
+      "exit_code": 1,
+      "smoke": null
+    },
+    "c3-canvas": {
+      "status": "harness_failure_agentv_sdk_module_not_found",
+      "exit_code": 1,
+      "smoke": null
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "repair sandbox environment; retry frozen arm",
+    "reasons": [
+      "harness_failure:c20260805-continuous-openui-local-8c0b60dd-c3-control:experiment_failed",
+      "harness_failure:c20260805-continuous-openui-local-8c0b60dd-c3-canvas:experiment_failed",
+      "measurement_incomplete:c20260805-continuous-openui-local-8c0b60dd-c3-control:missing_scoreboard",
+      "measurement_incomplete:c20260805-continuous-openui-local-8c0b60dd-c3-canvas:missing_scoreboard"
+    ]
+  },
+  "harness_signal": {
+    "family": "model_build",
+    "component": "evals.agentv (scripts/evaluate_model.py --ship-gates)",
+    "symptom": "node:internal ERR_MODULE_NOT_FOUND: Cannot find module '/home/user/slm-training/node_modules/typebox/build/typebox.mjs' imported from node_modules/typebox/build/index.mjs",
+    "root_cause": "sandbox_environment_gap: repo-root node_modules was present but incomplete/partial in this fresh container checkout (missing typebox, a transitive dependency of @agentv/core used by publish_agentv_evaluation). Not a code regression -- package.json/package-lock.json are unchanged and no tracked file differs before/after the repair.",
+    "repair": "npm ci at the repository root (no NODE_OPTIONS) materializes the missing packages exactly per the committed package-lock.json. Verified node -e \"import('node_modules/typebox/build/index.mjs')\" resolves cleanly afterward.",
+    "regression_coverage": "No new regression test added: this is an environment-provisioning gap identical in kind to the already-documented openui_bridge/design_md_bridge npm ci prerequisite in autotrain/references/continuous.md, not a code defect. Recommends adding root `npm ci` to that same fresh-checkout prerequisite list so future continuous sessions install it before the first cycle instead of discovering it via a mid-loop harness_failure.",
+    "frozen_manifest_sha256": "a604f417ffebaca6cd01ff590aceca18b7264f38d58424a6c3fad98e6bbe1b77"
+  },
+  "conclusion": "Continuous-openui-local loop, cycle 3 (scheduled routine session sched02, branch claude/great-dirac-m25gcv): both arms failed identically during the ship-gated evaluate_model stage with a Node ESM ERR_MODULE_NOT_FOUND for 'typebox', a transitive dependency of the AgentV SDK evaluation path (publish_agentv_evaluation). Root cause is a sandbox environment gap -- this session's repo-root node_modules was incomplete on a fresh checkout, not a code regression (package.json/package-lock.json are unchanged). Repaired by running `npm ci` at the repository root; no tracked file changed as a result, since npm ci only materializes what the existing lockfile already specifies. Verified the previously-failing import resolves after the repair. This is analogous to the already-documented openui_bridge/design_md_bridge JS-bridge npm ci prerequisite in autotrain/references/continuous.md -- recommend that prerequisite list also mention the repo-root npm ci for a fresh checkout, so it is a known first-cycle step rather than a mid-loop harness_failure discovery.",
+  "next_priorities": [
+    "Retry the identical frozen arm (frozen_manifest_sha256 a604f417ffebaca6cd01ff590aceca18b7264f38d58424a6c3fad98e6bbe1b77) now that the sandbox's root node_modules is complete",
+    "Consider adding repo-root `npm ci` to the fresh-checkout prerequisite list in autotrain/references/continuous.md alongside the existing openui_bridge/design_md_bridge bridges",
+    "Continue treating the component-plan vs control +.05613 structural_similarity delta as independently reproduced once a clean retry completes"
+  ],
+  "recorded_at": "2026-08-05T04:41:30Z"
+}
