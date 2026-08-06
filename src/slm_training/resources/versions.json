@@ -2762,7 +2762,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v191",
+      "version": "v192",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2808,6 +2808,11 @@
         "tests/test_autoresearch/test_thrash_regime.py"
       ],
       "history": [
+        {
+          "version": "v192",
+          "date": "2026-08-06",
+          "note": "--skip-slugs CLI extra_skip_slugs for cross-session thrash arm exhaustion when local lineage resets"
+        },
         {
           "version": "v191",
           "date": "2026-08-06",

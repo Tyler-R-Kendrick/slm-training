@@ -781,6 +781,14 @@ def test_confirmation_never_inherits_promotion_role() -> None:
     )
 
 
+def test_parse_skip_slugs_from_cli_value() -> None:
+    assert _mod._parse_skip_slugs("") == frozenset()
+    assert _mod._parse_skip_slugs("bounds") == frozenset({"bounds"})
+    assert _mod._parse_skip_slugs("bounds, component-plan ,,component-edge") == (
+        frozenset({"bounds", "component-plan", "component-edge"})
+    )
+
+
 def test_select_recommended_slug_rotates_and_skips() -> None:
     # cycle 1 → first bank arm (bounds)
     assert _mod._select_recommended_slug(1) == "bounds"
@@ -3307,6 +3315,44 @@ def test_causal_cap_does_not_empty_multi_seed_open_bank() -> None:
     if open_slugs and not (open_slugs - skip):
         skip = soft | closed
     assert open_slugs - skip
+
+
+def test_causal_cap_relaxation_preserves_operator_skip_slugs() -> None:
+    """CAP relaxation must not reopen an operator-provided --skip-slugs slug.
+
+    Mirrors run_cycle's soft_skip construction (line ~8777): soft_skip must
+    union extra_skip_slugs alongside the queue-derived and recent_exhausted
+    skips, or an explicitly skipped arm could be re-selected once the causal
+    CAP relaxes.
+    """
+    entries = [
+        {
+            "entry_id": "c1",
+            "status": "rejected",
+            "source_integration_commit": "tip1",
+            "source_candidate_id": "x-literal-close",
+            "knobs": {"ltr_tail_loss_weight": 2.0},
+            "resolve_reasons": [
+                "non_regression_fail:binder_reference_f1:1.0->0.0",
+                "primary_metric_null_or_worse:smoke.structural_similarity",
+            ],
+        },
+    ]
+    extra_skip_slugs = frozenset({"literal-close"})
+    hard = _mod._skip_arm_slugs(entries, integration_commit="tip1") | extra_skip_slugs
+    soft = (
+        _mod._skip_arm_slugs(entries, integration_commit="tip1", include_causal_cap=False)
+        | extra_skip_slugs
+    )
+    closed: set[str] = set()
+    open_slugs = _mod._thrash_bank_open_slugs(closed)
+    assert "literal-close" in open_slugs
+    skip = hard | closed
+    if open_slugs and not (open_slugs - skip):
+        skip = soft | closed
+    # Relaxation happened (soft_skip lacks the causal CAP entry) but the
+    # operator's explicit --skip-slugs slug must still be excluded.
+    assert "literal-close" in skip
 
 
 def test_new_literal_close_successor_slugs() -> None:

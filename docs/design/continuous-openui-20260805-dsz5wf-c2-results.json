@@ -1,0 +1,48 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 2,
+  "source_commit": "35d85a4b",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "cycle_role": "screening",
+  "cycle_intent": "screening",
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2"
+  },
+  "arms": {
+    "control": {
+      "status": "measurement_incomplete",
+      "levers": {
+        "component_inventory_loss_weight": false
+      },
+      "smoke": {
+        "status": "missing_scoreboard"
+      }
+    },
+    "component-inventory": {
+      "status": "measurement_incomplete",
+      "levers": {
+        "component_inventory_loss_weight": true,
+        "structural_aux_head_profile": "component-inventory"
+      },
+      "smoke": {
+        "n": 3,
+        "decode_timeout_count": 3
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "conclusion": "First test of the size-matched component-inventory quality hypothesis this session, selected via the new --skip-slugs override (skip=['component-edge', 'component-plan'], both already conclusively closed same-day) so the driver rotated to a genuinely untested arm instead of re-running bounds/component-plan/component-edge a 5th+ time. Both arms trained to completion (checkpoints written), but AgentV finalized every record disposition and reported an internal decode timeout before either arm's --ship-gates scoreboard could be produced (control: missing_scoreboard; component-inventory: 3/3 decode_timeout_count). This is a runtime/infrastructure incomplete, not a model result -- no primary-metric delta is attributable. The driver's own typed handoff routes this to repair_harness (owner improve-openui-harnesses, harness_family model_build) before any retry_measurement replay of the frozen arm.",
+  "next_priorities": [
+    "Route the model_build decode-timeout signal through improve-openui-harnesses before replaying this frozen c2 pair; do not treat the incomplete component-inventory measurement as a model result",
+    "After repair (or if replay reproduces a completed measurement without repair), retry_measurement against the frozen manifest (sha256 28909340c77d61741bd5a668963653e5baed2abf91f506a0e3763221d6899c7b) before drawing any conclusion about component-inventory",
+    "Do not promote, sync, or ship either checkpoint; this cycle is harness-incomplete"
+  ],
+  "recorded_at": "2026-08-05T10:48:44Z"
+}

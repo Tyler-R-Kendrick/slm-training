@@ -1,0 +1,57 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c1",
+  "cycle_index": 1,
+  "source_commit": "bdf143cd",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "cycle_role": "screening",
+  "cycle_intent": "screening",
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "seed": 100001,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2"
+  },
+  "arms": {
+    "control": {
+      "status": "measurement_complete",
+      "levers": {
+        "grammar_completion_bounds": false
+      },
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0575,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 4306.77
+      }
+    },
+    "bounds": {
+      "status": "measurement_complete",
+      "levers": {
+        "grammar_completion_bounds": true
+      },
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0575,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 5746.75
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "conclusion": "Independent same-day reproduction of the continuous-openui-local bounds screen run in a separate scheduled session (same fixture recipe, same seed 100001, same size-matched 1,608,962 params, against the same source commit bdf143cd as PR #1450's c1). grammar_completion_bounds again produced an exact structural_similarity tie against the matched control (0.0575, parse 1.0, meaningful 0.0, binder F1 0.6333) -- the 5th independent measurement of this exact tie (PR #1322 c1, PR #1322 c3, continuous-openui-local-r2 c1 #1431, PR #1450 c1, and this run). Latency this run reverses direction again: bounds is 33.4% SLOWER than control (5746.75 vs 4306.77 ms p50), whereas PR #1450's c1 measured bounds 11.6% FASTER on the same recipe. This is now at least a 3rd sign reversal across independent same-day runs, reinforcing that smoke-fixture p50 latency deltas on this CPU sandbox are noise, not an attributable grammar_completion_bounds effect. Both arms fail honest ship gates on evidence volume alone (n=3 < 20), as expected at screening scale. This cycle's duplication (re-running the already-closed 'bounds' arm on a fresh checkout with no durable closure state) is what motivated the new --skip-slugs CLI override added this session (scripts/run_autotrain_continuous.py); c2 is the run that actually exercises it (--skip-slugs component-plan,component-edge). The local outputs/autoresearch/ campaign-lineage closure state is gitignored and resets on every fresh checkout, so a fresh session's cycle 1 always re-selects the arm bank's first slug ('bounds') regardless of how many times it was already closed in prior sessions' still-open PRs; --skip-slugs lets an agent carry that evidence forward manually pending a durable cross-session ledger.",
+  "next_priorities": [
+    "Treat grammar_completion_bounds vs matched control as exhausted for screening: 5 independent measurements (this run, PR #1322 c1/c3, continuous-openui-local-r2 c1 #1431, and PR #1450 c1) now show an exact structural_similarity tie with non-attributable, sign-reversing latency noise",
+    "Use --skip-slugs to carry forward known-exhausted arm slugs (bounds, component-plan, component-edge as of 2026-08-05) into fresh scheduled sessions until a durable cross-session closure ledger exists; this is a manual workaround, not a fix for the underlying gap",
+    "Do not promote or ship either checkpoint; both remain screening-scale fixture artifacts"
+  ],
+  "recorded_at": "2026-08-05T10:35:04Z"
+}
