@@ -8669,3 +8669,111 @@ def test_last_cycle_failure_message_reads_tail(tmp_path: Path) -> None:
         + "\n"
     )
     assert "repair_harness" in (_mod._last_cycle_failure_message(root, loop) or "")
+
+
+def test_self_heal_bank_exhaust_repair_rewrites_handoff(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Bank-exhaust repair_harness must compose arms and clear predecessor gate."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _init_git_repo(repo)
+    root = repo / "outputs" / "autoresearch"
+    loop_id = "continuous-openui-local"
+    campaign_id = "continuous-loop-bank-exhaust-c1"
+    camp = root / campaign_id
+    camp.mkdir(parents=True)
+    (camp / "campaign.json").write_text(
+        json.dumps(
+            {"campaign_id": campaign_id, "loop_id": loop_id, "cycle_index": 1}
+        )
+    )
+    handoff = {
+        "schema_version": "AutotrainCycleHandoffV1",
+        "loop_id": loop_id,
+        "campaign_id": campaign_id,
+        "cycle_index": 1,
+        "upstream_commit": "a" * 40,
+        "integration_commit": "b" * 40,
+        "cycle_role": "screening",
+        "cycle_intent": "screening",
+        "evidence_class": "fixture",
+        "climb_state": "rejected",
+        "ship_state": "blocked",
+        "primary_metric": "smoke.structural_similarity",
+        "reasons": ["primary_metric_null_or_worse"],
+        "actions": [
+            {
+                "kind": "repair_harness",
+                "owner": "improve-openui-harnesses",
+                "reason": (
+                    "registered quality-arm bank exhausted; preregister and wire "
+                    "a distinct size-matched model-build objective before the next run"
+                ),
+                "evidence_ids": [f"campaign:{campaign_id}"],
+                "harness_family": "model_build",
+            },
+            {
+                "kind": "document",
+                "owner": "documenting-experiment-results",
+                "reason": "persist docs",
+                "evidence_ids": [f"campaign:{campaign_id}"],
+            },
+        ],
+    }
+    (camp / "cycle_handoff.json").write_text(json.dumps(handoff) + "\n")
+    (camp / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "positive": False,
+                "measurement_complete": True,
+                "reasons": ["primary_metric_null_or_worse"],
+            }
+        )
+    )
+    import slm_training.autoresearch.storage as storage
+
+    monkeypatch.setattr(storage, "_REPO_ROOT", repo)
+    # Pretend static bank is fully closed so compose is forced.
+    monkeypatch.setattr(
+        _mod,
+        "_recent_completed_nonpositive_slugs",
+        lambda root, pred: {slug for slug, _, _ in _mod._SCREENING_ARM_BANK},
+    )
+    monkeypatch.setattr(_mod, "_load_champion_queue", lambda path: [])
+    monkeypatch.setattr(_mod, "_skip_arm_slugs", lambda *a, **k: set())
+    with pytest.raises(RuntimeError, match="repair_harness"):
+        _mod._require_predecessor_actions(root, loop_id, campaign_id)
+    kind = _mod._self_heal_bank_exhaust_repair(
+        cwd=repo, root=root, loop_id=loop_id, campaign_id=campaign_id
+    )
+    assert kind in {"bank_exhaust_compose", "document_closeout"}
+    rebuilt = json.loads((camp / "cycle_handoff.json").read_text())
+    kinds = [a["kind"] for a in rebuilt["actions"]]
+    assert "repair_harness" not in kinds
+    assert "next_experiment" in kinds
+    _mod._require_predecessor_actions(root, loop_id, campaign_id)
+
+
+def test_is_bank_exhaust_repair_action_matches_handoff_reason() -> None:
+    from slm_training.autoresearch.schemas import AutotrainActionV1
+
+    a = AutotrainActionV1(
+        kind="repair_harness",
+        owner="improve-openui-harnesses",
+        reason=(
+            "registered quality-arm bank exhausted; preregister and wire a distinct "
+            "size-matched model-build objective before the next run"
+        ),
+        evidence_ids=("campaign:x",),
+        harness_family="model_build",
+    )
+    assert _mod._is_bank_exhaust_repair_action(a)
+    b = AutotrainActionV1(
+        kind="repair_harness",
+        owner="improve-openui-harnesses",
+        reason="AgentV SDK is unavailable; run npm ci",
+        evidence_ids=("campaign:x",),
+        harness_family="model_build",
+    )
+    assert not _mod._is_bank_exhaust_repair_action(b)

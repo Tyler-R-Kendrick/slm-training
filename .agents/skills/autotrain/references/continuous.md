@@ -51,6 +51,11 @@ persistence is the host goal and the append-only campaign event chains.
      real cycle_failures message**, never only from
      `repair repeated blocker:<fingerprint>` (that matched no heal branch
      and false-cleared via bank compose).
+   - **thrash quality-arm bank exhaust** → compose size-matched dynamic thrash
+     successors (`SELF_HEAL_BANK_EXHAUST`) **and rewrite** predecessor
+     `repair_harness` → `next_experiment` (`SELF_HEAL_BANK_EXHAUST_REPAIR`).
+     Compose alone is not enough: the handoff prereq must be retired.
+     Hard-stop only when no untried size-matched compose pairs remain.
    - **Never auto-ack real** `repair_formal`, `rebuild_data`, `stop_campaign`,
      or `deliver_stack`. **Never fake** a harness repair commit for true
      harness crashes (missing AgentV, import errors). Those stay hard until
