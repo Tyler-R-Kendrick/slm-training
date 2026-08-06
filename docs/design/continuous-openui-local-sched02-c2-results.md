@@ -1,58 +1,53 @@
-# Continuous autotrain: 2026-08-05 (scheduled session sched02) cycle 2 — operator-timeout measurement gap (screening)
+# Continuous autotrain: 2026-08-05 (scheduled session sched02) cycle 2 — dual-arm decode timeout, seed 100002 (screening, inconclusive)
 
 **Loop:** `continuous-openui-local`
 **Campaign:** `continuous-loop-20260805-continuous-openui-local-8c0b60dd-c2`
-**Integration commit:** `bdf143cd` (`origin/main` tip at cycle start)
+**Integration commit:** `4961a4a6` (this session's cycle-1 docs commit)
 
-**Verdict:** not a model result. Both arms of the frozen `canvas`
-(component-plan) vs `control` comparison exited `124` because this session's
-first supervised-driver invocation was wrapped in an external `timeout 280`
-shell guard that raced the two sequential 70s-wall-capped arms — the
-research + hypothesize stages already consumed most of the 280s budget, so
-the wrapper's kill signal landed mid-run of both arms.
+**Verdict:** inconclusive — both the `component-plan` candidate and its
+matched `control` hit the per-experiment wall cap (exit `124`) at seed
+`100002`. No primary-metric comparison is possible this cycle.
 
-| Arm | Seed | structural_similarity | parse_rate | binder_reference_f1 | p50 ms | exit |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| control | 100002 | .32667 | 1.0 | 0 | 31359.1 | 124 (metrics captured before kill) |
-| canvas (component-plan) | 100002 | — | — | — | — | 124 (no scoreboard) |
+| Arm | Seed | Status | Detail |
+| --- | ---: | --- | --- |
+| component-plan | 100002 | wall_timeout (exit 124) | `missing_scoreboard` — never finished |
+| control | 100002 | wall_timeout (exit 124) | `incomplete_document_n=3`, `decode_timeout_count=3` |
 
-The control arm's metrics were already computed and match every prior
-session's control reading for this exact recipe/seed
-([`continuous-openui-local-sched01-c2-results.md`](continuous-openui-local-sched01-c2-results.md)
-and its four prior antecedents). The canvas arm never reached a scoreboard.
+`climb_state=inconclusive`, `ship_state=blocked`, `measurement_complete=false`.
 
-## Root cause: operator wrapper, not harness
+## Same blocker class as the open c5 dual-arm timeout finding
 
-The repo's own guidance
-([`autotrain/references/continuous.md`](../../.claude/skills/autotrain/references/continuous.md))
-says every child command already obeys the repository-wide `MAX_RUN_MINUTES`
-wall cap internally. Wrapping the supervised driver invocation in a shorter
-external `timeout` duplicates and conflicts with that internal cap. This
-cycle's fix is procedural: re-invoke the supervised driver without an
-external wrapper (or with a wrapper generous enough to exceed
-research + hypothesize + `N * experiment_wall_seconds`).
+This reproduces the same symptom class already tracked as **Blocker 1** in
+[`autotrain-cycle-c5-dual-arm-decode-timeout-unresolved.md`](autotrain-cycle-c5-dual-arm-decode-timeout-unresolved.md)
+/
+[`autotrain-cycle-c5-c6-replay-blocked-follow-up.md`](autotrain-cycle-c5-c6-replay-blocked-follow-up.md) —
+there at seed `100005` on a `-confirm` arm; here at seed `100002` on the
+ordinary `component-plan`/`control` screening pair. Root cause (seed-
+dependent decode pathology vs. sandbox CPU/wall-budget headroom) remains
+undetermined. Per the deliberate
+`test_replayed_dual_arm_timeouts_remain_inconclusive_and_require_repair`
+contract, this must **not** be auto-retired — it stays `inconclusive`.
 
 ## SDLC Phase A
 
-**Non-positive** (`measurement_incomplete`). Per `sdlc`
-autotrain-iteration-delivery, no new stack layer opens for this cycle; docs
-land locally and the loop continues by consuming the unacknowledged
-`retry_measurement` handoff action, which replays the identical frozen arm
-(`frozen_manifest_sha256`
-`4abfa37fbabbde6d3da4f7ab49f6c65b9968508c60be8f665226f9d2cf37db0b`) on the
-next supervised cycle.
+**Non-positive** (`measurement_incomplete`). No stack layer. The driver
+queued a single typed `retry_measurement` action (frozen
+`c20260805-continuous-openui-local-8c0b60dd-c2-component-plan`/`-control`
+pair, `frozen_manifest_sha256=41bdd9182d5…d680e864`) to run before any new
+model hypothesis.
 
 ## Next priorities
 
-1. Retry the identical frozen arm with no external timeout wrapper shorter
-   than the driver's own per-arm wall cap.
-2. Once clean, treat the component-plan vs control `+.05613`
-   `structural_similarity` delta as a further independent reproduction
-   (fifth+ confirmation across sessions `j48f8u`, `ts5ofk`, `peuum8`,
-   `sched01`).
-3. Do not attempt the blocked `-confirm`/`-fresh-confirmation` frozen-replay
-   path or the seed-`100005` dual-arm decode timeout speculatively; that
-   remains routed to a dedicated `improve-openui-harnesses` session.
+1. Replay the exact frozen pair once (rank 1, confidence 0.95) — this is
+   consumed automatically by the driver's `retry_measurement` mechanism on
+   the next supervised cycle, not a manual re-run.
+2. If the replay reproduces the same dual-arm timeout: stop retrying and
+   route to a dedicated `improve-openui-harnesses` profiling session per the
+   open Blocker 1 recommendation. Do not speculatively patch wall-budget or
+   routing logic without that investigation.
+3. If the replay completes cleanly: treat this as a one-off sandbox timing
+   artifact, not a harness regression, and resume normal hypothesis
+   rotation.
 
 Machine evidence:
 [`continuous-openui-local-sched02-c2-results.json`](continuous-openui-local-sched02-c2-results.json).
