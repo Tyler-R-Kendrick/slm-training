@@ -150,6 +150,12 @@ class CompletionSession:
         # stores draft results only — semantic filtering and path labeling
         # stay live per state; authority is unchanged.
         self._branch_memo: dict[tuple, tuple[str, tuple[int, ...] | None]] = {}
+        # Certified LALR acceptance-length bound (negative-direction only).
+        # Lazy: first successful certify is reused for the session; a failed
+        # or unavailable certification disables bound pruning for the session
+        # (Lark remains the live authority either way).
+        self._lalr_adapter: Any | None = None
+        self._lalr_bound_disabled: bool = False
         self._counters: dict[str, int] = {
             "session_starts": 1,
             "state_intern_hits": 0,
@@ -173,6 +179,7 @@ class CompletionSession:
             "scope_reference_scans_avoided": 0,
             "branch_memo_hits": 0,
             "branch_memo_misses": 0,
+            "min_terminals_prunes": 0,
         }
 
     # --- introspection ----------------------------------------------------
@@ -475,6 +482,45 @@ class CompletionSession:
 
     # --- bounded terminal-witness DP -----------------------------------------
 
+    def _min_terminals_bound(self, state_id: int) -> int | None:
+        """Certified lower bound on remaining terminals, or None if unknown.
+
+        Uses ``StaticLalrAdapter.min_terminals`` after lockstep certification.
+        Negative-direction only: a bound of ``b`` means at least ``b`` more
+        terminals are required; never used to force a commit or widen legality.
+        """
+        if self._lalr_bound_disabled:
+            return None
+        try:
+            record = self._states[int(state_id)]
+        except (IndexError, TypeError, ValueError):
+            return None
+        engine = record.engine
+        ip = getattr(engine, "_ip", None)
+        parser_state = getattr(ip, "parser_state", None) if ip is not None else None
+        stack = getattr(parser_state, "state_stack", None)
+        if not stack:
+            return None
+        if self._lalr_adapter is None:
+            try:
+                from slm_training.dsl.grammar.fastpath.static_control_domain import (
+                    require_certified_static_lalr,
+                    static_lalr_adapter,
+                )
+
+                require_certified_static_lalr(self._tokenizer, engine=engine)
+                self._lalr_adapter = static_lalr_adapter(
+                    self._tokenizer, engine=engine
+                )
+            except Exception:  # noqa: BLE001 - bound is optional; fail open to search
+                self._lalr_bound_disabled = True
+                return None
+        try:
+            bound = int(self._lalr_adapter.min_terminals(int(stack[-1])))
+        except Exception:  # noqa: BLE001
+            return None
+        return bound if bound >= 0 else None
+
     def terminal_witness(self, state_id: int, room: int) -> WitnessResult:
         """Return V1's first-in-path-order witness with typed uncertainty.
 
@@ -483,6 +529,10 @@ class CompletionSession:
         behavior-visible expansion order. Results affected by partial
         authority or budget depletion are UNKNOWN and never enter the
         session-wide memo.
+
+        When a certified ``state_min_terminals`` lower bound proves the
+        remaining room is insufficient, the query returns UNSUPPORTED without
+        expanding further (sound negative prune only).
         """
         sid = int(state_id)
         rm = max(0, int(room))
@@ -507,35 +557,40 @@ class CompletionSession:
                 return cached
             if remaining <= 0:
                 result = WitnessResult(WitnessStatus.UNSUPPORTED)
-            elif nodes_left <= 0:
-                result = WitnessResult(WitnessStatus.UNKNOWN)
             else:
-                nodes_left -= 1
-                self._counters["reachability_cache_misses"] += 1
-                self._counters["witness_states_expanded"] += 1
-                forest = self.outgoing(current)
-                saw_unknown = forest.coverage != "complete"
-                result = WitnessResult(WitnessStatus.UNSUPPORTED)
-                for path in forest.paths:
-                    tokens = tuple(int(token_id) for token_id in path.token_ids)
-                    if not tokens or len(tokens) > remaining:
-                        continue
-                    if path.kind == "eos":
-                        result = WitnessResult(WitnessStatus.SUPPORTED, tokens)
-                        break
-                    child = self.advance_path(current, tokens)
-                    if child is None:
-                        continue
-                    suffix = _eval(child, remaining - len(tokens))
-                    if suffix.status is WitnessStatus.SUPPORTED:
-                        result = WitnessResult(
-                            WitnessStatus.SUPPORTED, tokens + suffix.witness
-                        )
-                        break
-                    saw_unknown |= suffix.status is WitnessStatus.UNKNOWN
+                bound = self._min_terminals_bound(current)
+                if bound is not None and bound > remaining:
+                    self._counters["min_terminals_prunes"] += 1
+                    result = WitnessResult(WitnessStatus.UNSUPPORTED)
+                elif nodes_left <= 0:
+                    result = WitnessResult(WitnessStatus.UNKNOWN)
                 else:
-                    if saw_unknown:
-                        result = WitnessResult(WitnessStatus.UNKNOWN)
+                    nodes_left -= 1
+                    self._counters["reachability_cache_misses"] += 1
+                    self._counters["witness_states_expanded"] += 1
+                    forest = self.outgoing(current)
+                    saw_unknown = forest.coverage != "complete"
+                    result = WitnessResult(WitnessStatus.UNSUPPORTED)
+                    for path in forest.paths:
+                        tokens = tuple(int(token_id) for token_id in path.token_ids)
+                        if not tokens or len(tokens) > remaining:
+                            continue
+                        if path.kind == "eos":
+                            result = WitnessResult(WitnessStatus.SUPPORTED, tokens)
+                            break
+                        child = self.advance_path(current, tokens)
+                        if child is None:
+                            continue
+                        suffix = _eval(child, remaining - len(tokens))
+                        if suffix.status is WitnessStatus.SUPPORTED:
+                            result = WitnessResult(
+                                WitnessStatus.SUPPORTED, tokens + suffix.witness
+                            )
+                            break
+                        saw_unknown |= suffix.status is WitnessStatus.UNKNOWN
+                    else:
+                        if saw_unknown:
+                            result = WitnessResult(WitnessStatus.UNKNOWN)
             query_cache[key] = result
             query_cache.move_to_end(key)
             if len(query_cache) > 64:

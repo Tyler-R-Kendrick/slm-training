@@ -4,11 +4,12 @@ Production domains are obtained only after the completion artifact checker
 accepts the request-independent projection. Scope and semantic (Γ) constraints
 remain request-local leaf filters that may only **tighten** the static domain.
 Lark remains the live parser authority. ``StaticLalrAdapter`` is an executable
-projection of the certified control arrays, but it is import-only: it becomes
-usable evidence only after ``require_certified_static_lalr`` proves lockstep
-accepts-set equality against the live ``InteractiveParser`` over the canonical
-corpus, and no decode path consumes it. Certificate payload is never rebranded
-as a DPDA executor.
+projection of the certified control arrays: it becomes usable evidence only
+after ``require_certified_static_lalr`` proves lockstep accepts-set equality
+against the live ``InteractiveParser`` over the canonical corpus.
+``completion_kernel`` may then use ``min_terminals`` for negative-direction
+room pruning only — never to force commits or widen legality. Certificate
+payload is never rebranded as a DPDA executor.
 
 See ``docs/design/adr-constrained-diffusion-topology-split.md``.
 """

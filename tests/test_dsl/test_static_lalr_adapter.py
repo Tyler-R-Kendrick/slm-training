@@ -30,6 +30,8 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 _OWNING_MODULES = {
     "src/slm_training/dsl/grammar/fastpath/completion_artifact.py",
     "src/slm_training/dsl/grammar/fastpath/static_control_domain.py",
+    # Negative-direction room prune via certified min_terminals.
+    "src/slm_training/dsl/grammar/fastpath/completion_kernel.py",
 }
 
 
@@ -215,15 +217,16 @@ def _grep_python_sources(pattern: str) -> set[str]:
     return {line for line in found.stdout.splitlines() if line}
 
 
-def test_adapter_is_import_only_with_no_production_consumer() -> None:
-    """Nothing under src/ or scripts/ wires the adapter into a decode path."""
+def test_adapter_consumers_are_allowlisted() -> None:
+    """Only the certified kernel may consume the adapter in production paths."""
 
     adapter_hits = _grep_python_sources(
         "StaticLalrAdapter|require_certified_static_lalr|static_lalr_adapter"
     )
     assert adapter_hits == _OWNING_MODULES, sorted(adapter_hits)
 
-    # The acceptance-length bound is serialized and reported, never consumed.
+    # Bound may be serialized, reported, or used as a negative prune in the
+    # completion kernel — nowhere else under src/ or scripts/.
     bound_hits = _grep_python_sources("state_min_terminals|min_terminals")
     assert bound_hits <= _OWNING_MODULES | {"scripts/build_completion_artifact.py"}, (
         sorted(bound_hits)

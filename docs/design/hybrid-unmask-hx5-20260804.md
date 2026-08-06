@@ -104,11 +104,15 @@ over the E1 corpus (accepts-set equality at every terminal prefix: 8
 programs, 56 steps, 14 states). `require_certified_static_lalr()` is
 fail-closed and cached per artifact digest.
 
-**Consumed by nothing**: `completion_kernel.py` and `engine.py` are
-untouched; no default decode path changed. The artifact was regenerated
-(53824 → 56224 bytes) so its sha256 changed — checkpoints declaring the old
-`completion_artifact` identity must be re-stamped (fail-closed contract, not
-a regression).
+**Now consumed (negative-direction only, 2026-08-05):**
+`completion_kernel.terminal_witness` may call
+`require_certified_static_lalr` + `StaticLalrAdapter.min_terminals` and return
+`UNSUPPORTED` when remaining room is strictly below the certified lower
+bound. Counter: `min_terminals_prunes`. Lark remains the live parser
+authority; the bound never forces a commit or widens legality. The artifact
+was regenerated (53824 → 56224 bytes) so its sha256 changed — checkpoints
+declaring the old `completion_artifact` identity must be re-stamped
+(fail-closed contract, not a regression).
 
 ### (iv) W3 duration-aware sharding — PASS, with a caveat that matters
 
@@ -158,10 +162,13 @@ adapter and bound are certified but unconsumed. Any run using
 ## Follow-ups
 
 - Repair-heavy fixture to actually test HX5 (attempts > 1).
-- Kernel consumption of the certified adapter + `state_min_terminals` under
-  the campaign's E2 cold-speed gate.
-- Remediate the two >3-minute test files; consider per-node weighting if the
-  goal shifts from heavy-file isolation to minimizing max shard wall.
+- ~~Kernel consumption of the certified adapter + `state_min_terminals`~~ —
+  done as negative-direction prune in `terminal_witness` (still open: E2
+  cold-speed measurement under a preregistered campaign).
+- Remediate the two >3-minute test files further (topology live apply paths
+  still `@pytest.mark.slow`; dsh5 default CI now uses synthetic probes with
+  live preflight kept slow). Duration table carries `measured_at` +
+  `integrity.irreducible_files` so partial/stale weights fail validation.
 - Hybrid quality screening (preregistered) before any default change; the
   cluster-mode (V7) comparison remains open — hybrid is *structural* region
   typing, cluster is *attention-derived*, and they are mutually exclusive by

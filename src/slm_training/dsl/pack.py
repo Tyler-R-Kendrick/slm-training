@@ -528,9 +528,20 @@ def _openui_completion_domain(request: Any) -> Any:
     if query_witness_tally[0] and query_witness_tally[1] == 1:
         # Exactly one proven candidate survived while an unproven one was
         # dropped: downstream singleton detection cannot distinguish this from
-        # a genuine deterministic force, so the model is bypassed on the
-        # strength of a budget limit rather than a proof.
+        # a genuine deterministic force, so the model would be bypassed on the
+        # strength of a budget limit rather than a proof (I2 hazard).
+        # Fail closed: refuse a complete domain. Incomplete maps to forest
+        # coverage "none", so exact_forced_token_id will not commit the
+        # budget-manufactured singleton.
         _note_witness(false_singleton=True)
+        return _finish(
+            CompletionDomainV1(
+                status="incomplete",
+                scope_fingerprint=fingerprint,
+                terminals=initial.terminals,
+                reason="witness_false_singleton_risk",
+            )
+        )
     return _finish(
         CompletionDomainV1(
             status="complete",
@@ -775,6 +786,9 @@ def _openui_completion_domain_reference(request: Any) -> Any:
 
     candidates: list[Any] = []
     unwitnessed = False
+    # [unknown_dropped, proven_kept] — same false-singleton shape as the
+    # packed session path.
+    query_witness_tally = [0, 0]
     for path in initial.paths:
         tokens = tuple(int(token_id) for token_id in path.token_ids)
         if not tokens or len(tokens) > budget:
@@ -789,9 +803,11 @@ def _openui_completion_domain_reference(request: Any) -> Any:
             # Bounded tail search found nothing within budget: same
             # UNKNOWN-flavoured false-reject risk as the session path.
             _note_witness(materialized=True, pruned_unknown=True)
+            query_witness_tally[0] += 1
             unwitnessed = True
             continue
         _note_witness(materialized=True, kept=True)
+        query_witness_tally[1] += 1
         candidates.append(
             CompletionDomainCandidateV1(
                 token_ids=tokens,
@@ -805,6 +821,14 @@ def _openui_completion_domain_reference(request: Any) -> Any:
             scope_fingerprint=fingerprint,
             terminals=initial.terminals,
             reason="terminal_witness_unavailable",
+        )
+    if query_witness_tally[0] and query_witness_tally[1] == 1:
+        _note_witness(false_singleton=True)
+        return CompletionDomainV1(
+            status="incomplete",
+            scope_fingerprint=fingerprint,
+            terminals=initial.terminals,
+            reason="witness_false_singleton_risk",
         )
     return CompletionDomainV1(
         status="complete",
