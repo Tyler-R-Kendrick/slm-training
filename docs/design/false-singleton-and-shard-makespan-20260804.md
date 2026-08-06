@@ -69,9 +69,14 @@ timeout into a documented deferral. Run explicitly:
 python -m pytest tests/test_scripts/test_run_dsh5_03_bulk_operator_crossover.py -m slow
 ```
 
-**This is a coverage reduction in CI and is stated as such.** The follow-up is
-to make `run_local_preflight` cheaper or split the test, not to leave it
-deselected forever.
+**This was a coverage reduction in CI and is stated as such.** Follow-up
+(2026-08-05): the default dsh5 CLI test now exercises the report builder with
+synthetic probes (fixture-contract still asserted); the live
+`run_local_preflight` stack stays `@pytest.mark.slow`. Topology config tests
+moved off the slow class so mode reject/roundtrip stay default-on. The
+committed duration table now carries `measured_at`, `partial=false`, and
+`integrity.irreducible_files` so another partial/stale weight fails validation
+instead of silently packing wrong.
 
 ## Fault A — UNKNOWN false rejects: guarded, not "fixed"
 
@@ -94,20 +99,19 @@ rather than a proof. The counter flags that shape. It reads zero on this
 fixture, and the detector is proven live by a unit test (a zero counter is
 only evidence if it can fire).
 
-### Why no behavior change
+### Fail-closed behavior (2026-08-05)
 
-The obvious fix — keep UNKNOWN candidates and rank them last, mirroring
-`dsl/solver`'s existing `keep_and_rank` policy — is **not** implemented here,
-because every measurable consequence of the fault is currently nil: no dead
-ends, no false singletons, no invalid outputs, and raising the budget is
-strictly expensive. Shipping a behavior-changing lever with no measured
-benefit is exactly the pattern this line of work has already produced three
-times (block-diffusion lever slower, hybrid slower, HX5 neutral).
+The first landing only counted the hazard. A follow-up now **fails closed**
+when the shape fires: the completion domain returns
+`status="incomplete"` with `reason="witness_false_singleton_risk"` instead of
+a complete singleton. Downstream `exact_forced_token_id` only forces on
+complete forests, so I2 will not commit a budget-manufactured singleton.
+The counter still fires so the shape remains self-reporting.
 
-The fault is real and stays on the record. What would justify the fix:
-`witness_false_singleton_risk > 0`, or a corpus where UNKNOWN drops correlate
-with dead ends or certified fallbacks. The counter now makes that
-self-reporting: if the hazard ever occurs, it is visible rather than silent.
+The broader `keep_and_rank` policy (keep UNKNOWN candidates and rank them
+last, mirroring `dsl/solver`) is still **not** the default: it would widen
+the scored candidate set and needs its own preregistered campaign. Fail-closed
+incomplete is the minimal I2-safe answer when the hazard is detected.
 
 ## Verification
 

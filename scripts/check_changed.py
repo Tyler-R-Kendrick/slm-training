@@ -486,13 +486,82 @@ def _changed_test_workers() -> int:
     return configured_workers
 
 
+def _validate_test_duration_payload(payload: dict) -> list[str]:
+    """Return human-readable integrity problems for the committed weights table.
+
+    Packing still degrades gracefully when the table is absent; this validator
+    is for explicit checks (unit tests / repo policy) so partial or stale
+    measurements cannot silently re-enter the way the 11× topology weight did.
+    """
+    from datetime import date
+
+    from slm_training.levers import MAX_RUN_SECONDS
+
+    problems: list[str] = []
+    if payload.get("schema") != "test_file_durations/v1":
+        problems.append(f"unexpected schema {payload.get('schema')!r}")
+    if payload.get("unit") != "seconds":
+        problems.append(f"unexpected unit {payload.get('unit')!r}")
+    if payload.get("partial") is True:
+        problems.append("table is marked partial=true (incomplete measurement)")
+    measured_at = payload.get("measured_at")
+    if not measured_at:
+        problems.append("missing measured_at (YYYY-MM-DD)")
+    else:
+        try:
+            measured = date.fromisoformat(str(measured_at))
+        except ValueError:
+            problems.append(f"measured_at is not ISO date: {measured_at!r}")
+        else:
+            integrity = payload.get("integrity") or {}
+            max_age = int(integrity.get("max_age_days") or 180)
+            age = (date.today() - measured).days
+            if age > max_age:
+                problems.append(
+                    f"measured_at {measured_at} is {age}d old (max_age_days={max_age})"
+                )
+            if age < 0:
+                problems.append(f"measured_at {measured_at} is in the future")
+    durations = payload.get("durations")
+    if not isinstance(durations, dict) or not durations:
+        problems.append("durations map missing or empty")
+        return problems
+    integrity = payload.get("integrity") or {}
+    irreducible = integrity.get("irreducible_files") or {}
+    if not isinstance(irreducible, dict):
+        problems.append("integrity.irreducible_files must be an object")
+        irreducible = {}
+    for path, seconds in durations.items():
+        if not (isinstance(path, str) and path.startswith("tests/") and path.endswith(".py")):
+            problems.append(f"bad duration path {path!r}")
+            continue
+        if not isinstance(seconds, (int, float)) or float(seconds) <= 0:
+            problems.append(f"non-positive duration for {path}")
+            continue
+        # A single-node cost above the per-job wall is irreducible by packing;
+        # it must be documented so CI does not pretend packing will fix it.
+        if float(seconds) > float(MAX_RUN_SECONDS) and path not in irreducible:
+            problems.append(
+                f"{path} is {float(seconds):.1f}s > MAX_RUN_SECONDS={MAX_RUN_SECONDS} "
+                "but is not listed under integrity.irreducible_files"
+            )
+    for path, meta in irreducible.items():
+        if path not in durations:
+            problems.append(f"irreducible_files entry {path} has no durations[] weight")
+            continue
+        if not isinstance(meta, dict) or not str(meta.get("remediation") or "").strip():
+            problems.append(f"irreducible_files[{path}] needs a remediation note")
+    return problems
+
+
 @functools.lru_cache(maxsize=1)
 def _test_file_durations() -> dict[str, float]:
     """Committed per-file wall-clock weights; empty when absent or unreadable.
 
     Duration weights only reorder the shard packing, so a missing or corrupt
     table degrades to the historical count-balanced behaviour instead of
-    failing the run.
+    failing the run. Integrity / staleness is enforced separately via
+    ``_validate_test_duration_payload`` (tests + optional policy checks).
     """
     try:
         payload = json.loads(TEST_DURATIONS_PATH.read_text(encoding="utf-8"))
