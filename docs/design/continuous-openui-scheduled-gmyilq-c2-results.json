@@ -1,0 +1,67 @@
+{
+  "schema": "autotrain_continuous_cycle_results/v1",
+  "loop_id": "continuous-openui-scheduled-gmyilq",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-schedu-a88a1f21-c2",
+  "cycle_index": 2,
+  "source_commit": "bdf143cdcae7416e6eb6f8ef1da4d643f38aa613",
+  "integration_commit": "bdf143cdcae7416e6eb6f8ef1da4d643f38aa613",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "screening",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true,
+    "decode_timeout_seconds": 12.0
+  },
+  "arms": {
+    "control": {
+      "id": "c20260805-continuous-openui-schedu-a88a1f21-c2-control",
+      "trainable_params": 1608962,
+      "exit_code": 2,
+      "measurement_status": "incomplete",
+      "failure": "AgentV SDK evaluation failed with ERR_MODULE_NOT_FOUND on node_modules/typebox/build/typebox.mjs during scripts.evaluate_model --ship-gates"
+    },
+    "canvas": {
+      "id": "c20260805-continuous-openui-schedu-a88a1f21-c2-canvas",
+      "exit_code": 124,
+      "measurement_status": "incomplete",
+      "failure": "arm not executed (campaign stopped after control's harness failure)"
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "measurement_incomplete:c20260805-continuous-openui-schedu-a88a1f21-c2-control:missing_scoreboard",
+      "measurement_incomplete:c20260805-continuous-openui-schedu-a88a1f21-c2-canvas:missing_scoreboard",
+      "harness_failure:c20260805-continuous-openui-schedu-a88a1f21-c2-control:experiment_failed",
+      "executable_unblock_rejected_low_mpr:mpr=0.0",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.32666666666666666 candidate=0.32666666666666666 improvement=0.0"
+    ]
+  },
+  "conclusion": "harness_bug_diagnosed_and_fixed_pending_replay",
+  "finding": "The control arm's --ship-gates eval crashed inside publish_agentv_evaluation with Node ERR_MODULE_NOT_FOUND on node_modules/typebox/build/typebox.mjs. Root cause: this checkout's node_modules had @agentv/core/package.json present (a stale/partial install baked into the sandbox image) but a transitive dependency (typebox) was missing its build output. _agentv_runtime's self-heal reuse check in src/slm_training/evals/agentv.py only checked @agentv/core/package.json existence before trusting an install, so it never re-ran npm ci to repair the drift. Manually running `npm ci` at the repo root fixed the immediate environment for this session, but the harness bug (false-positive 'already installed' check) would recur in any other checkout with a similarly stale node_modules. Fixed in commit 9a53ea83c4265629f50bcb490f3abfb142059a8c (evals.agentv v9 -> v10): cross-check node_modules/.package-lock.json against package-lock.json for every non-optional package before reusing an existing install (optional platform-mismatched deps, e.g. darwin/win32 binaries on this linux-x64 sandbox, are excluded since npm legitimately skips those). Added two regression tests (drifted-install-triggers-bootstrap, optional-deps-tolerated) plus updated the four pre-existing runtime tests whose fixtures previously only set up @agentv/core/package.json without a matching lockfile marker; all 14 tests in tests/test_evals/test_agentv.py pass.",
+  "harness_signal": {
+    "family": "model_build",
+    "status": "repaired_pending_replay",
+    "fix_commit": "9a53ea83c4265629f50bcb490f3abfb142059a8c",
+    "frozen_manifest_sha256": "1f375b5890b625b99fad3254e883cc905c3a2665cbdf9d468769b6287e3cc21d"
+  },
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "infrastructure",
+      "hypothesis": "The measurement is incomplete; replay the exact frozen control and candidate before testing a new model hypothesis.",
+      "action": "retry_measurement",
+      "experiment_id": "c20260805-continuous-openui-schedu-a88a1f21-c2-canvas"
+    }
+  ],
+  "recorded_at": "2026-08-05T06:35:24Z"
+}
