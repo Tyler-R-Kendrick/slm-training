@@ -17,10 +17,15 @@ Human re-prompt is not a control plane for thrash bank or harness park.
 
 | Trigger | Heal | Artifact / log |
 | --- | --- | --- |
-| Static thrash bank multi-seed empty | Compose size-matched lever-pair successors | `loops/<id>/dynamic_thrash_arms.jsonl`, `SELF_HEAL_BANK_EXHAUST` |
+| Static thrash bank multi-seed empty | Compose size-matched lever-pair successors **and** rewrite handoff `repair_harness`→`next_experiment` | `loops/<id>/dynamic_thrash_arms.jsonl`, `SELF_HEAL_BANK_EXHAUST`, `SELF_HEAL_BANK_EXHAUST_REPAIR` |
 | Causal CAP empties multi-seed-open set | Drop CAP skips | `THRASH_CAUSAL_CAP_RELAX` |
 | Bank empty + promote head | Promote fallback | `BANK_EXHAUST_PROMOTE_FALLBACK` |
 | Harness park + new integration tip | Rearm champion | `CHAMPION_HARNESS_RETRY` |
+| Ordinary `document` closeout unacked | Write + commit + ack continuous results | `SELF_HEAL_DOCUMENT` |
+| Continuous-only dirty tree | Auto-commit closeout paths | `SELF_HEAL_DIRTY_TREE` |
+| Thrash wall/decode timeout residual | Rewrite `repair_harness`→`next_experiment` | `SELF_HEAL_THRASH_TIMEOUT_REPAIR` |
+| Worktree not ancestor of origin/main | `git fetch` + `merge origin/main` | `SELF_HEAL_GIT_ANCESTRY` |
+| Incomplete merge (`MERGE_HEAD` / `UU`) | Prefer main for harness, ours for closeout; commit | `SELF_HEAL_INCOMPLETE_MERGE` |
 | Cycle error healable | Clear BLOCKED, continue | `SELF_HEAL continue kind=…` |
 | Startup state BLOCKED + healable | Clear blocker before first cycle | `SELF_HEAL_CLEAR_BLOCKER` |
 

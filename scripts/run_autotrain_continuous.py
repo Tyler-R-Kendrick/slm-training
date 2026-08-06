@@ -1595,6 +1595,117 @@ def _delivery_is_thrash_timeout_residual(
     )
 
 
+def _merge_head_path(cwd: Path) -> Path | None:
+    """Return MERGE_HEAD path when a merge is in progress, else None."""
+    try:
+        rel = subprocess.check_output(
+            ["git", "rev-parse", "--git-path", "MERGE_HEAD"],
+            cwd=cwd,
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+    except (subprocess.CalledProcessError, OSError):
+        return None
+    if not rel:
+        return None
+    path = Path(rel)
+    if not path.is_absolute():
+        path = cwd / path
+    return path if path.is_file() else None
+
+
+def _unmerged_paths(
+    cwd: Path,
+    *,
+    root: Path | None = None,
+    loop_id: str | None = None,
+) -> list[str]:
+    git_kw: dict[str, Any] = {"cwd": cwd}
+    if root is not None and loop_id is not None:
+        git_kw.update(root=root, loop_id=loop_id)
+    try:
+        out = _git(
+            "diff",
+            "--name-only",
+            "--diff-filter=U",
+            stage="self-heal-unmerged-list" if root is not None else None,
+            **git_kw,
+        )
+    except Exception:  # noqa: BLE001
+        return []
+    return [p.strip() for p in out.splitlines() if p.strip()]
+
+
+def _self_heal_incomplete_merge(
+    *,
+    cwd: Path,
+    root: Path,
+    loop_id: str,
+) -> str | None:
+    """Finish interrupted origin/main merges that freeze thrash as foreign_dirty.
+
+    Agents often ``git merge origin/main`` into the live continuous worktree to
+    land self-heal driver fixes; version-registry conflicts leave ``UU`` paths
+    and the supervisor hard-backs-off forever. That is soft thrash dirt, not a
+    human control plane.
+
+    Policy (merge in progress only — never invent a merge):
+    - continuous closeout docs keep *ours* (loop-local evidence)
+    - every other unmerged path takes *theirs* (incoming origin/main harness)
+    - then ``git commit`` to complete the merge
+    """
+    if _merge_head_path(cwd) is None:
+        return None
+    unmerged = _unmerged_paths(cwd, root=root, loop_id=loop_id)
+    try:
+        for rel in unmerged:
+            side = "--ours" if _is_continuous_closeout_path(rel) else "--theirs"
+            _run(
+                ["git", "checkout", side, "--", rel],
+                cwd=cwd,
+                root=root,
+                loop_id=loop_id,
+                stage="self-heal-merge-checkout",
+            )
+            _run(
+                ["git", "add", "--", rel],
+                cwd=cwd,
+                root=root,
+                loop_id=loop_id,
+                stage="self-heal-merge-add",
+            )
+        # Re-check; refuse to commit if anything still unmerged.
+        still = _unmerged_paths(cwd, root=root, loop_id=loop_id)
+        if still:
+            print(
+                f"SELF_HEAL_INCOMPLETE_MERGE_HARD still_unmerged={still[:8]}",
+                flush=True,
+            )
+            return None
+        _run(
+            [
+                "git",
+                "commit",
+                "--no-edit",
+                "-m",
+                "self-heal: complete origin/main merge for continuous thrash",
+            ],
+            cwd=cwd,
+            root=root,
+            loop_id=loop_id,
+            stage="self-heal-merge-commit",
+        )
+        print(
+            f"SELF_HEAL_INCOMPLETE_MERGE resolved={unmerged or ['clean']} "
+            "reason=prefer_origin_main_for_non_closeout",
+            flush=True,
+        )
+        return "git_merge_complete"
+    except Exception as heal_exc:  # noqa: BLE001
+        print(f"SELF_HEAL_INCOMPLETE_MERGE_FAIL err={heal_exc!r}", flush=True)
+        return None
+
+
 def _self_heal_git_ancestry(
     *,
     cwd: Path,
@@ -1606,7 +1717,8 @@ def _self_heal_git_ancestry(
 
     Continuous worktrees accumulate exclusive commits; after main advances they
     fail ``git merge-base --is-ancestor origin/main HEAD``. Heal by fetching and
-    merging origin/main so thrash can continue without a human.
+    merging origin/main so thrash can continue without a human. Merge conflicts
+    are finished by ``_self_heal_incomplete_merge`` (prefer main for harness).
     """
     message = str(exc)
     cmd_text = ""
@@ -1623,15 +1735,28 @@ def _self_heal_git_ancestry(
             loop_id=loop_id,
             stage="self-heal-ancestry-fetch",
         )
-        _run(
-            ["git", "merge", "--no-edit", "origin/main"],
-            cwd=cwd,
-            root=root,
-            loop_id=loop_id,
-            stage="self-heal-ancestry-merge",
-        )
-        print("SELF_HEAL_GIT_ANCESTRY merged origin/main", flush=True)
-        return "git_ancestry_merge"
+        try:
+            _run(
+                ["git", "merge", "--no-edit", "origin/main"],
+                cwd=cwd,
+                root=root,
+                loop_id=loop_id,
+                stage="self-heal-ancestry-merge",
+            )
+            print("SELF_HEAL_GIT_ANCESTRY merged origin/main", flush=True)
+            return "git_ancestry_merge"
+        except Exception as merge_exc:  # noqa: BLE001
+            finished = _self_heal_incomplete_merge(
+                cwd=cwd, root=root, loop_id=loop_id
+            )
+            if finished:
+                print(
+                    "SELF_HEAL_GIT_ANCESTRY merged origin/main via conflict resolve",
+                    flush=True,
+                )
+                return finished
+            print(f"SELF_HEAL_GIT_ANCESTRY_FAIL err={merge_exc!r}", flush=True)
+            return None
     except Exception as heal_exc:  # noqa: BLE001
         print(f"SELF_HEAL_GIT_ANCESTRY_FAIL err={heal_exc!r}", flush=True)
         return None
@@ -1648,19 +1773,6 @@ def _exception_is_soft_continuous(exc: BaseException) -> bool:
         if "merge-base" in cmd or "is-ancestor" in cmd:
             return True
     message = str(exc)
-    soft_markers = (
-        "unacknowledged actions",
-        "loop worktree is dirty",
-        "unacknowledged actions: ",
-        ":document",
-        "repair_harness",  # may still be hard; soft only if healable residual
-        "frozen replay",
-        "missing_control_manifest",
-        "campaign already exists with different spec",
-        "conflicts with supplied feedback",
-        "screening arm bank exhausted",
-        _BANK_EXHAUST_MSG,
-    )
     # Document / dirty / thrash residual / soft identity are soft.
     if "unacknowledged actions" in message and ":document" in message:
         return True
@@ -2587,12 +2699,23 @@ def self_heal_unblock_loop(
           "predecessor_campaign_id": str | None,
         }
 
-    Soft: document, continuous-only dirt, thrash timeout residual repair_harness,
-    bank exhaust. Hard: true harness crash, formal, deliver_stack, foreign dirt.
+    Soft: incomplete origin/main merge, document, continuous-only dirt, thrash
+    timeout residual repair_harness, bank exhaust. Hard: true harness crash,
+    formal, deliver_stack, foreign dirt (non-merge WIP).
     """
     soft_healed: list[str] = []
     hard_pending: list[dict[str, Any]] = []
     pred = campaign_id or _latest_cycle(root, loop_id)[1]
+
+    # 0) Incomplete merge (UU) from landing origin/main into the thrash worktree.
+    try:
+        merge_kind = _self_heal_incomplete_merge(
+            cwd=cwd, root=root, loop_id=loop_id
+        )
+        if merge_kind:
+            soft_healed.append(merge_kind)
+    except Exception as exc:  # noqa: BLE001
+        print(f"SELF_HEAL_UNBLOCK merge_warn={exc!r}", flush=True)
 
     # 1) Hygiene — continuous-only dirty tree.
     try:

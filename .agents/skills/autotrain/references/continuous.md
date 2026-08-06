@@ -56,6 +56,11 @@ persistence is the host goal and the append-only campaign event chains.
      `repair_harness` → `next_experiment` (`SELF_HEAL_BANK_EXHAUST_REPAIR`).
      Compose alone is not enough: the handoff prereq must be retired.
      Hard-stop only when no untried size-matched compose pairs remain.
+   - **incomplete `origin/main` merge (`UU` / MERGE_HEAD)** → finish the merge
+     in-process (`SELF_HEAL_INCOMPLETE_MERGE`): prefer origin/main (*theirs*)
+     for harness/code paths, keep *ours* for continuous closeout docs, commit.
+     Ancestry merge failures that leave conflicts use the same path. Never
+     leave the live thrash worktree mid-merge as a human re-prompt.
    - **Never auto-ack real** `repair_formal`, `rebuild_data`, `stop_campaign`,
      or `deliver_stack`. **Never fake** a harness repair commit for true
      harness crashes (missing AgentV, import errors). Those stay hard until
@@ -127,10 +132,12 @@ is expected and not evidence of a lever regression.
 
 ### Preferred hands-off supervisor (in-repo)
 
-**Soft thrash unblock is driver law** via `self_heal_unblock_loop` (document,
-continuous-only dirt, thrash wall/decode timeout residual, bank exhaust). Do
-**not** use ad-hoc `/tmp` bash supervisors or ask the user to “document and
-restart.”
+**Soft thrash unblock is driver law** via `self_heal_unblock_loop` (incomplete
+origin/main merge, document, continuous-only dirt, thrash wall/decode timeout
+residual, bank exhaust compose+rewrite). Do **not** use ad-hoc `/tmp` bash
+supervisors or ask the user to “document / resolve conflicts / restart.”
+Deploying driver fixes into the live worktree must be a complete merge of
+`origin/main` — never leave `UU` paths; the driver finishes that merge itself.
 
 ```bash
 # local-only continuous loop worktree
