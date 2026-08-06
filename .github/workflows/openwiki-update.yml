@@ -1,9 +1,10 @@
 name: OpenWiki Update
 
+# Hosted Actions minutes disabled for the daily schedule (2026-08-06).
+# Run manually via workflow_dispatch when needed; see
+# docs/design/ci-minutes-and-speed-plan-20260806.md.
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "0 8 * * *"
 
 permissions:
   contents: write

@@ -1,9 +1,14 @@
 name: CI
 
+# Hosted GitHub Actions minutes are disabled for automatic PR/main triggers
+# (2026-08-06). Each automatic run was billing ~31 runner-minutes (12 python
+# shards alone reinstall torch+deps). Re-enable only after the optimization
+# plan lands: docs/design/ci-minutes-and-speed-plan-20260806.md
+#
+# Local gate remains authoritative: .githooks/check-changed +
+# python -m scripts.check_changed / repo_policy / verify_version_stamps.
 on:
-  push:
-    branches: [main]
-  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
