@@ -792,9 +792,3 @@ tests/
   test_runtime/        # accel / cactus / compression
   test_models/ test_data/ test_web/ ...
 ```
-
-## Continuous autotrain note (2026-08-06)
-
-- campaign: `cycle-1`
-- checkpoints: `runs/cand/last.pt`
-- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
