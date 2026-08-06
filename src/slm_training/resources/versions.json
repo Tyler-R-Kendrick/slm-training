@@ -2757,7 +2757,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v188",
+      "version": "v189",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2786,6 +2786,7 @@
         "docs/design/autotrain-cycle-1729-binder-topology-capacity-audit.md",
         "docs/design/adversarial-review.md",
         "docs/design/authoritative-credit-one-shot-agent-prompt.md",
+        "docs/design/autotrain-self-heal-pipeline-20260803.md",
         "tests/test_autoresearch/test_experiment_campaign.py",
         "tests/test_autoresearch/test_hillclimb.py",
         "tests/test_autoresearch/test_climb_policy.py",
@@ -2802,6 +2803,11 @@
         "tests/test_autoresearch/test_thrash_regime.py"
       ],
       "history": [
+        {
+          "version": "v189",
+          "date": "2026-08-06",
+          "note": "self-heal incomplete origin/main merge (MERGE_HEAD/UU): prefer main for harness, ours for continuous closeout; ancestry merge failures finish via same path so deploy dirt never freezes thrash"
+        },
         {
           "version": "v188",
           "date": "2026-08-06",

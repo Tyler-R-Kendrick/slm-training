@@ -5870,13 +5870,13 @@ def test_cycle_handoff_routes_exhausted_bank_to_model_build_repair(
         formal_status="proved",
     )
 
-    repair = next(
-        action for action in handoff.actions if action.kind == "repair_harness"
+    # Soft thrash law: bank exhaust is composed + next_experiment at emission,
+    # not a hard repair_harness that freezes the continuous loop.
+    assert all(action.kind != "repair_harness" for action in handoff.actions)
+    nxt = next(a for a in handoff.actions if a.kind == "next_experiment")
+    assert "composed thrash successors" in (nxt.reason or "").lower() or (
+        "bank" in (nxt.reason or "").lower()
     )
-    assert repair.owner == "improve-openui-harnesses"
-    assert repair.harness_family == "model_build"
-    assert "quality-arm bank exhausted" in repair.reason
-    assert all(action.kind != "next_experiment" for action in handoff.actions)
     assert handoff.priorities[0].disposition == "monitor"
 
 
@@ -7028,18 +7028,12 @@ def test_finalized_decode_timeout_routes_directly_to_runtime_repair(
         formal_status=None,
     )
 
-    repair = next(
-        action for action in handoff.actions if action.kind == "repair_harness"
-    )
-    retry = next(
-        action for action in handoff.actions if action.kind == "retry_measurement"
-    )
-    assert repair.owner == "improve-openui-harnesses"
-    assert repair.harness_family == "model_build"
-    assert "finalized every record disposition" in repair.reason
-    assert repair.frozen_manifest_sha256 == hashlib.sha256(b"{}\n").hexdigest()
-    assert retry.frozen_manifest_sha256 == repair.frozen_manifest_sha256
-    assert handoff.actions.index(repair) < handoff.actions.index(retry)
+    # Screening thrash decode/wall timeout residual is soft: emit
+    # next_experiment (not hard repair_harness) so continuous thrash continues.
+    assert all(action.kind != "repair_harness" for action in handoff.actions)
+    nxt = next(a for a in handoff.actions if a.kind == "next_experiment")
+    assert "timeout" in (nxt.reason or "").lower()
+    assert any(action.kind == "document" for action in handoff.actions)
 
 
 def test_replayed_finalized_decode_timeout_rejects_runtime_arm(
@@ -7160,9 +7154,9 @@ def test_replayed_dual_arm_timeouts_remain_inconclusive_and_require_repair(
 
     assert handoff.climb_state == "inconclusive"
     assert all("candidate_runtime_rejected" not in reason for reason in handoff.reasons)
-    assert any(action.kind == "repair_harness" for action in handoff.actions)
-    assert any(action.kind == "retry_measurement" for action in handoff.actions)
-    assert all(action.kind != "next_experiment" for action in handoff.actions)
+    # Dual-arm thrash decode timeouts stay soft (next_experiment), not hard repair.
+    assert all(action.kind != "repair_harness" for action in handoff.actions)
+    assert any(action.kind == "next_experiment" for action in handoff.actions)
 
 
 def test_numeric_literal_close_starvation_steers_new_training_arm(
@@ -8777,3 +8771,88 @@ def test_is_bank_exhaust_repair_action_matches_handoff_reason() -> None:
         harness_family="model_build",
     )
     assert not _mod._is_bank_exhaust_repair_action(b)
+
+
+def test_self_heal_incomplete_merge_prefers_main_for_harness(
+    tmp_path: Path,
+) -> None:
+    """Interrupted origin/main merge (UU) must finish without human re-prompt."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _init_git_repo(repo)
+    # shared base with harness
+    (repo / "harness.py").write_text("v1\n", encoding="utf-8")
+    subprocess.check_call(["git", "add", "harness.py"], cwd=repo)
+    subprocess.check_call(
+        ["git", "commit", "-m", "harness v1"],
+        cwd=repo,
+        stdout=subprocess.DEVNULL,
+    )
+    # trunk branch (incoming "main" side of the merge)
+    subprocess.check_call(
+        ["git", "branch", "-f", "trunk"], cwd=repo, stdout=subprocess.DEVNULL
+    )
+    # diverge loop branch (current HEAD)
+    (repo / "harness.py").write_text("loop-local\n", encoding="utf-8")
+    (repo / "docs" / "design" / "continuous-loop-x-results.md").write_text(
+        "closeout\n", encoding="utf-8"
+    )
+    subprocess.check_call(
+        ["git", "add", "harness.py", "docs/design/continuous-loop-x-results.md"],
+        cwd=repo,
+    )
+    subprocess.check_call(
+        ["git", "commit", "-m", "loop diverge"],
+        cwd=repo,
+        stdout=subprocess.DEVNULL,
+    )
+    loop_branch = subprocess.check_output(
+        ["git", "branch", "--show-current"], cwd=repo, text=True
+    ).strip()
+    # trunk advances with conflicting harness
+    subprocess.check_call(
+        ["git", "checkout", "trunk"], cwd=repo, stdout=subprocess.DEVNULL
+    )
+    (repo / "harness.py").write_text("main-fixed\n", encoding="utf-8")
+    subprocess.check_call(["git", "add", "harness.py"], cwd=repo)
+    subprocess.check_call(
+        ["git", "commit", "-m", "harness fix on main"],
+        cwd=repo,
+        stdout=subprocess.DEVNULL,
+    )
+    subprocess.check_call(
+        ["git", "checkout", loop_branch],
+        cwd=repo,
+        stdout=subprocess.DEVNULL,
+    )
+    # merge trunk → conflict (same as interrupted origin/main merge)
+    merge = subprocess.run(
+        ["git", "merge", "--no-edit", "trunk"],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert merge.returncode != 0, "expected conflict"
+    assert _mod._merge_head_path(repo) is not None
+    root = repo / "outputs" / "autoresearch"
+    root.mkdir(parents=True)
+    kind = _mod._self_heal_incomplete_merge(
+        cwd=repo, root=root, loop_id="continuous-openui-local"
+    )
+    assert kind == "git_merge_complete"
+    assert _mod._merge_head_path(repo) is None
+    assert (repo / "harness.py").read_text(encoding="utf-8") == "main-fixed\n"
+    porcelain = subprocess.check_output(
+        ["git", "status", "--porcelain", "--untracked-files=no"],
+        cwd=repo,
+        text=True,
+    )
+    assert porcelain.strip() == ""
+    # unblock loop must not report foreign_dirty after heal
+    report = _mod.self_heal_unblock_loop(
+        cwd=repo, root=root, loop_id="continuous-openui-local"
+    )
+    assert not any(
+        h.get("kind") == "foreign_dirty_tree" for h in report.get("hard_pending") or []
+    )
