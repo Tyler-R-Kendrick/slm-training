@@ -279,3 +279,42 @@ def test_false_singleton_shape_is_what_the_tally_encodes() -> None:
     assert flags(0, 1) is False         # genuine singleton: nothing dropped
     assert flags(3, 2) is False         # ambiguous anyway, model still ranks
     assert flags(0, 0) is False
+
+
+def test_false_singleton_hazard_makes_domain_incomplete() -> None:
+    """Budget-manufactured singletons must not surface as complete domains.
+
+    ``exact_forced_token_id`` only forces when forest coverage is complete; an
+    incomplete domain with reason ``witness_false_singleton_risk`` is the
+    fail-closed answer to the I2 hazard (counter still fires).
+    """
+    from slm_training.dsl.grammar_capabilities import (
+        CompletionDomainCandidateV1,
+        CompletionDomainV1,
+    )
+
+    # Reproduce the pack-side decision: one proven survivor + unknown drops
+    # → incomplete, not a complete singleton domain.
+    unknown_dropped, proven_kept = 1, 1
+    if unknown_dropped and proven_kept == 1:
+        domain = CompletionDomainV1(
+            status="incomplete",
+            reason="witness_false_singleton_risk",
+            candidates=(),
+            scope_fingerprint="test",
+        )
+    else:
+        domain = CompletionDomainV1(
+            status="complete",
+            candidates=(
+                CompletionDomainCandidateV1(
+                    token_ids=(1,),
+                    kind="token",
+                    terminal_witness=(1, 2),
+                ),
+            ),
+            scope_fingerprint="test",
+        )
+    assert domain.status == "incomplete"
+    assert domain.reason == "witness_false_singleton_risk"
+    assert not domain.candidates

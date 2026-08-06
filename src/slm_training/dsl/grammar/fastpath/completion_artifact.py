@@ -466,11 +466,14 @@ def _state_min_terminals(
 class StaticLalrAdapter:
     """Executable shift/reduce over the certified control arrays.
 
-    This is a *checked* adapter, never an authority: it is import-only until a
+    This is a *checked* adapter, never an authority: it is usable only after a
     lockstep certification against the live Lark ``InteractiveParser`` passes
-    (see ``static_control_domain.require_certified_static_lalr``).  Nothing in
-    the decode path consumes it.  ``$END`` follows Lark's end handling: the
-    reduction chain runs until the end state is exposed.
+    (see ``static_control_domain.require_certified_static_lalr``).  The decode
+    path may consume ``min_terminals`` as a **negative-direction** prune inside
+    ``completion_kernel.terminal_witness`` (reject when room is strictly below
+    the certified lower bound); Lark remains the live parser authority.
+    ``$END`` follows Lark's end handling: the reduction chain runs until the
+    end state is exposed.
     """
 
     symbols: tuple[str, ...]

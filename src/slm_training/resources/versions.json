@@ -1168,7 +1168,7 @@
       ]
     },
     "dsl.completion_kernel": {
-      "version": "v20",
+      "version": "v21",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/grammar/fastpath/engine.py",
@@ -1193,9 +1193,15 @@
         "src/slm_training/dsl/grammar/fastpath/residual_support.py",
         "tests/test_dsl/test_static_control_domain.py",
         "tests/test_dsl/test_residual_support.py",
-        "docs/design/adr-constrained-diffusion-topology-split.md"
+        "docs/design/adr-constrained-diffusion-topology-split.md",
+        "docs/design/hybrid-unmask-hx5-20260804.md"
       ],
       "history": [
+        {
+          "version": "v21",
+          "date": "2026-08-05",
+          "note": "Consume certified StaticLalrAdapter.min_terminals in completion_kernel.terminal_witness as a negative-direction prune (UNSUPPORTED when room < bound). Counter min_terminals_prunes. Adapter is no longer import-only; Lark remains live authority."
+        },
         {
           "version": "v20",
           "date": "2026-08-04",
@@ -1354,14 +1360,21 @@
       ]
     },
     "dsl.operators.registry": {
-      "version": "v12",
+      "version": "v13",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/registry.py",
         "src/slm_training/dsl/pack.py",
-        "tests/test_dsl/test_operator_registry.py"
+        "tests/test_dsl/test_operator_registry.py",
+        "docs/design/false-singleton-and-shard-makespan-20260804.md",
+        "tests/test_models/test_decode_stats.py"
       ],
       "history": [
+        {
+          "version": "v13",
+          "date": "2026-08-05",
+          "note": "Fail closed on witness false-singleton risk: when UNKNOWN drops leave exactly one proven candidate, completion domain status becomes incomplete with reason witness_false_singleton_risk so I2 exact_forced cannot commit a budget-manufactured singleton. Counter still fires."
+        },
         {
           "version": "v12",
           "date": "2026-08-04",
