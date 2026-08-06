@@ -1238,6 +1238,13 @@ _BANK_EXHAUST_MSG = (
     "registered screening arm bank exhausted; add a distinct preregistered "
     "quality objective instead of recycling a rejected approach"
 )
+# Handoff reasons use "quality-arm bank"; runtime uses "screening arm bank".
+_BANK_EXHAUST_MARKERS = (
+    "quality-arm bank exhausted",
+    "screening arm bank exhausted",
+    "arm bank exhausted",
+    "registered quality-arm bank is exhausted",
+)
 # Loop-local thrash successors synthesized when the static bank is multi-seed
 # exhausted. Persistent under loops/<id>/dynamic_thrash_arms.jsonl so the
 # continuous driver self-heals without a human re-prompt.
@@ -1660,8 +1667,10 @@ def _exception_is_soft_continuous(exc: BaseException) -> bool:
     if "loop worktree is dirty" in message:
         return True
     if "unacknowledged actions" in message and "repair_harness" in message:
-        # Soft until proven hard: thrash residual heal will clear; true AgentV
-        # hard cases re-raise after unblock reports hard_pending.
+        # Soft until proven hard: thrash residual / bank-exhaust heal will clear;
+        # true AgentV hard cases re-raise after unblock reports hard_pending.
+        return True
+    if any(m in message.lower() for m in _BANK_EXHAUST_MARKERS):
         return True
     if any(
         m in message
@@ -1677,6 +1686,136 @@ def _exception_is_soft_continuous(exc: BaseException) -> bool:
     ):
         return True
     return False
+
+
+def _is_bank_exhaust_repair_action(action: AutotrainActionV1) -> bool:
+    """True when repair_harness is thrash bank exhaust (soft if compose can reopen)."""
+    if action.kind != "repair_harness":
+        return False
+    reason = str(action.reason or "").lower()
+    return any(m in reason for m in _BANK_EXHAUST_MARKERS)
+
+
+def _self_heal_bank_exhaust_repair(
+    *,
+    cwd: Path,
+    root: Path,
+    loop_id: str,
+    campaign_id: str | None,
+    integration_commit: str | None = None,
+) -> str | None:
+    """Compose thrash successors and retire bank-exhaust repair_harness.
+
+    Compose alone is not enough: the predecessor handoff still blocks on
+    repair_harness until rewritten to next_experiment. Returns None when no
+    open arms remain after compose (true hard stop).
+    """
+    if not campaign_id:
+        return None
+    handoff_path = root / campaign_id / "cycle_handoff.json"
+    if not handoff_path.is_file():
+        return None
+    handoff = AutotrainCycleHandoffV1.model_validate_json(
+        handoff_path.read_text(encoding="utf-8")
+    )
+    if handoff.loop_id != loop_id or handoff.campaign_id != campaign_id:
+        return None
+    pending = list(pending_autotrain_actions(root, handoff))
+    bank_pending = [
+        (i, a) for i, a in pending if _is_bank_exhaust_repair_action(a)
+    ]
+    if not bank_pending:
+        return None
+    other_hard = [
+        (i, a)
+        for i, a in pending
+        if a.kind in _HARD_PREREQUISITE_ACTION_KINDS
+        and not _is_bank_exhaust_repair_action(a)
+        and a.kind != "document"
+    ]
+    if other_hard:
+        return None
+
+    closed = _recent_completed_nonpositive_slugs(root, campaign_id)
+    entries = _load_champion_queue(_champion_queue_path(root, loop_id))
+    if integration_commit:
+        _reopen_harness_blocked_champions(
+            root, entries, integration_commit=integration_commit
+        )
+        _write_champion_queue(_champion_queue_path(root, loop_id), entries)
+    skip = _skip_arm_slugs(
+        entries, integration_commit=integration_commit, include_causal_cap=False
+    )
+    opened = _self_heal_thrash_bank_exhaust(
+        root, loop_id, closed=closed, skip=skip | closed
+    )
+    if not opened:
+        print(
+            f"SELF_HEAL_BANK_EXHAUST_HARD campaign={campaign_id} "
+            "reason=no_untried_size_matched_compose_pairs",
+            flush=True,
+        )
+        return None
+
+    evidence_id = f"campaign:{campaign_id}"
+    kept: list[AutotrainActionV1] = []
+    for action in handoff.actions:
+        if action.kind == "repair_harness" and _is_bank_exhaust_repair_action(action):
+            continue
+        if action.kind == "retry_measurement":
+            continue
+        kept.append(action)
+    if not any(a.kind == "document" for a in kept):
+        kept.insert(
+            0,
+            AutotrainActionV1(
+                kind="document",
+                owner="documenting-experiment-results",
+                reason="persist thrash bank-exhaust closeout under docs/design",
+                evidence_ids=(evidence_id,),
+            ),
+        )
+    if not any(a.kind == "next_experiment" for a in kept):
+        kept.append(
+            AutotrainActionV1(
+                kind="next_experiment",
+                owner="autotrain",
+                reason=(
+                    "consume composed thrash successors after static quality-arm "
+                    "bank exhaust (continuous self-heal; not a model attribution)"
+                ),
+                evidence_ids=(evidence_id,),
+            )
+        )
+    rebuilt = handoff.model_copy(
+        update={
+            "actions": tuple(kept),
+            "reasons": tuple(
+                list(handoff.reasons)
+                + ["self_heal:bank_exhaust_compose→next_experiment"]
+            ),
+        }
+    )
+    handoff_path.write_text(
+        rebuilt.model_dump_json(indent=2) + "\n", encoding="utf-8"
+    )
+    print(
+        f"SELF_HEAL_BANK_EXHAUST_REPAIR campaign={campaign_id} "
+        f"actions={[a.kind for a in rebuilt.actions]}",
+        flush=True,
+    )
+    doc_kind = _self_heal_document_actions(
+        cwd=cwd, root=root, loop_id=loop_id, campaign_id=campaign_id
+    )
+    pending_after = pending_autotrain_actions(root, rebuilt)
+    hard_after = [
+        (i, a)
+        for i, a in pending_after
+        if a.kind in _HARD_PREREQUISITE_ACTION_KINDS
+    ]
+    if hard_after:
+        return None
+    return doc_kind or "bank_exhaust_compose"
 
 
 def _self_heal_thrash_timeout_repair(
@@ -1827,6 +1966,15 @@ def _self_heal_cycle_error(
         )
         if timeout_kind:
             return timeout_kind
+        bank_kind = _self_heal_bank_exhaust_repair(
+            cwd=work_cwd,
+            root=root,
+            loop_id=loop_id,
+            campaign_id=pred,
+            integration_commit=integration_commit,
+        )
+        if bank_kind:
+            return bank_kind
         kind = _self_heal_closeout_blockers(
             cwd=work_cwd, root=root, loop_id=loop_id, campaign_id=pred
         )
@@ -2035,11 +2183,18 @@ def _is_foreign_dirty_path(rel: str) -> bool:
 
 
 def _porcelain_paths(porcelain: str) -> list[str]:
+    """Parse ``git status --porcelain`` paths robustly (XY + space + path)."""
     paths: list[str] = []
     for line in porcelain.splitlines():
         if not line.strip():
             continue
-        body = line[3:] if len(line) >= 3 else line
+        # Standard format: two-char XY, space, path (optional rename "a -> b").
+        if len(line) >= 4 and line[2] == " ":
+            body = line[3:]
+        else:
+            # Fallback: first space-separated field after status token.
+            parts = line.split(" ", 1)
+            body = parts[1] if len(parts) > 1 else line
         if " -> " in body:
             body = body.split(" -> ", 1)[1]
         path = body.strip().strip('"')
@@ -2485,6 +2640,20 @@ def self_heal_unblock_loop(
     except Exception as exc:  # noqa: BLE001
         print(f"SELF_HEAL_UNBLOCK timeout_warn={exc!r}", flush=True)
 
+    # 2b) Quality-arm bank exhaust repair_harness → compose + next_experiment.
+    try:
+        bank_kind = _self_heal_bank_exhaust_repair(
+            cwd=cwd,
+            root=root,
+            loop_id=loop_id,
+            campaign_id=pred,
+            integration_commit=integration_commit,
+        )
+        if bank_kind:
+            soft_healed.append(bank_kind)
+    except Exception as exc:  # noqa: BLE001
+        print(f"SELF_HEAL_UNBLOCK bank_repair_warn={exc!r}", flush=True)
+
     # 3) Document closeout.
     try:
         doc_kind = _self_heal_document_actions(
@@ -2553,6 +2722,20 @@ def self_heal_unblock_loop(
                     if action.kind == "repair_harness":
                         if _delivery_is_thrash_timeout_residual(delivery, handoff):
                             # Should have been healed; treat residual as soft miss.
+                            continue
+                        if _is_bank_exhaust_repair_action(action):
+                            # Compose failed or rewrite missed — typed hard stop.
+                            hard_pending.append(
+                                {
+                                    "campaign_id": pred,
+                                    "index": index,
+                                    "kind": "repair_harness",
+                                    "reason": (
+                                        "bank_exhaust_no_successors: "
+                                        + str(action.reason or "arm bank exhausted")
+                                    ),
+                                }
+                            )
                             continue
                         hard_pending.append(
                             {
@@ -8017,19 +8200,45 @@ def _write_cycle_handoff(
             for priority in priorities
         )
     ):
-        actions.insert(
-            0,
-            AutotrainActionV1(
-                kind="repair_harness",
-                owner="improve-openui-harnesses",
-                reason=(
-                    "registered quality-arm bank exhausted; preregister and wire "
-                    "a distinct size-matched model-build objective before the next run"
-                ),
-                evidence_ids=(evidence_id,),
-                harness_family="model_build",
-            ),
+        # Prefer compose thrash successors over hard repair_harness so continuous
+        # thrash never freezes waiting for a human to "preregister an objective".
+        closed = _recent_completed_nonpositive_slugs(root, campaign_id)
+        entries = _load_champion_queue(_champion_queue_path(root, loop_id))
+        skip = _skip_arm_slugs(
+            entries,
+            integration_commit=integration_commit or None,
+            include_causal_cap=False,
         )
+        composed = _self_heal_thrash_bank_exhaust(
+            root, loop_id, closed=closed, skip=skip | closed
+        )
+        if composed:
+            actions.append(
+                AutotrainActionV1(
+                    kind="next_experiment",
+                    owner="autotrain",
+                    reason=(
+                        "static quality-arm bank was empty; consume composed thrash "
+                        "successors (continuous self-heal)"
+                    ),
+                    evidence_ids=(evidence_id,),
+                )
+            )
+        else:
+            actions.insert(
+                0,
+                AutotrainActionV1(
+                    kind="repair_harness",
+                    owner="improve-openui-harnesses",
+                    reason=(
+                        "registered quality-arm bank exhausted; no untried "
+                        "size-matched compose pairs remain — preregister and wire "
+                        "a distinct model-build objective before the next run"
+                    ),
+                    evidence_ids=(evidence_id,),
+                    harness_family="model_build",
+                ),
+            )
     else:
         actions.append(
             AutotrainActionV1(
@@ -11434,6 +11643,10 @@ def main(argv: list[str] | None = None) -> int:
                                 "dirty_tree_closeout",
                                 "thrash_timeout_repair_bypass",
                                 "thrash_bank_compose",
+<<<<<<< HEAD
+                                "bank_exhaust_compose",
+=======
+>>>>>>> origin/main
                             }
                             for k in (report.get("soft_healed") or [])
                         )
@@ -11443,6 +11656,10 @@ def main(argv: list[str] | None = None) -> int:
                             or "repair_harness" in str(exc)
                             or "bank" in str(exc).lower()
                             or _BANK_EXHAUST_MSG in str(exc)
+<<<<<<< HEAD
+                            or any(m in str(exc).lower() for m in _BANK_EXHAUST_MARKERS)
+=======
+>>>>>>> origin/main
                         )
                     )
                 )
