@@ -8340,3 +8340,204 @@ def test_load_frozen_replay_skips_missing_control_manifest(
     )
     result = _mod._load_frozen_replay(root, loop, campaign_id)
     assert result is None
+
+
+def test_self_heal_thrash_timeout_repair_bypasses_blocking_repair(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _init_git_repo(repo)
+    root = repo / "outputs" / "autoresearch"
+    loop_id = "continuous-openui-local"
+    campaign_id = "continuous-loop-test-c80"
+    camp = root / campaign_id
+    camp.mkdir(parents=True)
+    (camp / "campaign.json").write_text(
+        json.dumps(
+            {
+                "campaign_id": campaign_id,
+                "loop_id": loop_id,
+                "cycle_index": 80,
+            }
+        ),
+        encoding="utf-8",
+    )
+    sha = "c" * 64
+    handoff = {
+        "schema_version": "AutotrainCycleHandoffV1",
+        "loop_id": loop_id,
+        "campaign_id": campaign_id,
+        "cycle_index": 80,
+        "upstream_commit": "a" * 40,
+        "integration_commit": "b" * 40,
+        "cycle_role": "screening",
+        "cycle_intent": "screening",
+        "evidence_class": "fixture",
+        "climb_state": "inconclusive",
+        "ship_state": "blocked",
+        "primary_metric": "smoke.structural_similarity",
+        "reasons": [
+            "measurement_incomplete:cand:smoke:incomplete_document_n=1:decode_timeout_count=1",
+            "fixture_insufficient_n_alone",
+        ],
+        "actions": [
+            {
+                "kind": "repair_harness",
+                "owner": "improve-openui-harnesses",
+                "reason": (
+                    "AgentV finalized every record disposition and reported an "
+                    "internal decode timeout; repair canonical model-build runtime"
+                ),
+                "evidence_ids": [f"campaign:{campaign_id}"],
+                "harness_family": "model_build",
+                "frozen_manifest_sha256": sha,
+            },
+            {
+                "kind": "retry_measurement",
+                "owner": "autotrain",
+                "reason": "replay after repair",
+                "evidence_ids": [f"campaign:{campaign_id}"],
+                "frozen_manifest_sha256": sha,
+            },
+            {
+                "kind": "document",
+                "owner": "documenting-experiment-results",
+                "reason": "persist docs",
+                "evidence_ids": [f"campaign:{campaign_id}"],
+            },
+        ],
+        "checkpoint_paths": [],
+        "checkpoint_documentation_required": False,
+    }
+    (camp / "cycle_handoff.json").write_text(json.dumps(handoff) + "\n")
+    (camp / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "schema": "autotrain_sdlc_delivery/v1",
+                "positive": False,
+                "measurement_complete": False,
+                "arm_exits": {"cand": 124, "control": 124},
+                "reasons": [
+                    "measurement_incomplete:cand:decode_timeout_count=1",
+                ],
+            }
+        )
+        + "\n"
+    )
+    import slm_training.autoresearch.storage as storage
+
+    monkeypatch.setattr(storage, "_REPO_ROOT", repo)
+    with pytest.raises(RuntimeError, match="repair_harness"):
+        _mod._require_predecessor_actions(root, loop_id, campaign_id)
+    kind = _mod._self_heal_thrash_timeout_repair(
+        cwd=repo, root=root, loop_id=loop_id, campaign_id=campaign_id
+    )
+    assert kind in {"thrash_timeout_repair_bypass", "document_closeout"}
+    rebuilt = json.loads((camp / "cycle_handoff.json").read_text())
+    kinds = [a["kind"] for a in rebuilt["actions"]]
+    assert "repair_harness" not in kinds
+    assert "next_experiment" in kinds
+    _mod._require_predecessor_actions(root, loop_id, campaign_id)
+
+
+def test_self_heal_cycle_error_repairs_thrash_timeout_from_message(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _init_git_repo(repo)
+    root = repo / "outputs" / "autoresearch"
+    loop_id = "continuous-openui-local"
+    campaign_id = "continuous-loop-test-c81"
+    camp = root / campaign_id
+    camp.mkdir(parents=True)
+    (camp / "campaign.json").write_text(
+        json.dumps(
+            {"campaign_id": campaign_id, "loop_id": loop_id, "cycle_index": 81}
+        )
+    )
+    sha = "d" * 64
+    handoff = {
+        "schema_version": "AutotrainCycleHandoffV1",
+        "loop_id": loop_id,
+        "campaign_id": campaign_id,
+        "cycle_index": 81,
+        "upstream_commit": "a" * 40,
+        "integration_commit": "b" * 40,
+        "cycle_role": "screening",
+        "cycle_intent": "screening",
+        "evidence_class": "fixture",
+        "climb_state": "inconclusive",
+        "ship_state": "blocked",
+        "primary_metric": "smoke.structural_similarity",
+        "reasons": ["measurement_incomplete:x:decode_timeout_count=1"],
+        "actions": [
+            {
+                "kind": "repair_harness",
+                "owner": "improve-openui-harnesses",
+                "reason": "internal decode timeout; repair runtime",
+                "evidence_ids": [f"campaign:{campaign_id}"],
+                "harness_family": "model_build",
+                "frozen_manifest_sha256": sha,
+            },
+            {
+                "kind": "document",
+                "owner": "documenting-experiment-results",
+                "reason": "persist docs",
+                "evidence_ids": [f"campaign:{campaign_id}"],
+            },
+        ],
+    }
+    (camp / "cycle_handoff.json").write_text(json.dumps(handoff) + "\n")
+    (camp / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "arm_exits": {"a": 124, "b": 124},
+                "reasons": ["measurement_incomplete:decode_timeout_count=1"],
+            }
+        )
+    )
+    import slm_training.autoresearch.storage as storage
+
+    monkeypatch.setattr(storage, "_REPO_ROOT", repo)
+    kind = _mod._self_heal_cycle_error(
+        root=root,
+        loop_id=loop_id,
+        cwd=repo,
+        exc=RuntimeError(
+            f"predecessor {campaign_id} has unacknowledged actions: 0:repair_harness"
+        ),
+    )
+    assert kind is not None
+    _mod._require_predecessor_actions(root, loop_id, campaign_id)
+
+
+def test_delivery_is_thrash_timeout_residual_detects_wall_exits() -> None:
+    assert _mod._delivery_is_thrash_timeout_residual(
+        {"arm_exits": {"a": 124, "b": 124}, "reasons": []}
+    )
+    assert _mod._delivery_is_thrash_timeout_residual(
+        {"reasons": ["measurement_incomplete:x:decode_timeout_count=1"]}
+    )
+    assert not _mod._delivery_is_thrash_timeout_residual(
+        {"reasons": ["harness_failure:AgentV SDK is unavailable; run npm ci"]}
+    )
+
+
+def test_last_cycle_failure_message_reads_tail(tmp_path: Path) -> None:
+    root = tmp_path / "ar"
+    loop = "L"
+    path = root / "loops" / loop / "cycle_failures.jsonl"
+    path.parent.mkdir(parents=True)
+    path.write_text(
+        json.dumps(
+            {
+                "loop_id": loop,
+                "blocking": True,
+                "message": "predecessor x has unacknowledged actions: 0:repair_harness",
+            }
+        )
+        + "\n"
+    )
+    assert "repair_harness" in (_mod._last_cycle_failure_message(root, loop) or "")

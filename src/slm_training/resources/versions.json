@@ -2757,7 +2757,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v183",
+      "version": "v184",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2801,6 +2801,11 @@
         "tests/test_autoresearch/test_thrash_regime.py"
       ],
       "history": [
+        {
+          "version": "v184",
+          "date": "2026-08-06",
+          "note": "continuous self-heal: thrash decode/wall-timeout residual unblocks repair_harness (SELF_HEAL_THRASH_TIMEOUT_REPAIR); startup heals from last cycle_failures message instead of opaque fingerprint; screening thrash timeouts emit next_experiment not hard repair"
+        },
         {
           "version": "v183",
           "date": "2026-08-06",

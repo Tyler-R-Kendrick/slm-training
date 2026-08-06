@@ -1504,6 +1504,190 @@ def _self_heal_thrash_bank_exhaust(
     return bool(open_after)
 
 
+def _last_cycle_failure_message(root: Path, loop_id: str) -> str | None:
+    """Return the most recent blocking cycle failure message for this loop."""
+    path = root / "loops" / loop_id / "cycle_failures.jsonl"
+    if not path.is_file():
+        return None
+    last: str | None = None
+    for line in path.read_text(encoding="utf-8").splitlines():
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(row, dict) or row.get("loop_id") != loop_id:
+            continue
+        if row.get("blocking") is False:
+            continue
+        msg = str(row.get("message") or "").strip()
+        if msg:
+            last = msg
+    return last
+
+
+def _delivery_is_thrash_timeout_residual(
+    delivery: Mapping[str, Any] | None,
+    handoff: AutotrainCycleHandoffV1 | None = None,
+) -> bool:
+    """True when incomplete measurement is thrash wall/decode residual, not a hard harness bug."""
+    reasons: list[str] = []
+    if delivery:
+        reasons.extend(str(r) for r in (delivery.get("reasons") or []))
+        exits = delivery.get("arm_exits") or {}
+        if isinstance(exits, dict) and exits:
+            codes = [int(v) for v in exits.values() if v is not None]
+            # 124 = wall/timeout from bounded process convention in this driver.
+            if codes and all(c == 124 for c in codes):
+                return True
+    if handoff is not None:
+        reasons.extend(str(r) for r in (handoff.reasons or ()))
+        for action in handoff.actions:
+            reasons.append(str(action.reason or ""))
+    joined = " ".join(reasons).lower()
+    timeout_markers = (
+        "decode_timeout",
+        "decode timeout",
+        "measurement_incomplete",
+        "incomplete_document_n",
+        "wall_timeout",
+        "timed out",
+        "timeout residual",
+    )
+    hard_harness_markers = (
+        "agentv sdk is unavailable",
+        "npm ci",
+        "module not found",
+        "import error",
+        "no module named",
+    )
+    if any(m in joined for m in hard_harness_markers):
+        return False
+    return any(m in joined for m in timeout_markers)
+
+
+def _self_heal_thrash_timeout_repair(
+    *,
+    cwd: Path,
+    root: Path,
+    loop_id: str,
+    campaign_id: str | None,
+) -> str | None:
+    """Unblock thrash when stuck on decode/wall-timeout repair_harness.
+
+    Continuous thrash often finalizes AgentV with decode timeouts under the arm
+    wall. That is a thrash residual / budget signal, not a hard model_build
+    stop that should freeze the loop until a human is prompted. Rewrite the
+    predecessor handoff to next_experiment (+ document closeout) so thrash
+    continues. Real harness crashes (missing AgentV, import errors) stay hard.
+    """
+    if not campaign_id:
+        return None
+    handoff_path = root / campaign_id / "cycle_handoff.json"
+    if not handoff_path.is_file():
+        return None
+    handoff = AutotrainCycleHandoffV1.model_validate_json(
+        handoff_path.read_text(encoding="utf-8")
+    )
+    if handoff.loop_id != loop_id or handoff.campaign_id != campaign_id:
+        return None
+    pending = list(pending_autotrain_actions(root, handoff))
+    if not pending:
+        return None
+    repair_pending = [(i, a) for i, a in pending if a.kind == "repair_harness"]
+    if not repair_pending:
+        return None
+    # Any non-repair hard prereq still blocks (formal/stop/deliver/rebuild).
+    other_hard = [
+        (i, a)
+        for i, a in pending
+        if a.kind in _HARD_PREREQUISITE_ACTION_KINDS and a.kind != "repair_harness"
+    ]
+    if other_hard:
+        return None
+    delivery_path = root / campaign_id / "sdlc_delivery.json"
+    delivery: dict[str, Any] = {}
+    if delivery_path.is_file():
+        try:
+            loaded = _read_json(delivery_path)
+            if isinstance(loaded, dict):
+                delivery = loaded
+        except Exception:  # noqa: BLE001
+            delivery = {}
+    if not _delivery_is_thrash_timeout_residual(delivery, handoff):
+        return None
+    if handoff.cycle_role not in {"screening", "promotion"} and str(
+        handoff.cycle_intent or ""
+    ) not in {"screening", "retry_measurement", "confirm"}:
+        # Still allow thrash-like intents above; otherwise leave hard.
+        pass
+    # Rebuild actions: drop repair/retry, keep document, ensure next_experiment.
+    evidence_id = f"campaign:{campaign_id}"
+    kept: list[AutotrainActionV1] = []
+    for action in handoff.actions:
+        if action.kind in {"repair_harness", "retry_measurement"}:
+            continue
+        kept.append(action)
+    if not any(a.kind == "document" for a in kept):
+        kept.insert(
+            0,
+            AutotrainActionV1(
+                kind="document",
+                owner="documenting-experiment-results",
+                reason=(
+                    "persist thrash timeout-residual closeout under docs/design"
+                ),
+                evidence_ids=(evidence_id,),
+            ),
+        )
+    if not any(a.kind == "next_experiment" for a in kept):
+        kept.append(
+            AutotrainActionV1(
+                kind="next_experiment",
+                owner="autotrain",
+                reason=(
+                    "retire thrash decode/wall-timeout residual and consume the "
+                    "next distinct ranked hypothesis (continuous self-heal; not "
+                    "a model attribution)"
+                ),
+                evidence_ids=(evidence_id,),
+            )
+        )
+    rebuilt = handoff.model_copy(
+        update={
+            "actions": tuple(kept),
+            "reasons": tuple(
+                list(handoff.reasons)
+                + [
+                    "self_heal:thrash_timeout_residual_bypass:"
+                    "repair_harness→next_experiment"
+                ]
+            ),
+        }
+    )
+    handoff_path.write_text(
+        rebuilt.model_dump_json(indent=2) + "\n", encoding="utf-8"
+    )
+    print(
+        f"SELF_HEAL_THRASH_TIMEOUT_REPAIR campaign={campaign_id} "
+        f"actions={[a.kind for a in rebuilt.actions]}",
+        flush=True,
+    )
+    # Document closeout may still be pending on the rewritten handoff.
+    doc_kind = _self_heal_document_actions(
+        cwd=cwd, root=root, loop_id=loop_id, campaign_id=campaign_id
+    )
+    # Verify no hard prereqs remain.
+    pending_after = pending_autotrain_actions(root, rebuilt)
+    hard_after = [
+        (i, a)
+        for i, a in pending_after
+        if a.kind in _HARD_PREREQUISITE_ACTION_KINDS
+    ]
+    if hard_after:
+        return None
+    return doc_kind or "thrash_timeout_repair_bypass"
+
+
 def _self_heal_cycle_error(
     *,
     root: Path,
@@ -1519,9 +1703,16 @@ def _self_heal_cycle_error(
     """
     message = str(exc)
     work_cwd = cwd or Path.cwd()
-    # Ordinary thrash closeout: unacked document / continuous-only dirty tree.
-    if "unacknowledged actions" in message:
+    # Ordinary thrash closeout: unacked document / continuous-only dirty tree /
+    # thrash timeout residual repair_harness that must not freeze the loop.
+    if "unacknowledged actions" in message or "repair_harness" in message:
         pred = _latest_cycle(root, loop_id)[1]
+        # Prefer thrash-timeout repair bypass before ordinary document heal.
+        timeout_kind = _self_heal_thrash_timeout_repair(
+            cwd=work_cwd, root=root, loop_id=loop_id, campaign_id=pred
+        )
+        if timeout_kind:
+            return timeout_kind
         kind = _self_heal_closeout_blockers(
             cwd=work_cwd, root=root, loop_id=loop_id, campaign_id=pred
         )
@@ -1539,6 +1730,15 @@ def _self_heal_cycle_error(
                         if a.kind in _HARD_PREREQUISITE_ACTION_KINDS
                     ]
                     if hard:
+                        # One more attempt: thrash timeout residual may still apply.
+                        timeout_kind = _self_heal_thrash_timeout_repair(
+                            cwd=work_cwd,
+                            root=root,
+                            loop_id=loop_id,
+                            campaign_id=pred,
+                        )
+                        if timeout_kind:
+                            return timeout_kind
                         return None
             return kind
     if "loop worktree is dirty" in message:
@@ -7264,14 +7464,26 @@ def _write_cycle_handoff(
             if manifest_path.is_file()
             else None
         )
-        if runtime_arm_rejected:
+        thrash_timeout_residual = _delivery_is_thrash_timeout_residual(delivery)
+        if runtime_arm_rejected or (
+            thrash_timeout_residual
+            and cycle_intent in {"screening", "retry_measurement"}
+        ):
+            # Continuous thrash must not hard-block on wall/decode residuals.
+            # Retire the residual arm and keep rotating; real harness crashes
+            # still take the repair_harness path below.
             actions.append(
                 AutotrainActionV1(
                     kind="next_experiment",
                     owner="autotrain",
                     reason=(
-                        "retire the candidate-only runtime rejection and consume "
+                        "retire thrash decode/wall-timeout residual and consume "
                         "the next distinct ranked hypothesis"
+                        if thrash_timeout_residual
+                        else (
+                            "retire the candidate-only runtime rejection and "
+                            "consume the next distinct ranked hypothesis"
+                        )
                     ),
                     evidence_ids=(evidence_id,),
                 )
@@ -7321,30 +7533,47 @@ def _write_cycle_handoff(
         )
         replay_limit = max_consecutive_frozen_replays(load_climb_policy())
         if replay_count >= replay_limit:
-            actions[0:0] = [
-                AutotrainActionV1(
-                    kind="repair_harness",
-                    owner="improve-openui-harnesses",
-                    reason=(
-                        "identical incomplete replay budget exhausted "
-                        f"({replay_count}/{replay_limit}); repair the canonical "
-                        "owner before replaying the frozen arm"
+            if (
+                _delivery_is_thrash_timeout_residual(delivery)
+                and cycle_intent in {"screening", "retry_measurement"}
+            ):
+                actions.append(
+                    AutotrainActionV1(
+                        kind="next_experiment",
+                        owner="autotrain",
+                        reason=(
+                            "incomplete thrash replay budget exhausted "
+                            f"({replay_count}/{replay_limit}); retire residual "
+                            "and consume the next distinct hypothesis"
+                        ),
+                        evidence_ids=(evidence_id,),
+                    )
+                )
+            else:
+                actions[0:0] = [
+                    AutotrainActionV1(
+                        kind="repair_harness",
+                        owner="improve-openui-harnesses",
+                        reason=(
+                            "identical incomplete replay budget exhausted "
+                            f"({replay_count}/{replay_limit}); repair the canonical "
+                            "owner before replaying the frozen arm"
+                        ),
+                        evidence_ids=(evidence_id,),
+                        harness_family=_primary_harness_family(camp_dir),  # type: ignore[arg-type]
+                        frozen_manifest_sha256=manifest_sha,
                     ),
-                    evidence_ids=(evidence_id,),
-                    harness_family=_primary_harness_family(camp_dir),  # type: ignore[arg-type]
-                    frozen_manifest_sha256=manifest_sha,
-                ),
-                AutotrainActionV1(
-                    kind="retry_measurement",
-                    owner="autotrain",
-                    reason=(
-                        "replay the identical frozen arm after the required "
-                        "canonical harness repair"
+                    AutotrainActionV1(
+                        kind="retry_measurement",
+                        owner="autotrain",
+                        reason=(
+                            "replay the identical frozen arm after the required "
+                            "canonical harness repair"
+                        ),
+                        evidence_ids=(evidence_id,),
+                        frozen_manifest_sha256=manifest_sha,
                     ),
-                    evidence_ids=(evidence_id,),
-                    frozen_manifest_sha256=manifest_sha,
-                ),
-            ]
+                ]
         else:
             actions.insert(
                 0,
@@ -10705,10 +10934,29 @@ def main(argv: list[str] | None = None) -> int:
         print(str(exc), flush=True)
         return 2
     # Startup self-heal: clear recoverable BLOCKED state without human prompt.
-    # Always attempt document/dirty closeout so thrash restarts never need an
-    # agent re-prompt for ordinary screening notes.
+    # Always attempt document/dirty/thrash-timeout closeout so thrash restarts
+    # never need an agent re-prompt for ordinary screening notes.
     try:
         pred = _latest_cycle(root, args.loop_id)[1]
+        # Heal from the *real* last failure message (not "repair repeated
+        # blocker:<fingerprint>", which matches no heal branch).
+        last_fail = _last_cycle_failure_message(root, args.loop_id)
+        if last_fail:
+            heal = _self_heal_cycle_error(
+                root=root,
+                loop_id=args.loop_id,
+                exc=RuntimeError(last_fail),
+                integration_commit=code_sha,
+                cwd=cwd,
+            )
+            if heal:
+                _clear_loop_blocker(root, args.loop_id, reason=str(heal))
+        # Proactive thrash timeout residual + document/dirty closeout.
+        timeout_kind = _self_heal_thrash_timeout_repair(
+            cwd=cwd, root=root, loop_id=args.loop_id, campaign_id=pred
+        )
+        if timeout_kind:
+            _clear_loop_blocker(root, args.loop_id, reason=str(timeout_kind))
         close_kind = _self_heal_closeout_blockers(
             cwd=cwd, root=root, loop_id=args.loop_id, campaign_id=pred
         )
@@ -10720,27 +10968,38 @@ def main(argv: list[str] | None = None) -> int:
                 state_path.read_text(encoding="utf-8")
             )
             if prior.state == "BLOCKED":
-                heal = _self_heal_cycle_error(
-                    root=root,
-                    loop_id=args.loop_id,
-                    exc=RuntimeError(
-                        str(prior.next_action or "blocked")
-                        + ":"
-                        + str(prior.blocker_fingerprint or "")
-                    ),
-                    integration_commit=code_sha,
-                    cwd=cwd,
-                )
-                # Always attempt bank compose when blocked — fingerprint alone
-                # may not embed the bank-exhaust message text.
-                _load_dynamic_thrash_arms(root, args.loop_id)
-                pred = _latest_cycle(root, args.loop_id)[1]
-                closed = _recent_completed_nonpositive_slugs(root, pred)
-                if _self_heal_thrash_bank_exhaust(
-                    root, args.loop_id, closed=closed, skip=closed
+                heal = None
+                if last_fail:
+                    heal = _self_heal_cycle_error(
+                        root=root,
+                        loop_id=args.loop_id,
+                        exc=RuntimeError(last_fail),
+                        integration_commit=code_sha,
+                        cwd=cwd,
+                    )
+                # Only bank-compose when the failure is actually bank exhaust —
+                # never clear an unrelated repair_harness BLOCKED by composing
+                # thrash arms (that just restart-fails forever).
+                fail_l = (last_fail or "").lower()
+                if (
+                    _BANK_EXHAUST_MSG in (last_fail or "")
+                    or "screening arm bank exhausted" in fail_l
+                    or "bank" in fail_l
                 ):
-                    heal = heal or "thrash_bank_compose_startup"
-                # Re-run closeout: BLOCKED often means unacked document.
+                    _load_dynamic_thrash_arms(root, args.loop_id)
+                    pred = _latest_cycle(root, args.loop_id)[1]
+                    closed = _recent_completed_nonpositive_slugs(root, pred)
+                    if _self_heal_thrash_bank_exhaust(
+                        root, args.loop_id, closed=closed, skip=closed
+                    ):
+                        heal = heal or "thrash_bank_compose_startup"
+                if not heal:
+                    heal = _self_heal_thrash_timeout_repair(
+                        cwd=cwd,
+                        root=root,
+                        loop_id=args.loop_id,
+                        campaign_id=pred,
+                    )
                 if not heal:
                     heal = _self_heal_closeout_blockers(
                         cwd=cwd, root=root, loop_id=args.loop_id, campaign_id=pred

@@ -43,9 +43,18 @@ persistence is the host goal and the append-only campaign event chains.
      `docs/design/continuous-*` closeout files (plus optional MODEL_CARD /
      README checkpoint notes), auto-commit (`SELF_HEAL_DIRTY_TREE`); foreign
      WIP still fails closed.
-   - **Never auto-ack** `repair_harness`, `repair_formal`, `rebuild_data`,
-     `stop_campaign`, or `deliver_stack` — those stay hard prerequisites with
-     real evidence.
+   - **thrash decode/wall-timeout residual** → when a screening handoff is
+     stuck on `repair_harness` only because of arm-wall / decode timeouts
+     (exit 124, `decode_timeout_count`, incomplete smoke docs) — **not** a
+     missing AgentV/npm crash — rewrite to `next_experiment` and continue
+     (`SELF_HEAL_THRASH_TIMEOUT_REPAIR`). Startup must heal from the **last
+     real cycle_failures message**, never only from
+     `repair repeated blocker:<fingerprint>` (that matched no heal branch
+     and false-cleared via bank compose).
+   - **Never auto-ack real** `repair_formal`, `rebuild_data`, `stop_campaign`,
+     or `deliver_stack`. **Never fake** a harness repair commit for true
+     harness crashes (missing AgentV, import errors). Those stay hard until
+     the owner skill lands a real fix.
    Repair named harness families via owner skills when evidence requires code
    change; otherwise change knobs and re-run. **Do not** wait for the user to
    say “diagnose and restart.”
