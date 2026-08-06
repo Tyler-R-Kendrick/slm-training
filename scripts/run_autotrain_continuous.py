@@ -2183,11 +2183,18 @@ def _is_foreign_dirty_path(rel: str) -> bool:
 
 
 def _porcelain_paths(porcelain: str) -> list[str]:
+    """Parse ``git status --porcelain`` paths robustly (XY + space + path)."""
     paths: list[str] = []
     for line in porcelain.splitlines():
         if not line.strip():
             continue
-        body = line[3:] if len(line) >= 3 else line
+        # Standard format: two-char XY, space, path (optional rename "a -> b").
+        if len(line) >= 4 and line[2] == " ":
+            body = line[3:]
+        else:
+            # Fallback: first space-separated field after status token.
+            parts = line.split(" ", 1)
+            body = parts[1] if len(parts) > 1 else line
         if " -> " in body:
             body = body.split(" -> ", 1)[1]
         path = body.strip().strip('"')
