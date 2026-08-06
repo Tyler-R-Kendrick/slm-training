@@ -2804,6 +2804,11 @@
         {
           "version": "v183",
           "date": "2026-08-06",
+          "note": "no-bump: FROZEN_REPLAY_SKIP on missing control manifest (deadline-skipped incomplete pair) so continuous thrash does not hard-block"
+        },
+        {
+          "version": "v183",
+          "date": "2026-08-06",
           "note": "no-bump: gate SELF_HEAL_DOCUMENT in _write_cycle_handoff on explicit cwd only (prevent unit-test pollution of docs/design); heal behavior unchanged for live continuous which always passes cwd"
         },
         {

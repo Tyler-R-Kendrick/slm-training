@@ -7840,7 +7840,16 @@ def _load_frozen_replay(
     control_id = str(matrix["hypotheses"][0]["experiment"]["experiment_id"])
     control_path = camp_dir / "manifests" / f"{control_id}.json"
     if not control_path.is_file():
-        raise RuntimeError(f"frozen replay control manifest is missing: {control_id}")
+        # Incomplete predecessor (e.g. control arm deadline-skipped) cannot be
+        # frozen-replayed. Skip to normal thrash rather than hard-blocking the
+        # continuous loop — same class as nonreplayable configuration.
+        print(
+            "FROZEN_REPLAY_SKIP reason=missing_control_manifest "
+            f"control_id={control_id} campaign={predecessor_campaign_id} "
+            f"action_index={action_index}",
+            flush=True,
+        )
+        return None
     control_manifest = ExperimentCampaignV1.model_validate_json(
         control_path.read_text(encoding="utf-8")
     )
