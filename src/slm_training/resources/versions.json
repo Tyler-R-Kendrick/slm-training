@@ -2734,7 +2734,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v181",
+      "version": "v182",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2772,9 +2772,17 @@
         "tests/test_scripts/test_run_autotrain_continuous.py",
         "scripts/run_autotrain_continuous.py",
         "scripts/report_autotrain_continuous.sh",
-        "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
+        "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json",
+        "src/slm_training/autoresearch/thrash_regime.py",
+        "docs/design/dual-regime-thrash-20260804.md",
+        "tests/test_autoresearch/test_thrash_regime.py"
       ],
       "history": [
+        {
+          "version": "v182",
+          "date": "2026-08-05",
+          "note": "dual-regime thrash: isolate + climb residual + timeout\u2192decode residual routing; climb no-op residual skip via materialized knob signatures; thrash_regime on AutotrainCycleHandoffV1; policy v6 thrash_regimes"
+        },
         {
           "version": "v181",
           "note": "Register generate_batch_size (v1433 screening fair-share-decode-timeout knob) on ExperimentKnobs + DEFAULT_ALLOWED_KNOBS; every role='screening' _matrix() hypothesis was failing HypothesisMatrix strict validation (extra_forbidden), blocking every default continuous-openui-local cycle.",

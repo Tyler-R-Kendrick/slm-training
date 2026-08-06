@@ -510,6 +510,7 @@ class ExperimentKnobs(StrictModel):
     mixture_max_importance_weight: float | None = Field(default=None, ge=1.0)
     steps: int | None = Field(default=None, ge=1, le=100_000)
     batch_size: int | None = Field(default=None, ge=1, le=1024)
+    # Screening thrash: force 1 so fair-share decode timeouts apply per doc.
     generate_batch_size: int | None = Field(default=None, ge=1, le=1024)
     lr: float | None = Field(default=None, gt=0, le=1)
     ltr_prefix_loss_weight: float | None = Field(default=None, ge=0, le=20)
@@ -1060,6 +1061,9 @@ class AutotrainCycleHandoffV1(StrictModel):
     formal_status: str | None = None
     checkpoint_paths: tuple[str, ...] = ()
     checkpoint_documentation_required: bool = False
+    # Dual-regime thrash label from the screening matrix (isolate / climb /
+    # timeout_decode_residual). Absent on confirm/promote / non-thrash cycles.
+    thrash_regime: dict[str, Any] | None = None
     created_at: str = Field(default_factory=utc_now)
 
     @model_validator(mode="after")
@@ -1144,6 +1148,10 @@ class HypothesisMatrix(StrictModel):
     predecessor_matrix_id: str | None = None
     feedback_ids: tuple[str, ...] = ()
     next_run_priorities: tuple[NextRunPriorityV1, ...] = ()
+    # Dual-regime thrash labels (isolate / climb / timeout_decode_residual).
+    # Optional so non-thrash matrices stay valid without the field.
+    thrash_regime: dict[str, Any] | None = None
+    decode_residual_slugs: tuple[str, ...] = ()
     created_at: str = Field(default_factory=utc_now)
 
     @model_validator(mode="after")
