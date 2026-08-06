@@ -120,12 +120,30 @@ A timeout that reproduces after this install is real signal (file a
 `model_build` `HarnessSignalV1`); a timeout on a fresh venv without this step
 is expected and not evidence of a lever regression.
 
-The host agent owns an **unbudgeted persistent goal** and runs one bounded cycle
-at a time. The agent must regain control between cycles to repair canonical
-harnesses, handle Lean dispositions, commit durable docs, and perform delivery:
+### Preferred hands-off supervisor (in-repo)
+
+**Soft thrash unblock is driver law** via `self_heal_unblock_loop` (document,
+continuous-only dirt, thrash wall/decode timeout residual, bank exhaust). Do
+**not** use ad-hoc `/tmp` bash supervisors or ask the user to “document and
+restart.”
 
 ```bash
-# local-only continuous loop worktree, clean tree required
+# local-only continuous loop worktree
+python -m scripts.run_autotrain_supervisor \
+  --loop-id continuous-openui-local \
+  --train-version wf_smoke_v2 \
+  --steps 20
+```
+
+Each supervised cycle is still one `run_autotrain_continuous --supervised
+--max-cycles 1` invocation. Before and after every cycle the supervisor runs
+`self_heal_unblock_loop`. Soft failures heal and continue; only typed
+`hard_pending` (true AgentV/npm crash, formal, deliver_stack, foreign dirty
+WIP) backs off without a human chat prompt.
+
+Single-cycle manual invoke remains available:
+
+```bash
 python -m scripts.run_autotrain_continuous \
   --loop-id continuous-openui-local \
   --supervised --max-cycles 1 \
@@ -134,11 +152,9 @@ python -m scripts.run_autotrain_continuous \
 ```
 
 The invocation writes `<campaign>/cycle_handoff.json` and refreshes
-`loops/<loop-id>/state.json`. Validate the handoff, execute every required
-owner skill, print the compact matrix, commit the cycle, get latest, and start
-the successor. `--max-cycles 0` remains a legacy unbounded executor; bare
-`/autotrain` does not use it because a blocking process cannot close repairs or
-delivery between cycles.
+`loops/<loop-id>/state.json`. Soft document closeout is driver-owned. Agents
+only execute **hard_pending** owner skills (true harness repair, Lean, stack
+delivery). `--max-cycles 0` remains a legacy unbounded executor.
 
 Every prerequisite action needs an append-only receipt before the successor can
 start. **Ordinary `document` actions are driver-owned** via

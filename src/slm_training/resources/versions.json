@@ -2757,7 +2757,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v184",
+      "version": "v185",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2794,6 +2794,7 @@
         "tests/test_scripts/test_slm_cli.py",
         "tests/test_scripts/test_run_autotrain_continuous.py",
         "scripts/run_autotrain_continuous.py",
+        "scripts/run_autotrain_supervisor.py",
         "scripts/report_autotrain_continuous.sh",
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json",
         "src/slm_training/autoresearch/thrash_regime.py",
@@ -2801,6 +2802,11 @@
         "tests/test_autoresearch/test_thrash_regime.py"
       ],
       "history": [
+        {
+          "version": "v185",
+          "date": "2026-08-06",
+          "note": "structural continuous self-heal: self_heal_unblock_loop single owner; soft failures never BLOCKED; thrash timeout residual classifier tightened; in-repo run_autotrain_supervisor replaces /tmp bash; adversarial unblock tests"
+        },
         {
           "version": "v184",
           "date": "2026-08-06",

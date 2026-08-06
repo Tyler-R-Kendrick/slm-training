@@ -8520,9 +8520,137 @@ def test_delivery_is_thrash_timeout_residual_detects_wall_exits() -> None:
     assert _mod._delivery_is_thrash_timeout_residual(
         {"reasons": ["measurement_incomplete:x:decode_timeout_count=1"]}
     )
+    # Bare measurement_incomplete is not enough (also appears on real harness bugs).
+    assert not _mod._delivery_is_thrash_timeout_residual(
+        {"reasons": ["measurement_incomplete:cand:incomplete_document_n=1"]}
+    )
     assert not _mod._delivery_is_thrash_timeout_residual(
         {"reasons": ["harness_failure:AgentV SDK is unavailable; run npm ci"]}
     )
+
+
+def test_self_heal_unblock_loop_soft_document(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _init_git_repo(repo)
+    root = repo / "outputs" / "autoresearch"
+    loop_id = "continuous-openui-local"
+    campaign_id = "continuous-loop-unblock-doc-c1"
+    _document_handoff_campaign(
+        root,
+        loop_id=loop_id,
+        campaign_id=campaign_id,
+        actions=[
+            {
+                "kind": "document",
+                "owner": "documenting-experiment-results",
+                "reason": "persist docs",
+                "evidence_ids": [f"campaign:{campaign_id}"],
+            },
+            {
+                "kind": "next_experiment",
+                "owner": "autotrain",
+                "reason": "continue",
+                "evidence_ids": [f"campaign:{campaign_id}"],
+            },
+        ],
+    )
+    (root / campaign_id / "campaign.json").write_text(
+        json.dumps(
+            {"campaign_id": campaign_id, "loop_id": loop_id, "cycle_index": 1}
+        )
+    )
+    import slm_training.autoresearch.storage as storage
+
+    monkeypatch.setattr(storage, "_REPO_ROOT", repo)
+    report = _mod.self_heal_unblock_loop(
+        cwd=repo, root=root, loop_id=loop_id, campaign_id=campaign_id
+    )
+    assert report["blocker_cleared"] is True
+    assert not report["hard_pending"]
+    _mod._require_predecessor_actions(root, loop_id, campaign_id)
+
+
+def test_self_heal_unblock_loop_hard_agentv_repair(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _init_git_repo(repo)
+    root = repo / "outputs" / "autoresearch"
+    loop_id = "continuous-openui-local"
+    campaign_id = "continuous-loop-unblock-hard-c1"
+    camp = root / campaign_id
+    camp.mkdir(parents=True)
+    (camp / "campaign.json").write_text(
+        json.dumps(
+            {"campaign_id": campaign_id, "loop_id": loop_id, "cycle_index": 1}
+        )
+    )
+    sha = "e" * 64
+    handoff = {
+        "schema_version": "AutotrainCycleHandoffV1",
+        "loop_id": loop_id,
+        "campaign_id": campaign_id,
+        "cycle_index": 1,
+        "upstream_commit": "a" * 40,
+        "integration_commit": "b" * 40,
+        "cycle_role": "screening",
+        "cycle_intent": "screening",
+        "evidence_class": "fixture",
+        "climb_state": "harness_failure",
+        "ship_state": "blocked",
+        "primary_metric": "smoke.structural_similarity",
+        "reasons": ["harness_failure:AgentV SDK is unavailable; run npm ci"],
+        "actions": [
+            {
+                "kind": "repair_harness",
+                "owner": "improve-openui-harnesses",
+                "reason": "AgentV SDK is unavailable; run npm ci",
+                "evidence_ids": [f"campaign:{campaign_id}"],
+                "harness_family": "model_build",
+                "frozen_manifest_sha256": sha,
+            }
+        ],
+    }
+    (camp / "cycle_handoff.json").write_text(json.dumps(handoff) + "\n")
+    (camp / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "reasons": ["harness_failure:AgentV SDK is unavailable; run npm ci"],
+                "arm_exits": {"a": 1},
+            }
+        )
+    )
+    import slm_training.autoresearch.storage as storage
+
+    monkeypatch.setattr(storage, "_REPO_ROOT", repo)
+    report = _mod.self_heal_unblock_loop(
+        cwd=repo, root=root, loop_id=loop_id, campaign_id=campaign_id
+    )
+    assert report["blocker_cleared"] is False
+    assert any(h.get("kind") == "repair_harness" for h in report["hard_pending"])
+    with pytest.raises(RuntimeError, match="repair_harness"):
+        _mod._require_predecessor_actions(root, loop_id, campaign_id)
+
+
+def test_soft_document_failures_never_block(tmp_path: Path) -> None:
+    root = tmp_path / "ar"
+    for i in range(5):
+        count = _mod._record_cycle_failure(
+            root=root,
+            loop_id="loop-1",
+            exc=RuntimeError(
+                "predecessor c1 has unacknowledged actions: 0:document"
+            ),
+            cycle_index=i,
+        )
+        assert count == 0
+    state = json.loads((root / "loops" / "loop-1" / "state.json").read_text())
+    assert state["state"] == "IDLE"
+    assert state["blocker_count"] == 0
 
 
 def test_last_cycle_failure_message_reads_tail(tmp_path: Path) -> None:

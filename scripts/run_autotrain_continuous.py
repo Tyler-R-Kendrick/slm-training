@@ -1529,30 +1529,32 @@ def _delivery_is_thrash_timeout_residual(
     delivery: Mapping[str, Any] | None,
     handoff: AutotrainCycleHandoffV1 | None = None,
 ) -> bool:
-    """True when incomplete measurement is thrash wall/decode residual, not a hard harness bug."""
+    """True when incomplete measurement is thrash wall/decode residual, not a hard harness bug.
+
+    Bare ``measurement_incomplete`` is **not** enough — that also appears on real
+    harness crashes. Require an explicit timeout signal (exit 124, decode_timeout*
+    counters, wall_timeout, or repair text about internal decode timeout).
+    """
     reasons: list[str] = []
+    timeout_exit = False
     if delivery:
         reasons.extend(str(r) for r in (delivery.get("reasons") or []))
         exits = delivery.get("arm_exits") or {}
         if isinstance(exits, dict) and exits:
-            codes = [int(v) for v in exits.values() if v is not None]
+            codes: list[int] = []
+            for v in exits.values():
+                try:
+                    codes.append(int(v))  # type: ignore[arg-type]
+                except (TypeError, ValueError):
+                    continue
             # 124 = wall/timeout from bounded process convention in this driver.
             if codes and all(c == 124 for c in codes):
-                return True
+                timeout_exit = True
     if handoff is not None:
         reasons.extend(str(r) for r in (handoff.reasons or ()))
         for action in handoff.actions:
             reasons.append(str(action.reason or ""))
     joined = " ".join(reasons).lower()
-    timeout_markers = (
-        "decode_timeout",
-        "decode timeout",
-        "measurement_incomplete",
-        "incomplete_document_n",
-        "wall_timeout",
-        "timed out",
-        "timeout residual",
-    )
     hard_harness_markers = (
         "agentv sdk is unavailable",
         "npm ci",
@@ -1562,7 +1564,62 @@ def _delivery_is_thrash_timeout_residual(
     )
     if any(m in joined for m in hard_harness_markers):
         return False
-    return any(m in joined for m in timeout_markers)
+    timeout_markers = (
+        "decode_timeout",
+        "decode timeout",
+        "decode_timeout_count",
+        "wall_timeout",
+        "timed out",
+        "timeout residual",
+        "internal decode timeout",
+    )
+    return timeout_exit or any(m in joined for m in timeout_markers)
+
+
+def _exception_is_soft_continuous(exc: BaseException) -> bool:
+    """True when the failure class is thrash-soft and must not create BLOCKED."""
+    if isinstance(exc, (subprocess.TimeoutExpired, TimeoutError, ConnectionError)):
+        return True
+    if isinstance(exc, subprocess.CalledProcessError):
+        if exc.cmd and list(exc.cmd)[:2] == ["git", "fetch"]:
+            return True
+    message = str(exc)
+    soft_markers = (
+        "unacknowledged actions",
+        "loop worktree is dirty",
+        "unacknowledged actions: ",
+        ":document",
+        "repair_harness",  # may still be hard; soft only if healable residual
+        "frozen replay",
+        "missing_control_manifest",
+        "campaign already exists with different spec",
+        "conflicts with supplied feedback",
+        "screening arm bank exhausted",
+        _BANK_EXHAUST_MSG,
+    )
+    # Document / dirty / thrash residual / soft identity are soft.
+    if "unacknowledged actions" in message and ":document" in message:
+        return True
+    if "loop worktree is dirty" in message:
+        return True
+    if "unacknowledged actions" in message and "repair_harness" in message:
+        # Soft until proven hard: thrash residual heal will clear; true AgentV
+        # hard cases re-raise after unblock reports hard_pending.
+        return True
+    if any(
+        m in message
+        for m in (
+            "campaign already exists with different spec",
+            "conflicts with supplied feedback",
+            "screening arm bank exhausted",
+            _BANK_EXHAUST_MSG,
+            "FROZEN_REPLAY_SKIP",
+            "frozen replay control manifest is missing",
+            "missing_control_manifest",
+        )
+    ):
+        return True
+    return False
 
 
 def _self_heal_thrash_timeout_repair(
@@ -1907,6 +1964,19 @@ def _is_continuous_closeout_path(rel: str) -> bool:
     return name.startswith("continuous-") and name.endswith((".md", ".json"))
 
 
+def _is_foreign_dirty_path(rel: str) -> bool:
+    """True when porcelain path should hard-block continuous thrash."""
+    path = rel.replace("\\", "/").lstrip("./")
+    if _is_continuous_closeout_path(path):
+        return False
+    # Runtime artifacts are never continuous blockers (usually gitignored).
+    if path == "outputs" or path.startswith("outputs/"):
+        return False
+    if path.startswith(".pytest_cache/") or path == ".pytest_cache":
+        return False
+    return True
+
+
 def _porcelain_paths(porcelain: str) -> list[str]:
     paths: list[str] = []
     for line in porcelain.splitlines():
@@ -2232,14 +2302,17 @@ def _self_heal_continuous_dirty_tree(
     paths = _porcelain_paths(porcelain)
     if not paths:
         return None
-    foreign = [p for p in paths if not _is_continuous_closeout_path(p)]
-    if foreign:
+    closeout = [p for p in paths if _is_continuous_closeout_path(p)]
+    foreign = [p for p in paths if _is_foreign_dirty_path(p)]
+    if foreign and not closeout:
         print(
             f"SELF_HEAL_DIRTY_TREE_SKIP foreign={foreign[:8]}",
             flush=True,
         )
         return None
-    abs_paths = [cwd / p for p in paths]
+    if not closeout:
+        return None
+    abs_paths = [cwd / p for p in closeout]
     committed = _git_commit_paths(
         cwd,
         abs_paths,
@@ -2250,7 +2323,7 @@ def _self_heal_continuous_dirty_tree(
     )
     if not committed:
         return None
-    print(f"SELF_HEAL_DIRTY_TREE files={paths}", flush=True)
+    print(f"SELF_HEAL_DIRTY_TREE files={closeout}", flush=True)
     return "dirty_tree_closeout"
 
 
@@ -2281,6 +2354,263 @@ def _self_heal_closeout_blockers(
     except Exception as exc:  # noqa: BLE001
         print(f"SELF_HEAL_DIRTY_TREE_WARN err={exc!r}", flush=True)
     return kinds[-1] if kinds else None
+
+
+def self_heal_unblock_loop(
+    *,
+    cwd: Path,
+    root: Path,
+    loop_id: str,
+    integration_commit: str | None = None,
+    campaign_id: str | None = None,
+) -> dict[str, Any]:
+    """Single owner for continuous soft-unblock (never chat-prompt thrash).
+
+    Returns::
+
+        {
+          "soft_healed": [kind, ...],
+          "hard_pending": [{"campaign_id", "index", "kind", "reason"}, ...],
+          "blocker_cleared": bool,
+          "predecessor_campaign_id": str | None,
+        }
+
+    Soft: document, continuous-only dirt, thrash timeout residual repair_harness,
+    bank exhaust. Hard: true harness crash, formal, deliver_stack, foreign dirt.
+    """
+    soft_healed: list[str] = []
+    hard_pending: list[dict[str, Any]] = []
+    pred = campaign_id or _latest_cycle(root, loop_id)[1]
+
+    # 1) Hygiene — continuous-only dirty tree.
+    try:
+        dirty_kind = _self_heal_continuous_dirty_tree(
+            cwd=cwd, root=root, loop_id=loop_id
+        )
+        if dirty_kind:
+            soft_healed.append(dirty_kind)
+    except Exception as exc:  # noqa: BLE001
+        print(f"SELF_HEAL_UNBLOCK dirty_warn={exc!r}", flush=True)
+
+    # Foreign dirt is hard (tree still dirty after continuous-only attempt).
+    try:
+        porcelain = _git(
+            "status",
+            "--porcelain",
+            cwd=cwd,
+            root=root,
+            loop_id=loop_id,
+            stage="self-heal-unblock-dirty-check",
+        )
+    except Exception:  # noqa: BLE001
+        porcelain = ""
+    if porcelain.strip():
+        foreign = [
+            p for p in _porcelain_paths(porcelain) if _is_foreign_dirty_path(p)
+        ]
+        if foreign:
+            hard_pending.append(
+                {
+                    "campaign_id": pred,
+                    "index": -1,
+                    "kind": "foreign_dirty_tree",
+                    "reason": f"non-closeout dirty paths: {foreign[:8]}",
+                }
+            )
+
+    # 2) Thrash timeout residual repair_harness → next_experiment.
+    try:
+        timeout_kind = _self_heal_thrash_timeout_repair(
+            cwd=cwd, root=root, loop_id=loop_id, campaign_id=pred
+        )
+        if timeout_kind:
+            soft_healed.append(timeout_kind)
+    except Exception as exc:  # noqa: BLE001
+        print(f"SELF_HEAL_UNBLOCK timeout_warn={exc!r}", flush=True)
+
+    # 3) Document closeout.
+    try:
+        doc_kind = _self_heal_document_actions(
+            cwd=cwd, root=root, loop_id=loop_id, campaign_id=pred
+        )
+        if doc_kind:
+            soft_healed.append(doc_kind)
+    except Exception as exc:  # noqa: BLE001
+        print(f"SELF_HEAL_UNBLOCK document_warn={exc!r}", flush=True)
+
+    # 4) Bank exhaust when no open screening arms.
+    try:
+        closed = _recent_completed_nonpositive_slugs(root, pred)
+        entries = _load_champion_queue(_champion_queue_path(root, loop_id))
+        if integration_commit:
+            _reopen_harness_blocked_champions(
+                root, entries, integration_commit=integration_commit
+            )
+            _write_champion_queue(_champion_queue_path(root, loop_id), entries)
+        skip = _skip_arm_slugs(
+            entries, integration_commit=integration_commit, include_causal_cap=False
+        )
+        if _self_heal_thrash_bank_exhaust(
+            root, loop_id, closed=closed, skip=skip | closed
+        ):
+            # Only record as heal when bank was empty before (heuristic: open_now
+            # was empty). The helper returns True also when arms already open;
+            # still safe to note compose path.
+            soft_healed.append("thrash_bank_compose")
+    except Exception as exc:  # noqa: BLE001
+        print(f"SELF_HEAL_UNBLOCK bank_warn={exc!r}", flush=True)
+
+    # 5) Enumerate remaining hard prereqs on predecessor.
+    if pred:
+        handoff_path = root / pred / "cycle_handoff.json"
+        if handoff_path.is_file():
+            try:
+                handoff = AutotrainCycleHandoffV1.model_validate_json(
+                    handoff_path.read_text(encoding="utf-8")
+                )
+                delivery: dict[str, Any] = {}
+                delivery_path = root / pred / "sdlc_delivery.json"
+                if delivery_path.is_file():
+                    try:
+                        loaded = _read_json(delivery_path)
+                        if isinstance(loaded, dict):
+                            delivery = loaded
+                    except Exception:  # noqa: BLE001
+                        delivery = {}
+                pending = list(pending_autotrain_actions(root, handoff))
+                if delivery.get("stack_layer") is False:
+                    pending = [
+                        (i, a) for i, a in pending if a.kind != "deliver_stack"
+                    ]
+                for index, action in pending:
+                    if action.kind == "document":
+                        hard_pending.append(
+                            {
+                                "campaign_id": pred,
+                                "index": index,
+                                "kind": "document",
+                                "reason": str(action.reason or "document unacked"),
+                            }
+                        )
+                        continue
+                    if action.kind == "repair_harness":
+                        if _delivery_is_thrash_timeout_residual(delivery, handoff):
+                            # Should have been healed; treat residual as soft miss.
+                            continue
+                        hard_pending.append(
+                            {
+                                "campaign_id": pred,
+                                "index": index,
+                                "kind": "repair_harness",
+                                "reason": str(action.reason or "harness repair"),
+                            }
+                        )
+                        continue
+                    if action.kind in _HARD_PREREQUISITE_ACTION_KINDS:
+                        hard_pending.append(
+                            {
+                                "campaign_id": pred,
+                                "index": index,
+                                "kind": action.kind,
+                                "reason": str(action.reason or action.kind),
+                            }
+                        )
+            except Exception as exc:  # noqa: BLE001
+                print(f"SELF_HEAL_UNBLOCK enumerate_warn={exc!r}", flush=True)
+
+    # Drop document hard_pending if we just acked (re-check).
+    if pred and any(h.get("kind") == "document" for h in hard_pending):
+        try:
+            handoff = AutotrainCycleHandoffV1.model_validate_json(
+                (root / pred / "cycle_handoff.json").read_text(encoding="utf-8")
+            )
+            still_doc = any(
+                a.kind == "document"
+                for _, a in pending_autotrain_actions(root, handoff)
+            )
+            if not still_doc:
+                hard_pending = [h for h in hard_pending if h.get("kind") != "document"]
+        except Exception:  # noqa: BLE001
+            pass
+
+    blocker_cleared = not hard_pending
+    if blocker_cleared:
+        _clear_loop_blocker(
+            root,
+            loop_id,
+            reason=(
+                "unblock:" + ",".join(soft_healed)
+                if soft_healed
+                else "unblock:clean"
+            ),
+        )
+        _record_cycle_recovery(
+            root=root,
+            loop_id=loop_id,
+            soft_healed=soft_healed,
+            predecessor_campaign_id=pred,
+        )
+    else:
+        # Typed hard block — one state write, no restart thrash on soft classes.
+        cycle_index, _ = _latest_cycle(root, loop_id)
+        detail = "; ".join(
+            f"{h.get('kind')}@{h.get('campaign_id')}:{h.get('reason', '')[:80]}"
+            for h in hard_pending
+        )
+        _write_loop_state(
+            root,
+            AutotrainLoopStateV1(
+                loop_id=loop_id,
+                state="BLOCKED",
+                phase="blocked",
+                cycle_index=max(0, cycle_index),
+                next_action=f"hard_pending:{detail[:200]}",
+                blocker_fingerprint=hashlib.sha256(
+                    detail.encode("utf-8")
+                ).hexdigest(),
+                blocker_count=len(hard_pending),
+                pid=os.getpid(),
+                heartbeat_at=utc_now(),
+            ),
+        )
+        print(f"SELF_HEAL_UNBLOCK hard_pending={hard_pending}", flush=True)
+
+    report = {
+        "soft_healed": soft_healed,
+        "hard_pending": hard_pending,
+        "blocker_cleared": blocker_cleared,
+        "predecessor_campaign_id": pred,
+    }
+    print(
+        f"SELF_HEAL_UNBLOCK cleared={blocker_cleared} "
+        f"soft={soft_healed} hard_n={len(hard_pending)} pred={pred}",
+        flush=True,
+    )
+    return report
+
+
+def _record_cycle_recovery(
+    *,
+    root: Path,
+    loop_id: str,
+    soft_healed: Sequence[str],
+    predecessor_campaign_id: str | None,
+) -> None:
+    """Append a non-blocking recovery event so soft failures do not accumulate."""
+    path = root / "loops" / loop_id / "cycle_failures.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    record = {
+        "schema": "autotrain_cycle_recovery/v1",
+        "loop_id": loop_id,
+        "predecessor_campaign_id": predecessor_campaign_id,
+        "soft_healed": list(soft_healed),
+        "blocking": False,
+        "recovered": True,
+        "consecutive_count": 0,
+        "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(record, sort_keys=True) + "\n")
 
 
 def _loop_state_path(root: Path, loop_id: str) -> Path:
@@ -2378,7 +2708,11 @@ def _clear_active_stage(root: Path, loop_id: str) -> None:
 def _record_cycle_failure(
     *, root: Path, loop_id: str, exc: Exception, cycle_index: int
 ) -> int:
-    """Persist a stable blocker fingerprint and return its consecutive count."""
+    """Persist a stable blocker fingerprint and return its consecutive count.
+
+    Soft continuous failures (document, thrash timeout residual, dirty closeout,
+    bank exhaust, soft identity) never accumulate to ``state=BLOCKED``.
+    """
     message = str(exc).strip() or exc.__class__.__name__
     fingerprint = hashlib.sha256(
         f"{exc.__class__.__name__}:{message}".encode("utf-8")
@@ -2394,13 +2728,15 @@ def _record_cycle_failure(
                 continue
             if isinstance(row, dict):
                 previous.append(row)
-    soft = isinstance(exc, (subprocess.TimeoutExpired, TimeoutError, ConnectionError))
-    if isinstance(exc, subprocess.CalledProcessError):
-        soft = bool(exc.cmd and list(exc.cmd)[:2] == ["git", "fetch"])
+    soft = _exception_is_soft_continuous(exc)
     count = 0 if soft else 1
     if not soft:
         for row in reversed(previous):
-            if not row.get("blocking", True) or row.get("fingerprint") != fingerprint:
+            if (
+                not row.get("blocking", True)
+                or row.get("recovered")
+                or row.get("fingerprint") != fingerprint
+            ):
                 break
             count += 1
     record = {
@@ -2412,6 +2748,7 @@ def _record_cycle_failure(
         "fingerprint": fingerprint,
         "consecutive_count": count,
         "blocking": not soft,
+        "soft": soft,
         "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     with path.open("a", encoding="utf-8") as fh:
@@ -2431,9 +2768,10 @@ def _record_cycle_failure(
                 if soft
                 else "retry cycle"
             ),
-            blocker_fingerprint=fingerprint,
-            blocker_count=count,
+            blocker_fingerprint=fingerprint if not soft else None,
+            blocker_count=count if not soft else 0,
             pid=os.getpid(),
+            heartbeat_at=utc_now(),
         ),
     )
     return count
@@ -9667,15 +10005,38 @@ def run_cycle(
     lineage_pred = _campaign_at_cycle(root, loop_id, idx)
     if require_action_receipts:
         _refresh_incomplete_replay_handoff(root, loop_id, pred)
-    # Defensive: complete ordinary document closeout before the hard gate so
-    # thrash never blocks on "please document and restart".
-    if require_action_receipts and pred:
+    # Single soft-unblock owner before the hard prereq gate.
+    if require_action_receipts:
         try:
-            _self_heal_document_actions(
-                cwd=cwd, root=root, loop_id=loop_id, campaign_id=pred
+            report = self_heal_unblock_loop(
+                cwd=cwd,
+                root=root,
+                loop_id=loop_id,
+                campaign_id=pred,
             )
+            if report.get("hard_pending"):
+                detail = ", ".join(
+                    f"{h.get('index')}:{h.get('kind')}"
+                    for h in report["hard_pending"]
+                    if h.get("kind") != "foreign_dirty_tree"
+                )
+                foreign = [
+                    h
+                    for h in report["hard_pending"]
+                    if h.get("kind") == "foreign_dirty_tree"
+                ]
+                if foreign:
+                    raise RuntimeError(
+                        "loop worktree is dirty; continuous requires a clean tree"
+                    )
+                if detail:
+                    raise RuntimeError(
+                        f"predecessor {pred} has unacknowledged actions: {detail}"
+                    )
+        except RuntimeError:
+            raise
         except Exception as exc:  # noqa: BLE001
-            print(f"SELF_HEAL_DOCUMENT_WARN predecessor={pred} err={exc!r}", flush=True)
+            print(f"SELF_HEAL_UNBLOCK_WARN predecessor={pred} err={exc!r}", flush=True)
     if require_action_receipts:
         _require_predecessor_actions(root, loop_id, pred)
     replay = (
@@ -10933,79 +11294,19 @@ def main(argv: list[str] | None = None) -> int:
     except RuntimeError as exc:
         print(str(exc), flush=True)
         return 2
-    # Startup self-heal: clear recoverable BLOCKED state without human prompt.
-    # Always attempt document/dirty/thrash-timeout closeout so thrash restarts
-    # never need an agent re-prompt for ordinary screening notes.
+    # Startup self-heal: single unblock owner — never chat-prompt for soft thrash.
     try:
-        pred = _latest_cycle(root, args.loop_id)[1]
-        # Heal from the *real* last failure message (not "repair repeated
-        # blocker:<fingerprint>", which matches no heal branch).
-        last_fail = _last_cycle_failure_message(root, args.loop_id)
-        if last_fail:
-            heal = _self_heal_cycle_error(
-                root=root,
-                loop_id=args.loop_id,
-                exc=RuntimeError(last_fail),
-                integration_commit=code_sha,
-                cwd=cwd,
-            )
-            if heal:
-                _clear_loop_blocker(root, args.loop_id, reason=str(heal))
-        # Proactive thrash timeout residual + document/dirty closeout.
-        timeout_kind = _self_heal_thrash_timeout_repair(
-            cwd=cwd, root=root, loop_id=args.loop_id, campaign_id=pred
+        report = self_heal_unblock_loop(
+            cwd=cwd,
+            root=root,
+            loop_id=args.loop_id,
+            integration_commit=code_sha,
         )
-        if timeout_kind:
-            _clear_loop_blocker(root, args.loop_id, reason=str(timeout_kind))
-        close_kind = _self_heal_closeout_blockers(
-            cwd=cwd, root=root, loop_id=args.loop_id, campaign_id=pred
-        )
-        if close_kind:
-            _clear_loop_blocker(root, args.loop_id, reason=str(close_kind))
-        state_path = _loop_state_path(root, args.loop_id)
-        if state_path.is_file():
-            prior = AutotrainLoopStateV1.model_validate_json(
-                state_path.read_text(encoding="utf-8")
+        if report.get("hard_pending"):
+            print(
+                f"SELF_HEAL_STARTUP hard_pending={report['hard_pending']}",
+                flush=True,
             )
-            if prior.state == "BLOCKED":
-                heal = None
-                if last_fail:
-                    heal = _self_heal_cycle_error(
-                        root=root,
-                        loop_id=args.loop_id,
-                        exc=RuntimeError(last_fail),
-                        integration_commit=code_sha,
-                        cwd=cwd,
-                    )
-                # Only bank-compose when the failure is actually bank exhaust —
-                # never clear an unrelated repair_harness BLOCKED by composing
-                # thrash arms (that just restart-fails forever).
-                fail_l = (last_fail or "").lower()
-                if (
-                    _BANK_EXHAUST_MSG in (last_fail or "")
-                    or "screening arm bank exhausted" in fail_l
-                    or "bank" in fail_l
-                ):
-                    _load_dynamic_thrash_arms(root, args.loop_id)
-                    pred = _latest_cycle(root, args.loop_id)[1]
-                    closed = _recent_completed_nonpositive_slugs(root, pred)
-                    if _self_heal_thrash_bank_exhaust(
-                        root, args.loop_id, closed=closed, skip=closed
-                    ):
-                        heal = heal or "thrash_bank_compose_startup"
-                if not heal:
-                    heal = _self_heal_thrash_timeout_repair(
-                        cwd=cwd,
-                        root=root,
-                        loop_id=args.loop_id,
-                        campaign_id=pred,
-                    )
-                if not heal:
-                    heal = _self_heal_closeout_blockers(
-                        cwd=cwd, root=root, loop_id=args.loop_id, campaign_id=pred
-                    )
-                if heal:
-                    _clear_loop_blocker(root, args.loop_id, reason=str(heal))
     except Exception as startup_exc:  # noqa: BLE001 — never abort startup heal
         print(f"SELF_HEAL_STARTUP_WARN {startup_exc!r}", flush=True)
     if args.supervised and args.max_cycles not in {0, 1}:
@@ -11043,8 +11344,21 @@ def main(argv: list[str] | None = None) -> int:
             except Exception as exc:  # noqa: BLE001 - continuous must self-heal next pass
                 print(f"CYCLE_ERROR {exc!r}", flush=True)
                 cycle_index, _ = _latest_cycle(root, args.loop_id)
-                # In-pipeline heal first — bank exhaust / soft identity races
-                # must not require a human re-prompt to continue learning.
+                # Single unblock owner — soft thrash never needs a human prompt.
+                report = self_heal_unblock_loop(
+                    cwd=cwd,
+                    root=root,
+                    loop_id=args.loop_id,
+                    integration_commit=code_sha,
+                )
+                if report.get("blocker_cleared") and not report.get("hard_pending"):
+                    print(
+                        f"SELF_HEAL continue soft={report.get('soft_healed')}",
+                        flush=True,
+                    )
+                    time.sleep(1)
+                    continue
+                # Also try legacy string heal for bank/soft identity not covered.
                 heal_kind = _self_heal_cycle_error(
                     root=root,
                     loop_id=args.loop_id,
@@ -11063,32 +11377,43 @@ def main(argv: list[str] | None = None) -> int:
                     exc=exc,
                     cycle_index=cycle_index,
                 )
-                # A supervised invocation returns control immediately. Legacy
-                # unbounded mode stops only at the typed repeated-blocker rule
-                # after self-heal could not recover.
-                if args.supervised or "dirty" in str(exc).lower() or count >= 3:
-                    # Last-chance heal before yielding — include supervised so
-                    # a one-shot restart after document closeout never needs
-                    # an agent prompt.
-                    last = _self_heal_cycle_error(
+                # Soft failures never force exit 2 thrash; only hard_pending does.
+                if _exception_is_soft_continuous(exc) and not report.get(
+                    "hard_pending"
+                ):
+                    # Unblock again then continue (unbounded) or return 0 so the
+                    # in-repo supervisor restarts cleanly without agent prompt.
+                    self_heal_unblock_loop(
+                        cwd=cwd,
                         root=root,
                         loop_id=args.loop_id,
-                        exc=exc,
                         integration_commit=code_sha,
-                        cwd=cwd,
                     )
-                    if last:
-                        _clear_loop_blocker(root, args.loop_id, reason=str(last))
-                        print(
-                            f"SELF_HEAL after_hard_block kind={last}",
-                            flush=True,
-                        )
-                        if not args.supervised:
-                            time.sleep(1)
-                            continue
-                        # Supervised: healed so successor restart is unblocked.
+                    if args.supervised:
                         return 0
-                    return 2
+                    time.sleep(1)
+                    continue
+                if args.supervised or count >= 3 or report.get("hard_pending"):
+                    if not report.get("hard_pending"):
+                        last_report = self_heal_unblock_loop(
+                            cwd=cwd,
+                            root=root,
+                            loop_id=args.loop_id,
+                            integration_commit=code_sha,
+                        )
+                        if last_report.get("blocker_cleared") and not last_report.get(
+                            "hard_pending"
+                        ):
+                            print(
+                                f"SELF_HEAL after_hard_block "
+                                f"soft={last_report.get('soft_healed')}",
+                                flush=True,
+                            )
+                            if not args.supervised:
+                                time.sleep(1)
+                                continue
+                            return 0
+                    return 2 if report.get("hard_pending") or count >= 3 else 0
                 time.sleep(1)
                 continue
         return 0
