@@ -7470,16 +7470,22 @@ def _write_cycle_handoff(
         ),
     )
     # Driver-owned document closeout so the successor never waits on a human
-    # re-prompt for ordinary thrash screening notes.
-    try:
-        _self_heal_document_actions(
-            cwd=cwd or Path.cwd(),
-            root=root,
-            loop_id=loop_id,
-            campaign_id=campaign_id,
-        )
-    except Exception as exc:  # noqa: BLE001 — never fail handoff write on closeout
-        print(f"SELF_HEAL_DOCUMENT_WARN campaign={campaign_id} err={exc!r}", flush=True)
+    # re-prompt for ordinary thrash screening notes. Only when cwd is explicit
+    # (live continuous worktree) — unit tests call this helper without cwd and
+    # must not write into the caller's real docs/design tree.
+    if cwd is not None:
+        try:
+            _self_heal_document_actions(
+                cwd=cwd,
+                root=root,
+                loop_id=loop_id,
+                campaign_id=campaign_id,
+            )
+        except Exception as exc:  # noqa: BLE001 — never fail handoff write on closeout
+            print(
+                f"SELF_HEAL_DOCUMENT_WARN campaign={campaign_id} err={exc!r}",
+                flush=True,
+            )
     return handoff
 
 

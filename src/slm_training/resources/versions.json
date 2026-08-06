@@ -2804,6 +2804,11 @@
         {
           "version": "v183",
           "date": "2026-08-06",
+          "note": "no-bump: gate SELF_HEAL_DOCUMENT in _write_cycle_handoff on explicit cwd only (prevent unit-test pollution of docs/design); heal behavior unchanged for live continuous which always passes cwd"
+        },
+        {
+          "version": "v183",
+          "date": "2026-08-06",
           "note": "continuous self-heal: driver-owned document closeout + continuous-only dirty-tree commit (SELF_HEAL_DOCUMENT / SELF_HEAL_DIRTY_TREE) so thrash never blocks on unacked document or auto-docs dirt; hard prereqs (repair_harness/formal/deliver_stack/\u2026) still fail closed"
         },
         {
