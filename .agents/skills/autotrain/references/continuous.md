@@ -33,6 +33,19 @@ persistence is the host goal and the append-only campaign event chains.
      live promote re-run. Never leave unstamped legacy promotions authoritative
      after a harness update.
    - startup `BLOCKED` with a healable fingerprint → clear blocker and continue
+   - **ordinary cycle `document` closeout** → driver writes
+     `docs/design/<campaign_id>-results.{md,json}`, commits **only** those
+     continuous closeout paths, and appends a content-bound
+     `document` receipt (`SELF_HEAL_DOCUMENT`). End-of-cycle, pre-gate, cycle
+     error, and startup all run this heal so thrash never blocks on
+     “please document and restart.”
+   - **continuous-only dirty tree** → if porcelain is only
+     `docs/design/continuous-*` closeout files (plus optional MODEL_CARD /
+     README checkpoint notes), auto-commit (`SELF_HEAL_DIRTY_TREE`); foreign
+     WIP still fails closed.
+   - **Never auto-ack** `repair_harness`, `repair_formal`, `rebuild_data`,
+     `stop_campaign`, or `deliver_stack` — those stay hard prerequisites with
+     real evidence.
    Repair named harness families via owner skills when evidence requires code
    change; otherwise change knobs and re-run. **Do not** wait for the user to
    say “diagnose and restart.”
@@ -119,7 +132,10 @@ the successor. `--max-cycles 0` remains a legacy unbounded executor; bare
 delivery between cycles.
 
 Every prerequisite action needs an append-only receipt before the successor can
-start. After executing action index `<i>` from the handoff, bind its evidence:
+start. **Ordinary `document` actions are driver-owned** via
+`SELF_HEAL_DOCUMENT` (no agent ack required between thrash cycles). For hard
+prerequisites (`repair_harness`, `repair_formal`, `rebuild_data`, `stop_campaign`,
+`deliver_stack`) the agent still executes the owner skill then binds evidence:
 
 ```bash
 python -m scripts.autoresearch --root outputs/autoresearch ack-action \
@@ -132,7 +148,7 @@ must resolve to an existing durable artifact or Git commit; documentation must b
 tracked, and delivery must cite a commit already merged into `origin/main`.
 Receipts are action-content-bound; editing/reordering a handoff cannot satisfy an
 old action. The driver enforces receipts for theorem-backed stops, harness, Lean,
-data, docs, and delivery actions.
+data, docs, and delivery actions — and auto-satisfies ordinary docs itself.
 `next_experiment`, `retry_measurement`, and `monitor` are execution/steering actions,
 so they are not predecessor prerequisites.
 An unacknowledged `retry_measurement` is nevertheless consumed before a new model
@@ -249,8 +265,11 @@ For each cycle, run the full body without pausing:
    comparative.
 5. **Diagnose** outcomes; write hypothesizer feedback.
 6. **Document** JSON + markdown under `docs/design/` (`documenting-experiment-results`).
-   Acknowledge the matching `document` action with the durable doc path; if a
-   checkpoint exists, the evidence must also cover MODEL_CARD + README.
+   For ordinary thrash cycles the continuous driver already wrote and acked
+   `docs/design/<campaign_id>-results.{md,json}` (`SELF_HEAL_DOCUMENT`). Agents
+   only need a manual document ack when the driver could not (rare) or when
+   checkpoint documentation requires a richer MODEL_CARD/README update than the
+   honesty stub.
 7. **Print** the compact four-table view:
 
    ```bash
@@ -293,8 +312,11 @@ For each cycle, run the full body without pausing:
     # resolve conflicts on the owning layer; re-check policy/tests
     ```
 
-    The supervised driver verifies this integrated clean tree but does not
-    fetch, merge, commit, push, or open PRs itself.
+    The supervised driver verifies this integrated clean tree. It may
+    **commit only** continuous closeout docs (`SELF_HEAL_DOCUMENT` /
+    `SELF_HEAL_DIRTY_TREE`) so thrash can continue without a human re-prompt.
+    It still does not fetch/merge (except when not `--supervised`), push, or
+    open PRs itself.
 
 Owner skills (invoke; do not reimplement):
 

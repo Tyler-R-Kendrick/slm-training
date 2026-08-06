@@ -1448,3 +1448,9 @@ Date (UTC) column). Do not delete history.
    versions from `scoreboard.json`
    ([version-stamp-contract.md](design/version-stamp-contract.md)).
 6. Commit docs with the checkpoint-producing change.
+
+## Continuous autotrain note (2026-08-06)
+
+- campaign: `cycle-1`
+- checkpoints: `runs/cand/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.

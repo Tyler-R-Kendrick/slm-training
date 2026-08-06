@@ -2757,7 +2757,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v182",
+      "version": "v183",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2801,6 +2801,11 @@
         "tests/test_autoresearch/test_thrash_regime.py"
       ],
       "history": [
+        {
+          "version": "v183",
+          "date": "2026-08-06",
+          "note": "continuous self-heal: driver-owned document closeout + continuous-only dirty-tree commit (SELF_HEAL_DOCUMENT / SELF_HEAL_DIRTY_TREE) so thrash never blocks on unacked document or auto-docs dirt; hard prereqs (repair_harness/formal/deliver_stack/\u2026) still fail closed"
+        },
         {
           "version": "v182",
           "date": "2026-08-05",

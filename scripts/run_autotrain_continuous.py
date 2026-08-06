@@ -1510,6 +1510,7 @@ def _self_heal_cycle_error(
     loop_id: str,
     exc: BaseException,
     integration_commit: str | None = None,
+    cwd: Path | None = None,
 ) -> str | None:
     """Attempt in-pipeline recovery for known continuous blockers.
 
@@ -1517,6 +1518,44 @@ def _self_heal_cycle_error(
     or None when the error remains hard.
     """
     message = str(exc)
+    work_cwd = cwd or Path.cwd()
+    # Ordinary thrash closeout: unacked document / continuous-only dirty tree.
+    if "unacknowledged actions" in message:
+        pred = _latest_cycle(root, loop_id)[1]
+        kind = _self_heal_closeout_blockers(
+            cwd=work_cwd, root=root, loop_id=loop_id, campaign_id=pred
+        )
+        if kind:
+            # Only claim heal when no hard prerequisites remain on predecessor.
+            if pred:
+                handoff_path = root / pred / "cycle_handoff.json"
+                if handoff_path.is_file():
+                    handoff = AutotrainCycleHandoffV1.model_validate_json(
+                        handoff_path.read_text(encoding="utf-8")
+                    )
+                    hard = [
+                        (i, a)
+                        for i, a in pending_autotrain_actions(root, handoff)
+                        if a.kind in _HARD_PREREQUISITE_ACTION_KINDS
+                    ]
+                    if hard:
+                        return None
+            return kind
+    if "loop worktree is dirty" in message:
+        dirty_kind = _self_heal_continuous_dirty_tree(
+            cwd=work_cwd, root=root, loop_id=loop_id
+        )
+        if dirty_kind:
+            return dirty_kind
+        # Document closeout may produce the dirt; heal both.
+        close_kind = _self_heal_closeout_blockers(
+            cwd=work_cwd,
+            root=root,
+            loop_id=loop_id,
+            campaign_id=_latest_cycle(root, loop_id)[1],
+        )
+        if close_kind:
+            return close_kind
     # Bank exhaust: synthesize thrash successors and/or rearm harness heads.
     if _BANK_EXHAUST_MSG in message or "screening arm bank exhausted" in message:
         pred = _latest_cycle(root, loop_id)[1]
@@ -1638,6 +1677,410 @@ def _clear_loop_blocker(root: Path, loop_id: str, *, reason: str) -> None:
         ),
     )
     print(f"SELF_HEAL_CLEAR_BLOCKER reason={reason}", flush=True)
+
+
+# ---------------------------------------------------------------------------
+# Document + dirty-tree self-heal (ordinary thrash closeout — never agent-prompt)
+# ---------------------------------------------------------------------------
+
+_HARD_PREREQUISITE_ACTION_KINDS = frozenset(
+    {
+        "stop_campaign",
+        "repair_harness",
+        "repair_formal",
+        "rebuild_data",
+        "deliver_stack",
+    }
+)
+
+
+def _is_continuous_closeout_path(rel: str) -> bool:
+    """True when a dirty path is continuous-driver closeout material only."""
+    path = rel.replace("\\", "/").lstrip("./")
+    if path in {"docs/MODEL_CARD.md", "README.md"}:
+        return True
+    if not path.startswith("docs/design/"):
+        return False
+    name = path[len("docs/design/") :]
+    if "/" in name:
+        return False
+    return name.startswith("continuous-") and name.endswith((".md", ".json"))
+
+
+def _porcelain_paths(porcelain: str) -> list[str]:
+    paths: list[str] = []
+    for line in porcelain.splitlines():
+        if not line.strip():
+            continue
+        body = line[3:] if len(line) >= 3 else line
+        if " -> " in body:
+            body = body.split(" -> ", 1)[1]
+        path = body.strip().strip('"')
+        if path:
+            paths.append(path)
+    return paths
+
+
+def _continuous_docs_paths(cwd: Path, campaign_id: str) -> tuple[Path, Path]:
+    design = cwd / "docs" / "design"
+    stem = f"{campaign_id}-results"
+    return design / f"{stem}.md", design / f"{stem}.json"
+
+
+def _render_continuous_cycle_docs(
+    *,
+    campaign_id: str,
+    loop_id: str,
+    handoff: AutotrainCycleHandoffV1,
+    delivery: Mapping[str, Any],
+) -> tuple[str, dict[str, Any]]:
+    """Honest fixture-screening closeout payload (not a ship claim)."""
+    reasons = list(delivery.get("reasons") or handoff.reasons or [])
+    payload: dict[str, Any] = {
+        "schema": "continuous_cycle_results/v1",
+        "campaign_id": campaign_id,
+        "loop_id": loop_id,
+        "cycle_index": handoff.cycle_index,
+        "cycle_role": handoff.cycle_role,
+        "cycle_intent": handoff.cycle_intent,
+        "positive": bool(delivery.get("positive")),
+        "stack_layer": bool(delivery.get("stack_layer")),
+        "measurement_complete": delivery.get("measurement_complete"),
+        "primary_metric": handoff.primary_metric,
+        "control_metrics": delivery.get("control_metrics"),
+        "candidate_metrics": delivery.get("candidate_metrics"),
+        "reasons": reasons,
+        "evidence_class": handoff.evidence_class,
+        "honesty": "fixture_screening_only_not_ship",
+        "auto": True,
+    }
+    md = (
+        f"# Continuous cycle `{campaign_id}`\n\n"
+        f"- loop_id: `{loop_id}`\n"
+        f"- cycle_index: `{handoff.cycle_index}`\n"
+        f"- role/intent: `{handoff.cycle_role}` / `{handoff.cycle_intent}`\n"
+        f"- primary_metric: `{handoff.primary_metric}`\n"
+        f"- positive: **{payload['positive']}**\n"
+        f"- stack_layer: **{payload['stack_layer']}**\n"
+        f"- measurement_complete: `{payload['measurement_complete']}`\n"
+        f"- evidence_class: `{handoff.evidence_class}`\n"
+        f"- reasons: {', '.join(str(r) for r in reasons) or '—'}\n"
+        f"- control_metrics: `{payload['control_metrics']}`\n"
+        f"- candidate_metrics: `{payload['candidate_metrics']}`\n\n"
+        "Auto-documented by the continuous driver self-heal closeout. "
+        "Fixture screening only — not a ship claim.\n"
+    )
+    return md, payload
+
+
+def _git_commit_paths(
+    cwd: Path,
+    paths: Sequence[Path],
+    *,
+    message: str,
+    root: Path | None = None,
+    loop_id: str | None = None,
+    stage: str = "self-heal-git-commit",
+) -> bool:
+    """Stage only the given paths and commit if there is a staged diff."""
+    rels: list[str] = []
+    for path in paths:
+        resolved = path if path.is_absolute() else cwd / path
+        if not resolved.is_file():
+            continue
+        try:
+            rels.append(str(resolved.resolve().relative_to(cwd.resolve())))
+        except ValueError:
+            rels.append(str(path))
+    if not rels:
+        return False
+    stage_kw: dict[str, Any] = {"cwd": cwd}
+    if root is not None and loop_id is not None:
+        stage_kw.update(root=root, loop_id=loop_id)
+    add_stage = f"{stage}-add" if root is not None else None
+    staged_stage = f"{stage}-staged" if root is not None else None
+    commit_stage = f"{stage}-commit" if root is not None else None
+    _run(
+        ["git", "add", "--", *rels],
+        stage=add_stage,
+        **stage_kw,
+    )
+    staged = _git(
+        "diff",
+        "--cached",
+        "--name-only",
+        stage=staged_stage,
+        **stage_kw,
+    )
+    if not staged.strip():
+        return False
+    _run(
+        [
+            "git",
+            "-c",
+            "user.email=autotrain@local",
+            "-c",
+            "user.name=autotrain",
+            "commit",
+            "-m",
+            message,
+            "--",
+            *rels,
+        ],
+        stage=commit_stage,
+        **stage_kw,
+    )
+    return True
+
+
+def _ack_document_action(
+    root: Path,
+    handoff: AutotrainCycleHandoffV1,
+    *,
+    action_index: int,
+    evidence_uris: Sequence[str],
+) -> None:
+    action = handoff.actions[action_index]
+    if action.kind != "document":
+        raise ValueError(f"refusing to auto-ack non-document action: {action.kind}")
+    uris = tuple(evidence_uris)
+    evidence = bind_autotrain_action_evidence(root, handoff, action, uris)
+    append_autotrain_action_receipt(
+        root,
+        AutotrainActionReceiptV1(
+            loop_id=handoff.loop_id,
+            campaign_id=handoff.campaign_id,
+            action_index=action_index,
+            action_sha256=autotrain_action_sha256(action),
+            action_kind="document",
+            status="completed",
+            evidence_uris=uris,
+            evidence=evidence,
+        ),
+    )
+
+
+def _append_checkpoint_doc_notes(
+    cwd: Path,
+    *,
+    campaign_id: str,
+    checkpoint_paths: Sequence[str],
+) -> list[Path]:
+    """Minimal honesty-labeled checkpoint notes when handoff requires them."""
+    touched: list[Path] = []
+    if not checkpoint_paths:
+        return touched
+    stamp = time.strftime("%Y-%m-%d", time.gmtime())
+    note = (
+        f"\n## Continuous autotrain note ({stamp})\n\n"
+        f"- campaign: `{campaign_id}`\n"
+        f"- checkpoints: {', '.join(f'`{p}`' for p in checkpoint_paths)}\n"
+        "- honesty: fixture/scratch continuous cycle — **not** a ship promotion.\n"
+    )
+    for rel in ("docs/MODEL_CARD.md", "README.md"):
+        path = cwd / rel
+        if not path.is_file():
+            continue
+        text = path.read_text(encoding="utf-8")
+        marker = f"campaign: `{campaign_id}`"
+        if marker in text:
+            continue
+        path.write_text(text.rstrip() + "\n" + note, encoding="utf-8")
+        touched.append(path)
+    return touched
+
+
+def _self_heal_document_actions(
+    *,
+    cwd: Path,
+    root: Path,
+    loop_id: str,
+    campaign_id: str | None,
+) -> str | None:
+    """Write/commit docs/design closeout and ack pending document actions.
+
+    Returns a heal kind when at least one document action was completed.
+    Never acks repair_harness / formal / deliver_stack / rebuild_data / stop.
+    """
+    if not campaign_id:
+        return None
+    handoff_path = root / campaign_id / "cycle_handoff.json"
+    if not handoff_path.is_file():
+        return None
+    handoff = AutotrainCycleHandoffV1.model_validate_json(
+        handoff_path.read_text(encoding="utf-8")
+    )
+    if handoff.loop_id != loop_id or handoff.campaign_id != campaign_id:
+        return None
+    pending_docs = [
+        (index, action)
+        for index, action in pending_autotrain_actions(root, handoff)
+        if action.kind == "document"
+    ]
+    if not pending_docs:
+        return None
+
+    delivery_path = root / campaign_id / "sdlc_delivery.json"
+    delivery: dict[str, Any] = {}
+    if delivery_path.is_file():
+        try:
+            loaded = _read_json(delivery_path)
+            if isinstance(loaded, dict):
+                delivery = loaded
+        except Exception:  # noqa: BLE001 — still document what we have
+            delivery = {}
+
+    md_path, json_path = _continuous_docs_paths(cwd, campaign_id)
+    md_path.parent.mkdir(parents=True, exist_ok=True)
+    md_text, payload = _render_continuous_cycle_docs(
+        campaign_id=campaign_id,
+        loop_id=loop_id,
+        handoff=handoff,
+        delivery=delivery,
+    )
+    md_path.write_text(md_text, encoding="utf-8")
+    json_path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    touched: list[Path] = [md_path, json_path]
+    if handoff.checkpoint_documentation_required:
+        touched.extend(
+            _append_checkpoint_doc_notes(
+                cwd,
+                campaign_id=campaign_id,
+                checkpoint_paths=tuple(handoff.checkpoint_paths or ()),
+            )
+        )
+        if handoff.checkpoint_paths and not any(
+            p.name in {"MODEL_CARD.md", "README.md"} for p in touched
+        ):
+            print(
+                "SELF_HEAL_DOCUMENT_WARN "
+                f"campaign={campaign_id} reason=checkpoint_docs_missing_templates",
+                flush=True,
+            )
+            # Still ack design docs; iron-law checkpoint note attempted.
+    committed = _git_commit_paths(
+        cwd,
+        touched,
+        message=f"docs(autotrain): continuous {loop_id} {campaign_id} closeout",
+        root=root,
+        loop_id=loop_id,
+        stage="self-heal-document",
+    )
+    evidence_uris: list[str] = []
+    for path in touched:
+        try:
+            rel = str(path.resolve().relative_to(cwd.resolve()))
+        except ValueError:
+            rel = str(path)
+        # Evidence must be git-tracked (ls-files --error-unmatch fails if not).
+        try:
+            _git(
+                "ls-files",
+                "--error-unmatch",
+                rel,
+                cwd=cwd,
+                root=root,
+                loop_id=loop_id,
+                stage="self-heal-document-tracked",
+            )
+        except Exception:  # noqa: BLE001 — untracked path is not valid evidence
+            continue
+        evidence_uris.append(rel)
+    if not evidence_uris:
+        print(
+            f"SELF_HEAL_DOCUMENT_FAIL campaign={campaign_id} reason=no_tracked_evidence "
+            f"committed={committed}",
+            flush=True,
+        )
+        return None
+    for index, _action in pending_docs:
+        _ack_document_action(
+            root,
+            handoff,
+            action_index=index,
+            evidence_uris=evidence_uris,
+        )
+    print(
+        f"SELF_HEAL_DOCUMENT campaign={campaign_id} "
+        f"files={evidence_uris} acked={len(pending_docs)}",
+        flush=True,
+    )
+    return "document_closeout"
+
+
+def _self_heal_continuous_dirty_tree(
+    *,
+    cwd: Path,
+    root: Path | None = None,
+    loop_id: str | None = None,
+) -> str | None:
+    """Commit continuous closeout dirt only; leave foreign WIP hard-failing."""
+    # _git requires root/loop_id/stage as a triple — omit all when root missing.
+    git_kw: dict[str, Any] = {"cwd": cwd}
+    if root is not None and loop_id is not None:
+        git_kw.update(root=root, loop_id=loop_id)
+    porcelain = _git(
+        "status",
+        "--porcelain",
+        stage="self-heal-dirty-status" if root is not None else None,
+        **git_kw,
+    )
+    if not porcelain.strip():
+        return None
+    paths = _porcelain_paths(porcelain)
+    if not paths:
+        return None
+    foreign = [p for p in paths if not _is_continuous_closeout_path(p)]
+    if foreign:
+        print(
+            f"SELF_HEAL_DIRTY_TREE_SKIP foreign={foreign[:8]}",
+            flush=True,
+        )
+        return None
+    abs_paths = [cwd / p for p in paths]
+    committed = _git_commit_paths(
+        cwd,
+        abs_paths,
+        message=f"docs(autotrain): continuous {loop_id or 'loop'} self-heal closeout",
+        root=root,
+        loop_id=loop_id,
+        stage="self-heal-dirty",
+    )
+    if not committed:
+        return None
+    print(f"SELF_HEAL_DIRTY_TREE files={paths}", flush=True)
+    return "dirty_tree_closeout"
+
+
+def _self_heal_closeout_blockers(
+    *,
+    cwd: Path,
+    root: Path,
+    loop_id: str,
+    campaign_id: str | None = None,
+) -> str | None:
+    """Run document + dirty-tree heals; return last successful heal kind."""
+    kinds: list[str] = []
+    target = campaign_id or _latest_cycle(root, loop_id)[1]
+    try:
+        doc_kind = _self_heal_document_actions(
+            cwd=cwd, root=root, loop_id=loop_id, campaign_id=target
+        )
+        if doc_kind:
+            kinds.append(doc_kind)
+    except Exception as exc:  # noqa: BLE001 — surface, keep trying dirty heal
+        print(f"SELF_HEAL_DOCUMENT_WARN err={exc!r}", flush=True)
+    try:
+        dirty_kind = _self_heal_continuous_dirty_tree(
+            cwd=cwd, root=root, loop_id=loop_id
+        )
+        if dirty_kind:
+            kinds.append(dirty_kind)
+    except Exception as exc:  # noqa: BLE001
+        print(f"SELF_HEAL_DIRTY_TREE_WARN err={exc!r}", flush=True)
+    return kinds[-1] if kinds else None
 
 
 def _loop_state_path(root: Path, loop_id: str) -> Path:
@@ -6486,6 +6929,7 @@ def _write_cycle_handoff(
     resolution: dict[str, Any] | None,
     formal_status: str | None,
     skip_slugs: set[str] | None = None,
+    cwd: Path | None = None,
 ) -> AutotrainCycleHandoffV1:
     """Write the typed boundary consumed by the agent between bounded cycles."""
     camp_dir = root / campaign_id
@@ -7025,6 +7469,17 @@ def _write_cycle_handoff(
             pid=os.getpid(),
         ),
     )
+    # Driver-owned document closeout so the successor never waits on a human
+    # re-prompt for ordinary thrash screening notes.
+    try:
+        _self_heal_document_actions(
+            cwd=cwd or Path.cwd(),
+            root=root,
+            loop_id=loop_id,
+            campaign_id=campaign_id,
+        )
+    except Exception as exc:  # noqa: BLE001 — never fail handoff write on closeout
+        print(f"SELF_HEAL_DOCUMENT_WARN campaign={campaign_id} err={exc!r}", flush=True)
     return handoff
 
 
@@ -7213,6 +7668,7 @@ def _finalize_terminal_interrupted_replay(
         delivery=delivery,
         resolution=None,
         formal_status=_formal_preflight_status(camp_dir),
+        cwd=cwd,
     )
     _run(
         [
@@ -8902,7 +9358,7 @@ def run_cycle(
             raise _CodeUpdated(
                 f"integrated {integrated}; restart stale process from {startup_commit}"
             )
-    if _git(
+    dirty = _git(
         "status",
         "--porcelain",
         cwd=cwd,
@@ -8910,7 +9366,20 @@ def run_cycle(
         root=root,
         loop_id=loop_id,
         stage="sync-clean-status",
-    ):
+    )
+    if dirty:
+        # Continuous-only closeout dirt is driver-owned; foreign WIP still fails.
+        _self_heal_continuous_dirty_tree(cwd=cwd, root=root, loop_id=loop_id)
+        dirty = _git(
+            "status",
+            "--porcelain",
+            cwd=cwd,
+            deadline=deadline,
+            root=root,
+            loop_id=loop_id,
+            stage="sync-clean-status-recheck",
+        )
+    if dirty:
         raise RuntimeError("loop worktree is dirty; continuous requires a clean tree")
     upstream = _git(
         "rev-parse",
@@ -8954,6 +9423,15 @@ def run_cycle(
     lineage_pred = _campaign_at_cycle(root, loop_id, idx)
     if require_action_receipts:
         _refresh_incomplete_replay_handoff(root, loop_id, pred)
+    # Defensive: complete ordinary document closeout before the hard gate so
+    # thrash never blocks on "please document and restart".
+    if require_action_receipts and pred:
+        try:
+            _self_heal_document_actions(
+                cwd=cwd, root=root, loop_id=loop_id, campaign_id=pred
+            )
+        except Exception as exc:  # noqa: BLE001
+            print(f"SELF_HEAL_DOCUMENT_WARN predecessor={pred} err={exc!r}", flush=True)
     if require_action_receipts:
         _require_predecessor_actions(root, loop_id, pred)
     replay = (
@@ -10137,6 +10615,7 @@ def run_cycle(
         resolution=resolution,
         formal_status=promote_formal_status,
         skip_slugs=skip_slugs,
+        cwd=cwd,
     )
     try:
         _run(
@@ -10211,7 +10690,15 @@ def main(argv: list[str] | None = None) -> int:
         print(str(exc), flush=True)
         return 2
     # Startup self-heal: clear recoverable BLOCKED state without human prompt.
+    # Always attempt document/dirty closeout so thrash restarts never need an
+    # agent re-prompt for ordinary screening notes.
     try:
+        pred = _latest_cycle(root, args.loop_id)[1]
+        close_kind = _self_heal_closeout_blockers(
+            cwd=cwd, root=root, loop_id=args.loop_id, campaign_id=pred
+        )
+        if close_kind:
+            _clear_loop_blocker(root, args.loop_id, reason=str(close_kind))
         state_path = _loop_state_path(root, args.loop_id)
         if state_path.is_file():
             prior = AutotrainLoopStateV1.model_validate_json(
@@ -10227,6 +10714,7 @@ def main(argv: list[str] | None = None) -> int:
                         + str(prior.blocker_fingerprint or "")
                     ),
                     integration_commit=code_sha,
+                    cwd=cwd,
                 )
                 # Always attempt bank compose when blocked — fingerprint alone
                 # may not embed the bank-exhaust message text.
@@ -10237,6 +10725,11 @@ def main(argv: list[str] | None = None) -> int:
                     root, args.loop_id, closed=closed, skip=closed
                 ):
                     heal = heal or "thrash_bank_compose_startup"
+                # Re-run closeout: BLOCKED often means unacked document.
+                if not heal:
+                    heal = _self_heal_closeout_blockers(
+                        cwd=cwd, root=root, loop_id=args.loop_id, campaign_id=pred
+                    )
                 if heal:
                     _clear_loop_blocker(root, args.loop_id, reason=str(heal))
     except Exception as startup_exc:  # noqa: BLE001 — never abort startup heal
@@ -10283,6 +10776,7 @@ def main(argv: list[str] | None = None) -> int:
                     loop_id=args.loop_id,
                     exc=exc,
                     integration_commit=code_sha,
+                    cwd=cwd,
                 )
                 if heal_kind:
                     _clear_loop_blocker(root, args.loop_id, reason=heal_kind)
@@ -10299,23 +10793,27 @@ def main(argv: list[str] | None = None) -> int:
                 # unbounded mode stops only at the typed repeated-blocker rule
                 # after self-heal could not recover.
                 if args.supervised or "dirty" in str(exc).lower() or count >= 3:
-                    # Last-chance heal on third hard block (e.g. bank exhaust
-                    # fingerprint) before yielding to the host agent.
-                    if count >= 3 and not args.supervised:
-                        last = _self_heal_cycle_error(
-                            root=root,
-                            loop_id=args.loop_id,
-                            exc=exc,
-                            integration_commit=code_sha,
+                    # Last-chance heal before yielding — include supervised so
+                    # a one-shot restart after document closeout never needs
+                    # an agent prompt.
+                    last = _self_heal_cycle_error(
+                        root=root,
+                        loop_id=args.loop_id,
+                        exc=exc,
+                        integration_commit=code_sha,
+                        cwd=cwd,
+                    )
+                    if last:
+                        _clear_loop_blocker(root, args.loop_id, reason=str(last))
+                        print(
+                            f"SELF_HEAL after_hard_block kind={last}",
+                            flush=True,
                         )
-                        if last:
-                            _clear_loop_blocker(root, args.loop_id, reason=str(last))
-                            print(
-                                f"SELF_HEAL after_hard_block kind={last}",
-                                flush=True,
-                            )
+                        if not args.supervised:
                             time.sleep(1)
                             continue
+                        # Supervised: healed so successor restart is unblocked.
+                        return 0
                     return 2
                 time.sleep(1)
                 continue

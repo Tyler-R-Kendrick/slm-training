@@ -8038,3 +8038,246 @@ def test_write_cycle_handoff_records_thrash_regime(tmp_path: Path) -> None:
 
 
 
+
+
+def _init_git_repo(path: Path) -> None:
+    subprocess.check_call(["git", "init"], cwd=path, stdout=subprocess.DEVNULL)
+    subprocess.check_call(
+        ["git", "config", "user.email", "test@example.com"], cwd=path
+    )
+    subprocess.check_call(["git", "config", "user.name", "test"], cwd=path)
+    (path / "README.md").write_text("# test\n", encoding="utf-8")
+    (path / "docs" / "design").mkdir(parents=True)
+    (path / "docs" / "design" / ".gitkeep").write_text("", encoding="utf-8")
+    subprocess.check_call(["git", "add", "README.md", "docs"], cwd=path)
+    subprocess.check_call(
+        ["git", "commit", "-m", "init"], cwd=path, stdout=subprocess.DEVNULL
+    )
+
+
+def _document_handoff_campaign(
+    root: Path,
+    *,
+    loop_id: str,
+    campaign_id: str,
+    actions: list[dict],
+) -> None:
+    camp = root / campaign_id
+    camp.mkdir(parents=True, exist_ok=True)
+    commit = "a" * 40
+    handoff = {
+        "schema_version": "AutotrainCycleHandoffV1",
+        "loop_id": loop_id,
+        "campaign_id": campaign_id,
+        "cycle_index": 1,
+        "upstream_commit": commit,
+        "integration_commit": commit,
+        "cycle_role": "screening",
+        "cycle_intent": "screening",
+        "evidence_class": "fixture",
+        "climb_state": "candidate_queued",
+        "ship_state": "blocked",
+        "primary_metric": "smoke.structural_similarity",
+        "actions": actions,
+        "checkpoint_paths": [],
+        "checkpoint_documentation_required": False,
+    }
+    (camp / "cycle_handoff.json").write_text(
+        json.dumps(handoff, indent=2) + "\n", encoding="utf-8"
+    )
+    (camp / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "schema": "autotrain_sdlc_delivery/v1",
+                "loop_id": loop_id,
+                "campaign_id": campaign_id,
+                "positive": False,
+                "stack_layer": False,
+                "measurement_complete": True,
+                "control_metrics": {"structural_similarity": 0.1},
+                "candidate_metrics": {"structural_similarity": 0.1},
+                "reasons": ["primary_metric_null_or_worse"],
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
+def test_self_heal_document_actions_writes_commits_acks(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _init_git_repo(repo)
+    root = repo / "outputs" / "autoresearch"
+    loop_id = "continuous-openui-local"
+    campaign_id = "continuous-loop-test-continuous-openui-local-c1"
+    _document_handoff_campaign(
+        root,
+        loop_id=loop_id,
+        campaign_id=campaign_id,
+        actions=[
+            {
+                "kind": "document",
+                "owner": "documenting-experiment-results",
+                "reason": "persist this cycle's JSON and markdown under docs/design",
+                "evidence_ids": [f"campaign:{campaign_id}"],
+            },
+            {
+                "kind": "next_experiment",
+                "owner": "autotrain",
+                "reason": "consume the ranked successor priorities",
+                "evidence_ids": [f"campaign:{campaign_id}"],
+            },
+        ],
+    )
+    import slm_training.autoresearch.storage as storage
+
+    monkeypatch.setattr(storage, "_REPO_ROOT", repo)
+    with pytest.raises(RuntimeError, match="unacknowledged actions"):
+        _mod._require_predecessor_actions(root, loop_id, campaign_id)
+    kind = _mod._self_heal_document_actions(
+        cwd=repo, root=root, loop_id=loop_id, campaign_id=campaign_id
+    )
+    assert kind == "document_closeout"
+    md = repo / "docs" / "design" / f"{campaign_id}-results.md"
+    js = repo / "docs" / "design" / f"{campaign_id}-results.json"
+    assert md.is_file() and js.is_file()
+    tracked = subprocess.check_output(
+        ["git", "ls-files", "--error-unmatch", str(md.relative_to(repo))],
+        cwd=repo,
+        text=True,
+    )
+    assert tracked.strip()
+    _mod._require_predecessor_actions(root, loop_id, campaign_id)
+
+
+def test_self_heal_does_not_ack_repair_harness(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _init_git_repo(repo)
+    root = repo / "outputs" / "autoresearch"
+    loop_id = "loop-1"
+    campaign_id = "continuous-loop-test-c1"
+    _document_handoff_campaign(
+        root,
+        loop_id=loop_id,
+        campaign_id=campaign_id,
+        actions=[
+            {
+                "kind": "repair_harness",
+                "owner": "improve-openui-harnesses",
+                "reason": "repair the canonical owner",
+                "evidence_ids": [f"campaign:{campaign_id}"],
+                "harness_family": "model_build",
+            },
+            {
+                "kind": "document",
+                "owner": "documenting-experiment-results",
+                "reason": "persist docs",
+                "evidence_ids": [f"campaign:{campaign_id}"],
+            },
+        ],
+    )
+    import slm_training.autoresearch.storage as storage
+
+    monkeypatch.setattr(storage, "_REPO_ROOT", repo)
+    kind = _mod._self_heal_document_actions(
+        cwd=repo, root=root, loop_id=loop_id, campaign_id=campaign_id
+    )
+    assert kind == "document_closeout"
+    with pytest.raises(RuntimeError, match="repair_harness"):
+        _mod._require_predecessor_actions(root, loop_id, campaign_id)
+
+
+def test_self_heal_dirty_tree_continuous_docs_only(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _init_git_repo(repo)
+    allowed = repo / "docs" / "design" / "continuous-openui-local-c9-results.md"
+    allowed.write_text("# auto\n", encoding="utf-8")
+    kind = _mod._self_heal_continuous_dirty_tree(cwd=repo, loop_id="loop-1")
+    assert kind == "dirty_tree_closeout"
+    status = subprocess.check_output(
+        ["git", "status", "--porcelain"], cwd=repo, text=True
+    )
+    assert status.strip() == ""
+
+    # Foreign WIP must not be auto-committed.
+    (repo / "src_extra.py").write_text("x=1\n", encoding="utf-8")
+    kind2 = _mod._self_heal_continuous_dirty_tree(cwd=repo, loop_id="loop-1")
+    assert kind2 is None
+    status2 = subprocess.check_output(
+        ["git", "status", "--porcelain"], cwd=repo, text=True
+    )
+    assert "src_extra.py" in status2
+
+
+def test_self_heal_cycle_error_document_message(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _init_git_repo(repo)
+    root = repo / "outputs" / "autoresearch"
+    loop_id = "continuous-openui-local"
+    campaign_id = "continuous-loop-20260805-continuous-openui-local-c74"
+    # Lineage discovery uses campaign.json cycle_index + loop_id.
+    camp = root / campaign_id
+    camp.mkdir(parents=True)
+    (camp / "campaign.json").write_text(
+        json.dumps(
+            {
+                "schema_version": "CampaignSpec",
+                "campaign_id": campaign_id,
+                "loop_id": loop_id,
+                "cycle_index": 74,
+                "objective": "t",
+                "primary_metric": "smoke.structural_similarity",
+                "upstream_commit": "a" * 40,
+                "integration_commit": "b" * 40,
+            }
+        ),
+        encoding="utf-8",
+    )
+    _document_handoff_campaign(
+        root,
+        loop_id=loop_id,
+        campaign_id=campaign_id,
+        actions=[
+            {
+                "kind": "document",
+                "owner": "documenting-experiment-results",
+                "reason": "persist docs",
+                "evidence_ids": [f"campaign:{campaign_id}"],
+            }
+        ],
+    )
+    import slm_training.autoresearch.storage as storage
+
+    monkeypatch.setattr(storage, "_REPO_ROOT", repo)
+    kind = _mod._self_heal_cycle_error(
+        root=root,
+        loop_id=loop_id,
+        cwd=repo,
+        exc=RuntimeError(
+            f"predecessor {campaign_id} has unacknowledged actions: 0:document"
+        ),
+    )
+    assert kind == "document_closeout"
+    _mod._require_predecessor_actions(root, loop_id, campaign_id)
+
+
+def test_is_continuous_closeout_path_allowlist() -> None:
+    assert _mod._is_continuous_closeout_path(
+        "docs/design/continuous-openui-local-c1-results.md"
+    )
+    assert _mod._is_continuous_closeout_path(
+        "docs/design/continuous-loop-20260805-x-c1-results.json"
+    )
+    assert _mod._is_continuous_closeout_path("docs/MODEL_CARD.md")
+    assert not _mod._is_continuous_closeout_path("scripts/run_autotrain_continuous.py")
+    assert not _mod._is_continuous_closeout_path("docs/design/other-topic.md")
