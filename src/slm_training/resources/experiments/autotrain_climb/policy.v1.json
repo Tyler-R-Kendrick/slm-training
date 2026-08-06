@@ -1,7 +1,7 @@
 {
   "schema": "autotrain_climb_policy/v1",
-  "version": "v5",
-  "description": "High-volatility continuous autotrain hill-climb policy. Harness/driver code loads this artifact; change metrics, cadence, caps, and identity fields here without re-authoring classifiers.",
+  "version": "v6",
+  "description": "High-volatility continuous autotrain hill-climb policy. Harness/driver code loads this artifact; change metrics, cadence, caps, and identity fields here without re-authoring classifiers. Dual-regime thrash: isolate (causal OFAT) + climb (residual on sticky champion) + timeout→decode residual routing.",
   "screening_primary": {
     "metric": "smoke.structural_similarity",
     "direction": "increase",
@@ -52,6 +52,25 @@
       "min_train_floor_seconds": 20,
       "eval_overhead_seconds": 8,
       "screening_thrash_steps": 40
+    },
+    "thrash_regimes": {
+      "schema": "thrash_regimes_policy/v1",
+      "description": "Isolate = causal OFAT vs zeroed/precursor control. Climb = residual thrash on sticky confirmed/climb_accepted champion knobs. Timeout residual prefers decode-cost arms when prior cycle was incomplete with compiler_ms-dominant decode timeout. Confirm/promote freeze thrash.",
+      "default_regime": "isolate",
+      "climb_baseline_statuses": [
+        "confirmed",
+        "climb_accepted",
+        "promoted"
+      ],
+      "decode_residual_slugs": [
+        "bounds",
+        "canvas",
+        "both",
+        "cached-compiler-decision-margin"
+      ],
+      "timeout_dominant_phase": "compiler_ms",
+      "preserve_constrained_decode": true,
+      "forbid_unconstrained_as_residual": true
     }
   },
   "cadence": {

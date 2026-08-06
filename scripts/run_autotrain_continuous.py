@@ -45,6 +45,19 @@ from slm_training.autoresearch.experiment_campaign import (
     MultiplicityFamilyV1,
 )
 from slm_training.autoresearch.formal import formal_obligation_id
+from slm_training.autoresearch.thrash_regime import (
+    DECODE_RESIDUAL_SLUGS,
+    REGIME_CLIMB,
+    REGIME_ISOLATE,
+    ThrashRegimeDecision,
+    compose_climb_control_levers,
+    compose_isolate_control_levers,
+    compose_treatment_levers,
+    decide_screening_regime,
+    is_compiler_ms_timeout_signal,
+    select_climb_baseline_entry,
+    select_recommended_slug_for_regime,
+)
 from slm_training.autoresearch.schemas import (
     AutotrainActionReceiptV1,
     AutotrainActionV1,
@@ -333,6 +346,7 @@ def _write_thrash_timing(
     reasons: list[str],
     control_metrics: dict[str, Any] | None,
     candidate_metrics: dict[str, Any] | None,
+    thrash_regime: Mapping[str, Any] | None = None,
 ) -> Path:
     """Durable thrash timing / completeness row for Pareto recalibration."""
 
@@ -365,6 +379,7 @@ def _write_thrash_timing(
         "arm_wall_seconds": arm_wall_seconds,
         "decode_fit": decode_fit,
         "incomplete_reasons": incomplete_reasons,
+        "thrash_regime": dict(thrash_regime) if thrash_regime else None,
         "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     path = camp_dir / "thrash_timing.json"
@@ -3149,6 +3164,81 @@ def _repeat_confirm_while_waiting_for_promotion(
     return False
 
 
+def _predecessor_compiler_ms_timeout(
+    root: Path, predecessor_campaign_id: str | None
+) -> bool:
+    """True when the predecessor cycle timed out under compiler_ms dominance."""
+
+    if not predecessor_campaign_id:
+        return False
+    camp_dir = root / predecessor_campaign_id
+    reasons: list[str] = []
+    delivery_path = camp_dir / "sdlc_delivery.json"
+    if delivery_path.is_file():
+        delivery = _read_json(delivery_path)
+        reasons.extend(str(r) for r in delivery.get("reasons") or [])
+        if delivery.get("measurement_complete") is False:
+            incomplete = True
+        else:
+            incomplete = any(
+                str(r).startswith("measurement_incomplete:") for r in reasons
+            )
+    else:
+        incomplete = False
+    # Per-doc timeout detail from eval smoke scoreboards when present.
+    detail = ""
+    timeout_n = 0
+    for path in camp_dir.glob("runs/*/eval_smoke.json"):
+        try:
+            payload = _read_json(path)
+        except Exception:  # noqa: BLE001 — best-effort signal only
+            continue
+        try:
+            timeout_n = max(
+                timeout_n,
+                int(payload.get("decode_timeout_count") or 0),
+                int(payload.get("decode_timeout_document_count") or 0),
+            )
+        except (TypeError, ValueError):
+            pass
+        for doc in payload.get("details") or []:
+            if not isinstance(doc, dict):
+                continue
+            d = str(doc.get("decode_outcome_detail") or "")
+            if "compiler_ms" in d:
+                detail = d
+                break
+        if detail:
+            break
+    if not incomplete and timeout_n <= 0 and not detail:
+        return False
+    return is_compiler_ms_timeout_signal(
+        reasons=reasons,
+        decode_outcome_detail=detail or None,
+        incomplete=incomplete or timeout_n > 0,
+        decode_timeout_count=timeout_n,
+    )
+
+
+def _screening_regime_decision(
+    *,
+    queue_entries: Sequence[Mapping[str, Any]] | None,
+    compiler_ms_timeout: bool,
+) -> ThrashRegimeDecision:
+    """Decide isolate / climb / timeout residual for the next screening thrash."""
+
+    baseline_entry = select_climb_baseline_entry(queue_entries)
+    climb_knobs = None
+    if baseline_entry is not None:
+        raw = baseline_entry.get("knobs")
+        if isinstance(raw, dict) and raw:
+            climb_knobs = _lever_knobs(raw)
+    return decide_screening_regime(
+        climb_baseline_knobs=climb_knobs,
+        compiler_ms_timeout=compiler_ms_timeout,
+    )
+
+
 def _select_cycle_slug(
     cycle: int,
     *,
@@ -3156,14 +3246,35 @@ def _select_cycle_slug(
     skip: set[str],
     has_confirm_levers: bool,
     has_promote_levers: bool,
+    thrash_regime: ThrashRegimeDecision | None = None,
 ) -> str | None:
     """Select only for screening; confirm/promote carry frozen recipes."""
 
     if has_confirm_levers or has_promote_levers:
         return None
+    bank_slugs = [slug for slug, _, _ in _all_screening_arm_bank()]
+    decision = thrash_regime or decide_screening_regime(
+        climb_baseline_knobs=None,
+        compiler_ms_timeout=False,
+    )
+    if decision.timeout_residual:
+        # Timeout residual outranks generic predecessor quality priorities.
+        return select_recommended_slug_for_regime(
+            decision=decision,
+            cycle=cycle,
+            skip=skip,
+            bank_slugs=bank_slugs,
+            isolate_selector=lambda c, s: _select_recommended_slug(c, skip=s),
+        )
     if predecessor_priority and predecessor_priority not in skip:
         return predecessor_priority
-    return _select_recommended_slug(cycle, skip=skip)
+    return select_recommended_slug_for_regime(
+        decision=decision,
+        cycle=cycle,
+        skip=skip,
+        bank_slugs=bank_slugs,
+        isolate_selector=lambda c, s: _select_recommended_slug(c, skip=s),
+    )
 
 
 def _apply_arm_extras(base_steps: int, extras: dict[str, Any]) -> dict[str, Any]:
@@ -5554,6 +5665,18 @@ def _phase_a_delivery(
             _fitted, decode_fit = _fit_screening_decode_timeout_seconds(
                 policy, arm_wall_seconds=arm_s
             )
+        matrix_regime = None
+        matrix_path = camp_dir / "matrix-proposal.json"
+        if matrix_path.is_file():
+            try:
+                matrix_regime = _read_json(matrix_path).get("thrash_regime")
+            except Exception:  # noqa: BLE001 — telemetry only
+                matrix_regime = None
+        if matrix_regime is not None:
+            record["thrash_regime"] = matrix_regime
+            out_path.write_text(
+                json.dumps(record, indent=2) + "\n", encoding="utf-8"
+            )
         _write_thrash_timing(
             camp_dir,
             loop_id=loop_id,
@@ -5569,6 +5692,9 @@ def _phase_a_delivery(
             else None,
             candidate_metrics=record.get("candidate_metrics")
             if isinstance(record.get("candidate_metrics"), dict)
+            else None,
+            thrash_regime=matrix_regime
+            if isinstance(matrix_regime, dict)
             else None,
         )
     except Exception as exc:  # noqa: BLE001 — never fail Phase A on telemetry
@@ -6858,6 +6984,11 @@ def _write_cycle_handoff(
             )
         )
 
+    thrash_regime_payload = matrix.get("thrash_regime")
+    if thrash_regime_payload is not None and not isinstance(
+        thrash_regime_payload, dict
+    ):
+        thrash_regime_payload = None
     handoff = AutotrainCycleHandoffV1(
         loop_id=loop_id,
         campaign_id=campaign_id,
@@ -6876,6 +7007,7 @@ def _write_cycle_handoff(
         formal_status=formal_status,
         checkpoint_paths=checkpoint_paths,
         checkpoint_documentation_required=bool(checkpoint_paths),
+        thrash_regime=thrash_regime_payload,
     )
     (camp_dir / "cycle_handoff.json").write_text(
         handoff.model_dump_json(indent=2) + "\n", encoding="utf-8"
@@ -7595,6 +7727,7 @@ def _matrix(
     promote_control_levers: dict[str, Any] | None = None,
     recommended_slug: str | None = None,
     skip_slugs: set[str] | None = None,
+    thrash_regime: ThrashRegimeDecision | None = None,
 ) -> dict:
     from slm_training.autoresearch.climb_policy import (
         decode_timeout_seconds_for_role,
@@ -8083,15 +8216,28 @@ def _matrix(
             "next_run_priorities": priorities,
         }
     else:
-        # Change B: rotate recommended thrash arm; full bank always present.
-        rec_slug = recommended_slug or _select_recommended_slug(
-            cycle, skip=skip_slugs
+        # Dual-regime thrash: isolate (causal OFAT) or climb (residual on sticky
+        # champion baseline). Timeout residual prefers decode-cost arms.
+        regime = thrash_regime or decide_screening_regime(
+            climb_baseline_knobs=None,
+            compiler_ms_timeout=False,
+        )
+        bank_slugs = [slug for slug, _, _ in _all_screening_arm_bank()]
+        rec_slug = recommended_slug or select_recommended_slug_for_regime(
+            decision=regime,
+            cycle=cycle,
+            skip=skip_slugs,
+            bank_slugs=bank_slugs,
+            isolate_selector=lambda c, s: _select_recommended_slug(c, skip=s),
         )
         bank_by_slug = {
             slug: (hyp, extras) for slug, hyp, extras in _all_screening_arm_bank()
         }
         if rec_slug not in bank_by_slug:
             rec_slug = _all_screening_arm_bank()[0][0]
+        climb_active = regime.base_regime == REGIME_CLIMB and bool(
+            regime.climb_baseline
+        )
         control_extra: dict[str, Any] = {}
         treatment_key = {
             "bounded-compiler-decision-margin": "grammar_completion_bounds",
@@ -8110,15 +8256,16 @@ def _matrix(
                 "compiler_alignment_semantic_exhaustive"
             ),
         }.get(rec_slug)
-        if treatment_key is not None:
-            control_extra = {
-                key: value
-                for key, value in bank_by_slug[rec_slug][1].items()
-                if key != treatment_key
-            }
-        if rec_slug == "exposure-targeted-compiler-decision-margin":
-            control_extra = dict(bank_by_slug[rec_slug][1])
-            control_extra["mixture_sampling_policy"] = "capacity_aware"
+        if not climb_active:
+            if treatment_key is not None:
+                control_extra = {
+                    key: value
+                    for key, value in bank_by_slug[rec_slug][1].items()
+                    if key != treatment_key
+                }
+            if rec_slug == "exposure-targeted-compiler-decision-margin":
+                control_extra = dict(bank_by_slug[rec_slug][1])
+                control_extra["mixture_sampling_policy"] = "capacity_aware"
         if rec_slug == "exposure-targeted-semantic-exhaustive-compiler-decision-margin":
             precursor_slug = "exposure-targeted-compiler-decision-margin"
         elif rec_slug == "exposure-targeted-compiler-decision-margin":
@@ -8134,76 +8281,133 @@ def _matrix(
             precursor_slug = "capacity-aware-compiler-decision-margin"
         else:
             precursor_slug = "compiler-decision-margin"
+        if climb_active:
+            control_levers = compose_climb_control_levers(regime.climb_baseline or {})
+            control_hyp = (
+                "Climb baseline control: sticky confirmed/climb_accepted champion "
+                "recipe under size-matched residual thrash."
+            )
+            control_rationale = (
+                f"Climb control baseline ({regime.reason}); residual-only treatments."
+            )
+        else:
+            # Isolate: precursor package or zeroed template (existing OFAT).
+            isolate_precursor = compose_isolate_control_levers(
+                precursor_extras=control_extra
+            )
+            control_levers = {
+                "structural_aux_head_profile": str(
+                    bank_by_slug[rec_slug][1].get(
+                        "structural_aux_head_profile", "none"
+                    )
+                ),
+                "compiler_decode_mode": str(
+                    bank_by_slug[rec_slug][1].get("compiler_decode_mode", "off")
+                ),
+                **(
+                    {
+                        key: value
+                        for key, value in bank_by_slug[rec_slug][1].items()
+                        if key
+                        in {
+                            "semantic_contrast_dir",
+                            "semantic_contrast_margin",
+                            "semantic_contrast_fraction",
+                        }
+                    }
+                    | (
+                        {"semantic_contrast_loss_weight": 0.0}
+                        if rec_slug == "semantic-contrast"
+                        else {}
+                    )
+                ),
+                **isolate_precursor,
+            }
+            control_hyp = (
+                "Matched fixture control with both grammar levers off completes "
+                "smoke eval under the published suite."
+            )
+            control_rationale = (
+                "All-family margin control for isolated "
+                f"{treatment_key} attribution."
+                if treatment_key is not None
+                else "Baseline for size-matched continuous attribution."
+            )
         candidates = [
             {
                 "experiment": exp(
                     f"{prefix}-control",
-                    "Matched fixture control with both grammar levers off completes smoke eval under the published suite.",
-                    knobs(
-                        structural_aux_head_profile=str(
-                            bank_by_slug[rec_slug][1].get(
-                                "structural_aux_head_profile", "none"
-                            )
-                        ),
-                        compiler_decode_mode=str(
-                            bank_by_slug[rec_slug][1].get("compiler_decode_mode", "off")
-                        ),
-                        **(
-                            {
-                                key: value
-                                for key, value in bank_by_slug[rec_slug][1].items()
-                                if key
-                                in {
-                                    "semantic_contrast_dir",
-                                    "semantic_contrast_margin",
-                                    "semantic_contrast_fraction",
-                                }
-                            }
-                            | (
-                                {"semantic_contrast_loss_weight": 0.0}
-                                if rec_slug == "semantic-contrast"
-                                else {}
-                            )
-                        ),
-                        **control_extra,
-                    ),
-                    (
-                        "All-family margin control for isolated "
-                        f"{treatment_key} attribution."
-                        if treatment_key is not None
-                        else "Baseline for size-matched continuous attribution."
-                    ),
+                    control_hyp,
+                    knobs(**control_levers),
+                    control_rationale,
                 ),
                 "evidence_uses": uses(),
-                "novelty": novelty(0, "matched control with published eval"),
+                "novelty": novelty(
+                    0,
+                    (
+                        "climb sticky baseline control"
+                        if climb_active
+                        else "matched control with published eval"
+                    ),
+                ),
             }
         ]
         # Track lever signatures so static + dynamic compose arms never collide
-        # (HypothesisMatrix requires distinct knob signatures).
-        seen_lever_sigs: set[str] = set()
-        control_knobs = candidates[0]["experiment"]["knobs"]
-        seen_lever_sigs.add(
-            _thrash_lever_signature(
+        # (HypothesisMatrix requires distinct knob signatures). Climb signs the
+        # *materialized* knobs() payload — sparse residual overlay alone is not
+        # comparable to full control knobs when the champion already carries that
+        # residual (no-op arm would otherwise slip through and fail validation).
+        _sig_exclude = frozenset(
+            {
+                "seed",
+                "steps",
+                "decode_timeout_seconds",
+                "generate_batch_size",
+                "eval_suites",
+            }
+        )
+
+        def _materialized_sig(full_knobs: Mapping[str, Any]) -> str:
+            return _thrash_lever_signature(
                 {
                     k: v
-                    for k, v in control_knobs.items()
-                    if k not in {"seed", "steps", "decode_timeout_seconds"}
+                    for k, v in full_knobs.items()
+                    if k not in _sig_exclude
                 }
             )
-        )
+
+        seen_lever_sigs: set[str] = set()
+        control_knobs = candidates[0]["experiment"]["knobs"]
+        seen_lever_sigs.add(_materialized_sig(control_knobs))
         for i, (slug, hyp, extras) in enumerate(_all_screening_arm_bank(), start=1):
-            if treatment_key is not None and slug == precursor_slug:
+            if (
+                not climb_active
+                and treatment_key is not None
+                and slug == precursor_slug
+            ):
                 # The matched control is exactly this precursor arm. Emitting it
                 # again would violate the preregistration contract's distinct-
                 # knob-signature requirement without adding information.
                 continue
             arm_extra = _apply_arm_extras(steps, extras)
-            sig = _thrash_lever_signature(arm_extra)
+            if climb_active:
+                arm_extra = compose_treatment_levers(
+                    control_levers=control_levers,
+                    residual_extras=arm_extra,
+                )
+                hyp = (
+                    f"Climb residual '{slug}' on sticky champion baseline: {hyp}"
+                )
+            full_knobs = knobs(**arm_extra)
+            if climb_active:
+                sig = _materialized_sig(full_knobs)
+            else:
+                # Isolate keeps sparse extras for thrash-arm identity (steps-only
+                # arm differs only on measurement keys excluded from full sig).
+                sig = _thrash_lever_signature(arm_extra)
             if sig in seen_lever_sigs:
                 # Prefer the static bank slug; drop duplicate dynamic recipes.
-                if slug.startswith("compose-"):
-                    continue
-                # Static collision with an already-emitted arm: skip later copy.
+                # Climb: also drops no-op residuals already present on baseline.
                 continue
             seen_lever_sigs.add(sig)
             candidates.append(
@@ -8211,8 +8415,14 @@ def _matrix(
                     "experiment": exp(
                         f"{prefix}-{slug}",
                         hyp,
-                        knobs(**arm_extra),
-                        f"Continuous thrash arm '{slug}' (rotated recommendation).",
+                        full_knobs,
+                        (
+                            f"Climb residual thrash arm '{slug}' "
+                            f"(regime={regime.regime})."
+                            if climb_active
+                            else f"Continuous thrash arm '{slug}' "
+                            f"(rotated recommendation)."
+                        ),
                     ),
                     "evidence_uses": uses(),
                     "novelty": novelty(i, f"thrash arm {slug}"),
@@ -8232,14 +8442,22 @@ def _matrix(
                     rec = eid
                     rec_slug = eid.split(f"{prefix}-", 1)[-1]
                     break
+        regime_label = regime.regime
         priorities = [
             {
                 "rank": 1,
                 "area": "model",
-                "hypothesis": f"Test thrash arm '{rec_slug}' first under the published eval suite.",
+                "hypothesis": (
+                    f"[{regime_label}] Test thrash arm '{rec_slug}' first under "
+                    f"the published eval suite."
+                ),
                 "evidence_ids": [research, prior],
                 "confidence": 0.6,
-                "expected_information_gain": "Attributes decode metrics vs matched control.",
+                "expected_information_gain": (
+                    "Attributes residual decode/quality metrics vs climb baseline."
+                    if climb_active
+                    else "Attributes decode metrics vs matched control."
+                ),
                 "authority": "speculative",
                 "disposition": "experiment_next",
                 "proposed_experiment_id": rec,
@@ -8247,7 +8465,11 @@ def _matrix(
             {
                 "rank": 2,
                 "area": "evaluation",
-                "hypothesis": "Keep the matched control as the size-matched baseline every cycle.",
+                "hypothesis": (
+                    "Keep the climb sticky baseline as the size-matched control."
+                    if climb_active
+                    else "Keep the matched control as the size-matched baseline every cycle."
+                ),
                 "evidence_ids": [research, prior],
                 "confidence": 0.7,
                 "expected_information_gain": "Prevents false positives from recipe drift.",
@@ -8258,10 +8480,22 @@ def _matrix(
             {
                 "rank": 3,
                 "area": "model",
-                "hypothesis": "Rotate thrash recommendation across the lever bank (not bounds-only).",
+                "hypothesis": (
+                    "Timeout residual prefers decode-cost arms (bounds/canvas/both/cache)."
+                    if regime.timeout_residual
+                    else (
+                        "Climb residual rotation on sticky champion recipe."
+                        if climb_active
+                        else "Rotate thrash recommendation across the lever bank (not bounds-only)."
+                    )
+                ),
                 "evidence_ids": [research, prior],
                 "confidence": 0.65,
-                "expected_information_gain": "Avoids single-lever thrash collapse.",
+                "expected_information_gain": (
+                    "Routes compiler_ms timeouts into decode cost thrash."
+                    if regime.timeout_residual
+                    else "Avoids single-lever thrash collapse."
+                ),
                 "authority": "observed_result",
                 "disposition": "experiment_next",
                 "proposed_experiment_id": rec,
@@ -8297,9 +8531,13 @@ def _matrix(
             "hypotheses": candidates,
             "recommended_experiment_id": rec,
             "selection_rationale": (
-                f"Size-matched continuous thrash with rotated recommendation "
-                f"'{rec_slug}' (cycle {cycle})."
+                f"[{regime_label}] Size-matched continuous thrash "
+                f"(base={regime.base_regime}, timeout_residual="
+                f"{regime.timeout_residual}) with recommendation '{rec_slug}' "
+                f"(cycle {cycle}; reason={regime.reason})."
             ),
+            "thrash_regime": regime.as_dict(),
+            "decode_residual_slugs": list(DECODE_RESIDUAL_SLUGS),
             "next_run_priorities": priorities,
         }
     if feedback:
@@ -9264,6 +9502,20 @@ def run_cycle(
             feedback = [
                 item for item in feedback if item.get("matrix_id") == previous_matrix_id
             ]
+    # Dual-regime thrash decision (screening only). Confirm/promote freeze levers.
+    thrash_regime: ThrashRegimeDecision | None = None
+    if confirm_levers is None and promote_levers is None and replay is None:
+        thrash_regime = _screening_regime_decision(
+            queue_entries=queue_entries,
+            compiler_ms_timeout=_predecessor_compiler_ms_timeout(root, pred),
+        )
+        print(
+            "THRASH_REGIME "
+            f"regime={thrash_regime.regime} base={thrash_regime.base_regime} "
+            f"timeout_residual={thrash_regime.timeout_residual} "
+            f"reason={thrash_regime.reason}",
+            flush=True,
+        )
     rec_slug = _select_cycle_slug(
         cycle,
         predecessor_priority=_predecessor_priority_slug(
@@ -9275,6 +9527,7 @@ def run_cycle(
         skip=skip_slugs,
         has_confirm_levers=confirm_levers is not None,
         has_promote_levers=promote_levers is not None,
+        thrash_regime=thrash_regime,
     )
     matrix = _matrix(
         campaign_id=campaign_id,
@@ -9297,6 +9550,7 @@ def run_cycle(
         if promote_levers is None and confirm_levers is None
         else None,
         skip_slugs=skip_slugs,
+        thrash_regime=thrash_regime,
     )
     replay_manifests: dict[str, dict[str, Any]] = {}
     if replay is not None:
@@ -9309,8 +9563,12 @@ def run_cycle(
             flush=True,
         )
     elif promote_levers is None and confirm_levers is None:
+        regime_tag = (
+            thrash_regime.regime if thrash_regime is not None else REGIME_ISOLATE
+        )
         print(
-            f"THRASH_ROTATE cycle={cycle} recommended={rec_slug} skip={sorted(skip_slugs)}",
+            f"THRASH_ROTATE cycle={cycle} regime={regime_tag} "
+            f"recommended={rec_slug} skip={sorted(skip_slugs)}",
             flush=True,
         )
     # Defense in depth: thrash matrices never carry feedback/predecessor binds.

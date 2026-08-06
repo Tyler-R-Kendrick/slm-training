@@ -7733,3 +7733,308 @@ def test_thrash_does_not_bind_handoff_pred_feedback_ids(tmp_path: Path) -> None:
     result = AgentHypothesisProvider(path).propose(camp, evidence, [], (live,))
     assert result.matrix.feedback_ids == (live.feedback_id,)
     assert result.matrix.predecessor_matrix_id == live.matrix_id
+
+
+
+
+def test_matrix_climb_control_uses_champion_baseline() -> None:
+    from slm_training.autoresearch.schemas import HypothesisMatrix
+    from slm_training.autoresearch.thrash_regime import (
+        REGIME_CLIMB,
+        decide_screening_regime,
+    )
+
+    climb_knobs = {
+        "binder_arity_loss_weight": 1.0,
+        "binder_arity_decode_weight": 1.0,
+        "compiler_decode_mode": "tree",
+        "structural_aux_head_profile": "binder-arity",
+    }
+    regime = decide_screening_regime(
+        climb_baseline_knobs=climb_knobs,
+        compiler_ms_timeout=False,
+    )
+    assert regime.regime == REGIME_CLIMB
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-regime-climb-c1",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=5,
+        role="screening",
+        recommended_slug="bounds",
+        thrash_regime=regime,
+    )
+    HypothesisMatrix.model_validate(matrix)
+    by_id = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    control = by_id["cregime-climb-c1-control"]
+    candidate = by_id["cregime-climb-c1-bounds"]
+    assert matrix["thrash_regime"]["regime"] == "climb"
+    assert "[climb]" in matrix["selection_rationale"]
+    # Climb control carries sticky champion levers.
+    assert control["binder_arity_loss_weight"] == 1.0
+    assert control["compiler_decode_mode"] == "tree"
+    assert control.get("grammar_completion_bounds") in (False, None)
+    # Treatment = champion + residual decode cost lever.
+    assert candidate["binder_arity_loss_weight"] == 1.0
+    assert candidate["grammar_completion_bounds"] is True
+    assert candidate["compiler_decode_mode"] == "tree"
+
+
+
+
+
+
+def test_matrix_climb_skips_noop_residual_when_champion_already_has_bounds() -> None:
+    """Climb baseline that already includes a residual bank arm must still validate.
+
+    Control is signed from full knobs(); treatment must use the same materialization
+    so no-op residuals (e.g. bounds on a bounds champion) are skipped rather than
+    duplicating control signatures.
+    """
+    from slm_training.autoresearch.schemas import HypothesisMatrix
+    from slm_training.autoresearch.thrash_regime import decide_screening_regime
+
+    regime = decide_screening_regime(
+        climb_baseline_knobs={
+            "grammar_completion_bounds": True,
+            "compact_active_canvas": True,
+            "compiler_decode_mode": "tree",
+            "binder_arity_loss_weight": 1.0,
+            "binder_arity_decode_weight": 1.0,
+        },
+        compiler_ms_timeout=False,
+    )
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-regime-climb-overlap-c1",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=11,
+        role="screening",
+        recommended_slug="bounds",
+        thrash_regime=regime,
+    )
+    HypothesisMatrix.model_validate(matrix)
+    ids = [h["experiment"]["experiment_id"] for h in matrix["hypotheses"]]
+    assert not any(i.endswith("-bounds") for i in ids)
+    assert not any(i.endswith("-canvas") for i in ids)
+    # both = bounds+canvas is also a no-op on this baseline
+    assert not any(i.endswith("-both") for i in ids)
+    rec = matrix["recommended_experiment_id"]
+    assert rec in ids
+    assert not rec.endswith("-control")
+    assert not rec.endswith("-bounds")
+    by_id = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    control = by_id["cregime-climb-overlap-c1-control"]
+    assert control["grammar_completion_bounds"] is True
+    assert control["binder_arity_loss_weight"] == 1.0
+    # Every treatment differs from control on at least one non-measurement lever.
+    measurement = {
+        "seed",
+        "steps",
+        "decode_timeout_seconds",
+        "generate_batch_size",
+        "eval_suites",
+    }
+    ctrl_view = {k: v for k, v in control.items() if k not in measurement}
+    for eid, knobs in by_id.items():
+        if eid.endswith("-control"):
+            continue
+        view = {k: v for k, v in knobs.items() if k not in measurement}
+        assert view != ctrl_view, f"no-op treatment leaked: {eid}"
+
+
+
+
+
+
+def test_matrix_isolate_control_zeroes_quality_levers() -> None:
+    from slm_training.autoresearch.schemas import HypothesisMatrix
+
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-regime-isolate-c1",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=3,
+        role="screening",
+        recommended_slug="binder-arity",
+    )
+    HypothesisMatrix.model_validate(matrix)
+    by_id = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    control = by_id["cregime-isolate-c1-control"]
+    candidate = by_id["cregime-isolate-c1-binder-arity"]
+    assert matrix["thrash_regime"]["regime"] == "isolate"
+    assert control["binder_arity_loss_weight"] == 0.0
+    assert candidate["binder_arity_loss_weight"] == 1.0
+    # Constrained decode preserved (no unconstrained production residual).
+    assert candidate.get("allow_unconstrained_fallback") in (None, False)
+
+
+
+
+
+
+def test_predecessor_compiler_ms_timeout_from_eval_detail(tmp_path: Path) -> None:
+    root = tmp_path / "ar"
+    camp = root / "pred-c1"
+    run = camp / "runs" / "pred-c1-control"
+    run.mkdir(parents=True)
+    (camp / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "measurement_complete": False,
+                "reasons": [
+                    "measurement_incomplete:pred-c1-control:smoke:"
+                    "incomplete_document_n=1:decode_timeout_count=1"
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    (run / "eval_smoke.json").write_text(
+        json.dumps(
+            {
+                "decode_timeout_count": 1,
+                "details": [
+                    {
+                        "id": "smoke_hero_01",
+                        "incomplete": True,
+                        "decode_outcome_detail": (
+                            "timeout_dominant_phase=compiler_ms(14697ms/17334ms)"
+                        ),
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    assert _mod._predecessor_compiler_ms_timeout(root, "pred-c1") is True
+    assert _mod._predecessor_compiler_ms_timeout(root, "missing") is False
+
+
+
+
+
+
+def test_select_cycle_slug_timeout_outranks_quality_predecessor() -> None:
+    from slm_training.autoresearch.thrash_regime import decide_screening_regime
+
+    regime = decide_screening_regime(
+        climb_baseline_knobs=None,
+        compiler_ms_timeout=True,
+    )
+    slug = _mod._select_cycle_slug(
+        1,
+        predecessor_priority="binder-arity",
+        skip=set(),
+        has_confirm_levers=False,
+        has_promote_levers=False,
+        thrash_regime=regime,
+    )
+    assert slug == "bounds"
+    assert slug != "binder-arity"
+
+
+
+
+
+
+def test_write_cycle_handoff_records_thrash_regime(tmp_path: Path) -> None:
+    """Handoff must carry thrash_regime when the screening matrix labeled one."""
+    from slm_training.autoresearch.schemas import HypothesisMatrix
+
+    root = tmp_path / "autoresearch"
+    campaign_id = "continuous-loop-handoff-regime-c1"
+    camp = root / campaign_id
+    camp.mkdir(parents=True)
+    commit = "a" * 40
+    (camp / "campaign.json").write_text(
+        json.dumps(
+            {
+                "campaign_id": campaign_id,
+                "loop_id": "loop-h",
+                "cycle_index": 1,
+                "upstream_commit": commit,
+                "integration_commit": commit,
+            }
+        ),
+        encoding="utf-8",
+    )
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1,
+        role="screening",
+        recommended_slug="canvas",
+    )
+    HypothesisMatrix.model_validate(matrix)
+    assert matrix.get("thrash_regime", {}).get("regime") == "isolate"
+    delivery = {
+        "measurement_complete": True,
+        "positive": False,
+        "reasons": [],
+        "candidate_id": matrix["recommended_experiment_id"],
+        "control_id": f"{campaign_id.replace('continuous-loop-', 'c')}-control".replace(
+            "continuous-loop-", "c"
+        ),
+    }
+    # control id from matrix
+    control_id = next(
+        h["experiment"]["experiment_id"]
+        for h in matrix["hypotheses"]
+        if str(h["experiment"]["experiment_id"]).endswith("-control")
+    )
+    delivery["control_id"] = control_id
+    (camp / "sdlc_delivery.json").write_text(
+        json.dumps(delivery), encoding="utf-8"
+    )
+    (camp / "matrix-proposal.json").write_text(
+        json.dumps(matrix), encoding="utf-8"
+    )
+    handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-h",
+        campaign_id=campaign_id,
+        cycle_index=1,
+        upstream_commit=commit,
+        integration_commit=commit,
+        role="screening",
+        cycle_intent="screening",
+        primary_metric="smoke.structural_similarity",
+        matrix=matrix,
+        delivery=delivery,
+        resolution=None,
+        formal_status=None,
+    )
+    assert handoff.thrash_regime is not None
+    assert handoff.thrash_regime.get("regime") == "isolate"
+    dumped = json.loads((camp / "cycle_handoff.json").read_text(encoding="utf-8"))
+    assert dumped.get("thrash_regime", {}).get("regime") == "isolate"
+
+
+
