@@ -1588,12 +1588,57 @@ def _delivery_is_thrash_timeout_residual(
     )
 
 
+def _self_heal_git_ancestry(
+    *,
+    cwd: Path,
+    root: Path,
+    loop_id: str,
+    exc: BaseException,
+) -> str | None:
+    """Merge origin/main when supervised continuous worktree drifts from trunk.
+
+    Continuous worktrees accumulate exclusive commits; after main advances they
+    fail ``git merge-base --is-ancestor origin/main HEAD``. Heal by fetching and
+    merging origin/main so thrash can continue without a human.
+    """
+    message = str(exc)
+    cmd_text = ""
+    if isinstance(exc, subprocess.CalledProcessError):
+        cmd_text = " ".join(str(x) for x in (exc.cmd or ()))
+    blob = f"{message} {cmd_text}"
+    if "merge-base" not in blob and "is-ancestor" not in blob:
+        return None
+    try:
+        _run(
+            ["git", "fetch", "origin", "main"],
+            cwd=cwd,
+            root=root,
+            loop_id=loop_id,
+            stage="self-heal-ancestry-fetch",
+        )
+        _run(
+            ["git", "merge", "--no-edit", "origin/main"],
+            cwd=cwd,
+            root=root,
+            loop_id=loop_id,
+            stage="self-heal-ancestry-merge",
+        )
+        print("SELF_HEAL_GIT_ANCESTRY merged origin/main", flush=True)
+        return "git_ancestry_merge"
+    except Exception as heal_exc:  # noqa: BLE001
+        print(f"SELF_HEAL_GIT_ANCESTRY_FAIL err={heal_exc!r}", flush=True)
+        return None
+
+
 def _exception_is_soft_continuous(exc: BaseException) -> bool:
     """True when the failure class is thrash-soft and must not create BLOCKED."""
     if isinstance(exc, (subprocess.TimeoutExpired, TimeoutError, ConnectionError)):
         return True
     if isinstance(exc, subprocess.CalledProcessError):
-        if exc.cmd and list(exc.cmd)[:2] == ["git", "fetch"]:
+        cmd = [str(x) for x in (exc.cmd or ())]
+        if cmd[:2] == ["git", "fetch"]:
+            return True
+        if "merge-base" in cmd or "is-ancestor" in cmd:
             return True
     message = str(exc)
     soft_markers = (
@@ -11363,14 +11408,7 @@ def main(argv: list[str] | None = None) -> int:
                     loop_id=args.loop_id,
                     integration_commit=code_sha,
                 )
-                if report.get("blocker_cleared") and not report.get("hard_pending"):
-                    print(
-                        f"SELF_HEAL continue soft={report.get('soft_healed')}",
-                        flush=True,
-                    )
-                    time.sleep(1)
-                    continue
-                # Also try legacy string heal for bank/soft identity not covered.
+                # Legacy string heal for bank/soft identity / document / residual.
                 heal_kind = _self_heal_cycle_error(
                     root=root,
                     loop_id=args.loop_id,
@@ -11378,9 +11416,43 @@ def main(argv: list[str] | None = None) -> int:
                     integration_commit=code_sha,
                     cwd=cwd,
                 )
-                if heal_kind:
-                    _clear_loop_blocker(root, args.loop_id, reason=heal_kind)
-                    print(f"SELF_HEAL continue kind={heal_kind}", flush=True)
+                # Also heal git ancestry drift for supervised continuous worktrees
+                # (origin/main advanced while local branch has exclusive commits).
+                ancestry_healed = _self_heal_git_ancestry(
+                    cwd=cwd, root=root, loop_id=args.loop_id, exc=exc
+                )
+                actually_healed = bool(
+                    heal_kind
+                    or ancestry_healed
+                    or (
+                        _exception_is_soft_continuous(exc)
+                        and report.get("soft_healed")
+                        and any(
+                            k
+                            in {
+                                "document_closeout",
+                                "dirty_tree_closeout",
+                                "thrash_timeout_repair_bypass",
+                                "thrash_bank_compose",
+                            }
+                            for k in (report.get("soft_healed") or [])
+                        )
+                        and (
+                            "unacknowledged" in str(exc)
+                            or "dirty" in str(exc).lower()
+                            or "repair_harness" in str(exc)
+                            or "bank" in str(exc).lower()
+                            or _BANK_EXHAUST_MSG in str(exc)
+                        )
+                    )
+                )
+                if actually_healed and not report.get("hard_pending"):
+                    if heal_kind:
+                        _clear_loop_blocker(root, args.loop_id, reason=heal_kind)
+                    print(
+                        f"SELF_HEAL continue kind={heal_kind or ancestry_healed or report.get('soft_healed')}",
+                        flush=True,
+                    )
                     time.sleep(1)
                     continue
                 count = _record_cycle_failure(
@@ -11389,43 +11461,17 @@ def main(argv: list[str] | None = None) -> int:
                     exc=exc,
                     cycle_index=cycle_index,
                 )
-                # Soft failures never force exit 2 thrash; only hard_pending does.
-                if _exception_is_soft_continuous(exc) and not report.get(
-                    "hard_pending"
-                ):
-                    # Unblock again then continue (unbounded) or return 0 so the
-                    # in-repo supervisor restarts cleanly without agent prompt.
-                    self_heal_unblock_loop(
-                        cwd=cwd,
-                        root=root,
-                        loop_id=args.loop_id,
-                        integration_commit=code_sha,
-                    )
+                if report.get("hard_pending"):
+                    return 2
+                # Soft-class exceptions that still could not be healed: exit 0 so
+                # the supervisor restarts after a fresh unblock, without BLOCKED.
+                if _exception_is_soft_continuous(exc):
                     if args.supervised:
                         return 0
                     time.sleep(1)
                     continue
-                if args.supervised or count >= 3 or report.get("hard_pending"):
-                    if not report.get("hard_pending"):
-                        last_report = self_heal_unblock_loop(
-                            cwd=cwd,
-                            root=root,
-                            loop_id=args.loop_id,
-                            integration_commit=code_sha,
-                        )
-                        if last_report.get("blocker_cleared") and not last_report.get(
-                            "hard_pending"
-                        ):
-                            print(
-                                f"SELF_HEAL after_hard_block "
-                                f"soft={last_report.get('soft_healed')}",
-                                flush=True,
-                            )
-                            if not args.supervised:
-                                time.sleep(1)
-                                continue
-                            return 0
-                    return 2 if report.get("hard_pending") or count >= 3 else 0
+                if args.supervised or count >= 3:
+                    return 2
                 time.sleep(1)
                 continue
         return 0

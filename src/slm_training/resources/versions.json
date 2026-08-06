@@ -2757,7 +2757,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v186",
+      "version": "v187",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2802,6 +2802,11 @@
         "tests/test_autoresearch/test_thrash_regime.py"
       ],
       "history": [
+        {
+          "version": "v187",
+          "date": "2026-08-06",
+          "note": "fix false soft-continue on every cycle error; self-heal git ancestry merge when continuous worktree drifts from origin/main"
+        },
         {
           "version": "v186",
           "date": "2026-08-06",
