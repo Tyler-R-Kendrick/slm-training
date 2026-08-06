@@ -1,0 +1,57 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c1",
+  "cycle_index": 1,
+  "source_commit": "bdf143cd",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "cycle_role": "screening",
+  "cycle_intent": "screening",
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "seed": 100001,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2"
+  },
+  "arms": {
+    "control": {
+      "status": "measurement_complete",
+      "levers": {
+        "grammar_completion_bounds": false
+      },
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0575,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 4480.77
+      }
+    },
+    "bounds": {
+      "status": "measurement_complete",
+      "levers": {
+        "grammar_completion_bounds": true
+      },
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0575,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 3961.09
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "conclusion": "First cycle of the continuous-openui-local loop directly against main tip bdf143cd, immediately after #1444 registered the generate_batch_size knob that had been blocking every screening cycle's HypothesisMatrix validation. This cycle proves the unblock: the campaign now runs to completion (no extra_forbidden knob rejection). grammar_completion_bounds is again an exact structural_similarity tie with the matched control (0.0575, parse 1.0, meaningful 0.0, binder F1 0.6333), consistent with every prior measurement of this lever. Bounds latency came in 11.6% faster than control this run (3961.09 vs 4480.77 ms p50) -- another sign reversal at fixture n=3 scale, matching the r2-c1 finding (2ba7468) that retry-to-retry latency deltas on this fixture are CPU-sandbox timing noise, not an attributable lever effect. Both arms fail honest ship gates on evidence volume alone (n=3 < 20) as expected at screening scale.",
+  "next_priorities": [
+    "Do not treat this run's bounds latency delta as a real effect; it is the second sign reversal observed for this lever at fixture scale, reinforcing that latency is dominated by sandbox timing noise here",
+    "grammar_completion_bounds vs matched control is now exhausted as a screening hypothesis (repeated exact structural_similarity ties); test the size-matched component-plan quality hypothesis next per the driver's ranked priorities",
+    "Do not promote or ship either checkpoint; both remain screening-scale fixture artifacts"
+  ],
+  "recorded_at": "2026-08-05T08:31:16Z"
+}

@@ -1,0 +1,82 @@
+{
+  "schema": "autotrain_continuous_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 2,
+  "source_commit": "bdf143cd",
+  "integration_commit": "76304a69",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "retry_measurement",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true
+  },
+  "arms": {
+    "control": {
+      "id": "c20260805-continuous-openui-local-8c0b60dd-c2-control",
+      "trainable_params": 1608962,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete_gate_reject",
+      "checkpoint_sha256": "cd2a5b90470ab1cb6c46716900954c01feba3121f540a478a28f60253139871a",
+      "metrics": {
+        "latency_ms_p50": 4164.45,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "placeholder_fidelity": 0.5277777777777778
+      }
+    },
+    "bounds": {
+      "id": "c20260805-continuous-openui-local-8c0b60dd-c2-bounds",
+      "trainable_params": 1608962,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete_gate_reject",
+      "checkpoint_sha256": "a3a07750aec318861e644138b0bc5e586e2a7abb8f48b45a7dcd8fb719e24263",
+      "metrics": {
+        "latency_ms_p50": 4255.73,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "placeholder_fidelity": 0.5277777777777778
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c2-bounds",
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c2-control",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.057499999999999996 candidate=0.057499999999999996 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "climb_state": "rejected",
+  "ship_state": "blocked",
+  "conclusion": "frozen_replay_confirms_c1_exact_tie_grammar_completion_bounds",
+  "caveats": [
+    "This is the frozen replay of cycle 1's control/bounds arms, now that the torch install self-heal from cycle 1 landed; it reproduces the same exact-tie shape observed for this hypothesis in prior sessions (e.g. continuous-openui-local-j48f8u-c1, continuous-openui-local-peuum8-c1: structure .0575 both arms).",
+    "bounds is marginally slower (4255.73ms vs 4164.45ms p50) with zero quality delta — no lever effect from grammar-completion-bounds at this fixture scale, consistent with three prior independent sessions.",
+    "Smoke n=3 only; held_out/adversarial/ood/rico_held suites missing — fixture screening evidence only, not a ship claim."
+  ],
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "model",
+      "hypothesis": "The completed frozen replay rejects the prior arm; test the distinct size-matched 'component-plan' quality hypothesis next.",
+      "action": "experiment_next",
+      "experiment_id": "c20260805-continuous-openui-local-8c0b60dd-c2-component-plan"
+    }
+  ],
+  "recorded_at": "2026-08-05T05:34:49Z"
+}

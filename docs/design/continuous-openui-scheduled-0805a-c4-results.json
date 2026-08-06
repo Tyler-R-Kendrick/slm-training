@@ -1,0 +1,70 @@
+{
+  "schema": "autotrain_continuous_cycle_results/v1",
+  "loop_id": "continuous-openui-scheduled-0805a",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-schedu-e7f55102-c4",
+  "cycle_index": 4,
+  "cycle_intent": "screening",
+  "source_commit": "bdf143cdcae7416e6eb6f8ef1da4d643f38aa613",
+  "integration_commit": "e3079bd4c1b8c8311a3311f57b3ba579d73e7ec8",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_role": "screening",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true
+  },
+  "arms": {
+    "control": {
+      "id": "c20260805-continuous-openui-schedu-e7f55102-c4-control",
+      "trainable_params": 1608962,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete (gate reject)",
+      "metrics": {
+        "latency_ms_p50": 22109.8,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.4166666666666667,
+        "binder_reference_f1": 0.9523809523809523
+      }
+    },
+    "batch1": {
+      "id": "c20260805-continuous-openui-schedu-e7f55102-c4-batch1",
+      "trainable_params": 1608962,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete (gate reject)",
+      "metrics": {
+        "latency_ms_p50": 22688.8,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.4166666666666667,
+        "binder_reference_f1": 0.9523809523809523
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260805-continuous-openui-schedu-e7f55102-c4-control",
+      "fixture_insufficient_n:c20260805-continuous-openui-schedu-e7f55102-c4-batch1",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.4166666666666667 candidate=0.4166666666666667 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "checkpoint_paths": [
+    "runs/c20260805-continuous-openui-schedu-e7f55102-c4-batch1/checkpoints/last.pt",
+    "runs/c20260805-continuous-openui-schedu-e7f55102-c4-control/checkpoints/last.pt"
+  ],
+  "next_priorities": [
+    "component-plan family re-proposed (rank 1) -- already exhausted per c2/c3 (seed-sensitive, rejected on confirmation); do not re-run without a new hypothesis variant."
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c4",
+  "cycle_index": 4,
+  "source_commit": "bdf143cd",
+  "integration_commit": "1b613728",
+  "predecessor_campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c3",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_role": "screening",
+  "cycle_intent": "screening",
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "seed": 100001
+  },
+  "arms": {
+    "c4-control": {
+      "id": "c20260805-continuous-openui-local-8c0b60dd-c4-control",
+      "trainable_params": 1766990,
+      "exit_code": 0,
+      "status": "complete_gate_reject",
+      "smoke": {
+        "latency_ms_p50": 27792.2,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.4166666666666667,
+        "binder_reference_f1": 0.9523809523809523
+      }
+    },
+    "c4-component-edge": {
+      "id": "c20260805-continuous-openui-local-8c0b60dd-c4-component-edge",
+      "trainable_params": 1766990,
+      "exit_code": 0,
+      "status": "complete_gate_reject",
+      "smoke": {
+        "latency_ms_p50": 30898.2,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.4166666666666667,
+        "binder_reference_f1": 0.9523809523809523
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c4-control",
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c4-component-edge",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.4166666666666667:candidate=0.4166666666666667:improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "note": "component-edge is an exact tie with control on every smoke quality metric (structure .4167, MPR .333, binder .9524) but is slower (p50 30898.2 vs 27792.2 ms, +11.2%). Auxiliary edge-decode coupling buys no quality signal at additional latency and (implicitly) capacity cost. Rejected.",
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "model",
+      "hypothesis": "Test the distinct size-matched 'component-plan' quality hypothesis next.",
+      "authority": "observed_result",
+      "confidence": 0.9,
+      "disposition": "experiment_next",
+      "proposed_experiment_id": "c20260805-continuous-openui-local-8c0b60dd-c4-component-plan"
+    }
+  ]
+}

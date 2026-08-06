@@ -1,0 +1,106 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "bdf143cdcae7416e6eb6f8ef1da4d643f38aa613",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v92",
+      "harness.model_build.train": "v42",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v23",
+      "evals.agentv": "v9",
+      "model.twotower": "v312",
+      "dsl.symbolic_surface": "v6"
+    },
+    "stamped_at": "2026-08-05T03:46:31.645081+00:00"
+  },
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c1",
+  "cycle_index": 1,
+  "source_commit": "bdf143cd",
+  "integration_commit": "bdf143cd",
+  "predecessor_campaign_id": null,
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "screening",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true
+  },
+  "arms": {
+    "control": {
+      "id": "c20260805-continuous-openui-local-8c0b60dd-c1-control",
+      "trainable_params": 1608962,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete_gate_reject",
+      "metrics": {
+        "latency_ms_p50": 4108.71,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0575,
+        "binder_reference_f1": 0.6333333333333333
+      }
+    },
+    "bounds": {
+      "id": "c20260805-continuous-openui-local-8c0b60dd-c1-bounds",
+      "trainable_params": 1608962,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete_gate_reject",
+      "metrics": {
+        "latency_ms_p50": 3108.98,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0575,
+        "binder_reference_f1": 0.6333333333333333
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c1-control",
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c1-bounds",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.0575:candidate=0.0575:improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "climb_state": "rejected",
+  "ship_state": "blocked",
+  "conclusion": "bounds_arm_exact_tie_on_primary_with_faster_latency_only",
+  "caveats": [
+    "The 'bounds' candidate arm was faster p50 (3108.98ms vs 4108.71ms control) but with no held quality delta (structural_similarity tied at 0.0575, meaningful_program_rate=0.0 on both arms), so the quality-aware tradeoff classifier keeps this non-positive.",
+    "Fixture n=3 on all arms; honest ship gates fail as expected (smoke:insufficient_n need>=20; held_out/adversarial/ood/rico_held missing_suite).",
+    "This is a fresh campaign lineage (predecessor_campaign_id=null) started in a new container with no prior local outputs/ state; it continues the shared continuous-openui-local loop already advanced by other sessions on origin/main (see continuous-openui-local-a08cs6-c3-results.md and the generate_batch_size unblock doc)."
+  ],
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "model",
+      "hypothesis": "The completed non-positive arm is exhausted; test the distinct size-matched 'component-plan' quality hypothesis next.",
+      "action": "experiment_next",
+      "experiment_id": "c20260805-continuous-openui-local-8c0b60dd-c1-component-plan"
+    },
+    {
+      "rank": 2,
+      "area": "evaluation",
+      "hypothesis": "Keep the matched control as the size-matched baseline every cycle.",
+      "action": "experiment_next",
+      "experiment_id": "c20260805-continuous-openui-local-8c0b60dd-c1-control"
+    }
+  ],
+  "recorded_at": "2026-08-05T03:31:19Z"
+}

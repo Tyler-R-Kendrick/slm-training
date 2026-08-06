@@ -1,0 +1,97 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c1",
+  "cycle_index": 1,
+  "source_commit": "bdf143cd",
+  "integration_commit": "bdf143cd",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "seed": 100001,
+    "cycle_role": "screening",
+    "cycle_intent": "screening"
+  },
+  "arms": {
+    "c1-control": {
+      "id": "c20260805-continuous-openui-local-8c0b60dd-c1-control",
+      "trainable_params": 1608962,
+      "exit_code": 124,
+      "status": "measurement_incomplete",
+      "note": "eval completed 3/3 documents (evaluation_wall_seconds=43.651774, completed_document_n=3, incomplete_document_n=0) but the process was killed by the MAX_RUN_MINUTES=3 wall cap before scoreboard.json was written, so no ship-gate scoreboard exists for this arm despite partial metrics being observable in eval_smoke.json.",
+      "smoke": {
+        "latency_ms_p50": 4868.02,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333
+      }
+    },
+    "c1-bounds": {
+      "id": "c20260805-continuous-openui-local-8c0b60dd-c1-bounds",
+      "trainable_params": 1608962,
+      "exit_code": 0,
+      "status": "complete_gate_reject",
+      "smoke": {
+        "latency_ms_p50": 5138.03,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333
+      },
+      "gates": {
+        "pass": false,
+        "evidence_volume_failures": [
+          "smoke:insufficient_n actual=3 need>=20",
+          "held_out:missing_suite",
+          "adversarial:missing_suite",
+          "ood:missing_suite",
+          "rico_held:missing_suite"
+        ],
+        "quality_threshold_failures": [
+          "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+          "smoke:structural_similarity actual=0.0575 need>=0.35",
+          "smoke:component_type_recall actual=0.0 need>=0.35",
+          "smoke:ast_beq_rate actual=0.0 need>=0.2",
+          "smoke:canonical_beq_rate actual=0.0 need>=0.1",
+          "smoke:reward_score actual=0.0 need>=0.3"
+        ]
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "continue loop; local commits/docs only",
+    "reasons": [
+      "measurement_incomplete:c20260805-continuous-openui-local-8c0b60dd-c1-control:missing_scoreboard",
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c1-bounds",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.0575:candidate=0.0575:improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "infrastructure",
+      "hypothesis": "The measurement is incomplete; replay the exact frozen control and candidate before testing a new hypothesis.",
+      "authority": "observed_result",
+      "confidence": 0.95,
+      "disposition": "experiment_next",
+      "proposed_experiment_id": "c20260805-continuous-openui-local-8c0b60dd-c1-bounds"
+    }
+  ],
+  "handoff_actions": [
+    "retry_measurement (frozen_manifest_sha256=1ada6cf30506e5ff480d5fbcf37c47675d4ddd6000ad4f5da99edfb58f7852a9)",
+    "document (this pair of files)"
+  ]
+}

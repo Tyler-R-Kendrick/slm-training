@@ -1,0 +1,99 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c3",
+  "cycle_index": 3,
+  "source_commit": "093f9c72",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "seed": 100003
+  },
+  "arms": {
+    "c3-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.23083333333333333,
+        "component_type_recall": 0.16666666666666666,
+        "binder_reference_f1": 0.48888888888888893,
+        "placeholder_fidelity": 0.38888888888888884,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "reward_score": 0.5493333333333333,
+        "latency_ms_p50": 9119.15
+      }
+    },
+    "c3-confirm": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.23083333333333333,
+        "component_type_recall": 0.16666666666666666,
+        "binder_reference_f1": 0.26666666666666666,
+        "placeholder_fidelity": 0.2222222222222222,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "reward_score": 0.283,
+        "latency_ms_p50": 8997.63
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "continue loop; local commits/docs only",
+    "reasons": [
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c3-confirm",
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c3-control",
+      "efficiency_win_rejected_min_effect:mpr_per_ms:3.6553114e-05->3.7046793e-05:gain_fraction=0.013505779<0.05",
+      "non_regression_fail:binder_reference_f1:0.48888888888888893->0.26666666666666666",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.23083333333333333 candidate=0.23083333333333333 improvement=0.0",
+      "fixture_insufficient_n_alone",
+      "confirmation_rejected:primary_quality_not_reheld"
+    ]
+  },
+  "champion_status": {
+    "entry_id": "champ-continuous-openui-local-2-6cfba5d6fd08579f",
+    "status": "rejected",
+    "campaign": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c3"
+  },
+  "conclusion": "Continuous-openui-local loop, cycle 3 (session 8c0b60dd): fresh-seed confirmation (seed 100003) rejects the component-plan champion enqueued in cycle 2 (champ-continuous-openui-local-2-6cfba5d6fd08579f). Primary metric smoke.structural_similarity is null between confirm and control (0.23083 == 0.23083, delta 0.0) -- the cycle-2 win does not reproduce at this seed. Worse, binder_reference_f1 regresses on the confirm arm relative to control (0.48889 -> 0.26667), and the efficiency proxy mpr_per_ms gain (1.35%) is below the 5% minimum-effect threshold. This is the same fate as every prior fresh-seed confirmation of this same candidate fingerprint (most recently rejected in session peuum8, commit 6d97009) -- the component-plan structural-similarity win observed on cycle-2-style seeds does not hold under an independent seed and should be treated as exhausted rather than requeued again without a new preregistered hypothesis. SDLC Phase A classifies this cycle NON_POSITIVE (confirmation_rejected:primary_quality_not_reheld); no stack layer opens.",
+  "next_priorities": [
+    "Exhaust the component-plan fingerprint; do not requeue it again without a new preregistered hypothesis (rank 1, confidence 0.95)",
+    "Retain training loss as a diagnostic only, not a promotion proxy -- loss and certified program quality diverged on this confirmation (rank 2, confidence 0.90)",
+    "Recent registered quality families are exhausted; prioritize a new preregistered structural or meaningful-quality objective before recycling them (rank 5, confidence 0.75, speculative)"
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "093f9c727befed18283e4d5e2f174c4263012edd",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v92",
+      "harness.model_build.train": "v42",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v23",
+      "evals.agentv": "v9",
+      "model.twotower": "v312",
+      "dsl.symbolic_surface": "v6"
+    },
+    "stamped_at": "2026-08-05T11:44:26Z"
+  },
+  "recorded_at": "2026-08-05T11:44:26Z"
+}

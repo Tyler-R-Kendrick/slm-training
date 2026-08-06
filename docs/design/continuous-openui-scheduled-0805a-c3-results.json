@@ -1,0 +1,77 @@
+{
+  "schema": "autotrain_continuous_cycle_results/v1",
+  "loop_id": "continuous-openui-scheduled-0805a",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-schedu-e7f55102-c3",
+  "cycle_index": 3,
+  "cycle_intent": "confirm",
+  "source_commit": "bdf143cdcae7416e6eb6f8ef1da4d643f38aa613",
+  "integration_commit": "0bb9ed3251d2679ee47afee8f8094bf5a38eb382",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_role": "screening",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true
+  },
+  "arms": {
+    "control": {
+      "id": "c20260805-continuous-openui-schedu-e7f55102-c3-control",
+      "trainable_params": 1755764,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete (gate reject)",
+      "metrics": {
+        "latency_ms_p50": 7512.17,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.23083333333333333,
+        "binder_reference_f1": 0.48888888888888893
+      }
+    },
+    "confirm": {
+      "id": "c20260805-continuous-openui-schedu-e7f55102-c3-confirm",
+      "trainable_params": 1755764,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete (gate reject)",
+      "metrics": {
+        "latency_ms_p50": 6778.62,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.23083333333333333,
+        "binder_reference_f1": 0.26666666666666666
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "champion_entry_id": "champ-continuous-openui-scheduled-0805a-2-6cfba5d6fd08579f",
+  "champion_status": "rejected",
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260805-continuous-openui-schedu-e7f55102-c3-confirm",
+      "fixture_insufficient_n:c20260805-continuous-openui-schedu-e7f55102-c3-control",
+      "efficiency_win:mpr_per_ms:4.4372443e-05->4.9174217e-05:gain_fraction=0.10821524:minimum=0.05",
+      "quality_held:parse=1.0 mpr=0.3333333333333333",
+      "non_regression_fail:binder_reference_f1:0.48888888888888893->0.26666666666666666",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.23083333333333333 candidate=0.23083333333333333 improvement=0.0",
+      "fixture_insufficient_n_alone",
+      "confirmation_rejected:primary_quality_not_reheld"
+    ]
+  },
+  "checkpoint_paths": [
+    "runs/c20260805-continuous-openui-schedu-e7f55102-c3-confirm/checkpoints/last.pt",
+    "runs/c20260805-continuous-openui-schedu-e7f55102-c3-control/checkpoints/last.pt"
+  ],
+  "next_priorities": [
+    "Exhaust the component-plan family; test a distinct size-matched quality-targeted objective next (rank 1, confidence 0.95, monitor).",
+    "c20260805-continuous-openui-schedu-e7f55102-c3-batch1 (runtime diagnostic only, not a quality hypothesis; rank 3, confidence 0.65)"
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "schema": "autotrain_continuous_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c1",
+  "cycle_index": 1,
+  "source_commit": "bdf143cd",
+  "integration_commit": "bdf143cd",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "screening",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true
+  },
+  "arms": {
+    "control": {
+      "id": "c20260805-continuous-openui-local-8c0b60dd-c1-control",
+      "exit_code": 1,
+      "train_status": "failed",
+      "eval_status": "not_run",
+      "metrics": {}
+    },
+    "bounds": {
+      "id": "c20260805-continuous-openui-local-8c0b60dd-c1-bounds",
+      "exit_code": 1,
+      "train_status": "failed",
+      "eval_status": "not_run",
+      "metrics": {}
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "measurement_incomplete:c20260805-continuous-openui-local-8c0b60dd-c1-control:missing_scoreboard",
+      "measurement_incomplete:c20260805-continuous-openui-local-8c0b60dd-c1-bounds:missing_scoreboard",
+      "harness_failure:c20260805-continuous-openui-local-8c0b60dd-c1-bounds:experiment_failed",
+      "harness_failure:c20260805-continuous-openui-local-8c0b60dd-c1-control:experiment_failed",
+      "primary_metric_unavailable"
+    ]
+  },
+  "climb_state": "inconclusive",
+  "ship_state": "blocked",
+  "conclusion": "environment_infra_failure_torch_not_installed",
+  "caveats": [
+    "Fresh checkout / fresh venv had no PyTorch wheel installed; both arms failed at scripts.train_model:detect_device with ModuleNotFoundError before any train step ran.",
+    "This is an environment-setup gap identical in kind to the documented openui_bridge/design_md_bridge npm-ci prerequisite in autotrain/references/continuous.md, not a harness code defect: no code change was made or is warranted.",
+    "Self-heal applied: installed the pinned CPU wheel per scripts/setup_dev_env.sh guidance (torch==2.5.1+cpu from https://download.pytorch.org/whl/cpu) into a dedicated python3.12 venv, since the ambient interpreter is 3.11 and pyproject.toml requires >=3.12,<3.13.",
+    "No metrics were produced by either arm; this cycle carries zero model evidence in either direction."
+  ],
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "infrastructure",
+      "hypothesis": "The measurement is incomplete; replay the exact frozen control and candidate now that torch is installed, before testing a new hypothesis.",
+      "action": "experiment_next",
+      "experiment_id": "c20260805-continuous-openui-local-8c0b60dd-c1-bounds"
+    }
+  ],
+  "recorded_at": "2026-08-05T05:30:10Z"
+}

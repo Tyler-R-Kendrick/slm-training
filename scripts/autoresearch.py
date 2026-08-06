@@ -658,15 +658,19 @@ def _recover_incomplete_handoff_feedback(
         reason.startswith(("measurement_incomplete:", "harness_failure:"))
         for reason in handoff.reasons
     )
-    infrastructure = tuple(
+    # Gate recovery on the typed incomplete-measurement reason, not on which
+    # PriorityArea the diagnosis happened to tag the retry priority with —
+    # areas like "model_build" are a legitimate diagnosis of a wall/decode
+    # timeout and must recover the same as "harness"/"infrastructure".
+    retry_priorities = tuple(
         priority
         for priority in handoff.priorities
-        if priority.area in {"harness", "infrastructure"}
+        if priority.proposed_experiment_id is not None
     )
-    if not incomplete or not infrastructure:
+    if not incomplete or not retry_priorities:
         return None
     experiment_id = (
-        infrastructure[0].proposed_experiment_id or matrix.recommended_experiment_id
+        retry_priorities[0].proposed_experiment_id or matrix.recommended_experiment_id
     )
     candidates = {
         item.experiment.experiment_id: item.experiment for item in matrix.hypotheses
@@ -677,7 +681,7 @@ def _recover_incomplete_handoff_feedback(
     evidence = tuple(handoff.reasons) or (
         "Phase A classified the measurement as incomplete.",
     )
-    actions = tuple(priority.hypothesis for priority in infrastructure)
+    actions = tuple(priority.hypothesis for priority in retry_priorities)
     signature = json.dumps(
         experiment.knobs.model_dump(exclude_none=True, mode="json"), sort_keys=True
     )

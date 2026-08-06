@@ -1,0 +1,119 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "b369306176372dca22990f65b5f7f364d9f7878a",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v92",
+      "harness.model_build.train": "v42",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v23",
+      "evals.agentv": "v9",
+      "model.twotower": "v312",
+      "dsl.symbolic_surface": "v6"
+    },
+    "stamped_at": "2026-08-05T03:46:31.645081+00:00"
+  },
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c3",
+  "cycle_index": 3,
+  "source_commit": "bdf143cd",
+  "integration_commit": "b3693061",
+  "predecessor_campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c2",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "retry_measurement",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "arm_seed": 100002,
+    "ship_gates": true
+  },
+  "arms": {
+    "control": {
+      "id": "c20260805-continuous-openui-local-8c0b60dd-c3-control",
+      "trainable_params": 1755764,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete_gate_reject",
+      "structural_aux_head_profile": null,
+      "knobs_delta": {
+        "component_plan_decode_weight": 0.0,
+        "component_plan_loss_weight": 0.0
+      },
+      "metrics": {
+        "latency_ms_p50": 35231.83,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.32666666666666666,
+        "binder_reference_f1": 0.0
+      }
+    },
+    "component-plan": {
+      "id": "c20260805-continuous-openui-local-8c0b60dd-c3-component-plan",
+      "trainable_params": 1755764,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete_gate_reject",
+      "structural_aux_head_profile": "component-plan",
+      "knobs_delta": {
+        "component_plan_decode_weight": 1.0,
+        "component_plan_loss_weight": 1.0
+      },
+      "metrics": {
+        "latency_ms_p50": 25520.6,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.38280000000000003,
+        "binder_reference_f1": 0.0
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.05613333333333337,
+  "sdlc_phase_a": {
+    "positive": true,
+    "stack_layer": true,
+    "stack_action": "documented_then_stacked",
+    "reasons": [
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c3-component-plan",
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c3-control",
+      "primary_metric_win:smoke.structural_similarity:0.32666666666666666->0.38280000000000003:improvement=0.05613333333333337"
+    ]
+  },
+  "climb_state": "candidate_queued",
+  "ship_state": "blocked",
+  "conclusion": "component_plan_structural_similarity_win_reproduced_again_on_frozen_replay",
+  "champion_queue_entry": "champ-continuous-openui-local-3-6cfba5d6fd08579f",
+  "champion_fingerprint": "6cfba5d6fd08579f",
+  "caveats": [
+    "This is a screening-scale (n=3) reproduction of the `component-plan` structural-aux-head candidate (structural_aux_head_profile=component-plan, component_plan_decode_weight=1.0, component_plan_loss_weight=1.0), the same candidate documented across many prior sessions (e.g. continuous-openui-local ce27597 '5th reproduction', 4549cd8 '6th reproduction').",
+    "The same candidate has ALSO been rejected on fresh-seed confirmation in other sessions (see continuous-openui-local-... 'component-plan win rejected on fresh-seed confirmation' and 'component-plan rejected on fresh seed' docs). This session's win at arm_seed=100002 is one more data point, not a confirmed promotion; climb_state stays candidate_queued (confirm_attempts=0), not climb_accepted.",
+    "meaningful_program_rate is 0.0 on both arms; the win is on structural_similarity + latency only, at fixture n=3 with honest ship gates failing on evidence volume (need n>=20).",
+    "This cycle is also the frozen replay of cycle 2's control-arm decode-timeout: both arms completed cleanly here (no decode_timeout), so the prior measurement-incomplete state did not reproduce under replay."
+  ],
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "model",
+      "hypothesis": "The completed frozen replay rejects the prior arm; test the distinct size-matched 'component-edge' quality hypothesis next.",
+      "action": "experiment_next",
+      "experiment_id": "c20260805-continuous-openui-local-8c0b60dd-c3-component-edge"
+    },
+    {
+      "rank": 2,
+      "area": "evaluation",
+      "hypothesis": "Keep the matched control as the size-matched baseline every cycle.",
+      "action": "experiment_next",
+      "experiment_id": "c20260805-continuous-openui-local-8c0b60dd-c3-control"
+    }
+  ],
+  "recorded_at": "2026-08-05T03:39:20Z"
+}

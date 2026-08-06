@@ -1,0 +1,66 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c4",
+  "cycle_index": 4,
+  "source_commit": "81df7d8e",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "cycle_role": "screening",
+  "cycle_intent": "screening",
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2"
+  },
+  "arms": {
+    "control": {
+      "status": "measurement_complete",
+      "levers": {
+        "component_edge": false
+      },
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.4166666666666667,
+        "binder_reference_f1": 0.9523809523809524,
+        "component_type_recall": 0.25,
+        "placeholder_fidelity": 0.9166666666666666,
+        "reward_score": 0.936,
+        "latency_ms_p50": 28544.2
+      }
+    },
+    "component-edge": {
+      "status": "measurement_complete",
+      "levers": {
+        "component_edge": true
+      },
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.4166666666666667,
+        "binder_reference_f1": 0.9523809523809524,
+        "component_type_recall": 0.25,
+        "placeholder_fidelity": 0.9166666666666666,
+        "reward_score": 0.936,
+        "latency_ms_p50": 26376.68
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "params": {
+    "control": 1766987,
+    "component-edge": 1766987
+  },
+  "conclusion": "Fourth cycle, size-matched (1,766,987 params each) component-edge quality hypothesis. Every guarded quality metric is an exact tie between arms (parse 1.0, MPR 0.3333, structural_similarity 0.4167, binder F1 0.9524, component recall 0.25, fidelity 0.9167, reward 0.936). The driver's own SDLC Phase A classification flags an efficiency_win (mpr_per_ms gain_fraction=0.0822, above the 0.05 floor -- candidate 7.6% faster p50) with quality held, but the primary metric (structural_similarity) delta is exactly 0.0, so this does NOT clear the quality-aware positive bar (latency-only wins require a held/positive primary metric move, not just an efficiency ratio, per _classify_metric_tradeoff). Correctly classified non-positive; local docs only, no stack layer.",
+  "next_priorities": [
+    "component-edge vs matched control is a quality tie with a latency-only signal; not sufficient for a positive classification on its own",
+    "Do not re-test component-plan at this recipe: c3 (this cohort) already conclusively rejected/retired it (reproduced control timeout + rejected candidate absolute quality). The driver's raw ranked-priority output repeats a generic 'test component-plan next' suggestion that does not track lineage exhaustion -- select a genuinely untested lever (or an explicitly distinct recipe/lever variant of component-plan) for c5, not this pairing verbatim",
+    "Do not promote or ship either checkpoint"
+  ],
+  "recorded_at": "2026-08-05T08:42:49Z"
+}

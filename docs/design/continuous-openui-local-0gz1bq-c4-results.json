@@ -1,0 +1,86 @@
+{
+  "schema": "autotrain_continuous_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c4",
+  "cycle_index": 4,
+  "source_commit": "bdf143cd",
+  "integration_commit": "3dbde7cc",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "screening",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true
+  },
+  "arms": {
+    "control": {
+      "id": "c20260805-continuous-openui-local-8c0b60dd-c4-control",
+      "trainable_params": 1766990,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete_gate_reject",
+      "checkpoint_sha256": "6ad5fba6571aadedc6823d811f3c469167bd58ae229ca58fb8eda949830f87b7",
+      "metrics": {
+        "latency_ms_p50": 27697.6,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.4166666666666667,
+        "binder_reference_f1": 0.9523809523809524,
+        "component_type_recall": 0.25,
+        "placeholder_fidelity": 0.9166666666666666,
+        "reward_score": 0.9359999999999999
+      }
+    },
+    "component-edge": {
+      "id": "c20260805-continuous-openui-local-8c0b60dd-c4-component-edge",
+      "trainable_params": 1766990,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete_gate_reject",
+      "checkpoint_sha256": "e3088ca94ad09f1c665759d6c40cafb31fb504d4490c60b0754386fa674b4ef6",
+      "metrics": {
+        "latency_ms_p50": 32093.17,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.4166666666666667,
+        "binder_reference_f1": 0.9523809523809524,
+        "component_type_recall": 0.25,
+        "placeholder_fidelity": 0.9166666666666666,
+        "reward_score": 0.9359999999999999
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c4-control",
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c4-component-edge",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.4166666666666667 candidate=0.4166666666666667 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "climb_state": "rejected",
+  "ship_state": "blocked",
+  "conclusion": "component_edge_exact_tie_slower",
+  "caveats": [
+    "Byte-identical quality on every measured metric between control and component-edge at this fixture scale (structure, MPR, binder F1, recall, fidelity, reward all identical).",
+    "component-edge is markedly slower (32093.17ms vs 27697.6ms p50, +15.9%) with zero quality delta — a pure cost regression, not a tradeoff worth taking.",
+    "Smoke n=3 only; held_out/adversarial/ood/rico_held suites missing — fixture screening evidence only, not a ship claim."
+  ],
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "model",
+      "hypothesis": "The completed non-positive arm is exhausted; test the distinct size-matched 'component-plan' quality hypothesis next.",
+      "action": "experiment_next",
+      "experiment_id": "c20260805-continuous-openui-local-8c0b60dd-c4-component-plan"
+    }
+  ],
+  "recorded_at": "2026-08-05T05:42:44Z"
+}
