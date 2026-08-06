@@ -8281,3 +8281,62 @@ def test_is_continuous_closeout_path_allowlist() -> None:
     assert _mod._is_continuous_closeout_path("docs/MODEL_CARD.md")
     assert not _mod._is_continuous_closeout_path("scripts/run_autotrain_continuous.py")
     assert not _mod._is_continuous_closeout_path("docs/design/other-topic.md")
+
+
+def test_load_frozen_replay_skips_missing_control_manifest(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "ar"
+    loop = "loop-1"
+    campaign_id = "camp-1"
+    camp = root / campaign_id
+    manifests = camp / "manifests"
+    manifests.mkdir(parents=True)
+    sha = "f" * 64
+    handoff = {
+        "schema_version": "AutotrainCycleHandoffV1",
+        "loop_id": loop,
+        "campaign_id": campaign_id,
+        "cycle_index": 1,
+        "upstream_commit": "a" * 40,
+        "integration_commit": "b" * 40,
+        "cycle_role": "screening",
+        "cycle_intent": "retry_measurement",
+        "evidence_class": "fixture",
+        "climb_state": "harness_failure",
+        "ship_state": "blocked",
+        "primary_metric": "smoke.structural_similarity",
+        "actions": [
+            {
+                "kind": "retry_measurement",
+                "owner": "autotrain",
+                "reason": "replay",
+                "evidence_ids": [f"campaign:{campaign_id}"],
+                "frozen_manifest_sha256": sha,
+            }
+        ],
+    }
+    (camp / "cycle_handoff.json").write_text(json.dumps(handoff) + "\n")
+    (camp / "matrix-proposal.json").write_text(
+        json.dumps(
+            {
+                "hypotheses": [
+                    {"experiment": {"experiment_id": "camp-1-control"}},
+                    {"experiment": {"experiment_id": "camp-1-cand"}},
+                ]
+            }
+        )
+    )
+    cand_path = manifests / "camp-1-cand.json"
+
+    class _M:
+        experiment_id = "camp-1-cand"
+
+    monkeypatch.setattr(
+        _mod, "_manifest_with_sha", lambda camp_dir, digest: (cand_path, _M())
+    )
+    monkeypatch.setattr(
+        _mod, "_nonreplayable_configuration_failure", lambda *a, **k: None
+    )
+    result = _mod._load_frozen_replay(root, loop, campaign_id)
+    assert result is None

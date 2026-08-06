@@ -2804,6 +2804,11 @@
         {
           "version": "v183",
           "date": "2026-08-06",
+          "note": "no-bump: unit test for FROZEN_REPLAY_SKIP missing control manifest"
+        },
+        {
+          "version": "v183",
+          "date": "2026-08-06",
           "note": "no-bump: FROZEN_REPLAY_SKIP on missing control manifest (deadline-skipped incomplete pair) so continuous thrash does not hard-block"
         },
         {
