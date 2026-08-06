@@ -2757,7 +2757,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v182",
+      "version": "v185",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2794,6 +2794,7 @@
         "tests/test_scripts/test_slm_cli.py",
         "tests/test_scripts/test_run_autotrain_continuous.py",
         "scripts/run_autotrain_continuous.py",
+        "scripts/run_autotrain_supervisor.py",
         "scripts/report_autotrain_continuous.sh",
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json",
         "src/slm_training/autoresearch/thrash_regime.py",
@@ -2801,6 +2802,36 @@
         "tests/test_autoresearch/test_thrash_regime.py"
       ],
       "history": [
+        {
+          "version": "v185",
+          "date": "2026-08-06",
+          "note": "structural continuous self-heal: self_heal_unblock_loop single owner; soft failures never BLOCKED; thrash timeout residual classifier tightened; in-repo run_autotrain_supervisor replaces /tmp bash; adversarial unblock tests"
+        },
+        {
+          "version": "v184",
+          "date": "2026-08-06",
+          "note": "continuous self-heal: thrash decode/wall-timeout residual unblocks repair_harness (SELF_HEAL_THRASH_TIMEOUT_REPAIR); startup heals from last cycle_failures message instead of opaque fingerprint; screening thrash timeouts emit next_experiment not hard repair"
+        },
+        {
+          "version": "v183",
+          "date": "2026-08-06",
+          "note": "no-bump: unit test for FROZEN_REPLAY_SKIP missing control manifest"
+        },
+        {
+          "version": "v183",
+          "date": "2026-08-06",
+          "note": "no-bump: FROZEN_REPLAY_SKIP on missing control manifest (deadline-skipped incomplete pair) so continuous thrash does not hard-block"
+        },
+        {
+          "version": "v183",
+          "date": "2026-08-06",
+          "note": "no-bump: gate SELF_HEAL_DOCUMENT in _write_cycle_handoff on explicit cwd only (prevent unit-test pollution of docs/design); heal behavior unchanged for live continuous which always passes cwd"
+        },
+        {
+          "version": "v183",
+          "date": "2026-08-06",
+          "note": "continuous self-heal: driver-owned document closeout + continuous-only dirty-tree commit (SELF_HEAL_DOCUMENT / SELF_HEAL_DIRTY_TREE) so thrash never blocks on unacked document or auto-docs dirt; hard prereqs (repair_harness/formal/deliver_stack/\u2026) still fail closed"
+        },
         {
           "version": "v182",
           "date": "2026-08-05",
