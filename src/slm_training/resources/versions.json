@@ -1870,7 +1870,7 @@
       ]
     },
     "evals.agentv": {
-      "version": "v9",
+      "version": "v10",
       "kind": "harness",
       "paths": [
         "src/slm_training/evals/agentv.py",
@@ -1878,6 +1878,11 @@
         "tests/test_evals/test_agentv.py"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-08-06",
+          "note": "AgentV SDK reuse requires lockfile-marker integrity (_sdk_installed); reject stale node_modules that only have @agentv/core/package.json"
+        },
         {
           "version": "v9",
           "date": "2026-08-04",
