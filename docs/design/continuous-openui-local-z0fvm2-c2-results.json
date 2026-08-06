@@ -1,0 +1,98 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "abefbb99605cb14ef01488fa1b0ffdfdf7aec561",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v92",
+      "harness.model_build.train": "v42",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v23",
+      "evals.agentv": "v9",
+      "model.twotower": "v312",
+      "dsl.symbolic_surface": "v6"
+    },
+    "stamped_at": "2026-08-05T03:46:31.645081+00:00"
+  },
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 2,
+  "source_commit": "bdf143cd",
+  "integration_commit": "abefbb99",
+  "predecessor_campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c1",
+  "honesty": "fixture",
+  "not_ship_claim": true,
+  "cycle_intent": "screening",
+  "recipe": {
+    "device": "cpu",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "suite": "smoke",
+    "steps": 20,
+    "ship_gates": true
+  },
+  "arms": {
+    "component-plan": {
+      "id": "c20260805-continuous-openui-local-8c0b60dd-c2-component-plan",
+      "trainable_params": 1755764,
+      "exit_code": 0,
+      "train_status": "completed",
+      "eval_status": "complete_gate_reject",
+      "metrics": {
+        "latency_ms_p50": 32136.7,
+        "meaningful_program_rate": 0.0,
+        "binder_reference_f1": 0.0
+      }
+    },
+    "control": {
+      "id": "c20260805-continuous-openui-local-8c0b60dd-c2-control",
+      "trainable_params": 1755764,
+      "exit_code": 2,
+      "train_status": "completed",
+      "eval_status": "incomplete_decode_timeout",
+      "metrics": {
+        "decode_timeout_count": 3
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "measurement_incomplete:c20260805-continuous-openui-local-8c0b60dd-c2-control:smoke:incomplete_document_n=3:decode_timeout_count=3",
+      "harness_failure:c20260805-continuous-openui-local-8c0b60dd-c2-control:experiment_failed",
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c2-control",
+      "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c2-component-plan",
+      "executable_unblock_rejected_low_mpr:mpr=0.0",
+      "primary_metric_unavailable",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "climb_state": "inconclusive",
+  "ship_state": "blocked",
+  "conclusion": "control_arm_hit_typed_decode_timeout_component_plan_arm_completed_but_null_quality",
+  "caveats": [
+    "Control arm entered a typed decode timeout (decode_timeout_count=3) during evaluation and never produced a primary-metric measurement; this is a measurement-incomplete state, not a model comparison.",
+    "component-plan candidate completed but meaningful_program_rate=0.0 and binder_reference_f1=0.0, so even if the control had completed this would not have been an executable_unblock win (mpr=0.0).",
+    "No typed HarnessSignalV1 was reproduced/emitted for the decode timeout (harness_signals=[] in the campaign JSON), so this is not routed to improve-openui-harnesses yet; the driver instead queued a retry_measurement (frozen replay) to test reproducibility before treating it as a harness signal.",
+    "Fixture n=3; honest ship gates fail as expected."
+  ],
+  "next_priorities": [
+    {
+      "rank": 1,
+      "area": "model_build",
+      "hypothesis": "The tail-supervised candidate completed while the matched control entered a typed decode timeout; replay the exact frozen pair once to test whether the runtime unblock reproduces.",
+      "action": "retry_measurement",
+      "frozen_manifest_sha256": "cc50e682842c72483fa0b29eb7ac690fd433382d3c67fc991a19e42cd48142e2",
+      "experiment_id": "c20260805-continuous-openui-local-8c0b60dd-c2-component-plan"
+    }
+  ],
+  "recorded_at": "2026-08-05T03:36:05Z"
+}

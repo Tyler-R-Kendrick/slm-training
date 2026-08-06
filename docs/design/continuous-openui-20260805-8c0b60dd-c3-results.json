@@ -1,0 +1,52 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c3",
+  "cycle_index": 3,
+  "source_commit": "5a7c14c3",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "cycle_role": "screening",
+  "cycle_intent": "retry_measurement",
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2"
+  },
+  "replay_of_manifest_sha256": "383a9dc5a5c195732675ff31b415eb0817c4900c253b9cc226abcea2219dcfaf",
+  "arms": {
+    "control": {
+      "status": "measurement_incomplete_reproduced",
+      "levers": {
+        "component_plan": false
+      },
+      "smoke": {
+        "n": 3,
+        "decode_timeout_count": 3
+      }
+    },
+    "component-plan": {
+      "status": "measurement_complete_reproduced",
+      "levers": {
+        "component_plan": true
+      },
+      "smoke": {
+        "n": 3,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.3828,
+        "binder_reference_f1": 0.0,
+        "latency_ms_p50": 31496.5
+      }
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "conclusion": "Frozen replay of cycle 2's exact control/component-plan pair (frozen_manifest_sha256 383a9dc5...). Both cycle-2 outcomes reproduce exactly: the control-only decode timeout reproduces (3/3, deterministic given identical config), and the component-plan candidate again completes with structural_similarity=0.3828. Because the timeout is now reproduced rather than a one-off, the driver classifies this as a resolved infrastructure attribution (not a harness defect requiring repair) and retires both arms: the control comparison is rejected for lacking a completed baseline, and the candidate's own quality is rejected on absolute merit (meaningful_program_rate=0, binder_reference_f1=0) rather than left inconclusive. component-plan is now exhausted as a screening hypothesis at this recipe.",
+  "next_priorities": [
+    "Retire the component-plan vs matched-control pairing at this recipe; it is now conclusively rejected (reproduced control timeout + rejected candidate absolute quality)",
+    "Test the distinct size-matched component-edge quality hypothesis next per the driver's ranked priorities",
+    "Do not promote, sync, or ship either checkpoint"
+  ],
+  "recorded_at": "2026-08-05T08:40:12Z"
+}

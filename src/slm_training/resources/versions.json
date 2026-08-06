@@ -2811,6 +2811,11 @@
         {
           "version": "v192",
           "date": "2026-08-06",
+          "note": "no-bump: harvest durable continuous-cycle docs/design evidence from unstacked backlog PRs 1436/1445/1447/1450-1454 (docs only)"
+        },
+        {
+          "version": "v192",
+          "date": "2026-08-06",
           "note": "--skip-slugs CLI extra_skip_slugs for cross-session thrash arm exhaustion when local lineage resets"
         },
         {

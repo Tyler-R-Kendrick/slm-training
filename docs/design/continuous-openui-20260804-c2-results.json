@@ -1,0 +1,63 @@
+{
+    "schema": "continuous_autotrain_cycle_results/v1",
+    "loop_id": "continuous-openui-local",
+    "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c2",
+    "cycle_index": 2,
+    "source_commit": "170eb5cf",
+    "honesty": "fixture_or_scratch",
+    "not_ship_claim": true,
+    "note": "Infrastructure failure, not a model result. control hit decode_timeout_count=3 (exit=124) and the component-plan candidate never ran (exit=2, missing_scoreboard). This is the same soft decode-timeout-wall-clock class documented in decode-timeout-hang-seed44-steps72-finding.md (signal.setitimer SIGALRM only delivered between Python bytecode instructions, so a long native decode call can overrun the configured wall timeout).",
+    "recipe": {
+        "device": "cpu",
+        "steps": 20,
+        "train_version": "wf_smoke_v2",
+        "eval_version": "e938_role_safe_all_targets_v2",
+        "max_wall_minutes": 3,
+        "ship_gates": true,
+        "seed": 100002
+    },
+    "arms": {
+        "c2-control": {
+            "trainable_params": 1755764,
+            "status": "harness_failure_decode_timeout",
+            "exit_code": 124,
+            "smoke": {
+                "n": 3,
+                "decode_timeout_count": 3,
+                "parse_rate": null,
+                "meaningful_program_rate": null,
+                "structural_similarity": null,
+                "binder_reference_f1": null
+            }
+        },
+        "c2-component-plan": {
+            "trainable_params": 1755764,
+            "status": "not_executed_missing_scoreboard",
+            "exit_code": 2,
+            "smoke": null
+        }
+    },
+    "primary_metric": "smoke.structural_similarity",
+    "primary_delta": null,
+    "sdlc_phase_a": {
+        "positive": false,
+        "stack_layer": false,
+        "stack_action": "no_stack_layer_non_positive",
+        "agent_required": "continue loop; local commits/docs only",
+        "reasons": [
+            "measurement_incomplete:c20260804-continuous-openui-local-8c0b60dd-c2-control:smoke:incomplete_document_n=3:decode_timeout_count=3",
+            "measurement_incomplete:c20260804-continuous-openui-local-8c0b60dd-c2-component-plan:missing_scoreboard",
+            "harness_failure:c20260804-continuous-openui-local-8c0b60dd-c2-control:experiment_failed",
+            "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c2-control",
+            "primary_metric_unavailable",
+            "fixture_insufficient_n_alone"
+        ]
+    },
+    "conclusion": "Infrastructure failure, not scoreable. The control arm (1,755,764 matched params, wf_smoke_v2, steps=20, seed 100002) hit 3/3 decode timeouts (exit=124) before producing a scoreboard, so the driver never executed the component-plan candidate (exit=2, missing_scoreboard). This matches the known soft-wall-clock decode-timeout class already diagnosed in decode-timeout-hang-seed44-steps72-finding.md -- the SIGALRM-based decode_timeout_seconds guard is only delivered between Python bytecode instructions and can be overrun by a single long native decode call. The driver's own SDLC_PHASE_A classification correctly flagged this NON_POSITIVE/harness_failure and queued a retry_measurement action to replay the identical frozen pair rather than treating this as a negative model result.",
+    "next_priorities": [
+        "retry_measurement: replay the exact frozen c2 pair once to test whether the control-only decode timeout reproduces (confidence 0.95, per driver)",
+        "If the timeout reproduces deterministically, this graduates from a soft retry to a repair_harness signal against model_build/eval_runner's decode_timeout_seconds enforcement (see decode-timeout-hang-seed44-steps72-finding.md root-cause hypothesis)",
+        "Do not attribute this cycle's non-completion to the component-plan or control model hypotheses -- neither arm produced usable evidence"
+    ],
+    "recorded_at": "2026-08-04T21:46:44Z"
+}
