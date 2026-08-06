@@ -380,14 +380,53 @@ def test_committed_test_duration_table_is_schema_valid() -> None:
     assert payload["schema"] == "test_file_durations/v1"
     assert payload["unit"] == "seconds"
     assert payload["generated_by"]
+    assert payload.get("measured_at")
+    assert payload.get("partial") is False
     durations = payload["durations"]
     assert durations
     for path, seconds in durations.items():
         assert path.startswith("tests/") and path.endswith(".py"), path
         assert isinstance(seconds, (int, float)) and seconds > 0, path
 
+    problems = check_changed._validate_test_duration_payload(payload)
+    assert problems == [], problems
+
     loaded = check_changed._test_file_durations()
     assert loaded == {path: float(value) for path, value in durations.items()}
+
+
+def test_duration_table_validator_flags_partial_and_irreducible_gaps() -> None:
+    base = {
+        "schema": "test_file_durations/v1",
+        "unit": "seconds",
+        "generated_by": "unit-test",
+        "measured_at": "2026-08-04",
+        "partial": True,
+        "integrity": {
+            "max_age_days": 180,
+            "irreducible_files": {},
+        },
+        "durations": {
+            "tests/test_dsl/test_topology_apply.py": 5000.0,
+            "tests/test_ok.py": 1.0,
+        },
+    }
+    problems = check_changed._validate_test_duration_payload(base)
+    assert any("partial=true" in p for p in problems)
+    assert any("test_topology_apply.py" in p and "irreducible" in p for p in problems)
+
+    fixed = dict(base)
+    fixed["partial"] = False
+    fixed["integrity"] = {
+        "max_age_days": 180,
+        "irreducible_files": {
+            "tests/test_dsl/test_topology_apply.py": {
+                "seconds": 5000.0,
+                "remediation": "marked slow",
+            }
+        },
+    }
+    assert check_changed._validate_test_duration_payload(fixed) == []
 
 
 def test_missing_duration_table_degrades_to_an_empty_weighting(monkeypatch, tmp_path) -> None:

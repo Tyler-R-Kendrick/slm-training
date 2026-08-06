@@ -121,6 +121,18 @@ class TestEditKindMapping:
         assert map_operator_to_edit_kind("openui.nonexistent") is None
 
 
+class TestTopologyApplyConfig:
+    """Config surface is cheap; keep it on the default CI path."""
+
+    def test_config_rejects_unknown_mode(self):
+        with pytest.raises(ValueError, match="unknown topology-apply mode"):
+            TopologyApplyConfigV1(mode="always")  # type: ignore[arg-type]
+
+    def test_config_roundtrip(self):
+        config = TopologyApplyConfigV1(mode="topology_apply")
+        assert TopologyApplyConfigV1.from_dict(config.to_dict()) == config
+
+
 # Measured on an idle machine: this class alone exceeds the canonical
 # per-job wall (MAX_RUN_MINUTES = 3), and its individual test nodes run
 # ~100s+ each, so no shard packing can fit it. Deselected by default;
@@ -145,14 +157,6 @@ class TestDefaultOff:
         assert applied is False
         assert session.stats.node_passes == passes_before
         assert session.stats.direct_applies == 0
-
-    def test_config_rejects_unknown_mode(self):
-        with pytest.raises(ValueError, match="unknown topology-apply mode"):
-            TopologyApplyConfigV1(mode="always")  # type: ignore[arg-type]
-
-    def test_config_roundtrip(self):
-        config = TopologyApplyConfigV1(mode="topology_apply")
-        assert TopologyApplyConfigV1.from_dict(config.to_dict()) == config
 
 
 # Measured on an idle machine: this class alone exceeds the canonical

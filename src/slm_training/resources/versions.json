@@ -1610,6 +1610,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-08-05",
+          "note": "no-bump: move TopologyApplyConfig unit tests off @pytest.mark.slow class so default CI keeps mode-reject/roundtrip coverage; live apply paths remain slow"
+        },
+        {
+          "version": "v1",
           "date": "2026-08-04",
           "note": "no-bump: mark TestDefaultOff / TestDirectApply / TestStaleInvalidation @pytest.mark.slow. Run to completion on an idle machine the file takes 4726s (the committed CI weight said 429s -- a partial measurement, wrong by 11x), with individual nodes at ~100-340s, so no shard packing fits it under MAX_RUN_MINUTES; those tests were cancelled on every CI run. TestEditKindMapping (3.0s) stays in CI, where the file now completes in 0.11s. Test selection only; no source or behavior change."
         },
@@ -1923,6 +1928,11 @@
         "docs/design/dsh5-03-bulk-operator-crossover.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-05",
+          "note": "no-bump: default dsh5 CLI test uses synthetic probes for report+stamp path; live run_local_preflight remains @pytest.mark.slow integration"
+        },
         {
           "version": "v1",
           "date": "2026-08-04",
