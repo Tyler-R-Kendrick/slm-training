@@ -1,0 +1,65 @@
+{
+    "schema": "continuous_autotrain_cycle_results/v1",
+    "loop_id": "continuous-openui-local",
+    "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c6",
+    "cycle_index": 6,
+    "source_commit": "a745dc64",
+    "honesty": "fixture_or_scratch",
+    "not_ship_claim": true,
+    "recipe": {
+        "device": "cpu",
+        "steps": 20,
+        "train_version": "wf_smoke_v2",
+        "eval_version": "e938_role_safe_all_targets_v2",
+        "max_wall_minutes": 1.1666666666666667,
+        "ship_gates": true,
+        "seed": 100002,
+        "intent": "retry_measurement",
+        "frozen_manifest_sha256": "fc7f74cc6b9176e0d0be5f33e2114de07de1aeba9ffe0b93b3e2413fc1427dfb"
+    },
+    "arms": {
+        "c6-component-plan": {
+            "status": "harness_failure",
+            "exit_code": 2,
+            "smoke": {
+                "incomplete_document_n": 3,
+                "decode_timeout_count": 3,
+                "compiler_ms_mean": 34679.2,
+                "tokens_emitted_mean": 84,
+                "forwards_count_mean": 15
+            }
+        },
+        "c6-control": {
+            "status": "harness_failure",
+            "exit_code": 2,
+            "smoke": {
+                "incomplete_document_n": 3,
+                "decode_timeout_count": 3
+            }
+        }
+    },
+    "primary_metric": "smoke.structural_similarity",
+    "primary_delta": null,
+    "sdlc_phase_a": {
+        "positive": false,
+        "stack_layer": false,
+        "stack_action": "no_stack_layer_non_positive",
+        "agent_required": "continue loop; local commits/docs only",
+        "reasons": [
+            "measurement_incomplete:c20260805-continuous-openui-local-8c0b60dd-c6-control:smoke:incomplete_document_n=3:decode_timeout_count=3",
+            "measurement_incomplete:c20260805-continuous-openui-local-8c0b60dd-c6-component-plan:smoke:incomplete_document_n=3:decode_timeout_count=3",
+            "harness_failure:c20260805-continuous-openui-local-8c0b60dd-c6-component-plan:experiment_failed",
+            "harness_failure:c20260805-continuous-openui-local-8c0b60dd-c6-control:experiment_failed",
+            "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c6-component-plan",
+            "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c6-control",
+            "primary_metric_unavailable",
+            "fixture_insufficient_n_alone"
+        ]
+    },
+    "conclusion": "Continuous-openui-local loop, cycle 6 (scheduled routine session sched02, branch claude/great-dirac-h4hi9j): this is the frozen retry_measurement replay of cycle 2's incomplete component-plan/control pair, made executable by this session's own _recover_incomplete_handoff_feedback fix (commit a745dc6). The replay mechanism itself now works -- cycle 6 ran to completion instead of the ValueError hard-crash that cycles c3/c4/c5 hit three times in a row. The underlying measurement, however, still fails: both arms hit decode_timeout_count=3/3 at seed 100002, exit code 2 (harness_failure, not a wall-cap KeyboardInterrupt this time). compiler_ms_mean=34679.2 on the component-plan arm vs the configured screening_decode_timeout_seconds=12 -- roughly 3x over budget. This is the third independent seed (100005 in an earlier session, 100002 twice in this session) reproducing the same class of dual-arm decode-timeout pathology tracked as the still-open Blocker 1 in autotrain-cycle-c5-dual-arm-decode-timeout-unresolved.md. climb_state=inconclusive, ship_state=blocked. The driver now queues a repair_harness action (owner=improve-openui-harnesses, harness_family=model_build) ahead of any further retry_measurement or new model hypothesis.",
+    "next_priorities": [
+        "Do not speculatively raise screening_decode_timeout_seconds again; route to a dedicated improve-openui-harnesses profiling session to find where the ~34.7s/record compiler-search cost is spent before touching any budget/routing knob.",
+        "Do not keep re-issuing retry_measurement for this exact frozen pair; three independent seeds have reproduced the same failure class -- further blind retries are not new information.",
+        "The component-plan quality hypothesis stays unconfirmed at fresh seed, queued behind Blocker 1 resolution."
+    ]
+}

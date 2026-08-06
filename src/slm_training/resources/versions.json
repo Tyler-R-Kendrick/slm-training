@@ -2762,7 +2762,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v190",
+      "version": "v191",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2808,6 +2808,11 @@
         "tests/test_autoresearch/test_thrash_regime.py"
       ],
       "history": [
+        {
+          "version": "v191",
+          "date": "2026-08-06",
+          "note": "recover incomplete handoff feedback for any PriorityArea with proposed_experiment_id (not only harness/infrastructure) so model_build decode-timeout retries replay"
+        },
         {
           "version": "v190",
           "date": "2026-08-06",

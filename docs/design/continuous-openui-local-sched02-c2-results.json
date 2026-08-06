@@ -1,66 +1,56 @@
 {
-  "schema": "continuous_autotrain_cycle_results/v1",
-  "loop_id": "continuous-openui-local",
-  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c2",
-  "cycle_index": 2,
-  "source_commit": "bdf143cdcae7416e6eb6f8ef1da4d643f38aa613",
-  "version_stamp": {
-    "stamp_schema": "version_stamp/v1",
-    "code_commit": "d93b96ed74ba77d3339c85ae20b784afa5889eb5",
-    "code_dirty": false,
-    "components": {
-      "harness.autoresearch.experiment_campaign": "v181"
-    }
-  },
-  "honesty": "fixture_or_scratch",
-  "not_ship_claim": true,
-  "recipe": {
-    "device": "cpu",
-    "steps": 20,
-    "train_version": "wf_smoke_v2",
-    "eval_version": "e938_role_safe_all_targets_v2",
-    "max_wall_minutes": 3,
-    "experiment_wall_seconds": 70,
-    "ship_gates": true,
-    "seed": 100002
-  },
-  "arms": {
-    "c2-control": {
-      "status": "operator_timeout_partial",
-      "exit_code": 124,
-      "smoke": {
-        "n": 3,
-        "parse_rate": 1.0,
-        "meaningful_program_rate": 0.0,
-        "structural_similarity": 0.32666666666666666,
-        "binder_reference_f1": 0.0,
-        "latency_ms_p50": 31359.11
-      }
+    "schema": "continuous_autotrain_cycle_results/v1",
+    "loop_id": "continuous-openui-local",
+    "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c2",
+    "cycle_index": 2,
+    "source_commit": "4961a4a6",
+    "honesty": "fixture_or_scratch",
+    "not_ship_claim": true,
+    "recipe": {
+        "device": "cpu",
+        "steps": 20,
+        "train_version": "wf_smoke_v2",
+        "eval_version": "e938_role_safe_all_targets_v2",
+        "max_wall_minutes": 1.1666666666666667,
+        "ship_gates": true,
+        "seed": 100002
     },
-    "c2-canvas": {
-      "status": "operator_timeout_no_scoreboard",
-      "exit_code": 124,
-      "smoke": null
-    }
-  },
-  "primary_metric": "smoke.structural_similarity",
-  "primary_delta": null,
-  "sdlc_phase_a": {
-    "positive": false,
-    "stack_layer": false,
-    "stack_action": "no_stack_layer_non_positive",
-    "agent_required": "continue loop; local commits/docs only",
-    "reasons": [
-      "measurement_incomplete:c20260805-continuous-openui-local-8c0b60dd-c2-control:missing_scoreboard",
-      "measurement_incomplete:c20260805-continuous-openui-local-8c0b60dd-c2-canvas:missing_scoreboard",
-      "primary_metric_unavailable"
+    "arms": {
+        "c2-component-plan": {
+            "status": "wall_timeout",
+            "exit_code": 124,
+            "smoke": {
+                "reason": "missing_scoreboard"
+            }
+        },
+        "c2-control": {
+            "status": "wall_timeout",
+            "exit_code": 124,
+            "smoke": {
+                "incomplete_document_n": 3,
+                "decode_timeout_count": 3
+            }
+        }
+    },
+    "primary_metric": "smoke.structural_similarity",
+    "primary_delta": null,
+    "sdlc_phase_a": {
+        "positive": false,
+        "stack_layer": false,
+        "stack_action": "no_stack_layer_non_positive",
+        "agent_required": "continue loop; local commits/docs only",
+        "reasons": [
+            "measurement_incomplete:c20260805-continuous-openui-local-8c0b60dd-c2-control:smoke:incomplete_document_n=3:decode_timeout_count=3",
+            "measurement_incomplete:c20260805-continuous-openui-local-8c0b60dd-c2-component-plan:missing_scoreboard",
+            "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c2-control",
+            "primary_metric_unavailable",
+            "fixture_insufficient_n_alone"
+        ]
+    },
+    "conclusion": "Continuous-openui-local loop, cycle 2 (scheduled routine session sched02, branch claude/great-dirac-h4hi9j): both the component-plan candidate and its matched control hit the per-experiment wall cap (exit 124) at seed 100002, 1,755,764 trainable params on both arms. component-plan never produced a scoreboard at all; control emitted a typed decode timeout on all 3 smoke records before the wall cap (incomplete_document_n=3, decode_timeout_count=3). climb_state=inconclusive, ship_state=blocked, measurement_complete=false. This is the same class of dual-arm decode-timeout pathology already tracked as 'Blocker 1' in autotrain-cycle-c5-dual-arm-decode-timeout-unresolved.md / autotrain-cycle-c5-c6-replay-blocked-follow-up.md (there observed at seed 100005 on a -confirm arm; here at seed 100002 on the ordinary component-plan/control screening pair) -- root cause still undetermined, needs a dedicated improve-openui-harnesses profiling session, not a speculative fix. Per the deliberate test_replayed_dual_arm_timeouts_remain_inconclusive_and_require_repair contract, this must not be auto-retired; it stays inconclusive and the driver queues a single frozen retry_measurement of the identical pair (action kind=retry_measurement, frozen_manifest_sha256=41bdd9182d596196c2b970c75069c28ece7585f4ea04d94e4fcf38adf680e864) before any new model hypothesis is attempted. SDLC Phase A: NON_POSITIVE, no stack layer.",
+    "next_priorities": [
+        "Replay the exact frozen component-plan/control pair once (rank 1, confidence 0.95) to distinguish a causal runtime effect from a one-run timing artifact -- consumed automatically by the driver's retry_measurement mechanism on the next supervised cycle, not a manual re-run.",
+        "If the frozen replay reproduces the same dual-arm timeout, stop retrying and route to a dedicated improve-openui-harnesses profiling session per the open Blocker 1 recommendation; do not speculatively patch wall-budget or routing logic.",
+        "If the frozen replay completes cleanly, treat this occurrence as a one-off sandbox timing artifact (not a harness regression) and resume normal hypothesis rotation."
     ]
-  },
-  "conclusion": "Continuous-openui-local loop, cycle 2 (scheduled routine session sched02, branch claude/great-dirac-m25gcv): both arms of the frozen 'canvas' vs 'control' comparison exited 124 (timeout) not because of a harness or fixture defect, but because this session's first supervised-driver invocation was wrapped in an operator-added external `timeout 280` shell guard that raced the two sequential 70s-wall-capped arms (research + hypothesize overhead already consumed most of the 280s budget, so the wrapper's SIGTERM landed mid-run of both arms). The control arm's metrics were already computed and captured (structural_similarity=.32667, matching every prior session's control reading for this exact recipe/seed) before the kill signal landed; the canvas (component-plan) arm produced no scoreboard at all. This is the same recipe and seed (100002) that four-to-five prior sessions (j48f8u, ts5ofk, peuum8, sched01) have already independently and byte-identically confirmed as a +.05613 structural_similarity win for the component-plan arm over control -- so this cycle contributes no new signal either way, it only records an operator-side measurement gap. The fix is procedural, not a code change: do not wrap the supervised driver invocation in an external wall-clock timeout shorter than research+hypothesize+N*70s; rely on the driver's own internal MAX_RUN_MINUTES-derived per-arm wall cap instead. The unacknowledged retry_measurement handoff action for this campaign will replay the identical frozen arm on the next supervised cycle without an external wrapper.",
-  "next_priorities": [
-    "Retry this exact frozen arm (frozen_manifest_sha256 4abfa37fbabbde6d3da4f7ab49f6c65b9968508c60be8f665226f9d2cf37db0b) with no external timeout wrapper shorter than the driver's own per-arm wall cap",
-    "Continue treating the component-plan vs control +.05613 structural_similarity delta as independently reproduced (fifth+ confirmation) once this cycle's retry completes cleanly",
-    "Do not attempt the blocked '-confirm'/'-fresh-confirmation' frozen-replay path or the seed-100005 dual-arm decode timeout speculatively; route to a dedicated improve-openui-harnesses session"
-  ],
-  "recorded_at": "2026-08-05T04:40:00Z"
 }
