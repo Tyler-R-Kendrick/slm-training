@@ -11643,7 +11643,10 @@ def main(argv: list[str] | None = None) -> int:
                                 "dirty_tree_closeout",
                                 "thrash_timeout_repair_bypass",
                                 "thrash_bank_compose",
+<<<<<<< HEAD
                                 "bank_exhaust_compose",
+=======
+>>>>>>> origin/main
                             }
                             for k in (report.get("soft_healed") or [])
                         )
@@ -11653,7 +11656,10 @@ def main(argv: list[str] | None = None) -> int:
                             or "repair_harness" in str(exc)
                             or "bank" in str(exc).lower()
                             or _BANK_EXHAUST_MSG in str(exc)
+<<<<<<< HEAD
                             or any(m in str(exc).lower() for m in _BANK_EXHAUST_MARKERS)
+=======
+>>>>>>> origin/main
                         )
                     )
                 )
