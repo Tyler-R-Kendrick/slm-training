@@ -2757,7 +2757,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v187",
+      "version": "v188",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2802,6 +2802,11 @@
         "tests/test_autoresearch/test_thrash_regime.py"
       ],
       "history": [
+        {
+          "version": "v188",
+          "date": "2026-08-06",
+          "note": "bank exhaust self-heal: compose thrash successors AND rewrite handoff repair_harness\u2192next_experiment; robust porcelain path parse"
+        },
         {
           "version": "v187",
           "date": "2026-08-06",
