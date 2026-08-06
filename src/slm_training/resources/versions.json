@@ -3872,9 +3872,15 @@
         "scripts/verify_formal_contracts.py",
         "tests/test_autoresearch/test_formal.py",
         "docs/design/formal-autoresearch.md",
-        ".github/workflows/ci.yml"
+        ".github/workflows/ci.yml",
+        "docs/design/ci-minutes-and-speed-plan-20260806.md"
       ],
       "history": [
+        {
+          "version": "v14",
+          "date": "2026-08-06",
+          "note": "no-bump: disable automatic GHA CI triggers (workflow_dispatch only) to stop hosted runner-minute burn; job steps/timeouts unchanged. See docs/design/ci-minutes-and-speed-plan-20260806.md"
+        },
         {
           "version": "v14",
           "date": "2026-08-04",
