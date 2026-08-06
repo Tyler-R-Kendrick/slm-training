@@ -124,7 +124,16 @@ cycles 4/6/7, [results](../../../../docs/design/continuous-openui-20260730-c7-re
 ```bash
 cd src/apps/openui_bridge && npm ci && cd ../../..
 cd src/apps/design_md_bridge && npm ci && cd ../../..
+NODE_OPTIONS= npm ci   # repo root: AgentV SDK ship-gate eval needs this too
 ```
+
+The repo-root `npm ci` is also required before the first ship-gated
+`evaluate_model` call: on a fresh checkout the root `node_modules/` can be
+present but incomplete (observed: `ERR_MODULE_NOT_FOUND` for `typebox`, a
+transitive `@agentv/core` dependency). Some containers set a `NODE_OPTIONS`
+that breaks plain `npm ci` (`--import tsx is not allowed in NODE_OPTIONS`);
+clear it for the install only, as shown above.
+
 
 A timeout that reproduces after this install is real signal (file a
 `model_build` `HarnessSignalV1`); a timeout on a fresh venv without this step
