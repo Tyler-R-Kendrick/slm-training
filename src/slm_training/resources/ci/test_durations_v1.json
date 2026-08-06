@@ -2,6 +2,22 @@
   "schema": "test_file_durations/v1",
   "generated_by": "python -m pytest <tests subdirectory> --durations=0 -q -p no:randomly (one pass per top-level tests/ subdirectory; a test file's weight is the sum of its reported setup+call+teardown seconds, the slowest observation wins when a file is measured twice, rounded to 0.01s, files under 0.05s and unmeasured files are omitted and fall back to node-count weighting)",
   "unit": "seconds",
+  "measured_at": "2026-08-04",
+  "partial": false,
+  "integrity": {
+    "schema": "test_file_durations_integrity/v1",
+    "max_age_days": 180,
+    "irreducible_files": {
+      "tests/test_dsl/test_topology_apply.py": {
+        "seconds": 4726.16,
+        "remediation": "pytest.mark.slow on heavy classes; TestEditKindMapping + TestTopologyApplyConfig stay default-on"
+      },
+      "tests/test_scripts/test_run_dsh5_03_bulk_operator_crossover.py": {
+        "seconds": 301.2,
+        "remediation": "live preflight @pytest.mark.slow; default CI uses synthetic probes"
+      }
+    }
+  },
   "durations": {
     "tests/test_autoresearch/test_experiment_campaign.py": 0.15,
     "tests/test_autoresearch/test_formal.py": 0.85,
