@@ -20,10 +20,14 @@ notes via `[[wikilinks]]`. Keep this map short; push detail into atomic notes.
 - Codebase navigation: [OpenWiki quickstart](../../openwiki/quickstart.md)
 - Model card: [`docs/MODEL_CARD.md`](../../MODEL_CARD.md)
 
-## Active theses (Linear initiatives / projects → brain notes)
+## Research programs (Linear projects → brain notes)
 
-Each active Linear project should have (or grow) an atomic note here capturing
-the *thesis*, the open questions, and the falsification boundary. Seed notes:
+**Board status (2026-08-07):** every SLM research project is Linear
+**Completed** after issue-empty verification — see
+[`docs/design/slm-linear-project-hygiene-20260807.md`](../../design/slm-linear-project-hygiene-20260807.md).
+Completed ≠ “no open scientific questions”; it means there is no remaining
+claimable `SLM-N` backlog on those programs. Seed notes below still capture
+durable learning and dead-end boundaries.
 
 - _(seed)_ Valid-edit flow attribution — link project + `docs/design/` rows
 - _(seed)_ Semantic planning & valid-state learning
@@ -37,8 +41,8 @@ the *thesis*, the open questions, and the falsification boundary. Seed notes:
   a rejected approach never closes a goal.
 
 > Add a note with `templates/concept-note.md` and wikilink it here when a thesis
-> becomes active. Do not restate the Linear project — link it and record what the
-> repo has *learned* about it.
+> becomes active again. Do not restate the Linear project — link it and record
+> what the repo has *learned* about it.
 
 ## Open questions (drives hypothesis generation)
 
@@ -54,12 +58,14 @@ reads this section to seed the autotrain hypothesis loop and prunes it as
   SLM-282 negative was underpowered noise, not a robust contraction
   violation. A powered n=20 Wilson-interval rerun (fresh disjoint seeds,
   preregistered `min_pass_rate=0.5` locked before observing them) found
-  `recursive_core_positive` (18/20, Wilson 95% CI [0.699, 0.972]). This
-  satisfies only one of PR #853-#856's two LAR3 reopening conditions; LAR3
-  stays closed pending a powered rerun of SLM-317's value gate (blocked —
-  that harness is not yet merged to `main`). Next open question: land
-  SLM-317's harness on `main` (via its own PR #852) so its value gate can
-  get the same powered-rerun treatment.
+  `recursive_core_positive` (18/20, Wilson 95% CI [0.699, 0.972]). Keep
+  that note as the scientific source of truth for recurrence-health /
+  LAR follow-ups; do not invent board status from this MOC bullet.
+- Board hygiene (2026-08-07): no claimable SLM issues/projects remain after
+  [`slm-linear-project-hygiene-20260807`](../../design/slm-linear-project-hygiene-20260807.md).
+  AP0 “Metric & Judge Validity” stays 0% because SLM-278/280 were canceled,
+  not unfinished. Re-file a new `SLM-N` if a scientific open question needs
+  active tracking again.
 
 ## Dead ends (do not re-propose)
 
