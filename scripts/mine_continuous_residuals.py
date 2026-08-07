@@ -98,6 +98,15 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     classify, aggregate, boosts_fn = _load_module()
+    try:
+        from slm_training.autoresearch.thrash_residuals import (  # noqa: WPS433
+            build_slug_stats_payload,
+        )
+    except ImportError:
+        from slm_training.autoresearch.thrash_residuals import (  # type: ignore[no-redef]
+            build_slug_stats_payload,
+        )
+
     root = args.root if args.root.is_absolute() else Path.cwd() / args.root
     if not root.is_dir():
         print(f"root missing: {root}", file=sys.stderr)
@@ -130,6 +139,12 @@ def main(argv: list[str] | None = None) -> int:
         key=lambda s: (-s.prior_score(), -s.n_complete, s.slug),
     )
     boosts = boosts_fn(residuals)
+    payload = build_slug_stats_payload(
+        loop_id=args.loop_id,
+        deliveries=deliveries,
+        residuals=residuals,
+        residual_boosts=boosts,
+    )
 
     print(
         f"deliveries={len(deliveries)} residuals={len(residuals)} "
@@ -166,19 +181,7 @@ def main(argv: list[str] | None = None) -> int:
             for obs in residuals:
                 fh.write(json.dumps(obs.as_dict(), sort_keys=True) + "\n")
         stats_path.write_text(
-            json.dumps(
-                {
-                    "schema": "thrash_slug_stats/v1",
-                    "loop_id": args.loop_id,
-                    "n_deliveries": len(deliveries),
-                    "n_residuals": len(residuals),
-                    "slugs": {s.slug: s.as_dict() for s in ranked},
-                    "residual_boosts": boosts,
-                },
-                indent=2,
-                sort_keys=True,
-            )
-            + "\n",
+            json.dumps(payload, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
         print(f"\nwrote {residual_path}")

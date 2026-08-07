@@ -2762,7 +2762,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v193",
+      "version": "v194",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2812,6 +2812,11 @@
         "tests/test_autoresearch/test_thrash_residuals.py"
       ],
       "history": [
+        {
+          "version": "v194",
+          "date": "2026-08-06",
+          "note": "thrash residual complete: family boosts, auto slug_stats refresh, residual_eval_queue for eval-lite checkpoints; soft-rank call sites pass loop root"
+        },
         {
           "version": "v193",
           "date": "2026-08-06",
