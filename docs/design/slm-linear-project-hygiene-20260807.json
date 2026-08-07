@@ -1,0 +1,145 @@
+{
+  "schema": "linear_project_hygiene/v1",
+  "date": "2026-08-07",
+  "team": "SLM",
+  "team_name": "slm-training",
+  "criterion": "Every linked issue statusType is completed or canceled; no Todo/Backlog/In Progress/In Review issues remain on the team.",
+  "github_open_prs": 0,
+  "repository": "Tyler-R-Kendrick/slm-training",
+  "projects_completed": [
+    {
+      "name": "Null-Calibrated Spectral Learning & Causal Geometry",
+      "note": "Completed earlier in the cycle; all milestones 100%."
+    },
+    {
+      "name": "VAR \u2014 Model Variant Contract & Shared Op Kernel",
+      "issue_count": 10
+    },
+    {
+      "name": "DSH5 \u2014 Bulk Operators, Transactions & Control Plane",
+      "issue_count": 12
+    },
+    {
+      "name": "DSH4 \u2014 Distillation, Trace Evals & Final Disposition",
+      "issue_count": 6
+    },
+    {
+      "name": "DSH3 \u2014 CAP2 Compiler-Owned AST Operators",
+      "issue_count": 34
+    },
+    {
+      "name": "DSH2 \u2014 CAP1 Generic NL-to-DSL Grounding",
+      "issue_count": 6
+    },
+    {
+      "name": "DSH1 \u2014 CAP0 Grammar-Complete Symbolic Synthesis",
+      "issue_count": 10
+    },
+    {
+      "name": "DSH0 \u2014 Capability Harness Contracts & Provenance",
+      "issue_count": 8
+    },
+    {
+      "name": "AP5 \u2014 Evidence, Promotion & Linear Automation",
+      "issue_count": 3
+    },
+    {
+      "name": "AP4 \u2014 Program-Scale Bottlenecks & Selective Continuous Latents",
+      "issue_count": 7
+    },
+    {
+      "name": "Looped AST Diffusion \u00b7 Evidence-Gated Research Program",
+      "issue_count": 30
+    },
+    {
+      "name": "AP3 \u2014 TwoTower Discrete-Plan Hybrid",
+      "issue_count": 6
+    },
+    {
+      "name": "AP2 \u2014 Abstract-CoT Causal Pilot",
+      "issue_count": 7
+    },
+    {
+      "name": "AP1 \u2014 Verified Data & Existing Semantic Assets",
+      "issue_count": 8
+    },
+    {
+      "name": "AP0 \u2014 Measurement Integrity & Locked Baselines",
+      "issue_count": 7,
+      "milestone_notes": [
+        {
+          "name": "Metric & Judge Validity",
+          "progress_pct": 0,
+          "disposition": "canceled-not-achieved",
+          "issues": [
+            "SLM-278",
+            "SLM-280"
+          ],
+          "reason": "Linear does not count canceled issues toward milestone completion."
+        }
+      ]
+    },
+    {
+      "name": "Diffusion Objective & Conversion Attribution",
+      "issue_count": 8
+    },
+    {
+      "name": "Verified Semantic Data & Causal Diagnostics",
+      "issue_count": 9
+    },
+    {
+      "name": "LOTUS-Faithful Causal OpenUI Transfer & Causal Mediation",
+      "issue_count": 11
+    },
+    {
+      "name": "Recurrent Semantic Computation & Looped-Latent Gates",
+      "issue_count": 20
+    },
+    {
+      "name": "Valid-Edit Flow Attribution & Hybrid Search",
+      "issue_count": 12
+    },
+    {
+      "name": "Flow Foundations, Evidence & Planner Economics",
+      "issue_count": 13
+    },
+    {
+      "name": "Semantic Planning & Valid-State Learning",
+      "issue_count": 20
+    },
+    {
+      "name": "Local Decision Interventions & Adapter Post-Training",
+      "issue_count": 16
+    },
+    {
+      "name": "Evidence-First Semantic SLM Campaign",
+      "issue_count": 22
+    },
+    {
+      "name": "Calculated Arity & Adaptive Precision",
+      "issue_count": 26
+    },
+    {
+      "name": "Verified Scope Solving & Hybrid Realization",
+      "issue_count": 20
+    },
+    {
+      "name": "DSL Diffusion SLM Research Program",
+      "issue_count": 30
+    },
+    {
+      "name": "OpenUI-SLM",
+      "issue_count": 19
+    }
+  ],
+  "post_hygiene": {
+    "slm_todo": 0,
+    "slm_backlog_issues": 0,
+    "slm_in_progress_issues": 0,
+    "slm_in_review_issues": 0,
+    "slm_projects_started": 0,
+    "slm_projects_backlog": 0,
+    "slm_projects_planned": 0
+  },
+  "honesty": "Project Completed means issue backlog is empty and program status was stale; it does not reopen canceled milestone exit criteria (AP0 Metric & Judge Validity)."
+}
