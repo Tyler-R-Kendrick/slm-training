@@ -58,6 +58,13 @@ from slm_training.autoresearch.thrash_regime import (
     select_climb_baseline_entry,
     select_recommended_slug_for_regime,
 )
+from slm_training.autoresearch.thrash_residuals import (
+    ResidualObservation,
+    SlugStats,
+    classify_delivery_residual,
+    pick_soft_ranked_slug,
+    residual_boosts_from_observations,
+)
 from slm_training.autoresearch.schemas import (
     AutotrainActionReceiptV1,
     AutotrainActionV1,
@@ -4393,11 +4400,138 @@ def _recent_completed_nonpositive_slugs(
     }
 
 
+def _interesting_residuals_path(root: Path, loop_id: str) -> Path:
+    return root / "loops" / loop_id / "interesting_residuals.jsonl"
+
+
+def _slug_stats_path(root: Path, loop_id: str) -> Path:
+    return root / "loops" / loop_id / "slug_stats.json"
+
+
+def _load_residual_observations(
+    root: Path, loop_id: str
+) -> list[ResidualObservation]:
+    path = _interesting_residuals_path(root, loop_id)
+    if not path.is_file():
+        return []
+    out: list[ResidualObservation] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(row, dict):
+            continue
+        try:
+            out.append(
+                ResidualObservation(
+                    campaign_id=str(row.get("campaign_id") or ""),
+                    cycle_index=(
+                        int(row["cycle_index"])
+                        if row.get("cycle_index") is not None
+                        else None
+                    ),
+                    slug=row.get("slug") if isinstance(row.get("slug"), str) else None,
+                    residual_class=(
+                        str(row["residual_class"])
+                        if row.get("residual_class") is not None
+                        else None
+                    ),
+                    score=float(row.get("score") or 0.0),
+                    ss_control=row.get("ss_control"),
+                    ss_cand=row.get("ss_cand"),
+                    mpr_control=row.get("mpr_control"),
+                    mpr_cand=row.get("mpr_cand"),
+                    binder_control=row.get("binder_control"),
+                    binder_cand=row.get("binder_cand"),
+                    positive=row.get("positive")
+                    if isinstance(row.get("positive"), bool)
+                    else None,
+                    measurement_complete=row.get("measurement_complete")
+                    if isinstance(row.get("measurement_complete"), bool)
+                    else None,
+                    reasons=tuple(str(r) for r in (row.get("reasons") or ())),
+                )
+            )
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
+def _load_slug_stats(root: Path, loop_id: str) -> dict[str, SlugStats]:
+    path = _slug_stats_path(root, loop_id)
+    if not path.is_file():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    if not isinstance(payload, dict):
+        return {}
+    raw = payload.get("slugs") or {}
+    if not isinstance(raw, dict):
+        return {}
+    out: dict[str, SlugStats] = {}
+    for slug, row in raw.items():
+        if not isinstance(row, dict):
+            continue
+        try:
+            out[str(slug)] = SlugStats(
+                slug=str(slug),
+                n_complete=int(row.get("n_complete") or 0),
+                n_positive=int(row.get("n_positive") or 0),
+                mean_delta_ss=float(row.get("mean_delta_ss") or 0.0),
+                binder_fail_rate=float(row.get("binder_fail_rate") or 0.0),
+                incomplete_n=int(row.get("incomplete_n") or 0),
+                residual_hits=int(row.get("residual_hits") or 0),
+            )
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
+def _append_interesting_residual(
+    root: Path,
+    loop_id: str,
+    delivery: Mapping[str, Any],
+    *,
+    campaign_id: str,
+    cycle_index: int | None,
+) -> ResidualObservation | None:
+    """Classify delivery and append interesting residual to loop ledger."""
+    obs = classify_delivery_residual(
+        delivery,
+        campaign_id=campaign_id,
+        cycle_index=cycle_index,
+    )
+    if obs is None or not obs.residual_class:
+        return None
+    path = _interesting_residuals_path(root, loop_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(obs.as_dict(), sort_keys=True) + "\n")
+    print(
+        f"THRASH_RESIDUAL class={obs.residual_class} slug={obs.slug} "
+        f"score={obs.score:.3f} campaign={campaign_id}",
+        flush=True,
+    )
+    return obs
+
+
 def _select_recommended_slug(
     cycle: int,
     skip: set[str] | None = None,
+    *,
+    root: Path | None = None,
+    loop_id: str | None = None,
 ) -> str:
-    """Rotate screening arms without reopening a multi-seed-closed approach."""
+    """Rotate screening arms without reopening a multi-seed-closed approach.
+
+    When residual / slug-stat ledgers exist under the loop root, soft-rank open
+    candidates (boost interesting residuals; still never reopen skipped arms).
+    """
     # Evidence-triggered and successor quality arms do not perturb the stable
     # cycle-number rotation of the original screening bank. They become the
     # fail-forward path only after older approaches are closed.
@@ -4464,21 +4598,55 @@ def _select_recommended_slug(
     start = (max(1, int(cycle)) - 1) % max(n, 1)
     ordered = [bank[(start + i) % n][0] for i in range(n)] if n else []
     skip = skip or set()
+    open_candidates: list[str] = []
     if legacy_quality_slugs.issubset(skip):
         for slug in successor_slugs:
             if slug not in skip:
-                return slug
+                open_candidates.append(slug)
     for slug in ordered:
         if slug not in skip:
-            return slug
+            open_candidates.append(slug)
     for slug in successor_slugs:
-        if slug not in skip:
-            return slug
+        if slug not in skip and slug not in open_candidates:
+            open_candidates.append(slug)
     # Self-heal thrash successors (compose-*) live in the full bank after static.
     for slug, _, _ in full_bank:
-        if slug not in skip and slug.startswith("compose-"):
-            return slug
-    raise RuntimeError(_BANK_EXHAUST_MSG)
+        if slug not in skip and slug.startswith("compose-") and slug not in open_candidates:
+            open_candidates.append(slug)
+    if not open_candidates:
+        raise RuntimeError(_BANK_EXHAUST_MSG)
+
+    # Soft residual re-rank when loop ledgers are available (Layer 1).
+    if root is not None and loop_id:
+        try:
+            stats = _load_slug_stats(root, loop_id)
+            observations = _load_residual_observations(root, loop_id)
+            boosts = residual_boosts_from_observations(
+                observations,
+                max_age=40,
+                latest_cycle=int(cycle),
+            )
+            if stats or boosts:
+                picked = pick_soft_ranked_slug(
+                    open_candidates,
+                    stats=stats,
+                    residual_boosts=boosts,
+                    rotation_order=open_candidates,
+                )
+                if picked:
+                    if boosts.get(picked) or (
+                        stats.get(picked) and stats[picked].prior_score() != 0.0
+                    ):
+                        print(
+                            f"THRASH_SOFT_RANK cycle={cycle} slug={picked} "
+                            f"boost={boosts.get(picked, 0.0):.3f}",
+                            flush=True,
+                        )
+                    return picked
+        except Exception as exc:  # noqa: BLE001 — never block thrash on soft rank
+            print(f"THRASH_SOFT_RANK_WARN err={exc!r}", flush=True)
+
+    return open_candidates[0]
 
 
 def _repeat_confirm_while_waiting_for_promotion(
@@ -4591,6 +4759,8 @@ def _select_cycle_slug(
     has_confirm_levers: bool,
     has_promote_levers: bool,
     thrash_regime: ThrashRegimeDecision | None = None,
+    root: Path | None = None,
+    loop_id: str | None = None,
 ) -> str | None:
     """Select only for screening; confirm/promote carry frozen recipes."""
 
@@ -4601,6 +4771,10 @@ def _select_cycle_slug(
         climb_baseline_knobs=None,
         compiler_ms_timeout=False,
     )
+
+    def _isolate(c: int, s: set[str]) -> str:
+        return _select_recommended_slug(c, skip=s, root=root, loop_id=loop_id)
+
     if decision.timeout_residual:
         # Timeout residual outranks generic predecessor quality priorities.
         return select_recommended_slug_for_regime(
@@ -4608,7 +4782,7 @@ def _select_cycle_slug(
             cycle=cycle,
             skip=skip,
             bank_slugs=bank_slugs,
-            isolate_selector=lambda c, s: _select_recommended_slug(c, skip=s),
+            isolate_selector=_isolate,
         )
     if predecessor_priority and predecessor_priority not in skip:
         return predecessor_priority
@@ -4617,7 +4791,7 @@ def _select_cycle_slug(
         cycle=cycle,
         skip=skip,
         bank_slugs=bank_slugs,
-        isolate_selector=lambda c, s: _select_recommended_slug(c, skip=s),
+        isolate_selector=_isolate,
     )
 
 
@@ -6995,6 +7169,22 @@ def _phase_a_delivery(
     ledger = root / "sdlc_delivery_ledger.jsonl"
     with ledger.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(record, sort_keys=True) + "\n")
+
+    # Cheap thrash residual ledger (no retrain): mine interesting residuals.
+    try:
+        cycle_idx = None
+        match = re.search(r"-c(\d+)$", campaign_id)
+        if match:
+            cycle_idx = int(match.group(1))
+        _append_interesting_residual(
+            root,
+            loop_id,
+            record,
+            campaign_id=campaign_id,
+            cycle_index=cycle_idx,
+        )
+    except Exception as exc:  # noqa: BLE001
+        print(f"THRASH_RESIDUAL_WARN err={exc!r}", flush=True)
 
     # Pareto thrash timing: durable completeness + decode-fit snapshot.
     try:
@@ -11003,6 +11193,8 @@ def run_cycle(
         has_confirm_levers=confirm_levers is not None,
         has_promote_levers=promote_levers is not None,
         thrash_regime=thrash_regime,
+        root=root,
+        loop_id=loop_id,
     )
     matrix = _matrix(
         campaign_id=campaign_id,
