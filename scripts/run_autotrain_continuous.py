@@ -61,6 +61,7 @@ from slm_training.autoresearch.thrash_regime import (
 from slm_training.autoresearch.thrash_residuals import (
     ResidualObservation,
     SlugStats,
+    build_slug_stats_payload,
     classify_delivery_residual,
     pick_soft_ranked_slug,
     residual_boosts_from_observations,
@@ -4492,6 +4493,93 @@ def _load_slug_stats(root: Path, loop_id: str) -> dict[str, SlugStats]:
     return out
 
 
+def _iter_loop_deliveries(
+    root: Path, loop_id: str, *, limit: int = 120
+) -> list[dict[str, Any]]:
+    """Load recent continuous deliveries for this loop (newest first, capped)."""
+    rows: list[tuple[int, dict[str, Any]]] = []
+    for path in root.glob("continuous-loop-*/sdlc_delivery.json"):
+        parent = path.parent.name
+        if loop_id not in parent:
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(data, dict):
+            continue
+        match = re.search(r"-c(\d+)$", parent)
+        cycle = int(match.group(1)) if match else 0
+        data = {**data, "campaign_id": data.get("campaign_id") or parent}
+        rows.append((cycle, data))
+    rows.sort(key=lambda item: item[0], reverse=True)
+    return [data for _, data in rows[: max(1, int(limit))]]
+
+
+def _refresh_slug_stats_ledger(root: Path, loop_id: str) -> None:
+    """Regenerate loops/<id>/slug_stats.json from recent deliveries + residuals."""
+    deliveries = _iter_loop_deliveries(root, loop_id, limit=120)
+    observations = _load_residual_observations(root, loop_id)
+    boosts = residual_boosts_from_observations(observations)
+    payload = build_slug_stats_payload(
+        loop_id=loop_id,
+        deliveries=deliveries,
+        residuals=observations,
+        residual_boosts=boosts,
+    )
+    path = _slug_stats_path(root, loop_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+
+
+def _checkpoint_path_for_candidate(
+    root: Path, campaign_id: str, candidate_id: str | None
+) -> Path | None:
+    """Return candidate last.pt if present (for residual eval-lite notes)."""
+    if not candidate_id:
+        return None
+    ckpt = root / campaign_id / "runs" / str(candidate_id) / "checkpoints" / "last.pt"
+    return ckpt if ckpt.is_file() else None
+
+
+def _append_residual_eval_queue(
+    root: Path,
+    loop_id: str,
+    obs: ResidualObservation,
+    *,
+    checkpoint: Path | None,
+) -> None:
+    """Queue optional eval-only follow-up for actionable residuals (no auto-train)."""
+    if obs.residual_class in {None, "control_spike_shared"}:
+        return
+    if obs.residual_class not in {
+        "primary_up_binder_down",
+        "efficiency_win_quality_held",
+        "high_band_absolute",
+    }:
+        return
+    path = root / "loops" / loop_id / "residual_eval_queue.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    row = {
+        "schema": "residual_eval_queue/v1",
+        "campaign_id": obs.campaign_id,
+        "cycle_index": obs.cycle_index,
+        "slug": obs.slug,
+        "residual_class": obs.residual_class,
+        "score": obs.score,
+        "checkpoint": str(checkpoint) if checkpoint else None,
+        "status": "queued" if checkpoint else "no_checkpoint",
+        "note": (
+            "eval-only confirm-lite candidate; run evaluate_model --checkpoint "
+            "when wall budget allows — does not auto-promote"
+        ),
+    }
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(row, sort_keys=True) + "\n")
+
+
 def _append_interesting_residual(
     root: Path,
     loop_id: str,
@@ -4512,9 +4600,20 @@ def _append_interesting_residual(
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(obs.as_dict(), sort_keys=True) + "\n")
+    cand_id = str(delivery.get("candidate_id") or "") or None
+    ckpt = _checkpoint_path_for_candidate(root, campaign_id, cand_id)
+    try:
+        _append_residual_eval_queue(root, loop_id, obs, checkpoint=ckpt)
+    except Exception as exc:  # noqa: BLE001
+        print(f"THRASH_RESIDUAL_EVAL_QUEUE_WARN err={exc!r}", flush=True)
+    try:
+        _refresh_slug_stats_ledger(root, loop_id)
+    except Exception as exc:  # noqa: BLE001
+        print(f"THRASH_SLUG_STATS_WARN err={exc!r}", flush=True)
     print(
         f"THRASH_RESIDUAL class={obs.residual_class} slug={obs.slug} "
-        f"score={obs.score:.3f} campaign={campaign_id}",
+        f"score={obs.score:.3f} campaign={campaign_id}"
+        + (f" ckpt={ckpt.name}" if ckpt else ""),
         flush=True,
     )
     return obs
@@ -9840,6 +9939,9 @@ def _matrix(
             compiler_ms_timeout=False,
         )
         bank_slugs = [slug for slug, _, _ in _all_screening_arm_bank()]
+        # Soft residual rank only when recommended_slug already computed by
+        # caller with root/loop_id; fallback isolate_selector stays pure rotation
+        # (matrix builder may not have loop context in unit tests).
         rec_slug = recommended_slug or select_recommended_slug_for_regime(
             decision=regime,
             cycle=cycle,
@@ -10737,7 +10839,9 @@ def run_cycle(
     # and every screening cycle raised bank-exhausted.
     if cycle_intent == "screening" and promoting_champion is None:
         try:
-            _select_recommended_slug(cycle, skip=skip_slugs)
+            _select_recommended_slug(
+                cycle, skip=skip_slugs, root=root, loop_id=loop_id
+            )
         except RuntimeError as exc:
             if _BANK_EXHAUST_MSG not in str(exc):
                 raise
@@ -10761,7 +10865,9 @@ def run_cycle(
             ):
                 # Dynamic thrash successors now in the process bank — continue
                 # screening without a human re-prompt.
-                _select_recommended_slug(cycle, skip=skip_slugs)
+                _select_recommended_slug(
+                    cycle, skip=skip_slugs, root=root, loop_id=loop_id
+                )
             else:
                 raise
     campaign_id = _campaign_id(loop_id, cycle)

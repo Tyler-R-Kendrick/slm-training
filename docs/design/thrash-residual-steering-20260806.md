@@ -23,13 +23,22 @@ Mine completed deliveries (JSON-only) into a loop-local residual ledger and
 
 Multi-seed arm close and hard `skip` still outrank soft boosts.
 
+**Family prior:** `primary_up_binder_down` also lightly boosts binder-focused
+bank slugs (`BINDER_FAMILY_SLUGS`). Compose residuals share a light sticky bump
+across observed compose-* residual slugs.
+
 ## Artifacts
 
 | Path | Role |
 | --- | --- |
 | `loops/<id>/interesting_residuals.jsonl` | Append-only residual observations |
-| `loops/<id>/slug_stats.json` | Regenerable prior (via miner) |
+| `loops/<id>/slug_stats.json` | Regenerable prior (miner or post-cycle refresh) |
+| `loops/<id>/residual_eval_queue.jsonl` | Optional eval-only confirm-lite notes + checkpoint paths |
 | `THRASH_RESIDUAL` / `THRASH_SOFT_RANK` logs | Driver visibility |
+
+Driver: after each complete delivery, classify → append residual → refresh
+`slug_stats` (last ~120 deliveries) → queue eval-lite note if checkpoint exists.
+Soft-rank open thrash slugs on the next screening selection.
 
 ## Tools
 
@@ -40,12 +49,27 @@ python -m scripts.mine_continuous_residuals \
 
 Pure helpers: `src/slm_training/autoresearch/thrash_residuals.py`.
 
+## Eval-only confirm-lite (Layer 2, manual / queued)
+
+When a residual has a valid `checkpoints/last.pt`, the driver appends
+`residual_eval_queue.jsonl` (`status=queued`). This does **not** auto-run eval
+(wall budget + lineage fail-closed). Operators/agents may:
+
+```bash
+python -m scripts.evaluate_model \
+  --checkpoint <path-from-queue> \
+  --test-dir <eval_version> --suites smoke --ship-gates ...
+```
+
+Auto eval-only as a continuous cycle role remains deferred (needs wall-cap
+scheduling + replay digests). Soft re-rank is the automatic path.
+
 ## Non-goals
 
 - Weakening ship gates or fixture honesty  
 - Auto-promote from residuals  
 - LLM hypothesizer as thrash controller  
-- Full retrain densification (optional later: eval-only confirm-lite)
+- Full retrain densification
 
 ## Related
 

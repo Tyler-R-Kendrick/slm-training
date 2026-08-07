@@ -18,6 +18,7 @@ __all__ = [
     "RESIDUAL_EFFICIENCY_WIN_QUALITY_HELD",
     "RESIDUAL_CONTROL_SPIKE_SHARED",
     "DEFAULT_HIGH_SS_BAND",
+    "BINDER_FAMILY_SLUGS",
     "ResidualObservation",
     "SlugStats",
     "metric_from_delivery",
@@ -26,7 +27,27 @@ __all__ = [
     "aggregate_slug_stats",
     "soft_rank_slugs",
     "pick_soft_ranked_slug",
+    "residual_boosts_from_observations",
+    "expand_family_boosts",
+    "build_slug_stats_payload",
 ]
+
+# Soft-related screening arms for binder non-regression residuals (not densify
+# only the exact failed slug — also try binder-focused thrash bank members).
+BINDER_FAMILY_SLUGS: frozenset[str] = frozenset(
+    {
+        "binder-arity",
+        "binder-component-plan",
+        "binder-topology",
+        "slot-contract-context",
+        "constraint-graph",
+        "literal-close",
+        "literal-margin",
+        "compose-ltr-tail-symbol-boundary",
+        "symbol-boundary",
+        "symbol-boundary-structure",
+    }
+)
 
 RESIDUAL_HIGH_BAND_ABSOLUTE = "high_band_absolute"
 RESIDUAL_PRIMARY_UP_BINDER_DOWN = "primary_up_binder_down"
@@ -403,5 +424,64 @@ def residual_boosts_from_observations(
             RESIDUAL_EFFICIENCY_WIN_QUALITY_HELD: 1.5,
             RESIDUAL_HIGH_BAND_ABSOLUTE: 1.0,
         }.get(obs.residual_class, 0.5)
-        boosts[obs.slug] += weight * max(0.1, float(obs.score))
-    return dict(boosts)
+        amount = weight * max(0.1, float(obs.score))
+        boosts[obs.slug] += amount
+        if obs.residual_class == RESIDUAL_PRIMARY_UP_BINDER_DOWN:
+            # Also steer binder-focused bank members (cheap family prior).
+            for fam in BINDER_FAMILY_SLUGS:
+                if fam != obs.slug:
+                    boosts[fam] += 0.25 * amount
+    return expand_family_boosts(dict(boosts), observations=observations)
+
+
+def expand_family_boosts(
+    boosts: Mapping[str, float],
+    *,
+    observations: Iterable[ResidualObservation] | None = None,
+) -> dict[str, float]:
+    """Expand exact-slug boosts with light compose-family siblings.
+
+    When a residual hits ``compose-ltr-tail-X``, sibling compose slugs already
+    in ``boosts`` get a small shared-family bump so rotation does not abandon
+    the productive compose band after one non-positive.
+    """
+    out: dict[str, float] = dict(boosts)
+    compose_hits = [
+        o.slug
+        for o in (observations or ())
+        if o.slug
+        and o.slug.startswith("compose-")
+        and o.residual_class not in {None, RESIDUAL_CONTROL_SPIKE_SHARED}
+    ]
+    if not compose_hits:
+        return out
+    # Light shared bump among observed compose residual slugs only (not whole bank).
+    unique = sorted(set(compose_hits))
+    if len(unique) < 2:
+        return out
+    for slug in unique:
+        out[slug] = float(out.get(slug, 0.0)) + 0.15
+    return out
+
+
+def build_slug_stats_payload(
+    *,
+    loop_id: str,
+    deliveries: Sequence[Mapping[str, Any]],
+    residuals: Sequence[ResidualObservation],
+    residual_boosts: Mapping[str, float] | None = None,
+) -> dict[str, Any]:
+    """JSON-serializable slug_stats ledger body (regenerable)."""
+    stats = aggregate_slug_stats(deliveries, residuals=residuals)
+    ranked = sorted(
+        stats.values(),
+        key=lambda s: (-s.prior_score(), -s.n_complete, s.slug),
+    )
+    return {
+        "schema": "thrash_slug_stats/v1",
+        "loop_id": loop_id,
+        "n_deliveries": len(deliveries),
+        "n_residuals": len(residuals),
+        "slugs": {s.slug: s.as_dict() for s in ranked},
+        "residual_boosts": dict(residual_boosts or {}),
+    }

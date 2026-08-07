@@ -160,6 +160,24 @@ def test_soft_rank_prefers_residual_boost() -> None:
     ) == "canvas"
 
 
+def test_binder_residual_boosts_family_slugs() -> None:
+    d = _delivery(
+        cand_id="loop-c3-compose-ltr-tail-compiler-decision-token",
+        ss_c=0.2,
+        ss_k=0.3,
+        reasons=[
+            "primary_metric_win:ss:0.2->0.3",
+            "non_regression_fail:binder_reference_f1:0.9->0.6",
+        ],
+    )
+    obs = classify_delivery_residual(d, campaign_id="c", cycle_index=3)
+    assert obs is not None
+    boosts = residual_boosts_from_observations([obs])
+    assert boosts["compose-ltr-tail-compiler-decision-token"] > 0
+    # Family prior for binder residual
+    assert boosts.get("binder-arity", 0) > 0 or boosts.get("literal-close", 0) > 0
+
+
 def test_aggregate_slug_stats() -> None:
     deliveries = [
         _delivery(
