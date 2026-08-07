@@ -61,6 +61,13 @@ persistence is the host goal and the append-only campaign event chains.
      for harness/code paths, keep *ours* for continuous closeout docs, commit.
      Ancestry merge failures that leave conflicts use the same path. Never
      leave the live thrash worktree mid-merge as a human re-prompt.
+   - **interesting thrash residuals (no retrain)** → after each complete
+     delivery, classify typed residuals (`primary_up_binder_down`,
+     `efficiency_win_quality_held`, `high_band_absolute`,
+     `control_spike_shared`) into `loops/<id>/interesting_residuals.jsonl`.
+     Soft-rank open thrash slugs with residual boosts + `slug_stats` prior;
+     multi-seed close still wins. Interesting ≠ promotable; mine offline via
+     `python -m scripts.mine_continuous_residuals --write-ledger`.
    - **Never auto-ack real** `repair_formal`, `rebuild_data`, `stop_campaign`,
      or `deliver_stack`. **Never fake** a harness repair commit for true
      harness crashes (missing AgentV, import errors). Those stay hard until

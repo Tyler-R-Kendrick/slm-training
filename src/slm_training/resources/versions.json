@@ -2762,7 +2762,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v192",
+      "version": "v193",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2792,6 +2792,7 @@
         "docs/design/adversarial-review.md",
         "docs/design/authoritative-credit-one-shot-agent-prompt.md",
         "docs/design/autotrain-self-heal-pipeline-20260803.md",
+        "docs/design/thrash-residual-steering-20260806.md",
         "tests/test_autoresearch/test_experiment_campaign.py",
         "tests/test_autoresearch/test_hillclimb.py",
         "tests/test_autoresearch/test_climb_policy.py",
@@ -2802,12 +2803,20 @@
         "scripts/run_autotrain_continuous.py",
         "scripts/run_autotrain_supervisor.py",
         "scripts/report_autotrain_continuous.sh",
+        "scripts/mine_continuous_residuals.py",
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json",
         "src/slm_training/autoresearch/thrash_regime.py",
+        "src/slm_training/autoresearch/thrash_residuals.py",
         "docs/design/dual-regime-thrash-20260804.md",
-        "tests/test_autoresearch/test_thrash_regime.py"
+        "tests/test_autoresearch/test_thrash_regime.py",
+        "tests/test_autoresearch/test_thrash_residuals.py"
       ],
       "history": [
+        {
+          "version": "v193",
+          "date": "2026-08-06",
+          "note": "cheap thrash residual steering: classify interesting residuals from sdlc_delivery (no retrain), ledger + slug_stats soft-rank open arms; mine_continuous_residuals CLI; interesting != promotable"
+        },
         {
           "version": "v192",
           "date": "2026-08-06",
