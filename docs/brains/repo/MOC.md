@@ -58,15 +58,14 @@ reads this section to seed the autotrain hypothesis loop and prunes it as
   SLM-282 negative was underpowered noise, not a robust contraction
   violation. A powered n=20 Wilson-interval rerun (fresh disjoint seeds,
   preregistered `min_pass_rate=0.5` locked before observing them) found
-  `recursive_core_positive` (18/20, Wilson 95% CI [0.699, 0.972]). LAR /
-  SLM-317 follow-through was later dispositioned on the Completed LAR
-  program; do not treat stale “harness not on main” wording as an open
-  Linear ticket — re-file a new `SLM-N` if a powered value-gate rerun is
-  needed again.
+  `recursive_core_positive` (18/20, Wilson 95% CI [0.699, 0.972]). Keep
+  that note as the scientific source of truth for recurrence-health /
+  LAR follow-ups; do not invent board status from this MOC bullet.
 - Board hygiene (2026-08-07): no claimable SLM issues/projects remain after
   [`slm-linear-project-hygiene-20260807`](../../design/slm-linear-project-hygiene-20260807.md).
   AP0 “Metric & Judge Validity” stays 0% because SLM-278/280 were canceled,
-  not unfinished.
+  not unfinished. Re-file a new `SLM-N` if a scientific open question needs
+  active tracking again.
 
 ## Dead ends (do not re-propose)
 
