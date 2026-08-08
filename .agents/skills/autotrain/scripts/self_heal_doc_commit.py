@@ -73,7 +73,7 @@ def main() -> int:
         return check.returncode
 
     commit = subprocess.run(
-        ["git", "-c", "user.email=autotrain@local", "-c", "user.name=autotrain", "commit", "-m", args.message],
+        ["git", "commit", "-m", args.message],
         cwd=ROOT,
     )
     return commit.returncode

@@ -2961,6 +2961,11 @@
         {
           "version": "v195",
           "date": "2026-08-08",
+          "note": "no-bump: _git_add_and_commit_paths() drops the hardcoded -c user.email=autotrain@local -c user.name=autotrain override on the self-heal document-closeout commit so it inherits the session's real (verified) git identity instead of landing as GitHub-unverified; commit selection, staged paths, and gating logic are unchanged."
+        },
+        {
+          "version": "v195",
+          "date": "2026-08-08",
           "note": "no-bump: land the _git_commit_paths() committer-identity fix as a manual follow-up commit after an earlier commit attempt for the same change was interrupted by an unrelated pre-commit hook failure; behavior unchanged from the previously recorded note."
         },
         {
@@ -6160,6 +6165,11 @@
         "docs/design/semantic-floor-gate-v1.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-08",
+          "note": "no-bump: regenerate the committed gate artifact (gate_hash, stamped harness.experiments v148) so publish --check passes again after unrelated upstream drift (harness.experiments v147 -> v148); verdict stays inconclusive, thresholds and gate behavior unchanged."
+        },
         {
           "version": "v1",
           "date": "2026-08-08",
