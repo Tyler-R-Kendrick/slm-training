@@ -8296,6 +8296,11 @@
         {
           "version": "v3",
           "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop continuous-openui-20260808-scheduled c5's component-plan/control incomplete measurement (decode/wall-timeout residual, decode_timeout_count=3, arm not executed; soft thrash failure, loop continues) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
           "note": "no-bump: record scheduled loop continuous-openui-20260808-scheduled c4's batch1/control scratch checkpoint provenance (fixture ship-gate rejection, null primary-metric delta 0.4167 tie, non-positive, screening only) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
