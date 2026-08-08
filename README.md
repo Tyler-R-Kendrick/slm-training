@@ -1364,3 +1364,27 @@ tests/
 - campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c10`
 - checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c10-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c10-control/checkpoints/last.pt`
 - honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-b09a9491-c1)
+
+- campaign: `continuous-loop-20260808-continuous-openui-schedu-b09a9491-c1`
+- checkpoints: `runs/c20260808-continuous-openui-schedu-b09a9491-c1-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-b09a9491-c1-control/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-b09a9491-c2)
+
+- campaign: `continuous-loop-20260808-continuous-openui-schedu-b09a9491-c2`
+- checkpoints: `runs/c20260808-continuous-openui-schedu-b09a9491-c2-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-b09a9491-c2-control/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-b09a9491-c4)
+
+- campaign: `continuous-loop-20260808-continuous-openui-schedu-b09a9491-c4`
+- checkpoints: `runs/c20260808-continuous-openui-schedu-b09a9491-c4-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-b09a9491-c4-control/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-b09a9491-c5)
+
+- campaign: `continuous-loop-20260808-continuous-openui-schedu-b09a9491-c5`
+- checkpoints: `runs/c20260808-continuous-openui-schedu-b09a9491-c5-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-b09a9491-c5-control/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
