@@ -15084,7 +15084,7 @@
       ]
     },
     "data.prompt_requirements": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/data/progspec/prompt_requirements.py",
@@ -15095,6 +15095,11 @@
         "tests/test_data/test_semantic_plan_extraction/test_requirements_extract.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-08",
+          "note": "SGS-004 hotfix: either/or ambiguous-component filter matches exact required component names only (no Form\u2282FormControl / Card\u2282CardHeader substring suppression)."
+        },
         {
           "version": "v1",
           "date": "2026-08-08",

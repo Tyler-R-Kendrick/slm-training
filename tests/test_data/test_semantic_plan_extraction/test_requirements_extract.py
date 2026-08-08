@@ -151,3 +151,29 @@ def test_facts_are_advisory_only() -> None:
         )
     )
     assert all(fact.authority == "advisory-learned" for fact in requirements.facts)
+
+
+def test_either_or_does_not_substring_suppress_neighbors() -> None:
+    """Card in either/or must not drop a separate CardHeader requirement."""
+    requirements = extract_prompt_requirements(
+        GenerationRequest(
+            prompt="Use either a Card or an Input, and also a card header"
+        ),
+        canonicalize=False,
+    )
+    ambiguous = {
+        fact.statement.removeprefix("prompt offers component alternative ").strip()
+        for fact in requirements.facts
+        if fact.statement.startswith("prompt offers component alternative ")
+    }
+    assert "Card" in ambiguous
+    assert any(
+        fact.disposition == "required" and "CardHeader" in fact.statement
+        for fact in requirements.facts
+    )
+    assert not any(
+        fact.disposition == "required"
+        and fact.statement.startswith("prompt requires component Card")
+        and "CardHeader" not in fact.statement
+        for fact in requirements.facts
+    )

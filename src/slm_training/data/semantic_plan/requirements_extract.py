@@ -382,16 +382,29 @@ def extract_prompt_requirements(
     facts.extend(_output_kind_facts(request))
     either_facts, groups = _either_or_ambiguity(request.prompt, components)
     ambiguous_components = {
-        fact.statement.rsplit(" ", 1)[-1]
+        fact.statement.removeprefix("prompt offers component alternative ").strip()
         for fact in either_facts
         if fact.statement.startswith("prompt offers component alternative ")
     }
     required = _prompt_required_component_facts(request.prompt, components)
-    # Either/or alternatives abstain from hard required inventory claims.
+
+    def _required_component_name(fact: RequirementFact) -> str | None:
+        # Statements are "prompt requires component NAME" or
+        # "prompt requires component NAME count>=N".
+        prefix = "prompt requires component "
+        if not fact.statement.startswith(prefix):
+            return None
+        rest = fact.statement[len(prefix) :]
+        name = rest.split(" count>=", 1)[0].strip()
+        return name or None
+
+    # Either/or alternatives abstain from hard required inventory claims for
+    # those exact component names only (never substring-suppress neighbors
+    # like Form vs FormControl).
     facts.extend(
         fact
         for fact in required
-        if not any(name in fact.statement for name in ambiguous_components)
+        if _required_component_name(fact) not in ambiguous_components
     )
     facts.extend(_prompt_forbidden_component_facts(request.prompt, components))
     facts.extend(either_facts)
