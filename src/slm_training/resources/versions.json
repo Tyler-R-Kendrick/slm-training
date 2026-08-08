@@ -8296,6 +8296,26 @@
         {
           "version": "v3",
           "date": "2026-08-08",
+          "note": "no-bump: record scheduled continuous-openui-scheduled-20260808 c5's control fixture scratch checkpoint provenance (component-plan arm not run, control incomplete campaign arm missing) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled continuous-openui-scheduled-20260808 c4's bounds/control fixture scratch checkpoint provenance (non-positive smoke-scale ship-gate reject) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled continuous-openui-scheduled-20260808 c2's control/component-plan fixture scratch checkpoint provenance (control decode-timeout arm-not-run, component-plan arm not run) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled continuous-openui-scheduled-20260808 c1's bounds/control fixture scratch checkpoint provenance (non-positive smoke-scale ship-gate reject) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
           "note": "no-bump: retrofit unique 'Continuous autotrain note' headings (campaign id appended) for the c1-c7 continuous-openui-20260808 notes already committed on this branch, matching the harness fix in harness.autoresearch.experiment_campaign; SLM-228 behavior is unchanged."
         },
         {
