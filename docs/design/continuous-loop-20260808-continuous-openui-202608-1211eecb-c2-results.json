@@ -1,0 +1,44 @@
+{
+  "auto": true,
+  "campaign_id": "continuous-loop-20260808-continuous-openui-202608-1211eecb-c2",
+  "candidate_metrics": {
+    "binder_reference_f1": 0.0,
+    "latency_ms_p50": 29154.67,
+    "meaningful_program_rate": 0.0,
+    "parse_rate": 1.0,
+    "smoke.binder_reference_f1": 0.0,
+    "smoke.latency_ms_p50": 29154.67,
+    "smoke.meaningful_program_rate": 0.0,
+    "smoke.parse_rate": 1.0,
+    "smoke.structural_similarity": 0.38280000000000003,
+    "structural_similarity": 0.38280000000000003
+  },
+  "control_metrics": {
+    "binder_reference_f1": 0.0,
+    "latency_ms_p50": 32098.86,
+    "meaningful_program_rate": 0.0,
+    "parse_rate": 1.0,
+    "smoke.binder_reference_f1": 0.0,
+    "smoke.latency_ms_p50": 32098.86,
+    "smoke.meaningful_program_rate": 0.0,
+    "smoke.parse_rate": 1.0,
+    "smoke.structural_similarity": 0.32666666666666666,
+    "structural_similarity": 0.32666666666666666
+  },
+  "cycle_index": 2,
+  "cycle_intent": "screening",
+  "cycle_role": "screening",
+  "evidence_class": "fixture",
+  "honesty": "fixture_screening_only_not_ship",
+  "loop_id": "continuous-openui-20260808",
+  "measurement_complete": true,
+  "positive": true,
+  "primary_metric": "smoke.structural_similarity",
+  "reasons": [
+    "fixture_insufficient_n:c20260808-continuous-openui-202608-1211eecb-c2-control",
+    "fixture_insufficient_n:c20260808-continuous-openui-202608-1211eecb-c2-component-plan",
+    "primary_metric_win:smoke.structural_similarity:0.32666666666666666->0.38280000000000003:improvement=0.05613333333333337"
+  ],
+  "schema": "continuous_cycle_results/v1",
+  "stack_layer": false
+}

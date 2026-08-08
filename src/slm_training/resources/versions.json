@@ -1397,7 +1397,7 @@
         {
           "version": "v14",
           "date": "2026-08-08",
-          "note": "SRP-001 (SLM-441) \u2014 dsl/pack.py's _ensure_builtin_packs registers a new opt-in `symbolic_regression` DslPack (built by the new dsl/symbolic_regression_pack.py) alongside openui/toy-layout/graphql. Behavioral addition to the watched file: a new pack_id becomes resolvable via get_pack('symbolic_regression')/SLM_GRAMMAR_DSL, but it is never aliased to the default (_ALIASES and _active_dsl() are unchanged, both still resolve to 'openui'), so existing callers and the default pack are unaffected."
+          "note": "SRP-001 (SLM-441) — dsl/pack.py's _ensure_builtin_packs registers a new opt-in `symbolic_regression` DslPack (built by the new dsl/symbolic_regression_pack.py) alongside openui/toy-layout/graphql. Behavioral addition to the watched file: a new pack_id becomes resolvable via get_pack('symbolic_regression')/SLM_GRAMMAR_DSL, but it is never aliased to the default (_ALIASES and _active_dsl() are unchanged, both still resolve to 'openui'), so existing callers and the default pack are unaffected."
         },
         {
           "version": "v13",
@@ -8283,6 +8283,41 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled continuous-openui-20260808 cycle 8 (screening arms component-plan/control, fixture gate reject, null primary-metric delta, non-positive) checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled continuous-openui-20260808 cycle 7 (screening arms bounds/control, fixture gate reject, null primary-metric delta, non-positive) checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled continuous-openui-20260808 cycle 5 (component-plan arm measurement incomplete, missing_scoreboard, queued retry_measurement) checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled continuous-openui-20260808 cycle 4 (screening arms batch1/control, fixture gate reject, null primary-metric delta, non-positive) checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled continuous-openui-20260808 cycle 3 (fresh-seed confirmation of cycle-2 champion fingerprint, rejected: binder_reference_f1 regressed 0.822->0.6, non-positive) checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled continuous-openui-20260808 cycle 2 (screening arms component-plan/control, fixture gate reject, positive primary-metric win queued as champion candidate, no tracked code delta) checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled continuous-openui-20260808 cycle 1 (screening arms bounds/control, fixture gate reject, non-positive) checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
         {
           "version": "v3",
           "date": "2026-08-08",
