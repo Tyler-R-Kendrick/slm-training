@@ -21,12 +21,12 @@ string opener. Generic string schema positions admit placeholders only; explicit
 schema enums remain atomic grammar literals. Legacy compositional output
 tokenization is not a supported training target.
 
-Checkpoint loading requires output contract v4 exactly. Every earlier checkpoint
+Checkpoint loading requires output contract v2 exactly. Every earlier checkpoint
 is intentionally incompatible and must not be evaluated, resumed, promoted, or
-served by current code. Version 4 requires the train/test harnesses to rewrite
+served by current code. Version 2 requires the train/test harnesses to rewrite
 caller marker spellings to contiguous `:slot_<ordinal>` identities across every
 persisted field, accepted target, and nested contract before admission. There is
-no migration because v3 corpora and weights could retain marker-name semantics.
+no migration because v1 corpora and weights could retain marker-name semantics.
 
 The invariant is enforced at five boundaries:
 

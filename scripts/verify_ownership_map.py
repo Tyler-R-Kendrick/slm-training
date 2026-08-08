@@ -88,6 +88,12 @@ def check_subsystems(doc: dict[str, Any]) -> list[str]:
             raise OwnershipMapError(f"subsystem {sid!r} owner_module missing: {module}")
         if module.endswith(".py"):
             defined = _defined_names(module)
+            if not entry["owner_symbols"]:
+                raise OwnershipMapError(
+                    f"subsystem {sid!r} owns Python module {module} but lists no "
+                    "owner_symbols -- an empty list certifies only that the file "
+                    "exists, not that the claimed ownership is real"
+                )
             for symbol in entry["owner_symbols"]:
                 if symbol not in defined:
                     raise OwnershipMapError(
@@ -140,24 +146,44 @@ def _output_contract_version_from_code() -> int:
     return int(match.group(1))
 
 
-def _output_contract_version_from_doc() -> int:
-    match = re.search(
-        r"OUTPUT_CONTRACT_VERSION\s*=\s*(\d+)", _read(OUTPUT_CONTRACT_DOC)
-    )
-    if not match:
-        raise OwnershipMapError(
-            f"{OUTPUT_CONTRACT_DOC} no longer states OUTPUT_CONTRACT_VERSION"
-        )
-    return int(match.group(1))
+def _all_version_mentions_from_doc() -> set[int]:
+    """Every bare `vN` / `VersionN` prose mention in the doc, not just the
+    exact ``OUTPUT_CONTRACT_VERSION = N`` spelling -- prose drifts in more
+    ways than the constant does (SGS-001 found "output contract v4",
+    "Version 4", and "v3 corpora" alongside a correctly-spelled "= 2")."""
+    text = _read(OUTPUT_CONTRACT_DOC)
+    mentions = {
+        int(n) for n in re.findall(r"OUTPUT_CONTRACT_VERSION\s*=\s*(\d+)", text)
+    }
+    mentions |= {int(n) for n in re.findall(r"\bv(\d+)\b", text)}
+    mentions |= {int(n) for n in re.findall(r"\bVersion (\d+)\b", text)}
+    return mentions
 
 
 def check_output_contract_version() -> int:
     code_version = _output_contract_version_from_code()
-    doc_version = _output_contract_version_from_doc()
-    if code_version != doc_version:
+    doc_versions = _all_version_mentions_from_doc()
+    if not doc_versions:
+        raise OwnershipMapError(
+            f"{OUTPUT_CONTRACT_DOC} no longer states OUTPUT_CONTRACT_VERSION"
+        )
+    # The doc legitimately mentions the current version and the immediately
+    # prior one (e.g. "v2 is intentionally checkpoint-incompatible with v1").
+    allowed = {code_version, code_version - 1}
+    stray = sorted(doc_versions - allowed)
+    if stray:
         raise OwnershipMapError(
             f"OUTPUT_CONTRACT_VERSION drift: {LANGUAGE_CONTRACT} says {code_version}, "
-            f"{OUTPUT_CONTRACT_DOC} says {doc_version} -- reconcile them (see SGS-001 / "
+            f"but {OUTPUT_CONTRACT_DOC} also mentions version(s) {stray} that are "
+            f"neither the current ({code_version}) nor prior ({code_version - 1}) "
+            "version -- reconcile them (see SGS-001 / "
+            "known_drift.output_contract_version_doc_mismatch in ownership_map.json)"
+        )
+    if code_version not in doc_versions:
+        raise OwnershipMapError(
+            f"OUTPUT_CONTRACT_VERSION drift: {LANGUAGE_CONTRACT} says {code_version}, "
+            f"but {OUTPUT_CONTRACT_DOC} never mentions it (only {sorted(doc_versions)}) "
+            "-- reconcile them (see SGS-001 / "
             "known_drift.output_contract_version_doc_mismatch in ownership_map.json)"
         )
     return code_version
@@ -187,8 +213,23 @@ def check_downstream_extension_map(doc: dict[str, Any]) -> list[str]:
     return checked
 
 
+SCHEMA = "ownership_map/v1"
+
+
+def _check_no_duplicate_ids(doc: dict[str, Any]) -> None:
+    ids = [s["id"] for s in doc["subsystems"]]
+    duplicates = sorted({sid for sid in ids if ids.count(sid) > 1})
+    if duplicates:
+        raise OwnershipMapError(f"duplicate subsystems[].id values: {duplicates}")
+
+
 def certify() -> dict[str, Any]:
     doc = _load_map()
+    if doc.get("schema") != SCHEMA:
+        raise OwnershipMapError(
+            f"{MAP_PATH} declares schema {doc.get('schema')!r}, expected {SCHEMA!r}"
+        )
+    _check_no_duplicate_ids(doc)
     return {
         "map_schema": doc["schema"],
         "subsystems": check_subsystems(doc),
@@ -203,7 +244,7 @@ def main(argv: list[str] | None = None) -> int:
     del argv
     try:
         print(json.dumps(certify(), indent=2, sort_keys=True))
-    except OwnershipMapError as exc:
+    except (OwnershipMapError, KeyError, TypeError) as exc:
         print(f"ownership-map regression: {exc}", file=sys.stderr)
         return 1
     return 0

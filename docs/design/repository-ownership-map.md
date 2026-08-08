@@ -4,7 +4,9 @@
 
 SGS-001 (SLM-435, milestone "Compatibility and ownership gate"). Commits a machine-readable owner/authority map for the live OpenUI synthesis stack (`SemanticPlanV1`, the G0-G12 verifier gates, semantic-failure taxonomy, repair, counterfactual replay, the experiment registry, telemetry, certified completion artifacts, DSL packs, search/lattice state, versioning, and generated docs) so the downstream SGS/VCE/PCT/SRP/SIE/RSP backlog extends an existing owner instead of duplicating one.
 
-**Machine-readable source of truth:** [`src/slm_training/resources/ownership_map.json`](../../src/slm_training/resources/ownership_map.json) (`schema: ownership_map/v1`). **Verified by:** `python -m scripts.verify_ownership_map` (static AST/text check, no imports — every `owner_module` must exist and every `owner_symbols` entry must actually be defined there; every downstream row must cite a real extension point or justify a new owner; `OUTPUT_CONTRACT_VERSION` in code and docs must agree). Regression coverage: `tests/test_scripts/test_verify_ownership_map.py`.
+**Machine-readable source of truth:** [`src/slm_training/resources/ownership_map.json`](../../src/slm_training/resources/ownership_map.json) (`schema: ownership_map/v1`). **Verified by:** `python -m scripts.verify_ownership_map` (static AST/text check, no imports — every `owner_module` must exist and every `owner_symbols` entry must actually be defined there; every downstream row must cite a real extension point or justify a new owner; `OUTPUT_CONTRACT_VERSION` in code and every version mention in the output-contract doc must agree). Regression coverage: `tests/test_scripts/test_verify_ownership_map.py`.
+
+*This page is mechanically generated from the JSON above — do not hand-edit the tables below; edit the JSON and regenerate.*
 
 ## Authority tiers
 
@@ -32,22 +34,23 @@ Every subsystem below is tagged with one of these tiers (acceptance criterion: "
 | `counterfactual_replay` — Judge-based grammar-legal continuation replay | `src/slm_training/harnesses/preference/counterfactuals.py` | `SEMANTIC_VERIFIER_V1` | `verifier-hard` | [ldi3-04-remine-intervene-campaign-20260718.md](ldi3-04-remine-intervene-campaign-20260718.md) |
 | `semantic_counterfactual_synthesis` — Training-pair counterfactual mutation generator | `src/slm_training/harnesses/train_data/semantic_counterfactuals.py` | `CounterfactualPairV1` | `evaluation-only` | [iter-slm366-counterfactuals-20260725.md](iter-slm366-counterfactuals-20260725.md) |
 | `solver_replay` — Decode trace recording and replay validation | `src/slm_training/dsl/solver/replay.py` | `solver_replay_violations`, `solver_events_from_closure`, `solver_events_from_search`, `solver_trace_counters` | `verifier-hard` | [verified-scope-solver.md](verified-scope-solver.md) |
-| `valid_state_search_generic` — Bounded proof-carrying search controller (generic) | `src/slm_training/dsl/solver/controller.py` | — | `compiler-hard` | [verified-scope-solver.md](verified-scope-solver.md) |
+| `valid_state_search_generic` — Bounded proof-carrying search controller (generic) | `src/slm_training/dsl/solver/controller.py` | `SearchStatus`, `SearchDecision`, `SearchResult`, `search` | `compiler-hard` | [verified-scope-solver.md](verified-scope-solver.md) |
 | `lattice_search_forest_adapter` — Compiler-forest-specific lattice search | `src/slm_training/dsl/grammar/fastpath/lattice_search.py` | `LatticeSearchState` | `compiler-hard` | [lattice-recursive-search.md](lattice-recursive-search.md) |
 | `experiment_campaign` — Pre-registered experiment campaign contract | `src/slm_training/autoresearch/experiment_campaign.py` | `ExperimentCampaignV1`, `CampaignEndpointV1`, `CampaignArmV1`, `CampaignGateV1`, `campaign_manifest_sha256`, `validate_result_claim` | `compiler-hard` | [experiment-campaign-governance.md](experiment-campaign-governance.md) |
 | `decode_telemetry` — Per-decode-call immutable telemetry | `src/slm_training/models/decode_stats.py` | `DecodeStats`, `collect_decode_stats`, `aggregate_stats` | `evaluation-only` | [decode-invariants.md](decode-invariants.md) |
-| `runtime_telemetry` — Runtime-level telemetry sink | `src/slm_training/runtime/telemetry/__init__.py` | — | `evaluation-only` | [decode-invariants.md](decode-invariants.md) |
+| `runtime_telemetry` — Runtime-level telemetry sink | `src/slm_training/runtime/telemetry/__init__.py` | `SpanStats`, `CycleTelemetry`, `get_telemetry`, `timed` | `evaluation-only` | [decode-invariants.md](decode-invariants.md) |
 | `certified_completion_artifact` — Certified static-LALR completion artifact | `src/slm_training/dsl/grammar/fastpath/completion_artifact.py` | `CompletionArtifact`, `StaticLalrAdapter`, `build_completion_artifact`, `load_checked_completion_artifact` | `compiler-hard` | [certified-completion-artifact-and-tps-target.md](certified-completion-artifact-and-tps-target.md) |
 | `dsl_pack_registry_canonical` — DSL pack registry (canonical, singular) | `src/slm_training/dsl/pack.py` | `DslPack`, `register_pack`, `get_pack`, `list_packs` | `compiler-hard` | [dsl-pack-contract.md](dsl-pack-contract.md) |
 | `dsl_pack_registry_shadow` — DSL pack registry (shadow, plural) -- DUPLICATE RISK | `src/slm_training/dsl/packs/types.py` | `DSLPack`, `PlaceholderPolicy` | `compiler-hard` | [dsl-pack-contract.md](dsl-pack-contract.md) |
 | `output_contract` — Symbol-only output contract / OUTPUT_CONTRACT_VERSION | `src/slm_training/dsl/language_contract.py` | `OUTPUT_CONTRACT_VERSION` | `compiler-hard` | [symbol-only-output-contract.md](symbol-only-output-contract.md) |
 | `completion_domain` — Grammar-capability-derived completion domain | `src/slm_training/dsl/grammar_capabilities.py` | `CompletionDomainV1`, `GrammarCapabilityAdapterV1`, `GrammarCapabilityAuthorityV1` | `compiler-hard` | [decode-invariants.md](decode-invariants.md) |
 | `choice_codec` — Deterministic choice-sequence codec | `src/slm_training/models/choice_tokenizer.py` | `ChoiceTokenizer`, `ChoiceDecodeState` | `compiler-hard` | [decode-invariants.md](decode-invariants.md) |
-| `production_codec` — Grammar production codec | `src/slm_training/dsl/production_codec.py` | — | `compiler-hard` | [decode-invariants.md](decode-invariants.md) |
+| `production_codec` — Grammar production codec | `src/slm_training/dsl/production_codec.py` | `ProductionProgram`, `ProductionVocab`, `decode_productions` | `compiler-hard` | [decode-invariants.md](decode-invariants.md) |
 | `version_registry` — Component-version registry and enforcement | `src/slm_training/resources/versions.json` | — | `compiler-hard` | [version-stamp-contract.md](version-stamp-contract.md) |
-| `openwiki_generation` — Generated agent-navigation documentation | `scripts/update_openwiki.py` | — | `evaluation-only` | [quickstart.md](../openwiki/quickstart.md) |
-| `agent_surface_parity` — Obligation x agent-harness-surface parity | `scripts/verify_agent_surfaces.py` | — | `compiler-hard` | [agent-harness-parity-audit.md](agent-harness-parity-audit.md) |
-| `repository_organization_policy` — Tracked-file placement policy | `scripts/repo_policy.py` | — | `compiler-hard` | [repository-organization.md](../repository-organization.md) |
+| `data_corpus_audit` — Cross-snapshot data-corpus leakage/dedup audit | `scripts/audit_data_corpora.py` | `main`, `_overlap_matrix`, `_near_dup_clusters` | `evaluation-only` | [data-corpus-audit.md](data-corpus-audit.md) |
+| `openwiki_generation` — Generated agent-navigation documentation | `scripts/update_openwiki.py` | `run_openwiki`, `main` | `evaluation-only` | [quickstart.md](../openwiki/quickstart.md) |
+| `agent_surface_parity` — Obligation x agent-harness-surface parity | `scripts/verify_agent_surfaces.py` | `AgentSurfaceError`, `Obligation`, `check`, `main` | `compiler-hard` | [agent-harness-parity-audit.md](agent-harness-parity-audit.md) |
+| `repository_organization_policy` — Tracked-file placement policy | `scripts/repo_policy.py` | `ALLOWED_ROOTS`, `validate_skill_mirrors`, `main` | `compiler-hard` | [repository-organization.md](../repository-organization.md) |
 
 Notes, one per subsystem:
 
@@ -74,6 +77,7 @@ Notes, one per subsystem:
 - **`choice_codec`**: Fastpath alternative to open-vocab tokenization. Coexists deliberately with the DSL-native tokenizer (is_choice_tokenizer discriminator); not a duplicate.
 - **`production_codec`**: Related production-level codec consumed alongside choice_codec.
 - **`version_registry`**: Enforced by scripts/verify_version_stamps.py in CI, pre-commit, and agent hooks. Governs every other component id in this map.
+- **`data_corpus_audit`**: AGENTS.md data-quality law: cross-snapshot overlap/leakage/near-dup auditing owner. New corpora (e.g. SRP-008 symbolic-regression corpus, VCE-008 split audits) run through this existing tool rather than a new leakage checker.
 - **`openwiki_generation`**: Regenerates docs/openwiki/*; do not hand-edit generated pages.
 - **`agent_surface_parity`**: Certifies every repository law appears on every configured coding-harness instruction surface (AGENTS.md, CLAUDE.md, GEMINI.md, .github/copilot-instructions.md, .cursor/rules/*.mdc, .codex/, .grok/).
 - **`repository_organization_policy`**: Enforces ALLOWED_ROOTS and validate_skill_mirrors; executable counterpart to docs/repository-organization.md and .agents/skills/organize-repository/SKILL.md.
@@ -130,7 +134,7 @@ Every SGS/VCE/PCT/SRP/SIE/RSP backlog item mapped to the existing subsystem(s) i
 | **SGS-006** — Integrate prompt requirements with existing semantic-plan/evaluation/decode owners | SLM-454 | `semantic_plan`, `verifier_gate_stack`, `decode_telemetry` | no | Pure integration issue across three existing owners; no new owner. |
 | **SGS-007** — Implement VerifiedSynthesisProblemV1 and generated JSON Schema | SLM-444 | `semantic_plan`, `verifier_gate_stack`, `dsl_pack_registry_canonical` | yes | No existing contract shapes a pack-supplied, verifier-checked synthesis problem; a new VerifiedSynthesisProblemV1 owner is justified, layered on the three existing owners it must not duplicate. |
 | **SGS-008** — Add fail-closed SyGuS/SemGuS capability reports and conformance fixtures | SLM-455 | `dsl_pack_registry_canonical`, `completion_domain` | no | Extends the canonical pack registry's capability surface; no new owner. |
-| **SGS-009** — Generate mechanism disposition and stale-evidence supersession reports | SLM-456 | `version_registry` | no | Extends the disposition-report pattern already used by docs/design/semantic-planning-valid-state-disposition.md (SLM-160) and this map's known_drift/duplicate_subsystem_risks sections. |
+| **SGS-009** — Generate mechanism disposition and stale-evidence supersession reports | SLM-456 | — | yes | No existing subsystem owns disposition/supersession reporting as reusable code; it follows the documented narrative precedent in docs/design/semantic-planning-valid-state-disposition.md (SLM-160) rather than a registered code owner, and its output feeds version_registry once mechanisms are actually retired/frozen/promoted. |
 | **SGS-010** — Close schema versioning, migrations, and compatibility tests for synthesis contracts | SLM-445 | `version_registry` | no | Extends version_registry to cover SGS-007's VerifiedSynthesisProblemV1 once it exists. |
 | **VCE-001** — Extend semantic-failure traces into lossless typed verifier witnesses | SLM-438 | `semantic_failure_taxonomy`, `verifier_gate_stack` | no | Extends the existing taxonomy adapter and gate stack; witnesses are a lossless superset of current traces. |
 | **VCE-002** — Unify repair residuals with existing SemanticRepairRecordV1 and conflict slices | SLM-446 | `semantic_repair` | no | Title names the existing owner directly. |
@@ -139,7 +143,7 @@ Every SGS/VCE/PCT/SRP/SIE/RSP backlog item mapped to the existing subsystem(s) i
 | **VCE-005** — Add no-op, destructive, shuffled, one-factor, and all-oracle intervention controls | SLM-458 | `plan_oracle_substitutor` | no | Extends the VCE-004 intervention harness with control arms. |
 | **VCE-006** — Extend the existing hard-valid semantic contrast corpus for missing factor families | SLM-448 | `semantic_plan` | no | Extends data/semantic_contrast/transforms.py, an existing SemanticPlanV1 consumer. |
 | **VCE-007** — Add metamorphic prompt/program, alpha-renaming, and positive-equivalence generators | SLM-459 | `semantic_plan`, `counterfactual_replay` | no | Extends the VCE-006 contrast corpus and the existing judge-based replay verifier. |
-| **VCE-008** — Add leakage, deduplication, topology, and OOD split audits | SLM-463 | `version_registry` | no | Extends the existing corpus-audit tooling named in AGENTS.md's data-quality law (scripts/audit_data_corpora.py), not a new owner. |
+| **VCE-008** — Add leakage, deduplication, topology, and OOD split audits | SLM-463 | `data_corpus_audit` | no | Extends the existing data_corpus_audit tool (scripts/audit_data_corpora.py) named in AGENTS.md data-quality law, not a new owner. |
 | **VCE-009** — Record oracle/contrast fixture campaigns in governed evidence envelopes | SLM-468 | `experiment_campaign` | no | ExperimentCampaignV1 is the existing governed-evidence-envelope owner. |
 | **VCE-010** — Define evaluator calibration, blinded adjudication, and risk-coverage protocol | SLM-469 | `verifier_gate_stack` | no | Must coordinate with the existing judge-independence audit (SLM-106, see related_overlaps) rather than duplicate it. |
 | **PCT-001** — Extend immutable telemetry with authority, exact-work, witness, and cold/warm fields | SLM-439 | `decode_telemetry` | no | Title names the existing owner directly. |
@@ -157,7 +161,7 @@ Every SGS/VCE/PCT/SRP/SIE/RSP backlog item mapped to the existing subsystem(s) i
 | **SRP-005** — Implement canonicalization and a proof-scoped rewrite-certificate schema | SLM-462 | `verifier_gate_stack` | yes | New pack-local canonicalizer justified; its rewrite-certificate must follow the VCE-001 witness pattern rather than invent a parallel proof format. |
 | **SRP-006** — Add evaluator, fitting, canonicalization, and numerical differential tests | SLM-470 | `dsl_pack_registry_canonical` | no | Tests SRP-003/004/005; no new owner. |
 | **SRP-007** — Implement validity, fit, extrapolation, complexity, and Pareto reporting | SLM-466 | `dsl_pack_registry_canonical` | no | Reporting layer over SRP-003/004/005. |
-| **SRP-008** — Implement deterministic symbolic-regression corpus generation with OOD and leakage controls | SLM-471 | `version_registry` | no | Reuses the VCE-008 / audit_data_corpora.py leakage-control machinery for a new corpus, not a new owner. |
+| **SRP-008** — Implement deterministic symbolic-regression corpus generation with OOD and leakage controls | SLM-471 | `data_corpus_audit` | no | Reuses data_corpus_audit (scripts/audit_data_corpora.py) leakage-control machinery for a new corpus, not a new owner. |
 | **SRP-009** — Implement a bounded canonical enumerative symbolic-regression baseline | SLM-472 | `valid_state_search_generic` | no | Reuses the generic bounded search controller as the search backbone rather than inventing a new search owner. |
 | **SRP-010** — Add end-to-end symbolic-pack portability, default-isolation, and standards fixtures | SLM-474 | `dsl_pack_registry_canonical` | no | Extends the canonical pack registry's portability guarantees to the SRP-001 pack. |
 | **SRP-011** — Define an optional PySR/SRBench adapter with isolated environment manifest | SLM-475 | — | yes | External, optional dependency by design; isolated deliberately and does not extend any internal owner. |
@@ -186,10 +190,10 @@ python -m scripts.verify_ownership_map
 python -m pytest tests/test_scripts/test_verify_ownership_map.py -q
 python -m scripts.verify_agent_surfaces
 python -m scripts.verify_version_stamps --check
-python -m scripts.verify_decode_invariants
+PYTHONPATH=src python -m scripts.verify_decode_invariants
 ```
 
-`verify_ownership_map` independently samples every owner claim against imports/call sites by parsing the owner module's AST and checking each claimed symbol is actually defined there — it does not trust the prose in this file, only the JSON, and the JSON does not trust its own claims either.
+`verify_ownership_map` checks every owner claim by parsing the owner module's AST and confirming each claimed symbol is defined there as a class, function, or assignment target. It reads only the JSON, never the prose in this file — importer counts in the notes above come from a manual audit and are not themselves certified.
 
 ## Non-goals
 

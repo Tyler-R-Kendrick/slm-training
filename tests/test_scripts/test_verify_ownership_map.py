@@ -158,6 +158,49 @@ def test_catches_output_contract_version_doc_drift(sandbox):
         verifier.certify()
 
 
+def test_catches_bare_prose_version_drift(sandbox):
+    """A second SGS-001 finding, missed by the first fix: the correctly-spelled
+    ``OUTPUT_CONTRACT_VERSION = 2`` can coexist with stray bare-prose mentions
+    ("output contract v4", "Version 4") elsewhere in the same doc."""
+    (sandbox / "docs/design/symbol-only-output-contract.md").write_text(
+        "The canonical contract is `OUTPUT_CONTRACT_VERSION = 2` here.\n"
+        "Checkpoint loading requires output contract v4 exactly. Version 4 "
+        "requires rewriting markers.\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(
+        verifier.OwnershipMapError, match="OUTPUT_CONTRACT_VERSION drift"
+    ):
+        verifier.certify()
+
+
+def test_catches_empty_owner_symbols_on_a_python_module(sandbox):
+    path = sandbox / "src/slm_training/resources/ownership_map.json"
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    doc["subsystems"][0]["owner_symbols"] = []
+    path.write_text(json.dumps(doc), encoding="utf-8")
+    with pytest.raises(verifier.OwnershipMapError, match="lists no owner_symbols"):
+        verifier.certify()
+
+
+def test_catches_duplicate_subsystem_ids(sandbox):
+    path = sandbox / "src/slm_training/resources/ownership_map.json"
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    doc["subsystems"].append(dict(doc["subsystems"][0]))
+    path.write_text(json.dumps(doc), encoding="utf-8")
+    with pytest.raises(verifier.OwnershipMapError, match="duplicate subsystems"):
+        verifier.certify()
+
+
+def test_catches_unexpected_schema(sandbox):
+    path = sandbox / "src/slm_training/resources/ownership_map.json"
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    doc["schema"] = "ownership_map/v2"
+    path.write_text(json.dumps(doc), encoding="utf-8")
+    with pytest.raises(verifier.OwnershipMapError, match="declares schema"):
+        verifier.certify()
+
+
 def test_catches_downstream_row_with_no_extension_point_and_no_justification(sandbox):
     path = sandbox / "src/slm_training/resources/ownership_map.json"
     doc = json.loads(path.read_text(encoding="utf-8"))

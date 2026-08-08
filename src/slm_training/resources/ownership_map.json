@@ -151,7 +151,12 @@
       "id": "valid_state_search_generic",
       "name": "Bounded proof-carrying search controller (generic)",
       "owner_module": "src/slm_training/dsl/solver/controller.py",
-      "owner_symbols": [],
+      "owner_symbols": [
+        "SearchStatus",
+        "SearchDecision",
+        "SearchResult",
+        "search"
+      ],
       "authority_tier": "compiler-hard",
       "design_doc": "docs/design/verified-scope-solver.md",
       "notes": "VSS1-02. Docstring states explicitly: this is the new generic controller; the compiler-forest LatticeSearchState is retained unchanged as the forest-specific adapter. This split is a documented, intentional reconciliation, not an accidental duplicate."
@@ -200,7 +205,12 @@
       "id": "runtime_telemetry",
       "name": "Runtime-level telemetry sink",
       "owner_module": "src/slm_training/runtime/telemetry/__init__.py",
-      "owner_symbols": [],
+      "owner_symbols": [
+        "SpanStats",
+        "CycleTelemetry",
+        "get_telemetry",
+        "timed"
+      ],
       "authority_tier": "evaluation-only",
       "design_doc": "docs/design/decode-invariants.md",
       "notes": "Lower-level runtime namespace used by runtime/decode_schedule.py. Consumes/produces DecodeStats; not a re-implementation of it."
@@ -285,7 +295,11 @@
       "id": "production_codec",
       "name": "Grammar production codec",
       "owner_module": "src/slm_training/dsl/production_codec.py",
-      "owner_symbols": [],
+      "owner_symbols": [
+        "ProductionProgram",
+        "ProductionVocab",
+        "decode_productions"
+      ],
       "authority_tier": "compiler-hard",
       "design_doc": "docs/design/decode-invariants.md",
       "notes": "Related production-level codec consumed alongside choice_codec."
@@ -300,10 +314,26 @@
       "notes": "Enforced by scripts/verify_version_stamps.py in CI, pre-commit, and agent hooks. Governs every other component id in this map."
     },
     {
+      "id": "data_corpus_audit",
+      "name": "Cross-snapshot data-corpus leakage/dedup audit",
+      "owner_module": "scripts/audit_data_corpora.py",
+      "owner_symbols": [
+        "main",
+        "_overlap_matrix",
+        "_near_dup_clusters"
+      ],
+      "authority_tier": "evaluation-only",
+      "design_doc": "docs/design/data-corpus-audit.md",
+      "notes": "AGENTS.md data-quality law: cross-snapshot overlap/leakage/near-dup auditing owner. New corpora (e.g. SRP-008 symbolic-regression corpus, VCE-008 split audits) run through this existing tool rather than a new leakage checker."
+    },
+    {
       "id": "openwiki_generation",
       "name": "Generated agent-navigation documentation",
       "owner_module": "scripts/update_openwiki.py",
-      "owner_symbols": [],
+      "owner_symbols": [
+        "run_openwiki",
+        "main"
+      ],
       "authority_tier": "evaluation-only",
       "design_doc": "docs/openwiki/quickstart.md",
       "notes": "Regenerates docs/openwiki/*; do not hand-edit generated pages."
@@ -312,7 +342,12 @@
       "id": "agent_surface_parity",
       "name": "Obligation x agent-harness-surface parity",
       "owner_module": "scripts/verify_agent_surfaces.py",
-      "owner_symbols": [],
+      "owner_symbols": [
+        "AgentSurfaceError",
+        "Obligation",
+        "check",
+        "main"
+      ],
       "authority_tier": "compiler-hard",
       "design_doc": "docs/design/agent-harness-parity-audit.md",
       "notes": "Certifies every repository law appears on every configured coding-harness instruction surface (AGENTS.md, CLAUDE.md, GEMINI.md, .github/copilot-instructions.md, .cursor/rules/*.mdc, .codex/, .grok/)."
@@ -321,7 +356,11 @@
       "id": "repository_organization_policy",
       "name": "Tracked-file placement policy",
       "owner_module": "scripts/repo_policy.py",
-      "owner_symbols": [],
+      "owner_symbols": [
+        "ALLOWED_ROOTS",
+        "validate_skill_mirrors",
+        "main"
+      ],
       "authority_tier": "compiler-hard",
       "design_doc": "docs/repository-organization.md",
       "notes": "Enforces ALLOWED_ROOTS and validate_skill_mirrors; executable counterpart to docs/repository-organization.md and .agents/skills/organize-repository/SKILL.md."
@@ -461,11 +500,9 @@
       "issue": "SGS-009",
       "linear_id": "SLM-456",
       "title": "Generate mechanism disposition and stale-evidence supersession reports",
-      "extension_points": [
-        "version_registry"
-      ],
-      "new_owner_justified": false,
-      "justification": "Extends the disposition-report pattern already used by docs/design/semantic-planning-valid-state-disposition.md (SLM-160) and this map's known_drift/duplicate_subsystem_risks sections."
+      "extension_points": [],
+      "new_owner_justified": true,
+      "justification": "No existing subsystem owns disposition/supersession reporting as reusable code; it follows the documented narrative precedent in docs/design/semantic-planning-valid-state-disposition.md (SLM-160) rather than a registered code owner, and its output feeds version_registry once mechanisms are actually retired/frozen/promoted."
     },
     {
       "issue": "SGS-010",
@@ -555,10 +592,10 @@
       "linear_id": "SLM-463",
       "title": "Add leakage, deduplication, topology, and OOD split audits",
       "extension_points": [
-        "version_registry"
+        "data_corpus_audit"
       ],
       "new_owner_justified": false,
-      "justification": "Extends the existing corpus-audit tooling named in AGENTS.md's data-quality law (scripts/audit_data_corpora.py), not a new owner."
+      "justification": "Extends the existing data_corpus_audit tool (scripts/audit_data_corpora.py) named in AGENTS.md data-quality law, not a new owner."
     },
     {
       "issue": "VCE-009",
@@ -740,10 +777,10 @@
       "linear_id": "SLM-471",
       "title": "Implement deterministic symbolic-regression corpus generation with OOD and leakage controls",
       "extension_points": [
-        "version_registry"
+        "data_corpus_audit"
       ],
       "new_owner_justified": false,
-      "justification": "Reuses the VCE-008 / audit_data_corpora.py leakage-control machinery for a new corpus, not a new owner."
+      "justification": "Reuses data_corpus_audit (scripts/audit_data_corpora.py) leakage-control machinery for a new corpus, not a new owner."
     },
     {
       "issue": "SRP-009",
