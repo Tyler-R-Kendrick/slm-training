@@ -8296,6 +8296,11 @@
         {
           "version": "v3",
           "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop continuous-openui-20260808-scheduled c1's bounds/control scratch checkpoint provenance (fixture ship-gate rejection, non-positive, screening only) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
           "note": "no-bump: record scheduled continuous-openui-scheduled-20260808 c5's control fixture scratch checkpoint provenance (component-plan arm not run, control incomplete campaign arm missing) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
