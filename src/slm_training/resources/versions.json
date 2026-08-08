@@ -8301,6 +8301,11 @@
         {
           "version": "v3",
           "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop 0ln96zd c2's component-plan/control fixture-scale checkpoint provenance (structural_similarity 0.0575->0.0964, still smoke n=3) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
           "note": "no-bump: record scheduled loop 0ln96zd c1's bounds/control fixture-scale checkpoint provenance (reduced-steps lever, decode wall-timeout still incomplete) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
