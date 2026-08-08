@@ -114,11 +114,13 @@
         "LegalEdit",
         "RepairEvidence",
         "RepairPolicyName",
-        "SemanticRepairScorer"
+        "SemanticRepairScorer",
+        "RepairResidualV1",
+        "project_repair_residual"
       ],
       "authority_tier": "advisory-learned",
       "design_doc": "docs/design/iter-spv2-05-semantic-repair-20260720.md",
-      "notes": "Fixture-only interim baseline (SPV2-05). Its own docstring defers real verifier-backed counterfactual action values to SLM-131/VSS (counterfactual_probe). Not dead code; a documented pending supersession."
+      "notes": "Fixture-only interim baseline (SPV2-05). Its own docstring defers real verifier-backed counterfactual action values to SLM-131/VSS (counterfactual_probe). Not dead code; a documented pending supersession. VCE-002/SLM-446 added RepairResidualV1 -- a pure projection of SemanticRepairRecordV1/ConflictSlice (plus optional VCE-001 VerifierWitnessV1 reconciliation) into an advisory residual-obligation view; it owns no new authority and is not a second repair registry."
     },
     {
       "id": "plan_oracle_substitutor",

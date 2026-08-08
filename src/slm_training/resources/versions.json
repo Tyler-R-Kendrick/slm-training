@@ -2808,6 +2808,11 @@
         {
           "version": "v6",
           "date": "2026-08-08",
+          "note": "no-bump: SLM-446 (VCE-002) adds RepairResidualV1/project_repair_residual to the existing 'semantic_repair' owner's owner_symbols (per the pre-registered downstream_extension_map row for VCE-002, new_owner_justified: false) and mirrors the row into repository-ownership-map.md; behavior-neutral, no new owner or authority tier introduced."
+        },
+        {
+          "version": "v6",
+          "date": "2026-08-08",
           "note": "SGS-007 (SLM-444): register the new 'verified_synthesis_problem' owner (VerifiedSynthesisProblemV1, PackIdentityV1, RuntimeSymbolDeclarationV1, VerificationRequirementV1, SearchBudgetV1, ObjectiveTermV1, EvidenceProvenanceV1 in src/slm_training/data/progspec/synthesis_problem.py), authority_tier advisory-learned, layered on the semantic_plan/verifier_gate_stack/dsl_pack_registry_canonical extension points this map already authorized as new_owner_justified; mirrors the row into repository-ownership-map.md."
         },
         {
@@ -4314,7 +4319,7 @@
       ]
     },
     "harness.distill": {
-      "version": "v10",
+      "version": "v11",
       "kind": "harness",
       "paths": [
         "docs/design/ap020-on-policy-abstract-self-distillation.md",
@@ -4354,6 +4359,11 @@
         "tests/test_harnesses/distill/test_select_sft.py"
       ],
       "history": [
+        {
+          "version": "v11",
+          "date": "2026-08-08",
+          "note": "SLM-446 (VCE-002): add RepairResidualV1, a pure/stateless projection of SemanticRepairRecordV1 + ConflictSlice into an advisory residual-obligation view (unsatisfied obligations, conflict slice/completeness, protected regions, legal repair-action domain, witness/source ids, tamper-evident residual_hash); optionally reconciles VCE-001 VerifierWitnessV1.unresolved_localizations as additional obligations without ever fabricating legal edits, converting UNKNOWN to failure, or letting HEURISTIC evidence authorize repair -- no second repair registry or verifier authority introduced."
+        },
         {
           "version": "v10",
           "date": "2026-08-03",

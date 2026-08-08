@@ -2,21 +2,26 @@
 
 from __future__ import annotations
 
+import dataclasses
 import math
 
 import pytest
 
 from slm_training.data.corrupt import CorruptionOperator, build_corruption
 from slm_training.dsl.lang_core import validate
+from slm_training.evals.semantic_failure import VerifierWitnessV1
 from slm_training.harnesses.distill.semantic_repair import (
     ConflictSlice,
     LegalEdit,
     RepairEvidence,
     RepairFeatureExtractor,
+    RepairResidualV1,
     SemanticRepairRecordV1,
     SemanticRepairScorer,
     apply_repair_policy,
     build_repair_records_from_corruption,
+    project_repair_residual,
+    residual_integrity_ok,
     train_repair_policy_fixture,
 )
 
@@ -244,3 +249,132 @@ def test_legal_edit_and_evidence_roundtrip() -> None:
     )
     assert LegalEdit.from_dict(edit.to_dict()) == edit
     assert RepairEvidence.from_dict(evidence.to_dict()) == evidence
+
+
+def _fake_witness(*, unresolved: tuple[str, ...] = ()) -> VerifierWitnessV1:
+    """Directly construct a VerifierWitnessV1 for reconciliation tests."""
+    return VerifierWitnessV1(
+        schema_version="verifier_witness/v1",
+        source_trace_fingerprint="trace-fp-1",
+        taxonomy_version="semantic_failure_taxonomy/v1",
+        evaluator_version="v1",
+        evaluator_hash="hash1",
+        first_failed_gate=None,
+        localizations=(),
+        unresolved_localizations=unresolved,
+        witness_digest="unused-in-direct-construction",
+    )
+
+
+def test_project_residual_is_lossless_and_golden() -> None:
+    records = build_repair_records_from_corruption(SIMPLE)
+    for record in records:
+        residual = project_repair_residual(record)
+        assert residual.schema_version == "repair_residual/v1"
+        assert residual.source_record_id == record.record_id
+        assert residual.source_fingerprint == record.source_fingerprint
+        assert residual.source_witness_fingerprint is None
+        assert residual.completeness_class == record.conflict_slice.completeness_class
+        assert residual.conflict_stage == record.conflict_slice.stage
+        assert residual.failing_node_ids == record.conflict_slice.failing_node_ids
+        assert residual.dependency_frontier == record.conflict_slice.dependency_frontier
+        assert residual.protected_node_ids == record.conflict_slice.protected_node_ids
+        assert residual.advisory_only is True
+        assert residual.residual_hash
+        assert residual_integrity_ok(residual)
+        # Golden round trip: to_dict/from_dict must reconstruct an equal object.
+        assert RepairResidualV1.from_dict(residual.to_dict()) == residual
+
+
+def test_heuristic_conflict_slice_yields_empty_action_domain() -> None:
+    records = build_repair_records_from_corruption(SIMPLE)
+    record = records[0]
+    heuristic_record = dataclasses.replace(
+        record,
+        conflict_slice=dataclasses.replace(
+            record.conflict_slice, completeness_class="HEURISTIC"
+        ),
+    )
+    residual = project_repair_residual(heuristic_record)
+    assert residual.completeness_class == "HEURISTIC"
+    assert not residual.can_authorize_repair()
+    assert residual.legal_repair_action_domain == ()
+
+    # An EXACT/SOUND_OVERAPPROX slice with legal edits does expose its domain.
+    exact_record = dataclasses.replace(
+        record,
+        conflict_slice=dataclasses.replace(
+            record.conflict_slice, completeness_class="EXACT"
+        ),
+    )
+    exact_residual = project_repair_residual(exact_record)
+    assert exact_residual.can_authorize_repair()
+    assert exact_residual.legal_repair_action_domain == tuple(
+        e.edit_id for e in exact_record.legal_edits
+    )
+
+
+def test_witness_reconciliation_never_fabricates_or_converts_unknown() -> None:
+    records = build_repair_records_from_corruption(SIMPLE)
+    record = records[0]
+    witness = _fake_witness(unresolved=("gate:HUMAN_AUDIT", "semantic_check:foo"))
+
+    baseline = project_repair_residual(record)
+    reconciled = project_repair_residual(record, witness=witness)
+
+    assert reconciled.source_witness_fingerprint == witness.source_trace_fingerprint
+    for item in witness.unresolved_localizations:
+        assert f"witness:{item}" in reconciled.unsatisfied_obligations
+
+    # The witness only ever adds obligations, never legal edits, and never
+    # flips completeness/authorization -- both stay identical to the
+    # witness-free projection.
+    assert reconciled.legal_repair_action_domain == baseline.legal_repair_action_domain
+    assert reconciled.completeness_class == baseline.completeness_class
+    known_edit_ids = {e.edit_id for e in record.legal_edits}
+    assert set(reconciled.legal_repair_action_domain) <= known_edit_ids
+
+
+def test_residual_is_frozen_and_protected_regions_are_not_mutated() -> None:
+    records = build_repair_records_from_corruption(SIMPLE)
+    record = records[0]
+    residual = project_repair_residual(record)
+    original_protected = record.conflict_slice.protected_node_ids
+
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        residual.protected_node_ids = ()  # type: ignore[misc]
+
+    assert record.conflict_slice.protected_node_ids == original_protected
+    assert residual.protected_node_ids == original_protected
+
+
+def test_residual_tamper_and_schema_rejection() -> None:
+    records = build_repair_records_from_corruption(SIMPLE)
+    residual = project_repair_residual(records[0])
+
+    tampered = residual.to_dict()
+    tampered["protected_node_ids"] = list(tampered["protected_node_ids"]) + ["injected"]
+    with pytest.raises(ValueError, match="hash mismatch"):
+        RepairResidualV1.from_dict(tampered)
+
+    wrong_schema = residual.to_dict()
+    wrong_schema["schema_version"] = "repair_residual/v0"
+    with pytest.raises(ValueError, match="unsupported repair residual schema"):
+        RepairResidualV1.from_dict(wrong_schema)
+
+
+def test_residual_handles_partial_evidence() -> None:
+    records = build_repair_records_from_corruption(SIMPLE)
+    record = dataclasses.replace(records[0], failure_evidence=())
+    residual = project_repair_residual(record)
+    assert residual.unsatisfied_obligations == ()
+    assert residual_integrity_ok(residual)
+
+
+def test_residual_projection_is_deterministic_and_replayable() -> None:
+    records = build_repair_records_from_corruption(SIMPLE)
+    record = records[0]
+    first = project_repair_residual(record)
+    second = project_repair_residual(record)
+    assert first == second
+    assert first.residual_hash == second.residual_hash

@@ -11,9 +11,10 @@ deferred to SLM-131 / VSS finite replay.
 from __future__ import annotations
 
 import hashlib
+import json
 import random
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, Literal
 
 try:
@@ -28,6 +29,7 @@ from slm_training.data.corrupt import (
     generate_corruptions,
 )
 from slm_training.dsl.lang_core import validate
+from slm_training.evals.semantic_failure import VerifierWitnessV1
 from slm_training.versioning import build_version_stamp
 
 
@@ -37,10 +39,13 @@ __all__ = [
     "RepairEvidence",
     "RepairFeatureExtractor",
     "RepairPolicyName",
+    "RepairResidualV1",
     "SemanticRepairRecordV1",
     "SemanticRepairScorer",
     "apply_repair_policy",
     "build_repair_records_from_corruption",
+    "project_repair_residual",
+    "residual_integrity_ok",
     "train_repair_policy_fixture",
 ]
 
@@ -236,6 +241,152 @@ class SemanticRepairRecordV1:
             schema_version=data.get("schema_version", "semantic_repair/v1"),
             version_stamp=data.get("version_stamp"),
         )
+
+
+RESIDUAL_SCHEMA_VERSION = "repair_residual/v1"
+
+
+def _residual_digest(residual: "RepairResidualV1") -> str:
+    payload = residual.to_dict()
+    payload.pop("residual_hash", None)
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+@dataclass(frozen=True)
+class RepairResidualV1:
+    """Canonical residual-obligation view projected from an existing repair record.
+
+    Advisory-only: it re-expresses ``SemanticRepairRecordV1``/``ConflictSlice``
+    evidence a search/policy consumer needs (unsatisfied obligations, the
+    localized conflict slice and its completeness, protected/certified
+    regions, and the legal repair-action domain where known) without owning
+    any of that evidence itself. It is not a second repair registry and
+    never grants verifier authority: ``completeness_class`` and
+    ``protected_node_ids`` are carried through unchanged from the source
+    ``ConflictSlice``, and ``legal_repair_action_domain`` only ever contains
+    edit ids that already exist on the source record.
+    """
+
+    schema_version: str
+    source_record_id: str
+    source_fingerprint: str
+    source_witness_fingerprint: str | None
+    completeness_class: Literal["EXACT", "SOUND_OVERAPPROX", "HEURISTIC"]
+    unsatisfied_obligations: tuple[str, ...]
+    conflict_stage: str
+    failing_node_ids: tuple[str | int, ...]
+    dependency_frontier: tuple[str | int, ...]
+    protected_node_ids: tuple[str | int, ...]
+    legal_repair_action_domain: tuple[str, ...]
+    residual_hash: str
+    advisory_only: bool = True
+
+    def can_authorize_repair(self) -> bool:
+        """Only EXACT or SOUND_OVERAPPROX residuals expose a non-empty action domain."""
+        return self.completeness_class in ("EXACT", "SOUND_OVERAPPROX")
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "source_record_id": self.source_record_id,
+            "source_fingerprint": self.source_fingerprint,
+            "source_witness_fingerprint": self.source_witness_fingerprint,
+            "completeness_class": self.completeness_class,
+            "unsatisfied_obligations": list(self.unsatisfied_obligations),
+            "conflict_stage": self.conflict_stage,
+            "failing_node_ids": list(self.failing_node_ids),
+            "dependency_frontier": list(self.dependency_frontier),
+            "protected_node_ids": list(self.protected_node_ids),
+            "legal_repair_action_domain": list(self.legal_repair_action_domain),
+            "advisory_only": self.advisory_only,
+            "residual_hash": self.residual_hash,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "RepairResidualV1":
+        if data.get("schema_version") != RESIDUAL_SCHEMA_VERSION:
+            raise ValueError(
+                f"unsupported repair residual schema: {data.get('schema_version')!r}"
+            )
+        completeness = data.get("completeness_class", "HEURISTIC")
+        if completeness not in _COMPLETENESS_CLASSES:
+            completeness = "HEURISTIC"
+        residual = cls(
+            schema_version=data.get("schema_version", RESIDUAL_SCHEMA_VERSION),
+            source_record_id=data.get("source_record_id", ""),
+            source_fingerprint=data.get("source_fingerprint", ""),
+            source_witness_fingerprint=data.get("source_witness_fingerprint"),
+            completeness_class=completeness,  # type: ignore[arg-type]
+            unsatisfied_obligations=tuple(data.get("unsatisfied_obligations", [])),
+            conflict_stage=data.get("conflict_stage", ""),
+            failing_node_ids=tuple(data.get("failing_node_ids", [])),
+            dependency_frontier=tuple(data.get("dependency_frontier", [])),
+            protected_node_ids=tuple(data.get("protected_node_ids", [])),
+            legal_repair_action_domain=tuple(data.get("legal_repair_action_domain", [])),
+            advisory_only=bool(data.get("advisory_only", True)),
+            residual_hash=data.get("residual_hash", ""),
+        )
+        if _residual_digest(residual) != residual.residual_hash:
+            raise ValueError(
+                "repair residual hash mismatch (tampered or corrupted payload)"
+            )
+        return residual
+
+
+def residual_integrity_ok(residual: RepairResidualV1) -> bool:
+    """Recompute the residual hash and compare; used by replay/tamper checks."""
+    return _residual_digest(residual) == residual.residual_hash
+
+
+def project_repair_residual(
+    record: SemanticRepairRecordV1,
+    *,
+    witness: VerifierWitnessV1 | None = None,
+) -> RepairResidualV1:
+    """Losslessly project an existing repair record into an advisory residual view.
+
+    Pure and stateless: reads ``record`` (and optionally a VCE-001
+    ``VerifierWitnessV1`` for the same failure) and returns a new read-only
+    view. It never mutates the source record or its ``ConflictSlice``, never
+    introduces a second repair registry, and never authorizes automatic
+    repair -- ``legal_repair_action_domain`` stays empty unless the record's
+    own conflict slice is EXACT or SOUND_OVERAPPROX (``HEURISTIC`` evidence
+    can never authorize primary localized repair). When a witness is
+    supplied, its ``unresolved_localizations`` are carried through verbatim
+    as additional ``witness:``-prefixed obligations -- an UNKNOWN witness
+    localization is never silently converted into a pass/fail decision.
+    """
+    conflict_slice = record.conflict_slice
+    obligations = tuple(
+        sorted({e.reason_code for e in record.failure_evidence if e.reason_code})
+    )
+    if witness is not None:
+        obligations = obligations + tuple(
+            f"witness:{item}" for item in witness.unresolved_localizations
+        )
+    domain = (
+        tuple(edit.edit_id for edit in record.legal_edits)
+        if conflict_slice.can_authorize_repair()
+        else ()
+    )
+    residual = RepairResidualV1(
+        schema_version=RESIDUAL_SCHEMA_VERSION,
+        source_record_id=record.record_id,
+        source_fingerprint=record.source_fingerprint,
+        source_witness_fingerprint=(
+            witness.source_trace_fingerprint if witness is not None else None
+        ),
+        completeness_class=conflict_slice.completeness_class,
+        unsatisfied_obligations=obligations,
+        conflict_stage=conflict_slice.stage,
+        failing_node_ids=conflict_slice.failing_node_ids,
+        dependency_frontier=conflict_slice.dependency_frontier,
+        protected_node_ids=conflict_slice.protected_node_ids,
+        legal_repair_action_domain=domain,
+        residual_hash="",
+    )
+    return replace(residual, residual_hash=_residual_digest(residual))
 
 
 def _parse_diagnostic(diag: str) -> RepairEvidence:
