@@ -2961,6 +2961,11 @@
         {
           "version": "v195",
           "date": "2026-08-08",
+          "note": "no-bump: land the _git_commit_paths() committer-identity fix as a manual follow-up commit after an earlier commit attempt for the same change was interrupted by an unrelated pre-commit hook failure; behavior unchanged from the previously recorded note."
+        },
+        {
+          "version": "v195",
+          "date": "2026-08-08",
           "note": "no-bump: _git_commit_paths() no longer overrides committer identity with user.email=autotrain@local / user.name=autotrain for the docs self-heal commit; it now inherits the ambient (signed) git identity instead. Commit content, staging, and campaign semantics are unchanged — only the committer metadata on self-heal commits."
         },
         {
