@@ -2960,6 +2960,11 @@
       "history": [
         {
           "version": "v194",
+          "date": "2026-08-08",
+          "note": "no-bump: _append_checkpoint_doc_notes() appends the campaign_id to the README/MODEL_CARD 'Continuous autotrain note' heading so same-day cycles don't collide on an identical heading (MD024, flagged by CodeRabbit on PR #1495); note body and marker-based idempotency check are unchanged, behavior is otherwise unchanged."
+        },
+        {
+          "version": "v194",
           "date": "2026-08-06",
           "note": "thrash residual complete: family boosts, auto slug_stats refresh, residual_eval_queue for eval-lite checkpoints; soft-rank call sites pass loop root"
         },
@@ -6130,6 +6135,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-08-08",
+          "note": "no-bump: regenerate the committed gate artifact (agentv_owner_sha256, gate_hash) so publish --check passes again after unrelated upstream drift; verdict stays inconclusive, thresholds and gate behavior unchanged."
+        },
+        {
+          "version": "v1",
           "date": "2026-08-03",
           "note": "no-bump: regenerate the committed gate artifact after upstream component bumps (evals.scoring v23, harness.experiments v147) so publish --check passes again; verdict stays inconclusive, thresholds and gate behavior unchanged"
         },
@@ -8283,6 +8293,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: retrofit unique 'Continuous autotrain note' headings (campaign id appended) for the c1-c7 continuous-openui-20260808 notes already committed on this branch, matching the harness fix in harness.autoresearch.experiment_campaign; SLM-228 behavior is unchanged."
+        },
         {
           "version": "v3",
           "date": "2026-08-08",
