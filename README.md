@@ -1038,3 +1038,9 @@ tests/
 - campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c45`
 - checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c45-control/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c45-scaffold-prefix-structure/checkpoints/last.pt`
 - honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-08)
+
+- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c46`
+- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c46-control/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c46-scaffold-prefix/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
