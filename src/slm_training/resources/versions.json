@@ -8301,6 +8301,11 @@
         {
           "version": "v3",
           "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop dc8878 c1's bounds/control screening checkpoint provenance (fixture ship-gate reject, non-positive) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
           "note": "no-bump: record scheduled loop h2k9wp c4's control/component-plan scratch checkpoint provenance (fixture insufficient_n, efficiency gain 1.6% below 5% minimum, structural_similarity null delta) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
