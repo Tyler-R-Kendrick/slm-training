@@ -1175,11 +1175,12 @@
       ]
     },
     "dsl.completion_kernel": {
-      "version": "v21",
+      "version": "v22",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/grammar/fastpath/engine.py",
         "src/slm_training/dsl/grammar/fastpath/completion_artifact.py",
+        "tests/test_dsl/test_completion_artifact_provider_parity.py",
         "tests/test_dsl/test_static_lalr_adapter.py",
         "src/slm_training/dsl/grammar/fastpath/completion_kernel.py",
         "src/slm_training/dsl/grammar/fastpath/force_emit.py",
@@ -1205,6 +1206,11 @@
         "docs/design/hybrid-unmask-hx5-20260804.md"
       ],
       "history": [
+        {
+          "version": "v22",
+          "date": "2026-08-08",
+          "note": "PCT-005 (SLM-451): add tests/test_dsl/test_completion_artifact_provider_parity.py -- a differential/tamper matrix proving StaticCompletionArtifactProvider.load_checked is byte/digest/decision-identical to the direct load_checked_completion_artifact path (manifest, direct_map, digest, full StaticLalrAdapter equality, every-prefix accepts() parity), that checkpoint artifact-binding and the exclusion of dynamic runtime/scope facts from the provider payload are unaffected, and that every corruption class (byte-flipped artifact, stale grammar, unsupported manifest/metadata schema, tokenizer row shape abuse, tampered rule_origins/rule_lengths/state_min_terminals) fails closed identically through the provider seam, never returning a partial/degraded CompletionArtifact and always leaving the exact live-construction fallback available."
+        },
         {
           "version": "v21",
           "date": "2026-08-08",
