@@ -8,8 +8,9 @@ OpenUI model targets and completions contain only grammar/AST symbols and
 template placeholders. The model never learns or emits arbitrary string
 content.
 
-The canonical contract is `OUTPUT_CONTRACT_VERSION = 4` in
-`src/slm_training/dsl/language_contract.py`. Its closed string-literal set is
+The canonical contract is `OUTPUT_CONTRACT_VERSION = 2` in
+`src/slm_training/dsl/language_contract.py` (v2 is intentionally
+checkpoint-incompatible with v1). Its closed string-literal set is
 derived from the pinned component schema. Values outside that set are content,
 including lowercase identifiers, empty strings, operational names, and strings
 inside arrays; data sanitization rewrites them to deterministic placeholders.
@@ -20,12 +21,12 @@ string opener. Generic string schema positions admit placeholders only; explicit
 schema enums remain atomic grammar literals. Legacy compositional output
 tokenization is not a supported training target.
 
-Checkpoint loading requires output contract v4 exactly. Every earlier checkpoint
+Checkpoint loading requires output contract v2 exactly. Every earlier checkpoint
 is intentionally incompatible and must not be evaluated, resumed, promoted, or
-served by current code. Version 4 requires the train/test harnesses to rewrite
+served by current code. Version 2 requires the train/test harnesses to rewrite
 caller marker spellings to contiguous `:slot_<ordinal>` identities across every
 persisted field, accepted target, and nested contract before admission. There is
-no migration because v3 corpora and weights could retain marker-name semantics.
+no migration because v1 corpora and weights could retain marker-name semantics.
 
 The invariant is enforced at five boundaries:
 

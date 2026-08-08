@@ -3,6 +3,14 @@
 Keep one obvious owner for every tracked file. Before adding a path, search with
 `rg --files` and `rg` and extend the existing owner when one exists.
 
+This page covers *where a file lives*. For *which module is the authoritative
+owner of a concern* (SemanticPlanV1, the G0-G12 verifier gates, the DSL pack
+registry, telemetry, certified completion artifacts, and so on) see the
+checked-in [repository ownership map](design/repository-ownership-map.md)
+(`src/slm_training/resources/ownership_map.json`,
+`python -m scripts.verify_ownership_map`). New subsystems cite an existing
+owner from that map as their extension point before adding a new one.
+
 ## Placement
 
 | Content | Location |
