@@ -472,7 +472,7 @@
       ]
     },
     "data.semantic_contrast": {
-      "version": "v3",
+      "version": "v4",
       "kind": "data_builder",
       "paths": [
         "src/slm_training/data/semantic_contrast/",
@@ -483,9 +483,16 @@
         "tests/test_scripts/test_verify_semantic_contrast_runtime.py",
         "src/slm_training/resources/data/eval/openui_hard_valid_v1/",
         "docs/design/semantic-contrast-corpus-v1.md",
+        "docs/design/semantic-contrast-corpus-v2-notes.md",
+        "docs/design/semantic-contrast-corpus-v2-fixture-evidence.json",
         "docs/design/iter-slm290-semantic-contrast-20260725.json"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-08-08",
+          "note": "SLM-448 (VCE-006): fix topology_reparent to search every (child, container) pair instead of edges[0]/[1] (which collided on virtually every real chain-shaped source); add positive_control_sibling_reorder equivalence control; attach SGS-003/004 prompt-contract facts to every record's meta. Builder 2.0.1 -> 2.1.0. Fixture-scale evidence only -- the published openui_hard_valid_v1 corpus is untouched and immutable."
+        },
         {
           "version": "v3",
           "date": "2026-07-30",

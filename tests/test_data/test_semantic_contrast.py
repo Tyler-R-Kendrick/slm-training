@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from slm_training.data.progspec.generate import GeneratorConfig, ProgramGenerator
+from slm_training.data.progspec.semantic_plan import SemanticPlanV1
 from slm_training.data.contract import assert_canonical_template_markers
 from slm_training.data.semantic_contrast import (
     ContrastFamily,
@@ -15,6 +16,7 @@ from slm_training.data.semantic_contrast import (
     generate_transforms,
 )
 from slm_training.data.semantic_plan.extract import OpenUISemanticPlanExtractor
+from slm_training.data.semantic_plan.seed import PlanSeedBuilder
 from slm_training.data.verify import VerificationContext, verify_record
 from slm_training.dsl.pack import get_pack
 from slm_training.dsl.schema import ExampleRecord
@@ -190,3 +192,165 @@ def test_strict_delta_ignores_the_whole_plan_hash(tmp_path):
         len(set(row["meta"]["semantic_delta"]) - {"exact"}) == 1
         for row in negatives
     )
+
+
+def _leaf_content_plan(role_ids: list[str], edges: list[dict], families: dict) -> SemanticPlanV1:
+    """Build a plan giving every leaf role a bound placeholder symbol.
+
+    ``TextContent``/``Button`` require ``text``/``label`` respectively, so any
+    hand-built plan whose leaves lack a binding fails to compile -- this
+    mirrors what ``OpenUISemanticPlanExtractor`` would have produced.
+    """
+    from slm_training.data.progspec.semantic_plan import (
+        PlanBinding,
+        PlanIdentity,
+        PlanSymbol,
+        PlanTopology,
+        RoleSlot,
+    )
+
+    parent_ids = {str(e["parent_role_id"]) for e in edges}
+    leaf_ids = [rid for rid in role_ids if rid not in parent_ids]
+    symbols = tuple(
+        PlanSymbol(symbol_id=f"sym_{i:04d}", semantic_role="text")
+        for i in range(len(leaf_ids))
+    )
+    bindings = tuple(
+        PlanBinding(role_slot_id=rid, candidate_symbols=(sym.symbol_id,))
+        for rid, sym in zip(leaf_ids, symbols)
+    )
+    return SemanticPlanV1(
+        identity=PlanIdentity(pack_id="openui", provenance="gold"),
+        role_slots=tuple(
+            RoleSlot(role_id=rid, component_family=families[rid]) for rid in role_ids
+        ),
+        topology=PlanTopology(parent_relation_candidates=tuple(edges)),
+        symbols=symbols,
+        bindings=bindings,
+    )
+
+
+def _two_container_plan() -> SemanticPlanV1:
+    """root(Stack) -> [containerA(Stack), leafX]; containerA -> [leafY, leafZ].
+
+    containerA keeps a child after leafX moves in, and root keeps containerA
+    after leafX moves out -- a reparent should fire cleanly.
+    """
+    edges = [
+        {"parent_role_id": "root", "child_role_id": "containerA", "relation": "contains"},
+        {"parent_role_id": "root", "child_role_id": "leafX", "relation": "contains"},
+        {"parent_role_id": "containerA", "child_role_id": "leafY", "relation": "contains"},
+        {"parent_role_id": "containerA", "child_role_id": "leafZ", "relation": "contains"},
+    ]
+    families = {
+        "root": "Stack",
+        "containerA": "Stack",
+        "leafX": "TextContent",
+        "leafY": "TextContent",
+        "leafZ": "TextContent",
+    }
+    return _leaf_content_plan(
+        ["root", "containerA", "leafX", "leafY", "leafZ"], edges, families
+    )
+
+
+def _chain_plan() -> SemanticPlanV1:
+    """root(Stack) -> containerA(Stack) -> leafY: every parent has one child."""
+    edges = [
+        {"parent_role_id": "root", "child_role_id": "containerA", "relation": "contains"},
+        {"parent_role_id": "containerA", "child_role_id": "leafY", "relation": "contains"},
+    ]
+    families = {"root": "Stack", "containerA": "Stack", "leafY": "TextContent"}
+    return _leaf_content_plan(["root", "containerA", "leafY"], edges, families)
+
+
+def test_topology_reparent_moves_a_role_into_a_sibling_container(pack):
+    plan = _two_container_plan()
+    candidates = generate_transforms(plan)
+    reparent = next(
+        (c for c in candidates if c.transform_id == "topology_reparent"), None
+    )
+    assert reparent is not None, "expected a reparent candidate for a two-container plan"
+    edges = reparent.plan.topology.parent_relation_candidates
+    # Neither container was emptied by the move.
+    parents = [str(e["parent_role_id"]) for e in edges]
+    assert parents.count("root") >= 1
+    assert parents.count("containerA") >= 1
+    # The mutated plan still compiles to a valid, non-empty seed distinct
+    # from the original.
+    seed_builder = PlanSeedBuilder(pack)
+    result = seed_builder.build(reparent.plan)
+    assert result.ok, result.reason
+    assert result.seed
+    assert result.seed != seed_builder.build(plan).seed
+
+
+def test_topology_reparent_refuses_to_empty_a_container(pack):
+    # Every parent in this chain has exactly one child; reparenting either
+    # edge would leave PlanSeedBuilder rendering a childless container
+    # without its required "children" prop (schema-invalid), so no
+    # candidate is produced.
+    plan = _chain_plan()
+    candidates = generate_transforms(plan)
+    assert not any(c.transform_id == "topology_reparent" for c in candidates)
+
+
+def test_sibling_reorder_admits_as_a_positive_equivalence_control(tmp_path):
+    dataset_id = "semantic_contrast_sibling_reorder"
+    builder = SemanticContrastBuilder(
+        output_root=tmp_path,
+        dataset_id=dataset_id,
+        seed=3,
+        source_count=10,
+        splits=("train",),
+        split_weights=(1.0,),
+        wide_sources=True,
+        strict_delta=True,
+    )
+    builder.build()
+    pairs = [
+        json.loads(line)
+        for line in (tmp_path / "eval" / dataset_id / "pairs.jsonl").read_text().splitlines()
+    ]
+    reorder_pairs = [p for p in pairs if p["transform_id"] == "positive_control_sibling_reorder"]
+    assert reorder_pairs, "expected at least one admitted sibling-reorder control"
+    for pair in reorder_pairs:
+        assert pair["family"] == "positive"
+        assert pair["positive"]["meaningful_report"]["verdict"] is True
+        assert pair["negative"]["meaningful_report"]["verdict"] is True
+        # The compiled surface must actually differ -- otherwise this would
+        # be indistinguishable from the identity control.
+        assert pair["positive"]["record"]["openui"] != pair["negative"]["record"]["openui"]
+        # The reorder is a single-factor delta on the declared topology
+        # factor (sibling order is not alpha/order-normalized for
+        # gold-provenance plans -- see the transform's docstring).
+        delta = set(pair["negative"]["meta"]["semantic_delta"]) - {"exact"}
+        assert delta == {"topology"}
+
+
+def test_prompt_requirements_are_attached_to_every_record(tmp_path):
+    dataset_id = "semantic_contrast_prompt_requirements"
+    builder = SemanticContrastBuilder(
+        output_root=tmp_path,
+        dataset_id=dataset_id,
+        seed=3,
+        source_count=4,
+        splits=("train",),
+        split_weights=(1.0,),
+    )
+    builder.build()
+    records = [
+        json.loads(line)
+        for line in (tmp_path / "eval" / dataset_id / "records.jsonl").read_text().splitlines()
+    ]
+    assert records
+    for record in records:
+        requirements = record["meta"]["prompt_requirements"]
+        assert requirements["requirements_version"] == "1"
+        fingerprints = record["meta"]["prompt_requirements_fingerprints"]
+        assert {"exact", "fact_set", "authority", "ambiguity_groups"} <= set(fingerprints)
+        # Never gold-provenance: this is a conservative, gold-blind read of
+        # the shared prompt (SGS-004), not derived from the AST.
+        assert all(
+            fact["provenance"] != "gold" for fact in requirements["facts"]
+        )
