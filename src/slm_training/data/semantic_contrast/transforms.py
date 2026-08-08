@@ -9,6 +9,7 @@ longer matches the prompt contract encoded by the positive record.
 from __future__ import annotations
 
 import copy
+from collections import Counter
 from typing import Any
 
 from slm_training.data.progspec.semantic_plan import SemanticPlanV1
@@ -90,6 +91,13 @@ def _content_families() -> tuple[str, ...]:
     return ("TextContent", "Button", "Label", "Title")
 
 
+def _container_families() -> tuple[str, ...]:
+    # Mirrors OpenUISemanticPlanExtractor._CONTAINER_TYPES: only these
+    # component families are known to accept a "children" prop, so only
+    # these are safe reparent targets.
+    return ("Stack", "Card", "List", "Grid", "Form", "Page")
+
+
 def _content_component_roles(slots: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [
         slot
@@ -110,6 +118,50 @@ def _transform_positive_control(plan: SemanticPlanV1) -> TransformCandidate:
         severity=ContrastSeverity.BENIGN,
         description="Original plan compiled unchanged as a positive control.",
         plan=plan,
+    )
+
+
+def _transform_topology_reorder_siblings(plan: SemanticPlanV1) -> TransformCandidate | None:
+    """Swap the declared order of two children under the same parent.
+
+    Every plan this builder extracts is gold-provenance, so
+    ``SemanticPlanV1.compile_to_baseline()`` is true and ``canonicalize_plan``
+    returns the plan unchanged instead of alpha/order-normalizing it: sibling
+    order is therefore visible as a declared ``topology`` factor change under
+    ``plan_factor_fingerprints``, and ``PlanSeedBuilder`` renders children in
+    raw edge-list order, so the compiled surface text differs too (different
+    statement numbering and argument order). This is a positive-equivalence
+    control: a structurally different, single-factor-delta surface that must
+    still pass meaningful-program evaluation, so the evaluator is graded on at
+    least one case where reordering siblings is not itself a violation.
+    """
+    payload = _clone_plan(plan)
+    edges = _edges(payload)
+    if len(edges) < 2:
+        return None
+    by_parent: dict[str, list[int]] = {}
+    for index, edge in enumerate(edges):
+        parent = str(edge.get("parent_role_id") or "")
+        by_parent.setdefault(parent, []).append(index)
+    target_parent = next((p for p, idxs in by_parent.items() if len(idxs) >= 2), None)
+    if target_parent is None:
+        return None
+    first_index, second_index = by_parent[target_parent][:2]
+    edges[first_index], edges[second_index] = edges[second_index], edges[first_index]
+    child_a = str(edges[first_index].get("child_role_id") or "")
+    child_b = str(edges[second_index].get("child_role_id") or "")
+    return TransformCandidate(
+        transform_id="positive_control_sibling_reorder",
+        family=ContrastFamily.POSITIVE,
+        severity=ContrastSeverity.BENIGN,
+        description=(
+            f"Swapped the declared sibling order of {child_a!r} and {child_b!r} "
+            f"under {target_parent!r}. The declared topology factor and compiled "
+            "surface both change, but no sibling's actual content or role "
+            "changed, so this must still pass evaluation as a positive "
+            "equivalence control."
+        ),
+        plan=_rebuild_plan(payload),
     )
 
 
@@ -207,42 +259,71 @@ def _transform_topology_delete_leaf(plan: SemanticPlanV1) -> TransformCandidate 
 
 
 def _transform_topology_reparent(plan: SemanticPlanV1) -> TransformCandidate | None:
+    """Move one role to a different, unrelated container parent.
+
+    Searches every (child edge, candidate container parent) combination
+    instead of only ``edges[0]``/``edges[1]``: for a typical generated tree
+    (root -> one wrapper layer -> leaves) those two edges always share a
+    child/parent boundary, so the naive pick degenerates to a no-op on every
+    real source.  Candidate new parents are restricted to role slots whose
+    component family is a known container (``_container_families``), since
+    only those accept a ``children`` prop when recompiled.  The move is only
+    taken when the old parent keeps at least one remaining child, since
+    ``PlanSeedBuilder`` renders a childless container without its required
+    ``children`` prop at all (schema-invalid), not as an empty list.
+    """
     payload = _clone_plan(plan)
     edges = _edges(payload)
     slots = _role_slots(payload)
     if len(edges) < 2 or len(slots) < 3:
         return None
-    first = edges[0]
-    second = edges[1]
-    child = str(first.get("child_role_id") or "")
-    new_parent = str(second.get("parent_role_id") or "")
-    old_parent = str(first.get("parent_role_id") or "")
-    if child == new_parent or old_parent == new_parent:
-        return None
-    descendants: set[str] = set()
 
-    def collect(parent: str) -> None:
-        for edge in edges:
-            if str(edge.get("parent_role_id") or "") == parent:
-                c = str(edge.get("child_role_id") or "")
-                if c not in descendants:
-                    descendants.add(c)
-                    collect(c)
+    def descendants_of(role_id: str) -> set[str]:
+        found: set[str] = set()
 
-    collect(child)
-    if new_parent in descendants:
-        return None
-    first["parent_role_id"] = new_parent
-    return TransformCandidate(
-        transform_id="topology_reparent",
-        family=ContrastFamily.TOPOLOGY,
-        severity=ContrastSeverity.SEVERE,
-        description=(
-            f"Re-parented role {child!r} from {old_parent!r} to {new_parent!r}, "
-            "changing the semantic nesting of the program."
-        ),
-        plan=_rebuild_plan(payload),
+        def collect(parent: str) -> None:
+            for edge in edges:
+                if str(edge.get("parent_role_id") or "") == parent:
+                    c = str(edge.get("child_role_id") or "")
+                    if c not in found:
+                        found.add(c)
+                        collect(c)
+
+        collect(role_id)
+        return found
+
+    container_role_ids = sorted(
+        str(slot.get("role_id") or "")
+        for slot in slots
+        if str(slot.get("component_family") or "") in _container_families()
     )
+    parent_child_counts = Counter(
+        str(edge.get("parent_role_id") or "") for edge in edges
+    )
+    for child_edge in edges:
+        child = str(child_edge.get("child_role_id") or "")
+        old_parent = str(child_edge.get("parent_role_id") or "")
+        if parent_child_counts[old_parent] < 2:
+            continue
+        descendants = descendants_of(child)
+        for new_parent in container_role_ids:
+            if new_parent == child or new_parent == old_parent:
+                continue
+            if new_parent in descendants:
+                continue
+            child_edge["parent_role_id"] = new_parent
+            return TransformCandidate(
+                transform_id="topology_reparent",
+                family=ContrastFamily.TOPOLOGY,
+                severity=ContrastSeverity.SEVERE,
+                description=(
+                    f"Re-parented role {child!r} from {old_parent!r} to "
+                    f"{new_parent!r}, changing the semantic nesting of the "
+                    "program."
+                ),
+                plan=_rebuild_plan(payload),
+            )
+    return None
 
 
 def _transform_binding_swap_symbol(plan: SemanticPlanV1) -> TransformCandidate | None:
@@ -403,6 +484,7 @@ def _transform_contract_archetype_mismatch(
 
 TRANSFORM_ORDER = (
     _transform_positive_control,
+    _transform_topology_reorder_siblings,
     _transform_content_swap_family,
     _transform_content_invert_role,
     _transform_topology_delete_leaf,

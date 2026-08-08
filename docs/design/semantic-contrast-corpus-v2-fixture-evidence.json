@@ -1,0 +1,63 @@
+{
+  "builder_version": "2.1.0",
+  "dataset_id": "openui_hard_valid_v2_fixture",
+  "seed": 3,
+  "source_count": 30,
+  "pairs": 96,
+  "records": 192,
+  "rejected": 167,
+  "mutation_classes": [
+    "binding_swap_symbol",
+    "binding_swap_symbol_reverse",
+    "content_swap_family"
+  ],
+  "runtime_required": false,
+  "scoreboard": [
+    {
+      "family": "binding",
+      "n_total": 34,
+      "n_admitted": 34,
+      "verifier_pass_rate": 1.0,
+      "meaningful_pass_rate": 0.0,
+      "false_negative_rate": 0.0,
+      "mean_reason_count": 2.0,
+      "top_reasons": [
+        "required_placeholder_missing",
+        "duplicate_placeholder_identity"
+      ]
+    },
+    {
+      "family": "content",
+      "n_total": 14,
+      "n_admitted": 14,
+      "verifier_pass_rate": 1.0,
+      "meaningful_pass_rate": 0.0,
+      "false_negative_rate": 0.0,
+      "mean_reason_count": 2.0,
+      "top_reasons": [
+        "prompt_component_missing",
+        "required_component_missing"
+      ]
+    },
+    {
+      "family": "positive",
+      "n_total": 144,
+      "n_admitted": 96,
+      "verifier_pass_rate": 1.0,
+      "meaningful_pass_rate": 1.0,
+      "false_negative_rate": 0.0,
+      "mean_reason_count": 0.0,
+      "top_reasons": []
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "b12eb2cb6502fbec5bad5e3782e04ba732122f0b",
+    "code_dirty": true,
+    "components": {
+      "data.semantic_contrast": "v4",
+      "evals.meaningful_program": "2.13.0"
+    },
+    "stamped_at": "2026-08-08T06:54:39.337228+00:00"
+  }
+}

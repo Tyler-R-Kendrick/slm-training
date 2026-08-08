@@ -31,6 +31,12 @@ from slm_training.data.semantic_contrast.schema import (
 from slm_training.data.semantic_contrast.transforms import generate_transforms
 from slm_training.data.semantic_plan.extract import OpenUISemanticPlanExtractor
 from slm_training.data.semantic_plan.canonicalize import plan_factor_fingerprints
+from slm_training.data.semantic_plan.requirements_canonicalize import (
+    requirement_fact_fingerprints,
+)
+from slm_training.data.semantic_plan.requirements_extract import (
+    extract_prompt_requirements,
+)
 from slm_training.data.semantic_plan.seed import PlanSeedBuilder
 from slm_training.data.store import DataStore, write_common_manifest
 from slm_training.data.verify import (
@@ -45,7 +51,7 @@ from slm_training.evals.meaningful_program import binding_aware_meaningful_v2
 from slm_training.harness_core.versioning import build_version_stamp
 
 
-BUILDER_VERSION = "2.0.1"
+BUILDER_VERSION = "2.1.0"
 PROGRAM_FAMILY = "semantic_contrast"
 
 
@@ -316,9 +322,12 @@ class SemanticContrastBuilder:
             and declared_delta_count != 1
         ):
             return None
-        if family is ContrastFamily.POSITIVE:
-            # Positive controls keep the original surface so the control pair
-            # is bit-for-bit identical and is expected to pass meaningful eval.
+        if transform_id == "positive_control_identity":
+            # The identity control keeps the original surface so the control
+            # pair is bit-for-bit identical and is expected to pass
+            # meaningful eval. Other POSITIVE-family transforms (e.g. a
+            # sibling-order equivalence control) recompile their mutated
+            # plan like any other candidate, below.
             corrupted = source.canonical_openui
         else:
             corrupted, reason = self._compile_candidate(candidate.plan)
@@ -345,6 +354,18 @@ class SemanticContrastBuilder:
         positive_score = _score(positive_record)
         negative_score = _score(negative_record)
 
+        # Prompt-contract facts (SGS-003/004): a conservative, gold-blind read
+        # of what the shared prompt appears to require, attached as advisory
+        # provenance alongside the AST-derived plan -- never used to gate
+        # admission, since it is authority="advisory-learned" by construction.
+        prompt_requirements = extract_prompt_requirements(_request_for(positive_record))
+        requirements_meta = {
+            "prompt_requirements": prompt_requirements.to_dict(),
+            "prompt_requirements_fingerprints": requirement_fact_fingerprints(
+                prompt_requirements
+            ),
+        }
+
         positive = SemanticContrastRecord(
             record=positive_record,
             role=ContrastRole.POSITIVE,
@@ -357,7 +378,7 @@ class SemanticContrastBuilder:
             verifier_ok=True,
             verifier_tier=verifier_tier,
             meaningful_report=positive_score,
-            meta={"split": split, "semantic_delta": semantic_delta},
+            meta={"split": split, "semantic_delta": semantic_delta, **requirements_meta},
         )
         negative = SemanticContrastRecord(
             record=negative_record,
@@ -371,7 +392,7 @@ class SemanticContrastBuilder:
             verifier_ok=verifier_ok,
             verifier_tier=verifier_tier,
             meaningful_report=negative_score,
-            meta={"split": split, "semantic_delta": semantic_delta},
+            meta={"split": split, "semantic_delta": semantic_delta, **requirements_meta},
         )
 
         negative_has_expected_verdict = (

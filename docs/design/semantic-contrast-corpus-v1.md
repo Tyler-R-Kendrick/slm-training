@@ -66,6 +66,12 @@ not regex hacks.
 | `contract` | `contract_unresolve` | severe | Mark a requirement unresolved and remove the role that satisfied it. |
 | `contract` | `contract_archetype_mismatch` | benign | Contradict the prompt archetype. |
 | `positive` | `positive_control_identity` | benign | Original source compiled unchanged. |
+| `positive` | `positive_control_sibling_reorder` | benign | Swap two children's declared order under the same parent; added in [SLM-448/VCE-006](semantic-contrast-corpus-v2-notes.md), builder `2.1.0`. |
+
+See [`semantic-contrast-corpus-v2-notes.md`](semantic-contrast-corpus-v2-notes.md)
+for the SLM-448 (VCE-006) `topology_reparent` fix and fixture-scale evidence;
+the numbers on this page describe the immutable `openui_hard_valid_v1`
+corpus and are unchanged.
 
 ## Build recipe
 
