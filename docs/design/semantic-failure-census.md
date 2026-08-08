@@ -6,6 +6,21 @@ results. It is not an evaluator, a decoder policy, or a human-rating gate.
 Native reason codes, source evidence, and every gate outcome remain in each
 `SemanticFailureTraceV1`; an unrecognized reason is surfaced as `unknown`.
 
+## Typed verifier witnesses (VCE-001)
+
+`build_verifier_witness(trace)` (`src/slm_training/evals/semantic_failure.py`)
+re-localizes an existing `SemanticFailureTraceV1` into a `VerifierWitnessV1`:
+one `VerifierLocalizationV1` per gate outcome and per semantic-check evidence
+item, each carrying a `completeness_class` (`EXACT`/`HEURISTIC`/`UNKNOWN`), a
+redaction-safe `detail`, and (where an authority provides one) an AST
+path/span or certificate id. It never rescopes G0--G12 pass/fail or check
+status -- it is a lossless, purely diagnostic superset of the trace, per the
+`semantic_failure_taxonomy` / `verifier_gate_stack` extension points in
+[`repository-ownership-map.md`](repository-ownership-map.md). Identical
+traces always yield an identical witness, including its tamper-evident
+`witness_digest`; `VerifierWitnessV1.from_dict` recomputes and compares that
+digest, failing closed on any drift or corruption.
+
 Use the canonical replay command for immutable envelopes:
 
 ```bash

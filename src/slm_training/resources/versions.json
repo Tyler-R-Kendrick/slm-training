@@ -4387,6 +4387,11 @@
         {
           "version": "v2",
           "date": "2026-08-08",
+          "note": "no-bump: document VerifierWitnessV1 in semantic-failure-census.md; no code/behavior change"
+        },
+        {
+          "version": "v2",
+          "date": "2026-08-08",
           "note": "VCE-001/SLM-438: add VerifierWitnessV1 lossless typed localization (gate/reason/AST-span, completeness, redaction, tamper-evident digest) over SemanticFailureTraceV1"
         },
         {
