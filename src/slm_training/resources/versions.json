@@ -8301,6 +8301,11 @@
         {
           "version": "v3",
           "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop 0ln96zd c4's component-plan/control fixture-scale checkpoint provenance (structural_similarity regressed to 0.0575, latency_ms_p50 jumped to ~28s from a degenerate long-decode seed, still smoke n=3) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
           "note": "no-bump: record scheduled loop 0ln96zd c3's component-edge/control fixture-scale checkpoint provenance (structural_similarity 0.0964->0.174167, efficiency_win_rejected_min_effect gain_fraction=0.045<0.05, still smoke n=3) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
