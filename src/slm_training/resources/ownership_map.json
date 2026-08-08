@@ -236,7 +236,7 @@
       ],
       "authority_tier": "evaluation-only",
       "design_doc": "docs/design/decode-invariants.md",
-      "notes": "Timing/step-count/fastpath hit-miss telemetry collected during inference/eval."
+      "notes": "Timing/step-count/fastpath hit-miss telemetry collected during inference/eval. PCT-003/SLM-450 added src/slm_training/harnesses/model_build/cold_warm_bench.py (BenchTrialV1, HardwareIdentityV1, run_cold_trial/run_warm_trial/summarize_trials), a fresh-subprocess cold and in-process warm benchmark harness reusing this owner's MEASUREMENT_STAGES/COMPLETENESS_STATES taxonomy directly rather than inventing a second one; extends the bench_* script family (scripts/bench_accel.py etc.), introduces no new telemetry authority."
     },
     {
       "id": "runtime_telemetry",

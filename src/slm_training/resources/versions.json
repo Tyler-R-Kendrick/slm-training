@@ -2808,6 +2808,11 @@
         {
           "version": "v6",
           "date": "2026-08-08",
+          "note": "no-bump: SLM-450 (PCT-003) documents the new harnesses/model_build/cold_warm_bench.py module (BenchTrialV1, HardwareIdentityV1, run_cold_trial/run_warm_trial/summarize_trials) in the existing 'decode_telemetry' owner's notes -- not owner_symbols, since verify_ownership_map requires owner_symbols to be literally defined in owner_module and these live in a sibling file -- per the pre-registered downstream_extension_map row for PCT-003 (new_owner_justified: false, extends the bench_* harness family and decode_telemetry's MEASUREMENT_STAGES/COMPLETENESS_STATES taxonomy); behavior-neutral, no new owner or authority tier introduced."
+        },
+        {
+          "version": "v6",
+          "date": "2026-08-08",
           "note": "no-bump: SLM-449 (PCT-002) documents the new replay_bundle.py submodule (ReplayBundleV1/build_replay_bundle/append_replay_bundle/iter_replay_bundles/mirror_bundle_best_effort/replay_bundle_integrity_ok, re-exported through runtime/telemetry/__init__.py) in the existing 'runtime_telemetry' owner's notes -- not owner_symbols, since verify_ownership_map requires owner_symbols to be literally defined in owner_module and these live in the sibling file -- per the pre-registered downstream_extension_map row for PCT-002 (new_owner_justified: false, extends runtime_telemetry + solver_replay); behavior-neutral, no new owner or authority tier introduced."
         },
         {

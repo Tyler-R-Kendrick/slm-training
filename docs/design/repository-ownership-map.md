@@ -71,7 +71,7 @@ Notes, one per subsystem:
 - **`valid_state_search_generic`**: VSS1-02. Docstring states explicitly: this is the new generic controller; the compiler-forest LatticeSearchState is retained unchanged as the forest-specific adapter. This split is a documented, intentional reconciliation, not an accidental duplicate.
 - **`lattice_search_forest_adapter`**: Retained forest adapter beneath valid_state_search_generic; not superseded, not dead code.
 - **`experiment_campaign`**: AP-007+ runners and every promotion candidate use this contract. No competing implementation found.
-- **`decode_telemetry`**: Timing/step-count/fastpath hit-miss telemetry collected during inference/eval.
+- **`decode_telemetry`**: Timing/step-count/fastpath hit-miss telemetry collected during inference/eval. PCT-003 added a fresh-subprocess cold / in-process warm benchmark harness (`harnesses/model_build/cold_warm_bench.py`) reusing this owner's `MEASUREMENT_STAGES`/`COMPLETENESS_STATES` taxonomy.
 - **`runtime_telemetry`**: Lower-level runtime namespace used by runtime/decode_schedule.py. Consumes/produces DecodeStats; not a re-implementation of it. PCT-002 added a sibling submodule (`replay_bundle.py`, re-exported here) composing `DecodeIdentityV1` and `solver_replay_violations` into an offline-replayable evidence envelope.
 - **`certified_completion_artifact`**: Checkpoint-bound, safetensors-encoded control-table artifact. Generated via scripts/build_completion_artifact.py; certified by dsl/grammar/fastpath/static_control_domain.py.
 - **`dsl_pack_registry_canonical`**: F1/SLM-34. 114 importers across dsl/operators/*, dsl/harness_dsl.py, dsl/grammar/fastpath/*, and web/routes.py (dashboard pack API). This is the live, wired-in pack registry.
