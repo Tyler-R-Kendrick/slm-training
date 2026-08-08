@@ -8828,6 +8828,11 @@
         {
           "version": "v3",
           "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-r7m3xz continuous-loop-20260808-continuous-openui-schedu-a8e59439-c1's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
           "note": "no-bump: record scheduled loop dc8878 c5's canvas/control screening checkpoint provenance (fixture ship-gate reject, non-positive) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
