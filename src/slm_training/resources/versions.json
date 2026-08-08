@@ -2743,7 +2743,7 @@
       ]
     },
     "governance.ownership_map": {
-      "version": "v3",
+      "version": "v4",
       "kind": "gate",
       "paths": [
         "src/slm_training/resources/ownership_map.json",
@@ -2751,9 +2751,16 @@
         "docs/design/symbol-only-output-contract.md",
         "docs/design/repository-ownership-map.md",
         "tests/test_scripts/test_verify_ownership_map.py",
-        "scripts/check_changed.py"
+        "scripts/check_changed.py",
+        "src/slm_training/data/progspec/prompt_requirements.py",
+        "tests/test_data/test_progspec/test_prompt_requirements.py"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-08-08",
+          "note": "SGS-003 (SLM-437): register the new 'prompt_requirements' subsystem (PromptSemanticRequirementsV1, RequirementFact, AmbiguityGroup, combine_authority in src/slm_training/data/progspec/prompt_requirements.py), authority_tier advisory-learned, the new_owner_justified: true adjacent owner the map already authorized next to 'semantic_plan'; mirrors the row into repository-ownership-map.md."
+        },
         {
           "version": "v3",
           "date": "2026-08-08",
