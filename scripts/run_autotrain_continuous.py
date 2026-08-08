@@ -2474,7 +2474,7 @@ def _append_checkpoint_doc_notes(
         return touched
     stamp = time.strftime("%Y-%m-%d", time.gmtime())
     note = (
-        f"\n## Continuous autotrain note ({stamp})\n\n"
+        f"\n## Continuous autotrain note ({stamp}, {campaign_id})\n\n"
         f"- campaign: `{campaign_id}`\n"
         f"- checkpoints: {', '.join(f'`{p}`' for p in checkpoint_paths)}\n"
         "- honesty: fixture/scratch continuous cycle — **not** a ship promotion.\n"
