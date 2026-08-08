@@ -78,6 +78,23 @@
       "notes": "SGS-008/SLM-455. The downstream_extension_map row for SGS-008 predicted extending dsl_pack_registry_canonical/completion_domain directly (new_owner_justified: false); implementation instead built a small, self-contained new module over verified_synthesis_problem's envelope, so it is registered here as its own subsystem rather than force-fit into pack.py/grammar_capabilities.py, whose owner_symbols it does not touch. Reuses grammar_capabilities.py's UnsupportedCapabilityV1 status/reason idiom (generalized to representable/non_representable/extension_required) and symbolic_expr_ir.py's BINARY_OPERATORS/UNARY_OPERATORS for the one demonstrably faithful fragment (a symbolic-regression synth-fun grammar); every other requirement-bearing element (verification requirements, prompt facts/ambiguity groups, objectives, search budget, evidence provenance) is reported non_representable/extension_required with a reason, never silently dropped. Introduces no solver dependency and calls no external solver, so nothing here can widen exact compiler support. conformance='inspired_interoperability' documents that the emitted SyGuS-IF-shaped text is not standards-conformant (no (check-synth), no example-table constraints)."
     },
     {
+      "id": "mechanism_disposition_report",
+      "name": "Mechanism disposition and stale-evidence supersession reports",
+      "owner_module": "src/slm_training/harnesses/experiments/mechanism_disposition_report.py",
+      "owner_symbols": [
+        "MechanismDispositionRecordV1",
+        "MechanismDispositionReportV1",
+        "SupersessionEntryV1",
+        "EVIDENCE_CLASSES",
+        "build_mechanism_disposition_record",
+        "build_supersession_entry",
+        "build_disposition_report"
+      ],
+      "authority_tier": "evaluation-only",
+      "design_doc": "docs/design/semantic-planning-valid-state-disposition.md",
+      "notes": "SGS-009/SLM-456 (new_owner_justified: true, extension_points: [] in the downstream_extension_map -- genuinely new). Generalizes the SLM-160/SPV4-02 narrative precedent (SPVMechanismDisposition, docs/design/semantic-planning-valid-state-disposition.md) into reusable code covering any mechanism, not just the SPV family; reuses that module's Disposition enum directly rather than redefining the same seven values. Is the canonical EVIDENCE_CLASSES registry PCT-007 (models/decode_stats.py's MECHANISM_EVIDENCE_CLASSES) named as still-Backlog when it stayed a caller-declared advisory field. Fails closed on both AC1/AC2: adopt_primary/adopt_optional requires evidence_class in {measured,promotable,ship} plus non-empty activation_evidence (a wired-but-unmeasured mechanism can never be recorded as adopted), and evidence_class='fixture' can never pair with default_state='on'. Supersession is a pure, append-only pointer between two same-mechanism_id records; the superseded record is never rewritten or removed, only linked. Scope note: ships the reusable schema/validation/generator proven against a fixture matrix (the issue's own validation ask), not a completed audit of every real mechanism across the current SGS/VCE/PCT/SRP/SIE/RSP backlog -- that data-entry pass is follow-on work, mirroring how SLM-160's own audit was a separate pass from building its harness."
+    },
+    {
       "id": "semantic_failure_taxonomy",
       "name": "Semantic-failure taxonomy / evidence labeling",
       "owner_module": "src/slm_training/evals/semantic_failure.py",

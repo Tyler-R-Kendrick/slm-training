@@ -2819,6 +2819,11 @@
         {
           "version": "v6",
           "date": "2026-08-08",
+          "note": "no-bump: SLM-456 (SGS-009) registers a new 'mechanism_disposition_report' subsystem (src/slm_training/harnesses/experiments/mechanism_disposition_report.py) per the pre-registered downstream_extension_map row for SGS-009 (new_owner_justified: true, extension_points: [] -- genuinely new); mirrors the row into repository-ownership-map.md; behavior-neutral doc update (the code-level bump is recorded separately under harness.experiments)."
+        },
+        {
+          "version": "v6",
+          "date": "2026-08-08",
           "note": "no-bump: SLM-455 (SGS-008) registers a new 'sygus_capability_report' subsystem (src/slm_training/data/progspec/synthesis_capability_report.py: SyGuSCapabilityReportV1/CapabilityFindingV1/build_sygus_capability_report). The pre-registered downstream_extension_map row for SGS-008 predicted extending dsl_pack_registry_canonical/completion_domain directly (new_owner_justified: false); implementation instead built a small self-contained module over verified_synthesis_problem's envelope not touching either predicted owner's owner_symbols, so it is registered as its own subsystem and the divergence is documented in its notes field; behavior-neutral doc update, introduces no solver dependency or new decode/verifier authority."
         },
         {
@@ -4564,7 +4569,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v147",
+      "version": "v148",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
@@ -4578,6 +4583,11 @@
         "tests/test_harnesses/rl/test_trajectory.py"
       ],
       "history": [
+        {
+          "version": "v148",
+          "date": "2026-08-08",
+          "note": "SGS-009/SLM-456: add mechanism_disposition_report.py (MechanismDispositionRecordV1/MechanismDispositionReportV1/SupersessionEntryV1), generalizing the SLM-160/SPV4-02 SPVMechanismDisposition precedent into reusable code for any mechanism, reusing that module's Disposition enum directly. Fails closed on adopt_primary/adopt_optional requiring measured evidence_class + non-empty activation_evidence, and on evidence_class='fixture' pairing with default_state='on'. Supersession is a pure append-only pointer between same-mechanism_id records; superseded records are never rewritten or removed. Ships the reusable schema/generator proven against a fixture matrix, not a completed audit of every real mechanism in the current backlog -- that data-entry pass is follow-on work."
+        },
         {
           "version": "v147",
           "date": "2026-08-03",
