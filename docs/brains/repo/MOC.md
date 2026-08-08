@@ -74,3 +74,5 @@ hypothesis loop's novelty audit can exclude them.
 
 - _(seed)_ E249 / E252 local-preference chain — negative; see
   [`research-lineage.md`](../../design/research-lineage.md) "Exact-state local decision preference".
+
+- [SGS-004 prompt requirements extract](../design/sgs-004-prompt-requirements-extract.md)
