@@ -1448,3 +1448,39 @@ Date (UTC) column). Do not delete history.
    versions from `scoreboard.json`
    ([version-stamp-contract.md](design/version-stamp-contract.md)).
 6. Commit docs with the checkpoint-producing change.
+
+## Continuous autotrain note (2026-08-08, c1)
+
+- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c1`
+- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c1-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c1-control/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-08, c2)
+
+- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c2`
+- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c2-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c2-control/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-08, c4)
+
+- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c4`
+- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c4-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c4-control/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-08, c5)
+
+- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c5`
+- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c5-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c5-control/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-08, c6)
+
+- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c6`
+- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c6-canvas/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c6-control/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-08, c7)
+
+- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c7`
+- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c7-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c7-control/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
