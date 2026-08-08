@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from slm_training.data.semantic_plan.canonicalize import canonicalize_plan, plan_factor_fingerprints
 from slm_training.data.semantic_plan.compiler import (
+    AuthorityProjectionV1,
     Evidence,
     EvidenceKind,
+    EvidenceProjection,
     HardRemoval,
     OpenUISemanticPlanCompiler,
     PlanActionFeatures,
@@ -14,6 +16,7 @@ from slm_training.data.semantic_plan.compiler import (
     PlanSeedResult,
     RestrictionResult,
     SemanticPlanCompiler,
+    project_authority,
 )
 from slm_training.data.semantic_plan.extract import (
     OpenUISemanticPlanExtractor,
@@ -23,8 +26,10 @@ from slm_training.data.semantic_plan.oracle import PlanOracleSubstitutor
 from slm_training.data.semantic_plan.seed import PlanSeedBuilder
 
 __all__ = [
+    "AuthorityProjectionV1",
     "Evidence",
     "EvidenceKind",
+    "EvidenceProjection",
     "HardRemoval",
     "OpenUISemanticPlanExtractor",
     "OpenUISemanticPlanCompiler",
@@ -39,4 +44,5 @@ __all__ = [
     "SemanticPlanExtractor",
     "canonicalize_plan",
     "plan_factor_fingerprints",
+    "project_authority",
 ]

@@ -178,3 +178,91 @@ def test_extra_fields_are_rejected() -> None:
     payload["facts"][0]["unexpected_field"] = "smuggled"
     with pytest.raises(ValidationError):
         PromptSemanticRequirementsV1.from_dict(payload)
+
+
+def test_to_production_dict_rejects_invalid_honesty_mode() -> None:
+    requirements = PromptSemanticRequirementsV1(facts=(_fact(),))
+    with pytest.raises(ValueError, match="honesty_mode"):
+        requirements.to_production_dict(honesty_mode="cheat")
+
+
+def test_to_production_dict_drops_oracle_facts_and_records_the_reason() -> None:
+    oracle_fact = _fact(
+        fact_id="fact_oracle",
+        provenance="oracle_override",
+        authority="oracle-diagnostic",
+        statement="oracle-substituted ground truth",
+    )
+    predicted_fact = _fact()
+    requirements = PromptSemanticRequirementsV1(facts=(predicted_fact, oracle_fact))
+
+    payload = requirements.to_production_dict()
+
+    kept_ids = {fact["fact_id"] for fact in payload["facts"]}
+    assert kept_ids == {"fact_button"}
+    assert payload["dropped_facts"] == [
+        {
+            "fact_id": "fact_oracle",
+            "provenance": "oracle_override",
+            "authority": "oracle-diagnostic",
+            "downgrade_reason": "oracle_override fact excluded from a production manifest",
+        }
+    ]
+
+
+def test_to_production_dict_keeps_oracle_facts_in_diagnostic_mode() -> None:
+    requirements = PromptSemanticRequirementsV1(
+        facts=(_fact(fact_id="fact_oracle", provenance="oracle_override"),)
+    )
+    payload = requirements.to_production_dict(honesty_mode="oracle_diagnostic")
+    assert {fact["fact_id"] for fact in payload["facts"]} == {"fact_oracle"}
+    assert payload["dropped_facts"] == []
+
+
+def test_to_production_dict_never_rewrites_kept_fact_authority() -> None:
+    """Monotonic downgrade: a kept fact's authority is byte-identical, never escalated."""
+    fact = _fact(authority="evaluation-only")
+    requirements = PromptSemanticRequirementsV1(facts=(fact,))
+    payload = requirements.to_production_dict()
+    assert payload["facts"][0]["authority"] == "evaluation-only"
+
+
+def test_to_production_dict_drops_ambiguity_group_with_an_oracle_member() -> None:
+    """Nested provenance smuggling: a group referencing a dropped fact cannot survive."""
+    oracle_fact = _fact(fact_id="fact_oracle", provenance="oracle_override")
+    predicted_fact = _fact(fact_id="fact_predicted")
+    group = AmbiguityGroup(group_id="g", member_fact_ids=("fact_oracle", "fact_predicted"))
+    requirements = PromptSemanticRequirementsV1(
+        facts=(oracle_fact, predicted_fact), ambiguity_groups=(group,)
+    )
+
+    payload = requirements.to_production_dict()
+
+    assert payload["ambiguity_groups"] == []
+
+
+def test_to_production_dict_round_trips_through_from_dict() -> None:
+    requirements = PromptSemanticRequirementsV1(facts=(_fact(),))
+    payload = requirements.to_production_dict()
+    restored = PromptSemanticRequirementsV1.from_dict(
+        {key: value for key, value in payload.items() if key != "dropped_facts"}
+    )
+    assert restored.to_dict() == {
+        key: value for key, value in payload.items() if key != "dropped_facts"
+    }
+
+
+def test_to_production_dict_is_idempotent_once_oracle_facts_are_gone() -> None:
+    """P(P(x)) == P(x): re-projecting an already-projected requirement set is a fixed point."""
+    requirements = PromptSemanticRequirementsV1(
+        facts=(_fact(), _fact(fact_id="fact_oracle", provenance="oracle_override"))
+    )
+    once = requirements.to_production_dict()
+    reparsed = PromptSemanticRequirementsV1.from_dict(
+        {key: value for key, value in once.items() if key != "dropped_facts"}
+    )
+    twice = reparsed.to_production_dict()
+
+    assert twice["facts"] == once["facts"]
+    assert twice["ambiguity_groups"] == once["ambiguity_groups"]
+    assert twice["dropped_facts"] == []  # nothing oracle-tagged left to drop the second time

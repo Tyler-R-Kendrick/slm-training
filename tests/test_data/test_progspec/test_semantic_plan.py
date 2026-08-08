@@ -136,6 +136,39 @@ def test_invalid_honesty_mode_rejected() -> None:
         plan.to_production_dict(honesty_mode="cheat")
 
 
+def test_predicted_plan_survives_production_projection_unchanged() -> None:
+    """The non-oracle, allowed path: nothing is rejected or silently mutated."""
+    plan = _predicted_plan()
+    payload = plan.to_production_dict()
+    assert payload["identity"]["provenance"] == "predicted"
+    assert payload["role_slots"] == plan.to_dict()["role_slots"]
+
+
+def test_to_production_dict_is_idempotent_on_a_predicted_plan() -> None:
+    """P(P(x)) == P(x): re-projecting an already-projected plan is a fixed point."""
+    plan = _predicted_plan()
+    once = plan.to_production_dict()
+    reparsed = SemanticPlanV1.from_dict(once)
+    twice = reparsed.to_production_dict()
+    assert twice == once
+
+
+def test_to_production_dict_never_reintroduces_a_stripped_field() -> None:
+    plan = SemanticPlanV1(
+        identity=PlanIdentity(
+            pack_id="openui-v1",
+            contract_hash="a" * 16,
+            source_program_fingerprint="fp_123",
+            provenance="oracle_override",
+        )
+    )
+    projected = plan.to_production_dict(honesty_mode="oracle_diagnostic")
+    reparsed = SemanticPlanV1.from_dict(projected)
+    assert reparsed.identity.source_program_fingerprint is None
+    reprojected = reparsed.to_production_dict(honesty_mode="oracle_diagnostic")
+    assert "source_program_fingerprint" not in reprojected["identity"]
+
+
 def test_confidence_out_of_range_rejected() -> None:
     data: dict[str, Any] = _predicted_plan().to_dict()
     data["archetype"] = {"confidence": 1.5}
