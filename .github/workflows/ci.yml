@@ -193,6 +193,8 @@ jobs:
         run: python -m scripts.verify_decode_invariants
       - name: Certify every agent surface carries every repository law
         run: python -m scripts.verify_agent_surfaces
+      - name: Certify the repository ownership map
+        run: python -m scripts.verify_ownership_map
       - name: Validate external test and eval cases
         run: |
           python -m scripts.extract_test_cases

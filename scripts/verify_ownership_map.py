@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
-"""CI certificate for the repository owner/authority map (SGS-001, SLM-435).
+"""CI certificate for the repository owner/authority map and its watched
+contract-version pairs (SGS-001/SLM-435, SGS-002/SLM-436).
 
 Static only -- parses source with :mod:`ast` and reads text, no imports, so it
-runs in the dependency-light static CI job. It certifies:
+runs in the dependency-light static CI job (`.github/workflows/ci.yml`
+`python-static` job) and the changed-file pre-commit hook
+(`scripts/check_changed.py`). It certifies:
 
 1. Every ``subsystems[]`` entry's ``owner_module`` exists and every listed
    ``owner_symbols`` name is actually a class/def/assignment target in that
@@ -10,11 +13,13 @@ runs in the dependency-light static CI job. It certifies:
 2. Every ``authority_tier`` used is declared in ``authority_tiers``.
 3. Every ``duplicate_subsystem_risks[]`` and ``related_overlaps[]`` reference
    resolves to a real path.
-4. ``OUTPUT_CONTRACT_VERSION`` in ``dsl/language_contract.py`` matches the
-   value cited by ``docs/design/symbol-only-output-contract.md`` -- the exact
-   drift class this audit found and fixed (map ``known_drift`` entry
+4. Every registered ``CONTRACT_VERSION_CHECKS`` entry: a code constant
+   (``OUTPUT_CONTRACT_VERSION``, ``DSL_TOKENIZER_VERSION``, ...) matches every
+   version number its canonical docs cite for it in prose -- the exact drift
+   class SGS-001 found (map ``known_drift`` entry
    ``output_contract_version_doc_mismatch``). Regresses loudly if either side
-   changes without the other.
+   changes without the other; add an entry here for any new contract/tokenizer/
+   pack/artifact/schema/evaluator version identity that gains a doc claim.
 5. Every ``downstream_extension_map[]`` row either cites at least one real
    ``subsystems[].id`` as its extension point, or sets
    ``new_owner_justified: true`` with a non-empty ``justification``.
@@ -122,6 +127,34 @@ def check_duplicate_risks(doc: dict[str, Any]) -> list[str]:
     return checked
 
 
+def check_contract_version_governance(doc: dict[str, Any]) -> str:
+    """The doc's claim that OUTPUT_CONTRACT_VERSION is independently
+    re-enforced at checkpoint load (SGS-002 acceptance criterion: historical
+    artifacts are never silently reinterpreted) must point at real code and
+    real regression tests, not just prose."""
+    governance = doc["contract_version_governance"]
+    enforcement = governance["checkpoint_load_enforcement"]
+    module = enforcement["enforced_by_module"]
+    symbol = enforcement["enforced_by_symbol"]
+    if not (ROOT / module).is_file():
+        raise OwnershipMapError(
+            f"contract_version_governance.checkpoint_load_enforcement "
+            f"enforced_by_module missing: {module}"
+        )
+    if symbol not in _defined_names(module):
+        raise OwnershipMapError(
+            f"contract_version_governance.checkpoint_load_enforcement claims "
+            f"{symbol!r} in {module}, but it is not defined there"
+        )
+    for relative in (*enforcement["called_from"], *enforcement["regression_tests"]):
+        if not (ROOT / relative).is_file():
+            raise OwnershipMapError(
+                f"contract_version_governance.checkpoint_load_enforcement "
+                f"references a missing file: {relative}"
+            )
+    return governance["mechanism"]
+
+
 def check_related_overlaps(doc: dict[str, Any]) -> list[str]:
     checked: list[str] = []
     for overlap in doc["related_overlaps"]:
@@ -133,60 +166,98 @@ def check_related_overlaps(doc: dict[str, Any]) -> list[str]:
     return checked
 
 
-def _output_contract_version_from_code() -> int:
-    match = re.search(
-        r"^OUTPUT_CONTRACT_VERSION\s*=\s*(\d+)",
-        _read(LANGUAGE_CONTRACT),
-        re.MULTILINE,
-    )
-    if not match:
-        raise OwnershipMapError(
-            f"{LANGUAGE_CONTRACT} no longer defines OUTPUT_CONTRACT_VERSION"
-        )
-    return int(match.group(1))
+class ContractVersionCheck:
+    """One `<CONSTANT> = N` in code that must never silently disagree with
+    the docs that cite it in prose (SGS-002, SLM-436). ``doc_patterns`` are
+    tried in order against each doc in ``doc_paths``; every match across
+    every pattern/doc becomes a "mention" that must fall inside
+    ``{current, current - 1}`` (the doc may legitimately describe both the
+    live version and the one it superseded)."""
+
+    def __init__(
+        self,
+        name: str,
+        code_path: str,
+        code_pattern: str,
+        doc_paths: tuple[str, ...],
+        doc_patterns: tuple[str, ...],
+    ) -> None:
+        self.name = name
+        self.code_path = code_path
+        self.code_pattern = code_pattern
+        self.doc_paths = doc_paths
+        self.doc_patterns = doc_patterns
+
+    def code_version(self) -> int:
+        match = re.search(self.code_pattern, _read(self.code_path), re.MULTILINE)
+        if not match:
+            raise OwnershipMapError(f"{self.code_path} no longer defines {self.name}")
+        return int(match.group(1))
+
+    def doc_mentions(self) -> set[int]:
+        mentions: set[int] = set()
+        for doc_path in self.doc_paths:
+            text = _read(doc_path)
+            for pattern in self.doc_patterns:
+                mentions |= {int(n) for n in re.findall(pattern, text)}
+        return mentions
+
+    def check(self) -> int:
+        code_version = self.code_version()
+        doc_versions = self.doc_mentions()
+        docs = ", ".join(self.doc_paths)
+        if not doc_versions:
+            raise OwnershipMapError(f"{docs} no longer state {self.name}")
+        # The docs legitimately mention the current version and the
+        # immediately prior one (e.g. "v2 is checkpoint-incompatible with v1").
+        allowed = {code_version, code_version - 1}
+        stray = sorted(doc_versions - allowed)
+        if stray:
+            raise OwnershipMapError(
+                f"{self.name} drift: {self.code_path} says {code_version}, but "
+                f"{docs} also mention version(s) {stray} that are neither the "
+                f"current ({code_version}) nor prior ({code_version - 1}) "
+                "version -- reconcile them (SGS-002 contract-version consistency)"
+            )
+        if code_version not in doc_versions:
+            raise OwnershipMapError(
+                f"{self.name} drift: {self.code_path} says {code_version}, but "
+                f"{docs} never mention it (only {sorted(doc_versions)}) -- "
+                "reconcile them (SGS-002 contract-version consistency)"
+            )
+        return code_version
 
 
-def _all_version_mentions_from_doc() -> set[int]:
-    """Every bare `vN` / `VersionN` prose mention in the doc, not just the
-    exact ``OUTPUT_CONTRACT_VERSION = N`` spelling -- prose drifts in more
-    ways than the constant does (SGS-001 found "output contract v4",
-    "Version 4", and "v3 corpora" alongside a correctly-spelled "= 2")."""
-    text = _read(OUTPUT_CONTRACT_DOC)
-    mentions = {
-        int(n) for n in re.findall(r"OUTPUT_CONTRACT_VERSION\s*=\s*(\d+)", text)
-    }
-    mentions |= {int(n) for n in re.findall(r"\bv(\d+)\b", text)}
-    mentions |= {int(n) for n in re.findall(r"\bVersion (\d+)\b", text)}
-    return mentions
+# `OUTPUT_CONTRACT_VERSION`'s doc is single-topic (the whole file is about
+# this one contract), so every bare `vN`/`Version N` mention in it belongs to
+# this check -- that's how SGS-001 caught "output contract v4" prose sitting
+# next to a correctly-spelled "= 2". A multi-topic doc would need a
+# name-scoped pattern instead (see DSL_TOKENIZER_VERSION below) or every
+# unrelated version number in the doc would trip this check.
+CONTRACT_VERSION_CHECKS: tuple[ContractVersionCheck, ...] = (
+    ContractVersionCheck(
+        name="OUTPUT_CONTRACT_VERSION",
+        code_path=LANGUAGE_CONTRACT,
+        code_pattern=r"^OUTPUT_CONTRACT_VERSION\s*=\s*(\d+)",
+        doc_paths=(OUTPUT_CONTRACT_DOC,),
+        doc_patterns=(
+            r"OUTPUT_CONTRACT_VERSION\s*=\s*(\d+)",
+            r"\bv(\d+)\b",
+            r"\bVersion (\d+)\b",
+        ),
+    ),
+    ContractVersionCheck(
+        name="DSL_TOKENIZER_VERSION",
+        code_path="src/slm_training/models/dsl_tokenizer.py",
+        code_pattern=r"^DSL_TOKENIZER_VERSION\s*=\s*(\d+)",
+        doc_paths=("docs/design/agent-harness-parity-audit.md",),
+        doc_patterns=(r"DSL_TOKENIZER_VERSION\D{0,20}(\d+)",),
+    ),
+)
 
 
-def check_output_contract_version() -> int:
-    code_version = _output_contract_version_from_code()
-    doc_versions = _all_version_mentions_from_doc()
-    if not doc_versions:
-        raise OwnershipMapError(
-            f"{OUTPUT_CONTRACT_DOC} no longer states OUTPUT_CONTRACT_VERSION"
-        )
-    # The doc legitimately mentions the current version and the immediately
-    # prior one (e.g. "v2 is intentionally checkpoint-incompatible with v1").
-    allowed = {code_version, code_version - 1}
-    stray = sorted(doc_versions - allowed)
-    if stray:
-        raise OwnershipMapError(
-            f"OUTPUT_CONTRACT_VERSION drift: {LANGUAGE_CONTRACT} says {code_version}, "
-            f"but {OUTPUT_CONTRACT_DOC} also mentions version(s) {stray} that are "
-            f"neither the current ({code_version}) nor prior ({code_version - 1}) "
-            "version -- reconcile them (see SGS-001 / "
-            "known_drift.output_contract_version_doc_mismatch in ownership_map.json)"
-        )
-    if code_version not in doc_versions:
-        raise OwnershipMapError(
-            f"OUTPUT_CONTRACT_VERSION drift: {LANGUAGE_CONTRACT} says {code_version}, "
-            f"but {OUTPUT_CONTRACT_DOC} never mentions it (only {sorted(doc_versions)}) "
-            "-- reconcile them (see SGS-001 / "
-            "known_drift.output_contract_version_doc_mismatch in ownership_map.json)"
-        )
-    return code_version
+def check_contract_versions() -> dict[str, int]:
+    return {check.name: check.check() for check in CONTRACT_VERSION_CHECKS}
 
 
 def check_downstream_extension_map(doc: dict[str, Any]) -> list[str]:
@@ -235,7 +306,8 @@ def certify() -> dict[str, Any]:
         "subsystems": check_subsystems(doc),
         "duplicate_subsystem_risks": check_duplicate_risks(doc),
         "related_overlaps": check_related_overlaps(doc),
-        "output_contract_version": check_output_contract_version(),
+        "contract_versions": check_contract_versions(),
+        "contract_version_governance": check_contract_version_governance(doc),
         "downstream_extension_map": check_downstream_extension_map(doc),
     }
 

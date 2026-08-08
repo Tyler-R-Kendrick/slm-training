@@ -2743,16 +2743,22 @@
       ]
     },
     "governance.ownership_map": {
-      "version": "v2",
+      "version": "v3",
       "kind": "gate",
       "paths": [
         "src/slm_training/resources/ownership_map.json",
         "scripts/verify_ownership_map.py",
         "docs/design/symbol-only-output-contract.md",
         "docs/design/repository-ownership-map.md",
-        "tests/test_scripts/test_verify_ownership_map.py"
+        "tests/test_scripts/test_verify_ownership_map.py",
+        "scripts/check_changed.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "SGS-002 (SLM-436): generalize the OUTPUT_CONTRACT_VERSION doc/code guard into a table-driven CONTRACT_VERSION_CHECKS mechanism and add a second protected identity (DSL_TOKENIZER_VERSION, name-scoped doc pattern since its doc is multi-topic). Wire verify_ownership_map into CI (.github/workflows/ci.yml python-static job) and the changed-file pre-commit hook (scripts/check_changed.py OWNERSHIP_MAP_FILES) so the guard actually blocks merges instead of only being unit-tested. Add a contract_version_governance record + check documenting and verifying that OUTPUT_CONTRACT_VERSION is independently re-enforced at checkpoint load (require_current_output_contract), satisfying the historical-artifacts-never-silently-reinterpreted acceptance criterion against real code, not prose. Register a dsl_tokenizer subsystem."
+        },
         {
           "version": "v2",
           "date": "2026-08-08",
@@ -3990,6 +3996,11 @@
         "docs/design/ci-minutes-and-speed-plan-20260806.md"
       ],
       "history": [
+        {
+          "version": "v14",
+          "date": "2026-08-08",
+          "note": "no-bump: add a \"Certify the repository ownership map\" step (python -m scripts.verify_ownership_map) to the python-static job for SGS-002/SLM-436; existing job steps, timeouts, and formal/autoresearch behavior are unchanged."
+        },
         {
           "version": "v14",
           "date": "2026-08-06",

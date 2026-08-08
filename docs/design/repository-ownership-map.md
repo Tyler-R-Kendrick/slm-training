@@ -2,9 +2,9 @@
 
 > **Goal law:** this document is bound by [decode-invariants.md](decode-invariants.md) — a rejected approach never closes a goal, and every agent surface carries the law (I7/I14/I15).
 
-SGS-001 (SLM-435, milestone "Compatibility and ownership gate"). Commits a machine-readable owner/authority map for the live OpenUI synthesis stack (`SemanticPlanV1`, the G0-G12 verifier gates, semantic-failure taxonomy, repair, counterfactual replay, the experiment registry, telemetry, certified completion artifacts, DSL packs, search/lattice state, versioning, and generated docs) so the downstream SGS/VCE/PCT/SRP/SIE/RSP backlog extends an existing owner instead of duplicating one.
+SGS-001 (SLM-435, milestone "Compatibility and ownership gate"). Commits a machine-readable owner/authority map for the live OpenUI synthesis stack (`SemanticPlanV1`, the G0-G12 verifier gates, semantic-failure taxonomy, repair, counterfactual replay, the experiment registry, telemetry, certified completion artifacts, DSL packs, search/lattice state, versioning, and generated docs) so the downstream SGS/VCE/PCT/SRP/SIE/RSP backlog extends an existing owner instead of duplicating one. SGS-002 (SLM-436) generalizes the OUTPUT_CONTRACT_VERSION doc/code guard this map introduced into a table-driven, CI-enforced contract-version consistency mechanism (see "Contract-version consistency" below).
 
-**Machine-readable source of truth:** [`src/slm_training/resources/ownership_map.json`](../../src/slm_training/resources/ownership_map.json) (`schema: ownership_map/v1`). **Verified by:** `python -m scripts.verify_ownership_map` (static AST/text check, no imports — every `owner_module` must exist and every `owner_symbols` entry must actually be defined there; every downstream row must cite a real extension point or justify a new owner; `OUTPUT_CONTRACT_VERSION` in code and every version mention in the output-contract doc must agree). Regression coverage: `tests/test_scripts/test_verify_ownership_map.py`.
+**Machine-readable source of truth:** [`src/slm_training/resources/ownership_map.json`](../../src/slm_training/resources/ownership_map.json) (`schema: ownership_map/v1`). **Verified by:** `python -m scripts.verify_ownership_map` (static AST/text check, no imports — every `owner_module` must exist and every `owner_symbols` entry must actually be defined there; every downstream row must cite a real extension point or justify a new owner; every registered contract-version pair must agree between code and its canonical docs). Wired into `.github/workflows/ci.yml` (`python-static` job) and the changed-file pre-commit hook (`scripts/check_changed.py`, `OWNERSHIP_MAP_FILES`). Regression coverage: `tests/test_scripts/test_verify_ownership_map.py`.
 
 *This page is mechanically generated from the JSON above — do not hand-edit the tables below; edit the JSON and regenerate.*
 
@@ -44,6 +44,7 @@ Every subsystem below is tagged with one of these tiers (acceptance criterion: "
 | `dsl_pack_registry_shadow` — DSL pack registry (shadow, plural) -- DUPLICATE RISK | `src/slm_training/dsl/packs/types.py` | `DSLPack`, `PlaceholderPolicy` | `compiler-hard` | [dsl-pack-contract.md](dsl-pack-contract.md) |
 | `output_contract` — Symbol-only output contract / OUTPUT_CONTRACT_VERSION | `src/slm_training/dsl/language_contract.py` | `OUTPUT_CONTRACT_VERSION` | `compiler-hard` | [symbol-only-output-contract.md](symbol-only-output-contract.md) |
 | `completion_domain` — Grammar-capability-derived completion domain | `src/slm_training/dsl/grammar_capabilities.py` | `CompletionDomainV1`, `GrammarCapabilityAdapterV1`, `GrammarCapabilityAuthorityV1` | `compiler-hard` | [decode-invariants.md](decode-invariants.md) |
+| `dsl_tokenizer` — DSL/grammar-native tokenizer (symbol-only decode target) | `src/slm_training/models/dsl_tokenizer.py` | `DSL_TOKENIZER_VERSION`, `DSLNativeTokenizer`, `SymbolTable` | `compiler-hard` | [agent-harness-parity-audit.md](agent-harness-parity-audit.md) |
 | `choice_codec` — Deterministic choice-sequence codec | `src/slm_training/models/choice_tokenizer.py` | `ChoiceTokenizer`, `ChoiceDecodeState` | `compiler-hard` | [decode-invariants.md](decode-invariants.md) |
 | `production_codec` — Grammar production codec | `src/slm_training/dsl/production_codec.py` | `ProductionProgram`, `ProductionVocab`, `decode_productions` | `compiler-hard` | [decode-invariants.md](decode-invariants.md) |
 | `version_registry` — Component-version registry and enforcement | `src/slm_training/resources/versions.json` | — | `compiler-hard` | [version-stamp-contract.md](version-stamp-contract.md) |
@@ -74,6 +75,7 @@ Notes, one per subsystem:
 - **`dsl_pack_registry_shadow`**: Also cites F1/SLM-34 but is a second, independently-registered pack system (note capitalization DSLPack vs DslPack). Only 7 importers, all under dsl/packs/*, harnesses/reasoning/bench.py, and their tests. See duplicate_subsystem_risks below; flagged for consolidation, not rewritten by this audit (non-goal: no new search/semantic behavior). Registry functions (register_pack/get_pack/list_packs) live in dsl/packs/__init__.py; the DSLPack dataclass itself is defined in dsl/packs/types.py.
 - **`output_contract`**: OUTPUT_CONTRACT_VERSION=2 (checkpoint-incompatible with v1). See known_drift for the doc mismatch this audit reconciles.
 - **`completion_domain`**: Single definition site; used by the fastpath engine to compute legal-symbol candidates.
+- **`dsl_tokenizer`**: DSL_TOKENIZER_VERSION=5, machine-checked against docs/design/agent-harness-parity-audit.md ("DSL_TOKENIZER_VERSION stays 5") by scripts/verify_ownership_map.py CONTRACT_VERSION_CHECKS (SGS-002/SLM-436). Distinct from choice_codec (models/choice_tokenizer.py): this is the lexer-native tokenizer, the choice codec is the fastpath alternative.
 - **`choice_codec`**: Fastpath alternative to open-vocab tokenization. Coexists deliberately with the DSL-native tokenizer (is_choice_tokenizer discriminator); not a duplicate.
 - **`production_codec`**: Related production-level codec consumed alongside choice_codec.
 - **`version_registry`**: Enforced by scripts/verify_version_stamps.py in CI, pre-commit, and agent hooks. Governs every other component id in this map.
@@ -81,6 +83,20 @@ Notes, one per subsystem:
 - **`openwiki_generation`**: Regenerates docs/openwiki/*; do not hand-edit generated pages.
 - **`agent_surface_parity`**: Certifies every repository law appears on every configured coding-harness instruction surface (AGENTS.md, CLAUDE.md, GEMINI.md, .github/copilot-instructions.md, .cursor/rules/*.mdc, .codex/, .grok/).
 - **`repository_organization_policy`**: Enforces ALLOWED_ROOTS and validate_skill_mirrors; executable counterpart to docs/repository-organization.md and .agents/skills/organize-repository/SKILL.md.
+
+## Contract-version consistency (SGS-002)
+
+**Mechanism:** scripts/verify_ownership_map.py CONTRACT_VERSION_CHECKS -- table-driven code<->doc version consistency (SGS-002/SLM-436).
+
+- **CI wiring:** .github/workflows/ci.yml python-static job, step "Certify the repository ownership map"
+- **Pre-commit wiring:** scripts/check_changed.py OWNERSHIP_MAP_FILES set triggers python -m scripts.verify_ownership_map when a watched file changes
+- **Currently checked identities:** `OUTPUT_CONTRACT_VERSION`, `DSL_TOKENIZER_VERSION`
+
+**Historical artifacts are never silently reinterpreted (acceptance criterion):** OUTPUT_CONTRACT_VERSION is enforced a second, independent time at model-checkpoint load: require_current_output_contract() raises OutputContractError on any mismatch. A stale checkpoint is rejected outright, never silently reinterpreted (SGS-002 acceptance criterion).
+
+- Enforced by: `require_current_output_contract` in `src/slm_training/dsl/language_contract.py`
+- Called from: `src/slm_training/models/twotower.py`, `src/slm_training/models/grammar_diffusion.py`
+- Regression tests: `tests/test_harnesses/model_build/test_twotower.py`, `tests/test_models/test_grammar_diffusion.py`
 
 ## Duplicate-subsystem risks
 

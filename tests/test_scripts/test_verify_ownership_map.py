@@ -1,11 +1,15 @@
 """The ownership-map certificate must fail on real regressions.
 
 SGS-001 (SLM-435) commits ``src/slm_training/resources/ownership_map.json`` as
-the checked-in owner/authority map for the live synthesis stack. A map nobody
-watches drift is worse than no map: it reads as current while lying. Each
-test below reproduces one way the map's claims can rot -- an owner file
-deleted, a symbol renamed, the exact OUTPUT_CONTRACT_VERSION doc/code
-mismatch this audit found and fixed -- and asserts the certificate catches it.
+the checked-in owner/authority map for the live synthesis stack. SGS-002
+(SLM-436) generalizes its OUTPUT_CONTRACT_VERSION doc/code guard into a
+table-driven ``CONTRACT_VERSION_CHECKS`` mechanism and wires the whole
+certificate into CI (`.github/workflows/ci.yml`) and the changed-file
+pre-commit hook (`scripts/check_changed.py`). A map nobody watches drift is
+worse than no map: it reads as current while lying. Each test below
+reproduces one way the map's claims can rot -- an owner file deleted, a
+symbol renamed, a contract-version doc/code mismatch -- and asserts the
+certificate catches it.
 """
 
 from __future__ import annotations
@@ -46,6 +50,17 @@ def _minimal_map() -> dict:
             }
         ],
         "known_drift": [],
+        "contract_version_governance": {
+            "mechanism": "test fixture",
+            "checked_identities": ["OUTPUT_CONTRACT_VERSION", "DSL_TOKENIZER_VERSION"],
+            "checkpoint_load_enforcement": {
+                "description": "test fixture",
+                "enforced_by_module": "src/slm_training/widget.py",
+                "enforced_by_symbol": "build_widget",
+                "called_from": ["src/slm_training/widget.py"],
+                "regression_tests": ["docs/design/widget.md"],
+            },
+        },
         "related_overlaps": [
             {
                 "linear_id": "SLM-1",
@@ -78,9 +93,12 @@ def _minimal_map() -> dict:
 @pytest.fixture
 def sandbox(tmp_path, monkeypatch):
     """A minimal repo tree whose ownership_map.json passes, so each test can
-    break exactly one claim."""
+    break exactly one claim. Every ``CONTRACT_VERSION_CHECKS`` entry's code
+    and doc files must exist here too, since ``check_contract_versions``
+    checks all of them unconditionally against ``verifier.ROOT``."""
     (tmp_path / "src/slm_training/resources").mkdir(parents=True)
     (tmp_path / "src/slm_training/dsl").mkdir(parents=True)
+    (tmp_path / "src/slm_training/models").mkdir(parents=True)
     (tmp_path / "docs/design").mkdir(parents=True)
 
     def write(relative: str, text: str) -> None:
@@ -100,6 +118,14 @@ def sandbox(tmp_path, monkeypatch):
         "The canonical contract is `OUTPUT_CONTRACT_VERSION = 2` here.\n",
     )
     write(
+        "src/slm_training/models/dsl_tokenizer.py",
+        "DSL_TOKENIZER_VERSION = 5\n",
+    )
+    write(
+        "docs/design/agent-harness-parity-audit.md",
+        "DSL_TOKENIZER_VERSION stays 5 in both cases.\n",
+    )
+    write(
         "src/slm_training/resources/ownership_map.json",
         json.dumps(_minimal_map(), indent=2),
     )
@@ -111,16 +137,41 @@ def sandbox(tmp_path, monkeypatch):
 def test_passes_on_a_consistent_repo(sandbox):
     result = verifier.certify()
     assert result["subsystems"] == ["widget"]
-    assert result["output_contract_version"] == 2
+    assert result["contract_versions"] == {
+        "OUTPUT_CONTRACT_VERSION": 2,
+        "DSL_TOKENIZER_VERSION": 5,
+    }
     assert "TST-001" in result["downstream_extension_map"]
 
 
 def test_passes_on_the_real_repository():
     """The live ownership_map.json must certify against the live source tree."""
     result = verifier.certify()
-    assert result["output_contract_version"] == 2
+    assert result["contract_versions"]["OUTPUT_CONTRACT_VERSION"] == 2
+    assert result["contract_versions"]["DSL_TOKENIZER_VERSION"] == 5
+    assert "CONTRACT_VERSION_CHECKS" in result["contract_version_governance"]
     assert len(result["subsystems"]) >= 20
     assert len(result["downstream_extension_map"]) >= 50
+
+
+def test_catches_a_fabricated_checkpoint_enforcement_symbol(sandbox):
+    path = sandbox / "src/slm_training/resources/ownership_map.json"
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    governance = doc["contract_version_governance"]["checkpoint_load_enforcement"]
+    governance["enforced_by_symbol"] = "does_not_exist"
+    path.write_text(json.dumps(doc), encoding="utf-8")
+    with pytest.raises(verifier.OwnershipMapError, match="not defined there"):
+        verifier.certify()
+
+
+def test_catches_a_missing_checkpoint_enforcement_regression_test(sandbox):
+    path = sandbox / "src/slm_training/resources/ownership_map.json"
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    governance = doc["contract_version_governance"]["checkpoint_load_enforcement"]
+    governance["regression_tests"] = ["tests/test_scripts/test_does_not_exist.py"]
+    path.write_text(json.dumps(doc), encoding="utf-8")
+    with pytest.raises(verifier.OwnershipMapError, match="references a missing file"):
+        verifier.certify()
 
 
 def test_catches_deleted_owner_module(sandbox):
@@ -172,6 +223,27 @@ def test_catches_bare_prose_version_drift(sandbox):
         verifier.OwnershipMapError, match="OUTPUT_CONTRACT_VERSION drift"
     ):
         verifier.certify()
+
+
+def test_catches_dsl_tokenizer_version_doc_drift(sandbox):
+    (sandbox / "docs/design/agent-harness-parity-audit.md").write_text(
+        "DSL_TOKENIZER_VERSION stays 3 in both cases.\n", encoding="utf-8"
+    )
+    with pytest.raises(verifier.OwnershipMapError, match="DSL_TOKENIZER_VERSION drift"):
+        verifier.certify()
+
+
+def test_dsl_tokenizer_version_check_ignores_unrelated_numbers_in_the_doc(sandbox):
+    """agent-harness-parity-audit.md is a multi-topic doc -- the check must be
+    scoped to numbers near the constant name, not every bare vN/number in the
+    file, or unrelated version mentions elsewhere would false-positive."""
+    (sandbox / "docs/design/agent-harness-parity-audit.md").write_text(
+        "The gate stack is at v9 and the tokenizer vocab is 605 wide.\n"
+        "DSL_TOKENIZER_VERSION stays 5 in both cases.\n",
+        encoding="utf-8",
+    )
+    result = verifier.certify()
+    assert result["contract_versions"]["DSL_TOKENIZER_VERSION"] == 5
 
 
 def test_catches_empty_owner_symbols_on_a_python_module(sandbox):

@@ -32,6 +32,16 @@ TEST_DURATIONS_PATH = (
 AGENT_SURFACE_FILES = frozenset(
     relative for obligation in OBLIGATIONS for relative in obligation.surfaces()
 ) | {"scripts/verify_agent_surfaces.py"}
+# Cheap, no imports beyond stdlib: an owner claim or a watched contract/doc
+# pair only stays consistent if a one-sided edit is caught immediately.
+OWNERSHIP_MAP_FILES = frozenset(
+    {
+        "src/slm_training/resources/ownership_map.json",
+        "scripts/verify_ownership_map.py",
+        "docs/design/repository-ownership-map.md",
+        "docs/design/symbol-only-output-contract.md",
+    }
+)
 GLOBAL_TEST_FILES = {
     "pyproject.toml",
     "pytest.ini",
@@ -369,6 +379,9 @@ def check(
     if any(path in AGENT_SURFACE_FILES for path in paths):
         if _run([sys.executable, "-m", "scripts.verify_agent_surfaces"]):
             return 1
+    if any(path in OWNERSHIP_MAP_FILES for path in paths):
+        if _run([sys.executable, "-m", "scripts.verify_ownership_map"]):
+            return 1
     tests = hook_test_targets(paths) if changed_tests_only else select_tests(paths)
     python_paths = [
         path for path in paths if path.endswith(".py") and (ROOT / path).is_file()
@@ -472,9 +485,7 @@ def _run_changed_tests_parallel(
     commands = [
         [sys.executable, "-m", "pytest", "-q", *batch] for batch in batches if batch
     ]
-    with concurrent.futures.ThreadPoolExecutor(
-        max_workers=workers
-    ) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
         return int(any(executor.map(_run, commands)))
 
 
@@ -532,7 +543,9 @@ def _validate_test_duration_payload(payload: dict) -> list[str]:
         problems.append("integrity.irreducible_files must be an object")
         irreducible = {}
     for path, seconds in durations.items():
-        if not (isinstance(path, str) and path.startswith("tests/") and path.endswith(".py")):
+        if not (
+            isinstance(path, str) and path.startswith("tests/") and path.endswith(".py")
+        ):
             problems.append(f"bad duration path {path!r}")
             continue
         if not isinstance(seconds, (int, float)) or float(seconds) <= 0:
@@ -654,7 +667,9 @@ def main(argv: list[str] | None = None) -> int:
         default=1,
         help="number of disjoint changed-test CI shards",
     )
-    parser.add_argument("--list", action="store_true", help="print selected tests without running")
+    parser.add_argument(
+        "--list", action="store_true", help="print selected tests without running"
+    )
     parser.add_argument(
         "--hook",
         action="store_true",
