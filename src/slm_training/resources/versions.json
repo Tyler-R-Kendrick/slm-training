@@ -8296,6 +8296,11 @@
         {
           "version": "v3",
           "date": "2026-08-08",
+          "note": "no-bump: record scheduled continuous-openui-scheduled-20260808 c2's control/component-plan fixture scratch checkpoint provenance (control decode-timeout arm-not-run, component-plan arm not run) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
           "note": "no-bump: record scheduled continuous-openui-scheduled-20260808 c1's bounds/control fixture scratch checkpoint provenance (non-positive smoke-scale ship-gate reject) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
