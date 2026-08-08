@@ -1,0 +1,45 @@
+{
+  "auto": true,
+  "campaign_id": "continuous-loop-20260808-continuous-openui-202608-1211eecb-c32",
+  "candidate_metrics": {
+    "binder_reference_f1": 0.6333333333333333,
+    "latency_ms_p50": 12080.49,
+    "meaningful_program_rate": 0.3333333333333333,
+    "parse_rate": 1.0,
+    "smoke.binder_reference_f1": 0.6333333333333333,
+    "smoke.latency_ms_p50": 12080.49,
+    "smoke.meaningful_program_rate": 0.3333333333333333,
+    "smoke.parse_rate": 1.0,
+    "smoke.structural_similarity": 0.46416666666666667,
+    "structural_similarity": 0.46416666666666667
+  },
+  "control_metrics": {
+    "binder_reference_f1": 0.6333333333333333,
+    "latency_ms_p50": 3631.34,
+    "meaningful_program_rate": 0.3333333333333333,
+    "parse_rate": 1.0,
+    "smoke.binder_reference_f1": 0.6333333333333333,
+    "smoke.latency_ms_p50": 3631.34,
+    "smoke.meaningful_program_rate": 0.3333333333333333,
+    "smoke.parse_rate": 1.0,
+    "smoke.structural_similarity": 0.13526666666666667,
+    "structural_similarity": 0.13526666666666667
+  },
+  "cycle_index": 32,
+  "cycle_intent": "retry_measurement",
+  "cycle_role": "screening",
+  "evidence_class": "fixture",
+  "honesty": "fixture_screening_only_not_ship",
+  "loop_id": "continuous-openui-20260808",
+  "measurement_complete": true,
+  "positive": false,
+  "primary_metric": "smoke.structural_similarity",
+  "reasons": [
+    "fixture_insufficient_n:c20260808-continuous-openui-202608-1211eecb-c32-control",
+    "fixture_insufficient_n:c20260808-continuous-openui-202608-1211eecb-c32-semantic-contrast-compiler-margin",
+    "primary_quality_win_rejected_latency_budget:smoke.structural_similarity:lat=3631.34->12080.49",
+    "primary_metric_win:smoke.structural_similarity:0.13526666666666667->0.46416666666666667:improvement=0.32889999999999997"
+  ],
+  "schema": "continuous_cycle_results/v1",
+  "stack_layer": false
+}
