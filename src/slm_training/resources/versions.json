@@ -4373,7 +4373,7 @@
       ]
     },
     "harness.eval.semantic_failure_census": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/evals/semantic_failure.py",
@@ -4384,6 +4384,11 @@
         "docs/design/iter-slm263-semantic-failure-census-20260724.json"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-08",
+          "note": "VCE-001/SLM-438: add VerifierWitnessV1 lossless typed localization (gate/reason/AST-span, completeness, redaction, tamper-evident digest) over SemanticFailureTraceV1"
+        },
         {
           "version": "v1",
           "date": "2026-07-24",
