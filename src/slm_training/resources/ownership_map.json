@@ -418,6 +418,23 @@
       "notes": "SRP-003/SLM-461. New pack-local subsystem for the symbolic-regression pack, pre-authorized by the downstream_extension_map row for SRP-003 (new_owner_justified: true, extension_point dsl_pack_registry_canonical -- this evaluator is consumed by/registered through that registry, it does not fork it). Evaluates symbolic_expr_ir's typed AST (VarRef/CoefficientHole/OpApply) over NumPy arrays via a fixed, hardcoded per-operator dispatch table -- no eval/exec/getattr/importlib path exists. Honors symbolic_regression_pack.SymbolicRegressionProblemV1.numeric_domain_policy (reject_nonfinite/allow_nonfinite), which no evaluator previously consulted. Supersedes symbolic_regression_pack.evaluate_expression for real search/fitting use; that scalar reference evaluator is kept only to prove the parse/evaluate round trip. SRP-004 (SLM-465) is pre-registered to extend this owner rather than create a new one."
     },
     {
+      "id": "symbolic_expr_canonicalize",
+      "name": "Pack-owned canonicalization and tamper-evident rewrite-certificate schema",
+      "owner_module": "src/slm_training/dsl/symbolic_expr_canonicalize.py",
+      "owner_symbols": [
+        "RewriteRuleV1",
+        "RewriteCertificateV1",
+        "REWRITE_RULES",
+        "canonicalize_expr",
+        "canonicalize_with_certificates",
+        "apply_rewrite_rule",
+        "certificate_integrity_ok"
+      ],
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/symbol-only-output-contract.md",
+      "notes": "SRP-005/SLM-462. New pack-local subsystem for the symbolic-regression pack, pre-authorized by the downstream_extension_map row for SRP-005 (new_owner_justified: true). That row's extension_points list ['verifier_gate_stack'] as a predicted layering point and constrains the certificate shape to follow the VCE-001 witness pattern; the certificate schema (RewriteCertificateV1) is deliberately templated on evals/semantic_failure.py's VerifierWitnessV1 (schema version + typed evidence + trailing self-digest + fail-closed from_dict), satisfying that constraint. The predicted verifier_gate_stack layering itself is a documented divergence (same precedent as SGS-008): data/verify/stack.py's Gate/GateResult score LLM decode/verifier evidence, which a purely structural algebraic rewrite has no pass/fail outcome to compose with, so this module does not import or extend Gate/GateResult. Initial REWRITE_RULES set is small and exact-IEEE-754-safe by construction (commutative operand ordering for binary +/*, double-negation elimination, abs idempotence) -- none require a numeric side condition, so none can fold a not-yet-fit CoefficientHole or change declared numerical semantics."
+    },
+    {
       "id": "version_registry",
       "name": "Component-version registry and enforcement",
       "owner_module": "src/slm_training/resources/versions.json",
