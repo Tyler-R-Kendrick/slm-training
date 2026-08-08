@@ -8296,6 +8296,11 @@
         {
           "version": "v3",
           "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop continuous-openui-20260808-scheduled c3's confirm/control fresh-seed rejection (champion fingerprint 6cfba5d6fd08579f rejected: binder_reference_f1 non-regression fail 0.822->0.6, structural_similarity flat 0.1908) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
           "note": "no-bump: record scheduled loop continuous-openui-20260808-scheduled c2's component-plan/control scratch checkpoint provenance (fixture structural_similarity screening win .3267->.3828, fresh-seed confirmation queued, not promotable/synced/ship) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
