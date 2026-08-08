@@ -15084,17 +15084,24 @@
       ]
     },
     "data.prompt_requirements": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/data/progspec/prompt_requirements.py",
         "src/slm_training/data/semantic_plan/requirements_canonicalize.py",
         "src/slm_training/data/semantic_plan/requirements_extract.py",
+        "src/slm_training/data/semantic_plan/requirements_project.py",
         "tests/test_data/test_progspec/test_prompt_requirements.py",
         "tests/test_data/test_semantic_plan_extraction/test_requirements_canonicalize.py",
-        "tests/test_data/test_semantic_plan_extraction/test_requirements_extract.py"
+        "tests/test_data/test_semantic_plan_extraction/test_requirements_extract.py",
+        "tests/test_data/test_semantic_plan_extraction/test_requirements_project.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "SGS-005 (SLM-443): authority projections for PromptSemanticRequirementsV1 (production/oracle_diagnostic/evaluation_only) with hard-prune gate that requires COMPILER_AUTHORED_CERTIFIED evidence; reuses SemanticPlanV1.to_production_dict."
+        },
         {
           "version": "v2",
           "date": "2026-08-08",
