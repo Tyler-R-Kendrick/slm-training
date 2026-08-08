@@ -404,6 +404,20 @@
       "notes": "SRP-002/SLM-453. New pack-local subsystem for the symbolic-regression pack (SRP-001/SLM-441, owner symbolic_regression_pack.py), pre-authorized by the downstream_extension_map row for SRP-002 (new_owner_justified: true, layer under output_contract, do not fork it). Variables and coefficients are opaque indices only -- never names or free numeric literals -- so the structural codec's output space is symbol-only by construction without introducing a second OUTPUT_CONTRACT_VERSION or reusing production_codec's OpenUI-specific encode/decode logic. Supersedes the untyped dict-shaped expression tree in symbolic_regression_pack.py as the canonical structural form; the Lark surface grammar registered there (dsl/grammar/backends/symbolic_regression.py) remains input-surface syntax only."
     },
     {
+      "id": "symbolic_expr_evaluator",
+      "name": "Vectorized NumPy evaluator with explicit numerical-domain policies",
+      "owner_module": "src/slm_training/dsl/symbolic_expr_evaluator.py",
+      "owner_symbols": [
+        "DomainViolationV1",
+        "EvaluationResultV1",
+        "evaluate_vectorized",
+        "NUMERIC_DOMAIN_POLICIES"
+      ],
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/symbol-only-output-contract.md",
+      "notes": "SRP-003/SLM-461. New pack-local subsystem for the symbolic-regression pack, pre-authorized by the downstream_extension_map row for SRP-003 (new_owner_justified: true, extension_point dsl_pack_registry_canonical -- this evaluator is consumed by/registered through that registry, it does not fork it). Evaluates symbolic_expr_ir's typed AST (VarRef/CoefficientHole/OpApply) over NumPy arrays via a fixed, hardcoded per-operator dispatch table -- no eval/exec/getattr/importlib path exists. Honors symbolic_regression_pack.SymbolicRegressionProblemV1.numeric_domain_policy (reject_nonfinite/allow_nonfinite), which no evaluator previously consulted. Supersedes symbolic_regression_pack.evaluate_expression for real search/fitting use; that scalar reference evaluator is kept only to prove the parse/evaluate round trip. SRP-004 (SLM-465) is pre-registered to extend this owner rather than create a new one."
+    },
+    {
       "id": "version_registry",
       "name": "Component-version registry and enforcement",
       "owner_module": "src/slm_training/resources/versions.json",
