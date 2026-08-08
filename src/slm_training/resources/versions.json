@@ -8286,6 +8286,11 @@
         {
           "version": "v3",
           "date": "2026-08-08",
+          "note": "no-bump: record continuous loop continuous-openui-20260808 cycle 5 (continuous-loop-20260808-continuous-openui-202608-1211eecb-c5) incomplete component-plan arm (not executed) scratch checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
           "note": "no-bump: record continuous loop continuous-openui-20260808 cycle 4 (continuous-loop-20260808-continuous-openui-202608-1211eecb-c4) batch1-vs-control null-delta scratch checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
