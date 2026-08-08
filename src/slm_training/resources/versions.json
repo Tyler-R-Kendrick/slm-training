@@ -1372,6 +1372,11 @@
       "history": [
         {
           "version": "v13",
+          "date": "2026-08-08",
+          "note": "no-bump: add PCT-001/SLM-439 DecodeStatsRecordV1 regression tests to tests/test_models/test_decode_stats.py; registry.py and pack.py unchanged."
+        },
+        {
+          "version": "v13",
           "date": "2026-08-05",
           "note": "Fail closed on witness false-singleton risk: when UNKNOWN drops leave exactly one proven candidate, completion domain status becomes incomplete with reason witness_false_singleton_risk so I2 exact_forced cannot commit a budget-manufactured singleton. Counter still fires."
         },
@@ -10204,7 +10209,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v92",
+      "version": "v93",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -10225,6 +10230,11 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v93",
+          "note": "PCT-001/SLM-439: add DecodeStatsRecordV1/DecodeIdentityV1 typed, tamper-evident, append-only envelope over DecodeStats (measurement_stage cold/warm classification, completeness gating, legal-domain status, witness_ids, identity binding). Purely additive: DecodeStats and aggregate_stats are unchanged and no existing call site is wired to the new envelope yet.",
+          "date": "2026-08-08"
+        },
         {
           "version": "v92",
           "note": "eval generate_batch_size override for fair-share screening decode timeouts",

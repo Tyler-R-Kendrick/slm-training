@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import math
+import os
 import time
 from contextlib import contextmanager
-from dataclasses import asdict, dataclass, field
-from typing import Any, Iterator
+from dataclasses import asdict, dataclass, field, replace
+from pathlib import Path
+from typing import Any, Iterable, Iterator
 
 
 @dataclass
@@ -273,6 +277,201 @@ class DecodeStats:
             cur = getattr(self, key)
             if isinstance(cur, (int, float)) and isinstance(value, (int, float)):
                 setattr(self, key, cur + value)
+
+
+def proves_zero_neural_work(stats: DecodeStats) -> bool:
+    """I2 bypass proof: no denoiser forward, row-eval, or ambiguous-forward fired.
+
+    Mirrors the ``forwards_count == 0`` assertion pattern AGENTS.md I2
+    requires of every new decode path's bypass test
+    (``tests/test_models/test_inference_speed.py``).
+    """
+    return (
+        stats.forwards_count == 0
+        and stats.denoiser_rows_evaluated == 0
+        and stats.ambiguous_rows_forwarded == 0
+    )
+
+
+def proves_zero_search_work(stats: DecodeStats) -> bool:
+    """True when no solver decision and no lattice trajectory were expanded."""
+    return (
+        stats.solver_decisions == 0
+        and stats.solver_expanded_nodes == 0
+        and stats.compiler_lattice_trajectories == 0
+    )
+
+
+DECODE_STATS_RECORD_SCHEMA = "decode_stats_record/v1"
+
+# Distinguishes which boundary a decode call crossed so a "steady state"
+# aggregate can never silently absorb a cold-start's inflated timing.
+MEASUREMENT_STAGES = frozenset(
+    {"process_cold", "artifact_cold", "model_cold", "request_cold", "steady_state"}
+)
+# "complete" is the only stage a summary/aggregate may treat as a finished
+# measurement; a partial/aborted run stays visibly partial forever.
+COMPLETENESS_STATES = frozenset({"complete", "partial_timeout", "aborted"})
+# Mirrors CompletionDomainV1.status (dsl/grammar_capabilities.py) rather than
+# inventing a second symbol-table completeness vocabulary; "unknown" covers
+# callers that did not report a domain at all.
+LEGAL_DOMAIN_STATUSES = frozenset({"complete", "incomplete", "unsupported", "unknown"})
+
+
+def _canonical_digest(value: Any) -> str:
+    return hashlib.sha256(
+        json.dumps(value, sort_keys=True, separators=(",", ":"), default=str).encode("utf-8")
+    ).hexdigest()
+
+
+@dataclass(frozen=True)
+class DecodeIdentityV1:
+    """Identity binding for one decode call; every field is optional and
+    explicit -- callers that have not wired an identity source pass None
+    rather than a fabricated value."""
+
+    contract_version: int | None = None
+    pack_id: str | None = None
+    tokenizer_id: str | None = None
+    artifact_sha256: str | None = None
+    checkpoint_sha256: str | None = None
+    evaluator_version: str | None = None
+    evaluator_hash: str | None = None
+    code_commit: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "DecodeIdentityV1":
+        return cls(**payload)
+
+
+def _decode_record_digest(record: "DecodeStatsRecordV1") -> str:
+    payload = asdict(record)
+    payload.pop("record_digest", None)
+    return _canonical_digest(payload)
+
+
+@dataclass(frozen=True)
+class DecodeStatsRecordV1:
+    """Deterministic, tamper-evident envelope around one finished ``DecodeStats``.
+
+    Purely additive over the existing counter accumulator: it snapshots
+    ``stats`` rather than replacing it, so every current reader of
+    ``DecodeStats``/``aggregate_stats`` stays unaffected. Never fabricates
+    identity, domain, or witness evidence a caller did not supply.
+    """
+
+    schema_version: str
+    stats: dict[str, Any]
+    identity: dict[str, Any]
+    measurement_stage: str
+    completeness: str
+    legal_domain_size: int | None
+    legal_domain_status: str
+    witness_ids: tuple[str, ...]
+    prev_record_digest: str | None
+    record_digest: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "DecodeStatsRecordV1":
+        if payload.get("schema_version") != DECODE_STATS_RECORD_SCHEMA:
+            raise ValueError(
+                f"unsupported decode stats record schema: {payload.get('schema_version')!r}"
+            )
+        record = cls(**{**payload, "witness_ids": tuple(payload["witness_ids"])})
+        if _decode_record_digest(record) != record.record_digest:
+            raise ValueError(
+                "decode stats record digest mismatch (tampered or corrupted payload)"
+            )
+        return record
+
+
+def build_decode_stats_record(
+    stats: DecodeStats,
+    *,
+    measurement_stage: str,
+    completeness: str = "complete",
+    identity: DecodeIdentityV1 | None = None,
+    legal_domain_size: int | None = None,
+    legal_domain_status: str = "unknown",
+    witness_ids: tuple[str, ...] = (),
+    prev_record_digest: str | None = None,
+) -> DecodeStatsRecordV1:
+    """Build one content-bound record; identical inputs always yield an
+    identical ``record_digest``. Fails closed on an unrecognized stage/
+    completeness/domain-status rather than silently accepting one."""
+    if measurement_stage not in MEASUREMENT_STAGES:
+        raise ValueError(f"unknown measurement_stage: {measurement_stage!r}")
+    if completeness not in COMPLETENESS_STATES:
+        raise ValueError(f"unknown completeness: {completeness!r}")
+    if legal_domain_status not in LEGAL_DOMAIN_STATUSES:
+        raise ValueError(f"unknown legal_domain_status: {legal_domain_status!r}")
+    record = DecodeStatsRecordV1(
+        schema_version=DECODE_STATS_RECORD_SCHEMA,
+        stats=stats.as_dict(),
+        identity=(identity or DecodeIdentityV1()).to_dict(),
+        measurement_stage=measurement_stage,
+        completeness=completeness,
+        legal_domain_size=legal_domain_size,
+        legal_domain_status=legal_domain_status,
+        witness_ids=tuple(witness_ids),
+        prev_record_digest=prev_record_digest,
+        record_digest="",
+    )
+    return replace(record, record_digest=_decode_record_digest(record))
+
+
+def append_decode_stats_record(record: DecodeStatsRecordV1, path: str | Path) -> None:
+    """Append one canonical JSON line; never opens the log for truncation.
+
+    Fsyncs before returning, matching the durable-append convention already
+    used by the sibling append-only sink
+    (``harnesses/distill/trace_store.py::TraceStore.append``).
+    """
+    line = json.dumps(record.to_dict(), sort_keys=True, separators=(",", ":"))
+    with open(path, "a", encoding="utf-8") as handle:
+        handle.write(line + "\n")
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
+def iter_decode_stats_records(path: str | Path) -> Iterator[DecodeStatsRecordV1]:
+    """Read an append-only decode-stats log, failing closed on any break in
+    the ``prev_record_digest`` hash chain (reordered, deleted, or inserted
+    lines) or a per-record digest mismatch (tampered payload)."""
+    previous: DecodeStatsRecordV1 | None = None
+    with open(path, encoding="utf-8") as handle:
+        for line_no, raw_line in enumerate(handle, start=1):
+            raw_line = raw_line.strip()
+            if not raw_line:
+                continue
+            record = DecodeStatsRecordV1.from_dict(json.loads(raw_line))
+            expected_prev = previous.record_digest if previous is not None else None
+            if record.prev_record_digest != expected_prev:
+                raise ValueError(
+                    f"decode stats record chain broken at line {line_no}: "
+                    f"expected prev_record_digest={expected_prev!r}, "
+                    f"got {record.prev_record_digest!r}"
+                )
+            previous = record
+            yield record
+
+
+def completed_steady_state(
+    records: Iterable[DecodeStatsRecordV1],
+) -> list[DecodeStatsRecordV1]:
+    """Only complete, steady-state records may feed a "measured performance"
+    aggregate; cold-start and partial/aborted records never blend in."""
+    return [
+        record
+        for record in records
+        if record.completeness == "complete" and record.measurement_stage == "steady_state"
+    ]
 
 
 @contextmanager
@@ -716,13 +915,25 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
 
 __all__ = [
     "ATTRIBUTED_PHASE_FIELDS",
+    "COMPLETENESS_STATES",
+    "DECODE_STATS_RECORD_SCHEMA",
+    "LEGAL_DOMAIN_STATUSES",
+    "MEASUREMENT_STAGES",
+    "DecodeIdentityV1",
     "DecodeStats",
+    "DecodeStatsRecordV1",
     "aggregate_stats",
+    "append_decode_stats_record",
     "attributed_time_summary",
+    "build_decode_stats_record",
     "collect_completion_session_delta",
     "collect_decode_stats",
     "collect_engine_stats",
+    "completed_steady_state",
     "get_active_stats",
+    "iter_decode_stats_records",
+    "proves_zero_neural_work",
+    "proves_zero_search_work",
     "set_active_stats",
     "timed_ms",
 ]
