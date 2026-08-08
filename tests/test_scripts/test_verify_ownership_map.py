@@ -130,6 +130,16 @@ def sandbox(tmp_path, monkeypatch):
         json.dumps(_minimal_map(), indent=2),
     )
 
+    # SGS-010: copy the real serialized-contract modules rather than restating
+    # them, so a new SERIALIZED_CONTRACTS row needs no fixture edit.
+    for contract in verifier.SERIALIZED_CONTRACTS:
+        target = tmp_path / contract.module
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(
+            (verifier.ROOT / contract.module).read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+
     monkeypatch.setattr(verifier, "ROOT", tmp_path)
     return tmp_path
 
@@ -288,4 +298,20 @@ def test_catches_downstream_row_citing_unknown_subsystem(sandbox):
     doc["downstream_extension_map"][0]["extension_points"] = ["nonexistent"]
     path.write_text(json.dumps(doc), encoding="utf-8")
     with pytest.raises(verifier.OwnershipMapError, match="unknown extension_points"):
+        verifier.certify()
+
+
+def test_catches_serialized_contract_reader_that_ignores_its_version(sandbox):
+    # SGS-010: a reader that drops the version comparison would silently
+    # reinterpret an older/newer payload -- must fail loudly, not pass.
+    path = sandbox / "src/slm_training/data/progspec/synthesis_problem.py"
+    source = path.read_text(encoding="utf-8")
+    path.write_text(
+        source.replace(
+            'if str(value.get("schema_version")) != SYNTHESIS_PROBLEM_SCHEMA_VERSION:',
+            "if False:",
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(verifier.OwnershipMapError, match="never consults"):
         verifier.certify()

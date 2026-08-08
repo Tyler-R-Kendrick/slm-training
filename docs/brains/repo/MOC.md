@@ -76,3 +76,4 @@ hypothesis loop's novelty audit can exclude them.
   [`research-lineage.md`](../../design/research-lineage.md) "Exact-state local decision preference".
 
 - [SGS-004 prompt requirements extract](../design/sgs-004-prompt-requirements-extract.md)
+- [SGS-010 schema versioning + compatibility](../design/sgs-010-schema-versioning-compatibility.md)

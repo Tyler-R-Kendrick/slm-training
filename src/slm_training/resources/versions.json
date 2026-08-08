@@ -68,7 +68,7 @@
         {
           "version": "v3",
           "date": "2026-07-30",
-          "note": "ConstrainedDiffusion.lean: machine-checked claim cores for topology\u00d7diffusion ADR (\u0393 tighten, E1 parity, residual ranking, forced-macro no-literal, singleton forwards optimum 0, E9 memo\u2260AOT, stack order, forest-verified subset). Map in adr-constrained-diffusion-topology-proofs.md."
+          "note": "ConstrainedDiffusion.lean: machine-checked claim cores for topology×diffusion ADR (Γ tighten, E1 parity, residual ranking, forced-macro no-literal, singleton forwards optimum 0, E9 memo≠AOT, stack order, forest-verified subset). Map in adr-constrained-diffusion-topology-proofs.md."
         },
         {
           "version": "v2",
@@ -763,7 +763,7 @@
         {
           "version": "v1",
           "date": "2026-07-25",
-          "note": "DSH5-02: initial exact atomic bulk openui.map_set_property operator over SelectorRefV1 \u2014 one schema-valid property update applied to every exact selected node atomically, with per-target effect deltas, replay, fresh post-commit reference-table continuation, and a diagnostic-only primitive-lowering equivalence oracle"
+          "note": "DSH5-02: initial exact atomic bulk openui.map_set_property operator over SelectorRefV1 — one schema-valid property update applied to every exact selected node atomically, with per-target effect deltas, replay, fresh post-commit reference-table continuation, and a diagnostic-only primitive-lowering equivalence oracle"
         }
       ]
     },
@@ -1143,7 +1143,7 @@
         {
           "version": "v1",
           "date": "2026-07-25",
-          "note": "no-bump: DSH5-05 extracts the private _merge_value/_StructuralConflict/MergeConflictKind primitive into the new src/slm_training/dsl/operators/ast_merge.py module (merge_ast_value/StructuralMergeConflict/MergeConflictKind) so the transaction executor's N-way fold can reuse it without importing merge.py (which imports conversation.py) and closing an import cycle; merge.py now imports from ast_merge.py instead of defining these locally \u2014 public behavior and every test_operator_merge.py test are unchanged"
+          "note": "no-bump: DSH5-05 extracts the private _merge_value/_StructuralConflict/MergeConflictKind primitive into the new src/slm_training/dsl/operators/ast_merge.py module (merge_ast_value/StructuralMergeConflict/MergeConflictKind) so the transaction executor's N-way fold can reuse it without importing merge.py (which imports conversation.py) and closing an import cycle; merge.py now imports from ast_merge.py instead of defining these locally — public behavior and every test_operator_merge.py test are unchanged"
         },
         {
           "version": "v1",
@@ -1201,7 +1201,7 @@
         {
           "version": "v21",
           "date": "2026-08-08",
-          "note": "no-bump: PCT-004 (SLM-440) \u2014 added StaticCompletionArtifactProvider + provider_for_pack in completion_artifact.py so a pack-declared completion_artifact path is the single source of truth for artifact/manifest locations, instead of the private DEFAULT_ARTIFACT_PATH/DEFAULT_MANIFEST_PATH constants duplicated across four call sites. engine.py's _direct_map and static_control_domain.py's require_certified_static_projection/static_lalr_adapter/require_certified_static_lalr now resolve the OpenUI provider through the pack registry (dsl/pack.py's completion_artifact_provider_for_grammar_path) rather than a hardcoded 'openui.lark' filename check. The checker (load_checked_completion_artifact) is unchanged and remains authoritative; resolved paths for the openui pack are byte-identical to the old defaults, so default OpenUI outputs, static_artifact_hits/fallbacks counters, and the fail-closed live-construction fallback for packs without a declared artifact are unchanged."
+          "note": "no-bump: PCT-004 (SLM-440) — added StaticCompletionArtifactProvider + provider_for_pack in completion_artifact.py so a pack-declared completion_artifact path is the single source of truth for artifact/manifest locations, instead of the private DEFAULT_ARTIFACT_PATH/DEFAULT_MANIFEST_PATH constants duplicated across four call sites. engine.py's _direct_map and static_control_domain.py's require_certified_static_projection/static_lalr_adapter/require_certified_static_lalr now resolve the OpenUI provider through the pack registry (dsl/pack.py's completion_artifact_provider_for_grammar_path) rather than a hardcoded 'openui.lark' filename check. The checker (load_checked_completion_artifact) is unchanged and remains authoritative; resolved paths for the openui pack are byte-identical to the old defaults, so default OpenUI outputs, static_artifact_hits/fallbacks counters, and the fail-closed live-construction fallback for packs without a declared artifact are unchanged."
         },
         {
           "version": "v21",
@@ -1379,12 +1379,12 @@
         {
           "version": "v14",
           "date": "2026-08-08",
-          "note": "SRP-001 (SLM-441) \u2014 dsl/pack.py's _ensure_builtin_packs registers a new opt-in `symbolic_regression` DslPack (built by the new dsl/symbolic_regression_pack.py) alongside openui/toy-layout/graphql. Behavioral addition to the watched file: a new pack_id becomes resolvable via get_pack('symbolic_regression')/SLM_GRAMMAR_DSL, but it is never aliased to the default (_ALIASES and _active_dsl() are unchanged, both still resolve to 'openui'), so existing callers and the default pack are unaffected."
+          "note": "SRP-001 (SLM-441) — dsl/pack.py's _ensure_builtin_packs registers a new opt-in `symbolic_regression` DslPack (built by the new dsl/symbolic_regression_pack.py) alongside openui/toy-layout/graphql. Behavioral addition to the watched file: a new pack_id becomes resolvable via get_pack('symbolic_regression')/SLM_GRAMMAR_DSL, but it is never aliased to the default (_ALIASES and _active_dsl() are unchanged, both still resolve to 'openui'), so existing callers and the default pack are unaffected."
         },
         {
           "version": "v13",
           "date": "2026-08-08",
-          "note": "no-bump: PCT-004 (SLM-440) \u2014 added DslPack.completion_artifact-driven completion_artifact_provider_for_grammar_path(grammar_path) to dsl/pack.py, resolving the registered pack whose backend grammar matches and returning its StaticCompletionArtifactProvider (completion_artifact.py). Registry contract (DslPack fields, register_pack/get_pack/list_packs) unchanged; new lookup is additive and only consumed by engine.py's fastpath _direct_map seam."
+          "note": "no-bump: PCT-004 (SLM-440) — added DslPack.completion_artifact-driven completion_artifact_provider_for_grammar_path(grammar_path) to dsl/pack.py, resolving the registered pack whose backend grammar matches and returning its StaticCompletionArtifactProvider (completion_artifact.py). Registry contract (DslPack fields, register_pack/get_pack/list_packs) unchanged; new lookup is additive and only consumed by engine.py's fastpath _direct_map seam."
         },
         {
           "version": "v13",
@@ -1511,7 +1511,7 @@
         {
           "version": "v1",
           "date": "2026-08-08",
-          "note": "SRP-001 (SLM-441) initial registration: opt-in `symbolic_regression` DslPack registered through the canonical dsl.pack registry (not the deprecated dsl/packs shadow registry). Adds SymbolicRegressionProblemV1 (versioned, hashable, validate-on-construct problem contract), a minimal placeholder Lark grammar/backend for a single `root` expression over allow-listed operators, a syntactic-only oracle (well_formed_not_behavioral \u2014 never numeric fit), and a fixed-dispatch-table reference evaluator that never calls eval/exec. No sympy/scipy/scikit-learn/PySR/julia dependency. SRP-002 (SLM-453) supersedes the placeholder grammar with a typed expression IR/codec; SRP-003 (SLM-461) supersedes the reference evaluator with a vectorized NumPy evaluator honoring numeric_domain_policy."
+          "note": "SRP-001 (SLM-441) initial registration: opt-in `symbolic_regression` DslPack registered through the canonical dsl.pack registry (not the deprecated dsl/packs shadow registry). Adds SymbolicRegressionProblemV1 (versioned, hashable, validate-on-construct problem contract), a minimal placeholder Lark grammar/backend for a single `root` expression over allow-listed operators, a syntactic-only oracle (well_formed_not_behavioral — never numeric fit), and a fixed-dispatch-table reference evaluator that never calls eval/exec. No sympy/scipy/scikit-learn/PySR/julia dependency. SRP-002 (SLM-453) supersedes the placeholder grammar with a typed expression IR/codec; SRP-003 (SLM-461) supersedes the reference evaluator with a vectorized NumPy evaluator honoring numeric_domain_policy."
         }
       ]
     },
@@ -1699,7 +1699,7 @@
         {
           "version": "v1",
           "date": "2026-07-25",
-          "note": "DSH5-05: initial atomic multi-action operator transaction executor \u2014 independent per-action constituent replay against one fixed base, base-relative N-way AST composition (a fold over the new shared ast_merge.merge_ast_value primitive, extracted from merge.py to avoid a conversation<->transaction_executor import cycle), a real structural-conflict safety net over declared-but-unverified commutativity, full pack-authority validation, fresh branch-local reference-table continuation via a caller-supplied builder, exact commit replay, and one CRDT conversation turn (TRANSACTION_COMMIT) carrying the whole transaction with every constituent application ID retained"
+          "note": "DSH5-05: initial atomic multi-action operator transaction executor — independent per-action constituent replay against one fixed base, base-relative N-way AST composition (a fold over the new shared ast_merge.merge_ast_value primitive, extracted from merge.py to avoid a conversation<->transaction_executor import cycle), a real structural-conflict safety net over declared-but-unverified commutativity, full pack-authority validation, fresh branch-local reference-table continuation via a caller-supplied builder, exact commit replay, and one CRDT conversation turn (TRANSACTION_COMMIT) carrying the whole transaction with every constituent application ID retained"
         }
       ]
     },
@@ -1715,7 +1715,7 @@
         {
           "version": "v3",
           "date": "2026-07-25",
-          "note": "DSH5-05: extend _target_lineage to also map ReferenceTableV1.selectors (not just .entries), so a selector-argument operator (openui.map_set_property, DSH5-02's only bulk operator) can be prepared into a transaction at all \u2014 previously unresolvable in both prepare_operator_action's semantic-id derivation and derive_read_write_set's precondition footprint, invisible until DSH5-05's bulk-plus-primitive matrix requirement exercised it; purely additive, no existing non-selector lineage entry changes"
+          "note": "DSH5-05: extend _target_lineage to also map ReferenceTableV1.selectors (not just .entries), so a selector-argument operator (openui.map_set_property, DSH5-02's only bulk operator) can be prepared into a transaction at all — previously unresolvable in both prepare_operator_action's semantic-id derivation and derive_read_write_set's precondition footprint, invisible until DSH5-05's bulk-plus-primitive matrix requirement exercised it; purely additive, no existing non-selector lineage entry changes"
         },
         {
           "version": "v2",
@@ -1725,7 +1725,7 @@
         {
           "version": "v1",
           "date": "2026-07-25",
-          "note": "DSH5-04: initial OperatorTransactionV1/PreparedOperatorActionV1/OperatorReadWriteSetV1 base-state, dependency, and conflict contracts \u2014 one-base multi-action preparation, semantic read/write footprints, write/write and write/read conflict resolution via mutual commutativity (reusing merge.py's _effect_targets and mutually-commuting gate), dependency-cycle detection, and canonical permutation-invariant transaction identity; schema/safety layer only, no execution path wired"
+          "note": "DSH5-04: initial OperatorTransactionV1/PreparedOperatorActionV1/OperatorReadWriteSetV1 base-state, dependency, and conflict contracts — one-base multi-action preparation, semantic read/write footprints, write/write and write/read conflict resolution via mutual commutativity (reusing merge.py's _effect_targets and mutually-commuting gate), dependency-cycle detection, and canonical permutation-invariant transaction identity; schema/safety layer only, no execution path wired"
         }
       ]
     },
@@ -2401,7 +2401,7 @@
         {
           "version": "v9",
           "date": "2026-07-19",
-          "note": "add EFS2-01 X22 tree-edit beam-width \u00d7 edit-depth scaling harness (TreeEditScalingConfig, run_scaling_grid, valid-state beam search) on top of quantized-energy/solver-state/verifier-cascade stack"
+          "note": "add EFS2-01 X22 tree-edit beam-width × edit-depth scaling harness (TreeEditScalingConfig, run_scaling_grid, valid-state beam search) on top of quantized-energy/solver-state/verifier-cascade stack"
         },
         {
           "version": "v8",
@@ -2781,7 +2781,7 @@
       ]
     },
     "governance.ownership_map": {
-      "version": "v6",
+      "version": "v7",
       "kind": "gate",
       "paths": [
         "src/slm_training/resources/ownership_map.json",
@@ -2789,9 +2789,15 @@
         "docs/design/symbol-only-output-contract.md",
         "docs/design/repository-ownership-map.md",
         "tests/test_scripts/test_verify_ownership_map.py",
-        "scripts/check_changed.py"
+        "scripts/check_changed.py",
+        "tests/test_data/test_synthesis_contract_versions.py"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-08-08",
+          "note": "SGS-010 (SLM-445): add the SERIALIZED_CONTRACTS static certificate to verify_ownership_map (every persisted contract declares a version symbol whose reader consults it and raises on mismatch) plus the table-driven runtime compatibility suite tests/test_data/test_synthesis_contract_versions.py (round-trip, future-version rejection, missing-version rejection, registry parity) covering PromptSemanticRequirementsV1, VerifiedSynthesisProblemV1, VerifierWitnessV1 and DecodeStatsRecordV1."
+        },
         {
           "version": "v6",
           "date": "2026-08-08",
@@ -2932,7 +2938,7 @@
         {
           "version": "v188",
           "date": "2026-08-06",
-          "note": "bank exhaust self-heal: compose thrash successors AND rewrite handoff repair_harness\u2192next_experiment; robust porcelain path parse"
+          "note": "bank exhaust self-heal: compose thrash successors AND rewrite handoff repair_harness→next_experiment; robust porcelain path parse"
         },
         {
           "version": "v187",
@@ -2972,12 +2978,12 @@
         {
           "version": "v183",
           "date": "2026-08-06",
-          "note": "continuous self-heal: driver-owned document closeout + continuous-only dirty-tree commit (SELF_HEAL_DOCUMENT / SELF_HEAL_DIRTY_TREE) so thrash never blocks on unacked document or auto-docs dirt; hard prereqs (repair_harness/formal/deliver_stack/\u2026) still fail closed"
+          "note": "continuous self-heal: driver-owned document closeout + continuous-only dirty-tree commit (SELF_HEAL_DOCUMENT / SELF_HEAL_DIRTY_TREE) so thrash never blocks on unacked document or auto-docs dirt; hard prereqs (repair_harness/formal/deliver_stack/…) still fail closed"
         },
         {
           "version": "v182",
           "date": "2026-08-05",
-          "note": "dual-regime thrash: isolate + climb residual + timeout\u2192decode residual routing; climb no-op residual skip via materialized knob signatures; thrash_regime on AutotrainCycleHandoffV1; policy v6 thrash_regimes"
+          "note": "dual-regime thrash: isolate + climb residual + timeout→decode residual routing; climb no-op residual skip via materialized knob signatures; thrash_regime on AutotrainCycleHandoffV1; policy v6 thrash_regimes"
         },
         {
           "version": "v181",
@@ -3042,7 +3048,7 @@
         {
           "version": "v170",
           "date": "2026-08-03",
-          "note": "Thrash never binds handoff-pred feedback_ids (handoff pred \u2260 hypothesize lineage); only confirm/promote/replay bind; fixes CYCLE_ERROR conflicts with supplied feedback ids after incomplete successor"
+          "note": "Thrash never binds handoff-pred feedback_ids (handoff pred ≠ hypothesize lineage); only confirm/promote/replay bind; fixes CYCLE_ERROR conflicts with supplied feedback ids after incomplete successor"
         },
         {
           "version": "v169",
@@ -3052,7 +3058,7 @@
         {
           "version": "v168",
           "date": "2026-08-03",
-          "note": "Pareto thrash timing: screening decode 8s + thrash steps 40 so n\u00d7decode fits 70s arm wall; thrash_timing/v1 telemetry; incomplete rate drives recalibration not wall++"
+          "note": "Pareto thrash timing: screening decode 8s + thrash steps 40 so n×decode fits 70s arm wall; thrash_timing/v1 telemetry; incomplete rate drives recalibration not wall++"
         },
         {
           "version": "v167",
@@ -3862,7 +3868,7 @@
         {
           "version": "v27",
           "date": "2026-08-01",
-          "note": "Promote formal timeout 600s \u2192 timed_out / promotion_inconclusive (not failed); refund promote_attempts on timeout"
+          "note": "Promote formal timeout 600s → timed_out / promotion_inconclusive (not failed); refund promote_attempts on timeout"
         },
         {
           "version": "v26",
@@ -4067,7 +4073,7 @@
         {
           "version": "v14",
           "date": "2026-08-03",
-          "note": "no-bump: CI no-torch fast path excludes tests/test_versioning again \u2014 test_mirrors.py imports torch transitively, so versions.json-only PRs failed collection; formal-contract behavior unchanged."
+          "note": "no-bump: CI no-torch fast path excludes tests/test_versioning again — test_mirrors.py imports torch transitively, so versions.json-only PRs failed collection; formal-contract behavior unchanged."
         },
         {
           "version": "v14",
@@ -4562,7 +4568,7 @@
         {
           "version": "v138",
           "date": "2026-07-27",
-          "note": "SLM-431 (LAR0-06): land src/slm_training/harnesses/experiments/slm317_repair_hybrid.py byte-identical from unmerged branch commit 48e5cadc (its own tests pass unmodified against main HEAD); the harness module itself carries no logic changes \u2014 the powered-rerun surface lives in scripts/run_slm317_repair_hybrid.py under harness.experiments.slm317_repair_hybrid v2."
+          "note": "SLM-431 (LAR0-06): land src/slm_training/harnesses/experiments/slm317_repair_hybrid.py byte-identical from unmerged branch commit 48e5cadc (its own tests pass unmodified against main HEAD); the harness module itself carries no logic changes — the powered-rerun surface lives in scripts/run_slm317_repair_hybrid.py under harness.experiments.slm317_repair_hybrid v2."
         },
         {
           "version": "v137",
@@ -5227,7 +5233,7 @@
         {
           "version": "v31",
           "date": "2026-07-20",
-          "note": "add SLM-148 SPV1-05 plan-conditioned X22 \u00d7 conflict-slice staged campaign wiring/fixture harness"
+          "note": "add SLM-148 SPV1-05 plan-conditioned X22 × conflict-slice staged campaign wiring/fixture harness"
         },
         {
           "version": "v30",
@@ -5267,7 +5273,7 @@
         {
           "version": "v24",
           "date": "2026-07-19",
-          "note": "add SLM-133 EFS3-06 AST-sketch dedup \u00d7 choice-native retrieval factorial wiring/fixture harness"
+          "note": "add SLM-133 EFS3-06 AST-sketch dedup × choice-native retrieval factorial wiring/fixture harness"
         },
         {
           "version": "v23",
@@ -5327,7 +5333,7 @@
         {
           "version": "v13",
           "date": "2026-07-19",
-          "note": "add CAP3-05 (SLM-94) equal-byte width \u00d7 precision ladder planner and dry-run manifest support"
+          "note": "add CAP3-05 (SLM-94) equal-byte width × precision ladder planner and dry-run manifest support"
         },
         {
           "version": "v12",
@@ -5448,7 +5454,7 @@
         {
           "version": "v1",
           "date": "2026-07-19",
-          "note": "initial registration; SLM-133 EFS3-06 AST-sketch dedup \u00d7 choice-native retrieval factorial wiring/fixture harness"
+          "note": "initial registration; SLM-133 EFS3-06 AST-sketch dedup × choice-native retrieval factorial wiring/fixture harness"
         }
       ]
     },
@@ -6038,7 +6044,7 @@
         {
           "version": "sde5-03-v1",
           "date": "2026-07-21",
-          "note": "initial registration; SLM-210 SDE5-03 prompt-plan \u00d7 grammar-mass \u00d7 high-debt exposure floor-escape matrix wiring/fixture harness"
+          "note": "initial registration; SLM-210 SDE5-03 prompt-plan × grammar-mass × high-debt exposure floor-escape matrix wiring/fixture harness"
         }
       ]
     },
@@ -6581,7 +6587,7 @@
         {
           "version": "v1",
           "date": "2026-07-20",
-          "note": "initial registration of SLM-148 SPV1-05 plan-conditioned X22 \u00d7 conflict-slice staged campaign wiring/fixture harness"
+          "note": "initial registration of SLM-148 SPV1-05 plan-conditioned X22 × conflict-slice staged campaign wiring/fixture harness"
         }
       ]
     },
@@ -7755,7 +7761,7 @@
         {
           "version": "v4",
           "date": "2026-07-25",
-          "note": "no-bump: shrink the Vercel bundle from ~10.4 GB to under half of the first working 247 MB deploy \u2014 exclude local build/run artifacts (/outputs, /.venv, /node_modules, /build, /session, /_uv, /tests), published training records.jsonl, sourcemaps, oversized historical docs/design JSON, and the fixture checkpoint; ship a slim requirements.txt without numpy/onnxruntime (generation hands off to the browser path honestly); stop installing the project into the function venv (tool.uv package=false)"
+          "note": "no-bump: shrink the Vercel bundle from ~10.4 GB to under half of the first working 247 MB deploy — exclude local build/run artifacts (/outputs, /.venv, /node_modules, /build, /session, /_uv, /tests), published training records.jsonl, sourcemaps, oversized historical docs/design JSON, and the fixture checkpoint; ship a slim requirements.txt without numpy/onnxruntime (generation hands off to the browser path honestly); stop installing the project into the function venv (tool.uv package=false)"
         },
         {
           "version": "v4",
@@ -11588,7 +11594,7 @@
         {
           "version": "v19",
           "date": "2026-07-25",
-          "note": "no-bump: additive self-contained module operator_nl_turns.py (SLM-379 operator NL edit turns); no existing train_data builder, validator, preference, quality, leakage, or publication path is modified \u2014 the new module is versioned under harness.experiments.slm379_operator_frames v1"
+          "note": "no-bump: additive self-contained module operator_nl_turns.py (SLM-379 operator NL edit turns); no existing train_data builder, validator, preference, quality, leakage, or publication path is modified — the new module is versioned under harness.experiments.slm379_operator_frames v1"
         },
         {
           "version": "v19",
@@ -11873,7 +11879,7 @@
         {
           "version": "v9",
           "date": "2026-08-03",
-          "note": "no-bump: Round 7 follow-up docs \u2014 record the landed finalize_ms/attributed_fraction telemetry and HEAD re-validation numbers in runtime-performance.md; matrix behavior unchanged."
+          "note": "no-bump: Round 7 follow-up docs — record the landed finalize_ms/attributed_fraction telemetry and HEAD re-validation numbers in runtime-performance.md; matrix behavior unchanged."
         },
         {
           "version": "v9",
@@ -15054,7 +15060,7 @@
         {
           "version": "v7",
           "date": "2026-07-31",
-          "note": "Non-vacuous LeverProofLean.AdvisoryResidual scorer/membership/golden incidence cores; SFF campaign formal_obligations + formal_preflight; golden_vectors.v1.json Python\u2194Lean bridges; hollow residual theorems documented as ADR sketches."
+          "note": "Non-vacuous LeverProofLean.AdvisoryResidual scorer/membership/golden incidence cores; SFF campaign formal_obligations + formal_preflight; golden_vectors.v1.json Python↔Lean bridges; hollow residual theorems documented as ADR sketches."
         },
         {
           "version": "v6",
@@ -15074,12 +15080,12 @@
         {
           "version": "v3",
           "date": "2026-07-31",
-          "note": "First-class runtime metrics: per-arm wall_ms mean/p50/p95/total, vs-control ratio, quality_per_ms, delta_accuracy_per_extra_ms; campaign endpoints wall_ms_mean + quality_per_ms; claims C17\u2013C19 efficiency gates."
+          "note": "First-class runtime metrics: per-arm wall_ms mean/p50/p95/total, vs-control ratio, quality_per_ms, delta_accuracy_per_extra_ms; campaign endpoints wall_ms_mean + quality_per_ms; claims C17–C19 efficiency gates."
         },
         {
           "version": "v2",
           "date": "2026-07-31",
-          "note": "Measured SFF suite n_ranked=78 (26\u00d73 seeds): claim validate/invalidate registry, MRR/CI/paired deltas, role-conditioned restart residual; role_ported/direct/exact_typed causal; factor_node inert; role identity claim invalidated; promotion bar fails fixture class."
+          "note": "Measured SFF suite n_ranked=78 (26×3 seeds): claim validate/invalidate registry, MRR/CI/paired deltas, role-conditioned restart residual; role_ported/direct/exact_typed causal; factor_node inert; role identity claim invalidated; promotion bar fails fixture class."
         },
         {
           "version": "v1",
@@ -15117,12 +15123,12 @@
         {
           "version": "v2",
           "date": "2026-08-08",
-          "note": "SGS-004 hotfix: either/or ambiguous-component filter matches exact required component names only (no Form\u2282FormControl / Card\u2282CardHeader substring suppression)."
+          "note": "SGS-004 hotfix: either/or ambiguous-component filter matches exact required component names only (no Form⊂FormControl / Card⊂CardHeader substring suppression)."
         },
         {
           "version": "v1",
           "date": "2026-08-08",
-          "note": "SGS-004 (SLM-442): conservative deterministic GenerationRequest \u2192 PromptSemanticRequirementsV1 extractor with stable rule ids, gold-target access guards, ambiguity abstention, and reuse of existing _prompt_component_requirements inventory behavior; registers the SGS-003 contract + canonicalize + extract surface under one component."
+          "note": "SGS-004 (SLM-442): conservative deterministic GenerationRequest → PromptSemanticRequirementsV1 extractor with stable rule ids, gold-target access guards, ambiguity abstention, and reuse of existing _prompt_component_requirements inventory behavior; registers the SGS-003 contract + canonicalize + extract surface under one component."
         }
       ]
     }
