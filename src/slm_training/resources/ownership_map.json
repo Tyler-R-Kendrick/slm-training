@@ -435,6 +435,22 @@
       "notes": "SRP-005/SLM-462. New pack-local subsystem for the symbolic-regression pack, pre-authorized by the downstream_extension_map row for SRP-005 (new_owner_justified: true). That row's extension_points list ['verifier_gate_stack'] as a predicted layering point and constrains the certificate shape to follow the VCE-001 witness pattern; the certificate schema (RewriteCertificateV1) is deliberately templated on evals/semantic_failure.py's VerifierWitnessV1 (schema version + typed evidence + trailing self-digest + fail-closed from_dict), satisfying that constraint. The predicted verifier_gate_stack layering itself is a documented divergence (same precedent as SGS-008): data/verify/stack.py's Gate/GateResult score LLM decode/verifier evidence, which a purely structural algebraic rewrite has no pass/fail outcome to compose with, so this module does not import or extend Gate/GateResult. Initial REWRITE_RULES set is small and exact-IEEE-754-safe by construction (commutative operand ordering for binary +/*, double-negation elimination, abs idempotence) -- none require a numeric side condition, so none can fold a not-yet-fit CoefficientHole or change declared numerical semantics."
     },
     {
+      "id": "symbolic_expr_fit",
+      "name": "Affine coefficient-dependence analysis and deterministic least-squares fitting",
+      "owner_module": "src/slm_training/dsl/symbolic_expr_fit.py",
+      "owner_symbols": [
+        "AffineClassificationV1",
+        "LeastSquaresFitV1",
+        "NonAffineError",
+        "classify_affine_dependence",
+        "fit_least_squares",
+        "fit_integrity_ok"
+      ],
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/symbol-only-output-contract.md",
+      "notes": "SRP-004/SLM-465. The downstream_extension_map row for SRP-004 predicted new_owner_justified: false ('Extends the SRP-003 evaluator'), i.e. adding these symbols directly to symbolic_expr_evaluator's owner_symbols. The real implementation is a self-contained module whose dataclasses (AffineClassificationV1, LeastSquaresFitV1) are not literally defined in symbolic_expr_evaluator.py -- per this map's own rule that a symbol living in a sibling file cannot be added to another module's owner_symbols -- so it is registered as its own subsystem instead, and the divergence is documented here (same precedent as SGS-008/SRP-005). It does reuse symbolic_expr_evaluator.evaluate_vectorized directly (every coefficient-free subtree is evaluated through it, never re-implemented) rather than forking evaluator arithmetic. classify_affine_dependence is a purely structural, data-independent check built on the identical recursive rule set fit_least_squares uses to build the design matrix (via a single-row dummy evaluation), so the two can never silently disagree. Non-affine coefficient holes are unsupported by design -- no optimizer is ever silently substituted."
+    },
+    {
       "id": "version_registry",
       "name": "Component-version registry and enforcement",
       "owner_module": "src/slm_training/resources/versions.json",
