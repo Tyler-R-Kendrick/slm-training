@@ -8212,6 +8212,11 @@
       "history": [
         {
           "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop continuous-openui-local c1's bounds/control scratch checkpoint provenance (fixture-scale wf_smoke_v2 cycle, ship gates rejected on fixture n, non-positive SDLC classification) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
           "date": "2026-08-04",
           "note": "no-bump: record scheduled loop fe71636 c2's control/canvas scratch checkpoint provenance (AgentV harness failure, repaired, replay still decode-timeout incomplete) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
