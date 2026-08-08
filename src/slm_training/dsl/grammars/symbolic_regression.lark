@@ -1,0 +1,40 @@
+// Symbolic-regression expression DSL (SRP-001 / SLM-441): a minimal, safe
+// arithmetic-plus-allow-listed-function grammar for a single `root` binding
+// over declared input variables. This is a placeholder generic-Lark
+// grammar reusing the same statement/expr shape as arith_sketch.lark and
+// toy_layout.lark; SRP-002 (SLM-453) owns the typed symbolic-expression
+// IR/grammar/codec that supersedes it. Example:
+//   a = 2 * x
+//   root = a + sin(y) - 1
+
+start: statement*
+
+statement: NAME "=" expr (_NL)*
+
+?expr: add
+
+?add: add "+" mul -> add_expr
+    | add "-" mul -> sub_expr
+    | mul
+
+?mul: mul "*" unary -> mul_expr
+    | mul "/" unary -> div_expr
+    | unary
+
+?unary: "-" unary -> neg_expr
+      | atom
+
+?atom: NUMBER
+     | call
+     | NAME -> ref
+     | "(" expr ")"
+
+call: NAME "(" [arg_list] ")"
+arg_list: expr ("," expr)*
+
+NAME: /[A-Za-z_][A-Za-z0-9_]*/
+NUMBER: /[0-9]+(\.[0-9]+)?/
+
+_NL: /(\r?\n)+/
+%import common.WS_INLINE
+%ignore WS_INLINE

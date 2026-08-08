@@ -1366,7 +1366,7 @@
       ]
     },
     "dsl.operators.registry": {
-      "version": "v13",
+      "version": "v14",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/registry.py",
@@ -1376,6 +1376,11 @@
         "tests/test_models/test_decode_stats.py"
       ],
       "history": [
+        {
+          "version": "v14",
+          "date": "2026-08-08",
+          "note": "SRP-001 (SLM-441) — dsl/pack.py's _ensure_builtin_packs registers a new opt-in `symbolic_regression` DslPack (built by the new dsl/symbolic_regression_pack.py) alongside openui/toy-layout/graphql. Behavioral addition to the watched file: a new pack_id becomes resolvable via get_pack('symbolic_regression')/SLM_GRAMMAR_DSL, but it is never aliased to the default (_ALIASES and _active_dsl() are unchanged, both still resolve to 'openui'), so existing callers and the default pack are unaffected."
+        },
         {
           "version": "v13",
           "date": "2026-08-08",
@@ -1485,6 +1490,23 @@
           "version": "v1",
           "date": "2026-07-23",
           "note": "initial pack-owned immutable operator registry with pure apply, dry-run authority validation, typed rejection, and exact replay"
+        }
+      ]
+    },
+    "dsl.symbolic_regression_pack": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/symbolic_regression_pack.py",
+        "src/slm_training/dsl/grammar/backends/symbolic_regression.py",
+        "src/slm_training/dsl/grammars/symbolic_regression.lark",
+        "tests/test_dsl/test_symbolic_regression_pack.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-08",
+          "note": "SRP-001 (SLM-441) initial registration: opt-in `symbolic_regression` DslPack registered through the canonical dsl.pack registry (not the deprecated dsl/packs shadow registry). Adds SymbolicRegressionProblemV1 (versioned, hashable, validate-on-construct problem contract), a minimal placeholder Lark grammar/backend for a single `root` expression over allow-listed operators, a syntactic-only oracle (well_formed_not_behavioral — never numeric fit), and a fixed-dispatch-table reference evaluator that never calls eval/exec. No sympy/scipy/scikit-learn/PySR/julia dependency. SRP-002 (SLM-453) supersedes the placeholder grammar with a typed expression IR/codec; SRP-003 (SLM-461) supersedes the reference evaluator with a vectorized NumPy evaluator honoring numeric_domain_policy."
         }
       ]
     },

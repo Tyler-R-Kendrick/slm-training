@@ -1102,6 +1102,13 @@ def _ensure_builtin_packs() -> None:
         register_pack(build_graphql_pack())
     except Exception:  # noqa: BLE001 - graphql pack is optional
         pass
+    # SRP-001 (SLM-441): opt-in symbolic-regression reference pack. Pure
+    # Python/Lark, no external bridge, so no defensive try/except is needed.
+    from slm_training.dsl.symbolic_regression_pack import (
+        build_symbolic_regression_pack,
+    )
+
+    register_pack(build_symbolic_regression_pack())
     _BUILTINS_LOADED = True
 
 

@@ -109,6 +109,14 @@ def _load_graphql() -> GrammarBackend:
     return GraphQLJsBackend()
 
 
+def _load_symbolic_regression() -> GrammarBackend:
+    from slm_training.dsl.grammar.backends.symbolic_regression import (
+        SymbolicRegressionBackend,
+    )
+
+    return SymbolicRegressionBackend()
+
+
 def _load_lark_alias() -> GrammarBackend:
     from slm_training.dsl.grammar.backends.lark_backend import LarkFileBackend
 
@@ -128,6 +136,7 @@ _BUILTIN_LOADERS: tuple[tuple[str, Callable[[], GrammarBackend]], ...] = (
     ("toy-layout", _load_toy_layout),
     ("arith-sketch", _load_arith_sketch),
     ("graphql", _load_graphql),
+    ("symbolic-regression", _load_symbolic_regression),
     ("lark-openui", _load_lark_alias),
 )
 
