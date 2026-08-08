@@ -8286,6 +8286,11 @@
         {
           "version": "v3",
           "date": "2026-08-08",
+          "note": "no-bump: record scheduled continuous-openui-20260808 cycle 5 (component-plan arm measurement incomplete, missing_scoreboard, queued retry_measurement) checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
           "note": "no-bump: record scheduled continuous-openui-20260808 cycle 4 (screening arms batch1/control, fixture gate reject, null primary-metric delta, non-positive) checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
