@@ -8301,6 +8301,11 @@
         {
           "version": "v3",
           "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop h2k9wp c2's control/component-plan scratch checkpoint provenance (decode-timeout measurement_incomplete, infrastructure diagnosis) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
           "note": "no-bump: record scheduled loop h2k9wp c1's control/bounds scratch checkpoint provenance (fixture insufficient_n, structural_similarity null delta) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
