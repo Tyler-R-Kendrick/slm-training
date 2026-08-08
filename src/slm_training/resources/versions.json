@@ -8301,6 +8301,11 @@
         {
           "version": "v3",
           "date": "2026-08-08",
+          "note": "no-bump: record continuous-loop-20260808-continuous-openui-local-8c0b60dd-c10's component-edge/control fixture screen (non-positive, gate reject, checkpoint provenance) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
           "note": "no-bump: record continuous-loop-20260808-continuous-openui-local-8c0b60dd-c8's control-only fixture screen (component-edge arm not executed, non-positive, checkpoint provenance) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
