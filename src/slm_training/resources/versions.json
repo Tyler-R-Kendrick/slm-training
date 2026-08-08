@@ -8301,6 +8301,11 @@
         {
           "version": "v3",
           "date": "2026-08-08",
+          "note": "no-bump: record scheduled continuous-openui-20260808 c7's fixture control/component-edge checkpoint provenance (both arms complete, fixture insufficient_n, ship gates rejected as expected) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
           "note": "no-bump: record scheduled continuous-openui-20260808 c6's fixture control/component-plan checkpoint provenance (both arms complete, fixture insufficient_n, ship gates rejected as expected) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
