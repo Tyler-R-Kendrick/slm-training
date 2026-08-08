@@ -8301,6 +8301,11 @@
         {
           "version": "v3",
           "date": "2026-08-08",
+          "note": "no-bump: record scheduled continuous-openui-20260808 c6's fixture control/component-plan checkpoint provenance (both arms complete, fixture insufficient_n, ship gates rejected as expected) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
           "note": "no-bump: record scheduled continuous-openui-20260808 c4's fixture control/bounds checkpoint provenance (control decode_timeout_count=3, harness_failure exit=2; bounds arm completed with insufficient_n; executable_unblock signal queued for retry_measurement) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
