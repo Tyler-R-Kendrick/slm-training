@@ -9,6 +9,7 @@ import pytest
 from slm_training.data.progspec.schema import ProgramSpec
 from slm_training.data.progspec.semantic_plan import SemanticPlanV1
 from slm_training.data.semantic_plan import (
+    AuthorityProjectionV1,
     Evidence,
     EvidenceKind,
     OpenUISemanticPlanCompiler,
@@ -16,7 +17,9 @@ from slm_training.data.semantic_plan import (
     PlanAssumption,
     PlanAssumptionTrail,
     PlanSeedResult,
+    project_authority,
 )
+from slm_training.data.semantic_plan.compiler import RestrictionResult
 from slm_training.dsl.pack import get_pack
 from slm_training.dsl.parser import validate
 
@@ -238,3 +241,197 @@ def test_plan_seed_builder_reused_for_openui(compiler: OpenUISemanticPlanCompile
     # The seed should contain the root component and at least one child.
     assert "root" in result.seed
     assert "Stack" in result.seed
+
+
+# --- project_authority (SGS-005 / SLM-443) ---------------------------------
+
+
+def test_project_authority_certified_hard_removal_becomes_compiler_hard(
+    compiler: OpenUISemanticPlanCompiler,
+) -> None:
+    evidence = [
+        Evidence(
+            evidence_id="forbidden_card",
+            kind=EvidenceKind.COMPILER_AUTHORED_CERTIFIED,
+            certificate="pack_schema:card_forbidden",
+        )
+    ]
+    restriction = compiler.certified_restrictions(None, None, _make_gold_plan(), evidence)
+    projection = project_authority(None, restriction, honesty_mode="production")
+
+    assert [e.evidence_id for e in projection.compiler_certified] == ["forbidden_card"]
+    assert projection.compiler_certified[0].downgrade_reason is None
+    assert projection.production_safe_advisory == ()
+    assert projection.evaluation_only == ()
+
+
+def test_project_authority_downgrades_uncertified_compiler_claim(
+    compiler: OpenUISemanticPlanCompiler,
+) -> None:
+    evidence = [
+        Evidence(
+            evidence_id="uncertified",
+            kind=EvidenceKind.COMPILER_AUTHORED_CERTIFIED,
+            certificate=None,
+        )
+    ]
+    restriction = compiler.certified_restrictions(None, None, _make_gold_plan(), evidence)
+    projection = project_authority(None, restriction)
+
+    assert projection.compiler_certified == ()
+    downgraded = projection.evaluation_only[0]
+    assert downgraded.evidence_id == "uncertified"
+    assert downgraded.hard_removal is False
+    assert "no certified hard removal" in downgraded.downgrade_reason
+
+
+def test_project_authority_downgrades_unsafe_hard_removal_never_promotable() -> None:
+    """A prediction-only hard removal (only reachable via the unsafe escape
+    hatch) can never surface as advisory or compiler-hard in a manifest."""
+    unsafe_compiler = OpenUISemanticPlanCompiler(
+        honesty_mode="oracle_diagnostic", allow_unsafe_predicted_hard_control=True
+    )
+    evidence = [Evidence(evidence_id="unsafe_prune", kind=EvidenceKind.PREDICTION_ONLY)]
+    restriction = unsafe_compiler.certified_restrictions(None, None, _make_gold_plan(), evidence)
+    assert any(r.action_id == "unsafe_prune" for r in restriction.hard_removals)  # sanity
+
+    projection = project_authority(None, restriction, honesty_mode="oracle_diagnostic")
+
+    assert projection.compiler_certified == ()
+    assert projection.production_safe_advisory == ()
+    downgraded = projection.evaluation_only[0]
+    assert downgraded.evidence_id == "unsafe_prune"
+    assert downgraded.hard_removal is True
+    assert "unsafe diagnostic control" in downgraded.downgrade_reason
+
+
+def test_project_authority_excludes_oracle_gold_from_production() -> None:
+    evidence = [Evidence(evidence_id="oracle_hint", kind=EvidenceKind.ORACLE_GOLD)]
+    restriction = RestrictionResult(evidence_log=tuple(evidence))
+    projection = project_authority(None, restriction, honesty_mode="production")
+
+    assert projection.oracle_diagnostic == ()
+    downgraded = projection.evaluation_only[0]
+    assert downgraded.evidence_id == "oracle_hint"
+    assert "excluded from a production manifest" in downgraded.downgrade_reason
+
+
+def test_project_authority_keeps_oracle_gold_in_diagnostic_mode() -> None:
+    evidence = [Evidence(evidence_id="oracle_hint", kind=EvidenceKind.ORACLE_GOLD)]
+    restriction = RestrictionResult(evidence_log=tuple(evidence))
+    projection = project_authority(None, restriction, honesty_mode="oracle_diagnostic")
+
+    assert [e.evidence_id for e in projection.oracle_diagnostic] == ["oracle_hint"]
+    assert projection.oracle_diagnostic[0].downgrade_reason is None
+
+
+def test_project_authority_downgrades_tainted_dependency(
+    compiler: OpenUISemanticPlanCompiler,
+) -> None:
+    """Nested provenance smuggling: a certified removal cannot launder an
+    oracle-derived dependency into compiler-hard authority."""
+    oracle_dep = Evidence(evidence_id="oracle_source", kind=EvidenceKind.ORACLE_GOLD)
+    tainted_certified = Evidence(
+        evidence_id="laundered",
+        kind=EvidenceKind.COMPILER_AUTHORED_CERTIFIED,
+        certificate="cert:laundered",
+        depends_on=("oracle_source",),
+    )
+    restriction = compiler.certified_restrictions(
+        None, None, _make_gold_plan(), [oracle_dep, tainted_certified]
+    )
+    assert any(r.action_id == "laundered" for r in restriction.hard_removals)  # sanity
+
+    projection = project_authority(None, restriction, honesty_mode="oracle_diagnostic")
+
+    laundered = next(
+        e for e in projection.evaluation_only if e.evidence_id == "laundered"
+    )
+    assert "oracle" in laundered.downgrade_reason
+    assert all(e.evidence_id != "laundered" for e in projection.compiler_certified)
+
+
+def test_project_authority_never_changes_the_restriction_it_projects(
+    compiler: OpenUISemanticPlanCompiler,
+) -> None:
+    """No projection changes the exact candidate domain by itself."""
+    evidence = [
+        Evidence(
+            evidence_id="forbidden_card",
+            kind=EvidenceKind.COMPILER_AUTHORED_CERTIFIED,
+            certificate="pack_schema:card_forbidden",
+        )
+    ]
+    restriction = compiler.certified_restrictions(None, None, _make_gold_plan(), evidence)
+    before = restriction.to_dict()
+    project_authority(None, restriction)
+    assert restriction.to_dict() == before
+
+
+def test_project_authority_advisory_and_certified_buckets_never_overlap(
+    compiler: OpenUISemanticPlanCompiler,
+) -> None:
+    evidence = [
+        Evidence(evidence_id="predicted_only", kind=EvidenceKind.PREDICTION_ONLY),
+        Evidence(
+            evidence_id="certified",
+            kind=EvidenceKind.COMPILER_AUTHORED_CERTIFIED,
+            certificate="cert:x",
+        ),
+    ]
+    restriction = compiler.certified_restrictions(None, None, _make_gold_plan(), evidence)
+    projection = project_authority(None, restriction)
+
+    advisory_ids = {e.evidence_id for e in projection.production_safe_advisory}
+    certified_ids = {e.evidence_id for e in projection.compiler_certified}
+    assert advisory_ids.isdisjoint(certified_ids)
+    assert advisory_ids == {"predicted_only"}
+    assert certified_ids == {"certified"}
+
+
+def test_project_authority_is_idempotent(compiler: OpenUISemanticPlanCompiler) -> None:
+    evidence = [
+        Evidence(
+            evidence_id="forbidden_card",
+            kind=EvidenceKind.COMPILER_AUTHORED_CERTIFIED,
+            certificate="pack_schema:card_forbidden",
+        ),
+        Evidence(evidence_id="retrieved_hint", kind=EvidenceKind.RETRIEVAL),
+    ]
+    restriction = compiler.certified_restrictions(None, None, _make_gold_plan(), evidence)
+    once = project_authority(None, restriction)
+    twice = project_authority(None, restriction)
+    assert once == twice
+
+
+def test_project_authority_round_trips_through_from_dict(
+    compiler: OpenUISemanticPlanCompiler,
+) -> None:
+    evidence = [
+        Evidence(
+            evidence_id="forbidden_card",
+            kind=EvidenceKind.COMPILER_AUTHORED_CERTIFIED,
+            certificate="pack_schema:card_forbidden",
+        )
+    ]
+    restriction = compiler.certified_restrictions(None, None, _make_gold_plan(), evidence)
+    projection = project_authority(None, restriction)
+    restored = AuthorityProjectionV1.from_dict(projection.to_dict())
+    assert restored == projection
+
+
+def test_project_authority_rejects_invalid_honesty_mode(
+    compiler: OpenUISemanticPlanCompiler,
+) -> None:
+    restriction = compiler.certified_restrictions(None, None, _make_gold_plan(), [])
+    with pytest.raises(ValueError, match="honesty_mode"):
+        project_authority(None, restriction, honesty_mode="cheat")
+
+
+def test_project_authority_projects_plan_via_to_production_dict() -> None:
+    predicted_plan = SemanticPlanV1(
+        identity={"pack_id": "openui", "provenance": "predicted"},  # type: ignore[arg-type]
+    )
+    restriction = RestrictionResult()
+    projection = project_authority(predicted_plan, restriction, honesty_mode="production")
+    assert projection.plan == predicted_plan.to_production_dict(honesty_mode="production")

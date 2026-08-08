@@ -150,6 +150,58 @@ class PromptSemanticRequirementsV1(_StrictModel):
             raise ValueError("unsupported PromptSemanticRequirementsV1 version")
         return cls.model_validate(value)
 
+    def to_production_dict(self, *, honesty_mode: str = "production") -> dict[str, Any]:
+        """Project to a production-safe manifest (SGS-005 / SLM-443).
+
+        Mirrors ``SemanticPlanV1.to_production_dict``'s ``honesty_mode``
+        contract. A requirements set is a collection of independently
+        authored facts rather than one monolithic plan, so an
+        ``oracle_override`` fact is dropped -- recorded, not silently lost --
+        instead of failing the whole projection the way a gold
+        ``SemanticPlanV1`` does. Every other fact is kept byte-identical:
+        ``authority`` is never rewritten, since ``RequirementAuthority``
+        already excludes ``compiler-hard``/``verifier-hard`` at the type
+        level and this projection never escalates or invents a stronger
+        claim than a fact already carried.
+        """
+        if honesty_mode not in {"production", "oracle_diagnostic"}:
+            raise ValueError("honesty_mode must be production or oracle_diagnostic")
+
+        kept_facts: list[RequirementFact] = []
+        dropped_facts: list[dict[str, Any]] = []
+        for fact in self.facts:
+            if honesty_mode != "oracle_diagnostic" and fact.provenance == "oracle_override":
+                dropped_facts.append(
+                    {
+                        "fact_id": fact.fact_id,
+                        "provenance": fact.provenance,
+                        "authority": fact.authority,
+                        "downgrade_reason": (
+                            "oracle_override fact excluded from a production manifest"
+                        ),
+                    }
+                )
+                continue
+            kept_facts.append(fact)
+
+        kept_ids = {fact.fact_id for fact in kept_facts}
+        # A group with any oracle-dropped member cannot be projected: keeping
+        # it would leave a dangling member_fact_ids reference, and silently
+        # collapsing the remaining members would smuggle the ambiguity away.
+        kept_groups = tuple(
+            group for group in self.ambiguity_groups if set(group.member_fact_ids) <= kept_ids
+        )
+
+        projected = PromptSemanticRequirementsV1(
+            requirements_version=self.requirements_version,
+            prompt_context_hash=self.prompt_context_hash,
+            facts=tuple(kept_facts),
+            ambiguity_groups=kept_groups,
+        )
+        payload = projected.to_dict()
+        payload["dropped_facts"] = dropped_facts
+        return payload
+
     def merged_with(
         self, other: "PromptSemanticRequirementsV1"
     ) -> "PromptSemanticRequirementsV1":

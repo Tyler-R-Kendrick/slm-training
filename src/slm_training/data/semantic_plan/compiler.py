@@ -396,6 +396,196 @@ class OpenUISemanticPlanCompiler:
         )
 
 
+# Ownership-map authority-tier vocabulary (docs/design/repository-ownership-map.md
+# / resources/ownership_map.json "authority_tiers"). EvidenceKind values map
+# to it below rather than inventing a second restriction/authority system.
+AUTHORITY_TIER_COMPILER_HARD = "compiler-hard"
+AUTHORITY_TIER_ORACLE_DIAGNOSTIC = "oracle-diagnostic"
+AUTHORITY_TIER_ADVISORY_LEARNED = "advisory-learned"
+AUTHORITY_TIER_EVALUATION_ONLY = "evaluation-only"
+
+_EVIDENCE_KIND_DECLARED_TIER: dict[EvidenceKind, str] = {
+    EvidenceKind.PREDICTION_ONLY: AUTHORITY_TIER_ADVISORY_LEARNED,
+    EvidenceKind.RETRIEVAL: AUTHORITY_TIER_ADVISORY_LEARNED,
+    EvidenceKind.ORACLE_GOLD: AUTHORITY_TIER_ORACLE_DIAGNOSTIC,
+    EvidenceKind.COMPILER_AUTHORED_CERTIFIED: AUTHORITY_TIER_COMPILER_HARD,
+    EvidenceKind.UNKNOWN: AUTHORITY_TIER_EVALUATION_ONLY,
+}
+
+
+@dataclass(frozen=True)
+class EvidenceProjection:
+    """One evidence item re-labeled with the authority tier it actually earned."""
+
+    evidence_id: str
+    kind: str
+    authority_tier: str
+    downgrade_reason: str | None
+    hard_removal: bool
+    certificate_present: bool
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "evidence_id": self.evidence_id,
+            "kind": self.kind,
+            "authority_tier": self.authority_tier,
+            "downgrade_reason": self.downgrade_reason,
+            "hard_removal": self.hard_removal,
+            "certificate_present": self.certificate_present,
+        }
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "EvidenceProjection":
+        return cls(**payload)
+
+
+@dataclass(frozen=True)
+class AuthorityProjectionV1:
+    """Production/oracle/hard-authority projection (SGS-005 / SLM-443).
+
+    Pure re-labeling over an already-decided ``RestrictionResult``: it never
+    recomputes which candidates were removed (that decision stays owned by
+    ``certified_restrictions``), it only classifies each evidence item into
+    the ownership map's authority-tier vocabulary and strips oracle/gold plan
+    fields via ``SemanticPlanV1.to_production_dict``. A projection can only
+    ever *downgrade* a kind's declared tier to ``evaluation-only`` -- it never
+    invents or upgrades authority.
+    """
+
+    honesty_mode: str
+    plan: dict[str, Any] | None
+    compiler_certified: tuple[EvidenceProjection, ...]
+    production_safe_advisory: tuple[EvidenceProjection, ...]
+    oracle_diagnostic: tuple[EvidenceProjection, ...]
+    evaluation_only: tuple[EvidenceProjection, ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "honesty_mode": self.honesty_mode,
+            "plan": self.plan,
+            "compiler_certified": [e.to_dict() for e in self.compiler_certified],
+            "production_safe_advisory": [e.to_dict() for e in self.production_safe_advisory],
+            "oracle_diagnostic": [e.to_dict() for e in self.oracle_diagnostic],
+            "evaluation_only": [e.to_dict() for e in self.evaluation_only],
+        }
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "AuthorityProjectionV1":
+        return cls(
+            honesty_mode=payload["honesty_mode"],
+            plan=payload.get("plan"),
+            compiler_certified=tuple(
+                EvidenceProjection.from_dict(e) for e in payload["compiler_certified"]
+            ),
+            production_safe_advisory=tuple(
+                EvidenceProjection.from_dict(e) for e in payload["production_safe_advisory"]
+            ),
+            oracle_diagnostic=tuple(
+                EvidenceProjection.from_dict(e) for e in payload["oracle_diagnostic"]
+            ),
+            evaluation_only=tuple(
+                EvidenceProjection.from_dict(e) for e in payload["evaluation_only"]
+            ),
+        )
+
+
+def project_authority(
+    plan: SemanticPlanV1 | None,
+    restriction: RestrictionResult,
+    *,
+    honesty_mode: str = "production",
+) -> AuthorityProjectionV1:
+    """Deterministic authority projection over a plan and its restriction evidence.
+
+    Never mutates or re-decides ``restriction`` -- the exact candidate domain
+    (which actions were hard-removed) is unaffected by calling this. Each
+    evidence item's *declared* tier comes from its ``EvidenceKind``; the
+    *actual* tier is only ever that declared tier or a downgrade to
+    ``evaluation-only``, with an explicit ``downgrade_reason`` recorded:
+
+    * ``COMPILER_AUTHORED_CERTIFIED`` evidence that did not end up producing
+      a certified hard removal (no/rejected certificate) never earned
+      compiler-hard authority.
+    * A certified hard removal whose ``depends_on`` cites oracle or
+      unresolved evidence is tainted and cannot pass its authority through.
+    * Any hard removal from non-certified evidence (only reachable through
+      ``allow_unsafe_predicted_hard_control``) is forced to
+      ``evaluation-only`` -- an unsafe diagnostic control never earns a
+      production-promotable tier, regardless of its declared kind.
+    * ``ORACLE_GOLD`` evidence is excluded from a ``production`` manifest,
+      matching ``SemanticPlanV1``'s oracle-diagnostic-only gate.
+    """
+    if honesty_mode not in {"production", "oracle_diagnostic"}:
+        raise ValueError("honesty_mode must be production or oracle_diagnostic")
+
+    evidence_by_id = {ev.evidence_id: ev for ev in restriction.evidence_log}
+    hard_removal_ids = {removal.evidence.evidence_id for removal in restriction.hard_removals}
+
+    buckets: dict[str, list[EvidenceProjection]] = {
+        AUTHORITY_TIER_COMPILER_HARD: [],
+        AUTHORITY_TIER_ADVISORY_LEARNED: [],
+        AUTHORITY_TIER_ORACLE_DIAGNOSTIC: [],
+        AUTHORITY_TIER_EVALUATION_ONLY: [],
+    }
+    for ev in restriction.evidence_log:
+        is_hard = ev.evidence_id in hard_removal_ids
+        tier = _EVIDENCE_KIND_DECLARED_TIER[ev.kind]
+        downgrade_reason: str | None = None
+
+        if is_hard and ev.kind is not EvidenceKind.COMPILER_AUTHORED_CERTIFIED:
+            tier = AUTHORITY_TIER_EVALUATION_ONLY
+            downgrade_reason = (
+                "non-certified evidence produced a hard removal via an unsafe "
+                "diagnostic control; never promotable to a production authority tier"
+            )
+        elif ev.kind is EvidenceKind.COMPILER_AUTHORED_CERTIFIED:
+            if not is_hard:
+                tier = AUTHORITY_TIER_EVALUATION_ONLY
+                downgrade_reason = (
+                    "compiler_authored_certified evidence produced no certified hard removal"
+                )
+            else:
+                tainted = next(
+                    (
+                        dep_id
+                        for dep_id in ev.depends_on
+                        if evidence_by_id.get(dep_id) is None
+                        or evidence_by_id[dep_id].kind is EvidenceKind.ORACLE_GOLD
+                    ),
+                    None,
+                )
+                if tainted is not None:
+                    tier = AUTHORITY_TIER_EVALUATION_ONLY
+                    downgrade_reason = (
+                        f"depends_on references oracle or unresolved evidence {tainted!r}"
+                    )
+        elif ev.kind is EvidenceKind.ORACLE_GOLD and honesty_mode != "oracle_diagnostic":
+            tier = AUTHORITY_TIER_EVALUATION_ONLY
+            downgrade_reason = "oracle_gold evidence excluded from a production manifest"
+
+        buckets[tier].append(
+            EvidenceProjection(
+                evidence_id=ev.evidence_id,
+                kind=ev.kind.value,
+                authority_tier=tier,
+                downgrade_reason=downgrade_reason,
+                hard_removal=is_hard,
+                certificate_present=bool(ev.certificate),
+            )
+        )
+
+    plan_dict = plan.to_production_dict(honesty_mode=honesty_mode) if plan is not None else None
+
+    return AuthorityProjectionV1(
+        honesty_mode=honesty_mode,
+        plan=plan_dict,
+        compiler_certified=tuple(buckets[AUTHORITY_TIER_COMPILER_HARD]),
+        production_safe_advisory=tuple(buckets[AUTHORITY_TIER_ADVISORY_LEARNED]),
+        oracle_diagnostic=tuple(buckets[AUTHORITY_TIER_ORACLE_DIAGNOSTIC]),
+        evaluation_only=tuple(buckets[AUTHORITY_TIER_EVALUATION_ONLY]),
+    )
+
+
 def _compute_coverage(plan: SemanticPlanV1) -> dict[str, Any]:
     return {
         "role_count": len(plan.role_slots),
