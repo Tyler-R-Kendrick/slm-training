@@ -8213,6 +8213,11 @@
         {
           "version": "v3",
           "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop continuous-openui-local c5's component-edge/control scratch checkpoint provenance (fixture-scale wf_smoke_v2 cycle, ship gates rejected on fixture n plus a null primary-metric delta, non-positive SDLC classification) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
           "note": "no-bump: record scheduled loop continuous-openui-local c3's component-plan/control scratch checkpoint provenance (fixture-scale wf_smoke_v2 cycle, ship gates rejected on fixture n plus a primary-metric regression, non-positive SDLC classification) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
