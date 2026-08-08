@@ -1,0 +1,44 @@
+{
+  "auto": true,
+  "campaign_id": "continuous-loop-20260808-continuous-openui-schedu-97a2c1e2-c3",
+  "candidate_metrics": {
+    "binder_reference_f1": 0.0,
+    "latency_ms_p50": 17240.15,
+    "meaningful_program_rate": 0.0,
+    "parse_rate": 1.0,
+    "smoke.binder_reference_f1": 0.0,
+    "smoke.latency_ms_p50": 17240.15,
+    "smoke.meaningful_program_rate": 0.0,
+    "smoke.parse_rate": 1.0,
+    "smoke.structural_similarity": 0.38280000000000003,
+    "structural_similarity": 0.38280000000000003
+  },
+  "control_metrics": {
+    "binder_reference_f1": 0.0,
+    "latency_ms_p50": 23045.84,
+    "meaningful_program_rate": 0.0,
+    "parse_rate": 1.0,
+    "smoke.binder_reference_f1": 0.0,
+    "smoke.latency_ms_p50": 23045.84,
+    "smoke.meaningful_program_rate": 0.0,
+    "smoke.parse_rate": 1.0,
+    "smoke.structural_similarity": 0.32666666666666666,
+    "structural_similarity": 0.32666666666666666
+  },
+  "cycle_index": 3,
+  "cycle_intent": "retry_measurement",
+  "cycle_role": "screening",
+  "evidence_class": "fixture",
+  "honesty": "fixture_screening_only_not_ship",
+  "loop_id": "continuous-openui-scheduled-4e3ffd",
+  "measurement_complete": true,
+  "positive": true,
+  "primary_metric": "smoke.structural_similarity",
+  "reasons": [
+    "fixture_insufficient_n:c20260808-continuous-openui-schedu-97a2c1e2-c3-control",
+    "fixture_insufficient_n:c20260808-continuous-openui-schedu-97a2c1e2-c3-component-plan",
+    "primary_metric_win:smoke.structural_similarity:0.32666666666666666->0.38280000000000003:improvement=0.05613333333333337"
+  ],
+  "schema": "continuous_cycle_results/v1",
+  "stack_layer": false
+}
