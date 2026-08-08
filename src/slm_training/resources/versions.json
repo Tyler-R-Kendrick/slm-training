@@ -2742,6 +2742,23 @@
         }
       ]
     },
+    "governance.ownership_map": {
+      "version": "v1",
+      "kind": "gate",
+      "paths": [
+        "src/slm_training/resources/ownership_map.json",
+        "scripts/verify_ownership_map.py",
+        "docs/design/repository-ownership-map.md",
+        "tests/test_scripts/test_verify_ownership_map.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-08",
+          "note": "SGS-001 (SLM-435): initial checked-in owner/authority map for the live synthesis stack (semantic plan, G0-G12 verifier gates, semantic-failure taxonomy, repair, counterfactual replay, experiment registry, telemetry, certified completion artifacts, DSL packs, search/lattice state, versioning, generated docs); flags the dsl.pack vs dsl.packs duplicate registry; reconciles the OUTPUT_CONTRACT_VERSION doc/code mismatch (docs said 4, code says 2); maps all 55 downstream SGS/VCE/PCT/SRP/SIE/RSP backlog items to an existing extension point or an explicit new-owner justification."
+        }
+      ]
+    },
     "harness.artifact_graph": {
       "version": "v1",
       "kind": "harness",

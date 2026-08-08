@@ -8,8 +8,9 @@ OpenUI model targets and completions contain only grammar/AST symbols and
 template placeholders. The model never learns or emits arbitrary string
 content.
 
-The canonical contract is `OUTPUT_CONTRACT_VERSION = 4` in
-`src/slm_training/dsl/language_contract.py`. Its closed string-literal set is
+The canonical contract is `OUTPUT_CONTRACT_VERSION = 2` in
+`src/slm_training/dsl/language_contract.py` (v2 is intentionally
+checkpoint-incompatible with v1). Its closed string-literal set is
 derived from the pinned component schema. Values outside that set are content,
 including lowercase identifiers, empty strings, operational names, and strings
 inside arrays; data sanitization rewrites them to deterministic placeholders.
