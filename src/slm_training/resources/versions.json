@@ -8286,6 +8286,11 @@
         {
           "version": "v3",
           "date": "2026-08-08",
+          "note": "no-bump: record continuous loop continuous-openui-20260808 cycle 4 (continuous-loop-20260808-continuous-openui-202608-1211eecb-c4) batch1-vs-control null-delta scratch checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
           "note": "no-bump: record continuous loop continuous-openui-20260808 cycle 3 (continuous-loop-20260808-continuous-openui-202608-1211eecb-c3) fresh-seed confirmation rejection scratch checkpoint provenance in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
