@@ -280,6 +280,19 @@
       "notes": "Single definition site; used by the fastpath engine to compute legal-symbol candidates."
     },
     {
+      "id": "dsl_tokenizer",
+      "name": "DSL/grammar-native tokenizer (symbol-only decode target)",
+      "owner_module": "src/slm_training/models/dsl_tokenizer.py",
+      "owner_symbols": [
+        "DSL_TOKENIZER_VERSION",
+        "DSLNativeTokenizer",
+        "SymbolTable"
+      ],
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/agent-harness-parity-audit.md",
+      "notes": "DSL_TOKENIZER_VERSION=5, machine-checked against docs/design/agent-harness-parity-audit.md (\"DSL_TOKENIZER_VERSION stays 5\") by scripts/verify_ownership_map.py CONTRACT_VERSION_CHECKS (SGS-002/SLM-436). Distinct from choice_codec (models/choice_tokenizer.py): this is the lexer-native tokenizer, the choice codec is the fastpath alternative."
+    },
+    {
       "id": "choice_codec",
       "name": "Deterministic choice-sequence codec",
       "owner_module": "src/slm_training/models/choice_tokenizer.py",
@@ -992,5 +1005,27 @@
       "new_owner_justified": false,
       "justification": "Follows the SLM-160 disposition-report precedent and this map's known_drift/duplicate_subsystem_risks pattern; no new owner."
     }
-  ]
+  ],
+  "contract_version_governance": {
+    "mechanism": "scripts/verify_ownership_map.py CONTRACT_VERSION_CHECKS -- table-driven code<->doc version consistency (SGS-002/SLM-436)",
+    "ci_wiring": ".github/workflows/ci.yml python-static job, step \"Certify the repository ownership map\"",
+    "precommit_wiring": "scripts/check_changed.py OWNERSHIP_MAP_FILES set triggers python -m scripts.verify_ownership_map when a watched file changes",
+    "checked_identities": [
+      "OUTPUT_CONTRACT_VERSION",
+      "DSL_TOKENIZER_VERSION"
+    ],
+    "checkpoint_load_enforcement": {
+      "description": "OUTPUT_CONTRACT_VERSION is enforced a second, independent time at model-checkpoint load: require_current_output_contract() raises OutputContractError on any mismatch. A stale checkpoint is rejected outright, never silently reinterpreted (SGS-002 acceptance criterion).",
+      "enforced_by_module": "src/slm_training/dsl/language_contract.py",
+      "enforced_by_symbol": "require_current_output_contract",
+      "called_from": [
+        "src/slm_training/models/twotower.py",
+        "src/slm_training/models/grammar_diffusion.py"
+      ],
+      "regression_tests": [
+        "tests/test_harnesses/model_build/test_twotower.py",
+        "tests/test_models/test_grammar_diffusion.py"
+      ]
+    }
+  }
 }
