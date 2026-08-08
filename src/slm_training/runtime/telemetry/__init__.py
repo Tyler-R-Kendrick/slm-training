@@ -11,6 +11,14 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterator
 
+from slm_training.runtime.telemetry.replay_bundle import (
+    ReplayBundleV1,
+    append_replay_bundle,
+    build_replay_bundle,
+    iter_replay_bundles,
+    mirror_bundle_best_effort,
+    replay_bundle_integrity_ok,
+)
 from slm_training.runtime.telemetry.trace import RunTrace, current_trace, run_trace
 
 
@@ -139,10 +147,16 @@ def timed(name: str) -> Iterator[None]:
 
 __all__ = [
     "CycleTelemetry",
+    "ReplayBundleV1",
     "RunTrace",
+    "append_replay_bundle",
     "bind_telemetry",
+    "build_replay_bundle",
     "current_trace",
     "get_telemetry",
+    "iter_replay_bundles",
+    "mirror_bundle_best_effort",
+    "replay_bundle_integrity_ok",
     "run_trace",
     "set_telemetry",
     "timed",
