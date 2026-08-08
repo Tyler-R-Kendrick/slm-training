@@ -8296,6 +8296,11 @@
         {
           "version": "v3",
           "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop openui-scheduled-0808a cycle c3's bounds/control fixture checkpoint provenance (non-positive, honest ship-gate reject) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
           "note": "no-bump: record scheduled loop openui-scheduled-0808a cycle c2's bounds/control fixture checkpoint provenance (infrastructure-incomplete evaluation, inconclusive) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
