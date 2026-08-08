@@ -45,7 +45,7 @@
       ],
       "authority_tier": "advisory-learned",
       "design_doc": "docs/design/semantic-planning-valid-state.md",
-      "notes": "SGS-003 (SLM-437): new adjacent owner for what a request appears to require, separate from SemanticPlanV1's AST-derived program contract. Excludes provenance=\"gold\" and authority in {compiler-hard, verifier-hard} at the type level so an AST-derived fact can never masquerade as a prompt-derived one, and stays advisory-learned per SGS-005's authority-tier projection plan. Canonicalization/fingerprints live in data/semantic_plan/requirements_canonicalize.py."
+      "notes": "SGS-004 extractor/canonicalize live beside the contract under data/semantic_plan/requirements_extract.py and requirements_canonicalize.py (extract_prompt_requirements, ExtractorRule, EXTRACTOR_RULES, GoldTargetAccessError, canonicalize_requirements, requirement_fact_fingerprints). Advisory-only; refuses gold/target kwargs. Owner_symbols stay on the contract module because verify_ownership_map binds symbols to a single owner_module file."
     },
     {
       "id": "semantic_failure_taxonomy",
