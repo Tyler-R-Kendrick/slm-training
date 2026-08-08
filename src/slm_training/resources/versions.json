@@ -8588,6 +8588,11 @@
         {
           "version": "v3",
           "date": "2026-08-08",
+          "note": "no-bump: land continuous-openui-scheduled-122f continuous-loop-20260808-continuous-openui-schedu-588c01bf-c2's checkpoint-note-only doc update as a manual follow-up commit after the driver's own commit attempt was interrupted by an unrelated pre-commit hook failure; behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
           "note": "no-bump: record scheduled loop continuous-openui-scheduled-122f continuous-loop-20260808-continuous-openui-schedu-588c01bf-c2's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
         },
         {
