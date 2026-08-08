@@ -1,0 +1,15 @@
+# Continuous cycle `continuous-loop-20260808-continuous-openui-202608-1211eecb-c34`
+
+- loop_id: `continuous-openui-20260808`
+- cycle_index: `34`
+- role/intent: `screening` / `screening`
+- primary_metric: `smoke.structural_similarity`
+- positive: **False**
+- stack_layer: **False**
+- measurement_complete: `False`
+- evidence_class: `fixture`
+- reasons: measurement_incomplete:c20260808-continuous-openui-202608-1211eecb-c34-semantic-contrast-compiler-margin:missing_scoreboard, fixture_insufficient_n:c20260808-continuous-openui-202608-1211eecb-c34-control, primary_metric_unavailable, fixture_insufficient_n_alone
+- control_metrics: `{'latency_ms_p50': 25642.45, 'parse_rate': 1.0, 'meaningful_program_rate': 1.0, 'structural_similarity': 0.0387, 'binder_reference_f1': 1.0, 'smoke.latency_ms_p50': 25642.45, 'smoke.parse_rate': 1.0, 'smoke.meaningful_program_rate': 1.0, 'smoke.structural_similarity': 0.0387, 'smoke.binder_reference_f1': 1.0}`
+- candidate_metrics: `{'latency_ms_p50': None, 'parse_rate': None, 'meaningful_program_rate': None, 'structural_similarity': None, 'binder_reference_f1': None}`
+
+Auto-documented by the continuous driver self-heal closeout. Fixture screening only — not a ship claim.
