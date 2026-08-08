@@ -8110,6 +8110,11 @@
         {
           "version": "v3",
           "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop 57b8fc3 c4's fixture batch1/control checkpoint provenance (batch-size arm, expected honest ship-gate rejection, non-positive, no stack layer) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
           "note": "no-bump: record scheduled loop 57b8fc3 c3's fixture confirm/control checkpoint provenance (fresh-seed confirmation rejected the c2 component-plan champion fingerprint, non-positive, no stack layer) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
