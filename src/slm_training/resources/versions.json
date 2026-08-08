@@ -8213,6 +8213,11 @@
         {
           "version": "v3",
           "date": "2026-08-08",
+          "note": "no-bump: record scheduled continuous-openui-20260808 continuous-loop-20260808-continuous-openui-202608-1211eecb-c31's fixture checkpoint provenance in MODEL_CARD and README (auto-healed version-stamp registry note); SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
           "note": "no-bump: record scheduled continuous-openui-20260808 continuous-loop-20260808-continuous-openui-202608-1211eecb-c30's fixture checkpoint provenance in MODEL_CARD and README (auto-healed version-stamp registry note); SLM-228 behavior is unchanged."
         },
         {
