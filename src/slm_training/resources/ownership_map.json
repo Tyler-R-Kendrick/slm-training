@@ -34,6 +34,20 @@
       "notes": "Versioned, provenance-aware, pack-neutral plan IR. Single definition site; all consumers (models/semantic_plan_factors.py, data/semantic_contrast/transforms.py, data/semantic_plan/*) import from here."
     },
     {
+      "id": "prompt_requirements",
+      "name": "PromptSemanticRequirementsV1 prompt-side partial requirements contract",
+      "owner_module": "src/slm_training/data/progspec/prompt_requirements.py",
+      "owner_symbols": [
+        "PromptSemanticRequirementsV1",
+        "RequirementFact",
+        "AmbiguityGroup",
+        "combine_authority"
+      ],
+      "authority_tier": "advisory-learned",
+      "design_doc": "docs/design/semantic-planning-valid-state.md",
+      "notes": "SGS-003 (SLM-437): new adjacent owner for what a request appears to require, separate from SemanticPlanV1's AST-derived program contract. Excludes provenance=\"gold\" and authority in {compiler-hard, verifier-hard} at the type level so an AST-derived fact can never masquerade as a prompt-derived one, and stays advisory-learned per SGS-005's authority-tier projection plan. Canonicalization/fingerprints live in data/semantic_plan/requirements_canonicalize.py."
+    },
+    {
       "id": "semantic_failure_taxonomy",
       "name": "Semantic-failure taxonomy / evidence labeling",
       "owner_module": "src/slm_training/evals/semantic_failure.py",
