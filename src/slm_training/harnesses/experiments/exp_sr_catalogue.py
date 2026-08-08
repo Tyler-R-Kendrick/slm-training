@@ -42,8 +42,10 @@ from slm_training.autoresearch.experiment_campaign import (
     campaign_manifest_sha256,
 )
 from slm_training.harness_core.versioning import build_version_stamp
+from slm_training.levers import MAX_RUN_MINUTES
 from slm_training.lineage.records import canonical_json
 import hashlib
+import re
 
 _CATALOGUE_VERSION_COMPONENT = "harness.experiments"
 # Fixed so every call to _build_campaign for the same family produces a
@@ -51,10 +53,26 @@ _CATALOGUE_VERSION_COMPONENT = "harness.experiments"
 # creation time on every lookup) -- mirrors slm287_power_protocol.py's
 # fixed created_at for its locked campaign.
 _CATALOGUE_REGISTERED_AT = "2026-08-08T00:00:00Z"
+_SOURCE_COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
+# ExperimentCampaignV1.source_commit requires a real 40-hex digest;
+# build_version_stamp() falls back to "UNKNOWN" outside a usable git
+# checkout, which would otherwise fail construction outright. This
+# placeholder is never mistaken for a real commit (an actual sha256/git
+# hash is vanishingly unlikely to be all zeros).
+_UNKNOWN_SOURCE_COMMIT_PLACEHOLDER = "0" * 40
 
 
 def _sha(value: object) -> str:
     return hashlib.sha256(canonical_json(value).encode("utf-8")).hexdigest()
+
+
+def _source_commit(stamp_code_commit: object) -> str:
+    commit = str(stamp_code_commit)
+    return (
+        commit
+        if _SOURCE_COMMIT_PATTERN.match(commit)
+        else _UNKNOWN_SOURCE_COMMIT_PLACEHOLDER
+    )
 
 
 @dataclass(frozen=True)
@@ -70,11 +88,22 @@ class ExpSrFamilySpec:
     minimum_effect: float
     falsifier: str
     kill_threshold: float
+    # Explicit, not derived from primary_direction: whether kill_threshold
+    # marks the metric's *null/bad* boundary (inclusive "ge"/"le" is correct
+    # -- the gate should fire at or beyond that bound) or its *perfect*
+    # boundary that must be met exactly (strict "gt"/"lt" is required, or an
+    # inclusive comparison at the metric's own natural extreme would match
+    # every possible outcome and make the gate vacuously always-true).
+    kill_operator: Literal["ge", "gt", "le", "lt"]
     matched_control_axis: str
     leakage_control: str
     claim_class: ClaimClass
     extra_artifact_kinds: tuple[str, ...] = ()
-    max_wall_minutes: float = 10.0
+    # New harness wall budgets obey the repository-wide hard run cap
+    # (AGENTS.md "Hard run cap"; CampaignBudget's own field comment: "every
+    # execution surface clamps new work to MAX_RUN_MINUTES"). No override
+    # here may exceed it.
+    max_wall_minutes: float = float(MAX_RUN_MINUTES)
     max_experiments: int = 12
 
 
@@ -92,6 +121,7 @@ EXP_SR_FAMILY_SPECS: tuple[ExpSrFamilySpec, ...] = (
         minimum_effect=0.03,
         falsifier="Localized error mass is statistically indistinguishable from a uniform-error null across factor families.",
         kill_threshold=0.0,
+        kill_operator="le",
         matched_control_axis="Same held-out contrast slice scored by the current oracle and a factor-shuffled null oracle.",
         leakage_control="Held-out factor slice never appears in any evaluator training or calibration split.",
         claim_class="diagnostic",
@@ -107,6 +137,7 @@ EXP_SR_FAMILY_SPECS: tuple[ExpSrFamilySpec, ...] = (
         minimum_effect=0.05,
         falsifier="Predictor F1 does not exceed the majority-class/no-prediction baseline on the held-out prompt slice.",
         kill_threshold=0.0,
+        kill_operator="le",
         matched_control_axis="Same prompts scored by the predictor and by a requirement-frequency-only baseline.",
         leakage_control="Prompt/requirement pairs are grouped by source template before any train/eval split.",
         claim_class="screening",
@@ -122,6 +153,7 @@ EXP_SR_FAMILY_SPECS: tuple[ExpSrFamilySpec, ...] = (
         minimum_effect=0.1,
         falsifier="Cohen's kappa between evaluator and blinded human adjudication is at or below chance agreement.",
         kill_threshold=0.0,
+        kill_operator="le",
         matched_control_axis="Same contrast pairs scored by the evaluator and by blinded independent human raters.",
         leakage_control="Human raters never see evaluator verdicts or source lineage before adjudicating.",
         claim_class="diagnostic",
@@ -137,11 +169,11 @@ EXP_SR_FAMILY_SPECS: tuple[ExpSrFamilySpec, ...] = (
         minimum_effect=0.05,
         falsifier="Witness-guided repair yield does not exceed matched-compute unguided resampling.",
         kill_threshold=0.0,
+        kill_operator="le",
         matched_control_axis="Same broken-candidate corpus repaired by witness-guided CEGIS and by matched-compute resampling.",
         leakage_control="Repair witnesses are drawn only from the candidate's own domain, never from the held-out answer.",
         claim_class="screening",
         extra_artifact_kinds=(),
-        max_wall_minutes=15.0,
     ),
     ExpSrFamilySpec(
         family_id="exp-sr-5",
@@ -153,6 +185,7 @@ EXP_SR_FAMILY_SPECS: tuple[ExpSrFamilySpec, ...] = (
         minimum_effect=0.05,
         falsifier="Controller regret is not below the fixed-budget control's regret at matched verified-solution yield.",
         kill_threshold=0.0,
+        kill_operator="gt",
         matched_control_axis="Same task stream under the learned controller and under a fixed-budget schedule.",
         leakage_control="Controller state features never include held-out evaluation identity or gold labels.",
         claim_class="diagnostic",
@@ -168,11 +201,11 @@ EXP_SR_FAMILY_SPECS: tuple[ExpSrFamilySpec, ...] = (
         minimum_effect=0.05,
         falsifier="Neural-guided ordering hit rate does not exceed left-to-right ordering at the same node budget.",
         kill_threshold=0.0,
+        kill_operator="le",
         matched_control_axis="Same search problems solved under neural-guided order and under left-to-right order at equal node budget.",
         leakage_control="Ranking signal is trained only on problems disjoint from the held-out search benchmark.",
         claim_class="screening",
         extra_artifact_kinds=(),
-        max_wall_minutes=20.0,
     ),
     ExpSrFamilySpec(
         family_id="exp-sr-7",
@@ -184,6 +217,7 @@ EXP_SR_FAMILY_SPECS: tuple[ExpSrFamilySpec, ...] = (
         minimum_effect=0.0,
         falsifier="Any packed-summary domain diverges from the certified live-construction oracle on the differential corpus.",
         kill_threshold=1.0,
+        kill_operator="lt",
         matched_control_axis="Same prefixes evaluated with the packed summary enabled and disabled against the live oracle.",
         leakage_control="Packed summary keys exclude request-local runtime facts (mirrors PCT-006's static/request-boundary guard).",
         claim_class="diagnostic",
@@ -199,6 +233,7 @@ EXP_SR_FAMILY_SPECS: tuple[ExpSrFamilySpec, ...] = (
         minimum_effect=0.0,
         falsifier="Any applied e-graph rewrite lacks a certified equivalence proof or fails runtime re-verification.",
         kill_threshold=1.0,
+        kill_operator="lt",
         matched_control_axis="Same expression corpus rewritten with e-graph regions enabled and with the unrewritten baseline.",
         leakage_control="Equivalence certificates are checked against the live evaluator, never assumed from rule provenance.",
         claim_class="fixture",
@@ -214,6 +249,7 @@ EXP_SR_FAMILY_SPECS: tuple[ExpSrFamilySpec, ...] = (
         minimum_effect=0.02,
         falsifier="Macro substitution changes certified semantics on any corpus program.",
         kill_threshold=0.0,
+        kill_operator="le",
         matched_control_axis="Same corpus expressed with and without learned macro substitution.",
         leakage_control="Macro library is learned only from the training-side corpus, never from held-out evaluation programs.",
         claim_class="fixture",
@@ -229,6 +265,7 @@ EXP_SR_FAMILY_SPECS: tuple[ExpSrFamilySpec, ...] = (
         minimum_effect=0.05,
         falsifier="Quality-diversity coverage does not exceed matched-compute rejection sampling coverage.",
         kill_threshold=0.0,
+        kill_operator="le",
         matched_control_axis="Same generation budget spent under quality-diversity search and under rejection sampling.",
         leakage_control="Generated corpus is grouped by source template/lineage before any train/eval split, per VCE-008.",
         claim_class="fixture",
@@ -241,14 +278,14 @@ EXP_SR_FAMILY_SPECS: tuple[ExpSrFamilySpec, ...] = (
         decision="Report matched-budget parity honestly; a gap versus PySR/SRBench is not treated as a pack defect without matched compute.",
         primary_metric="srbench_matched_score_gap",
         primary_direction="decrease",
-        minimum_effect=0.0,
+        minimum_effect=0.02,
         falsifier="The matched-budget gap versus PySR/SRBench does not shrink relative to the unmatched baseline comparison.",
         kill_threshold=0.0,
+        kill_operator="gt",
         matched_control_axis="Same SRBench problems solved by the in-repo pack and by the optional isolated PySR/SRBench adapter at equal compute budget.",
         leakage_control="PySR/SRBench adapter runs in an isolated environment manifest (SRP-011) and never shares training data with the pack.",
         claim_class="diagnostic",
         extra_artifact_kinds=(),
-        max_wall_minutes=30.0,
     ),
     ExpSrFamilySpec(
         family_id="exp-sr-12",
@@ -260,6 +297,7 @@ EXP_SR_FAMILY_SPECS: tuple[ExpSrFamilySpec, ...] = (
         minimum_effect=0.0,
         falsifier="Any pack-specific fork is required in the shared seam to support the symbolic-regression pack.",
         kill_threshold=1.0,
+        kill_operator="lt",
         matched_control_axis="Same seam exercised end-to-end against the OpenUI pack and against the symbolic-regression pack.",
         leakage_control="Portability fixtures never reuse OpenUI-specific grammar/tokenizer identities for the symbolic-regression pack.",
         claim_class="diagnostic",
@@ -279,9 +317,6 @@ def _build_campaign(spec: ExpSrFamilySpec) -> ExperimentCampaignV1:
     primary_id = f"{spec.family_id}_primary"
     opposite_operator: Literal["ge", "le"] = (
         "ge" if spec.primary_direction == "increase" else "le"
-    )
-    kill_operator: Literal["le", "ge"] = (
-        "le" if spec.primary_direction == "increase" else "ge"
     )
     quality_control_id = f"{spec.family_id}_matched_control"
     leakage_control_id = f"{spec.family_id}_leakage_control"
@@ -358,7 +393,7 @@ def _build_campaign(spec: ExpSrFamilySpec) -> ExperimentCampaignV1:
             CampaignGateV1(
                 gate_id=f"{spec.family_id}_kill",
                 endpoint_id=primary_id,
-                operator=kill_operator,
+                operator=spec.kill_operator,
                 threshold=spec.kill_threshold,
             ),
         ),
@@ -369,8 +404,11 @@ def _build_campaign(spec: ExpSrFamilySpec) -> ExperimentCampaignV1:
             for kind in artifact_kinds
         ),
         claim_class=spec.claim_class,
-        source_commit=str(stamp["code_commit"]),
-        source_dirty=bool(stamp["code_dirty"]),
+        source_commit=_source_commit(stamp["code_commit"]),
+        # Unknown git state is conservatively treated as dirty -- an
+        # unverifiable checkout is never reported as a clean one.
+        source_dirty=bool(stamp["code_dirty"])
+        or _source_commit(stamp["code_commit"]) == _UNKNOWN_SOURCE_COMMIT_PLACEHOLDER,
         author="slm-training",
         created_at=_CATALOGUE_REGISTERED_AT,
     )

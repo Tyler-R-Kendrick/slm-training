@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 
 from slm_training.autoresearch.experiment_campaign import (
+    CampaignGateV1,
     ExperimentCampaignV1,
     campaign_manifest_sha256,
 )
@@ -23,8 +24,19 @@ from slm_training.harnesses.experiments.exp_sr_catalogue import (
     exp_sr_campaign,
     plan_only_manifest,
 )
+from slm_training.levers import MAX_RUN_MINUTES
 
 _EXPECTED_FAMILY_IDS = tuple(f"exp-sr-{n}" for n in range(1, 13))
+
+
+def _gate_fires(gate: CampaignGateV1, value: float) -> bool:
+    return {
+        "ge": value >= gate.threshold,
+        "gt": value > gate.threshold,
+        "le": value <= gate.threshold,
+        "lt": value < gate.threshold,
+        "eq": value == gate.threshold,
+    }[gate.operator]
 
 
 def test_catalogue_has_twelve_unique_stable_identities() -> None:
@@ -61,7 +73,30 @@ def test_every_family_declares_a_falsifier_and_matched_and_leakage_controls() ->
         assert "quality" in kinds
         assert "negative" in kinds
         assert campaign.negative_controls == (f"{spec.family_id}_leakage_control",)
-        assert campaign.budget.max_wall_minutes <= 60.0
+        # The repository-wide hard run cap (AGENTS.md "Hard run cap"), not
+        # the CampaignBudget schema's own looser 60-minute ceiling.
+        assert campaign.budget.max_wall_minutes <= MAX_RUN_MINUTES
+
+
+def test_rollback_gates_are_not_vacuous() -> None:
+    """Every rollback gate must be satisfiable both ways.
+
+    A rollback gate pinned at a metric's natural boundary with an inclusive
+    comparison (e.g. ``le 1.0`` on a [0, 1] rate) matches every possible
+    outcome and would make ``validate_result_claim`` reject every
+    ``CampaignResultV1`` for that family forever, since
+    ``rollback_gates_not_passed`` fires whenever any rollback gate matches.
+    For every family, the gate must not fire at the "perfect" end of the
+    metric's declared direction, and must fire on a clearly bad outcome.
+    """
+    for spec, campaign in zip(
+        EXP_SR_FAMILY_SPECS, build_exp_sr_catalogue(), strict=True
+    ):
+        gate = campaign.rollback_gates[0]
+        perfect = 1.0 if spec.primary_direction == "increase" else 0.0
+        bad = 0.0 if spec.primary_direction == "increase" else 1.0
+        assert not _gate_fires(gate, perfect), (spec.family_id, gate)
+        assert _gate_fires(gate, bad), (spec.family_id, gate)
 
 
 def test_exp_sr_campaign_lookup_and_unknown_family_raises() -> None:
@@ -71,16 +106,18 @@ def test_exp_sr_campaign_lookup_and_unknown_family_raises() -> None:
         exp_sr_campaign("exp-sr-99")
 
 
-def test_plan_only_manifest_never_locks_and_matches_the_registered_digest(
-    tmp_path: Path,
-) -> None:
+def test_plan_only_manifest_never_locks_and_matches_the_registered_digest() -> None:
     preview = plan_only_manifest("exp-sr-1")
     assert preview["status"] == "plan_only"
-    expected_digest = campaign_manifest_sha256(exp_sr_campaign("exp-sr-1"))
-    assert preview["manifest_sha256"] == expected_digest
     assert preview["manifest"]["experiment_id"] == "exp-sr-1"
-    # Nothing is written anywhere -- plan-only truly means preview-only.
-    assert not any(tmp_path.iterdir())
+    # The digest must describe the returned payload itself, not merely agree
+    # with a second independently-built object from the same inputs (which
+    # would pass even if the payload didn't match its own claimed digest).
+    round_tripped = ExperimentCampaignV1.model_validate(preview["manifest"])
+    assert campaign_manifest_sha256(round_tripped) == preview["manifest_sha256"]
+    assert preview["manifest_sha256"] == campaign_manifest_sha256(
+        exp_sr_campaign("exp-sr-1")
+    )
 
 
 def test_duplicate_relock_with_different_content_is_rejected(tmp_path: Path) -> None:
