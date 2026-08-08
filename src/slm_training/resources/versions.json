@@ -4515,17 +4515,23 @@
       ]
     },
     "harness.eval.semantic_failure_census": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/evals/semantic_failure.py",
         "scripts/audit_semantic_failures.py",
         "tests/test_evals/test_semantic_failure.py",
         "tests/test_scripts/test_audit_semantic_failures.py",
+        "tests/test_evals/test_verifier_witness_security.py",
         "docs/design/semantic-failure-census.md",
         "docs/design/iter-slm263-semantic-failure-census-20260724.json"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "VCE-003/SLM-457: VerifierLocalizationV1.from_dict now fails closed on a completeness_class outside {EXACT,HEURISTIC,UNKNOWN} (_LOCALIZATION_COMPLETENESS_CLASSES) instead of accepting any string -- an untrusted payload can no longer self-report a stronger completeness tier (e.g. a fabricated 'compiler-hard') than the legitimate builder (_gate_completeness) would ever assign. Every existing producer in this module already only emits one of the three values, so this is additive-only for legitimate witnesses. Adds tests/test_evals/test_verifier_witness_security.py: a corruption matrix over every top-level VerifierWitnessV1/RepairResidualV1 field, redaction/linkage, malformed-completeness fuzzing, from_dict injection-safety, and real-file cross-process-style replay."
+        },
         {
           "version": "v2",
           "date": "2026-08-08",

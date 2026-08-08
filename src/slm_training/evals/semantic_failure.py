@@ -313,6 +313,13 @@ def _gate_completeness(gate: Gate, status: str) -> str:
     return "HEURISTIC" if gate in _HEURISTIC_GATES else "EXACT"
 
 
+# VCE-003: the closed set every legitimate producer in this module assigns
+# (see _gate_completeness and the semantic_check branches below). from_dict
+# fails closed on anything outside it rather than trusting an untrusted
+# payload to self-report a stronger completeness tier than it earned.
+_LOCALIZATION_COMPLETENESS_CLASSES = frozenset({"EXACT", "HEURISTIC", "UNKNOWN"})
+
+
 @dataclass(frozen=True)
 class VerifierLocalizationV1:
     """One typed, redaction-safe evidence unit inside a ``VerifierWitnessV1``.
@@ -339,6 +346,11 @@ class VerifierLocalizationV1:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> VerifierLocalizationV1:
+        completeness = payload.get("completeness_class")
+        if completeness not in _LOCALIZATION_COMPLETENESS_CLASSES:
+            raise ValueError(
+                f"unsupported verifier localization completeness_class: {completeness!r}"
+            )
         span = payload.get("source_span")
         return cls(**{**payload, "source_span": tuple(span) if span is not None else None})
 
