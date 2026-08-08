@@ -794,6 +794,7 @@ tests/
 ```
 
 ## Continuous autotrain note (2026-08-08, c1)
+## Continuous autotrain note (2026-08-08)
 
 - campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c1`
 - checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c1-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c1-control/checkpoints/last.pt`
