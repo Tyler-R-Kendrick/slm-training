@@ -8110,6 +8110,11 @@
         {
           "version": "v3",
           "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop 57b8fc3 c2's fixture control/component-plan checkpoint provenance (primary-metric screening win, candidate queued pending fresh-seed confirmation, no tracked code delta so no stack layer) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
           "note": "no-bump: record scheduled loop 57b8fc3 c1's fixture bounds/control checkpoint provenance (expected smoke insufficient_n gate rejection, non-positive, no stack layer) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
