@@ -2819,6 +2819,11 @@
         {
           "version": "v6",
           "date": "2026-08-08",
+          "note": "no-bump: SLM-453 (SRP-002) registers a new 'symbolic_expr_ir' subsystem (src/slm_training/dsl/symbolic_expr_ir.py: VarRef/CoefficientHole/OpApply/parse_expr/serialize_expr/collect_symbols/validate_expr_budget) per the pre-registered downstream_extension_map row for SRP-002 (new_owner_justified: true, layered under output_contract, does not fork OUTPUT_CONTRACT_VERSION or reuse production_codec's OpenUI-specific logic) and mirrors the row into repository-ownership-map.md; the new source/test files are not yet tracked by any versions.json component (consistent with the sibling-file precedent set for PCT-002/003/007's new files), so this entry only covers the ownership-map doc update."
+        },
+        {
+          "version": "v6",
+          "date": "2026-08-08",
           "note": "no-bump: SLM-452 (PCT-007) adds MechanismActivationV1/build_mechanism_activation to the existing 'decode_telemetry' owner's owner_symbols (both literally defined in owner_module decode_stats.py) per the pre-registered downstream_extension_map row for PCT-007 (new_owner_justified: false); notes flag evidence_class/default_state as caller-declared advisory fields pending SGS-009's canonical disposition enum, not a fabricated second registry; behavior-neutral doc update, no new owner or authority tier introduced."
         },
         {

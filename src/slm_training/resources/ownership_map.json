@@ -357,6 +357,23 @@
       "notes": "Related production-level codec consumed alongside choice_codec."
     },
     {
+      "id": "symbolic_expr_ir",
+      "name": "Typed symbolic-expression IR, codec, and symbol table",
+      "owner_module": "src/slm_training/dsl/symbolic_expr_ir.py",
+      "owner_symbols": [
+        "VarRef",
+        "CoefficientHole",
+        "OpApply",
+        "parse_expr",
+        "serialize_expr",
+        "collect_symbols",
+        "validate_expr_budget"
+      ],
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/symbol-only-output-contract.md",
+      "notes": "SRP-002/SLM-453. New pack-local subsystem for the symbolic-regression pack (SRP-001/SLM-441, owner symbolic_regression_pack.py), pre-authorized by the downstream_extension_map row for SRP-002 (new_owner_justified: true, layer under output_contract, do not fork it). Variables and coefficients are opaque indices only -- never names or free numeric literals -- so the structural codec's output space is symbol-only by construction without introducing a second OUTPUT_CONTRACT_VERSION or reusing production_codec's OpenUI-specific encode/decode logic. Supersedes the untyped dict-shaped expression tree in symbolic_regression_pack.py as the canonical structural form; the Lark surface grammar registered there (dsl/grammar/backends/symbolic_regression.py) remains input-surface syntax only."
+    },
+    {
       "id": "version_registry",
       "name": "Component-version registry and enforcement",
       "owner_module": "src/slm_training/resources/versions.json",
