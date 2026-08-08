@@ -1979,4 +1979,32 @@ Date (UTC) column). Do not delete history.
 
 - campaign: `continuous-loop-20260808-continuous-openui-schedu-c1d66fca-c4`
 - checkpoints: `runs/c20260808-continuous-openui-schedu-c1d66fca-c4-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-c1d66fca-c4-control/checkpoints/last.pt`
+## Continuous autotrain note (2026-08-08)
+
+- campaign: `continuous-loop-20260808-continuous-openui-schedu-32a7e28a-c1`
+- checkpoints: `runs/c20260808-continuous-openui-schedu-32a7e28a-c1-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-32a7e28a-c1-control/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-08)
+
+- campaign: `continuous-loop-20260808-continuous-openui-schedu-32a7e28a-c2`
+- checkpoints: `runs/c20260808-continuous-openui-schedu-32a7e28a-c2-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-32a7e28a-c2-control/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-08)
+
+- campaign: `continuous-loop-20260808-continuous-openui-schedu-32a7e28a-c3`
+- checkpoints: `runs/c20260808-continuous-openui-schedu-32a7e28a-c3-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-32a7e28a-c3-control/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-08)
+
+- campaign: `continuous-loop-20260808-continuous-openui-schedu-32a7e28a-c4`
+- checkpoints: `runs/c20260808-continuous-openui-schedu-32a7e28a-c4-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-32a7e28a-c4-control/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-08)
+
+- campaign: `continuous-loop-20260808-continuous-openui-schedu-32a7e28a-c5`
+- checkpoints: `runs/c20260808-continuous-openui-schedu-32a7e28a-c5-canvas/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-32a7e28a-c5-control/checkpoints/last.pt`
 - honesty: fixture/scratch continuous cycle — **not** a ship promotion.
