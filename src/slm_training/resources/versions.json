@@ -1392,7 +1392,12 @@
         {
           "version": "v14",
           "date": "2026-08-08",
-          "note": "SRP-001 (SLM-441) — dsl/pack.py's _ensure_builtin_packs registers a new opt-in `symbolic_regression` DslPack (built by the new dsl/symbolic_regression_pack.py) alongside openui/toy-layout/graphql. Behavioral addition to the watched file: a new pack_id becomes resolvable via get_pack('symbolic_regression')/SLM_GRAMMAR_DSL, but it is never aliased to the default (_ALIASES and _active_dsl() are unchanged, both still resolve to 'openui'), so existing callers and the default pack are unaffected."
+          "note": "no-bump: add PCT-007/SLM-452 MechanismActivationV1 regression tests to tests/test_models/test_decode_stats.py; registry.py and pack.py unchanged."
+        },
+        {
+          "version": "v14",
+          "date": "2026-08-08",
+          "note": "SRP-001 (SLM-441) \u2014 dsl/pack.py's _ensure_builtin_packs registers a new opt-in `symbolic_regression` DslPack (built by the new dsl/symbolic_regression_pack.py) alongside openui/toy-layout/graphql. Behavioral addition to the watched file: a new pack_id becomes resolvable via get_pack('symbolic_regression')/SLM_GRAMMAR_DSL, but it is never aliased to the default (_ALIASES and _active_dsl() are unchanged, both still resolve to 'openui'), so existing callers and the default pack are unaffected."
         },
         {
           "version": "v13",
@@ -2810,6 +2815,11 @@
           "version": "v7",
           "date": "2026-08-08",
           "note": "SGS-010 (SLM-445): add the SERIALIZED_CONTRACTS static certificate to verify_ownership_map (every persisted contract declares a version symbol whose reader consults it and raises on mismatch) plus the table-driven runtime compatibility suite tests/test_data/test_synthesis_contract_versions.py (round-trip, future-version rejection, missing-version rejection, registry parity) covering PromptSemanticRequirementsV1, VerifiedSynthesisProblemV1, VerifierWitnessV1 and DecodeStatsRecordV1."
+        },
+        {
+          "version": "v6",
+          "date": "2026-08-08",
+          "note": "no-bump: SLM-452 (PCT-007) adds MechanismActivationV1/build_mechanism_activation to the existing 'decode_telemetry' owner's owner_symbols (both literally defined in owner_module decode_stats.py) per the pre-registered downstream_extension_map row for PCT-007 (new_owner_justified: false); notes flag evidence_class/default_state as caller-declared advisory fields pending SGS-009's canonical disposition enum, not a fabricated second registry; behavior-neutral doc update, no new owner or authority tier introduced."
         },
         {
           "version": "v6",
@@ -10301,7 +10311,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v93",
+      "version": "v94",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -10322,6 +10332,11 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v94",
+          "note": "PCT-007/SLM-452: add MechanismActivationV1/build_mechanism_activation -- a common eligible/invoked/abstained/no_op/changed_top_choice/changed_final_program/forwards/verified_states/verifier_calls/wall_ms/failure_reason envelope any optional semantic/search/repair/controller mechanism can emit, fail-closed against representing a wired-but-never-active mechanism as a successful intervention (invoked requires eligible; a choice-change claim requires invoked and not no_op). evidence_class/default_state stay caller-declared advisory fields (MECHANISM_EVIDENCE_CLASSES is illustrative, not a canonical enum) since no single canonical disposition registry exists yet -- SGS-009/SLM-456 is still Backlog. Purely additive over DecodeStats/aggregate_stats; no existing call site wired yet.",
+          "date": "2026-08-08"
+        },
         {
           "version": "v93",
           "note": "PCT-001/SLM-439: add DecodeStatsRecordV1/DecodeIdentityV1 typed, tamper-evident, append-only envelope over DecodeStats (measurement_stage cold/warm classification, completeness gating, legal-domain status, witness_ids, identity binding). Purely additive: DecodeStats and aggregate_stats are unchanged and no existing call site is wired to the new envelope yet.",

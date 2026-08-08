@@ -232,11 +232,13 @@
       "owner_symbols": [
         "DecodeStats",
         "collect_decode_stats",
-        "aggregate_stats"
+        "aggregate_stats",
+        "MechanismActivationV1",
+        "build_mechanism_activation"
       ],
       "authority_tier": "evaluation-only",
       "design_doc": "docs/design/decode-invariants.md",
-      "notes": "Timing/step-count/fastpath hit-miss telemetry collected during inference/eval. PCT-003/SLM-450 added src/slm_training/harnesses/model_build/cold_warm_bench.py (BenchTrialV1, HardwareIdentityV1, run_cold_trial/run_warm_trial/summarize_trials), a fresh-subprocess cold and in-process warm benchmark harness reusing this owner's MEASUREMENT_STAGES/COMPLETENESS_STATES taxonomy directly rather than inventing a second one; extends the bench_* script family (scripts/bench_accel.py etc.), introduces no new telemetry authority."
+      "notes": "Timing/step-count/fastpath hit-miss telemetry collected during inference/eval. PCT-003/SLM-450 added src/slm_training/harnesses/model_build/cold_warm_bench.py (BenchTrialV1, HardwareIdentityV1, run_cold_trial/run_warm_trial/summarize_trials), a fresh-subprocess cold and in-process warm benchmark harness reusing this owner's MEASUREMENT_STAGES/COMPLETENESS_STATES taxonomy directly rather than inventing a second one; extends the bench_* script family (scripts/bench_accel.py etc.), introduces no new telemetry authority. PCT-007/SLM-452 added MechanismActivationV1/build_mechanism_activation directly in decode_stats.py: a common eligible/invoked/abstained/no_op/changed_top_choice/changed_final_program envelope any optional mechanism can emit, fail-closed against representing a never-active mechanism as a successful intervention. evidence_class/default_state stay caller-declared advisory fields (MECHANISM_EVIDENCE_CLASSES is illustrative only) pending SGS-009/SLM-456 (still Backlog), which is the actual future owner of a canonical disposition enum -- this does not fabricate that registry ahead of it."
     },
     {
       "id": "runtime_telemetry",

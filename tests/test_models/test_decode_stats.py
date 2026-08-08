@@ -1,16 +1,21 @@
+import dataclasses
+
 import pytest
 
 from slm_training.models.decode_stats import (
     DecodeIdentityV1,
     DecodeStats,
     DecodeStatsRecordV1,
+    MechanismActivationV1,
     aggregate_stats,
     append_decode_stats_record,
     build_decode_stats_record,
+    build_mechanism_activation,
     collect_decode_stats,
     collect_completion_session_delta,
     completed_steady_state,
     iter_decode_stats_records,
+    mechanism_activation_integrity_ok,
     proves_zero_neural_work,
     proves_zero_search_work,
 )
@@ -421,3 +426,101 @@ def test_append_only_log_round_trips_and_detects_chain_tampering(tmp_path) -> No
     log_path.write_text(swapped, encoding="utf-8")
     with pytest.raises(ValueError, match="chain broken"):
         list(iter_decode_stats_records(log_path))
+
+
+def test_mechanism_activation_distinguishes_zero_activation_from_no_choice_change() -> None:
+    ineligible = build_mechanism_activation(
+        mechanism_id="semantic_repair", eligible=False, invoked=False
+    )
+    eligible_but_declined = build_mechanism_activation(
+        mechanism_id="semantic_repair", eligible=True, invoked=False, abstained=True
+    )
+    invoked_no_op = build_mechanism_activation(
+        mechanism_id="semantic_repair", eligible=True, invoked=True, no_op=True
+    )
+    invoked_changed = build_mechanism_activation(
+        mechanism_id="semantic_repair",
+        eligible=True,
+        invoked=True,
+        changed_top_choice=True,
+        changed_final_program=True,
+    )
+
+    # Four distinguishable states, not collapsed into one "did nothing" bucket.
+    states = {
+        (a.eligible, a.invoked, a.abstained, a.no_op, a.changed_top_choice)
+        for a in (ineligible, eligible_but_declined, invoked_no_op, invoked_changed)
+    }
+    assert len(states) == 4
+    assert invoked_changed.changed_top_choice and invoked_changed.changed_final_program
+
+
+def test_mechanism_activation_rejects_never_active_success_claims() -> None:
+    with pytest.raises(ValueError, match="ineligible mechanism cannot be invoked"):
+        build_mechanism_activation(mechanism_id="m", eligible=False, invoked=True)
+    with pytest.raises(ValueError, match="mutually exclusive"):
+        build_mechanism_activation(
+            mechanism_id="m", eligible=True, invoked=True, abstained=True
+        )
+    with pytest.raises(ValueError, match="choice-change claim requires invoked"):
+        build_mechanism_activation(
+            mechanism_id="m", eligible=True, invoked=False, changed_top_choice=True
+        )
+    with pytest.raises(ValueError, match="no-op activation cannot also claim"):
+        build_mechanism_activation(
+            mechanism_id="m",
+            eligible=True,
+            invoked=True,
+            no_op=True,
+            changed_final_program=True,
+        )
+    with pytest.raises(ValueError, match="mechanism_id is required"):
+        build_mechanism_activation(mechanism_id="", eligible=True, invoked=True)
+
+
+def test_mechanism_activation_evidence_class_and_default_state_are_caller_declared() -> None:
+    activation = build_mechanism_activation(
+        mechanism_id="component_inventory",
+        eligible=True,
+        invoked=True,
+        evidence_class="promotable",
+        default_state=True,
+    )
+    assert activation.evidence_class == "promotable"
+    assert activation.default_state is True
+
+    # A caller-declared class outside the documented illustrative set is not
+    # rejected -- there is no canonical enum yet (SGS-009 is still Backlog),
+    # so this stays advisory rather than a fabricated closed registry.
+    exotic = build_mechanism_activation(
+        mechanism_id="component_inventory", eligible=True, invoked=True, evidence_class="novel"
+    )
+    assert exotic.evidence_class == "novel"
+
+
+def test_mechanism_activation_is_frozen_deterministic_and_replayable() -> None:
+    kwargs = dict(mechanism_id="required_slot_margin", eligible=True, invoked=True, no_op=True)
+    first = build_mechanism_activation(**kwargs)
+    second = build_mechanism_activation(**kwargs)
+    assert first == second
+    assert first.activation_hash == second.activation_hash
+    assert mechanism_activation_integrity_ok(first)
+
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        first.invoked = False  # type: ignore[misc]
+
+    assert MechanismActivationV1.from_dict(first.to_dict()) == first
+
+
+def test_mechanism_activation_tamper_and_schema_rejection() -> None:
+    activation = build_mechanism_activation(mechanism_id="m", eligible=True, invoked=True)
+
+    tampered = activation.to_dict()
+    tampered["invoked"] = False
+    with pytest.raises(ValueError, match="hash mismatch"):
+        MechanismActivationV1.from_dict(tampered)
+
+    wrong_schema = activation.to_dict()
+    wrong_schema["schema_version"] = "mechanism_activation_record/v0"
+    with pytest.raises(ValueError, match="unsupported mechanism activation schema"):
+        MechanismActivationV1.from_dict(wrong_schema)
