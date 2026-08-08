@@ -8110,6 +8110,11 @@
         {
           "version": "v3",
           "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop 57b8fc3 c5's fixture component-plan/control checkpoint provenance (component-plan arm hit decode-timeout residual, decode_timeout_count=3, under MAX_RUN_MINUTES=3 wall cap; inconclusive measurement, non-positive, no stack layer) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
           "note": "no-bump: record scheduled loop 57b8fc3 c4's fixture batch1/control checkpoint provenance (batch-size arm, expected honest ship-gate rejection, non-positive, no stack layer) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
