@@ -2751,9 +2751,7 @@
         "docs/design/symbol-only-output-contract.md",
         "docs/design/repository-ownership-map.md",
         "tests/test_scripts/test_verify_ownership_map.py",
-        "scripts/check_changed.py",
-        "src/slm_training/data/progspec/prompt_requirements.py",
-        "tests/test_data/test_progspec/test_prompt_requirements.py"
+        "scripts/check_changed.py"
       ],
       "history": [
         {
