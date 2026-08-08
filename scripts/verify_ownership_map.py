@@ -20,7 +20,10 @@ runs in the dependency-light static CI job (`.github/workflows/ci.yml`
    ``output_contract_version_doc_mismatch``). Regresses loudly if either side
    changes without the other; add an entry here for any new contract/tokenizer/
    pack/artifact/schema/evaluator version identity that gains a doc claim.
-5. Every ``downstream_extension_map[]`` row either cites at least one real
+5. Every ``SERIALIZED_CONTRACTS`` entry (SGS-010/SLM-445): the contract
+   declares an explicit version symbol and its reader consults that symbol and
+   raises on mismatch, so no persisted payload is ever silently reinterpreted.
+6. Every ``downstream_extension_map[]`` row either cites at least one real
    ``subsystems[].id`` as its extension point, or sets
    ``new_owner_justified: true`` with a non-empty ``justification``.
 
@@ -33,6 +36,7 @@ import ast
 import json
 import re
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -260,6 +264,107 @@ def check_contract_versions() -> dict[str, int]:
     return {check.name: check.check() for check in CONTRACT_VERSION_CHECKS}
 
 
+@dataclass(frozen=True)
+class SerializedContract:
+    """One persisted contract that must version itself and fail closed on drift.
+
+    SGS-010 (SLM-445): every serialized contract this initiative introduced has
+    to (a) declare an explicit version constant and (b) reject a payload whose
+    version does not match, rather than silently reinterpreting it. Checked
+    statically so it runs in the dependency-light CI job; the matching runtime
+    reader behavior is covered by
+    ``tests/test_data/test_synthesis_contract_versions.py``.
+    """
+
+    contract_id: str
+    module: str
+    version_symbol: str
+    reader: str
+
+    def check(self) -> str:
+        source = _read(self.module)
+        tree = ast.parse(source, filename=self.module)
+        defined = _defined_names(self.module)
+        if self.version_symbol not in defined:
+            raise OwnershipMapError(
+                f"serialized contract {self.contract_id!r} does not define its "
+                f"version symbol {self.version_symbol!r} in {self.module}"
+            )
+        owner: ast.ClassDef | None = next(
+            (
+                node
+                for node in ast.walk(tree)
+                if isinstance(node, ast.ClassDef) and node.name == self.contract_id
+            ),
+            None,
+        )
+        if owner is None:
+            raise OwnershipMapError(
+                f"serialized contract {self.contract_id!r} is not defined in "
+                f"{self.module}"
+            )
+        # Class-scoped: sibling contracts in the same module each own their
+        # reader, so a module-wide walk would grade the wrong function.
+        reader_node: ast.FunctionDef | None = next(
+            (
+                node
+                for node in owner.body
+                if isinstance(node, ast.FunctionDef) and node.name == self.reader
+            ),
+            None,
+        )
+        if reader_node is None:
+            raise OwnershipMapError(
+                f"serialized contract {self.contract_id!r} has no {self.reader!r} "
+                f"reader in {self.module}"
+            )
+        reader_src = ast.get_source_segment(source, reader_node) or ""
+        if self.version_symbol not in reader_src:
+            raise OwnershipMapError(
+                f"{self.contract_id!r} reader {self.reader!r} never consults "
+                f"{self.version_symbol!r}: an older/newer payload would be "
+                "silently reinterpreted"
+            )
+        if not any(isinstance(n, ast.Raise) for n in ast.walk(reader_node)):
+            raise OwnershipMapError(
+                f"{self.contract_id!r} reader {self.reader!r} does not raise on a "
+                "version mismatch (must fail closed, never coerce)"
+            )
+        return self.contract_id
+
+
+SERIALIZED_CONTRACTS: tuple[SerializedContract, ...] = (
+    SerializedContract(
+        contract_id="PromptSemanticRequirementsV1",
+        module="src/slm_training/data/progspec/prompt_requirements.py",
+        version_symbol="REQUIREMENTS_SCHEMA_VERSION",
+        reader="from_dict",
+    ),
+    SerializedContract(
+        contract_id="VerifiedSynthesisProblemV1",
+        module="src/slm_training/data/progspec/synthesis_problem.py",
+        version_symbol="SYNTHESIS_PROBLEM_SCHEMA_VERSION",
+        reader="from_dict",
+    ),
+    SerializedContract(
+        contract_id="VerifierWitnessV1",
+        module="src/slm_training/evals/semantic_failure.py",
+        version_symbol="WITNESS_SCHEMA_VERSION",
+        reader="from_dict",
+    ),
+    SerializedContract(
+        contract_id="DecodeStatsRecordV1",
+        module="src/slm_training/models/decode_stats.py",
+        version_symbol="DECODE_STATS_RECORD_SCHEMA",
+        reader="from_dict",
+    ),
+)
+
+
+def check_serialized_contracts() -> list[str]:
+    return [contract.check() for contract in SERIALIZED_CONTRACTS]
+
+
 def check_downstream_extension_map(doc: dict[str, Any]) -> list[str]:
     subsystem_ids = {s["id"] for s in doc["subsystems"]}
     checked: list[str] = []
@@ -307,6 +412,7 @@ def certify() -> dict[str, Any]:
         "duplicate_subsystem_risks": check_duplicate_risks(doc),
         "related_overlaps": check_related_overlaps(doc),
         "contract_versions": check_contract_versions(),
+        "serialized_contracts": check_serialized_contracts(),
         "contract_version_governance": check_contract_version_governance(doc),
         "downstream_extension_map": check_downstream_extension_map(doc),
     }

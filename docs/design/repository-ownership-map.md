@@ -95,6 +95,16 @@ Notes, one per subsystem:
 - **Pre-commit wiring:** scripts/check_changed.py OWNERSHIP_MAP_FILES set triggers python -m scripts.verify_ownership_map when a watched file changes
 - **Currently checked identities:** `OUTPUT_CONTRACT_VERSION`, `DSL_TOKENIZER_VERSION`
 
+**Serialized-contract compatibility (SGS-010/SLM-445):** scripts/verify_ownership_map.py
+`SERIALIZED_CONTRACTS` additionally certifies, per persisted contract, that the
+contract declares a version symbol and that its class-scoped reader consults
+that symbol and raises on mismatch -- so no payload is silently reinterpreted.
+Covered: `PromptSemanticRequirementsV1`, `VerifiedSynthesisProblemV1`,
+`VerifierWitnessV1`, `DecodeStatsRecordV1`. Runtime reader behavior
+(round-trip, future-version rejection, missing-version rejection, registry
+parity) is in tests/test_data/test_synthesis_contract_versions.py. Policy:
+[sgs-010-schema-versioning-compatibility.md](sgs-010-schema-versioning-compatibility.md).
+
 **Historical artifacts are never silently reinterpreted (acceptance criterion):** OUTPUT_CONTRACT_VERSION is enforced a second, independent time at model-checkpoint load: require_current_output_contract() raises OutputContractError on any mismatch. A stale checkpoint is rejected outright, never silently reinterpreted (SGS-002 acceptance criterion).
 
 - Enforced by: `require_current_output_contract` in `src/slm_training/dsl/language_contract.py`
