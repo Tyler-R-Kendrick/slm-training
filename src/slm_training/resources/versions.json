@@ -8296,6 +8296,26 @@
         {
           "version": "v3",
           "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop openui-scheduled-0808a cycle c4's component-plan/control fixture checkpoint provenance (harness incomplete, matched control hit a typed decode timeout, inconclusive) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop openui-scheduled-0808a cycle c3's bounds/control fixture checkpoint provenance (non-positive, honest ship-gate reject) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop openui-scheduled-0808a cycle c2's bounds/control fixture checkpoint provenance (infrastructure-incomplete evaluation, inconclusive) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop openui-scheduled-0808a cycle c1's bounds/control fixture checkpoint provenance (non-positive, honest ship-gate reject) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
           "note": "no-bump: record scheduled loop continuous-openui-20260808-scheduled c6's bounds/control scratch checkpoint provenance (fixture ship-gate rejection, null primary-metric delta 0.0964 tie, non-positive, screening only) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
