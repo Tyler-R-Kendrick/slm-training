@@ -801,6 +801,7 @@ tests/
 - honesty: fixture/scratch continuous cycle — **not** a ship promotion.
 
 ## Continuous autotrain note (2026-08-08, c2)
+## Continuous autotrain note (2026-08-08)
 
 - campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c2`
 - checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c2-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c2-control/checkpoints/last.pt`
