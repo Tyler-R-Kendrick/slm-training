@@ -8301,6 +8301,11 @@
         {
           "version": "v3",
           "date": "2026-08-08",
+          "note": "no-bump: record scheduled continuous-openui-20260808 c2's incomplete measurement (both arms exit=124, wall-timeout under the 3-minute cap; retry_measurement queued) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
           "note": "no-bump: record scheduled continuous-openui-20260808 c1's fixture control/bounds checkpoint provenance (fixture insufficient_n, non-positive, ship gates rejected as expected) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
