@@ -8109,6 +8109,11 @@
       "history": [
         {
           "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop 57b8fc3 c1's fixture bounds/control checkpoint provenance (expected smoke insufficient_n gate rejection, non-positive, no stack layer) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
           "date": "2026-08-04",
           "note": "no-bump: record scheduled loop fe71636 c2's control/canvas scratch checkpoint provenance (AgentV harness failure, repaired, replay still decode-timeout incomplete) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },

@@ -1448,3 +1448,9 @@ Date (UTC) column). Do not delete history.
    versions from `scoreboard.json`
    ([version-stamp-contract.md](design/version-stamp-contract.md)).
 6. Commit docs with the checkpoint-producing change.
+
+## Continuous autotrain note (2026-08-08)
+
+- campaign: `continuous-loop-20260808-continuous-openui-schedu-91b3625e-c1`
+- checkpoints: `runs/c20260808-continuous-openui-schedu-91b3625e-c1-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-91b3625e-c1-control/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
