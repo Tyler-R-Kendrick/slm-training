@@ -1175,11 +1175,12 @@
       ]
     },
     "dsl.completion_kernel": {
-      "version": "v21",
+      "version": "v22",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/grammar/fastpath/engine.py",
         "src/slm_training/dsl/grammar/fastpath/completion_artifact.py",
+        "tests/test_dsl/test_completion_artifact_provider_parity.py",
         "tests/test_dsl/test_static_lalr_adapter.py",
         "src/slm_training/dsl/grammar/fastpath/completion_kernel.py",
         "src/slm_training/dsl/grammar/fastpath/force_emit.py",
@@ -1205,6 +1206,11 @@
         "docs/design/hybrid-unmask-hx5-20260804.md"
       ],
       "history": [
+        {
+          "version": "v22",
+          "date": "2026-08-08",
+          "note": "PCT-005 (SLM-451): add tests/test_dsl/test_completion_artifact_provider_parity.py -- a differential/tamper matrix proving StaticCompletionArtifactProvider.load_checked is byte/digest/decision-identical to the direct load_checked_completion_artifact path (manifest, direct_map, digest, full StaticLalrAdapter equality, every-prefix accepts() parity), that checkpoint artifact-binding and the exclusion of dynamic runtime/scope facts from the provider payload are unaffected, and that every corruption class (byte-flipped artifact, stale grammar, unsupported manifest/metadata schema, tokenizer row shape abuse, tampered rule_origins/rule_lengths/state_min_terminals) fails closed identically through the provider seam, never returning a partial/degraded CompletionArtifact and always leaving the exact live-construction fallback available."
+        },
         {
           "version": "v21",
           "date": "2026-08-08",
@@ -1386,7 +1392,12 @@
         {
           "version": "v14",
           "date": "2026-08-08",
-          "note": "SRP-001 (SLM-441) — dsl/pack.py's _ensure_builtin_packs registers a new opt-in `symbolic_regression` DslPack (built by the new dsl/symbolic_regression_pack.py) alongside openui/toy-layout/graphql. Behavioral addition to the watched file: a new pack_id becomes resolvable via get_pack('symbolic_regression')/SLM_GRAMMAR_DSL, but it is never aliased to the default (_ALIASES and _active_dsl() are unchanged, both still resolve to 'openui'), so existing callers and the default pack are unaffected."
+          "note": "no-bump: add PCT-007/SLM-452 MechanismActivationV1 regression tests to tests/test_models/test_decode_stats.py; registry.py and pack.py unchanged."
+        },
+        {
+          "version": "v14",
+          "date": "2026-08-08",
+          "note": "SRP-001 (SLM-441) \u2014 dsl/pack.py's _ensure_builtin_packs registers a new opt-in `symbolic_regression` DslPack (built by the new dsl/symbolic_regression_pack.py) alongside openui/toy-layout/graphql. Behavioral addition to the watched file: a new pack_id becomes resolvable via get_pack('symbolic_regression')/SLM_GRAMMAR_DSL, but it is never aliased to the default (_ALIASES and _active_dsl() are unchanged, both still resolve to 'openui'), so existing callers and the default pack are unaffected."
         },
         {
           "version": "v13",
@@ -2804,6 +2815,46 @@
           "version": "v7",
           "date": "2026-08-08",
           "note": "SGS-010 (SLM-445): add the SERIALIZED_CONTRACTS static certificate to verify_ownership_map (every persisted contract declares a version symbol whose reader consults it and raises on mismatch) plus the table-driven runtime compatibility suite tests/test_data/test_synthesis_contract_versions.py (round-trip, future-version rejection, missing-version rejection, registry parity) covering PromptSemanticRequirementsV1, VerifiedSynthesisProblemV1, VerifierWitnessV1 and DecodeStatsRecordV1."
+        },
+        {
+          "version": "v6",
+          "date": "2026-08-08",
+          "note": "no-bump: SLM-456 (SGS-009) registers a new 'mechanism_disposition_report' subsystem (src/slm_training/harnesses/experiments/mechanism_disposition_report.py) per the pre-registered downstream_extension_map row for SGS-009 (new_owner_justified: true, extension_points: [] -- genuinely new); mirrors the row into repository-ownership-map.md; behavior-neutral doc update (the code-level bump is recorded separately under harness.experiments)."
+        },
+        {
+          "version": "v6",
+          "date": "2026-08-08",
+          "note": "no-bump: SLM-455 (SGS-008) registers a new 'sygus_capability_report' subsystem (src/slm_training/data/progspec/synthesis_capability_report.py: SyGuSCapabilityReportV1/CapabilityFindingV1/build_sygus_capability_report). The pre-registered downstream_extension_map row for SGS-008 predicted extending dsl_pack_registry_canonical/completion_domain directly (new_owner_justified: false); implementation instead built a small self-contained module over verified_synthesis_problem's envelope not touching either predicted owner's owner_symbols, so it is registered as its own subsystem and the divergence is documented in its notes field; behavior-neutral doc update, introduces no solver dependency or new decode/verifier authority."
+        },
+        {
+          "version": "v6",
+          "date": "2026-08-08",
+          "note": "no-bump: SLM-453 (SRP-002) registers a new 'symbolic_expr_ir' subsystem (src/slm_training/dsl/symbolic_expr_ir.py: VarRef/CoefficientHole/OpApply/parse_expr/serialize_expr/collect_symbols/validate_expr_budget) per the pre-registered downstream_extension_map row for SRP-002 (new_owner_justified: true, layered under output_contract, does not fork OUTPUT_CONTRACT_VERSION or reuse production_codec's OpenUI-specific logic) and mirrors the row into repository-ownership-map.md; the new source/test files are not yet tracked by any versions.json component (consistent with the sibling-file precedent set for PCT-002/003/007's new files), so this entry only covers the ownership-map doc update."
+        },
+        {
+          "version": "v6",
+          "date": "2026-08-08",
+          "note": "no-bump: SLM-452 (PCT-007) adds MechanismActivationV1/build_mechanism_activation to the existing 'decode_telemetry' owner's owner_symbols (both literally defined in owner_module decode_stats.py) per the pre-registered downstream_extension_map row for PCT-007 (new_owner_justified: false); notes flag evidence_class/default_state as caller-declared advisory fields pending SGS-009's canonical disposition enum, not a fabricated second registry; behavior-neutral doc update, no new owner or authority tier introduced."
+        },
+        {
+          "version": "v6",
+          "date": "2026-08-08",
+          "note": "no-bump: SLM-450 (PCT-003) documents the new harnesses/model_build/cold_warm_bench.py module (BenchTrialV1, HardwareIdentityV1, run_cold_trial/run_warm_trial/summarize_trials) in the existing 'decode_telemetry' owner's notes -- not owner_symbols, since verify_ownership_map requires owner_symbols to be literally defined in owner_module and these live in a sibling file -- per the pre-registered downstream_extension_map row for PCT-003 (new_owner_justified: false, extends the bench_* harness family and decode_telemetry's MEASUREMENT_STAGES/COMPLETENESS_STATES taxonomy); behavior-neutral, no new owner or authority tier introduced."
+        },
+        {
+          "version": "v6",
+          "date": "2026-08-08",
+          "note": "no-bump: SLM-449 (PCT-002) documents the new replay_bundle.py submodule (ReplayBundleV1/build_replay_bundle/append_replay_bundle/iter_replay_bundles/mirror_bundle_best_effort/replay_bundle_integrity_ok, re-exported through runtime/telemetry/__init__.py) in the existing 'runtime_telemetry' owner's notes -- not owner_symbols, since verify_ownership_map requires owner_symbols to be literally defined in owner_module and these live in the sibling file -- per the pre-registered downstream_extension_map row for PCT-002 (new_owner_justified: false, extends runtime_telemetry + solver_replay); behavior-neutral, no new owner or authority tier introduced."
+        },
+        {
+          "version": "v6",
+          "date": "2026-08-08",
+          "note": "no-bump: SLM-447 (VCE-004) adds PlanInterventionRecordV1/InterventionIdentityV1/apply_plan_intervention/filter_manifest_safe to the existing 'plan_oracle_substitutor' owner's owner_symbols (per the pre-registered downstream_extension_map row for VCE-004, new_owner_justified: false) and mirrors the row into repository-ownership-map.md; behavior-neutral, no new owner or authority tier introduced."
+        },
+        {
+          "version": "v6",
+          "date": "2026-08-08",
+          "note": "no-bump: SLM-446 (VCE-002) adds RepairResidualV1/project_repair_residual to the existing 'semantic_repair' owner's owner_symbols (per the pre-registered downstream_extension_map row for VCE-002, new_owner_justified: false) and mirrors the row into repository-ownership-map.md; behavior-neutral, no new owner or authority tier introduced."
         },
         {
           "version": "v6",
@@ -4314,7 +4365,7 @@
       ]
     },
     "harness.distill": {
-      "version": "v10",
+      "version": "v11",
       "kind": "harness",
       "paths": [
         "docs/design/ap020-on-policy-abstract-self-distillation.md",
@@ -4354,6 +4405,11 @@
         "tests/test_harnesses/distill/test_select_sft.py"
       ],
       "history": [
+        {
+          "version": "v11",
+          "date": "2026-08-08",
+          "note": "SLM-446 (VCE-002): add RepairResidualV1, a pure/stateless projection of SemanticRepairRecordV1 + ConflictSlice into an advisory residual-obligation view (unsatisfied obligations, conflict slice/completeness, protected regions, legal repair-action domain, witness/source ids, tamper-evident residual_hash); optionally reconciles VCE-001 VerifierWitnessV1.unresolved_localizations as additional obligations without ever fabricating legal edits, converting UNKNOWN to failure, or letting HEURISTIC evidence authorize repair -- no second repair registry or verifier authority introduced."
+        },
         {
           "version": "v10",
           "date": "2026-08-03",
@@ -4513,7 +4569,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v147",
+      "version": "v148",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
@@ -4527,6 +4583,11 @@
         "tests/test_harnesses/rl/test_trajectory.py"
       ],
       "history": [
+        {
+          "version": "v148",
+          "date": "2026-08-08",
+          "note": "SGS-009/SLM-456: add mechanism_disposition_report.py (MechanismDispositionRecordV1/MechanismDispositionReportV1/SupersessionEntryV1), generalizing the SLM-160/SPV4-02 SPVMechanismDisposition precedent into reusable code for any mechanism, reusing that module's Disposition enum directly. Fails closed on adopt_primary/adopt_optional requiring measured evidence_class + non-empty activation_evidence, and on evidence_class='fixture' pairing with default_state='on'. Supersession is a pure append-only pointer between same-mechanism_id records; superseded records are never rewritten or removed. Ships the reusable schema/generator proven against a fixture matrix, not a completed audit of every real mechanism in the current backlog -- that data-entry pass is follow-on work."
+        },
         {
           "version": "v147",
           "date": "2026-08-03",
@@ -10270,7 +10331,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v93",
+      "version": "v94",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -10291,6 +10352,11 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v94",
+          "note": "PCT-007/SLM-452: add MechanismActivationV1/build_mechanism_activation -- a common eligible/invoked/abstained/no_op/changed_top_choice/changed_final_program/forwards/verified_states/verifier_calls/wall_ms/failure_reason envelope any optional semantic/search/repair/controller mechanism can emit, fail-closed against representing a wired-but-never-active mechanism as a successful intervention (invoked requires eligible; a choice-change claim requires invoked and not no_op). evidence_class/default_state stay caller-declared advisory fields (MECHANISM_EVIDENCE_CLASSES is illustrative, not a canonical enum) since no single canonical disposition registry exists yet -- SGS-009/SLM-456 is still Backlog. Purely additive over DecodeStats/aggregate_stats; no existing call site wired yet.",
+          "date": "2026-08-08"
+        },
         {
           "version": "v93",
           "note": "PCT-001/SLM-439: add DecodeStatsRecordV1/DecodeIdentityV1 typed, tamper-evident, append-only envelope over DecodeStats (measurement_stage cold/warm classification, completeness gating, legal-domain status, witness_ids, identity binding). Purely additive: DecodeStats and aggregate_stats are unchanged and no existing call site is wired to the new envelope yet.",

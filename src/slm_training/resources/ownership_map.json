@@ -65,6 +65,36 @@
       "notes": "SGS-007 (SLM-444): new owner layered on semantic_plan, verifier_gate_stack, and dsl_pack_registry_canonical without duplicating any of them -- carries a PromptSemanticRequirementsV1 verbatim, references verifier/evaluator identities by string, and bounds search resources without granting search authority. Excludes authority in {compiler-hard, verifier-hard} at the type level, mirroring prompt_requirements, so no request can declare itself compiler-certified merely through this envelope. Generated JSON Schema: src/slm_training/resources/verified_synthesis_problem.schema.json (scripts/sync_verified_synthesis_problem_schema.py --check)."
     },
     {
+      "id": "sygus_capability_report",
+      "name": "SyGuS/SemGuS capability report over VerifiedSynthesisProblemV1",
+      "owner_module": "src/slm_training/data/progspec/synthesis_capability_report.py",
+      "owner_symbols": [
+        "SyGuSCapabilityReportV1",
+        "CapabilityFindingV1",
+        "build_sygus_capability_report"
+      ],
+      "authority_tier": "evaluation-only",
+      "design_doc": "docs/design/semantic-planning-valid-state.md",
+      "notes": "SGS-008/SLM-455. The downstream_extension_map row for SGS-008 predicted extending dsl_pack_registry_canonical/completion_domain directly (new_owner_justified: false); implementation instead built a small, self-contained new module over verified_synthesis_problem's envelope, so it is registered here as its own subsystem rather than force-fit into pack.py/grammar_capabilities.py, whose owner_symbols it does not touch. Reuses grammar_capabilities.py's UnsupportedCapabilityV1 status/reason idiom (generalized to representable/non_representable/extension_required) and symbolic_expr_ir.py's BINARY_OPERATORS/UNARY_OPERATORS for the one demonstrably faithful fragment (a symbolic-regression synth-fun grammar); every other requirement-bearing element (verification requirements, prompt facts/ambiguity groups, objectives, search budget, evidence provenance) is reported non_representable/extension_required with a reason, never silently dropped. Introduces no solver dependency and calls no external solver, so nothing here can widen exact compiler support. conformance='inspired_interoperability' documents that the emitted SyGuS-IF-shaped text is not standards-conformant (no (check-synth), no example-table constraints)."
+    },
+    {
+      "id": "mechanism_disposition_report",
+      "name": "Mechanism disposition and stale-evidence supersession reports",
+      "owner_module": "src/slm_training/harnesses/experiments/mechanism_disposition_report.py",
+      "owner_symbols": [
+        "MechanismDispositionRecordV1",
+        "MechanismDispositionReportV1",
+        "SupersessionEntryV1",
+        "EVIDENCE_CLASSES",
+        "build_mechanism_disposition_record",
+        "build_supersession_entry",
+        "build_disposition_report"
+      ],
+      "authority_tier": "evaluation-only",
+      "design_doc": "docs/design/semantic-planning-valid-state-disposition.md",
+      "notes": "SGS-009/SLM-456 (new_owner_justified: true, extension_points: [] in the downstream_extension_map -- genuinely new). Generalizes the SLM-160/SPV4-02 narrative precedent (SPVMechanismDisposition, docs/design/semantic-planning-valid-state-disposition.md) into reusable code covering any mechanism, not just the SPV family; reuses that module's Disposition enum directly rather than redefining the same seven values. Is the canonical EVIDENCE_CLASSES registry PCT-007 (models/decode_stats.py's MECHANISM_EVIDENCE_CLASSES) named as still-Backlog when it stayed a caller-declared advisory field. Fails closed on both AC1/AC2: adopt_primary/adopt_optional requires evidence_class in {measured,promotable,ship} plus non-empty activation_evidence (a wired-but-unmeasured mechanism can never be recorded as adopted), and evidence_class='fixture' can never pair with default_state='on'. Supersession is a pure, append-only pointer between two same-mechanism_id records; the superseded record is never rewritten or removed, only linked. Scope note: ships the reusable schema/validation/generator proven against a fixture matrix (the issue's own validation ask), not a completed audit of every real mechanism across the current SGS/VCE/PCT/SRP/SIE/RSP backlog -- that data-entry pass is follow-on work, mirroring how SLM-160's own audit was a separate pass from building its harness."
+    },
+    {
       "id": "semantic_failure_taxonomy",
       "name": "Semantic-failure taxonomy / evidence labeling",
       "owner_module": "src/slm_training/evals/semantic_failure.py",
@@ -114,22 +144,28 @@
         "LegalEdit",
         "RepairEvidence",
         "RepairPolicyName",
-        "SemanticRepairScorer"
+        "SemanticRepairScorer",
+        "RepairResidualV1",
+        "project_repair_residual"
       ],
       "authority_tier": "advisory-learned",
       "design_doc": "docs/design/iter-spv2-05-semantic-repair-20260720.md",
-      "notes": "Fixture-only interim baseline (SPV2-05). Its own docstring defers real verifier-backed counterfactual action values to SLM-131/VSS (counterfactual_probe). Not dead code; a documented pending supersession."
+      "notes": "Fixture-only interim baseline (SPV2-05). Its own docstring defers real verifier-backed counterfactual action values to SLM-131/VSS (counterfactual_probe). Not dead code; a documented pending supersession. VCE-002/SLM-446 added RepairResidualV1 -- a pure projection of SemanticRepairRecordV1/ConflictSlice (plus optional VCE-001 VerifierWitnessV1 reconciliation) into an advisory residual-obligation view; it owns no new authority and is not a second repair registry."
     },
     {
       "id": "plan_oracle_substitutor",
       "name": "Plan-level oracle substitution",
       "owner_module": "src/slm_training/data/semantic_plan/oracle.py",
       "owner_symbols": [
-        "PlanOracleSubstitutor"
+        "PlanOracleSubstitutor",
+        "PlanInterventionRecordV1",
+        "InterventionIdentityV1",
+        "apply_plan_intervention",
+        "filter_manifest_safe"
       ],
       "authority_tier": "oracle-diagnostic",
       "design_doc": "docs/design/semantic-planning-valid-state.md",
-      "notes": "Distinct from semantic_repair's corruption-repair targets: this substitutes ground-truth oracle values for factor-wise diagnosis, not corruption recovery."
+      "notes": "Distinct from semantic_repair's corruption-repair targets: this substitutes ground-truth oracle values for factor-wise diagnosis, not corruption recovery. VCE-004/SLM-447 added PlanInterventionRecordV1/apply_plan_intervention -- an immutable, replayable paired baseline/intervention observation (before/after plan hashes, declared-vs-observed changed factors, frozen model/request/seed/verifier/hardware identity, downstream decision/quality/compute evidence) plus filter_manifest_safe to exclude contamination-bannered records from any manifest. Extends this owner directly; introduces no second substitution authority."
     },
     {
       "id": "counterfactual_probe",
@@ -226,11 +262,13 @@
       "owner_symbols": [
         "DecodeStats",
         "collect_decode_stats",
-        "aggregate_stats"
+        "aggregate_stats",
+        "MechanismActivationV1",
+        "build_mechanism_activation"
       ],
       "authority_tier": "evaluation-only",
       "design_doc": "docs/design/decode-invariants.md",
-      "notes": "Timing/step-count/fastpath hit-miss telemetry collected during inference/eval."
+      "notes": "Timing/step-count/fastpath hit-miss telemetry collected during inference/eval. PCT-003/SLM-450 added src/slm_training/harnesses/model_build/cold_warm_bench.py (BenchTrialV1, HardwareIdentityV1, run_cold_trial/run_warm_trial/summarize_trials), a fresh-subprocess cold and in-process warm benchmark harness reusing this owner's MEASUREMENT_STAGES/COMPLETENESS_STATES taxonomy directly rather than inventing a second one; extends the bench_* script family (scripts/bench_accel.py etc.), introduces no new telemetry authority. PCT-007/SLM-452 added MechanismActivationV1/build_mechanism_activation directly in decode_stats.py: a common eligible/invoked/abstained/no_op/changed_top_choice/changed_final_program envelope any optional mechanism can emit, fail-closed against representing a never-active mechanism as a successful intervention. evidence_class/default_state stay caller-declared advisory fields (MECHANISM_EVIDENCE_CLASSES is illustrative only) pending SGS-009/SLM-456 (still Backlog), which is the actual future owner of a canonical disposition enum -- this does not fabricate that registry ahead of it."
     },
     {
       "id": "runtime_telemetry",
@@ -244,7 +282,7 @@
       ],
       "authority_tier": "evaluation-only",
       "design_doc": "docs/design/decode-invariants.md",
-      "notes": "Lower-level runtime namespace used by runtime/decode_schedule.py. Consumes/produces DecodeStats; not a re-implementation of it."
+      "notes": "Lower-level runtime namespace used by runtime/decode_schedule.py. Consumes/produces DecodeStats; not a re-implementation of it. PCT-002/SLM-449 added a sibling submodule src/slm_training/runtime/telemetry/replay_bundle.py (ReplayBundleV1, build_replay_bundle, append_replay_bundle, iter_replay_bundles, mirror_bundle_best_effort, replay_bundle_integrity_ok -- re-exported through this package's __init__.py) composing DecodeIdentityV1 (decode_telemetry) and solver_replay_violations (solver_replay) into a compact, content-bound, offline-replayable evidence envelope; introduces no new decode/verifier authority and no new store (persistence reuses any ReplayBundleStore-shaped append-only store the caller already has)."
     },
     {
       "id": "certified_completion_artifact",
@@ -347,6 +385,23 @@
       "authority_tier": "compiler-hard",
       "design_doc": "docs/design/decode-invariants.md",
       "notes": "Related production-level codec consumed alongside choice_codec."
+    },
+    {
+      "id": "symbolic_expr_ir",
+      "name": "Typed symbolic-expression IR, codec, and symbol table",
+      "owner_module": "src/slm_training/dsl/symbolic_expr_ir.py",
+      "owner_symbols": [
+        "VarRef",
+        "CoefficientHole",
+        "OpApply",
+        "parse_expr",
+        "serialize_expr",
+        "collect_symbols",
+        "validate_expr_budget"
+      ],
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/symbol-only-output-contract.md",
+      "notes": "SRP-002/SLM-453. New pack-local subsystem for the symbolic-regression pack (SRP-001/SLM-441, owner symbolic_regression_pack.py), pre-authorized by the downstream_extension_map row for SRP-002 (new_owner_justified: true, layer under output_contract, do not fork it). Variables and coefficients are opaque indices only -- never names or free numeric literals -- so the structural codec's output space is symbol-only by construction without introducing a second OUTPUT_CONTRACT_VERSION or reusing production_codec's OpenUI-specific encode/decode logic. Supersedes the untyped dict-shaped expression tree in symbolic_regression_pack.py as the canonical structural form; the Lark surface grammar registered there (dsl/grammar/backends/symbolic_regression.py) remains input-surface syntax only."
     },
     {
       "id": "version_registry",

@@ -474,6 +474,142 @@ def completed_steady_state(
     ]
 
 
+MECHANISM_ACTIVATION_SCHEMA = "mechanism_activation_record/v1"
+
+# Illustrative, non-exhaustive evidence-class vocabulary. PCT-007 asks for
+# this to be drawn "from canonical experiment/disposition owners", but no
+# single canonical enum spanning fixture/measured/promotable/rejected/blocked
+# exists yet -- SGS-009 (SLM-456, "Generate mechanism disposition and
+# stale-evidence supersession reports") is still Backlog. Rather than invent
+# a second competing registry ahead of that issue, ``evidence_class`` stays a
+# caller-declared, advisory string; this set documents the values already in
+# use around the repo (AutotrainCycleHandoffV1.evidence_class and the
+# SLM-160/228/236-family Disposition enums) without claiming to unify them.
+MECHANISM_EVIDENCE_CLASSES = frozenset(
+    {"fixture", "scratch", "measured", "promotable", "rejected", "blocked", "ship"}
+)
+
+
+def _mechanism_activation_digest(activation: "MechanismActivationV1") -> str:
+    payload = asdict(activation)
+    payload.pop("activation_hash", None)
+    return _canonical_digest(payload)
+
+
+@dataclass(frozen=True)
+class MechanismActivationV1:
+    """Common activation/choice-change/disposition envelope (PCT-007).
+
+    Any optional semantic/search/repair/controller mechanism can emit one of
+    these to report whether it was eligible, actually invoked, and whether it
+    changed anything -- without mutating candidate support or promotion
+    policy itself (it is a read-only diagnostic record, purely additive over
+    whatever counters the mechanism already has). Built only by
+    ``build_mechanism_activation``, which fails closed on internally
+    inconsistent claims so a wired-but-never-active mechanism can never be
+    represented as a successful intervention.
+    """
+
+    schema_version: str
+    mechanism_id: str
+    eligible: bool
+    invoked: bool
+    abstained: bool
+    no_op: bool
+    changed_top_choice: bool
+    changed_final_program: bool
+    forwards: int
+    verified_states: int
+    verifier_calls: int
+    wall_ms: float | None
+    failure_reason: str | None
+    evidence_class: str
+    default_state: bool
+    activation_hash: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "MechanismActivationV1":
+        if payload.get("schema_version") != MECHANISM_ACTIVATION_SCHEMA:
+            raise ValueError(
+                f"unsupported mechanism activation schema: {payload.get('schema_version')!r}"
+            )
+        activation = cls(**payload)
+        if _mechanism_activation_digest(activation) != activation.activation_hash:
+            raise ValueError(
+                "mechanism activation hash mismatch (tampered or corrupted payload)"
+            )
+        return activation
+
+
+def build_mechanism_activation(
+    *,
+    mechanism_id: str,
+    eligible: bool,
+    invoked: bool,
+    abstained: bool = False,
+    no_op: bool = False,
+    changed_top_choice: bool = False,
+    changed_final_program: bool = False,
+    forwards: int = 0,
+    verified_states: int = 0,
+    verifier_calls: int = 0,
+    wall_ms: float | None = None,
+    failure_reason: str | None = None,
+    evidence_class: str = "fixture",
+    default_state: bool = False,
+) -> MechanismActivationV1:
+    """Build one content-bound activation record; fails closed on a claim
+    combination that would misrepresent a never-active mechanism as having
+    changed something.
+
+    * an ineligible mechanism cannot be ``invoked``;
+    * ``invoked`` and ``abstained`` are mutually exclusive (abstaining is
+      declining to act while eligible, not acting);
+    * a choice-change claim (``changed_top_choice``/``changed_final_program``)
+      requires ``invoked=True`` -- this is the concrete guard against
+      representing a wired-but-never-active mechanism as a successful
+      intervention;
+    * a ``no_op`` activation cannot also claim a choice change.
+    """
+    if not mechanism_id:
+        raise ValueError("mechanism_id is required")
+    if invoked and not eligible:
+        raise ValueError("an ineligible mechanism cannot be invoked")
+    if invoked and abstained:
+        raise ValueError("invoked and abstained are mutually exclusive")
+    if (changed_top_choice or changed_final_program) and not invoked:
+        raise ValueError("a choice-change claim requires invoked=True")
+    if no_op and (changed_top_choice or changed_final_program):
+        raise ValueError("a no-op activation cannot also claim a choice change")
+    activation = MechanismActivationV1(
+        schema_version=MECHANISM_ACTIVATION_SCHEMA,
+        mechanism_id=mechanism_id,
+        eligible=eligible,
+        invoked=invoked,
+        abstained=abstained,
+        no_op=no_op,
+        changed_top_choice=changed_top_choice,
+        changed_final_program=changed_final_program,
+        forwards=forwards,
+        verified_states=verified_states,
+        verifier_calls=verifier_calls,
+        wall_ms=wall_ms,
+        failure_reason=failure_reason,
+        evidence_class=evidence_class,
+        default_state=default_state,
+        activation_hash="",
+    )
+    return replace(activation, activation_hash=_mechanism_activation_digest(activation))
+
+
+def mechanism_activation_integrity_ok(activation: MechanismActivationV1) -> bool:
+    """Recompute the activation hash and compare; used by replay/tamper checks."""
+    return _mechanism_activation_digest(activation) == activation.activation_hash
+
+
 @contextmanager
 def timed_ms(stats: DecodeStats | None, field_name: str) -> Iterator[None]:
     """Accumulate wall time into ``stats.<field_name>`` when stats is set."""
@@ -919,19 +1055,24 @@ __all__ = [
     "DECODE_STATS_RECORD_SCHEMA",
     "LEGAL_DOMAIN_STATUSES",
     "MEASUREMENT_STAGES",
+    "MECHANISM_ACTIVATION_SCHEMA",
+    "MECHANISM_EVIDENCE_CLASSES",
     "DecodeIdentityV1",
     "DecodeStats",
     "DecodeStatsRecordV1",
+    "MechanismActivationV1",
     "aggregate_stats",
     "append_decode_stats_record",
     "attributed_time_summary",
     "build_decode_stats_record",
+    "build_mechanism_activation",
     "collect_completion_session_delta",
     "collect_decode_stats",
     "collect_engine_stats",
     "completed_steady_state",
     "get_active_stats",
     "iter_decode_stats_records",
+    "mechanism_activation_integrity_ok",
     "proves_zero_neural_work",
     "proves_zero_search_work",
     "set_active_stats",
