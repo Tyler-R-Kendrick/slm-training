@@ -8296,6 +8296,11 @@
         {
           "version": "v3",
           "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop openui-scheduled-bcz5ho c7's control/canvas fixture checkpoint provenance (honest ship-gate reject on fixture n, null primary-metric delta) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
           "note": "no-bump: record scheduled loop openui-scheduled-bcz5ho c5's control/component-plan fixture checkpoint provenance (measurement incomplete, missing scoreboard, expected soft failure) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
