@@ -1,8 +1,18 @@
+import pytest
+
 from slm_training.models.decode_stats import (
+    DecodeIdentityV1,
     DecodeStats,
+    DecodeStatsRecordV1,
     aggregate_stats,
+    append_decode_stats_record,
+    build_decode_stats_record,
     collect_decode_stats,
     collect_completion_session_delta,
+    completed_steady_state,
+    iter_decode_stats_records,
+    proves_zero_neural_work,
+    proves_zero_search_work,
 )
 from slm_training.harnesses.model_build.eval_runner import _nearest_rank
 
@@ -318,3 +328,96 @@ def test_false_singleton_hazard_makes_domain_incomplete() -> None:
     assert domain.status == "incomplete"
     assert domain.reason == "witness_false_singleton_risk"
     assert not domain.candidates
+
+
+def test_proves_zero_neural_work_true_on_bypassed_stats() -> None:
+    stats = DecodeStats(forced_row_tokens_without_forward=2, all_forced_steps_without_forward=1)
+    assert proves_zero_neural_work(stats)
+
+
+def test_proves_zero_neural_work_false_once_a_forward_fires() -> None:
+    stats = DecodeStats(forwards_count=1)
+    assert not proves_zero_neural_work(stats)
+
+
+def test_proves_zero_search_work_false_once_solver_decides() -> None:
+    stats = DecodeStats(solver_decisions=1)
+    assert not proves_zero_search_work(stats)
+
+
+def test_build_decode_stats_record_rejects_unknown_enums() -> None:
+    stats = DecodeStats(total_ms=1.0)
+    with pytest.raises(ValueError, match="measurement_stage"):
+        build_decode_stats_record(stats, measurement_stage="lukewarm")
+    with pytest.raises(ValueError, match="completeness"):
+        build_decode_stats_record(stats, measurement_stage="steady_state", completeness="mostly")
+    with pytest.raises(ValueError, match="legal_domain_status"):
+        build_decode_stats_record(
+            stats, measurement_stage="steady_state", legal_domain_status="maybe"
+        )
+
+
+def test_decode_stats_record_is_deterministic_and_content_bound() -> None:
+    stats = DecodeStats(total_ms=5.0, forwards_count=0)
+    identity = DecodeIdentityV1(pack_id="openui", checkpoint_sha256="abc123")
+    one = build_decode_stats_record(
+        stats, measurement_stage="steady_state", identity=identity, witness_ids=("w1",)
+    )
+    two = build_decode_stats_record(
+        stats, measurement_stage="steady_state", identity=identity, witness_ids=("w1",)
+    )
+    assert one == two
+    restored = DecodeStatsRecordV1.from_dict(one.to_dict())
+    assert restored == one
+
+
+def test_decode_stats_record_from_dict_rejects_tampering_and_bad_schema() -> None:
+    stats = DecodeStats(total_ms=1.0)
+    record = build_decode_stats_record(stats, measurement_stage="request_cold")
+    tampered = dict(record.to_dict())
+    tampered["measurement_stage"] = "steady_state"
+    with pytest.raises(ValueError, match="digest mismatch"):
+        DecodeStatsRecordV1.from_dict(tampered)
+
+    wrong_schema = dict(record.to_dict())
+    wrong_schema["schema_version"] = "decode_stats_record/v0"
+    with pytest.raises(ValueError, match="unsupported decode stats record schema"):
+        DecodeStatsRecordV1.from_dict(wrong_schema)
+
+
+def test_incomplete_records_are_excluded_from_steady_state_aggregation() -> None:
+    complete_steady = build_decode_stats_record(
+        DecodeStats(total_ms=1.0), measurement_stage="steady_state", completeness="complete"
+    )
+    partial = build_decode_stats_record(
+        DecodeStats(total_ms=999.0),
+        measurement_stage="steady_state",
+        completeness="partial_timeout",
+    )
+    cold = build_decode_stats_record(
+        DecodeStats(total_ms=50.0), measurement_stage="process_cold", completeness="complete"
+    )
+    kept = completed_steady_state([complete_steady, partial, cold])
+    assert kept == [complete_steady]
+
+
+def test_append_only_log_round_trips_and_detects_chain_tampering(tmp_path) -> None:
+    log_path = tmp_path / "decode_stats.jsonl"
+    first = build_decode_stats_record(DecodeStats(total_ms=1.0), measurement_stage="process_cold")
+    append_decode_stats_record(first, log_path)
+    second = build_decode_stats_record(
+        DecodeStats(total_ms=2.0),
+        measurement_stage="steady_state",
+        prev_record_digest=first.record_digest,
+    )
+    append_decode_stats_record(second, log_path)
+
+    replayed = list(iter_decode_stats_records(log_path))
+    assert replayed == [first, second]
+
+    lines = log_path.read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 2
+    swapped = "\n".join([lines[1], lines[0]]) + "\n"
+    log_path.write_text(swapped, encoding="utf-8")
+    with pytest.raises(ValueError, match="chain broken"):
+        list(iter_decode_stats_records(log_path))

@@ -3,13 +3,20 @@
 This module is deliberately an adapter: ``binding_aware_meaningful_v2`` and the
 G0--G12 verifier stack remain the scoring authorities.  It only gives their
 ordered evidence a stable, versioned diagnostic vocabulary.
+
+``VerifierWitnessV1`` extends that adapter: it re-localizes an existing
+``SemanticFailureTraceV1`` into typed, tamper-evident evidence records
+(gate/reason/AST-path/span, completeness, redaction-safe detail) without
+scoring anything itself -- it is a lossless superset of the trace, never a
+competing legality authority.
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import asdict, dataclass
+import re
+from dataclasses import asdict, dataclass, replace
 from enum import Enum
 from typing import Any
 
@@ -269,3 +276,204 @@ def trace_semantic_failure(
         evaluator_hash=report.metric_implementation_hash,
         trace_fingerprint=_digest(fingerprint_payload),
     )
+
+
+WITNESS_SCHEMA_VERSION = "verifier_witness/v1"
+
+# Gates whose pass/fail is not a deterministic compiler-hard decision (judge
+# or human evidence); their localization completeness is downgraded from
+# EXACT to HEURISTIC even when a result is present.
+_HEURISTIC_GATES = frozenset({Gate.INDEPENDENT_JUDGE, Gate.HUMAN_AUDIT})
+
+_SECRET_PATTERNS = (
+    re.compile(r"hf_[A-Za-z0-9]{10,}"),
+    re.compile(r"sk-[A-Za-z0-9]{10,}"),
+    re.compile(r"AKIA[0-9A-Z]{16}"),
+    re.compile(r"(?i)(api[_-]?key|token|secret|password)=([^\s,;]+)"),
+    re.compile(r"\b[0-9a-f]{48,}\b"),
+)
+_MAX_DETAIL_CHARS = 240
+
+
+def _scrub_detail(text: str) -> str:
+    """Strip secret-shaped substrings and cap length before text enters a witness."""
+    if not text:
+        return text
+    scrubbed = text
+    for pattern in _SECRET_PATTERNS:
+        scrubbed = pattern.sub("[REDACTED]", scrubbed)
+    if len(scrubbed) > _MAX_DETAIL_CHARS:
+        scrubbed = f"{scrubbed[:_MAX_DETAIL_CHARS]}...[truncated:{_digest(text)[:12]}]"
+    return scrubbed
+
+
+def _gate_completeness(gate: Gate, status: str) -> str:
+    if status == GateStatus.SKIP.value:
+        return "UNKNOWN"
+    return "HEURISTIC" if gate in _HEURISTIC_GATES else "EXACT"
+
+
+@dataclass(frozen=True)
+class VerifierLocalizationV1:
+    """One typed, redaction-safe evidence unit inside a ``VerifierWitnessV1``.
+
+    ``completeness_class`` is one of ``EXACT`` (deterministic authority gave a
+    concrete localized fact), ``HEURISTIC`` (a judge/human authority gave a
+    fact that is not independently replayable), or ``UNKNOWN`` (no authority
+    localized this evidence point -- stays explicit rather than omitted).
+    """
+
+    source: str
+    gate: str | None
+    reason_code: str | None
+    ast_path: str | None
+    source_span: tuple[int, int] | None
+    expected: str | None
+    observed: str | None
+    completeness_class: str
+    certificate_id: str | None
+    detail: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> VerifierLocalizationV1:
+        span = payload.get("source_span")
+        return cls(**{**payload, "source_span": tuple(span) if span is not None else None})
+
+
+def _witness_digest(witness: VerifierWitnessV1) -> str:
+    payload = asdict(witness)
+    payload.pop("witness_digest", None)
+    return _digest(payload)
+
+
+@dataclass(frozen=True)
+class VerifierWitnessV1:
+    """Deterministic, tamper-evident typed localization over a failure trace.
+
+    Purely diagnostic: it never overrides G0--G12 pass/fail or any semantic
+    check outcome, it only re-expresses their existing evidence as typed,
+    replayable localization records.
+    """
+
+    schema_version: str
+    source_trace_fingerprint: str
+    taxonomy_version: str
+    evaluator_version: str
+    evaluator_hash: str
+    first_failed_gate: str | None
+    localizations: tuple[VerifierLocalizationV1, ...]
+    unresolved_localizations: tuple[str, ...]
+    witness_digest: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> VerifierWitnessV1:
+        if payload.get("schema_version") != WITNESS_SCHEMA_VERSION:
+            raise ValueError(f"unsupported verifier witness schema: {payload.get('schema_version')!r}")
+        witness = cls(
+            **{
+                **payload,
+                "localizations": tuple(
+                    VerifierLocalizationV1.from_dict(item) for item in payload["localizations"]
+                ),
+                "unresolved_localizations": tuple(payload["unresolved_localizations"]),
+            }
+        )
+        if _witness_digest(witness) != witness.witness_digest:
+            raise ValueError("verifier witness digest mismatch (tampered or corrupted payload)")
+        return witness
+
+
+def witness_integrity_ok(witness: VerifierWitnessV1) -> bool:
+    """Recompute the witness digest and compare; used by replay/tamper checks."""
+    return _witness_digest(witness) == witness.witness_digest
+
+
+def build_verifier_witness(trace: SemanticFailureTraceV1) -> VerifierWitnessV1:
+    """Losslessly re-localize an existing trace's evidence into typed witnesses.
+
+    Deterministic: identical traces always yield an identical witness payload
+    (including ``witness_digest``), because every field is derived only from
+    ``trace``'s own already-deterministic fields.
+    """
+    localizations: list[VerifierLocalizationV1] = []
+    unresolved: list[str] = []
+
+    for outcome in trace.gate_outcomes:
+        gate = Gate(outcome["gate"])
+        completeness = _gate_completeness(gate, outcome["status"])
+        if completeness == "UNKNOWN":
+            unresolved.append(f"gate:{outcome['gate']}")
+        localizations.append(
+            VerifierLocalizationV1(
+                source="gate",
+                gate=outcome["gate"],
+                reason_code=None,
+                ast_path=None,
+                source_span=None,
+                expected="pass",
+                observed=outcome["status"],
+                completeness_class=completeness,
+                certificate_id=None,
+                detail=_scrub_detail(outcome.get("detail", "")),
+            )
+        )
+
+    for check in trace.semantic_checks:
+        reason_code = ",".join(check["reason_codes"]) if check["reason_codes"] else None
+        evidence_items = check["evidence"]
+        if not evidence_items:
+            if check["status"] != "PASS":
+                unresolved.append(f"semantic_check:{check['name']}")
+                localizations.append(
+                    VerifierLocalizationV1(
+                        source="semantic_check",
+                        gate=None,
+                        reason_code=reason_code,
+                        ast_path=None,
+                        source_span=None,
+                        expected=None,
+                        observed=check["status"],
+                        completeness_class="UNKNOWN",
+                        certificate_id=None,
+                        detail=_scrub_detail(reason_code or ""),
+                    )
+                )
+            continue
+        for item in evidence_items:
+            span = item.get("source_span")
+            ast_path = item.get("ast_path") or None
+            if not ast_path:
+                unresolved.append(f"semantic_check:{check['name']}:unlocalized")
+            localizations.append(
+                VerifierLocalizationV1(
+                    source="semantic_check",
+                    gate=None,
+                    reason_code=reason_code,
+                    ast_path=ast_path,
+                    source_span=tuple(span) if span is not None else None,
+                    expected=None,
+                    observed=check["status"],
+                    completeness_class="EXACT" if ast_path else "UNKNOWN",
+                    certificate_id=None,
+                    detail=_scrub_detail(item.get("detail", "")),
+                )
+            )
+
+    witness = VerifierWitnessV1(
+        schema_version=WITNESS_SCHEMA_VERSION,
+        source_trace_fingerprint=trace.trace_fingerprint,
+        taxonomy_version=trace.taxonomy_version,
+        evaluator_version=trace.evaluator_version,
+        evaluator_hash=trace.evaluator_hash,
+        first_failed_gate=trace.first_failed_gate,
+        localizations=tuple(localizations),
+        unresolved_localizations=tuple(dict.fromkeys(unresolved)),
+        witness_digest="",
+    )
+    return replace(witness, witness_digest=_witness_digest(witness))

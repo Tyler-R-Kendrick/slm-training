@@ -164,6 +164,57 @@ transitively, `scoreboard.json`) via `aggregate_stats`; no new top-level metric
 keys or files. They do not overload the existing grammar/lattice candidate
 counters.
 
+## Typed decode-stats records (PCT-001 / SLM-439)
+
+[`DecodeStatsRecordV1`](../../src/slm_training/models/decode_stats.py) is an
+optional, tamper-evident envelope built from an existing `DecodeStats`
+snapshot -- an extension of `decode_telemetry`, not a second telemetry owner.
+It never mutates `DecodeStats` or `aggregate_stats`, so every current reader
+(`durable_decode_stats` in `run_quality_matrix.py`, the `decode_headlines`
+allowlist in `autoresearch/engine.py`, the `decode_progress.json` sidecar
+gate) is unaffected.
+
+A record adds:
+
+* **`measurement_stage`** -- one of `process_cold` / `artifact_cold` /
+  `model_cold` / `request_cold` / `steady_state`. A "steady state" aggregate
+  must filter on this field (`completed_steady_state`) so a cold-start
+  decode's inflated `total_ms` can never silently blend into it.
+* **`completeness`** -- `complete` / `partial_timeout` / `aborted`. Only
+  `complete` records may feed a "measured performance" summary.
+* **`legal_domain_size` / `legal_domain_status`** -- the latter mirrors
+  `CompletionDomainV1.status` (`complete` / `incomplete` / `unsupported` /
+  `unknown`) rather than inventing a second symbol-table completeness
+  vocabulary.
+* **`witness_ids`** -- opaque references (e.g. a `VerifierWitnessV1.witness_digest`
+  from `evals/semantic_failure.py`) linking a decode to independently
+  replayable verifier evidence, when one was produced.
+* **`identity`** -- a `DecodeIdentityV1` binding to contract version, pack,
+  tokenizer, artifact/checkpoint sha256, evaluator version/hash, and code
+  commit; every field is optional and explicit, never inferred.
+* **`record_digest`** -- a canonical-JSON sha256 over every other field,
+  following the same digest convention as `dsl/solver/replay.py` and
+  `evals/semantic_failure.py`'s `VerifierWitnessV1`. `from_dict` recomputes
+  and compares it, raising (fail closed) on drift or corruption.
+
+`proves_zero_neural_work(stats)` / `proves_zero_search_work(stats)` give the
+I2 `forwards_count == 0` bypass proof (and its search-side analog) a reusable,
+directly testable form.
+
+`append_decode_stats_record` / `iter_decode_stats_records` give records an
+append-only, fsync'd JSONL home with a `prev_record_digest` hash chain: a
+reordered, deleted, or tampered line breaks the chain and `iter_decode_stats_records`
+raises rather than silently replaying a corrupted log.
+
+**Scope note**: this PR ships the typed contract, builder, and persistence
+layer with full unit coverage. It does not yet wire `build_decode_stats_record`
+into any live `collect_decode_stats` call site (`eval_runner.py`,
+`decode_progress.json`, `scoreboard.json`) -- that integration, plus the
+`durable_decode_stats` allowlist and `decode_headlines` updates it would need,
+is deliberately left to PCT-003 (honest end-to-end cold/warm benchmark
+harness) and PCT-007 (mechanism activation/disposition telemetry), which own
+that wiring.
+
 ## How to use
 
 ```bash
