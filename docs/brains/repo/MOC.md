@@ -67,6 +67,18 @@ reads this section to seed the autotrain hypothesis loop and prunes it as
   not unfinished. Re-file a new `SLM-N` if a scientific open question needs
   active tracking again.
 
+## Semantic contracts & governance (SGS)
+
+Active governance, not results: the executable contracts/certificates the
+synthesis backlog extends. Listed here so a new issue extends an existing owner
+instead of duplicating one. (These are **not** dead ends.)
+
+- [SGS-004 prompt requirement extraction](../../design/sgs-004-prompt-requirements-extract.md)
+- [SGS-005 authority projections](../../design/sgs-005-authority-projections.md)
+- [SGS-006 requirement integration adapters](../../design/sgs-006-prompt-requirements-integration.md)
+- [SGS-010 schema versioning + compatibility](../../design/sgs-010-schema-versioning-compatibility.md)
+- [Repository ownership map](../../design/repository-ownership-map.md) — owner/authority registry all of the above register into.
+
 ## Dead ends (do not re-propose)
 
 Record negative results and abandoned levers with a link to the evidence, so the
@@ -74,6 +86,3 @@ hypothesis loop's novelty audit can exclude them.
 
 - _(seed)_ E249 / E252 local-preference chain — negative; see
   [`research-lineage.md`](../../design/research-lineage.md) "Exact-state local decision preference".
-
-- [SGS-004 prompt requirements extract](../design/sgs-004-prompt-requirements-extract.md)
-- [SGS-010 schema versioning + compatibility](../design/sgs-010-schema-versioning-compatibility.md)
