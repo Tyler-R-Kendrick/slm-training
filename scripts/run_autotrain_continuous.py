@@ -2462,11 +2462,75 @@ def _ack_document_action(
     )
 
 
+_VERSION_REGISTRY_REL = "src/slm_training/resources/versions.json"
+
+
+def _auto_no_bump_version_registry(
+    cwd: Path,
+    *,
+    touched_rel_paths: Sequence[str],
+    loop_id: str,
+    campaign_id: str,
+) -> Path | None:
+    """Append a same-version no-bump history entry for components that claim
+    ``touched_rel_paths``, so the honesty-stub checkpoint note (which edits
+    only doc prose, never harness behavior) does not trip
+    ``scripts/verify_version_stamps.py`` every single continuous cycle.
+
+    Never bumps ``version`` and never touches an unrelated component — only
+    components whose registered ``paths`` intersect the files this cycle
+    actually wrote. Behavior-neutral by construction: doc prose only.
+    """
+    registry_path = cwd / _VERSION_REGISTRY_REL
+    if not registry_path.is_file() or not touched_rel_paths:
+        return None
+    try:
+        registry = json.loads(registry_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    components = registry.get("components")
+    if not isinstance(components, dict):
+        return None
+    stamp = time.strftime("%Y-%m-%d", time.gmtime())
+    touched_set = set(touched_rel_paths)
+    changed = False
+    for component_id, entry in components.items():
+        paths = entry.get("paths") or []
+        if not touched_set.intersection(paths):
+            continue
+        history = entry.get("history")
+        if not isinstance(history, list):
+            continue
+        marker = f"loop {loop_id} {campaign_id}'s"
+        if history and marker in str(history[0].get("note") or ""):
+            continue  # already recorded for this exact campaign
+        history.insert(
+            0,
+            {
+                "version": entry.get("version"),
+                "date": stamp,
+                "note": (
+                    f"no-bump: record scheduled loop {loop_id} {campaign_id}'s "
+                    "checkpoint-note-only doc update (fixture/scratch continuous "
+                    "cycle honesty stub); behavior unchanged."
+                ),
+            },
+        )
+        changed = True
+    if not changed:
+        return None
+    registry_path.write_text(
+        json.dumps(registry, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+    return registry_path
+
+
 def _append_checkpoint_doc_notes(
     cwd: Path,
     *,
     campaign_id: str,
     checkpoint_paths: Sequence[str],
+    loop_id: str | None = None,
 ) -> list[Path]:
     """Minimal honesty-labeled checkpoint notes when handoff requires them."""
     touched: list[Path] = []
@@ -2479,6 +2543,7 @@ def _append_checkpoint_doc_notes(
         f"- checkpoints: {', '.join(f'`{p}`' for p in checkpoint_paths)}\n"
         "- honesty: fixture/scratch continuous cycle — **not** a ship promotion.\n"
     )
+    touched_rel: list[str] = []
     for rel in ("docs/MODEL_CARD.md", "README.md"):
         path = cwd / rel
         if not path.is_file():
@@ -2489,6 +2554,16 @@ def _append_checkpoint_doc_notes(
             continue
         path.write_text(text.rstrip() + "\n" + note, encoding="utf-8")
         touched.append(path)
+        touched_rel.append(rel)
+    if touched_rel and loop_id:
+        registry_path = _auto_no_bump_version_registry(
+            cwd,
+            touched_rel_paths=touched_rel,
+            loop_id=loop_id,
+            campaign_id=campaign_id,
+        )
+        if registry_path is not None:
+            touched.append(registry_path)
     return touched
 
 
@@ -2551,6 +2626,7 @@ def _self_heal_document_actions(
                 cwd,
                 campaign_id=campaign_id,
                 checkpoint_paths=tuple(handoff.checkpoint_paths or ()),
+                loop_id=loop_id,
             )
         )
         if handoff.checkpoint_paths and not any(

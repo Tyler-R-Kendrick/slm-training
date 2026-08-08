@@ -2908,7 +2908,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v194",
+      "version": "v195",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2958,6 +2958,11 @@
         "tests/test_autoresearch/test_thrash_residuals.py"
       ],
       "history": [
+        {
+          "version": "v195",
+          "date": "2026-08-08",
+          "note": "self-heal document commit auto no-bumps the version registry for components whose watched paths are only touched by the checkpoint-note-only README/MODEL_CARD honesty stub, so the continuous driver no longer hard-blocks on the version-stamp gate every cycle that requires checkpoint documentation"
+        },
         {
           "version": "v194",
           "date": "2026-08-08",
@@ -8293,6 +8298,81 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-w1tlbr continuous-loop-20260808-continuous-openui-schedu-6e2cdb52-c16's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-w1tlbr continuous-loop-20260808-continuous-openui-schedu-6e2cdb52-c15's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-w1tlbr continuous-loop-20260808-continuous-openui-schedu-6e2cdb52-c14's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-w1tlbr continuous-loop-20260808-continuous-openui-schedu-6e2cdb52-c13's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-w1tlbr continuous-loop-20260808-continuous-openui-schedu-6e2cdb52-c12's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-w1tlbr continuous-loop-20260808-continuous-openui-schedu-6e2cdb52-c11's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-w1tlbr continuous-loop-20260808-continuous-openui-schedu-6e2cdb52-c10's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-w1tlbr continuous-loop-20260808-continuous-openui-schedu-6e2cdb52-c9's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-w1tlbr continuous-loop-20260808-continuous-openui-schedu-6e2cdb52-c8's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-w1tlbr continuous-loop-20260808-continuous-openui-schedu-6e2cdb52-c7's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-w1tlbr continuous-loop-20260808-continuous-openui-schedu-6e2cdb52-c5's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-w1tlbr continuous-loop-20260808-continuous-openui-schedu-6e2cdb52-c4's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-w1tlbr continuous-loop-20260808-continuous-openui-schedu-6e2cdb52-c3's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop w1tlbr c2's control/component-plan fixture screening checkpoint provenance (positive primary-metric win, no tracked code delta so no stack layer) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop w1tlbr c1's control/bounds fixture screening checkpoint provenance (non-positive, gate-rejected) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
         {
           "version": "v3",
           "date": "2026-08-08",
