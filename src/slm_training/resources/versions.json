@@ -8301,6 +8301,11 @@
         {
           "version": "v3",
           "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop dc8878 c3's bounds/control screening checkpoint provenance (fixture ship-gate reject, null primary-metric delta, non-positive) in MODEL_CARD and README; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
           "note": "no-bump: record scheduled loop dc8878 c2's component-plan/control screening checkpoint provenance (measurement incomplete, decode_timeout_count=3, non-positive) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
