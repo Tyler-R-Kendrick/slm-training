@@ -8301,6 +8301,11 @@
         {
           "version": "v3",
           "date": "2026-08-08",
+          "note": "no-bump: record scheduled continuous-openui-local cycle 7 (continuous-loop-20260808-continuous-openui-local-8c0b60dd-c7, non-positive: fixture insufficient_n + null primary-metric delta) checkpoint provenance in MODEL_CARD and README; fixture/scratch cycle, not a ship promotion; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
           "note": "no-bump: record scheduled continuous-openui-local cycle 6 (continuous-loop-20260808-continuous-openui-local-8c0b60dd-c6, non-positive: fixture insufficient_n + null primary-metric delta) checkpoint provenance in MODEL_CARD and README; fixture/scratch cycle, not a ship promotion; SLM-228 behavior is unchanged."
         },
         {
