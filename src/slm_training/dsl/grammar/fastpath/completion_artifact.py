@@ -33,10 +33,18 @@ from slm_training.dsl.grammar.fastpath.token_map import dsl_direct_terminal_map
 
 ARTIFACT_SCHEMA = "openui_completion_artifact/v1"
 CHECKER_SCHEMA = "openui_completion_checker/v1"
-DEFAULT_ARTIFACT_PATH = (
-    Path(__file__).parents[3] / "resources/decode/openui_completion_v1.safetensors"
-)
+# Anchor for pack-declared artifact paths (see ``provider_for_pack``): packs
+# name their ``completion_artifact`` relative to this same root.
+PACKAGE_ROOT = Path(__file__).parents[3]
+DEFAULT_ARTIFACT_PATH = PACKAGE_ROOT / "resources/decode/openui_completion_v1.safetensors"
 DEFAULT_MANIFEST_PATH = DEFAULT_ARTIFACT_PATH.with_suffix(".manifest.json")
+REQUEST_DEPENDENT_AUTHORITY_EXCLUDED = (
+    "runtime symbols",
+    "scope visibility",
+    "literal bodies",
+    "macro expansions",
+    "semantic state",
+)
 
 _ROLE_NONE = 0
 _ROLE_PUNCT = 1
@@ -707,13 +715,9 @@ def build_completion_artifact(
                 "passes; Lark remains the parser authority"
             ),
         },
-        "request_dependent_authority_excluded": [
-            "runtime symbols",
-            "scope visibility",
-            "literal bodies",
-            "macro expansions",
-            "semantic state",
-        ],
+        "request_dependent_authority_excluded": list(
+            REQUEST_DEPENDENT_AUTHORITY_EXCLUDED
+        ),
     }
     artifact_path.parent.mkdir(parents=True, exist_ok=True)
     artifact_path.write_bytes(artifact_bytes)
@@ -777,16 +781,103 @@ def load_checked_completion_artifact(
     )
 
 
+@dataclass(frozen=True)
+class StaticCompletionArtifactProvider:
+    """Pack-owned seam onto a certified static completion artifact.
+
+    A pack declares only *where* its artifact lives (``DslPack.completion_artifact``,
+    resolved through :func:`provider_for_pack`); :func:`load_checked_completion_artifact`
+    remains the sole authority and every load reports failure instead of ever
+    widening what a caller may trust. Missing/stale/corrupt artifacts must fall
+    back to exact live construction — see :meth:`try_load`.
+    """
+
+    pack_id: str
+    artifact_path: Path
+    manifest_path: Path
+
+    def describe(self) -> dict[str, Any]:
+        """Identity/schema, checker identity, and authority this provider covers."""
+
+        return {
+            "pack_id": self.pack_id,
+            "artifact_schema": ARTIFACT_SCHEMA,
+            "checker_schema": CHECKER_SCHEMA,
+            "artifact_path": str(self.artifact_path),
+            "manifest_path": str(self.manifest_path),
+            "static_authority_covered": [
+                "lalr_control_table",
+                "rule_origin_and_length_tensors",
+                "state_min_terminals_lower_bound",
+                "tokenizer_direct_terminal_map",
+            ],
+            "request_dependent_authority_excluded": list(
+                REQUEST_DEPENDENT_AUTHORITY_EXCLUDED
+            ),
+            "safe_fallback": "exact_live_construction",
+        }
+
+    def load_checked(
+        self, tokenizer: Any, parser: Any, *, grammar_path: Path
+    ) -> CompletionArtifact:
+        """Delegate to the authoritative checker at this provider's paths."""
+
+        return load_checked_completion_artifact(
+            tokenizer,
+            parser,
+            grammar_path=grammar_path,
+            artifact_path=self.artifact_path,
+            manifest_path=self.manifest_path,
+        )
+
+    def try_load(
+        self, tokenizer: Any, parser: Any, *, grammar_path: Path
+    ) -> tuple[CompletionArtifact | None, str | None]:
+        """Never raise: missing/stale/corrupt artifacts fall back to ``None``."""
+
+        try:
+            return (
+                self.load_checked(tokenizer, parser, grammar_path=grammar_path),
+                None,
+            )
+        except (OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
+            return None, str(exc)
+
+
+def provider_for_pack(pack: Any) -> StaticCompletionArtifactProvider | None:
+    """Resolve ``pack``'s declared completion-artifact provider, if any.
+
+    ``pack.completion_artifact`` is a path relative to :data:`PACKAGE_ROOT`,
+    the same anchor :data:`DEFAULT_ARTIFACT_PATH` uses. A pack that leaves the
+    slot ``None`` gets no provider and callers must use the exact
+    live-construction path.
+    """
+
+    declared = getattr(pack, "completion_artifact", None)
+    if declared is None:
+        return None
+    artifact_path = PACKAGE_ROOT / str(declared)
+    return StaticCompletionArtifactProvider(
+        pack_id=str(getattr(pack, "pack_id", "")),
+        artifact_path=artifact_path,
+        manifest_path=artifact_path.with_suffix(".manifest.json"),
+    )
+
+
 __all__ = [
     "ARTIFACT_SCHEMA",
     "CHECKER_SCHEMA",
     "CompletionArtifact",
     "DEFAULT_ARTIFACT_PATH",
     "DEFAULT_MANIFEST_PATH",
+    "PACKAGE_ROOT",
+    "REQUEST_DEPENDENT_AUTHORITY_EXCLUDED",
+    "StaticCompletionArtifactProvider",
     "StaticLalrAdapter",
     "build_completion_artifact",
     "completion_artifact_checkpoint_identity",
     "load_checked_completion_artifact",
+    "provider_for_pack",
     "require_checkpoint_completion_artifact",
     "tokenizer_authority",
 ]
