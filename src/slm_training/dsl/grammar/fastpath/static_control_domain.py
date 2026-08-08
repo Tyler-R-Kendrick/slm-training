@@ -22,7 +22,7 @@ from typing import Any, Iterable, Sequence
 
 from slm_training.dsl.grammar.fastpath.completion_artifact import (
     StaticLalrAdapter,
-    load_checked_completion_artifact,
+    provider_for_pack,
 )
 from slm_training.dsl.grammar.fastpath.completion_kernel import CompletionSession
 from slm_training.dsl.grammar.fastpath.engine import OpenUIIncrementalEngine
@@ -126,6 +126,17 @@ def e9_warm_hard_prefix_classification() -> dict[str, str]:
     }
 
 
+def _openui_completion_artifact_provider() -> Any:
+    """The OpenUI pack's declared completion-artifact provider (fail closed)."""
+
+    from slm_training.dsl.pack import get_pack
+
+    provider = provider_for_pack(get_pack("openui"))
+    if provider is None:
+        raise ValueError("openui pack does not declare a completion_artifact")
+    return provider
+
+
 def require_certified_static_projection(
     tokenizer: Any,
     *,
@@ -138,7 +149,8 @@ def require_certified_static_projection(
     """
 
     eng = engine if engine is not None else OpenUIIncrementalEngine()
-    checked = load_checked_completion_artifact(
+    provider = _openui_completion_artifact_provider()
+    checked = provider.load_checked(
         tokenizer, eng._parser, grammar_path=eng.grammar_path
     )
     live = dsl_direct_terminal_map(tokenizer, eng._parser.terminals)
@@ -184,9 +196,8 @@ def static_lalr_adapter(
 
     eng = engine if engine is not None else OpenUIIncrementalEngine()
     tok = tokenizer if tokenizer is not None else DSLNativeTokenizer.build()
-    checked = load_checked_completion_artifact(
-        tok, eng._parser, grammar_path=eng.grammar_path
-    )
+    provider = _openui_completion_artifact_provider()
+    checked = provider.load_checked(tok, eng._parser, grammar_path=eng.grammar_path)
     if checked.lalr is None:
         raise ValueError("checked artifact carries no static LALR adapter")
     return checked.lalr
@@ -274,9 +285,8 @@ def require_certified_static_lalr(
 
     eng = engine if engine is not None else OpenUIIncrementalEngine()
     tok = tokenizer if tokenizer is not None else DSLNativeTokenizer.build()
-    checked = load_checked_completion_artifact(
-        tok, eng._parser, grammar_path=eng.grammar_path
-    )
+    provider = _openui_completion_artifact_provider()
+    checked = provider.load_checked(tok, eng._parser, grammar_path=eng.grammar_path)
     if checked.lalr is None:
         raise ValueError("checked artifact carries no static LALR adapter")
     cached = _STATIC_LALR_CERTIFICATES.get(checked.digest)

@@ -44,6 +44,7 @@ import json
 import os
 import re
 from dataclasses import dataclass, field, fields, replace
+from pathlib import Path
 from typing import (
     Any,
     Callable,
@@ -64,6 +65,9 @@ from slm_training.dsl.placeholders import (
 )
 
 if TYPE_CHECKING:
+    from slm_training.dsl.grammar.fastpath.completion_artifact import (
+        StaticCompletionArtifactProvider,
+    )
     from slm_training.dsl.grammar_capabilities import GrammarCapabilityAuthorityV1
 
 
@@ -207,6 +211,31 @@ def get_pack(dsl: str | None = None) -> DslPack:
     if key not in _PACKS:
         raise KeyError(f"unknown DSL pack {dsl!r}; known={sorted(_PACKS)}")
     return _PACKS[key]
+
+
+def completion_artifact_provider_for_grammar_path(
+    grammar_path: Path,
+) -> "StaticCompletionArtifactProvider | None":
+    """Resolve the completion-artifact provider owned by ``grammar_path``.
+
+    Generalizes what was a private ``engine.py`` hardcode of the OpenUI
+    filename: any registered pack whose backend grammar matches
+    ``grammar_path`` and that declares ``completion_artifact`` gets static
+    completion support through this one seam, without engine.py or
+    ``static_control_domain.py`` naming the pack.
+    """
+    from slm_training.dsl.grammar.fastpath.completion_artifact import (
+        provider_for_pack,
+    )
+
+    resolved = Path(grammar_path).resolve()
+    for pack_id in list_packs():
+        pack = get_pack(pack_id)
+        info_path = pack.backend.info.grammar_path
+        if info_path is None or Path(info_path).resolve() != resolved:
+            continue
+        return provider_for_pack(pack)
+    return None
 
 
 # --------------------------------------------------------------------------

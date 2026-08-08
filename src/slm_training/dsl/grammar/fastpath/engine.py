@@ -530,35 +530,37 @@ class OpenUIIncrementalEngine:
         entry = self._direct_map_cache.get(key)
         if entry is None or entry[0] is not tokenizer:
             mapping = None
-            if self.grammar_path.name == "openui.lark" and hasattr(
-                tokenizer, "token_to_id"
-            ):
-                artifact_key = (
-                    self._fingerprint,
-                    int(getattr(tokenizer, "version", 0)),
-                    hash(tuple(sorted(tokenizer.token_to_id.items()))),
+            if hasattr(tokenizer, "token_to_id"):
+                # Pack-owned seam (PCT-004): eligibility and artifact paths
+                # come from whichever registered pack's backend grammar
+                # matches this engine, not a hardcoded "openui.lark" name.
+                from slm_training.dsl.pack import (
+                    completion_artifact_provider_for_grammar_path,
                 )
-                if artifact_key not in _STATIC_ARTIFACT_CACHE:
-                    try:
-                        from slm_training.dsl.grammar.fastpath.completion_artifact import (
-                            load_checked_completion_artifact,
-                        )
 
-                        checked = load_checked_completion_artifact(
-                            tokenizer,
-                            self._parser,
-                            grammar_path=self.grammar_path,
-                        )
-                        _STATIC_ARTIFACT_CACHE[artifact_key] = checked.direct_map
-                    except (OSError, ValueError, KeyError, json.JSONDecodeError):
+                provider = completion_artifact_provider_for_grammar_path(
+                    self.grammar_path
+                )
+                if provider is not None:
+                    artifact_key = (
+                        self._fingerprint,
+                        int(getattr(tokenizer, "version", 0)),
+                        hash(tuple(sorted(tokenizer.token_to_id.items()))),
+                    )
+                    if artifact_key not in _STATIC_ARTIFACT_CACHE:
                         # Exact reference construction remains the fail-closed
                         # path for absent, stale, or corrupt artifacts.
-                        _STATIC_ARTIFACT_CACHE[artifact_key] = None
-                mapping = _STATIC_ARTIFACT_CACHE[artifact_key]
-                if mapping is None:
-                    self.static_artifact_fallbacks += 1
-                else:
-                    self.static_artifact_hits += 1
+                        checked, _error = provider.try_load(
+                            tokenizer, self._parser, grammar_path=self.grammar_path
+                        )
+                        _STATIC_ARTIFACT_CACHE[artifact_key] = (
+                            checked.direct_map if checked is not None else None
+                        )
+                    mapping = _STATIC_ARTIFACT_CACHE[artifact_key]
+                    if mapping is None:
+                        self.static_artifact_fallbacks += 1
+                    else:
+                        self.static_artifact_hits += 1
             if mapping is None:
                 mapping = dsl_direct_terminal_map(tokenizer, self._parser.terminals)
             entry = (tokenizer, mapping)

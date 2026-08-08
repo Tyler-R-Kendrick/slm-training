@@ -1183,6 +1183,7 @@
         "tests/test_dsl/test_completion_kernel.py",
         "tests/test_dsl/test_completion_forest_engine_reuse.py",
         "tests/test_dsl/test_completion_artifact.py",
+        "tests/test_dsl/test_completion_artifact_provider.py",
         "tests/test_dsl/test_solver_packed_reuse.py",
         "scripts/build_completion_artifact.py",
         "src/slm_training/resources/decode/openui_completion_v1.safetensors",
@@ -1197,6 +1198,11 @@
         "docs/design/hybrid-unmask-hx5-20260804.md"
       ],
       "history": [
+        {
+          "version": "v21",
+          "date": "2026-08-08",
+          "note": "no-bump: PCT-004 (SLM-440) — added StaticCompletionArtifactProvider + provider_for_pack in completion_artifact.py so a pack-declared completion_artifact path is the single source of truth for artifact/manifest locations, instead of the private DEFAULT_ARTIFACT_PATH/DEFAULT_MANIFEST_PATH constants duplicated across four call sites. engine.py's _direct_map and static_control_domain.py's require_certified_static_projection/static_lalr_adapter/require_certified_static_lalr now resolve the OpenUI provider through the pack registry (dsl/pack.py's completion_artifact_provider_for_grammar_path) rather than a hardcoded 'openui.lark' filename check. The checker (load_checked_completion_artifact) is unchanged and remains authoritative; resolved paths for the openui pack are byte-identical to the old defaults, so default OpenUI outputs, static_artifact_hits/fallbacks counters, and the fail-closed live-construction fallback for packs without a declared artifact are unchanged."
+        },
         {
           "version": "v21",
           "date": "2026-08-05",
@@ -1370,6 +1376,11 @@
         "tests/test_models/test_decode_stats.py"
       ],
       "history": [
+        {
+          "version": "v13",
+          "date": "2026-08-08",
+          "note": "no-bump: PCT-004 (SLM-440) — added DslPack.completion_artifact-driven completion_artifact_provider_for_grammar_path(grammar_path) to dsl/pack.py, resolving the registered pack whose backend grammar matches and returning its StaticCompletionArtifactProvider (completion_artifact.py). Registry contract (DslPack fields, register_pack/get_pack/list_packs) unchanged; new lookup is additive and only consumed by engine.py's fastpath _direct_map seam."
+        },
         {
           "version": "v13",
           "date": "2026-08-05",
