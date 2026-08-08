@@ -2808,6 +2808,11 @@
         {
           "version": "v6",
           "date": "2026-08-08",
+          "note": "no-bump: SLM-447 (VCE-004) adds PlanInterventionRecordV1/InterventionIdentityV1/apply_plan_intervention/filter_manifest_safe to the existing 'plan_oracle_substitutor' owner's owner_symbols (per the pre-registered downstream_extension_map row for VCE-004, new_owner_justified: false) and mirrors the row into repository-ownership-map.md; behavior-neutral, no new owner or authority tier introduced."
+        },
+        {
+          "version": "v6",
+          "date": "2026-08-08",
           "note": "no-bump: SLM-446 (VCE-002) adds RepairResidualV1/project_repair_residual to the existing 'semantic_repair' owner's owner_symbols (per the pre-registered downstream_extension_map row for VCE-002, new_owner_justified: false) and mirrors the row into repository-ownership-map.md; behavior-neutral, no new owner or authority tier introduced."
         },
         {
