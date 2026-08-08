@@ -8818,6 +8818,11 @@
         {
           "version": "v3",
           "date": "2026-08-08",
+          "note": "no-bump: backfill continuous-loop-20260808-continuous-openui-local-8c0b60dd-c25's docs/design results + README/MODEL_CARD checkpoint-note (non-positive, gate reject, null primary-metric delta), reconstructed post-hoc from committed run artifacts after the driver's self-heal document step silently skipped this cycle (missing cycle_handoff.json); SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
           "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260808-continuous-openui-local-8c0b60dd-c29's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
         },
         {

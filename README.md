@@ -1993,6 +1993,12 @@ tests/
 - checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c24-binder-arity/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c24-control/checkpoints/last.pt`
 - honesty: fixture/scratch continuous cycle — **not** a ship promotion.
 
+## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-local-8c0b60dd-c25)
+
+- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c25`
+- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c25-binder-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c25-control/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion. Reconstructed post-hoc; the driver never wrote this cycle's `cycle_handoff.json` (see the matching `docs/design/*-c25-results.md` note).
+
 ## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-local-8c0b60dd-c26)
 
 - campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c26`
