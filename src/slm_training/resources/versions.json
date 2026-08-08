@@ -8301,6 +8301,11 @@
         {
           "version": "v3",
           "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-w1tlbr continuous-loop-20260808-continuous-openui-schedu-6e2cdb52-c3's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
           "note": "no-bump: record scheduled loop w1tlbr c2's control/component-plan fixture screening checkpoint provenance (positive primary-metric win, no tracked code delta so no stack layer) in MODEL_CARD and README; SLM-228 behavior is unchanged."
         },
         {
