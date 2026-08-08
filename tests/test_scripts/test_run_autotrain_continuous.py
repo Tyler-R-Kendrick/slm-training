@@ -8902,3 +8902,108 @@ def test_self_heal_incomplete_merge_prefers_main_for_harness(
     assert not any(
         h.get("kind") == "foreign_dirty_tree" for h in report.get("hard_pending") or []
     )
+
+
+def _write_registry(path: Path, *, paths: list[str], version: str = "v3") -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "schema": "version_registry/v1",
+                "components": {
+                    "harness.experiments.slm228_spectral_disposition": {
+                        "version": version,
+                        "kind": "harness",
+                        "paths": paths,
+                        "history": [
+                            {
+                                "version": version,
+                                "date": "2026-08-01",
+                                "note": "no-bump: prior entry unrelated to this test.",
+                            }
+                        ],
+                    },
+                    "harness.unrelated_component": {
+                        "version": "v1",
+                        "kind": "harness",
+                        "paths": ["docs/design/unrelated.md"],
+                        "history": [
+                            {
+                                "version": "v1",
+                                "date": "2026-08-01",
+                                "note": "no-bump: unrelated component seed entry.",
+                            }
+                        ],
+                    },
+                },
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
+def test_auto_no_bump_version_registry_records_checkpoint_note_only_change(
+    tmp_path: Path,
+) -> None:
+    """Checkpoint-note-only README/MODEL_CARD edits must not repeatedly hard-block
+    the continuous driver's self-heal document commit on the version-stamp gate."""
+    registry_path = tmp_path / "src" / "slm_training" / "resources" / "versions.json"
+    _write_registry(registry_path, paths=["README.md", "docs/MODEL_CARD.md"])
+
+    result = _mod._auto_no_bump_version_registry(
+        tmp_path,
+        touched_rel_paths=["README.md", "docs/MODEL_CARD.md"],
+        loop_id="continuous-openui-scheduled-w1tlbr",
+        campaign_id="continuous-loop-20260808-c1",
+    )
+    assert result == registry_path
+
+    registry = json.loads(registry_path.read_text(encoding="utf-8"))
+    owner = registry["components"]["harness.experiments.slm228_spectral_disposition"]
+    assert len(owner["history"]) == 2
+    assert owner["version"] == "v3"  # never bumps for a doc-prose-only change
+    top_note = owner["history"][0]["note"]
+    assert top_note.startswith("no-bump:")
+    assert "continuous-loop-20260808-c1" in top_note
+
+    # Unrelated components (no touched path in their `paths`) stay untouched.
+    unrelated = registry["components"]["harness.unrelated_component"]
+    assert len(unrelated["history"]) == 1
+
+
+def test_auto_no_bump_version_registry_is_idempotent_per_campaign(
+    tmp_path: Path,
+) -> None:
+    registry_path = tmp_path / "src" / "slm_training" / "resources" / "versions.json"
+    _write_registry(registry_path, paths=["README.md"])
+
+    kwargs = dict(
+        touched_rel_paths=["README.md"],
+        loop_id="continuous-openui-scheduled-w1tlbr",
+        campaign_id="continuous-loop-20260808-c1",
+    )
+    first = _mod._auto_no_bump_version_registry(tmp_path, **kwargs)
+    assert first is not None
+    second = _mod._auto_no_bump_version_registry(tmp_path, **kwargs)
+    assert second is None  # same campaign already recorded; no duplicate entry
+
+    registry = json.loads(registry_path.read_text(encoding="utf-8"))
+    owner = registry["components"]["harness.experiments.slm228_spectral_disposition"]
+    assert len(owner["history"]) == 2
+
+
+def test_auto_no_bump_version_registry_noop_without_owning_component(
+    tmp_path: Path,
+) -> None:
+    registry_path = tmp_path / "src" / "slm_training" / "resources" / "versions.json"
+    _write_registry(registry_path, paths=["docs/design/unrelated.md"])
+
+    result = _mod._auto_no_bump_version_registry(
+        tmp_path,
+        touched_rel_paths=["README.md", "docs/MODEL_CARD.md"],
+        loop_id="continuous-openui-scheduled-w1tlbr",
+        campaign_id="continuous-loop-20260808-c1",
+    )
+    assert result is None

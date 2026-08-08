@@ -2908,7 +2908,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v194",
+      "version": "v195",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2958,6 +2958,11 @@
         "tests/test_autoresearch/test_thrash_residuals.py"
       ],
       "history": [
+        {
+          "version": "v195",
+          "date": "2026-08-08",
+          "note": "self-heal document commit auto no-bumps the version registry for components whose watched paths are only touched by the checkpoint-note-only README/MODEL_CARD honesty stub, so the continuous driver no longer hard-blocks on the version-stamp gate every cycle that requires checkpoint documentation"
+        },
         {
           "version": "v194",
           "date": "2026-08-08",
