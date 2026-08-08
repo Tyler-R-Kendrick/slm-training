@@ -1,0 +1,41 @@
+{
+  "auto": true,
+  "campaign_id": "continuous-loop-20260808-continuous-openui-202608-13c4d22a-c5",
+  "candidate_metrics": {
+    "binder_reference_f1": null,
+    "latency_ms_p50": null,
+    "meaningful_program_rate": null,
+    "parse_rate": null,
+    "structural_similarity": null
+  },
+  "control_metrics": {
+    "binder_reference_f1": 0.8222222222222223,
+    "latency_ms_p50": 13059.07,
+    "meaningful_program_rate": 0.0,
+    "parse_rate": 1.0,
+    "smoke.binder_reference_f1": 0.8222222222222223,
+    "smoke.latency_ms_p50": 13059.07,
+    "smoke.meaningful_program_rate": 0.0,
+    "smoke.parse_rate": 1.0,
+    "smoke.structural_similarity": 0.057499999999999996,
+    "structural_similarity": 0.057499999999999996
+  },
+  "cycle_index": 5,
+  "cycle_intent": "screening",
+  "cycle_role": "screening",
+  "evidence_class": "fixture",
+  "honesty": "fixture_screening_only_not_ship",
+  "loop_id": "continuous-openui-20260808-scheduled",
+  "measurement_complete": false,
+  "positive": false,
+  "primary_metric": "smoke.structural_similarity",
+  "reasons": [
+    "measurement_incomplete:c20260808-continuous-openui-202608-13c4d22a-c5-component-plan:smoke:incomplete_document_n=3:decode_timeout_count=3",
+    "fixture_insufficient_n:c20260808-continuous-openui-202608-13c4d22a-c5-control",
+    "fixture_insufficient_n:c20260808-continuous-openui-202608-13c4d22a-c5-component-plan",
+    "primary_metric_unavailable",
+    "fixture_insufficient_n_alone"
+  ],
+  "schema": "continuous_cycle_results/v1",
+  "stack_layer": false
+}
