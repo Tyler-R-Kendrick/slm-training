@@ -2819,6 +2819,11 @@
         {
           "version": "v6",
           "date": "2026-08-08",
+          "note": "no-bump: SLM-455 (SGS-008) registers a new 'sygus_capability_report' subsystem (src/slm_training/data/progspec/synthesis_capability_report.py: SyGuSCapabilityReportV1/CapabilityFindingV1/build_sygus_capability_report). The pre-registered downstream_extension_map row for SGS-008 predicted extending dsl_pack_registry_canonical/completion_domain directly (new_owner_justified: false); implementation instead built a small self-contained module over verified_synthesis_problem's envelope not touching either predicted owner's owner_symbols, so it is registered as its own subsystem and the divergence is documented in its notes field; behavior-neutral doc update, introduces no solver dependency or new decode/verifier authority."
+        },
+        {
+          "version": "v6",
+          "date": "2026-08-08",
           "note": "no-bump: SLM-453 (SRP-002) registers a new 'symbolic_expr_ir' subsystem (src/slm_training/dsl/symbolic_expr_ir.py: VarRef/CoefficientHole/OpApply/parse_expr/serialize_expr/collect_symbols/validate_expr_budget) per the pre-registered downstream_extension_map row for SRP-002 (new_owner_justified: true, layered under output_contract, does not fork OUTPUT_CONTRACT_VERSION or reuse production_codec's OpenUI-specific logic) and mirrors the row into repository-ownership-map.md; the new source/test files are not yet tracked by any versions.json component (consistent with the sibling-file precedent set for PCT-002/003/007's new files), so this entry only covers the ownership-map doc update."
         },
         {

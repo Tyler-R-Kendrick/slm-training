@@ -65,6 +65,19 @@
       "notes": "SGS-007 (SLM-444): new owner layered on semantic_plan, verifier_gate_stack, and dsl_pack_registry_canonical without duplicating any of them -- carries a PromptSemanticRequirementsV1 verbatim, references verifier/evaluator identities by string, and bounds search resources without granting search authority. Excludes authority in {compiler-hard, verifier-hard} at the type level, mirroring prompt_requirements, so no request can declare itself compiler-certified merely through this envelope. Generated JSON Schema: src/slm_training/resources/verified_synthesis_problem.schema.json (scripts/sync_verified_synthesis_problem_schema.py --check)."
     },
     {
+      "id": "sygus_capability_report",
+      "name": "SyGuS/SemGuS capability report over VerifiedSynthesisProblemV1",
+      "owner_module": "src/slm_training/data/progspec/synthesis_capability_report.py",
+      "owner_symbols": [
+        "SyGuSCapabilityReportV1",
+        "CapabilityFindingV1",
+        "build_sygus_capability_report"
+      ],
+      "authority_tier": "evaluation-only",
+      "design_doc": "docs/design/semantic-planning-valid-state.md",
+      "notes": "SGS-008/SLM-455. The downstream_extension_map row for SGS-008 predicted extending dsl_pack_registry_canonical/completion_domain directly (new_owner_justified: false); implementation instead built a small, self-contained new module over verified_synthesis_problem's envelope, so it is registered here as its own subsystem rather than force-fit into pack.py/grammar_capabilities.py, whose owner_symbols it does not touch. Reuses grammar_capabilities.py's UnsupportedCapabilityV1 status/reason idiom (generalized to representable/non_representable/extension_required) and symbolic_expr_ir.py's BINARY_OPERATORS/UNARY_OPERATORS for the one demonstrably faithful fragment (a symbolic-regression synth-fun grammar); every other requirement-bearing element (verification requirements, prompt facts/ambiguity groups, objectives, search budget, evidence provenance) is reported non_representable/extension_required with a reason, never silently dropped. Introduces no solver dependency and calls no external solver, so nothing here can widen exact compiler support. conformance='inspired_interoperability' documents that the emitted SyGuS-IF-shaped text is not standards-conformant (no (check-synth), no example-table constraints)."
+    },
+    {
       "id": "semantic_failure_taxonomy",
       "name": "Semantic-failure taxonomy / evidence labeling",
       "owner_module": "src/slm_training/evals/semantic_failure.py",
