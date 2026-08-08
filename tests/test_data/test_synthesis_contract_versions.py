@@ -62,7 +62,9 @@ def _witness_payload() -> dict[str, Any]:
         split="smoke",
         source="fixture",
     )
-    return build_verifier_witness(trace_semantic_failure("root = Stack([])", record)).to_dict()
+    return build_verifier_witness(
+        trace_semantic_failure("root = Stack([])", record)
+    ).to_dict()
 
 
 def _decode_record_payload() -> dict[str, Any]:
@@ -84,7 +86,12 @@ CASES: tuple[Case, ...] = (
         _synthesis_payload,
         VerifiedSynthesisProblemV1.from_dict,
     ),
-    ("VerifierWitnessV1", "schema_version", _witness_payload, VerifierWitnessV1.from_dict),
+    (
+        "VerifierWitnessV1",
+        "schema_version",
+        _witness_payload,
+        VerifierWitnessV1.from_dict,
+    ),
     (
         "DecodeStatsRecordV1",
         "schema_version",
