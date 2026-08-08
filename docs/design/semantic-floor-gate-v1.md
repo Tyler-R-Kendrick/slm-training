@@ -2,7 +2,7 @@
 
 **Schema:** `semantic_floor_gate/v1`
 **Verdict:** **inconclusive**
-**Gate hash:** `4ac3cb383206e32514606b5b2540912c2ec87971ca79abbf8daa60bbf89b3d68`
+**Gate hash:** `d762bbbdd6222507a1c1471c85e65effe71ee85fb918ad6f8eaf7f57e950134f`
 **Evidence cutoff:** `2026-07-21T04:15:30.006965Z`
 
 ## Decision
