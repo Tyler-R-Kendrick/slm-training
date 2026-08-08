@@ -2781,7 +2781,7 @@
       ]
     },
     "governance.ownership_map": {
-      "version": "v5",
+      "version": "v6",
       "kind": "gate",
       "paths": [
         "src/slm_training/resources/ownership_map.json",
@@ -2792,6 +2792,11 @@
         "scripts/check_changed.py"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-08-08",
+          "note": "SGS-007 (SLM-444): register the new 'verified_synthesis_problem' owner (VerifiedSynthesisProblemV1, PackIdentityV1, RuntimeSymbolDeclarationV1, VerificationRequirementV1, SearchBudgetV1, ObjectiveTermV1, EvidenceProvenanceV1 in src/slm_training/data/progspec/synthesis_problem.py), authority_tier advisory-learned, layered on the semantic_plan/verifier_gate_stack/dsl_pack_registry_canonical extension points this map already authorized as new_owner_justified; mirrors the row into repository-ownership-map.md."
+        },
         {
           "version": "v5",
           "date": "2026-08-08",

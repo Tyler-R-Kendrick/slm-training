@@ -1,0 +1,539 @@
+{
+  "$defs": {
+    "AmbiguityGroup": {
+      "additionalProperties": false,
+      "description": "Two or more facts that are mutually exclusive interpretations.\n\nMembership alone records the ambiguity; nothing here resolves it, so a\ncaller cannot lose one interpretation by silently overwriting another.",
+      "properties": {
+        "group_id": {
+          "minLength": 1,
+          "title": "Group Id",
+          "type": "string"
+        },
+        "member_fact_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 2,
+          "title": "Member Fact Ids",
+          "type": "array"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Note"
+        }
+      },
+      "required": [
+        "group_id",
+        "member_fact_ids"
+      ],
+      "title": "AmbiguityGroup",
+      "type": "object"
+    },
+    "EvidenceProvenanceV1": {
+      "additionalProperties": false,
+      "description": "One piece of evidence backing this problem, with its authority tier.",
+      "properties": {
+        "source": {
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        },
+        "authority": {
+          "enum": [
+            "advisory-learned",
+            "oracle-diagnostic",
+            "evaluation-only"
+          ],
+          "title": "Authority",
+          "type": "string"
+        },
+        "identity": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Identity"
+        }
+      },
+      "required": [
+        "source",
+        "authority"
+      ],
+      "title": "EvidenceProvenanceV1",
+      "type": "object"
+    },
+    "ObjectiveTermV1": {
+      "additionalProperties": false,
+      "description": "One weighted term of the multi-objective vector.\n\nThe objective is always a vector of named terms, never collapsed into a\nsingle hidden scalar -- callers that want a scalar compute it themselves\nfrom the declared terms/weights.",
+      "properties": {
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "weight": {
+          "title": "Weight",
+          "type": "number"
+        },
+        "direction": {
+          "enum": [
+            "maximize",
+            "minimize"
+          ],
+          "title": "Direction",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "weight",
+        "direction"
+      ],
+      "title": "ObjectiveTermV1",
+      "type": "object"
+    },
+    "PackIdentityV1": {
+      "additionalProperties": false,
+      "description": "DSL pack/contract/grammar/tokenizer/canonicalizer/artifact identities.\n\nField names deliberately mirror\n``slm_training.models.decode_stats.DecodeIdentityV1`` so problem\nauthoring and decode telemetry share one identity vocabulary end to end.",
+      "properties": {
+        "pack_id": {
+          "minLength": 1,
+          "title": "Pack Id",
+          "type": "string"
+        },
+        "contract_version": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Contract Version"
+        },
+        "grammar_sha256": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Grammar Sha256"
+        },
+        "tokenizer_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tokenizer Id"
+        },
+        "canonicalizer_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Canonicalizer Id"
+        },
+        "artifact_schema": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Artifact Schema"
+        },
+        "artifact_sha256": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Artifact Sha256"
+        }
+      },
+      "required": [
+        "pack_id"
+      ],
+      "title": "PackIdentityV1",
+      "type": "object"
+    },
+    "PromptSemanticRequirementsV1": {
+      "additionalProperties": false,
+      "description": "Pack-neutral partial requirements extracted from a request prompt.",
+      "properties": {
+        "requirements_version": {
+          "default": "1",
+          "pattern": "^1$",
+          "title": "Requirements Version",
+          "type": "string"
+        },
+        "prompt_context_hash": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Prompt Context Hash"
+        },
+        "facts": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/RequirementFact"
+          },
+          "title": "Facts",
+          "type": "array"
+        },
+        "ambiguity_groups": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/AmbiguityGroup"
+          },
+          "title": "Ambiguity Groups",
+          "type": "array"
+        }
+      },
+      "title": "PromptSemanticRequirementsV1",
+      "type": "object"
+    },
+    "RequirementFact": {
+      "additionalProperties": false,
+      "description": "One prompt-derived fact about a single factor of the requested program.",
+      "properties": {
+        "fact_id": {
+          "minLength": 1,
+          "title": "Fact Id",
+          "type": "string"
+        },
+        "factor_family": {
+          "minLength": 1,
+          "title": "Factor Family",
+          "type": "string"
+        },
+        "disposition": {
+          "enum": [
+            "required",
+            "forbidden",
+            "preferred",
+            "optional",
+            "unspecified"
+          ],
+          "title": "Disposition",
+          "type": "string"
+        },
+        "statement": {
+          "minLength": 1,
+          "title": "Statement",
+          "type": "string"
+        },
+        "confidence": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "provenance": {
+          "enum": [
+            "predicted",
+            "retrieved",
+            "oracle_override",
+            "merged"
+          ],
+          "title": "Provenance",
+          "type": "string"
+        },
+        "authority": {
+          "enum": [
+            "advisory-learned",
+            "oracle-diagnostic",
+            "evaluation-only"
+          ],
+          "title": "Authority",
+          "type": "string"
+        },
+        "source_span": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Span"
+        }
+      },
+      "required": [
+        "fact_id",
+        "factor_family",
+        "disposition",
+        "statement",
+        "confidence",
+        "provenance",
+        "authority"
+      ],
+      "title": "RequirementFact",
+      "type": "object"
+    },
+    "RuntimeSymbolDeclarationV1": {
+      "additionalProperties": false,
+      "description": "One authored/declared runtime symbol available to the request.",
+      "properties": {
+        "surface": {
+          "minLength": 1,
+          "title": "Surface",
+          "type": "string"
+        },
+        "role": {
+          "minLength": 1,
+          "title": "Role",
+          "type": "string"
+        }
+      },
+      "required": [
+        "surface",
+        "role"
+      ],
+      "title": "RuntimeSymbolDeclarationV1",
+      "type": "object"
+    },
+    "SearchBudgetV1": {
+      "additionalProperties": false,
+      "description": "Bounded resource budget. Declaring a budget grants no search authority\nand changes no legal-candidate domain by itself.",
+      "properties": {
+        "max_forwards": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Forwards"
+        },
+        "max_wall_seconds": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Wall Seconds"
+        },
+        "max_states": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max States"
+        },
+        "max_verifier_calls": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Verifier Calls"
+        }
+      },
+      "title": "SearchBudgetV1",
+      "type": "object"
+    },
+    "VerificationRequirementV1": {
+      "additionalProperties": false,
+      "description": "One required verifier gate or evaluator identity a solution must meet.",
+      "properties": {
+        "requirement_id": {
+          "minLength": 1,
+          "title": "Requirement Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "gate",
+            "evaluator"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "gate": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Gate"
+        },
+        "evaluator_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Evaluator Version"
+        },
+        "evaluator_hash": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Evaluator Hash"
+        },
+        "mandatory": {
+          "default": true,
+          "title": "Mandatory",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "requirement_id",
+        "kind"
+      ],
+      "title": "VerificationRequirementV1",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "One pack-neutral, versioned synthesis-request envelope.",
+  "properties": {
+    "schema_version": {
+      "default": "1",
+      "pattern": "^1$",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "problem_id": {
+      "minLength": 1,
+      "title": "Problem Id",
+      "type": "string"
+    },
+    "pack_identity": {
+      "$ref": "#/$defs/PackIdentityV1"
+    },
+    "authored_context": {
+      "default": "",
+      "title": "Authored Context",
+      "type": "string"
+    },
+    "runtime_symbols": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/RuntimeSymbolDeclarationV1"
+      },
+      "title": "Runtime Symbols",
+      "type": "array"
+    },
+    "requirements": {
+      "$ref": "#/$defs/PromptSemanticRequirementsV1"
+    },
+    "verification_requirements": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/VerificationRequirementV1"
+      },
+      "title": "Verification Requirements",
+      "type": "array"
+    },
+    "evidence_provenance": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/EvidenceProvenanceV1"
+      },
+      "title": "Evidence Provenance",
+      "type": "array"
+    },
+    "search_budget": {
+      "$ref": "#/$defs/SearchBudgetV1"
+    },
+    "objective": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ObjectiveTermV1"
+      },
+      "title": "Objective",
+      "type": "array"
+    },
+    "provenance": {
+      "additionalProperties": true,
+      "title": "Provenance",
+      "type": "object"
+    }
+  },
+  "required": [
+    "problem_id",
+    "pack_identity"
+  ],
+  "title": "VerifiedSynthesisProblemV1",
+  "type": "object"
+}

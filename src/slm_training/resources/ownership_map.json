@@ -48,6 +48,23 @@
       "notes": "SGS-004 extractor/canonicalize live beside the contract under data/semantic_plan/requirements_extract.py and requirements_canonicalize.py (extract_prompt_requirements, ExtractorRule, EXTRACTOR_RULES, GoldTargetAccessError, canonicalize_requirements, requirement_fact_fingerprints). Advisory-only; refuses gold/target kwargs. Owner_symbols stay on the contract module because verify_ownership_map binds symbols to a single owner_module file."
     },
     {
+      "id": "verified_synthesis_problem",
+      "name": "VerifiedSynthesisProblemV1 pack-neutral synthesis-request envelope",
+      "owner_module": "src/slm_training/data/progspec/synthesis_problem.py",
+      "owner_symbols": [
+        "VerifiedSynthesisProblemV1",
+        "PackIdentityV1",
+        "RuntimeSymbolDeclarationV1",
+        "VerificationRequirementV1",
+        "SearchBudgetV1",
+        "ObjectiveTermV1",
+        "EvidenceProvenanceV1"
+      ],
+      "authority_tier": "advisory-learned",
+      "design_doc": "docs/design/semantic-planning-valid-state.md",
+      "notes": "SGS-007 (SLM-444): new owner layered on semantic_plan, verifier_gate_stack, and dsl_pack_registry_canonical without duplicating any of them -- carries a PromptSemanticRequirementsV1 verbatim, references verifier/evaluator identities by string, and bounds search resources without granting search authority. Excludes authority in {compiler-hard, verifier-hard} at the type level, mirroring prompt_requirements, so no request can declare itself compiler-certified merely through this envelope. Generated JSON Schema: src/slm_training/resources/verified_synthesis_problem.schema.json (scripts/sync_verified_synthesis_problem_schema.py --check)."
+    },
+    {
       "id": "semantic_failure_taxonomy",
       "name": "Semantic-failure taxonomy / evidence labeling",
       "owner_module": "src/slm_training/evals/semantic_failure.py",
