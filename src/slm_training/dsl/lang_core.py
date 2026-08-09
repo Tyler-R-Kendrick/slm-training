@@ -82,6 +82,39 @@ def _node_bin() -> str:
     return shutil.which("node") or ""
 
 
+@lru_cache(maxsize=1)
+def _node_engine_mismatch() -> str:
+    """A one-line reason when the resolved ``node`` is outside the range the
+    bridge declares in ``engines.node``, else ``""``.
+
+    Running the bridge on an unsupported Node reports as whatever its
+    dependency graph happens to break on first -- on Node 18 that is an
+    ``ERR_REQUIRE_ESM`` deep inside a transitive package, which reads as a
+    dependency bug rather than the version mismatch it actually is.
+    """
+    node = _node_bin()
+    if not node:
+        return ""
+    try:
+        declared = json.loads((_bridge_dir() / "package.json").read_text())["engines"]["node"]
+        running = subprocess.run(
+            [node, "--version"], capture_output=True, text=True, timeout=10, check=False
+        ).stdout.strip()
+        major = int(running.lstrip("v").split(".")[0])
+    except Exception:  # noqa: BLE001 - a hint must never mask the real failure
+        return ""
+    bounds = [int(t[2:].split(".")[0]) for t in declared.split() if t.startswith(">=")]
+    exclusive = [int(t[1:].split(".")[0]) for t in declared.split() if t.startswith("<")]
+    low_ok = all(major >= b for b in bounds)
+    high_ok = all(major < b for b in exclusive)
+    if low_ok and high_ok:
+        return ""
+    return (
+        f" [node {running} at {node} is outside the bridge's declared "
+        f"engines.node '{declared}' -- use a supported Node before reading the error above]"
+    )
+
+
 def _same_bridge_sources(left: Path, right: Path) -> bool:
     return all(
         (left / name).is_file()
@@ -189,7 +222,8 @@ def _invoke_once(payload: dict[str, Any], timeout_s: float = 30.0) -> dict[str, 
     stdout = (proc.stdout or "").strip()
     if not stdout:
         raise RuntimeError(
-            f"OpenUI bridge returned empty output (exit={proc.returncode}): {proc.stderr}"
+            f"OpenUI bridge returned empty output (exit={proc.returncode}): "
+            f"{proc.stderr}{_node_engine_mismatch()}"
         )
     try:
         result = json.loads(stdout)
@@ -229,7 +263,7 @@ def _invoke_repl(payload: dict[str, Any], timeout_s: float = 30.0) -> dict[str, 
                 except Exception:  # noqa: BLE001
                     err = ""
             _close_repl()
-            raise RuntimeError(f"OpenUI bridge REPL died: {err}")
+            raise RuntimeError(f"OpenUI bridge REPL died: {err}{_node_engine_mismatch()}")
         try:
             return json.loads(line)
         except json.JSONDecodeError as exc:
