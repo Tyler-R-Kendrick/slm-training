@@ -5041,6 +5041,94 @@ def _apply_arm_extras(base_steps: int, extras: dict[str, Any]) -> dict[str, Any]
     return out
 
 
+def _preflight_screening_slug(
+    rec_slug: str,
+    *,
+    steps: int,
+    endpoint_metric: str,
+    minimum_effect: float | None,
+    skip: set[str],
+    reselect: Any,
+) -> tuple[str, dict[str, Any] | None]:
+    """Preflight-gate the selected screening arm (fail-soft, WP-3 seam).
+
+    Runs ``slm_training.autoresearch.preflight.run_preflight`` on the chosen
+    arm's candidate dict. A ``"block"`` verdict skips the arm and reselects; if
+    every open arm blocks, the original pick runs anyway with the override
+    recorded (the loop must never die on a preflight). Returns the slug to run
+    and a ``preflight`` payload (or ``None`` when the seam is unavailable) that
+    :func:`_phase_a_delivery` persists into the delivery record.
+    """
+    try:
+        from slm_training.autoresearch.preflight import has_block, run_preflight
+    except Exception as exc:  # noqa: BLE001 — seam optional, never fatal
+        print(f"PREFLIGHT_WARN import err={exc!r}", flush=True)
+        return rec_slug, None
+    bank = {slug: (hyp, extras) for slug, hyp, extras in _all_screening_arm_bank()}
+    verdicts_by_slug: dict[str, list[dict[str, Any]]] = {}
+    blocked: list[str] = []
+    current = rec_slug
+    try:
+        for _ in range(len(bank) + 1):
+            row = bank.get(current)
+            if row is None:
+                break
+            hypothesis, extras = row
+            levers = _apply_arm_extras(steps, dict(extras))
+            candidate = {
+                "hypothesis_text": str(hypothesis),
+                "lever_keys": sorted(levers),
+                "config_fingerprint": _knobs_fingerprint(levers),
+                "n_seeds": 1,
+                "steps": steps,
+                "minimum_effect": minimum_effect,
+                "endpoint_metric": endpoint_metric,
+                "slug": current,
+                "levers": levers,
+            }
+            verdicts = run_preflight(candidate)
+            verdicts_by_slug[current] = [v.model_dump() for v in verdicts]
+            if not has_block(verdicts):
+                return current, {
+                    "schema": "autotrain_preflight/v1",
+                    "selected_slug": current,
+                    "blocked_slugs": blocked,
+                    "verdicts": verdicts_by_slug,
+                }
+            reasons = [r for v in verdicts if v.verdict == "block" for r in v.reasons]
+            print(
+                f"PREFLIGHT_BLOCK slug={current} reasons={reasons[:2]}",
+                flush=True,
+            )
+            blocked.append(current)
+            skip = skip | {current}
+            current = reselect(skip)
+            if current is None or current in blocked:
+                break
+    except Exception as exc:  # noqa: BLE001 — fail-soft: run original pick
+        print(f"PREFLIGHT_WARN err={exc!r}", flush=True)
+        return rec_slug, None
+    if not verdicts_by_slug:
+        # rec_slug is not a known bank arm (no candidate to build): un-gated.
+        return rec_slug, None
+    # Fail-soft floor: a preflight can never exhaust the loop on its own
+    # authority. Prefer an un-gated reselection (slug outside the bank map)
+    # over re-running a blocked pick; otherwise run the original pick with the
+    # override recorded (arm closure stays with multi-seed null evidence).
+    if current and current not in blocked and current != rec_slug:
+        fallback, override = current, "reselected_slug_not_in_bank_ran_ungated"
+    else:
+        fallback, override = rec_slug, "all_open_arms_blocked_ran_original_pick"
+    print(f"PREFLIGHT_OVERRIDE slug={fallback} reason={override}", flush=True)
+    return fallback, {
+        "schema": "autotrain_preflight/v1",
+        "selected_slug": fallback,
+        "blocked_slugs": blocked,
+        "override": override,
+        "verdicts": verdicts_by_slug,
+    }
+
+
 def _quality_held_reasons(reasons: list[str] | None) -> bool:
     """True when Phase A reasons include a quality hold/win (not pure latency)."""
     if not reasons:
@@ -7401,6 +7489,16 @@ def _phase_a_delivery(
         "arm_skipped": dict(arm_skipped or {}),
         **{k: v for k, v in decision.items() if k not in {"positive", "stack_layer"}},
     }
+    # WP-3: persist the cycle's preflight verdicts (written at selection time
+    # by _preflight_screening_slug) into the delivery record + ledger entry.
+    try:
+        preflight_path = camp_dir / "preflight.json"
+        if preflight_path.is_file():
+            preflight = _read_json(preflight_path)
+            if isinstance(preflight, dict) and preflight:
+                record["preflight"] = preflight
+    except Exception as exc:  # noqa: BLE001 — telemetry only, never fatal
+        print(f"PREFLIGHT_WARN delivery err={exc!r}", flush=True)
     out_path = camp_dir / "sdlc_delivery.json"
     out_path.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
     ledger = root / "sdlc_delivery_ledger.jsonl"
@@ -11460,6 +11558,48 @@ def run_cycle(
         root=root,
         loop_id=loop_id,
     )
+    # WP-3 preflight gate seam: skeptic checks (prior-attempt dedup, power,
+    # concluded families) run before a screening cycle is spent; "block"
+    # verdicts skip the arm. Confirm/promote/replay carry frozen recipes and
+    # are never re-gated here.
+    preflight_payload: dict[str, Any] | None = None
+    if rec_slug is not None and replay is None:
+        screening_primary = primary_for_role(policy, "screening")
+
+        def _preflight_reselect(augmented_skip: set[str]) -> str | None:
+            return _select_cycle_slug(
+                cycle,
+                predecessor_priority=None,
+                skip=augmented_skip,
+                has_confirm_levers=False,
+                has_promote_levers=False,
+                thrash_regime=thrash_regime,
+                root=root,
+                loop_id=loop_id,
+            )
+
+        rec_slug, preflight_payload = _preflight_screening_slug(
+            rec_slug,
+            steps=steps,
+            endpoint_metric=str(
+                screening_primary.get("metric") or "smoke.structural_similarity"
+            ),
+            minimum_effect=(
+                float(screening_primary["minimum_effect"])
+                if screening_primary.get("minimum_effect") is not None
+                else None
+            ),
+            skip=set(skip_slugs),
+            reselect=_preflight_reselect,
+        )
+        if preflight_payload is not None:
+            try:
+                (camp_dir / "preflight.json").write_text(
+                    json.dumps(preflight_payload, indent=2, sort_keys=True) + "\n",
+                    encoding="utf-8",
+                )
+            except OSError as exc:
+                print(f"PREFLIGHT_WARN persist err={exc!r}", flush=True)
     matrix = _matrix(
         campaign_id=campaign_id,
         evidence_snapshot_id=ev["snapshot_id"],
@@ -12286,6 +12426,22 @@ def main(argv: list[str] | None = None) -> int:
                 continue
         return 0
     finally:
+        # WP-3 closeout: refresh the durable evidence store (guarded — the
+        # sync script is concurrent work and may not exist; failure only logs).
+        try:
+            sync_script = cwd / "scripts" / "sync_evidence_store.py"
+            if os.path.exists(sync_script):
+                proc = subprocess.run(  # noqa: S603 — repo-owned script
+                    [sys.executable, str(sync_script)],
+                    cwd=cwd,
+                    timeout=120,
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+                print(f"EVIDENCE_STORE_SYNC rc={proc.returncode}", flush=True)
+        except Exception as sync_exc:  # noqa: BLE001 — closeout never raises
+            print(f"EVIDENCE_STORE_SYNC_WARN {sync_exc!r}", flush=True)
         try:
             fcntl.flock(lock_fh.fileno(), fcntl.LOCK_UN)
         except OSError:

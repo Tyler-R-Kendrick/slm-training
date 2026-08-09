@@ -250,3 +250,79 @@ API or the existing Transformers.js fallback. Users can disable it. Server-side
 OpenAI enrichment is a separate opt-in fallback and is available only when
 `OPENAI_API_KEY` is configured; Responses are structured and use `store=False`.
 The deterministic report remains useful when no model is available.
+
+## PostHog mirror (WP-6: LLM analytics + dashboard error tracking)
+
+The self-hosted OpenTelemetry stack stays the source of truth: spans, logs,
+and OTLP JSONL bundles are written locally by
+`src/slm_training/runtime/telemetry/trace.py` and aggregated by the in-memory
+OTLP hub (`src/slm_training/web/otel_hub.py`). PostHog is a **mirror only** —
+a fire-and-forget copy of a small set of LLM analytics events so runs show up
+in PostHog's free-tier LLM analytics and error-tracking views. Nothing reads
+PostHog back, no scheduler or CI workflow is involved, and losing every
+mirrored event loses no evidence.
+
+### Architecture
+
+- `src/slm_training/runtime/telemetry/posthog_bridge.py` posts batches to the
+  documented public batch-capture endpoint `{POSTHOG_HOST}/batch/` with JSON
+  `{"api_key": ..., "batch": [...]}` (chosen over the one-event-per-request
+  `/capture/` and the SDK-internal `/i/v0/e/` alias). Transport is stdlib
+  `urllib.request`, matching `trace.py::_mirror` — `httpx` is only an optional
+  extra in `pyproject.toml`, so the core runtime must not import it.
+- Events are queued on a bounded in-memory queue (default 2048) drained by a
+  single daemon thread that flushes on batch size (default 50) and on a time
+  interval (default 2 s), with an `atexit` best-effort final flush bounded by
+  a short timeout. When the queue is full, events are dropped and counted
+  (`BridgeStats.dropped`); transport failures also drop-with-counter. The
+  bridge **never raises into callers**.
+- `trace.py` mirrors at span finish: when a `RunTrace` carries `llm.*`
+  attributes (see below), `_mirror_llm_span_to_posthog` emits one
+  `$ai_generation` event via the bridge. With no API key configured the
+  bridge no-ops (single logged notice) and behavior is unchanged.
+
+### Environment variables
+
+| Variable | Meaning |
+| --- | --- |
+| `POSTHOG_PROJECT_API_KEY` | Project API key; **unset ⇒ the whole mirror cleanly no-ops** with one logged notice. |
+| `POSTHOG_HOST` | Ingestion host, default `https://us.i.posthog.com`. |
+| `SLM_RUN_ID` | Preferred `distinct_id`; falls back to the hostname, then `"slm-training"`. Runs are machines, not people — no user identity is attached. |
+| `SLM_POSTHOG_ENABLE_REPLAY` | Server-side opt-in (`1/true/yes/on`) that sets `posthog.enable_replay: true` in the dashboard feature bootstrap payload. Default off. |
+
+### Event schema
+
+- `$ai_generation` (`capture_ai_generation`): `$ai_trace_id` (the W3C trace
+  id), `$ai_model`, `$ai_provider`, `$ai_input_tokens`, `$ai_output_tokens`,
+  `$ai_latency` (**seconds**, per PostHog's LLM-analytics convention; callers
+  pass milliseconds and the bridge converts), `$ai_is_error`, `$ai_error`,
+  `$ai_total_cost_usd`, plus passthrough properties (the trace mirror adds
+  `slm.run.id`, `slm.operation`, and any extra `llm.*` attributes).
+- `$ai_trace` (`capture_ai_trace`): `$ai_trace_id`, `$ai_span_name`, plus
+  passthrough properties.
+
+Span attribute convention introduced by WP-6 (the local OTLP span model had
+no prior LLM keys): `llm.provider` / `llm.model` mark a `RunTrace` as an LLM
+generation; `llm.input_tokens` / `llm.output_tokens` are optional counts; any
+other `llm.*` attribute passes through to PostHog verbatim.
+
+### Dashboard error tracking + replay flag
+
+`src/apps/dashboard/src/features/runtime.ts` already lazily initializes
+`posthog-js` when the feature bootstrap selects the PostHog OpenFeature
+provider. WP-6 adds `capture_exceptions: true` (uncaught exceptions and
+unhandled rejections mirror to PostHog error tracking) and keeps session
+recording disabled unless the bootstrap payload carries
+`posthog.enable_replay === true` (sourced server-side from
+`SLM_POSTHOG_ENABLE_REPLAY` in `src/slm_training/features/runtime.py`). All
+existing behavior — lazy imports, OpenFeature provider wiring, in-memory
+bootstrap-snapshot fallback — is preserved.
+
+### Free-tier posture
+
+The integration targets PostHog's free tier: low event volume (one
+`$ai_generation` per finished LLM-attributed span, occasional `$ai_trace`,
+dashboard exceptions), session replay off by default, drop-on-overflow rather
+than retry queues, and no server-side PostHog SDK dependency. No scheduled
+job, GitHub Action, or CI step talks to PostHog; tests use injected fake
+transports and perform no network I/O.

@@ -256,6 +256,9 @@ fn worker_prompt(w, cfg_json, heal_hint) {
     p += "- Rebase onto origin/<base_branch>; resolve conflicts carefully; push --force-with-lease.\n";
     p += "- Required CI: python, python-static, data-build. Vercel/CodeRabbit alone MUST NOT block merge.\n";
     p += "- On CI fail: read `gh run view --log-failed`, fix root cause, push, re-watch. Cap max_check_rounds.\n";
+    p += "- LOCAL MERGE GATE (hosted GHA triggers are disabled): in the worktree run\n";
+    p += "  `python3 -m scripts.verify_merge_ready` (full, NOT --fast) and require exit 0\n";
+    p += "  before any squash-merge. Red gate => no merge; GHA silence is not approval.\n";
     p += "- Merge: `gh pr merge <n> --squash --delete-branch` then `--admin` if only non-required checks fail.\n";
     p += "- After merge: Linear save_issue state=done_state + comment with PR URL. status=ok only if merged\n";
     p += "  when allow_merge=true (or pr_ready when allow_merge=false and checks green).\n";
@@ -266,9 +269,11 @@ fn worker_prompt(w, cfg_json, heal_hint) {
     p += "1. Linear get issue; gh pr view (number from existing_pr or search title for id).\n";
     p += "2. If PR base != base_branch → PATCH base to main. If closed unmerged → gh pr create --base main --head <head>.\n";
     p += "3. Rebase origin/main in worktree; push force-with-lease; fix CI until required green.\n";
-    p += "4. If allow_merge: squash merge. Confirm MERGED via gh pr view.\n";
-    p += "5. Linear Done + comment. Remove claim_label if present.\n";
-    p += "6. Remove worktree. status ok|pr_ready|blocked|failed|needs_heal with error/next_action.\n";
+    p += "4. Run `python3 -m scripts.verify_merge_ready` (full) in the worktree; exit 0 required.\n";
+    p += "   If red: fix root cause, push, re-run. Never merge over a red gate.\n";
+    p += "5. If allow_merge and the gate passed: squash merge. Confirm MERGED via gh pr view.\n";
+    p += "6. Linear Done + comment. Remove claim_label if present.\n";
+    p += "7. Remove worktree. status ok|pr_ready|blocked|failed|needs_heal with error/next_action.\n";
     p += "Return structured worker_schema.\n";
     p
 }

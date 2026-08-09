@@ -182,3 +182,47 @@ A PR with red hooks must not merge just because GHA is silent.
 - Disabling Actions removes a remote second opinion; local hooks are necessary
   but not identical (no Lean lake build, no full data-build on every PR).
 - This is a **cost and latency** intervention, not a quality claim about models.
+
+## Implemented: local merge gate (2026-08-09)
+
+The documented hole — *"A PR with red hooks must not merge just because GHA
+is silent"* — is now closed locally by a zero-minute merge gate:
+
+| Surface | Role |
+| --- | --- |
+| `scripts/verify_merge_ready.py` | Single local gate command mirroring the dormant `python-static` CI job plus the changed-test fan-out. `--fast` = static only; `--json` = machine-readable summary; per-step wall budget defaults to `slm_training.levers.MAX_RUN_MINUTES` (a timed out step is `timeout` = failure). |
+| `.githooks/pre-push` | Runs `python3 -m scripts.verify_merge_ready --fast` on every push (`core.hooksPath=.githooks`). Escape hatch: `SLM_SKIP_PREPUSH=1` skips but prints a loud multi-line UNVERIFIED warning. |
+| `scripts/report_merge_readiness.sh` | Read-only one-screen reporter over `verify_merge_ready --json`, for agents' status checks. |
+| `.grok/workflows/unblock-in-review.rhai` | Workers must run the **full** `python3 -m scripts.verify_merge_ready` and get exit 0 before any squash-merge. |
+| `tests/test_scripts/test_merge_ready_gate.py` | Certifies the gate embeds every `python-static` invocation in workflow order (parity by construction), the failure/skip semantics, and both shell surfaces. |
+
+Exact command list mirrored from `.github/workflows/ci.yml` `python-static`
+(same order), then the `python` job's regression fan-out:
+
+```bash
+python -m scripts.repo_policy
+python -m scripts.verify_decode_invariants
+python -m scripts.verify_agent_surfaces
+python -m scripts.verify_ownership_map
+python -m scripts.extract_test_cases            # read-only sweep (no --write)
+python -m scripts.refresh_test_cases --check --changed   # local analogue of CI's --base-ref form
+ruff check .
+python -m compileall -q src scripts tests
+python -m scripts.verify_checkpoint_references --check
+python -m scripts.verify_version_stamps --check
+python -m scripts.check_changed --changed-tests-only     # skipped by --fast
+```
+
+Failure behavior (chosen and documented in the script): every static step
+always runs even after a failure — each is seconds-cheap, so one pass
+collects every red step instead of one rerun per fix. The changed-test step
+is the only expensive one and is skipped when any static step failed; the
+gate exits non-zero either way.
+
+Pre-push behavior: the hook runs the fast (static) profile so pushes stay
+seconds-cheap; the **full** gate (including changed tests) is required before
+merge — by agents' merge workflows and by anyone squash-merging manually.
+`SLM_SKIP_PREPUSH=1` exists for emergencies only and marks the push
+UNVERIFIED in loud stderr output; it never marks anything green.
+
+**Rule: red `verify_merge_ready` ⇒ no merge. GHA silence is not approval.**

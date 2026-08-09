@@ -50,6 +50,16 @@ def _posthog_api_key() -> str | None:
     return None
 
 
+def _posthog_replay_enabled() -> bool:
+    """Session replay is opt-in via env; error tracking is always mirrored."""
+    return os.getenv("SLM_POSTHOG_ENABLE_REPLAY", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
 def _launchdarkly_sdk_key() -> str | None:
     for name in ("LAUNCHDARKLY_SDK_KEY", "LD_SDK_KEY"):
         value = os.getenv(name, "").strip()
@@ -178,7 +188,11 @@ class FeatureRuntime:
         return {
             "provider": self.provider,
             "posthog": (
-                {"project_api_key": posthog_key, "host": posthog_host}
+                {
+                    "project_api_key": posthog_key,
+                    "host": posthog_host,
+                    "enable_replay": _posthog_replay_enabled(),
+                }
                 if self.provider == "posthog" and posthog_key
                 else None
             ),

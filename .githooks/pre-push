@@ -1,0 +1,33 @@
+#!/bin/sh
+# Zero-minute merge gate: hosted GHA triggers are disabled for cost, so this
+# hook is the authoritative pre-push check (static/fast profile). Rule:
+# red verify_merge_ready => no merge; GHA silence is not approval.
+# See docs/design/ci-minutes-and-speed-plan-20260806.md.
+set -eu
+
+if [ "${SLM_SKIP_PREPUSH:-0}" = "1" ]; then
+  cat >&2 <<'EOF'
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! SLM_SKIP_PREPUSH=1 — the local merge gate was NOT run for this push. !!
+!! GitHub Actions is disabled: nothing remote will catch red checks.    !!
+!! This push is UNVERIFIED. Run before merging:                         !!
+!!     python3 -m scripts.verify_merge_ready                            !!
+!! Rule: red verify_merge_ready => no merge; GHA silence is not         !!
+!! approval.                                                            !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+EOF
+  exit 0
+fi
+
+root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+common_git_dir=$(git -C "$root" rev-parse --path-format=absolute --git-common-dir)
+common_root=$(dirname -- "$common_git_dir")
+unset $(git rev-parse --local-env-vars)
+cd "$root"
+if [ -x .venv/bin/python ]; then
+  exec .venv/bin/python -m scripts.verify_merge_ready --fast
+fi
+if [ -x "$common_root/.venv/bin/python" ]; then
+  exec "$common_root/.venv/bin/python" -m scripts.verify_merge_ready --fast
+fi
+exec python3 -m scripts.verify_merge_ready --fast
