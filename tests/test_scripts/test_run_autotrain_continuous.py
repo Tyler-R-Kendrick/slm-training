@@ -6413,11 +6413,11 @@ def test_promotion_manifest_embeds_locked_power_feasibility() -> None:
     report = manifest.power_feasibility
     assert report is not None
     assert report["schema"] == "power_feasibility/v1"
-    # Current policy geometry: promotion suite n falls back to
-    # measurement.screening_smoke_n; the exact sign test needs required_n.
-    assert report["n"] == 3
+    # Policy v8 sets measurement.promotion_suite_n to the exact sign-test
+    # floor, so promote campaigns lock a decisive feasibility report.
+    assert report["n"] == 6
     assert report["required_n"] == 6
-    assert report["decisive"] is False
+    assert report["decisive"] is True
     screening = _mod._manifest("cycle-1", experiment, "a" * 40)
     assert screening.power_feasibility is None
 

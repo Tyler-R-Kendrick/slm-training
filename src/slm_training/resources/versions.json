@@ -2966,7 +2966,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v197",
+      "version": "v198",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -3019,6 +3019,11 @@
         "tests/test_autoresearch/test_evidence_ledger.py"
       ],
       "history": [
+        {
+          "version": "v198",
+          "date": "2026-08-09",
+          "note": "darkfactory completion (units G+L): terminal governance — park the loop under a typed regime_exhausted verdict with a deterministic bank-fingerprint resume predicate (REGIME_PARKED/REGIME_RESUMED), retire compose-filler synthesis and confirm-seed burning behind policy v8 terminal.park_on_exhaust, lock a power_feasibility/v1 report on promote campaigns and refuse non-decisive ones (promotion_infeasible_by_design), promotion_suite_n=6 makes promotion decidable; ledger evolution — staleness-decayed cross-version pooling from versions.json history distance, sdlc_delivery embedded in closeout docs and mined, operator status with posterior-UCB top-10 + screening power geometry; policy v7->v8"
+        },
         {
           "version": "v197",
           "date": "2026-08-09",

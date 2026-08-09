@@ -40,6 +40,7 @@
     "screening_decode_timeout_seconds": 12,
     "promotion_decode_timeout_seconds": 24,
     "screening_smoke_n": 3,
+    "promotion_suite_n": 6,
     "max_consecutive_frozen_replays": 1,
     "screening_suites": [
       "smoke"
