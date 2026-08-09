@@ -161,11 +161,13 @@
         "PlanInterventionRecordV1",
         "InterventionIdentityV1",
         "apply_plan_intervention",
-        "filter_manifest_safe"
+        "filter_manifest_safe",
+        "select_shuffled_oracle",
+        "build_baseline_intervention"
       ],
       "authority_tier": "oracle-diagnostic",
       "design_doc": "docs/design/semantic-planning-valid-state.md",
-      "notes": "Distinct from semantic_repair's corruption-repair targets: this substitutes ground-truth oracle values for factor-wise diagnosis, not corruption recovery. VCE-004/SLM-447 added PlanInterventionRecordV1/apply_plan_intervention -- an immutable, replayable paired baseline/intervention observation (before/after plan hashes, declared-vs-observed changed factors, frozen model/request/seed/verifier/hardware identity, downstream decision/quality/compute evidence) plus filter_manifest_safe to exclude contamination-bannered records from any manifest. Extends this owner directly; introduces no second substitution authority."
+      "notes": "Distinct from semantic_repair's corruption-repair targets: this substitutes ground-truth oracle values for factor-wise diagnosis, not corruption recovery. VCE-004/SLM-447 added PlanInterventionRecordV1/apply_plan_intervention -- an immutable, replayable paired baseline/intervention observation (before/after plan hashes, declared-vs-observed changed factors, frozen model/request/seed/verifier/hardware identity, downstream decision/quality/compute evidence) plus filter_manifest_safe to exclude contamination-bannered records from any manifest. VCE-005/SLM-458 extended PlanSource with 'destructive'/'random' (PlanOracleSubstitutor.apply permutes baseline's own existing per-factor content -- same element count, matched serialization/work -- rather than reading any second plan; neither is contamination-bannered, since neither ever saw real oracle content), added select_shuffled_oracle (content-only compatibility key over archetype id + structure sizes, never identity.source_program_fingerprint/prompt_context_hash, so a shuffled control cannot access target identity through those hidden fields), and build_baseline_intervention (an explicit, first-class matched-telemetry no-intervention control -- same apply_plan_intervention bookkeeping as every other arm). No new record schema, no second substitution authority."
     },
     {
       "id": "counterfactual_probe",
