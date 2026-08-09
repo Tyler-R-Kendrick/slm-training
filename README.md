@@ -1851,4 +1851,26 @@ tests/
 
 - campaign: `continuous-loop-20260808-continuous-openui-schedu-121086e4-c5`
 - checkpoints: `runs/c20260808-continuous-openui-schedu-121086e4-c5-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-121086e4-c5-control/checkpoints/last.pt`
+## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-eaa78363-c1)
+
+- campaign: `continuous-loop-20260808-continuous-openui-schedu-eaa78363-c1`
+- checkpoints: `runs/c20260808-continuous-openui-schedu-eaa78363-c1-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-eaa78363-c1-control/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-eaa78363-c2)
+
+- campaign: `continuous-loop-20260808-continuous-openui-schedu-eaa78363-c2`
+- checkpoints: `runs/c20260808-continuous-openui-schedu-eaa78363-c2-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-eaa78363-c2-control/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-eaa78363-c3)
+
+- campaign: `continuous-loop-20260808-continuous-openui-schedu-eaa78363-c3`
+- checkpoints: `runs/c20260808-continuous-openui-schedu-eaa78363-c3-confirm/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-eaa78363-c3-control/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-eaa78363-c4)
+
+- campaign: `continuous-loop-20260808-continuous-openui-schedu-eaa78363-c4`
+- checkpoints: `runs/c20260808-continuous-openui-schedu-eaa78363-c4-batch1/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-eaa78363-c4-control/checkpoints/last.pt`
 - honesty: fixture/scratch continuous cycle — **not** a ship promotion.
