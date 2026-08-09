@@ -98,13 +98,18 @@
       ]
     },
     "config.levers": {
-      "version": "v30",
+      "version": "v31",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v31",
+          "date": "2026-08-09",
+          "note": "darkfactory unit M: solver_energy_decode_weight and legal_edit_hazard_decode_weight registered in TRAINED_DECODE_REQUIREMENTS and the compiler-path decode lever group"
+        },
         {
           "version": "v30",
           "date": "2026-07-30",
@@ -2966,7 +2971,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v198",
+      "version": "v199",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -3019,6 +3024,11 @@
         "tests/test_autoresearch/test_evidence_ledger.py"
       ],
       "history": [
+        {
+          "version": "v199",
+          "date": "2026-08-09",
+          "note": "darkfactory unit M integration: solver-energy-rerank and legal-edit-hazard screening arms in the bank with matched zero-weight controls, _LEVER_KNOB_KEYS + explicit _arm_slug_from_knobs branches, ExperimentKnobs fields + engine knob->CLI routing"
+        },
         {
           "version": "v198",
           "date": "2026-08-09",
@@ -11714,7 +11724,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v94",
+      "version": "v95",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -11735,6 +11745,11 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v95",
+          "date": "2026-08-09",
+          "note": "darkfactory unit M: DecodeStats gains solver_energy/legal_edit_hazard bias applications/choice_changes/fallbacks counters; evaluate_model exposes the two decode weights as None-default runtime overrides"
+        },
         {
           "version": "v94",
           "note": "PCT-007/SLM-452: add MechanismActivationV1/build_mechanism_activation -- a common eligible/invoked/abstained/no_op/changed_top_choice/changed_final_program/forwards/verified_states/verifier_calls/wall_ms/failure_reason envelope any optional semantic/search/repair/controller mechanism can emit, fail-closed against representing a wired-but-never-active mechanism as a successful intervention (invoked requires eligible; a choice-change claim requires invoked and not no_op). evidence_class/default_state stay caller-declared advisory fields (MECHANISM_EVIDENCE_CLASSES is illustrative, not a canonical enum) since no single canonical disposition registry exists yet -- SGS-009/SLM-456 is still Backlog. Purely additive over DecodeStats/aggregate_stats; no existing call site wired yet.",
@@ -14216,7 +14231,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v312",
+      "version": "v313",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -14261,6 +14276,11 @@
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
       "history": [
+        {
+          "version": "v313",
+          "date": "2026-08-09",
+          "note": "darkfactory unit M: solver-energy reranker + legal-edit hazard (flow) ranking levers — solver_energy_decode_weight / legal_edit_hazard_{loss,decode}_weight config fields, solver-energy / legal-edit-hazard structural_aux_head_profiles with isolated_aux_init prebuild parity, compiler-decision-seam features (pooled ctx + hidden + candidate embedding, symbol-only), pairwise energy and multi-positive-mass hazard objectives on the detached-auxiliary path, tanh-clamped fail-closed decode biases in both _select_compiler_path branches after the untouched singleton bypass; factory/train_model passthrough"
+        },
         {
           "version": "v312",
           "note": "ModelBuildConfig.generate_batch_size eval-time override field",

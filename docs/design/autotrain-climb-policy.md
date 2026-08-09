@@ -251,6 +251,28 @@ A bank-exhausted handoff now also carries a typed
 constraint and resume predicate beside the existing `repair_harness`
 action.
 
+## Terminal governance + decidable promotion (policy v8)
+
+Policy v8 adds (see
+[`darkfactory-hillclimb-optimization.md`](darkfactory-hillclimb-optimization.md)):
+
+- **`terminal.park_on_exhaust`** (default `true`) — a bank-exhausted cycle
+  persists its `regime_exhausted_verdict/v1` (now carrying a
+  `bank_fingerprint`) to `loops/<id>/terminal_verdict.json`, writes loop
+  state `BLOCKED`, and subsequent cycles short-circuit with `REGIME_PARKED`
+  until the bank fingerprint (sorted bank slugs+knobs, policy sha,
+  `MAX_RUN_MINUTES`) changes, at which point the loop resumes and archives
+  the verdict. Compose-arm synthesis and confirm-seed burning are disabled
+  on exhaustion; causal-cap relaxation and retryable promote heads remain.
+  `false` restores the legacy exhaustion branching.
+- **`measurement.promotion_suite_n: 6`** — promote campaigns lock a
+  `power_feasibility/v1` report before outcomes; dispose refuses a
+  non-decisive report as `promotion_infeasible_by_design`. n=6 is the exact
+  sign-test floor at alpha 1/20 (min two-sided p = 1/32), so promotion
+  stays decidable.
+- Editing the policy file changes `promote_authority_sha256` — queued
+  champions re-certify on the next cycle (intended).
+
 ## Content digest
 
 `climb_policy_content_digest(payload)` hashes the policy body so version stamps
