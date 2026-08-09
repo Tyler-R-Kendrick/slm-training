@@ -52,6 +52,15 @@ class DecodeStats:
     component_inventory_choice_changes: int = 0
     component_plan_applications: int = 0
     component_plan_choice_changes: int = 0
+    # Energy-reranker / legal-edit-hazard ranking levers: application and
+    # argmax-flip accounting like the other factor heads, plus a fail-closed
+    # counter for defective scorer output degraded to identity order.
+    solver_energy_bias_applications: int = 0
+    solver_energy_bias_choice_changes: int = 0
+    solver_energy_fallbacks: int = 0
+    legal_edit_hazard_bias_applications: int = 0
+    legal_edit_hazard_bias_choice_changes: int = 0
+    legal_edit_hazard_fallbacks: int = 0
     semantic_plan_applications: int = 0
     semantic_plan_choice_changes: int = 0
     semantic_plan_binding_applications: int = 0
@@ -850,6 +859,12 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "component_inventory_choice_changes",
         "component_plan_applications",
         "component_plan_choice_changes",
+        "solver_energy_bias_applications",
+        "solver_energy_bias_choice_changes",
+        "solver_energy_fallbacks",
+        "legal_edit_hazard_bias_applications",
+        "legal_edit_hazard_bias_choice_changes",
+        "legal_edit_hazard_fallbacks",
         "semantic_plan_applications",
         "semantic_plan_choice_changes",
         "semantic_plan_binding_applications",

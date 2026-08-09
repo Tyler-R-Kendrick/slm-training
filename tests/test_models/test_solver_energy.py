@@ -207,3 +207,147 @@ def test_no_text_leak_in_scorer_input():
         "candidate_features",
     }
     assert not (fields & {"text", "final_text", "witness", "witness_text", "source"})
+
+
+# ------------------------------------------------------------------------- #
+# M1: energy-reranker lever over the compiler-decision seam (twotower).
+# ------------------------------------------------------------------------- #
+
+_HERO = (
+    'root = Stack([b1], "column")\n'
+    "b1 = Card([b2, b3])\n"
+    'b2 = TextContent(":slot_0")\n'
+    'b3 = TextContent(":slot_1")'
+)
+
+
+def _hero_records():
+    from slm_training.dsl.schema import ExampleRecord
+
+    return [
+        ExampleRecord(
+            id="a",
+            prompt="Hero",
+            openui=_HERO,
+            placeholders=[":slot_0", ":slot_1"],
+            split="train",
+        )
+    ]
+
+
+def _lever_model(**kwargs):
+    from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
+
+    torch.manual_seed(123)
+    return TwoTowerModel.from_records(
+        _hero_records(),
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            output_tokenizer="lexer",
+            compiler_decode_mode="tree",
+            **kwargs,
+        ),
+    )
+
+
+# 13. the profile arm and its zero-weight control build the identical head
+def test_solver_energy_profile_prebuild_parity():
+    control = _lever_model(structural_aux_head_profile="solver-energy")
+    candidate = _lever_model(
+        structural_aux_head_profile="solver-energy",
+        solver_energy_loss_weight=1.0,
+        solver_energy_decode_weight=1.0,
+    )
+    assert control.solver_energy_head is not None
+    assert candidate.solver_energy_head is not None
+    assert sum(p.numel() for p in control.parameters()) == sum(
+        p.numel() for p in candidate.parameters()
+    )
+
+
+# 14. bias covers exactly the supplied candidate ids and respects the clamp
+def test_solver_energy_bias_covers_only_supplied_candidates_and_is_bounded():
+    model = _lever_model(
+        structural_aux_head_profile="solver-energy",
+        solver_energy_loss_weight=1.0,
+        solver_energy_decode_weight=0.5,
+    )
+    ctx = torch.randn(1, 4, 32)
+    ctx_pad = torch.zeros(1, 4, dtype=torch.bool)
+    hidden = torch.randn(32)
+    candidates = (2, 3, 5)
+    bias = model._solver_energy_bias(ctx, ctx_pad, hidden, candidates)
+    assert bias is not None
+    assert bias.shape == (len(candidates),)
+    assert bool((bias.abs() <= 0.5 + 1e-6).all())
+
+
+# 15. weight <= 0 (or a missing head) contributes nothing
+def test_solver_energy_bias_disabled_returns_none():
+    model = _lever_model(structural_aux_head_profile="solver-energy")
+    ctx = torch.randn(1, 4, 32)
+    ctx_pad = torch.zeros(1, 4, dtype=torch.bool)
+    assert model._solver_energy_bias(ctx, ctx_pad, torch.randn(32), (2, 3)) is None
+
+
+# 16. non-finite scorer output degrades to identity order with a counter
+def test_solver_energy_bias_non_finite_falls_back_with_counter():
+    from slm_training.models.decode_stats import collect_decode_stats
+
+    model = _lever_model(
+        structural_aux_head_profile="solver-energy",
+        solver_energy_loss_weight=1.0,
+        solver_energy_decode_weight=1.0,
+    )
+
+    class _NaNHead(torch.nn.Module):
+        def energies(self, inp):
+            out = torch.zeros(len(inp.candidate_ids))
+            out[0] = float("nan")
+            return out
+
+    model.solver_energy_head = _NaNHead()
+    ctx = torch.randn(1, 4, 32)
+    ctx_pad = torch.zeros(1, 4, dtype=torch.bool)
+    with collect_decode_stats() as stats:
+        bias = model._solver_energy_bias(ctx, ctx_pad, torch.randn(32), (2, 3))
+    assert bias is None
+    assert stats.solver_energy_fallbacks == 1
+
+
+# 17. enabling decode without the owning training loss is a hard error
+def test_solver_energy_decode_weight_requires_training_loss():
+    import pytest
+
+    from slm_training.models.twotower import TwoTowerConfig
+
+    with pytest.raises(ValueError, match="solver_energy_decode_weight"):
+        TwoTowerConfig(
+            output_tokenizer="lexer",
+            compiler_decode_mode="tree",
+            solver_energy_decode_weight=1.0,
+        )
+
+
+# 18. the pairwise objective on the seam decreases under head-only steps
+def test_solver_energy_training_loss_decreases():
+    model = _lever_model(
+        structural_aux_head_profile="solver-energy",
+        solver_energy_loss_weight=1.0,
+        solver_energy_decode_weight=1.0,
+    )
+    records = _hero_records()
+    optimizer = torch.optim.Adam(model.solver_energy_head.parameters(), lr=0.05)
+    losses: list[float] = []
+    for _ in range(5):
+        model.training_loss(records)
+        auxiliary = model.take_detached_auxiliary_loss()
+        assert auxiliary is not None
+        optimizer.zero_grad()
+        auxiliary.backward()
+        optimizer.step()
+        losses.append(float(auxiliary))
+    assert losses[-1] < losses[0]

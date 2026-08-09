@@ -126,6 +126,11 @@ from slm_training.models.abstract_plan_head import (
     AbstractPlanMode,
     AbstractPlanTrace,
 )
+from slm_training.models.solver_energy import (
+    CandidateEnergyInput,
+    CandidateEnergyScorer,
+    energy_pairwise_loss,
+)
 from slm_training.models.tokenizer import (
     OpenUITokenizer,
     load_tokenizer_sidecar,
@@ -142,6 +147,8 @@ STRUCTURAL_AUX_HEAD_PROFILES = (
     "binder-arity",
     "binder-component-plan",
     "component-structure",
+    "solver-energy",
+    "legal-edit-hazard",
 )
 _PLAN_CONNECTOR_ARMS: tuple[str, ...] = tuple(arm.value for arm in PlanConnectorArm)
 _OPAQUE_PROJECTION_MODELS: ContextVar[frozenset[int]] = ContextVar(
@@ -570,6 +577,15 @@ class TwoTowerConfig:
     solver_energy_pairwise_weight: float = 0.0
     solver_energy_cost_version: str = "v1"
     solver_energy_fallback: str = "deterministic"
+    # Additive bias over already-legal compiler-decision candidates from the
+    # trained candidate-energy head (lower energy => higher bias). Ranking
+    # only; candidate membership is never touched (invariant I5/I6).
+    solver_energy_decode_weight: float = 0.0
+    # Legal-edit hazard (flow) lever: softplus rates over the legal candidate
+    # set at each compiler decision, trained with the set-mass and hazard
+    # objectives from models/legal_edit_flow.py. Ranking only, same contract.
+    legal_edit_hazard_loss_weight: float = 0.0
+    legal_edit_hazard_decode_weight: float = 0.0
     # A4 minimum-content decode contract (compiler-tree decode only):
     #   0  -> off (empty layouts remain legal completions);
     #   >0 -> require at least this many components before EOS is admitted;
@@ -1949,6 +1965,58 @@ class TwoTowerModel(nn.Module):
             if root_reference_identity_enabled
             else None
         )
+        # Energy reranker over compiler-decision candidates. The profile arm
+        # and its zero-weight matched control build the identical head so
+        # capacity stays size-matched (invariant VI).
+        solver_energy_enabled = (
+            aux_profile == "solver-energy"
+            or bool(getattr(self.config, "solver_energy_head", False))
+            or float(getattr(self.config, "solver_energy_loss_weight", 0.0) or 0.0)
+            > 0.0
+            or float(
+                getattr(self.config, "solver_energy_pairwise_weight", 0.0) or 0.0
+            )
+            > 0.0
+            or float(getattr(self.config, "solver_energy_decode_weight", 0.0) or 0.0)
+            > 0.0
+        )
+        self.solver_energy_head = (
+            isolated_aux_init(
+                lambda: CandidateEnergyScorer(
+                    state_dim=self.config.d_model,
+                    hole_dim=self.config.d_model,
+                    candidate_dim=self.config.d_model,
+                    hidden_dim=int(
+                        getattr(self.config, "solver_energy_hidden_dim", 64) or 64
+                    ),
+                ),
+                118,
+            )
+            if solver_energy_enabled
+            else None
+        )
+        # Legal-edit hazard rate head: one linear over the same
+        # state (+) hole (+) candidate features (the cheaper of the two shapes
+        # allowed by the lever contract; hidden dim stays fixed at zero).
+        legal_edit_hazard_enabled = (
+            aux_profile == "legal-edit-hazard"
+            or float(
+                getattr(self.config, "legal_edit_hazard_loss_weight", 0.0) or 0.0
+            )
+            > 0.0
+            or float(
+                getattr(self.config, "legal_edit_hazard_decode_weight", 0.0) or 0.0
+            )
+            > 0.0
+        )
+        self.legal_edit_hazard_head = (
+            isolated_aux_init(
+                lambda: nn.Linear(3 * self.config.d_model, 1),
+                119,
+            )
+            if legal_edit_hazard_enabled
+            else None
+        )
         # AP-023 (SLM-315): default-off discrete abstract-plan head over
         # pooled context-tower states. ``disabled`` constructs nothing (zero
         # params, RNG/optimizer/fingerprint untouched); see
@@ -2247,6 +2315,8 @@ class TwoTowerModel(nn.Module):
             "binder_arity_head.",
             "root_reference_arity_head.",
             "root_reference_identity_head.",
+            "solver_energy_head.",
+            "legal_edit_hazard_head.",
             "trust_gate.",
             "survival_head.",
             "abstract_plan_head.",
@@ -4751,6 +4821,107 @@ class TwoTowerModel(nn.Module):
                 }
             )
 
+        solver_energy_w = float(
+            getattr(self.config, "solver_energy_loss_weight", 0.0) or 0.0
+        )
+        legal_edit_hazard_w = float(
+            getattr(self.config, "legal_edit_hazard_loss_weight", 0.0) or 0.0
+        )
+        energy_on = solver_energy_w > 0.0 and self.solver_energy_head is not None
+        hazard_on = (
+            legal_edit_hazard_w > 0.0 and self.legal_edit_hazard_head is not None
+        )
+        if energy_on or hazard_on:
+            seam = self._compiler_decision_seam_features(batch, target_ids, ctx, ctx_pad)
+        else:
+            seam = None
+        if seam is not None:
+            seam_features, seam_gold_mask, seam_groups = seam
+            group_ids = [
+                group
+                for group, (start, end) in enumerate(seam_groups)
+                for _ in range(end - start)
+            ]
+            if energy_on:
+                energies = self.solver_energy_head.net(seam_features).squeeze(-1)
+                # The gold candidate must carry lower energy than its legal
+                # siblings: hinge over same-decision pairs with cost 0 for
+                # gold and 1 for every other legal candidate. margin > 0 so a
+                # tied initialization still receives gradient.
+                pair_targets = (~seam_gold_mask).to(energies.dtype)
+                observed = torch.ones_like(pair_targets)
+                energy_loss = energy_pairwise_loss(
+                    energies, pair_targets, group_ids, observed, margin=1.0
+                )
+                gold_top1: list[bool] = []
+                for start, end in seam_groups:
+                    best = int(energies[start:end].argmin().item())
+                    gold_top1.append(bool(seam_gold_mask[start + best]))
+                detached = solver_energy_w * energy_loss
+                if self._detached_auxiliary_loss is not None:
+                    detached = detached + self._detached_auxiliary_loss
+                self._detached_auxiliary_loss = detached
+                self.last_training_metrics.update(
+                    {
+                        "solver_energy_loss": float(energy_loss.detach().cpu()),
+                        "solver_energy_gold_top1": (
+                            sum(gold_top1) / len(gold_top1) if gold_top1 else 0.0
+                        ),
+                        "solver_energy_decision_rows": len(seam_groups),
+                    }
+                )
+            if hazard_on:
+                # Flow objectives adapted from models/legal_edit_flow.py
+                # (legal_edit_flow_losses): its LegalEditBatch shapes do not
+                # fit the compiler-decision seam, so multi_positive_mass
+                # (-log sum of positive-set probability, positives = {gold})
+                # and the total_hazard regularizer (rate mass vs the legal-set
+                # size) are computed locally over the same softplus rates.
+                rate_logits = self.legal_edit_hazard_head(seam_features).squeeze(-1)
+                rates = F.softplus(rate_logits) + 1e-8
+                mass_losses: list[torch.Tensor] = []
+                hazard_losses: list[torch.Tensor] = []
+                hazard_top1: list[bool] = []
+                for start, end in seam_groups:
+                    group_rates = rates[start:end]
+                    probabilities = group_rates / group_rates.sum()
+                    positive = seam_gold_mask[start:end]
+                    mass_losses.append(
+                        -torch.log(
+                            probabilities[positive].sum().clamp_min(1e-12)
+                        )
+                    )
+                    # Scale-free hazard regularizer: rate mass is anchored on
+                    # the legal-set size without letting large domains dominate
+                    # the set-mass objective.
+                    size = float(end - start)
+                    hazard_losses.append(
+                        ((group_rates.sum() - size) / size) ** 2
+                    )
+                    best = int(group_rates.argmax().item())
+                    hazard_top1.append(bool(seam_gold_mask[start + best]))
+                mass_loss = torch.stack(mass_losses).mean()
+                hazard_reg = torch.stack(hazard_losses).mean()
+                hazard_loss = mass_loss + hazard_reg
+                detached = legal_edit_hazard_w * hazard_loss
+                if self._detached_auxiliary_loss is not None:
+                    detached = detached + self._detached_auxiliary_loss
+                self._detached_auxiliary_loss = detached
+                self.last_training_metrics.update(
+                    {
+                        "legal_edit_hazard_loss": float(hazard_loss.detach().cpu()),
+                        "legal_edit_hazard_mass_loss": float(
+                            mass_loss.detach().cpu()
+                        ),
+                        "legal_edit_hazard_gold_top1": (
+                            sum(hazard_top1) / len(hazard_top1)
+                            if hazard_top1
+                            else 0.0
+                        ),
+                        "legal_edit_hazard_decision_rows": len(seam_groups),
+                    }
+                )
+
         edge_alignment_w = float(
             getattr(self.config, "component_edge_alignment_loss_weight", 0.0) or 0.0
         )
@@ -6254,6 +6425,193 @@ class TwoTowerModel(nn.Module):
                 bias[position] = weight * torch.tanh(
                     torch.logaddexp(logits[0, token_id], remaining.log())
                 )
+        return bias
+
+    def _compiler_decision_seam_features(
+        self,
+        batch: list,
+        target_ids: torch.Tensor,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor | None,
+        *,
+        max_rows: int = 256,
+    ) -> tuple[torch.Tensor, torch.Tensor, list[tuple[int, int]]] | None:
+        """(state, hole, candidate) rows at cached gold compiler decisions.
+
+        state = pooled context (same pooling as the component-plan loss),
+        hole = denoiser hidden at the decision position on the gold canvas,
+        candidate = decoder token embedding of each legal candidate id.
+        Symbol-only inputs: token ids, positions, and hidden states — never
+        marker text or user-defined names. All features are detached so the
+        auxiliary heads train through ``take_detached_auxiliary_loss`` without
+        touching base gradients; the deterministic ``max_rows`` cap bounds the
+        pairwise objective.
+        """
+        from slm_training.dsl.grammar.fastpath.compiler_draft import (
+            gold_compiler_decisions,
+        )
+
+        pooled = self._pool_context(ctx, ctx_pad).detach()
+        was_training = self.denoiser.training
+        # Deterministic features: no dropout draw perturbing the train RNG.
+        self.denoiser.eval()
+        try:
+            with torch.no_grad():
+                hidden = self.denoiser.encode(
+                    target_ids,
+                    ctx,
+                    pad_id=self.tokenizer.pad_id,
+                    ctx_pad_mask=ctx_pad,
+                )
+        finally:
+            self.denoiser.train(was_training)
+        token_embedding = self.denoiser.tok.weight.detach()
+        state_rows: list[torch.Tensor] = []
+        hole_rows: list[torch.Tensor] = []
+        candidate_rows: list[torch.Tensor] = []
+        gold_flags: list[bool] = []
+        groups: list[tuple[int, int]] = []
+        capped = False
+        for row, record in enumerate(batch):
+            if capped:
+                break
+            target_key = tuple(int(token_id) for token_id in target_ids[row].tolist())
+            contract_key = tuple(record.placeholders or ())
+            cache_key = (target_key, contract_key)
+            decisions = self._compiler_decision_cache.get(cache_key)
+            if decisions is None:
+                decisions = gold_compiler_decisions(
+                    self.tokenizer,
+                    target_key,
+                    slot_contract=list(contract_key),
+                )
+                self._compiler_decision_cache[cache_key] = decisions
+            for decision in decisions:
+                candidate_ids = tuple(
+                    int(candidate) for candidate in decision.candidate_ids
+                )
+                position = int(decision.position)
+                if len(candidate_ids) < 2 or position >= hidden.size(1):
+                    continue
+                gold_id = int(target_ids[row, position])
+                if gold_id not in candidate_ids:
+                    continue
+                if len(gold_flags) + len(candidate_ids) > max_rows:
+                    capped = True
+                    break
+                start = len(gold_flags)
+                for candidate in candidate_ids:
+                    state_rows.append(pooled[row])
+                    hole_rows.append(hidden[row, position].detach())
+                    candidate_rows.append(token_embedding[candidate])
+                    gold_flags.append(candidate == gold_id)
+                groups.append((start, len(gold_flags)))
+        if not groups:
+            return None
+        features = torch.cat(
+            [
+                torch.stack(state_rows),
+                torch.stack(hole_rows),
+                torch.stack(candidate_rows),
+            ],
+            dim=-1,
+        )
+        gold_mask = torch.tensor(
+            gold_flags, dtype=torch.bool, device=features.device
+        )
+        return features, gold_mask, groups
+
+    def _solver_energy_bias(
+        self,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor | None,
+        hidden_state: torch.Tensor,
+        candidate_ids: tuple[int, ...],
+    ) -> torch.Tensor | None:
+        """Bounded energy bias over already-legal candidates (lower is better).
+
+        Ranking authority only: candidates are supplied by the compiler and
+        never added or removed here (invariant I5/I6). ``tanh`` keeps the
+        configured weight as the maximum authority of the heuristic (see the
+        component-plan clamp rationale above). Any defect — exception, shape
+        mismatch, non-finite output — degrades to identity order with a
+        counter, mirroring ``CandidateEnergyRanker``'s fail-closed contract.
+        """
+        weight = float(
+            getattr(self.config, "solver_energy_decode_weight", 0.0) or 0.0
+        )
+        if weight <= 0.0 or self.solver_energy_head is None:
+            return None
+        stats = get_active_stats()
+        try:
+            with torch.no_grad():
+                energies = self.solver_energy_head.energies(
+                    CandidateEnergyInput(
+                        state_fingerprint="",
+                        state_features=self._pool_context(ctx, ctx_pad)[0],
+                        hole_features=hidden_state,
+                        candidate_ids=tuple(candidate_ids),
+                        candidate_features=self.denoiser.tok.weight[
+                            list(candidate_ids)
+                        ],
+                    )
+                ).reshape(-1)
+            if energies.shape[0] != len(candidate_ids):
+                raise ValueError("energy head returned a different candidate count")
+            # Check the raw energies: tanh would silently saturate inf to +/-1.
+            if not bool(torch.isfinite(energies).all()):
+                raise ValueError("energy head produced a non-finite energy")
+            bias = weight * torch.tanh(-energies)
+        except Exception:  # noqa: BLE001 — decode must fail closed to identity
+            if stats is not None:
+                stats.solver_energy_fallbacks += 1
+            return None
+        return bias
+
+    def _legal_edit_hazard_bias(
+        self,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor | None,
+        hidden_state: torch.Tensor,
+        candidate_ids: tuple[int, ...],
+    ) -> torch.Tensor | None:
+        """Bounded hazard-rate bias over already-legal candidates.
+
+        Mirrors ``_component_plan_bias``'s bounded-rate treatment:
+        ``weight * tanh(log softplus(rate))`` with the same fail-closed
+        identity fallback and counter as ``_solver_energy_bias``.
+        """
+        weight = float(
+            getattr(self.config, "legal_edit_hazard_decode_weight", 0.0) or 0.0
+        )
+        if weight <= 0.0 or self.legal_edit_hazard_head is None:
+            return None
+        stats = get_active_stats()
+        try:
+            n = len(candidate_ids)
+            state = self._pool_context(ctx, ctx_pad)[0]
+            with torch.no_grad():
+                features = torch.cat(
+                    [
+                        state.reshape(1, -1).expand(n, -1),
+                        hidden_state.reshape(1, -1).expand(n, -1),
+                        self.denoiser.tok.weight[list(candidate_ids)],
+                    ],
+                    dim=-1,
+                )
+                rates = F.softplus(
+                    self.legal_edit_hazard_head(features).squeeze(-1)
+                ).clamp_min(1e-4)
+            if rates.shape[0] != n:
+                raise ValueError("hazard head returned a different candidate count")
+            # Check the raw rates: tanh(log(inf)) would silently saturate to 1.
+            if not bool(torch.isfinite(rates).all()):
+                raise ValueError("hazard head produced a non-finite rate")
+            bias = weight * torch.tanh(rates.log())
+        except Exception:  # noqa: BLE001 — decode must fail closed to identity
+            if stats is not None:
+                stats.legal_edit_hazard_fallbacks += 1
+            return None
         return bias
 
     def _slot_component_bias(
@@ -10445,6 +10803,28 @@ class TwoTowerModel(nn.Module):
                     stats.component_plan_choice_changes += int(
                         int(scores.argmax().item()) != before_plan
                     )
+            energy_bias = self._solver_energy_bias(
+                ctx, ctx_pad, hidden_row[len(prefix)], candidates
+            )
+            if energy_bias is not None:
+                before_energy = int(scores.argmax().item())
+                scores = scores + energy_bias
+                if stats is not None:
+                    stats.solver_energy_bias_applications += 1
+                    stats.solver_energy_bias_choice_changes += int(
+                        int(scores.argmax().item()) != before_energy
+                    )
+            hazard_bias = self._legal_edit_hazard_bias(
+                ctx, ctx_pad, hidden_row[len(prefix)], candidates
+            )
+            if hazard_bias is not None:
+                before_hazard = int(scores.argmax().item())
+                scores = scores + hazard_bias
+                if stats is not None:
+                    stats.legal_edit_hazard_bias_applications += 1
+                    stats.legal_edit_hazard_bias_choice_changes += int(
+                        int(scores.argmax().item()) != before_hazard
+                    )
             slot_bias = self._slot_component_bias_for_row(
                 plan_row,
                 ctx,
@@ -10712,6 +11092,34 @@ class TwoTowerModel(nn.Module):
                             stats.component_plan_applications += 1
                             stats.component_plan_choice_changes += int(
                                 int(scores.argmax().item()) != before_plan
+                            )
+                    energy_bias = self._solver_energy_bias(
+                        ctx,
+                        ctx_pad,
+                        hidden_rows[parent][len(parent)],
+                        candidate_ids,
+                    )
+                    if energy_bias is not None:
+                        before_energy = int(scores.argmax().item())
+                        scores = scores + energy_bias
+                        if stats is not None:
+                            stats.solver_energy_bias_applications += 1
+                            stats.solver_energy_bias_choice_changes += int(
+                                int(scores.argmax().item()) != before_energy
+                            )
+                    hazard_bias = self._legal_edit_hazard_bias(
+                        ctx,
+                        ctx_pad,
+                        hidden_rows[parent][len(parent)],
+                        candidate_ids,
+                    )
+                    if hazard_bias is not None:
+                        before_hazard = int(scores.argmax().item())
+                        scores = scores + hazard_bias
+                        if stats is not None:
+                            stats.legal_edit_hazard_bias_applications += 1
+                            stats.legal_edit_hazard_bias_choice_changes += int(
+                                int(scores.argmax().item()) != before_hazard
                             )
                     slot_bias = self._slot_component_bias_for_row(
                         plan_row,
