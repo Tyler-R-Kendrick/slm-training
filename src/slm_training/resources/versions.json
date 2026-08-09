@@ -8421,6 +8421,11 @@
         {
           "version": "v3",
           "date": "2026-08-09",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-2805 continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c125's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-09",
           "note": "no-bump: record scheduled loop continuous-openui-scheduled-2805 continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c124's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
         },
         {

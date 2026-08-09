@@ -1,0 +1,44 @@
+{
+  "auto": true,
+  "campaign_id": "continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c125",
+  "candidate_metrics": {
+    "binder_reference_f1": 0.6333333333333333,
+    "latency_ms_p50": 3850.73,
+    "meaningful_program_rate": 0.0,
+    "parse_rate": 1.0,
+    "smoke.binder_reference_f1": 0.6333333333333333,
+    "smoke.latency_ms_p50": 3850.73,
+    "smoke.meaningful_program_rate": 0.0,
+    "smoke.parse_rate": 1.0,
+    "smoke.structural_similarity": 0.0964,
+    "structural_similarity": 0.0964
+  },
+  "control_metrics": {
+    "binder_reference_f1": 0.6333333333333333,
+    "latency_ms_p50": 4392.96,
+    "meaningful_program_rate": 0.0,
+    "parse_rate": 1.0,
+    "smoke.binder_reference_f1": 0.6333333333333333,
+    "smoke.latency_ms_p50": 4392.96,
+    "smoke.meaningful_program_rate": 0.0,
+    "smoke.parse_rate": 1.0,
+    "smoke.structural_similarity": 0.057499999999999996,
+    "structural_similarity": 0.057499999999999996
+  },
+  "cycle_index": 125,
+  "cycle_intent": "screening",
+  "cycle_role": "screening",
+  "evidence_class": "fixture",
+  "honesty": "fixture_screening_only_not_ship",
+  "loop_id": "continuous-openui-scheduled-2805",
+  "measurement_complete": true,
+  "positive": true,
+  "primary_metric": "smoke.structural_similarity",
+  "reasons": [
+    "fixture_insufficient_n:c20260809-continuous-openui-schedu-e9c397aa-c125-control",
+    "fixture_insufficient_n:c20260809-continuous-openui-schedu-e9c397aa-c125-symbol-boundary-structure",
+    "primary_metric_win:smoke.structural_similarity:0.057499999999999996->0.0964:improvement=0.038900000000000004"
+  ],
+  "schema": "continuous_cycle_results/v1",
+  "stack_layer": false
+}
