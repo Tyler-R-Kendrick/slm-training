@@ -88,17 +88,17 @@
           "sumsq": 0.0
         },
         "unstamped": {
-          "n": 47,
+          "n": 48,
           "sum": 0.0,
           "sumsq": 0.0
         }
       },
       "m2_delta": 0.0,
       "mean_delta": 0.0,
-      "n_complete": 48,
-      "n_delta": 48,
-      "n_null": 47,
-      "n_obs": 50,
+      "n_complete": 49,
+      "n_delta": 49,
+      "n_null": 48,
+      "n_obs": 52,
       "n_positive": 0
     },
     "canvas": {
@@ -160,7 +160,7 @@
       "n_complete": 15,
       "n_delta": 15,
       "n_null": 13,
-      "n_obs": 16,
+      "n_obs": 17,
       "n_positive": 0
     },
     "component-edge-margin": {
@@ -222,17 +222,17 @@
           "sumsq": 0.0
         },
         "unstamped": {
-          "n": 25,
-          "sum": 0.44686666666666697,
-          "sumsq": 0.031761337777777815
+          "n": 26,
+          "sum": 0.3885333333333336,
+          "sumsq": 0.0351641155555556
         }
       },
-      "m2_delta": 0.024365418600823065,
-      "mean_delta": 0.016550617283950627,
-      "n_complete": 27,
-      "n_delta": 27,
-      "n_null": 16,
-      "n_obs": 82,
+      "m2_delta": 0.02977275301587304,
+      "mean_delta": 0.013876190476190486,
+      "n_complete": 28,
+      "n_delta": 28,
+      "n_null": 17,
+      "n_obs": 83,
       "n_positive": 9
     },
     "component-structure": {
@@ -435,7 +435,7 @@
     "gates.ship"
   ],
   "file_counts": {
-    "observations": 268,
+    "observations": 272,
     "scanned": 2074,
     "unreadable": 0
   },

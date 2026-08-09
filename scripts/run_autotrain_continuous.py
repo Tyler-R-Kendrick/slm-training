@@ -2356,6 +2356,10 @@ def _render_continuous_cycle_docs(
         "honesty": "fixture_screening_only_not_ship",
         "auto": True,
     }
+    # Embed the rich delivery record (candidate_id/arm_seed/policy_sha256) so
+    # future ledger mining never falls back to reasons-string recovery.
+    if delivery.get("schema") == "autotrain_sdlc_delivery/v1":
+        payload["delivery"] = dict(delivery)
     md = (
         f"# Continuous cycle `{campaign_id}`\n\n"
         f"- loop_id: `{loop_id}`\n"
@@ -4370,6 +4374,12 @@ def _evidence_ranked_slug(
             _ev.load_ledger(),
             exploration_c=float(selection.get("exploration_c", 1.0)),
             prior_scale=float(selection.get("prior_scale", 0.05)),
+            staleness_decay=float(
+                selection.get("staleness_decay", _ev.STALENESS_DECAY)
+            ),
+            staleness_floor=float(
+                selection.get("staleness_floor", _ev.STALENESS_FLOOR)
+            ),
             residual_boosts=boosts,
             live_stats=live_stats,
             rotation_order=candidates,
