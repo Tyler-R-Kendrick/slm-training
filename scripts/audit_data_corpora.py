@@ -39,6 +39,13 @@ from slm_training.data.semantic_plan.canonicalize import plan_factor_fingerprint
 from slm_training.data.store import DataStore
 from slm_training.data.verify import certify_snapshots, write_certified_snapshot
 from slm_training.dsl.schema import ExampleRecord, load_jsonl
+from slm_training.dsl.symbolic_expr_corpus import (
+    CORPUS_SCHEMA_VERSION,
+    CorpusGenerationConfigV1,
+    CorpusRejectionV1,
+    audit_corpus_leakage,
+    generate_corpus,
+)
 from slm_training.versioning import build_version_stamp
 
 LEGACY_TRAIN_DATA_ROOT = Path("src/slm_training/resources/train_data")
@@ -428,6 +435,97 @@ def _contrast_markdown(report: dict[str, object]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _default_symbolic_regression_corpus_config(seed: int, num_problems: int) -> CorpusGenerationConfigV1:
+    return CorpusGenerationConfigV1(
+        schema_version=CORPUS_SCHEMA_VERSION,
+        seed=seed,
+        num_problems=num_problems,
+        num_variables_range=(1, 3),
+        allowed_operators=frozenset({"+", "-", "*", "/", "sin", "cos", "exp", "log", "sqrt", "abs"}),
+        max_basis_depth=3,
+        max_coefficient_terms=3,
+        coefficient_probability=0.7,
+        numeric_domain_policy="reject_nonfinite",
+        complexity_budget=64,
+        train_rows=24,
+        validation_rows=8,
+        extrapolation_rows=8,
+        train_domain=(-3.0, 3.0),
+        extrapolation_domain=(4.0, 7.0),
+        coefficient_range=(-5.0, 5.0),
+    )
+
+
+def _rejection_histogram(rejections: tuple[CorpusRejectionV1, ...]) -> dict[str, int]:
+    histogram: dict[str, int] = {}
+    for rejection in rejections:
+        histogram[rejection.reason] = histogram.get(rejection.reason, 0) + 1
+    return histogram
+
+
+def symbolic_regression_corpus_leakage_report(seed: int = 2026, num_problems: int = 200) -> dict[str, object]:
+    """SRP-008 leakage/dedup/topology/OOD audit over a deterministically
+    generated symbolic-regression corpus. Nothing is persisted by the pack
+    itself -- the corpus is fully reproducible from ``(seed, num_problems)``
+    alone (see ``dsl/symbolic_expr_corpus.py``), so auditing it is just
+    regenerating it and running the shared leakage/OOD-slice checks."""
+    config = _default_symbolic_regression_corpus_config(seed, num_problems)
+    corpus = generate_corpus(config)
+    audit = audit_corpus_leakage(corpus)
+    split_counts: dict[str, int] = {}
+    for record in corpus.records:
+        split_counts[record.corpus_split] = split_counts.get(record.corpus_split, 0) + 1
+    ood_slice_members = corpus.ood_slices.to_dict()
+    ood_slice_members.pop("schema_version", None)
+    return {
+        "seed": seed,
+        "num_problems": num_problems,
+        "records_generated": len(corpus.records),
+        "split_counts": split_counts,
+        "rejections": {
+            "count": len(corpus.rejections),
+            "by_reason": _rejection_histogram(corpus.rejections),
+        },
+        "leakage_audit": audit.to_dict(),
+        "ood_slices": {name: len(ids) for name, ids in ood_slice_members.items()},
+        "ood_slice_members": ood_slice_members,
+        "corpus_fingerprint": corpus.corpus_fingerprint,
+        "version_stamp": build_version_stamp("data.corpus_certification"),
+    }
+
+
+def _symbolic_regression_markdown(report: dict[str, object]) -> str:
+    audit = report["leakage_audit"]  # type: ignore[index]
+    ood = report["ood_slices"]  # type: ignore[index]
+    lines = [
+        "# Symbolic-regression corpus leakage/dedup/OOD audit",
+        "",
+        f"Deterministically regenerated from seed={report['seed']} "
+        f"(requested {report['num_problems']} problems, {report['records_generated']} generated).",
+        "",
+        "## Leakage / dedup",
+        "",
+        f"- Cross-split family violations: {len(audit['cross_split_family_violations'])}",  # type: ignore[index,arg-type]
+        f"- Duplicate family ids: {len(audit['duplicate_family_ids'])}",  # type: ignore[index,arg-type]
+        f"- Clean: {audit['is_clean']}",  # type: ignore[index]
+        "",
+        "## Rejections (filtered, not silently dropped)",
+        "",
+    ]
+    for reason, count in report["rejections"]["by_reason"].items():  # type: ignore[index]
+        lines.append(f"- `{reason}`: {count}")
+    lines += ["", "## OOD slices (frozen, reproducible)", ""]
+    for name, count in ood.items():
+        lines.append(f"- `{name}`: {count} records")
+    lines += [
+        "",
+        f"Corpus content fingerprint: `{report['corpus_fingerprint']}`.",
+        "",
+        "Full detail: `docs/design/symbolic-regression-corpus-leakage-audit.json`.",
+    ]
+    return "\n".join(lines) + "\n"
+
+
 def _markdown(report: dict[str, object]) -> str:
     lines = [
         "# Data corpus audit",
@@ -527,7 +625,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--mode",
-        choices=("audit", "certify", "report-certification", "contrast-audit"),
+        choices=("audit", "certify", "report-certification", "contrast-audit", "symbolic-regression-audit"),
         default="audit",
     )
     parser.add_argument(
@@ -565,6 +663,28 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         default=Path("docs/design/contrast-corpus-leakage-audit.md"),
     )
+    parser.add_argument(
+        "--sr-seed",
+        type=int,
+        default=2026,
+        help="Generation seed for --mode symbolic-regression-audit (SRP-008).",
+    )
+    parser.add_argument(
+        "--sr-num-problems",
+        type=int,
+        default=200,
+        help="Corpus size for --mode symbolic-regression-audit (SRP-008).",
+    )
+    parser.add_argument(
+        "--sr-out-json",
+        type=Path,
+        default=Path("docs/design/symbolic-regression-corpus-leakage-audit.json"),
+    )
+    parser.add_argument(
+        "--sr-out-md",
+        type=Path,
+        default=Path("docs/design/symbolic-regression-corpus-leakage-audit.md"),
+    )
     args = parser.parse_args(argv)
 
     if args.mode == "report-certification":
@@ -588,6 +708,23 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
         print(f"wrote {args.contrast_out_json} and {args.contrast_out_md}")
+        return 0
+    if args.mode == "symbolic-regression-audit":
+        report = symbolic_regression_corpus_leakage_report(args.sr_seed, args.sr_num_problems)
+        args.sr_out_json.parent.mkdir(parents=True, exist_ok=True)
+        args.sr_out_json.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+        args.sr_out_md.write_text(_symbolic_regression_markdown(report), encoding="utf-8")
+        print(
+            json.dumps(
+                {
+                    "records_generated": report["records_generated"],
+                    "leakage_audit": report["leakage_audit"],
+                    "ood_slices": report["ood_slices"],
+                },
+                indent=2,
+            )
+        )
+        print(f"wrote {args.sr_out_json} and {args.sr_out_md}")
         return 0
     snapshots = _load_snapshots(args.include_local)
     if not snapshots:

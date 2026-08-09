@@ -11,6 +11,7 @@ from scripts.audit_data_corpora import (
     _load_contrast_corpus,
     contrast_corpus_leakage_report,
     main,
+    symbolic_regression_corpus_leakage_report,
 )
 
 
@@ -257,6 +258,50 @@ def test_load_contrast_corpus_matches_manifest_and_verifies_hashes():
     records = _load_contrast_corpus()
     assert len(records) == 2412
     assert all("source_plan" in record for record in records)
+
+
+def test_symbolic_regression_corpus_leakage_report_is_deterministic_and_clean():
+    report_a = symbolic_regression_corpus_leakage_report(seed=13, num_problems=30)
+    report_b = symbolic_regression_corpus_leakage_report(seed=13, num_problems=30)
+    # deterministic regeneration, content-identical apart from the stamped wall-clock time
+    assert report_a["corpus_fingerprint"] == report_b["corpus_fingerprint"]
+    assert {k: v for k, v in report_a.items() if k != "version_stamp"} == {
+        k: v for k, v in report_b.items() if k != "version_stamp"
+    }
+
+    assert report_a["records_generated"] == 30
+    assert report_a["leakage_audit"]["is_clean"] is True
+    assert report_a["leakage_audit"]["cross_split_family_violations"] == ()
+    assert report_a["leakage_audit"]["duplicate_family_ids"] == ()
+    assert set(report_a["ood_slices"]) == {
+        "unseen_topology",
+        "unseen_operator_composition",
+        "unseen_variable_dimensionality",
+        "unseen_coefficient_regime",
+    }
+
+
+def test_symbolic_regression_audit_cli_mode_writes_durable_report(tmp_path):
+    out_json = tmp_path / "sr-audit.json"
+    out_md = tmp_path / "sr-audit.md"
+    exit_code = main(
+        [
+            "--mode",
+            "symbolic-regression-audit",
+            "--sr-seed",
+            "13",
+            "--sr-num-problems",
+            "30",
+            "--sr-out-json",
+            str(out_json),
+            "--sr-out-md",
+            str(out_md),
+        ]
+    )
+    assert exit_code == 0
+    report = json.loads(out_json.read_text())
+    assert report["records_generated"] == 30
+    assert "OOD slices" in out_md.read_text()
 
 
 def test_report_certification_writes_stamped_durable_result(tmp_path, monkeypatch):
