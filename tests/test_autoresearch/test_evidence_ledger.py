@@ -231,12 +231,27 @@ def test_regime_exhausted_verdict_shape() -> None:
         closed_slugs=["b", "a", "a"],
         policy_sha256="0" * 64,
         resume_predicate="new lever family registered",
+        bank_fingerprint="f" * 64,
     )
     assert verdict["schema_version"] == ev.VERDICT_SCHEMA
     assert verdict["closed_slugs"] == ["a", "b"]
     assert verdict["binding_constraint"] == "quality_arm_bank_exhausted"
+    assert verdict["bank_fingerprint"] == "f" * 64
     # The builder's payload must satisfy the strict schema consumers rely on.
     from slm_training.autoresearch.schemas import RegimeExhaustedVerdictV1
 
     model = RegimeExhaustedVerdictV1.model_validate(verdict)
     assert model.resume_predicate == "new lever family registered"
+    assert model.bank_fingerprint == "f" * 64
+    # Fingerprint stays optional for verdicts persisted before the park/resume
+    # predicate existed.
+    legacy = ev.build_regime_exhausted_verdict(
+        campaign_id="camp",
+        loop_id="loop",
+        cycle_index=7,
+        binding_constraint="quality_arm_bank_exhausted",
+        closed_slugs=[],
+        policy_sha256=None,
+        resume_predicate="new lever family registered",
+    )
+    assert RegimeExhaustedVerdictV1.model_validate(legacy).bank_fingerprint is None

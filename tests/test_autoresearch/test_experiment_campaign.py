@@ -351,9 +351,12 @@ def test_manifest_digest_and_lock_roundtrip() -> None:
 
 
 def test_lock_accepts_digest_from_before_optional_replicate_fields() -> None:
+    # A lock from before the optional replicate fields also predates the
+    # optional power_feasibility field — its digest carries none of them.
     payload = _manifest().model_dump(mode="json")
     payload.pop("replicate_ledger_schema")
     payload.pop("replicate_seed_floor")
+    payload.pop("power_feasibility")
     digest = hashlib.sha256(canonical_json(payload).encode("utf-8")).hexdigest()
 
     lock = CampaignLockV1.model_validate(
@@ -383,6 +386,44 @@ def test_legacy_lock_digest_still_rejects_manifest_mutation() -> None:
                 "locked_at": "2026-07-23T00:01:00Z",
             }
         )
+
+
+def test_power_feasibility_shape_validation() -> None:
+    report = {
+        "schema": "power_feasibility/v1",
+        "n": 6,
+        "alpha": "1/20",
+        "min_two_sided_p": "1/32",
+        "decisive": True,
+        "required_n": 6,
+    }
+    manifest = _manifest(power_feasibility=report)
+    assert manifest.power_feasibility == report
+    # The locked report is decision-bearing: adding it changes the digest.
+    assert campaign_manifest_sha256(manifest) != campaign_manifest_sha256(_manifest())
+    with pytest.raises(ValidationError, match="power_feasibility.schema"):
+        _manifest(power_feasibility={**report, "schema": "power/v0"})
+    with pytest.raises(ValidationError, match="positive integer"):
+        _manifest(power_feasibility={**report, "n": 0})
+    with pytest.raises(ValidationError, match="positive integer"):
+        _manifest(power_feasibility={**report, "required_n": True})
+    with pytest.raises(ValidationError, match="decisive must be a boolean"):
+        _manifest(power_feasibility={**report, "decisive": "yes"})
+    with pytest.raises(ValidationError, match="alpha"):
+        _manifest(power_feasibility={**report, "alpha": ""})
+    with pytest.raises(ValidationError, match="min_two_sided_p"):
+        _manifest(power_feasibility={**report, "min_two_sided_p": None})
+
+
+def test_power_feasibility_accepts_ledger_report() -> None:
+    from fractions import Fraction
+
+    from slm_training.autoresearch.evidence_ledger import power_feasibility_report
+
+    report = power_feasibility_report(3, Fraction(1, 20))
+    manifest = _manifest(power_feasibility=report)
+    assert manifest.power_feasibility is not None
+    assert manifest.power_feasibility["decisive"] is False
 
 
 def test_decision_bearing_mutation_changes_digest() -> None:

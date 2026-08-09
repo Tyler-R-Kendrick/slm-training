@@ -1051,6 +1051,10 @@ class RegimeExhaustedVerdictV1(StrictModel):
     closed_slugs: tuple[str, ...] = ()
     policy_sha256: str | None = None
     resume_predicate: str = Field(min_length=1)
+    # Deterministic identity of the legal screening domain at park time
+    # (bank slugs + knobs, climb-policy sha256, MAX_RUN_MINUTES). A parked
+    # loop resumes exactly when this fingerprint changes.
+    bank_fingerprint: str | None = None
 
 
 class AutotrainCycleHandoffV1(StrictModel):

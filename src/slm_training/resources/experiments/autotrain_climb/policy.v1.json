@@ -1,6 +1,6 @@
 {
   "schema": "autotrain_climb_policy/v1",
-  "version": "v7",
+  "version": "v8",
   "description": "High-volatility continuous autotrain hill-climb policy. Harness/driver code loads this artifact; change metrics, cadence, caps, and identity fields here without re-authoring classifiers. Dual-regime thrash: isolate (causal OFAT) + climb (residual on sticky champion) + timeout→decode residual routing.",
   "screening_primary": {
     "metric": "smoke.structural_similarity",
@@ -117,6 +117,10 @@
     "enabled": true,
     "alpha": "1/20",
     "description": "Exact sign-test power floor: arm closure requires enough independent complete-null cycles that the pooled sign test over screening_smoke_n-document cycles could have rejected at alpha. Never lowers min_complete_null_seeds."
+  },
+  "terminal": {
+    "park_on_exhaust": true,
+    "description": "When the screening bank is exhausted, emit the typed regime_exhausted verdict and park the loop instead of synthesizing compose filler arms or burning confirm seeds. Causal-cap relaxation and retryable promote heads remain active (they are evidence-driven, not filler)."
   },
   "positive_classification": {
     "allow_executable_unblock": true,

@@ -630,12 +630,14 @@ def build_regime_exhausted_verdict(
     closed_slugs: Sequence[str],
     policy_sha256: str | None,
     resume_predicate: str,
+    bank_fingerprint: str | None = None,
 ) -> dict[str, Any]:
     """Typed terminal verdict: the legal experiment domain is empty.
 
     This is a conclusion, not a failure — it names the constraint whose change
     re-opens the region. Consumers must not resume the parked loop until the
-    ``resume_predicate`` holds.
+    ``resume_predicate`` holds; ``bank_fingerprint`` is the deterministic
+    identity whose change satisfies it.
     """
     return {
         "schema_version": VERDICT_SCHEMA,
@@ -646,4 +648,5 @@ def build_regime_exhausted_verdict(
         "closed_slugs": sorted(set(closed_slugs)),
         "policy_sha256": policy_sha256,
         "resume_predicate": resume_predicate,
+        "bank_fingerprint": bank_fingerprint,
     }
