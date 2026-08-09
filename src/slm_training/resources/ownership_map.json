@@ -404,6 +404,53 @@
       "notes": "SRP-002/SLM-453. New pack-local subsystem for the symbolic-regression pack (SRP-001/SLM-441, owner symbolic_regression_pack.py), pre-authorized by the downstream_extension_map row for SRP-002 (new_owner_justified: true, layer under output_contract, do not fork it). Variables and coefficients are opaque indices only -- never names or free numeric literals -- so the structural codec's output space is symbol-only by construction without introducing a second OUTPUT_CONTRACT_VERSION or reusing production_codec's OpenUI-specific encode/decode logic. Supersedes the untyped dict-shaped expression tree in symbolic_regression_pack.py as the canonical structural form; the Lark surface grammar registered there (dsl/grammar/backends/symbolic_regression.py) remains input-surface syntax only."
     },
     {
+      "id": "symbolic_expr_evaluator",
+      "name": "Vectorized NumPy evaluator with explicit numerical-domain policies",
+      "owner_module": "src/slm_training/dsl/symbolic_expr_evaluator.py",
+      "owner_symbols": [
+        "DomainViolationV1",
+        "EvaluationResultV1",
+        "evaluate_vectorized",
+        "NUMERIC_DOMAIN_POLICIES"
+      ],
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/symbol-only-output-contract.md",
+      "notes": "SRP-003/SLM-461. New pack-local subsystem for the symbolic-regression pack, pre-authorized by the downstream_extension_map row for SRP-003 (new_owner_justified: true, extension_point dsl_pack_registry_canonical -- this evaluator is consumed by/registered through that registry, it does not fork it). Evaluates symbolic_expr_ir's typed AST (VarRef/CoefficientHole/OpApply) over NumPy arrays via a fixed, hardcoded per-operator dispatch table -- no eval/exec/getattr/importlib path exists. Honors symbolic_regression_pack.SymbolicRegressionProblemV1.numeric_domain_policy (reject_nonfinite/allow_nonfinite), which no evaluator previously consulted. Supersedes symbolic_regression_pack.evaluate_expression for real search/fitting use; that scalar reference evaluator is kept only to prove the parse/evaluate round trip. SRP-004 (SLM-465) is pre-registered to extend this owner rather than create a new one."
+    },
+    {
+      "id": "symbolic_expr_canonicalize",
+      "name": "Pack-owned canonicalization and tamper-evident rewrite-certificate schema",
+      "owner_module": "src/slm_training/dsl/symbolic_expr_canonicalize.py",
+      "owner_symbols": [
+        "RewriteRuleV1",
+        "RewriteCertificateV1",
+        "REWRITE_RULES",
+        "canonicalize_expr",
+        "canonicalize_with_certificates",
+        "apply_rewrite_rule",
+        "certificate_integrity_ok"
+      ],
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/symbol-only-output-contract.md",
+      "notes": "SRP-005/SLM-462. New pack-local subsystem for the symbolic-regression pack, pre-authorized by the downstream_extension_map row for SRP-005 (new_owner_justified: true). That row's extension_points list ['verifier_gate_stack'] as a predicted layering point and constrains the certificate shape to follow the VCE-001 witness pattern; the certificate schema (RewriteCertificateV1) is deliberately templated on evals/semantic_failure.py's VerifierWitnessV1 (schema version + typed evidence + trailing self-digest + fail-closed from_dict), satisfying that constraint. The predicted verifier_gate_stack layering itself is a documented divergence (same precedent as SGS-008): data/verify/stack.py's Gate/GateResult score LLM decode/verifier evidence, which a purely structural algebraic rewrite has no pass/fail outcome to compose with, so this module does not import or extend Gate/GateResult. Initial REWRITE_RULES set is small and exact-IEEE-754-safe by construction (commutative operand ordering for binary +/*, double-negation elimination, abs idempotence) -- none require a numeric side condition, so none can fold a not-yet-fit CoefficientHole or change declared numerical semantics."
+    },
+    {
+      "id": "symbolic_expr_fit",
+      "name": "Affine coefficient-dependence analysis and deterministic least-squares fitting",
+      "owner_module": "src/slm_training/dsl/symbolic_expr_fit.py",
+      "owner_symbols": [
+        "AffineClassificationV1",
+        "LeastSquaresFitV1",
+        "NonAffineError",
+        "classify_affine_dependence",
+        "fit_least_squares",
+        "fit_integrity_ok"
+      ],
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/symbol-only-output-contract.md",
+      "notes": "SRP-004/SLM-465. The downstream_extension_map row for SRP-004 predicted new_owner_justified: false ('Extends the SRP-003 evaluator'), i.e. adding these symbols directly to symbolic_expr_evaluator's owner_symbols. The real implementation is a self-contained module whose dataclasses (AffineClassificationV1, LeastSquaresFitV1) are not literally defined in symbolic_expr_evaluator.py -- per this map's own rule that a symbol living in a sibling file cannot be added to another module's owner_symbols -- so it is registered as its own subsystem instead, and the divergence is documented here (same precedent as SGS-008/SRP-005). It does reuse symbolic_expr_evaluator.evaluate_vectorized directly (every coefficient-free subtree is evaluated through it, never re-implemented) rather than forking evaluator arithmetic. classify_affine_dependence is a purely structural, data-independent check built on the identical recursive rule set fit_least_squares uses to build the design matrix (via a single-row dummy evaluation), so the two can never silently disagree. Non-affine coefficient holes are unsupported by design -- no optimizer is ever silently substituted."
+    },
+    {
       "id": "version_registry",
       "name": "Component-version registry and enforcement",
       "owner_module": "src/slm_training/resources/versions.json",

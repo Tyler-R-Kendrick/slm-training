@@ -2419,10 +2419,6 @@ def _git_commit_paths(
     _run(
         [
             "git",
-            "-c",
-            "user.email=autotrain@local",
-            "-c",
-            "user.name=autotrain",
             "commit",
             "-m",
             message,
