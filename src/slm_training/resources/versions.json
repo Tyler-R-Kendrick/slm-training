@@ -2814,6 +2814,21 @@
         {
           "version": "v7",
           "date": "2026-08-08",
+          "note": "no-bump: SLM-465 (SRP-004) registers a new 'symbolic_expr_fit' subsystem (src/slm_training/dsl/symbolic_expr_fit.py: AffineClassificationV1/LeastSquaresFitV1/NonAffineError/classify_affine_dependence/fit_least_squares/fit_integrity_ok); mirrors the row into repository-ownership-map.md, including the documented divergence from the pre-registered downstream_extension_map row for SRP-004 (predicted new_owner_justified: false, 'Extends the SRP-003 evaluator' -- the real dataclasses are not literally defined in symbolic_expr_evaluator.py, so per this map's own sibling-file rule it is registered as its own subsystem instead, same precedent as SGS-008/SRP-005); the new source/test files are not yet tracked by any versions.json component (consistent with the SRP-002/003/005 sibling-file precedent), so this entry only covers the ownership-map doc update."
+        },
+        {
+          "version": "v7",
+          "date": "2026-08-08",
+          "note": "no-bump: SLM-462 (SRP-005) registers a new 'symbolic_expr_canonicalize' subsystem (src/slm_training/dsl/symbolic_expr_canonicalize.py: RewriteRuleV1/RewriteCertificateV1/REWRITE_RULES/canonicalize_expr/canonicalize_with_certificates/apply_rewrite_rule/certificate_integrity_ok) per the pre-registered downstream_extension_map row for SRP-005 (new_owner_justified: true); mirrors the row into repository-ownership-map.md, including the documented divergence from the row's predicted verifier_gate_stack layering (a structural algebraic rewrite has no G0-G12 pass/fail outcome to compose with, same SGS-008 precedent) while satisfying the row's actual constraint that the rewrite certificate follow the VCE-001 witness pattern (RewriteCertificateV1 is templated on VerifierWitnessV1's schema-version + typed-evidence + trailing-self-digest + fail-closed-from_dict shape); the new source/test files are not yet tracked by any versions.json component (consistent with the SRP-002/SRP-003/PCT-002/003/007 sibling-file precedent), so this entry only covers the ownership-map doc update."
+        },
+        {
+          "version": "v7",
+          "date": "2026-08-08",
+          "note": "no-bump: SLM-461 (SRP-003) registers a new 'symbolic_expr_evaluator' subsystem (src/slm_training/dsl/symbolic_expr_evaluator.py: DomainViolationV1/EvaluationResultV1/evaluate_vectorized/NUMERIC_DOMAIN_POLICIES) per the pre-registered downstream_extension_map row for SRP-003 (new_owner_justified: true, extension_point dsl_pack_registry_canonical -- consumed by/registered through that registry, does not fork it) and mirrors the row into repository-ownership-map.md; the new source/test files are not yet tracked by any versions.json component (consistent with the sibling-file precedent set for SRP-002/PCT-002/003/007's new files), so this entry only covers the ownership-map doc update."
+        },
+        {
+          "version": "v7",
+          "date": "2026-08-08",
           "note": "SGS-010 (SLM-445): add the SERIALIZED_CONTRACTS static certificate to verify_ownership_map (every persisted contract declares a version symbol whose reader consults it and raises on mismatch) plus the table-driven runtime compatibility suite tests/test_data/test_synthesis_contract_versions.py (round-trip, future-version rejection, missing-version rejection, registry parity) covering PromptSemanticRequirementsV1, VerifiedSynthesisProblemV1, VerifierWitnessV1 and DecodeStatsRecordV1."
         },
         {
@@ -4515,17 +4530,23 @@
       ]
     },
     "harness.eval.semantic_failure_census": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/evals/semantic_failure.py",
         "scripts/audit_semantic_failures.py",
         "tests/test_evals/test_semantic_failure.py",
         "tests/test_scripts/test_audit_semantic_failures.py",
+        "tests/test_evals/test_verifier_witness_security.py",
         "docs/design/semantic-failure-census.md",
         "docs/design/iter-slm263-semantic-failure-census-20260724.json"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "VCE-003/SLM-457: VerifierLocalizationV1.from_dict now fails closed on a completeness_class outside {EXACT,HEURISTIC,UNKNOWN} (_LOCALIZATION_COMPLETENESS_CLASSES) instead of accepting any string -- an untrusted payload can no longer self-report a stronger completeness tier (e.g. a fabricated 'compiler-hard') than the legitimate builder (_gate_completeness) would ever assign. Every existing producer in this module already only emits one of the three values, so this is additive-only for legitimate witnesses. Adds tests/test_evals/test_verifier_witness_security.py: a corruption matrix over every top-level VerifierWitnessV1/RepairResidualV1 field, redaction/linkage, malformed-completeness fuzzing, from_dict injection-safety, and real-file cross-process-style replay."
+        },
         {
           "version": "v2",
           "date": "2026-08-08",
