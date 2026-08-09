@@ -472,7 +472,7 @@
       ]
     },
     "data.semantic_contrast": {
-      "version": "v4",
+      "version": "v5",
       "kind": "data_builder",
       "paths": [
         "src/slm_training/data/semantic_contrast/",
@@ -481,13 +481,20 @@
         "src/slm_training/data/verify/runtime.py",
         "scripts/verify_semantic_contrast_runtime.py",
         "tests/test_scripts/test_verify_semantic_contrast_runtime.py",
+        "tests/test_data/test_semantic_contrast_metamorphic.py",
         "src/slm_training/resources/data/eval/openui_hard_valid_v1/",
         "docs/design/semantic-contrast-corpus-v1.md",
         "docs/design/semantic-contrast-corpus-v2-notes.md",
         "docs/design/semantic-contrast-corpus-v2-fixture-evidence.json",
+        "docs/design/semantic-contrast-metamorphic-vce007.md",
         "docs/design/iter-slm290-semantic-contrast-20260725.json"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-08-08",
+          "note": "SLM-459 (VCE-007): add metamorphic prompt/program, alpha-renaming, and positive-equivalence generators (data/semantic_contrast/metamorphic.py) -- alpha-rename plan identity, sibling/declaration reorder (wraps VCE-006), prompt single-fact edit, prompt paraphrase invariance, and AST rewrite equivalence (wraps dsl.analysis.optimize). Generator functions + tests only; no persisted-corpus CLI yet."
+        },
         {
           "version": "v4",
           "date": "2026-08-08",
