@@ -1312,6 +1312,91 @@ def _recent_exhaustion_cycle_window() -> int:
 # Back-compat alias for tests that walked the static bank length.
 _RECENT_EXHAUSTION_CYCLE_WINDOW = len(_SCREENING_ARM_BANK)
 
+# Cycle status returned when a parked terminal verdict short-circuits run_cycle.
+_REGIME_PARKED_STATUS = "regime-parked"
+
+
+def _terminal_verdict_path(root: Path, loop_id: str) -> Path:
+    return root / "loops" / loop_id / "terminal_verdict.json"
+
+
+def _terminal_park_on_exhaust(policy: Any | None = None) -> bool:
+    """Policy-gated bank-exhaust parking (``terminal`` block; defaults off)."""
+    try:
+        from slm_training.autoresearch.climb_policy import load_climb_policy
+
+        pol = policy if policy is not None else load_climb_policy()
+        payload = getattr(pol, "payload", None) or {}
+        block = payload.get("terminal") if isinstance(payload, Mapping) else None
+        return bool(isinstance(block, Mapping) and block.get("park_on_exhaust"))
+    except Exception:  # noqa: BLE001 — parking never blocks the legacy path
+        return False
+
+
+def _screening_bank_fingerprint(policy_sha256: str | None = None) -> str:
+    """Deterministic identity of the legal screening domain for park/resume.
+
+    sha256 over canonical JSON of the sorted bank (slug + public knobs from
+    ``_all_screening_arm_bank``), the climb-policy sha256, and
+    ``MAX_RUN_MINUTES``. A parked loop resumes exactly when this changes.
+    """
+    from slm_training.levers import MAX_RUN_MINUTES
+    from slm_training.lineage.records import canonical_json
+
+    if policy_sha256 is None:
+        try:
+            from slm_training.autoresearch.climb_policy import load_climb_policy
+
+            policy_sha256 = load_climb_policy().sha256
+        except Exception:  # noqa: BLE001 — fingerprint must stay computable
+            policy_sha256 = ""
+    arms = sorted(
+        (
+            (
+                slug,
+                {k: v for k, v in extras.items() if not str(k).startswith("_")},
+            )
+            for slug, _, extras in _all_screening_arm_bank()
+        ),
+        key=lambda item: item[0],
+    )
+    body = {
+        "schema": "autotrain_bank_fingerprint/v1",
+        "arms": [[slug, knobs] for slug, knobs in arms],
+        "climb_policy_sha256": str(policy_sha256 or ""),
+        "max_run_minutes": int(MAX_RUN_MINUTES),
+    }
+    return hashlib.sha256(canonical_json(body).encode("utf-8")).hexdigest()
+
+
+def _check_regime_parked(*, root: Path, loop_id: str) -> str | None:
+    """Deterministic park/resume predicate over a persisted terminal verdict.
+
+    Returns ``_REGIME_PARKED_STATUS`` while the bank identity matches the
+    verdict's fingerprint; archives the verdict, restores the loop state, and
+    returns ``None`` once the fingerprint moves (bank/policy/budget changed).
+    """
+    path = _terminal_verdict_path(root, loop_id)
+    if not path.is_file():
+        return None
+    verdict = _read_json(path)
+    _load_dynamic_thrash_arms(root, loop_id)
+    stored = verdict.get("bank_fingerprint")
+    if stored and stored == _screening_bank_fingerprint():
+        print(
+            f"REGIME_PARKED loop={loop_id} "
+            f"constraint={verdict.get('binding_constraint')}",
+            flush=True,
+        )
+        return _REGIME_PARKED_STATUS
+    resolved = path.with_name(
+        f"terminal_verdict.resolved.c{int(verdict.get('cycle_index') or 0)}.json"
+    )
+    path.replace(resolved)
+    print("REGIME_RESUMED reason=bank_identity_changed", flush=True)
+    _clear_loop_blocker(root, loop_id, reason="regime_resumed_bank_identity_changed")
+    return None
+
 
 def _short_lever_token(key: str) -> str:
     token = key.replace("_loss_weight", "").replace("_weight", "").replace("_", "-")
@@ -1494,6 +1579,14 @@ def _self_heal_thrash_bank_exhaust(
     open_now = {slug for slug, _, _ in bank if slug not in closed and slug not in skip}
     if open_now:
         return True
+    if _terminal_park_on_exhaust():
+        # Terminal policy retires compose filler: an exhausted bank concludes
+        # with the typed regime_exhausted verdict instead of synthetic arms.
+        print(
+            "SELF_HEAL_BANK_EXHAUST parked reason=terminal_park_on_exhaust",
+            flush=True,
+        )
+        return False
     synthesized = _synthesize_thrash_arms(
         known_slugs=known | closed | skip, closed=closed
     )
@@ -4906,6 +4999,10 @@ def _repeat_confirm_while_waiting_for_promotion(
         return False
     if confirmed_champion.get("status") != "confirmed":
         return False
+    if _terminal_park_on_exhaust():
+        # Terminal policy retires the confirm filler: an exhausted bank parks
+        # under the typed verdict instead of burning confirmation seeds.
+        return False
     try:
         _select_recommended_slug(cycle, skip=skip)
     except RuntimeError:
@@ -5457,6 +5554,7 @@ def dispose_champion_promote(
     candidate_metrics: dict[str, float | None] | None = None,
     promotion_primary: dict[str, Any] | None = None,
     promotion_dispose: dict[str, Any] | None = None,
+    power_feasibility: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Authoritative promote disposition (proof + effect driver).
 
@@ -5511,6 +5609,18 @@ def dispose_champion_promote(
         if timeout:
             out["timeout"] = True
         return out
+
+    if power_feasibility is not None and not bool(power_feasibility.get("decisive")):
+        # Power admission (adds a refusal, weakens nothing): a locked plan
+        # whose exact sign test cannot reject at the policy alpha must not be
+        # measured into a promotion decision.
+        reasons.append(
+            "promotion_infeasible_by_design:"
+            f"n={power_feasibility.get('n')}:"
+            f"alpha={power_feasibility.get('alpha')}:"
+            f"required_n={power_feasibility.get('required_n')}"
+        )
+        return _base(status="promotion_failed")
 
     if _formal_status_is_timeout(formal_preflight_status):
         reasons.append(
@@ -5673,6 +5783,18 @@ def _write_five_lane_successor(
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     print(f"FIVE_LANE_SUCCESSOR path={path}", flush=True)
     return path
+
+
+def _campaign_power_feasibility(
+    camp_dir: Path, candidate_id: str
+) -> dict[str, Any] | None:
+    """Locked pre-run power report from the candidate's campaign manifest."""
+    if not candidate_id:
+        return None
+    report = _read_json(camp_dir / "manifests" / f"{candidate_id}.json").get(
+        "power_feasibility"
+    )
+    return report if isinstance(report, dict) else None
 
 
 def _load_promote_certificate(camp_dir: Path) -> dict[str, Any] | None:
@@ -6664,6 +6786,7 @@ def _resolve_promotion_result(
             candidate_metrics=cand_metrics,  # type: ignore[arg-type]
             promotion_primary=dict(climb.promotion_primary),
             promotion_dispose=dict(climb.promotion_dispose),
+            power_feasibility=_campaign_power_feasibility(camp, candidate_id),
         )
         disposition = _gate_promotion_on_replicates(
             root=root,
@@ -8794,16 +8917,20 @@ def _write_cycle_handoff(
                 from slm_training.autoresearch import evidence_ledger as _ev
                 from slm_training.autoresearch.climb_policy import load_climb_policy
 
+                policy_sha = load_climb_policy().sha256
                 terminal_verdict = _ev.build_regime_exhausted_verdict(
                     campaign_id=campaign_id,
                     loop_id=loop_id,
                     cycle_index=cycle_index,
                     binding_constraint="quality_arm_bank_exhausted",
                     closed_slugs=sorted(closed),
-                    policy_sha256=load_climb_policy().sha256,
+                    policy_sha256=policy_sha,
                     resume_predicate=(
                         "a new lever family, budget tier, or metric floor is "
                         "registered (integrated code identity changes)"
+                    ),
+                    bank_fingerprint=_screening_bank_fingerprint(
+                        policy_sha256=policy_sha
                     ),
                 )
             except Exception:  # noqa: BLE001 — verdict is additive evidence
@@ -8859,19 +8986,53 @@ def _write_cycle_handoff(
     (camp_dir / "cycle_handoff.json").write_text(
         handoff.model_dump_json(indent=2) + "\n", encoding="utf-8"
     )
-    _write_loop_state(
-        root,
-        AutotrainLoopStateV1(
-            loop_id=loop_id,
-            state="IDLE",
-            phase="between_cycles",
-            active_campaign_id=None,
-            last_completed_campaign_id=campaign_id,
-            cycle_index=cycle_index,
-            next_action=actions[0].kind,
-            pid=os.getpid(),
-        ),
-    )
+    if terminal_verdict is not None and _terminal_park_on_exhaust():
+        # Park under the typed conclusion: persist the verdict beside the loop
+        # state so the successor cycle's deterministic resume predicate
+        # (bank-fingerprint change) governs re-entry, not a human re-prompt.
+        verdict_path = _terminal_verdict_path(root, loop_id)
+        verdict_path.parent.mkdir(parents=True, exist_ok=True)
+        verdict_path.write_text(
+            json.dumps(terminal_verdict, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        _write_loop_state(
+            root,
+            AutotrainLoopStateV1(
+                loop_id=loop_id,
+                state="BLOCKED",
+                phase="blocked",
+                active_campaign_id=None,
+                last_completed_campaign_id=campaign_id,
+                cycle_index=cycle_index,
+                next_action=actions[0].kind,
+                blocker_fingerprint=str(
+                    terminal_verdict.get("binding_constraint") or ""
+                )
+                or None,
+                blocker_count=1,
+                pid=os.getpid(),
+            ),
+        )
+        print(
+            f"REGIME_PARK loop={loop_id} campaign={campaign_id} "
+            f"constraint={terminal_verdict.get('binding_constraint')}",
+            flush=True,
+        )
+    else:
+        _write_loop_state(
+            root,
+            AutotrainLoopStateV1(
+                loop_id=loop_id,
+                state="IDLE",
+                phase="between_cycles",
+                active_campaign_id=None,
+                last_completed_campaign_id=campaign_id,
+                cycle_index=cycle_index,
+                next_action=actions[0].kind,
+                pid=os.getpid(),
+            ),
+        )
     # Driver-owned document closeout so the successor never waits on a human
     # re-prompt for ordinary thrash screening notes. Only when cwd is explicit
     # (live continuous worktree) — unit tests call this helper without cwd and
@@ -10538,6 +10699,24 @@ def _manifest(
             locked_eval = hashlib.sha256(
                 str(knobs_pre["eval_version"]).encode("utf-8")
             ).hexdigest()
+        # Power admission: lock the exact sign-test feasibility of the planned
+        # promotion measurement before any outcome is visible. Dispose refuses
+        # a non-decisive report (promotion_infeasible_by_design).
+        from slm_training.autoresearch import evidence_ledger as _ev
+
+        measurement = pol.measurement
+        gate = (pol.payload or {}).get("power_gate")
+        power_feasibility = _ev.power_feasibility_report(
+            max(
+                1,
+                int(
+                    measurement.get("promotion_suite_n")
+                    or measurement.get("screening_smoke_n")
+                    or 3
+                ),
+            ),
+            _ev.parse_alpha(gate.get("alpha") if isinstance(gate, Mapping) else None),
+        )
     else:
         claim_class = str(defaults.get("claim_class_screening") or "diagnostic")
         seeds = (int(experiment.get("knobs", {}).get("seed") or 7),)
@@ -10553,6 +10732,7 @@ def _manifest(
         negative_controls = ("matched-control",)
         artifact_requirements = (ArtifactRequirementV1(kind="version_stamp"),)
         locked_eval = None
+        power_feasibility = None
 
     knobs = experiment["knobs"]
     cfg = hashlib.sha256(json.dumps(knobs, sort_keys=True).encode()).hexdigest()
@@ -10669,6 +10849,7 @@ def _manifest(
         replicate_seed_floor=(
             promotion_seed_floor(pol)[0] if role == "promotion" else None
         ),
+        power_feasibility=power_feasibility,
         source_commit=commit,
         source_dirty=False,
         author="autotrain-continuous-driver",
@@ -10831,6 +11012,12 @@ def run_cycle(
             loop_id=loop_id,
             stage="sync-ancestry",
         )
+
+    # Terminal governance: a parked regime verdict short-circuits the cycle
+    # until its deterministic resume predicate (bank-identity change) holds.
+    parked_status = _check_regime_parked(root=root, loop_id=loop_id)
+    if parked_status is not None:
+        return parked_status
 
     recovered_campaign = _finalize_terminal_interrupted_replay(
         cwd=cwd,

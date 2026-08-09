@@ -36,6 +36,24 @@ def _clear_dynamic_thrash_bank_cache() -> None:
     _mod._DYNAMIC_THRASH_LOADED_FOR = None
 
 
+def _inject_terminal_policy(
+    monkeypatch: pytest.MonkeyPatch, *, park: bool
+) -> "object":
+    """Pin ``terminal.park_on_exhaust`` while keeping every other policy block real."""
+    from slm_training.autoresearch import climb_policy as cp
+
+    base = cp.load_climb_policy()
+    policy = cp.ClimbPolicy(
+        path=base.path,
+        schema=base.schema,
+        version=base.version,
+        sha256=base.sha256,
+        payload={**base.payload, "terminal": {"park_on_exhaust": park}},
+    )
+    monkeypatch.setattr(cp, "load_climb_policy", lambda path=None: policy)
+    return policy
+
+
 def _classify(
     *,
     control: dict[str, float | None],
@@ -2312,7 +2330,11 @@ def test_balanced_container_close_arm_combines_quality_and_close_objectives() ->
     assert _mod._arm_slug_from_knobs(candidate) == "balanced-container-close"
 
 
-def test_confirmed_champion_reconfirms_when_bank_exhausted_before_promotion() -> None:
+def test_confirmed_champion_reconfirms_when_bank_exhausted_before_promotion(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Legacy confirm-fallback path: only active while terminal parking is off.
+    _inject_terminal_policy(monkeypatch, park=False)
     exhausted = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
     champion = {"status": "confirmed", "entry_id": "champ-1"}
 
@@ -5892,7 +5914,10 @@ def test_predecessor_without_stack_delta_does_not_block_on_deliver_stack(
 
 def test_cycle_handoff_routes_exhausted_bank_to_model_build_repair(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    # Legacy compose-successor path: only active while terminal parking is off.
+    _inject_terminal_policy(monkeypatch, park=False)
     root = tmp_path / "autoresearch"
     (root / "cycle-exhausted").mkdir(parents=True)
     handoff = _mod._write_cycle_handoff(
@@ -6094,8 +6119,12 @@ def test_completed_candidate_priorities_accepts_dynamic_successor() -> None:
     ) or any(p.disposition == "monitor" for p in rows)
 
 
-def test_self_heal_thrash_bank_composes_successors(tmp_path: Path) -> None:
+def test_self_heal_thrash_bank_composes_successors(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Bank exhaust must self-heal by composing size-matched thrash arms."""
+    # Legacy compose synthesis: only active while terminal parking is off.
+    _inject_terminal_policy(monkeypatch, park=False)
     _mod._DYNAMIC_THRASH_ARMS.clear()
     _mod._DYNAMIC_THRASH_LOADED_FOR = None
     root = tmp_path / "ar"
@@ -6171,7 +6200,11 @@ def test_thrash_matrix_dedupes_compose_vs_static_knob_signatures() -> None:
     assert matrix["recommended_experiment_id"] in ids
 
 
-def test_self_heal_cycle_error_recovers_bank_exhaust(tmp_path: Path) -> None:
+def test_self_heal_cycle_error_recovers_bank_exhaust(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Legacy compose recovery: only active while terminal parking is off.
+    _inject_terminal_policy(monkeypatch, park=False)
     _mod._DYNAMIC_THRASH_ARMS.clear()
     _mod._DYNAMIC_THRASH_LOADED_FOR = None
     root = tmp_path / "ar"
@@ -6187,6 +6220,268 @@ def test_self_heal_cycle_error_recovers_bank_exhaust(tmp_path: Path) -> None:
     state = json.loads((root / "loops" / loop / "state.json").read_text())
     assert state["state"] == "IDLE"
     assert state["blocker_count"] == 0
+
+
+def test_screening_bank_fingerprint_tracks_bank_identity() -> None:
+    fingerprint = _mod._screening_bank_fingerprint(policy_sha256="s")
+    assert fingerprint == _mod._screening_bank_fingerprint(policy_sha256="s")
+    assert fingerprint != _mod._screening_bank_fingerprint(policy_sha256="t")
+    _mod._DYNAMIC_THRASH_ARMS.append(
+        ("compose-fp-probe", "Fingerprint probe.", {"ltr_tail_loss_weight": 2.0})
+    )
+    assert fingerprint != _mod._screening_bank_fingerprint(policy_sha256="s")
+
+
+def test_park_policy_retires_confirm_fallback_and_compose_synthesis(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _inject_terminal_policy(monkeypatch, park=True)
+    exhausted = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
+    champion = {"status": "confirmed", "entry_id": "champ-1"}
+    assert not _mod._repeat_confirm_while_waiting_for_promotion(
+        cadence_role="screening",
+        confirmed_champion=champion,
+        cycle=1811,
+        skip=exhausted,
+    )
+    root = tmp_path / "ar"
+    assert not _mod._self_heal_thrash_bank_exhaust(
+        root, "L", closed=exhausted, skip=set()
+    )
+    assert not _mod._DYNAMIC_THRASH_ARMS
+    assert not _mod._dynamic_thrash_arms_path(root, "L").is_file()
+    # Open arms remaining never park: heal still reports the bank as usable.
+    assert _mod._self_heal_thrash_bank_exhaust(root, "L", closed=set(), skip=set())
+
+
+def test_bank_exhaust_parks_loop_under_typed_verdict(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from slm_training.autoresearch.schemas import RegimeExhaustedVerdictV1
+
+    policy = _inject_terminal_policy(monkeypatch, park=True)
+    monkeypatch.setattr(
+        _mod,
+        "_recent_completed_nonpositive_slugs",
+        lambda *args, **kwargs: {slug for slug, _, _ in _mod._SCREENING_ARM_BANK},
+    )
+    root = tmp_path / "autoresearch"
+    (root / "cycle-exhausted").mkdir(parents=True)
+    handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-exhausted",
+        cycle_index=1795,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="screening",
+        cycle_intent="screening",
+        primary_metric="held_out.structural_similarity",
+        matrix=_priority_matrix(),
+        delivery={
+            "positive": False,
+            "candidate_id": "edge-alignment",
+            "control_id": "control",
+            "reasons": ["primary_metric_not_improved"],
+        },
+        resolution=None,
+        formal_status="proved",
+    )
+
+    assert handoff.terminal_verdict is not None
+    assert handoff.terminal_verdict.binding_constraint == "quality_arm_bank_exhausted"
+    assert handoff.terminal_verdict.bank_fingerprint == (
+        _mod._screening_bank_fingerprint(policy_sha256=policy.sha256)
+    )
+    # The parked handoff still carries the required repair_harness action.
+    assert any(action.kind == "repair_harness" for action in handoff.actions)
+    verdict_path = _mod._terminal_verdict_path(root, "loop-1")
+    assert verdict_path.is_file()
+    persisted = RegimeExhaustedVerdictV1.model_validate_json(
+        verdict_path.read_text(encoding="utf-8")
+    )
+    assert persisted.bank_fingerprint == handoff.terminal_verdict.bank_fingerprint
+    state = json.loads((root / "loops" / "loop-1" / "state.json").read_text())
+    assert state["state"] == "BLOCKED"
+    assert state["phase"] == "blocked"
+    assert state["blocker_fingerprint"] == "quality_arm_bank_exhausted"
+
+
+def test_regime_parked_early_return_and_fingerprint_resume(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = tmp_path / "ar"
+    loop = "loop-parked"
+    verdict_path = _mod._terminal_verdict_path(root, loop)
+    verdict_path.parent.mkdir(parents=True, exist_ok=True)
+
+    def _write_verdict(fingerprint: str) -> None:
+        verdict_path.write_text(
+            json.dumps(
+                {
+                    "schema_version": "regime_exhausted_verdict/v1",
+                    "campaign_id": "cycle-exhausted",
+                    "loop_id": loop,
+                    "cycle_index": 1795,
+                    "binding_constraint": "quality_arm_bank_exhausted",
+                    "closed_slugs": [],
+                    "policy_sha256": None,
+                    "resume_predicate": "bank identity changes",
+                    "bank_fingerprint": fingerprint,
+                }
+            )
+        )
+
+    # Unchanged fingerprint: the loop stays parked without running anything.
+    _write_verdict(_mod._screening_bank_fingerprint())
+    assert (
+        _mod._check_regime_parked(root=root, loop_id=loop)
+        == _mod._REGIME_PARKED_STATUS
+    )
+    assert verdict_path.is_file()
+    out = capsys.readouterr().out
+    assert f"REGIME_PARKED loop={loop}" in out
+    assert "constraint=quality_arm_bank_exhausted" in out
+
+    # Changed fingerprint: archive the verdict deterministically and resume.
+    _write_verdict("0" * 64)
+    assert _mod._check_regime_parked(root=root, loop_id=loop) is None
+    assert not verdict_path.is_file()
+    resolved = verdict_path.with_name("terminal_verdict.resolved.c1795.json")
+    assert resolved.is_file()
+    out = capsys.readouterr().out
+    assert "REGIME_RESUMED reason=bank_identity_changed" in out
+    state = json.loads((root / "loops" / loop / "state.json").read_text())
+    assert state["state"] == "IDLE"
+    assert state["blocker_count"] == 0
+    # No verdict file means no park check applies at all.
+    assert _mod._check_regime_parked(root=root, loop_id=loop) is None
+
+
+def test_run_cycle_short_circuits_on_parked_regime(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "ar"
+    loop = "loop-parked"
+    verdict_path = _mod._terminal_verdict_path(root, loop)
+    verdict_path.parent.mkdir(parents=True, exist_ok=True)
+    verdict_path.write_text(
+        json.dumps(
+            {
+                "schema_version": "regime_exhausted_verdict/v1",
+                "campaign_id": "cycle-exhausted",
+                "loop_id": loop,
+                "cycle_index": 3,
+                "binding_constraint": "quality_arm_bank_exhausted",
+                "closed_slugs": [],
+                "policy_sha256": None,
+                "resume_predicate": "bank identity changes",
+                "bank_fingerprint": _mod._screening_bank_fingerprint(),
+            }
+        )
+    )
+    monkeypatch.setattr(
+        _mod,
+        "_git",
+        lambda *args, **kwargs: "" if args[0] == "status" else "a" * 40,
+    )
+    status = _mod.run_cycle(
+        cwd=tmp_path,
+        root=root,
+        loop_id=loop,
+        train_version="wf_smoke_v2",
+        steps=1,
+        objective="objective",
+        primary_metric="smoke.structural_similarity",
+        sync_git=False,
+        require_action_receipts=False,
+    )
+    assert status == _mod._REGIME_PARKED_STATUS
+    # Parked cycles run no experiment and write no campaign bundle.
+    assert not list(root.glob("*/campaign.json"))
+
+
+def test_promotion_manifest_embeds_locked_power_feasibility() -> None:
+    experiment = {
+        "experiment_id": "cand-promote",
+        "hypothesis": "A confirmed champion holds its held-out primary win.",
+        "knobs": {"seed": 7, "eval_version": "e_test"},
+    }
+    manifest = _mod._manifest(
+        "cycle-1", experiment, "a" * 40, role="promotion"
+    )
+    report = manifest.power_feasibility
+    assert report is not None
+    assert report["schema"] == "power_feasibility/v1"
+    # Current policy geometry: promotion suite n falls back to
+    # measurement.screening_smoke_n; the exact sign test needs required_n.
+    assert report["n"] == 3
+    assert report["required_n"] == 6
+    assert report["decisive"] is False
+    screening = _mod._manifest("cycle-1", experiment, "a" * 40)
+    assert screening.power_feasibility is None
+
+
+def test_dispose_champion_promote_refuses_infeasible_power_report() -> None:
+    from fractions import Fraction
+
+    from slm_training.autoresearch import evidence_ledger as ev
+
+    infeasible = ev.power_feasibility_report(3, Fraction(1, 20))
+    assert infeasible["decisive"] is False
+    d = _mod.dispose_champion_promote(
+        formal_preflight_status="proved",
+        certificate=None,
+        power_feasibility=infeasible,
+    )
+    assert d["status"] == "promotion_failed"
+    assert any(
+        r.startswith("promotion_infeasible_by_design:") for r in d["reasons"]
+    )
+
+    # A decisive report passes through to the unchanged downstream gates.
+    feasible = ev.power_feasibility_report(6, Fraction(1, 20))
+    assert feasible["decisive"] is True
+    d = _mod.dispose_champion_promote(
+        formal_preflight_status="proved",
+        certificate=None,
+        power_feasibility=feasible,
+    )
+    assert not any(
+        r.startswith("promotion_infeasible_by_design:") for r in d["reasons"]
+    )
+    assert d["status"] == "promotion_failed"
+    assert any(r.startswith("promote_requires_certificate") for r in d["reasons"])
+
+    # Absent report (legacy / screening campaigns): dispose is untouched.
+    d = _mod.dispose_champion_promote(
+        formal_preflight_status="proved",
+        certificate=None,
+    )
+    assert not any(
+        r.startswith("promotion_infeasible_by_design:") for r in d["reasons"]
+    )
+
+
+def test_campaign_power_feasibility_reads_candidate_manifest(
+    tmp_path: Path,
+) -> None:
+    camp = tmp_path / "camp"
+    (camp / "manifests").mkdir(parents=True)
+    report = {
+        "schema": "power_feasibility/v1",
+        "n": 3,
+        "alpha": "1/20",
+        "min_two_sided_p": "1/4",
+        "decisive": False,
+        "required_n": 6,
+    }
+    (camp / "manifests" / "cand.json").write_text(
+        json.dumps({"power_feasibility": report})
+    )
+    assert _mod._campaign_power_feasibility(camp, "cand") == report
+    assert _mod._campaign_power_feasibility(camp, "") is None
+    assert _mod._campaign_power_feasibility(camp, "missing") is None
 
 
 def test_repeated_timeouts_remain_soft_and_never_block(tmp_path: Path) -> None:
@@ -8715,6 +9010,8 @@ def test_self_heal_bank_exhaust_repair_rewrites_handoff(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Bank-exhaust repair_harness must compose arms and clear predecessor gate."""
+    # Legacy compose repair path: only active while terminal parking is off.
+    _inject_terminal_policy(monkeypatch, park=False)
     repo = tmp_path / "repo"
     repo.mkdir()
     _init_git_repo(repo)
