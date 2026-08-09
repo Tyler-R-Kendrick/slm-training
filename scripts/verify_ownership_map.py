@@ -358,6 +358,12 @@ SERIALIZED_CONTRACTS: tuple[SerializedContract, ...] = (
         version_symbol="DECODE_STATS_RECORD_SCHEMA",
         reader="from_dict",
     ),
+    SerializedContract(
+        contract_id="ComputeStateFeaturesV1",
+        module="src/slm_training/harnesses/experiments/compute_state_controller.py",
+        version_symbol="COMPUTE_STATE_FEATURES_SCHEMA",
+        reader="from_dict",
+    ),
 )
 
 

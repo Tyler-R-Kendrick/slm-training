@@ -2816,7 +2816,7 @@
       ]
     },
     "governance.ownership_map": {
-      "version": "v7",
+      "version": "v8",
       "kind": "gate",
       "paths": [
         "src/slm_training/resources/ownership_map.json",
@@ -2828,6 +2828,11 @@
         "tests/test_data/test_synthesis_contract_versions.py"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-08-09",
+          "note": "SIE-007/SLM-473: register ComputeStateFeaturesV1 (harnesses/experiments/compute_state_controller.py, COMPUTE_STATE_FEATURES_SCHEMA) in SERIALIZED_CONTRACTS so the SGS-010 static check certifies that its from_dict reader consults its own version symbol and raises on mismatch, rather than coercing a foreign payload."
+        },
         {
           "version": "v7",
           "date": "2026-08-09",
@@ -4663,9 +4668,15 @@
         "tests/test_harnesses/experiments/test_exp_sr_catalogue.py",
         "src/slm_training/harnesses/experiments/pct008_artifact_cold_warm.py",
         "tests/test_harnesses/experiments/test_pct008_artifact_cold_warm.py",
-        "scripts/run_pct008_artifact_cold_warm.py"
+        "scripts/run_pct008_artifact_cold_warm.py",
+        "tests/test_harnesses/experiments/test_compute_state_controller.py"
       ],
       "history": [
+        {
+          "version": "v151",
+          "date": "2026-08-09",
+          "note": "SIE-007/SLM-473: add compute_state_controller.py -- ComputeStateFeaturesV1 (versioned, total decision-state feature vector read out of DecodeStatsRecordV1, where an absent measurement is None/UNKNOWN rather than 0.0 so a scoring rule cannot read 'unmeasured' as 'measured empty') plus a replay-only value-of-compute controller. The rule language reuses the existing symbolic-regression IR (dsl/symbolic_expr_ir) unchanged rather than forking a second expression language: its token grammar admits only parens, allowlisted operators and v<i>/c<i> references, so no eval/import/call/reflection or free literal is reachable from a rule, and depth/node budgets are tightened to 8/48 and enforced at construction. Comparisons/booleans are expressed as score differences plus an abstain margin. An exact singleton (complete legal domain of size 1) bypasses the controller with expressions_evaluated == 0 per I2; an incomplete domain of apparent size 1 does not. A rule referencing an UNKNOWN feature abstains instead of guessing, controller_can_change_legality() is a hard False, and replay scores regret against an oracle action derived only from observed record counters, crediting no agreement for abstention. Nothing here is registered into a serving path -- no controller is enabled in production by this issue."
+        },
         {
           "version": "v151",
           "date": "2026-08-09",
