@@ -1,0 +1,285 @@
+{
+  "kind": "vce009_oracle_contrast_campaign/v1",
+  "claim_class": "fixture",
+  "environment": {
+    "platform": "Linux-6.18.5-fc-v20-x86_64-with-glibc2.39",
+    "machine": "x86_64",
+    "python": "3.12.3"
+  },
+  "recipe": {
+    "command": [
+      "python",
+      "-m",
+      "scripts.run_vce009_oracle_contrast_campaign",
+      "--mode",
+      "fixture",
+      "--source-count",
+      "6",
+      "--seed",
+      "3"
+    ],
+    "docs_path": "docs/design/vce009-oracle-contrast-results.json"
+  },
+  "arms": [
+    {
+      "arm": "oracle_baseline",
+      "role": "control",
+      "disposition": "match",
+      "changed_factors": [],
+      "declared_factors": [],
+      "contamination_banner": null,
+      "is_contaminated": false,
+      "compute": {
+        "forwards": 0,
+        "verifier_calls": 1,
+        "wall_ms": 0.33
+      }
+    },
+    {
+      "arm": "oracle_one_factor_archetype",
+      "role": "candidate",
+      "disposition": "match",
+      "changed_factors": [],
+      "declared_factors": [
+        "archetype"
+      ],
+      "contamination_banner": null,
+      "is_contaminated": false,
+      "compute": {
+        "forwards": 0,
+        "verifier_calls": 1,
+        "wall_ms": 0.254
+      }
+    },
+    {
+      "arm": "oracle_one_factor_roles",
+      "role": "candidate",
+      "disposition": "match",
+      "changed_factors": [
+        "roles"
+      ],
+      "declared_factors": [
+        "roles"
+      ],
+      "contamination_banner": null,
+      "is_contaminated": false,
+      "compute": {
+        "forwards": 0,
+        "verifier_calls": 1,
+        "wall_ms": 0.235
+      }
+    },
+    {
+      "arm": "oracle_one_factor_topology",
+      "role": "candidate",
+      "disposition": "match",
+      "changed_factors": [
+        "topology"
+      ],
+      "declared_factors": [
+        "topology"
+      ],
+      "contamination_banner": null,
+      "is_contaminated": false,
+      "compute": {
+        "forwards": 0,
+        "verifier_calls": 1,
+        "wall_ms": 0.254
+      }
+    },
+    {
+      "arm": "oracle_one_factor_bindings",
+      "role": "candidate",
+      "disposition": "match",
+      "changed_factors": [
+        "bindings"
+      ],
+      "declared_factors": [
+        "bindings"
+      ],
+      "contamination_banner": null,
+      "is_contaminated": false,
+      "compute": {
+        "forwards": 0,
+        "verifier_calls": 1,
+        "wall_ms": 0.2
+      }
+    },
+    {
+      "arm": "oracle_all_factors",
+      "role": "candidate",
+      "disposition": "match",
+      "changed_factors": [
+        "roles",
+        "topology",
+        "bindings"
+      ],
+      "declared_factors": [
+        "archetype",
+        "roles",
+        "topology",
+        "bindings"
+      ],
+      "contamination_banner": null,
+      "is_contaminated": false,
+      "compute": {
+        "forwards": 0,
+        "verifier_calls": 1,
+        "wall_ms": 0.242
+      }
+    },
+    {
+      "arm": "oracle_shuffled",
+      "role": "candidate",
+      "disposition": "inconclusive",
+      "reason": "no_compatible_candidate_in_frozen_slice",
+      "changed_factors": [],
+      "contamination_banner": null,
+      "is_contaminated": false,
+      "compute": {
+        "forwards": 0,
+        "verifier_calls": 0,
+        "wall_ms": 0.029
+      }
+    },
+    {
+      "arm": "oracle_destructive",
+      "role": "candidate",
+      "disposition": "match",
+      "changed_factors": [
+        "roles"
+      ],
+      "declared_factors": [
+        "roles"
+      ],
+      "contamination_banner": null,
+      "is_contaminated": false,
+      "compute": {
+        "forwards": 0,
+        "verifier_calls": 1,
+        "wall_ms": 0.225
+      }
+    },
+    {
+      "arm": "contrast_corpus_scoreboard",
+      "role": "candidate",
+      "disposition": "match",
+      "pairs": 16,
+      "mutation_classes": [
+        "binding_swap_symbol",
+        "binding_swap_symbol_reverse",
+        "content_swap_family"
+      ],
+      "scoreboard": [
+        {
+          "family": "binding",
+          "n_total": 4,
+          "n_admitted": 4,
+          "verifier_pass_rate": 1.0,
+          "meaningful_pass_rate": 0.0,
+          "false_negative_rate": 0.0,
+          "mean_reason_count": 2.0,
+          "top_reasons": [
+            "required_placeholder_missing",
+            "duplicate_placeholder_identity"
+          ]
+        },
+        {
+          "family": "content",
+          "n_total": 4,
+          "n_admitted": 4,
+          "verifier_pass_rate": 1.0,
+          "meaningful_pass_rate": 0.0,
+          "false_negative_rate": 0.0,
+          "mean_reason_count": 2.0,
+          "top_reasons": [
+            "prompt_component_missing",
+            "required_component_missing"
+          ]
+        },
+        {
+          "family": "positive",
+          "n_total": 24,
+          "n_admitted": 16,
+          "verifier_pass_rate": 1.0,
+          "meaningful_pass_rate": 1.0,
+          "false_negative_rate": 0.0,
+          "mean_reason_count": 0.0,
+          "top_reasons": []
+        }
+      ],
+      "contamination_banner": null,
+      "is_contaminated": false,
+      "compute": {
+        "forwards": 0,
+        "verifier_calls": 16,
+        "wall_ms": 3563.941
+      }
+    },
+    {
+      "arm": "metamorphic_generators",
+      "role": "candidate",
+      "disposition": "match",
+      "cases": [
+        {
+          "family": "alpha_rename_plan_identity",
+          "disposition": "match",
+          "expected_invariant": [
+            "compiled_surface",
+            "meaningful_verdict",
+            "exact",
+            "archetype",
+            "role_set",
+            "component_family",
+            "cardinality",
+            "symbol_role",
+            "topology",
+            "bindings",
+            "coverage"
+          ]
+        },
+        {
+          "family": "reorder_declarations",
+          "disposition": "match",
+          "expected_changed": [
+            "compiled_surface",
+            "topology"
+          ]
+        },
+        {
+          "family": "prompt_single_fact_edit",
+          "disposition": "match"
+        },
+        {
+          "family": "prompt_paraphrase_invariant",
+          "disposition": "match"
+        },
+        {
+          "family": "ast_rewrite_equivalence",
+          "disposition": "match"
+        }
+      ],
+      "contamination_banner": null,
+      "is_contaminated": false,
+      "compute": {
+        "forwards": 0,
+        "verifier_calls": 5,
+        "wall_ms": 11.076
+      }
+    }
+  ],
+  "arm_contract_match_rate": 0.9,
+  "inconclusive_count": 1,
+  "contaminated_arm_ids": [],
+  "scope_disclaimer": "Fixture-scale evidence over a small frozen source slice only. No champion/default/checkpoint promotion claim is made -- see claim_class='fixture' and the vacuous fixture_only promotion gate.",
+  "manifest_sha256": "68e4001ec3ac7e107e078ab3085ae9bf044bcdae762452fddf4f1baa9ff8d58c",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "4b7a09c1f5717ca0c9277a5e27d678fe9154ea0f",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v151"
+    },
+    "stamped_at": "2026-08-09T06:00:48.203901+00:00"
+  }
+}
