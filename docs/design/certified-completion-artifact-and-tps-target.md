@@ -177,15 +177,66 @@ Production domains for E1 are exposed via
 `slm_training.dsl.grammar.fastpath.static_control_domain`. Warm hard-prefix
 ~89.8× is **`request_local_memo_reuse`** only — never AOT cold.
 
+## PCT-008: fixture-scale artifact load/check overhead (measured)
+
+[`pct008-artifact-cold-warm-results.json`](pct008-artifact-cold-warm-results.json)
+— `slm_training.harnesses.experiments.pct008_artifact_cold_warm`, run via
+`python -m scripts.run_pct008_artifact_cold_warm --mode fixture`. This is the
+preregistered performance run the "Remaining work" bullet below asked for,
+scoped to the artifact seam only (no model is loaded): `claim_class="fixture"`,
+`evidence: fixture-only`. **No production-speedup or model-quality claim is
+made** — see the JSON's own `scope_disclaimer`.
+
+Four fresh-subprocess cold arms plus one in-process warm arm, gated on exact
+completion-domain parity against the live Lark oracle at a fixed corpus prefix
+(`root = TextContent(":slot_0")\n`) *before* any timing was interpreted —
+parity held (`domain_parity.equal: true`) on every run, and the campaign is
+wired to abort before any trial if it ever does not. 3 cold trials per arm, 20
+repeated warm queries, `n=3` sample sizes reported honestly as fixture-scale
+(not a production-grade sample count).
+
+Median per-phase duration (ms), complete trials only, host in the JSON's
+`environment` block:
+
+| Arm | `tokenizer_pack_construction` | `artifact_step` | `first_domain_query` |
+| --- | --- | --- | --- |
+| `no_artifact` (live construction, no artifact touched) | 1.93 | 0.04 | 143.29 |
+| `certified_direct` (`load_checked_completion_artifact` called directly) | 1.93 | 82.54 | 127.13 |
+| `provider_mediated` (real production entry point) | 1.92 | 152.73 | 68.66 |
+| `deliberate_miss` (nonexistent artifact path, safe fallback) | 1.85 | 57.60 | 84.54 |
+
+The artifact load/check overhead is visible exactly where the AC asked for
+it: `artifact_step` for `no_artifact` is noise-floor (~0.04ms — nothing is
+touched), while every arm that verifies the static artifact (full sha256 over
+the artifact bytes, grammar file, and control tensors) pays 57–153ms for it.
+`deliberate_miss` proves the fail-closed contract holds under real conditions:
+`StaticCompletionArtifactProvider.try_load` returns `(None, reason)` — it
+never raises — and the caller's fallback to exact live construction is the
+*same* oracle path `no_artifact` exercises directly.
+
+One honest caveat this run surfaced, not hidden: `first_domain_query` always
+goes through the shared candidate-construction path (`production_domain_snapshot`
+for the two provider-backed arms, `oracle_lark_domain_snapshot` for the
+oracle/fallback arms), and `production_domain_snapshot`'s default
+`require_artifact=True` independently re-certifies the artifact *again* inside
+that call — so `certified_direct`'s and `provider_mediated`'s `artifact_step`
+and `first_domain_query` numbers both partly reflect certification cost, and
+are not cleanly additive into one "total artifact overhead" figure. Whole
+fresh-process `total_ms` (500–700ms across every arm) is dominated by Python
+interpreter startup and package import, not by the artifact seam — it is
+recorded in the JSON but is not the informative comparison here; the phase
+deltas are.
+
 ## Remaining work
 
 - Add an explicit target-profile registry for named CPU/GPU serving classes;
   current unidentified rates remain visibly labeled assumptions.
 - Tag future performance evidence `single_stream` or `aggregate` at its writer
   so gap analysis becomes comparable.
-- Measure artifact load and checker overhead in a preregistered performance run
-  before claiming a speedup (E3). This change proves reuse and authority parity,
-  not a whole-model latency win.
+- ~~Measure artifact load and checker overhead in a preregistered performance
+  run before claiming a speedup (E3).~~ Done at fixture scale — see PCT-008
+  above. A whole-model latency claim (with a real checkpoint, not this fixture
+  pass) remains open.
 - Consume the certified control table directly only after a separately checked
   parser adapter proves identical accept/reduce behavior **and** E1 stays green
   (executable static control successor — not a rebrand of today's loader).

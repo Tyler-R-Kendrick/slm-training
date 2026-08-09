@@ -291,7 +291,7 @@
       ]
     },
     "data.corpus_certification": {
-      "version": "v2",
+      "version": "v3",
       "kind": "data_builder",
       "paths": [
         "src/slm_training/data/verify/",
@@ -305,6 +305,11 @@
         "tests/test_dsl/test_grammar_backends.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-09",
+          "note": "VCE-008/SLM-463: add a new --mode contrast-audit to scripts/audit_data_corpora.py (contrast_corpus_leakage_report and its _contrast_* helpers) -- a read-only leakage/dedup/topology/OOD-split audit over the immutable openui_hard_valid_v1 semantic-contrast corpus. Groups by source_program_id lineage before checking cross-split leakage; keys exact/alpha-equivalent duplicate detection on semantic_plan.canonicalize.plan_factor_fingerprints' alpha-rename-invariant 'exact' fingerprint (so renamed symbols/roles cannot bypass dedup); derives frozen unseen_topology/unseen_component_combination/unseen_source_family/renamed_symbol OOD slices from the same fingerprints plus observed binding_swap_symbol* transform_ids. Reads the corpus only through DataStore.verify('eval', ...) (hash-checked) and never writes into the dataset directory. Extends the pre-registered data_corpus_audit owner per ownership_map.json's VCE-008 downstream_extension_map row (new_owner_justified: false) rather than creating a new tool."
+        },
         {
           "version": "v2",
           "date": "2026-08-03",
@@ -1215,6 +1220,11 @@
       "history": [
         {
           "version": "v22",
+          "date": "2026-08-09",
+          "note": "no-bump: PCT-008 (SLM-464) appended a measured-results section to docs/design/certified-completion-artifact-and-tps-target.md reporting the new fixture-scale artifact load/check overhead campaign (owned by the harness.experiments component, pct008_artifact_cold_warm.py). Documentation only -- no dsl.completion_kernel/completion_artifact/static_control_domain code changed, no new authority claim, closes that doc's own 'measure artifact load and checker overhead' remaining-work item at fixture scale."
+        },
+        {
+          "version": "v22",
           "date": "2026-08-08",
           "note": "PCT-005 (SLM-451): add tests/test_dsl/test_completion_artifact_provider_parity.py -- a differential/tamper matrix proving StaticCompletionArtifactProvider.load_checked is byte/digest/decision-identical to the direct load_checked_completion_artifact path (manifest, direct_map, digest, full StaticLalrAdapter equality, every-prefix accepts() parity), that checkpoint artifact-binding and the exclusion of dynamic runtime/scope facts from the provider payload are unaffected, and that every corruption class (byte-flipped artifact, stale grammar, unsupported manifest/metadata schema, tokenizer row shape abuse, tampered rule_origins/rule_lengths/state_min_terminals) fails closed identically through the provider seam, never returning a partial/degraded CompletionArtifact and always leaving the exact live-construction fallback available."
         },
@@ -1856,14 +1866,20 @@
       ]
     },
     "dsl.symbolic_surface": {
-      "version": "v6",
+      "version": "v7",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/language_contract.py",
         "src/slm_training/dsl/lang_core.py",
-        "tests/test_dsl/test_language_contract.py"
+        "tests/test_dsl/test_language_contract.py",
+        "tests/test_dsl/test_lang_core_node_engine_hint.py"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-08-09",
+          "note": "no-bump-behavior: diagnostics only. An OpenUI bridge failure on a Node outside the bridge's declared engines.node range now names the version mismatch instead of surfacing only whatever the dependency graph breaks on first -- on Node 18 that is an ERR_REQUIRE_ESM deep inside a transitive package, which reads as a packaging bug rather than the version mismatch it is, and cost debugging time twice. The hint degrades to silence when package.json or `node --version` cannot be read, so it can never mask the real bridge error."
+        },
         {
           "version": "v6",
           "date": "2026-08-03",
@@ -2806,7 +2822,7 @@
       ]
     },
     "governance.ownership_map": {
-      "version": "v7",
+      "version": "v8",
       "kind": "gate",
       "paths": [
         "src/slm_training/resources/ownership_map.json",
@@ -2818,6 +2834,26 @@
         "tests/test_data/test_synthesis_contract_versions.py"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-08-09",
+          "note": "SIE-007/SLM-473: register ComputeStateFeaturesV1 (harnesses/experiments/compute_state_controller.py, COMPUTE_STATE_FEATURES_SCHEMA) in SERIALIZED_CONTRACTS so the SGS-010 static check certifies that its from_dict reader consults its own version symbol and raises on mismatch, rather than coercing a foreign payload."
+        },
+        {
+          "version": "v7",
+          "date": "2026-08-09",
+          "note": "no-bump: SLM-463 (VCE-008) adds 'contrast_corpus_leakage_report' to the existing 'data_corpus_audit' subsystem's owner_symbols (scripts/audit_data_corpora.py already owns it per the pre-registered downstream_extension_map row for VCE-008, new_owner_justified: false) -- no new subsystem, no ownership-map structural change, just recording the new public symbol on its existing declared owner_module."
+        },
+        {
+          "version": "v7",
+          "date": "2026-08-09",
+          "note": "no-bump: SLM-466 (SRP-007) registers a new 'symbolic_expr_report' subsystem (src/slm_training/dsl/symbolic_expr_report.py: ExpressionEvidenceV1/ParetoFrontV1/SplitEvidenceV1/build_evidence_record/evidence_integrity_ok/front_integrity_ok/pareto_front); mirrors the row into repository-ownership-map.md, including the documented divergence from the pre-registered downstream_extension_map row for SRP-007 (predicted new_owner_justified: false, 'Reporting layer over SRP-003/004/005' -- the real dataclasses are not literally defined in any sibling file, so per this map's own sibling-file rule it is registered as its own subsystem instead, same precedent as SGS-008/SRP-004/SRP-005); the new source/test files are not yet tracked by any versions.json component (consistent with the SRP-002/003/004/005 sibling-file precedent), so this entry only covers the ownership-map doc update."
+        },
+        {
+          "version": "v7",
+          "date": "2026-08-08",
+          "note": "no-bump: SLM-458 (VCE-005) adds select_shuffled_oracle/build_baseline_intervention to the existing 'plan_oracle_substitutor' owner's owner_symbols and extends PlanSource with 'destructive'/'random' (per the pre-registered downstream_extension_map row for VCE-005, new_owner_justified: false, 'Extends the VCE-004 intervention harness with control arms'); mirrors the row into repository-ownership-map.md. Behavior-additive only: existing PlanSource values, PlanInterventionRecordV1's schema, and contamination_banner's gate ({'gold','oracle_override'}) are unchanged, so destructive/random/shuffled(predicted-sourced) arms are never bannered while gold-sourced shuffled arms still are, via the same existing gate."
+        },
         {
           "version": "v7",
           "date": "2026-08-08",
@@ -4622,7 +4658,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v150",
+      "version": "v152",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
@@ -4635,9 +4671,28 @@
         "src/slm_training/harnesses/rl/trajectory.py",
         "tests/test_harnesses/rl/test_trajectory.py",
         "src/slm_training/harnesses/experiments/exp_sr_catalogue.py",
-        "tests/test_harnesses/experiments/test_exp_sr_catalogue.py"
+        "tests/test_harnesses/experiments/test_exp_sr_catalogue.py",
+        "src/slm_training/harnesses/experiments/pct008_artifact_cold_warm.py",
+        "tests/test_harnesses/experiments/test_pct008_artifact_cold_warm.py",
+        "scripts/run_pct008_artifact_cold_warm.py",
+        "tests/test_harnesses/experiments/test_compute_state_controller.py"
       ],
       "history": [
+        {
+          "version": "v152",
+          "date": "2026-08-09",
+          "note": "SIE-007/SLM-473 review fix (PR #1537): replay_rule returned regret 0.0 when every record abstained (the vacuous 1 - 0/0), so a rule that never decides would have outranked every rule that actually committed under any ranking by regret alone. Total abstention now takes maximal regret 1.0; the abstention count is still reported beside it, since regret and coverage are both needed to read a replay result."
+        },
+        {
+          "version": "v151",
+          "date": "2026-08-09",
+          "note": "SIE-007/SLM-473: add compute_state_controller.py -- ComputeStateFeaturesV1 (versioned, total decision-state feature vector read out of DecodeStatsRecordV1, where an absent measurement is None/UNKNOWN rather than 0.0 so a scoring rule cannot read 'unmeasured' as 'measured empty') plus a replay-only value-of-compute controller. The rule language reuses the existing symbolic-regression IR (dsl/symbolic_expr_ir) unchanged rather than forking a second expression language: its token grammar admits only parens, allowlisted operators and v<i>/c<i> references, so no eval/import/call/reflection or free literal is reachable from a rule, and depth/node budgets are tightened to 8/48 and enforced at construction. Comparisons/booleans are expressed as score differences plus an abstain margin. An exact singleton (complete legal domain of size 1) bypasses the controller with expressions_evaluated == 0 per I2; an incomplete domain of apparent size 1 does not. A rule referencing an UNKNOWN feature abstains instead of guessing, controller_can_change_legality() is a hard False, and replay scores regret against an oracle action derived only from observed record counters, crediting no agreement for abstention. Nothing here is registered into a serving path -- no controller is enabled in production by this issue."
+        },
+        {
+          "version": "v151",
+          "date": "2026-08-09",
+          "note": "PCT-008/SLM-464: add pct008_artifact_cold_warm.py, the first governed fixture-scale evidence package for the generalized static-artifact seam (extends PCT-003's cold_warm_bench.py and the PCT-005/PCT-006 completion-artifact seam rather than reimplementing either). Four fresh-subprocess cold arms (no_artifact, certified_direct, provider_mediated, deliberate_miss) plus an in-process warm_repeated arm, gated on exact completion-domain parity against the live Lark oracle before any timing is interpreted -- the campaign aborts before any trial if parity ever fails. claim_class=\"fixture\": no production-speedup or model-quality claim. Real fixture-scale evidence run via scripts/run_pct008_artifact_cold_warm.py, written to docs/design/pct008-artifact-cold-warm-results.json and docs/design/certified-completion-artifact-and-tps-target.md, closing that doc's \"measure artifact load and checker overhead\" remaining-work item at fixture scale (a whole-model latency claim remains open)."
+        },
         {
           "version": "v150",
           "date": "2026-08-08",
@@ -8567,6 +8622,116 @@
           "version": "v3",
           "date": "2026-08-09",
           "note": "no-bump: record scheduled loop continuous-openui-scheduled-2805 continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c39's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-09",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-soy2gk continuous-loop-20260809-continuous-openui-schedu-b47915d7-c10's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-09",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-soy2gk continuous-loop-20260809-continuous-openui-schedu-b47915d7-c9's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-09",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-soy2gk continuous-loop-20260809-continuous-openui-schedu-b47915d7-c8's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-09",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-soy2gk continuous-loop-20260809-continuous-openui-schedu-b47915d7-c7's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-09",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-soy2gk continuous-loop-20260809-continuous-openui-schedu-b47915d7-c6's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-09",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-soy2gk continuous-loop-20260809-continuous-openui-schedu-b47915d7-c5's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-09",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-soy2gk continuous-loop-20260809-continuous-openui-schedu-b47915d7-c4's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-09",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-soy2gk continuous-loop-20260809-continuous-openui-schedu-b47915d7-c3's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-09",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-soy2gk continuous-loop-20260809-continuous-openui-schedu-b47915d7-c2's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-09",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-soy2gk continuous-loop-20260809-continuous-openui-schedu-b47915d7-c1's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-09",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-t4qk8h continuous-loop-20260809-continuous-openui-schedu-1b7ec4eb-c3's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-09",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-t4qk8h continuous-loop-20260809-continuous-openui-schedu-1b7ec4eb-c2's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-09",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-t4qk8h continuous-loop-20260809-continuous-openui-schedu-1b7ec4eb-c1's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-09",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-5vmmio continuous-loop-20260809-continuous-openui-schedu-4f947861-c4's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-09",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-5vmmio continuous-loop-20260809-continuous-openui-schedu-4f947861-c3's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-09",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-5vmmio continuous-loop-20260809-continuous-openui-schedu-4f947861-c1's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-09",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-5b5605 continuous-loop-20260809-continuous-openui-schedu-0f17ac27-c8's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-09",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-5b5605 continuous-loop-20260809-continuous-openui-schedu-0f17ac27-c7's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-09",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-5b5605 continuous-loop-20260809-continuous-openui-schedu-0f17ac27-c5's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-09",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-5b5605 continuous-loop-20260809-continuous-openui-schedu-0f17ac27-c4's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-09",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-5b5605 continuous-loop-20260809-continuous-openui-schedu-0f17ac27-c2's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-09",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-5b5605 continuous-loop-20260809-continuous-openui-schedu-0f17ac27-c1's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
         },
         {
           "version": "v3",
@@ -16255,6 +16420,11 @@
         "tests/test_data/test_progspec/test_semantic_plan.py"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-08",
+          "note": "no-bump: SLM-458 (VCE-005) adds select_shuffled_oracle/build_baseline_intervention re-exports to data/semantic_plan/__init__.py (the underlying symbols are owned by governance.ownership_map's 'plan_oracle_substitutor' row, not this component); import-surface change only, no behavior here."
+        },
         {
           "version": "v1",
           "date": "2026-08-08",

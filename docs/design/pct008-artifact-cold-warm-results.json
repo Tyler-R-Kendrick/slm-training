@@ -1,0 +1,566 @@
+{
+  "kind": "pct008_artifact_cold_warm/v1",
+  "claim_class": "fixture",
+  "environment": {
+    "platform": "Linux-6.18.5-fc-v20-x86_64-with-glibc2.39",
+    "machine": "x86_64",
+    "python": "3.12.3"
+  },
+  "recipe": {
+    "command": [
+      "python",
+      "-m",
+      "scripts.run_pct008_artifact_cold_warm",
+      "--mode",
+      "fixture",
+      "--cold-trials-per-arm",
+      "3",
+      "--warm-trials",
+      "20"
+    ],
+    "docs_path": "docs/design/pct008-artifact-cold-warm-results.json"
+  },
+  "domain_parity": {
+    "equal": true,
+    "reasons": [],
+    "oracle_candidate_count": 1,
+    "production_candidate_count": 1
+  },
+  "summary": {
+    "excluded_incomplete": 0,
+    "arms": {
+      "cold:aff522ce1af9": {
+        "trial_kind": "cold",
+        "config_hash": "aff522ce1af94c49d731f9e40499c4afaa47b29f85cbc00557025699a039fcf2",
+        "n": 3,
+        "p50_ms": 547.891,
+        "p95_ms": 571.271,
+        "arm": "no_artifact"
+      },
+      "cold:264462ee015e": {
+        "trial_kind": "cold",
+        "config_hash": "264462ee015ed91445c6cd2d384c4c53a4a62a60421cf4876038f9cca6f30342",
+        "n": 3,
+        "p50_ms": 640.063,
+        "p95_ms": 661.41,
+        "arm": "certified_direct"
+      },
+      "cold:d3f9325ada0a": {
+        "trial_kind": "cold",
+        "config_hash": "d3f9325ada0a720fd847c319b92fcacf251099c1d904eff864b64593e2194c46",
+        "n": 3,
+        "p50_ms": 627.24,
+        "p95_ms": 633.682,
+        "arm": "provider_mediated"
+      },
+      "cold:f42649804df0": {
+        "trial_kind": "cold",
+        "config_hash": "f42649804df019c0c5c4f910731f0c8978b9665a27742641d0987578a792deed",
+        "n": 3,
+        "p50_ms": 572.148,
+        "p95_ms": 607.375,
+        "arm": "deliberate_miss"
+      },
+      "warm:752f5961d471": {
+        "trial_kind": "warm",
+        "config_hash": "752f5961d4715be93a94d75fda8a25526c32fca70d6dece64003330f031747a1",
+        "n": 1,
+        "p50_ms": 447.267,
+        "p95_ms": 447.267,
+        "arm": "warm_repeated"
+      }
+    }
+  },
+  "phase_breakdown_by_arm": {
+    "no_artifact": {
+      "tokenizer_pack_construction": 1.917,
+      "artifact_step": 0.033,
+      "first_domain_query": 134.491
+    },
+    "certified_direct": {
+      "tokenizer_pack_construction": 1.89,
+      "artifact_step": 89.893,
+      "first_domain_query": 136.405
+    },
+    "provider_mediated": {
+      "tokenizer_pack_construction": 1.905,
+      "artifact_step": 147.167,
+      "first_domain_query": 64.778
+    },
+    "deliberate_miss": {
+      "tokenizer_pack_construction": 1.885,
+      "artifact_step": 63.908,
+      "first_domain_query": 91.066
+    }
+  },
+  "trials": [
+    {
+      "schema_version": "cold_warm_bench_trial/v1",
+      "trial_kind": "cold",
+      "measurement_stage": "process_cold",
+      "completeness": "complete",
+      "config_hash": "aff522ce1af94c49d731f9e40499c4afaa47b29f85cbc00557025699a039fcf2",
+      "hardware_identity": {
+        "hostname": "vm",
+        "platform": "Linux-6.18.5-fc-v20-x86_64-with-glibc2.39",
+        "python_version": "3.12.3",
+        "cpu_count": 4,
+        "machine": "x86_64"
+      },
+      "phases": [
+        {
+          "phase": "process_launch",
+          "duration_ms": null
+        },
+        {
+          "phase": "tokenizer_pack_construction",
+          "duration_ms": 2.2004249999554304
+        },
+        {
+          "phase": "artifact_step",
+          "duration_ms": 0.05236900005911593
+        },
+        {
+          "phase": "first_domain_query",
+          "duration_ms": 134.49114099989856
+        }
+      ],
+      "total_ms": 547.7380400000129,
+      "peak_rss_kb": 380968,
+      "exit_code": 0,
+      "trial_hash": "404ee8adc8ca9c815ee0e79746b0e3cf838c5a84392cea9ce93ae65eada97edf"
+    },
+    {
+      "schema_version": "cold_warm_bench_trial/v1",
+      "trial_kind": "cold",
+      "measurement_stage": "process_cold",
+      "completeness": "complete",
+      "config_hash": "aff522ce1af94c49d731f9e40499c4afaa47b29f85cbc00557025699a039fcf2",
+      "hardware_identity": {
+        "hostname": "vm",
+        "platform": "Linux-6.18.5-fc-v20-x86_64-with-glibc2.39",
+        "python_version": "3.12.3",
+        "cpu_count": 4,
+        "machine": "x86_64"
+      },
+      "phases": [
+        {
+          "phase": "process_launch",
+          "duration_ms": null
+        },
+        {
+          "phase": "tokenizer_pack_construction",
+          "duration_ms": 1.9169069998952182
+        },
+        {
+          "phase": "artifact_step",
+          "duration_ms": 0.03341800015732588
+        },
+        {
+          "phase": "first_domain_query",
+          "duration_ms": 133.8061269998434
+        }
+      ],
+      "total_ms": 547.891429999936,
+      "peak_rss_kb": 404948,
+      "exit_code": 0,
+      "trial_hash": "4f88c42b3ca2f32c4c7f47f1d67d947d161972610f4e27663131fd8312b388a2"
+    },
+    {
+      "schema_version": "cold_warm_bench_trial/v1",
+      "trial_kind": "cold",
+      "measurement_stage": "process_cold",
+      "completeness": "complete",
+      "config_hash": "aff522ce1af94c49d731f9e40499c4afaa47b29f85cbc00557025699a039fcf2",
+      "hardware_identity": {
+        "hostname": "vm",
+        "platform": "Linux-6.18.5-fc-v20-x86_64-with-glibc2.39",
+        "python_version": "3.12.3",
+        "cpu_count": 4,
+        "machine": "x86_64"
+      },
+      "phases": [
+        {
+          "phase": "process_launch",
+          "duration_ms": null
+        },
+        {
+          "phase": "tokenizer_pack_construction",
+          "duration_ms": 1.8565519999356184
+        },
+        {
+          "phase": "artifact_step",
+          "duration_ms": 0.031691999993199715
+        },
+        {
+          "phase": "first_domain_query",
+          "duration_ms": 141.33065500004705
+        }
+      ],
+      "total_ms": 571.2709009999344,
+      "peak_rss_kb": 404948,
+      "exit_code": 0,
+      "trial_hash": "54777cb35118430dc64ba88c1e7ad053d9e062ae4bbb9ec99dbfbd232b93ad62"
+    },
+    {
+      "schema_version": "cold_warm_bench_trial/v1",
+      "trial_kind": "cold",
+      "measurement_stage": "process_cold",
+      "completeness": "complete",
+      "config_hash": "264462ee015ed91445c6cd2d384c4c53a4a62a60421cf4876038f9cca6f30342",
+      "hardware_identity": {
+        "hostname": "vm",
+        "platform": "Linux-6.18.5-fc-v20-x86_64-with-glibc2.39",
+        "python_version": "3.12.3",
+        "cpu_count": 4,
+        "machine": "x86_64"
+      },
+      "phases": [
+        {
+          "phase": "process_launch",
+          "duration_ms": null
+        },
+        {
+          "phase": "tokenizer_pack_construction",
+          "duration_ms": 1.8903590000718395
+        },
+        {
+          "phase": "artifact_step",
+          "duration_ms": 83.84492899995166
+        },
+        {
+          "phase": "first_domain_query",
+          "duration_ms": 136.4045759999044
+        }
+      ],
+      "total_ms": 640.0626119998378,
+      "peak_rss_kb": 404948,
+      "exit_code": 0,
+      "trial_hash": "a9447c27ff180ed02006016e65e8e2265057889fb63c520b146e48f2a15c11ff"
+    },
+    {
+      "schema_version": "cold_warm_bench_trial/v1",
+      "trial_kind": "cold",
+      "measurement_stage": "process_cold",
+      "completeness": "complete",
+      "config_hash": "264462ee015ed91445c6cd2d384c4c53a4a62a60421cf4876038f9cca6f30342",
+      "hardware_identity": {
+        "hostname": "vm",
+        "platform": "Linux-6.18.5-fc-v20-x86_64-with-glibc2.39",
+        "python_version": "3.12.3",
+        "cpu_count": 4,
+        "machine": "x86_64"
+      },
+      "phases": [
+        {
+          "phase": "process_launch",
+          "duration_ms": null
+        },
+        {
+          "phase": "tokenizer_pack_construction",
+          "duration_ms": 2.0855269999628945
+        },
+        {
+          "phase": "artifact_step",
+          "duration_ms": 94.53560499991909
+        },
+        {
+          "phase": "first_domain_query",
+          "duration_ms": 137.15195899999344
+        }
+      ],
+      "total_ms": 661.4104430000225,
+      "peak_rss_kb": 404948,
+      "exit_code": 0,
+      "trial_hash": "6f3365d6ecd81d46fd48c14aec6a2596cd4e427af4f0bd40dcac805143667693"
+    },
+    {
+      "schema_version": "cold_warm_bench_trial/v1",
+      "trial_kind": "cold",
+      "measurement_stage": "process_cold",
+      "completeness": "complete",
+      "config_hash": "264462ee015ed91445c6cd2d384c4c53a4a62a60421cf4876038f9cca6f30342",
+      "hardware_identity": {
+        "hostname": "vm",
+        "platform": "Linux-6.18.5-fc-v20-x86_64-with-glibc2.39",
+        "python_version": "3.12.3",
+        "cpu_count": 4,
+        "machine": "x86_64"
+      },
+      "phases": [
+        {
+          "phase": "process_launch",
+          "duration_ms": null
+        },
+        {
+          "phase": "tokenizer_pack_construction",
+          "duration_ms": 1.808433999940462
+        },
+        {
+          "phase": "artifact_step",
+          "duration_ms": 89.89330500003234
+        },
+        {
+          "phase": "first_domain_query",
+          "duration_ms": 130.72566699997878
+        }
+      ],
+      "total_ms": 637.9270209999959,
+      "peak_rss_kb": 404948,
+      "exit_code": 0,
+      "trial_hash": "2c1c07b83c654e4f5cf3545604feabecd0c2f24629d503c08e26ff5a5344bc87"
+    },
+    {
+      "schema_version": "cold_warm_bench_trial/v1",
+      "trial_kind": "cold",
+      "measurement_stage": "process_cold",
+      "completeness": "complete",
+      "config_hash": "d3f9325ada0a720fd847c319b92fcacf251099c1d904eff864b64593e2194c46",
+      "hardware_identity": {
+        "hostname": "vm",
+        "platform": "Linux-6.18.5-fc-v20-x86_64-with-glibc2.39",
+        "python_version": "3.12.3",
+        "cpu_count": 4,
+        "machine": "x86_64"
+      },
+      "phases": [
+        {
+          "phase": "process_launch",
+          "duration_ms": null
+        },
+        {
+          "phase": "tokenizer_pack_construction",
+          "duration_ms": 1.8506439998873248
+        },
+        {
+          "phase": "artifact_step",
+          "duration_ms": 147.1666920001553
+        },
+        {
+          "phase": "first_domain_query",
+          "duration_ms": 65.9703039998476
+        }
+      ],
+      "total_ms": 627.2404979999919,
+      "peak_rss_kb": 404948,
+      "exit_code": 0,
+      "trial_hash": "4c7029df30c7ab5f35aac2fb80a4ae89635f178671f5c158c11ef9c9622baa9c"
+    },
+    {
+      "schema_version": "cold_warm_bench_trial/v1",
+      "trial_kind": "cold",
+      "measurement_stage": "process_cold",
+      "completeness": "complete",
+      "config_hash": "d3f9325ada0a720fd847c319b92fcacf251099c1d904eff864b64593e2194c46",
+      "hardware_identity": {
+        "hostname": "vm",
+        "platform": "Linux-6.18.5-fc-v20-x86_64-with-glibc2.39",
+        "python_version": "3.12.3",
+        "cpu_count": 4,
+        "machine": "x86_64"
+      },
+      "phases": [
+        {
+          "phase": "process_launch",
+          "duration_ms": null
+        },
+        {
+          "phase": "tokenizer_pack_construction",
+          "duration_ms": 2.244961000087642
+        },
+        {
+          "phase": "artifact_step",
+          "duration_ms": 147.02632800003812
+        },
+        {
+          "phase": "first_domain_query",
+          "duration_ms": 63.9473609999186
+        }
+      ],
+      "total_ms": 621.7338050000762,
+      "peak_rss_kb": 404948,
+      "exit_code": 0,
+      "trial_hash": "0672cc2e17da6146afc33bc2ddc20728010e9f3e4a6e60114a256504f61d9fa0"
+    },
+    {
+      "schema_version": "cold_warm_bench_trial/v1",
+      "trial_kind": "cold",
+      "measurement_stage": "process_cold",
+      "completeness": "complete",
+      "config_hash": "d3f9325ada0a720fd847c319b92fcacf251099c1d904eff864b64593e2194c46",
+      "hardware_identity": {
+        "hostname": "vm",
+        "platform": "Linux-6.18.5-fc-v20-x86_64-with-glibc2.39",
+        "python_version": "3.12.3",
+        "cpu_count": 4,
+        "machine": "x86_64"
+      },
+      "phases": [
+        {
+          "phase": "process_launch",
+          "duration_ms": null
+        },
+        {
+          "phase": "tokenizer_pack_construction",
+          "duration_ms": 1.9054690001212293
+        },
+        {
+          "phase": "artifact_step",
+          "duration_ms": 152.74656799988406
+        },
+        {
+          "phase": "first_domain_query",
+          "duration_ms": 64.7782470000493
+        }
+      ],
+      "total_ms": 633.6816069999713,
+      "peak_rss_kb": 404948,
+      "exit_code": 0,
+      "trial_hash": "f84c6d8b4e361c620e09efb0d142c236ff587cda03d67a96f1d686b3a2f6c0a4"
+    },
+    {
+      "schema_version": "cold_warm_bench_trial/v1",
+      "trial_kind": "cold",
+      "measurement_stage": "process_cold",
+      "completeness": "complete",
+      "config_hash": "f42649804df019c0c5c4f910731f0c8978b9665a27742641d0987578a792deed",
+      "hardware_identity": {
+        "hostname": "vm",
+        "platform": "Linux-6.18.5-fc-v20-x86_64-with-glibc2.39",
+        "python_version": "3.12.3",
+        "cpu_count": 4,
+        "machine": "x86_64"
+      },
+      "phases": [
+        {
+          "phase": "process_launch",
+          "duration_ms": null
+        },
+        {
+          "phase": "tokenizer_pack_construction",
+          "duration_ms": 1.9578789999741275
+        },
+        {
+          "phase": "artifact_step",
+          "duration_ms": 92.60025899993707
+        },
+        {
+          "phase": "first_domain_query",
+          "duration_ms": 97.04337300013322
+        }
+      ],
+      "total_ms": 607.3749960000896,
+      "peak_rss_kb": 404948,
+      "exit_code": 0,
+      "trial_hash": "38e2b831989fed7beb3c3aebc4c153f89de1f8a0bc48f5b537e3acda2a48a935"
+    },
+    {
+      "schema_version": "cold_warm_bench_trial/v1",
+      "trial_kind": "cold",
+      "measurement_stage": "process_cold",
+      "completeness": "complete",
+      "config_hash": "f42649804df019c0c5c4f910731f0c8978b9665a27742641d0987578a792deed",
+      "hardware_identity": {
+        "hostname": "vm",
+        "platform": "Linux-6.18.5-fc-v20-x86_64-with-glibc2.39",
+        "python_version": "3.12.3",
+        "cpu_count": 4,
+        "machine": "x86_64"
+      },
+      "phases": [
+        {
+          "phase": "process_launch",
+          "duration_ms": null
+        },
+        {
+          "phase": "tokenizer_pack_construction",
+          "duration_ms": 1.8845550000605726
+        },
+        {
+          "phase": "artifact_step",
+          "duration_ms": 63.90786599990861
+        },
+        {
+          "phase": "first_domain_query",
+          "duration_ms": 91.06609200011917
+        }
+      ],
+      "total_ms": 572.1484690000125,
+      "peak_rss_kb": 404948,
+      "exit_code": 0,
+      "trial_hash": "a0e3791eae20770cf89fb96cd43db1b1f89497beccedc8c78e32697d06a9c852"
+    },
+    {
+      "schema_version": "cold_warm_bench_trial/v1",
+      "trial_kind": "cold",
+      "measurement_stage": "process_cold",
+      "completeness": "complete",
+      "config_hash": "f42649804df019c0c5c4f910731f0c8978b9665a27742641d0987578a792deed",
+      "hardware_identity": {
+        "hostname": "vm",
+        "platform": "Linux-6.18.5-fc-v20-x86_64-with-glibc2.39",
+        "python_version": "3.12.3",
+        "cpu_count": 4,
+        "machine": "x86_64"
+      },
+      "phases": [
+        {
+          "phase": "process_launch",
+          "duration_ms": null
+        },
+        {
+          "phase": "tokenizer_pack_construction",
+          "duration_ms": 1.80594900007236
+        },
+        {
+          "phase": "artifact_step",
+          "duration_ms": 55.38425500003541
+        },
+        {
+          "phase": "first_domain_query",
+          "duration_ms": 79.23835099995813
+        }
+      ],
+      "total_ms": 544.7848400001476,
+      "peak_rss_kb": 404948,
+      "exit_code": 0,
+      "trial_hash": "1043268bec73ffe7ff5472ff0b45d07bc058ed698b219ecb251b77c921b2c2fb"
+    },
+    {
+      "schema_version": "cold_warm_bench_trial/v1",
+      "trial_kind": "warm",
+      "measurement_stage": "steady_state",
+      "completeness": "complete",
+      "config_hash": "752f5961d4715be93a94d75fda8a25526c32fca70d6dece64003330f031747a1",
+      "hardware_identity": {
+        "hostname": "vm",
+        "platform": "Linux-6.18.5-fc-v20-x86_64-with-glibc2.39",
+        "python_version": "3.12.3",
+        "cpu_count": 4,
+        "machine": "x86_64"
+      },
+      "phases": [
+        {
+          "phase": "repeated_domain_queries",
+          "duration_ms": null
+        }
+      ],
+      "total_ms": 447.26741099998435,
+      "peak_rss_kb": 256,
+      "exit_code": 0,
+      "trial_hash": "6eb247c570cf0b47abfd48ae8cb4f6a4eefeb5e19ba123fc537b85964c4da184"
+    }
+  ],
+  "noise_floor_ms": 5.0,
+  "scope_disclaimer": "Artifact-seam phases only (process launch, tokenizer/pack construction, artifact step, first completion-domain query). No model is loaded; model init/first-forward and full first-verified-program latency are out of scope for this fixture pass. No production-speedup or model-quality claim is made.",
+  "manifest_sha256": "81fa2baa1f01a8e1c5b345c2ea9eefb5069080453d06dcd4ab6c79f7736493c9",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "0e466093177ff72cc77e64f9ea6cc898a0eb000a",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v151"
+    },
+    "stamped_at": "2026-08-09T04:20:34.729346+00:00"
+  }
+}
