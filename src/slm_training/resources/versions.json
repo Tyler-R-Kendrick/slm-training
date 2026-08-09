@@ -1215,6 +1215,11 @@
       "history": [
         {
           "version": "v22",
+          "date": "2026-08-09",
+          "note": "no-bump: PCT-008 (SLM-464) appended a measured-results section to docs/design/certified-completion-artifact-and-tps-target.md reporting the new fixture-scale artifact load/check overhead campaign (owned by the harness.experiments component, pct008_artifact_cold_warm.py). Documentation only -- no dsl.completion_kernel/completion_artifact/static_control_domain code changed, no new authority claim, closes that doc's own 'measure artifact load and checker overhead' remaining-work item at fixture scale."
+        },
+        {
+          "version": "v22",
           "date": "2026-08-08",
           "note": "PCT-005 (SLM-451): add tests/test_dsl/test_completion_artifact_provider_parity.py -- a differential/tamper matrix proving StaticCompletionArtifactProvider.load_checked is byte/digest/decision-identical to the direct load_checked_completion_artifact path (manifest, direct_map, digest, full StaticLalrAdapter equality, every-prefix accepts() parity), that checkpoint artifact-binding and the exclusion of dynamic runtime/scope facts from the provider payload are unaffected, and that every corruption class (byte-flipped artifact, stale grammar, unsupported manifest/metadata schema, tokenizer row shape abuse, tampered rule_origins/rule_lengths/state_min_terminals) fails closed identically through the provider seam, never returning a partial/degraded CompletionArtifact and always leaving the exact live-construction fallback available."
         },
@@ -4627,7 +4632,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v150",
+      "version": "v151",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
@@ -4640,9 +4645,17 @@
         "src/slm_training/harnesses/rl/trajectory.py",
         "tests/test_harnesses/rl/test_trajectory.py",
         "src/slm_training/harnesses/experiments/exp_sr_catalogue.py",
-        "tests/test_harnesses/experiments/test_exp_sr_catalogue.py"
+        "tests/test_harnesses/experiments/test_exp_sr_catalogue.py",
+        "src/slm_training/harnesses/experiments/pct008_artifact_cold_warm.py",
+        "tests/test_harnesses/experiments/test_pct008_artifact_cold_warm.py",
+        "scripts/run_pct008_artifact_cold_warm.py"
       ],
       "history": [
+        {
+          "version": "v151",
+          "date": "2026-08-09",
+          "note": "PCT-008/SLM-464: add pct008_artifact_cold_warm.py, the first governed fixture-scale evidence package for the generalized static-artifact seam (extends PCT-003's cold_warm_bench.py and the PCT-005/PCT-006 completion-artifact seam rather than reimplementing either). Four fresh-subprocess cold arms (no_artifact, certified_direct, provider_mediated, deliberate_miss) plus an in-process warm_repeated arm, gated on exact completion-domain parity against the live Lark oracle before any timing is interpreted -- the campaign aborts before any trial if parity ever fails. claim_class=\"fixture\": no production-speedup or model-quality claim. Real fixture-scale evidence run via scripts/run_pct008_artifact_cold_warm.py, written to docs/design/pct008-artifact-cold-warm-results.json and docs/design/certified-completion-artifact-and-tps-target.md, closing that doc's \"measure artifact load and checker overhead\" remaining-work item at fixture scale (a whole-model latency claim remains open)."
+        },
         {
           "version": "v150",
           "date": "2026-08-08",
