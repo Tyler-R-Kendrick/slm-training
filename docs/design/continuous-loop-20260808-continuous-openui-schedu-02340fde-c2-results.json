@@ -1,0 +1,34 @@
+{
+  "auto": true,
+  "campaign_id": "continuous-loop-20260808-continuous-openui-schedu-02340fde-c2",
+  "candidate_metrics": {
+    "binder_reference_f1": null,
+    "latency_ms_p50": null,
+    "meaningful_program_rate": null,
+    "parse_rate": null,
+    "structural_similarity": null
+  },
+  "control_metrics": {
+    "binder_reference_f1": null,
+    "latency_ms_p50": null,
+    "meaningful_program_rate": null,
+    "parse_rate": null,
+    "structural_similarity": null
+  },
+  "cycle_index": 2,
+  "cycle_intent": "screening",
+  "cycle_role": "screening",
+  "evidence_class": "fixture",
+  "honesty": "fixture_screening_only_not_ship",
+  "loop_id": "continuous-openui-scheduled-luccne",
+  "measurement_complete": false,
+  "positive": false,
+  "primary_metric": "smoke.structural_similarity",
+  "reasons": [
+    "measurement_incomplete:c20260808-continuous-openui-schedu-02340fde-c2-control:missing_scoreboard",
+    "measurement_incomplete:c20260808-continuous-openui-schedu-02340fde-c2-component-plan:missing_scoreboard",
+    "primary_metric_unavailable"
+  ],
+  "schema": "continuous_cycle_results/v1",
+  "stack_layer": false
+}
