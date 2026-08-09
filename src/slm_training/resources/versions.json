@@ -4579,7 +4579,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v148",
+      "version": "v150",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
@@ -4590,9 +4590,21 @@
         "scripts/run_scaling_ladder.py",
         "tests/test_harnesses/experiments/test_locked_manifest_digest_threading.py",
         "src/slm_training/harnesses/rl/trajectory.py",
-        "tests/test_harnesses/rl/test_trajectory.py"
+        "tests/test_harnesses/rl/test_trajectory.py",
+        "src/slm_training/harnesses/experiments/exp_sr_catalogue.py",
+        "tests/test_harnesses/experiments/test_exp_sr_catalogue.py"
       ],
       "history": [
+        {
+          "version": "v150",
+          "date": "2026-08-08",
+          "note": "SIE-001/SLM-467 review fixes (PR #1516): rollback gates for exp-sr-5/7/8/11/12 were vacuous (an inclusive ge/le pinned at the metric's own natural boundary matched every possible outcome, so validate_result_claim would reject every CampaignResultV1 for those families forever); added an explicit per-family kill_operator decoupled from primary_direction and fixed exp-sr-11's minimum_effect (0.0 promotion threshold required an exactly-zero gap). source_commit now falls back to a stable placeholder instead of the unvalidatable 'UNKNOWN' string when git metadata is unavailable, and conservatively marks source_dirty. Wall budgets now clamp to MAX_RUN_MINUTES instead of the looser 60-minute CampaignBudget schema ceiling. Adds a regression test proving every rollback gate is satisfiable both ways and strengthens the plan-only manifest test to bind the digest to the returned payload rather than two independently-built objects."
+        },
+        {
+          "version": "v149",
+          "date": "2026-08-08",
+          "note": "SIE-001/SLM-467: add exp_sr_catalogue.py, minting the stable EXP-SR-1..EXP-SR-12 experiment identities named in the repository roadmap under the existing ExperimentCampaignV1 contract (no parallel registry). Each of the twelve entries declares a primary metric, falsifier, matched-control axis, compute budget, evidence class, required artifact suites and a leakage control, and round-trips through the real pydantic contract so a malformed identity fails to construct. None use claim_class in {promotion_candidate, ship_gate}, so registering an identity here can never itself mutate product defaults or satisfy promotion; sibling SIE/RSP issues extend a family's manifest only when they have real evidence. Ships the registry plus plan-only manifest preview and CampaignStore duplicate-relock/idempotent-relock proofs, not any executed EXP-SR experiment -- that remains each sibling issue's own follow-on work."
+        },
         {
           "version": "v148",
           "date": "2026-08-08",
