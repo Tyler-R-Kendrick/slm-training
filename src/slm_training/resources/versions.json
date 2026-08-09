@@ -2961,6 +2961,11 @@
         {
           "version": "v195",
           "date": "2026-08-08",
+          "note": "no-bump: _git_add_and_commit_paths() drops the hardcoded -c user.email=autotrain@local -c user.name=autotrain override on the self-heal document-closeout commit so it inherits the session's real (verified) git identity instead of landing as GitHub-unverified; commit selection, staged paths, and gating logic are unchanged."
+        },
+        {
+          "version": "v195",
+          "date": "2026-08-08",
           "note": "no-bump: land the _git_commit_paths() committer-identity fix as a manual follow-up commit after an earlier commit attempt for the same change was interrupted by an unrelated pre-commit hook failure; behavior unchanged from the previously recorded note."
         },
         {
@@ -6163,6 +6168,11 @@
         {
           "version": "v1",
           "date": "2026-08-08",
+          "note": "no-bump: regenerate the committed gate artifact (gate_hash, stamped harness.experiments v148) so publish --check passes again after unrelated upstream drift (harness.experiments v147 -> v148); verdict stays inconclusive, thresholds and gate behavior unchanged."
+        },
+        {
+          "version": "v1",
+          "date": "2026-08-08",
           "note": "no-bump: regenerate the committed gate artifact (gate_hash, version_stamp.components.harness.experiments=v148) so publish --check passes again after unrelated upstream drift; verdict stays inconclusive, thresholds and gate behavior unchanged."
         },
         {
@@ -8734,6 +8744,31 @@
           "version": "v3",
           "date": "2026-08-08",
           "note": "no-bump: record scheduled loop continuous-openui-scheduled-0808b continuous-loop-20260808-continuous-openui-schedu-b09a9491-c1's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-0808z1 continuous-loop-20260808-continuous-openui-schedu-121086e4-c5's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-0808z1 continuous-loop-20260808-continuous-openui-schedu-121086e4-c4's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-0808z1 continuous-loop-20260808-continuous-openui-schedu-121086e4-c3's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-0808z1 continuous-loop-20260808-continuous-openui-schedu-121086e4-c2's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-08",
+          "note": "no-bump: record scheduled loop continuous-openui-scheduled-0808z1 continuous-loop-20260808-continuous-openui-schedu-121086e4-c1's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
         },
         {
           "version": "v3",
