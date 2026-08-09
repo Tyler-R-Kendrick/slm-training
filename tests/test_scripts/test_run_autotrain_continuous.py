@@ -941,6 +941,49 @@ def test_new_successor_arm_slug_mapping() -> None:
     )
 
 
+def test_model_lever_arm_slug_mapping() -> None:
+    """M-unit ranking-lever arms are visible to the slug classifier."""
+    assert (
+        _mod._arm_slug_from_knobs(
+            {
+                "solver_energy_loss_weight": 1.0,
+                "solver_energy_decode_weight": 1.0,
+                "structural_aux_head_profile": "solver-energy",
+                "compiler_decode_mode": "tree",
+            }
+        )
+        == "solver-energy-rerank"
+    )
+    assert (
+        _mod._arm_slug_from_knobs(
+            {
+                "legal_edit_hazard_loss_weight": 1.0,
+                "legal_edit_hazard_decode_weight": 1.0,
+                "structural_aux_head_profile": "legal-edit-hazard",
+                "compiler_decode_mode": "tree",
+            }
+        )
+        == "legal-edit-hazard"
+    )
+    # The bank rows themselves round-trip through the classifier.
+    by_slug = {slug: extras for slug, _, extras in _mod._SCREENING_ARM_BANK}
+    for slug in ("solver-energy-rerank", "legal-edit-hazard"):
+        assert _mod._arm_slug_from_knobs(dict(by_slug[slug])) == slug
+
+
+def test_model_lever_arms_are_successor_selectable() -> None:
+    """New arms never perturb the pinned rotation but remain selectable."""
+    all_slugs = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
+    assert (
+        _mod._select_recommended_slug(1, skip=all_slugs - {"solver-energy-rerank"})
+        == "solver-energy-rerank"
+    )
+    assert (
+        _mod._select_recommended_slug(1, skip=all_slugs - {"legal-edit-hazard"})
+        == "legal-edit-hazard"
+    )
+
+
 def test_confirmation_bypasses_exhausted_screening_selector() -> None:
     all_slugs = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
 
