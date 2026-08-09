@@ -291,7 +291,7 @@
       ]
     },
     "data.corpus_certification": {
-      "version": "v2",
+      "version": "v3",
       "kind": "data_builder",
       "paths": [
         "src/slm_training/data/verify/",
@@ -305,6 +305,11 @@
         "tests/test_dsl/test_grammar_backends.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-09",
+          "note": "VCE-008/SLM-463: add a new --mode contrast-audit to scripts/audit_data_corpora.py (contrast_corpus_leakage_report and its _contrast_* helpers) -- a read-only leakage/dedup/topology/OOD-split audit over the immutable openui_hard_valid_v1 semantic-contrast corpus. Groups by source_program_id lineage before checking cross-split leakage; keys exact/alpha-equivalent duplicate detection on semantic_plan.canonicalize.plan_factor_fingerprints' alpha-rename-invariant 'exact' fingerprint (so renamed symbols/roles cannot bypass dedup); derives frozen unseen_topology/unseen_component_combination/unseen_source_family/renamed_symbol OOD slices from the same fingerprints plus observed binding_swap_symbol* transform_ids. Reads the corpus only through DataStore.verify('eval', ...) (hash-checked) and never writes into the dataset directory. Extends the pre-registered data_corpus_audit owner per ownership_map.json's VCE-008 downstream_extension_map row (new_owner_justified: false) rather than creating a new tool."
+        },
         {
           "version": "v2",
           "date": "2026-08-03",
@@ -2823,6 +2828,11 @@
         "tests/test_data/test_synthesis_contract_versions.py"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-08-09",
+          "note": "no-bump: SLM-463 (VCE-008) adds 'contrast_corpus_leakage_report' to the existing 'data_corpus_audit' subsystem's owner_symbols (scripts/audit_data_corpora.py already owns it per the pre-registered downstream_extension_map row for VCE-008, new_owner_justified: false) -- no new subsystem, no ownership-map structural change, just recording the new public symbol on its existing declared owner_module."
+        },
         {
           "version": "v7",
           "date": "2026-08-09",

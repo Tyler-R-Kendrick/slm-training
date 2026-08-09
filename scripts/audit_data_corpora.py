@@ -32,8 +32,10 @@ from slm_training.data.dedup import (
     minhash_signature,
 )
 from slm_training.data.leakage import fingerprint_openui_structure, fingerprint_pair
+from slm_training.data.progspec.semantic_plan import SemanticPlanV1
 from slm_training.data.quality import assess_record
 from slm_training.data.semantic_dedup import apply_semantic_dedup, similarity_engine
+from slm_training.data.semantic_plan.canonicalize import plan_factor_fingerprints
 from slm_training.data.store import DataStore
 from slm_training.data.verify import certify_snapshots, write_certified_snapshot
 from slm_training.dsl.schema import ExampleRecord, load_jsonl
@@ -42,6 +44,12 @@ from slm_training.versioning import build_version_stamp
 LEGACY_TRAIN_DATA_ROOT = Path("src/slm_training/resources/train_data")
 _BANDS = 16
 _ROWS_PER_BAND = 4  # 16 * 4 == the 64 MinHash permutations
+
+# VCE-008 (SLM-463): renamed-symbol OOD probe. These are the observed
+# openui_hard_valid_v1 transform_ids that swap which symbol a role binds to
+# without changing structure -- the natural "renamed identity" slice for
+# this corpus, rather than an invented one.
+_RENAMED_SYMBOL_TRANSFORM_PREFIXES = ("binding_swap_symbol",)
 
 
 def _load_snapshots(include_local: bool) -> dict[str, list[ExampleRecord]]:
@@ -236,6 +244,190 @@ def _semantic_union_redundancy(
     }
 
 
+# ---------------------------------------------------------------------------
+# VCE-008 (SLM-463): leakage, dedup, topology, and OOD split audits over the
+# immutable semantic-contrast corpus (default: openui_hard_valid_v1). Reads
+# through DataStore.verify (hash-checked) and never writes into the dataset
+# directory -- "audited without mutation" by construction.
+# ---------------------------------------------------------------------------
+
+
+def _load_contrast_corpus(dataset_id: str = "openui_hard_valid_v1") -> list[dict]:
+    ref = DataStore().verify("eval", dataset_id)
+    records_path = ref.path / "records.jsonl"
+    return [json.loads(line) for line in records_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def _contrast_fingerprints(records: list[dict]) -> list[dict[str, str]]:
+    """Alpha-equivalence-normalized per-factor SHA-256 fingerprints, one per record."""
+    fingerprints = []
+    for record in records:
+        plan = SemanticPlanV1.from_dict(record["source_plan"])
+        fingerprints.append(plan_factor_fingerprints(plan))
+    return fingerprints
+
+
+def _contrast_lineage_split_report(records: list[dict]) -> dict[str, object]:
+    """Group by source_program_id; flag any lineage family split across
+    more than one corpus split (scope: 'group before split by lineage')."""
+    groups: dict[str, list[int]] = defaultdict(list)
+    for index, record in enumerate(records):
+        groups[str(record["source_program_id"])].append(index)
+
+    violations: list[dict[str, object]] = []
+    for source_program_id, indices in sorted(groups.items()):
+        splits = {str(records[i].get("meta", {}).get("split", "unknown")) for i in indices}
+        if len(splits) > 1:
+            violations.append(
+                {
+                    "source_program_id": source_program_id,
+                    "splits": sorted(splits),
+                    "record_ids": [records[i]["record"]["id"] for i in indices],
+                }
+            )
+    return {
+        "lineage_groups": len(groups),
+        "cross_split_lineage_violations": violations,
+    }
+
+
+def _contrast_alpha_equivalent_duplicates(
+    records: list[dict], fingerprints: list[dict[str, str]]
+) -> dict[str, object]:
+    """Exact/alpha-equivalent duplicate detection keyed on the canonicalized
+    'exact' plan fingerprint -- renamed symbols/roles cannot bypass this
+    because canonicalize_plan already normalizes them before hashing."""
+    by_fingerprint: dict[str, list[int]] = defaultdict(list)
+    for index, fp in enumerate(fingerprints):
+        by_fingerprint[fp["exact"]].append(index)
+
+    within_split: list[dict[str, object]] = []
+    cross_split: list[dict[str, object]] = []
+    quarantined: list[dict[str, object]] = []
+    for exact_fp, indices in by_fingerprint.items():
+        if len(indices) < 2:
+            continue
+        splits = [str(records[i].get("meta", {}).get("split", "unknown")) for i in indices]
+        record_ids = [records[i]["record"]["id"] for i in indices]
+        source_lineage = sorted({str(records[i]["source_program_id"]) for i in indices})
+        entry = {
+            "exact_fingerprint": exact_fp,
+            "record_ids": record_ids,
+            "source_lineage": source_lineage,
+        }
+        if len(set(splits)) > 1:
+            cross_split.append(entry)
+            # Keep the earliest (train-preferring) occurrence; quarantine the rest.
+            keep = indices[splits.index("train")] if "train" in splits else indices[0]
+            for i in indices:
+                if i != keep:
+                    quarantined.append(
+                        {
+                            "record_id": records[i]["record"]["id"],
+                            "reason": "alpha_equivalent_cross_split_duplicate",
+                            "source_program_id": str(records[i]["source_program_id"]),
+                            "duplicate_of": records[keep]["record"]["id"],
+                        }
+                    )
+        else:
+            within_split.append(entry)
+    return {
+        "within_split_duplicates": within_split,
+        "cross_split_duplicates": cross_split,
+        "quarantined": quarantined,
+    }
+
+
+def _contrast_ood_slices(
+    records: list[dict], fingerprints: list[dict[str, str]]
+) -> dict[str, object]:
+    """Frozen, reproducible OOD slices: held-out rows whose topology,
+    component-family composition, or source lineage never appears in train,
+    plus the renamed-symbol probe already present via binding_swap_symbol*
+    transforms."""
+    split_of = [str(r.get("meta", {}).get("split", "unknown")) for r in records]
+    train_idx = [i for i, s in enumerate(split_of) if s == "train"]
+    held_out_idx = [i for i, s in enumerate(split_of) if s == "held_out"]
+
+    def _unseen_slice(factor: str) -> list[str]:
+        train_values = {fingerprints[i][factor] for i in train_idx}
+        return sorted(
+            records[i]["record"]["id"]
+            for i in held_out_idx
+            if fingerprints[i][factor] not in train_values
+        )
+
+    train_sources = {str(records[i]["source_program_id"]) for i in train_idx}
+    unseen_source_family = sorted(
+        records[i]["record"]["id"]
+        for i in held_out_idx
+        if str(records[i]["source_program_id"]) not in train_sources
+    )
+    renamed_symbol_slice = sorted(
+        record["record"]["id"]
+        for record in records
+        if str(record.get("transform_id", "")).startswith(_RENAMED_SYMBOL_TRANSFORM_PREFIXES)
+    )
+    return {
+        "unseen_topology": _unseen_slice("topology"),
+        "unseen_component_combination": _unseen_slice("component_family"),
+        "unseen_source_family": unseen_source_family,
+        "renamed_symbol": renamed_symbol_slice,
+    }
+
+
+def contrast_corpus_leakage_report(dataset_id: str = "openui_hard_valid_v1") -> dict[str, object]:
+    """Full VCE-008 leakage/dedup/topology/OOD audit over the immutable
+    semantic-contrast corpus. Read-only: never mutates the dataset."""
+    records = _load_contrast_corpus(dataset_id)
+    fingerprints = _contrast_fingerprints(records)
+    lineage = _contrast_lineage_split_report(records)
+    duplicates = _contrast_alpha_equivalent_duplicates(records, fingerprints)
+    ood = _contrast_ood_slices(records, fingerprints)
+    quarantined_ids = {entry["record_id"] for entry in duplicates["quarantined"]}
+    for violation in lineage["cross_split_lineage_violations"]:
+        quarantined_ids.update(violation["record_ids"])
+    return {
+        "dataset_id": dataset_id,
+        "records_audited": len(records),
+        "lineage": lineage,
+        "duplicates": duplicates,
+        "ood_slices": {name: len(ids) for name, ids in ood.items()},
+        "ood_slice_members": ood,
+        "quarantined_record_count": len(quarantined_ids),
+        "version_stamp": build_version_stamp("data.corpus_certification"),
+    }
+
+
+def _contrast_markdown(report: dict[str, object]) -> str:
+    lineage = report["lineage"]  # type: ignore[index]
+    duplicates = report["duplicates"]  # type: ignore[index]
+    slices = report["ood_slices"]  # type: ignore[index]
+    lines = [
+        "# Semantic-contrast corpus leakage/dedup/OOD audit",
+        "",
+        f"Dataset: `{report['dataset_id']}` ({report['records_audited']} records audited, read-only).",
+        "",
+        "## Lineage / split leakage",
+        "",
+        f"- Lineage groups (by `source_program_id`): {lineage['lineage_groups']}",  # type: ignore[index]
+        f"- Cross-split lineage violations: {len(lineage['cross_split_lineage_violations'])}",  # type: ignore[index,arg-type]
+        "",
+        "## Alpha-equivalent / exact duplicates",
+        "",
+        f"- Within-split duplicate groups: {len(duplicates['within_split_duplicates'])}",  # type: ignore[index,arg-type]
+        f"- Cross-split (contaminating) duplicate groups: {len(duplicates['cross_split_duplicates'])}",  # type: ignore[index,arg-type]
+        f"- Quarantined records: {report['quarantined_record_count']}",
+        "",
+        "## OOD slices (frozen, reproducible)",
+        "",
+    ]
+    for name, count in slices.items():
+        lines.append(f"- `{name}`: {count} records")
+    lines += ["", "Full detail: `docs/design/contrast-corpus-leakage-audit.json`."]
+    return "\n".join(lines) + "\n"
+
+
 def _markdown(report: dict[str, object]) -> str:
     lines = [
         "# Data corpus audit",
@@ -334,7 +526,14 @@ def _write_certification_result(directory: Path) -> tuple[Path, Path]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--mode", choices=("audit", "certify", "report-certification"), default="audit"
+        "--mode",
+        choices=("audit", "certify", "report-certification", "contrast-audit"),
+        default="audit",
+    )
+    parser.add_argument(
+        "--contrast-dataset-id",
+        default="openui_hard_valid_v1",
+        help="eval-kind dataset id for --mode contrast-audit (VCE-008).",
     )
     parser.add_argument(
         "--output-dir",
@@ -356,11 +555,39 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--out-json", type=Path, default=Path("docs/design/data-corpus-audit.json"))
     parser.add_argument("--out-md", type=Path, default=Path("docs/design/data-corpus-audit.md"))
+    parser.add_argument(
+        "--contrast-out-json",
+        type=Path,
+        default=Path("docs/design/contrast-corpus-leakage-audit.json"),
+    )
+    parser.add_argument(
+        "--contrast-out-md",
+        type=Path,
+        default=Path("docs/design/contrast-corpus-leakage-audit.md"),
+    )
     args = parser.parse_args(argv)
 
     if args.mode == "report-certification":
         json_path, md_path = _write_certification_result(args.output_dir)
         print(f"wrote {json_path} and {md_path}")
+        return 0
+    if args.mode == "contrast-audit":
+        report = contrast_corpus_leakage_report(args.contrast_dataset_id)
+        args.contrast_out_json.parent.mkdir(parents=True, exist_ok=True)
+        args.contrast_out_json.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+        args.contrast_out_md.write_text(_contrast_markdown(report), encoding="utf-8")
+        print(
+            json.dumps(
+                {
+                    "dataset_id": report["dataset_id"],
+                    "records_audited": report["records_audited"],
+                    "quarantined_record_count": report["quarantined_record_count"],
+                    "ood_slices": report["ood_slices"],
+                },
+                indent=2,
+            )
+        )
+        print(f"wrote {args.contrast_out_json} and {args.contrast_out_md}")
         return 0
     snapshots = _load_snapshots(args.include_local)
     if not snapshots:
