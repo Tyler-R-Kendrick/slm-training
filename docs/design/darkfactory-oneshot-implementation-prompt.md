@@ -36,12 +36,13 @@ integrator merges the branches, performs the single consolidated
 ## Non-negotiable laws (violating any of these fails the unit)
 
 1. **Constrained decoding is the product.** Levers may change how legal
-   symbols are *ranked*, never whether output is legal (invariant I5/I6).
+   symbols are *ranked*, never whether output is legal (invariants I5/I6,
+   canonical statements in [`decode-invariants.md`](decode-invariants.md)).
    New scorers add only additive biases or reorderings over
    already-proven-legal candidate ids. Never touch candidate membership,
    never add a fallback to full vocabulary, never register a new lever in
    `levers.CONSTRAINT_WEAKENING_LEVERS`.
-2. **Singleton bypass is absolute (I2).** When the domain has exactly one
+2. **Singleton bypass is absolute (I2, [`decode-invariants.md`](decode-invariants.md)).** When the domain has exactly one
    legal candidate, no neural forward runs. `TwoTowerModel._select_compiler_path`
    (`src/slm_training/models/twotower.py:10243`) short-circuits singletons
    near `:10267` *before* the bias chain — leave that ordering intact.
@@ -59,8 +60,7 @@ integrator merges the branches, performs the single consolidated
    Token ids, decision kinds, structural positions, and hidden states are
    fine.
 5. **Trained-decode contract.** Every new `*_decode_weight` lever must be
-   registered in `levers.TRAINED_DECode_REQUIREMENTS` (sic — grep
-   `TRAINED_DECODE_REQUIREMENTS`, `levers.py:378`) so enabling decode
+   registered in `levers.TRAINED_DECODE_REQUIREMENTS` (`levers.py:378`) so enabling decode
    without its owning training loss is a hard error, and in
    `LEVER_REQUIREMENTS` under the appropriate decode-path group (grep
    `_DUAL_PATH_DECODE_LEVERS` near `levers.py:343`).
@@ -73,7 +73,8 @@ integrator merges the branches, performs the single consolidated
    `scripts/run_autotrain_continuous.py` for the pattern).
 7. **Hard run cap.** `levers.MAX_RUN_MINUTES = 3`. Do not launch training
    runs as evidence; your evidence is unit/fixture tests. Any command you
-   run must finish inside the cap — use targeted pytest selections.
+   run must finish inside the cap — use targeted pytest selections and wrap
+   long invocations with `timeout 170` (the derived interrupt value).
 8. **No `versions.json` edits and no `docs/design` edits from work units.**
    The integrator owns the consolidated component bump and the design-doc
    update (this avoids three-way merge conflicts). Instead, END your report
@@ -94,11 +95,14 @@ integrator merges the branches, performs the single consolidated
   `cd <your-worktree> && /home/user/slm-training/.venv/bin/python -m pytest <targets> -q`
   and `/home/user/slm-training/.venv/bin/python -m ruff check <files>`.
   (pytest's rootdir config puts your worktree's `src` on the path.)
+- Prefer `rtk <cmd>` for verbose shell output when the `rtk` binary is
+  installed (`command -v rtk`); fall back to plain commands when absent —
+  it is not installed in all containers.
 - Create and commit on the branch named in your unit
   (`git checkout -b <branch>`). Small, coherent commits; end each commit
   message with:
 
-  ```
+  ```text
   Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
   Claude-Session: https://claude.ai/code/session_01Tx7RTWqSvZukyDS1j1A9qt
   ```
@@ -322,8 +326,11 @@ and gate decision-bearing campaigns on computed power feasibility.
   synthesize compose arms (return `False` so the verdict path fires), and
   `CHAMPION_CONFIRM_FALLBACK` is skipped. `THRASH_CAUSAL_CAP_RELAX` and the
   retryable-promote-head branch of `BANK_EXHAUST_PROMOTE_FALLBACK` stay
-  active in both modes. With the flag false, behavior is byte-identical to
-  today.
+  active in both modes. With the flag false, the exhaustion *branching semantics* are unchanged
+  from today — but note the policy-sha side effect applies in both modes:
+  bumping the policy file changes `promote_authority_sha256` and
+  de-certifies queued champions until re-certification, regardless of the
+  flag value. State this in your report.
 - Existing driver tests that assert compose-synthesis / confirm-fallback
   behavior (grep `test_self_heal_thrash_bank_composes_successors`,
   `test_confirmed_champion_reconfirms_when_bank_exhausted_before_promotion`,
@@ -390,8 +397,11 @@ per-cycle persistence for future mining, and a one-stop operator status.
   per-component staleness decay: for a bucket whose key differs from the
   current eval key, compute `behind_by` = sum over the four
   `EVAL_KEY_COMPONENTS` of the history-index distance between the bucket's
-  stamped version and the current version (0 when equal or unknown), and
+  stamped version and the current version (0 when equal), and
   weight the bucket `max(floor, CROSS_PARTITION_WEIGHT * decay ** behind_by)`.
+  If *any* stamped component in the key cannot be resolved to a known
+  history index, use the flat `CROSS_PARTITION_WEIGHT` for the whole
+  bucket (no partial decay).
   `unstamped` buckets keep the flat `CROSS_PARTITION_WEIGHT`. Same-key
   buckets stay at 1.0.
 - Policy knobs (read defensively from the `selection` block; do not edit the
@@ -459,5 +469,8 @@ New tests in `tests/test_autoresearch/test_evidence_ledger.py` for L1
    tests/test_models tests/test_versioning`, `ruff` on all touched files,
    `python -m scripts.verify_version_stamps --check`,
    `python -m scripts.repo_policy`,
-   `python -m scripts.refresh_test_cases --check --changed`.
+   `python -m scripts.refresh_test_cases --check --changed`; run
+   `.githooks/check-changed`-selected tests, and
+   `python -m scripts.verify_agent_surfaces` if any agent-instruction
+   surface was touched (none should be).
 6. Commit, push, open the PR (ready for review), subscribe to its activity.
