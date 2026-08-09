@@ -1064,6 +1064,10 @@ class AutotrainCycleHandoffV1(StrictModel):
     # Dual-regime thrash label from the screening matrix (isolate / climb /
     # timeout_decode_residual). Absent on confirm/promote / non-thrash cycles.
     thrash_regime: dict[str, Any] | None = None
+    # Typed regime_exhausted_verdict/v1 payload when the legal experiment
+    # domain is empty: a conclusion naming the binding constraint and the
+    # resume predicate, not a harness failure. None on ordinary cycles.
+    terminal_verdict: dict[str, Any] | None = None
     created_at: str = Field(default_factory=utc_now)
 
     @model_validator(mode="after")

@@ -4305,6 +4305,8 @@ def _thrash_bank_open_slugs(closed: set[str]) -> set[str]:
 
 def _arm_close_min_null_seeds(policy: Any | None = None) -> int:
     """Distinct complete-null seeds required before a thrash arm is closed."""
+    base = _DEFAULT_ARM_CLOSE_MIN_NULL_SEEDS
+    payload: dict[str, Any] = {}
     try:
         from slm_training.autoresearch.climb_policy import load_climb_policy
 
@@ -4314,14 +4316,67 @@ def _arm_close_min_null_seeds(policy: Any | None = None) -> int:
             payload.get("screening_arm_closure") if isinstance(payload, dict) else None
         )
         if isinstance(block, dict) and block.get("min_complete_null_seeds") is not None:
-            return max(1, int(block["min_complete_null_seeds"]))
-        # Align with recipe_null_cap when screening_arm_closure is absent.
-        cap = payload.get("recipe_null_cap") if isinstance(payload, dict) else None
-        if isinstance(cap, dict) and cap.get("max_nulls_per_family") is not None:
-            return max(1, int(cap["max_nulls_per_family"]))
+            base = max(1, int(block["min_complete_null_seeds"]))
+        else:
+            # Align with recipe_null_cap when screening_arm_closure is absent.
+            cap = payload.get("recipe_null_cap") if isinstance(payload, dict) else None
+            if isinstance(cap, dict) and cap.get("max_nulls_per_family") is not None:
+                base = max(1, int(cap["max_nulls_per_family"]))
     except Exception:  # noqa: BLE001 — fail closed to default
+        return base
+    try:
+        gate = payload.get("power_gate") if isinstance(payload, dict) else None
+        if isinstance(gate, dict) and gate.get("enabled"):
+            from slm_training.autoresearch import evidence_ledger as _ev
+
+            measurement = (
+                payload.get("measurement") if isinstance(payload, dict) else None
+            )
+            per_cycle_n = int((measurement or {}).get("screening_smoke_n") or 0)
+            base = _ev.power_scaled_null_seeds(
+                base, per_cycle_n, _ev.parse_alpha(gate.get("alpha"))
+            )
+    except Exception:  # noqa: BLE001 — power floor never blocks closure math
         pass
-    return _DEFAULT_ARM_CLOSE_MIN_NULL_SEEDS
+    return base
+
+
+def _evidence_ranked_slug(
+    candidates: list[str],
+    *,
+    stats: dict[str, Any],
+    boosts: dict[str, float],
+) -> str | None:
+    """Posterior-UCB pick over the committed evidence ledger (policy-gated).
+
+    Returns ``None`` when the policy does not enable posterior selection or on
+    any failure, so the caller falls through to the legacy soft rank.
+    """
+    try:
+        from slm_training.autoresearch import evidence_ledger as _ev
+        from slm_training.autoresearch.climb_policy import load_climb_policy
+
+        payload = getattr(load_climb_policy(), "payload", None) or {}
+        selection = payload.get("selection")
+        if not isinstance(selection, dict) or selection.get("mode") != "posterior_ucb":
+            return None
+        live_stats = {
+            slug: (float(entry.n_complete), float(entry.mean_delta_ss))
+            for slug, entry in stats.items()
+            if getattr(entry, "n_complete", 0) > 0
+        }
+        return _ev.pick_evidence_ranked_slug(
+            candidates,
+            _ev.load_ledger(),
+            exploration_c=float(selection.get("exploration_c", 1.0)),
+            prior_scale=float(selection.get("prior_scale", 0.05)),
+            residual_boosts=boosts,
+            live_stats=live_stats,
+            rotation_order=candidates,
+        )
+    except Exception as exc:  # noqa: BLE001 — selection upgrade must fail open
+        print(f"EVIDENCE_RANK_WARN {exc}", flush=True)
+        return None
 
 
 def _recent_completed_nonpositive_slugs(
@@ -4797,6 +4852,16 @@ def _select_recommended_slug(
                 max_age=40,
                 latest_cycle=int(cycle),
             )
+            evidence_pick = _evidence_ranked_slug(
+                open_candidates, stats=stats, boosts=boosts
+            )
+            if evidence_pick:
+                print(
+                    f"EVIDENCE_RANK cycle={cycle} slug={evidence_pick} "
+                    f"mode=posterior_ucb",
+                    flush=True,
+                )
+                return evidence_pick
             if stats or boosts:
                 picked = pick_soft_ranked_slug(
                     open_candidates,
@@ -8193,6 +8258,7 @@ def _write_cycle_handoff(
     skip_slugs: set[str] | None = None,
     cwd: Path | None = None,
 ) -> AutotrainCycleHandoffV1:
+    terminal_verdict: dict[str, Any] | None = None
     """Write the typed boundary consumed by the agent between bounded cycles."""
     camp_dir = root / campaign_id
     evidence_id = f"campaign:{campaign_id}"
@@ -8723,6 +8789,24 @@ def _write_cycle_handoff(
                     harness_family="model_build",
                 ),
             )
+            try:
+                from slm_training.autoresearch import evidence_ledger as _ev
+                from slm_training.autoresearch.climb_policy import load_climb_policy
+
+                terminal_verdict = _ev.build_regime_exhausted_verdict(
+                    campaign_id=campaign_id,
+                    loop_id=loop_id,
+                    cycle_index=cycle_index,
+                    binding_constraint="quality_arm_bank_exhausted",
+                    closed_slugs=sorted(closed),
+                    policy_sha256=load_climb_policy().sha256,
+                    resume_predicate=(
+                        "a new lever family, budget tier, or metric floor is "
+                        "registered (integrated code identity changes)"
+                    ),
+                )
+            except Exception:  # noqa: BLE001 — verdict is additive evidence
+                terminal_verdict = None
     else:
         actions.append(
             AutotrainActionV1(
@@ -8769,6 +8853,7 @@ def _write_cycle_handoff(
         checkpoint_paths=checkpoint_paths,
         checkpoint_documentation_required=bool(checkpoint_paths),
         thrash_regime=thrash_regime_payload,
+        terminal_verdict=terminal_verdict,
     )
     (camp_dir / "cycle_handoff.json").write_text(
         handoff.model_dump_json(indent=2) + "\n", encoding="utf-8"

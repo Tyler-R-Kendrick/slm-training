@@ -226,6 +226,31 @@ promotion proof, multi-seed, or ship gates. A completed frozen replay also rewri
 its stale infrastructure priority to the next distinct model-quality arm.
 Policy v4 retains those quality rules and adds the minimum efficiency effect above.
 
+## Evidence-ledger selection + power gate (policy v7)
+
+Policy v7 adds two optional blocks (see
+[`darkfactory-hillclimb-optimization.md`](darkfactory-hillclimb-optimization.md)):
+
+- **`selection`** — `mode: posterior_ucb` ranks open screening arms by a
+  deterministic per-arm conjugate-posterior upper confidence bound computed
+  from the committed cross-version evidence ledger
+  (`resources/experiments/autotrain_climb/evidence_ledger.v1.json`,
+  rebuild via `python -m scripts.build_evidence_ledger --write`) merged
+  with the live loop's `slug_stats.json`. Residual boosts stay
+  lexicographically dominant; `mode: rotation` restores the legacy soft
+  rank; any failure falls open to it.
+- **`power_gate`** — exact sign-test floor on arm closure: enough
+  independent complete-null cycles that the pooled test over
+  `screening_smoke_n`-document cycles could have rejected at `alpha`.
+  Current values (2 seeds × 3 docs, alpha 1/20) already satisfy it; the
+  gate guards that consistency against future drift and never lowers
+  `min_complete_null_seeds`.
+
+A bank-exhausted handoff now also carries a typed
+`terminal_verdict` (`regime_exhausted_verdict/v1`) naming the binding
+constraint and resume predicate beside the existing `repair_harness`
+action.
+
 ## Content digest
 
 `climb_policy_content_digest(payload)` hashes the policy body so version stamps

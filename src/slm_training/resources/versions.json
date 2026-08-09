@@ -2966,7 +2966,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v195",
+      "version": "v196",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -3013,9 +3013,17 @@
         "src/slm_training/autoresearch/thrash_residuals.py",
         "docs/design/dual-regime-thrash-20260804.md",
         "tests/test_autoresearch/test_thrash_regime.py",
-        "tests/test_autoresearch/test_thrash_residuals.py"
+        "tests/test_autoresearch/test_thrash_residuals.py",
+        "src/slm_training/autoresearch/evidence_ledger.py",
+        "scripts/build_evidence_ledger.py",
+        "tests/test_autoresearch/test_evidence_ledger.py"
       ],
       "history": [
+        {
+          "version": "v196",
+          "date": "2026-08-09",
+          "note": "darkfactory phase 1: deterministic evidence ledger (mines docs/design cycle+measured records into committed cross-version arm posteriors), posterior-UCB screening selection (policy selection.mode=posterior_ucb), exact sign-test power floor on arm closure (policy power_gate), and typed regime_exhausted terminal verdict on the cycle handoff; policy v6->v7"
+        },
         {
           "version": "v195",
           "date": "2026-08-08",

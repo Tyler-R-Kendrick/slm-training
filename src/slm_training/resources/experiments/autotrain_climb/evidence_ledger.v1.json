@@ -1,0 +1,444 @@
+{
+  "arms": {
+    "balanced-container-close": {
+      "by_eval_key": {
+        "evals.scoring=v22|evals.meaningful_program=2.13.0|harness.model_build.eval=v77": {
+          "n": 1,
+          "sum": 0.11666666666666667,
+          "sumsq": 0.013611111111111112
+        }
+      },
+      "m2_delta": 0.0,
+      "mean_delta": 0.11666666666666667,
+      "n_complete": 1,
+      "n_delta": 1,
+      "n_null": 0,
+      "n_obs": 1,
+      "n_positive": 0
+    },
+    "batch1": {
+      "by_eval_key": {
+        "unstamped": {
+          "n": 9,
+          "sum": 0.16666666666666666,
+          "sumsq": 0.027777777777777776
+        }
+      },
+      "m2_delta": 0.024691358024691357,
+      "mean_delta": 0.018518518518518517,
+      "n_complete": 9,
+      "n_delta": 9,
+      "n_null": 9,
+      "n_obs": 24,
+      "n_positive": 0
+    },
+    "binder-arity": {
+      "by_eval_key": {
+        "unstamped": {
+          "n": 8,
+          "sum": 0.0,
+          "sumsq": 0.0
+        }
+      },
+      "m2_delta": 0.0,
+      "mean_delta": 0.0,
+      "n_complete": 8,
+      "n_delta": 8,
+      "n_null": 8,
+      "n_obs": 8,
+      "n_positive": 0
+    },
+    "binder-component-plan": {
+      "by_eval_key": {
+        "unstamped": {
+          "n": 7,
+          "sum": 0.0,
+          "sumsq": 0.0
+        }
+      },
+      "m2_delta": 0.0,
+      "mean_delta": 0.0,
+      "n_complete": 7,
+      "n_delta": 7,
+      "n_null": 7,
+      "n_obs": 7,
+      "n_positive": 0
+    },
+    "binder-topology": {
+      "by_eval_key": {
+        "unstamped": {
+          "n": 9,
+          "sum": 0.10916666666666666,
+          "sumsq": 0.01191736111111111
+        }
+      },
+      "m2_delta": 0.01059320987654321,
+      "mean_delta": 0.012129629629629629,
+      "n_complete": 9,
+      "n_delta": 9,
+      "n_null": 8,
+      "n_obs": 11,
+      "n_positive": 1
+    },
+    "bounds": {
+      "by_eval_key": {
+        "evals.scoring=v22|evals.meaningful_program=2.13.0|harness.model_build.eval=v73": {
+          "n": 1,
+          "sum": 0.0,
+          "sumsq": 0.0
+        },
+        "unstamped": {
+          "n": 47,
+          "sum": 0.0,
+          "sumsq": 0.0
+        }
+      },
+      "m2_delta": 0.0,
+      "mean_delta": 0.0,
+      "n_complete": 48,
+      "n_delta": 48,
+      "n_null": 47,
+      "n_obs": 50,
+      "n_positive": 0
+    },
+    "canvas": {
+      "by_eval_key": {
+        "unstamped": {
+          "n": 5,
+          "sum": 0.0,
+          "sumsq": 0.0
+        }
+      },
+      "m2_delta": 0.0,
+      "mean_delta": 0.0,
+      "n_complete": 5,
+      "n_delta": 5,
+      "n_null": 5,
+      "n_obs": 7,
+      "n_positive": 0
+    },
+    "compiler-decision-margin": {
+      "by_eval_key": {},
+      "m2_delta": 0.0,
+      "mean_delta": 0.0,
+      "n_complete": 0,
+      "n_delta": 0,
+      "n_null": 0,
+      "n_obs": 1,
+      "n_positive": 0
+    },
+    "compiler-decision-token": {
+      "by_eval_key": {},
+      "m2_delta": 0.0,
+      "mean_delta": 0.0,
+      "n_complete": 0,
+      "n_delta": 0,
+      "n_null": 0,
+      "n_obs": 3,
+      "n_positive": 0
+    },
+    "component-edge": {
+      "by_eval_key": {
+        "evals.scoring=v22|evals.meaningful_program=2.13.0|harness.model_build.eval=v73": {
+          "n": 1,
+          "sum": 0.0,
+          "sumsq": 0.0
+        },
+        "evals.scoring=v22|evals.meaningful_program=2.13.0|harness.model_build.eval=v74|gates.ship=openui_ship_gates_v6": {
+          "n": 1,
+          "sum": 0.0,
+          "sumsq": 0.0
+        },
+        "unstamped": {
+          "n": 13,
+          "sum": 0.0,
+          "sumsq": 0.0
+        }
+      },
+      "m2_delta": 0.0,
+      "mean_delta": 0.0,
+      "n_complete": 15,
+      "n_delta": 15,
+      "n_null": 13,
+      "n_obs": 16,
+      "n_positive": 0
+    },
+    "component-edge-margin": {
+      "by_eval_key": {},
+      "m2_delta": 0.0,
+      "mean_delta": 0.0,
+      "n_complete": 0,
+      "n_delta": 0,
+      "n_null": 0,
+      "n_obs": 2,
+      "n_positive": 0
+    },
+    "component-edge-token": {
+      "by_eval_key": {},
+      "m2_delta": 0.0,
+      "mean_delta": 0.0,
+      "n_complete": 0,
+      "n_delta": 0,
+      "n_null": 0,
+      "n_obs": 1,
+      "n_positive": 0
+    },
+    "component-inventory": {
+      "by_eval_key": {
+        "evals.scoring=v22|evals.meaningful_program=2.13.0|harness.model_build.eval=v73": {
+          "n": 1,
+          "sum": 0.0,
+          "sumsq": 0.0
+        },
+        "evals.scoring=v22|evals.meaningful_program=2.13.0|harness.model_build.eval=v74|gates.ship=openui_ship_gates_v6": {
+          "n": 1,
+          "sum": 0.0,
+          "sumsq": 0.0
+        },
+        "unstamped": {
+          "n": 12,
+          "sum": 0.21500000000000005,
+          "sumsq": 0.031202420000000012
+        }
+      },
+      "m2_delta": 0.0279006342857143,
+      "mean_delta": 0.015357142857142861,
+      "n_complete": 14,
+      "n_delta": 14,
+      "n_null": 10,
+      "n_obs": 16,
+      "n_positive": 2
+    },
+    "component-plan": {
+      "by_eval_key": {
+        "evals.scoring=v22|evals.meaningful_program=2.13.0|harness.model_build.eval=v73": {
+          "n": 1,
+          "sum": 0.0,
+          "sumsq": 0.0
+        },
+        "evals.scoring=v22|evals.meaningful_program=2.13.0|harness.model_build.eval=v74|gates.ship=openui_ship_gates_v6": {
+          "n": 1,
+          "sum": 0.0,
+          "sumsq": 0.0
+        },
+        "unstamped": {
+          "n": 25,
+          "sum": 0.44686666666666697,
+          "sumsq": 0.031761337777777815
+        }
+      },
+      "m2_delta": 0.024365418600823065,
+      "mean_delta": 0.016550617283950627,
+      "n_complete": 27,
+      "n_delta": 27,
+      "n_null": 16,
+      "n_obs": 82,
+      "n_positive": 9
+    },
+    "component-structure": {
+      "by_eval_key": {
+        "evals.scoring=v22|evals.meaningful_program=2.13.0|harness.model_build.eval=v73": {
+          "n": 1,
+          "sum": 0.0,
+          "sumsq": 0.0
+        }
+      },
+      "m2_delta": 0.0,
+      "mean_delta": 0.0,
+      "n_complete": 1,
+      "n_delta": 1,
+      "n_null": 0,
+      "n_obs": 1,
+      "n_positive": 0
+    },
+    "constraint-graph": {
+      "by_eval_key": {
+        "unstamped": {
+          "n": 4,
+          "sum": 0.0,
+          "sumsq": 0.0
+        }
+      },
+      "m2_delta": 0.0,
+      "mean_delta": 0.0,
+      "n_complete": 4,
+      "n_delta": 4,
+      "n_null": 4,
+      "n_obs": 4,
+      "n_positive": 0
+    },
+    "container-close": {
+      "by_eval_key": {
+        "evals.scoring=v22|evals.meaningful_program=2.13.0|harness.model_build.eval=v77": {
+          "n": 1,
+          "sum": 0.0,
+          "sumsq": 0.0
+        }
+      },
+      "m2_delta": 0.0,
+      "mean_delta": 0.0,
+      "n_complete": 1,
+      "n_delta": 1,
+      "n_null": 0,
+      "n_obs": 1,
+      "n_positive": 0
+    },
+    "edge-alignment": {
+      "by_eval_key": {
+        "unstamped": {
+          "n": 4,
+          "sum": 0.0,
+          "sumsq": 0.0
+        }
+      },
+      "m2_delta": 0.0,
+      "mean_delta": 0.0,
+      "n_complete": 4,
+      "n_delta": 4,
+      "n_null": 4,
+      "n_obs": 4,
+      "n_positive": 0
+    },
+    "fidelity": {
+      "by_eval_key": {
+        "unstamped": {
+          "n": 4,
+          "sum": -0.23333333333333334,
+          "sumsq": 0.027222222222222224
+        }
+      },
+      "m2_delta": 0.013611111111111112,
+      "mean_delta": -0.058333333333333334,
+      "n_complete": 4,
+      "n_delta": 4,
+      "n_null": 4,
+      "n_obs": 4,
+      "n_positive": 0
+    },
+    "mixed-mask": {
+      "by_eval_key": {
+        "unstamped": {
+          "n": 1,
+          "sum": -0.29000000000000004,
+          "sumsq": 0.08410000000000002
+        }
+      },
+      "m2_delta": 0.0,
+      "mean_delta": -0.29000000000000004,
+      "n_complete": 1,
+      "n_delta": 1,
+      "n_null": 1,
+      "n_obs": 1,
+      "n_positive": 0
+    },
+    "semantic-contrast": {
+      "by_eval_key": {
+        "unstamped": {
+          "n": 3,
+          "sum": -0.00866666666666667,
+          "sumsq": 7.511111111111116e-05
+        }
+      },
+      "m2_delta": 5.00740740740741e-05,
+      "mean_delta": -0.00288888888888889,
+      "n_complete": 3,
+      "n_delta": 3,
+      "n_null": 3,
+      "n_obs": 3,
+      "n_positive": 0
+    },
+    "semantic-contrast-compiler-margin": {
+      "by_eval_key": {
+        "unstamped": {
+          "n": 3,
+          "sum": 0.8200333333333334,
+          "sumsq": 0.22878118555555557
+        }
+      },
+      "m2_delta": 0.004629629629629624,
+      "mean_delta": 0.27334444444444445,
+      "n_complete": 3,
+      "n_delta": 3,
+      "n_null": 3,
+      "n_obs": 6,
+      "n_positive": 0
+    },
+    "slot-augmentation": {
+      "by_eval_key": {
+        "unstamped": {
+          "n": 2,
+          "sum": 0.029333333333333378,
+          "sumsq": 0.0008604444444444471
+        }
+      },
+      "m2_delta": 0.00043022222222222355,
+      "mean_delta": 0.014666666666666689,
+      "n_complete": 2,
+      "n_delta": 2,
+      "n_null": 1,
+      "n_obs": 2,
+      "n_positive": 1
+    },
+    "slot-component-fidelity-coupling": {
+      "by_eval_key": {
+        "unstamped": {
+          "n": 5,
+          "sum": -0.20223333333333335,
+          "sumsq": 0.054324321111111115
+        }
+      },
+      "m2_delta": 0.04614465688888889,
+      "mean_delta": -0.04044666666666667,
+      "n_complete": 5,
+      "n_delta": 5,
+      "n_null": 4,
+      "n_obs": 5,
+      "n_positive": 1
+    },
+    "slot-component-inventory-coupling": {
+      "by_eval_key": {
+        "unstamped": {
+          "n": 4,
+          "sum": 0.0,
+          "sumsq": 0.0
+        }
+      },
+      "m2_delta": 0.0,
+      "mean_delta": 0.0,
+      "n_complete": 4,
+      "n_delta": 4,
+      "n_null": 4,
+      "n_obs": 4,
+      "n_positive": 0
+    },
+    "slot-contract-context": {
+      "by_eval_key": {
+        "unstamped": {
+          "n": 4,
+          "sum": 0.0,
+          "sumsq": 0.0
+        }
+      },
+      "m2_delta": 0.0,
+      "mean_delta": 0.0,
+      "n_complete": 4,
+      "n_delta": 4,
+      "n_null": 4,
+      "n_obs": 4,
+      "n_positive": 0
+    }
+  },
+  "eval_key_components": [
+    "evals.scoring",
+    "evals.meaningful_program",
+    "harness.model_build.eval",
+    "gates.ship"
+  ],
+  "file_counts": {
+    "observations": 268,
+    "scanned": 2074,
+    "unreadable": 0
+  },
+  "generated_from": "/home/user/slm-training/docs/design",
+  "schema": "autotrain_evidence_ledger/v1"
+}

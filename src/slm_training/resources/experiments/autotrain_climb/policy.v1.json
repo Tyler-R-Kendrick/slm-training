@@ -1,6 +1,6 @@
 {
   "schema": "autotrain_climb_policy/v1",
-  "version": "v6",
+  "version": "v7",
   "description": "High-volatility continuous autotrain hill-climb policy. Harness/driver code loads this artifact; change metrics, cadence, caps, and identity fields here without re-authoring classifiers. Dual-regime thrash: isolate (causal OFAT) + climb (residual on sticky champion) + timeout→decode residual routing.",
   "screening_primary": {
     "metric": "smoke.structural_similarity",
@@ -41,8 +41,13 @@
     "promotion_decode_timeout_seconds": 24,
     "screening_smoke_n": 3,
     "max_consecutive_frozen_replays": 1,
-    "screening_suites": ["smoke"],
-    "promotion_suites": ["smoke", "held_out"],
+    "screening_suites": [
+      "smoke"
+    ],
+    "promotion_suites": [
+      "smoke",
+      "held_out"
+    ],
     "thrash_timing": {
       "schema": "thrash_timing_policy/v1",
       "description": "Pareto-calibrated thrash budgets: timeouts ≈ p95(work)+margin. Incomplete rate outside [low,high] means recalculate recipe/budget, not ad-hoc wall++.",
@@ -102,6 +107,17 @@
     "min_complete_null_seeds": 2,
     "description": "Permanent thrash-arm bank close requires this many distinct seeds of complete non-positive measurement. One fixture-noise null never closes the approach."
   },
+  "selection": {
+    "mode": "posterior_ucb",
+    "exploration_c": 1.0,
+    "prior_scale": 0.05,
+    "description": "Deterministic evidence-ledger arm selection: per-arm conjugate NIG posterior over the primary-metric effect, ranked by mean + exploration_c posterior-sd upper confidence. Residual boosts stay lexicographically dominant. mode=rotation restores the legacy soft-rank path."
+  },
+  "power_gate": {
+    "enabled": true,
+    "alpha": "1/20",
+    "description": "Exact sign-test power floor: arm closure requires enough independent complete-null cycles that the pooled sign test over screening_smoke_n-document cycles could have rejected at alpha. Never lowers min_complete_null_seeds."
+  },
   "positive_classification": {
     "allow_executable_unblock": true,
     "fixture_insufficient_n_alone_not_positive": true,
@@ -130,7 +146,9 @@
   "rung_gates": {
     "enabled": true,
     "current_rung": "grammar_2_ast",
-    "certified_rungs": ["ast_2_ast"],
+    "certified_rungs": [
+      "ast_2_ast"
+    ],
     "certification_evidence": {
       "ast_2_ast": "docs/MODEL_CARD.md#capability-ladder-position-decode-invariant-i10"
     },
