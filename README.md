@@ -1710,3 +1710,9 @@ tests/
 - campaign: `continuous-loop-20260808-continuous-openui-schedu-588c01bf-c2`
 - checkpoints: `runs/c20260808-continuous-openui-schedu-588c01bf-c2-component-plan/checkpoints/last.pt`
 - honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-09, continuous-loop-20260808-continuous-openui-schedu-588c01bf-c3)
+
+- campaign: `continuous-loop-20260808-continuous-openui-schedu-588c01bf-c3`
+- checkpoints: `runs/c20260808-continuous-openui-schedu-588c01bf-c3-control/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
