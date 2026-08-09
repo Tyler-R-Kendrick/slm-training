@@ -485,11 +485,12 @@
       "owner_symbols": [
         "main",
         "_overlap_matrix",
-        "_near_dup_clusters"
+        "_near_dup_clusters",
+        "contrast_corpus_leakage_report"
       ],
       "authority_tier": "evaluation-only",
       "design_doc": "docs/design/data-corpus-audit.md",
-      "notes": "AGENTS.md data-quality law: cross-snapshot overlap/leakage/near-dup auditing owner. New corpora (e.g. SRP-008 symbolic-regression corpus, VCE-008 split audits) run through this existing tool rather than a new leakage checker."
+      "notes": "AGENTS.md data-quality law: cross-snapshot overlap/leakage/near-dup auditing owner. New corpora (e.g. SRP-008 symbolic-regression corpus, VCE-008 split audits) run through this existing tool rather than a new leakage checker. VCE-008/SLM-463 landed as contrast_corpus_leakage_report + --mode contrast-audit: a read-only leakage/dedup/topology/OOD-split audit over the immutable openui_hard_valid_v1 corpus, per this row's own downstream_extension_map entry (new_owner_justified: false)."
     },
     {
       "id": "openwiki_generation",
