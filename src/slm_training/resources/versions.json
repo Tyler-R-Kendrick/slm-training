@@ -2831,6 +2831,11 @@
         {
           "version": "v7",
           "date": "2026-08-08",
+          "note": "no-bump: SLM-458 (VCE-005) adds select_shuffled_oracle/build_baseline_intervention to the existing 'plan_oracle_substitutor' owner's owner_symbols and extends PlanSource with 'destructive'/'random' (per the pre-registered downstream_extension_map row for VCE-005, new_owner_justified: false, 'Extends the VCE-004 intervention harness with control arms'); mirrors the row into repository-ownership-map.md. Behavior-additive only: existing PlanSource values, PlanInterventionRecordV1's schema, and contamination_banner's gate ({'gold','oracle_override'}) are unchanged, so destructive/random/shuffled(predicted-sourced) arms are never bannered while gold-sourced shuffled arms still are, via the same existing gate."
+        },
+        {
+          "version": "v7",
+          "date": "2026-08-08",
           "note": "no-bump: SLM-465 (SRP-004) registers a new 'symbolic_expr_fit' subsystem (src/slm_training/dsl/symbolic_expr_fit.py: AffineClassificationV1/LeastSquaresFitV1/NonAffineError/classify_affine_dependence/fit_least_squares/fit_integrity_ok); mirrors the row into repository-ownership-map.md, including the documented divergence from the pre-registered downstream_extension_map row for SRP-004 (predicted new_owner_justified: false, 'Extends the SRP-003 evaluator' -- the real dataclasses are not literally defined in symbolic_expr_evaluator.py, so per this map's own sibling-file rule it is registered as its own subsystem instead, same precedent as SGS-008/SRP-005); the new source/test files are not yet tracked by any versions.json component (consistent with the SRP-002/003/005 sibling-file precedent), so this entry only covers the ownership-map doc update."
         },
         {
@@ -16068,6 +16073,11 @@
         "tests/test_data/test_progspec/test_semantic_plan.py"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-08",
+          "note": "no-bump: SLM-458 (VCE-005) adds select_shuffled_oracle/build_baseline_intervention re-exports to data/semantic_plan/__init__.py (the underlying symbols are owned by governance.ownership_map's 'plan_oracle_substitutor' row, not this component); import-surface change only, no behavior here."
+        },
         {
           "version": "v1",
           "date": "2026-08-08",

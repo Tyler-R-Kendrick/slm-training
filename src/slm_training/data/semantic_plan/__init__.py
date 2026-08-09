@@ -27,8 +27,10 @@ from slm_training.data.semantic_plan.oracle import (
     PlanInterventionRecordV1,
     PlanOracleSubstitutor,
     apply_plan_intervention,
+    build_baseline_intervention,
     filter_manifest_safe,
     intervention_record_integrity_ok,
+    select_shuffled_oracle,
 )
 from slm_training.data.semantic_plan.seed import PlanSeedBuilder
 
@@ -52,9 +54,11 @@ __all__ = [
     "SemanticPlanCompiler",
     "SemanticPlanExtractor",
     "apply_plan_intervention",
+    "build_baseline_intervention",
     "canonicalize_plan",
     "filter_manifest_safe",
     "intervention_record_integrity_ok",
     "plan_factor_fingerprints",
     "project_authority",
+    "select_shuffled_oracle",
 ]
