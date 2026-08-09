@@ -658,6 +658,8 @@ def main(argv: list[str] | None = None) -> int:
             "binder-arity",
             "binder-component-plan",
             "component-structure",
+            "solver-energy",
+            "legal-edit-hazard",
         ),
         default="none",
         help="Prebuild structural auxiliary heads for capacity-matched controls.",
@@ -679,6 +681,30 @@ def main(argv: list[str] | None = None) -> int:
         type=float,
         default=0.0,
         help="Bias compiler-legal components by role and remaining planned count.",
+    )
+    parser.add_argument(
+        "--solver-energy-loss-weight",
+        type=float,
+        default=0.0,
+        help="Gold-lower-energy pairwise loss over legal compiler decisions.",
+    )
+    parser.add_argument(
+        "--solver-energy-decode-weight",
+        type=float,
+        default=0.0,
+        help="Bounded energy bias over legal compiler-decision candidates.",
+    )
+    parser.add_argument(
+        "--legal-edit-hazard-loss-weight",
+        type=float,
+        default=0.0,
+        help="Flow set-mass + hazard loss over legal compiler decisions.",
+    )
+    parser.add_argument(
+        "--legal-edit-hazard-decode-weight",
+        type=float,
+        default=0.0,
+        help="Bounded hazard-rate bias over legal compiler-decision candidates.",
     )
     parser.add_argument(
         "--abstract-plan-mode",
@@ -1607,6 +1633,10 @@ def main(argv: list[str] | None = None) -> int:
         component_inventory_decode_weight=args.component_inventory_decode_weight,
         component_plan_loss_weight=args.component_plan_loss_weight,
         component_plan_decode_weight=args.component_plan_decode_weight,
+        solver_energy_loss_weight=args.solver_energy_loss_weight,
+        solver_energy_decode_weight=args.solver_energy_decode_weight,
+        legal_edit_hazard_loss_weight=args.legal_edit_hazard_loss_weight,
+        legal_edit_hazard_decode_weight=args.legal_edit_hazard_decode_weight,
         abstract_plan_mode=args.abstract_plan_mode,
         abstract_plan_connector_arm=args.abstract_plan_connector_arm,
         abstract_plan_loss_weight=args.abstract_plan_loss_weight,
