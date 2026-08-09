@@ -30,6 +30,7 @@ container inherits the full cross-session memory:
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import re
@@ -77,6 +78,7 @@ DEFAULT_LEDGER_PATH = (
     / "autotrain_climb"
     / "evidence_ledger.v1.json"
 )
+_REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
 # ---------------------------------------------------------------------------
@@ -269,7 +271,7 @@ def _measured_record_observations(
         slug = slug_from_candidate_token(experiment_id)
         if slug is None and experiment_id.endswith("-control"):
             control_value = value
-        elif slug is None and "control" in experiment_id:
+        elif slug is None and experiment_id.rsplit("-", 1)[-1] in _NON_ARM_SLUGS:
             control_value = value
         elif slug is not None:
             candidates.append((slug, value))
@@ -336,9 +338,16 @@ def build_ledger(design_dir: Path) -> dict[str, Any]:
             continue
         if not isinstance(payload, Mapping):
             continue
+        # Campaign-less records fall back to a content digest so a payload
+        # duplicated across files (e.g. an iteration doc and its closeout
+        # copy) still folds exactly once.
+        payload_digest = hashlib.sha256(
+            json.dumps(payload, sort_keys=True, default=str).encode("utf-8")
+        ).hexdigest()
         for obs in extract_observations(payload, source=path.name):
-            key = (obs.campaign_id, obs.cycle_index, obs.slug, obs.seed)
-            if obs.campaign_id and key in seen:
+            identity = obs.campaign_id or f"sha:{payload_digest}"
+            key = (identity, obs.cycle_index, obs.slug, obs.seed)
+            if key in seen:
                 continue
             seen.add(key)
             _fold_observation(per_arm, obs)
@@ -346,9 +355,13 @@ def build_ledger(design_dir: Path) -> dict[str, Any]:
         slug: _finalize_arm(stats)
         for slug, stats in sorted(per_arm.items())
     }
+    try:
+        generated_from = str(design_dir.resolve().relative_to(_REPO_ROOT))
+    except ValueError:
+        generated_from = design_dir.name
     return {
         "schema": LEDGER_SCHEMA,
-        "generated_from": str(design_dir),
+        "generated_from": generated_from,
         "eval_key_components": list(EVAL_KEY_COMPONENTS),
         "file_counts": {
             "scanned": scanned,
@@ -389,6 +402,7 @@ def _fold_observation(per_arm: dict[str, dict[str, Any]], obs: ArmObservation) -
 
 
 def _finalize_arm(stats: dict[str, Any]) -> dict[str, Any]:
+    stats = dict(stats)
     deltas = stats.pop("deltas")
     n = len(deltas)
     mean = sum(deltas) / n if n else 0.0
@@ -467,25 +481,86 @@ def arm_posterior(
     )
 
 
+def current_eval_key() -> str | None:
+    """Current eval-comparability key from the live version registry.
+
+    Mirrors ``eval_key_from_stamp``'s format so ledger buckets produced under
+    the same metric constraints match exactly. ``None`` when the registry is
+    unavailable.
+    """
+    try:
+        from slm_training.versioning import component_version
+
+        parts = []
+        for name in EVAL_KEY_COMPONENTS:
+            try:
+                parts.append(f"{name}={component_version(name)}")
+            except KeyError:
+                continue
+        return "|".join(parts) if parts else None
+    except Exception:  # noqa: BLE001 — selection must not require the registry
+        return None
+
+
+def _weighted_bucket_stats(
+    buckets: Mapping[str, Any], eval_key: str | None
+) -> tuple[float, float, float]:
+    """Fold per-eval-partition buckets into weighted ``(n, mean, m2)``.
+
+    Same-partition observations count at full weight; cross-partition and
+    unstamped history at ``CROSS_PARTITION_WEIGHT``.
+    """
+    rows: list[tuple[float, float, float, float]] = []
+    total_w = weighted_sum = 0.0
+    for key, bucket in sorted(buckets.items()):
+        if not isinstance(bucket, Mapping):
+            continue
+        bucket_n = float(bucket.get("n") or 0.0)
+        if bucket_n <= 0:
+            continue
+        weight = 1.0 if eval_key is not None and key == eval_key else (
+            CROSS_PARTITION_WEIGHT
+        )
+        bucket_sum = float(bucket.get("sum") or 0.0)
+        bucket_sumsq = float(bucket.get("sumsq") or 0.0)
+        rows.append((weight, bucket_n, bucket_sum, bucket_sumsq))
+        total_w += weight * bucket_n
+        weighted_sum += weight * bucket_sum
+    if total_w <= 0:
+        return 0.0, 0.0, 0.0
+    mean = weighted_sum / total_w
+    m2 = sum(
+        w * (sumsq - 2.0 * mean * s + bn * mean * mean)
+        for w, bn, s, sumsq in rows
+    )
+    return total_w, mean, max(0.0, m2)
+
+
 def _arm_sufficient_stats(
     ledger_arm: Mapping[str, Any] | None,
     live: tuple[float, float] | None,
+    eval_key: str | None = None,
 ) -> tuple[float, float, float]:
     """Combine ledger stats and live loop stats into ``(n, mean, m2)``.
 
-    Live stats arrive as ``(n_complete, mean_delta)`` with unknown within-run
-    variance; they are folded via the parallel-axis rule with zero internal
-    spread (the prior's ``alpha0`` keeps the posterior width positive).
-    Ledger observations count at ``CROSS_PARTITION_WEIGHT`` because the
-    committed record spans eval partitions.
+    Ledger evidence is folded per eval partition: same-partition buckets at
+    full weight, cross-partition/unstamped at ``CROSS_PARTITION_WEIGHT``
+    (uniform discount when no bucket detail exists). Live stats arrive as
+    ``(n_complete, mean_delta)`` with unknown within-run variance; they are
+    folded via the parallel-axis rule with zero internal spread (the prior's
+    ``alpha0`` keeps the posterior width positive).
     """
     n = mean = m2 = 0.0
     if isinstance(ledger_arm, Mapping):
-        raw_n = float(ledger_arm.get("n_delta") or 0.0)
-        if raw_n > 0:
-            n = raw_n * CROSS_PARTITION_WEIGHT
-            mean = float(ledger_arm.get("mean_delta") or 0.0)
-            m2 = float(ledger_arm.get("m2_delta") or 0.0) * CROSS_PARTITION_WEIGHT
+        buckets = ledger_arm.get("by_eval_key")
+        if isinstance(buckets, Mapping) and buckets:
+            n, mean, m2 = _weighted_bucket_stats(buckets, eval_key)
+        else:
+            raw_n = float(ledger_arm.get("n_delta") or 0.0)
+            if raw_n > 0:
+                n = raw_n * CROSS_PARTITION_WEIGHT
+                mean = float(ledger_arm.get("mean_delta") or 0.0)
+                m2 = float(ledger_arm.get("m2_delta") or 0.0) * CROSS_PARTITION_WEIGHT
     if live is not None:
         live_n, live_mean = live
         if live_n > 0:
@@ -506,6 +581,7 @@ def rank_arms_by_evidence(
     residual_boosts: Mapping[str, float] | None = None,
     live_stats: Mapping[str, tuple[float, float]] | None = None,
     rotation_order: Sequence[str] | None = None,
+    eval_key: str | None = None,
 ) -> list[str]:
     """Deterministic evidence ranking of candidate slugs.
 
@@ -517,7 +593,9 @@ def rank_arms_by_evidence(
     rotation = {slug: idx for idx, slug in enumerate(rotation_order or candidates)}
 
     def key(slug: str) -> tuple[float, float, int, str]:
-        n, mean, m2 = _arm_sufficient_stats(ledger_arms.get(slug), live.get(slug))
+        n, mean, m2 = _arm_sufficient_stats(
+            ledger_arms.get(slug), live.get(slug), eval_key
+        )
         posterior = arm_posterior(n=n, mean=mean, m2=m2, prior_scale=prior_scale)
         return (
             -float(boosts.get(slug, 0.0)),
@@ -560,7 +638,7 @@ def build_regime_exhausted_verdict(
     ``resume_predicate`` holds.
     """
     return {
-        "schema": VERDICT_SCHEMA,
+        "schema_version": VERDICT_SCHEMA,
         "campaign_id": campaign_id,
         "loop_id": loop_id,
         "cycle_index": int(cycle_index),

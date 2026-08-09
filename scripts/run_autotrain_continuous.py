@@ -4373,6 +4373,7 @@ def _evidence_ranked_slug(
             residual_boosts=boosts,
             live_stats=live_stats,
             rotation_order=candidates,
+            eval_key=_ev.current_eval_key(),
         )
     except Exception as exc:  # noqa: BLE001 — selection upgrade must fail open
         print(f"EVIDENCE_RANK_WARN {exc}", flush=True)

@@ -2966,7 +2966,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v196",
+      "version": "v197",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -3019,6 +3019,11 @@
         "tests/test_autoresearch/test_evidence_ledger.py"
       ],
       "history": [
+        {
+          "version": "v197",
+          "date": "2026-08-09",
+          "note": "darkfactory phase 1 review fixes: typed RegimeExhaustedVerdictV1 on the handoff (strict model replaces dict), partition-aware posterior weighting (same-eval-key buckets at full weight via current_eval_key), content-digest dedupe for campaign-less records, repo-relative generated_from in the committed ledger, control-suffix tightening, ledger --check drift mode"
+        },
         {
           "version": "v196",
           "date": "2026-08-09",

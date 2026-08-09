@@ -68,8 +68,8 @@ climb policy `selection.mode == "posterior_ucb"` (policy v7). Any failure
 falls open to the legacy soft rank; `selection.mode = "rotation"` restores
 the old behavior wholesale. On the real ledger the selector's first picks
 are the arms with the strongest observed effects
-(`semantic-contrast-compiler-margin`, mean Δ +0.27 over 6 observations) —
-signal the rotation selector never used.
+(`semantic-contrast-compiler-margin`, mean Δ +0.27 over 3 delta
+observations, 6 records total) — signal the rotation selector never used.
 
 ### 3. Exact power floor on arm closure (R1, narrow form)
 

@@ -439,6 +439,6 @@
     "scanned": 2074,
     "unreadable": 0
   },
-  "generated_from": "/home/user/slm-training/docs/design",
+  "generated_from": "docs/design",
   "schema": "autotrain_evidence_ledger/v1"
 }

@@ -95,10 +95,17 @@ def test_build_ledger_dedupes_and_is_deterministic(tmp_path: Path) -> None:
     record = _cycle_record("canvas", positive=False, delta=-0.02, cycle=5)
     (design / "a.json").write_text(json.dumps(record))
     (design / "b.json").write_text(json.dumps(record))  # duplicate identity
+    # Campaign-less duplicates fold once via the content-digest fallback.
+    orphan = dict(record)
+    orphan["campaign_id"] = ""
+    (design / "c.json").write_text(json.dumps(orphan))
+    (design / "d.json").write_text(json.dumps(orphan))
     first = ev.build_ledger(design)
     second = ev.build_ledger(design)
     assert first == second
-    assert first["arms"]["canvas"]["n_obs"] == 1
+    assert first["arms"]["canvas"]["n_obs"] == 2
+    # generated_from never embeds a machine-local absolute path.
+    assert not first["generated_from"].startswith("/")
 
 
 def test_measured_record_extraction() -> None:
@@ -196,6 +203,25 @@ def test_ledger_roundtrip(tmp_path: Path) -> None:
     assert ev.load_ledger(tmp_path / "missing.json") == {}
 
 
+def test_committed_ledger_loads_nonempty() -> None:
+    # Guards the committed artifact against deletion or schema drift, which
+    # would silently degrade selection to prior-only ranking.
+    arms = ev.load_ledger()
+    assert arms, "committed evidence_ledger.v1.json missing or invalid"
+
+
+def test_partition_weighting_prefers_current_eval_key() -> None:
+    buckets = {
+        "evals.scoring=v23": {"n": 4, "sum": 0.2, "sumsq": 0.05},
+        "unstamped": {"n": 2, "sum": -0.1, "sumsq": 0.02},
+    }
+    n_cur, _, _ = ev._weighted_bucket_stats(buckets, "evals.scoring=v23")
+    n_none, _, _ = ev._weighted_bucket_stats(buckets, None)
+    # Same-partition evidence counts at full weight only when the key matches.
+    assert n_cur == 4.0 + 2.0 * ev.CROSS_PARTITION_WEIGHT
+    assert n_none == (4.0 + 2.0) * ev.CROSS_PARTITION_WEIGHT
+
+
 def test_regime_exhausted_verdict_shape() -> None:
     verdict = ev.build_regime_exhausted_verdict(
         campaign_id="camp",
@@ -206,6 +232,11 @@ def test_regime_exhausted_verdict_shape() -> None:
         policy_sha256="0" * 64,
         resume_predicate="new lever family registered",
     )
-    assert verdict["schema"] == ev.VERDICT_SCHEMA
+    assert verdict["schema_version"] == ev.VERDICT_SCHEMA
     assert verdict["closed_slugs"] == ["a", "b"]
     assert verdict["binding_constraint"] == "quality_arm_bank_exhausted"
+    # The builder's payload must satisfy the strict schema consumers rely on.
+    from slm_training.autoresearch.schemas import RegimeExhaustedVerdictV1
+
+    model = RegimeExhaustedVerdictV1.model_validate(verdict)
+    assert model.resume_predicate == "new lever family registered"

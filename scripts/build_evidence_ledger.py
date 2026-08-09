@@ -14,6 +14,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -46,6 +47,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--status", action="store_true", help="summarize the committed ledger"
     )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="rebuild and fail (exit 1) when the committed ledger has drifted",
+    )
     args = parser.parse_args(argv)
 
     if args.status:
@@ -59,6 +65,16 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     payload = ev.build_ledger(args.design_dir)
+    if args.check:
+        try:
+            committed = json.loads(args.out.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            committed = None
+        if committed != payload:
+            print(f"evidence ledger drift: {args.out} != rebuild of {args.design_dir}")
+            return 1
+        print("evidence ledger up to date")
+        return 0
     counts = payload["file_counts"]
     print(
         f"scanned={counts['scanned']} unreadable={counts['unreadable']} "
