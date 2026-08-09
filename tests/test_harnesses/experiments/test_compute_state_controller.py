@@ -198,6 +198,9 @@ def test_replay_scores_regret_and_does_not_reward_blanket_abstention() -> None:
     assert abstained.abstentions == len(unknown_records)
     assert abstained.agreements == 0
     assert abstained.expressions_evaluated == 0
+    # Never the vacuous 1 - 0/0 = 0 that would outrank every rule that decided.
+    assert abstained.regret == 1.0
+    assert abstained.regret >= report.regret
 
 
 def test_replay_is_deterministic() -> None:

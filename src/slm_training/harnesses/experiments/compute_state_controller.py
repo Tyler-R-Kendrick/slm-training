@@ -424,9 +424,11 @@ def replay_rule(
         elif recommendation.action == oracle:
             agreements += 1
     decided = len(records) - abstentions
-    # Abstention is not scored as a wrong answer; it is scored as coverage
-    # loss, so a rule cannot buy regret 0 by abstaining everywhere.
-    regret = 0.0 if decided == 0 else 1.0 - (agreements / decided)
+    # Abstention is scored as coverage loss rather than as a wrong answer, but
+    # a rule that never decides has no measured skill at all -- so it takes
+    # maximal regret instead of the vacuous 1 - 0/0 = 0 a do-nothing rule would
+    # otherwise use to outrank every rule that actually committed.
+    regret = 1.0 if decided == 0 else 1.0 - (agreements / decided)
     return ReplayReportV1(
         rule_id=rule.rule_id,
         recommendations=tuple(recommendations),

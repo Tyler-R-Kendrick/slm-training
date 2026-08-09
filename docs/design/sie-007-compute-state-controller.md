@@ -57,8 +57,10 @@ derived only from counters the record already carries (retries → repair,
 multiple attempts → bounded search, forwards → neural forward, otherwise the
 deterministic ranker), never from a label supplied by the rule under test.
 Abstention is scored as coverage loss rather than as a wrong answer, so a rule
-cannot buy regret `0.0` by abstaining everywhere — the abstention count is
-reported beside the regret and both are needed to read a result.
+cannot buy regret `0.0` by abstaining everywhere: a rule that never decides has
+no measured skill and takes maximal regret `1.0`, not the vacuous `1 - 0/0`.
+The abstention count is reported beside the regret and both are needed to read
+a result.
 
 ## Validation
 
