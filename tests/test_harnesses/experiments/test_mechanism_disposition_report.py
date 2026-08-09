@@ -11,6 +11,8 @@ import dataclasses
 
 import pytest
 
+from tests.casefiles import case_values
+
 from slm_training.harnesses.experiments.mechanism_disposition_report import (
     RECORD_SCHEMA,
     REPORT_SCHEMA,
@@ -156,11 +158,7 @@ def test_missing_evidence_forces_a_downgraded_disposition() -> None:
 
 @pytest.mark.parametrize(
     "overrides,match",
-    [
-        ({"authority_class": "made_up"}, "unknown authority_class"),
-        ({"evidence_class": "made_up"}, "unknown evidence_class"),
-        ({"default_state": "made_up"}, "unknown default_state"),
-    ],
+    case_values(__file__, "test_rejects_unknown_enum_like_values"),
 )
 def test_rejects_unknown_enum_like_values(overrides: dict, match: str) -> None:
     fields = dict(

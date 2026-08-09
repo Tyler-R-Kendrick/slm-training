@@ -1545,6 +1545,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-08-09",
+          "note": "no-bump: inline pytest case tables externalized to mirrored JSON via scripts.extract_test_cases --write; test behavior byte-equivalent (140 tests pass unchanged)."
+        },
+        {
+          "version": "v1",
           "date": "2026-08-08",
           "note": "SRP-001 (SLM-441) initial registration: opt-in `symbolic_regression` DslPack registered through the canonical dsl.pack registry (not the deprecated dsl/packs shadow registry). Adds SymbolicRegressionProblemV1 (versioned, hashable, validate-on-construct problem contract), a minimal placeholder Lark grammar/backend for a single `root` expression over allow-listed operators, a syntactic-only oracle (well_formed_not_behavioral \u2014 never numeric fit), and a fixed-dispatch-table reference evaluator that never calls eval/exec. No sympy/scipy/scikit-learn/PySR/julia dependency. SRP-002 (SLM-453) supersedes the placeholder grammar with a typed expression IR/codec; SRP-003 (SLM-461) supersedes the reference evaluator with a vectorized NumPy evaluator honoring numeric_domain_policy."
         }
@@ -4706,6 +4711,11 @@
         "tests/test_harnesses/experiments/test_compute_state_controller.py"
       ],
       "history": [
+        {
+          "version": "v152",
+          "date": "2026-08-09",
+          "note": "no-bump: inline pytest case tables externalized to mirrored JSON via scripts.extract_test_cases --write; test behavior byte-equivalent (140 tests pass unchanged)."
+        },
         {
           "version": "v152",
           "date": "2026-08-09",

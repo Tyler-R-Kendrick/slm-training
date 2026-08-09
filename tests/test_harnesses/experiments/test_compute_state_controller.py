@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import pytest
 
+from tests.casefiles import case_values
+
 from slm_training.harnesses.experiments.compute_state_controller import (
     COMPUTE_STATE_FEATURES_SCHEMA,
     CONTROLLER_ACTIONS,
@@ -108,17 +110,7 @@ def test_rule_abstains_on_unknown_features_rather_than_guessing() -> None:
 
 @pytest.mark.parametrize(
     "malicious",
-    [
-        "__import__('os').system('rm -rf /')",
-        "(+ v0 __import__)",
-        "eval",
-        "(exec v0)",
-        "(+ v0 1.5)",
-        "(+ v0 v999)",
-        "",
-        "(+ v0",
-        "(+ v0) trailing",
-    ],
+    case_values(__file__, "test_malicious_or_malformed_rules_are_rejected_at_construction"),
 )
 def test_malicious_or_malformed_rules_are_rejected_at_construction(malicious: str) -> None:
     with pytest.raises(ValueError):

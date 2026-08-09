@@ -1,0 +1,41 @@
+{
+  "schema": "test_cases/v1",
+  "module": "tests/test_harnesses/experiments/test_mechanism_disposition_report.py",
+  "case_sets": {
+    "test_rejects_unknown_enum_like_values": {
+      "parameters": [
+        "overrides",
+        "match"
+      ],
+      "cases": [
+        {
+          "id": "case-001",
+          "values": [
+            {
+              "authority_class": "made_up"
+            },
+            "unknown authority_class"
+          ]
+        },
+        {
+          "id": "case-002",
+          "values": [
+            {
+              "evidence_class": "made_up"
+            },
+            "unknown evidence_class"
+          ]
+        },
+        {
+          "id": "case-003",
+          "values": [
+            {
+              "default_state": "made_up"
+            },
+            "unknown default_state"
+          ]
+        }
+      ]
+    }
+  }
+}
