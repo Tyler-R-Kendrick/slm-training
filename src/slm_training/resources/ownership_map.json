@@ -451,6 +451,23 @@
       "notes": "SRP-004/SLM-465. The downstream_extension_map row for SRP-004 predicted new_owner_justified: false ('Extends the SRP-003 evaluator'), i.e. adding these symbols directly to symbolic_expr_evaluator's owner_symbols. The real implementation is a self-contained module whose dataclasses (AffineClassificationV1, LeastSquaresFitV1) are not literally defined in symbolic_expr_evaluator.py -- per this map's own rule that a symbol living in a sibling file cannot be added to another module's owner_symbols -- so it is registered as its own subsystem instead, and the divergence is documented here (same precedent as SGS-008/SRP-005). It does reuse symbolic_expr_evaluator.evaluate_vectorized directly (every coefficient-free subtree is evaluated through it, never re-implemented) rather than forking evaluator arithmetic. classify_affine_dependence is a purely structural, data-independent check built on the identical recursive rule set fit_least_squares uses to build the design matrix (via a single-row dummy evaluation), so the two can never silently disagree. Non-affine coefficient holes are unsupported by design -- no optimizer is ever silently substituted."
     },
     {
+      "id": "symbolic_expr_report",
+      "name": "Validity, fit, extrapolation, complexity, and Pareto reporting",
+      "owner_module": "src/slm_training/dsl/symbolic_expr_report.py",
+      "owner_symbols": [
+        "ExpressionEvidenceV1",
+        "ParetoFrontV1",
+        "SplitEvidenceV1",
+        "build_evidence_record",
+        "evidence_integrity_ok",
+        "front_integrity_ok",
+        "pareto_front"
+      ],
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/symbol-only-output-contract.md",
+      "notes": "SRP-007/SLM-466. The downstream_extension_map row for SRP-007 predicted new_owner_justified: false ('Reporting layer over SRP-003/004/005'), i.e. adding these symbols directly to an existing owner's owner_symbols. The real implementation's dataclasses (ExpressionEvidenceV1, ParetoFrontV1, SplitEvidenceV1) are not literally defined in symbolic_expr_evaluator.py/symbolic_expr_fit.py/symbolic_expr_canonicalize.py -- per this map's own rule that a symbol living in a sibling file cannot be added to another module's owner_symbols -- so it is registered as its own subsystem instead, and the divergence is documented here (same precedent as SGS-008/SRP-004/SRP-005). It composes rather than re-derives: complexity comes from symbolic_expr_ir.expr_depth_and_node_count, validity/predictions from symbolic_expr_evaluator.evaluate_vectorized, fitted coefficients from symbolic_expr_fit.fit_least_squares (train_indices only -- validation/extrapolation rows are scored afterward, never fit on), and canonical identity from symbolic_expr_canonicalize.canonicalize_expr. Per-expression evidence is reported as a vector (train/validation/extrapolation loss kept separate, never averaged into one number); a split with any numerically invalid row is scored math.inf rather than averaged over only its valid rows, so invalid output can never buy a better score. pareto_front's dominance function follows evals/verified_utility.pareto_dominance's factor-list style, generalized to N objectives, and requires every input record to share one problem_fingerprint/pack_id/resource budget so a comparison artifact never silently mixes identities."
+    },
+    {
       "id": "version_registry",
       "name": "Component-version registry and enforcement",
       "owner_module": "src/slm_training/resources/versions.json",

@@ -2820,6 +2820,11 @@
       "history": [
         {
           "version": "v7",
+          "date": "2026-08-09",
+          "note": "no-bump: SLM-466 (SRP-007) registers a new 'symbolic_expr_report' subsystem (src/slm_training/dsl/symbolic_expr_report.py: ExpressionEvidenceV1/ParetoFrontV1/SplitEvidenceV1/build_evidence_record/evidence_integrity_ok/front_integrity_ok/pareto_front); mirrors the row into repository-ownership-map.md, including the documented divergence from the pre-registered downstream_extension_map row for SRP-007 (predicted new_owner_justified: false, 'Reporting layer over SRP-003/004/005' -- the real dataclasses are not literally defined in any sibling file, so per this map's own sibling-file rule it is registered as its own subsystem instead, same precedent as SGS-008/SRP-004/SRP-005); the new source/test files are not yet tracked by any versions.json component (consistent with the SRP-002/003/004/005 sibling-file precedent), so this entry only covers the ownership-map doc update."
+        },
+        {
+          "version": "v7",
           "date": "2026-08-08",
           "note": "no-bump: SLM-465 (SRP-004) registers a new 'symbolic_expr_fit' subsystem (src/slm_training/dsl/symbolic_expr_fit.py: AffineClassificationV1/LeastSquaresFitV1/NonAffineError/classify_affine_dependence/fit_least_squares/fit_integrity_ok); mirrors the row into repository-ownership-map.md, including the documented divergence from the pre-registered downstream_extension_map row for SRP-004 (predicted new_owner_justified: false, 'Extends the SRP-003 evaluator' -- the real dataclasses are not literally defined in symbolic_expr_evaluator.py, so per this map's own sibling-file rule it is registered as its own subsystem instead, same precedent as SGS-008/SRP-005); the new source/test files are not yet tracked by any versions.json component (consistent with the SRP-002/003/005 sibling-file precedent), so this entry only covers the ownership-map doc update."
         },
