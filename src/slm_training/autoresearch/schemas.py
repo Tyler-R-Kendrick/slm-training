@@ -1033,6 +1033,26 @@ class AutotrainActionV1(StrictModel):
         return self
 
 
+class RegimeExhaustedVerdictV1(StrictModel):
+    """Typed terminal verdict: the legal screening-arm domain is empty.
+
+    A conclusion, not a failure — it names the binding constraint and the
+    predicate whose satisfaction re-opens the region. Built by
+    ``evidence_ledger.build_regime_exhausted_verdict``.
+    """
+
+    schema_version: Literal["regime_exhausted_verdict/v1"] = (
+        "regime_exhausted_verdict/v1"
+    )
+    campaign_id: str = Field(min_length=1)
+    loop_id: str = Field(min_length=1)
+    cycle_index: int = Field(ge=1)
+    binding_constraint: str = Field(min_length=1)
+    closed_slugs: tuple[str, ...] = ()
+    policy_sha256: str | None = None
+    resume_predicate: str = Field(min_length=1)
+
+
 class AutotrainCycleHandoffV1(StrictModel):
     """Typed boundary returned to the agent supervisor after one bounded cycle."""
 
@@ -1064,6 +1084,10 @@ class AutotrainCycleHandoffV1(StrictModel):
     # Dual-regime thrash label from the screening matrix (isolate / climb /
     # timeout_decode_residual). Absent on confirm/promote / non-thrash cycles.
     thrash_regime: dict[str, Any] | None = None
+    # Typed verdict when the legal experiment domain is empty: a conclusion
+    # naming the binding constraint and the resume predicate, not a harness
+    # failure. None on ordinary cycles.
+    terminal_verdict: RegimeExhaustedVerdictV1 | None = None
     created_at: str = Field(default_factory=utc_now)
 
     @model_validator(mode="after")
