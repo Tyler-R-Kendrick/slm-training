@@ -1,0 +1,335 @@
+{
+  "kind": "vce010_evaluator_calibration_protocol/v1",
+  "claim_class": "diagnostic",
+  "environment": {
+    "platform": "Linux-6.18.5-fc-v20-x86_64-with-glibc2.39",
+    "machine": "x86_64",
+    "python": "3.12.3"
+  },
+  "recipe": {
+    "command": [
+      "python",
+      "-m",
+      "scripts.run_vce010_evaluator_calibration_protocol",
+      "--mode",
+      "fixture",
+      "--source-count",
+      "4",
+      "--seed",
+      "3"
+    ],
+    "docs_path": "docs/design/vce010-evaluator-calibration-results.json"
+  },
+  "disposition": "complete",
+  "pair_n": 12,
+  "arms": [
+    {
+      "arm": "deterministic_only",
+      "disposition": "match",
+      "pair_n": 12,
+      "compute": {
+        "forwards": 0,
+        "verifier_calls": 12,
+        "wall_ms": 0.0
+      }
+    },
+    {
+      "arm": "external_only_missing_human",
+      "disposition": "blocked",
+      "reason": "missing_human_evidence",
+      "pair_n": 12,
+      "compute": {
+        "forwards": 0,
+        "verifier_calls": 12,
+        "wall_ms": 1.107
+      }
+    },
+    {
+      "arm": "human_only_missing_external",
+      "disposition": "blocked",
+      "reason": "missing_external_evidence",
+      "pair_n": 12,
+      "compute": {
+        "forwards": 0,
+        "verifier_calls": 12,
+        "wall_ms": 7.286
+      }
+    },
+    {
+      "arm": "full_triple_judge",
+      "disposition": "match",
+      "pair_n": 12,
+      "ambiguous_pair_ids": [],
+      "independence_ok": true,
+      "triple_judge_analysis": {
+        "schema": "TripleJudgeAnalysisV1",
+        "pair_n": 12,
+        "full": {
+          "pair_n": 12,
+          "pairwise": {
+            "deterministic_vs_external": {
+              "score_pair_n": 12,
+              "spearman": null,
+              "kendall_tau_b": null,
+              "kendall_tau_b_ci": {
+                "estimate": null,
+                "low": null,
+                "high": null,
+                "resamples": 0
+              },
+              "cohen_kappa": 0.0,
+              "pass_set_jaccard": 0.9166666666666666,
+              "admission_divergence_rate": 0.08333333333333333,
+              "verdict_agreement_ci": {
+                "n": 12,
+                "estimate": 0.9166666666666666,
+                "low": 0.646120088858883,
+                "high": 0.9851349055950829
+              }
+            },
+            "deterministic_vs_human": {
+              "score_pair_n": 12,
+              "spearman": null,
+              "kendall_tau_b": null,
+              "kendall_tau_b_ci": {
+                "estimate": null,
+                "low": null,
+                "high": null,
+                "resamples": 0
+              },
+              "cohen_kappa": null,
+              "pass_set_jaccard": 1.0,
+              "admission_divergence_rate": 0.0,
+              "verdict_agreement_ci": {
+                "n": 12,
+                "estimate": 1.0,
+                "low": 0.7575059933447592,
+                "high": 1.0
+              }
+            },
+            "external_vs_human": {
+              "score_pair_n": 12,
+              "spearman": -0.08056054385890982,
+              "kendall_tau_b": -0.13740858372430334,
+              "kendall_tau_b_ci": {
+                "estimate": -0.13740858372430334,
+                "low": -0.6551724137931034,
+                "high": 0.3548387096774194,
+                "resamples": 1000
+              },
+              "cohen_kappa": 0.0,
+              "pass_set_jaccard": 0.9166666666666666,
+              "admission_divergence_rate": 0.08333333333333333,
+              "verdict_agreement_ci": {
+                "n": 12,
+                "estimate": 0.9166666666666666,
+                "low": 0.646120088858883,
+                "high": 0.9851349055950829
+              }
+            }
+          },
+          "fleiss_kappa": -0.028571428571426576,
+          "external_vs_human": {
+            "n": 12,
+            "precision": 1.0,
+            "recall": 0.9166666666666666,
+            "calibration_error": 0.15841666666666665
+          }
+        },
+        "excluding_ambiguous_human_pairs": {
+          "pair_n": 12,
+          "pairwise": {
+            "deterministic_vs_external": {
+              "score_pair_n": 12,
+              "spearman": null,
+              "kendall_tau_b": null,
+              "kendall_tau_b_ci": {
+                "estimate": null,
+                "low": null,
+                "high": null,
+                "resamples": 0
+              },
+              "cohen_kappa": 0.0,
+              "pass_set_jaccard": 0.9166666666666666,
+              "admission_divergence_rate": 0.08333333333333333,
+              "verdict_agreement_ci": {
+                "n": 12,
+                "estimate": 0.9166666666666666,
+                "low": 0.646120088858883,
+                "high": 0.9851349055950829
+              }
+            },
+            "deterministic_vs_human": {
+              "score_pair_n": 12,
+              "spearman": null,
+              "kendall_tau_b": null,
+              "kendall_tau_b_ci": {
+                "estimate": null,
+                "low": null,
+                "high": null,
+                "resamples": 0
+              },
+              "cohen_kappa": null,
+              "pass_set_jaccard": 1.0,
+              "admission_divergence_rate": 0.0,
+              "verdict_agreement_ci": {
+                "n": 12,
+                "estimate": 1.0,
+                "low": 0.7575059933447592,
+                "high": 1.0
+              }
+            },
+            "external_vs_human": {
+              "score_pair_n": 12,
+              "spearman": -0.08056054385890982,
+              "kendall_tau_b": -0.13740858372430334,
+              "kendall_tau_b_ci": {
+                "estimate": -0.13740858372430334,
+                "low": -0.6551724137931034,
+                "high": 0.3548387096774194,
+                "resamples": 1000
+              },
+              "cohen_kappa": 0.0,
+              "pass_set_jaccard": 0.9166666666666666,
+              "admission_divergence_rate": 0.08333333333333333,
+              "verdict_agreement_ci": {
+                "n": 12,
+                "estimate": 0.9166666666666666,
+                "low": 0.646120088858883,
+                "high": 0.9851349055950829
+              }
+            }
+          },
+          "fleiss_kappa": -0.028571428571426576,
+          "external_vs_human": {
+            "n": 12,
+            "precision": 1.0,
+            "recall": 0.9166666666666666,
+            "calibration_error": 0.15841666666666665
+          }
+        },
+        "ambiguous_pair_n": 0,
+        "disagreement": {
+          "pair_n": 1,
+          "reason_clusters": {
+            "binding": 2
+          },
+          "checkpoint_family": {
+            "binding": 1
+          },
+          "suite": {
+            "vce010_fixture": 1
+          }
+        },
+        "external_operations": {
+          "total_cost_usd": 0.0012000000000000001,
+          "mean_latency_ms": 0.0,
+          "refusal_n": 0,
+          "error_n": 0
+        }
+      },
+      "risk_coverage": {
+        "n": 12,
+        "brier": 0.03470058333333333,
+        "ece": 0.15841666666666665,
+        "max_selective_risk": 0.2,
+        "operating_point": {
+          "threshold": 0.421,
+          "coverage": 1.0,
+          "selective_risk": 0.08333333333333333
+        },
+        "abstain_required": false,
+        "risk_coverage": [
+          {
+            "threshold": 0.946,
+            "coverage": 0.08333333333333333,
+            "selective_risk": 0.0
+          },
+          {
+            "threshold": 0.942,
+            "coverage": 0.16666666666666666,
+            "selective_risk": 0.0
+          },
+          {
+            "threshold": 0.916,
+            "coverage": 0.25,
+            "selective_risk": 0.0
+          },
+          {
+            "threshold": 0.907,
+            "coverage": 0.3333333333333333,
+            "selective_risk": 0.0
+          },
+          {
+            "threshold": 0.903,
+            "coverage": 0.4166666666666667,
+            "selective_risk": 0.0
+          },
+          {
+            "threshold": 0.877,
+            "coverage": 0.5,
+            "selective_risk": 0.0
+          },
+          {
+            "threshold": 0.84,
+            "coverage": 0.5833333333333334,
+            "selective_risk": 0.0
+          },
+          {
+            "threshold": 0.825,
+            "coverage": 0.6666666666666666,
+            "selective_risk": 0.0
+          },
+          {
+            "threshold": 0.809,
+            "coverage": 0.75,
+            "selective_risk": 0.0
+          },
+          {
+            "threshold": 0.799,
+            "coverage": 0.8333333333333334,
+            "selective_risk": 0.0
+          },
+          {
+            "threshold": 0.756,
+            "coverage": 0.9166666666666666,
+            "selective_risk": 0.0
+          },
+          {
+            "threshold": 0.421,
+            "coverage": 1.0,
+            "selective_risk": 0.08333333333333333
+          }
+        ]
+      },
+      "reason_family_confusion": {
+        "binding": {
+          "binding": 1
+        }
+      },
+      "compute": {
+        "forwards": 0,
+        "verifier_calls": 12,
+        "wall_ms": 8.393
+      }
+    }
+  ],
+  "external_human_calibration_error": 0.15841666666666665,
+  "external_human_cohen_kappa": 0.0,
+  "admission_divergence_rate": 0.0,
+  "preregistered_calibration_error_max": 0.35,
+  "rollback_gate_fired": false,
+  "independence_ok": true,
+  "ambiguous_pair_ids": [],
+  "scope_disclaimer": "Fixture-scale calibration evidence over a small, freshly generated semantic-contrast pair sample. The external judge and its transport are a labeled mock (no real external-model credentials or network call); human raters are synthetic, seeded labels standing in for a real blinded pair study. No evaluator-promotion or production-quality claim is made.",
+  "manifest_sha256": "4c8968a59582520ab7b3da0571a909bac9c418e0da51decba7e2d9667e5e9466",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "75fab945ef7514fbd2936e57291b9344c4ce2ef3",
+    "code_dirty": true,
+    "components": {
+      "evals.evaluator_calibration_protocol": "v1"
+    },
+    "stamped_at": "2026-08-09T06:26:55.876708+00:00"
+  }
+}
