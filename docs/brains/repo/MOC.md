@@ -77,6 +77,7 @@ instead of duplicating one. (These are **not** dead ends.)
 - [SGS-005 authority projections](../../design/sgs-005-authority-projections.md)
 - [SGS-006 requirement integration adapters](../../design/sgs-006-prompt-requirements-integration.md)
 - [SGS-010 schema versioning + compatibility](../../design/sgs-010-schema-versioning-compatibility.md)
+- [SIE-007 compute-state features + replay-only controller](../../design/sie-007-compute-state-controller.md)
 - [Repository ownership map](../../design/repository-ownership-map.md) — owner/authority registry all of the above register into.
 
 ## Dead ends (do not re-propose)
