@@ -716,6 +716,10 @@ _LEVER_KNOB_KEYS = (
     "mixture_max_importance_weight",
     "component_plan_loss_weight",
     "component_plan_decode_weight",
+    "solver_energy_loss_weight",
+    "solver_energy_decode_weight",
+    "legal_edit_hazard_loss_weight",
+    "legal_edit_hazard_decode_weight",
     "component_edge_loss_weight",
     "component_edge_alignment_loss_weight",
     "component_edge_decode_weight",
@@ -1235,6 +1239,26 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
             "compiler_alignment_margin": 1.0,
             "compiler_alignment_stratified": True,
             "compiler_alignment_kind_filter": "literal-close",
+        },
+    ),
+    (
+        "solver-energy-rerank",
+        "A trained candidate-energy reranker over legal compiler decisions improves smoke structural_similarity without lowering parse_rate or binder_reference_f1.",
+        {
+            "solver_energy_loss_weight": 1.0,
+            "solver_energy_decode_weight": 1.0,
+            "structural_aux_head_profile": "solver-energy",
+            "compiler_decode_mode": "tree",
+        },
+    ),
+    (
+        "legal-edit-hazard",
+        "A flow-matching hazard head over legal compiler decisions improves smoke structural_similarity without lowering parse_rate or binder_reference_f1.",
+        {
+            "legal_edit_hazard_loss_weight": 1.0,
+            "legal_edit_hazard_decode_weight": 1.0,
+            "structural_aux_head_profile": "legal-edit-hazard",
+            "compiler_decode_mode": "tree",
         },
     ),
 )
@@ -4171,6 +4195,14 @@ def _arm_slug_from_knobs(
         return "component-structure"
     if knobs.get("component_plan_loss_weight"):
         return "component-plan"
+    if knobs.get("solver_energy_loss_weight") or knobs.get(
+        "solver_energy_decode_weight"
+    ):
+        return "solver-energy-rerank"
+    if knobs.get("legal_edit_hazard_loss_weight") or knobs.get(
+        "legal_edit_hazard_decode_weight"
+    ):
+        return "legal-edit-hazard"
     if knobs.get("component_edge_alignment_loss_weight"):
         return "edge-alignment"
     if knobs.get("semantic_contrast_loss_weight"):
@@ -4807,6 +4839,8 @@ def _select_recommended_slug(
         "literal-close-typed-balance",
         "symbol-boundary-structure",
         "semantic-contrast-structure",
+        "solver-energy-rerank",
+        "legal-edit-hazard",
     )
     legacy_quality_slugs = {
         "component-plan",
@@ -9706,6 +9740,10 @@ def _matrix(
             "compact_active_canvas": False,
             "component_plan_loss_weight": 0.0,
             "component_plan_decode_weight": 0.0,
+            "solver_energy_loss_weight": 0.0,
+            "solver_energy_decode_weight": 0.0,
+            "legal_edit_hazard_loss_weight": 0.0,
+            "legal_edit_hazard_decode_weight": 0.0,
             "component_edge_loss_weight": 0.0,
             "component_edge_alignment_loss_weight": 0.0,
             "component_edge_decode_weight": 0.0,

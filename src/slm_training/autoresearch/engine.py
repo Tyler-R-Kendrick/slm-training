@@ -649,6 +649,31 @@ def compile_commands(
                     str(knobs.component_plan_decode_weight),
                 ]
             )
+        if knobs.solver_energy_loss_weight is not None:
+            train.extend(
+                ["--solver-energy-loss-weight", str(knobs.solver_energy_loss_weight)]
+            )
+        if knobs.solver_energy_decode_weight is not None:
+            train.extend(
+                [
+                    "--solver-energy-decode-weight",
+                    str(knobs.solver_energy_decode_weight),
+                ]
+            )
+        if knobs.legal_edit_hazard_loss_weight is not None:
+            train.extend(
+                [
+                    "--legal-edit-hazard-loss-weight",
+                    str(knobs.legal_edit_hazard_loss_weight),
+                ]
+            )
+        if knobs.legal_edit_hazard_decode_weight is not None:
+            train.extend(
+                [
+                    "--legal-edit-hazard-decode-weight",
+                    str(knobs.legal_edit_hazard_decode_weight),
+                ]
+            )
         if knobs.slot_component_loss_weight is not None:
             train.extend(
                 ["--slot-component-loss-weight", str(knobs.slot_component_loss_weight)]
