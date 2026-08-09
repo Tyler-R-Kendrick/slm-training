@@ -1,0 +1,48 @@
+{
+  "auto": true,
+  "campaign_id": "continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c136",
+  "candidate_metrics": {
+    "binder_reference_f1": 0.7999999999999999,
+    "latency_ms_p50": 12308.36,
+    "meaningful_program_rate": 0.3333333333333333,
+    "parse_rate": 1.0,
+    "smoke.binder_reference_f1": 0.7999999999999999,
+    "smoke.latency_ms_p50": 12308.36,
+    "smoke.meaningful_program_rate": 0.3333333333333333,
+    "smoke.parse_rate": 1.0,
+    "smoke.structural_similarity": 0.06513333333333333,
+    "structural_similarity": 0.06513333333333333
+  },
+  "control_metrics": {
+    "binder_reference_f1": 0.9523809523809524,
+    "latency_ms_p50": 10279.24,
+    "meaningful_program_rate": 0.3333333333333333,
+    "parse_rate": 1.0,
+    "smoke.binder_reference_f1": 0.9523809523809524,
+    "smoke.latency_ms_p50": 10279.24,
+    "smoke.meaningful_program_rate": 0.3333333333333333,
+    "smoke.parse_rate": 1.0,
+    "smoke.structural_similarity": 0.19083333333333333,
+    "structural_similarity": 0.19083333333333333
+  },
+  "cycle_index": 136,
+  "cycle_intent": "confirm",
+  "cycle_role": "screening",
+  "evidence_class": "fixture",
+  "honesty": "fixture_screening_only_not_ship",
+  "loop_id": "continuous-openui-scheduled-2805",
+  "measurement_complete": true,
+  "positive": false,
+  "primary_metric": "smoke.structural_similarity",
+  "reasons": [
+    "fixture_insufficient_n:c20260809-continuous-openui-schedu-e9c397aa-c136-confirm",
+    "fixture_insufficient_n:c20260809-continuous-openui-schedu-e9c397aa-c136-control",
+    "non_regression_fail:binder_reference_f1:0.9523809523809524->0.7999999999999999",
+    "primary_metric_null_or_worse:smoke.structural_similarity:control=0.19083333333333333 candidate=0.06513333333333333 improvement=-0.12569999999999998",
+    "fixture_insufficient_n_alone",
+    "eg_params_block:capacity growth blocked for climb/promotion: capacity_increased_without_parameter_efficiency_evidence",
+    "confirmation_rejected:primary_quality_not_reheld"
+  ],
+  "schema": "continuous_cycle_results/v1",
+  "stack_layer": false
+}
