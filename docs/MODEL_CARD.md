@@ -2415,4 +2415,68 @@ Date (UTC) column). Do not delete history.
 
 - campaign: `continuous-loop-20260808-continuous-openui-schedu-8d54410a-c6`
 - checkpoints: `runs/c20260808-continuous-openui-schedu-8d54410a-c6-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-8d54410a-c6-control/checkpoints/last.pt`
+## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-8d54410a-c3)
+
+- campaign: `continuous-loop-20260808-continuous-openui-schedu-8d54410a-c3`
+- checkpoints: `runs/c20260808-continuous-openui-schedu-8d54410a-c3-confirm/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-8d54410a-c3-control/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-8d54410a-c4)
+
+- campaign: `continuous-loop-20260808-continuous-openui-schedu-8d54410a-c4`
+- checkpoints: `runs/c20260808-continuous-openui-schedu-8d54410a-c4-batch1/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-8d54410a-c4-control/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-8d54410a-c5)
+
+- campaign: `continuous-loop-20260808-continuous-openui-schedu-8d54410a-c5`
+- checkpoints: `runs/c20260808-continuous-openui-schedu-8d54410a-c5-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-8d54410a-c5-control/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-8d54410a-c7)
+
+- campaign: `continuous-loop-20260808-continuous-openui-schedu-8d54410a-c7`
+- checkpoints: `runs/c20260808-continuous-openui-schedu-8d54410a-c7-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-8d54410a-c7-control/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-8d54410a-c8)
+
+- campaign: `continuous-loop-20260808-continuous-openui-schedu-8d54410a-c8`
+- checkpoints: `runs/c20260808-continuous-openui-schedu-8d54410a-c8-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-8d54410a-c8-control/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-8d54410a-c9)
+
+- campaign: `continuous-loop-20260808-continuous-openui-schedu-8d54410a-c9`
+- checkpoints: `runs/c20260808-continuous-openui-schedu-8d54410a-c9-component-edge/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-8d54410a-c9-control/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-8d54410a-c10)
+
+- campaign: `continuous-loop-20260808-continuous-openui-schedu-8d54410a-c10`
+- checkpoints: `runs/c20260808-continuous-openui-schedu-8d54410a-c10-component-inventory/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-8d54410a-c10-control/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-8d54410a-c11)
+
+- campaign: `continuous-loop-20260808-continuous-openui-schedu-8d54410a-c11`
+- checkpoints: `runs/c20260808-continuous-openui-schedu-8d54410a-c11-component-edge/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-8d54410a-c11-control/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-8d54410a-c12)
+
+- campaign: `continuous-loop-20260808-continuous-openui-schedu-8d54410a-c12`
+- checkpoints: `runs/c20260808-continuous-openui-schedu-8d54410a-c12-component-inventory/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-8d54410a-c12-control/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-8d54410a-c13)
+
+- campaign: `continuous-loop-20260808-continuous-openui-schedu-8d54410a-c13`
+- checkpoints: `runs/c20260808-continuous-openui-schedu-8d54410a-c13-binder-topology/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-8d54410a-c13-control/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-8d54410a-c14)
+
+- campaign: `continuous-loop-20260808-continuous-openui-schedu-8d54410a-c14`
+- checkpoints: `runs/c20260808-continuous-openui-schedu-8d54410a-c14-binder-arity/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-8d54410a-c14-control/checkpoints/last.pt`
 - honesty: fixture/scratch continuous cycle — **not** a ship promotion.
