@@ -1866,14 +1866,20 @@
       ]
     },
     "dsl.symbolic_surface": {
-      "version": "v6",
+      "version": "v7",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/language_contract.py",
         "src/slm_training/dsl/lang_core.py",
-        "tests/test_dsl/test_language_contract.py"
+        "tests/test_dsl/test_language_contract.py",
+        "tests/test_dsl/test_lang_core_node_engine_hint.py"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-08-09",
+          "note": "no-bump-behavior: diagnostics only. An OpenUI bridge failure on a Node outside the bridge's declared engines.node range now names the version mismatch instead of surfacing only whatever the dependency graph breaks on first -- on Node 18 that is an ERR_REQUIRE_ESM deep inside a transitive package, which reads as a packaging bug rather than the version mismatch it is, and cost debugging time twice. The hint degrades to silence when package.json or `node --version` cannot be read, so it can never mask the real bridge error."
+        },
         {
           "version": "v6",
           "date": "2026-08-03",
