@@ -4774,7 +4774,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v152",
+      "version": "v153",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
@@ -4791,9 +4791,17 @@
         "src/slm_training/harnesses/experiments/pct008_artifact_cold_warm.py",
         "tests/test_harnesses/experiments/test_pct008_artifact_cold_warm.py",
         "scripts/run_pct008_artifact_cold_warm.py",
-        "tests/test_harnesses/experiments/test_compute_state_controller.py"
+        "tests/test_harnesses/experiments/test_compute_state_controller.py",
+        "src/slm_training/harnesses/experiments/vce009_oracle_contrast_campaign.py",
+        "tests/test_harnesses/experiments/test_vce009_oracle_contrast_campaign.py",
+        "scripts/run_vce009_oracle_contrast_campaign.py"
       ],
       "history": [
+        {
+          "version": "v153",
+          "date": "2026-08-09",
+          "note": "VCE-009/SLM-468: add vce009_oracle_contrast_campaign.py, the first governed fixture-scale evidence package for the VCE-004/005 oracle-intervention arms (PlanOracleSubstitutor/apply_plan_intervention/select_shuffled_oracle/build_baseline_intervention) -- no new arm generator, evidence schema, or writer; composes the existing ones exactly as PCT-008 composed PCT-003/005/006. Runs all 9 declared arms (none, one_factor_{archetype,roles,topology,bindings}, all_oracle, shuffled, destructive, random) over a small pool of real openui_hard_valid_v1 SemanticPlanV1 pairs, cleaned first through VCE-008's contrast_corpus_leakage_report (quarantined records excluded from the pool). Every corpus plan is genuinely provenance=gold, so the oracle/shuffled/one-factor arms honestly run under plan_source='gold', honesty_mode='oracle_diagnostic' (not a mislabeled 'predicted' arm) -- exercising a real, non-trivial contamination_banner on exactly those six arm families while none/destructive/random stay uncontaminated by construction; filter_manifest_safe demonstrably drops only the former. claim_class='fixture' throughout: no promotion claim. Real fixture-scale evidence run via scripts/run_vce009_oracle_contrast_campaign.py, written to docs/design/vce009-oracle-contrast-results.json."
+        },
         {
           "version": "v152",
           "date": "2026-08-09",
