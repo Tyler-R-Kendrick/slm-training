@@ -2276,3 +2276,9 @@ Date (UTC) column). Do not delete history.
 - campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c36`
 - checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c36-batch1/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c36-control/checkpoints/last.pt`
 - honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c37)
+
+- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c37`
+- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c37-control/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c37-slot-augmentation/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
