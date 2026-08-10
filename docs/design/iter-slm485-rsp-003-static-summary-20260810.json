@@ -1,0 +1,734 @@
+{
+  "kind": "rsp003_static_summary_fixture/v1",
+  "claim_class": "fixture",
+  "promotion": false,
+  "environment": {
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+    "machine": "aarch64",
+    "python": "3.12.3"
+  },
+  "recipe": {
+    "command": [
+      "python",
+      "-m",
+      "scripts.run_rsp003_static_summary",
+      "--mode",
+      "fixture",
+      "--cold-trials-per-arm",
+      "2",
+      "--warm-trials",
+      "5"
+    ],
+    "docs_path": "docs/design/iter-slm485-rsp-003-static-summary-20260810.json",
+    "device": "cpu",
+    "honesty_mode": "static_summary_fixture",
+    "matrix_set": "slm485_rsp003_static_summary"
+  },
+  "catalogue_id": "exp-sr-7",
+  "catalogue_manifest_sha256": "1ba177755d5d28be13a3bb0f2a5db46e265365cc7d32b77d5df5275bdd6aa561",
+  "manifest_sha256": "6c7929d462b093a596fc0f1c63ee116c534fe865097339edca155cafa67e68c8",
+  "static_summary_domain_parity_rate": 1.0,
+  "parity_analysis": {
+    "static_summary_domain_parity_rate": 1.0,
+    "checks_passed": 9,
+    "checks_total": 9,
+    "checks": {
+      "differential_corpus_oracle_parity": true,
+      "base_artifact_domain_parity": true,
+      "control_summary_domain_parity": true,
+      "static_lalr_summary_domain_parity": true,
+      "packed_semantic_summary_domain_parity": true,
+      "provider_mediated_domain_parity": true,
+      "deliberate_miss_fallback_closed": true,
+      "packed_summary_request_independent": true,
+      "packed_summary_checker_fail_closed": true
+    },
+    "differential_parity": {
+      "equal": true,
+      "prefixes_checked": 1,
+      "mismatch_count": 0,
+      "mismatches": []
+    },
+    "kill_threshold": 1.0,
+    "kill_operator": "lt",
+    "kill_gate_triggered": false,
+    "certified": true,
+    "packed_summary": {
+      "schema": "openui_packed_semantic_summary/v1",
+      "authority_sha256": "d295a54bfdc7b8f51ca75577eb15d9b07708abcf93397a94dc5ca8bd0990cec0",
+      "vocab_size": 569,
+      "special_id_count": 5,
+      "request_dependent_authority_excluded": [
+        "runtime symbols",
+        "scope visibility",
+        "literal bodies",
+        "macro expansions",
+        "semantic state"
+      ]
+    }
+  },
+  "phase_breakdown_by_arm": {
+    "no_artifact": {
+      "tokenizer_pack_construction": 4.352,
+      "summary_step": 0.033,
+      "first_domain_query": 4426.195
+    },
+    "base_artifact": {
+      "tokenizer_pack_construction": 2.09,
+      "summary_step": 182.894,
+      "first_domain_query": 3843.235
+    },
+    "control_summary": {
+      "tokenizer_pack_construction": 2.046,
+      "summary_step": 103.661,
+      "first_domain_query": 3952.703
+    },
+    "static_lalr_summary": {
+      "tokenizer_pack_construction": 7.963,
+      "summary_step": 239.985,
+      "first_domain_query": 3238.86
+    },
+    "packed_semantic_summary": {
+      "tokenizer_pack_construction": 1.729,
+      "summary_step": 100.38,
+      "first_domain_query": 2329.297
+    },
+    "provider_mediated": {
+      "tokenizer_pack_construction": 2.116,
+      "summary_step": 188.103,
+      "first_domain_query": 3317.551
+    },
+    "deliberate_miss": {
+      "tokenizer_pack_construction": 1.895,
+      "summary_step": 49.278,
+      "first_domain_query": 2531.199
+    }
+  },
+  "cold_path_improvement": {
+    "measurable": true,
+    "baseline_arm": "base_artifact",
+    "baseline_summary_step_p50_ms": 182.894,
+    "delta_vs_baseline_ms": {
+      "base_artifact": 0.0,
+      "control_summary": 79.233,
+      "static_lalr_summary": -57.091,
+      "packed_semantic_summary": 82.514,
+      "provider_mediated": -5.209
+    },
+    "best_candidate_arm": "packed_semantic_summary",
+    "best_delta_ms": 82.514,
+    "cold_path_improved": true,
+    "noise_floor_ms": 5.0
+  },
+  "recommendation": "inconclusive_fixture",
+  "summary": {
+    "excluded_incomplete": 0,
+    "arms": {
+      "cold:d3862e8a1f4d": {
+        "trial_kind": "cold",
+        "config_hash": "d3862e8a1f4d5fe76ef8e09777dfbdc831dd03653e85e1a01cc0f0051265411c",
+        "n": 2,
+        "p50_ms": 5923.954,
+        "p95_ms": 10897.887,
+        "arm": "no_artifact"
+      },
+      "cold:8a023cfba479": {
+        "trial_kind": "cold",
+        "config_hash": "8a023cfba4793e5740bf4aa4a418479fb23094d6163cf50b39a2a2724a602405",
+        "n": 2,
+        "p50_ms": 8561.685,
+        "p95_ms": 9061.793,
+        "arm": "base_artifact"
+      },
+      "cold:419b78f1ca9f": {
+        "trial_kind": "cold",
+        "config_hash": "419b78f1ca9f687005266e7d6de46fb52092f1078130b61dcd14cb970e8c1033",
+        "n": 2,
+        "p50_ms": 7679.026,
+        "p95_ms": 8422.709,
+        "arm": "control_summary"
+      },
+      "cold:94006b3f5141": {
+        "trial_kind": "cold",
+        "config_hash": "94006b3f51413f6f825b8181cdaa5ec7c5400aa22f25470b5ad8eed25f7a347f",
+        "n": 2,
+        "p50_ms": 6569.795,
+        "p95_ms": 7097.214,
+        "arm": "static_lalr_summary"
+      },
+      "cold:fe10f00b427e": {
+        "trial_kind": "cold",
+        "config_hash": "fe10f00b427e732707fe2305a804e444a68e0a5c7f9050605d67cbf1175e10b0",
+        "n": 2,
+        "p50_ms": 4952.397,
+        "p95_ms": 12512.862,
+        "arm": "packed_semantic_summary"
+      },
+      "cold:6010c325b867": {
+        "trial_kind": "cold",
+        "config_hash": "6010c325b8679ea351d61616d258f4b8de2de5844e382eb7681f0c3bcc1eeda0",
+        "n": 2,
+        "p50_ms": 5528.775,
+        "p95_ms": 8282.672,
+        "arm": "provider_mediated"
+      },
+      "cold:a1ccec36f58f": {
+        "trial_kind": "cold",
+        "config_hash": "a1ccec36f58f93a3b3a784d1198895ebabc806e56d8b086c5e26ddbd8b6bc438",
+        "n": 2,
+        "p50_ms": 5218.721,
+        "p95_ms": 5802.767,
+        "arm": "deliberate_miss"
+      },
+      "warm:e98219f8b8c8": {
+        "trial_kind": "warm",
+        "config_hash": "e98219f8b8c8bfb4e08ad065804106e88deb8de197c982da87a87bcb0474d00a",
+        "n": 1,
+        "p50_ms": 113.194,
+        "p95_ms": 113.194,
+        "arm": "warm_repeated"
+      }
+    }
+  },
+  "trials": [
+    {
+      "schema_version": "cold_warm_bench_trial/v1",
+      "trial_kind": "cold",
+      "measurement_stage": "process_cold",
+      "completeness": "complete",
+      "config_hash": "d3862e8a1f4d5fe76ef8e09777dfbdc831dd03653e85e1a01cc0f0051265411c",
+      "hardware_identity": {
+        "hostname": "CopilotPro7",
+        "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+        "python_version": "3.12.3",
+        "cpu_count": 12,
+        "machine": "aarch64"
+      },
+      "phases": [
+        {
+          "phase": "process_launch",
+          "duration_ms": null
+        },
+        {
+          "phase": "tokenizer_pack_construction",
+          "duration_ms": 2.2730450000381097
+        },
+        {
+          "phase": "summary_step",
+          "duration_ms": 0.03373200161149725
+        },
+        {
+          "phase": "first_domain_query",
+          "duration_ms": 2963.813416998164
+        }
+      ],
+      "total_ms": 5923.953554000036,
+      "peak_rss_kb": 2432,
+      "exit_code": 0,
+      "trial_hash": "340734f9d94a82110d8fe7814eb28d8f272979c1c36928a644d2cc5ebcd838af"
+    },
+    {
+      "schema_version": "cold_warm_bench_trial/v1",
+      "trial_kind": "cold",
+      "measurement_stage": "process_cold",
+      "completeness": "complete",
+      "config_hash": "d3862e8a1f4d5fe76ef8e09777dfbdc831dd03653e85e1a01cc0f0051265411c",
+      "hardware_identity": {
+        "hostname": "CopilotPro7",
+        "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+        "python_version": "3.12.3",
+        "cpu_count": 12,
+        "machine": "aarch64"
+      },
+      "phases": [
+        {
+          "phase": "process_launch",
+          "duration_ms": null
+        },
+        {
+          "phase": "tokenizer_pack_construction",
+          "duration_ms": 6.431219000660349
+        },
+        {
+          "phase": "summary_step",
+          "duration_ms": 0.03281499812146649
+        },
+        {
+          "phase": "first_domain_query",
+          "duration_ms": 5888.575617002061
+        }
+      ],
+      "total_ms": 10897.887053000886,
+      "peak_rss_kb": 236836,
+      "exit_code": 0,
+      "trial_hash": "7f3f630e721795afba3f034de7e15b23f95593295448106fabf62e53b3c4a8f9"
+    },
+    {
+      "schema_version": "cold_warm_bench_trial/v1",
+      "trial_kind": "cold",
+      "measurement_stage": "process_cold",
+      "completeness": "complete",
+      "config_hash": "8a023cfba4793e5740bf4aa4a418479fb23094d6163cf50b39a2a2724a602405",
+      "hardware_identity": {
+        "hostname": "CopilotPro7",
+        "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+        "python_version": "3.12.3",
+        "cpu_count": 12,
+        "machine": "aarch64"
+      },
+      "phases": [
+        {
+          "phase": "process_launch",
+          "duration_ms": null
+        },
+        {
+          "phase": "tokenizer_pack_construction",
+          "duration_ms": 1.7656939999142196
+        },
+        {
+          "phase": "summary_step",
+          "duration_ms": 235.46994700154755
+        },
+        {
+          "phase": "first_domain_query",
+          "duration_ms": 3772.6183449995006
+        }
+      ],
+      "total_ms": 9061.792571999831,
+      "peak_rss_kb": 236836,
+      "exit_code": 0,
+      "trial_hash": "64aec0f1f865fa676b3c2529305ae9ec8077316ee3f94ae55824700d30d064d5"
+    },
+    {
+      "schema_version": "cold_warm_bench_trial/v1",
+      "trial_kind": "cold",
+      "measurement_stage": "process_cold",
+      "completeness": "complete",
+      "config_hash": "8a023cfba4793e5740bf4aa4a418479fb23094d6163cf50b39a2a2724a602405",
+      "hardware_identity": {
+        "hostname": "CopilotPro7",
+        "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+        "python_version": "3.12.3",
+        "cpu_count": 12,
+        "machine": "aarch64"
+      },
+      "phases": [
+        {
+          "phase": "process_launch",
+          "duration_ms": null
+        },
+        {
+          "phase": "tokenizer_pack_construction",
+          "duration_ms": 2.4142040019796696
+        },
+        {
+          "phase": "summary_step",
+          "duration_ms": 130.31774999763002
+        },
+        {
+          "phase": "first_domain_query",
+          "duration_ms": 3913.850980999996
+        }
+      ],
+      "total_ms": 8561.685328000749,
+      "peak_rss_kb": 236836,
+      "exit_code": 0,
+      "trial_hash": "3c8c88794ae1e508f119933e42ea3ee6fd173a41964733bbfa463aa9951288b6"
+    },
+    {
+      "schema_version": "cold_warm_bench_trial/v1",
+      "trial_kind": "cold",
+      "measurement_stage": "process_cold",
+      "completeness": "complete",
+      "config_hash": "419b78f1ca9f687005266e7d6de46fb52092f1078130b61dcd14cb970e8c1033",
+      "hardware_identity": {
+        "hostname": "CopilotPro7",
+        "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+        "python_version": "3.12.3",
+        "cpu_count": 12,
+        "machine": "aarch64"
+      },
+      "phases": [
+        {
+          "phase": "process_launch",
+          "duration_ms": null
+        },
+        {
+          "phase": "tokenizer_pack_construction",
+          "duration_ms": 1.8841210003301967
+        },
+        {
+          "phase": "summary_step",
+          "duration_ms": 83.61913699991419
+        },
+        {
+          "phase": "first_domain_query",
+          "duration_ms": 3517.9236699987086
+        }
+      ],
+      "total_ms": 7679.02633599806,
+      "peak_rss_kb": 236836,
+      "exit_code": 0,
+      "trial_hash": "5dcf882f81870425e6ce94e8d35dad1daf32a8f8347cdcf97d62c89e8a0e14d8"
+    },
+    {
+      "schema_version": "cold_warm_bench_trial/v1",
+      "trial_kind": "cold",
+      "measurement_stage": "process_cold",
+      "completeness": "complete",
+      "config_hash": "419b78f1ca9f687005266e7d6de46fb52092f1078130b61dcd14cb970e8c1033",
+      "hardware_identity": {
+        "hostname": "CopilotPro7",
+        "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+        "python_version": "3.12.3",
+        "cpu_count": 12,
+        "machine": "aarch64"
+      },
+      "phases": [
+        {
+          "phase": "process_launch",
+          "duration_ms": null
+        },
+        {
+          "phase": "tokenizer_pack_construction",
+          "duration_ms": 2.20878999971319
+        },
+        {
+          "phase": "summary_step",
+          "duration_ms": 123.70375500177033
+        },
+        {
+          "phase": "first_domain_query",
+          "duration_ms": 4387.483092999901
+        }
+      ],
+      "total_ms": 8422.709145997942,
+      "peak_rss_kb": 236836,
+      "exit_code": 0,
+      "trial_hash": "33fba6136c08182ecab535e4acdeb9f46c3b7729c99ecad0b95f3b95d0a30edb"
+    },
+    {
+      "schema_version": "cold_warm_bench_trial/v1",
+      "trial_kind": "cold",
+      "measurement_stage": "process_cold",
+      "completeness": "complete",
+      "config_hash": "94006b3f51413f6f825b8181cdaa5ec7c5400aa22f25470b5ad8eed25f7a347f",
+      "hardware_identity": {
+        "hostname": "CopilotPro7",
+        "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+        "python_version": "3.12.3",
+        "cpu_count": 12,
+        "machine": "aarch64"
+      },
+      "phases": [
+        {
+          "phase": "process_launch",
+          "duration_ms": null
+        },
+        {
+          "phase": "tokenizer_pack_construction",
+          "duration_ms": 13.890248999814503
+        },
+        {
+          "phase": "summary_step",
+          "duration_ms": 221.1924250004813
+        },
+        {
+          "phase": "first_domain_query",
+          "duration_ms": 3017.345555999782
+        }
+      ],
+      "total_ms": 6569.794884999283,
+      "peak_rss_kb": 236836,
+      "exit_code": 0,
+      "trial_hash": "e8374acf217fdfa06b39b2dae0ee16c1f6f844115dbdfbf1c8a1d1a4b0a8b0ac"
+    },
+    {
+      "schema_version": "cold_warm_bench_trial/v1",
+      "trial_kind": "cold",
+      "measurement_stage": "process_cold",
+      "completeness": "complete",
+      "config_hash": "94006b3f51413f6f825b8181cdaa5ec7c5400aa22f25470b5ad8eed25f7a347f",
+      "hardware_identity": {
+        "hostname": "CopilotPro7",
+        "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+        "python_version": "3.12.3",
+        "cpu_count": 12,
+        "machine": "aarch64"
+      },
+      "phases": [
+        {
+          "phase": "process_launch",
+          "duration_ms": null
+        },
+        {
+          "phase": "tokenizer_pack_construction",
+          "duration_ms": 2.0350890008558054
+        },
+        {
+          "phase": "summary_step",
+          "duration_ms": 258.77676799791516
+        },
+        {
+          "phase": "first_domain_query",
+          "duration_ms": 3460.3746100001445
+        }
+      ],
+      "total_ms": 7097.214323999651,
+      "peak_rss_kb": 236836,
+      "exit_code": 0,
+      "trial_hash": "703fa72943f1253ac368ad5e5fe4191321539575bd6624fa896ebf505ff1739c"
+    },
+    {
+      "schema_version": "cold_warm_bench_trial/v1",
+      "trial_kind": "cold",
+      "measurement_stage": "process_cold",
+      "completeness": "complete",
+      "config_hash": "fe10f00b427e732707fe2305a804e444a68e0a5c7f9050605d67cbf1175e10b0",
+      "hardware_identity": {
+        "hostname": "CopilotPro7",
+        "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+        "python_version": "3.12.3",
+        "cpu_count": 12,
+        "machine": "aarch64"
+      },
+      "phases": [
+        {
+          "phase": "process_launch",
+          "duration_ms": null
+        },
+        {
+          "phase": "tokenizer_pack_construction",
+          "duration_ms": 1.7728429993439931
+        },
+        {
+          "phase": "summary_step",
+          "duration_ms": 90.00672500042128
+        },
+        {
+          "phase": "first_domain_query",
+          "duration_ms": 2299.1890809971665
+        }
+      ],
+      "total_ms": 12512.862071998825,
+      "peak_rss_kb": 236836,
+      "exit_code": 0,
+      "trial_hash": "28cf4e66de5df4673b7fb465241facc261d03c9266d02ae63b65d7d6745d06ab"
+    },
+    {
+      "schema_version": "cold_warm_bench_trial/v1",
+      "trial_kind": "cold",
+      "measurement_stage": "process_cold",
+      "completeness": "complete",
+      "config_hash": "fe10f00b427e732707fe2305a804e444a68e0a5c7f9050605d67cbf1175e10b0",
+      "hardware_identity": {
+        "hostname": "CopilotPro7",
+        "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+        "python_version": "3.12.3",
+        "cpu_count": 12,
+        "machine": "aarch64"
+      },
+      "phases": [
+        {
+          "phase": "process_launch",
+          "duration_ms": null
+        },
+        {
+          "phase": "tokenizer_pack_construction",
+          "duration_ms": 1.6860389987414237
+        },
+        {
+          "phase": "summary_step",
+          "duration_ms": 110.75368900128524
+        },
+        {
+          "phase": "first_domain_query",
+          "duration_ms": 2359.4046929974866
+        }
+      ],
+      "total_ms": 4952.397320997989,
+      "peak_rss_kb": 236836,
+      "exit_code": 0,
+      "trial_hash": "9df01939331c693819aa00c8437a23b0bcdfccf83660a2344ec87bd4827757d6"
+    },
+    {
+      "schema_version": "cold_warm_bench_trial/v1",
+      "trial_kind": "cold",
+      "measurement_stage": "process_cold",
+      "completeness": "complete",
+      "config_hash": "6010c325b8679ea351d61616d258f4b8de2de5844e382eb7681f0c3bcc1eeda0",
+      "hardware_identity": {
+        "hostname": "CopilotPro7",
+        "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+        "python_version": "3.12.3",
+        "cpu_count": 12,
+        "machine": "aarch64"
+      },
+      "phases": [
+        {
+          "phase": "process_launch",
+          "duration_ms": null
+        },
+        {
+          "phase": "tokenizer_pack_construction",
+          "duration_ms": 1.8414980004308745
+        },
+        {
+          "phase": "summary_step",
+          "duration_ms": 151.191025001026
+        },
+        {
+          "phase": "first_domain_query",
+          "duration_ms": 2601.401738000277
+        }
+      ],
+      "total_ms": 5528.775309001503,
+      "peak_rss_kb": 236836,
+      "exit_code": 0,
+      "trial_hash": "3fdfbbffae9125d1df486a3940ec0ce2d182140309166d30adb691132f4b8bd4"
+    },
+    {
+      "schema_version": "cold_warm_bench_trial/v1",
+      "trial_kind": "cold",
+      "measurement_stage": "process_cold",
+      "completeness": "complete",
+      "config_hash": "6010c325b8679ea351d61616d258f4b8de2de5844e382eb7681f0c3bcc1eeda0",
+      "hardware_identity": {
+        "hostname": "CopilotPro7",
+        "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+        "python_version": "3.12.3",
+        "cpu_count": 12,
+        "machine": "aarch64"
+      },
+      "phases": [
+        {
+          "phase": "process_launch",
+          "duration_ms": null
+        },
+        {
+          "phase": "tokenizer_pack_construction",
+          "duration_ms": 2.390096997260116
+        },
+        {
+          "phase": "summary_step",
+          "duration_ms": 225.01557400028105
+        },
+        {
+          "phase": "first_domain_query",
+          "duration_ms": 4033.700881002005
+        }
+      ],
+      "total_ms": 8282.67178799797,
+      "peak_rss_kb": 236836,
+      "exit_code": 0,
+      "trial_hash": "de9c5e4e6a731dcb3be10eec798fd4c68a9739cab182fcd758b2b1fe0481f4a7"
+    },
+    {
+      "schema_version": "cold_warm_bench_trial/v1",
+      "trial_kind": "cold",
+      "measurement_stage": "process_cold",
+      "completeness": "complete",
+      "config_hash": "a1ccec36f58f93a3b3a784d1198895ebabc806e56d8b086c5e26ddbd8b6bc438",
+      "hardware_identity": {
+        "hostname": "CopilotPro7",
+        "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+        "python_version": "3.12.3",
+        "cpu_count": 12,
+        "machine": "aarch64"
+      },
+      "phases": [
+        {
+          "phase": "process_launch",
+          "duration_ms": null
+        },
+        {
+          "phase": "tokenizer_pack_construction",
+          "duration_ms": 1.7391110013704747
+        },
+        {
+          "phase": "summary_step",
+          "duration_ms": 44.31328200007556
+        },
+        {
+          "phase": "first_domain_query",
+          "duration_ms": 2320.3107609988365
+        }
+      ],
+      "total_ms": 5218.7211150012445,
+      "peak_rss_kb": 236836,
+      "exit_code": 0,
+      "trial_hash": "18c2b19596d04afa9050ce9b8158d919795e09d1f7b70c6f158d781144b25b4b"
+    },
+    {
+      "schema_version": "cold_warm_bench_trial/v1",
+      "trial_kind": "cold",
+      "measurement_stage": "process_cold",
+      "completeness": "complete",
+      "config_hash": "a1ccec36f58f93a3b3a784d1198895ebabc806e56d8b086c5e26ddbd8b6bc438",
+      "hardware_identity": {
+        "hostname": "CopilotPro7",
+        "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+        "python_version": "3.12.3",
+        "cpu_count": 12,
+        "machine": "aarch64"
+      },
+      "phases": [
+        {
+          "phase": "process_launch",
+          "duration_ms": null
+        },
+        {
+          "phase": "tokenizer_pack_construction",
+          "duration_ms": 2.0509460009634495
+        },
+        {
+          "phase": "summary_step",
+          "duration_ms": 54.24197200045455
+        },
+        {
+          "phase": "first_domain_query",
+          "duration_ms": 2742.087882998021
+        }
+      ],
+      "total_ms": 5802.7666650014,
+      "peak_rss_kb": 236836,
+      "exit_code": 0,
+      "trial_hash": "08a5db9130d392006f9c5e285de9ed06a78e731e2fde2334d719a9d1bf16d03e"
+    },
+    {
+      "schema_version": "cold_warm_bench_trial/v1",
+      "trial_kind": "warm",
+      "measurement_stage": "steady_state",
+      "completeness": "complete",
+      "config_hash": "e98219f8b8c8bfb4e08ad065804106e88deb8de197c982da87a87bcb0474d00a",
+      "hardware_identity": {
+        "hostname": "CopilotPro7",
+        "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+        "python_version": "3.12.3",
+        "cpu_count": 12,
+        "machine": "aarch64"
+      },
+      "phases": [
+        {
+          "phase": "repeated_domain_queries",
+          "duration_ms": null
+        }
+      ],
+      "total_ms": 113.19383400041261,
+      "peak_rss_kb": 236836,
+      "exit_code": 0,
+      "trial_hash": "7c26412db35657c6e4c51a1fa7b22438cb988fac8d59cac474054e17a6fb1587"
+    }
+  ],
+  "scope_disclaimer": "Fixture-scale EXP-SR-7 evidence for incremental request-independent summary layers on the certified completion artifact. Parity gate uses the fixed hard prefix plus whole-program/empty-prefix samples from STATIC_LALR_CORPUS; every intermediate prefix is owned by tests/test_dsl/test_static_control_domain.py (E1 suite). Measures process launch, tokenizer/pack construction, summary preload, and first completion-domain query \u2014 not model init, first-forward, or full first-verified-program latency. claim_class=fixture; never promotion_candidate/ship_gate. Request-local symbols/binders/placeholders remain overlay.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "507102c38eab292641a8b1e1301ad4152658a2f7",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v159",
+      "harness.experiments.slm485_rsp003_static_summary": "v1"
+    },
+    "stamped_at": "2026-08-10T21:20:50.933667+00:00"
+  }
+}

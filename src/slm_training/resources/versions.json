@@ -1197,13 +1197,15 @@
       ]
     },
     "dsl.completion_kernel": {
-      "version": "v22",
+      "version": "v23",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/grammar/fastpath/engine.py",
         "src/slm_training/dsl/grammar/fastpath/completion_artifact.py",
+        "src/slm_training/dsl/grammar/fastpath/packed_semantic_summary.py",
         "tests/test_dsl/test_completion_artifact_provider_parity.py",
         "tests/test_dsl/test_static_lalr_adapter.py",
+        "tests/test_dsl/test_packed_semantic_summary.py",
         "src/slm_training/dsl/grammar/fastpath/completion_kernel.py",
         "src/slm_training/dsl/grammar/fastpath/force_emit.py",
         "src/slm_training/dsl/grammar/fastpath/semantic_state.py",
@@ -1228,6 +1230,16 @@
         "docs/design/hybrid-unmask-hx5-20260804.md"
       ],
       "history": [
+        {
+          "version": "v23",
+          "date": "2026-08-10",
+          "note": "no-bump: RSP-003/SLM-485 adds packed_semantic_summary.py request-independent semantic kind summary under the completion-kernel seam (consumed by harness.experiments.slm485_rsp003_static_summary)."
+        },
+        {
+          "version": "v23",
+          "date": "2026-08-10",
+          "note": "RSP-003/SLM-485: add packed_semantic_summary.py \u2014 request-independent packed semantic kind summary derived solely from tokenizer_authority (ids/kinds/special ids); load_checked/try_load fail closed; excluded from production default; consumed by EXP-SR-7 fixture campaign only."
+        },
         {
           "version": "v22",
           "date": "2026-08-09",
@@ -4850,6 +4862,11 @@
         "tests/test_scripts/test_run_exp_sr8_egraph_experiment.py"
       ],
       "history": [
+        {
+          "version": "v159",
+          "date": "2026-08-10",
+          "note": "no-bump: RSP-003/SLM-485 EXP-SR-7 static-summary campaign lives in rsp003_static_summary.py under dedicated component harness.experiments.slm485_rsp003_static_summary (v1); catalogue exp_sr_catalogue.py unchanged."
+        },
         {
           "version": "v159",
           "date": "2026-08-10",
@@ -17241,6 +17258,25 @@
           "version": "v1",
           "date": "2026-08-10",
           "note": "RSP-001/SLM-488: fixture-scale EXP-SR-4 witness-guided CEGIS repair composing semantic_repair + conflict_slice_repair + RepairResidualV1; claim_class=fixture; default lever OFF; no promotion."
+        }
+      ]
+    },
+    "harness.experiments.slm485_rsp003_static_summary": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/rsp003_static_summary.py",
+        "scripts/run_rsp003_static_summary.py",
+        "tests/test_harnesses/experiments/test_rsp003_static_summary.py",
+        "tests/test_scripts/test_run_rsp003_static_summary.py",
+        "docs/design/iter-slm485-rsp-003-static-summary-20260810.json",
+        "docs/design/iter-slm485-rsp-003-static-summary-20260810.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-10",
+          "note": "RSP-003/SLM-485: EXP-SR-7 fixture static-artifact + packed semantic-summary campaign; claim_class=fixture; never promotion_candidate/ship_gate; kill if static_summary_domain_parity_rate < 1.0."
         }
       ]
     }
