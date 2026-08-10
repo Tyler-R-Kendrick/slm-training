@@ -2971,7 +2971,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v199",
+      "version": "v200",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -3024,6 +3024,11 @@
         "tests/test_autoresearch/test_evidence_ledger.py"
       ],
       "history": [
+        {
+          "version": "v200",
+          "date": "2026-08-10",
+          "note": "stamp continuous_cycle_results/v1 closeout records with the eval-comparability version_stamp (evals.scoring, evals.meaningful_program, harness.model_build.eval, gates.ship) via build_version_stamp, so cycle deltas mine into a real cross-version evidence-ledger partition instead of the catch-all 'unstamped' bucket; regenerate the committed evidence_ledger.v1.json (was stale versus docs/design) and add a build_evidence_ledger --check CI gate"
+        },
         {
           "version": "v199",
           "date": "2026-08-09",
@@ -4224,6 +4229,11 @@
         "docs/design/ci-minutes-and-speed-plan-20260806.md"
       ],
       "history": [
+        {
+          "version": "v14",
+          "date": "2026-08-10",
+          "note": "no-bump: add a \"Verify the cross-version evidence ledger is not stale\" step (python -m scripts.build_evidence_ledger --check) to the python-static job; existing job steps, timeouts, and formal/autoresearch verification behavior are unchanged."
+        },
         {
           "version": "v14",
           "date": "2026-08-08",
