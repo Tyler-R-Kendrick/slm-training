@@ -214,6 +214,12 @@ jobs:
           else
             python -m scripts.verify_version_stamps --check
           fi
+      - name: Verify the cross-version evidence ledger is not stale
+        # The committed ledger is the durable cross-harness-version memory the
+        # hill-climb selector reads. It is a deterministic fold of docs/design;
+        # this gate fails closed on drift so it can never silently rot. Rebuild
+        # with `python -m scripts.build_evidence_ledger --write`.
+        run: python -m scripts.build_evidence_ledger --check
 
   lean-formal:
     runs-on: ubuntu-latest
