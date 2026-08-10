@@ -139,7 +139,7 @@ def render_markdown(payload: dict[str, Any]) -> str:
         "",
         payload.get("scope_disclaimer", ""),
         "",
-        f"Command: `python -m scripts.run_slm491_external_blocked_closeout`",
+        "Command: `python -m scripts.run_slm491_external_blocked_closeout`",
         "",
     ]
     return "\n".join(lines)

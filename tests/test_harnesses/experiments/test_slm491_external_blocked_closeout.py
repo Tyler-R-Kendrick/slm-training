@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import importlib.util
 from pathlib import Path
 
 from slm_training.harnesses.experiments.slm491_external_blocked_closeout import (
