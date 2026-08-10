@@ -205,11 +205,31 @@ def test_remote_fts_query_used_when_creds_present(local_index: Path) -> None:
     )
     client = _creds_client(local_index, transport)
     results = client.find_prior_attempts(hypothesis_text="macro tokens")
-    assert [record.experiment_id for record in results] == ["remote-hit"]
+    # Remote hit ranks first (query used, kept its rank); the local mirror's
+    # own match for the same query is still unioned in, not replaced — a
+    # remote table that's empty or lags the committed mirror must never
+    # silently drop a local match (client.py's merge-not-replace fix).
+    assert [record.experiment_id for record in results] == [
+        "remote-hit",
+        "arm-macro",
+    ]
     method, url, _, body = transport.calls[0]
     assert method == "GET"
     assert body is None
     assert "search_tsv=wfts.macro+tokens" in url
+
+
+def test_empty_remote_fingerprint_result_still_surfaces_local_match(
+    local_index: Path,
+) -> None:
+    """A successful-but-empty remote query (schema.sql applied, not yet
+    synced; or the remote table lags the committed mirror) must not hide a
+    local match — the exact failure mode the prior-attempt gate exists to
+    prevent (client.py's merge-not-replace fix)."""
+    transport = FakeTransport([TransportResponse(200, b"[]")])
+    client = _creds_client(local_index, transport)
+    results = client.find_prior_attempts(config_fingerprint="b" * 64)
+    assert [record.experiment_id for record in results] == ["arm-bounds"]
 
 
 def test_remote_failure_degrades_to_local(local_index: Path) -> None:

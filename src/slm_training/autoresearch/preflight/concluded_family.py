@@ -94,9 +94,13 @@ class _ConcludedFamilyCheck:
         try:
             return _run(dict(candidate or {}))
         except Exception as exc:  # noqa: BLE001 — plugins never raise
+            # Package fail-soft law (preflight/__init__.py): a check *bug*
+            # is "warn", never a silent "pass" — a crash is not the same
+            # signal as a verified-open family, and the persisted preflight
+            # payload must be able to tell the two apart.
             return PreflightVerdict(
                 check_id=CHECK_ID,
-                verdict="pass",
+                verdict="warn",
                 reasons=[
                     "concluded_family check errored and fails open: "
                     f"{type(exc).__name__}: {exc}"

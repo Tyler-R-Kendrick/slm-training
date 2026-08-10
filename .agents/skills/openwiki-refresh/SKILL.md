@@ -22,10 +22,13 @@ exception is an explicit user request).
 ## 1. Check / install the CLI (pinned)
 
 ```bash
-node --version                      # Node ≥ 22 expected
-npm ls -g openwiki || npm install --global openwiki@0.1.2
+node --version                                     # Node ≥ 22 expected
+npm ls -g --depth=0 openwiki@0.1.2 || npm install --global openwiki@0.1.2
 ```
 
+Check the **pinned version explicitly** (`openwiki@0.1.2`, not a bare `openwiki`
+presence check) — an unversioned check reports whatever global `openwiki` tree
+exists, even a different version, and skips the install that would fix it.
 Always pin `openwiki@0.1.2` — the wrapper and the disabled workflow assume this
 version. Do not float to `latest`.
 
@@ -67,19 +70,29 @@ them afterwards, and fails loudly if `docs/openwiki/` disappears. Running the
 ## 4. Commit + PR (what the old workflow did)
 
 Only `docs/openwiki/` may change. If `git status` shows no diff there, report
-"no OpenWiki changes" and stop. Otherwise:
+"no OpenWiki changes" and stop. Otherwise, make both steps idempotent — a
+rerun must never fail just because the branch or PR already exists from a
+prior refresh:
 
 ```bash
-git switch -c openwiki/update   # reuse/reset the branch if it already exists
+# git switch -c fails if the branch already exists locally; reset it instead.
+git switch openwiki/update 2>/dev/null || git switch -c openwiki/update
+git reset --hard main            # start the branch clean from main each run
 git add docs/openwiki
 git commit -m "docs: update OpenWiki"
 git push -u origin openwiki/update --force-with-lease
-gh pr create --base main --head openwiki/update \
-  --title "docs: update OpenWiki" \
-  --body "Automated OpenWiki documentation update (agent-run refresh; replaces the disabled scheduled workflow)."
+
+# Reuse an existing open PR instead of always creating a new one.
+existing_pr=$(gh pr list --base main --head openwiki/update --state open --json number --jq '.[0].number')
+if [ -n "$existing_pr" ]; then
+  echo "Reusing existing PR #$existing_pr"
+else
+  gh pr create --base main --head openwiki/update \
+    --title "docs: update OpenWiki" \
+    --body "Automated OpenWiki documentation update (agent-run refresh; replaces the disabled scheduled workflow)."
+fi
 ```
 
-Reuse an existing open `openwiki/update` PR instead of opening a duplicate.
 Never commit straight to `main`, and never add non-`docs/openwiki` paths to the
 commit. If scaffold files (`AGENTS.md`, `CLAUDE.md`, workflow YAML) show a diff
 after the run, the wrapper's restore failed — revert them and investigate; do

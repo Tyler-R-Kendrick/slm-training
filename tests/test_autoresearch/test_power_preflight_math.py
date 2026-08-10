@@ -120,6 +120,14 @@ class TestNormalApproximation:
             required_n_for_effect(0.0, 0.1)
         with pytest.raises(ValueError):
             required_n_for_effect(0.01, -1.0)
+        with pytest.raises(ValueError):
+            required_n_for_effect(0.01, 0.1, alpha=0.0)
+        with pytest.raises(ValueError):
+            required_n_for_effect(0.01, 0.1, alpha=1.0)
+        with pytest.raises(ValueError):
+            required_n_for_effect(0.01, 0.1, power=0.0)
+        with pytest.raises(ValueError):
+            required_n_for_effect(0.01, 0.1, power=1.0)
 
 
 class TestIsDecidable:

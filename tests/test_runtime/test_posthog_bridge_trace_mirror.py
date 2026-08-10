@@ -71,6 +71,34 @@ def test_llm_span_mirrors_one_ai_generation(
     assert "llm.model" not in call["properties"]
 
 
+def test_content_bearing_llm_attribute_is_never_forwarded(
+    tmp_path: Path, captured: list[dict[str, Any]]
+) -> None:
+    """Data-minimization: llm.* attributes are an allowlist, not a passthrough
+    — a caller-set attribute carrying free-form content (prompt, completion,
+    a raw response body) must never reach the third-party mirror just
+    because it happens to start with "llm."."""
+    with run_trace(
+        "gen-2",
+        "generate",
+        trace_root=tmp_path,
+        attributes={
+            "llm.provider": "local",
+            "llm.model": "slm-frontier-v7",
+            "llm.prompt": "the user's secret prompt text",
+            "llm.completion": "the model's generated completion text",
+            "llm.raw_response": {"choices": ["sensitive content"]},
+        },
+    ):
+        pass
+
+    assert len(captured) == 1
+    properties = captured[0]["properties"]
+    assert "llm.prompt" not in properties
+    assert "llm.completion" not in properties
+    assert "llm.raw_response" not in properties
+
+
 def test_non_llm_span_does_not_mirror(tmp_path: Path, captured: list[dict[str, Any]]) -> None:
     with run_trace("plain", "train", trace_root=tmp_path, attributes={"slm.step": 1}):
         pass

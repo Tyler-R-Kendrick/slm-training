@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -117,6 +118,46 @@ def test_submit_requires_all_guards_and_prints_flavor_first(
     manifest = json.loads(out.read_text(encoding="utf-8"))
     assert [s["seed"] for s in manifest["submissions"]] == [0, 1, 2]
     assert all(s["returncode"] == 0 for s in manifest["submissions"])
+
+
+def test_hugging_face_hub_token_only_still_forwards_hf_token_secret(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    tmp_path: Path,
+) -> None:
+    """A caller with only HUGGING_FACE_HUB_TOKEN set must still submit with
+    the token actually reaching the container: --secrets HF_TOKEN forwards
+    the *local* env var named HF_TOKEN, so it must be aliased in-process
+    before hf jobs run is invoked — never by putting the value on argv."""
+    monkeypatch.delenv("HF_TOKEN", raising=False)
+    monkeypatch.setenv("HUGGING_FACE_HUB_TOKEN", "hub_test_token")
+    submitted: list[list[str]] = []
+
+    def _fake_submit(cmd: list[str], **kwargs: object) -> int:
+        submitted.append(list(cmd))
+        assert os.environ.get("HF_TOKEN") == "hub_test_token"
+        return 0
+
+    monkeypatch.setattr(hf_jobs_screen, "submit_jobs_command", _fake_submit)
+    out = tmp_path / "submission.json"
+    rc = hf_jobs_screen.main(
+        [
+            "--screen-id",
+            "unit_screen",
+            "--seeds",
+            "2",
+            "--no-dry-run",
+            "--i-understand-this-costs-money",
+            "--out",
+            str(out),
+        ]
+    )
+    assert rc == 0
+    assert len(submitted) == 2
+    for cmd in submitted:
+        # Name-only form: the secret value itself never appears on argv.
+        assert cmd[cmd.index("--secrets") + 1] == "HF_TOKEN"
+        assert "hub_test_token" not in cmd
 
 
 def test_config_file_merges_and_cli_overrides(

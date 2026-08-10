@@ -55,6 +55,17 @@ create table if not exists evidence_records (
 create unique index if not exists evidence_records_fingerprint_metric_uq
     on evidence_records (config_fingerprint, endpoint_metric);
 
+-- A table created in `public` is exposed through PostgREST to any holder
+-- of the project's anon/publishable key; RLS is off by default for a table
+-- created this way, so without it anonymous clients could read every
+-- evidence row (hypothesis_text, source_path, etc). The sync client
+-- authenticates with the service-role key, which bypasses RLS entirely, so
+-- enabling it with no policies keeps the sync/query path working and denies
+-- everyone else. Add explicit policies here if anon/authenticated read
+-- access is ever genuinely needed.
+alter table evidence_records enable row level security;
+revoke all on evidence_records from anon, authenticated;
+
 -- Full-text search over hypothesis text + flattened lever keys
 -- (PostgREST: ?search_tsv=wfts.<query>).
 create index if not exists evidence_records_search_tsv_gin

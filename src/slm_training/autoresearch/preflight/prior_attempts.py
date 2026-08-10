@@ -82,26 +82,28 @@ _LEDGER_PATH = (
 
 
 def config_fingerprint(config: Mapping[str, Any]) -> str:
-    """Canonical config identity hash (see module docstring for provenance)."""
-    try:  # Prefer the evidence-store helper when that package exists.
-        from slm_training.evidence_store import records as _records  # type: ignore
+    """Canonical config identity hash (see module docstring for provenance).
 
-        for name in (
-            "compute_config_fingerprint",
-            "config_fingerprint",
-            "fingerprint_config",
-            "fingerprint",
-        ):
-            helper = getattr(_records, name, None)
-            if callable(helper):
-                return str(helper(dict(config)))
-    except Exception:  # noqa: BLE001 — concurrent module may not exist yet
-        pass
+    ``steps`` (cycle jitter, not config identity) is excluded from the
+    stable mapping *before* trying the evidence-store helper — passing the
+    unfiltered config there would make the fingerprint change every cycle
+    (steps differs run to run), so no stored record would ever match and
+    this check would silently pass every re-spend of an already-refuted
+    config.
+    """
     stable = {
         key: value
         for key, value in (config or {}).items()
         if key not in FINGERPRINT_EXCLUDE_KEYS
     }
+    try:  # Prefer the evidence-store helper when that package exists.
+        from slm_training.evidence_store import records as _records  # type: ignore
+
+        helper = getattr(_records, "compute_config_fingerprint", None)
+        if callable(helper):
+            return str(helper(stable))
+    except Exception:  # noqa: BLE001 — concurrent module may not exist yet
+        pass
     payload = json.dumps(stable, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
 

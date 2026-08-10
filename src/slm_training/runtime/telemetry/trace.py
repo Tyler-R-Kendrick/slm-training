@@ -451,6 +451,21 @@ class RunTrace:
 
 
 _LLM_MIRROR_CORE_KEYS = {"llm.provider", "llm.model", "llm.input_tokens", "llm.output_tokens"}
+#: Additional llm.* metadata keys safe to mirror to PostHog verbatim, beyond
+#: the four core keys above. Deliberately an ALLOWLIST, not a denylist:
+#: llm.* can carry prompts, completions, or other generation content, which
+#: must never leave the box for this fire-and-forget third-party mirror. A
+#: new llm.* attribute is dropped by default until reviewed and added here —
+#: never forwarded just because a caller started setting it.
+_LLM_MIRROR_ALLOWED_EXTRA_KEYS = {
+    "llm.temperature",
+    "llm.max_tokens",
+    "llm.finish_reason",
+    "llm.cost_usd",
+    "llm.cached",
+    "llm.retry_count",
+    "llm.stream",
+}
 
 
 def _mirror_llm_span_to_posthog(
@@ -461,10 +476,12 @@ def _mirror_llm_span_to_posthog(
     Attribute convention (introduced here — the local OTLP span model had no
     prior LLM keys): ``llm.provider`` / ``llm.model`` mark a span as an LLM
     generation; ``llm.input_tokens`` / ``llm.output_tokens`` are optional
-    counts, and any other ``llm.*`` attribute passes through verbatim. The
-    local OTLP bundle and OTel hub stay the source of truth; the PostHog
-    bridge is a fire-and-forget mirror that no-ops without an API key, so
-    this helper changes no behavior in that case and never raises.
+    counts. Any other ``llm.*`` attribute is forwarded only when it is on
+    ``_LLM_MIRROR_ALLOWED_EXTRA_KEYS`` (scalar operational metadata, never
+    free-form content) — see that set's docstring. The local OTLP bundle and
+    OTel hub stay the source of truth; the PostHog bridge is a
+    fire-and-forget mirror that no-ops without an API key, so this helper
+    changes no behavior in that case and never raises.
     """
     attributes = trace.attributes
     model = attributes.get("llm.model")
@@ -477,7 +494,7 @@ def _mirror_llm_span_to_posthog(
         passthrough = {
             key: value
             for key, value in attributes.items()
-            if key.startswith("llm.") and key not in _LLM_MIRROR_CORE_KEYS
+            if key in _LLM_MIRROR_ALLOWED_EXTRA_KEYS
         }
         capture_ai_generation(
             trace_id=trace.trace_id,

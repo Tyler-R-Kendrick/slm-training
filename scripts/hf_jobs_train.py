@@ -192,6 +192,25 @@ def hf_token_present() -> bool:
     )
 
 
+def ensure_hf_token_env() -> None:
+    """Alias ``HUGGING_FACE_HUB_TOKEN`` to ``HF_TOKEN`` in this process's env.
+
+    ``build_jobs_run_command`` forwards the secret via ``--secrets HF_TOKEN``
+    (name-only — the ``hf`` CLI reads the local env var of that name itself
+    and never puts the value on the argv). ``hf_token_present()`` treats
+    either variable name as "a token is configured", so without this
+    normalization a caller with only ``HUGGING_FACE_HUB_TOKEN`` set passes
+    the local safety gate but ``--secrets HF_TOKEN`` finds nothing to
+    forward, starting a paid job with no token in the container. Call this
+    once, immediately before constructing/submitting the job command — never
+    write a literal secret value into a subprocess argv.
+    """
+    if not os.environ.get("HF_TOKEN"):
+        hub_token = os.environ.get("HUGGING_FACE_HUB_TOKEN")
+        if hub_token:
+            os.environ["HF_TOKEN"] = hub_token
+
+
 def submit_jobs_command(
     cmd: list[str], *, timeout_seconds: int = MAX_RUN_SECONDS
 ) -> int:
@@ -308,6 +327,7 @@ def main(argv: list[str] | None = None) -> int:
                 }
             )
         )
+    ensure_hf_token_env()
 
     return submit_jobs_command(cmd)
 

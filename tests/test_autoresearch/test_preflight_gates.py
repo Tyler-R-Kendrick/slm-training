@@ -446,6 +446,25 @@ def test_fingerprint_prefers_evidence_store_helper(
     )
 
 
+def test_fingerprint_excludes_steps_before_evidence_store_helper(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Regression: the evidence-store helper must see the steps-excluded
+    stable mapping, not the raw config — otherwise the fingerprint changes
+    every cycle and prior-attempt matching silently never fires."""
+    pkg = ModuleType("slm_training.evidence_store")
+    records = ModuleType("slm_training.evidence_store.records")
+    records.compute_config_fingerprint = (  # type: ignore[attr-defined]
+        lambda config: "store-fp-" + "/".join(sorted(config))
+    )
+    pkg.records = records  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "slm_training.evidence_store", pkg)
+    monkeypatch.setitem(sys.modules, "slm_training.evidence_store.records", records)
+    assert prior_attempts.config_fingerprint(
+        {"a": 1, "steps": 10}
+    ) == prior_attempts.config_fingerprint({"a": 1, "steps": 20})
+
+
 # ---------------------------------------------------------------------------
 # Driver-side gate (_preflight_screening_slug)
 # ---------------------------------------------------------------------------

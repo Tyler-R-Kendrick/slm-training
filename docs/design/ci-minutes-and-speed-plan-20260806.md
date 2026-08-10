@@ -191,9 +191,19 @@ is silent"* — is now closed locally by a zero-minute merge gate:
 | Surface | Role |
 | --- | --- |
 | `scripts/verify_merge_ready.py` | Single local gate command mirroring the dormant `python-static` CI job plus the changed-test fan-out. `--fast` = static only; `--json` = machine-readable summary; per-step wall budget defaults to `slm_training.levers.MAX_RUN_MINUTES` (a timed out step is `timeout` = failure). |
-| `.githooks/pre-push` | Runs `python3 -m scripts.verify_merge_ready --fast` on every push (`core.hooksPath=.githooks`). Escape hatch: `SLM_SKIP_PREPUSH=1` skips but prints a loud multi-line UNVERIFIED warning. |
+| `.githooks/pre-push` | Runs `verify_merge_ready --fast` on every push (`core.hooksPath=.githooks`). Escape hatch: `SLM_SKIP_PREPUSH=1` skips but prints a loud multi-line UNVERIFIED warning. |
 | `scripts/report_merge_readiness.sh` | Read-only one-screen reporter over `verify_merge_ready --json`, for agents' status checks. |
-| `.grok/workflows/unblock-in-review.rhai` | Workers must run the **full** `python3 -m scripts.verify_merge_ready` and get exit 0 before any squash-merge. |
+| `.grok/workflows/unblock-in-review.rhai` | Workers must run the **full** `verify_merge_ready` and get exit 0 before any squash-merge. |
+
+**Interpreter resolution (worktree-aware).** A linked git worktree — e.g. one
+of `drain-in-review`'s per-issue isolated checkouts — usually has no `.venv`
+of its own; dependencies live in the primary clone. `.githooks/pre-push` and
+`scripts/report_merge_readiness.sh` both resolve the interpreter the same
+way: this checkout's own `.venv/bin/python` first, else the **common git
+root**'s (`git rev-parse --path-format=absolute --git-common-dir`, its
+dirname is the primary clone), else bare `python3`. A bare `python3` in a
+worktree can fail on unimportable deps — a false "gate failed" that isn't
+actually the gate.
 | `tests/test_scripts/test_merge_ready_gate.py` | Certifies the gate embeds every `python-static` invocation in workflow order (parity by construction), the failure/skip semantics, and both shell surfaces. |
 
 Exact command list mirrored from `.github/workflows/ci.yml` `python-static`

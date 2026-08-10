@@ -287,7 +287,7 @@ mirrored event loses no evidence.
 | --- | --- |
 | `POSTHOG_PROJECT_API_KEY` | Project API key; **unset ⇒ the whole mirror cleanly no-ops** with one logged notice. |
 | `POSTHOG_HOST` | Ingestion host, default `https://us.i.posthog.com`. |
-| `SLM_RUN_ID` | Preferred `distinct_id`; falls back to the hostname, then `"slm-training"`. Runs are machines, not people — no user identity is attached. |
+| `SLM_RUN_ID` | Preferred `distinct_id`; falls back to the fixed literal `"slm-training"` (never the machine hostname, which can reveal internal infrastructure naming or a person's machine). Runs are machines, not people — no user identity is attached. |
 | `SLM_POSTHOG_ENABLE_REPLAY` | Server-side opt-in (`1/true/yes/on`) that sets `posthog.enable_replay: true` in the dashboard feature bootstrap payload. Default off. |
 
 ### Event schema
@@ -297,14 +297,21 @@ mirrored event loses no evidence.
   `$ai_latency` (**seconds**, per PostHog's LLM-analytics convention; callers
   pass milliseconds and the bridge converts), `$ai_is_error`, `$ai_error`,
   `$ai_total_cost_usd`, plus passthrough properties (the trace mirror adds
-  `slm.run.id`, `slm.operation`, and any extra `llm.*` attributes).
+  `slm.run.id`, `slm.operation`, and any allowlisted extra `llm.*`
+  attributes — see below).
 - `$ai_trace` (`capture_ai_trace`): `$ai_trace_id`, `$ai_span_name`, plus
   passthrough properties.
 
 Span attribute convention introduced by WP-6 (the local OTLP span model had
 no prior LLM keys): `llm.provider` / `llm.model` mark a `RunTrace` as an LLM
-generation; `llm.input_tokens` / `llm.output_tokens` are optional counts; any
-other `llm.*` attribute passes through to PostHog verbatim.
+generation; `llm.input_tokens` / `llm.output_tokens` are optional counts.
+Any other `llm.*` attribute is forwarded only when it is on
+`trace.py::_LLM_MIRROR_ALLOWED_EXTRA_KEYS` (currently `llm.temperature`,
+`llm.max_tokens`, `llm.finish_reason`, `llm.cost_usd`, `llm.cached`,
+`llm.retry_count`, `llm.stream`) — an **allowlist, not a denylist**: `llm.*`
+can carry prompts, completions, or other generation content, which must
+never leave the box via this third-party mirror, so a new `llm.*` attribute
+is dropped by default until reviewed and added to that set.
 
 ### Dashboard error tracking + replay flag
 

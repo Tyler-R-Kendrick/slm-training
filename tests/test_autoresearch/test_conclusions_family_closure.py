@@ -443,5 +443,8 @@ def test_plugin_never_raises(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setattr(conclusions, "binding_closure", _boom)
     verdict = concluded_family.CHECK.run({"lever_keys": ["bounds"]})
-    assert verdict.verdict == "pass"
+    # Package fail-soft law: a check bug is "warn" (never a silent "pass"),
+    # so a crash reads differently in the persisted payload than a
+    # verified-open family.
+    assert verdict.verdict == "warn"
     assert any("fails open" in reason for reason in verdict.reasons)

@@ -113,6 +113,88 @@ def test_collect_excludes_incomplete_seeds_from_evidence(
     assert "code_commit" in stamp and "stamped_at" in stamp
 
 
+def test_collect_rejects_mismatched_seed_identity(tmp_path: Path) -> None:
+    config = hf_jobs_screen.ScreenConfig(screen_id="unit_screen", seeds=2)
+    collect = tmp_path / "screening" / "unit_screen"
+    collect.mkdir(parents=True)
+    _write_seed(collect, 0, value=0.4)
+    # A stale seed_1.json from a different screen (wrong screen_id) must
+    # never silently enter this screen's aggregate.
+    _write_seed(collect, 1, value=0.5, screen_id="some_other_screen")
+
+    result = hf_jobs_screen.collect_results(config, collect_dir=collect, baseline=None)
+
+    assert result["n_complete"] == 1
+    assert result["values"] == [0.4]
+    row1 = next(row for row in result["per_seed"] if row["seed"] == 1)
+    assert row1["status"] == "incomplete"
+    assert "identity mismatch" in row1["reason"]
+    assert "screen_id" in row1["reason"]
+
+
+def test_collect_rejects_non_finite_value(tmp_path: Path) -> None:
+    config = hf_jobs_screen.ScreenConfig(screen_id="unit_screen", seeds=2)
+    collect = tmp_path / "screening" / "unit_screen"
+    collect.mkdir(parents=True)
+    _write_seed(collect, 0, value=0.4)
+    (collect / "seed_1.json").write_text(
+        json.dumps(
+            {
+                "schema": hf_jobs_screen.SEED_SCHEMA,
+                "screen_id": "unit_screen",
+                "seed": 1,
+                "run_id": "unit_screen_s1",
+                "metric": "meaningful_program_rate",
+                "suite": "smoke",
+                "value": float("nan"),
+                "status": "complete",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = hf_jobs_screen.collect_results(config, collect_dir=collect, baseline=None)
+
+    assert result["n_complete"] == 1
+    row1 = next(row for row in result["per_seed"] if row["seed"] == 1)
+    assert row1["status"] == "incomplete"
+    assert "finite" in row1["reason"]
+
+
+def test_collect_rejects_malformed_seed_json(tmp_path: Path) -> None:
+    config = hf_jobs_screen.ScreenConfig(screen_id="unit_screen", seeds=2)
+    collect = tmp_path / "screening" / "unit_screen"
+    collect.mkdir(parents=True)
+    (collect / "seed_0.json").write_text("{not json", encoding="utf-8")
+
+    result = hf_jobs_screen.collect_results(config, collect_dir=collect, baseline=None)
+
+    assert result["n_complete"] == 0
+    assert "unreadable" in result["per_seed"][0]["reason"]
+
+
+class TestScreenConfigValidation:
+    def test_rejects_path_unsafe_screen_id(self) -> None:
+        with pytest.raises(ValueError, match="screen_id"):
+            hf_jobs_screen.ScreenConfig(screen_id="../../etc/passwd")
+
+    def test_rejects_shell_metacharacters_in_screen_id(self) -> None:
+        with pytest.raises(ValueError):
+            hf_jobs_screen.ScreenConfig(screen_id="x$(rm -rf /)")
+
+    def test_rejects_shell_metacharacters_in_metric(self) -> None:
+        with pytest.raises(ValueError):
+            hf_jobs_screen.ScreenConfig(metric='x"; import os; os.system("rm -rf /"); y="')
+
+    def test_rejects_shell_metacharacters_in_suite(self) -> None:
+        with pytest.raises(ValueError):
+            hf_jobs_screen.ScreenConfig(suite="smoke`echo pwned`")
+
+    def test_accepts_dotted_metric_names(self) -> None:
+        config = hf_jobs_screen.ScreenConfig(metric="smoke.structural_similarity")
+        assert config.metric == "smoke.structural_similarity"
+
+
 def test_collect_without_baseline_reports_no_p_value(tmp_path: Path) -> None:
     config = hf_jobs_screen.ScreenConfig(screen_id="unit_screen", seeds=2)
     collect = tmp_path / "screening" / "unit_screen"

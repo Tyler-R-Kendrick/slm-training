@@ -107,6 +107,48 @@ def test_full_queue_drops_with_counter() -> None:
         bridge.close(timeout=0.5)
 
 
+class _BlockingTransport:
+    """Each send blocks for ``delay`` seconds — simulates a slow HTTP call."""
+
+    def __init__(self, delay: float) -> None:
+        self.delay = delay
+        self.calls = 0
+
+    def __call__(self, url: str, payload: dict[str, Any]) -> None:
+        self.calls += 1
+        time.sleep(self.delay)
+
+
+def test_close_respects_one_absolute_deadline_with_full_queue() -> None:
+    """A full queue behind a slow transport must not delay close() past its
+    own timeout — the join and the final drain share one deadline, not
+    (join timeout) + (unbounded drain), each send blocking further."""
+    transport = _BlockingTransport(delay=0.2)
+    bridge = _make_bridge(
+        transport, max_queue=50, batch_size=1, flush_seconds=0.01
+    )
+    for i in range(20):
+        bridge.capture("$ai_trace", {"n": i})
+
+    started = time.monotonic()
+    bridge.close(timeout=0.5)
+    elapsed = time.monotonic() - started
+
+    # Generous slack over the deadline for scheduling jitter and the one
+    # in-flight send that can't be interrupted mid-call, but this must stay
+    # far below "drain all 20 batches at 0.2s each" (~4s unbounded).
+    assert elapsed < 1.5
+    # close() itself is bounded (asserted above); the abandoned background
+    # worker thread may still be mid-send for one batch when close()
+    # returns (a blocking transport call can't be interrupted from another
+    # thread) — give it a short grace window to finish before the final count.
+    for _ in range(30):
+        if bridge.stats.sent + bridge.stats.dropped >= 20:
+            break
+        time.sleep(0.1)
+    assert bridge.stats.sent + bridge.stats.dropped == 20
+
+
 def test_transport_failures_never_raise_and_count_drops() -> None:
     transport = FakeTransport(fail=True)
     bridge = _make_bridge(transport)

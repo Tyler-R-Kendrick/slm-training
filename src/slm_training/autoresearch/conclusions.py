@@ -36,7 +36,9 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import os
 import re
+import tempfile
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -420,13 +422,25 @@ def _write_closed_approaches(
     records: Sequence[Mapping[str, Any]],
     path: Path,
 ) -> None:
+    """Write the append-only closed-approaches ledger atomically.
+
+    Temp file + ``os.replace`` — a process failure mid-write must never
+    truncate or corrupt the existing append-only ledger (which would look
+    like closed families silently reopening).
+    """
     body = dict(payload)
     body["schema"] = CLOSED_APPROACHES_SCHEMA
     body["records"] = list(records)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(body, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
+    text = json.dumps(body, indent=2, sort_keys=True) + "\n"
+    fd, tmp_name = tempfile.mkstemp(dir=str(path.parent), suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(text)
+        os.replace(tmp_name, path)
+    except BaseException:
+        Path(tmp_name).unlink(missing_ok=True)
+        raise
 
 
 def _record_reopened(

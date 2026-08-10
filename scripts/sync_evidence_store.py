@@ -413,7 +413,7 @@ def _map_climb_ledger(
                 steps=0,
                 outcome=outcome,
                 blocker=blocker,
-                version_stamp={},
+                version_stamp=_stamp(payload),
                 source_path=source,
                 run_date=None,
             )

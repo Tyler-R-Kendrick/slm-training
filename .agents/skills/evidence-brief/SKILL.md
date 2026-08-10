@@ -24,8 +24,17 @@ missing file is normal and is reported as "not present", never as an error.
 | Evidence ledger | `src/slm_training/resources/experiments/autotrain_climb/evidence_ledger.v1.json` | Per-arm `n_obs` / `mean_delta` / `n_positive` — which hypothesis families are open vs exhausted |
 | Closed approaches | `src/slm_training/resources/experiments/autotrain_climb/closed_approaches.v1.json` | Recently closed approaches (a rejected experiment closes an approach, never a goal) |
 | Evidence store | `src/slm_training/resources/evidence_store/local_index.jsonl` — query via `python -m scripts.query_evidence` **when that script exists**, else read the JSONL directly | Recent runs, preflight blocks, pending confirmations |
-| Merge preflight | `python -m scripts.verify_merge_ready` output **when present** (run read-only, report only) | Current preflight-block status |
+| Merge preflight | The delivery ledger's persisted `preflight` field (`outputs/autoresearch/sdlc_delivery_ledger.jsonl`, when present) | Preflight-block status from the most recent recorded cycle |
 | Model card | `docs/MODEL_CARD.md` (plus README "Model card (summary)") | Currently promoted model / roster status |
+
+**Never invoke `scripts.verify_merge_ready` (or any full/fast merge-gate run)
+from this skill.** That script runs `compileall` (writes `__pycache__`) and,
+outside `--fast`, executes the changed-test suite — neither is read-only,
+and this skill's whole contract is that it writes nothing. Read only a
+**persisted** status source (the delivery ledger's recorded `preflight`
+field above); if none exists, report "merge-preflight: not checked (no
+persisted status source available)" — never run the gate yourself to
+manufacture one.
 
 ## Brief shape (post to chat)
 
@@ -41,7 +50,7 @@ Keep it under ~40 lines. Sections, in order:
 - <approach> — closed <date/reason>   (from closed_approaches.v1.json; "none recorded" if file absent)
 
 ## Recent preflight blocks
-- <block source + one-line reason>    (evidence store / verify_merge_ready; "none observed" otherwise)
+- <block source + one-line reason>    (evidence store / delivery ledger's persisted preflight field; "none observed" otherwise)
 
 ## Pending confirmations
 - <promotion candidates awaiting locked-eval / multi-seed confirmation>  (policy `promotion_primary` vs ledger)

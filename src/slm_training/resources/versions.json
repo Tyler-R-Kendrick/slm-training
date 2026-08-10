@@ -4251,6 +4251,11 @@
       "history": [
         {
           "version": "v14",
+          "date": "2026-08-10",
+          "note": "no-bump: ci-minutes-and-speed-plan doc gained a paragraph documenting the worktree-aware interpreter resolution used by the local merge gate surfaces; no formal-harness code changed."
+        },
+        {
+          "version": "v14",
           "date": "2026-08-09",
           "note": "no-bump: ci-minutes-and-speed-plan doc gained an append-only section documenting the local merge gate; no formal-harness code changed."
         },
@@ -11764,7 +11769,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v95",
+      "version": "v96",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -11785,6 +11790,11 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v96",
+          "date": "2026-08-10",
+          "note": "CodeRabbit fix (data minimization): the PostHog LLM-telemetry mirror in trace.py now forwards only an explicit allowlist of scalar llm.* metadata keys (temperature, max_tokens, finish_reason, cost_usd, cached, retry_count, stream) instead of every llm.*-prefixed attribute verbatim \u2014 the prior passthrough could have forwarded free-form generation content (a prompt, completion, or raw response) to the third-party mirror if a caller ever tagged a span with such an attribute."
+        },
         {
           "version": "v95",
           "date": "2026-08-09",
@@ -16690,16 +16700,22 @@
       ]
     },
     "evidence.store": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/evidence_store/",
         "src/slm_training/resources/evidence_store/",
         "scripts/sync_evidence_store.py",
         "scripts/query_evidence.py",
-        "docs/design/evidence-store.md"
+        "docs/design/evidence-store.md",
+        "tests/test_evidence_store/"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-10",
+          "note": "CodeRabbit fixes: find_prior_attempts now unions remote results with the local mirror instead of replacing it (a successful-but-empty remote query \u2014 schema.sql applied but not yet synced, or a lagging remote table \u2014 no longer silently hides a local match); write_local_index writes atomically (temp file + os.replace); _map_climb_ledger populates version_stamp from the source payload instead of hardcoding {}; schema.sql enables row-level security and revokes anon/authenticated access (the sync client's service-role key bypasses RLS, so this only closes the anonymous-read exposure of a table created in public)."
+        },
         {
           "version": "v2",
           "date": "2026-08-10",
@@ -16713,14 +16729,21 @@
       ]
     },
     "autoresearch.power_preflight": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/power.py",
         "src/slm_training/autoresearch/preflight/power_check.py",
-        "docs/design/power-preflight.md"
+        "docs/design/power-preflight.md",
+        "tests/test_autoresearch/test_power_preflight_check.py",
+        "tests/test_autoresearch/test_power_preflight_math.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-10",
+          "note": "CodeRabbit fix: required_n_for_effect now validates alpha/power are in (0, 1), matching min_detectable_effect's existing checks, instead of surfacing an unrelated NormalDist.inv_cdf error."
+        },
         {
           "version": "v2",
           "date": "2026-08-10",
@@ -16734,15 +16757,21 @@
       ]
     },
     "autoresearch.preflight": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/preflight/__init__.py",
         "src/slm_training/autoresearch/preflight/prior_attempts.py",
         "docs/design/preflight-gates.md",
-        ".agents/skills/skeptic-panel/SKILL.md"
+        ".agents/skills/skeptic-panel/SKILL.md",
+        "tests/test_autoresearch/test_preflight_gates.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-10",
+          "note": "CodeRabbit fix (real bug): config_fingerprint excluded FINGERPRINT_EXCLUDE_KEYS (steps) only in its local fallback, but passed the unfiltered config to the evidence-store helper when importable \u2014 since that module ships in this same PR the helper path always won, so the fingerprint changed every cycle and prior-attempt matching silently never fired. Stable mapping is now built once and used by both paths."
+        },
         {
           "version": "v2",
           "date": "2026-08-10",
@@ -16756,16 +16785,22 @@
       ]
     },
     "autoresearch.conclusions": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/conclusions.py",
         "src/slm_training/autoresearch/preflight/concluded_family.py",
         "src/slm_training/resources/experiments/autotrain_climb/policy.v2.json",
         "src/slm_training/resources/experiments/autotrain_climb/closed_approaches.v1.json",
-        "docs/design/hypothesis-family-conclusions.md"
+        "docs/design/hypothesis-family-conclusions.md",
+        "tests/test_autoresearch/test_conclusions_family_closure.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-10",
+          "note": "CodeRabbit fixes: closed_approaches.v1.json written atomically (temp file + os.replace, never truncate the append-only ledger on a mid-write failure); concluded_family plugin returns warn (not a silent pass) on an internal error, matching the sibling plugins' fail-soft convention."
+        },
         {
           "version": "v2",
           "date": "2026-08-10",
@@ -16784,9 +16819,15 @@
       "paths": [
         "scripts/verify_merge_ready.py",
         "scripts/report_merge_readiness.sh",
-        ".githooks/pre-push"
+        ".githooks/pre-push",
+        "tests/test_scripts/test_merge_ready_gate.py"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-10",
+          "note": "no-bump: report_merge_readiness.sh now resolves the interpreter the same way .githooks/pre-push does (this checkout's venv, else the common git root's, else bare python3) so it works correctly from a linked worktree, which usually has no .venv of its own; no change to the gate's own check list or verdict logic."
+        },
         {
           "version": "v1",
           "date": "2026-08-09",
@@ -16795,12 +16836,21 @@
       ]
     },
     "telemetry.posthog_bridge": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
-        "src/slm_training/runtime/telemetry/posthog_bridge.py"
+        "src/slm_training/runtime/telemetry/posthog_bridge.py",
+        "docs/design/telemetry.md",
+        "tests/test_runtime/test_posthog_bridge_client.py",
+        "tests/test_runtime/test_posthog_bridge_trace_mirror.py",
+        "tests/test_features/test_posthog_bridge_bootstrap.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-10",
+          "note": "CodeRabbit fixes: default_distinct_id no longer falls back to the machine hostname (can reveal infrastructure naming or a person's machine) \u2014 falls straight to the fixed literal 'slm-training'; close() now bounds the worker-thread join and the final drain by one shared absolute deadline (including the flush-lock acquisition itself, not just the loop body), so a full queue behind a slow transport can no longer delay process shutdown past the requested timeout, with a deadline-exceeded drop counted in stats.dropped."
+        },
         {
           "version": "v1",
           "date": "2026-08-09",
@@ -16809,12 +16859,22 @@
       ]
     },
     "experiments.hf_screening": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
-        "scripts/hf_jobs_screen.py"
+        "scripts/hf_jobs_screen.py",
+        "scripts/hf_jobs_train.py",
+        "docs/design/hf-jobs-train.md",
+        "tests/test_scripts/test_hf_jobs_screen_cli.py",
+        "tests/test_scripts/test_hf_jobs_screen_stats.py",
+        "tests/test_scripts/test_hf_jobs_screen_policy.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-10",
+          "note": "CodeRabbit fixes (real security issues): ScreenConfig validates screen_id/metric/suite against a safe charset (they were interpolated into generated shell/Python script text \u2014 a crafted --config could otherwise inject shell commands or escape the intended bucket path); collect_results validates each seed file's identity (schema/screen_id/seed/suite/metric) before aggregating and requires a finite numeric value, so a stale or unrelated seed_<k>.json can no longer silently enter this screen's evidence; hf_jobs_train.ensure_hf_token_env aliases HUGGING_FACE_HUB_TOKEN to HF_TOKEN in-process before submission (never via a literal secret value on argv) so a caller with only that variable set still authenticates the remote job instead of silently starting one with no token."
+        },
         {
           "version": "v1",
           "date": "2026-08-09",

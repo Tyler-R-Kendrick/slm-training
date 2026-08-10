@@ -19,9 +19,10 @@ Design decisions (documented per WP-6):
   (it appears only in optional extras), so the bridge must not import it.
 * **``$ai_latency``** — PostHog's LLM analytics convention expresses latency
   in **seconds** (float); callers pass milliseconds and the bridge converts.
-* **``distinct_id``** — a stable machine/run identifier: ``SLM_RUN_ID`` when
-  set, else the hostname, else ``"slm-training"``. Runs are infrastructure,
-  not people, so no user identity is ever attached.
+* **``distinct_id``** — a stable run identifier: ``SLM_RUN_ID`` when set,
+  else the fixed literal ``"slm-training"`` (never the machine hostname,
+  which can reveal infrastructure naming or a person's machine). Runs are
+  infrastructure, not people, so no user identity is ever attached.
 * **Fail-soft** — when ``POSTHOG_PROJECT_API_KEY`` is unset the module no-ops
   after logging a single notice. Events are queued on a bounded in-memory
   queue drained by one daemon thread; when the queue is full events are
@@ -35,8 +36,8 @@ import json
 import logging
 import os
 import queue
-import socket
 import threading
+import time
 import urllib.request
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -67,14 +68,14 @@ def _urllib_transport(url: str, payload: dict[str, Any]) -> None:
 
 
 def default_distinct_id() -> str:
-    """Stable machine/run identifier: SLM_RUN_ID, else hostname, else literal."""
+    """Stable run identifier: ``SLM_RUN_ID``, else a fixed, non-identifying literal.
+
+    Deliberately does not fall back to the machine hostname: a hostname can
+    reveal internal infrastructure naming or a person's machine name, and
+    this bridge's own contract is "runs are infrastructure, not people."
+    """
     run_id = os.getenv("SLM_RUN_ID", "").strip()
-    if run_id:
-        return run_id
-    try:
-        return socket.gethostname() or "slm-training"
-    except OSError:  # pragma: no cover - hostname lookup is best-effort
-        return "slm-training"
+    return run_id or "slm-training"
 
 
 @dataclass
@@ -138,11 +139,22 @@ class PostHogBridge:
         self._flush_once()
 
     def close(self, timeout: float = _ATEXIT_FLUSH_SECONDS) -> None:
-        """Stop the worker and drain what remains, bounded by ``timeout``."""
+        """Stop the worker and drain what remains, bounded by ONE absolute deadline.
+
+        ``timeout`` covers both the worker-thread join and the final drain
+        together — not each independently. Each send can itself take up to
+        the transport's own timeout, so letting the final flush run
+        unbounded after an already-bounded join could still delay process
+        shutdown well past ``timeout`` with a full queue. Once the deadline
+        passes, remaining queued rows are dropped (counted in
+        ``stats.dropped``) rather than sent.
+        """
+        deadline = time.monotonic() + max(0.0, float(timeout))
         self._closed.set()
         self._wake.set()
-        self._thread.join(timeout=timeout)
-        self._flush_once()
+        join_budget = max(0.0, deadline - time.monotonic())
+        self._thread.join(timeout=join_budget)
+        self._flush_once(deadline=deadline)
 
     # -- internals ---------------------------------------------------------
 
@@ -152,9 +164,23 @@ class PostHogBridge:
             self._wake.clear()
             self._flush_once()
 
-    def _flush_once(self) -> None:
-        with self._flush_lock:
+    def _flush_once(self, deadline: float | None = None) -> None:
+        # A plain `with self._flush_lock:` would block for however long the
+        # background worker holds the lock mid-drain (potentially the
+        # entire unbounded drain), before the deadline check below ever
+        # runs — so the lock acquisition itself must respect the deadline.
+        if deadline is not None:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0 or not self._flush_lock.acquire(timeout=remaining):
+                self._drop_remaining_queue()
+                return
+        else:
+            self._flush_lock.acquire()
+        try:
             while True:
+                if deadline is not None and time.monotonic() >= deadline:
+                    self._drop_remaining_queue()
+                    return
                 rows: list[dict[str, Any]] = []
                 while len(rows) < self.batch_size:
                     try:
@@ -169,6 +195,20 @@ class PostHogBridge:
                 except Exception as exc:  # noqa: BLE001 - mirror must never raise
                     self.stats.dropped += len(rows)
                     self.stats.last_error = type(exc).__name__
+        finally:
+            self._flush_lock.release()
+
+    def _drop_remaining_queue(self) -> None:
+        dropped = 0
+        while True:
+            try:
+                self._queue.get_nowait()
+                dropped += 1
+            except queue.Empty:
+                break
+        if dropped:
+            self.stats.dropped += dropped
+            self.stats.last_error = "close_deadline_exceeded"
 
 
 _bridge: PostHogBridge | None = None

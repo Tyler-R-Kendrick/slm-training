@@ -33,12 +33,13 @@ import argparse
 import json
 import math
 import random
+import re
 import shlex
 from itertools import combinations
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from scripts.hf_jobs_train import (
     BUCKET_MOUNT,
@@ -48,6 +49,7 @@ from scripts.hf_jobs_train import (
     DEFAULT_REPO,
     build_entrypoint_script,
     build_jobs_run_command,
+    ensure_hf_token_env,
     hf_token_present,
     submit_jobs_command,
 )
@@ -67,6 +69,16 @@ INCOMPLETE_NOTE = (
 )
 
 
+#: screen_id becomes a bucket-relative path segment and a shell/Python
+#: identifier embedded in generated job scripts — restrict to a safe,
+#: unambiguous charset so a crafted --config cannot escape the intended
+#: bucket path, break out of generated shell text, or inject code.
+_SAFE_IDENTIFIER = re.compile(r"^[A-Za-z0-9_-]+$")
+#: metric/suite name a scoreboard key and a generated-script literal;
+#: same safety requirement, plus '.' for dotted metric names.
+_SAFE_METRIC = re.compile(r"^[A-Za-z0-9_.-]+$")
+
+
 class ScreenConfig(BaseModel):
     """Candidate screening config (JSON file merged with CLI overrides)."""
 
@@ -84,6 +96,29 @@ class ScreenConfig(BaseModel):
     suite: str = "smoke"
     max_minutes: int = Field(default=30, ge=1)
     trackio_project: str = "openui-hf-screening"
+
+    @field_validator("screen_id")
+    @classmethod
+    def _validate_screen_id(cls, value: str) -> str:
+        if not _SAFE_IDENTIFIER.match(value):
+            raise ValueError(
+                f"screen_id {value!r} must match {_SAFE_IDENTIFIER.pattern!r} — "
+                "it becomes a bucket-relative path and a generated-script "
+                "identifier; path separators and shell/Python metacharacters "
+                "are rejected at this trust boundary."
+            )
+        return value
+
+    @field_validator("metric", "suite")
+    @classmethod
+    def _validate_metric_or_suite(cls, value: str) -> str:
+        if not _SAFE_METRIC.match(value):
+            raise ValueError(
+                f"{value!r} must match {_SAFE_METRIC.pattern!r} — it is "
+                "embedded in a generated shell/Python script; shell "
+                "metacharacters and quotes are rejected at this trust boundary."
+            )
+        return value
 
     def run_id(self, seed: int) -> str:
         return f"{self.screen_id}_s{int(seed)}"
@@ -109,8 +144,13 @@ def build_metric_publish_block(config: ScreenConfig, seed: int) -> str:
     """
     run_id = config.run_id(seed)
     seed_path = f"{BUCKET_MOUNT}/{config.bucket_prefix}/seed_{int(seed)}.json"
+    # metric/suite are charset-validated (ScreenConfig validators) so this
+    # single-quoted literal can never contain a quote or shell metacharacter,
+    # but avoid raw double-quote interpolation into generated shell text
+    # regardless, as a second, independent layer at this trust boundary.
+    publish_log = f"[hf-screen] publish {config.metric} ({config.suite}) seed={int(seed)}"
     return f"""
-echo "[hf-screen] publish {config.metric} ({config.suite}) seed={int(seed)}"
+echo {shlex.quote(publish_log)}
 python - <<'PYEOF'
 import json
 from pathlib import Path
@@ -433,7 +473,46 @@ def collect_results(
                 }
             )
             continue
-        payload = json.loads(seed_file.read_text(encoding="utf-8"))
+        try:
+            payload = json.loads(seed_file.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            per_seed.append(
+                {
+                    "seed": seed,
+                    "run_id": config.run_id(seed),
+                    "status": "incomplete",
+                    "value": None,
+                    "reason": f"seed file unreadable/malformed: {exc}",
+                }
+            )
+            continue
+        # Identity check at this trust boundary: a stale or unrelated seed
+        # file (wrong schema/screen/seed/suite/metric) must never silently
+        # enter this screen's aggregate just because it landed at the
+        # expected filename.
+        expected_identity = {
+            "schema": SEED_SCHEMA,
+            "screen_id": config.screen_id,
+            "seed": seed,
+            "suite": config.suite,
+            "metric": config.metric,
+        }
+        mismatches = [
+            f"{key}={payload.get(key)!r} (expected {expected!r})"
+            for key, expected in expected_identity.items()
+            if payload.get(key) != expected
+        ]
+        if mismatches:
+            per_seed.append(
+                {
+                    "seed": seed,
+                    "run_id": payload.get("run_id", config.run_id(seed)),
+                    "status": "incomplete",
+                    "value": None,
+                    "reason": "seed file identity mismatch: " + "; ".join(mismatches),
+                }
+            )
+            continue
         status = payload.get("status")
         value = payload.get("value")
         if status != "complete" or value is None:
@@ -447,12 +526,27 @@ def collect_results(
                 }
             )
             continue
+        try:
+            numeric_value = float(value)
+        except (TypeError, ValueError):
+            numeric_value = math.nan
+        if not math.isfinite(numeric_value):
+            per_seed.append(
+                {
+                    "seed": seed,
+                    "run_id": payload.get("run_id", config.run_id(seed)),
+                    "status": "incomplete",
+                    "value": None,
+                    "reason": f"value {value!r} is not a finite number",
+                }
+            )
+            continue
         per_seed.append(
             {
                 "seed": seed,
                 "run_id": payload.get("run_id", config.run_id(seed)),
                 "status": "complete",
-                "value": float(value),
+                "value": numeric_value,
             }
         )
 
@@ -671,6 +765,7 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
         return 2
+    ensure_hf_token_env()
 
     manifest = submit_screen(plan)
     out = args.out or Path(

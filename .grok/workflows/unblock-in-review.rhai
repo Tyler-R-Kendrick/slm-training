@@ -257,8 +257,14 @@ fn worker_prompt(w, cfg_json, heal_hint) {
     p += "- Required CI: python, python-static, data-build. Vercel/CodeRabbit alone MUST NOT block merge.\n";
     p += "- On CI fail: read `gh run view --log-failed`, fix root cause, push, re-watch. Cap max_check_rounds.\n";
     p += "- LOCAL MERGE GATE (hosted GHA triggers are disabled): in the worktree run\n";
-    p += "  `python3 -m scripts.verify_merge_ready` (full, NOT --fast) and require exit 0\n";
-    p += "  before any squash-merge. Red gate => no merge; GHA silence is not approval.\n";
+    p += "  verify_merge_ready (full, NOT --fast) and require exit 0 before any squash-merge.\n";
+    p += "  A worktree usually has no local .venv of its own (deps live in the primary\n";
+    p += "  clone) — resolve the interpreter the same way .githooks/pre-push does: prefer\n";
+    p += "  <worktree>/.venv/bin/python, else <common-git-root>/.venv/bin/python (find it\n";
+    p += "  via `git rev-parse --path-format=absolute --git-common-dir`, its dirname is the\n";
+    p += "  primary clone root), else bare `python3`. A bare `python3 -m scripts...` alone\n";
+    p += "  can fail with the harness's own deps unimportable, not because the gate is red.\n";
+    p += "  Red gate => no merge; GHA silence is not approval.\n";
     p += "- Merge: `gh pr merge <n> --squash --delete-branch` then `--admin` if only non-required checks fail.\n";
     p += "- After merge: Linear save_issue state=done_state + comment with PR URL. status=ok only if merged\n";
     p += "  when allow_merge=true (or pr_ready when allow_merge=false and checks green).\n";

@@ -187,6 +187,10 @@ def required_n_for_effect(
         raise ValueError("effect must be positive")
     if sd < 0:
         raise ValueError("sd must be non-negative")
+    if not 0 < alpha < 1:
+        raise ValueError("alpha must be in (0, 1)")
+    if not 0 < power < 1:
+        raise ValueError("power must be in (0, 1)")
     if sd == 0:
         return 1
     z_total = _z(1 - alpha / 2) + _z(power)

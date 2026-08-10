@@ -11,6 +11,8 @@ so regeneration produces clean diffs.
 from __future__ import annotations
 
 import logging
+import os
+import tempfile
 from pathlib import Path
 from typing import Iterable, Sequence
 
@@ -70,12 +72,24 @@ def dedup_records(records: Iterable[EvidenceRecordV1]) -> list[EvidenceRecordV1]
 def write_local_index(
     records: Sequence[EvidenceRecordV1], path: Path | None = None
 ) -> list[EvidenceRecordV1]:
-    """Write the deduplicated, stably sorted mirror; returns what was written."""
+    """Write the deduplicated, stably sorted mirror; returns what was written.
+
+    Written atomically (temp file + ``os.replace``) so a process failure
+    mid-write can never truncate or corrupt the committed cross-session
+    memory this mirror exists to preserve.
+    """
     target = path or DEFAULT_LOCAL_INDEX_PATH
     deduped = dedup_records(records)
     target.parent.mkdir(parents=True, exist_ok=True)
     body = "".join(record.canonical_line() + "\n" for record in deduped)
-    target.write_text(body, encoding="utf-8")
+    fd, tmp_name = tempfile.mkstemp(dir=str(target.parent), suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(body)
+        os.replace(tmp_name, target)
+    except BaseException:
+        Path(tmp_name).unlink(missing_ok=True)
+        raise
     return deduped
 
 

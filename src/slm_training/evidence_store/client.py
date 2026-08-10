@@ -283,17 +283,25 @@ class EvidenceStoreClient:
             _notice_remote_disabled()
 
         if config_fingerprint:
+            # _remote_query returns [] for a successful zero-row query and
+            # None only on failure — union with the local mirror rather
+            # than replacing it, so a schema.sql applied but not yet synced
+            # (or a remote table lagging the committed mirror) still finds
+            # the local match instead of silently returning nothing (the
+            # exact failure mode the prior-attempt gate exists to prevent).
             exact = self._remote_query(
                 {"config_fingerprint": f"eq.{config_fingerprint}"}
             )
-            if exact is None:
-                exact = [
-                    record
-                    for record in self._load_local()
-                    if record.config_fingerprint == config_fingerprint
-                ]
+            local_exact = [
+                record
+                for record in self._load_local()
+                if record.config_fingerprint == config_fingerprint
+            ]
             _extend(
-                sorted(exact, key=lambda record: record.dedup_key())
+                sorted(
+                    list(exact or []) + local_exact,
+                    key=lambda record: record.dedup_key(),
+                )
             )
 
         if hypothesis_text or lever_keys:
@@ -308,21 +316,20 @@ class EvidenceStoreClient:
                     for record in remote
                     if _local_match_score(record, None, lever_keys) > 0
                 ] or remote
-            if remote is not None and hypothesis_text:
+            if remote:
                 _extend(remote)
-            else:
-                scored = [
-                    (
-                        _local_match_score(record, hypothesis_text, lever_keys),
-                        record,
-                    )
-                    for record in self._load_local()
-                ]
-                ranked = sorted(
-                    (item for item in scored if item[0] > 0.0),
-                    key=lambda item: (-item[0], item[1].dedup_key()),
+            scored = [
+                (
+                    _local_match_score(record, hypothesis_text, lever_keys),
+                    record,
                 )
-                _extend([record for _, record in ranked])
+                for record in self._load_local()
+            ]
+            ranked = sorted(
+                (item for item in scored if item[0] > 0.0),
+                key=lambda item: (-item[0], item[1].dedup_key()),
+            )
+            _extend([record for _, record in ranked])
 
         return results
 

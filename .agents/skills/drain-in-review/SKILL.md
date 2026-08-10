@@ -37,8 +37,14 @@ iteration doc before implementing.
    preflight, or editing gate configs to go green. Document a fail and stop the
    worker instead (`honest-ship-eval`).
 3. **Bounded rounds.** CI-fix loops per issue are capped: `max_check_rounds`
-   default **3**, hard max **6**. When the cap is hit, report the issue as
-   `blocked` with the failing check and next action — do not loop forever.
+   default **3**, hard max **6** — and this cap covers the Work phase's CI-fix
+   loop **and** the single Heal re-run together, not each independently.
+   Reserve the last round for Heal: the Work phase's own loop stops at
+   `max_check_rounds - 1` rounds so Heal's one re-run is the round that
+   fills the cap, keeping total attempts per issue at exactly
+   `max_check_rounds`, never `max_check_rounds + 1`. When the cap is hit,
+   report the issue as `blocked` with the failing check and next action —
+   do not loop forever.
 4. **Worktree isolation.** One isolated git worktree per issue under a sibling
    parent dir (default `../.worktrees-unblock/<id-lower>`). Never work on two
    issues in one checkout, never work in the primary clone.
@@ -90,15 +96,29 @@ fabricate Linear state.
    - On CI failure: `gh run view --log-failed`, fix root cause, push, re-watch
      — within the round cap. Required checks: `python`, `python-static`,
      `data-build`; Vercel / CodeRabbit alone must not block a merge.
-   - **Run the merge preflight (hard rule 1).** Only then
-     `gh pr merge <n> --squash --delete-branch`; confirm MERGED via
-     `gh pr view`.
+   - **Run the merge preflight (hard rule 1).** A push after preflight but
+     before merge can change the PR head, so pin the exact commit it
+     validated: capture `headRefOid` (`gh pr view <n> --json headRefOid`)
+     immediately before or right after preflight succeeds, then merge with
+     `gh pr merge <n> --squash --delete-branch --match-head-commit <sha>`.
+     If the merge rejects the SHA (the head moved), re-run preflight against
+     the new head before merging — never merge a commit preflight never saw.
+     Confirm MERGED via `gh pr view`.
    - Move the Linear issue to `Done` with a comment linking the PR; remove the
-     claim label; `git worktree remove --force` — never leave orphan worktrees.
+     claim label.
    - Status per worker: `ok` (merged) | `pr_ready` (green, `allow_merge=false`)
      | `blocked` | `failed`, with error + next action.
+   - **Every worker's worktree is removed in every terminal state** — `ok`,
+     `pr_ready`, `blocked`, and `failed` alike (`git worktree remove --force`).
+     `blocked`/`failed` are terminal statuses too; leaving their worktrees
+     behind "for diagnosis" is how repeated drains exhaust local disk with
+     orphaned worktrees. If a worktree is deliberately kept for diagnosis,
+     record that decision explicitly in the report — don't just skip cleanup.
 4. **Heal (once).** Re-run each `failed`/`blocked` worker exactly one more
-   time with the prior error as context. One heal pass total — no heal loops.
+   time with the prior error as context — this is the round reserved by hard
+   rule 3, not an extra attempt beyond `max_check_rounds`. One heal pass
+   total — no heal loops. Whatever the worker's status after Heal, its
+   worktree is removed per the cleanup rule above.
 5. **Report.** Scoreboard to chat: merged / pr_ready / blocked / failed per
    issue, PR URLs, leftover queue depth. Best-effort durable copy under
    `outputs/unblock-in-review/` (gitignored; never commit it).
@@ -106,8 +126,11 @@ fabricate Linear state.
 ## Red flags
 
 - Merging without a passing `verify_merge_ready` (or its documented fallback list)
+- Merging a commit `verify_merge_ready` never validated (missing `--match-head-commit`)
 - Editing a gate, test, or preflight script to make a check pass
-- Unbounded fix loops past `max_check_rounds`
+- Unbounded fix loops past `max_check_rounds`, or Heal running as an extra
+  attempt beyond the cap rather than the cap's reserved last round
 - Two issues sharing a worktree, or edits in the primary clone
+- An orphaned worktree left behind for a `blocked` or `failed` worker
 - Claiming Linear state changes that were never made (MCP absent)
 - `--admin` merges past **required** checks (only ever past non-required ones)

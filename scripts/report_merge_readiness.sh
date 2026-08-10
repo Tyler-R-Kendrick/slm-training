@@ -9,9 +9,17 @@ set -euo pipefail
 
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$root"
+# A linked worktree (e.g. drain-in-review's per-issue isolation) usually has
+# no .venv of its own — deps live in the primary clone. Resolve the same way
+# .githooks/pre-push does: this checkout's own venv, else the common git
+# root's (the primary clone's, found via git-common-dir), else bare python3.
+common_git_dir=$(git -C "$root" rev-parse --path-format=absolute --git-common-dir)
+common_root=$(dirname -- "$common_git_dir")
 PY=python3
 if [ -x .venv/bin/python ]; then
   PY=.venv/bin/python
+elif [ -x "$common_root/.venv/bin/python" ]; then
+  PY="$common_root/.venv/bin/python"
 fi
 
 json=$("$PY" -m scripts.verify_merge_ready --json "$@" 2>/dev/null) || true
