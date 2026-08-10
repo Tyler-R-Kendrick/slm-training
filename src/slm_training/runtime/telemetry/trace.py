@@ -295,9 +295,11 @@ class RunTrace:
             severity="ERROR" if exc else "INFO",
             attributes={"error.type": exc_type.__name__ if exc_type else None},
         )
-        payload = self._trace_payload(time.time_ns(), status, str(exc) if exc else "")
+        end_ns = time.time_ns()
+        payload = self._trace_payload(end_ns, status, str(exc) if exc else "")
         self._append("traces", payload)
         self._mirror("traces", payload)
+        _mirror_llm_span_to_posthog(self, end_ns, exc)
         self._langsmith.finish(exc)
         self._write_manifest()
         if self._token is not None:
@@ -446,6 +448,70 @@ class RunTrace:
             "langsmith": self._langsmith.manifest(),
         }
         path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+
+_LLM_MIRROR_CORE_KEYS = {"llm.provider", "llm.model", "llm.input_tokens", "llm.output_tokens"}
+#: Additional llm.* metadata keys safe to mirror to PostHog verbatim, beyond
+#: the four core keys above. Deliberately an ALLOWLIST, not a denylist:
+#: llm.* can carry prompts, completions, or other generation content, which
+#: must never leave the box for this fire-and-forget third-party mirror. A
+#: new llm.* attribute is dropped by default until reviewed and added here —
+#: never forwarded just because a caller started setting it.
+_LLM_MIRROR_ALLOWED_EXTRA_KEYS = {
+    "llm.temperature",
+    "llm.max_tokens",
+    "llm.finish_reason",
+    "llm.cost_usd",
+    "llm.cached",
+    "llm.retry_count",
+    "llm.stream",
+}
+
+
+def _mirror_llm_span_to_posthog(
+    trace: "RunTrace", end_ns: int, error: BaseException | None
+) -> None:
+    """Mirror finished spans that carry ``llm.*`` attributes to PostHog.
+
+    Attribute convention (introduced here — the local OTLP span model had no
+    prior LLM keys): ``llm.provider`` / ``llm.model`` mark a span as an LLM
+    generation; ``llm.input_tokens`` / ``llm.output_tokens`` are optional
+    counts. Any other ``llm.*`` attribute is forwarded only when it is on
+    ``_LLM_MIRROR_ALLOWED_EXTRA_KEYS`` (scalar operational metadata, never
+    free-form content) — see that set's docstring. The local OTLP bundle and
+    OTel hub stay the source of truth; the PostHog bridge is a
+    fire-and-forget mirror that no-ops without an API key, so this helper
+    changes no behavior in that case and never raises.
+    """
+    attributes = trace.attributes
+    model = attributes.get("llm.model")
+    provider = attributes.get("llm.provider")
+    if model is None and provider is None:
+        return
+    try:
+        from slm_training.runtime.telemetry.posthog_bridge import capture_ai_generation
+
+        passthrough = {
+            key: value
+            for key, value in attributes.items()
+            if key in _LLM_MIRROR_ALLOWED_EXTRA_KEYS
+        }
+        capture_ai_generation(
+            trace_id=trace.trace_id,
+            model=str(model) if model is not None else "unknown",
+            provider=str(provider) if provider is not None else "local",
+            input_tokens=attributes.get("llm.input_tokens"),
+            output_tokens=attributes.get("llm.output_tokens"),
+            latency_ms=(end_ns - trace.start_ns) / 1e6,
+            error=f"{type(error).__name__}: {error}" if error is not None else None,
+            properties={
+                "slm.run.id": trace.run_id,
+                "slm.operation": trace.operation,
+                **passthrough,
+            },
+        )
+    except Exception:  # noqa: BLE001 - observability must never stop a run
+        pass
 
 
 def current_trace() -> RunTrace | None:

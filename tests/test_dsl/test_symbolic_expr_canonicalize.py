@@ -9,6 +9,8 @@ from dataclasses import replace
 import numpy as np
 import pytest
 
+from tests.casefiles import case_values
+
 from slm_training.dsl.symbolic_expr_canonicalize import (
     ADD_COMMUTATIVE_SORT,
     DOUBLE_NEGATION_ELIMINATION,
@@ -212,7 +214,7 @@ def test_certificate_rejects_unsupported_schema_version():
 
 @pytest.mark.parametrize(
     "field",
-    ["rule_id", "rule_version", "input_canonical_hash", "output_canonical_hash", "semantic_scope", "checker_identity"],
+    case_values(__file__, "test_certificate_tamper_on_any_field_is_detected"),
 )
 def test_certificate_tamper_on_any_field_is_detected(field):
     node = _op("+", _v(1), _v(0))

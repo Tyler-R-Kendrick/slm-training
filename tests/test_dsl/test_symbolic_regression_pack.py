@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import pytest
 
+from tests.casefiles import case_values
+
 from slm_training.dsl.lang_core import ParseError
 from slm_training.dsl.pack import DslPack, get_pack, list_packs
 from slm_training.dsl.symbolic_regression_pack import (
@@ -198,11 +200,7 @@ def test_evaluate_expression_rejects_out_of_domain_function_input() -> None:
 
 @pytest.mark.parametrize(
     "malicious_source",
-    [
-        "root = __import__('os')\n",
-        "root = os.system(x)\n",
-        "root = eval(x)\n",
-    ],
+    case_values(__file__, "test_core_execution_never_evaluates_arbitrary_python"),
 )
 def test_core_execution_never_evaluates_arbitrary_python(malicious_source: str) -> None:
     """Core parse/oracle path only ever walks a fixed dispatch table — it

@@ -36,8 +36,14 @@ def build_entrypoint_script(
     sync_checkpoints: bool,
     skip_eval: bool,
     extra_train_args: str,
+    max_wall_minutes: int = MAX_RUN_MINUTES,
 ) -> str:
-    """Bash body executed inside the Jobs container after image start."""
+    """Bash body executed inside the Jobs container after image start.
+
+    ``max_wall_minutes`` defaults to the canonical local run cap so this
+    launcher's output is unchanged; the seed-fanout screening launcher passes
+    its per-job remote budget instead (docs/design/hf-jobs-train.md).
+    """
     sync_flag = (
         "--no-sync-checkpoints"
         if not sync_checkpoints
@@ -61,7 +67,7 @@ set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 export SLM_FAST_TRAIN=1
 export HF_JOBS_FAST_TRAIN=1
-export SLM_MAX_WALL_MINUTES={MAX_RUN_MINUTES}
+export SLM_MAX_WALL_MINUTES={int(max_wall_minutes)}
 export TOKENIZERS_PARALLELISM=false
 export PYTORCH_CUDA_ALLOC_CONF="${{PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}}"
 
@@ -114,7 +120,7 @@ fi
 """.strip()
 
 
-def build_hf_jobs_command(
+def build_jobs_run_command(
     *,
     flavor: str,
     timeout: str,
@@ -124,8 +130,13 @@ def build_hf_jobs_command(
     mount_bucket: bool,
     env: dict[str, str] | None = None,
 ) -> list[str]:
-    if timeout != JOB_TIMEOUT:
-        raise ValueError(f"HF Jobs timeout must be {JOB_TIMEOUT}")
+    """Assemble the ``hf jobs run`` argv (no timeout policy of its own).
+
+    Callers enforce their own wall-clock policy: this launcher pins
+    :data:`JOB_TIMEOUT` via :func:`build_hf_jobs_command`, while the
+    seed-fanout screening launcher passes its per-seed ``--max-minutes``
+    budget (docs/design/hf-jobs-train.md).
+    """
     cmd: list[str] = [
         "hf",
         "jobs",
@@ -149,6 +160,70 @@ def build_hf_jobs_command(
         cmd.extend(["--volume", f"hf://{bucket_id}:{BUCKET_MOUNT}"])
     cmd.extend([image, "bash", "-lc", entrypoint])
     return cmd
+
+
+def build_hf_jobs_command(
+    *,
+    flavor: str,
+    timeout: str,
+    image: str,
+    entrypoint: str,
+    checkpoint_bucket: str,
+    mount_bucket: bool,
+    env: dict[str, str] | None = None,
+) -> list[str]:
+    if timeout != JOB_TIMEOUT:
+        raise ValueError(f"HF Jobs timeout must be {JOB_TIMEOUT}")
+    return build_jobs_run_command(
+        flavor=flavor,
+        timeout=timeout,
+        image=image,
+        entrypoint=entrypoint,
+        checkpoint_bucket=checkpoint_bucket,
+        mount_bucket=mount_bucket,
+        env=env,
+    )
+
+
+def hf_token_present() -> bool:
+    """True when an HF Hub token is exported in the environment."""
+    return bool(
+        os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
+    )
+
+
+def ensure_hf_token_env() -> None:
+    """Alias ``HUGGING_FACE_HUB_TOKEN`` to ``HF_TOKEN`` in this process's env.
+
+    ``build_jobs_run_command`` forwards the secret via ``--secrets HF_TOKEN``
+    (name-only — the ``hf`` CLI reads the local env var of that name itself
+    and never puts the value on the argv). ``hf_token_present()`` treats
+    either variable name as "a token is configured", so without this
+    normalization a caller with only ``HUGGING_FACE_HUB_TOKEN`` set passes
+    the local safety gate but ``--secrets HF_TOKEN`` finds nothing to
+    forward, starting a paid job with no token in the container. Call this
+    once, immediately before constructing/submitting the job command — never
+    write a literal secret value into a subprocess argv.
+    """
+    if not os.environ.get("HF_TOKEN"):
+        hub_token = os.environ.get("HUGGING_FACE_HUB_TOKEN")
+        if hub_token:
+            os.environ["HF_TOKEN"] = hub_token
+
+
+def submit_jobs_command(
+    cmd: list[str], *, timeout_seconds: int = MAX_RUN_SECONDS
+) -> int:
+    """Run an ``hf jobs run`` argv; 124 when the local submit call times out.
+
+    The remote Job's own wall-clock cap lives in the argv (``--timeout``);
+    this bound only covers the local CLI submission.
+    """
+    try:
+        proc = subprocess.run(cmd, check=False, timeout=timeout_seconds)
+    except subprocess.TimeoutExpired:
+        return 124
+    return int(proc.returncode)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -243,7 +318,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(plan, indent=2))
         return 0
 
-    if not (os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")):
+    if not hf_token_present():
         # hf CLI may still read ~/.cache/huggingface/token — warn only.
         print(
             json.dumps(
@@ -252,12 +327,9 @@ def main(argv: list[str] | None = None) -> int:
                 }
             )
         )
+    ensure_hf_token_env()
 
-    try:
-        proc = subprocess.run(cmd, check=False, timeout=MAX_RUN_SECONDS)
-    except subprocess.TimeoutExpired:
-        return 124
-    return int(proc.returncode)
+    return submit_jobs_command(cmd)
 
 
 if __name__ == "__main__":

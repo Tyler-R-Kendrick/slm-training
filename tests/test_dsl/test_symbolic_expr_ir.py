@@ -11,6 +11,8 @@ import random
 
 import pytest
 
+from tests.casefiles import case_values
+
 from slm_training.dsl.symbolic_expr_ir import (
     BINARY_OPERATORS,
     UNARY_OPERATORS,
@@ -166,20 +168,7 @@ def test_structural_codec_is_invariant_to_variable_renaming() -> None:
 
 @pytest.mark.parametrize(
     "malformed",
-    [
-        "3.14",  # bare numeric literal
-        "'hello'",  # string literal
-        "(+ v0 1)",  # numeric literal as an operand
-        "(+ v0 \"x\")",  # string operand
-        "__import__('os')",
-        "(system v0)",  # not in the operator table
-        "(+ v0)",  # wrong arity
-        "(+ v0 v1",  # unterminated
-        "+ v0 v1)",  # missing '('
-        "",  # empty
-        "v-1",  # not a valid var token at all (rejected as malformed, not negative-parsed)
-        "v01",  # non-canonical leading zero
-    ],
+    case_values(__file__, "test_parser_fails_closed_on_malformed_or_smuggled_input"),
 )
 def test_parser_fails_closed_on_malformed_or_smuggled_input(malformed: str) -> None:
     with pytest.raises(ValueError):

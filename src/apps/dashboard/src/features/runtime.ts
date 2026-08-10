@@ -14,7 +14,7 @@ import {
 
 export interface FeatureBootstrap {
   provider: "in_memory" | "posthog" | "launchdarkly";
-  posthog: { project_api_key: string; host: string } | null;
+  posthog: { project_api_key: string; host: string; enable_replay?: boolean } | null;
   launchdarkly: boolean;
   defaults: Record<string, JsonValue>;
   evaluated: Record<string, JsonValue>;
@@ -71,6 +71,11 @@ async function initPostHogProvider(bootstrap: FeatureBootstrap): Promise<void> {
   ]);
   posthog.default.init(bootstrap.posthog.project_api_key, {
     api_host: bootstrap.posthog.host,
+    // Dashboard error tracking: mirror uncaught exceptions / unhandled
+    // rejections to PostHog. Session replay stays off unless the server
+    // bootstrap explicitly opts in via posthog.enable_replay === true.
+    capture_exceptions: true,
+    disable_session_recording: bootstrap.posthog.enable_replay !== true,
     loaded: (client) => {
       client.identify(bootstrap.targeting_key);
     },

@@ -273,6 +273,49 @@ Policy v8 adds (see
 - Editing the policy file changes `promote_authority_sha256` — queued
   champions re-certify on the next cycle (intended).
 
+<!-- BEGIN policy v2 (WP-4 conclusion criteria) — appended section -->
+
+## `policy.v2.json` artifact (conclusion criteria)
+
+`policy.v2.json` is an **exact superset** of `policy.v1.json` as it stands
+(currently `version: v8`, schema family unchanged `autotrain_climb_policy/v1`
+— including the terminal-governance and `promotion_suite_n` blocks above)
+plus one new top-level block:
+
+```json
+"conclusion_policy": {
+  "family_close_after_adequately_powered_failures": 3,
+  "adequate_power_requires": { "min_seeds": 8, "decidable": true },
+  "closed_families_reopen_on": ["new_lever_key", "harness_version_change"]
+}
+```
+
+Because `policy.v1.json`'s own `version` field is independently evolving
+(policy v8's terminal governance landed after `policy.v2.json` was first
+authored), `policy.v2.json`'s internal `version` is a separate,
+monotonically-later label (currently `v9`) rather than reusing v1's — the
+filename (`v2`) is the stable identity; the internal `version` field only
+needs to keep advancing whenever `policy.v2.json` is resynced against a
+newer `policy.v1.json`.
+
+`slm_training.autoresearch.conclusions.load_policy()` reads v2 when present
+and falls back to v1 with a single logged notice (reusing
+`load_climb_policy`; v1 callers are unaffected). A hypothesis family — the
+canonicalized sorted `lever_keys` set, restricted to the lever taxonomy
+observed in `evidence_ledger.v1.json` — **concludes** after three adequately
+powered failures (`confirm_failed` / `ship_rejected`, ≥ 8 seeds, decidable
+power), appending a content-addressed `ClosedApproachRecord` to the
+append-only `closed_approaches.v1.json`. The `concluded_family` preflight
+plugin blocks candidates whose family is closed while reopen conditions (a
+new lever key outside the closing evidence, or a changed harness component
+version) are unmet. A closed approach **never** closes a goal (AGENTS.md
+I14); each record names the goal invariant it served (or `"unknown"`) and the
+exact reopen conditions. This is the RC4 successor: exhaustion becomes a
+first-class terminal verdict instead of a bypassed stop. Full semantics:
+[`hypothesis-family-conclusions.md`](hypothesis-family-conclusions.md).
+
+<!-- END policy v2 (WP-4 conclusion criteria) -->
+
 ## Content digest
 
 `climb_policy_content_digest(payload)` hashes the policy body so version stamps

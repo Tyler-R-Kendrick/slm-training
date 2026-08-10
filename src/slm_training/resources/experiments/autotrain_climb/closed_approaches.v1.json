@@ -1,0 +1,5 @@
+{
+  "schema": "closed_approaches/v1",
+  "description": "Append-only ledger of concluded hypothesis families (WP-4). Each record closes one approach — a canonicalized lever-key family — after enough adequately powered failures under policy conclusion_policy. A closed approach NEVER closes a goal (AGENTS.md I14): goal invariants stay open and reopen conditions are recorded on every entry. Entries are content-addressed and never rewritten or deleted. See docs/design/hypothesis-family-conclusions.md.",
+  "records": []
+}

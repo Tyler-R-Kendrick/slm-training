@@ -31,6 +31,12 @@ symlinks back here.
 | `frontier-describe` | Train-only frozen paraphrase / ladder / edit / vision artifacts |
 | `organize-repository` | Canonical file placement, deduplication, and `git mv` workflow |
 | `rtk` | Prefer Rust Token Killer for verbose shell output ([`RTK.md`](../../RTK.md)) |
+| `openwiki-refresh` | Agent-run OpenWiki regeneration: pinned CLI + provider selection, PR on `openwiki/update`; SKIP (never fail) without a provider key |
+| `evidence-brief` | Read-only autotrain evidence digest to chat (climb policy, evidence ledger, closed approaches, evidence store, model card) |
+| `drain-in-review` | Harness-neutral Linear In-Review drain: claim → isolated worktree → PR babysit → bounded CI rounds → preflight-gated squash-merge (port of `.grok/workflows/unblock-in-review.rhai`) |
+
+Scheduled-session runbook for the three operations skills:
+[`docs/design/scheduled-agent-operations.md`](../../docs/design/scheduled-agent-operations.md).
 
 Edit only here; discovery symlinks update every client automatically.
 
