@@ -12,7 +12,7 @@ while reusing the SGS-009 record schema and fail-closed validation rules.
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -193,8 +193,6 @@ def _resolve_disposition(
         )
 
     primary = summaries[0]
-    spec = _family_spec(family_id)
-
     if family_id == "exp-sr-1":
         return (
             Disposition.RETAIN_DIAGNOSTIC,

@@ -3142,6 +3142,11 @@
         {
           "version": "v204",
           "date": "2026-08-10",
+          "note": "no-bump: rebuild evidence_ledger.v1.json after the newly merged RSP-009 design record changed the deterministic scan count; saturation and retirement behavior remain v204."
+        },
+        {
+          "version": "v204",
+          "date": "2026-08-10",
           "note": "Adversarial review fix: exclude retired or otherwise ineligible residual regimes before truncating the absolute-quality ranking, so an excluded top arm cannot consume one of the bounded two recovery slots."
         },
         {
@@ -17374,6 +17379,11 @@
         "docs/design/iter-slm490-rsp-009-disposition-20260810.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-10",
+          "note": "no-bump: remove three unused imports and locals reported by the repository-wide ruff gate; disposition output and behavior are unchanged."
+        },
         {
           "version": "v1",
           "date": "2026-08-10",

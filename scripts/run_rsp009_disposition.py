@@ -103,7 +103,6 @@ def _build_markdown(payload: dict[str, Any], command: str) -> str:
         )
 
     from slm_training.harnesses.experiments.rsp009_cross_experiment_disposition import (
-        Rsp009CrossExperimentDispositionV1,
         run_rsp009_disposition_audit,
     )
 
