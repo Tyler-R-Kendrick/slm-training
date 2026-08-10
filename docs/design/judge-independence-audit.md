@@ -61,3 +61,13 @@ set, intersection-admission corpus, or three-seed retrain exists yet. Provider
 credentials and actual human participants are absent. Therefore agreement,
 confidence intervals, admission trust, and the final EFS0-04 verdict remain
 **UNKNOWN**, and SLM-106 must not be closed from the scaffolding alone.
+
+## Related: SIE-005 blinded construct-validity packet (SLM-478)
+
+Fixture-scale stratified packet preparation for EXP-SR-3 lives in
+[`iter-slm478-sie-005-blinded-packet-20260810.md`](iter-slm478-sie-005-blinded-packet-20260810.md)
+(`sie005_blinded_packet`). It reuses this audit's `freeze_blinded_pairs` /
+`import_blinded_labels` and `ExternalJudgeAdapter` contracts; it does **not**
+close EFS0-04 or gather real human/provider evidence. SIE-006 executes the
+campaign once credentials/raters exist.
+

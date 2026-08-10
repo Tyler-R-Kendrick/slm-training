@@ -2875,7 +2875,7 @@
         {
           "version": "v9",
           "date": "2026-08-10",
-"note": "no-bump: SLM-475 (SRP-011) registers a new 'symbolic_expr_pysr_adapter' subsystem (src/slm_training/dsl/symbolic_expr_pysr_adapter.py: AdapterEnvironmentManifestV1/AdapterRunInputV1/AdapterRunResultV1/ExternalTranslationResultV1/build_adapter_run_input/parse_external_expression/run_adapter) exactly per the pre-registered downstream_extension_map row for SRP-011, which already predicted new_owner_justified: true, extension_points: [] ('External, optional dependency by design; isolated deliberately and does not extend any internal owner') -- not a divergence, unlike the SRP-004/005/007/008/009 siblings; mirrors the row into repository-ownership-map.md. The new source/test files are not yet tracked by any versions.json component (consistent with the SRP sibling-file precedent), so this entry only covers the ownership-map doc update."
+          "note": "no-bump: SLM-478 (SIE-005) knowledge-surface link only — repository-ownership-map.md + ownership_map.json cite iter-slm478-sie-005-blinded-packet-20260810.md on the SIE-005 row and name SIE-006/EXP-SR-3 as campaign successor; no owner_symbols or structural map change."
         },
         {
           "version": "v9",
@@ -4794,7 +4794,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v154",
+      "version": "v155",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
@@ -4817,6 +4817,11 @@
         "scripts/run_vce009_oracle_contrast_campaign.py"
       ],
       "history": [
+        {
+          "version": "v155",
+          "date": "2026-08-10",
+          "note": "no-bump: SLM-478 (SIE-005) blinded packet lives in sie005_blinded_packet.py, owned by dedicated component harness.experiments.slm478_sie005_blinded_packet (v1)."
+        },
         {
           "version": "v154",
           "date": "2026-08-10",
@@ -17009,6 +17014,25 @@
           "version": "v1",
           "date": "2026-08-10",
           "note": "SLM-474 (SRP-010): end-to-end symbolic-pack portability fixture — default OpenUI isolation, SR pack parse/canonicalize/oracle/evaluate-fit/evidence, VerifiedSynthesisProblemV1 + SyGuS capability export (inspired_interoperability), AST import audit, honest forks/unsupported_hooks inventory. claim_class=fixture; cites exp-sr-12 without locking ExperimentCampaignV1."
+        }
+      ]
+    },
+    "harness.experiments.slm478_sie005_blinded_packet": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/sie005_blinded_packet.py",
+        "scripts/run_sie005_blinded_packet.py",
+        "tests/test_harnesses/experiments/test_sie005_blinded_packet.py",
+        "tests/test_scripts/test_run_sie005_blinded_packet.py",
+        "docs/design/iter-slm478-sie-005-blinded-packet-20260810.json",
+        "docs/design/iter-slm478-sie-005-blinded-packet-20260810.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-10",
+          "note": "SLM-478 (SIE-005): stratified blinded annotation packet + provider-neutral external-judge schemas/mocks + credential runbook; reuses judge_audit and judge_independence; prepares EXP-SR-3 / SIE-006 without locking ExperimentCampaignV1."
         }
       ]
     }
