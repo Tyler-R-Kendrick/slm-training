@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import importlib.util
 from pathlib import Path
 
 from slm_training.harnesses.experiments.slm492_external_blocked_closeout import (
@@ -33,4 +32,6 @@ def test_closeout_external_blocked_not_a_loss(tmp_path: Path) -> None:
 
 
 def test_no_pysr_import_required() -> None:
+    import importlib.util
+
     assert importlib.util.find_spec("pysr") is None
