@@ -66,13 +66,14 @@ __all__ = [
     "build_tiny_sr_problem",
     "build_vsp_envelope",
     "inventory_forks_and_hooks",
+    "exercise_optional_hook_modules",
     "assess_symbolic_pack_portability",
     "run_fixture_campaign",
     "render_markdown",
 ]
 
 MATRIX_SET = "slm474_srp010_pack_portability"
-MATRIX_VERSION = "srp010-v1"
+MATRIX_VERSION = "srp010-v2"
 PORTABILITY_CAMPAIGN_ID = "slm474-srp010-pack-portability"
 RELATED_CATALOGUE_ID = "exp-sr-12"
 CLAIM_CLASS = "fixture"
@@ -226,6 +227,8 @@ class PackPortabilityReport:
     import_audit: tuple[ImportAuditFinding, ...]
     forks: tuple[ForkRecord, ...]
     unsupported_hooks: tuple[UnsupportedHook, ...]
+    enumeration_exercise: dict[str, Any] = field(default_factory=dict)
+    corpus_exercise: dict[str, Any] = field(default_factory=dict)
     version_stamp: dict[str, Any] = field(default_factory=dict)
     notes: tuple[str, ...] = ()
 
@@ -254,6 +257,8 @@ class PackPortabilityReport:
             "import_audit": [f.to_dict() for f in self.import_audit],
             "forks": [f.to_dict() for f in self.forks],
             "unsupported_hooks": [h.to_dict() for h in self.unsupported_hooks],
+            "enumeration_exercise": dict(self.enumeration_exercise),
+            "corpus_exercise": dict(self.corpus_exercise),
             "version_stamp": self.version_stamp,
             "notes": list(self.notes),
         }
@@ -305,6 +310,8 @@ class PackPortabilityReport:
                 UnsupportedHook.from_dict(h)
                 for h in data.get("unsupported_hooks", [])
             ),
+            enumeration_exercise=dict(data.get("enumeration_exercise", {})),
+            corpus_exercise=dict(data.get("corpus_exercise", {})),
             version_stamp=dict(data.get("version_stamp", {})),
             notes=tuple(data.get("notes", ())),
         )
@@ -421,47 +428,152 @@ def _check_default_isolation() -> DefaultIsolationCheck:
     )
 
 
-def _probe_optional_hooks() -> tuple[UnsupportedHook, ...]:
-    hooks: list[UnsupportedHook] = []
-    for module_name in OPTIONAL_HOOK_MODULES:
-        short = module_name.rsplit(".", 1)[-1]
-        try:
-            importlib.import_module(module_name)
-            hooks.append(
-                UnsupportedHook(
-                    hook_id=short,
-                    status="available",
-                    detail=f"{module_name} import succeeded",
-                )
-            )
-        except ModuleNotFoundError as exc:
-            hooks.append(
-                UnsupportedHook(
-                    hook_id=short,
-                    status="unsupported",
-                    detail=(
-                        f"{module_name} not on main ({exc.name or module_name}); "
-                        "SRP-008/SRP-009 corpus/baseline remain optional"
-                    ),
-                )
-            )
-        except Exception as exc:  # noqa: BLE001 - inventory only
-            hooks.append(
-                UnsupportedHook(
-                    hook_id=short,
-                    status="unsupported",
-                    detail=f"{module_name} import failed: {exc}",
-                )
-            )
-    return tuple(hooks)
+# Tiny fixture budgets — exercise only, not ship-scale enumeration/corpus.
+_ENUM_MAX_DEPTH = 2
+_ENUM_MAX_NODES = 3
+_ENUM_MAX_STATES = 100
+_CORPUS_SEED = 474
+_CORPUS_NUM_PROBLEMS = 4
+
+
+def _unsupported_import_hook(module_name: str, exc: BaseException) -> UnsupportedHook:
+    short = module_name.rsplit(".", 1)[-1]
+    if isinstance(exc, ModuleNotFoundError):
+        detail = (
+            f"{module_name} not on main ({exc.name or module_name}); "
+            "SRP-008/SRP-009 corpus/baseline remain optional"
+        )
+    else:
+        detail = f"{module_name} import failed: {exc}"
+    return UnsupportedHook(hook_id=short, status="unsupported", detail=detail)
+
+
+def _exercise_enumerate_module(
+    problem: SymbolicRegressionProblemV1,
+) -> tuple[UnsupportedHook, dict[str, Any]]:
+    """Call the public enumerative baseline on a tiny budget when importable."""
+    module_name = "slm_training.dsl.symbolic_expr_enumerate"
+    try:
+        mod = importlib.import_module(module_name)
+    except Exception as exc:  # noqa: BLE001 - inventory only
+        return _unsupported_import_hook(module_name, exc), {}
+
+    result = mod.run_enumerative_baseline(
+        problem,
+        max_depth=_ENUM_MAX_DEPTH,
+        max_nodes=_ENUM_MAX_NODES,
+        max_states=_ENUM_MAX_STATES,
+    )
+    counters = result.counters.to_dict()
+    summary = {
+        "status": "available",
+        "exercised": True,
+        "schema_version": result.schema_version,
+        "max_depth": result.max_depth_budget,
+        "max_nodes": result.max_nodes_budget,
+        "optimality_claim": result.optimality_claim,
+        "bound_exhausted": bool(counters.get("bound_exhausted")),
+        "states_generated": int(counters.get("states_generated", 0)),
+        "unique_canonical_states": int(counters.get("unique_canonical_states", 0)),
+        "duplicate_eliminations": int(counters.get("duplicate_eliminations", 0)),
+        "evaluation_count": int(counters.get("evaluation_count", 0)),
+        "pack_slot_corpus_generator": None,
+    }
+    hook = UnsupportedHook(
+        hook_id="symbolic_expr_enumerate",
+        status="available",
+        detail=(
+            f"{module_name} exercised "
+            f"(optimality_claim={result.optimality_claim!r}, "
+            f"states_generated={summary['states_generated']}, "
+            f"unique={summary['unique_canonical_states']}); "
+            "DslPack.corpus_generator remains unset"
+        ),
+    )
+    return hook, summary
+
+
+def _exercise_corpus_module() -> tuple[UnsupportedHook, dict[str, Any]]:
+    """Generate a tiny deterministic corpus + leakage audit when importable."""
+    module_name = "slm_training.dsl.symbolic_expr_corpus"
+    try:
+        mod = importlib.import_module(module_name)
+    except Exception as exc:  # noqa: BLE001 - inventory only
+        return _unsupported_import_hook(module_name, exc), {}
+
+    from slm_training.harnesses.train_data.split_policy import RootFamilySplitPolicyV1
+
+    config = mod.CorpusGenerationConfigV1(
+        schema_version=mod.CORPUS_SCHEMA_VERSION,
+        seed=_CORPUS_SEED,
+        num_problems=_CORPUS_NUM_PROBLEMS,
+        num_variables_range=(1, 1),
+        allowed_operators=frozenset({"+", "*"}),
+        max_basis_depth=2,
+        max_coefficient_terms=1,
+        coefficient_probability=0.0,
+        numeric_domain_policy="reject_nonfinite",
+        complexity_budget=16,
+        train_rows=4,
+        validation_rows=2,
+        extrapolation_rows=2,
+        train_domain=(-2.0, 2.0),
+        extrapolation_domain=(3.0, 5.0),
+        coefficient_range=(-2.0, 2.0),
+        split_policy=RootFamilySplitPolicyV1(
+            modulus=4, validation_buckets=(2,), test_buckets=(3,)
+        ),
+    )
+    corpus = mod.generate_corpus(config)
+    audit = mod.audit_corpus_leakage(corpus)
+    summary = {
+        "status": "available",
+        "exercised": True,
+        "schema_version": corpus.schema_version,
+        "seed": corpus.seed,
+        "num_problems": len(corpus.records),
+        "rejection_count": len(corpus.rejections),
+        "corpus_fingerprint": corpus.corpus_fingerprint,
+        "leakage_is_clean": bool(audit.is_clean),
+        "cross_split_family_violations": len(audit.cross_split_family_violations),
+        "duplicate_family_ids": len(audit.duplicate_family_ids),
+        "pack_slot_corpus_generator": None,
+    }
+    hook = UnsupportedHook(
+        hook_id="symbolic_expr_corpus",
+        status="available",
+        detail=(
+            f"{module_name} exercised "
+            f"(n={summary['num_problems']}, seed={_CORPUS_SEED}, "
+            f"rejections={summary['rejection_count']}, "
+            f"leakage_clean={summary['leakage_is_clean']}); "
+            "DslPack.corpus_generator remains unset"
+        ),
+    )
+    return hook, summary
+
+
+def exercise_optional_hook_modules(
+    problem: SymbolicRegressionProblemV1,
+) -> tuple[tuple[UnsupportedHook, ...], dict[str, Any], dict[str, Any]]:
+    """Import + exercise SRP-008/009 modules when present; never wire pack slots."""
+    enum_hook, enum_summary = _exercise_enumerate_module(problem)
+    corpus_hook, corpus_summary = _exercise_corpus_module()
+    return (enum_hook, corpus_hook), enum_summary, corpus_summary
 
 
 def inventory_forks_and_hooks(
     pack: DslPack,
     *,
     sygus_conformance: str,
-) -> tuple[tuple[ForkRecord, ...], tuple[UnsupportedHook, ...]]:
-    """Honest forks + unsupported-hook inventory (never silent)."""
+    problem: SymbolicRegressionProblemV1 | None = None,
+) -> tuple[
+    tuple[ForkRecord, ...],
+    tuple[UnsupportedHook, ...],
+    dict[str, Any],
+    dict[str, Any],
+]:
+    """Honest forks + optional-hook inventory/exercise (never silent)."""
     forks: list[ForkRecord] = [
         ForkRecord(
             fork_id="shadow_dsl_packs_registry",
@@ -492,7 +604,11 @@ def inventory_forks_and_hooks(
             ),
         ),
     ]
-    hooks: list[UnsupportedHook] = list(_probe_optional_hooks())
+    exercise_problem = problem if problem is not None else build_tiny_sr_problem()
+    optional_hooks, enumeration_exercise, corpus_exercise = (
+        exercise_optional_hook_modules(exercise_problem)
+    )
+    hooks: list[UnsupportedHook] = list(optional_hooks)
     for slot in MISSING_DSL_PACK_SLOTS:
         try:
             pack.require(slot)
@@ -514,7 +630,7 @@ def inventory_forks_and_hooks(
                     ),
                 )
             )
-    return tuple(forks), tuple(hooks)
+    return tuple(forks), tuple(hooks), enumeration_exercise, corpus_exercise
 
 
 def assess_symbolic_pack_portability(
@@ -565,8 +681,12 @@ def assess_symbolic_pack_portability(
             + ", ".join(f"{f.path}:{list(f.offenders)}" for f in openui_offenders)
         )
 
-    forks, unsupported_hooks = inventory_forks_and_hooks(
-        pack, sygus_conformance=str(sygus.get("conformance", ""))
+    forks, unsupported_hooks, enumeration_exercise, corpus_exercise = (
+        inventory_forks_and_hooks(
+            pack,
+            sygus_conformance=str(sygus.get("conformance", "")),
+            problem=problem,
+        )
     )
 
     status = "fixture"
@@ -597,6 +717,8 @@ def assess_symbolic_pack_portability(
         import_audit=import_audit,
         forks=forks,
         unsupported_hooks=unsupported_hooks,
+        enumeration_exercise=enumeration_exercise,
+        corpus_exercise=corpus_exercise,
         version_stamp=build_version_stamp(*VERSION_STAMP_COMPONENTS),
         notes=tuple(notes),
     )
@@ -671,6 +793,22 @@ def render_markdown(report: PackPortabilityReport) -> str:
     lines.extend(
         [
             "",
+            "## Optional module exercise (SRP-008/009)",
+            "",
+            (
+                f"- Enumerate: exercised=`{report.enumeration_exercise.get('exercised', False)}` "
+                f"optimality_claim=`{report.enumeration_exercise.get('optimality_claim', '')}` "
+                f"states=`{report.enumeration_exercise.get('states_generated', '')}` "
+                f"unique=`{report.enumeration_exercise.get('unique_canonical_states', '')}`"
+            ),
+            (
+                f"- Corpus: exercised=`{report.corpus_exercise.get('exercised', False)}` "
+                f"n=`{report.corpus_exercise.get('num_problems', '')}` "
+                f"rejections=`{report.corpus_exercise.get('rejection_count', '')}` "
+                f"leakage_clean=`{report.corpus_exercise.get('leakage_is_clean', '')}`"
+            ),
+            "- Pack slots `corpus_generator` / `completion_artifact` stay intentionally empty.",
+            "",
             "## Import audit (no OpenUI imports)",
             "",
             "| Module | Offenders |",
@@ -690,7 +828,8 @@ def render_markdown(report: PackPortabilityReport) -> str:
             "## Verdict",
             "",
             "Fixture wiring only. The symbolic-regression pack exercises "
-            "parse/canonicalize/oracle/evaluate-fit/evidence and the VSP/SyGuS "
+            "parse/canonicalize/oracle/evaluate-fit/evidence, optional "
+            "enumerate/corpus modules when importable, and the VSP/SyGuS "
             "capability export without changing OpenUI defaults. Real "
             f"{RELATED_CATALOGUE_ID} certification remains a separate campaign.",
             "",

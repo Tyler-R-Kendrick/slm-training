@@ -1,12 +1,39 @@
 {
   "canonical_expression": "v0",
   "claim_class": "fixture",
+  "corpus_exercise": {
+    "corpus_fingerprint": "3582c625af52bbe88740f2028411109a08d6a0fe1b9c9757724e5674b0e937a7",
+    "cross_split_family_violations": 0,
+    "duplicate_family_ids": 0,
+    "exercised": true,
+    "leakage_is_clean": true,
+    "num_problems": 4,
+    "pack_slot_corpus_generator": null,
+    "rejection_count": 5,
+    "schema_version": "v1",
+    "seed": 474,
+    "status": "available"
+  },
   "default_isolation": {
     "auto_pack_id": "openui",
     "default_alias_pack_id": "openui",
     "env_unset": true,
     "openui_is_default": true,
     "unresolved_pack_id": "openui"
+  },
+  "enumeration_exercise": {
+    "bound_exhausted": true,
+    "duplicate_eliminations": 2,
+    "evaluation_count": 8,
+    "exercised": true,
+    "max_depth": 2,
+    "max_nodes": 3,
+    "optimality_claim": "exhaustive_under_declared_bounds",
+    "pack_slot_corpus_generator": null,
+    "schema_version": "v1",
+    "states_generated": 10,
+    "status": "available",
+    "unique_canonical_states": 8
   },
   "evidence": {
     "canonical_expr": "v0",
@@ -104,7 +131,7 @@
     }
   ],
   "matrix_set": "slm474_srp010_pack_portability",
-  "matrix_version": "srp010-v1",
+  "matrix_version": "srp010-v2",
   "missing_slots": [
     "corpus_generator",
     "completion_artifact",
@@ -191,17 +218,17 @@
     "schema_version": "sygus_capability_report/v1",
     "sygus_program": "(set-logic NRA)\n(declare-var x Real)\n(synth-fun expr ((x Real)) Real ((Start Real (Var Coef (Start * Start) (Start + Start) (Start - Start) (Start / Start) (abs Start) (cos Start) (exp Start) (log Start) (neg Start) (sin Start) (sqrt Start)))))"
   },
-  "timestamp": "2026-08-10T19:11:09.444820Z",
+  "timestamp": "2026-08-10T19:18:08.048135Z",
   "unsupported_hooks": [
     {
-      "detail": "slm_training.dsl.symbolic_expr_corpus not on main (slm_training.dsl.symbolic_expr_corpus); SRP-008/SRP-009 corpus/baseline remain optional",
-      "hook_id": "symbolic_expr_corpus",
-      "status": "unsupported"
+      "detail": "slm_training.dsl.symbolic_expr_enumerate exercised (optimality_claim='exhaustive_under_declared_bounds', states_generated=10, unique=8); DslPack.corpus_generator remains unset",
+      "hook_id": "symbolic_expr_enumerate",
+      "status": "available"
     },
     {
-      "detail": "slm_training.dsl.symbolic_expr_enumerate not on main (slm_training.dsl.symbolic_expr_enumerate); SRP-008/SRP-009 corpus/baseline remain optional",
-      "hook_id": "symbolic_expr_enumerate",
-      "status": "unsupported"
+      "detail": "slm_training.dsl.symbolic_expr_corpus exercised (n=4, seed=474, rejections=5, leakage_clean=True); DslPack.corpus_generator remains unset",
+      "hook_id": "symbolic_expr_corpus",
+      "status": "available"
     },
     {
       "detail": "DslPack slot 'corpus_generator' is None on symbolic_regression (honest partial pack)",
@@ -230,14 +257,14 @@
     }
   ],
   "version_stamp": {
-    "code_commit": "c447b5f5e8694baed5c7511c3fa59b89b41c0900",
+    "code_commit": "8272aa9ea2851d061a532d4ae67bcf4e34d6d740",
     "code_dirty": true,
     "components": {
-      "harness.experiments": "v153",
-      "harness.experiments.slm474_srp010_portability": "v1"
+      "harness.experiments": "v154",
+      "harness.experiments.slm474_srp010_portability": "v2"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-08-10T19:11:09.444536+00:00"
+    "stamped_at": "2026-08-10T19:18:08.047108+00:00"
   },
   "vsp_digest": "3d822ea95b3665c48d5f2c7a6bc33a807e54b2825597e22d5586b492ec75e3d3"
 }

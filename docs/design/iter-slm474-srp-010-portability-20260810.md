@@ -2,7 +2,7 @@
 
 Matrix set: `slm474_srp010_pack_portability`
 
-Version: `srp010-v1`
+Version: `srp010-v2`
 
 Status: **fixture**
 
@@ -38,13 +38,19 @@ Status: **fixture**
 
 | Hook | Status | Detail |
 | --- | --- | --- |
-| symbolic_expr_corpus | unsupported | slm_training.dsl.symbolic_expr_corpus not on main (slm_training.dsl.symbolic_expr_corpus); SRP-008/SRP-009 corpus/baseline remain optional |
-| symbolic_expr_enumerate | unsupported | slm_training.dsl.symbolic_expr_enumerate not on main (slm_training.dsl.symbolic_expr_enumerate); SRP-008/SRP-009 corpus/baseline remain optional |
+| symbolic_expr_enumerate | available | slm_training.dsl.symbolic_expr_enumerate exercised (optimality_claim='exhaustive_under_declared_bounds', states_generated=10, unique=8); DslPack.corpus_generator remains unset |
+| symbolic_expr_corpus | available | slm_training.dsl.symbolic_expr_corpus exercised (n=4, seed=474, rejections=5, leakage_clean=True); DslPack.corpus_generator remains unset |
 | slot.corpus_generator | unsupported | DslPack slot 'corpus_generator' is None on symbolic_regression (honest partial pack) |
 | slot.completion_artifact | unsupported | DslPack slot 'completion_artifact' is None on symbolic_regression (honest partial pack) |
 | slot.scope_extractor | unsupported | DslPack slot 'scope_extractor' is None on symbolic_regression (honest partial pack) |
 | slot.prop_order | unsupported | DslPack slot 'prop_order' is None on symbolic_regression (honest partial pack) |
 | slot.incremental_engine | unsupported | DslPack slot 'incremental_engine' is None on symbolic_regression (honest partial pack) |
+
+## Optional module exercise (SRP-008/009)
+
+- Enumerate: exercised=`True` optimality_claim=`exhaustive_under_declared_bounds` states=`10` unique=`8`
+- Corpus: exercised=`True` n=`4` rejections=`5` leakage_clean=`True`
+- Pack slots `corpus_generator` / `completion_artifact` stay intentionally empty.
 
 ## Import audit (no OpenUI imports)
 
@@ -65,4 +71,4 @@ Status: **fixture**
 
 ## Verdict
 
-Fixture wiring only. The symbolic-regression pack exercises parse/canonicalize/oracle/evaluate-fit/evidence and the VSP/SyGuS capability export without changing OpenUI defaults. Real exp-sr-12 certification remains a separate campaign.
+Fixture wiring only. The symbolic-regression pack exercises parse/canonicalize/oracle/evaluate-fit/evidence, optional enumerate/corpus modules when importable, and the VSP/SyGuS capability export without changing OpenUI defaults. Real exp-sr-12 certification remains a separate campaign.

@@ -2860,7 +2860,7 @@
       ]
     },
     "governance.ownership_map": {
-      "version": "v8",
+      "version": "v9",
       "kind": "gate",
       "paths": [
         "src/slm_training/resources/ownership_map.json",
@@ -2872,6 +2872,11 @@
         "tests/test_data/test_synthesis_contract_versions.py"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-08-10",
+          "note": "SLM-474 (SRP-010): add related_overlaps row pointing at docs/design/iter-slm474-srp-010-portability-20260810.md (fixture-scale second-pack portability evidence for RSP-008/EXP-SR-12)."
+        },
         {
           "version": "v8",
           "date": "2026-08-10",
@@ -4807,6 +4812,11 @@
         "scripts/run_vce009_oracle_contrast_campaign.py"
       ],
       "history": [
+        {
+          "version": "v154",
+          "date": "2026-08-10",
+          "note": "no-bump: SLM-474 (SRP-010) optional corpus/enumerate exercise lives in srp010_pack_portability.py, owned by dedicated component harness.experiments.slm474_srp010_portability (v1→v2)."
+        },
         {
           "version": "v154",
           "date": "2026-08-10",
@@ -16969,7 +16979,7 @@
       ]
     },
     "harness.experiments.slm474_srp010_portability": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/srp010_pack_portability.py",
@@ -16980,6 +16990,11 @@
         "docs/design/iter-slm474-srp-010-portability-20260810.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-10",
+          "note": "SLM-474 (SRP-010): when symbolic_expr_enumerate / symbolic_expr_corpus import, fixture exercises tiny-budget run_enumerative_baseline and generate_corpus+audit_corpus_leakage and records counts / optimality_claim / leakage summary on the report (enumeration_exercise, corpus_exercise); pack slots stay unset."
+        },
         {
           "version": "v1",
           "date": "2026-08-10",

@@ -66,7 +66,7 @@ def _plan_only_payload() -> dict[str, Any]:
             "Parse/canonicalize/oracle/evaluate-fit/evidence",
             "build_sygus_capability_report on the VSP envelope",
             "AST-import-audit pack modules for openui imports",
-            "Honestly inventory forks + optional SRP-008/009 hooks",
+            "Honestly inventory forks + exercise optional SRP-008/009 corpus/enumerate APIs",
         ],
         "version_stamp": build_version_stamp(*VERSION_STAMP_COMPONENTS),
         "timestamp": _now(),

@@ -57,6 +57,16 @@ def test_e2e_fixture_smoke() -> None:
     assert any(f.fork_id == "shadow_dsl_packs_registry" for f in report.forks)
     assert any(f.fork_id == "openui_pinned_language_contract" for f in report.forks)
     assert any(f.fork_id == "sygus_inspired_not_conformance" for f in report.forks)
+    enum_status = next(
+        h.status for h in report.unsupported_hooks if h.hook_id == "symbolic_expr_enumerate"
+    )
+    if enum_status == "available":
+        assert report.enumeration_exercise.get("exercised") is True
+    corpus_status = next(
+        h.status for h in report.unsupported_hooks if h.hook_id == "symbolic_expr_corpus"
+    )
+    if corpus_status == "available":
+        assert report.corpus_exercise.get("exercised") is True
 
 
 def test_import_audit_finds_no_openui() -> None:
@@ -89,11 +99,47 @@ def test_honest_unsupported_hooks_do_not_fail_fixture() -> None:
     assert "symbolic_expr_enumerate" in hook_ids
     assert "slot.corpus_generator" in hook_ids
     assert "slot.completion_artifact" in hook_ids
+    # Pack slots stay intentionally empty even when optional modules import.
+    slot_hooks = {
+        h.hook_id: h.status
+        for h in report.unsupported_hooks
+        if h.hook_id.startswith("slot.")
+    }
+    assert slot_hooks["slot.corpus_generator"] == "unsupported"
+    assert slot_hooks["slot.completion_artifact"] == "unsupported"
     unsupported = [h for h in report.unsupported_hooks if h.status == "unsupported"]
     assert unsupported
     assert all(isinstance(h, UnsupportedHook) for h in unsupported)
     if report.default_isolation.openui_is_default:
         assert report.status == "fixture"
+
+
+def test_optional_modules_exercised_when_importable() -> None:
+    report = assess_symbolic_pack_portability(run_id="test_exercise")
+    by_id = {h.hook_id: h for h in report.unsupported_hooks}
+
+    enum_hook = by_id["symbolic_expr_enumerate"]
+    if enum_hook.status == "available":
+        assert report.enumeration_exercise.get("exercised") is True
+        assert report.enumeration_exercise.get("states_generated", 0) > 0
+        assert report.enumeration_exercise.get("unique_canonical_states", 0) > 0
+        assert report.enumeration_exercise.get("optimality_claim") in {
+            "exhaustive_under_declared_bounds",
+            "unknown_bound_truncated",
+        }
+        assert "exercised" in enum_hook.detail
+    else:
+        assert report.enumeration_exercise == {}
+
+    corpus_hook = by_id["symbolic_expr_corpus"]
+    if corpus_hook.status == "available":
+        assert report.corpus_exercise.get("exercised") is True
+        assert report.corpus_exercise.get("num_problems", 0) > 0
+        assert "corpus_fingerprint" in report.corpus_exercise
+        assert report.corpus_exercise.get("leakage_is_clean") is True
+        assert "exercised" in corpus_hook.detail
+    else:
+        assert report.corpus_exercise == {}
 
 
 def test_vsp_envelope_matches_problem() -> None:
@@ -114,3 +160,5 @@ def test_report_roundtrip() -> None:
     assert restored.problem_fingerprint == report.problem_fingerprint
     assert len(restored.forks) == len(report.forks)
     assert len(restored.unsupported_hooks) == len(report.unsupported_hooks)
+    assert restored.enumeration_exercise == report.enumeration_exercise
+    assert restored.corpus_exercise == report.corpus_exercise
