@@ -1,0 +1,143 @@
+{
+  "schema": "rsp005_macro_library_fixture_result/v1",
+  "campaign_id": "rsp005-exp-sr-9-macro-library-fixture",
+  "catalogue_id": "exp-sr-9",
+  "catalogue_manifest_sha256": "31af54bdc22065423ee2b54339f0eefa133226c67d3ea8265edbf3b330153db8",
+  "manifest_sha256": "578327e04b402f210aa92e6188210ef4af6c4bc92189e97db58129d978002872",
+  "claim_class": "fixture",
+  "promotion": false,
+  "corpus_seed": 0,
+  "leakage_audit": {
+    "schema_version": "v1",
+    "cross_split_family_violations": [],
+    "duplicate_family_ids": [],
+    "is_clean": true
+  },
+  "n_train_records": 64,
+  "n_test_records": 8,
+  "candidate_count": 205,
+  "arms": {
+    "no_macros": {
+      "reduction_rate": 0.0,
+      "library_size": 0,
+      "library_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "selection_policy": "none"
+    },
+    "frequency_macros": {
+      "reduction_rate": 0.1941747572815534,
+      "library_size": 16,
+      "library_digest": "84c69739525e00a94a9e31e579ca007a36f4c7ddf3e4f8ea561ca73dedc4340f",
+      "selection_policy": "frequency_only"
+    },
+    "mdl_macros": {
+      "reduction_rate": 0.1941747572815534,
+      "library_size": 16,
+      "library_digest": "bd0a6337a081b731647fa0e95c593428235cd250351b635c3d592e6b8e3b53f6",
+      "selection_policy": "mdl_net_gain"
+    }
+  },
+  "primary_metric": "macro_library_size_reduction_rate",
+  "minimum_effect": 0.02,
+  "expansion_equivalence": [
+    {
+      "macro_id": "macro_00adb113f75354ff",
+      "verified": true,
+      "reason": "ok",
+      "record_family_id": "11720a9b64406149ad44d87a4b1ada62666494f589cc234d8196d3db1187d4eb"
+    },
+    {
+      "macro_id": "macro_025de085d962cde0",
+      "verified": true,
+      "reason": "ok",
+      "record_family_id": "ba4ebe3a7cdd652342048bf5156a384d2a3fc7c007c3c72f33c44a62845683f7"
+    },
+    {
+      "macro_id": "macro_1519bd2ef963e459",
+      "verified": true,
+      "reason": "ok",
+      "record_family_id": "030645a9c132cdefe82bcf10fb603a8337157a50efc20847f0f015887db7ba80"
+    },
+    {
+      "macro_id": "macro_4b535b68a3c624fe",
+      "verified": true,
+      "reason": "ok",
+      "record_family_id": "604c4598423afcf028a0211882ffab90f9bfe42bca1e0331cca17f91e18bebd5"
+    },
+    {
+      "macro_id": "macro_59d8064ffd828353",
+      "verified": true,
+      "reason": "ok",
+      "record_family_id": "ba4ebe3a7cdd652342048bf5156a384d2a3fc7c007c3c72f33c44a62845683f7"
+    },
+    {
+      "macro_id": "macro_691c7f362fb661cf",
+      "verified": true,
+      "reason": "ok",
+      "record_family_id": "64fcee38f3b3c143a1739c05dc426942f33f4673ce1e13918d5a308bebc4af62"
+    },
+    {
+      "macro_id": "macro_97e8f5e7c2f2650b",
+      "verified": true,
+      "reason": "ok",
+      "record_family_id": "030645a9c132cdefe82bcf10fb603a8337157a50efc20847f0f015887db7ba80"
+    },
+    {
+      "macro_id": "macro_9f923ad8debda927",
+      "verified": true,
+      "reason": "ok",
+      "record_family_id": "6d77584cfb9a4d022efaccf66655115677f0a670d3cafbcaeda6fed96053cbb5"
+    },
+    {
+      "macro_id": "macro_aa18b26571efa90b",
+      "verified": true,
+      "reason": "ok",
+      "record_family_id": "37e41c90ab384c7f877528b759f776b19c3da953d77dbc7c689cfdafcffc10dc"
+    },
+    {
+      "macro_id": "macro_accc1ce91815a948",
+      "verified": true,
+      "reason": "ok",
+      "record_family_id": "604c4598423afcf028a0211882ffab90f9bfe42bca1e0331cca17f91e18bebd5"
+    },
+    {
+      "macro_id": "macro_b441e53219383e53",
+      "verified": true,
+      "reason": "ok",
+      "record_family_id": "030645a9c132cdefe82bcf10fb603a8337157a50efc20847f0f015887db7ba80"
+    },
+    {
+      "macro_id": "macro_b6ab388eecf12b11",
+      "verified": true,
+      "reason": "ok",
+      "record_family_id": "a16b74fd3f55d961e28acd51794afbe9e9817e8e967a26422351371fedab8f14"
+    },
+    {
+      "macro_id": "macro_b94f0e859cc9567b",
+      "verified": true,
+      "reason": "ok",
+      "record_family_id": "030645a9c132cdefe82bcf10fb603a8337157a50efc20847f0f015887db7ba80"
+    },
+    {
+      "macro_id": "macro_e7f0c098518db775",
+      "verified": true,
+      "reason": "ok",
+      "record_family_id": "de5606022366454b133964ee7354869950c5d863cee817603407f3521b620996"
+    },
+    {
+      "macro_id": "macro_fb907e7f9d09829d",
+      "verified": true,
+      "reason": "ok",
+      "record_family_id": "a5731d589126a77c2aa98143842888f4cc375b3fb119a67c59bb9f6c604db9fa"
+    },
+    {
+      "macro_id": "macro_fe79627fe7916fc4",
+      "verified": true,
+      "reason": "ok",
+      "record_family_id": "e2c57ef458d07f1e9265a04a776e9cee85f5e230685be14fd6d531cc3a92c359"
+    }
+  ],
+  "expansion_equivalence_all_verified": true,
+  "falsifier_holds": false,
+  "authorized": true,
+  "scope_disclaimer": "Fixture-scale certified macro/library-learning campaign over a small deterministic in-process symbolic-regression corpus (symbolic_expr_corpus.generate_corpus). Macros are closed (0-arity) recurring canonical subtrees mined exclusively from corpus_split=='train' records and evaluated on the frozen corpus_split=='test' slice, never the reverse. claim_class=fixture; 'authorized' is a diagnostic signal for later structural-search work and never promotes a checkpoint."
+}

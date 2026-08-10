@@ -1233,6 +1233,11 @@
         {
           "version": "v23",
           "date": "2026-08-10",
+          "note": "no-bump: remove an unused local variable (ruff F841, `original = _ss._kind_of` in test_try_load_fail_closed_on_divergence -- monkeypatch handles teardown, the captured reference was never read) -- pure lint fix, no behavior change."
+        },
+        {
+          "version": "v23",
+          "date": "2026-08-10",
           "note": "no-bump: RSP-003/SLM-485 adds packed_semantic_summary.py request-independent semantic kind summary under the completion-kernel seam (consumed by harness.experiments.slm485_rsp003_static_summary)."
         },
         {
@@ -2884,6 +2889,11 @@
         "tests/test_data/test_synthesis_contract_versions.py"
       ],
       "history": [
+        {
+          "version": "v12",
+          "date": "2026-08-10",
+          "note": "no-bump: RSP-005 (SLM-480) registers a new 'symbolic_macro_library' subsystem (src/slm_training/harnesses/experiments/symbolic_macro_library.py: MacroCandidateV1/MacroEntryV1/MacroLibraryV1/Rsp005CampaignV1/mine_macro_candidates/select_macros_by_mdl/select_macros_by_frequency/instrumented_node_count/macro_library_size_reduction_rate/expand_macro/verify_expansion_equivalence/run_campaign); mirrors the row into repository-ownership-map.md, including the documented divergence from the pre-registered downstream_extension_map row for RSP-005 (predicted new_owner_justified: false, 'Runs pack + artifact owners through the campaign contract' -- the macro-library contract's dataclasses are not literally defined in dsl/pack.py or dsl/grammar/fastpath/completion_artifact.py, so per this map's own sibling-file rule it is registered as its own subsystem instead, same precedent as SGS-008/SRP-004/005/007/008/009/RSP-004); the piece that IS genuinely reused (experiment_campaign/CampaignStore) is honored literally. New source/test/script files are not tracked by any versions.json component beyond the existing 'src/slm_training/harnesses/experiments/' prefix entry (consistent with the RSP-004/SIE-002 sibling precedent), so this entry only covers the ownership-map doc update."
+        },
         {
           "version": "v12",
           "date": "2026-08-10",
@@ -4836,7 +4846,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v159",
+      "version": "v160",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
@@ -4859,9 +4869,17 @@
         "scripts/run_vce009_oracle_contrast_campaign.py",
         "tests/test_harnesses/experiments/test_symbolic_egraph.py",
         "scripts/run_exp_sr8_egraph_experiment.py",
-        "tests/test_scripts/test_run_exp_sr8_egraph_experiment.py"
+        "tests/test_scripts/test_run_exp_sr8_egraph_experiment.py",
+        "tests/test_harnesses/experiments/test_symbolic_macro_library.py",
+        "scripts/run_exp_sr9_macro_library_experiment.py",
+        "tests/test_scripts/test_run_exp_sr9_macro_library_experiment.py"
       ],
       "history": [
+        {
+          "version": "v160",
+          "date": "2026-08-10",
+          "note": "RSP-005 (SLM-480): add symbolic_macro_library.py -- mines recurring canonical subtrees from corpus_split=='train' symbolic-regression records into a library of closed (0-arity), content-addressed macros (macro_id=sha256(expansion_expr)-derived, so admission/retirement never renumbers another macro's identity), using an MDL net-gain objective transplanted from data.macro_induction._net_gain (token spans -> AST subtree size). scripts/run_exp_sr9_macro_library_experiment.py executes the locked SIE-001 exp-sr-9 identity (exp_sr_catalogue.py) through Rsp005CampaignV1/CampaignStore (claim_class=fixture), comparing no_macros/frequency_macros/mdl_macros arms on macro_library_size_reduction_rate over the frozen, never-mined-from corpus_split=='test' slice; every admitted macro's expansion is independently re-verified numerically (NaN-aware) against a real occurrence, mirroring RSP-004's verify_rewrite_numerically pattern. Measured result (docs/design/exp-sr-9-macro-library-experiment.{json,md}): 64 train / 8 held-out test records, 205 candidate subtrees observed, 16-macro libraries admitted for both frequency_macros and mdl_macros (coincide on this small fixture vocabulary), mdl_macros reduction_rate=0.194175 (>= 0.02 minimum_effect over the no_macros baseline, >= frequency_macros), leakage audit is_clean=True, all 16 expansion-equivalence checks verified, falsifier does not hold -- authorized=True as a diagnostic signal only, no checkpoint promotion. Per SLM-480's acceptance criterion, this stays an isolated, evaluation-only experiment module -- no import from dsl/symbolic_regression_pack.py or any production canonicalization path, and it does not touch data/macro_induction.py/models/dsl_tokenizer.py's separate production macro system over the OpenUI DSL token stream."
+        },
         {
           "version": "v159",
           "date": "2026-08-10",
@@ -17254,6 +17272,11 @@
         {
           "version": "v1",
           "date": "2026-08-10",
+          "note": "no-bump: add a `# noqa: E731` marker to the hand_threshold arm's multi-line lambda assignment (ruff E731), matching the sibling arms in the same function that already carry it -- pure lint fix, no behavior change."
+        },
+        {
+          "version": "v1",
+          "date": "2026-08-10",
           "note": "SIE-008/SLM-484: fixture-scale EXP-SR-5 value-of-compute controller campaign composing SIE-007 compute_state_controller; claim_class=fixture; no promotion."
         }
       ]
@@ -17289,6 +17312,11 @@
         "docs/design/iter-slm488-rsp-001-cegis-repair-20260810.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-10",
+          "note": "no-bump: remove an unused import (ruff F401, `RepairPolicyName as TopologyRepairPolicy` from conflict_slice_repair, never referenced in this module) -- pure lint fix, no behavior change."
+        },
         {
           "version": "v1",
           "date": "2026-08-10",

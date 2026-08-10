@@ -27,7 +27,6 @@ def test_try_load_fail_closed_on_divergence(monkeypatch: pytest.MonkeyPatch) -> 
 
     tok = DSLNativeTokenizer.build()
     build_packed_semantic_summary(tok)
-    original = _ss._kind_of  # noqa: SLF001
 
     def _broken(_tokenizer, _tid: int) -> str:
         return "broken_kind"

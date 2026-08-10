@@ -47,7 +47,6 @@ from slm_training.harnesses.distill.semantic_repair import (
 )
 from slm_training.harnesses.experiments.conflict_slice_repair import (
     ConflictSliceV1,
-    RepairPolicyName as TopologyRepairPolicy,
     TopologyNode,
     _tree_fingerprint,
     apply_repair_policy as apply_topology_repair,
