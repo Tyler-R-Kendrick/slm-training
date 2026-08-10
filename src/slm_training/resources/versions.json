@@ -2162,6 +2162,24 @@
         }
       ]
     },
+    "evals.evaluator_calibration_protocol": {
+      "version": "v1",
+      "kind": "metric",
+      "paths": [
+        "src/slm_training/evals/evaluator_calibration_protocol.py",
+        "scripts/run_vce010_evaluator_calibration_protocol.py",
+        "tests/test_evals/test_evaluator_calibration_protocol.py",
+        "docs/design/vce010-evaluator-calibration-protocol.md",
+        "docs/design/vce010-evaluator-calibration-results.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-09",
+          "note": "initial registration; VCE-010/SLM-469 evaluator calibration, blinded adjudication, and risk-coverage protocol -- composes the existing SemanticContrastBuilder frozen sample, judge_independence agreement/calibration statistics, judge_audit blinded pair-study freeze/import, and trust_train.gate_calibration_report risk/coverage curve into a four-arm ExperimentCampaignV1 (deterministic_only control, external_only_missing_human / human_only_missing_external negative-control arms proving missing evidence is reported blocked rather than assumed valid, full_triple_judge). Preregisters the calibration_error_max rollback-gate threshold before any external-judge or human-label evidence is gathered; adds reason_family_confusion_matrix as the one genuinely new statistic (no crosstab owner existed elsewhere)."
+        }
+      ]
+    },
     "evals.judge_resolution": {
       "version": "v1",
       "kind": "metric",
