@@ -4865,6 +4865,11 @@
         {
           "version": "v159",
           "date": "2026-08-10",
+          "note": "no-bump: RSP-002/SLM-489 EXP-SR-6 neural-guided bounded search campaign lives in rsp002_bounded_search.py under dedicated component harness.experiments.slm489_rsp002_bounded_search (v1); catalogue exp_sr_catalogue.py unchanged."
+        },
+        {
+          "version": "v159",
+          "date": "2026-08-10",
           "note": "no-bump: RSP-003/SLM-485 EXP-SR-7 static-summary campaign lives in rsp003_static_summary.py under dedicated component harness.experiments.slm485_rsp003_static_summary (v1); catalogue exp_sr_catalogue.py unchanged."
         },
         {
@@ -17302,6 +17307,25 @@
           "version": "v1",
           "date": "2026-08-10",
           "note": "RSP-003/SLM-485: EXP-SR-7 fixture static-artifact + packed semantic-summary campaign; claim_class=fixture; never promotion_candidate/ship_gate; kill if static_summary_domain_parity_rate < 1.0."
+        }
+      ]
+    },
+    "harness.experiments.slm489_rsp002_bounded_search": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/rsp002_bounded_search.py",
+        "scripts/run_rsp002_bounded_search.py",
+        "tests/test_harnesses/experiments/test_rsp002_bounded_search.py",
+        "tests/test_scripts/test_run_rsp002_bounded_search.py",
+        "docs/design/iter-slm489-rsp-002-bounded-search-20260810.json",
+        "docs/design/iter-slm489-rsp-002-bounded-search-20260810.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-10",
+          "note": "RSP-002/SLM-489: fixture-scale EXP-SR-6 neural-guided bounded search + infilling order composing valid_state_search_generic + completion-forest adapter + advisory rankers; claim_class=fixture; default OFF; no promotion."
         }
       ]
     }
