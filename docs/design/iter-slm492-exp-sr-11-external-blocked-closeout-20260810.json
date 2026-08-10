@@ -1,0 +1,122 @@
+{
+  "catalogue_id": "exp-sr-11",
+  "claim_class": "diagnostic",
+  "disposition": "external_blocked",
+  "env_probe": {
+    "julia_binary_available": false,
+    "julia_path": null,
+    "live_execution_ready": false,
+    "manifest_fingerprint": "bf60c4f6e8ec22aa1bab4688606479616f724d10004d3823aed7bcf288821800",
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+    "pysr_import_available": false,
+    "python_version": "3.12.3",
+    "tool_name": "pysr",
+    "tool_version": "0.19.4"
+  },
+  "evidence_cutoff_commit": "874b95d95764727d14420080d50141dc602b95f8",
+  "external_blocked": true,
+  "incomplete": true,
+  "kind": "slm492_external_blocked_closeout/v1",
+  "linear_issue": "SLM-492",
+  "no_sota_claims": true,
+  "prepared_package": {
+    "prior_fixture_evidence": "docs/design/iter-slm486-rsp-007-pysr-srbench-20260810.json",
+    "rsp007_harness_replay": "python -m scripts.run_rsp007_pysr_srbench --mode fixture --seed 0",
+    "rsp007_owner": "src/slm_training/harnesses/experiments/rsp007_pysr_srbench.py",
+    "srp011_adapter_owner": "src/slm_training/dsl/symbolic_expr_pysr_adapter.py"
+  },
+  "primary_metric": "srbench_matched_score_gap",
+  "promotion": false,
+  "recipe": {
+    "command": [
+      "python",
+      "-m",
+      "scripts.run_slm492_external_blocked_closeout"
+    ],
+    "device": "cpu",
+    "docs_path": "docs/design/iter-slm492-exp-sr-11-external-blocked-closeout-20260810.json",
+    "honesty_mode": "external_blocked_prepared_package"
+  },
+  "rsp007_result": {
+    "campaign_id": "rsp007-exp-sr-11-pysr-srbench",
+    "catalogue_id": "exp-sr-11",
+    "catalogue_manifest_sha256": "3b18da06fec3d56879046d3cb96f6f5be44472157ca676520fbacf88e02f02b3",
+    "claim_class": "diagnostic",
+    "complete": false,
+    "env_probe": {
+      "live_execution_ready": false,
+      "manifest_fingerprint": "bf60c4f6e8ec22aa1bab4688606479616f724d10004d3823aed7bcf288821800",
+      "pysr_import_available": false,
+      "python_version": "3.12.3",
+      "tool_name": "pysr",
+      "tool_version": "0.19.4"
+    },
+    "evidence": "external-blocked",
+    "gap_analysis": {
+      "complete": false,
+      "evidence": "external-blocked",
+      "note": "External PySR/SRBench arm incomplete \u2014 gap not scored as a benchmark loss.",
+      "pack_validation_loss": 0.0,
+      "pysr_validation_loss": null,
+      "srbench_matched_score_gap": null
+    },
+    "kill_gate_triggered": false,
+    "kill_operator": "gt",
+    "kill_threshold": 0.0,
+    "manifest_sha256": "dc80cece8d6b4965a62b4cb28f541a977e014f667ff86536c362831f67e70530",
+    "matched_iteration_budget": 100,
+    "no_sota_claims": true,
+    "pack_enumerate_matched": {
+      "arm_id": "pack_enumerate_matched",
+      "bound_exhausted": true,
+      "evidence": "pack_enumerate",
+      "matched_iteration_budget": 100,
+      "max_depth": 3,
+      "max_nodes": 5,
+      "optimality_claim": "exhaustive_under_declared_bounds",
+      "states_generated": 74,
+      "status": "complete",
+      "unique_canonical_states": 40,
+      "validation_loss": 0.0
+    },
+    "problem_fingerprint": "e24faef56204128c544fc090576c1aa823b7ae2a6a2f8714dfcb9a323e755bb7",
+    "promotion": false,
+    "pysr_adapter_matched": {
+      "adapter_input_fingerprint": "bd0a0360f9d63487d26ef3ec5dce0ea611b2848411bdfc00c984822faeb2d43b",
+      "adapter_status": "external_blocked",
+      "arm_id": "pysr_adapter_matched",
+      "dry_run": true,
+      "env_probe": {
+        "live_execution_ready": false,
+        "manifest_fingerprint": "bf60c4f6e8ec22aa1bab4688606479616f724d10004d3823aed7bcf288821800",
+        "pysr_import_available": false,
+        "python_version": "3.12.3",
+        "tool_name": "pysr",
+        "tool_version": "0.19.4"
+      },
+      "error_detail": "PySR/SRBench live environment unavailable; fixture records external-blocked evidence only",
+      "evidence": "external-blocked",
+      "manifest_fingerprint": "bf60c4f6e8ec22aa1bab4688606479616f724d10004d3823aed7bcf288821800",
+      "matched_iteration_budget": 100,
+      "status": "incomplete",
+      "validation_loss": null
+    },
+    "schema": "rsp007_pysr_srbench_fixture_result/v1",
+    "scope_disclaimer": "Fixture-scale EXP-SR-11 matched-budget wiring over SRP-010 enumerator and SRP-011 PySR adapter on a tiny SRBench-compatible problem. External PySR/Julia absence yields evidence='external-blocked' incomplete results \u2014 never benchmark losses or SOTA claims. claim_class=diagnostic; never promotion_candidate/ship_gate.",
+    "seed": 0,
+    "srbench_matched_score_gap": null
+  },
+  "scope_disclaimer": "SLM-492 closes EXP-SR-11 follow-up as an honest external-blocked prepared package: RSP-007 harness and SRP-011 adapter isolation are replayable, but PySR/Julia absence yields incomplete evidence \u2014 never a benchmark loss or SOTA claim. srbench_matched_score_gap stays null.",
+  "srbench_matched_score_gap": null,
+  "status": "external_blocked",
+  "timestamp": "2026-08-10T23:28:42.593349Z",
+  "version_stamp": {
+    "code_commit": "874b95d95764727d14420080d50141dc602b95f8",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.slm492_external_blocked_closeout": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-10T23:28:42.593392+00:00"
+  }
+}

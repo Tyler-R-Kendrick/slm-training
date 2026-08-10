@@ -33,8 +33,12 @@ Rejected or blocked families: `exp-sr-2`, `exp-sr-5`, `exp-sr-10`, `exp-sr-11`.
 
 ## Follow-up issues
 
-- **SLM-491** — real (non-mock) external-judge / blinded-human calibration for EXP-SR-3
-- **SLM-492** — isolated PySR/Julia SRBench environment for EXP-SR-11
+- **SLM-491** — closed `external_blocked` prepared package ([`iter-slm491-exp-sr-3-external-blocked-closeout-20260810.md`](iter-slm491-exp-sr-3-external-blocked-closeout-20260810.md)); real human calibration still blocked
+- **SLM-492** — closed `external_blocked` prepared package ([`iter-slm492-exp-sr-11-external-blocked-closeout-20260810.md`](iter-slm492-exp-sr-11-external-blocked-closeout-20260810.md)); PySR/Julia still blocked
+
+## Supersessions (SLM-491 / SLM-492)
+
+See the **Supersessions** section in [`iter-slm490-rsp-009-disposition-20260810.md`](iter-slm490-rsp-009-disposition-20260810.md) — `exp-sr-3` and `exp-sr-11` rows link to the prepared-package closeouts without changing adopt/champion pointers.
 
 ## Reproducibility
 

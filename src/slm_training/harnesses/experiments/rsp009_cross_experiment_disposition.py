@@ -23,9 +23,19 @@ from slm_training.harnesses.experiments.mechanism_disposition_report import (
     Disposition,
     MechanismDispositionRecordV1,
     MechanismDispositionReportV1,
+    SupersessionEntryV1,
     build_disposition_report,
     build_mechanism_disposition_record,
+    build_supersession_entry,
     disposition_report_integrity_ok,
+)
+from slm_training.harnesses.experiments.slm491_external_blocked_closeout import (
+    DESIGN_STEM as SLM491_DESIGN_STEM,
+    load_closeout_summary as load_slm491_closeout_summary,
+)
+from slm_training.harnesses.experiments.slm492_external_blocked_closeout import (
+    DESIGN_STEM as SLM492_DESIGN_STEM,
+    load_closeout_summary as load_slm492_closeout_summary,
 )
 from slm_training.versioning import UNKNOWN, build_version_stamp, git_commit
 
@@ -36,6 +46,7 @@ __all__ = [
     "REPORT_WRAPPER_SCHEMA",
     "Rsp009CrossExperimentDispositionV1",
     "build_exp_sr_disposition_records",
+    "build_slm491_492_supersessions",
     "load_evidence_summary",
     "render_markdown",
     "run_rsp009_disposition_audit",
@@ -56,6 +67,7 @@ _EVIDENCE_BY_FAMILY: dict[str, tuple[str, ...]] = {
     "exp-sr-3": (
         "docs/design/iter-slm478-sie-005-blinded-packet-20260810.json",
         "docs/design/iter-slm483-sie-006-calibration-campaign-20260810.json",
+        f"{SLM491_DESIGN_STEM}.json",
     ),
     "exp-sr-4": ("docs/design/iter-slm488-rsp-001-cegis-repair-20260810.json",),
     "exp-sr-5": ("docs/design/iter-slm484-sie-008-voc-controller-20260810.json",),
@@ -64,14 +76,17 @@ _EVIDENCE_BY_FAMILY: dict[str, tuple[str, ...]] = {
     "exp-sr-8": ("docs/design/exp-sr-8-egraph-equivalence-experiment.json",),
     "exp-sr-9": ("docs/design/exp-sr-9-macro-library-experiment.json",),
     "exp-sr-10": ("docs/design/iter-slm481-rsp-006-quality-diversity-20260810.json",),
-    "exp-sr-11": ("docs/design/iter-slm486-rsp-007-pysr-srbench-20260810.json",),
+    "exp-sr-11": (
+        "docs/design/iter-slm486-rsp-007-pysr-srbench-20260810.json",
+        f"{SLM492_DESIGN_STEM}.json",
+    ),
     "exp-sr-12": ("docs/design/iter-slm487-rsp-008-portability-20260810.json",),
 }
 
 _ISSUE_BY_FAMILY: dict[str, tuple[str, ...]] = {
     "exp-sr-1": ("SLM-476", "SIE-002"),
     "exp-sr-2": ("SLM-482", "SIE-004"),
-    "exp-sr-3": ("SLM-478", "SLM-483", "SIE-005", "SIE-006"),
+    "exp-sr-3": ("SLM-478", "SLM-483", "SLM-491", "SIE-005", "SIE-006"),
     "exp-sr-4": ("SLM-488", "RSP-001"),
     "exp-sr-5": ("SLM-484", "SIE-008"),
     "exp-sr-6": ("SLM-489", "RSP-002"),
@@ -79,7 +94,7 @@ _ISSUE_BY_FAMILY: dict[str, tuple[str, ...]] = {
     "exp-sr-8": ("EXP-SR-8",),
     "exp-sr-9": ("EXP-SR-9",),
     "exp-sr-10": ("SLM-481", "RSP-006"),
-    "exp-sr-11": ("SLM-486", "RSP-007"),
+    "exp-sr-11": ("SLM-486", "SLM-492", "RSP-007"),
     "exp-sr-12": ("SLM-487", "RSP-008"),
 }
 
@@ -145,6 +160,7 @@ def load_evidence_summary(
         "adoption_decision": data.get("adoption_decision"),
         "certified": data.get("certified"),
         "analysis": data.get("analysis"),
+        "external_blocked": data.get("external_blocked"),
     }
     return summary
 
@@ -217,7 +233,16 @@ def _resolve_disposition(
         )
 
     if family_id == "exp-sr-3":
-        calib = summaries[-1] if len(summaries) > 1 else primary
+        closeout = summaries[-1]
+        if closeout.get("status") == "external_blocked" or closeout.get("external_blocked"):
+            return (
+                Disposition.REVISE_AND_RETEST,
+                "SLM-491 external-blocked prepared package filed (SIE-005 pin + SIE-006 "
+                "replay verified); real blinded human/provider calibration remains "
+                "unavailable — kappa/calibration metrics stay null.",
+                ("SLM-491", "VCE-010"),
+            )
+        calib = summaries[1] if len(summaries) > 1 else primary
         if calib.get("killed_by_catalogue_gate") or not calib.get("authorized"):
             return (
                 Disposition.REVISE_AND_RETEST,
@@ -327,6 +352,15 @@ def _resolve_disposition(
         )
 
     if family_id == "exp-sr-11":
+        closeout = summaries[-1]
+        if closeout.get("status") == "external_blocked" or closeout.get("external_blocked"):
+            return (
+                Disposition.BLOCKED,
+                "SLM-492 external-blocked prepared package filed (RSP-007 + SRP-011 "
+                "isolation replayable); PySR/Julia remain unavailable — gap not scored "
+                "as a benchmark loss.",
+                ("SLM-492", "SRP-011"),
+            )
         if primary.get("evidence") == "external-blocked" or not primary.get("complete"):
             return (
                 Disposition.BLOCKED,
@@ -465,12 +499,24 @@ def build_exp_sr_disposition_records(
     return tuple(records)
 
 
-def _follow_up_gaps() -> tuple[str, ...]:
+def _follow_up_gaps(repo_root: Path | None = None) -> tuple[str, ...]:
+    if repo_root is None:
+        repo_root = _repo_root()
+    slm491 = load_slm491_closeout_summary(repo_root / f"{SLM491_DESIGN_STEM}.json")
+    slm492 = load_slm492_closeout_summary(repo_root / f"{SLM492_DESIGN_STEM}.json")
+    gaps: list[str] = []
+    if not slm491.get("present"):
+        gaps.append(
+            "Real blinded human/provider calibration for EXP-SR-3 (SIE-006) — current "
+            "evidence is mock/synthetic only."
+        )
+    if not slm492.get("present"):
+        gaps.append(
+            "Isolated PySR/Julia SRBench environment for EXP-SR-11 (RSP-007) — external arm "
+            "is external-blocked, not reject."
+        )
     return (
-        "Real blinded human/provider calibration for EXP-SR-3 (SIE-006) — current "
-        "evidence is mock/synthetic only.",
-        "Isolated PySR/Julia SRBench environment for EXP-SR-11 (RSP-007) — external arm "
-        "is external-blocked, not reject.",
+        *gaps,
         "Eliminate shared-seam pack forks for symbolic_regression before EXP-SR-12 can "
         "certify second-pack portability.",
         "Measured (non-fixture) witness CEGIS and bounded-search confirmation on live "
@@ -528,6 +574,111 @@ class Rsp009CrossExperimentDispositionV1:
         }
 
 
+def build_slm491_492_supersessions(
+    records: tuple[MechanismDispositionRecordV1, ...],
+    *,
+    repo_root: Path | None = None,
+) -> tuple[
+    tuple[MechanismDispositionRecordV1, ...],
+    tuple[SupersessionEntryV1, ...],
+]:
+    """Append superseding records when SLM-491/492 prepared packages are present."""
+    if repo_root is None:
+        repo_root = _repo_root()
+
+    by_id = {r.mechanism_id: r for r in records}
+    extra: list[MechanismDispositionRecordV1] = []
+    supersessions: list[SupersessionEntryV1] = []
+
+    slm491 = load_slm491_closeout_summary(repo_root / f"{SLM491_DESIGN_STEM}.json")
+    if slm491.get("present") and "exp-sr-3" in by_id:
+        base = by_id["exp-sr-3"]
+        cutoff = str(slm491.get("evidence_cutoff_commit") or git_commit())
+        updated = build_mechanism_disposition_record(
+            mechanism_id=base.mechanism_id,
+            owner_module=base.owner_module,
+            owner_version=base.owner_version,
+            default_state=base.default_state,
+            authority_class=base.authority_class,
+            evidence_cutoff=cutoff,
+            evidence_class="blocked",
+            disposition=Disposition.REVISE_AND_RETEST,
+            rationale=(
+                "SLM-491 filed an honest external-blocked prepared package "
+                f"({SLM491_DESIGN_STEM}.json): SIE-005 pin + SIE-006 replay verified, "
+                "but real blinded human/provider calibration remains unavailable — "
+                "kappa/calibration metrics stay null, not mocked-as-real."
+            ),
+            activation_evidence=base.activation_evidence,
+            applicable_packs=base.applicable_packs,
+            matched_controls=base.matched_controls,
+            semantic_effect=base.semantic_effect,
+            cost_cold_effect=base.cost_cold_effect,
+            safety_invariants=base.safety_invariants,
+            external_dependencies=tuple(
+                dict.fromkeys((*base.external_dependencies, "SLM-491"))
+            ),
+            issues=tuple(dict.fromkeys((*base.issues, "SLM-491"))),
+        )
+        extra.append(updated)
+        supersessions.append(
+            build_supersession_entry(
+                superseded=base,
+                superseding=updated,
+                reason=(
+                    "SLM-491 external-blocked prepared package closeout — "
+                    "evaluator_calibration_protocol follow-up evidence filed"
+                ),
+            )
+        )
+
+    slm492 = load_slm492_closeout_summary(repo_root / f"{SLM492_DESIGN_STEM}.json")
+    if slm492.get("present") and "exp-sr-11" in by_id:
+        base = by_id["exp-sr-11"]
+        cutoff = str(slm492.get("evidence_cutoff_commit") or git_commit())
+        updated = build_mechanism_disposition_record(
+            mechanism_id=base.mechanism_id,
+            owner_module=base.owner_module,
+            owner_version=base.owner_version,
+            default_state="blocked",
+            authority_class=base.authority_class,
+            evidence_cutoff=cutoff,
+            evidence_class="blocked",
+            disposition=Disposition.BLOCKED,
+            rationale=(
+                "SLM-492 filed an honest external-blocked prepared package "
+                f"({SLM492_DESIGN_STEM}.json): RSP-007 harness + SRP-011 adapter "
+                "isolation replayable, but PySR/Julia remain unavailable — "
+                "gap is not scored as a benchmark loss; no SOTA claim."
+            ),
+            activation_evidence=base.activation_evidence,
+            applicable_packs=base.applicable_packs,
+            matched_controls=base.matched_controls,
+            semantic_effect=base.semantic_effect,
+            cost_cold_effect=base.cost_cold_effect,
+            safety_invariants=base.safety_invariants,
+            external_dependencies=tuple(
+                dict.fromkeys((*base.external_dependencies, "SLM-492", "SRP-011"))
+            ),
+            issues=tuple(dict.fromkeys((*base.issues, "SLM-492"))),
+        )
+        extra.append(updated)
+        supersessions.append(
+            build_supersession_entry(
+                superseded=base,
+                superseding=updated,
+                reason=(
+                    "SLM-492 external-blocked prepared package closeout — "
+                    "pysr_srbench_adapter follow-up evidence filed"
+                ),
+            )
+        )
+
+    if not extra:
+        return records, ()
+    return records + tuple(extra), tuple(supersessions)
+
+
 def run_rsp009_disposition_audit(
     *,
     run_id: str = "slm490_rsp009_disposition",
@@ -539,7 +690,8 @@ def run_rsp009_disposition_audit(
         repo_root = _repo_root()
 
     records = build_exp_sr_disposition_records(repo_root=repo_root)
-    report = build_disposition_report(records)
+    records, supersessions = build_slm491_492_supersessions(records, repo_root=repo_root)
+    report = build_disposition_report(records, supersessions)
     if not disposition_report_integrity_ok(report):
         raise ValueError("mechanism disposition report integrity check failed")
 
@@ -551,7 +703,9 @@ def run_rsp009_disposition_audit(
         )
 
     rejected_or_blocked = tuple(
-        r.mechanism_id for r in records if r.disposition in _REJECTED_OR_BLOCKED
+        dict.fromkeys(
+            r.mechanism_id for r in records if r.disposition in _REJECTED_OR_BLOCKED
+        )
     )
     cross_pack_summary = (
         "RSP-009 audited all twelve EXP-SR catalogue families (exp-sr-1..12) using "
@@ -576,7 +730,7 @@ def run_rsp009_disposition_audit(
         mechanism_disposition_report=report,
         catalogue_families=tuple(spec.family_id for spec in EXP_SR_FAMILY_SPECS),
         cross_pack_summary=cross_pack_summary,
-        follow_up_gaps=_follow_up_gaps(),
+        follow_up_gaps=_follow_up_gaps(repo_root=repo_root),
         champion_pointer_ids=(),
         rejected_or_blocked_ids=rejected_or_blocked,
         version_stamp=_build_version_stamp(),
@@ -625,6 +779,18 @@ def render_markdown(report: Rsp009CrossExperimentDispositionV1) -> str:
     if report.rejected_or_blocked_ids:
         for mid in report.rejected_or_blocked_ids:
             lines.append(f"- `{mid}`")
+    else:
+        lines.append("- _None._")
+
+    supersessions = report.mechanism_disposition_report.supersessions
+    lines.extend(["", "## Supersessions", ""])
+    if supersessions:
+        for entry in supersessions:
+            lines.append(
+                f"- `{entry.superseded_mechanism_id}`@`{entry.superseded_evidence_cutoff}` "
+                f"→ `{entry.superseding_mechanism_id}`@`{entry.superseding_evidence_cutoff}`: "
+                f"{entry.reason}"
+            )
     else:
         lines.append("- _None._")
 
