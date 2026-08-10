@@ -2864,3 +2864,25 @@ Date (UTC) column). Do not delete history.
 - campaign: `continuous-loop-20260809-continuous-openui-schedu-4b132389-c5`
 - checkpoints: `runs/c20260809-continuous-openui-schedu-4b132389-c5-component-plan/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-4b132389-c5-control/checkpoints/last.pt`
 - honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## RSP-009: EXP-SR cross-experiment disposition (2026-08-10, SLM-490)
+
+Closes out the EXP-SR-1..12 experiment initiative (SIE-001..008, RSP-001..008).
+Full structured disposition: [docs/design/exp-sr-disposition-20260810.md](design/exp-sr-disposition-20260810.md)
+(reproduce with `python -m scripts.publish_exp_sr_disposition --check`).
+
+- 12 registered mechanisms, all evidence fixture-scale (mock external judges,
+  synthetic human raters, small in-process corpora): 7 `retain_diagnostic`
+  (oracle_localization, evaluator_calibration_protocol,
+  semantic_repair_witness_cegis, bounded_search_neural_prior,
+  packed_semantic_summary, symbolic_egraph, symbolic_macro_library), 4
+  `reject` (prompt_factor_predictor, compute_state_controller,
+  quality_diversity_corpus, second_pack_portability), 1 `blocked`
+  (pysr_srbench_adapter — EXP-SR-11 was never executed).
+- No mechanism reached `adopt_primary`/`adopt_optional`: fixture-only
+  evidence cannot adopt, enforced structurally by
+  `mechanism_disposition_report.build_mechanism_disposition_record`'s own
+  validator. **No checkpoint, default, or champion pointer changed.**
+- Two genuine gaps remain open and are tracked as explicit follow-up issues
+  rather than hidden caveats: a real (non-mock) external-judge/human-rater
+  EXP-SR-3 run, and an actual EXP-SR-11 PySR/SRBench execution.

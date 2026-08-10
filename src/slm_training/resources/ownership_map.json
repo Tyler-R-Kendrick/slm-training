@@ -722,6 +722,13 @@
       "doc": "docs/design/iter-slm483-sie-006-calibration-campaign-20260810.md",
       "status": "diagnostic",
       "relation": "Diagnostic EXP-SR-3 calibration campaign (claim_class=diagnostic) wrapping VCE-010's evaluator_calibration_protocol under the locked catalogue identity; evaluator_human_agreement_kappa=0.0 on labeled-mock external-judge/synthetic-human evidence, below minimum_effect and the catalogue kill gate -- an honest negative result, not a construct-validity claim (no real external-judge credentials or human raters in this environment)."
+    },
+    {
+      "linear_id": "SLM-490",
+      "title": "RSP-009: Publish cross-experiment disposition and retire, freeze, or promote mechanisms honestly",
+      "doc": "docs/design/exp-sr-disposition-20260810.md",
+      "status": "diagnostic",
+      "relation": "Closeout disposition across all 12 registered EXP-SR mechanisms via SGS-009's mechanism_disposition_report.py (reused, not forked): 7 retain_diagnostic, 4 reject, 1 blocked (exp-sr-11, never executed). Zero adopt_primary/adopt_optional -- every campaign stayed fixture-scale and fixture-only evidence cannot adopt, enforced by the schema's own validator. No checkpoint/default/champion pointer changed. Follow-ups: SLM-491 (real EXP-SR-3 run), SLM-492 (real EXP-SR-11 run)."
     }
   ],
   "downstream_extension_map": [
@@ -1295,7 +1302,7 @@
         "experiment_campaign"
       ],
       "new_owner_justified": false,
-      "justification": "Follows the SLM-160 disposition-report precedent and this map's known_drift/duplicate_subsystem_risks pattern; no new owner."
+      "justification": "Follows the SLM-160 disposition-report precedent and this map's known_drift/duplicate_subsystem_risks pattern; no new owner. Closeout evidence: docs/design/exp-sr-disposition-20260810.md (12 EXP-SR mechanisms disposed via SGS-009's mechanism_disposition_report.py, reused not forked; 7 retain_diagnostic, 4 reject, 1 blocked (exp-sr-11, never executed); zero adopt_primary/adopt_optional, since every campaign this initiative ran stayed fixture-scale and fixture-only evidence cannot adopt under the schema's own validator; no checkpoint/default/champion pointer changed). Two follow-up issues filed for genuinely open gaps: SLM-491 (real EXP-SR-3 external-judge/human run) and SLM-492 (real EXP-SR-11 PySR/SRBench run)."
     }
   ],
   "contract_version_governance": {

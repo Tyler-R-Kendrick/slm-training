@@ -1,0 +1,309 @@
+{
+  "schema_version": "mechanism_disposition_report/v1",
+  "records": [
+    {
+      "schema_version": "mechanism_disposition_record/v1",
+      "mechanism_id": "oracle_localization",
+      "owner_module": "src/slm_training/data/semantic_plan/oracle.py",
+      "owner_version": "v1",
+      "default_state": "n/a",
+      "authority_class": "oracle-diagnostic",
+      "evidence_cutoff": "2026-08-10",
+      "evidence_class": "fixture",
+      "activation_evidence": "",
+      "applicable_packs": [
+        "openui"
+      ],
+      "matched_controls": true,
+      "semantic_effect": "roles/bindings factors show a material causal ceiling (oracle_factor_localization_precision=1.0 on the authorized subset); archetype/topology do not clear minimum_effect=0.03",
+      "cost_cold_effect": "",
+      "safety_invariants": [],
+      "external_dependencies": [],
+      "disposition": "retain_diagnostic",
+      "rationale": "SIE-002/EXP-SR-1 localized which semantic-plan factors have a material causal ceiling on a VCE-008-cleaned fixture pool (no-op/shuffled/destructive matched controls). Fixture-scale (claim_class=fixture): cannot promote a default. Authorizes only roles/bindings for later learned-predictor work -- archetype/style_layout stays an explicit placeholder, never a claimed authorization.",
+      "issues": [
+        "SLM-467",
+        "SLM-476"
+      ],
+      "record_hash": "31f4ffd590bc8f8fd7ae3d8279bd3d8c460e7cc8cc5b9a1fd223562f4a152c82"
+    },
+    {
+      "schema_version": "mechanism_disposition_record/v1",
+      "mechanism_id": "prompt_factor_predictor",
+      "owner_module": "src/slm_training/models/prompt_factor_predictor.py",
+      "owner_version": "v1",
+      "default_state": "off",
+      "authority_class": "advisory-learned",
+      "evidence_cutoff": "2026-08-10",
+      "evidence_class": "rejected",
+      "activation_evidence": "",
+      "applicable_packs": [
+        "openui"
+      ],
+      "matched_controls": true,
+      "semantic_effect": "requirement_predictor_f1=0.0 (learned arm); delta vs frequency baseline=-0.448; dominated_by_simpler_control=True",
+      "cost_cold_effect": "",
+      "safety_invariants": [],
+      "external_dependencies": [],
+      "disposition": "reject",
+      "rationale": "SIE-004/EXP-SR-2 evaluated the SIE-003 predictor seam end-to-end against no-predictor/deterministic/frequency/retrieval controls: the learned predictor is dominated by the simpler frequency baseline. Per this closeout's own rule ('when mechanisms are equivalent within uncertainty, prefer the simpler/lower-cost owner'), the predictor is rejected -- stays advisory-learned, off, never entered any hard-prune path.",
+      "issues": [
+        "SLM-477",
+        "SLM-482"
+      ],
+      "record_hash": "ceb85365aea2a8dcd09eaedaecf4b53139f0768986740621c09b1f6853c6a358"
+    },
+    {
+      "schema_version": "mechanism_disposition_record/v1",
+      "mechanism_id": "evaluator_calibration_protocol",
+      "owner_module": "src/slm_training/evals/evaluator_calibration_protocol.py",
+      "owner_version": "v1",
+      "default_state": "n/a",
+      "authority_class": "evaluation-only",
+      "evidence_cutoff": "2026-08-10",
+      "evidence_class": "fixture",
+      "activation_evidence": "",
+      "applicable_packs": [],
+      "matched_controls": true,
+      "semantic_effect": "evaluator_human_agreement_kappa=0.0 on 12 labeled-mock pairs; below minimum_effect=0.1 and the catalogue's le-0.0 kill gate",
+      "cost_cold_effect": "",
+      "safety_invariants": [],
+      "external_dependencies": [
+        "real external-judge API credentials",
+        "real human raters"
+      ],
+      "disposition": "retain_diagnostic",
+      "rationale": "SIE-006/EXP-SR-3 ran VCE-010's calibration protocol through the locked exp-sr-3 identity, but this environment has no real external-judge credentials or human raters (SLM-483's own external-blocked escape hatch): both the external-judge and human-rater arms are labeled mocks. The kappa=0.0 result is honest evidence about the MOCK fixture, not the real evaluator's true calibration -- retained as diagnostic-only pending a genuine external-judge/blinded-human run, never rejected on synthetic data alone.",
+      "issues": [
+        "SLM-478",
+        "SLM-483"
+      ],
+      "record_hash": "24a609f28f65888307edd7f03482cec7b25a3114f1facb6dc34021771ee107ba"
+    },
+    {
+      "schema_version": "mechanism_disposition_record/v1",
+      "mechanism_id": "semantic_repair_witness_cegis",
+      "owner_module": "src/slm_training/harnesses/experiments/rsp001_cegis_repair.py",
+      "owner_version": "v1",
+      "default_state": "off",
+      "authority_class": "advisory-learned",
+      "evidence_cutoff": "2026-08-10",
+      "evidence_class": "fixture",
+      "activation_evidence": "",
+      "applicable_packs": [
+        "openui"
+      ],
+      "matched_controls": true,
+      "semantic_effect": "verified_repair_yield=1.0 (witness_cegis arm) vs regenerate baseline, delta=+0.375 on the fixture corpus",
+      "cost_cold_effect": "",
+      "safety_invariants": [],
+      "external_dependencies": [],
+      "disposition": "retain_diagnostic",
+      "rationale": "RSP-001/EXP-SR-4 shows a clear positive fixture-scale signal for witness-guided CEGIS repair over regenerate/edit-distance/ learned-scorer controls. claim_class=fixture structurally blocks adopt_optional under this schema's own validator (fixture-only evidence cannot adopt) regardless of the source doc's own 'adopt-optional' recommendation language -- retained as diagnostic, default lever stays explicitly off.",
+      "issues": [
+        "SLM-488"
+      ],
+      "record_hash": "01117bc4c3103aba8a56c9909e11f807bc4594d0a1bc5135ab3a9460ed42d14c"
+    },
+    {
+      "schema_version": "mechanism_disposition_record/v1",
+      "mechanism_id": "compute_state_controller",
+      "owner_module": "src/slm_training/harnesses/experiments/sie008_voc_controller.py",
+      "owner_version": "v1",
+      "default_state": "off",
+      "authority_class": "advisory-learned",
+      "evidence_cutoff": "2026-08-10",
+      "evidence_class": "rejected",
+      "activation_evidence": "",
+      "applicable_packs": [],
+      "matched_controls": true,
+      "semantic_effect": "compute_value_regret=0.5036 (symbolic_rule arm, lower is better) vs hand_threshold control, delta=-0.2906 (worse)",
+      "cost_cold_effect": "",
+      "safety_invariants": [],
+      "external_dependencies": [],
+      "disposition": "reject",
+      "rationale": "SIE-008/EXP-SR-5 replayed the symbolic value-of-compute controller against hand_threshold/linear_scorer/gold_oracle arms on the SIE-007 substrate: the symbolic rule loses to both simpler controls. Rejected; capacity/compute claims stay advisory-learned and size-matched per goal-invariant VI.",
+      "issues": [
+        "SLM-473",
+        "SLM-484"
+      ],
+      "record_hash": "872385d5581bdf9f3e3502273e1439aaeab3d68b9b446c057066950fc974882c"
+    },
+    {
+      "schema_version": "mechanism_disposition_record/v1",
+      "mechanism_id": "bounded_search_neural_prior",
+      "owner_module": "src/slm_training/harnesses/experiments/rsp002_bounded_search.py",
+      "owner_version": "v1",
+      "default_state": "off",
+      "authority_class": "advisory-learned",
+      "evidence_cutoff": "2026-08-10",
+      "evidence_class": "fixture",
+      "activation_evidence": "",
+      "applicable_packs": [],
+      "matched_controls": true,
+      "semantic_effect": "bounded_search_hit_rate=1.0 (neural_prior arm) vs 0.0 (left_to_right baseline), delta=1.0 on the fixture corpus",
+      "cost_cold_effect": "",
+      "safety_invariants": [],
+      "external_dependencies": [],
+      "disposition": "retain_diagnostic",
+      "rationale": "RSP-002/EXP-SR-6 shows a clear positive fixture-scale signal for neural-prior search ordering over the existing decode baseline and a model-free enumerative control. Fixture-only evidence blocks adoption under this schema; retained as diagnostic, default stays off pending real reachability-matched, multi-seed evidence.",
+      "issues": [
+        "SLM-489"
+      ],
+      "record_hash": "4c0ba82feef0d6d239dcef95ba6d18f47f8d6da027b70b3cdf366512019d7580"
+    },
+    {
+      "schema_version": "mechanism_disposition_record/v1",
+      "mechanism_id": "packed_semantic_summary",
+      "owner_module": "src/slm_training/dsl/grammar/fastpath/packed_semantic_summary.py",
+      "owner_version": "v1",
+      "default_state": "off",
+      "authority_class": "evaluation-only",
+      "evidence_cutoff": "2026-08-10",
+      "evidence_class": "fixture",
+      "activation_evidence": "",
+      "applicable_packs": [
+        "openui"
+      ],
+      "matched_controls": true,
+      "semantic_effect": "static_summary_domain_parity_rate=1.0 (9/9 domain checks); packed-summary cold-path improvement +82.5ms",
+      "cost_cold_effect": "",
+      "safety_invariants": [],
+      "external_dependencies": [],
+      "disposition": "retain_diagnostic",
+      "rationale": "RSP-003/EXP-SR-7 measured exact domain parity against the live oracle on this fixture, with a real cold-path cost win. The source evidence doc's own recommendation label was 'inconclusive_fixture' (cost/promotion posture, not measurement doubt) -- the underlying result is an unambiguous fixture-scale positive, so retain_diagnostic reflects it more accurately than inconclusive; excluded from production default/checkpoint regardless, per fixture-only evidence.",
+      "issues": [
+        "SLM-485"
+      ],
+      "record_hash": "182fa7b26a8622a1c8aa9f084d17968b0f33606d2685ffafa3c392eb3298cc87"
+    },
+    {
+      "schema_version": "mechanism_disposition_record/v1",
+      "mechanism_id": "symbolic_egraph",
+      "owner_module": "src/slm_training/harnesses/experiments/symbolic_egraph.py",
+      "owner_version": "v1",
+      "default_state": "off",
+      "authority_class": "evaluation-only",
+      "evidence_cutoff": "2026-08-10",
+      "evidence_class": "fixture",
+      "activation_evidence": "",
+      "applicable_packs": [
+        "symbolic_regression"
+      ],
+      "matched_controls": true,
+      "semantic_effect": "egraph_certified_equivalence_rate=1.0; matches canonical-hash dedup's unique-form set and Pareto frontier exactly",
+      "cost_cold_effect": "",
+      "safety_invariants": [],
+      "external_dependencies": [],
+      "disposition": "retain_diagnostic",
+      "rationale": "RSP-004/EXP-SR-8: e-graph saturation/extraction is fully certified but produces no frontier improvement over plain canonicalize_expr -- mathematically expected, since SRP-005's current REWRITE_RULES are each complexity-non-increasing and confluent, so both mechanisms provably converge to the same fixed point. Per SLM-479's own acceptance criterion, stays default-off regardless of fixture win; no production canonicalization path imports this module.",
+      "issues": [
+        "SLM-479"
+      ],
+      "record_hash": "db74c6a1320ac938111c2a2d6daad93f94d2a036fbaeb52d3c4352ecf6d6cf33"
+    },
+    {
+      "schema_version": "mechanism_disposition_record/v1",
+      "mechanism_id": "symbolic_macro_library",
+      "owner_module": "src/slm_training/harnesses/experiments/symbolic_macro_library.py",
+      "owner_version": "v1",
+      "default_state": "off",
+      "authority_class": "evaluation-only",
+      "evidence_cutoff": "2026-08-10",
+      "evidence_class": "fixture",
+      "activation_evidence": "",
+      "applicable_packs": [
+        "symbolic_regression"
+      ],
+      "matched_controls": true,
+      "semantic_effect": "macro_library_size_reduction_rate=0.194 (mdl_macros); clears minimum_effect=0.02 vs no_macros but ties frequency_macros exactly on this small fixture vocabulary",
+      "cost_cold_effect": "",
+      "safety_invariants": [],
+      "external_dependencies": [],
+      "disposition": "retain_diagnostic",
+      "rationale": "RSP-005/EXP-SR-9: the MDL net-gain objective clears the no-macros baseline but shows no measured advantage over the simpler frequency-only control on this small fixture vocabulary -- an honest, unresolved comparison, not a clean win for the MDL-specific claim. All 16 admitted macros passed independent expansion-equivalence re-verification; retained diagnostic, evaluation-only, imported by no production canonicalization path.",
+      "issues": [
+        "SLM-480"
+      ],
+      "record_hash": "a83f8445e3be251207302922104556794a21d225af67f055197dac19bd19bd5a"
+    },
+    {
+      "schema_version": "mechanism_disposition_record/v1",
+      "mechanism_id": "quality_diversity_corpus",
+      "owner_module": "src/slm_training/harnesses/experiments/rsp006_quality_diversity.py",
+      "owner_version": "v1",
+      "default_state": "off",
+      "authority_class": "evaluation-only",
+      "evidence_cutoff": "2026-08-10",
+      "evidence_class": "rejected",
+      "activation_evidence": "",
+      "applicable_packs": [],
+      "matched_controls": true,
+      "semantic_effect": "corpus_topology_coverage=0.7222 (quality_diversity arm), exactly tied with the random_matched control",
+      "cost_cold_effect": "",
+      "safety_invariants": [],
+      "external_dependencies": [],
+      "disposition": "reject",
+      "rationale": "RSP-006/EXP-SR-10: the quality-diversity generation strategy does not beat matched-compute random rejection sampling -- an exact tie, not a directional loss, but the falsifier ('doesn't exceed matched-compute rejection sampling') fires on a tie by its own preregistered wording. Rejected; the simpler random_matched control is preferred per this closeout's own equivalence rule.",
+      "issues": [
+        "SLM-481"
+      ],
+      "record_hash": "502f8fb2d2716fbacd9091d7cbcdfc8ec8e18411f434f5d528e90098ba53c137"
+    },
+    {
+      "schema_version": "mechanism_disposition_record/v1",
+      "mechanism_id": "pysr_srbench_adapter",
+      "owner_module": "src/slm_training/dsl/symbolic_expr_pysr_adapter.py",
+      "owner_version": "v1",
+      "default_state": "n/a",
+      "authority_class": "evaluation-only",
+      "evidence_cutoff": "2026-08-10",
+      "evidence_class": "scratch",
+      "activation_evidence": "",
+      "applicable_packs": [],
+      "matched_controls": false,
+      "semantic_effect": "",
+      "cost_cold_effect": "",
+      "safety_invariants": [],
+      "external_dependencies": [
+        "pysr/Julia runtime",
+        "SRBench comparison protocol"
+      ],
+      "disposition": "blocked",
+      "rationale": "RSP-007/EXP-SR-11 was never executed: no locked exp-sr-11 campaign or docs/design evidence artifact exists in this repository as of this closeout's evidence cutoff. SRP-011's isolated adapter (symbolic_expr_pysr_adapter.py) is tested in isolation only (mocked/golden output; never imports pysr/Julia), which is not the same as a matched external-benchmark comparison. Disposed blocked rather than inferred from isolated unit coverage or silently omitted; a follow-up issue to actually run (or formally external-block) EXP-SR-11 is filed alongside this report.",
+      "issues": [
+        "SLM-486"
+      ],
+      "record_hash": "a149559c00ed55f0b47e4c23e40a11ad463aa95bc5250639b7ac89d5ff3b3abb"
+    },
+    {
+      "schema_version": "mechanism_disposition_record/v1",
+      "mechanism_id": "second_pack_portability",
+      "owner_module": "src/slm_training/harnesses/experiments/rsp008_second_pack_portability.py",
+      "owner_version": "v1",
+      "default_state": "n/a",
+      "authority_class": "evaluation-only",
+      "evidence_cutoff": "2026-08-10",
+      "evidence_class": "rejected",
+      "activation_evidence": "",
+      "applicable_packs": [
+        "openui",
+        "symbolic_regression"
+      ],
+      "matched_controls": true,
+      "semantic_effect": "second_pack_portability_parity_rate=0.909 (10/11 checks); 3 required shared-seam forks found: dsl_pack_registry_shadow, an OpenUI-pinned language contract, and a non-conformant SyGuS-inspired seam",
+      "cost_cold_effect": "",
+      "safety_invariants": [],
+      "external_dependencies": [],
+      "disposition": "reject",
+      "rationale": "RSP-008/EXP-SR-12: zero-fork cross-pack certification is falsified -- the fork inventory IS the evidence the falsifier fired correctly, satisfying this closeout's own rule that cross-pack claims require actual replication, not an inference from single-pack success. Rejected as a cross-pack certification claim; OpenUI and symbolic-regression pack claims remain scoped separately.",
+      "issues": [
+        "SLM-474",
+        "SLM-487"
+      ],
+      "record_hash": "09beb30640e3a291378692e2797c028e2c32f857b05a6b606013b8c62056905c"
+    }
+  ],
+  "supersessions": [],
+  "report_hash": "f8a578ef9254344746c959834b3bd7c38b45bef2eb59db457f547ab112a14886"
+}
