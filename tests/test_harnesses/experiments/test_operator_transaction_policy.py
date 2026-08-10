@@ -36,6 +36,7 @@ from slm_training.dsl.operators import (
 )
 from slm_training.dsl.operators.contracts import OperatorRef
 from slm_training.dsl.pack import get_pack
+from slm_training.harnesses.experiments import operator_transaction_policy
 from slm_training.harnesses.experiments.operator_transaction_policy import (
     MAX_TRANSACTION_POLICY_CANDIDATES,
     OperatorTransactionPolicyExampleV1,
@@ -265,7 +266,9 @@ def test_decode_selects_a_ground_truth_conflict_free_set(head_family: str) -> No
     assert verified.succeeded
 
 
-def test_shuffled_conflict_belief_never_commits_a_real_conflict() -> None:
+def test_shuffled_conflict_belief_never_commits_a_real_conflict(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """The core safety invariant: a corrupted ranking belief can waste search
     (nonzero ``conflict_attempts``) but can never make it into a commit."""
     fixture = _Fixture()
@@ -275,6 +278,18 @@ def test_shuffled_conflict_belief_never_commits_a_real_conflict() -> None:
     # invent conflicts that do not really exist — this is exactly the
     # `shuffled_conflict_graph` control's corrupted ranking belief.
     fake_belief = frozenset({frozenset({0, 2}), frozenset({1, 2})})
+    # Force the ranking step to prefer the corrupted-safe pair (0, 1) over any
+    # singleton, so this test deterministically exercises "highest-ranked
+    # candidate is the real conflict" instead of depending on the sign of a
+    # freshly initialized (and otherwise-untrained) scorer's raw logits —
+    # scoring subsets by a raw logit *sum* means an untrained network's
+    # ranking between different-sized subsets is incidental, not something
+    # this safety test should rely on.
+    monkeypatch.setattr(
+        operator_transaction_policy,
+        "score_transaction_candidates",
+        lambda _scorer, _example: torch.tensor([10.0, 10.0, 0.0]),
+    )
     decision = decode_bounded_transaction_set(
         scorer, example, k=2, conflict_belief=fake_belief
     )
