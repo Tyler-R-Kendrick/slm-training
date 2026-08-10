@@ -1,0 +1,1371 @@
+{
+  "kind": "vce009_oracle_contrast_fixture/v1",
+  "claim_class": "fixture",
+  "recipe": {
+    "command": [
+      "python",
+      "-m",
+      "scripts.run_vce009_oracle_contrast_campaign",
+      "--mode",
+      "fixture",
+      "--n-baseline-plans",
+      "5",
+      "--pool-size",
+      "40"
+    ],
+    "docs_path": "docs/design/vce009-oracle-contrast-results.json"
+  },
+  "baselines_attempted": 5,
+  "baselines_skipped": 0,
+  "declared_factor_fidelity_rate": 1.0,
+  "no_op_control_holds": true,
+  "records_total": 45,
+  "records_contaminated": 30,
+  "records_safe_for_export": 15,
+  "contaminated_arm_ids": [
+    "all_oracle",
+    "one_factor_archetype",
+    "one_factor_bindings",
+    "one_factor_roles",
+    "one_factor_topology",
+    "shuffled"
+  ],
+  "expected_contaminated_arm_ids": [
+    "all_oracle",
+    "one_factor_archetype",
+    "one_factor_bindings",
+    "one_factor_roles",
+    "one_factor_topology",
+    "shuffled"
+  ],
+  "baseline_reports": [
+    {
+      "record_id": "program_aae8d0896e2ff984_generation_7e07d2dc663e",
+      "skipped": false,
+      "designated_oracle_equals_shuffled_oracle": false,
+      "arms": {
+        "none": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "none",
+          "declared_factors": [],
+          "changed_factors": [],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.2743
+          },
+          "contamination_banner": null,
+          "record_hash": "673a990ed18f5932dfafc59c61f02567b7fa0ccfdf3fc91093b4294fe761b807"
+        },
+        "destructive": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "destructive",
+          "declared_factors": [
+            "archetype",
+            "roles",
+            "topology",
+            "bindings"
+          ],
+          "changed_factors": [
+            "archetype",
+            "roles",
+            "bindings"
+          ],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "752cf5cfe36114882b5fa1d287664956a226a0305478a865121f582681764edb",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.3098
+          },
+          "contamination_banner": null,
+          "record_hash": "5ebc892475c89b83daefe8708a297ce3960c801432f618982cb0b7b7fccce7a9"
+        },
+        "random": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "random",
+          "declared_factors": [
+            "archetype",
+            "roles",
+            "topology",
+            "bindings"
+          ],
+          "changed_factors": [
+            "archetype",
+            "roles",
+            "bindings"
+          ],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "8a2fc99f8f72198fde50edf00381317a2486cf3dcfb9f55691447fcaed5b94fd",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.2685
+          },
+          "contamination_banner": null,
+          "record_hash": "cdcbb858005cfb5560ef914b8cf2281cb6bc316e326c8f49a57f327fca4a788e"
+        },
+        "all_oracle": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "gold",
+          "declared_factors": [
+            "archetype",
+            "roles",
+            "topology",
+            "bindings"
+          ],
+          "changed_factors": [
+            "roles"
+          ],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "c01915f3aae407ba0bd9bce7760b331209ada539d2f6de87d9a02f06a0205e20",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.2111
+          },
+          "contamination_banner": "ORACLE_DIAGNOSTIC: plan_source=gold factors=['archetype', 'roles', 'topology', 'bindings'] use_mode=seed",
+          "record_hash": "b9bf47606d9bd5cfa2490cda58b041cc36b9356e6ac6d5d71288b01d0ce6bf84"
+        },
+        "shuffled": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "gold",
+          "declared_factors": [
+            "archetype",
+            "roles",
+            "topology",
+            "bindings"
+          ],
+          "changed_factors": [],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.2047
+          },
+          "contamination_banner": "ORACLE_DIAGNOSTIC: plan_source=gold factors=['archetype', 'roles', 'topology', 'bindings'] use_mode=seed",
+          "record_hash": "55cda0e0157943b3a37c7023d4dc643c0e9325fe8c25c840318aeda7b300998d"
+        },
+        "one_factor_archetype": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "gold",
+          "declared_factors": [
+            "archetype"
+          ],
+          "changed_factors": [],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.1707
+          },
+          "contamination_banner": "ORACLE_DIAGNOSTIC: plan_source=gold factors=['archetype'] use_mode=seed",
+          "record_hash": "30634e20c1fa7b048d490054ef01a70c9b4ce8938230efd1b1557c1421027a88"
+        },
+        "one_factor_roles": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "gold",
+          "declared_factors": [
+            "roles"
+          ],
+          "changed_factors": [
+            "roles"
+          ],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "c01915f3aae407ba0bd9bce7760b331209ada539d2f6de87d9a02f06a0205e20",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.1718
+          },
+          "contamination_banner": "ORACLE_DIAGNOSTIC: plan_source=gold factors=['roles'] use_mode=seed",
+          "record_hash": "a8c6ee1e37f54a80909a08d3dbec84631c97605b6a679d752f1c4ec11d4eb9d2"
+        },
+        "one_factor_topology": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "gold",
+          "declared_factors": [
+            "topology"
+          ],
+          "changed_factors": [],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.1522
+          },
+          "contamination_banner": "ORACLE_DIAGNOSTIC: plan_source=gold factors=['topology'] use_mode=seed",
+          "record_hash": "e3436e0d969d30cc8f5b2071bc44252c088067616e176ac3a4279a2e19574a0f"
+        },
+        "one_factor_bindings": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "gold",
+          "declared_factors": [
+            "bindings"
+          ],
+          "changed_factors": [],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.156
+          },
+          "contamination_banner": "ORACLE_DIAGNOSTIC: plan_source=gold factors=['bindings'] use_mode=seed",
+          "record_hash": "b7997b5669e1021744b0d6b7041e691a6a818bb41c5b9de136e4a8d93b99fd24"
+        }
+      }
+    },
+    {
+      "record_id": "program_aae8d0896e2ff984_neg_fcb979a410dfece8_adversarial_d694367a2372",
+      "skipped": false,
+      "designated_oracle_equals_shuffled_oracle": false,
+      "arms": {
+        "none": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "none",
+          "declared_factors": [],
+          "changed_factors": [],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.1907
+          },
+          "contamination_banner": null,
+          "record_hash": "673a990ed18f5932dfafc59c61f02567b7fa0ccfdf3fc91093b4294fe761b807"
+        },
+        "destructive": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "destructive",
+          "declared_factors": [
+            "archetype",
+            "roles",
+            "topology",
+            "bindings"
+          ],
+          "changed_factors": [
+            "archetype",
+            "roles",
+            "bindings"
+          ],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "752cf5cfe36114882b5fa1d287664956a226a0305478a865121f582681764edb",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.1976
+          },
+          "contamination_banner": null,
+          "record_hash": "5ebc892475c89b83daefe8708a297ce3960c801432f618982cb0b7b7fccce7a9"
+        },
+        "random": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "random",
+          "declared_factors": [
+            "archetype",
+            "roles",
+            "topology",
+            "bindings"
+          ],
+          "changed_factors": [
+            "archetype",
+            "roles",
+            "bindings"
+          ],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "8a2fc99f8f72198fde50edf00381317a2486cf3dcfb9f55691447fcaed5b94fd",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.2223
+          },
+          "contamination_banner": null,
+          "record_hash": "cdcbb858005cfb5560ef914b8cf2281cb6bc316e326c8f49a57f327fca4a788e"
+        },
+        "all_oracle": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "gold",
+          "declared_factors": [
+            "archetype",
+            "roles",
+            "topology",
+            "bindings"
+          ],
+          "changed_factors": [
+            "roles"
+          ],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "c01915f3aae407ba0bd9bce7760b331209ada539d2f6de87d9a02f06a0205e20",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.2036
+          },
+          "contamination_banner": "ORACLE_DIAGNOSTIC: plan_source=gold factors=['archetype', 'roles', 'topology', 'bindings'] use_mode=seed",
+          "record_hash": "b9bf47606d9bd5cfa2490cda58b041cc36b9356e6ac6d5d71288b01d0ce6bf84"
+        },
+        "shuffled": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "gold",
+          "declared_factors": [
+            "archetype",
+            "roles",
+            "topology",
+            "bindings"
+          ],
+          "changed_factors": [],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.2125
+          },
+          "contamination_banner": "ORACLE_DIAGNOSTIC: plan_source=gold factors=['archetype', 'roles', 'topology', 'bindings'] use_mode=seed",
+          "record_hash": "55cda0e0157943b3a37c7023d4dc643c0e9325fe8c25c840318aeda7b300998d"
+        },
+        "one_factor_archetype": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "gold",
+          "declared_factors": [
+            "archetype"
+          ],
+          "changed_factors": [],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.1453
+          },
+          "contamination_banner": "ORACLE_DIAGNOSTIC: plan_source=gold factors=['archetype'] use_mode=seed",
+          "record_hash": "30634e20c1fa7b048d490054ef01a70c9b4ce8938230efd1b1557c1421027a88"
+        },
+        "one_factor_roles": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "gold",
+          "declared_factors": [
+            "roles"
+          ],
+          "changed_factors": [
+            "roles"
+          ],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "c01915f3aae407ba0bd9bce7760b331209ada539d2f6de87d9a02f06a0205e20",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.158
+          },
+          "contamination_banner": "ORACLE_DIAGNOSTIC: plan_source=gold factors=['roles'] use_mode=seed",
+          "record_hash": "a8c6ee1e37f54a80909a08d3dbec84631c97605b6a679d752f1c4ec11d4eb9d2"
+        },
+        "one_factor_topology": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "gold",
+          "declared_factors": [
+            "topology"
+          ],
+          "changed_factors": [],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.146
+          },
+          "contamination_banner": "ORACLE_DIAGNOSTIC: plan_source=gold factors=['topology'] use_mode=seed",
+          "record_hash": "e3436e0d969d30cc8f5b2071bc44252c088067616e176ac3a4279a2e19574a0f"
+        },
+        "one_factor_bindings": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "gold",
+          "declared_factors": [
+            "bindings"
+          ],
+          "changed_factors": [],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.1747
+          },
+          "contamination_banner": "ORACLE_DIAGNOSTIC: plan_source=gold factors=['bindings'] use_mode=seed",
+          "record_hash": "b7997b5669e1021744b0d6b7041e691a6a818bb41c5b9de136e4a8d93b99fd24"
+        }
+      }
+    },
+    {
+      "record_id": "program_aae8d0896e2ff984_generation_7e07d2dc663e",
+      "skipped": false,
+      "designated_oracle_equals_shuffled_oracle": false,
+      "arms": {
+        "none": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "none",
+          "declared_factors": [],
+          "changed_factors": [],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.2429
+          },
+          "contamination_banner": null,
+          "record_hash": "673a990ed18f5932dfafc59c61f02567b7fa0ccfdf3fc91093b4294fe761b807"
+        },
+        "destructive": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "destructive",
+          "declared_factors": [
+            "archetype",
+            "roles",
+            "topology",
+            "bindings"
+          ],
+          "changed_factors": [
+            "archetype",
+            "roles",
+            "bindings"
+          ],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "752cf5cfe36114882b5fa1d287664956a226a0305478a865121f582681764edb",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.3212
+          },
+          "contamination_banner": null,
+          "record_hash": "5ebc892475c89b83daefe8708a297ce3960c801432f618982cb0b7b7fccce7a9"
+        },
+        "random": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "random",
+          "declared_factors": [
+            "archetype",
+            "roles",
+            "topology",
+            "bindings"
+          ],
+          "changed_factors": [
+            "archetype",
+            "roles",
+            "bindings"
+          ],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "8a2fc99f8f72198fde50edf00381317a2486cf3dcfb9f55691447fcaed5b94fd",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.35
+          },
+          "contamination_banner": null,
+          "record_hash": "cdcbb858005cfb5560ef914b8cf2281cb6bc316e326c8f49a57f327fca4a788e"
+        },
+        "all_oracle": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "gold",
+          "declared_factors": [
+            "archetype",
+            "roles",
+            "topology",
+            "bindings"
+          ],
+          "changed_factors": [
+            "roles"
+          ],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "c01915f3aae407ba0bd9bce7760b331209ada539d2f6de87d9a02f06a0205e20",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.2353
+          },
+          "contamination_banner": "ORACLE_DIAGNOSTIC: plan_source=gold factors=['archetype', 'roles', 'topology', 'bindings'] use_mode=seed",
+          "record_hash": "b9bf47606d9bd5cfa2490cda58b041cc36b9356e6ac6d5d71288b01d0ce6bf84"
+        },
+        "shuffled": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "gold",
+          "declared_factors": [
+            "archetype",
+            "roles",
+            "topology",
+            "bindings"
+          ],
+          "changed_factors": [],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.1922
+          },
+          "contamination_banner": "ORACLE_DIAGNOSTIC: plan_source=gold factors=['archetype', 'roles', 'topology', 'bindings'] use_mode=seed",
+          "record_hash": "55cda0e0157943b3a37c7023d4dc643c0e9325fe8c25c840318aeda7b300998d"
+        },
+        "one_factor_archetype": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "gold",
+          "declared_factors": [
+            "archetype"
+          ],
+          "changed_factors": [],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.1545
+          },
+          "contamination_banner": "ORACLE_DIAGNOSTIC: plan_source=gold factors=['archetype'] use_mode=seed",
+          "record_hash": "30634e20c1fa7b048d490054ef01a70c9b4ce8938230efd1b1557c1421027a88"
+        },
+        "one_factor_roles": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "gold",
+          "declared_factors": [
+            "roles"
+          ],
+          "changed_factors": [
+            "roles"
+          ],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "c01915f3aae407ba0bd9bce7760b331209ada539d2f6de87d9a02f06a0205e20",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.2289
+          },
+          "contamination_banner": "ORACLE_DIAGNOSTIC: plan_source=gold factors=['roles'] use_mode=seed",
+          "record_hash": "a8c6ee1e37f54a80909a08d3dbec84631c97605b6a679d752f1c4ec11d4eb9d2"
+        },
+        "one_factor_topology": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "gold",
+          "declared_factors": [
+            "topology"
+          ],
+          "changed_factors": [],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.1558
+          },
+          "contamination_banner": "ORACLE_DIAGNOSTIC: plan_source=gold factors=['topology'] use_mode=seed",
+          "record_hash": "e3436e0d969d30cc8f5b2071bc44252c088067616e176ac3a4279a2e19574a0f"
+        },
+        "one_factor_bindings": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "gold",
+          "declared_factors": [
+            "bindings"
+          ],
+          "changed_factors": [],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.1541
+          },
+          "contamination_banner": "ORACLE_DIAGNOSTIC: plan_source=gold factors=['bindings'] use_mode=seed",
+          "record_hash": "b7997b5669e1021744b0d6b7041e691a6a818bb41c5b9de136e4a8d93b99fd24"
+        }
+      }
+    },
+    {
+      "record_id": "program_aae8d0896e2ff984_neg_f2a8735fbc209007_adversarial_52e7dbea4e9d",
+      "skipped": false,
+      "designated_oracle_equals_shuffled_oracle": true,
+      "arms": {
+        "none": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "none",
+          "declared_factors": [],
+          "changed_factors": [],
+          "baseline_plan_hash": "c01915f3aae407ba0bd9bce7760b331209ada539d2f6de87d9a02f06a0205e20",
+          "intervened_plan_hash": "c01915f3aae407ba0bd9bce7760b331209ada539d2f6de87d9a02f06a0205e20",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.163
+          },
+          "contamination_banner": null,
+          "record_hash": "97943fc4157dbc59aea37446985d0969fc112e8c01c3ec203f58f5dd375e252a"
+        },
+        "destructive": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "destructive",
+          "declared_factors": [
+            "archetype",
+            "roles",
+            "topology",
+            "bindings"
+          ],
+          "changed_factors": [
+            "archetype",
+            "roles",
+            "bindings"
+          ],
+          "baseline_plan_hash": "c01915f3aae407ba0bd9bce7760b331209ada539d2f6de87d9a02f06a0205e20",
+          "intervened_plan_hash": "9ca4d6e2f4e39487a2d718d35a293df0e3173c999f3189a1949d230601ef6e08",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.1985
+          },
+          "contamination_banner": null,
+          "record_hash": "2cfb4bf107815f4e7e989b2b8dd03a6d27e709cac7e4bcdc7a8568898cad3235"
+        },
+        "random": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "random",
+          "declared_factors": [
+            "archetype",
+            "roles",
+            "topology",
+            "bindings"
+          ],
+          "changed_factors": [
+            "archetype",
+            "roles",
+            "bindings"
+          ],
+          "baseline_plan_hash": "c01915f3aae407ba0bd9bce7760b331209ada539d2f6de87d9a02f06a0205e20",
+          "intervened_plan_hash": "12ede5d71628c0d8139c35acb88a6b2ceb5789cf468bb6253b91e42b845d1e25",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.2206
+          },
+          "contamination_banner": null,
+          "record_hash": "62ccc056b4474f661581306814ecb87843a1e184ae1f024294e5ad03d29fec34"
+        },
+        "all_oracle": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "gold",
+          "declared_factors": [
+            "archetype",
+            "roles",
+            "topology",
+            "bindings"
+          ],
+          "changed_factors": [
+            "roles"
+          ],
+          "baseline_plan_hash": "c01915f3aae407ba0bd9bce7760b331209ada539d2f6de87d9a02f06a0205e20",
+          "intervened_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.1877
+          },
+          "contamination_banner": "ORACLE_DIAGNOSTIC: plan_source=gold factors=['archetype', 'roles', 'topology', 'bindings'] use_mode=seed",
+          "record_hash": "6c0ecf755b4408ef4cab3e1c639f29a43e7f72c42eb03b13f9452fa7e4e4c5a2"
+        },
+        "shuffled": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "gold",
+          "declared_factors": [
+            "archetype",
+            "roles",
+            "topology",
+            "bindings"
+          ],
+          "changed_factors": [
+            "roles"
+          ],
+          "baseline_plan_hash": "c01915f3aae407ba0bd9bce7760b331209ada539d2f6de87d9a02f06a0205e20",
+          "intervened_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.1932
+          },
+          "contamination_banner": "ORACLE_DIAGNOSTIC: plan_source=gold factors=['archetype', 'roles', 'topology', 'bindings'] use_mode=seed",
+          "record_hash": "6c0ecf755b4408ef4cab3e1c639f29a43e7f72c42eb03b13f9452fa7e4e4c5a2"
+        },
+        "one_factor_archetype": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "gold",
+          "declared_factors": [
+            "archetype"
+          ],
+          "changed_factors": [],
+          "baseline_plan_hash": "c01915f3aae407ba0bd9bce7760b331209ada539d2f6de87d9a02f06a0205e20",
+          "intervened_plan_hash": "c01915f3aae407ba0bd9bce7760b331209ada539d2f6de87d9a02f06a0205e20",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.1456
+          },
+          "contamination_banner": "ORACLE_DIAGNOSTIC: plan_source=gold factors=['archetype'] use_mode=seed",
+          "record_hash": "963c7c8421f537fa6a5b551b3c9220e81e50e4b5f1af417599133fe6a671fc77"
+        },
+        "one_factor_roles": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "gold",
+          "declared_factors": [
+            "roles"
+          ],
+          "changed_factors": [
+            "roles"
+          ],
+          "baseline_plan_hash": "c01915f3aae407ba0bd9bce7760b331209ada539d2f6de87d9a02f06a0205e20",
+          "intervened_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.1784
+          },
+          "contamination_banner": "ORACLE_DIAGNOSTIC: plan_source=gold factors=['roles'] use_mode=seed",
+          "record_hash": "5dc977587d4d1c76c82fd6348cabc642d5d7e7769ad348835600eeea4063f7b8"
+        },
+        "one_factor_topology": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "gold",
+          "declared_factors": [
+            "topology"
+          ],
+          "changed_factors": [],
+          "baseline_plan_hash": "c01915f3aae407ba0bd9bce7760b331209ada539d2f6de87d9a02f06a0205e20",
+          "intervened_plan_hash": "c01915f3aae407ba0bd9bce7760b331209ada539d2f6de87d9a02f06a0205e20",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.1421
+          },
+          "contamination_banner": "ORACLE_DIAGNOSTIC: plan_source=gold factors=['topology'] use_mode=seed",
+          "record_hash": "7973bf6df233ccaf1e3be3de6a62df3e5202f814955fb54dd10bb36596da9142"
+        },
+        "one_factor_bindings": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "gold",
+          "declared_factors": [
+            "bindings"
+          ],
+          "changed_factors": [],
+          "baseline_plan_hash": "c01915f3aae407ba0bd9bce7760b331209ada539d2f6de87d9a02f06a0205e20",
+          "intervened_plan_hash": "c01915f3aae407ba0bd9bce7760b331209ada539d2f6de87d9a02f06a0205e20",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.152
+          },
+          "contamination_banner": "ORACLE_DIAGNOSTIC: plan_source=gold factors=['bindings'] use_mode=seed",
+          "record_hash": "b5d337c1743e6940b2ed97695284ec0de89bef529d58bb955afa75b43d05725c"
+        }
+      }
+    },
+    {
+      "record_id": "program_aae8d0896e2ff984_generation_7e07d2dc663e",
+      "skipped": false,
+      "designated_oracle_equals_shuffled_oracle": false,
+      "arms": {
+        "none": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "none",
+          "declared_factors": [],
+          "changed_factors": [],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.1681
+          },
+          "contamination_banner": null,
+          "record_hash": "673a990ed18f5932dfafc59c61f02567b7fa0ccfdf3fc91093b4294fe761b807"
+        },
+        "destructive": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "destructive",
+          "declared_factors": [
+            "archetype",
+            "roles",
+            "topology",
+            "bindings"
+          ],
+          "changed_factors": [
+            "archetype",
+            "roles",
+            "bindings"
+          ],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "752cf5cfe36114882b5fa1d287664956a226a0305478a865121f582681764edb",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.1874
+          },
+          "contamination_banner": null,
+          "record_hash": "5ebc892475c89b83daefe8708a297ce3960c801432f618982cb0b7b7fccce7a9"
+        },
+        "random": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "random",
+          "declared_factors": [
+            "archetype",
+            "roles",
+            "topology",
+            "bindings"
+          ],
+          "changed_factors": [
+            "archetype",
+            "roles",
+            "bindings"
+          ],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "8a2fc99f8f72198fde50edf00381317a2486cf3dcfb9f55691447fcaed5b94fd",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.2134
+          },
+          "contamination_banner": null,
+          "record_hash": "cdcbb858005cfb5560ef914b8cf2281cb6bc316e326c8f49a57f327fca4a788e"
+        },
+        "all_oracle": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "gold",
+          "declared_factors": [
+            "archetype",
+            "roles",
+            "topology",
+            "bindings"
+          ],
+          "changed_factors": [
+            "roles"
+          ],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "c01915f3aae407ba0bd9bce7760b331209ada539d2f6de87d9a02f06a0205e20",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.1817
+          },
+          "contamination_banner": "ORACLE_DIAGNOSTIC: plan_source=gold factors=['archetype', 'roles', 'topology', 'bindings'] use_mode=seed",
+          "record_hash": "b9bf47606d9bd5cfa2490cda58b041cc36b9356e6ac6d5d71288b01d0ce6bf84"
+        },
+        "shuffled": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "gold",
+          "declared_factors": [
+            "archetype",
+            "roles",
+            "topology",
+            "bindings"
+          ],
+          "changed_factors": [],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.1888
+          },
+          "contamination_banner": "ORACLE_DIAGNOSTIC: plan_source=gold factors=['archetype', 'roles', 'topology', 'bindings'] use_mode=seed",
+          "record_hash": "55cda0e0157943b3a37c7023d4dc643c0e9325fe8c25c840318aeda7b300998d"
+        },
+        "one_factor_archetype": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "gold",
+          "declared_factors": [
+            "archetype"
+          ],
+          "changed_factors": [],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.1962
+          },
+          "contamination_banner": "ORACLE_DIAGNOSTIC: plan_source=gold factors=['archetype'] use_mode=seed",
+          "record_hash": "30634e20c1fa7b048d490054ef01a70c9b4ce8938230efd1b1557c1421027a88"
+        },
+        "one_factor_roles": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "gold",
+          "declared_factors": [
+            "roles"
+          ],
+          "changed_factors": [
+            "roles"
+          ],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "c01915f3aae407ba0bd9bce7760b331209ada539d2f6de87d9a02f06a0205e20",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.1954
+          },
+          "contamination_banner": "ORACLE_DIAGNOSTIC: plan_source=gold factors=['roles'] use_mode=seed",
+          "record_hash": "a8c6ee1e37f54a80909a08d3dbec84631c97605b6a679d752f1c4ec11d4eb9d2"
+        },
+        "one_factor_topology": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "gold",
+          "declared_factors": [
+            "topology"
+          ],
+          "changed_factors": [],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.1459
+          },
+          "contamination_banner": "ORACLE_DIAGNOSTIC: plan_source=gold factors=['topology'] use_mode=seed",
+          "record_hash": "e3436e0d969d30cc8f5b2071bc44252c088067616e176ac3a4279a2e19574a0f"
+        },
+        "one_factor_bindings": {
+          "schema_version": "plan_intervention_record/v1",
+          "plan_source": "gold",
+          "declared_factors": [
+            "bindings"
+          ],
+          "changed_factors": [],
+          "baseline_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "intervened_plan_hash": "33229e4c01a77b4945f56250f1a1c78921accc1b1c4955ac641b627ef01c90ac",
+          "identity": {
+            "model_id": null,
+            "request_fingerprint": null,
+            "candidate_budget": null,
+            "search_budget": null,
+            "seed": 0,
+            "verifier_version": null,
+            "hardware_id": null
+          },
+          "downstream_decision": {},
+          "quality_metrics": {},
+          "compute": {
+            "apply_ms": 0.1509
+          },
+          "contamination_banner": "ORACLE_DIAGNOSTIC: plan_source=gold factors=['bindings'] use_mode=seed",
+          "record_hash": "b7997b5669e1021744b0d6b7041e691a6a818bb41c5b9de136e4a8d93b99fd24"
+        }
+      }
+    }
+  ],
+  "scope_disclaimer": "Fixture-scale oracle-intervention evidence over a small pool of real, cleaned (VCE-008-audited) baseline/oracle plan pairs. No model, verifier, or search cost is measured -- 'compute' fields are pure in-process apply() wall-clock. No production-speedup or model-quality claim is made.",
+  "manifest_sha256": "5308391057f94b867b3efa14963339ef712b83abfbc4ac24fa34583b54fec76e",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "159429f42328fc5362fe9ee5297ff98b8c2622d1",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v151"
+    },
+    "stamped_at": "2026-08-09T05:57:16.753811+00:00"
+  }
+}
