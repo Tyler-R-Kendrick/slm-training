@@ -304,7 +304,7 @@ def replay_arm(
     discovery: tuple[DecodeStatsRecordV1, ...] = (),
 ) -> dict[str, Any]:
     if arm_id == "hand_threshold":
-        fn: Callable[[DecodeStatsRecordV1], ControllerRecommendationV1] = (
+        fn: Callable[[DecodeStatsRecordV1], ControllerRecommendationV1] = (  # noqa: E731
             lambda r: hand_threshold_recommend(features_from_decode_record(r))
         )
     elif arm_id == "linear_scorer":

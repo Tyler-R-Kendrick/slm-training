@@ -1233,6 +1233,11 @@
         {
           "version": "v23",
           "date": "2026-08-10",
+          "note": "no-bump: remove an unused local variable (ruff F841, `original = _ss._kind_of` in test_try_load_fail_closed_on_divergence -- monkeypatch handles teardown, the captured reference was never read) -- pure lint fix, no behavior change."
+        },
+        {
+          "version": "v23",
+          "date": "2026-08-10",
           "note": "no-bump: RSP-003/SLM-485 adds packed_semantic_summary.py request-independent semantic kind summary under the completion-kernel seam (consumed by harness.experiments.slm485_rsp003_static_summary)."
         },
         {
@@ -17257,6 +17262,11 @@
         {
           "version": "v1",
           "date": "2026-08-10",
+          "note": "no-bump: add a `# noqa: E731` marker to the hand_threshold arm's multi-line lambda assignment (ruff E731), matching the sibling arms in the same function that already carry it -- pure lint fix, no behavior change."
+        },
+        {
+          "version": "v1",
+          "date": "2026-08-10",
           "note": "SIE-008/SLM-484: fixture-scale EXP-SR-5 value-of-compute controller campaign composing SIE-007 compute_state_controller; claim_class=fixture; no promotion."
         }
       ]
@@ -17292,6 +17302,11 @@
         "docs/design/iter-slm488-rsp-001-cegis-repair-20260810.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-10",
+          "note": "no-bump: remove an unused import (ruff F401, `RepairPolicyName as TopologyRepairPolicy` from conflict_slice_repair, never referenced in this module) -- pure lint fix, no behavior change."
+        },
         {
           "version": "v1",
           "date": "2026-08-10",
