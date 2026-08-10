@@ -1,0 +1,39 @@
+{
+  "adopt_optional_count": 0,
+  "adopt_primary_count": 0,
+  "canonical_evidence": {
+    "json": "docs/design/iter-slm490-rsp-009-disposition-20260810.json",
+    "markdown": "docs/design/iter-slm490-rsp-009-disposition-20260810.md"
+  },
+  "disposition_counts": {
+    "blocked": 1,
+    "reject": 3,
+    "retain_diagnostic": 7,
+    "revise_and_retest": 2
+  },
+  "executive_finding": "RSP-009 audited all twelve EXP-SR catalogue families (exp-sr-1..12) using committed sibling evidence. OpenUI-scoped rows are separated from symbolic-pack rows and from the dual-scope EXP-SR-12 portability certification. No row satisfies adopt_primary or adopt_optional under SGS-009 fail-closed rules on fixture/scratch/blocked evidence — champion pointers stay empty.",
+  "experiment_id": "slm490-rsp-009-disposition",
+  "follow_up_issues": [
+    "SLM-491",
+    "SLM-492"
+  ],
+  "linear_issue": "SLM-490",
+  "matrix_set": "slm490_rsp009_disposition",
+  "rejected_or_blocked_ids": [
+    "exp-sr-2",
+    "exp-sr-5",
+    "exp-sr-10",
+    "exp-sr-11"
+  ],
+  "replay": "python -m scripts.run_rsp009_disposition --mode fixture",
+  "schema": "exp_sr_disposition_pointer/v1",
+  "version_stamp": {
+    "code_commit": "389e5189d2a37e304d3e16889c936a7b39df3e19",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.slm490_rsp009_disposition": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-11T00:10:00+00:00"
+  }
+}

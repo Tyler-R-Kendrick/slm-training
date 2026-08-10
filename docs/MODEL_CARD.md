@@ -391,6 +391,24 @@ zero heads/objectives/actions) unchanged. Recommendation:
 advanced-operator default-on change follows. Full evidence:
 [`dsh5-12-advanced-operator-disposition-20260727-local/summary.md`](design/dsh5-12-advanced-operator-disposition-20260727-local/summary.md).
 
+### RSP-009 EXP-SR cross-experiment disposition (SLM-490)
+
+RSP-009 closes the EXP-SR-1..12 catalogue initiative with a machine-auditable
+SGS-009 disposition over committed sibling evidence. Canonical pointer:
+[`exp-sr-disposition-20260810.md`](design/exp-sr-disposition-20260810.md)
+(full structured report:
+[`iter-slm490-rsp-009-disposition-20260810.md`](design/iter-slm490-rsp-009-disposition-20260810.md);
+reproduce with `python -m scripts.run_rsp009_disposition --mode fixture`).
+
+- 13 disposition rows across 12 catalogue families (EXP-SR-12 split by pack):
+  7 `retain_diagnostic`, 3 `reject`, 2 `revise_and_retest`, 1 `blocked`
+  (`exp-sr-11` PySR/SRBench external-blocked — not reject).
+- **Zero** `adopt_primary` / `adopt_optional`; champion pointers stay empty.
+  Fixture/scratch/blocked evidence cannot adopt under SGS-009 fail-closed rules.
+- **No checkpoint roster, default, promotion, or ship claim changed.**
+- Open follow-ups: **SLM-491** (real EXP-SR-3 external-judge/human calibration)
+  and **SLM-492** (real EXP-SR-11 PySR/SRBench run).
+
 Update the table in place when a checkpoint is written or superseded. Keep
 invalidated / superseded rows in **Checkpoint history** below.
 

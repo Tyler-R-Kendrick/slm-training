@@ -8760,6 +8760,11 @@
       "history": [
         {
           "version": "v3",
+          "date": "2026-08-10",
+          "note": "no-bump: SLM-490 closeout adds RSP-009 EXP-SR disposition subsection to MODEL_CARD/research-lineage and README link; spectral disposition policy unchanged."
+        },
+        {
+          "version": "v3",
           "date": "2026-08-09",
           "note": "no-bump: record scheduled loop continuous-openui-scheduled-tvb00f continuous-loop-20260809-continuous-openui-schedu-4b132389-c5's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
         },
@@ -17399,10 +17404,17 @@
         "src/slm_training/harnesses/experiments/rsp009_cross_experiment_disposition.py",
         "scripts/run_rsp009_disposition.py",
         "tests/test_harnesses/experiments/test_rsp009_cross_experiment_disposition.py",
+        "docs/design/exp-sr-disposition-20260810.json",
+        "docs/design/exp-sr-disposition-20260810.md",
         "docs/design/iter-slm490-rsp-009-disposition-20260810.json",
         "docs/design/iter-slm490-rsp-009-disposition-20260810.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-10",
+          "note": "no-bump: SLM-490 closeout adds stable exp-sr-disposition-20260810.{md,json} alias pointers and README/MODEL_CARD/research-lineage links; harness output unchanged."
+        },
         {
           "version": "v1",
           "date": "2026-08-10",
