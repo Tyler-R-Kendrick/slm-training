@@ -1,0 +1,99 @@
+{
+  "kind": "rsp007_pysr_srbench_fixture/v1",
+  "claim_class": "diagnostic",
+  "promotion": false,
+  "no_sota_claims": true,
+  "environment": {
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+    "machine": "aarch64",
+    "python": "3.12.3"
+  },
+  "recipe": {
+    "command": [
+      "python",
+      "-m",
+      "scripts.run_rsp007_pysr_srbench",
+      "--mode",
+      "fixture",
+      "--seed",
+      "0"
+    ],
+    "docs_path": "docs/design/iter-slm486-rsp-007-pysr-srbench-20260810.json",
+    "device": "cpu",
+    "honesty_mode": "matched_pysr_srbench_fixture",
+    "matrix_set": "slm486_rsp007_pysr_srbench"
+  },
+  "catalogue_id": "exp-sr-11",
+  "catalogue_manifest_sha256": "16aeb61784360605429a4a61849fe818d2f4fe53f7061c15aeaca218055061b9",
+  "manifest_sha256": "dc80cece8d6b4965a62b4cb28f541a977e014f667ff86536c362831f67e70530",
+  "seed": 0,
+  "problem_fingerprint": "e24faef56204128c544fc090576c1aa823b7ae2a6a2f8714dfcb9a323e755bb7",
+  "matched_iteration_budget": 100,
+  "env_probe": {
+    "tool_name": "pysr",
+    "tool_version": "0.19.4",
+    "python_version": "3.12.3",
+    "manifest_fingerprint": "bf60c4f6e8ec22aa1bab4688606479616f724d10004d3823aed7bcf288821800",
+    "pysr_import_available": false,
+    "live_execution_ready": false
+  },
+  "pack_enumerate_matched": {
+    "arm_id": "pack_enumerate_matched",
+    "status": "complete",
+    "evidence": "pack_enumerate",
+    "validation_loss": 0.0,
+    "optimality_claim": "exhaustive_under_declared_bounds",
+    "bound_exhausted": true,
+    "states_generated": 74,
+    "unique_canonical_states": 40,
+    "matched_iteration_budget": 100,
+    "max_depth": 3,
+    "max_nodes": 5
+  },
+  "pysr_adapter_matched": {
+    "arm_id": "pysr_adapter_matched",
+    "status": "incomplete",
+    "evidence": "external-blocked",
+    "adapter_status": "external_blocked",
+    "validation_loss": null,
+    "error_detail": "PySR/SRBench live environment unavailable; fixture records external-blocked evidence only",
+    "manifest_fingerprint": "bf60c4f6e8ec22aa1bab4688606479616f724d10004d3823aed7bcf288821800",
+    "adapter_input_fingerprint": "bd0a0360f9d63487d26ef3ec5dce0ea611b2848411bdfc00c984822faeb2d43b",
+    "matched_iteration_budget": 100,
+    "env_probe": {
+      "tool_name": "pysr",
+      "tool_version": "0.19.4",
+      "python_version": "3.12.3",
+      "manifest_fingerprint": "bf60c4f6e8ec22aa1bab4688606479616f724d10004d3823aed7bcf288821800",
+      "pysr_import_available": false,
+      "live_execution_ready": false
+    },
+    "dry_run": true
+  },
+  "gap_analysis": {
+    "srbench_matched_score_gap": null,
+    "evidence": "external-blocked",
+    "complete": false,
+    "pack_validation_loss": 0.0,
+    "pysr_validation_loss": null,
+    "note": "External PySR/SRBench arm incomplete \u2014 gap not scored as a benchmark loss."
+  },
+  "srbench_matched_score_gap": null,
+  "evidence": "external-blocked",
+  "complete": false,
+  "kill_threshold": 0.0,
+  "kill_operator": "gt",
+  "kill_gate_triggered": false,
+  "scope_disclaimer": "Fixture-scale EXP-SR-11 matched-budget wiring over SRP-010 enumerator and SRP-011 PySR adapter on a tiny SRBench-compatible problem. External PySR/Julia absence yields evidence='external-blocked' incomplete results \u2014 never benchmark losses or SOTA claims. claim_class=diagnostic; never promotion_candidate/ship_gate.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "3a97a85fbf86b9992db580bf4e985bec36fd1648",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v160",
+      "harness.experiments.slm486_rsp007_pysr": "v1"
+    },
+    "stamped_at": "2026-08-10T21:48:55.064654+00:00"
+  },
+  "external_blocked_note": "PySR/SRBench arm incomplete \u2014 not scored as a benchmark loss."
+}
