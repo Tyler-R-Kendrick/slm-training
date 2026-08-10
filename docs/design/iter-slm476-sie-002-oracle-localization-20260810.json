@@ -1,0 +1,403 @@
+{
+  "kind": "sie002_oracle_localization_fixture/v1",
+  "claim_class": "fixture",
+  "promotion": false,
+  "recipe": {
+    "command": [
+      "python",
+      "-m",
+      "scripts.run_sie002_oracle_localization",
+      "--mode",
+      "fixture",
+      "--n-baseline-plans",
+      "5",
+      "--pool-size",
+      "40",
+      "--seeds",
+      "0",
+      "1",
+      "2"
+    ],
+    "docs_path": "docs/design/iter-slm476-sie-002-oracle-localization-20260810.json",
+    "device": "cpu",
+    "honesty_mode": "oracle_diagnostic"
+  },
+  "catalogue_id": "exp-sr-1",
+  "catalogue_manifest_sha256": "9aff06964bd3234eaed93272783ab626618a6412ca1def4e5dc858e283b84a3b",
+  "manifest_sha256": "4fb182f0897a2d3afafb77df3776851685ca1d61ee790d3798aef6571c7d98dd",
+  "dataset_id": "openui_hard_valid_v1",
+  "leakage_audit": {
+    "dataset_id": "openui_hard_valid_v1",
+    "passed": true,
+    "quarantined_count": 61,
+    "quarantined_record_ids": [
+      "program_07b5a65c60749067_generation_3489cffd97a4",
+      "program_07b5a65c60749067_generation_3489cffd97a4",
+      "program_07b5a65c60749067_generation_3489cffd97a4",
+      "program_07b5a65c60749067_neg_1c65a3c969b610ff_adversarial_80d6bfa960fd",
+      "program_112e5484babad16c_generation_a20cfdd4d27d",
+      "program_112e5484babad16c_generation_a20cfdd4d27d",
+      "program_112e5484babad16c_generation_a20cfdd4d27d",
+      "program_112e5484babad16c_generation_a20cfdd4d27d",
+      "program_112e5484babad16c_neg_18082a081c803f27_adversarial_f590a7596162",
+      "program_112e5484babad16c_neg_2553dc358059ac39_adversarial_c8bae729079c",
+      "program_112e5484babad16c_neg_492e894eae1f3386_adversarial_2f1bff950e80",
+      "program_112e5484babad16c_neg_e4febf7e87b698d8_adversarial_06821179388c",
+      "program_2ca94efa87d2f008_neg_3cebceb070685403_adversarial_0f743f9b0003",
+      "program_350034d3767617f6_generation_9a203d85f2fe",
+      "program_350034d3767617f6_generation_9a203d85f2fe",
+      "program_350034d3767617f6_generation_9a203d85f2fe",
+      "program_350034d3767617f6_neg_e49fcf13bad677f2_adversarial_c5979106f704",
+      "program_350034d3767617f6_neg_e9b7aa7fe9e216a2_adversarial_7fd83d3209c0",
+      "program_3877ceac7a6c8ccb_neg_413f2ae7a81e6a8a_adversarial_60934ad44c3a",
+      "program_66814026fe84786c_generation_d878d3e7efca",
+      "program_66814026fe84786c_generation_d878d3e7efca",
+      "program_66814026fe84786c_generation_d878d3e7efca",
+      "program_66814026fe84786c_generation_d878d3e7efca",
+      "program_66814026fe84786c_neg_1dfc34c1b295265f_adversarial_5c4d1790fb97",
+      "program_66814026fe84786c_neg_41c0a1656a3c46e6_adversarial_3be6092ca475",
+      "program_66814026fe84786c_neg_8a317ba2d88f39f6_adversarial_51a48a6f49dc",
+      "program_66814026fe84786c_neg_a1bed8064bf91d53_adversarial_9f09d9c6abd4",
+      "program_6bdd91c833263a38_generation_61e7d2288a25",
+      "program_6bdd91c833263a38_generation_61e7d2288a25",
+      "program_6bdd91c833263a38_generation_61e7d2288a25",
+      "program_6bdd91c833263a38_generation_61e7d2288a25",
+      "program_6bdd91c833263a38_neg_1a00f7429ca2f798_adversarial_159e88fd7475",
+      "program_6bdd91c833263a38_neg_6517885498187b21_adversarial_462c85a46bb2",
+      "program_6bdd91c833263a38_neg_887319b24a6cbdef_adversarial_bcd167544953",
+      "program_6bdd91c833263a38_neg_916d40ecaa1dfcfd_adversarial_3d522d70d78a",
+      "program_954a26fcd1b00b17_generation_c1dd2fdef133",
+      "program_954a26fcd1b00b17_generation_c1dd2fdef133",
+      "program_954a26fcd1b00b17_generation_c1dd2fdef133",
+      "program_954a26fcd1b00b17_generation_c1dd2fdef133",
+      "program_954a26fcd1b00b17_neg_289a4e88d9faf2a2_adversarial_14ce9b3d912f",
+      "program_954a26fcd1b00b17_neg_2d4919c2302e619a_adversarial_48530e6f219a",
+      "program_954a26fcd1b00b17_neg_8d94a96bf3ed6890_adversarial_fafd1a532709",
+      "program_954a26fcd1b00b17_neg_91eaafbe94b036cc_adversarial_fd14d2589ffa",
+      "program_bbfed24d48d4e2ad_generation_7c48c669351c",
+      "program_bbfed24d48d4e2ad_generation_7c48c669351c",
+      "program_bbfed24d48d4e2ad_generation_7c48c669351c",
+      "program_bbfed24d48d4e2ad_generation_7c48c669351c",
+      "program_bbfed24d48d4e2ad_neg_010bc0556cf355a2_adversarial_59d934c4c104",
+      "program_bbfed24d48d4e2ad_neg_05dd38bf3ef7b8c5_adversarial_e4a1c526f370",
+      "program_bbfed24d48d4e2ad_neg_2c3191038e679a1a_adversarial_ed1556f7401a",
+      "program_bbfed24d48d4e2ad_neg_3c580e7314cff5b3_adversarial_54ac7f16b073",
+      "program_cef12e77b49803ae_generation_8097cfeaec23",
+      "program_cef12e77b49803ae_generation_8097cfeaec23",
+      "program_cef12e77b49803ae_generation_8097cfeaec23",
+      "program_cef12e77b49803ae_generation_8097cfeaec23",
+      "program_cef12e77b49803ae_neg_393d4ebe07ca8063_adversarial_07bc597382c2",
+      "program_cef12e77b49803ae_neg_53660d9e9eac6ab4_adversarial_1e4794c0e8e2",
+      "program_cef12e77b49803ae_neg_8bf69496e9e27e3d_adversarial_819b5299cc0d",
+      "program_cef12e77b49803ae_neg_d8c86e27136f5226_adversarial_2301b71e873a",
+      "program_d997d69a315a28bc_neg_391b8515e3963ec4_adversarial_4dd10e1d2d8c",
+      "program_f77fd08fb27c21a5_neg_bd7f0810876d1135_adversarial_f777cf134be9"
+    ],
+    "scope": "VCE-008 contrast_corpus_leakage_report; quarantined excluded from pool"
+  },
+  "n_baseline_plans": 5,
+  "pool_size": 40,
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "oracle_factor_localization_precision": 1.0,
+  "analysis": {
+    "n_active_baselines": 15,
+    "n_skipped": 0,
+    "oracle_factor_localization_precision": 1.0,
+    "n_localization_scored": 11,
+    "declared_factor_fidelity_rate": 1.0,
+    "no_op_control_holds": true,
+    "arm_change_rates": {
+      "none": 0.0,
+      "one_factor_archetype": 0.0,
+      "one_factor_roles": 0.466667,
+      "one_factor_topology": 0.0,
+      "one_factor_bindings": 0.266667,
+      "all_oracle": 0.733333,
+      "shuffled": 0.733333,
+      "destructive": 1.0,
+      "random": 1.0
+    },
+    "per_factor": {
+      "archetype": {
+        "arm_id": "one_factor_archetype",
+        "n": 15,
+        "change_rate": 0.0,
+        "mechanical_one_factor_fidelity": 1.0,
+        "ceiling_presence_n": 0,
+        "ceiling_recovery_n": 0,
+        "ceiling_recovery_rate": 0.0
+      },
+      "roles": {
+        "arm_id": "one_factor_roles",
+        "n": 15,
+        "change_rate": 0.466667,
+        "mechanical_one_factor_fidelity": 1.0,
+        "ceiling_presence_n": 7,
+        "ceiling_recovery_n": 7,
+        "ceiling_recovery_rate": 1.0
+      },
+      "topology": {
+        "arm_id": "one_factor_topology",
+        "n": 15,
+        "change_rate": 0.0,
+        "mechanical_one_factor_fidelity": 1.0,
+        "ceiling_presence_n": 0,
+        "ceiling_recovery_n": 0,
+        "ceiling_recovery_rate": 0.0
+      },
+      "bindings": {
+        "arm_id": "one_factor_bindings",
+        "n": 15,
+        "change_rate": 0.266667,
+        "mechanical_one_factor_fidelity": 1.0,
+        "ceiling_presence_n": 4,
+        "ceiling_recovery_n": 4,
+        "ceiling_recovery_rate": 1.0
+      }
+    },
+    "out_of_scope_fixture": [
+      "neural_forwards",
+      "exact_search_work",
+      "behavioral_cvar",
+      "legal_support_parity_under_decode"
+    ]
+  },
+  "authorization": {
+    "authorized_factors": [
+      "roles",
+      "bindings"
+    ],
+    "authorization_reasons": {
+      "archetype": "one_factor_change_rate=0.0 < minimum_effect=0.03",
+      "roles": "authorized_fixture_scale_oracle_localization",
+      "topology": "one_factor_change_rate=0.0 < minimum_effect=0.03",
+      "bindings": "authorized_fixture_scale_oracle_localization"
+    },
+    "falsifier_holds": false,
+    "falsifier_note": "One or more factors cleared the fixture authorization bar; still claim_class=fixture \u2014 not a promotion."
+  },
+  "authorized_factors": [
+    "roles",
+    "bindings"
+  ],
+  "seed_runs": [
+    {
+      "seed": 0,
+      "analysis": {
+        "n_active_baselines": 5,
+        "n_skipped": 0,
+        "oracle_factor_localization_precision": 1.0,
+        "n_localization_scored": 5,
+        "declared_factor_fidelity_rate": 1.0,
+        "no_op_control_holds": true,
+        "arm_change_rates": {
+          "none": 0.0,
+          "one_factor_archetype": 0.0,
+          "one_factor_roles": 1.0,
+          "one_factor_topology": 0.0,
+          "one_factor_bindings": 0.0,
+          "all_oracle": 1.0,
+          "shuffled": 0.2,
+          "destructive": 1.0,
+          "random": 1.0
+        },
+        "per_factor": {
+          "archetype": {
+            "arm_id": "one_factor_archetype",
+            "n": 5,
+            "change_rate": 0.0,
+            "mechanical_one_factor_fidelity": 1.0,
+            "ceiling_presence_n": 0,
+            "ceiling_recovery_n": 0,
+            "ceiling_recovery_rate": 0.0
+          },
+          "roles": {
+            "arm_id": "one_factor_roles",
+            "n": 5,
+            "change_rate": 1.0,
+            "mechanical_one_factor_fidelity": 1.0,
+            "ceiling_presence_n": 5,
+            "ceiling_recovery_n": 5,
+            "ceiling_recovery_rate": 1.0
+          },
+          "topology": {
+            "arm_id": "one_factor_topology",
+            "n": 5,
+            "change_rate": 0.0,
+            "mechanical_one_factor_fidelity": 1.0,
+            "ceiling_presence_n": 0,
+            "ceiling_recovery_n": 0,
+            "ceiling_recovery_rate": 0.0
+          },
+          "bindings": {
+            "arm_id": "one_factor_bindings",
+            "n": 5,
+            "change_rate": 0.0,
+            "mechanical_one_factor_fidelity": 1.0,
+            "ceiling_presence_n": 0,
+            "ceiling_recovery_n": 0,
+            "ceiling_recovery_rate": 0.0
+          }
+        },
+        "out_of_scope_fixture": [
+          "neural_forwards",
+          "exact_search_work",
+          "behavioral_cvar",
+          "legal_support_parity_under_decode"
+        ]
+      },
+      "baselines_attempted": 5,
+      "baselines_skipped": 0
+    },
+    {
+      "seed": 1,
+      "analysis": {
+        "n_active_baselines": 5,
+        "n_skipped": 0,
+        "oracle_factor_localization_precision": 1.0,
+        "n_localization_scored": 1,
+        "declared_factor_fidelity_rate": 1.0,
+        "no_op_control_holds": true,
+        "arm_change_rates": {
+          "none": 0.0,
+          "one_factor_archetype": 0.0,
+          "one_factor_roles": 0.2,
+          "one_factor_topology": 0.0,
+          "one_factor_bindings": 0.0,
+          "all_oracle": 0.2,
+          "shuffled": 1.0,
+          "destructive": 1.0,
+          "random": 1.0
+        },
+        "per_factor": {
+          "archetype": {
+            "arm_id": "one_factor_archetype",
+            "n": 5,
+            "change_rate": 0.0,
+            "mechanical_one_factor_fidelity": 1.0,
+            "ceiling_presence_n": 0,
+            "ceiling_recovery_n": 0,
+            "ceiling_recovery_rate": 0.0
+          },
+          "roles": {
+            "arm_id": "one_factor_roles",
+            "n": 5,
+            "change_rate": 0.2,
+            "mechanical_one_factor_fidelity": 1.0,
+            "ceiling_presence_n": 1,
+            "ceiling_recovery_n": 1,
+            "ceiling_recovery_rate": 1.0
+          },
+          "topology": {
+            "arm_id": "one_factor_topology",
+            "n": 5,
+            "change_rate": 0.0,
+            "mechanical_one_factor_fidelity": 1.0,
+            "ceiling_presence_n": 0,
+            "ceiling_recovery_n": 0,
+            "ceiling_recovery_rate": 0.0
+          },
+          "bindings": {
+            "arm_id": "one_factor_bindings",
+            "n": 5,
+            "change_rate": 0.0,
+            "mechanical_one_factor_fidelity": 1.0,
+            "ceiling_presence_n": 0,
+            "ceiling_recovery_n": 0,
+            "ceiling_recovery_rate": 0.0
+          }
+        },
+        "out_of_scope_fixture": [
+          "neural_forwards",
+          "exact_search_work",
+          "behavioral_cvar",
+          "legal_support_parity_under_decode"
+        ]
+      },
+      "baselines_attempted": 5,
+      "baselines_skipped": 0
+    },
+    {
+      "seed": 2,
+      "analysis": {
+        "n_active_baselines": 5,
+        "n_skipped": 0,
+        "oracle_factor_localization_precision": 1.0,
+        "n_localization_scored": 5,
+        "declared_factor_fidelity_rate": 1.0,
+        "no_op_control_holds": true,
+        "arm_change_rates": {
+          "none": 0.0,
+          "one_factor_archetype": 0.0,
+          "one_factor_roles": 0.2,
+          "one_factor_topology": 0.0,
+          "one_factor_bindings": 0.8,
+          "all_oracle": 1.0,
+          "shuffled": 1.0,
+          "destructive": 1.0,
+          "random": 1.0
+        },
+        "per_factor": {
+          "archetype": {
+            "arm_id": "one_factor_archetype",
+            "n": 5,
+            "change_rate": 0.0,
+            "mechanical_one_factor_fidelity": 1.0,
+            "ceiling_presence_n": 0,
+            "ceiling_recovery_n": 0,
+            "ceiling_recovery_rate": 0.0
+          },
+          "roles": {
+            "arm_id": "one_factor_roles",
+            "n": 5,
+            "change_rate": 0.2,
+            "mechanical_one_factor_fidelity": 1.0,
+            "ceiling_presence_n": 1,
+            "ceiling_recovery_n": 1,
+            "ceiling_recovery_rate": 1.0
+          },
+          "topology": {
+            "arm_id": "one_factor_topology",
+            "n": 5,
+            "change_rate": 0.0,
+            "mechanical_one_factor_fidelity": 1.0,
+            "ceiling_presence_n": 0,
+            "ceiling_recovery_n": 0,
+            "ceiling_recovery_rate": 0.0
+          },
+          "bindings": {
+            "arm_id": "one_factor_bindings",
+            "n": 5,
+            "change_rate": 0.8,
+            "mechanical_one_factor_fidelity": 1.0,
+            "ceiling_presence_n": 4,
+            "ceiling_recovery_n": 4,
+            "ceiling_recovery_rate": 1.0
+          }
+        },
+        "out_of_scope_fixture": [
+          "neural_forwards",
+          "exact_search_work",
+          "behavioral_cvar",
+          "legal_support_parity_under_decode"
+        ]
+      },
+      "baselines_attempted": 5,
+      "baselines_skipped": 0
+    }
+  ],
+  "scope_disclaimer": "Fixture-scale factor-wise oracle localization over a VCE-008-cleaned openui_hard_valid_v1 pool. Arms generated exclusively via VCE-009's generate_baseline_arms (no fork). No model, verifier search, or GPU cost is measured \u2014 plan-hash / changed-factor proxies only. claim_class=fixture; authorized_factors gate later predictor work and never promote a checkpoint.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "ff683aff4d57fe639f1cca9908de558bc59179be",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v157"
+    },
+    "stamped_at": "2026-08-10T19:47:49.224606+00:00"
+  }
+}

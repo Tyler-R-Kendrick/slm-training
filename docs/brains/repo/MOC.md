@@ -65,6 +65,7 @@ reads this section to seed the autotrain hypothesis loop and prunes it as
   external-judge schemas prepared — see
   [`iter-slm478-sie-005-blinded-packet-20260810.md`](../../design/iter-slm478-sie-005-blinded-packet-20260810.md).
   Real human/provider evidence and EXP-SR-3 execution remain SIE-006.
+- SIE-002 / EXP-SR-1 (2026-08-10, SLM-476): fixture oracle localization — see [`iter-slm476-sie-002-oracle-localization-20260810.md`](../../design/iter-slm476-sie-002-oracle-localization-20260810.md) (authorized_factors: roles, bindings; claim_class=fixture).
 - Board hygiene (2026-08-07): no claimable SLM issues/projects remain after
   [`slm-linear-project-hygiene-20260807`](../../design/slm-linear-project-hygiene-20260807.md).
   AP0 “Metric & Judge Validity” stays 0% because SLM-278/280 were canceled,
