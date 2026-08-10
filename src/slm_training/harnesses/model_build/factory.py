@@ -153,6 +153,8 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "diffusion_length_loss_weight",
         "component_inventory_decode_weight",
         "component_plan_decode_weight",
+        "solver_energy_decode_weight",
+        "legal_edit_hazard_decode_weight",
         "slot_component_decode_weight",
         "semantic_role_decode_weight",
         "semantic_role_schema_candidates",
@@ -580,6 +582,24 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         ),
         component_plan_decode_weight=float(
             getattr(config, "component_plan_decode_weight", 0.0) or 0.0
+        ),
+        solver_energy_loss_weight=float(
+            getattr(config, "solver_energy_loss_weight", 0.0) or 0.0
+        ),
+        solver_energy_pairwise_weight=float(
+            getattr(config, "solver_energy_pairwise_weight", 0.0) or 0.0
+        ),
+        solver_energy_decode_weight=float(
+            getattr(config, "solver_energy_decode_weight", 0.0) or 0.0
+        ),
+        solver_energy_hidden_dim=int(
+            getattr(config, "solver_energy_hidden_dim", 64) or 64
+        ),
+        legal_edit_hazard_loss_weight=float(
+            getattr(config, "legal_edit_hazard_loss_weight", 0.0) or 0.0
+        ),
+        legal_edit_hazard_decode_weight=float(
+            getattr(config, "legal_edit_hazard_decode_weight", 0.0) or 0.0
         ),
         slot_component_loss_weight=float(
             getattr(config, "slot_component_loss_weight", 0.0) or 0.0

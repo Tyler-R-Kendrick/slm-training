@@ -1,9 +1,11 @@
 # Harness-evolution architecture review: why the self-improvement loop cannot climb (2026-08-09)
 
 **Status:** deep review of the harness/training architecture and the documented
-eval record; no code changed. Findings are cited to file/line as of this
-review's commit. Successor approaches are filed per I14 — every closed approach
-below names its replacement.
+eval record; no code changed as of this review's commit. Findings are cited to
+file/line as of this review's commit. Successor approaches are filed per I14 —
+every closed approach below names its replacement. Delivery against R1–R7 is
+tracked separately (not edited into this point-in-time review) in
+[`docs/design/darkfactory-hillclimb-optimization.md`](darkfactory-hillclimb-optimization.md).
 
 **Scope:** the four review lanes were (1) the autoresearch/autotrain loop
 control flow, (2) the documented experiment/eval record, (3) the formal and

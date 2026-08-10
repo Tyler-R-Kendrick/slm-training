@@ -251,13 +251,36 @@ A bank-exhausted handoff now also carries a typed
 constraint and resume predicate beside the existing `repair_harness`
 action.
 
+## Terminal governance + decidable promotion (policy v8)
+
+Policy v8 adds (see
+[`darkfactory-hillclimb-optimization.md`](darkfactory-hillclimb-optimization.md)):
+
+- **`terminal.park_on_exhaust`** (default `true`) — a bank-exhausted cycle
+  persists its `regime_exhausted_verdict/v1` (now carrying a
+  `bank_fingerprint`) to `loops/<id>/terminal_verdict.json`, writes loop
+  state `BLOCKED`, and subsequent cycles short-circuit with `REGIME_PARKED`
+  until the bank fingerprint (sorted bank slugs+knobs, policy sha,
+  `MAX_RUN_MINUTES`) changes, at which point the loop resumes and archives
+  the verdict. Compose-arm synthesis and confirm-seed burning are disabled
+  on exhaustion; causal-cap relaxation and retryable promote heads remain.
+  `false` restores the legacy exhaustion branching.
+- **`measurement.promotion_suite_n: 6`** — promote campaigns lock a
+  `power_feasibility/v1` report before outcomes; dispose refuses a
+  non-decisive report as `promotion_infeasible_by_design`. n=6 is the exact
+  sign-test floor at alpha 1/20 (min two-sided p = 1/32), so promotion
+  stays decidable.
+- Editing the policy file changes `promote_authority_sha256` — queued
+  champions re-certify on the next cycle (intended).
+
 <!-- BEGIN policy v2 (WP-4 conclusion criteria) — appended section -->
 
-## Policy v2 (conclusion criteria)
+## `policy.v2.json` artifact (conclusion criteria)
 
-`policy.v2.json` is an **exact superset** of `policy.v1.json` (revision v7 →
-v8; schema family unchanged `autotrain_climb_policy/v1`, matching how v3–v7
-revisions were shipped) plus one new top-level block:
+`policy.v2.json` is an **exact superset** of `policy.v1.json` as it stands
+(currently `version: v8`, schema family unchanged `autotrain_climb_policy/v1`
+— including the terminal-governance and `promotion_suite_n` blocks above)
+plus one new top-level block:
 
 ```json
 "conclusion_policy": {
@@ -266,6 +289,14 @@ revisions were shipped) plus one new top-level block:
   "closed_families_reopen_on": ["new_lever_key", "harness_version_change"]
 }
 ```
+
+Because `policy.v1.json`'s own `version` field is independently evolving
+(policy v8's terminal governance landed after `policy.v2.json` was first
+authored), `policy.v2.json`'s internal `version` is a separate,
+monotonically-later label (currently `v9`) rather than reusing v1's — the
+filename (`v2`) is the stable identity; the internal `version` field only
+needs to keep advancing whenever `policy.v2.json` is resynced against a
+newer `policy.v1.json`.
 
 `slm_training.autoresearch.conclusions.load_policy()` reads v2 when present
 and falls back to v1 with a single logged notice (reusing

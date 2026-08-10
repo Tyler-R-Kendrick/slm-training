@@ -1,7 +1,10 @@
-# Dark-factory hill-climb optimization (phase 1: deterministic memory + selection)
+# Dark-factory hill-climb optimization (delivered)
 
-**Status:** implemented (phase 1); phases 2–3 specified below with wiring
-pointers. Parent analysis:
+**Status:** fully implemented — the memory/selection layer, the model
+ranking levers, terminal governance, and ledger evolution all landed; the
+completing delivery was executed from the committed one-shot specification
+[`darkfactory-oneshot-implementation-prompt.md`](darkfactory-oneshot-implementation-prompt.md)
+by three parallel work units (M/G/L). Parent analysis:
 [`harness-evolution-architecture-review-20260809.md`](harness-evolution-architecture-review-20260809.md)
 (root causes RC1–RC5, redesign program R1–R7).
 
@@ -12,7 +15,7 @@ machinery outranks LLM inference everywhere a deterministic answer exists
 flow-matching / diffusion / energy techniques on top of the autoregressive
 and masked-diffusion stack rather than replacing it.
 
-## What phase 1 shipped
+## Deterministic memory + selection layer
 
 ### 1. Cross-version evidence ledger (R2 substrate — durable memory)
 
@@ -114,61 +117,135 @@ next cycle — by design (authority changed).
 - `docs/MODEL_CARD.md` + closeout docs — unchanged authorities for model
   state and ship gates.
 
-## Phase 2 — flow / energy / diffusion arms (specified, next PR)
+## Energy + flow ranking levers (unit M — delivered)
 
-Deterministic-first still applies at decode: every technique below is a
-*ranking* lever over already-proven-legal candidates (I5) — legality stays
-with the grammar oracle, singleton bypass stays absolute (I2).
+Two size-matched, preregisterable screening arms now sit in the continuous
+bank, both pure *ranking* levers over already-proven-legal candidates at the
+compiler decision points (I5; singleton bypass untouched, I2):
 
-1. **Energy reranker over legal residual candidates** (shortest path,
-   assets already exist): wire the orphaned `solver_energy_*` fields
-   (`twotower.py:566-572`) through `ModelBuildConfig` → `factory.py`, add a
-   `_solver_energy_bias` beside `_component_plan_bias` in
-   `_select_compiler_path` (`twotower.py:10419/10698` — additive
-   `weight · tanh(·)` bias over `candidate_ids` only), train with the
-   existing `energy_regression_loss`/`energy_pairwise_loss`
-   (`models/solver_energy.py`) against `rejected_mining` +
-   `openui_hard_valid_v1` contrast pairs (never against `composite_reward`,
-   which is the held-out judge). Fail-closed identity-order fallback and the
-   permutation invariant come free from `CandidateEnergyRanker`. Register
-   `energy_decode_weight` in `TRAINED_DECODE_REQUIREMENTS`; keep all six
-   `CAPACITY_SCALING_LEVERS` at baseline and initialize via
-   `isolated_aux_init` so the arm is size-matched; report the head's
-   parameter delta.
-2. **Global program-level energy critic** as a best-of-n selector:
-   `global_semantic_critic.py` already defines the energy/value shape;
-   train on hard-valid contrast + mined rejects, evaluate as a
-   `_pick_best_of_n` alternative (`twotower.py:13173`).
-3. **Flow-matching over legal edits:** reframe `LegalEditFlow`
-   (`models/legal_edit_flow.py`, currently fixture-only and unreachable
-   from `train_model`) as a twotower *lever* — a rate/hazard aux head over
-   the exact legal-edit candidate batch — rather than a new `model_name`,
-   since the whole arm bank and matched-control machinery assumes
-   `model_name="twotower"`. Its `multi_positive_mass` objective is already
-   the partition-style set loss.
-4. **Trans-dimensional grammar diffusion:** `GrammarDiffusionModel` is
-   selectable from `train_model` but dormant (one 200-step smoke). Add it
-   as a preregistered *diagnostic control arm* on the grammar matrix, not
-   the continuous bank, until it clears fixture parity with twotower.
+- **`solver-energy-rerank`** — the previously orphaned `solver_energy` stack
+  wired end to end: `solver_energy_decode_weight` (tri-state, checkpoint-
+  preserving) through `ModelBuildConfig` → factory → `TwoTowerConfig`; a
+  `CandidateEnergyScorer` head under its own checkpoint prefix via
+  `isolated_aux_init`; pairwise energy training on cached gold compiler
+  decisions (gold below siblings, margin 1.0) on the detached-auxiliary
+  path; decode bias `weight · tanh(−energy)` with identity-order + counter
+  fallback on non-finite raw energies, in both `_select_compiler_path`
+  branches. Registered in `TRAINED_DECODE_REQUIREMENTS` and the
+  compiler-path decode lever group.
+- **`legal-edit-hazard`** — a flow-matching hazard head at the same seam:
+  softplus rates over the legal candidate set trained with the
+  `multi_positive_mass` set objective plus a size-normalized `total_hazard`
+  regularizer (objectives adapted from `models/legal_edit_flow.py`);
+  decode bias `weight · tanh(log softplus rate)` with the same fail-closed
+  contract and counters.
 
-Each becomes a new arm-bank entry with a zero-valued matched control
-(`knobs()` base dict), enters the evidence ledger under its slug, and
-competes under the same posterior selection — the factory then *decides for
-itself* how much compute each technique deserves.
+Both arms carry `structural_aux_head_profile` values (`solver-energy`,
+`legal-edit-hazard`) so the matched control prebuilds identical heads at
+zero weights — parameter-count parity is tested. New `DecodeStats`
+counters: `{solver_energy,legal_edit_hazard}_bias_{applications,choice_changes,fallbacks}`.
+The arms compete under posterior-UCB selection like every other arm — the
+factory decides from evidence how much compute each technique earns.
 
-## Phase 3 — remaining review items
+## Terminal governance (unit G — delivered)
 
-- Extend the ledger with per-`eval_key` staleness distance
-  (`verify_version_stamps` `behind_by`) as a decay weight, replacing the
-  flat `CROSS_PARTITION_WEIGHT`.
-- Persist `sdlc_delivery.json` (the rich per-arm record) for every cycle in
-  the closeout docs instead of the lossy `continuous_cycle_results/v1`
-  shape, so future mining needs no reasons-string slug recovery.
-- Campaign-lock `power_feasibility_report` into `ExperimentCampaignV1`
-  (full R1 admission gate) once evidence-bearing claim classes get their
-  own preregistered budget tier — a separate versioned change to the
-  run-cap policy (`levers.py` `MAX_RUN_MINUTES` + `repo_policy
-  --sync-run-policy`), never an ad-hoc exception.
-- Fold the four never-stop fallbacks behind the terminal verdict so a
-  `regime_exhausted` cycle parks the loop instead of synthesizing filler
-  compose arms (R7 complete).
+- **Park + deterministic resume.** A bank-exhausted cycle emits the typed
+  `regime_exhausted_verdict/v1` carrying a `bank_fingerprint` (sha256 of
+  sorted bank slugs+knobs, climb-policy sha, `MAX_RUN_MINUTES`), persists it
+  to `loops/<id>/terminal_verdict.json`, and writes loop state `BLOCKED`.
+  `run_cycle` short-circuits with `REGIME_PARKED` while the fingerprint is
+  unchanged and resumes (`REGIME_RESUMED reason=bank_identity_changed`,
+  verdict archived) only when the bank identity actually changes — a new
+  lever family, policy revision, or budget constant.
+- **Filler fallbacks retired behind policy.** Climb policy v8
+  `terminal.park_on_exhaust: true` disables compose-arm synthesis and
+  confirm-seed burning on exhaustion; causal-cap relaxation and retryable
+  promote heads stay (they are evidence-driven, not filler). Flag false
+  preserves the legacy branching semantics.
+- **Power admission on promotion.** Promote campaigns lock a
+  `power_feasibility/v1` report (`ExperimentCampaignV1.power_feasibility`);
+  dispose refuses a non-decisive report as `promotion_infeasible_by_design`.
+  `measurement.promotion_suite_n: 6` pins the promotion suite at the exact
+  sign-test floor (min two-sided p = 1/32 ≤ 1/20) so promotion stays
+  decidable. Known side effect (intended): the policy-file sha participates
+  in `promote_authority_sha256`, so queued champions re-certify.
+
+## Ledger evolution (unit L — delivered)
+
+- **Staleness-decayed pooling.** Stamped cross-partition buckets decay per
+  version step behind the current eval key
+  (`max(floor, CROSS_PARTITION_WEIGHT · decay^behind_by)`, defaults
+  decay 0.9 / floor 0.1, overridable via the policy `selection` block),
+  with the version distance read directly from `versions.json` history.
+  Partially unknown stamped keys use the flat weight for the whole bucket;
+  same-key buckets stay at 1.0; unstamped stay flat.
+- **Rich delivery persistence.** Per-cycle closeout JSONs embed the full
+  `sdlc_delivery.json` payload (`"delivery"`, schema
+  `autotrain_sdlc_delivery/v1`), and the miner consumes both embedded and
+  standalone delivery records — slug from `candidate_id`, seed from
+  `arm_seed` — superseding reasons-string recovery without double counting.
+- **Operator status.** `python -m scripts.build_evidence_ledger --status`
+  now also prints the current eval key, the posterior-UCB top-10, and the
+  screening power geometry.
+
+## Proof-chain integrity (R6, partial — 2026-08-10)
+
+R6 named four integrity gaps in the multi-prover formal-object loop
+(`docs/design/harness-evolution-architecture-review-20260809.md` §4-R6).
+Two are closed; two remain open, below.
+
+- **R6(a) — tautology backends replaced with property-based enumeration.**
+  `slm_training.formal.structural.check_law` and `check_law_reference` no
+  longer evaluate a single hardcoded default context when called with
+  `context=None` (the path every real exporter in the codebase uses). Both
+  now enumerate a shared, bounded case table (`_LAW_CASES`) — one set of
+  inputs per law, including antecedent-false and classifier-mismatch edge
+  cases — through two *separately written* evaluation functions (`_eval_law`,
+  `_eval_law_reference`), so a bug in one encoding has a real chance of
+  disagreeing with the other instead of both silently agreeing on one
+  anecdotal input. `slm_training.formal.checkers.check_lean_kernel` now
+  regex-audits that the claimed theorem is actually declared in the named
+  Lean source file *before* invoking the toolchain, and runs `make test`
+  (build → forbidden-token scan for `sorry`/`admit`/`axiom`/etc. →
+  `#print axioms` sweep) instead of trusting a bare `lake build` exit code.
+  Tests: `tests/test_formal/test_formal_objects.py` (16 cases, including two
+  new theorem-presence-violation tests and a direct backend-agreement sweep
+  over `_LAW_CASES`).
+- **R6(b) — real small-sample confidence intervals.**
+  `slm_training.harness_core.efficiency_gain.efficiency_gain_lcb` replaced
+  the normal-approximation `z=1.96` interval with exact two-sided Student-t
+  critical values (standard textbook table, no scipy dependency) and now
+  requires `n>=2` finite seeds for any `lcb`/`ucb` — a single seed returns
+  `nan` bounds rather than a zero-width interval that trivially clears an
+  `lcb >= threshold` gate. Both `promotion_engine.py` call sites already
+  guard with `math.isfinite(lcb)`, so this fails closed with no caller
+  change. Tests: `tests/test_harness_core/test_parameter_efficiency.py`
+  (5 new cases, including a regression guard proving the new bound is wider
+  than the stale normal-approximation bound at small n).
+- **R6(c) — measured-vs-synthesized as a type — not done.** Fixture
+  synthesizers still emit plain numeric fields; nothing yet stops a
+  `_hash_noise` value from sitting in a key a real gate/selection loader
+  reads. This needs a schema-level split (`synthetic_metrics` vs measured
+  fields) across the eval/gate loader boundary — larger than a hygiene fix,
+  deferred.
+- **R6(d) — forced-emit text from terminal regexes — not done.** Forced-emit
+  strings are still sourced from the hardcoded `_TERM_TO_TEXT` table rather
+  than derived from the terminal grammar's regexes (or the R2 product
+  automaton, itself undelivered). Deferred with R2.
+
+## Remaining open item
+
+The full R1 admission gate for *screening* (refusing statistically
+undecidable screening cycles outright, rather than treating them as
+advisory) stays coupled to a preregistered budget-tier change for the
+run-cap policy (`levers.py` `MAX_RUN_MINUTES` + `scripts.repo_policy
+--sync-run-policy`) — a separate versioned decision for the maintainer, not
+an implementation gap: under the current 3-minute wall, screening cycles
+remain evidence-tier `directional` and closure is already power-floored.
+
+R2 (typed lever lattice replacing the flat arm bank) and R4 (a graded,
+Lean-proved tree-edit-distance objective metric) remain undelivered —
+both are structural rewrites the original review explicitly separates from
+hygiene work, not gaps this pass scoped in. R5 (splitting the run budget by
+claim class) is, per the review, a policy decision for the maintainer to
+make, not an implementation task.

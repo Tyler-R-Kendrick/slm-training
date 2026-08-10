@@ -403,6 +403,15 @@ class ModelBuildConfig:
     root_reference_identity_negative_weight: float = 1.0
     root_reference_identity_strict_subset_multiplier: int = 1
     root_reference_identity_decode_weight: float | None = None
+    # Energy reranker over legal compiler-decision candidates (ranking only).
+    # None decode weight preserves the checkpoint value at eval time.
+    solver_energy_loss_weight: float = 0.0
+    solver_energy_pairwise_weight: float = 0.0
+    solver_energy_decode_weight: float | None = None
+    solver_energy_hidden_dim: int = 64
+    # Legal-edit hazard (flow) head over the same compiler-decision seam.
+    legal_edit_hazard_loss_weight: float = 0.0
+    legal_edit_hazard_decode_weight: float | None = None
     symbol_boundary_loss_weight: float = 0.0
     remask_span: str = "token"  # token | statement
     teacher_init_embeddings: bool = False

@@ -98,13 +98,18 @@
       ]
     },
     "config.levers": {
-      "version": "v30",
+      "version": "v31",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v31",
+          "date": "2026-08-09",
+          "note": "darkfactory unit M: solver_energy_decode_weight and legal_edit_hazard_decode_weight registered in TRAINED_DECODE_REQUIREMENTS and the compiler-path decode lever group"
+        },
         {
           "version": "v30",
           "date": "2026-07-30",
@@ -2976,7 +2981,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v199",
+      "version": "v200",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -3030,6 +3035,11 @@
       ],
       "history": [
         {
+          "version": "v200",
+          "date": "2026-08-10",
+          "note": "Merge origin/main (#1549 darkfactory completion) into this PR's branch: both lines of history had independently bumped this component twice from v197 (mine: preflight seam wiring, cumulative-seeds reconciliation; main: terminal governance policy v8, unit M integration) and collided on the v198/v199 labels. No new source change beyond what both sets of entries below already describe; this entry only reconciles the version counter so the two lines combine into one sequence."
+        },
+        {
           "version": "v199",
           "date": "2026-08-10",
           "note": "_preflight_screening_slug now passes the arm's cumulative ledger n_complete (+1 for this cycle) as the preflight candidate's n_seeds, instead of a literal 1 \u2014 reconciles the seeds policy with the power preflight so screening can actually accumulate evidence across cycles."
@@ -3038,6 +3048,16 @@
           "version": "v198",
           "date": "2026-08-09",
           "note": "Continuous loop screening picks now pass through the discovery-based preflight seam (power decidability, prior-attempt dedup, concluded families) with fail-soft override recorded; closeout syncs the evidence store when present."
+        },
+        {
+          "version": "v199",
+          "date": "2026-08-09",
+          "note": "darkfactory unit M integration: solver-energy-rerank and legal-edit-hazard screening arms in the bank with matched zero-weight controls, _LEVER_KNOB_KEYS + explicit _arm_slug_from_knobs branches, ExperimentKnobs fields + engine knob->CLI routing"
+        },
+        {
+          "version": "v198",
+          "date": "2026-08-09",
+          "note": "darkfactory completion (units G+L): terminal governance \u2014 park the loop under a typed regime_exhausted verdict with a deterministic bank-fingerprint resume predicate (REGIME_PARKED/REGIME_RESUMED), retire compose-filler synthesis and confirm-seed burning behind policy v8 terminal.park_on_exhaust, lock a power_feasibility/v1 report on promote campaigns and refuse non-decisive ones (promotion_infeasible_by_design), promotion_suite_n=6 makes promotion decidable; ledger evolution \u2014 staleness-decayed cross-version pooling from versions.json history distance, sdlc_delivery embedded in closeout docs and mined, operator status with posterior-UCB top-10 + screening power geometry; policy v7->v8"
         },
         {
           "version": "v197",
@@ -4402,12 +4422,17 @@
       ]
     },
     "harness.core": {
-      "version": "v15",
+      "version": "v16",
       "kind": "harness",
       "paths": [
         "src/slm_training/harness_core/"
       ],
       "history": [
+        {
+          "version": "v16",
+          "date": "2026-08-10",
+          "note": "Replace the normal-approximation z=1.96 EG_params/EG_time interval with exact Student-t critical values and require n>=2 finite seeds for any lcb/ucb (single-seed now yields nan, failing closed on lcb>=threshold gates instead of a zero-width interval)"
+        },
         {
           "version": "v15",
           "date": "2026-08-01",
@@ -11739,7 +11764,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v94",
+      "version": "v95",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -11760,6 +11785,11 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v95",
+          "date": "2026-08-09",
+          "note": "darkfactory unit M: DecodeStats gains solver_energy/legal_edit_hazard bias applications/choice_changes/fallbacks counters; evaluate_model exposes the two decode weights as None-default runtime overrides"
+        },
         {
           "version": "v94",
           "date": "2026-08-09",
@@ -14246,7 +14276,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v312",
+      "version": "v313",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -14291,6 +14321,11 @@
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
       "history": [
+        {
+          "version": "v313",
+          "date": "2026-08-09",
+          "note": "darkfactory unit M: solver-energy reranker + legal-edit hazard (flow) ranking levers \u2014 solver_energy_decode_weight / legal_edit_hazard_{loss,decode}_weight config fields, solver-energy / legal-edit-hazard structural_aux_head_profiles with isolated_aux_init prebuild parity, compiler-decision-seam features (pooled ctx + hidden + candidate embedding, symbol-only), pairwise energy and multi-positive-mass hazard objectives on the detached-auxiliary path, tanh-clamped fail-closed decode biases in both _select_compiler_path branches after the untouched singleton bypass; factory/train_model passthrough"
+        },
         {
           "version": "v312",
           "note": "ModelBuildConfig.generate_batch_size eval-time override field",
@@ -16448,7 +16483,7 @@
       ]
     },
     "formal.objects": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/formal/__init__.py",
@@ -16459,6 +16494,11 @@
         "docs/design/formal-objects-multi-prover.md"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-08-10",
+          "note": "Close the proof-chain integrity gaps: lean_kernel now audits theorem presence in source (regex-matched local declaration) before running 'make test' (build + forbidden-token scan + axiom-purity check) instead of trusting a bare 'lake build' exit code; python_structural/python_reference replace their single-hardcoded-context law checks with enumeration over a shared bounded case table (_LAW_CASES) covering every catalog law_id, so both independent backends can find a real counterexample instead of vacuously agreeing on one anecdotal input."
+        },
         {
           "version": "v3",
           "date": "2026-08-03",
@@ -16716,7 +16756,7 @@
       ]
     },
     "autoresearch.conclusions": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/conclusions.py",
@@ -16726,6 +16766,11 @@
         "docs/design/hypothesis-family-conclusions.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-10",
+          "note": "Merge reconciliation: rebuilt policy.v2.json from the current policy.v1.json (now v8, carrying main's terminal-governance and measurement.promotion_suite_n blocks from the merged #1549) plus the conclusion_policy block, so v2 is a true superset again; bumped v2's own internal version field to v9 (distinct from v1's v8) to avoid a version-label collision between the two policy files. No change to conclusions.py logic."
+        },
         {
           "version": "v1",
           "date": "2026-08-09",
