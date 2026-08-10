@@ -2860,7 +2860,7 @@
       ]
     },
     "governance.ownership_map": {
-      "version": "v9",
+      "version": "v10",
       "kind": "gate",
       "paths": [
         "src/slm_training/resources/ownership_map.json",
@@ -2872,6 +2872,11 @@
         "tests/test_data/test_synthesis_contract_versions.py"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-08-10",
+          "note": "no-bump: SLM-477 (SIE-003) registers a new 'prompt_factor_predictor' subsystem (src/slm_training/models/prompt_factor_predictor.py: PromptFactorExampleV1/PromptFactorPredictionV1/TinyBagOfWordsClassifier/predict_factor/prediction_to_requirement_fact/calibrate_abstention_threshold/resolve_confidence_threshold) -- the pre-registered downstream_extension_map row for SIE-003 predicted new_owner_justified: false ('Extends SGS-003/004's prompt_requirements owner'), but the real dataclasses/classifier are not literally defined in prompt_requirements.py/semantic_plan.py, so per this map's own sibling-file rule it is registered as its own subsystem instead (same precedent as SGS-008/SRP-004/005/007/008/009/011); mirrors the row into repository-ownership-map.md. The new source/test files are not yet tracked by any versions.json component (consistent with the SRP/SGS-008 sibling-file precedent), so this entry only covers the ownership-map doc update."
+        },
         {
           "version": "v9",
           "date": "2026-08-10",
