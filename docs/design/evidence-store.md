@@ -40,6 +40,11 @@ One `EvidenceRecordV1` normalizes one experiment outcome:
   digest; that module exposes no importable fingerprint helper, so
   `records.compute_config_fingerprint` pins the same expression and a test
   (`test_fingerprint_matches_evidence_ledger_canonicalization`) guards drift.
+  Climb-ledger-arm records use a distinct, deliberately cheaper sub-domain —
+  `records.compute_arm_fingerprint(arm)` — fingerprinting a slug-keyed source
+  descriptor rather than a concrete lever dict; see
+  `docs/design/preflight-gates.md`'s "arm-fingerprint convergence" note for
+  why a live candidate needs to reproduce this exact value.
 - `endpoint_metric`, `effect_size | None`, `n_seeds`, `steps`, `p_value | None`
 - `outcome`: `screen_positive | screen_negative | confirm_failed | confirmed |
   ship_rejected | promoted`

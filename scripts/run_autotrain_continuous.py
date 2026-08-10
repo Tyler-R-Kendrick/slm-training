@@ -5065,6 +5065,19 @@ def _preflight_screening_slug(
         print(f"PREFLIGHT_WARN import err={exc!r}", flush=True)
         return rec_slug, None
     bank = {slug: (hyp, extras) for slug, hyp, extras in _all_screening_arm_bank()}
+    # Cumulative per-arm seed count (ledger n_complete), so the power gate
+    # evaluates decidability against the arm's accumulated evidence across
+    # cycles rather than this cycle's single-seed marginal contribution — a
+    # literal n_seeds=1 is undecidable by construction and would block every
+    # screening cycle forever (see power_check.py's seeds-policy note).
+    try:
+        from slm_training.autoresearch import evidence_ledger as _ev
+
+        _ledger_arms = _ev.load_ledger().get("arms", {})
+        if not isinstance(_ledger_arms, dict):
+            _ledger_arms = {}
+    except Exception:  # noqa: BLE001 — cumulative-n lookup is best-effort
+        _ledger_arms = {}
     verdicts_by_slug: dict[str, list[dict[str, Any]]] = {}
     blocked: list[str] = []
     current = rec_slug
@@ -5075,11 +5088,13 @@ def _preflight_screening_slug(
                 break
             hypothesis, extras = row
             levers = _apply_arm_extras(steps, dict(extras))
+            arm_stats = _ledger_arms.get(current)
+            cumulative_n = int((arm_stats or {}).get("n_complete") or 0)
             candidate = {
                 "hypothesis_text": str(hypothesis),
                 "lever_keys": sorted(levers),
                 "config_fingerprint": _knobs_fingerprint(levers),
-                "n_seeds": 1,
+                "n_seeds": cumulative_n + 1,
                 "steps": steps,
                 "minimum_effect": minimum_effect,
                 "endpoint_metric": endpoint_metric,

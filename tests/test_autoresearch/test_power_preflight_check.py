@@ -11,6 +11,7 @@ from slm_training.autoresearch.preflight.power_check import (
     CHECK,
     CONSERVATIVE_DEFAULT_SD,
     DEFAULT_LEDGER_PATH,
+    MAX_REASONABLE_N,
     PowerDecidabilityCheck,
     _pooled_ledger_sd,
 )
@@ -38,7 +39,7 @@ class TestPluginSurface:
     def test_verdict_is_structural(self) -> None:
         verdict = CHECK.run(_candidate())
         assert verdict.check_id == "power_decidability"
-        assert verdict.verdict in {"pass", "block"}
+        assert verdict.verdict in {"pass", "warn", "block"}
         assert isinstance(verdict.reasons, list)
 
 
@@ -63,6 +64,25 @@ class TestVerdicts:
         verdict = CHECK.run(_candidate(n_seeds=8, minimum_effect=0.05))
         assert verdict.verdict == "pass"
         assert verdict.data["min_attainable_p"] == pytest.approx(2 / 2**8)
+
+    def test_still_accumulating_candidate_warns_not_blocks(self) -> None:
+        # Same reachable design as the n=8 pass case, but not there yet: the
+        # seeds-policy fix (WP-3 reconciliation) must not block an arm that
+        # simply hasn't accumulated enough cycles yet — that would prevent
+        # it from ever accumulating past this cycle.
+        verdict = CHECK.run(_candidate(n_seeds=2, minimum_effect=0.05))
+        assert verdict.verdict == "warn"
+        assert verdict.data["required_n_for_effect"] <= MAX_REASONABLE_N
+        assert any("still accumulating" in reason for reason in verdict.reasons)
+
+    def test_structurally_undecidable_design_still_blocks(self) -> None:
+        # RC1's own design (n_seeds=3, minimum_effect=0.01) requires far more
+        # than MAX_REASONABLE_N seeds — genuinely undecidable, not merely
+        # early in accumulation.
+        verdict = CHECK.run(_candidate())
+        assert verdict.verdict == "block"
+        assert verdict.data["required_n_for_effect"] > MAX_REASONABLE_N
+        assert any("realistic accumulation" in reason for reason in verdict.reasons)
 
     def test_ledger_sd_used_for_primary_metric(self) -> None:
         verdict = CHECK.run(_candidate(n_seeds=8, minimum_effect=0.05))

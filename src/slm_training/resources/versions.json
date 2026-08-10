@@ -2976,7 +2976,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v198",
+      "version": "v199",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -3029,6 +3029,11 @@
         "tests/test_autoresearch/test_evidence_ledger.py"
       ],
       "history": [
+        {
+          "version": "v199",
+          "date": "2026-08-10",
+          "note": "_preflight_screening_slug now passes the arm's cumulative ledger n_complete (+1 for this cycle) as the preflight candidate's n_seeds, instead of a literal 1 \u2014 reconciles the seeds policy with the power preflight so screening can actually accumulate evidence across cycles."
+        },
         {
           "version": "v198",
           "date": "2026-08-09",
@@ -16645,7 +16650,7 @@
       ]
     },
     "evidence.store": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/evidence_store/",
@@ -16656,6 +16661,11 @@
       ],
       "history": [
         {
+          "version": "v2",
+          "date": "2026-08-10",
+          "note": "Added compute_arm_fingerprint (records.py) as the single source of the climb-ledger-arm fingerprint domain; sync_evidence_store.py now calls it instead of inlining the hash (byte-identical output, verified by resync)."
+        },
+        {
           "version": "v1",
           "date": "2026-08-09",
           "note": "Durable evidence store with committed local mirror and optional Supabase sync (fail-soft when creds unset)."
@@ -16663,7 +16673,7 @@
       ]
     },
     "autoresearch.power_preflight": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/power.py",
@@ -16672,6 +16682,11 @@
       ],
       "history": [
         {
+          "version": "v2",
+          "date": "2026-08-10",
+          "note": "Seeds-policy reconciliation: verdict is now three-way (pass/warn/block) using a MAX_REASONABLE_N=64 ceiling on required_n_for_effect, so a design that is merely still-accumulating warns instead of blocking every screening cycle forever (a literal n_seeds=1 was undecidable by construction and would have blocked every cycle)."
+        },
+        {
           "version": "v1",
           "date": "2026-08-09",
           "note": "Decidability preflight blocking statistically undecidable screening designs (RC1)."
@@ -16679,7 +16694,7 @@
       ]
     },
     "autoresearch.preflight": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/preflight/__init__.py",
@@ -16688,6 +16703,11 @@
         ".agents/skills/skeptic-panel/SKILL.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-10",
+          "note": "Fingerprint-convergence fix: prior_attempts now also computes and queries the climb-ledger-arm fingerprint domain (evidence_store.records.compute_arm_fingerprint) so arm-level evidence-store records are discoverable by exact match, not only by fuzzy hypothesis/lever search; slug matching no longer requires the record to carry a null config_fingerprint."
+        },
         {
           "version": "v1",
           "date": "2026-08-09",

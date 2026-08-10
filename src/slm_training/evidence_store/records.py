@@ -50,6 +50,33 @@ def compute_config_fingerprint(config: Mapping[str, Any]) -> str:
     return hashlib.sha256(canonical_json(config).encode("utf-8")).hexdigest()
 
 
+#: Fingerprint domain tag for climb-ledger-arm records — see
+#: :func:`compute_arm_fingerprint`.
+CLIMB_LEDGER_ARM_SOURCE_KIND = "autotrain_climb_ledger"
+
+
+def compute_arm_fingerprint(arm: str) -> str:
+    """Identity fingerprint for a named autotrain-climb screening arm.
+
+    The sole producer of this fingerprint domain is
+    ``scripts/sync_evidence_store.py::_map_climb_ledger`` (it imports and
+    calls this function rather than inlining the hash, so the two can never
+    drift). A live screening candidate that knows its own arm slug — see
+    ``scripts/run_autotrain_continuous.py::_preflight_screening_slug`` and
+    ``slm_training.autoresearch.preflight.prior_attempts`` — can reproduce
+    the identical fingerprint from the slug alone, without materializing the
+    arm's full lever dict, closing the "prior-attempt" lookup gap for the
+    evidence store's arm-level records (they carry a
+    ``config_fingerprint`` that is *not* comparable to a live candidate's
+    lever-derived ``compute_config_fingerprint``, since the two hash
+    different input domains — a slug-keyed descriptor here vs. a concrete
+    lever dict there).
+    """
+    return compute_config_fingerprint(
+        {"source_kind": CLIMB_LEDGER_ARM_SOURCE_KIND, "arm": str(arm)}
+    )
+
+
 class EvidenceRecordV1(BaseModel):
     """One normalized experiment outcome (durable, source-agnostic)."""
 

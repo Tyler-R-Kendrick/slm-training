@@ -34,6 +34,19 @@ of the lever dict with the ``steps`` cycle-jitter key excluded, truncated to
 records fingerprinted by either producer compare correctly against a
 candidate carrying the same producer's hash.
 
+Cross-producer fingerprint convergence: a live candidate's own
+``config_fingerprint`` hashes its *concrete lever dict*, while
+``sync_evidence_store.py``'s climb-ledger-arm records are fingerprinted over
+a *slug-keyed source descriptor* (``evidence_store.records.
+compute_arm_fingerprint`` — a deliberately different, cheaper-to-reproduce
+domain that needs no lever materialization). These two domains never
+coincide by construction, so a candidate carrying a ``slug`` also computes
+the arm-fingerprint directly (:func:`arm_fingerprint`) and queries/matches
+on it alongside the lever-derived fingerprint — closing the gap without
+requiring the store to fingerprint over full lever dicts, and without
+weakening ``_knobs_fingerprint``'s established (steps-excluded, 16-hex,
+truncated) identity used elsewhere for champion-queue dedup.
+
 Never raises: any internal failure degrades to a ``"warn"`` verdict.
 """
 
@@ -159,17 +172,48 @@ def _ledger_fallback_records() -> list[dict[str, Any]]:
     return records
 
 
+def arm_fingerprint(slug: str) -> str | None:
+    """The evidence store's climb-ledger-arm fingerprint for ``slug``, if importable.
+
+    Fingerprint-convergence fix: ``sync_evidence_store.py`` fingerprints
+    climb-ledger-arm records by a slug-keyed source descriptor (see
+    ``evidence_store.records.compute_arm_fingerprint``), not by the arm's
+    concrete lever dict — a *different domain* from the live candidate's own
+    ``config_fingerprint`` (lever-derived). Recomputing the same
+    slug-keyed fingerprint here lets an exact lookup find those records
+    directly, instead of relying only on fuzzy hypothesis/lever-key search.
+    """
+    try:
+        from slm_training.evidence_store.records import compute_arm_fingerprint
+
+        return compute_arm_fingerprint(slug)
+    except Exception:  # noqa: BLE001 — store is concurrent work, may not exist
+        return None
+
+
 def _find_prior_attempts(candidate: Mapping[str, Any]) -> tuple[list[Any], str]:
     """Fetch prior-attempt records; returns ``(records, source)``."""
     try:
         from slm_training.evidence_store import client as _client  # type: ignore
 
-        records = _client.find_prior_attempts(
-            hypothesis_text=candidate.get("hypothesis_text"),
-            lever_keys=candidate.get("lever_keys"),
-            config_fingerprint=candidate.get("config_fingerprint"),
+        records = list(
+            _client.find_prior_attempts(
+                hypothesis_text=candidate.get("hypothesis_text"),
+                lever_keys=candidate.get("lever_keys"),
+                config_fingerprint=candidate.get("config_fingerprint"),
+            )
+            or []
         )
-        return list(records or []), "evidence_store"
+        slug = candidate.get("slug")
+        arm_fp = arm_fingerprint(str(slug)) if slug else None
+        if arm_fp and arm_fp != candidate.get("config_fingerprint"):
+            seen = {getattr(r, "dedup_key", lambda: id(r))() for r in records}
+            for record in _client.find_prior_attempts(config_fingerprint=arm_fp) or []:
+                key = getattr(record, "dedup_key", lambda: id(record))()
+                if key not in seen:
+                    seen.add(key)
+                    records.append(record)
+        return records, "evidence_store"
     except Exception:  # noqa: BLE001 — store is concurrent work, may not exist
         return _ledger_fallback_records(), "evidence_ledger_fallback"
 
@@ -219,13 +263,26 @@ class PriorAttemptsCheck:
         records, source = _find_prior_attempts(
             {**dict(candidate), "config_fingerprint": fingerprint}
         )
+        arm_fp = arm_fingerprint(str(slug)) if slug else None
         matches: list[Any] = []
         for record in records:
             record_fp = _field(record, "config_fingerprint")
             record_slug = _field(record, "slug")
+            if not record_slug:
+                # Evidence-store EvidenceRecordV1 rows carry no ``slug``
+                # attribute; a single-entry lever_keys list is the arm slug
+                # for climb-ledger-arm records (see records.compute_arm_fingerprint).
+                record_lever_keys = _field(record, "lever_keys") or []
+                if (
+                    isinstance(record_lever_keys, (list, tuple))
+                    and len(record_lever_keys) == 1
+                ):
+                    record_slug = record_lever_keys[0]
             if fingerprint and record_fp and str(record_fp) == str(fingerprint):
                 matches.append(record)
-            elif slug and not record_fp and record_slug and str(record_slug) == str(slug):
+            elif arm_fp and record_fp and str(record_fp) == str(arm_fp):
+                matches.append(record)
+            elif slug and record_slug and str(record_slug) == str(slug):
                 matches.append(record)
 
         def endpoint_matches(record: Any) -> bool:

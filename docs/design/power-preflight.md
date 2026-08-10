@@ -138,13 +138,57 @@ seam (`preflight/__init__.py`, RC3 work package). `run(candidate)` reads
 `n_seeds`, `minimum_effect` (falling back to the policy screening default
 0.01 with an explanatory reason), and `endpoint_metric`; verdicts:
 
-- `block` when the design is undecidable **or** candidate data is unusable
-  (e.g. no usable `n_seeds`) — the §4-R1 gate fails closed on evidence
+- `block` when candidate data is unusable (e.g. no usable `n_seeds`), **or**
+  the design is decidable at neither the current cumulative `n_seeds` nor
+  any realistic amount of further accumulation — `required_n_for_effect`
+  exceeds `MAX_REASONABLE_N` (64). The §4-R1 gate fails closed on evidence
   questions; reasons always carry `min_attainable_p` and
   `required_n_for_effect` for re-planning, `data` carries the full report;
-- `pass` when decidable on both axes;
-- `warn` only when the check itself errors (the preflight package's
+- `warn` when the design is not yet decidable at the current cumulative
+  `n_seeds` but `required_n_for_effect <= MAX_REASONABLE_N` — still
+  accumulating, not yet decided (see "Seeds-policy reconciliation" below);
+- `pass` when decidable on both axes at the current cumulative `n_seeds`;
+- `warn` also when the check itself errors (the preflight package's
   fail-soft law: a check bug must never take down the loop nor silently
   block a candidate — a bug is not evidence).
 
 It never raises.
+
+## Seeds-policy reconciliation (post-launch fix, 2026-08-10)
+
+The continuous loop spends **one seed per screening cycle** and
+accumulates evidence for an arm across many cycles — the committed
+`evidence_ledger.v1.json`'s per-arm `n_complete` is that cumulative count.
+The first cut of this preflight passed a literal `n_seeds=1` (the marginal
+contribution of a single cycle) to `power_decidability`. Since
+`min_attainable_p` at n=1 (paired sign test) is `2 * (1/2)^1 = 1.0`, that
+design is undecidable *by construction* — every screening cycle for every
+arm blocked, and the driver's fail-soft override
+(`_preflight_screening_slug`, "all_open_arms_blocked_ran_original_pick")
+fired every time, making the gate a no-op that only ever logged verdicts.
+Worse, blocking a low-n arm's *only* path to accumulating more evidence is
+a catch-22: the arm could never cross into decidability if every cycle
+that would grow its `n_complete` was preflighted away first.
+
+The fix has two parts:
+
+1. `scripts/run_autotrain_continuous.py::_preflight_screening_slug` now
+   reads the arm's cumulative `n_complete` from
+   `evidence_ledger.load_ledger()` (best-effort — any load failure
+   degrades to the old `n_seeds=1` behavior rather than raising) and
+   passes `n_seeds = n_complete + 1` — the projected total after this
+   cycle, not the cycle's marginal contribution.
+2. `power_check.py`'s verdict is now three-way: an arm below
+   `required_n_for_effect` but under the `MAX_REASONABLE_N` ceiling
+   **warns** (still accumulating — the cycle proceeds, `n_complete` grows,
+   and the next cycle's check moves closer to decidable) rather than
+   **blocks**. Only designs whose `required_n_for_effect` exceeds the
+   ceiling — i.e. RC1's own case, `minimum_effect=0.01` requiring 77 paired
+   seeds — remain a hard block, since no realistic amount of further
+   accumulation would help.
+
+`MAX_REASONABLE_N = 64` is generous relative to the conclusion policy's
+`adequate_power_requires.min_seeds = 8`
+(`docs/design/hypothesis-family-conclusions.md`), so ordinary accumulation
+toward an 8-to-64-seed decision is never blocked — only designs that
+could never reach a decision at any realistic budget are.

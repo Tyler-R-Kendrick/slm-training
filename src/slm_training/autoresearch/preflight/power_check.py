@@ -17,6 +17,21 @@ signed per-document effects (``credit_engine._two_sided_p_from_signed_effects``)
 see ``slm_training.autoresearch.power`` for the paired vs unpaired
 reconciliation.
 
+Seeds-policy reconciliation (post-launch fix): the continuous loop spends
+one seed per screening cycle and accumulates evidence for an arm across
+many cycles (``resources/experiments/autotrain_climb/evidence_ledger.v1.json``
+``n_complete``). ``scripts/run_autotrain_continuous.py::_preflight_screening_slug``
+therefore passes the arm's *cumulative* seed count (ledger ``n_complete + 1``,
+projecting the seed this cycle would add), not the marginal contribution of
+a single cycle — a literal ``n_seeds=1`` is undecidable by construction
+(``min_attainable_p`` at n=1 is 1.0) and would block every screening cycle
+forever, which would prevent the very accumulation the fix requires. Given
+a cumulative n below ``required_n_for_effect``, the verdict is ``"warn"``
+(still accumulating, not yet decided) rather than ``"block"``, UNLESS
+``required_n_for_effect`` exceeds ``MAX_REASONABLE_N`` — i.e. the design
+cannot become decidable through any realistic amount of further
+accumulation, which is a genuine RC1-style structural block.
+
 Observed metric SD: pooled from the committed darkfactory phase 1
 evidence ledger (``resources/experiments/autotrain_climb/
 evidence_ledger.v1.json``) — per-arm Welford ``m2_delta`` / ``n_delta``
@@ -73,6 +88,13 @@ DEFAULT_MINIMUM_EFFECT = 0.01
 CONSERVATIVE_DEFAULT_SD = math.sqrt(0.25 / 3.0)
 #: Minimum pooled degrees of freedom before the ledger SD counts as usable.
 MIN_LEDGER_DOF = 20
+#: Ceiling on ``required_n_for_effect`` beyond which a design is treated as
+#: structurally undecidable (block) rather than merely still-accumulating
+#: (warn). Generous relative to ``ADEQUATE_POWER_MIN_SEEDS`` (8, see
+#: ``preflight/prior_attempts.py`` and the conclusion-policy default of 8)
+#: so ordinary accumulation is never blocked, only designs whose minimum
+#: effect is unreachable at any realistic n.
+MAX_REASONABLE_N = 64
 #: The ledger's deltas are measurements of the loop screening primary.
 LEDGER_METRIC_LEAF = "structural_similarity"
 
@@ -193,6 +215,9 @@ class PowerDecidabilityCheck:
                 {},
             )
         reasons: list[str] = []
+        # ``n_seeds`` is the arm's *cumulative* seed count (ledger n_complete
+        # projected forward by this cycle), not this cycle's marginal
+        # contribution — see the module docstring's seeds-policy note.
         n_seeds = _positive_int(candidate.get("n_seeds"))
         if n_seeds is None:
             return _make_verdict(
@@ -236,10 +261,25 @@ class PowerDecidabilityCheck:
             "min_attainable_p": report.min_attainable_p,
             "min_detectable_effect": report.min_detectable_effect,
             "required_n_for_effect": report.required_n_for_effect,
+            "max_reasonable_n": MAX_REASONABLE_N,
         }
-        return _make_verdict(
-            "pass" if report.decidable else "block", reasons, details
-        )
+        if report.decidable:
+            verdict = "pass"
+        elif report.required_n_for_effect > MAX_REASONABLE_N:
+            verdict = "block"
+            reasons.append(
+                f"required_n_for_effect={report.required_n_for_effect} exceeds "
+                f"the reasonable screening ceiling ({MAX_REASONABLE_N}); this "
+                "design cannot become decidable through realistic accumulation"
+            )
+        else:
+            verdict = "warn"
+            reasons.append(
+                f"not yet decidable at cumulative n_seeds={n_seeds}; still "
+                f"accumulating toward required_n_for_effect="
+                f"{report.required_n_for_effect}"
+            )
+        return _make_verdict(verdict, reasons, details)
 
 
 #: Module-level plugin object discovered by the preflight registry.

@@ -349,6 +349,49 @@ def test_ledger_fallback_missing_file_passes(
     assert verdict.verdict == "pass"
 
 
+def test_arm_fingerprint_converges_evidence_store_record(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Fingerprint-convergence fix: a real evidence-store climb-ledger-arm
+    record (fingerprinted over a slug-keyed descriptor — a domain that never
+    equals a live candidate's lever-derived fingerprint) must still be
+    discoverable and matched by ``prior_attempts``, without falling back to
+    the raw-ledger path. Exercises the real ``evidence_store`` package, not
+    the ``_install_fake_store`` stand-in.
+    """
+    from slm_training.evidence_store import client as real_client
+    from slm_training.evidence_store.local_index import write_local_index
+    from slm_training.evidence_store.records import (
+        EvidenceRecordV1,
+        compute_arm_fingerprint,
+    )
+
+    monkeypatch.delenv("SUPABASE_URL", raising=False)
+    monkeypatch.delenv("SUPABASE_SERVICE_ROLE_KEY", raising=False)
+    slug = "dead-arm-convergence"
+    record = EvidenceRecordV1(
+        experiment_id=f"autotrain-climb-arm-{slug}",
+        campaign_id="autotrain-climb",
+        hypothesis_text=f"Screening arm '{slug}' improves {_ENDPOINT} over control",
+        lever_keys=[slug],
+        config_fingerprint=compute_arm_fingerprint(slug),
+        endpoint_metric=_ENDPOINT,
+        n_seeds=9,
+        outcome="confirm_failed",
+    )
+    local_index = tmp_path / "local_index.jsonl"
+    write_local_index([record], local_index)
+    monkeypatch.setattr(real_client, "DEFAULT_LOCAL_INDEX_PATH", local_index)
+
+    # A live candidate's own fingerprint is lever-derived — deliberately a
+    # different value from the arm fingerprint, mirroring the real driver.
+    candidate = _candidate(slug=slug, config_fingerprint="c" * 16)
+    verdict = prior_attempts.CHECK.run(candidate)
+    assert verdict.verdict == "block"
+    assert verdict.data["source"] == "evidence_store"
+    assert verdict.data["powered_refutations"] == 1
+
+
 def test_check_never_raises(monkeypatch: pytest.MonkeyPatch) -> None:
     def _explode(candidate):
         raise RuntimeError("store exploded")
@@ -462,6 +505,89 @@ def test_driver_gate_passes_through_unblocked_slug(
     assert "prior_attempts" in {
         v["check_id"] for v in payload["verdicts"][bank_slug]
     }
+
+
+def test_driver_gate_passes_cumulative_arm_seeds_not_literal_one(
+    driver, only_prior_attempts, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Seeds-policy reconciliation: the candidate's ``n_seeds`` reflects the
+    arm's cumulative ledger ``n_complete`` (projected +1 for this cycle), not
+    a literal ``1`` — a literal 1 is undecidable by construction and would
+    make ``power_decidability`` block every screening cycle forever.
+    """
+    _install_fake_store(monkeypatch, [])
+    bank_slug = driver._SCREENING_ARM_BANK[0][0]
+
+    from slm_training.autoresearch import evidence_ledger as ev
+
+    monkeypatch.setattr(
+        ev,
+        "load_ledger",
+        lambda *a, **k: {"arms": {bank_slug: {"n_complete": 6}}},
+    )
+    captured: list[dict] = []
+    real_run_preflight = preflight.run_preflight
+
+    def _spy(candidate):
+        captured.append(dict(candidate))
+        return real_run_preflight(candidate)
+
+    monkeypatch.setattr(preflight, "run_preflight", _spy)
+    _gate(driver, bank_slug, reselect=lambda skip: pytest.fail("must not reselect"))
+    assert captured
+    assert captured[0]["n_seeds"] == 7  # cumulative 6 + this cycle
+
+
+def test_driver_gate_unseen_arm_uses_first_cycle_seeds(
+    driver, only_prior_attempts, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An arm absent from the ledger (never screened) starts at n_seeds=1."""
+    _install_fake_store(monkeypatch, [])
+    bank_slug = driver._SCREENING_ARM_BANK[0][0]
+
+    from slm_training.autoresearch import evidence_ledger as ev
+
+    monkeypatch.setattr(ev, "load_ledger", lambda *a, **k: {"arms": {}})
+    captured: list[dict] = []
+    real_run_preflight = preflight.run_preflight
+
+    def _spy(candidate):
+        captured.append(dict(candidate))
+        return real_run_preflight(candidate)
+
+    monkeypatch.setattr(preflight, "run_preflight", _spy)
+    _gate(driver, bank_slug, reselect=lambda skip: pytest.fail("must not reselect"))
+    assert captured
+    assert captured[0]["n_seeds"] == 1
+
+
+def test_driver_gate_ledger_load_failure_degrades_to_one(
+    driver, only_prior_attempts, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A ledger-load error must never break the gate — degrade to n_seeds=1."""
+    _install_fake_store(monkeypatch, [])
+    bank_slug = driver._SCREENING_ARM_BANK[0][0]
+
+    from slm_training.autoresearch import evidence_ledger as ev
+
+    def _explode(*a, **k):
+        raise RuntimeError("ledger unreadable")
+
+    monkeypatch.setattr(ev, "load_ledger", _explode)
+    captured: list[dict] = []
+    real_run_preflight = preflight.run_preflight
+
+    def _spy(candidate):
+        captured.append(dict(candidate))
+        return real_run_preflight(candidate)
+
+    monkeypatch.setattr(preflight, "run_preflight", _spy)
+    chosen, payload = _gate(
+        driver, bank_slug, reselect=lambda skip: pytest.fail("must not reselect")
+    )
+    assert chosen == bank_slug
+    assert captured
+    assert captured[0]["n_seeds"] == 1
 
 
 def test_driver_gate_skips_blocked_slug_and_reselects(

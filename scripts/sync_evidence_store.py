@@ -33,6 +33,7 @@ from slm_training.evidence_store.local_index import (
 )
 from slm_training.evidence_store.records import (
     EvidenceRecordV1,
+    compute_arm_fingerprint,
     compute_config_fingerprint,
 )
 
@@ -401,9 +402,7 @@ def _map_climb_ledger(
                     "over control"
                 ),
                 lever_keys=[str(slug)],
-                config_fingerprint=compute_config_fingerprint(
-                    {"source_kind": "autotrain_climb_ledger", "arm": str(slug)}
-                ),
+                config_fingerprint=compute_arm_fingerprint(str(slug)),
                 endpoint_metric=CLIMB_PRIMARY_METRIC,
                 effect_size=(
                     float(mean_delta)

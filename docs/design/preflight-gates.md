@@ -152,3 +152,30 @@ weakened in either direction.
 (discovery, crash→warn, sorting, block detection) and the `prior_attempts`
 verdict matrix (block/warn/pass, fingerprint stability, guarded-import
 fallback, never-raise). Unit tests only — no training or eval runs.
+
+## Post-launch reconciliation fixes (2026-08-10)
+
+Two gaps flagged as "known reconciliation items" at launch are now closed:
+
+**Cumulative seeds, not a literal 1.** `_preflight_screening_slug` builds
+each candidate's `n_seeds` from the arm's cumulative ledger `n_complete`
+(`+1` for the cycle about to run), not a hardcoded `1`. A literal 1 is
+undecidable by construction for `power_check` (see
+[`power-preflight.md`](power-preflight.md#seeds-policy-reconciliation-post-launch-fix-2026-08-10))
+and would have made every screening cycle for every arm block forever,
+defeating the very accumulation the loop depends on.
+
+**Arm-fingerprint convergence.** A live candidate's `config_fingerprint` is
+lever-derived (hash of its concrete lever dict); `sync_evidence_store.py`'s
+climb-ledger-arm records are fingerprinted over a slug-keyed source
+descriptor (`evidence_store.records.compute_arm_fingerprint`) — a
+deliberately different, cheaper domain that needs no lever
+materialization. The two never coincide by construction, so once the
+evidence store became the primary lookup path, arm-level records were
+invisible to `prior_attempts`'s exact-fingerprint match (worse than the
+raw-ledger fallback it was meant to improve on). `prior_attempts.py` now
+also computes the candidate's arm fingerprint from its `slug`
+(`arm_fingerprint()`) and queries/matches on it alongside the lever-derived
+fingerprint, without weakening `_knobs_fingerprint`'s established
+(steps-excluded, 16-hex, truncated) identity used elsewhere for
+champion-queue dedup.
