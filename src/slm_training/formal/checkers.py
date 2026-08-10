@@ -19,6 +19,7 @@ from dataclasses import dataclass
 import fcntl
 import hashlib
 from pathlib import Path
+import re
 import tempfile
 import time
 from typing import Any
@@ -278,13 +279,66 @@ def check_python_replay(
     )
 
 
+_THEOREM_DECL_RE_CACHE: dict[str, re.Pattern[str]] = {}
+
+
+def _theorem_decl_pattern(local_name: str) -> re.Pattern[str]:
+    pattern = _THEOREM_DECL_RE_CACHE.get(local_name)
+    if pattern is None:
+        pattern = re.compile(
+            rf"(?m)^\s*(?:theorem|lemma)\s+{re.escape(local_name)}\b"
+        )
+        _THEOREM_DECL_RE_CACHE[local_name] = pattern
+    return pattern
+
+
+def _theorem_presence_violation(obj: FormalObjectV1) -> str | None:
+    """Verify a claimed Lean theorem is actually declared in its module.
+
+    A green ``make test`` audits the whole project's axiom purity; it says
+    nothing about whether *this* claim's specific theorem still exists under
+    the name the object cites. A renamed or deleted theorem must not keep
+    silently riding a passing project-wide build. Returns a violation
+    string, or ``None`` when the declaration is found.
+    """
+    theorem_id = obj.statement.get("theorem_id")
+    module = obj.statement.get("module")
+    if not isinstance(theorem_id, str) or not theorem_id:
+        return "lean claim object missing statement.theorem_id"
+    if not isinstance(module, str) or not module:
+        return "lean claim object missing statement.module"
+    local_name = theorem_id.rsplit(".", 1)[-1]
+    if not local_name or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_'!]*", local_name):
+        return f"theorem_id has no resolvable local name: {theorem_id!r}"
+    rel_path = Path(*module.split(".")).with_suffix(".lean")
+    source = LEAN_ROOT / rel_path
+    if not source.is_file():
+        return f"lean module source missing: {rel_path}"
+    try:
+        text = source.read_text(encoding="utf-8")
+    except OSError as exc:
+        return f"lean module source unreadable: {exc}"
+    if not _theorem_decl_pattern(local_name).search(text):
+        return f"theorem {theorem_id!r} not declared in {rel_path}"
+    return None
+
+
 def check_lean_kernel(
     obj: FormalObjectV1,
     *,
     timeout_s: float | None = None,
     enabled: bool = True,
 ) -> CheckerResult:
-    """Optional Lean 4 kernel audit — never sole authority for the loop."""
+    """Optional Lean 4 kernel audit — never sole authority for the loop.
+
+    Runs the project's canonical trust check (``make test``: forbidden-token
+    scan over every proof source, a build, and an axiom-purity audit of every
+    exported theorem via ``Test/Proofs.lean`` + a ``sorryAx`` scan — see
+    ``docs/design/leverproof-integration.md``), not a bare ``lake build``. A
+    passing project-wide audit does not by itself confirm this claim's
+    specific theorem still exists under its cited name, so Lean-claim objects
+    also get a source-level presence check first.
+    """
 
     if not enabled:
         return CheckerResult(
@@ -310,6 +364,16 @@ def check_lean_kernel(
             detail=f"lean package missing at {LEAN_ROOT}",
         )
 
+    if obj.kind is FormalObjectKind.LEAN_CLAIM:
+        presence_violation = _theorem_presence_violation(obj)
+        if presence_violation is not None:
+            return CheckerResult(
+                checker_id=CHECKER_LEAN_KERNEL,
+                backend=CHECKER_LEAN_KERNEL,
+                ok=False,
+                detail=presence_violation,
+            )
+
     # The formal checker is an eval-adjacent subprocess and must obey the same
     # repository wall cap as every other run.  ``subprocess.run(timeout=...)``
     # does not reap descendants and previously allowed callers to pass a
@@ -321,7 +385,7 @@ def check_lean_kernel(
         with FormalProjectLock(LEAN_ROOT, timeout_seconds=total) as lock:
             remaining = max(0.001, total - lock.wait_seconds)
             bounded = run_formal_process(
-                ["lake", "build", "LeverProofLean"],
+                ["make", "test"],
                 cwd=LEAN_ROOT,
                 timeout_seconds=remaining,
             )
@@ -337,14 +401,14 @@ def check_lean_kernel(
             checker_id=CHECKER_LEAN_KERNEL,
             backend=CHECKER_LEAN_KERNEL,
             ok=False,
-            detail=f"lean build launch failed: {bounded.launch_error or 'unknown error'}",
+            detail=f"lean test launch failed: {bounded.launch_error or 'unknown error'}",
         )
     if bounded.timed_out:
         return CheckerResult(
             checker_id=CHECKER_LEAN_KERNEL,
             backend=CHECKER_LEAN_KERNEL,
             ok=False,
-            detail=f"lean build timed out after {total:.3f}s",
+            detail=f"lean test timed out after {total:.3f}s",
         )
     if int(bounded.returncode or 0) != 0:
         tail = (bounded.stderr or bounded.stdout or "")[-500:]
@@ -352,15 +416,15 @@ def check_lean_kernel(
             checker_id=CHECKER_LEAN_KERNEL,
             backend=CHECKER_LEAN_KERNEL,
             ok=False,
-            detail=f"lake build failed: {tail}",
+            detail=f"make test failed: {tail}",
         )
     return CheckerResult(
         checker_id=CHECKER_LEAN_KERNEL,
         backend=CHECKER_LEAN_KERNEL,
         ok=True,
         detail=(
-            "lake build LeverProofLean ok "
-            f"(project_lock_wait_s={lock.wait_seconds:.3f})"
+            "make test ok (theorem presence + axiom-purity audit; "
+            f"project_lock_wait_s={lock.wait_seconds:.3f})"
         ),
     )
 

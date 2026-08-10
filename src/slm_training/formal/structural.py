@@ -9,6 +9,7 @@ membership so translation difficulty stays controlled.
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 from typing import Any
 
 
@@ -103,38 +104,62 @@ def law_close_monotone(
     return after_b.issubset(after_a)
 
 
+def removable(verdict: str, replay_ok: bool) -> bool:
+    """A candidate is removable only under a replay-confirmed UNSUPPORTED.
+
+    Mirrors ExactClosure's honesty rule: UNKNOWN and replay-invalid results
+    never license removal (``docs/design/leverproof-integration.md``). This
+    is the shared oracle the three ``*_not_removable`` laws below
+    characterize — no live closure-engine decision is wired into this pure
+    checker (that integration is tracked as open work, not claimed here);
+    what is verified is that the oracle itself agrees with the Lean-mirrored
+    intent at every point of its input domain, so a later edit that loosens
+    or inverts the definition is caught.
+    """
+    return verdict == "unsupported" and bool(replay_ok)
+
+
 def law_supported_not_removable(verdict: str, replay_ok: bool) -> bool:
-    if verdict == "supported":
-        return not (verdict == "unsupported" and replay_ok)
-    return True
+    return not (verdict == "supported" and removable(verdict, replay_ok))
 
 
 def law_unknown_not_removable(verdict: str, replay_ok: bool) -> bool:
-    if verdict == "unknown":
-        return not (verdict == "unsupported" and replay_ok)
-    return True
+    return not (verdict == "unknown" and removable(verdict, replay_ok))
 
 
 def law_failed_replay_not_removable(verdict: str, replay_ok: bool) -> bool:
-    if not replay_ok:
-        return not (verdict == "unsupported" and replay_ok)
-    return True
+    return not (not replay_ok and removable(verdict, replay_ok))
 
 
-def law_honest_fixed_point(live: Sequence[int], removable: Sequence[int]) -> bool:
-    if removable:
+def law_honest_fixed_point(live: Sequence[int], removable_ids: Sequence[int]) -> bool:
+    if removable_ids:
         return True  # only claims fixed point when nothing removable
-    return _set_eq(close_pass(live, removable), live)
+    return _set_eq(close_pass(live, removable_ids), live)
+
+
+def is_singleton_bypass_state(
+    candidates: Sequence[int], coverage_complete: bool
+) -> bool:
+    """True exactly at the I2 bypass condition: a proven, complete singleton.
+
+    Mirrors ``DecodeInvariants.singleton_bypasses_ranker``. This is a
+    classifier, not a universal implication — it is checked by table (input,
+    expected) below, not by requiring ``True`` on every input.
+    """
+    return bool(coverage_complete) and len(candidates) == 1
 
 
 def law_singleton_bypass(candidates: Sequence[int], coverage_complete: bool) -> bool:
-    if coverage_complete and len(candidates) == 1:
-        return True
-    return not (coverage_complete and len(candidates) == 1 and False)
+    return is_singleton_bypass_state(candidates, coverage_complete)
+
+
+def is_empty_dead_end(candidates: Sequence[int]) -> bool:
+    """True exactly when the candidate list is the empty dead-end state."""
+    return len(candidates) == 0
 
 
 def law_empty_dead_end(candidates: Sequence[int]) -> bool:
-    return len(candidates) == 0  # empty is dead-end condition
+    return is_empty_dead_end(candidates)
 
 
 def law_structural_similarity_mono(
@@ -156,91 +181,229 @@ def law_recall_mono(a: int, b: int, gold: int) -> bool:
     return a * gold <= b * gold
 
 
-def law_core_ignores_library_size(statuses: Sequence[bool], n: int, m: int) -> bool:
-    # success is only all(statuses); size is intentionally unused (BEq over size).
+def _core_success(statuses: Sequence[bool], n: int, m: int) -> bool:
+    # Success is BEq over statuses alone; (n, m) are intentionally unused —
+    # that is exactly the invariance the law below verifies by varying them.
     del n, m
-    return all(statuses) == all(statuses)
+    return all(statuses)
+
+
+def law_core_ignores_library_size(
+    statuses: Sequence[bool], n1: int, m1: int, n2: int, m2: int
+) -> bool:
+    """Core success must not depend on which (library-size) pair is passed."""
+    return _core_success(statuses, n1, m1) == _core_success(statuses, n2, m2)
 
 
 def law_core_ecosystem_disjoint(core: Sequence[str], eco: Sequence[str]) -> bool:
     return set(core).isdisjoint(set(eco))
 
 
-def check_law(law_id: str, context: Mapping[str, Any] | None = None) -> list[str]:
-    """Evaluate one named structural law; return violations (empty ⇒ ok)."""
+@dataclass(frozen=True)
+class _LawCase:
+    """One enumerated instance of a law: inputs plus the expected verdict.
 
-    ctx = dict(context or {})
-    live = list(ctx.get("live", [0, 1, 2, 3]))
-    removable = list(ctx.get("removable", [1]))
-    a = list(ctx.get("a", [1]))
-    b = list(ctx.get("b", [1, 2]))
+    Universal-implication laws (``expect=True`` in every case) fail on any
+    counterexample the case list covers; classifier laws carry mixed
+    expectations so both false positives and false negatives are caught.
+    """
 
-    ok = True
+    context: dict[str, Any]
+    expect: bool = True
+
+
+# Some exported law lists (objects.py) name the same case table under a
+# second, Lean-theorem-matching id. Resolve to the canonical table key before
+# any case lookup so both backends enumerate the identical case set.
+_LAW_ID_ALIASES: dict[str, str] = {
+    "close_never_adds_live": "close_pass_subset",
+}
+
+
+def _canonical_law_id(law_id: str) -> str:
+    return _LAW_ID_ALIASES.get(law_id, law_id)
+
+
+# Shared, bounded enumeration used by both independent backends (check_law
+# and check_law_reference) so a divergence between the two encodings has a
+# real chance to surface, and a single hardcoded default can no longer stand
+# in for verification across the law's actual domain.
+_LAW_CASES: dict[str, tuple[_LawCase, ...]] = {
+    "close_pass_subset": (
+        _LawCase({"live": [0, 1, 2, 3], "removable": [1]}),
+        _LawCase({"live": [0, 1, 2, 3], "removable": []}),
+        _LawCase({"live": [0, 1, 2, 3], "removable": [0, 1, 2, 3]}),
+        _LawCase({"live": [0, 1, 2, 3], "removable": [9]}),
+        _LawCase({"live": [], "removable": []}),
+    ),
+    "close_idempotent": (
+        _LawCase({"live": [0, 1, 2, 3], "removable": [1]}),
+        _LawCase({"live": [0, 1, 2, 3], "removable": []}),
+        _LawCase({"live": [0, 1, 2, 3], "removable": [0, 1, 2, 3]}),
+        _LawCase({"live": [], "removable": [1]}),
+    ),
+    "close_monotone": (
+        _LawCase({"live": [0, 1, 2, 3], "a": [], "b": [1]}),
+        _LawCase({"live": [0, 1, 2, 3], "a": [1], "b": [1, 2]}),
+        _LawCase({"live": [0, 1, 2, 3], "a": [1, 2], "b": [1, 2]}),
+        _LawCase({"live": [0, 1, 2, 3], "a": [], "b": []}),
+    ),
+    "close_history_preserved": (
+        _LawCase({"history": [], "suffix": []}),
+        _LawCase({"history": [], "suffix": ["d1"]}),
+        _LawCase({"history": ["d0"], "suffix": []}),
+        _LawCase({"history": ["d0", "d1"], "suffix": ["d2", "d3"]}),
+    ),
+    "supported_not_removable": tuple(
+        _LawCase({"verdict": v, "replay_ok": r})
+        for v in ("supported", "unsupported", "unknown")
+        for r in (True, False)
+    ),
+    "unknown_not_removable": tuple(
+        _LawCase({"verdict": v, "replay_ok": r})
+        for v in ("supported", "unsupported", "unknown")
+        for r in (True, False)
+    ),
+    "failed_replay_not_removable": tuple(
+        _LawCase({"verdict": v, "replay_ok": r})
+        for v in ("supported", "unsupported", "unknown")
+        for r in (True, False)
+    ),
+    "honest_fixed_point": (
+        _LawCase({"live": [0, 1, 2], "removable": []}),
+        _LawCase({"live": [], "removable": []}),
+        _LawCase({"live": [0, 1, 2], "removable": [1]}),
+    ),
+    "singleton_bypass": (
+        _LawCase({"candidates": [], "coverage_complete": True}, expect=False),
+        _LawCase({"candidates": [7], "coverage_complete": True}, expect=True),
+        _LawCase({"candidates": [7], "coverage_complete": False}, expect=False),
+        _LawCase({"candidates": [1, 2], "coverage_complete": True}, expect=False),
+        _LawCase({"candidates": [1, 2, 3], "coverage_complete": False}, expect=False),
+    ),
+    "empty_dead_end": (
+        _LawCase({"candidates": []}, expect=True),
+        _LawCase({"candidates": [1]}, expect=False),
+        _LawCase({"candidates": [1, 2]}, expect=False),
+    ),
+    "structural_similarity_mono": (
+        _LawCase({"j1": 1, "d1": 1, "j2": 2, "d2": 2}),
+        _LawCase({"j1": 0, "d1": 0, "j2": 0, "d2": 0}),
+        _LawCase({"j1": 3, "d1": 1, "j2": 3, "d2": 3}),
+        _LawCase({"j1": 5, "d1": 5, "j2": 1, "d2": 9}),  # antecedent false
+    ),
+    "recall_mono": (
+        _LawCase({"a": 1, "b": 2, "gold": 4}),
+        _LawCase({"a": 0, "b": 0, "gold": 4}),
+        _LawCase({"a": 4, "b": 4, "gold": 4}),
+        _LawCase({"a": 3, "b": 1, "gold": 4}),  # antecedent false
+    ),
+    "core_ignores_library_size": (
+        _LawCase({"statuses": [True, True, True], "n1": 0, "m1": 0, "n2": 5, "m2": 9}),
+        _LawCase(
+            {"statuses": [True, False, True], "n1": 1, "m1": 1, "n2": 20, "m2": 20}
+        ),
+        _LawCase({"statuses": [], "n1": 0, "m1": 0, "n2": 3, "m2": 3}),
+    ),
+    "core_ecosystem_disjoint": (
+        _LawCase(
+            {
+                "core": [
+                    "ListSet",
+                    "Forest",
+                    "Trace",
+                    "ExactClosure",
+                    "DecodeInvariants",
+                ],
+                "eco": ["StructuralMetrics", "EcosystemTier"],
+            }
+        ),
+        _LawCase({"core": [], "eco": ["StructuralMetrics"]}),
+        _LawCase({"core": ["Forest"], "eco": []}),
+    ),
+}
+
+
+def _eval_law(law_id: str, ctx: Mapping[str, Any]) -> bool:
+    """Evaluate the structural-backend law function for one case's context."""
     if law_id in {"close_pass_subset", "close_never_adds_live"}:
-        ok = law_close_pass_subset(live, removable)
-    elif law_id == "close_idempotent":
-        ok = law_close_idempotent(live, removable)
-    elif law_id == "close_monotone":
-        ok = law_close_monotone(live, a, b)
-    elif law_id == "close_history_preserved":
-        # History prefix: [h] ++ suffix always has [h] as prefix — tautology probe.
-        history = list(ctx.get("history", ["d0"]))
-        suffix = list(ctx.get("suffix", ["d1"]))
-        ok = history == (history + suffix)[: len(history)]
-    elif law_id == "supported_not_removable":
-        ok = law_supported_not_removable(
-            str(ctx.get("verdict", "supported")), bool(ctx.get("replay_ok", True))
+        return law_close_pass_subset(list(ctx["live"]), list(ctx["removable"]))
+    if law_id == "close_idempotent":
+        return law_close_idempotent(list(ctx["live"]), list(ctx["removable"]))
+    if law_id == "close_monotone":
+        return law_close_monotone(list(ctx["live"]), list(ctx["a"]), list(ctx["b"]))
+    if law_id == "close_history_preserved":
+        history = list(ctx["history"])
+        suffix = list(ctx["suffix"])
+        return history == (history + suffix)[: len(history)]
+    if law_id == "supported_not_removable":
+        return law_supported_not_removable(str(ctx["verdict"]), bool(ctx["replay_ok"]))
+    if law_id == "unknown_not_removable":
+        return law_unknown_not_removable(str(ctx["verdict"]), bool(ctx["replay_ok"]))
+    if law_id == "failed_replay_not_removable":
+        return law_failed_replay_not_removable(
+            str(ctx["verdict"]), bool(ctx["replay_ok"])
         )
-    elif law_id == "unknown_not_removable":
-        ok = law_unknown_not_removable(
-            str(ctx.get("verdict", "unknown")), bool(ctx.get("replay_ok", True))
+    if law_id == "honest_fixed_point":
+        return law_honest_fixed_point(list(ctx["live"]), list(ctx["removable"]))
+    if law_id == "singleton_bypass":
+        return law_singleton_bypass(
+            list(ctx["candidates"]), bool(ctx["coverage_complete"])
         )
-    elif law_id == "failed_replay_not_removable":
-        ok = law_failed_replay_not_removable(
-            str(ctx.get("verdict", "unsupported")), bool(ctx.get("replay_ok", False))
+    if law_id == "empty_dead_end":
+        return law_empty_dead_end(list(ctx["candidates"]))
+    if law_id == "structural_similarity_mono":
+        return law_structural_similarity_mono(
+            int(ctx["j1"]), int(ctx["d1"]), int(ctx["j2"]), int(ctx["d2"])
         )
-    elif law_id == "honest_fixed_point":
-        ok = law_honest_fixed_point(live, list(ctx.get("removable", [])))
-    elif law_id == "singleton_bypass":
-        ok = law_singleton_bypass(
-            list(ctx.get("candidates", [7])),
-            bool(ctx.get("coverage_complete", True)),
+    if law_id == "recall_mono":
+        return law_recall_mono(int(ctx["a"]), int(ctx["b"]), int(ctx["gold"]))
+    if law_id == "core_ignores_library_size":
+        return law_core_ignores_library_size(
+            list(ctx["statuses"]),
+            int(ctx["n1"]),
+            int(ctx["m1"]),
+            int(ctx["n2"]),
+            int(ctx["m2"]),
         )
-    elif law_id == "empty_dead_end":
-        ok = law_empty_dead_end(list(ctx.get("candidates", [])))
-    elif law_id == "structural_similarity_mono":
-        ok = law_structural_similarity_mono(
-            int(ctx.get("j1", 1)),
-            int(ctx.get("d1", 1)),
-            int(ctx.get("j2", 2)),
-            int(ctx.get("d2", 2)),
-        )
-    elif law_id == "recall_mono":
-        ok = law_recall_mono(
-            int(ctx.get("a", 1)), int(ctx.get("b", 2)), int(ctx.get("gold", 4))
-        )
-    elif law_id == "core_ignores_library_size":
-        ok = law_core_ignores_library_size(
-            list(ctx.get("statuses", [True, True, True, True, True])),
-            int(ctx.get("n", 0)),
-            int(ctx.get("m", 99)),
-        )
-    elif law_id == "core_ecosystem_disjoint":
-        ok = law_core_ecosystem_disjoint(
-            list(
-                ctx.get(
-                    "core",
-                    ["ListSet", "Forest", "Trace", "ExactClosure", "DecodeInvariants"],
-                )
-            ),
-            list(ctx.get("eco", ["StructuralMetrics", "EcosystemTier"])),
-        )
-    else:
-        return [f"unknown structural law: {law_id!r}"]
+    if law_id == "core_ecosystem_disjoint":
+        return law_core_ecosystem_disjoint(list(ctx["core"]), list(ctx["eco"]))
+    raise KeyError(law_id)
 
-    if not ok:
-        return [f"structural law failed: {law_id}"]
-    return []
+
+def check_law(law_id: str, context: Mapping[str, Any] | None = None) -> list[str]:
+    """Evaluate one named structural law; return violations (empty ⇒ ok).
+
+    With an explicit ``context`` this checks exactly that one instance
+    (single-shot, for a caller that supplies real state). With no context —
+    the path every exporter in this codebase actually uses — it enumerates
+    the law's bounded case table (:data:`_LAW_CASES`) instead of one
+    hardcoded default, so the check can find a real counterexample rather
+    than passing vacuously on a single anecdotal input.
+    """
+    if context is not None:
+        try:
+            ok = _eval_law(law_id, dict(context))
+        except (KeyError, TypeError, ValueError) as exc:
+            return [f"structural law {law_id!r} raised on supplied context: {exc}"]
+        return [] if ok else [f"structural law failed: {law_id}"]
+
+    cases = _LAW_CASES.get(_canonical_law_id(law_id))
+    if cases is None:
+        return [f"unknown structural law: {law_id!r}"]
+    violations: list[str] = []
+    for index, case in enumerate(cases):
+        try:
+            ok = _eval_law(law_id, case.context)
+        except (KeyError, TypeError, ValueError) as exc:
+            violations.append(f"structural law {law_id!r} case {index} raised: {exc}")
+            continue
+        if ok != case.expect:
+            violations.append(
+                f"structural law failed: {law_id} case {index} "
+                f"(got {ok}, expected {case.expect}, context={case.context})"
+            )
+    return violations
 
 
 def check_lean_or_closure_laws(
@@ -262,85 +425,126 @@ def close_pass_ref(live: Sequence[int], removable: Sequence[int]) -> set[int]:
     return set(live) - set(removable)
 
 
-def check_law_reference(law_id: str, context: Mapping[str, Any] | None = None) -> list[str]:
-    """Second pure encoding of structural laws (independent prover path)."""
+def removable_ref(verdict: str, replay_ok: bool) -> bool:
+    """Independent (dict-lookup) re-encoding of the removable oracle.
 
-    ctx = dict(context or {})
-    live = list(ctx.get("live", [0, 1, 2, 3]))
-    removable = list(ctx.get("removable", [1]))
-    a = list(ctx.get("a", [1]))
-    b = list(ctx.get("b", [1, 2]))
-    ok = True
+    Deliberately not a call to :func:`removable` — a shared helper would let
+    a single bug in the shared definition pass both backends. This is the
+    same rule (``UNSUPPORTED`` + replay-confirmed only) expressed a different
+    way, so the two backends can disagree if either encoding drifts.
+    """
+    return {"unsupported": bool(replay_ok)}.get(verdict, False)
 
-    if law_id in {"close_pass_subset", "close_never_adds_live"}:
-        ok = close_pass_ref(live, removable).issubset(set(live))
-    elif law_id == "close_idempotent":
+
+def _core_success_ref(statuses: Sequence[bool], n: int, m: int) -> bool:
+    del n, m
+    return all(statuses)
+
+
+def _eval_law_reference(law_id: str, ctx: Mapping[str, Any]) -> bool:
+    """Evaluate the reference-backend (set-based) law encoding for one case."""
+    canonical = _canonical_law_id(law_id)
+    if canonical == "close_pass_subset":
+        live = list(ctx["live"])
+        removable = list(ctx["removable"])
+        return close_pass_ref(live, removable).issubset(set(live))
+    if canonical == "close_idempotent":
+        live = list(ctx["live"])
+        removable = list(ctx["removable"])
         once = close_pass_ref(live, removable)
         twice = close_pass_ref(sorted(once), removable)
-        ok = once == twice
-    elif law_id == "close_monotone":
+        return once == twice
+    if canonical == "close_monotone":
+        live = list(ctx["live"])
+        a = list(ctx["a"])
+        b = list(ctx["b"])
         if not set(a).issubset(set(b)):
-            ok = False
-        else:
-            ok = close_pass_ref(live, b).issubset(close_pass_ref(live, a))
-    elif law_id == "close_history_preserved":
-        history = tuple(ctx.get("history", ("d0",)))
-        suffix = tuple(ctx.get("suffix", ("d1",)))
+            return False
+        return close_pass_ref(live, b).issubset(close_pass_ref(live, a))
+    if canonical == "close_history_preserved":
+        history = tuple(ctx["history"])
+        suffix = tuple(ctx["suffix"])
         extended = history + suffix
-        ok = extended[: len(history)] == history
-    elif law_id == "supported_not_removable":
-        verdict = str(ctx.get("verdict", "supported"))
-        ok = verdict != "unsupported" or not bool(ctx.get("replay_ok", True))
-        # supported never removable:
-        if verdict == "supported":
-            ok = True
-    elif law_id == "unknown_not_removable":
-        verdict = str(ctx.get("verdict", "unknown"))
-        ok = verdict != "unsupported" or not bool(ctx.get("replay_ok", True))
-        if verdict == "unknown":
-            ok = True
-    elif law_id == "failed_replay_not_removable":
-        ok = not bool(ctx.get("replay_ok", False))
-    elif law_id == "honest_fixed_point":
-        rem = list(ctx.get("removable", []))
-        ok = (not rem and close_pass_ref(live, rem) == set(live)) or bool(rem)
-    elif law_id == "singleton_bypass":
-        cands = list(ctx.get("candidates", [7]))
-        ok = bool(ctx.get("coverage_complete", True)) and len(cands) == 1
-    elif law_id == "empty_dead_end":
-        ok = len(list(ctx.get("candidates", []))) == 0
-    elif law_id == "structural_similarity_mono":
-        j1, d1 = int(ctx.get("j1", 1)), int(ctx.get("d1", 1))
-        j2, d2 = int(ctx.get("j2", 2)), int(ctx.get("d2", 2))
+        return extended[: len(history)] == history
+    if canonical == "supported_not_removable":
+        verdict = str(ctx["verdict"])
+        replay_ok = bool(ctx["replay_ok"])
+        return not (verdict == "supported" and removable_ref(verdict, replay_ok))
+    if canonical == "unknown_not_removable":
+        verdict = str(ctx["verdict"])
+        replay_ok = bool(ctx["replay_ok"])
+        return not (verdict == "unknown" and removable_ref(verdict, replay_ok))
+    if canonical == "failed_replay_not_removable":
+        verdict = str(ctx["verdict"])
+        replay_ok = bool(ctx["replay_ok"])
+        return not (not replay_ok and removable_ref(verdict, replay_ok))
+    if canonical == "honest_fixed_point":
+        live = list(ctx["live"])
+        rem = list(ctx["removable"])
+        if rem:
+            return True
+        return close_pass_ref(live, rem) == set(live)
+    if canonical == "singleton_bypass":
+        cands = list(ctx["candidates"])
+        return bool(ctx["coverage_complete"]) and len(cands) == 1
+    if canonical == "empty_dead_end":
+        return len(list(ctx["candidates"])) == 0
+    if canonical == "structural_similarity_mono":
+        j1, d1 = int(ctx["j1"]), int(ctx["d1"])
+        j2, d2 = int(ctx["j2"]), int(ctx["d2"])
         if j1 > j2 or d1 > d2:
-            ok = True
-        else:
-            ok = (7 * j1 + 3 * d1) // 10 <= (7 * j2 + 3 * d2) // 10
-    elif law_id == "recall_mono":
-        a_n, b_n, gold = (
-            int(ctx.get("a", 1)),
-            int(ctx.get("b", 2)),
-            int(ctx.get("gold", 4)),
-        )
-        ok = a_n > b_n or a_n * gold <= b_n * gold
-    elif law_id == "core_ignores_library_size":
-        statuses = list(ctx.get("statuses", [True, True, True, True, True]))
-        ok = all(statuses) == all(statuses)
-    elif law_id == "core_ecosystem_disjoint":
-        core = set(
-            ctx.get(
-                "core",
-                ["ListSet", "Forest", "Trace", "ExactClosure", "DecodeInvariants"],
-            )
-        )
-        eco = set(ctx.get("eco", ["StructuralMetrics", "EcosystemTier"]))
-        ok = core.isdisjoint(eco)
-    else:
-        return [f"unknown reference law: {law_id!r}"]
+            return True
+        return (7 * j1 + 3 * d1) // 10 <= (7 * j2 + 3 * d2) // 10
+    if canonical == "recall_mono":
+        a_n, b_n, gold = int(ctx["a"]), int(ctx["b"]), int(ctx["gold"])
+        return a_n > b_n or a_n * gold <= b_n * gold
+    if canonical == "core_ignores_library_size":
+        statuses = list(ctx["statuses"])
+        n1, m1 = int(ctx["n1"]), int(ctx["m1"])
+        n2, m2 = int(ctx["n2"]), int(ctx["m2"])
+        return _core_success_ref(statuses, n1, m1) == _core_success_ref(statuses, n2, m2)
+    if canonical == "core_ecosystem_disjoint":
+        core = set(ctx["core"])
+        eco = set(ctx["eco"])
+        return core.isdisjoint(eco)
+    raise KeyError(law_id)
 
-    if not ok:
-        return [f"reference law failed: {law_id}"]
-    return []
+
+def check_law_reference(law_id: str, context: Mapping[str, Any] | None = None) -> list[str]:
+    """Second, independent pure encoding of structural laws (set-based path).
+
+    Mirrors :func:`check_law`'s enumeration behavior: with no explicit
+    context (every real exporter's path) it checks the same bounded case
+    table (:data:`_LAW_CASES`) as the structural backend through a wholly
+    separate evaluation function, so an encoding bug in one backend has a
+    real chance of being caught by the other rather than both silently
+    agreeing on a single hardcoded default.
+    """
+    if context is not None:
+        try:
+            ok = _eval_law_reference(law_id, dict(context))
+        except KeyError:
+            return [f"unknown reference law: {law_id!r}"]
+        except (TypeError, ValueError) as exc:
+            return [f"reference law {law_id!r} raised on supplied context: {exc}"]
+        return [] if ok else [f"reference law failed: {law_id}"]
+
+    cases = _LAW_CASES.get(_canonical_law_id(law_id))
+    if cases is None:
+        return [f"unknown reference law: {law_id!r}"]
+    violations: list[str] = []
+    for index, case in enumerate(cases):
+        try:
+            ok = _eval_law_reference(law_id, case.context)
+        except (KeyError, TypeError, ValueError) as exc:
+            violations.append(f"reference law {law_id!r} case {index} raised: {exc}")
+            continue
+        if ok != case.expect:
+            violations.append(
+                f"reference law failed: {law_id} case {index} "
+                f"(got {ok}, expected {case.expect}, context={case.context})"
+            )
+    return violations
 
 
 def check_support_certificate_reference(payload: Mapping[str, Any]) -> list[str]:

@@ -188,6 +188,51 @@ factory decides from evidence how much compute each technique earns.
   now also prints the current eval key, the posterior-UCB top-10, and the
   screening power geometry.
 
+## Proof-chain integrity (R6, partial — 2026-08-10)
+
+R6 named four integrity gaps in the multi-prover formal-object loop
+(`docs/design/harness-evolution-architecture-review-20260809.md` §4-R6).
+Two are closed; two remain open, below.
+
+- **R6(a) — tautology backends replaced with property-based enumeration.**
+  `slm_training.formal.structural.check_law` and `check_law_reference` no
+  longer evaluate a single hardcoded default context when called with
+  `context=None` (the path every real exporter in the codebase uses). Both
+  now enumerate a shared, bounded case table (`_LAW_CASES`) — one set of
+  inputs per law, including antecedent-false and classifier-mismatch edge
+  cases — through two *separately written* evaluation functions (`_eval_law`,
+  `_eval_law_reference`), so a bug in one encoding has a real chance of
+  disagreeing with the other instead of both silently agreeing on one
+  anecdotal input. `slm_training.formal.checkers.check_lean_kernel` now
+  regex-audits that the claimed theorem is actually declared in the named
+  Lean source file *before* invoking the toolchain, and runs `make test`
+  (build → forbidden-token scan for `sorry`/`admit`/`axiom`/etc. →
+  `#print axioms` sweep) instead of trusting a bare `lake build` exit code.
+  Tests: `tests/test_formal/test_formal_objects.py` (16 cases, including two
+  new theorem-presence-violation tests and a direct backend-agreement sweep
+  over `_LAW_CASES`).
+- **R6(b) — real small-sample confidence intervals.**
+  `slm_training.harness_core.efficiency_gain.efficiency_gain_lcb` replaced
+  the normal-approximation `z=1.96` interval with exact two-sided Student-t
+  critical values (standard textbook table, no scipy dependency) and now
+  requires `n>=2` finite seeds for any `lcb`/`ucb` — a single seed returns
+  `nan` bounds rather than a zero-width interval that trivially clears an
+  `lcb >= threshold` gate. Both `promotion_engine.py` call sites already
+  guard with `math.isfinite(lcb)`, so this fails closed with no caller
+  change. Tests: `tests/test_harness_core/test_parameter_efficiency.py`
+  (5 new cases, including a regression guard proving the new bound is wider
+  than the stale normal-approximation bound at small n).
+- **R6(c) — measured-vs-synthesized as a type — not done.** Fixture
+  synthesizers still emit plain numeric fields; nothing yet stops a
+  `_hash_noise` value from sitting in a key a real gate/selection loader
+  reads. This needs a schema-level split (`synthetic_metrics` vs measured
+  fields) across the eval/gate loader boundary — larger than a hygiene fix,
+  deferred.
+- **R6(d) — forced-emit text from terminal regexes — not done.** Forced-emit
+  strings are still sourced from the hardcoded `_TERM_TO_TEXT` table rather
+  than derived from the terminal grammar's regexes (or the R2 product
+  automaton, itself undelivered). Deferred with R2.
+
 ## Remaining open item
 
 The full R1 admission gate for *screening* (refusing statistically
@@ -197,3 +242,10 @@ run-cap policy (`levers.py` `MAX_RUN_MINUTES` + `scripts.repo_policy
 --sync-run-policy`) — a separate versioned decision for the maintainer, not
 an implementation gap: under the current 3-minute wall, screening cycles
 remain evidence-tier `directional` and closure is already power-floored.
+
+R2 (typed lever lattice replacing the flat arm bank) and R4 (a graded,
+Lean-proved tree-edit-distance objective metric) remain undelivered —
+both are structural rewrites the original review explicitly separates from
+hygiene work, not gaps this pass scoped in. R5 (splitting the run budget by
+claim class) is, per the review, a policy decision for the maintainer to
+make, not an implementation task.

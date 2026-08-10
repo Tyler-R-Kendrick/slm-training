@@ -4392,12 +4392,17 @@
       ]
     },
     "harness.core": {
-      "version": "v15",
+      "version": "v16",
       "kind": "harness",
       "paths": [
         "src/slm_training/harness_core/"
       ],
       "history": [
+        {
+          "version": "v16",
+          "date": "2026-08-10",
+          "note": "Replace the normal-approximation z=1.96 EG_params/EG_time interval with exact Student-t critical values and require n>=2 finite seeds for any lcb/ucb (single-seed now yields nan, failing closed on lcb>=threshold gates instead of a zero-width interval)"
+        },
         {
           "version": "v15",
           "date": "2026-08-01",
@@ -16438,7 +16443,7 @@
       ]
     },
     "formal.objects": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/formal/__init__.py",
@@ -16449,6 +16454,11 @@
         "docs/design/formal-objects-multi-prover.md"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-08-10",
+          "note": "Close the proof-chain integrity gaps: lean_kernel now audits theorem presence in source (regex-matched local declaration) before running 'make test' (build + forbidden-token scan + axiom-purity check) instead of trusting a bare 'lake build' exit code; python_structural/python_reference replace their single-hardcoded-context law checks with enumeration over a shared bounded case table (_LAW_CASES) covering every catalog law_id, so both independent backends can find a real counterexample instead of vacuously agreeing on one anecdotal input."
+        },
         {
           "version": "v3",
           "date": "2026-08-03",

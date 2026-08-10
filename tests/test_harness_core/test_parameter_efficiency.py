@@ -8,7 +8,12 @@ from __future__ import annotations
 
 import pytest
 
-from slm_training.harness_core.efficiency_gain import efficiency_gain
+import math
+
+from slm_training.harness_core.efficiency_gain import (
+    efficiency_gain,
+    efficiency_gain_lcb,
+)
 from slm_training.harness_core.promotion_engine import (
     PromotionCriteria,
     check_parameter_efficiency,
@@ -185,3 +190,58 @@ def test_capacity_registry_declares_baseline_and_axis() -> None:
     for name, spec in CAPACITY_SCALING_LEVERS.items():
         assert "baseline_value" in spec, name
         assert spec.get("axis") in {"width", "depth", "backbone"}, name
+
+
+def test_efficiency_gain_lcb_empty_is_all_nan() -> None:
+    mean, lcb, ucb = efficiency_gain_lcb([])
+    assert math.isnan(mean) and math.isnan(lcb) and math.isnan(ucb)
+
+
+def test_efficiency_gain_lcb_single_seed_has_no_dispersion_estimate() -> None:
+    # A single observation must not present a zero-width interval that
+    # trivially clears any lcb>=threshold gate — the mean is honest, the
+    # bounds are unknown.
+    mean, lcb, ucb = efficiency_gain_lcb([1.5])
+    assert mean == pytest.approx(1.5)
+    assert math.isnan(lcb) and math.isnan(ucb)
+
+
+def test_efficiency_gain_lcb_matches_student_t_at_small_n() -> None:
+    # df=1 (n=2), 95% two-sided critical value is 12.706 (textbook), not the
+    # normal-approx 1.96 the old implementation used.
+    vals = [1.0, 1.2]
+    mean, lcb, ucb = efficiency_gain_lcb(vals, confidence=0.95)
+    n = len(vals)
+    sample_mean = sum(vals) / n
+    var = sum((v - sample_mean) ** 2 for v in vals) / (n - 1)
+    se = math.sqrt(var) / math.sqrt(n)
+    expected_lcb = sample_mean - 12.706 * se
+    expected_ucb = sample_mean + 12.706 * se
+    assert lcb == pytest.approx(expected_lcb, rel=1e-3)
+    assert ucb == pytest.approx(expected_ucb, rel=1e-3)
+
+
+def test_efficiency_gain_lcb_is_wider_than_the_old_normal_approx_at_small_n() -> None:
+    vals = [1.0, 1.1, 0.95]
+    _, lcb, _ = efficiency_gain_lcb(vals, confidence=0.95)
+    n = len(vals)
+    sample_mean = sum(vals) / n
+    var = sum((v - sample_mean) ** 2 for v in vals) / (n - 1)
+    se = math.sqrt(var) / math.sqrt(n)
+    stale_normal_lcb = sample_mean - 1.96 * se
+    assert lcb < stale_normal_lcb
+
+
+def test_efficiency_gain_lcb_clamps_beyond_the_tabulated_degrees_of_freedom() -> None:
+    # 35 seeds -> df=34, beyond the table's df=30 ceiling; the largest
+    # tabulated (most conservative) critical value is reused rather than
+    # extrapolating.
+    vals = [1.0 + 0.01 * i for i in range(35)]
+    _, lcb, ucb = efficiency_gain_lcb(vals, confidence=0.95)
+    n = len(vals)
+    sample_mean = sum(vals) / n
+    var = sum((v - sample_mean) ** 2 for v in vals) / (n - 1)
+    se = math.sqrt(var) / math.sqrt(n)
+    expected_lcb = sample_mean - 2.042 * se
+    assert lcb == pytest.approx(expected_lcb, rel=1e-3)
+    assert ucb > sample_mean > lcb
