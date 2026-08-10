@@ -1,0 +1,120 @@
+{
+  "auto": true,
+  "campaign_id": "continuous-loop-20260810-continuous-openui-schedu-b47915d7-c16",
+  "candidate_metrics": {
+    "binder_reference_f1": null,
+    "latency_ms_p50": null,
+    "meaningful_program_rate": null,
+    "parse_rate": null,
+    "structural_similarity": null
+  },
+  "control_metrics": {
+    "binder_reference_f1": null,
+    "latency_ms_p50": null,
+    "meaningful_program_rate": null,
+    "parse_rate": null,
+    "structural_similarity": null
+  },
+  "cycle_index": 16,
+  "cycle_intent": "screening",
+  "cycle_role": "screening",
+  "delivery": {
+    "agent_required": "continue loop; local commits/docs only",
+    "arm_exits": {
+      "c20260810-continuous-openui-schedu-b47915d7-c16-binder-topology": 124
+    },
+    "arm_order": [
+      "c20260810-continuous-openui-schedu-b47915d7-c16-binder-topology",
+      "c20260810-continuous-openui-schedu-b47915d7-c16-control"
+    ],
+    "arm_seed": 100016,
+    "arm_skipped": {
+      "c20260810-continuous-openui-schedu-b47915d7-c16-control": {
+        "arm_id": "c20260810-continuous-openui-schedu-b47915d7-c16-control",
+        "deadline": 244.132226587,
+        "order_index": 1,
+        "pending_arm_count": 1,
+        "reason": "deadline_reserve",
+        "remaining_seconds": 29.267971533999997,
+        "required_seconds": 29.4717472225,
+        "skipped_index": 0
+      }
+    },
+    "baseline_trainable_params": null,
+    "campaign_id": "continuous-loop-20260810-continuous-openui-schedu-b47915d7-c16",
+    "candidate_id": "c20260810-continuous-openui-schedu-b47915d7-c16-binder-topology",
+    "candidate_metrics": {
+      "binder_reference_f1": null,
+      "latency_ms_p50": null,
+      "meaningful_program_rate": null,
+      "parse_rate": null,
+      "structural_similarity": null
+    },
+    "candidate_trainable_params": null,
+    "climb_policy_sha256": "399db78cce898b86321e211492374a8ef372a271126e8ad992ab9c4e0dc3c7ce",
+    "control_id": "c20260810-continuous-openui-schedu-b47915d7-c16-control",
+    "control_metrics": {
+      "binder_reference_f1": null,
+      "latency_ms_p50": null,
+      "meaningful_program_rate": null,
+      "parse_rate": null,
+      "structural_similarity": null
+    },
+    "cycle_index": 16,
+    "cycle_intent": "screening",
+    "cycle_role": "screening",
+    "direction": "increase",
+    "finished_at": "2026-08-10T19:43:38Z",
+    "fixture_volume_gate_hits": 0,
+    "has_tracked_delta": false,
+    "loop_id": "continuous-openui-scheduled-soy2gk",
+    "measurement_complete": false,
+    "policy_sha256": "399db78cce898b86321e211492374a8ef372a271126e8ad992ab9c4e0dc3c7ce",
+    "policy_version": "v8",
+    "positive": false,
+    "primary_metric": "smoke.structural_similarity",
+    "reasons": [
+      "measurement_incomplete:c20260810-continuous-openui-schedu-b47915d7-c16-control:missing_scoreboard",
+      "measurement_incomplete:c20260810-continuous-openui-schedu-b47915d7-c16-binder-topology:missing_scoreboard",
+      "primary_metric_unavailable"
+    ],
+    "role": "screening",
+    "schema": "autotrain_sdlc_delivery/v1",
+    "sdlc_phase": "A",
+    "stack_action": "no_stack_layer_non_positive",
+    "stack_layer": false,
+    "thrash_regime": {
+      "base_regime": "isolate",
+      "climb_baseline_keys": [],
+      "has_climb_baseline": false,
+      "reason": "no_climb_baseline_causal_ofat",
+      "regime": "isolate",
+      "timeout_residual": false
+    }
+  },
+  "evidence_class": "fixture",
+  "honesty": "fixture_screening_only_not_ship",
+  "loop_id": "continuous-openui-scheduled-soy2gk",
+  "measurement_complete": false,
+  "positive": false,
+  "primary_metric": "smoke.structural_similarity",
+  "reasons": [
+    "measurement_incomplete:c20260810-continuous-openui-schedu-b47915d7-c16-control:missing_scoreboard",
+    "measurement_incomplete:c20260810-continuous-openui-schedu-b47915d7-c16-binder-topology:missing_scoreboard",
+    "primary_metric_unavailable"
+  ],
+  "schema": "continuous_cycle_results/v1",
+  "stack_layer": false,
+  "version_stamp": {
+    "code_commit": "18942c1e998327293bd6422440bc0c2b2d7604b3",
+    "code_dirty": false,
+    "components": {
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v23",
+      "gates.ship": "openui_ship_gates_v6",
+      "harness.model_build.eval": "v96"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-10T19:43:38.489878+00:00"
+  }
+}
