@@ -536,6 +536,28 @@
       "notes": "RSP-004/SLM-479. The downstream_extension_map row for RSP-004 predicted new_owner_justified: false ('Runs SRP-005's canonicalization/rewrite-certificate work through the campaign contract'), i.e. no new owner beyond dsl_pack_registry_canonical/experiment_campaign. The e-graph union-find contract itself (EGraph/ENodeV1/RewriteApplicationV1/CertificateVerificationV1) is not literally defined in symbolic_expr_canonicalize.py or experiment_campaign.py, so per this map's own sibling-file rule it is registered as its own subsystem instead (same precedent as SGS-008/SRP-004/005/007/008) -- but the row's actual constraint is honored literally: every union this module performs carries the certificate symbolic_expr_canonicalize.apply_rewrite_rule already produces (REWRITE_RULES is the sole seed, no new rewrite semantics), and the experiment runs through the pre-registered SIE-001 exp_sr_catalogue.py identity (family_id 'exp-sr-8', campaign_manifest_sha256 referenced in the results doc) rather than inventing a parallel campaign. Extraction is a cycle-safe bottom-up fixed point (safe_representatives): rules like double-negation elimination union a class with one of its own descendants, which can leave e-nodes only reconstructible by re-entering their own class -- a naive recursive walk over an arbitrary member recurses forever, so extraction only ever selects an already-proven-acyclic representative per class. Every rewrite application is independently re-verified numerically (verify_rewrite_numerically, NaN-aware) before counting toward the locked primary endpoint egraph_certified_equivalence_rate (kill_threshold=1.0/lt: any uncertified or numerically-unverified union kills the candidate arm). Measured result (docs/design/exp-sr-8-egraph-equivalence-experiment.{json,md}): e-graph regions matched canonical-hash dedup's unique-form set and Pareto frontier exactly on the fixture corpus -- expected, since SRP-005's current REWRITE_RULES are each complexity-non-increasing and confluent, so e-graph saturation is mathematically guaranteed to converge to the same fixed point canonicalize_expr already computes. Per SLM-479's own acceptance criterion ('Result remains default-off regardless of fixture win'), nothing in dsl/symbolic_regression_pack.py or any production canonicalization path imports this module."
     },
     {
+      "id": "symbolic_macro_library",
+      "name": "Prospective certified macro/library-learning experiment (EXP-SR-9)",
+      "owner_module": "src/slm_training/harnesses/experiments/symbolic_macro_library.py",
+      "owner_symbols": [
+        "MacroCandidateV1",
+        "MacroEntryV1",
+        "MacroLibraryV1",
+        "Rsp005CampaignV1",
+        "mine_macro_candidates",
+        "select_macros_by_mdl",
+        "select_macros_by_frequency",
+        "instrumented_node_count",
+        "macro_library_size_reduction_rate",
+        "expand_macro",
+        "verify_expansion_equivalence",
+        "run_campaign"
+      ],
+      "authority_tier": "evaluation-only",
+      "design_doc": "docs/design/exp-sr-9-macro-library-experiment.md",
+      "notes": "RSP-005/SLM-480. The downstream_extension_map row for RSP-005 predicted new_owner_justified: false ('Runs pack + artifact owners through the campaign contract'), i.e. no new owner beyond dsl_pack_registry_canonical/certified_completion_artifact/experiment_campaign. The macro-library contract itself (MacroLibraryV1/MacroEntryV1/mining and selection functions) is not literally defined in dsl/pack.py or dsl/grammar/fastpath/completion_artifact.py, so per this map's own sibling-file rule it is registered as its own subsystem instead (same precedent as SGS-008/SRP-004/005/007/008/009/RSP-004) -- but the row's actual constraint is honored literally for the piece that IS genuinely reused: Rsp005CampaignV1 builds a real autoresearch.experiment_campaign.ExperimentCampaignV1 and runs it through the shared autoresearch.storage.CampaignStore, exactly like SIE-002/RSP-004 (no forked campaign machinery). Every admitted macro is a closed (0-arity), content-addressed (macro_id=sha256(expansion_expr)-derived) recurring canonical subtree -- never a parametrized/anti-unified template -- mined exclusively from corpus_split=='train' symbolic-regression records (never a held-out/eval AST) and evaluated prospectively on the frozen corpus_split=='test' slice; expansion is exactly parse_expr of the stored canonical string, independently re-verified numerically (verify_expansion_equivalence, NaN-aware) against a real occurrence rather than trusted by construction, mirroring RSP-004's verify_rewrite_numerically pattern. Content-addressed macro_ids mean admitting or retiring a macro never renumbers another macro's identity. This module does not touch, extend, or compete with data/macro_induction.py or models/dsl_tokenizer.py -- that is a separate, production, compiler-hard, version-governed macro system over the OpenUI DSL token stream; this module mines macros over the unrelated symbolic-regression AST domain and stays evaluation-only, imported by no production canonicalization path."
+    },
+    {
       "id": "prompt_factor_predictor",
       "name": "Prompt-to-partial-requirements prediction behind the advisory-only seam",
       "owner_module": "src/slm_training/models/prompt_factor_predictor.py",
