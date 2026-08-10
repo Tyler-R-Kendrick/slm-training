@@ -1,0 +1,57 @@
+{
+  "kind": "sie006_calibration_campaign_diagnostic/v1",
+  "campaign_id": "sie006-exp-sr-3-calibration-diagnostic",
+  "catalogue_id": "exp-sr-3",
+  "catalogue_manifest_sha256": "c35d90524357e531f5faf9f8c35590c5f37127242fe404ed91bf2bf6b83a4fe9",
+  "manifest_sha256": "31dd78a74859bbd6612ad0f93a62478e8a88072888060d63b5f6461201172a8e",
+  "claim_class": "diagnostic",
+  "promotion": false,
+  "vce010_protocol_id": "sie006-exp-sr-3-calibration-diagnostic-vce010-protocol",
+  "vce010_campaign_id": "sie006-exp-sr-3-calibration-diagnostic-vce010-protocol",
+  "vce010_manifest_sha256": "60089df8b3793f3a7b7c61e73e3ae3c3f55db8df6ec02d2a337df5c5dad5149d",
+  "vce010_disposition": "complete",
+  "pair_n": 12,
+  "primary_metric": "evaluator_human_agreement_kappa",
+  "evaluator_human_agreement_kappa": 0.0,
+  "minimum_effect": 0.1,
+  "kill_threshold": 0.0,
+  "meets_minimum_effect": false,
+  "killed_by_catalogue_gate": true,
+  "independence_ok": true,
+  "ambiguous_pair_ids": [],
+  "external_human_calibration_error": 0.22775000000000004,
+  "admission_divergence_rate": 0.0,
+  "reason_family_confusion": {
+    "binding": {
+      "positive": 1
+    },
+    "positive": {
+      "topology": 1
+    }
+  },
+  "authorized": false,
+  "scope_disclaimer": "Diagnostic-scale evidence scoped to the locked exp-sr-3 catalogue identity, computed entirely from VCE-010's own evaluator-calibration protocol (no forked mechanism). The external judge and its transport are a labeled mock (no real external-model credentials or network call); human raters are synthetic, seeded labels standing in for a real blinded pair study, per SLM-478's (SIE-005) frozen packet design. No real external-family judge or human calibration was performed in this environment -- SLM-483's own escape hatch: this is honest fixture/diagnostic-scale wiring evidence, not a construct-validity claim. No downstream experiment may cite 'authorized' here as calibrated evidence for a promotion/risk claim; a real external-judge/blinded-human run remains required before any such claim.",
+  "recipe": {
+    "command": [
+      "python",
+      "-m",
+      "scripts.run_sie006_calibration_campaign",
+      "--mode",
+      "diagnostic",
+      "--protocol-seed",
+      "0"
+    ],
+    "docs_path": "docs/design/iter-slm483-sie-006-calibration-campaign-20260810.json",
+    "device": "cpu",
+    "honesty_mode": "diagnostic_mock_evidence"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "afaefc8b11771b0e1a3ca6ae40dbc2b7d924bbac",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v160"
+    },
+    "stamped_at": "2026-08-10T21:39:31.165876+00:00"
+  }
+}
