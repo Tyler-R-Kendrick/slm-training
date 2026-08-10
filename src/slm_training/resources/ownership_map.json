@@ -655,6 +655,13 @@
       "title": "SPV4-02: Publish the causal architecture disposition and integrate only qualified winners into model lineage",
       "doc": "docs/design/semantic-planning-valid-state-disposition.md",
       "relation": "Canonical disposition-report pattern that SGS-009 (mechanism disposition reports) and RSP-009 (cross-experiment disposition) should follow, not reinvent."
+    },
+    {
+      "linear_id": "SLM-476",
+      "title": "SIE-002: Execute held-out factor-wise semantic oracle localization (EXP-SR-1)",
+      "doc": "docs/design/iter-slm476-sie-002-oracle-localization-20260810.md",
+      "status": "fixture",
+      "relation": "Fixture-scale EXP-SR-1 oracle localization (claim_class=fixture); authorized_factors roles+bindings for later learned-predictor work; no checkpoint promotion."
     }
   ],
   "downstream_extension_map": [
@@ -1067,7 +1074,7 @@
         "experiment_campaign"
       ],
       "new_owner_justified": false,
-      "justification": "Runs the VCE-004 intervention harness through the campaign contract."
+      "justification": "Runs the VCE-004/VCE-009 intervention harness through the campaign contract. Fixture evidence: docs/design/iter-slm476-sie-002-oracle-localization-20260810.md (authorized_factors: roles, bindings; claim_class=fixture; no promotion)."
     },
     {
       "issue": "SIE-003",

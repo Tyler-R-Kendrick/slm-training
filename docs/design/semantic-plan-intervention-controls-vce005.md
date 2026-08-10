@@ -90,5 +90,6 @@ passing) -- its calls are positional `apply(baseline, oracle)`, unaffected by
   paths beyond making `oracle` optional and adding `rng_seed` -- both additive,
   backward-compatible signature changes.
 - No new persisted campaign/corpus of intervention records was built here; this
-  is harness code plus unit tests, consistent with VCE-004's own scope (the
-  campaign-scale execution is SIE-002/SLM-476, still blocked on other work).
+  is harness code plus unit tests, consistent with VCE-004's own scope. Campaign-
+  scale fixture execution landed as SIE-002/SLM-476
+  (`docs/design/iter-slm476-sie-002-oracle-localization-20260810.md`).

@@ -2875,6 +2875,11 @@
         {
           "version": "v9",
           "date": "2026-08-10",
+          "note": "no-bump: SLM-476 (SIE-002) knowledge-surface link only \u2014 repository-ownership-map.md + ownership_map.json cite iter-slm476-sie-002-oracle-localization-20260810.md on the SIE-002 row (authorized_factors roles+bindings, claim_class=fixture); no owner_symbols or structural map change."
+        },
+        {
+          "version": "v9",
+          "date": "2026-08-10",
           "note": "no-bump: SLM-479 (RSP-004) registers a new 'symbolic_egraph' subsystem (src/slm_training/harnesses/experiments/symbolic_egraph.py: EGraph/ENodeV1/RewriteApplicationV1/CertificateVerificationV1/saturate/verify_rewrite_numerically); mirrors the row into repository-ownership-map.md, including the documented divergence from the pre-registered downstream_extension_map row for RSP-004 (predicted new_owner_justified: false, 'Runs SRP-005's canonicalization/rewrite-certificate work through the campaign contract' -- the e-graph union-find contract's dataclasses are not literally defined in symbolic_expr_canonicalize.py or experiment_campaign.py, so per this map's own sibling-file rule it is registered as its own subsystem instead, same precedent as SGS-008/SRP-004/005/007/008); the actual constraint (seed rewrites exclusively from SRP-005 certified REWRITE_RULES, run the experiment through the pre-registered SIE-001 exp_sr_catalogue.py identity) is honored literally. New source/test files are not tracked by any versions.json component (consistent with the SRP-002/003/004/005/007/008 sibling-file precedent), so this entry only covers the ownership-map doc update."
         },
         {
@@ -4799,7 +4804,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v156",
+      "version": "v157",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
@@ -4825,6 +4830,11 @@
         "tests/test_scripts/test_run_exp_sr8_egraph_experiment.py"
       ],
       "history": [
+        {
+          "version": "v157",
+          "date": "2026-08-10",
+          "note": "SIE-002/SLM-476: add sie002_oracle_localization.py \u2014 fixture-scale EXP-SR-1 factor-wise semantic oracle localization composing VCE-009's generate_baseline_arms/load_fixture_plan_pool (no forked arm generator) with the SIE-001 exp-sr-1 catalogue identity under ExperimentCampaignV1/CampaignStore (claim_class=fixture, promotion=false). Multi-seed (0,1,2) matched arms over VCE-008-cleaned openui_hard_valid_v1; durable docs/design/iter-slm476-sie-002-oracle-localization-20260810.{json,md} report oracle_factor_localization_precision and authorized_factors for later learned-predictor work. Also re-digest PlanInterventionRecordV1 after attaching compute.apply_ms in VCE-009's generate_baseline_arms so from_dict round-trips."
+        },
         {
           "version": "v156",
           "date": "2026-08-10",
@@ -17096,6 +17106,25 @@
           "version": "v1",
           "date": "2026-08-10",
           "note": "SLM-478 (SIE-005): stratified blinded annotation packet + provider-neutral external-judge schemas/mocks + credential runbook; reuses judge_audit and judge_independence; prepares EXP-SR-3 / SIE-006 without locking ExperimentCampaignV1."
+        }
+      ]
+    },
+    "harness.experiments.slm476_sie002_oracle_localization": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/sie002_oracle_localization.py",
+        "scripts/run_sie002_oracle_localization.py",
+        "tests/test_harnesses/experiments/test_sie002_oracle_localization.py",
+        "tests/test_scripts/test_run_sie002_oracle_localization.py",
+        "docs/design/iter-slm476-sie-002-oracle-localization-20260810.json",
+        "docs/design/iter-slm476-sie-002-oracle-localization-20260810.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-10",
+          "note": "SIE-002/SLM-476: fixture-scale EXP-SR-1 factor-wise oracle localization campaign composing VCE-004/VCE-009; claim_class=fixture; no promotion."
         }
       ]
     }

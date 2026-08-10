@@ -81,15 +81,21 @@ __all__ = [
     "ARM_IDS",
     "ONE_FACTOR_ARMS",
     "Vce009CampaignV1",
+    "generate_baseline_arms",
+    "load_fixture_plan_pool",
     "run_campaign",
 ]
 
 
-def _load_fixture_plan_pool(
+def load_fixture_plan_pool(
     dataset_id: str = "openui_hard_valid_v1", *, limit: int
 ) -> list[tuple[str, SemanticPlanV1]]:
     """Real baseline/oracle plans from the frozen contrast corpus, cleaned
-    through VCE-008's leakage audit (quarantined records excluded)."""
+    through VCE-008's leakage audit (quarantined records excluded).
+
+    Public so SIE-002/EXP-SR-1 can compose the same cleaned pool without
+    forking the loader.
+    """
     from scripts.audit_data_corpora import contrast_corpus_leakage_report
 
     ref = DataStore().verify("eval", dataset_id)
@@ -112,7 +118,7 @@ def _load_fixture_plan_pool(
     return pool
 
 
-def _generate_baseline_arms(
+def generate_baseline_arms(
     record_id: str,
     baseline: SemanticPlanV1,
     other_candidates: list[SemanticPlanV1],
@@ -120,7 +126,10 @@ def _generate_baseline_arms(
     rng_seed: int,
 ) -> dict[str, Any]:
     """Every declared arm for one baseline plan, or an honest skip report
-    when no content-compatible oracle candidate exists in the pool."""
+    when no content-compatible oracle candidate exists in the pool.
+
+    Public so SIE-002/EXP-SR-1 reuses this generator rather than forking it.
+    """
     designated_oracle = select_shuffled_oracle(baseline, other_candidates, rng_seed=rng_seed)
     shuffled_oracle = select_shuffled_oracle(baseline, other_candidates, rng_seed=rng_seed + 1)
     if designated_oracle is None or shuffled_oracle is None:
@@ -132,7 +141,12 @@ def _generate_baseline_arms(
         start = time.perf_counter()
         record = build()
         elapsed_ms = (time.perf_counter() - start) * 1000.0
-        return replace(record, compute={"apply_ms": round(elapsed_ms, 4)})
+        # Re-digest after attaching compute — replace() alone would leave a
+        # stale record_hash that fails PlanInterventionRecordV1.from_dict.
+        from slm_training.data.semantic_plan.oracle import _intervention_record_digest
+
+        timed = replace(record, compute={"apply_ms": round(elapsed_ms, 4)}, record_hash="")
+        return replace(timed, record_hash=_intervention_record_digest(timed))
 
     arm_records: dict[str, PlanInterventionRecordV1] = {
         "none": _timed(lambda: build_baseline_intervention(baseline, identity=identity, compute={})),
@@ -343,13 +357,13 @@ def run_campaign(campaign: Vce009CampaignV1, *, root: Path) -> dict[str, Any]:
     )
     lock = store.lock_experiment_campaign(campaign.manifest())
 
-    pool = _load_fixture_plan_pool(limit=campaign.pool_size)
+    pool = load_fixture_plan_pool(limit=campaign.pool_size)
     candidates = [plan for _, plan in pool]
     baseline_reports: list[dict[str, Any]] = []
     all_records: list[PlanInterventionRecordV1] = []
     for index, (record_id, baseline) in enumerate(pool[: campaign.n_baseline_plans]):
         other_candidates = [plan for i, plan in enumerate(candidates) if i != index]
-        report = _generate_baseline_arms(record_id, baseline, other_candidates, rng_seed=campaign.seed)
+        report = generate_baseline_arms(record_id, baseline, other_candidates, rng_seed=campaign.seed)
         baseline_reports.append(report)
         if not report["skipped"]:
             all_records.extend(report["arms"].values())
