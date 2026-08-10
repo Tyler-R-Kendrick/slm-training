@@ -28,6 +28,82 @@
   "cycle_index": 15,
   "cycle_intent": "screening",
   "cycle_role": "screening",
+  "delivery": {
+    "agent_required": "continue loop; local commits/docs only",
+    "arm_exits": {
+      "c20260809-continuous-openui-schedu-b47915d7-c15-binder-arity": 0,
+      "c20260809-continuous-openui-schedu-b47915d7-c15-control": 0
+    },
+    "arm_order": [
+      "c20260809-continuous-openui-schedu-b47915d7-c15-control",
+      "c20260809-continuous-openui-schedu-b47915d7-c15-binder-arity"
+    ],
+    "arm_seed": 100015,
+    "arm_skipped": {},
+    "baseline_trainable_params": 2145602,
+    "campaign_id": "continuous-loop-20260809-continuous-openui-schedu-b47915d7-c15",
+    "candidate_id": "c20260809-continuous-openui-schedu-b47915d7-c15-binder-arity",
+    "candidate_metrics": {
+      "binder_reference_f1": 0.6333333333333333,
+      "latency_ms_p50": 6926.39,
+      "meaningful_program_rate": 0.3333333333333333,
+      "parse_rate": 1.0,
+      "smoke.binder_reference_f1": 0.6333333333333333,
+      "smoke.latency_ms_p50": 6926.39,
+      "smoke.meaningful_program_rate": 0.3333333333333333,
+      "smoke.parse_rate": 1.0,
+      "smoke.structural_similarity": 0.23416666666666666,
+      "structural_similarity": 0.23416666666666666
+    },
+    "candidate_trainable_params": 2145602,
+    "climb_policy_sha256": "237fe667892c615ad6e50f7289de20e9e114d540aede33481ff3643b7c5552c2",
+    "control_id": "c20260809-continuous-openui-schedu-b47915d7-c15-control",
+    "control_metrics": {
+      "binder_reference_f1": 0.6333333333333333,
+      "latency_ms_p50": 7046.91,
+      "meaningful_program_rate": 0.3333333333333333,
+      "parse_rate": 1.0,
+      "smoke.binder_reference_f1": 0.6333333333333333,
+      "smoke.latency_ms_p50": 7046.91,
+      "smoke.meaningful_program_rate": 0.3333333333333333,
+      "smoke.parse_rate": 1.0,
+      "smoke.structural_similarity": 0.23416666666666666,
+      "structural_similarity": 0.23416666666666666
+    },
+    "cycle_index": 15,
+    "cycle_intent": "screening",
+    "cycle_role": "screening",
+    "direction": "increase",
+    "finished_at": "2026-08-09T05:57:45Z",
+    "fixture_volume_gate_hits": 2,
+    "has_tracked_delta": false,
+    "loop_id": "continuous-openui-scheduled-soy2gk",
+    "measurement_complete": true,
+    "policy_sha256": "237fe667892c615ad6e50f7289de20e9e114d540aede33481ff3643b7c5552c2",
+    "policy_version": "v6",
+    "positive": false,
+    "primary_metric": "smoke.structural_similarity",
+    "reasons": [
+      "fixture_insufficient_n:c20260809-continuous-openui-schedu-b47915d7-c15-binder-arity",
+      "fixture_insufficient_n:c20260809-continuous-openui-schedu-b47915d7-c15-control",
+      "efficiency_win_rejected_min_effect:mpr_per_ms:4.7302056e-05->4.8125118e-05:gain_fraction=0.017400118<0.05",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.23416666666666666 candidate=0.23416666666666666 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ],
+    "role": "screening",
+    "schema": "autotrain_sdlc_delivery/v1",
+    "sdlc_phase": "A",
+    "stack_action": "no_stack_layer_non_positive",
+    "stack_layer": false,
+    "thrash_regime": {
+      "base_regime": "isolate",
+      "climb_baseline_keys": [],
+      "has_climb_baseline": false,
+      "reason": "no_climb_baseline_causal_ofat",
+      "regime": "isolate",
+      "timeout_residual": false
+    }
+  },
   "evidence_class": "fixture",
   "honesty": "fixture_screening_only_not_ship",
   "loop_id": "continuous-openui-scheduled-soy2gk",
@@ -42,5 +118,17 @@
     "fixture_insufficient_n_alone"
   ],
   "schema": "continuous_cycle_results/v1",
-  "stack_layer": false
+  "stack_layer": false,
+  "version_stamp": {
+    "code_commit": "d626b81805330d17f8bd015794a8f37fa85afc8d",
+    "code_dirty": false,
+    "components": {
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v23",
+      "gates.ship": "openui_ship_gates_v6",
+      "harness.model_build.eval": "v96"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-10T19:41:00.194392+00:00"
+  }
 }
