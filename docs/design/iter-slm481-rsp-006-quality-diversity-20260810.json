@@ -1,0 +1,194 @@
+{
+  "kind": "rsp006_quality_diversity_fixture/v1",
+  "claim_class": "fixture",
+  "promotion": false,
+  "automatic_adoption": false,
+  "environment": {
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+    "machine": "aarch64",
+    "python": "3.12.3"
+  },
+  "recipe": {
+    "command": [
+      "python",
+      "-m",
+      "scripts.run_rsp006_quality_diversity",
+      "--mode",
+      "fixture",
+      "--generation-budget",
+      "48",
+      "--seed",
+      "0",
+      "--shards",
+      "1"
+    ],
+    "docs_path": "docs/design/iter-slm481-rsp-006-quality-diversity-20260810.json",
+    "device": "cpu",
+    "honesty_mode": "quality_diversity_fixture",
+    "matrix_set": "slm481_rsp006_quality_diversity"
+  },
+  "catalogue_id": "exp-sr-10",
+  "catalogue_manifest_sha256": "9ac186784b9d561aa7d5476233d76515ced6100f6f33a069005b15265eda7edd",
+  "manifest_sha256": "e3106e91c2eb1e2175d30812db2ee0c4b48008ccfec21d848beec8b71e7e7fda",
+  "corpus_topology_coverage": 0.722222,
+  "qd_descriptor_version": "rsp006_qd_descriptors/v1",
+  "qd_descriptor_axes": [
+    "depth",
+    "reference_topology",
+    "operator_family",
+    "width",
+    "content_class"
+  ],
+  "descriptor_grid_size": 18,
+  "arm_results": {
+    "random_matched": {
+      "arm_id": "random_matched",
+      "seed": 705206174,
+      "generation_budget": 48,
+      "proposals": 36,
+      "accepted": 21,
+      "rejections": 0,
+      "duplicate_roots_skipped": 13,
+      "test_split_excluded": 2,
+      "unique_canonical_roots": 23,
+      "corpus_topology_coverage": 0.722222,
+      "validity_rate": 0.583333,
+      "descriptor_cells_covered": 13,
+      "descriptor_grid_size": 18,
+      "split_counts": {
+        "train": 21,
+        "validation": 0,
+        "test": 2
+      }
+    },
+    "frequency_balanced": {
+      "arm_id": "frequency_balanced",
+      "seed": 705206191,
+      "generation_budget": 48,
+      "proposals": 36,
+      "accepted": 21,
+      "rejections": 0,
+      "duplicate_roots_skipped": 13,
+      "test_split_excluded": 2,
+      "unique_canonical_roots": 23,
+      "corpus_topology_coverage": 0.666667,
+      "validity_rate": 0.583333,
+      "descriptor_cells_covered": 12,
+      "descriptor_grid_size": 18,
+      "split_counts": {
+        "train": 21,
+        "validation": 0,
+        "test": 2
+      }
+    },
+    "quality_diversity": {
+      "arm_id": "quality_diversity",
+      "seed": 705206216,
+      "generation_budget": 48,
+      "proposals": 36,
+      "accepted": 21,
+      "rejections": 0,
+      "duplicate_roots_skipped": 13,
+      "test_split_excluded": 2,
+      "unique_canonical_roots": 23,
+      "corpus_topology_coverage": 0.722222,
+      "validity_rate": 0.583333,
+      "descriptor_cells_covered": 13,
+      "descriptor_grid_size": 18,
+      "split_counts": {
+        "train": 21,
+        "validation": 0,
+        "test": 2
+      }
+    }
+  },
+  "shards": [
+    {
+      "shard_id": 0,
+      "seed": 705206174,
+      "arms": {
+        "random_matched": {
+          "arm_id": "random_matched",
+          "seed": 705206174,
+          "generation_budget": 48,
+          "proposals": 36,
+          "accepted": 21,
+          "rejections": 0,
+          "duplicate_roots_skipped": 13,
+          "test_split_excluded": 2,
+          "unique_canonical_roots": 23,
+          "corpus_topology_coverage": 0.722222,
+          "validity_rate": 0.583333,
+          "descriptor_cells_covered": 13,
+          "descriptor_grid_size": 18,
+          "split_counts": {
+            "train": 21,
+            "validation": 0,
+            "test": 2
+          }
+        },
+        "frequency_balanced": {
+          "arm_id": "frequency_balanced",
+          "seed": 705206191,
+          "generation_budget": 48,
+          "proposals": 36,
+          "accepted": 21,
+          "rejections": 0,
+          "duplicate_roots_skipped": 13,
+          "test_split_excluded": 2,
+          "unique_canonical_roots": 23,
+          "corpus_topology_coverage": 0.666667,
+          "validity_rate": 0.583333,
+          "descriptor_cells_covered": 12,
+          "descriptor_grid_size": 18,
+          "split_counts": {
+            "train": 21,
+            "validation": 0,
+            "test": 2
+          }
+        },
+        "quality_diversity": {
+          "arm_id": "quality_diversity",
+          "seed": 705206216,
+          "generation_budget": 48,
+          "proposals": 36,
+          "accepted": 21,
+          "rejections": 0,
+          "duplicate_roots_skipped": 13,
+          "test_split_excluded": 2,
+          "unique_canonical_roots": 23,
+          "corpus_topology_coverage": 0.722222,
+          "validity_rate": 0.583333,
+          "descriptor_cells_covered": 13,
+          "descriptor_grid_size": 18,
+          "split_counts": {
+            "train": 21,
+            "validation": 0,
+            "test": 2
+          }
+        }
+      }
+    }
+  ],
+  "comparison": {
+    "random_matched_coverage": 0.722222,
+    "frequency_balanced_coverage": 0.666667,
+    "quality_diversity_coverage": 0.722222,
+    "qd_beats_random": false,
+    "qd_validity_rate": 0.583333,
+    "random_validity_rate": 0.583333
+  },
+  "kill_gate_triggered": false,
+  "recommendation": "reject_qd_not_better_than_random",
+  "scope_disclaimer": "Fixture-scale EXP-SR-10 evidence for MAP-Elites/novelty-style corpus generation over frozen pack-owned descriptors on the bounded OpenUI ProgramSpec candidate grid. Arms are size/exposure-matched by generation_budget; splits are assigned from canonical root families before derivatives; test-split roots are excluded from coverage numerators; eval corpora are never read. Equivalent canonical roots do not inflate diversity. No automatic adoption from fixture coverage \u2014 claim_class=fixture only.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "c86da9bfa30d43671f803ce1be25e56fa8a19142",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v159",
+      "harness.experiments.slm481_rsp006_qd": "v1"
+    },
+    "stamped_at": "2026-08-10T21:31:27.587766+00:00"
+  }
+}

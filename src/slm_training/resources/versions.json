@@ -17328,6 +17328,25 @@
           "note": "RSP-002/SLM-489: fixture-scale EXP-SR-6 neural-guided bounded search + infilling order composing valid_state_search_generic + completion-forest adapter + advisory rankers; claim_class=fixture; default OFF; no promotion."
         }
       ]
+    },
+    "harness.experiments.slm481_rsp006_qd": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/rsp006_quality_diversity.py",
+        "scripts/run_rsp006_quality_diversity.py",
+        "tests/test_harnesses/experiments/test_rsp006_quality_diversity.py",
+        "tests/test_scripts/test_run_rsp006_quality_diversity.py",
+        "docs/design/iter-slm481-rsp-006-quality-diversity-20260810.json",
+        "docs/design/iter-slm481-rsp-006-quality-diversity-20260810.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-10",
+          "note": "RSP-006/SLM-481: fixture-scale EXP-SR-10 quality-diversity corpus generation with MAP-Elites archive over frozen pack-owned descriptors; matched random/frequency-balanced/QD arms; claim_class=fixture; no automatic adoption."
+        }
+      ]
     }
   }
 }
