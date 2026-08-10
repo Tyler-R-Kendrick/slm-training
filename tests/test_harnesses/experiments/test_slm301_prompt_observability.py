@@ -78,8 +78,23 @@ def test_matched_requests_differ_only_by_inventory_suffix():
 
 
 def test_inventory_never_rewrites_inventoried_prompt():
+    # Direct ensure_prompt_inventory unit check (already-canonical inputs,
+    # per its own contract): an already-inventoried prompt comes back
+    # unchanged no matter what (still-canonical, still-contiguous) contract
+    # the caller asks for — the short-circuit on an existing inventory line
+    # fires regardless of whether it matches the requested contract.
+    canonical_prompt = "Hero card.\nPlaceholders: :slot_0, :slot_1"
+    assert (
+        ensure_prompt_inventory(canonical_prompt, [":slot_0", ":slot_1", ":slot_2"])
+        == canonical_prompt
+    )
+
+    # Record-level check: raw (pre-canonicalization) fixtures may still use
+    # named marker spellings, as this smoke-shaped prompt/openui pair does.
+    # build_matched_requests canonicalizes them first, and the resulting
+    # arm-A prompt already carries its own (now-canonical) inventory line,
+    # so arm B must not append a second one.
     prompt = "Hero card.\nPlaceholders: :hero.title, :hero.body"
-    assert ensure_prompt_inventory(prompt, [":other.slot"]) == prompt
     record = _record(prompt)
     req_a, req_b = build_matched_requests(record)
     assert req_b.prompt == req_a.prompt

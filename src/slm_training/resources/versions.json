@@ -6292,6 +6292,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-08-10",
+          "note": "no-bump: test-only fix for test_shuffled_conflict_belief_never_commits_a_real_conflict. The test scored candidate subsets with a freshly-initialized (untrained) scorer and relied on its incidental raw-logit sign to rank the corrupted-safe pair {0,1} above singletons; an unrelated upstream change to something feeding the same fixed torch.manual_seed(11) RNG stream shifted those incidental logits so a singleton (0 conflict_attempts) now ranked first, no longer exercising the intended rejected-attempt path. Deterministically stubs score_transaction_candidates for that one test so the corrupted-belief-ranked pair is always tried first. No production code changed; decode_bounded_transaction_set's safety invariant (a corrupted conflict_belief can waste search but never lets a real conflict commit) is unchanged and now exercised more reliably."
+        },
+        {
+          "version": "v1",
           "date": "2026-07-26",
           "note": "SLM-414: bounded K=2/K=4 set-valued transaction selection over DSH3-28's independent-set/recurrent-set per-action logits; every ranked subset is re-verified by the real DSH5-05 build_operator_transaction/commit_operator_transaction before it can be selected. Fixture-scale wiring evidence only, no held-out claim yet."
         }
@@ -6440,6 +6445,11 @@
         "docs/design/semantic-floor-gate-v1.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-10",
+          "note": "no-bump: regenerate the committed gate artifact (gate_hash, stamped harness.experiments v157) so publish --check passes again after unrelated upstream drift (harness.experiments v148 -> v157); verdict stays inconclusive, thresholds and gate behavior unchanged."
+        },
         {
           "version": "v1",
           "date": "2026-08-08",
@@ -11307,6 +11317,11 @@
         "docs/design/slm301-slot-observability-audit-20260724.json"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-10",
+          "note": "no-bump: build_matched_requests now canonicalizes a record's markers (canonicalize_example_template_markers) before constructing GenerationRequest, and observability_row checks arm A's canonical prompt instead of the raw record prompt for an existing inventory line, matching the persist-time canonicalization already applied by harnesses/train_data and harnesses/test_data pipelines. Fixes a caller-side migration gap left by the PR #1345 contract.py hardening (assert_canonical_template_marker_inventory) that made this harness raise ValueError on any record with named (non-\":slot_N\") markers, including every row of test_seeds.jsonl; no change to the experiment's arms, metric, or predeclared thresholds"
+        },
         {
           "version": "v1",
           "date": "2026-07-25",
@@ -17110,6 +17125,11 @@
         {
           "version": "v1",
           "date": "2026-08-10",
+          "note": "no-bump: remove an extraneous f-string prefix (ruff F541, no placeholders) -- pure lint fix, no behavior change."
+        },
+        {
+          "version": "v1",
+          "date": "2026-08-10",
           "note": "SLM-478 (SIE-005): stratified blinded annotation packet + provider-neutral external-judge schemas/mocks + credential runbook; reuses judge_audit and judge_independence; prepares EXP-SR-3 / SIE-006 without locking ExperimentCampaignV1."
         }
       ]
@@ -17126,6 +17146,11 @@
         "docs/design/iter-slm476-sie-002-oracle-localization-20260810.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-10",
+          "note": "no-bump: remove an extraneous f-string prefix (ruff F541, no placeholders) -- pure lint fix, no behavior change."
+        },
         {
           "version": "v1",
           "date": "2026-08-10",

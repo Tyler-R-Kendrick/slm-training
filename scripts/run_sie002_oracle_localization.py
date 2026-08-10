@@ -89,7 +89,7 @@ def _write_markdown(docs_json: Path, payload: dict) -> Path:
             "",
             payload.get("scope_disclaimer", ""),
             "",
-            f"Command: `python -m scripts.run_sie002_oracle_localization --mode fixture`",
+            "Command: `python -m scripts.run_sie002_oracle_localization --mode fixture`",
             "",
             f"Full detail: `{docs_json.as_posix()}`.",
             "",

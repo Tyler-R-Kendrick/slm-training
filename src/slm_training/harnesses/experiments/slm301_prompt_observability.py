@@ -17,7 +17,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from slm_training.data.contract import GenerationRequest
+from slm_training.data.contract import (
+    GenerationRequest,
+    canonicalize_example_template_markers,
+)
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.evals.meaningful_program import (
     PromptContractV2,
@@ -92,8 +95,18 @@ def build_matched_requests(
     ``Placeholders: ...`` inventory suffix from ``ensure_prompt_inventory``
     over A's slot contract (the production honest-slot path). Prompts differ
     only by that suffix; an already-inventoried prompt is never rewritten.
+
+    ``record`` may still carry raw, user-defined marker spellings (as the
+    on-disk smoke/held-out fixtures do) — the same shape the real train/eval
+    builders accept before they persist. ``GenerationRequest`` only accepts
+    the opaque ``:slot_N`` contract (``data.contract.assert_canonical_
+    template_marker_inventory``), so this mirrors the builders' own
+    canonicalize-before-request step (see ``harnesses/train_data/pipeline.py``
+    and ``harnesses/test_data/pipeline.py``) rather than leaking named
+    markers into a production-shaped request.
     """
-    req_a = GenerationRequest.from_record(record)
+    canonical_record = canonicalize_example_template_markers(record)
+    req_a = GenerationRequest.from_record(canonical_record)
     data = req_a.to_dict()
     data["prompt"] = ensure_prompt_inventory(req_a.prompt, list(req_a.slot_contract))
     req_b = GenerationRequest.from_dict(data)
@@ -108,8 +121,13 @@ def observability_row(record: ExampleRecord, *, decode: str = "not_run") -> dict
     return {
         "id": record.id,
         "coverage_class": cls,
+        # Use arm A's (canonicalized) prompt rather than the raw record
+        # prompt: ``inventory_from_prompt`` validates any inventory line it
+        # finds against the opaque ``:slot_N`` contract, and a raw fixture
+        # record may still carry named marker spellings the builders would
+        # canonicalize before this prompt is ever request-visible.
         "prompt_has_inventory": bool(
-            inventory_from_prompt(record.prompt, heuristic=False)
+            inventory_from_prompt(req_a.prompt, heuristic=False)
         ),
         "component_coverage_from_prose": base.component_coverage_known,
         "n_slot_contract": len(req_a.slot_contract),
