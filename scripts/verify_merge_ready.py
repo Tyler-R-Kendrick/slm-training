@@ -95,7 +95,9 @@ def merge_gate_steps(*, fast: bool = False) -> tuple[Step, ...]:
             (python, "-m", "scripts.refresh_test_cases", "--check", "--changed"),
         ),
         Step("ruff", _ruff_cmd(python)),
-        Step("compileall", (python, "-m", "compileall", "-q", "src", "scripts", "tests")),
+        Step(
+            "compileall", (python, "-m", "compileall", "-q", "src", "scripts", "tests")
+        ),
         Step(
             "checkpoint_references",
             (python, "-m", "scripts.verify_checkpoint_references", "--check"),
@@ -103,6 +105,10 @@ def merge_gate_steps(*, fast: bool = False) -> tuple[Step, ...]:
         Step(
             "version_stamps",
             (python, "-m", "scripts.verify_version_stamps", "--check"),
+        ),
+        Step(
+            "evidence_ledger",
+            (python, "-m", "scripts.build_evidence_ledger", "--check"),
         ),
     ]
     if not fast:
