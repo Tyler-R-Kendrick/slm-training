@@ -17,6 +17,14 @@
     "SLM-491",
     "SLM-492"
   ],
+  "follow_up_status": {
+    "SLM-491": "external_blocked_prepared_package",
+    "SLM-492": "external_blocked_prepared_package"
+  },
+  "prepared_package_evidence": {
+    "SLM-491": "docs/design/iter-slm491-exp-sr-3-external-blocked-closeout-20260810.json",
+    "SLM-492": "docs/design/iter-slm492-exp-sr-11-external-blocked-closeout-20260810.json"
+  },
   "linear_issue": "SLM-490",
   "matrix_set": "slm490_rsp009_disposition",
   "rejected_or_blocked_ids": [

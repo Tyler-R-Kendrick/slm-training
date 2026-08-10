@@ -17409,12 +17409,18 @@
         "src/slm_training/harnesses/experiments/rsp009_cross_experiment_disposition.py",
         "scripts/run_rsp009_disposition.py",
         "tests/test_harnesses/experiments/test_rsp009_cross_experiment_disposition.py",
+        "tests/test_harnesses/experiments/test_rsp009_slm491_492_supersession.py",
         "docs/design/exp-sr-disposition-20260810.json",
         "docs/design/exp-sr-disposition-20260810.md",
         "docs/design/iter-slm490-rsp-009-disposition-20260810.json",
         "docs/design/iter-slm490-rsp-009-disposition-20260810.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-10",
+          "note": "no-bump: SLM-491/492 external-blocked prepared-package closeouts add build_slm491_492_supersessions wiring and refresh iter-slm490 + exp-sr-disposition alias; champion pointers stay empty."
+        },
         {
           "version": "v1",
           "date": "2026-08-10",
@@ -17429,6 +17435,42 @@
           "version": "v1",
           "date": "2026-08-10",
           "note": "RSP-009/SLM-490: cross-experiment EXP-SR disposition report over mechanism_disposition_report.py (SGS-009); no parallel disposition engine."
+        }
+      ]
+    },
+    "harness.experiments.slm491_external_blocked_closeout": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm491_external_blocked_closeout.py",
+        "scripts/run_slm491_external_blocked_closeout.py",
+        "tests/test_harnesses/experiments/test_slm491_external_blocked_closeout.py",
+        "docs/design/iter-slm491-exp-sr-3-external-blocked-closeout-20260810.json",
+        "docs/design/iter-slm491-exp-sr-3-external-blocked-closeout-20260810.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-10",
+          "note": "SLM-491: honest external-blocked prepared-package closeout for EXP-SR-3 — reuses SIE-006 external-blocked mode + frozen SIE-005 pin; kappa/calibration metrics stay null."
+        }
+      ]
+    },
+    "harness.experiments.slm492_external_blocked_closeout": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm492_external_blocked_closeout.py",
+        "scripts/run_slm492_external_blocked_closeout.py",
+        "tests/test_harnesses/experiments/test_slm492_external_blocked_closeout.py",
+        "docs/design/iter-slm492-exp-sr-11-external-blocked-closeout-20260810.json",
+        "docs/design/iter-slm492-exp-sr-11-external-blocked-closeout-20260810.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-10",
+          "note": "SLM-492: honest external-blocked prepared-package closeout for EXP-SR-11 — reuses RSP-007 + SRP-011 adapter isolation; no SOTA claim when PySR/Julia unavailable."
         }
       ]
     },
