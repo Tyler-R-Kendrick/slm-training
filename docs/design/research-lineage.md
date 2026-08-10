@@ -1701,6 +1701,28 @@ learned-benefit or systems-efficiency result). Evidence and scope:
 [`dsh5-12-advanced-operator-disposition-20260727-local/summary.md`](dsh5-12-advanced-operator-disposition-20260727-local/summary.md),
 narrative: [`dsh5-12-advanced-operator-disposition.md`](dsh5-12-advanced-operator-disposition.md).
 
+## RSP-009 EXP-SR cross-experiment disposition (SLM-490)
+
+**Fidelity label: repository evidence disposition.** RSP-009 closes the EXP-SR-1..12
+catalogue initiative (SIE/RSP sibling campaigns) by aggregating committed sibling
+evidence into one SGS-009 `MechanismDispositionReportV1`. It does not run new
+experiments and does not override per-family harness verdicts.
+
+| | |
+| --- | --- |
+| **Scope** | EXP-SR-1..12; OpenUI vs symbolic_regression pack scoping; EXP-SR-12 split |
+| **Outcome** | 7 `retain_diagnostic`, 3 `reject`, 2 `revise_and_retest`, 1 `blocked`; zero `adopt_primary`/`adopt_optional` |
+| **Decision** | No checkpoint, default, or champion pointer changes; fixture/scratch/blocked evidence stays default-off |
+| **Follow-ups** | SLM-491 (real EXP-SR-3 calibration), SLM-492 (real EXP-SR-11 PySR/SRBench) |
+
+Canonical pointer:
+[`exp-sr-disposition-20260810.md`](exp-sr-disposition-20260810.md) /
+[`exp-sr-disposition-20260810.json`](exp-sr-disposition-20260810.json).
+Full evidence:
+[`iter-slm490-rsp-009-disposition-20260810.md`](iter-slm490-rsp-009-disposition-20260810.md) /
+[`iter-slm490-rsp-009-disposition-20260810.json`](iter-slm490-rsp-009-disposition-20260810.json).
+Replay: `python -m scripts.run_rsp009_disposition --mode fixture`.
+
 ## Staged DSL capability baseline (DSH0-01 / SLM-345)
 
 **Fidelity label: repository contract.** The staged vocabulary introduces no
