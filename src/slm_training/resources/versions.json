@@ -4878,6 +4878,11 @@
         {
           "version": "v160",
           "date": "2026-08-10",
+          "note": "no-bump: RSP-007/SLM-486 EXP-SR-11 matched PySR/SRBench benchmark lives under dedicated component harness.experiments.slm486_rsp007_pysr (v1); catalogue exp_sr_catalogue.py unchanged."
+        },
+        {
+          "version": "v160",
+          "date": "2026-08-10",
           "note": "RSP-005 (SLM-480): add symbolic_macro_library.py -- mines recurring canonical subtrees from corpus_split=='train' symbolic-regression records into a library of closed (0-arity), content-addressed macros (macro_id=sha256(expansion_expr)-derived, so admission/retirement never renumbers another macro's identity), using an MDL net-gain objective transplanted from data.macro_induction._net_gain (token spans -> AST subtree size). scripts/run_exp_sr9_macro_library_experiment.py executes the locked SIE-001 exp-sr-9 identity (exp_sr_catalogue.py) through Rsp005CampaignV1/CampaignStore (claim_class=fixture), comparing no_macros/frequency_macros/mdl_macros arms on macro_library_size_reduction_rate over the frozen, never-mined-from corpus_split=='test' slice; every admitted macro's expansion is independently re-verified numerically (NaN-aware) against a real occurrence, mirroring RSP-004's verify_rewrite_numerically pattern. Measured result (docs/design/exp-sr-9-macro-library-experiment.{json,md}): 64 train / 8 held-out test records, 205 candidate subtrees observed, 16-macro libraries admitted for both frequency_macros and mdl_macros (coincide on this small fixture vocabulary), mdl_macros reduction_rate=0.194175 (>= 0.02 minimum_effect over the no_macros baseline, >= frequency_macros), leakage audit is_clean=True, all 16 expansion-equivalence checks verified, falsifier does not hold -- authorized=True as a diagnostic signal only, no checkpoint promotion. Per SLM-480's acceptance criterion, this stays an isolated, evaluation-only experiment module -- no import from dsl/symbolic_regression_pack.py or any production canonicalization path, and it does not touch data/macro_induction.py/models/dsl_tokenizer.py's separate production macro system over the OpenUI DSL token stream."
         },
         {
@@ -17378,6 +17383,25 @@
           "version": "v1",
           "date": "2026-08-10",
           "note": "RSP-006/SLM-481: fixture-scale EXP-SR-10 quality-diversity corpus generation with MAP-Elites archive over frozen pack-owned descriptors; matched random/frequency-balanced/QD arms; claim_class=fixture; no automatic adoption."
+        }
+      ]
+    },
+    "harness.experiments.slm486_rsp007_pysr": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/rsp007_pysr_srbench.py",
+        "scripts/run_rsp007_pysr_srbench.py",
+        "tests/test_harnesses/experiments/test_rsp007_pysr_srbench.py",
+        "tests/test_scripts/test_run_rsp007_pysr_srbench.py",
+        "docs/design/iter-slm486-rsp-007-pysr-srbench-20260810.json",
+        "docs/design/iter-slm486-rsp-007-pysr-srbench-20260810.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-10",
+          "note": "RSP-007/SLM-486: fixture-scale EXP-SR-11 matched PySR/SRBench benchmark composing SRP-010 enumerator and SRP-011 adapter under ExperimentCampaignV1/CampaignStore (claim_class=diagnostic). External PySR absence records evidence=external-blocked incomplete results, never benchmark losses; no SOTA claims."
         }
       ]
     }
