@@ -715,6 +715,13 @@
       "doc": "docs/design/iter-slm482-sie-004-predictor-campaign-20260810.md",
       "status": "fixture",
       "relation": "Fixture-scale EXP-SR-2 predictor campaign (claim_class=fixture); SIE-003 seam + SIE-002 authorized_factors gate; legal_support_parity exact; no checkpoint promotion."
+    },
+    {
+      "linear_id": "SLM-483",
+      "title": "SIE-006: Execute evaluator construct-validity and human calibration campaign (EXP-SR-3)",
+      "doc": "docs/design/iter-slm483-sie-006-calibration-campaign-20260810.md",
+      "status": "diagnostic",
+      "relation": "Diagnostic EXP-SR-3 calibration campaign (claim_class=diagnostic) wrapping VCE-010's evaluator_calibration_protocol under the locked catalogue identity; evaluator_human_agreement_kappa=0.0 on labeled-mock external-judge/synthetic-human evidence, below minimum_effect and the catalogue kill gate -- an honest negative result, not a construct-validity claim (no real external-judge credentials or human raters in this environment)."
     }
   ],
   "downstream_extension_map": [
@@ -1168,7 +1175,7 @@
         "verifier_gate_stack"
       ],
       "new_owner_justified": false,
-      "justification": "Runs VCE-010 + SIE-005 through the campaign contract."
+      "justification": "Runs VCE-010 + SIE-005 through the campaign contract. Diagnostic evidence: docs/design/iter-slm483-sie-006-calibration-campaign-20260810.md (claim_class=diagnostic; evaluator_human_agreement_kappa=0.0 on mock/synthetic evidence, below the 0.1 minimum_effect and the catalogue's own le-0.0 kill gate -- an honest negative result on labeled-mock external-judge/human-rater fixtures, since this environment has no real external-judge credentials or human raters; not a construct-validity claim)."
     },
     {
       "issue": "SIE-007",

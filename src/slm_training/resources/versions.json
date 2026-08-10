@@ -2892,6 +2892,11 @@
         {
           "version": "v12",
           "date": "2026-08-10",
+          "note": "no-bump: SLM-483 (SIE-006) adds a related_overlaps row pointing at docs/design/iter-slm483-sie-006-calibration-campaign-20260810.md (diagnostic EXP-SR-3 evaluator construct-validity/calibration campaign; evaluator_human_agreement_kappa=0.0 on labeled-mock external-judge/synthetic-human evidence, below minimum_effect and the catalogue kill gate -- honest negative result, not a construct-validity claim) and updates the SIE-006 downstream_extension_map justification with the same durable evidence pointer. No new subsystem registered: sie006_calibration_campaign.py is a thin driver over already-owned experiment_campaign/VCE-010 contracts, the same shape as SIE-002/SIE-004/SIE-008 (which also register no new subsystem)."
+        },
+        {
+          "version": "v12",
+          "date": "2026-08-10",
           "note": "no-bump: RSP-005 (SLM-480) registers a new 'symbolic_macro_library' subsystem (src/slm_training/harnesses/experiments/symbolic_macro_library.py: MacroCandidateV1/MacroEntryV1/MacroLibraryV1/Rsp005CampaignV1/mine_macro_candidates/select_macros_by_mdl/select_macros_by_frequency/instrumented_node_count/macro_library_size_reduction_rate/expand_macro/verify_expansion_equivalence/run_campaign); mirrors the row into repository-ownership-map.md, including the documented divergence from the pre-registered downstream_extension_map row for RSP-005 (predicted new_owner_justified: false, 'Runs pack + artifact owners through the campaign contract' -- the macro-library contract's dataclasses are not literally defined in dsl/pack.py or dsl/grammar/fastpath/completion_artifact.py, so per this map's own sibling-file rule it is registered as its own subsystem instead, same precedent as SGS-008/SRP-004/005/007/008/009/RSP-004); the piece that IS genuinely reused (experiment_campaign/CampaignStore) is honored literally. New source/test/script files are not tracked by any versions.json component beyond the existing 'src/slm_training/harnesses/experiments/' prefix entry (consistent with the RSP-004/SIE-002 sibling precedent), so this entry only covers the ownership-map doc update."
         },
         {
@@ -4846,7 +4851,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v160",
+      "version": "v161",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
@@ -4872,9 +4877,17 @@
         "tests/test_scripts/test_run_exp_sr8_egraph_experiment.py",
         "tests/test_harnesses/experiments/test_symbolic_macro_library.py",
         "scripts/run_exp_sr9_macro_library_experiment.py",
-        "tests/test_scripts/test_run_exp_sr9_macro_library_experiment.py"
+        "tests/test_scripts/test_run_exp_sr9_macro_library_experiment.py",
+        "tests/test_harnesses/experiments/test_sie006_calibration_campaign.py",
+        "scripts/run_sie006_calibration_campaign.py",
+        "tests/test_scripts/test_run_sie006_calibration_campaign.py"
       ],
       "history": [
+        {
+          "version": "v161",
+          "date": "2026-08-10",
+          "note": "SIE-006 (SLM-483): add sie006_calibration_campaign.py -- thin driver wrapping VCE-010's evaluator_calibration_protocol.run_protocol (no forked calibration/agreement mechanism) under the locked SIE-001 exp-sr-3 catalogue identity (exp_sr_catalogue.py), extracting evaluator_human_agreement_kappa as the catalogue's own primary metric and evaluating it against the preregistered gate (minimum_effect=0.1, kill_threshold=0.0/le). claim_class=diagnostic, matching the locked catalogue entry; no new ownership_map subsystem registered (unlike RSP-004/RSP-005, this driver introduces no new evaluation-only IR/data contract, the same shape as SIE-002/SIE-004/SIE-008). scripts/run_sie006_calibration_campaign.py executes the campaign and writes durable evidence (docs/design/iter-slm483-sie-006-calibration-campaign-20260810.{json,md}): evaluator_human_agreement_kappa=0.0 on labeled-mock external-judge/synthetic-human evidence (12 pairs), below both minimum_effect and the catalogue's own kill gate -- an honest negative result, not a construct-validity claim, since this environment has no real external-judge credentials or human raters (SLM-483's own external-blocked escape hatch is satisfied honestly via labeled mock/diagnostic evidence rather than fabrication)."
+        },
         {
           "version": "v160",
           "date": "2026-08-10",
