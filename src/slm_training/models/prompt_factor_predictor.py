@@ -8,14 +8,13 @@ than as a new legality path.
 
 Honest scope note on "authorized factor families" (issue AC: "No factor
 without an oracle ceiling is promoted into the model merely for
-convenience"): EXP-SR-1 (SIE-002/SLM-476, "Execute held-out factor-wise
-semantic oracle localization") has not run yet, so there is no real oracle-
-ceiling evidence to gate on today. :data:`DEFAULT_AUTHORIZED_FACTOR_FAMILIES`
-is therefore an explicit, documented *placeholder* -- callers pass their own
-``authorized_factor_families`` once EXP-SR-1 produces real evidence;
-:func:`prediction_to_requirement_fact` fails closed (returns ``None``) for
-any factor family not in that set, so nothing is ever promoted "merely for
-convenience" by omission.
+convenience"): EXP-SR-1 (SIE-002/SLM-476) authorized ``roles`` + ``bindings``
+(not archetype / ``style_layout``). :data:`DEFAULT_AUTHORIZED_FACTOR_FAMILIES`
+remains an explicit *placeholder* for this seam's archetype target; SIE-004
+(SLM-482) callers pass the real SIE-002-mapped program families and see
+fail-closed fact emission for ``style_layout``. :func:`prediction_to_requirement_fact`
+returns ``None`` for any factor family not in the caller-supplied set, so
+nothing is ever promoted "merely for convenience" by omission.
 
 Reuses every relevant owner rather than re-deriving anything:
 
