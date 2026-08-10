@@ -1,0 +1,328 @@
+{
+  "kind": "rsp005_macro_library_fixture/v1",
+  "claim_class": "fixture",
+  "promotion": false,
+  "environment": {
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+    "machine": "aarch64",
+    "python": "3.12.3"
+  },
+  "recipe": {
+    "command": [
+      "python",
+      "-m",
+      "scripts.run_rsp005_macro_library",
+      "--mode",
+      "fixture",
+      "--max-macros",
+      "8"
+    ],
+    "docs_path": "docs/design/iter-slm480-rsp-005-macro-library-20260810.json",
+    "device": "cpu",
+    "honesty_mode": "macro_library_fixture",
+    "matrix_set": "slm480_rsp005_macros"
+  },
+  "catalogue_id": "exp-sr-9",
+  "catalogue_manifest_sha256": "5a3230d41dffc4c56c5b8d86a715c87dc65e835a30226772431641a806d8762d",
+  "manifest_sha256": "056bb40838660328ccce006e015b24fafc3615b823fae7e349e54e6ca7fa3fab",
+  "macro_library_size_reduction_rate": 0.20073,
+  "minimum_effect": 0.02,
+  "arm_results": {
+    "no_macros": {
+      "arm": "no_macros",
+      "pack": {
+        "arm": "no_macros",
+        "pack_sha256": "9c81aaf9a84b0c6707081d25f5a6a7c36c518620c25d69ed4dbb1dbcb6d3a01f",
+        "n_macros": 0,
+        "tokenizer_version": 5,
+        "induction_stats": {
+          "n_macros": 0,
+          "arm": "no_macros"
+        }
+      },
+      "library_sources": 21,
+      "prospective_sources": 9,
+      "macro_library_size_reduction_rate": 0.0,
+      "semantics_preserved": true,
+      "semantics_preserved_rate": 1.0,
+      "prospective": {
+        "n_sources": 9,
+        "tokens_before": 548,
+        "tokens_after_with_table": 548,
+        "table_tokens": 0,
+        "macro_library_size_reduction_rate": 0.0,
+        "semantics_preserved": true,
+        "semantics_preserved_rate": 1.0,
+        "failures": [],
+        "pack_sha256": "9c81aaf9a84b0c6707081d25f5a6a7c36c518620c25d69ed4dbb1dbcb6d3a01f",
+        "n_macros": 0
+      }
+    },
+    "frequency_macros": {
+      "arm": "frequency_macros",
+      "pack": {
+        "arm": "frequency_macros",
+        "pack_sha256": "0752e05e37d82c8e3d4a4bdc6dc5c541ec8c5b39e65f1fe971d622725729eeee",
+        "n_macros": 8,
+        "tokenizer_version": 5,
+        "induction_stats": {
+          "n_sources": 21,
+          "n_macros": 8,
+          "tokens_before": 1065,
+          "tokens_after_with_table": 871,
+          "table_tokens": 18,
+          "description_length_bits_before": 4926.19,
+          "description_length_bits_after": 4218.21,
+          "macros": [
+            {
+              "tokens": [
+                "(",
+                "["
+              ],
+              "frequency": 34,
+              "net_gain_tokens": 32,
+              "selection_score": 34
+            },
+            {
+              "tokens": [
+                "=",
+                "TextContent",
+                "("
+              ],
+              "frequency": 32,
+              "net_gain_tokens": 61,
+              "selection_score": 32
+            },
+            {
+              "tokens": [
+                "]",
+                ","
+              ],
+              "frequency": 23,
+              "net_gain_tokens": 21,
+              "selection_score": 23
+            },
+            {
+              "tokens": [
+                "=",
+                "Stack"
+              ],
+              "frequency": 22,
+              "net_gain_tokens": 20,
+              "selection_score": 22
+            },
+            {
+              "tokens": [
+                "]",
+                ")"
+              ],
+              "frequency": 19,
+              "net_gain_tokens": 17,
+              "selection_score": 19
+            },
+            {
+              "tokens": [
+                "STR:column",
+                ")"
+              ],
+              "frequency": 18,
+              "net_gain_tokens": 16,
+              "selection_score": 18
+            },
+            {
+              "tokens": [
+                "=",
+                "Button",
+                "("
+              ],
+              "frequency": 12,
+              "net_gain_tokens": 21,
+              "selection_score": 12
+            },
+            {
+              "tokens": [
+                "=",
+                "Card"
+              ],
+              "frequency": 8,
+              "net_gain_tokens": 6,
+              "selection_score": 8
+            }
+          ],
+          "config": {
+            "min_frequency": 3,
+            "min_gain_tokens": 0,
+            "max_macros": 8,
+            "max_span_len": 8,
+            "selection_objective": "frequency"
+          }
+        }
+      },
+      "library_sources": 21,
+      "prospective_sources": 9,
+      "macro_library_size_reduction_rate": 0.158759,
+      "semantics_preserved": true,
+      "semantics_preserved_rate": 1.0,
+      "prospective": {
+        "n_sources": 9,
+        "tokens_before": 548,
+        "tokens_after_with_table": 461,
+        "table_tokens": 18,
+        "macro_library_size_reduction_rate": 0.158759,
+        "semantics_preserved": true,
+        "semantics_preserved_rate": 1.0,
+        "failures": [],
+        "pack_sha256": "0752e05e37d82c8e3d4a4bdc6dc5c541ec8c5b39e65f1fe971d622725729eeee",
+        "n_macros": 8
+      }
+    },
+    "learned_mdl": {
+      "arm": "learned_mdl",
+      "pack": {
+        "arm": "learned_mdl",
+        "pack_sha256": "978ece97db4765a8d071dbae3f37c1a56d2f852eec03e88cdd54ef9ad995e223",
+        "n_macros": 8,
+        "tokenizer_version": 5,
+        "induction_stats": {
+          "n_sources": 21,
+          "n_macros": 8,
+          "tokens_before": 1065,
+          "tokens_after_with_table": 815,
+          "table_tokens": 27,
+          "description_length_bits_before": 4926.19,
+          "description_length_bits_after": 3840.03,
+          "macros": [
+            {
+              "tokens": [
+                "=",
+                "Stack",
+                "(",
+                "["
+              ],
+              "frequency": 22,
+              "net_gain_tokens": 62,
+              "selection_score": 62
+            },
+            {
+              "tokens": [
+                "=",
+                "TextContent",
+                "("
+              ],
+              "frequency": 32,
+              "net_gain_tokens": 61,
+              "selection_score": 61
+            },
+            {
+              "tokens": [
+                "]",
+                ",",
+                "STR:column",
+                ")"
+              ],
+              "frequency": 18,
+              "net_gain_tokens": 50,
+              "selection_score": 50
+            },
+            {
+              "tokens": [
+                "=",
+                "Button",
+                "("
+              ],
+              "frequency": 12,
+              "net_gain_tokens": 21,
+              "selection_score": 21
+            },
+            {
+              "tokens": [
+                "=",
+                "Card",
+                "(",
+                "["
+              ],
+              "frequency": 8,
+              "net_gain_tokens": 20,
+              "selection_score": 20
+            },
+            {
+              "tokens": [
+                "]",
+                ")"
+              ],
+              "frequency": 19,
+              "net_gain_tokens": 17,
+              "selection_score": 17
+            },
+            {
+              "tokens": [
+                "=",
+                "Input",
+                "("
+              ],
+              "frequency": 7,
+              "net_gain_tokens": 11,
+              "selection_score": 11
+            },
+            {
+              "tokens": [
+                "]",
+                ",",
+                "STR:row",
+                ")"
+              ],
+              "frequency": 4,
+              "net_gain_tokens": 8,
+              "selection_score": 8
+            }
+          ],
+          "config": {
+            "min_frequency": 3,
+            "min_gain_tokens": 4,
+            "max_macros": 8,
+            "max_span_len": 8,
+            "selection_objective": "mdl"
+          }
+        }
+      },
+      "library_sources": 21,
+      "prospective_sources": 9,
+      "macro_library_size_reduction_rate": 0.20073,
+      "semantics_preserved": true,
+      "semantics_preserved_rate": 1.0,
+      "prospective": {
+        "n_sources": 9,
+        "tokens_before": 548,
+        "tokens_after_with_table": 438,
+        "table_tokens": 27,
+        "macro_library_size_reduction_rate": 0.20073,
+        "semantics_preserved": true,
+        "semantics_preserved_rate": 1.0,
+        "failures": [],
+        "pack_sha256": "978ece97db4765a8d071dbae3f37c1a56d2f852eec03e88cdd54ef9ad995e223",
+        "n_macros": 8
+      }
+    }
+  },
+  "matched_budget": {
+    "max_macros": 8,
+    "library_sources": 21,
+    "prospective_sources": 9
+  },
+  "control_rate": 0.0,
+  "frequency_rate": 0.158759,
+  "mdl_rate": 0.20073,
+  "semantics_preserved": true,
+  "recommendation": "inconclusive_fixture",
+  "scope_disclaimer": "Fixture-scale EXP-SR-9 evidence for certified macro/library learning. Library mined from train_seeds.jsonl only; prospective scoring on held_out+ood rows from test_seeds.jsonl. Retrospective compression on the training corpus is reported in induction_stats but is not the success criterion. claim_class=fixture; experimental until frontier-scale prospective evidence.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "3a97a85fbf86b9992db580bf4e985bec36fd1648",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v160",
+      "harness.experiments.slm480_rsp005_macros": "v1"
+    },
+    "stamped_at": "2026-08-10T21:57:05.565032+00:00"
+  }
+}

@@ -4888,6 +4888,11 @@
         {
           "version": "v159",
           "date": "2026-08-10",
+          "note": "no-bump: RSP-005/SLM-480 EXP-SR-9 macro-library campaign lives in rsp005_macro_library.py under dedicated component harness.experiments.slm480_rsp005_macros (v1); catalogue exp_sr_catalogue.py unchanged."
+        },
+        {
+          "version": "v159",
+          "date": "2026-08-10",
           "note": "no-bump: RSP-002/SLM-489 EXP-SR-6 neural-guided bounded search campaign lives in rsp002_bounded_search.py under dedicated component harness.experiments.slm489_rsp002_bounded_search (v1); catalogue exp_sr_catalogue.py unchanged."
         },
         {
@@ -17378,6 +17383,25 @@
           "version": "v1",
           "date": "2026-08-10",
           "note": "RSP-006/SLM-481: fixture-scale EXP-SR-10 quality-diversity corpus generation with MAP-Elites archive over frozen pack-owned descriptors; matched random/frequency-balanced/QD arms; claim_class=fixture; no automatic adoption."
+        }
+      ]
+    },
+    "harness.experiments.slm480_rsp005_macros": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/rsp005_macro_library.py",
+        "scripts/run_rsp005_macro_library.py",
+        "tests/test_harnesses/experiments/test_rsp005_macro_library.py",
+        "tests/test_scripts/test_run_rsp005_macro_library.py",
+        "docs/design/iter-slm480-rsp-005-macro-library-20260810.json",
+        "docs/design/iter-slm480-rsp-005-macro-library-20260810.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-10",
+          "note": "RSP-005/SLM-480: fixture-scale EXP-SR-9 prospective certified macro/library learning via macro_induction.py; arms no_macros/frequency_macros/learned_mdl at matched budget; library from train split only; prospective held_out+ood scoring; claim_class=fixture; no promotion."
         }
       ]
     }

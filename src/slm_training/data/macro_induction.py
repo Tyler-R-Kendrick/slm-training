@@ -23,7 +23,7 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass
-from typing import Any, Iterable
+from typing import Any, Iterable, Literal
 
 from slm_training.dsl.canonicalize import canonicalize
 from slm_training.models.dsl_tokenizer import (
@@ -40,6 +40,7 @@ class MacroInductionConfig:
     min_gain_tokens: int = 4
     max_macros: int = 16
     max_span_len: int = 8
+    selection_objective: Literal["mdl", "frequency"] = "mdl"
 
 
 @dataclass(frozen=True)
@@ -126,25 +127,28 @@ def induce_macros(
         for span_ids, frequency in counts.items():
             if frequency < cfg.min_frequency:
                 continue
-            gain = _net_gain(len(span_ids), frequency)
-            if gain < cfg.min_gain_tokens:
-                continue
-            span_tokens = tuple(
-                tokenizer.id_to_token[tid] for tid in span_ids
-            )
-            candidate = (gain, len(span_ids), span_tokens, span_ids)
+            span_tokens = tuple(tokenizer.id_to_token[tid] for tid in span_ids)
+            if cfg.selection_objective == "frequency":
+                score = frequency
+            else:
+                gain = _net_gain(len(span_ids), frequency)
+                if gain < cfg.min_gain_tokens:
+                    continue
+                score = gain
+            candidate = (score, len(span_ids), span_tokens, span_ids)
             if best is None or candidate[:3] > best[:3]:
                 best = candidate
         if best is None:
             break
-        gain, span_len, span_tokens, span_ids = best
+        score, span_len, span_tokens, span_ids = best
         frequency = counts[span_ids]
         accepted.append(span_tokens)
         per_macro.append(
             {
                 "tokens": list(span_tokens),
                 "frequency": int(frequency),
-                "net_gain_tokens": int(gain),
+                "net_gain_tokens": int(_net_gain(span_len, frequency)),
+                "selection_score": int(score),
             }
         )
         # Collapse occurrences before the next round so later picks reflect
@@ -181,6 +185,7 @@ def induce_macros(
             "min_gain_tokens": cfg.min_gain_tokens,
             "max_macros": cfg.max_macros,
             "max_span_len": cfg.max_span_len,
+            "selection_objective": cfg.selection_objective,
         },
     }
     return MacroInductionResult(expansions=tuple(accepted), stats=stats)
