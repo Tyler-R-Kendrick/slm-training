@@ -260,11 +260,13 @@ def test_prediction_to_requirement_fact_returns_none_on_abstention():
 
 def test_default_authorized_factor_families_is_an_honest_placeholder():
     # AC: "No factor without an oracle ceiling is promoted into the model
-    # merely for convenience" -- EXP-SR-1 has not run yet, so the default
-    # must be a small, explicit, documented set, not "everything".
+    # merely for convenience" -- EXP-SR-1 authorized roles+bindings, not
+    # style_layout; the default remains a small, explicit placeholder for
+    # this seam's archetype target (not "everything").
     from slm_training.models.semantic_plan_factors import PROGRAM_FACTOR_FAMILIES
 
     assert set(DEFAULT_AUTHORIZED_FACTOR_FAMILIES) < set(PROGRAM_FACTOR_FAMILIES)
+    assert DEFAULT_AUTHORIZED_FACTOR_FAMILIES == ("style_layout",)
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,328 @@
+{
+  "kind": "sie004_predictor_campaign_fixture/v1",
+  "claim_class": "fixture",
+  "catalogue_claim_class": "screening",
+  "promotion": false,
+  "recipe": {
+    "command": [
+      "python",
+      "-m",
+      "scripts.run_sie004_predictor_campaign",
+      "--mode",
+      "fixture",
+      "--max-examples",
+      "400",
+      "--train-fraction",
+      "0.7",
+      "--seeds",
+      "0",
+      "1",
+      "2"
+    ],
+    "docs_path": "docs/design/iter-slm482-sie-004-predictor-campaign-20260810.json",
+    "device": "cpu",
+    "honesty_mode": "fixture_diagnostic"
+  },
+  "catalogue_id": "exp-sr-2",
+  "catalogue_manifest_sha256": "07e14de5597a55e8d7646f0811b165bda422b51d9f676ea7bf40e372b9cb5fbc",
+  "manifest_sha256": "2d026e3751b4d2732a9da544a36b9241ffda8e79f5b07ae0d9f1949e754343ce",
+  "dataset_id": "openui_hard_valid_v1",
+  "factor_family": "style_layout",
+  "max_examples": 400,
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "authorized_factors_source": {
+    "authorized_factors": [
+      "roles",
+      "bindings"
+    ],
+    "authorized_program_families": [
+      "binder_reference",
+      "property_role_value"
+    ],
+    "source_doc": "docs/design/iter-slm476-sie-002-oracle-localization-20260810.json",
+    "loaded": true,
+    "sie002_claim_class": "fixture",
+    "note": "SIE-002 authorized ['roles', 'bindings']; mapped program families ['binder_reference', 'property_role_value']. SIE-003 seam targets 'style_layout' (NOT authorized)."
+  },
+  "legal_support_parity": {
+    "legal_support_parity_exact": true,
+    "hard_prune_predictor_off": false,
+    "hard_prune_predictor_on": false,
+    "hard_prune_prediction_only_evidence": false,
+    "note": "Advisory RequirementFacts never unlock hard prune; byte/set legal support unchanged with predictor on vs off (I6)."
+  },
+  "requirement_predictor_f1": 0.0,
+  "aggregate_arms": {
+    "none": {
+      "requirement_predictor_f1_mean": 0.0,
+      "requirement_predictor_f1_per_seed": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "n_seeds": 3
+    },
+    "deterministic_extractor": {
+      "requirement_predictor_f1_mean": 0.0,
+      "requirement_predictor_f1_per_seed": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "n_seeds": 3
+    },
+    "frequency": {
+      "requirement_predictor_f1_mean": 0.448389,
+      "requirement_predictor_f1_per_seed": [
+        0.508197,
+        0.398374,
+        0.438596
+      ],
+      "n_seeds": 3
+    },
+    "retrieval": {
+      "requirement_predictor_f1_mean": 0.637172,
+      "requirement_predictor_f1_per_seed": [
+        0.590164,
+        0.707317,
+        0.614035
+      ],
+      "n_seeds": 3
+    },
+    "learned_predictor": {
+      "requirement_predictor_f1_mean": 0.0,
+      "requirement_predictor_f1_per_seed": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "n_seeds": 3
+    },
+    "gold_oracle": {
+      "requirement_predictor_f1_mean": 1.0,
+      "requirement_predictor_f1_per_seed": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "n_seeds": 3
+    }
+  },
+  "effect_vs_frequency": -0.448389,
+  "ceiling_recovery_vs_gold": 0.0,
+  "minimum_effect": 0.05,
+  "paired_vs_frequency": {
+    "deltas": [
+      -0.508197,
+      -0.398374,
+      -0.438596
+    ],
+    "mean": -0.448389,
+    "se": 0.032079,
+    "n_seeds": 3
+  },
+  "falsifier": {
+    "falsifier_holds": true,
+    "clears_frequency_baseline": false,
+    "clears_none_baseline": false,
+    "clears_minimum_effect": false,
+    "dominated_by_simpler_control": true,
+    "note": "Catalogue falsifier: predictor F1 does not exceed the majority-class/no-prediction baseline on the held-out prompt slice."
+  },
+  "seed_runs": [
+    {
+      "seed": 0,
+      "n_train": 278,
+      "n_held_out": 122,
+      "n_train_programs": 50,
+      "n_held_programs": 22,
+      "majority_label": "stack_row",
+      "confidence_threshold": 1.000000001,
+      "calibration": {
+        "n": 122,
+        "brier": 0.5075874622866722,
+        "ece": 0.521487472820283,
+        "abstain_required": true,
+        "operating_point": null
+      },
+      "arms": {
+        "none": {
+          "requirement_predictor_f1": 0.0,
+          "coverage": 0.0,
+          "selective_risk": null,
+          "abstention_rate": 1.0,
+          "requirement_facts_emitted_under_sie002_auth": 0
+        },
+        "deterministic_extractor": {
+          "requirement_predictor_f1": 0.0,
+          "coverage": 0.0,
+          "selective_risk": null,
+          "abstention_rate": 1.0,
+          "requirement_facts_emitted_under_sie002_auth": 0
+        },
+        "frequency": {
+          "requirement_predictor_f1": 0.508197,
+          "coverage": 1.0,
+          "selective_risk": 0.491803,
+          "abstention_rate": 0.0,
+          "requirement_facts_emitted_under_sie002_auth": 0
+        },
+        "retrieval": {
+          "requirement_predictor_f1": 0.590164,
+          "coverage": 1.0,
+          "selective_risk": 0.409836,
+          "abstention_rate": 0.0,
+          "requirement_facts_emitted_under_sie002_auth": 0
+        },
+        "learned_predictor": {
+          "requirement_predictor_f1": 0.0,
+          "coverage": 0.0,
+          "selective_risk": null,
+          "abstention_rate": 1.0,
+          "requirement_facts_emitted_under_sie002_auth": 0
+        },
+        "gold_oracle": {
+          "requirement_predictor_f1": 1.0,
+          "coverage": 1.0,
+          "selective_risk": 0.0,
+          "abstention_rate": 0.0,
+          "requirement_facts_emitted_under_sie002_auth": 0
+        }
+      }
+    },
+    {
+      "seed": 1,
+      "n_train": 277,
+      "n_held_out": 123,
+      "n_train_programs": 50,
+      "n_held_programs": 22,
+      "majority_label": "stack_column",
+      "confidence_threshold": 1.000000001,
+      "calibration": {
+        "n": 123,
+        "brier": 0.5148928340641631,
+        "ece": 0.5348659438383567,
+        "abstain_required": true,
+        "operating_point": null
+      },
+      "arms": {
+        "none": {
+          "requirement_predictor_f1": 0.0,
+          "coverage": 0.0,
+          "selective_risk": null,
+          "abstention_rate": 1.0,
+          "requirement_facts_emitted_under_sie002_auth": 0
+        },
+        "deterministic_extractor": {
+          "requirement_predictor_f1": 0.0,
+          "coverage": 0.0,
+          "selective_risk": null,
+          "abstention_rate": 1.0,
+          "requirement_facts_emitted_under_sie002_auth": 0
+        },
+        "frequency": {
+          "requirement_predictor_f1": 0.398374,
+          "coverage": 1.0,
+          "selective_risk": 0.601626,
+          "abstention_rate": 0.0,
+          "requirement_facts_emitted_under_sie002_auth": 0
+        },
+        "retrieval": {
+          "requirement_predictor_f1": 0.707317,
+          "coverage": 1.0,
+          "selective_risk": 0.292683,
+          "abstention_rate": 0.0,
+          "requirement_facts_emitted_under_sie002_auth": 0
+        },
+        "learned_predictor": {
+          "requirement_predictor_f1": 0.0,
+          "coverage": 0.0,
+          "selective_risk": null,
+          "abstention_rate": 1.0,
+          "requirement_facts_emitted_under_sie002_auth": 0
+        },
+        "gold_oracle": {
+          "requirement_predictor_f1": 1.0,
+          "coverage": 1.0,
+          "selective_risk": 0.0,
+          "abstention_rate": 0.0,
+          "requirement_facts_emitted_under_sie002_auth": 0
+        }
+      }
+    },
+    {
+      "seed": 2,
+      "n_train": 286,
+      "n_held_out": 114,
+      "n_train_programs": 50,
+      "n_held_programs": 22,
+      "majority_label": "stack_row",
+      "confidence_threshold": 1.000000001,
+      "calibration": {
+        "n": 114,
+        "brier": 0.3939072763391763,
+        "ece": 0.38328183975098284,
+        "abstain_required": true,
+        "operating_point": null
+      },
+      "arms": {
+        "none": {
+          "requirement_predictor_f1": 0.0,
+          "coverage": 0.0,
+          "selective_risk": null,
+          "abstention_rate": 1.0,
+          "requirement_facts_emitted_under_sie002_auth": 0
+        },
+        "deterministic_extractor": {
+          "requirement_predictor_f1": 0.0,
+          "coverage": 0.0,
+          "selective_risk": null,
+          "abstention_rate": 1.0,
+          "requirement_facts_emitted_under_sie002_auth": 0
+        },
+        "frequency": {
+          "requirement_predictor_f1": 0.438596,
+          "coverage": 1.0,
+          "selective_risk": 0.561404,
+          "abstention_rate": 0.0,
+          "requirement_facts_emitted_under_sie002_auth": 0
+        },
+        "retrieval": {
+          "requirement_predictor_f1": 0.614035,
+          "coverage": 1.0,
+          "selective_risk": 0.385965,
+          "abstention_rate": 0.0,
+          "requirement_facts_emitted_under_sie002_auth": 0
+        },
+        "learned_predictor": {
+          "requirement_predictor_f1": 0.0,
+          "coverage": 0.0,
+          "selective_risk": null,
+          "abstention_rate": 1.0,
+          "requirement_facts_emitted_under_sie002_auth": 0
+        },
+        "gold_oracle": {
+          "requirement_predictor_f1": 1.0,
+          "coverage": 1.0,
+          "selective_risk": 0.0,
+          "abstention_rate": 0.0,
+          "requirement_facts_emitted_under_sie002_auth": 0
+        }
+      }
+    }
+  ],
+  "scope_disclaimer": "Fixture-scale EXP-SR-2 prompt-requirement predictor campaign over openui_hard_valid_v1 positive-role rows. Arms reuse SIE-003 predictor primitives; retrieval is train-only 1-NN (leakage-safe). Primary metric is requirement_predictor_f1 on archetype/style_layout labels. SIE-002 authorized_factors=['roles', 'bindings'] (program families ['binder_reference', 'property_role_value']); the seam target 'style_layout' is not in that set, so advisory fact emission under the SIE-002 gate is zero. Legal support parity is exact (advisory facts never hard-prune). claim_class=fixture; no promotion.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "7f471b1b28b5775ec30d9b018533cdae8d70ea3c",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v158"
+    },
+    "stamped_at": "2026-08-10T20:00:42.388504+00:00"
+  }
+}

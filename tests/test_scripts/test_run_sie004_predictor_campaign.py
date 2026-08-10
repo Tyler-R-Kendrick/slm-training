@@ -1,0 +1,49 @@
+"""CLI smoke for scripts.run_sie004_predictor_campaign."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+from scripts.run_sie004_predictor_campaign import main
+
+
+def test_plan_only_exits_zero(capsys) -> None:
+    assert main(["--mode", "plan-only"]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["status"] == "plan_only"
+    assert payload["manifest"]["experiment_id"] == "exp-sr-2"
+    assert payload["promotion"] is False
+
+
+def test_fixture_writes_docs(tmp_path: Path, capsys) -> None:
+    docs_out = tmp_path / "iter-slm482-sie-004.json"
+    out_dir = tmp_path / "run"
+    assert (
+        main(
+            [
+                "--mode",
+                "fixture",
+                "--max-examples",
+                "80",
+                "--seeds",
+                "0",
+                "--out-dir",
+                str(out_dir),
+                "--docs-out",
+                str(docs_out),
+            ]
+        )
+        == 0
+    )
+    payload = json.loads(docs_out.read_text(encoding="utf-8"))
+    assert payload["kind"] == "sie004_predictor_campaign_fixture/v1"
+    assert payload["claim_class"] == "fixture"
+    assert payload["promotion"] is False
+    assert "version_stamp" in payload
+    assert payload["version_stamp"]["stamp_schema"] == "version_stamp/v1"
+    assert payload["legal_support_parity"]["legal_support_parity_exact"] is True
+    assert docs_out.with_suffix(".md").is_file()
+    captured = capsys.readouterr().out
+    assert "requirement_predictor_f1=" in captured
+    assert "legal_support_parity_exact=" in captured
