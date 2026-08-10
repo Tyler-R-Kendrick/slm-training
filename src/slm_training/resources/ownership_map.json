@@ -503,6 +503,23 @@
       "notes": "SRP-009/SLM-472. The downstream_extension_map row for SRP-009 predicted extension_points: [valid_state_search_generic] (the fixed-hole finite-domain CSP controller, dsl/solver/controller.py) as the search backbone. That controller's state model is a fixed set of holes each drawn from a finite domain, solved via backtracking + certificate-backed closure; it does not naturally represent 'generate a variable-shaped tree up to a depth/node budget' without an artificial fixed-arity template encoding that would add real complexity without a matching correctness benefit, especially since this issue's core acceptance criterion (tiny fixtures must match an independent brute-force oracle exactly) is best served by a small, directly-auditable recursive enumerator over the grammar symbolic_expr_ir already declares. Registered as its own subsystem (same precedent as SGS-008/SRP-004/SRP-005/SRP-007) rather than extending valid_state_search_generic's owner_symbols. Composes rather than re-derives: candidate generation reads only symbolic_expr_ir's operator arity table and budgets (never targets/models), canonical identity and dedup come from symbolic_expr_canonicalize.canonicalize_expr, and every unique candidate is scored through symbolic_expr_report.build_evidence_record/pareto_front unmodified. Deduplicates by canonical hash before evaluation; a truncated enumeration (max_states cap reached before natural exhaustion) is structurally forbidden from claiming optimality_claim='exhaustive_under_declared_bounds' (EnumerativeBaselineResultV1.__post_init__ raises on the mismatched combination)."
     },
     {
+      "id": "symbolic_expr_pysr_adapter",
+      "name": "Optional PySR/SRBench adapter with isolated environment manifest",
+      "owner_module": "src/slm_training/dsl/symbolic_expr_pysr_adapter.py",
+      "owner_symbols": [
+        "AdapterEnvironmentManifestV1",
+        "AdapterRunInputV1",
+        "AdapterRunResultV1",
+        "ExternalTranslationResultV1",
+        "build_adapter_run_input",
+        "parse_external_expression",
+        "run_adapter"
+      ],
+      "authority_tier": "evaluation-only",
+      "design_doc": "docs/design/symbol-only-output-contract.md",
+      "notes": "SRP-011/SLM-475. The downstream_extension_map row for SRP-011 already predicted new_owner_justified: true, extension_points: [] ('External, optional dependency by design; isolated deliberately and does not extend any internal owner') -- unlike the SRP-004/005/007/008/009 siblings, this is not a divergence from the pre-registered plan. Never imports pysr/Julia and is never imported by any core path; the external call is injected as a plain str->str raw_output_provider callable, so core tests use mocked/golden output exclusively (no live PySR install exists or is verifiable in this environment). Translation is bidirectional over the already-existing IR: build_adapter_run_input serializes a SymbolicRegressionProblemV1's variable names/operator allowlist/row count (never raw training data) into external runner configuration; parse_external_expression parses the tool's returned infix text back into VarRef/CoefficientHole/OpApply via a hand-rolled tokenizer/recursive-descent parser (no eval/exec), mapping every numeric literal to a fresh CoefficientHole with its value carried in a parallel coefficients tuple so the IR's symbol-only contract is never violated. Every recovered expression is rescored through symbolic_expr_report.build_evidence_record unmodified -- an external tool's self-reported loss is never trusted or persisted. Any operator/identifier outside the pack's declared grammar (PySR's '^'/'square', etc.) is reported in unsupported_operators rather than approximated; any external-call exception, timeout, or malformed-output parse failure produces a typed non-'ok' AdapterRunResultV1 with evidence=None (enforced in __post_init__), never a fabricated benchmark loss."
+    },
+    {
       "id": "version_registry",
       "name": "Component-version registry and enforcement",
       "owner_module": "src/slm_training/resources/versions.json",

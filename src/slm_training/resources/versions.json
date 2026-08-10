@@ -2875,6 +2875,11 @@
         {
           "version": "v9",
           "date": "2026-08-10",
+"note": "no-bump: SLM-475 (SRP-011) registers a new 'symbolic_expr_pysr_adapter' subsystem (src/slm_training/dsl/symbolic_expr_pysr_adapter.py: AdapterEnvironmentManifestV1/AdapterRunInputV1/AdapterRunResultV1/ExternalTranslationResultV1/build_adapter_run_input/parse_external_expression/run_adapter) exactly per the pre-registered downstream_extension_map row for SRP-011, which already predicted new_owner_justified: true, extension_points: [] ('External, optional dependency by design; isolated deliberately and does not extend any internal owner') -- not a divergence, unlike the SRP-004/005/007/008/009 siblings; mirrors the row into repository-ownership-map.md. The new source/test files are not yet tracked by any versions.json component (consistent with the SRP sibling-file precedent), so this entry only covers the ownership-map doc update."
+        },
+        {
+          "version": "v9",
+          "date": "2026-08-10",
           "note": "SLM-474 (SRP-010): add related_overlaps row pointing at docs/design/iter-slm474-srp-010-portability-20260810.md (fixture-scale second-pack portability evidence for RSP-008/EXP-SR-12)."
         },
         {
