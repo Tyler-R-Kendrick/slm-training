@@ -46,6 +46,9 @@ def test_load_climb_policy_has_volatile_fields_and_digest() -> None:
     assert policy.cadence["screening_cycles_per_promotion"]
     assert policy.exhausted_identity_fields
     assert policy.recipe_tweak_knobs
+    terminal = policy.payload.get("terminal")
+    assert isinstance(terminal, dict)
+    assert terminal["park_on_exhaust"] is True
     digest1 = climb_policy_content_digest(policy.payload)
     mutated = dict(policy.payload)
     screening = dict(mutated["screening_primary"])

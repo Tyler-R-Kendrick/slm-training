@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from fractions import Fraction
 from pathlib import Path
 
 from slm_training.autoresearch import evidence_ledger as ev
@@ -36,6 +37,27 @@ def _summarize(arms: dict) -> list[str]:
             f"null={stats.get('n_null', 0):4d} pos={stats.get('n_positive', 0):3d} "
             f"mean_delta={stats.get('mean_delta', 0.0):+.4f}"
         )
+    return rows
+
+
+def _operator_status(arms: dict) -> list[str]:
+    """One-stop operator view: eval key, posterior-UCB ranking, power floor."""
+    eval_key = ev.current_eval_key()
+    rows = [f"current_eval_key: {eval_key or 'unavailable'}"]
+    ranked = ev.rank_arms_by_evidence(sorted(arms), arms, eval_key=eval_key)
+    rows.append("posterior_ucb_top10:")
+    for position, slug in enumerate(ranked[:10], start=1):
+        rows.append(f"  {position:2d}. {slug}")
+    # Current screening geometry: 3 paired smoke documents per cycle, alpha
+    # from the climb policy's power gate default.
+    alpha = Fraction(1, 20)
+    report = ev.power_feasibility_report(3, alpha)
+    rows.append(
+        "screening_geometry: n=3 alpha=1/20 "
+        f"decisive={report['decisive']} "
+        f"min_two_sided_p={report['min_two_sided_p']} "
+        f"required_pooled_n={report['required_n']}"
+    )
     return rows
 
 
@@ -61,6 +83,8 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(f"ledger: {args.out}")
         for row in _summarize(arms):
+            print(row)
+        for row in _operator_status(arms):
             print(row)
         return 0
 

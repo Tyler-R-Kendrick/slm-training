@@ -2485,6 +2485,41 @@ def test_compile_commands_routes_typed_ltr_prefix_training_lever() -> None:
     assert train[train.index("--ltr-prefix-loss-weight") + 1] == "1.0"
 
 
+def test_compile_commands_routes_solver_energy_and_hazard_levers() -> None:
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            train_version="wf_smoke_v2",
+            steps=20,
+            output_tokenizer="lexer",
+            compiler_decode_mode="tree",
+            structural_aux_head_profile="solver-energy",
+            solver_energy_loss_weight=1.0,
+            solver_energy_decode_weight=1.0,
+        )
+    )
+    commands = compile_commands(campaign(), spec)
+    train = next(command for command in commands if "scripts.train_model" in command)
+    assert train[train.index("--solver-energy-loss-weight") + 1] == "1.0"
+    assert train[train.index("--solver-energy-decode-weight") + 1] == "1.0"
+    assert train[train.index("--structural-aux-head-profile") + 1] == "solver-energy"
+
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            train_version="wf_smoke_v2",
+            steps=20,
+            output_tokenizer="lexer",
+            compiler_decode_mode="tree",
+            structural_aux_head_profile="legal-edit-hazard",
+            legal_edit_hazard_loss_weight=1.0,
+            legal_edit_hazard_decode_weight=1.0,
+        )
+    )
+    commands = compile_commands(campaign(), spec)
+    train = next(command for command in commands if "scripts.train_model" in command)
+    assert train[train.index("--legal-edit-hazard-loss-weight") + 1] == "1.0"
+    assert train[train.index("--legal-edit-hazard-decode-weight") + 1] == "1.0"
+
+
 def test_compile_commands_routes_typed_component_token_training_lever() -> None:
     spec = experiment(
         knobs=ExperimentKnobs(

@@ -47,7 +47,9 @@ _CREDIT_ARTIFACT_KINDS = frozenset(
 _LEGACY_DIGEST_DEFAULTS = {
     "replicate_ledger_schema": None,
     "replicate_seed_floor": None,
+    "power_feasibility": None,
 }
+_POWER_FEASIBILITY_SCHEMA = "power_feasibility/v1"
 
 
 def _unique(values: tuple[str, ...], label: str) -> None:
@@ -179,6 +181,10 @@ class ExperimentCampaignV1(StrictModel):
     # Climb / causal shape (required for promotion_candidate and ship_gate).
     mechanism_off_arm_ids: tuple[str, ...] = ()
     executable_kill_criteria: tuple[str, ...] = ()
+    # Pre-run power admission: locked sign-test feasibility of the planned
+    # measurement geometry (``evidence_ledger.power_feasibility_report``).
+    # Optional; when present it must carry the power_feasibility/v1 shape.
+    power_feasibility: dict[str, Any] | None = None
 
     @field_validator("seeds", mode="before")
     @classmethod
@@ -191,6 +197,27 @@ class ExperimentCampaignV1(StrictModel):
 
     @model_validator(mode="after")
     def validate_contract(self) -> ExperimentCampaignV1:
+        if self.power_feasibility is not None:
+            report = self.power_feasibility
+            if report.get("schema") != _POWER_FEASIBILITY_SCHEMA:
+                raise ValueError(
+                    "power_feasibility.schema must be "
+                    f"{_POWER_FEASIBILITY_SCHEMA!r}"
+                )
+            for key in ("n", "required_n"):
+                value = report.get(key)
+                if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+                    raise ValueError(
+                        f"power_feasibility.{key} must be a positive integer"
+                    )
+            if not isinstance(report.get("decisive"), bool):
+                raise ValueError("power_feasibility.decisive must be a boolean")
+            for key in ("alpha", "min_two_sided_p"):
+                value = report.get(key)
+                if not isinstance(value, str) or not value:
+                    raise ValueError(
+                        f"power_feasibility.{key} must be a non-empty string"
+                    )
         if bool(self.replay_of_manifest_sha256) != bool(self.replay_reason):
             raise ValueError(
                 "replay_of_manifest_sha256 and replay_reason must be declared together"

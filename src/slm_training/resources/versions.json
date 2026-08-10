@@ -98,13 +98,18 @@
       ]
     },
     "config.levers": {
-      "version": "v30",
+      "version": "v31",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v31",
+          "date": "2026-08-09",
+          "note": "darkfactory unit M: solver_energy_decode_weight and legal_edit_hazard_decode_weight registered in TRAINED_DECODE_REQUIREMENTS and the compiler-path decode lever group"
+        },
         {
           "version": "v30",
           "date": "2026-07-30",
@@ -2966,7 +2971,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v197",
+      "version": "v199",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -3019,6 +3024,16 @@
         "tests/test_autoresearch/test_evidence_ledger.py"
       ],
       "history": [
+        {
+          "version": "v199",
+          "date": "2026-08-09",
+          "note": "darkfactory unit M integration: solver-energy-rerank and legal-edit-hazard screening arms in the bank with matched zero-weight controls, _LEVER_KNOB_KEYS + explicit _arm_slug_from_knobs branches, ExperimentKnobs fields + engine knob->CLI routing"
+        },
+        {
+          "version": "v198",
+          "date": "2026-08-09",
+          "note": "darkfactory completion (units G+L): terminal governance — park the loop under a typed regime_exhausted verdict with a deterministic bank-fingerprint resume predicate (REGIME_PARKED/REGIME_RESUMED), retire compose-filler synthesis and confirm-seed burning behind policy v8 terminal.park_on_exhaust, lock a power_feasibility/v1 report on promote campaigns and refuse non-decisive ones (promotion_infeasible_by_design), promotion_suite_n=6 makes promotion decidable; ledger evolution — staleness-decayed cross-version pooling from versions.json history distance, sdlc_delivery embedded in closeout docs and mined, operator status with posterior-UCB top-10 + screening power geometry; policy v7->v8"
+        },
         {
           "version": "v197",
           "date": "2026-08-09",
@@ -4377,12 +4392,17 @@
       ]
     },
     "harness.core": {
-      "version": "v15",
+      "version": "v16",
       "kind": "harness",
       "paths": [
         "src/slm_training/harness_core/"
       ],
       "history": [
+        {
+          "version": "v16",
+          "date": "2026-08-10",
+          "note": "Replace the normal-approximation z=1.96 EG_params/EG_time interval with exact Student-t critical values and require n>=2 finite seeds for any lcb/ucb (single-seed now yields nan, failing closed on lcb>=threshold gates instead of a zero-width interval)"
+        },
         {
           "version": "v15",
           "date": "2026-08-01",
@@ -11709,7 +11729,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v94",
+      "version": "v95",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -11730,6 +11750,11 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v95",
+          "date": "2026-08-09",
+          "note": "darkfactory unit M: DecodeStats gains solver_energy/legal_edit_hazard bias applications/choice_changes/fallbacks counters; evaluate_model exposes the two decode weights as None-default runtime overrides"
+        },
         {
           "version": "v94",
           "note": "PCT-007/SLM-452: add MechanismActivationV1/build_mechanism_activation -- a common eligible/invoked/abstained/no_op/changed_top_choice/changed_final_program/forwards/verified_states/verifier_calls/wall_ms/failure_reason envelope any optional semantic/search/repair/controller mechanism can emit, fail-closed against representing a wired-but-never-active mechanism as a successful intervention (invoked requires eligible; a choice-change claim requires invoked and not no_op). evidence_class/default_state stay caller-declared advisory fields (MECHANISM_EVIDENCE_CLASSES is illustrative, not a canonical enum) since no single canonical disposition registry exists yet -- SGS-009/SLM-456 is still Backlog. Purely additive over DecodeStats/aggregate_stats; no existing call site wired yet.",
@@ -14211,7 +14236,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v312",
+      "version": "v313",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -14256,6 +14281,11 @@
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
       "history": [
+        {
+          "version": "v313",
+          "date": "2026-08-09",
+          "note": "darkfactory unit M: solver-energy reranker + legal-edit hazard (flow) ranking levers — solver_energy_decode_weight / legal_edit_hazard_{loss,decode}_weight config fields, solver-energy / legal-edit-hazard structural_aux_head_profiles with isolated_aux_init prebuild parity, compiler-decision-seam features (pooled ctx + hidden + candidate embedding, symbol-only), pairwise energy and multi-positive-mass hazard objectives on the detached-auxiliary path, tanh-clamped fail-closed decode biases in both _select_compiler_path branches after the untouched singleton bypass; factory/train_model passthrough"
+        },
         {
           "version": "v312",
           "note": "ModelBuildConfig.generate_batch_size eval-time override field",
@@ -16413,7 +16443,7 @@
       ]
     },
     "formal.objects": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/formal/__init__.py",
@@ -16424,6 +16454,11 @@
         "docs/design/formal-objects-multi-prover.md"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-08-10",
+          "note": "Close the proof-chain integrity gaps: lean_kernel now audits theorem presence in source (regex-matched local declaration) before running 'make test' (build + forbidden-token scan + axiom-purity check) instead of trusting a bare 'lake build' exit code; python_structural/python_reference replace their single-hardcoded-context law checks with enumeration over a shared bounded case table (_LAW_CASES) covering every catalog law_id, so both independent backends can find a real counterexample instead of vacuously agreeing on one anecdotal input."
+        },
         {
           "version": "v3",
           "date": "2026-08-03",

@@ -363,6 +363,8 @@ _COMPILER_PATH_DECODE_LEVERS: Final = (
     "binder_slot_ownership_decode_weight",
     "binder_slot_presence_decode_weight",
     "binder_reference_presence_decode_weight",
+    "solver_energy_decode_weight",
+    "legal_edit_hazard_decode_weight",
 )
 LEVER_REQUIREMENTS: Final = {
     **{name: (_CHOICE,) for name in _CHOICE_ONLY_DECODE_LEVERS},
@@ -393,6 +395,8 @@ TRAINED_DECODE_REQUIREMENTS: Final = {
     ),
     "root_reference_arity_decode_weight": ("root_reference_arity_loss_weight",),
     "root_reference_identity_decode_weight": ("root_reference_identity_loss_weight",),
+    "solver_energy_decode_weight": ("solver_energy_loss_weight",),
+    "legal_edit_hazard_decode_weight": ("legal_edit_hazard_loss_weight",),
 }
 
 # Runtime prerequisites belong in the same registry as codec support.  Keeping

@@ -227,6 +227,10 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "component_inventory_decode_weight",
         "component_plan_loss_weight",
         "component_plan_decode_weight",
+        "solver_energy_loss_weight",
+        "solver_energy_decode_weight",
+        "legal_edit_hazard_loss_weight",
+        "legal_edit_hazard_decode_weight",
         "slot_component_loss_weight",
         "slot_component_decode_weight",
         "component_edge_loss_weight",
@@ -548,12 +552,18 @@ class ExperimentKnobs(StrictModel):
             "binder-arity",
             "binder-component-plan",
             "component-structure",
+            "solver-energy",
+            "legal-edit-hazard",
         ]
         | None
     ) = None
     component_inventory_decode_weight: float | None = Field(default=None, ge=0, le=20)
     component_plan_loss_weight: float | None = Field(default=None, ge=0, le=20)
     component_plan_decode_weight: float | None = Field(default=None, ge=0, le=20)
+    solver_energy_loss_weight: float | None = Field(default=None, ge=0, le=20)
+    solver_energy_decode_weight: float | None = Field(default=None, ge=0, le=20)
+    legal_edit_hazard_loss_weight: float | None = Field(default=None, ge=0, le=20)
+    legal_edit_hazard_decode_weight: float | None = Field(default=None, ge=0, le=20)
     slot_component_loss_weight: float | None = Field(default=None, ge=0, le=20)
     slot_component_decode_weight: float | None = Field(default=None, ge=0, le=20)
     component_edge_loss_weight: float | None = Field(default=None, ge=0, le=20)
@@ -1051,6 +1061,10 @@ class RegimeExhaustedVerdictV1(StrictModel):
     closed_slugs: tuple[str, ...] = ()
     policy_sha256: str | None = None
     resume_predicate: str = Field(min_length=1)
+    # Deterministic identity of the legal screening domain at park time
+    # (bank slugs + knobs, climb-policy sha256, MAX_RUN_MINUTES). A parked
+    # loop resumes exactly when this fingerprint changes.
+    bank_fingerprint: str | None = None
 
 
 class AutotrainCycleHandoffV1(StrictModel):

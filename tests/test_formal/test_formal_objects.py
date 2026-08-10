@@ -192,6 +192,92 @@ def test_reference_backend_independent() -> None:
     assert a.backend != b.backend
 
 
+def test_structural_laws_enumerate_every_catalog_law_on_both_backends() -> None:
+    """R6(a): the no-context (real exporter) path enumerates a bounded case
+    table on both backends instead of checking one hardcoded default —
+    covering every law_id any exporter in this codebase actually emits.
+    """
+    from slm_training.formal.structural import (
+        _LAW_CASES,
+        check_law,
+        check_law_reference,
+    )
+
+    for law_id in _LAW_CASES:
+        assert check_law(law_id) == [], law_id
+        assert check_law_reference(law_id) == [], law_id
+
+
+def test_check_law_reference_reports_a_genuine_violation() -> None:
+    """The enumeration path is not a rubber stamp: an explicit context that
+    violates the law (here, close_monotone's a-subset-b antecedent) is
+    caught, not silently accepted.
+    """
+    from slm_training.formal.structural import check_law_reference
+
+    violations = check_law_reference(
+        "close_monotone",
+        context={"live": [0, 1, 2], "a": [1, 2], "b": [1]},
+    )
+    assert violations
+
+
+def test_check_law_and_reference_disagreement_is_detectable_via_shared_cases() -> None:
+    """Both backends are checked against the identical _LAW_CASES table, so
+    an encoding bug that makes one backend diverge from the other on any
+    catalog law would fail this loop rather than passing by coincidence.
+    """
+    from slm_training.formal.structural import (
+        _LAW_CASES,
+        _eval_law,
+        _eval_law_reference,
+    )
+
+    for law_id, cases in _LAW_CASES.items():
+        for case in cases:
+            structural_ok = _eval_law(law_id, case.context)
+            reference_ok = _eval_law_reference(law_id, case.context)
+            assert structural_ok == reference_ok == case.expect, (law_id, case)
+
+
+def _write_theorem_stub(root, module: str, local_name: str) -> None:
+    """Write a minimal Lean source so the theorem-presence check passes."""
+    path = root.joinpath(*module.split(".")).with_suffix(".lean")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(f"theorem {local_name} : True := trivial\n", encoding="utf-8")
+
+
+def test_theorem_presence_violation_when_declaration_missing(tmp_path) -> None:
+    import slm_training.formal.checkers as checkers
+
+    obj = export_lean_claim("ExactClosure.closePass_subset")
+    monkeypatch_root = tmp_path
+    original = checkers.LEAN_ROOT
+    checkers.LEAN_ROOT = monkeypatch_root
+    try:
+        result = checkers.check_lean_kernel(obj, timeout_s=1.0, enabled=True)
+    finally:
+        checkers.LEAN_ROOT = original
+    assert not result.ok
+    assert "not declared" in result.detail or "source missing" in result.detail
+
+
+def test_theorem_presence_catches_a_renamed_theorem(tmp_path) -> None:
+    import slm_training.formal.checkers as checkers
+
+    obj = export_lean_claim("ExactClosure.closePass_subset")
+    # The module exists, but the specific claimed theorem was renamed away.
+    _write_theorem_stub(tmp_path, "LeverProofLean.ExactClosure", "closePass_subset_v2")
+    original = checkers.LEAN_ROOT
+    checkers.LEAN_ROOT = tmp_path
+    try:
+        result = checkers.check_lean_kernel(obj, timeout_s=1.0, enabled=True)
+    finally:
+        checkers.LEAN_ROOT = original
+    assert not result.ok
+    assert "closePass_subset" in result.detail
+
+
 def test_lean_kernel_clamps_timeout_and_reaps_with_canonical_budget(
     monkeypatch, tmp_path
 ) -> None:
@@ -200,11 +286,12 @@ def test_lean_kernel_clamps_timeout_and_reaps_with_canonical_budget(
     import slm_training.formal.checkers as checkers
 
     obj = export_lean_claim("ExactClosure.closePass_subset")
+    _write_theorem_stub(tmp_path, "LeverProofLean.ExactClosure", "closePass_subset")
     monkeypatch.setattr(checkers, "LEAN_ROOT", tmp_path)
     calls: dict[str, float] = {}
 
     def fake_runner(command, *, cwd, interrupt_after_seconds, kill_grace_seconds):
-        assert command == ["lake", "build", "LeverProofLean"]
+        assert command == ["make", "test"]
         assert cwd == tmp_path
         calls["interrupt"] = interrupt_after_seconds
         calls["grace"] = kill_grace_seconds
@@ -231,6 +318,7 @@ def test_lean_kernel_timeout_is_not_success(monkeypatch, tmp_path) -> None:
     import slm_training.formal.checkers as checkers
 
     obj = export_lean_claim("ExactClosure.closePass_subset")
+    _write_theorem_stub(tmp_path, "LeverProofLean.ExactClosure", "closePass_subset")
     monkeypatch.setattr(checkers, "LEAN_ROOT", tmp_path)
     monkeypatch.setattr(
         checkers,

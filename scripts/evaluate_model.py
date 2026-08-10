@@ -264,6 +264,18 @@ def main(argv: list[str] | None = None) -> int:
         help="Override the checkpoint's grammar-role component-plan bias.",
     )
     parser.add_argument(
+        "--solver-energy-decode-weight",
+        type=float,
+        default=None,
+        help="Override the checkpoint's compiler-decision energy bias.",
+    )
+    parser.add_argument(
+        "--legal-edit-hazard-decode-weight",
+        type=float,
+        default=None,
+        help="Override the checkpoint's compiler-decision hazard bias.",
+    )
+    parser.add_argument(
         "--slot-component-decode-weight",
         type=float,
         default=None,
@@ -818,6 +830,8 @@ def main(argv: list[str] | None = None) -> int:
         solver_certificate_mode=args.solver_certificate_mode,
         component_inventory_decode_weight=args.component_inventory_decode_weight,
         component_plan_decode_weight=args.component_plan_decode_weight,
+        solver_energy_decode_weight=args.solver_energy_decode_weight,
+        legal_edit_hazard_decode_weight=args.legal_edit_hazard_decode_weight,
         slot_component_decode_weight=args.slot_component_decode_weight,
         schema_value_decode_weight=args.schema_value_decode_weight,
         schema_enum_close_decode_weight=args.schema_enum_close_decode_weight,
