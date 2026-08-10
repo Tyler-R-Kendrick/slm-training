@@ -183,6 +183,21 @@ A second test proves a **second pack resolves**: toy-layout backend parse +
 scope extraction + slot contract + streaming engine on a toy program, and its
 missing slots fail closed.
 
+### SRP-010 / SLM-474 — symbolic_regression portability fixture
+
+The `symbolic_regression` pack registers on the canonical `dsl/pack.py`
+registry (not the legacy `dsl/packs/` shadow). **SLM-474 (SRP-010)** ships a
+fixture harness only (`srp010_fixture`, matrix
+`slm474_srp010_pack_portability`): default isolation keeps OpenUI when
+`SLM_GRAMMAR_DSL` is unset; the SR pack exercises filled
+parse/canonicalize/oracle slots and fails closed on honest-`None` slots;
+claim class stays `fixture`. Measured write-up:
+[iter-slm474-srp-010-portability-20260810.md](iter-slm474-srp-010-portability-20260810.md).
+Real second-pack portability certification is **EXP-SR-12 / RSP-008
+(SLM-487)** — campaign execution successor, not this fixture. OpenWiki
+navigation refreshes from this design surface via the scheduled
+`openwiki-update` workflow (no hand-edited `docs/openwiki/` pages).
+
 Recipe for a full-size rerun (identical interface, bigger N, real model):
 
 ```bash

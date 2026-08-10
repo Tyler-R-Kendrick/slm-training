@@ -79,6 +79,12 @@ instead of duplicating one. (These are **not** dead ends.)
 - [SGS-010 schema versioning + compatibility](../../design/sgs-010-schema-versioning-compatibility.md)
 - [SIE-007 compute-state features + replay-only controller](../../design/sie-007-compute-state-controller.md)
 - [Repository ownership map](../../design/repository-ownership-map.md) — owner/authority registry all of the above register into.
+- **SRP-010 / SLM-474** — symbolic-pack portability fixture (`srp010_fixture`):
+  [iter-slm474-srp-010-portability-20260810.md](../../design/iter-slm474-srp-010-portability-20260810.md)
+  (`claim_class=fixture` only; OpenUI stays default). Campaign execution
+  successor is **EXP-SR-12 / RSP-008 (SLM-487)** — real OpenUI +
+  `symbolic_regression` second-pack portability certification via
+  `ExperimentCampaignV1`, not this fixture.
 
 ## Dead ends (do not re-propose)
 

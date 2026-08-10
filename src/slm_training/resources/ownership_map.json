@@ -612,6 +612,12 @@
       "relation": "Precedent for SRP-001/SRP-010 second-pack portability work; do not re-derive the replication protocol."
     },
     {
+      "linear_id": "SLM-474",
+      "title": "SRP-010: Add end-to-end symbolic-pack portability, default-isolation, and standards fixtures",
+      "doc": "docs/design/iter-slm474-srp-010-portability-20260810.md",
+      "relation": "Fixture-scale SR pack portability / default-isolation evidence (claim_class=fixture); RSP-008/EXP-SR-12 certification successor must build on this inventory rather than re-deriving it."
+    },
+    {
       "linear_id": "SLM-160",
       "title": "SPV4-02: Publish the causal architecture disposition and integrate only qualified winners into model lineage",
       "doc": "docs/design/semantic-planning-valid-state-disposition.md",
