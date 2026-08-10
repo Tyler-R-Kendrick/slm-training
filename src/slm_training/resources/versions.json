@@ -2981,7 +2981,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v200",
+      "version": "v201",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -3034,6 +3034,16 @@
         "tests/test_autoresearch/test_evidence_ledger.py"
       ],
       "history": [
+        {
+          "version": "v201",
+          "date": "2026-08-10",
+          "note": "Merge origin/main (#1551 evidence-ledger stamping) into this PR's branch: main independently bumped this component again from the shared ancestor (stamping continuous_cycle_results with build_version_stamp and regenerating the evidence ledger) while this branch's own history already used the same v200 label for a different entry \u2014 both are kept byte-identical to their own parent's history (duplicate version labels across distinct entries are an existing, tolerated pattern in this file \u2014 see the v195 entries below) and this new top-level entry uses a genuinely fresh label so both lines combine into one sequence without altering any entry already published on either side."
+        },
+        {
+          "version": "v200",
+          "date": "2026-08-10",
+          "note": "stamp continuous_cycle_results/v1 closeout records with the eval-comparability version_stamp (evals.scoring, evals.meaningful_program, harness.model_build.eval, gates.ship) via build_version_stamp, so cycle deltas mine into a real cross-version evidence-ledger partition instead of the catch-all 'unstamped' bucket; regenerate the committed evidence_ledger.v1.json (was stale versus docs/design) and add a build_evidence_ledger --check CI gate"
+        },
         {
           "version": "v200",
           "date": "2026-08-10",
@@ -4253,6 +4263,11 @@
           "version": "v14",
           "date": "2026-08-10",
           "note": "no-bump: ci-minutes-and-speed-plan doc gained a paragraph documenting the worktree-aware interpreter resolution used by the local merge gate surfaces; no formal-harness code changed."
+        },
+        {
+          "version": "v14",
+          "date": "2026-08-10",
+          "note": "no-bump: add a \"Verify the cross-version evidence ledger is not stale\" step (python -m scripts.build_evidence_ledger --check) to the python-static job; existing job steps, timeouts, and formal/autoresearch verification behavior are unchanged."
         },
         {
           "version": "v14",

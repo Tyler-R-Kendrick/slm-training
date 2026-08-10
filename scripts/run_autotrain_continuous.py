@@ -94,6 +94,7 @@ from slm_training.harness_core.bounded_process import (
     ProcessOutcome,
     run_bounded_process,
 )
+from slm_training.harness_core.versioning import build_version_stamp
 from slm_training.levers import (
     HARNESS_FINALIZATION_RESERVE_SECONDS,
     INTERRUPT_AFTER_SECONDS,
@@ -2455,6 +2456,19 @@ def _render_continuous_cycle_docs(
 ) -> tuple[str, dict[str, Any]]:
     """Honest fixture-screening closeout payload (not a ship claim)."""
     reasons = list(delivery.get("reasons") or handoff.reasons or [])
+    # Stamp the eval-comparability components so this record lands in a real
+    # cross-version partition of the evidence ledger instead of "unstamped".
+    # Without this, `eval_key_from_stamp` returns None and the record's delta is
+    # pooled with every other unstamped cycle regardless of the scorer/gate
+    # version it actually ran under. Never let stamping fail the closeout.
+    try:
+        from slm_training.autoresearch.evidence_ledger import EVAL_KEY_COMPONENTS
+
+        version_stamp: dict[str, Any] | None = build_version_stamp(
+            *EVAL_KEY_COMPONENTS
+        )
+    except Exception:
+        version_stamp = None
     payload: dict[str, Any] = {
         "schema": "continuous_cycle_results/v1",
         "campaign_id": campaign_id,
@@ -2473,6 +2487,8 @@ def _render_continuous_cycle_docs(
         "honesty": "fixture_screening_only_not_ship",
         "auto": True,
     }
+    if version_stamp is not None:
+        payload["version_stamp"] = version_stamp
     # Embed the rich delivery record (candidate_id/arm_seed/policy_sha256) so
     # future ledger mining never falls back to reasons-string recovery.
     if delivery.get("schema") == "autotrain_sdlc_delivery/v1":
