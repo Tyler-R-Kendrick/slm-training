@@ -2892,6 +2892,11 @@
         {
           "version": "v12",
           "date": "2026-08-10",
+          "note": "no-bump: SLM-483 (SIE-006) knowledge-surface link only — ownership_map.json SIE-006 row cites iter-slm483-sie-006-construct-validity-20260810.md; no owner_symbols or structural map change."
+        },
+        {
+          "version": "v12",
+          "date": "2026-08-10",
           "note": "no-bump: SLM-483 (SIE-006) adds a related_overlaps row pointing at docs/design/iter-slm483-sie-006-calibration-campaign-20260810.md (diagnostic EXP-SR-3 evaluator construct-validity/calibration campaign; evaluator_human_agreement_kappa=0.0 on labeled-mock external-judge/synthetic-human evidence, below minimum_effect and the catalogue kill gate -- honest negative result, not a construct-validity claim) and updates the SIE-006 downstream_extension_map justification with the same durable evidence pointer. No new subsystem registered: sie006_calibration_campaign.py is a thin driver over already-owned experiment_campaign/VCE-010 contracts, the same shape as SIE-002/SIE-004/SIE-008 (which also register no new subsystem)."
         },
         {
@@ -17272,6 +17277,25 @@
           "version": "v1",
           "date": "2026-08-10",
           "note": "SIE-004/SLM-482: fixture-scale EXP-SR-2 prompt-requirement predictor campaign composing SIE-003 + SIE-002 authorized_factors; claim_class=fixture; no promotion."
+        }
+      ]
+    },
+    "harness.experiments.slm483_sie006_construct_validity": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/sie006_construct_validity.py",
+        "scripts/run_sie006_construct_validity.py",
+        "tests/test_harnesses/experiments/test_sie006_construct_validity.py",
+        "tests/test_scripts/test_run_sie006_construct_validity.py",
+        "docs/design/iter-slm483-sie-006-construct-validity-20260810.json",
+        "docs/design/iter-slm483-sie-006-construct-validity-20260810.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-10",
+          "note": "SIE-006/SLM-483: EXP-SR-3 construct-validity campaign binding ExperimentCampaignV1 to the frozen SIE-005 packet; fixture mode exercises mock agreement/calibration plumbing; external-blocked mode reports incomplete evidence without fabricating human ratings."
         }
       ]
     },

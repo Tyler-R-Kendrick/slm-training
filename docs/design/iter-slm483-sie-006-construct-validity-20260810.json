@@ -1,0 +1,74 @@
+{
+  "audit_holdout": true,
+  "blocked_claims": [
+    "evaluator_human_agreement_kappa",
+    "external_judge_calibration",
+    "blinded_human_adjudication",
+    "construct_validity_promotion"
+  ],
+  "campaign_id": "sie006-exp-sr-3-construct-validity",
+  "catalogue_claim_class": "diagnostic",
+  "catalogue_id": "exp-sr-3",
+  "catalogue_manifest_sha256": "d9d12476e05c8be68c70b9eaed37628457f4e0d366460b10b82328522ee1dc61",
+  "claim_class": "fixture",
+  "disposition": "external_blocked",
+  "evaluator_human_agreement_kappa": null,
+  "evidence_available": {
+    "real_external_judge": false,
+    "real_human_labels": false,
+    "sie005_packet_pin": true
+  },
+  "external_blocked": true,
+  "external_human_calibration_error": null,
+  "incomplete": true,
+  "kind": "sie006_construct_validity_external_blocked_result/v1",
+  "manifest_sha256": "5ca311ff8084bbf9d34099c55931803ce9aca4006628e47ab6d839e63bddbb9d",
+  "matrix_set": "slm483_sie006_construct_validity",
+  "matrix_version": "sie006-v1",
+  "pair_n": 8,
+  "primary_metric": "evaluator_human_agreement_kappa",
+  "promotion": false,
+  "qualified_claims": {
+    "blinded_human_adjudication": "external_blocked",
+    "construct_validity_promotion": "external_blocked",
+    "evaluator_human_agreement_kappa": "external_blocked",
+    "external_judge_calibration": "external_blocked"
+  },
+  "reason": "Real blinded human labels are unavailable in-repo and EXTERNAL_JUDGE_API_KEY is unset; construct-validity endpoints remain external_blocked.",
+  "recipe": {
+    "command": [
+      "python",
+      "-m",
+      "scripts.run_sie006_construct_validity",
+      "--mode",
+      "external-blocked",
+      "--seed",
+      "0"
+    ],
+    "device": "cpu",
+    "docs_path": "docs/design/iter-slm483-sie-006-construct-validity-20260810.json",
+    "honesty_mode": "external_blocked",
+    "output_dir": "outputs/runs/sie006_construct_validity_external_blocked"
+  },
+  "schema": "sie006_construct_validity_external_blocked_result/v1",
+  "scope_disclaimer": "External-blocked EXP-SR-3 run: verifies the frozen SIE-005 packet pin and locks the campaign manifest, but does not fabricate human ratings or score primary construct-validity claims. Audit sample remains training-excluded. Fixture plumbing (mock transport + synthetic labels) is validated separately via `python -m scripts.run_sie006_construct_validity --mode fixture`.",
+  "sie005_frozen_doc": "docs/design/iter-slm478-sie-005-blinded-packet-20260810.json",
+  "sie005_pin": {
+    "annotation_order_sha256": "70f1ecba4fd7f6043692cb63192f30ffba0df6d90d0a99153169ed8dea9e082b",
+    "pair_n": 8,
+    "rubric_sha256": "829adbc7adba9366ffa430c54dc8e32861df062ab99591bf9fc294759cb2b321"
+  },
+  "status": "external_blocked",
+  "timestamp": "2026-08-10T22:14:41.084039Z",
+  "training_excluded": true,
+  "version_stamp": {
+    "code_commit": "8b0b58039fb8200d74174fd853a864ea9802292d",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v161",
+      "harness.experiments.slm483_sie006_construct_validity": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-10T22:14:41.069512+00:00"
+  }
+}
