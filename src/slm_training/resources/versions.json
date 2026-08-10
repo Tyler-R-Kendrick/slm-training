@@ -296,7 +296,7 @@
       ]
     },
     "data.corpus_certification": {
-      "version": "v3",
+      "version": "v4",
       "kind": "data_builder",
       "paths": [
         "src/slm_training/data/verify/",
@@ -310,6 +310,11 @@
         "tests/test_dsl/test_grammar_backends.py"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-08-09",
+          "note": "SLM-471 (SRP-008): adds symbolic_regression_corpus_leakage_report() and --mode symbolic-regression-audit to scripts/audit_data_corpora.py, per this subsystem's pre-registered ownership_map row for SRP-008 ('runs through data_corpus_audit rather than a new leakage checker'). Deterministically regenerates a symbolic-regression corpus from (seed, num_problems) via dsl/symbolic_expr_corpus.py and runs the same family/topology leakage + frozen OOD-slice checks that module exposes -- genuine new audit capability (same precedent as VCE-008's v2->v3 bump for contrast_corpus_leakage_report), not a behavior-neutral change."
+        },
         {
           "version": "v3",
           "date": "2026-08-09",
@@ -2849,6 +2854,11 @@
         "tests/test_data/test_synthesis_contract_versions.py"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-08-09",
+          "note": "no-bump: SLM-471 (SRP-008) registers a new 'symbolic_expr_corpus' subsystem (src/slm_training/dsl/symbolic_expr_corpus.py: CorpusGenerationConfigV1/CorpusLeakageAuditV1/CorpusOodSlicesV1/CorpusOracleV1/CorpusRecordV1/CorpusRejectionV1/SymbolicRegressionCorpusV1/audit_corpus_leakage/generate_corpus); mirrors the row into repository-ownership-map.md, including the documented divergence from the pre-registered downstream_extension_map row for SRP-008 (predicted new_owner_justified: false, 'Reuses data_corpus_audit leakage-control machinery for a new corpus, not a new owner' -- the generation contract's dataclasses are not literally defined in scripts/audit_data_corpora.py, so per this map's own sibling-file rule it is registered as its own subsystem instead, same precedent as SGS-008/SRP-004/SRP-005/SRP-007); the actual leakage-audit constraint is honored separately via a real version bump on data.corpus_certification (v3->v4, tracked in that component's own history) for the new symbolic_regression_corpus_leakage_report()/--mode symbolic-regression-audit capability in scripts/audit_data_corpora.py; the new dsl/symbolic_expr_corpus.py source/test files themselves are not tracked by any versions.json component (consistent with the SRP-002/003/004/005/007 sibling-file precedent), so this entry only covers the ownership-map doc update."
+        },
         {
           "version": "v8",
           "date": "2026-08-09",
