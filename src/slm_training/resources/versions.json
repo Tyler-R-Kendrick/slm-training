@@ -2860,7 +2860,7 @@
       ]
     },
     "governance.ownership_map": {
-      "version": "v11",
+      "version": "v12",
       "kind": "gate",
       "paths": [
         "src/slm_training/resources/ownership_map.json",
@@ -2872,6 +2872,11 @@
         "tests/test_data/test_synthesis_contract_versions.py"
       ],
       "history": [
+        {
+          "version": "v12",
+          "date": "2026-08-10",
+          "note": "SLM-484 (SIE-008): add related_overlaps row pointing at docs/design/iter-slm484-sie-008-voc-controller-20260810.md (fixture-scale EXP-SR-5 value-of-compute controller; I2/I6 safety audited; claim_class=fixture; no promotion); update SIE-008 downstream_extension_map justification with durable evidence pointer."
+        },
         {
           "version": "v11",
           "date": "2026-08-10",
@@ -17174,6 +17179,25 @@
           "version": "v1",
           "date": "2026-08-10",
           "note": "SIE-004/SLM-482: fixture-scale EXP-SR-2 prompt-requirement predictor campaign composing SIE-003 + SIE-002 authorized_factors; claim_class=fixture; no promotion."
+        }
+      ]
+    },
+    "harness.experiments.slm484_sie008_voc": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/sie008_voc_controller.py",
+        "scripts/run_sie008_voc_controller.py",
+        "tests/test_harnesses/experiments/test_sie008_voc_controller.py",
+        "tests/test_scripts/test_run_sie008_voc_controller.py",
+        "docs/design/iter-slm484-sie-008-voc-controller-20260810.json",
+        "docs/design/iter-slm484-sie-008-voc-controller-20260810.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-10",
+          "note": "SIE-008/SLM-484: fixture-scale EXP-SR-5 value-of-compute controller campaign composing SIE-007 compute_state_controller; claim_class=fixture; no promotion."
         }
       ]
     },
