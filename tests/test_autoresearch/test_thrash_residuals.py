@@ -87,6 +87,15 @@ def test_rank_absolute_regimes_prefers_guarded_quality_and_fast_decode_cost() ->
         **_delivery(cand_id="loop-c9-component-edge", ss_c=0.28, ss_k=0.28, b_k=0.95),
         "cycle_index": 9,
     }
+    component_inventory = {
+        **_delivery(
+            cand_id="loop-c10-component-inventory",
+            ss_c=0.2,
+            ss_k=0.2,
+            b_k=0.95,
+        ),
+        "cycle_index": 10,
+    }
     canvas = {
         **_delivery(cand_id="loop-c20-canvas", ss_c=0.5, ss_k=0.5, b_k=0.95),
         "cycle_index": 20,
@@ -105,7 +114,14 @@ def test_rank_absolute_regimes_prefers_guarded_quality_and_fast_decode_cost() ->
         "candidate_trainable_params": 101,
     }
     assert rank_absolute_regimes(
-        [component_plan, component_edge, canvas, capacity_growth],
+        [component_plan, component_edge, component_inventory, canvas, capacity_growth],
+        through_cycle=21,
+        max_regimes=2,
+        decode_cost_slugs={"canvas"},
+        excluded_slugs={"component-plan"},
+    ) == ["component-edge", "component-inventory"]
+    assert rank_absolute_regimes(
+        [component_plan, component_edge, component_inventory, canvas, capacity_growth],
         through_cycle=21,
         max_regimes=2,
         decode_cost_slugs={"canvas"},

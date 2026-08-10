@@ -3086,7 +3086,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v203",
+      "version": "v204",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -3139,6 +3139,11 @@
         "tests/test_autoresearch/test_evidence_ledger.py"
       ],
       "history": [
+        {
+          "version": "v204",
+          "date": "2026-08-10",
+          "note": "Adversarial review fix: exclude retired or otherwise ineligible residual regimes before truncating the absolute-quality ranking, so an excluded top arm cannot consume one of the bounded two recovery slots."
+        },
         {
           "version": "v203",
           "date": "2026-08-10",
