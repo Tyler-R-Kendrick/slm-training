@@ -5055,11 +5055,11 @@ def _screening_saturation_state(
         through_cycle=trigger_cycle,
         max_regimes=max(1, int(block.get("max_regimes") or 2)),
         decode_cost_slugs=DECODE_RESIDUAL_SLUGS,
+        excluded_slugs=excluded_slugs,
         minimum_latency_gain_fraction=float(
             positive_policy.get("minimum_efficiency_gain_fraction") or 0.05
         ),
     )
-    ranked = [slug for slug in ranked if slug not in excluded_slugs]
     completed_after = {
         slug
         for row in deliveries

@@ -222,6 +222,7 @@ def rank_absolute_regimes(
     through_cycle: int,
     max_regimes: int,
     decode_cost_slugs: Iterable[str] = (),
+    excluded_slugs: Iterable[str] = (),
     minimum_latency_gain_fraction: float = 0.05,
 ) -> list[str]:
     """Rank size-matched complete ties by absolute guarded quality.
@@ -231,6 +232,7 @@ def rank_absolute_regimes(
     """
 
     decode_cost = set(decode_cost_slugs)
+    excluded = set(excluded_slugs)
     best: dict[str, tuple[float, float, float, float, int]] = {}
     for row in deliveries:
         if row.get("measurement_complete") is not True:
@@ -243,6 +245,8 @@ def rank_absolute_regimes(
             continue
         slug = slug_from_candidate_id(str(row.get("candidate_id") or "") or None)
         if not slug:
+            continue
+        if slug in excluded:
             continue
         ctrl = row.get("control_metrics")
         cand = row.get("candidate_metrics")
