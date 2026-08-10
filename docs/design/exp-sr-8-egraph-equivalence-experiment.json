@@ -1,0 +1,90 @@
+{
+  "family_id": "exp-sr-8",
+  "campaign_manifest_sha256": "78b26b538843a36d276167eaad698c25f901d57fc3ade023ae69e42ed7455c86",
+  "claim_class": "fixture",
+  "fixture": {
+    "n_merge_groups": 6,
+    "n_distinct_pairs": 4,
+    "n_raw_forms": 20
+  },
+  "control_arm": {
+    "unique_forms": [
+      "(* (+ v0 v1) v0)",
+      "(* v0 v1)",
+      "(+ v0 v1)",
+      "(abs v0)",
+      "(neg v0)",
+      "v0",
+      "v1"
+    ],
+    "n_unique_forms": 7,
+    "wall_ms": 1.1096140001427557,
+    "pareto_member_hashes": [
+      "025de085d962cde076d09457ba188cf03b71bc22698a6ec51112a05faee38f76",
+      "0270da4daac514f30bece5788a87ad7b800f59476d0d7e6f70d4b61fbc4f5e9e",
+      "3bfc269594ef649228e9a74bab00f042efc91d5acc6fbee31a382e80d42388fe"
+    ]
+  },
+  "candidate_arm": {
+    "unique_forms": [
+      "(* (+ v0 v1) v0)",
+      "(* v0 v1)",
+      "(+ v0 v1)",
+      "(abs v0)",
+      "(neg v0)",
+      "v0",
+      "v1"
+    ],
+    "n_unique_forms": 7,
+    "wall_ms": 6.149843000002875,
+    "n_enodes": 14,
+    "n_eclasses": 9,
+    "saturation_rounds": 2,
+    "n_rewrite_applications": 10,
+    "pareto_member_hashes": [
+      "025de085d962cde076d09457ba188cf03b71bc22698a6ec51112a05faee38f76",
+      "0270da4daac514f30bece5788a87ad7b800f59476d0d7e6f70d4b61fbc4f5e9e",
+      "3bfc269594ef649228e9a74bab00f042efc91d5acc6fbee31a382e80d42388fe"
+    ]
+  },
+  "comparison": {
+    "unique_forms_match": true,
+    "pareto_frontier_matches": true,
+    "wall_ms_overhead": 5.040228999860119,
+    "memory_proxy_overhead_enodes": 7
+  },
+  "verification": {
+    "n_applications": 10,
+    "n_passed": 10,
+    "egraph_certified_equivalence_rate": 1.0,
+    "failed_rule_ids": []
+  },
+  "gates": [
+    {
+      "gate_id": "exp-sr-8_promotion",
+      "operator": "ge",
+      "threshold": 0.0,
+      "value": 1.0,
+      "fired": true
+    },
+    {
+      "gate_id": "exp-sr-8_kill",
+      "operator": "lt",
+      "threshold": 1.0,
+      "value": 1.0,
+      "fired": false
+    }
+  ],
+  "killed": false,
+  "adoption_decision": "not_adopted_stays_experimental",
+  "adoption_rationale": "e-graph equivalence regions matched canonical-hash dedup's unique-form set and Pareto frontier exactly on this fixture (unique_forms_match=True, pareto_frontier_matches=True); every certified rewrite union re-verified numerically. For SRP-005's current REWRITE_RULES (each rule is complexity-non-increasing and the rule set is confluent), e-graph saturation is mathematically guaranteed to converge to the same fixed point plain canonicalize_expr already computes, so no quality/cost frontier improvement over simpler canonicalization is possible with this rule set. Stays an isolated, default-off experiment module regardless: no import from dsl/symbolic_regression_pack.py or any production canonicalization path.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "9bf12db0aa81960fb1f07c66847f977ac6a0b092",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v153"
+    },
+    "stamped_at": "2026-08-10T19:28:21.799022+00:00"
+  }
+}
