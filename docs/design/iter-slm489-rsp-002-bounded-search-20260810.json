@@ -1,0 +1,329 @@
+{
+  "kind": "rsp002_bounded_search_fixture/v1",
+  "claim_class": "fixture",
+  "catalogue_claim_class": "screening",
+  "promotion": false,
+  "environment": {
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+    "machine": "aarch64",
+    "python": "3.12.3"
+  },
+  "recipe": {
+    "command": [
+      "python",
+      "-m",
+      "scripts.run_rsp002_bounded_search",
+      "--mode",
+      "fixture",
+      "--max-decisions",
+      "4",
+      "--seeds",
+      "0"
+    ],
+    "docs_path": "docs/design/iter-slm489-rsp-002-bounded-search-20260810.json",
+    "device": "cpu",
+    "honesty_mode": "bounded_search_fixture",
+    "matrix_set": "slm489_rsp002_bounded_search"
+  },
+  "catalogue_id": "exp-sr-6",
+  "catalogue_manifest_sha256": "c50650b3408b6811da21ff647e94b2d55e7ac291d64c194a4a2c28cef1577f86",
+  "manifest_sha256": "1813dccbe435a36475368599c5b0e37442357f09d50d1f2b9e25fea4137b9837",
+  "max_decisions": 4,
+  "seeds": [
+    0
+  ],
+  "energy_ranker_status": "available",
+  "bounded_search_hit_rate": 1.0,
+  "aggregate_hit_rates": {
+    "bounded_search_hit_rate": 1.0,
+    "control_left_to_right": 0.0,
+    "delta_vs_left_to_right": 1.0,
+    "per_arm": {
+      "left_to_right": 0.0,
+      "enumerative_best_first": 0.0,
+      "planned_hole_order": 0.0,
+      "neural_prior": 1.0,
+      "neural_value_rerank": 0.5
+    }
+  },
+  "minimum_effect": 0.05,
+  "recommendation": "adopt-optional",
+  "reachability": {
+    "reachable": true,
+    "problems": {
+      "ordering_trap_v1": {
+        "reachable": true,
+        "arms": {
+          "left_to_right": {
+            "arm_id": "left_to_right",
+            "problem_id": "ordering_trap_v1",
+            "status": "solved",
+            "hit": true,
+            "stop_reason": null,
+            "nodes": 19,
+            "decisions": 18,
+            "backtracks": 15,
+            "ranker_id": "baseline-canonical-v1"
+          },
+          "enumerative_best_first": {
+            "arm_id": "enumerative_best_first",
+            "problem_id": "ordering_trap_v1",
+            "status": "solved",
+            "hit": true,
+            "stop_reason": null,
+            "nodes": 19,
+            "decisions": 18,
+            "backtracks": 15,
+            "ranker_id": "baseline-canonical-v1"
+          },
+          "planned_hole_order": {
+            "arm_id": "planned_hole_order",
+            "problem_id": "ordering_trap_v1",
+            "status": "solved",
+            "hit": true,
+            "stop_reason": null,
+            "nodes": 19,
+            "decisions": 18,
+            "backtracks": 15,
+            "ranker_id": "baseline-canonical-v1"
+          },
+          "neural_prior": {
+            "arm_id": "neural_prior",
+            "problem_id": "ordering_trap_v1",
+            "status": "solved",
+            "hit": true,
+            "stop_reason": null,
+            "nodes": 4,
+            "decisions": 3,
+            "backtracks": 0,
+            "ranker_id": "composite-neural-prior-v1"
+          },
+          "neural_value_rerank": {
+            "arm_id": "neural_value_rerank",
+            "problem_id": "ordering_trap_v1",
+            "status": "solved",
+            "hit": true,
+            "stop_reason": null,
+            "nodes": 6,
+            "decisions": 5,
+            "backtracks": 2,
+            "ranker_id": "energy:solver-energy-v1"
+          }
+        }
+      },
+      "ranking_trap_v1": {
+        "reachable": true,
+        "arms": {
+          "left_to_right": {
+            "arm_id": "left_to_right",
+            "problem_id": "ranking_trap_v1",
+            "status": "solved",
+            "hit": true,
+            "stop_reason": null,
+            "nodes": 4,
+            "decisions": 3,
+            "backtracks": 2,
+            "ranker_id": "baseline-canonical-v1"
+          },
+          "enumerative_best_first": {
+            "arm_id": "enumerative_best_first",
+            "problem_id": "ranking_trap_v1",
+            "status": "solved",
+            "hit": true,
+            "stop_reason": null,
+            "nodes": 4,
+            "decisions": 3,
+            "backtracks": 2,
+            "ranker_id": "baseline-canonical-v1"
+          },
+          "planned_hole_order": {
+            "arm_id": "planned_hole_order",
+            "problem_id": "ranking_trap_v1",
+            "status": "solved",
+            "hit": true,
+            "stop_reason": null,
+            "nodes": 4,
+            "decisions": 3,
+            "backtracks": 2,
+            "ranker_id": "baseline-canonical-v1"
+          },
+          "neural_prior": {
+            "arm_id": "neural_prior",
+            "problem_id": "ranking_trap_v1",
+            "status": "solved",
+            "hit": true,
+            "stop_reason": null,
+            "nodes": 2,
+            "decisions": 1,
+            "backtracks": 0,
+            "ranker_id": "composite-neural-prior-v1"
+          },
+          "neural_value_rerank": {
+            "arm_id": "neural_value_rerank",
+            "problem_id": "ranking_trap_v1",
+            "status": "solved",
+            "hit": true,
+            "stop_reason": null,
+            "nodes": 4,
+            "decisions": 3,
+            "backtracks": 2,
+            "ranker_id": "energy:solver-energy-v1"
+          }
+        }
+      }
+    },
+    "note": "Reachability proven under generous bounds before hit-rate measurement."
+  },
+  "openui_completion_forest_reachability": {
+    "prefix_surface": "root = Card([",
+    "status": "prefix_extendable",
+    "reachable": true,
+    "candidate_count": 14,
+    "singleton_bypass": false,
+    "note": "Forest-root probe only \u2014 avoids exhaustive OpenUI search under tight budgets (no empty Card([]) oracle path)."
+  },
+  "falsifier": {
+    "falsifier_holds": false,
+    "clears_left_to_right_control": true,
+    "clears_minimum_effect": true,
+    "note": "Neural prior cleared left-to-right control on fixture; still claim_class=fixture \u2014 adopt-optional only, never default-on."
+  },
+  "invariants": {
+    "compiler_legal_domains_only": true,
+    "rankers_permute_only": true,
+    "singleton_bypass": true,
+    "default_off": true
+  },
+  "seed_runs": [
+    {
+      "seed": 0,
+      "problems": {
+        "ordering_trap_v1": {
+          "left_to_right": {
+            "arm_id": "left_to_right",
+            "problem_id": "ordering_trap_v1",
+            "status": "budget_exhausted",
+            "hit": false,
+            "stop_reason": "budget:max_decisions",
+            "nodes": 7,
+            "decisions": 6,
+            "backtracks": 4,
+            "ranker_id": "baseline-canonical-v1"
+          },
+          "enumerative_best_first": {
+            "arm_id": "enumerative_best_first",
+            "problem_id": "ordering_trap_v1",
+            "status": "budget_exhausted",
+            "hit": false,
+            "stop_reason": "budget:max_decisions",
+            "nodes": 7,
+            "decisions": 6,
+            "backtracks": 4,
+            "ranker_id": "baseline-canonical-v1"
+          },
+          "planned_hole_order": {
+            "arm_id": "planned_hole_order",
+            "problem_id": "ordering_trap_v1",
+            "status": "budget_exhausted",
+            "hit": false,
+            "stop_reason": "budget:max_decisions",
+            "nodes": 7,
+            "decisions": 6,
+            "backtracks": 4,
+            "ranker_id": "baseline-canonical-v1"
+          },
+          "neural_prior": {
+            "arm_id": "neural_prior",
+            "problem_id": "ordering_trap_v1",
+            "status": "solved",
+            "hit": true,
+            "stop_reason": null,
+            "nodes": 4,
+            "decisions": 3,
+            "backtracks": 0,
+            "ranker_id": "composite-neural-prior-v1"
+          },
+          "neural_value_rerank": {
+            "arm_id": "neural_value_rerank",
+            "problem_id": "ordering_trap_v1",
+            "status": "solved",
+            "hit": true,
+            "stop_reason": null,
+            "nodes": 6,
+            "decisions": 5,
+            "backtracks": 2,
+            "ranker_id": "energy:solver-energy-v1"
+          }
+        },
+        "ranking_trap_v1": {
+          "left_to_right": {
+            "arm_id": "left_to_right",
+            "problem_id": "ranking_trap_v1",
+            "status": "unknown",
+            "hit": false,
+            "stop_reason": "terminal_rejected_exhausted",
+            "nodes": 3,
+            "decisions": 2,
+            "backtracks": 2,
+            "ranker_id": "baseline-canonical-v1"
+          },
+          "enumerative_best_first": {
+            "arm_id": "enumerative_best_first",
+            "problem_id": "ranking_trap_v1",
+            "status": "unknown",
+            "hit": false,
+            "stop_reason": "terminal_rejected_exhausted",
+            "nodes": 3,
+            "decisions": 2,
+            "backtracks": 2,
+            "ranker_id": "baseline-canonical-v1"
+          },
+          "planned_hole_order": {
+            "arm_id": "planned_hole_order",
+            "problem_id": "ranking_trap_v1",
+            "status": "unknown",
+            "hit": false,
+            "stop_reason": "terminal_rejected_exhausted",
+            "nodes": 3,
+            "decisions": 2,
+            "backtracks": 2,
+            "ranker_id": "baseline-canonical-v1"
+          },
+          "neural_prior": {
+            "arm_id": "neural_prior",
+            "problem_id": "ranking_trap_v1",
+            "status": "solved",
+            "hit": true,
+            "stop_reason": null,
+            "nodes": 2,
+            "decisions": 1,
+            "backtracks": 0,
+            "ranker_id": "composite-neural-prior-v1"
+          },
+          "neural_value_rerank": {
+            "arm_id": "neural_value_rerank",
+            "problem_id": "ranking_trap_v1",
+            "status": "unknown",
+            "hit": false,
+            "stop_reason": "terminal_rejected_exhausted",
+            "nodes": 3,
+            "decisions": 2,
+            "backtracks": 2,
+            "ranker_id": "energy:solver-energy-v1"
+          }
+        }
+      }
+    }
+  ],
+  "scope_disclaimer": "Fixture-scale EXP-SR-6 bounded search over closed CSP fixtures and an optional OpenUI completion-forest reachability probe. Composes valid_state_search_generic + completion-forest adapter + advisory n-gram/energy rankers; no parallel search engine. Matched max_decisions=4. Avoids empty Card([]) / whole-corpus Lark oracle paths that hang under tight budgets. claim_class=fixture; no promotion; default lever OFF.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "c86da9bfa30d43671f803ce1be25e56fa8a19142",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v159",
+      "harness.experiments.slm489_rsp002_bounded_search": "v1"
+    },
+    "stamped_at": "2026-08-10T21:35:57.056192+00:00"
+  }
+}
