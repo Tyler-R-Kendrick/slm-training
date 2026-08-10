@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import pytest
 
+from tests.casefiles import case_values
+
 from slm_training.dsl.symbolic_expr_pysr_adapter import (
     ADAPTER_SCHEMA_VERSION,
     DEFAULT_PYSR_MANIFEST,
@@ -154,18 +156,13 @@ def test_parse_unary_minus_precedence_matches_standard_convention():
 
 @pytest.mark.parametrize(
     "text,unsupported",
-    [
-        ("x0^2 + x1", ("^",)),
-        ("square(x0)", ("square",)),
-        ("x0 % x1", ("%",)),
-        ("x0 + unknown_var", ("unknown_var",)),
-    ],
+    case_values(__file__, "test_unsupported_operators_are_reported_not_approximated"),
 )
 def test_unsupported_operators_are_reported_not_approximated(text, unsupported):
     problem = _problem()
     result = parse_external_expression(text, problem=problem)
     assert result.status == "operator_mismatch"
-    assert result.unsupported_operators == unsupported
+    assert result.unsupported_operators == tuple(unsupported)
     assert result.node is None
 
 
