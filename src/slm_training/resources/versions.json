@@ -4853,6 +4853,11 @@
         {
           "version": "v159",
           "date": "2026-08-10",
+          "note": "no-bump: RSP-001/SLM-488 EXP-SR-4 witness-guided CEGIS repair campaign lives in rsp001_cegis_repair.py under dedicated component harness.experiments.slm488_rsp001_cegis (v1); catalogue exp_sr_catalogue.py unchanged."
+        },
+        {
+          "version": "v159",
+          "date": "2026-08-10",
           "note": "RSP-008/SLM-487: add rsp008_second_pack_portability.py \u2014 diagnostic EXP-SR-12 second-pack portability certification composing SRP-010 seams on OpenUI (control) and symbolic_regression (candidate) under ExperimentCampaignV1/CampaignStore (claim_class=diagnostic, promotion=false). Scores second_pack_portability_parity_rate; honest fork inventory falsifies zero-fork certification. Dedicated component harness.experiments.slm487_rsp008_portability owns the harness/CLI/tests/docs paths."
         },
         {
@@ -17217,6 +17222,25 @@
           "version": "v1",
           "date": "2026-08-10",
           "note": "RSP-008/SLM-487: EXP-SR-12 diagnostic second-pack portability certification over SRP-010 seams; claim_class=diagnostic; never promotion_candidate/ship_gate."
+        }
+      ]
+    },
+    "harness.experiments.slm488_rsp001_cegis": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/rsp001_cegis_repair.py",
+        "scripts/run_rsp001_cegis_repair.py",
+        "tests/test_harnesses/experiments/test_rsp001_cegis_repair.py",
+        "tests/test_scripts/test_run_rsp001_cegis_repair.py",
+        "docs/design/iter-slm488-rsp-001-cegis-repair-20260810.json",
+        "docs/design/iter-slm488-rsp-001-cegis-repair-20260810.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-10",
+          "note": "RSP-001/SLM-488: fixture-scale EXP-SR-4 witness-guided CEGIS repair composing semantic_repair + conflict_slice_repair + RepairResidualV1; claim_class=fixture; default lever OFF; no promotion."
         }
       ]
     }

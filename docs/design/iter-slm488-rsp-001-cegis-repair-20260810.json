@@ -1,0 +1,353 @@
+{
+  "kind": "rsp001_cegis_repair_fixture/v1",
+  "claim_class": "fixture",
+  "catalogue_claim_class": "screening",
+  "promotion": false,
+  "recipe": {
+    "command": [
+      "python",
+      "-m",
+      "scripts.run_rsp001_cegis_repair",
+      "--mode",
+      "fixture",
+      "--max-records",
+      "64",
+      "--max-cycles",
+      "3",
+      "--seeds",
+      "0",
+      "1",
+      "2"
+    ],
+    "docs_path": "docs/design/iter-slm488-rsp-001-cegis-repair-20260810.json",
+    "device": "cpu",
+    "honesty_mode": "fixture_diagnostic"
+  },
+  "catalogue_id": "exp-sr-4",
+  "catalogue_manifest_sha256": "55c91a72007ca17a9d573dfb59ba4de4e3af1c773abae990d5448cd93527c5bf",
+  "manifest_sha256": "0f12b867ddf7c622342b1e2acb8da9b14af2de3c2cc8c02530490d1f76eb001e",
+  "max_records": 64,
+  "max_cycles": 3,
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "learned_scorer_status": "available",
+  "verified_repair_yield": 1.0,
+  "aggregate_yields": {
+    "no_repair": 0.0,
+    "regenerate": 0.625,
+    "edit_distance": 1.0,
+    "learned_scorer": 1.0,
+    "witness_cegis": 1.0,
+    "suffix_rollback": 0.0,
+    "full_remask": 0.0,
+    "conflict_slice": 1.0,
+    "conflict_slice_expanded": 1.0
+  },
+  "effect_vs_regenerate": 0.375,
+  "minimum_effect": 0.05,
+  "recommendation": "adopt-optional",
+  "falsifier": {
+    "falsifier_holds": false,
+    "clears_regenerate_control": true,
+    "clears_minimum_effect": true,
+    "note": "Witness CEGIS cleared regenerate control + minimum_effect on this fixture; still claim_class=fixture \u2014 adopt-optional only, never default-on or promotion."
+  },
+  "invariants": {
+    "certified_prefix_preserved": true,
+    "compiler_legal_domains_only": true,
+    "witness_vector_retained_each_cycle": true,
+    "default_off": true
+  },
+  "topology_policy_outcomes": {
+    "suffix_rollback": 0.0,
+    "full_remask": 0.0,
+    "conflict_slice": 1.0,
+    "conflict_slice_expanded": 1.0
+  },
+  "seed_runs": [
+    {
+      "seed": 0,
+      "n_records": 8,
+      "semantic_arms": {
+        "no_repair": {
+          "successes": 0,
+          "attempts": 8
+        },
+        "regenerate": {
+          "successes": 4,
+          "attempts": 8
+        },
+        "edit_distance": {
+          "successes": 8,
+          "attempts": 8
+        },
+        "learned_scorer": {
+          "successes": 8,
+          "attempts": 8
+        },
+        "witness_cegis": {
+          "successes": 8,
+          "attempts": 8
+        }
+      },
+      "topology_arms": {
+        "suffix_rollback": {
+          "arm_id": "suffix_rollback",
+          "seed": 0,
+          "recovered": false,
+          "remasked_node_ids": [
+            1,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "protected_mutations": 0,
+          "repeated_conflict": false
+        },
+        "full_remask": {
+          "arm_id": "full_remask",
+          "seed": 0,
+          "recovered": false,
+          "remasked_node_ids": [
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "protected_mutations": 0,
+          "repeated_conflict": false
+        },
+        "conflict_slice": {
+          "arm_id": "conflict_slice",
+          "seed": 0,
+          "recovered": true,
+          "remasked_node_ids": [
+            3,
+            4,
+            6,
+            8
+          ],
+          "protected_mutations": 0,
+          "repeated_conflict": false
+        },
+        "conflict_slice_expanded": {
+          "arm_id": "conflict_slice_expanded",
+          "seed": 0,
+          "recovered": true,
+          "remasked_node_ids": [
+            1,
+            3,
+            4,
+            6,
+            8
+          ],
+          "protected_mutations": 0,
+          "repeated_conflict": false
+        }
+      }
+    },
+    {
+      "seed": 1,
+      "n_records": 8,
+      "semantic_arms": {
+        "no_repair": {
+          "successes": 0,
+          "attempts": 8
+        },
+        "regenerate": {
+          "successes": 6,
+          "attempts": 8
+        },
+        "edit_distance": {
+          "successes": 8,
+          "attempts": 8
+        },
+        "learned_scorer": {
+          "successes": 8,
+          "attempts": 8
+        },
+        "witness_cegis": {
+          "successes": 8,
+          "attempts": 8
+        }
+      },
+      "topology_arms": {
+        "suffix_rollback": {
+          "arm_id": "suffix_rollback",
+          "seed": 1,
+          "recovered": false,
+          "remasked_node_ids": [
+            1,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "protected_mutations": 0,
+          "repeated_conflict": false
+        },
+        "full_remask": {
+          "arm_id": "full_remask",
+          "seed": 1,
+          "recovered": false,
+          "remasked_node_ids": [
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "protected_mutations": 0,
+          "repeated_conflict": false
+        },
+        "conflict_slice": {
+          "arm_id": "conflict_slice",
+          "seed": 1,
+          "recovered": true,
+          "remasked_node_ids": [
+            3,
+            4,
+            6,
+            8
+          ],
+          "protected_mutations": 0,
+          "repeated_conflict": false
+        },
+        "conflict_slice_expanded": {
+          "arm_id": "conflict_slice_expanded",
+          "seed": 1,
+          "recovered": true,
+          "remasked_node_ids": [
+            1,
+            3,
+            4,
+            6,
+            8
+          ],
+          "protected_mutations": 0,
+          "repeated_conflict": false
+        }
+      }
+    },
+    {
+      "seed": 2,
+      "n_records": 8,
+      "semantic_arms": {
+        "no_repair": {
+          "successes": 0,
+          "attempts": 8
+        },
+        "regenerate": {
+          "successes": 5,
+          "attempts": 8
+        },
+        "edit_distance": {
+          "successes": 8,
+          "attempts": 8
+        },
+        "learned_scorer": {
+          "successes": 8,
+          "attempts": 8
+        },
+        "witness_cegis": {
+          "successes": 8,
+          "attempts": 8
+        }
+      },
+      "topology_arms": {
+        "suffix_rollback": {
+          "arm_id": "suffix_rollback",
+          "seed": 2,
+          "recovered": false,
+          "remasked_node_ids": [
+            1,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "protected_mutations": 0,
+          "repeated_conflict": false
+        },
+        "full_remask": {
+          "arm_id": "full_remask",
+          "seed": 2,
+          "recovered": false,
+          "remasked_node_ids": [
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "protected_mutations": 0,
+          "repeated_conflict": false
+        },
+        "conflict_slice": {
+          "arm_id": "conflict_slice",
+          "seed": 2,
+          "recovered": true,
+          "remasked_node_ids": [
+            3,
+            4,
+            6,
+            8
+          ],
+          "protected_mutations": 0,
+          "repeated_conflict": false
+        },
+        "conflict_slice_expanded": {
+          "arm_id": "conflict_slice_expanded",
+          "seed": 2,
+          "recovered": true,
+          "remasked_node_ids": [
+            1,
+            3,
+            4,
+            6,
+            8
+          ],
+          "protected_mutations": 0,
+          "repeated_conflict": false
+        }
+      }
+    }
+  ],
+  "scope_disclaimer": "Fixture-scale EXP-SR-4 witness-guided CEGIS repair over SPV2-05 semantic repair records and one EFS2-03 topology conflict. Composes semantic_repair + conflict_slice_repair + RepairResidualV1 projection; no parallel CEGIS engine. Matched compute via shared max_cycles=3. claim_class=fixture; no promotion; default lever OFF.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "400eb083ac5cb365204978e7d696d3597eebfc15",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v159",
+      "harness.experiments.slm488_rsp001_cegis": "v1"
+    },
+    "stamped_at": "2026-08-10T20:26:09.908061+00:00"
+  }
+}
