@@ -8,7 +8,7 @@
 
 **Certified:** `True`
 
-**Recommendation:** `inconclusive_fixture`
+**Recommendation:** `inconclusive_no_cold_gain`
 
 ## Acceptance snapshot
 
@@ -16,9 +16,9 @@
 | --- | --- |
 | checks_passed / total | 9 / 9 |
 | kill_gate_triggered | False |
-| cold_path_improved | True |
-| best_candidate_arm | packed_semantic_summary |
-| best_delta_ms | 82.514 |
+| cold_path_improved | False |
+| best_candidate_arm | control_summary |
+| best_delta_ms | -18.022 |
 | promotion | False |
 
 ## Parity checks
@@ -37,8 +37,8 @@
 
 ## Cold-path summary-step deltas vs base_artifact
 
-- baseline_summary_step_p50_ms: 182.894
-- deltas: `{'base_artifact': 0.0, 'control_summary': 79.233, 'static_lalr_summary': -57.091, 'packed_semantic_summary': 82.514, 'provider_mediated': -5.209}`
+- baseline_summary_step_p50_ms: 88.7
+- deltas: `{'base_artifact': 0.0, 'control_summary': -18.022, 'static_lalr_summary': -142.072, 'packed_semantic_summary': -84.117, 'provider_mediated': -68.186}`
 
 ## Scope
 

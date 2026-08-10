@@ -246,18 +246,36 @@ def _walk_prefixes(tokenizer: Any, program: str) -> list[tuple[list[int], str]]:
 
 
 def _fixture_parity_prefixes(tokenizer: Any) -> list[tuple[list[int], str]]:
-    """Fixture-scale prefix set: PCT-008 fixed complete prefix only.
+    """Fixture-scale prefix set: hard prefix + whole-program samples only.
 
-    Broader STATIC_LALR_CORPUS differentials (incl. empty ``Card([])``) can hang
-    the Lark oracle under the shared budget and are owned by the E1 suite /
-    ``test_static_control_domain``. This campaign mirrors PCT-008's one-shot
-    parity gate before timing trials.
+    Uses the PCT-008 fixed complete prefix, an empty-prefix sample, and the
+    complete encoded surface for each ``STATIC_LALR_CORPUS`` program. Every
+    intermediate prefix is intentionally excluded here and owned by the E1
+    suite / ``test_static_control_domain``.
     """
+    items: list[tuple[list[int], str]] = []
+    seen: set[tuple[int, ...]] = set()
+
+    def _append(prefix: list[int], label: str) -> None:
+        key = tuple(prefix)
+        if key in seen:
+            return
+        seen.add(key)
+        items.append((prefix, label))
+
     fixed_ids = [
         tokenizer.bos_id,
         *tokenizer.encode(FIXED_PREFIX_SURFACE, add_special=False),
     ]
-    return [(fixed_ids, f"fixed_prefix:{FIXED_PREFIX_SURFACE!r}")]
+    _append(fixed_ids, f"fixed_prefix:{FIXED_PREFIX_SURFACE!r}")
+    _append([tokenizer.bos_id], "empty_prefix")
+    for program in DIFFERENTIAL_CORPUS:
+        whole_ids = [
+            tokenizer.bos_id,
+            *tokenizer.encode(program, add_special=False),
+        ]
+        _append(whole_ids, f"whole_program:{program!r}")
+    return items
 
 
 def check_arm_domain_parity(

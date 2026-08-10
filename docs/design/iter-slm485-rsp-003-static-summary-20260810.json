@@ -25,7 +25,7 @@
     "matrix_set": "slm485_rsp003_static_summary"
   },
   "catalogue_id": "exp-sr-7",
-  "catalogue_manifest_sha256": "1ba177755d5d28be13a3bb0f2a5db46e265365cc7d32b77d5df5275bdd6aa561",
+  "catalogue_manifest_sha256": "5f85849c68904c01df53eafa8ed11c9cb97930e904a7975947c952c16f608ba1",
   "manifest_sha256": "6c7929d462b093a596fc0f1c63ee116c534fe865097339edca155cafa67e68c8",
   "static_summary_domain_parity_rate": 1.0,
   "parity_analysis": {
@@ -45,7 +45,7 @@
     },
     "differential_parity": {
       "equal": true,
-      "prefixes_checked": 1,
+      "prefixes_checked": 8,
       "mismatch_count": 0,
       "mismatches": []
     },
@@ -69,58 +69,58 @@
   },
   "phase_breakdown_by_arm": {
     "no_artifact": {
-      "tokenizer_pack_construction": 4.352,
-      "summary_step": 0.033,
-      "first_domain_query": 4426.195
+      "tokenizer_pack_construction": 1.905,
+      "summary_step": 0.014,
+      "first_domain_query": 4016.721
     },
     "base_artifact": {
-      "tokenizer_pack_construction": 2.09,
-      "summary_step": 182.894,
-      "first_domain_query": 3843.235
+      "tokenizer_pack_construction": 2.083,
+      "summary_step": 88.7,
+      "first_domain_query": 3692.553
     },
     "control_summary": {
-      "tokenizer_pack_construction": 2.046,
-      "summary_step": 103.661,
-      "first_domain_query": 3952.703
+      "tokenizer_pack_construction": 5.618,
+      "summary_step": 106.722,
+      "first_domain_query": 2593.695
     },
     "static_lalr_summary": {
-      "tokenizer_pack_construction": 7.963,
-      "summary_step": 239.985,
-      "first_domain_query": 3238.86
+      "tokenizer_pack_construction": 1.831,
+      "summary_step": 230.772,
+      "first_domain_query": 4854.227
     },
     "packed_semantic_summary": {
-      "tokenizer_pack_construction": 1.729,
-      "summary_step": 100.38,
-      "first_domain_query": 2329.297
+      "tokenizer_pack_construction": 3.568,
+      "summary_step": 172.817,
+      "first_domain_query": 3703.601
     },
     "provider_mediated": {
-      "tokenizer_pack_construction": 2.116,
-      "summary_step": 188.103,
-      "first_domain_query": 3317.551
+      "tokenizer_pack_construction": 3.564,
+      "summary_step": 156.886,
+      "first_domain_query": 3204.31
     },
     "deliberate_miss": {
-      "tokenizer_pack_construction": 1.895,
-      "summary_step": 49.278,
-      "first_domain_query": 2531.199
+      "tokenizer_pack_construction": 2.332,
+      "summary_step": 66.249,
+      "first_domain_query": 3567.736
     }
   },
   "cold_path_improvement": {
     "measurable": true,
     "baseline_arm": "base_artifact",
-    "baseline_summary_step_p50_ms": 182.894,
+    "baseline_summary_step_p50_ms": 88.7,
     "delta_vs_baseline_ms": {
       "base_artifact": 0.0,
-      "control_summary": 79.233,
-      "static_lalr_summary": -57.091,
-      "packed_semantic_summary": 82.514,
-      "provider_mediated": -5.209
+      "control_summary": -18.022,
+      "static_lalr_summary": -142.072,
+      "packed_semantic_summary": -84.117,
+      "provider_mediated": -68.186
     },
-    "best_candidate_arm": "packed_semantic_summary",
-    "best_delta_ms": 82.514,
-    "cold_path_improved": true,
+    "best_candidate_arm": "control_summary",
+    "best_delta_ms": -18.022,
+    "cold_path_improved": false,
     "noise_floor_ms": 5.0
   },
-  "recommendation": "inconclusive_fixture",
+  "recommendation": "inconclusive_no_cold_gain",
   "summary": {
     "excluded_incomplete": 0,
     "arms": {
@@ -128,64 +128,64 @@
         "trial_kind": "cold",
         "config_hash": "d3862e8a1f4d5fe76ef8e09777dfbdc831dd03653e85e1a01cc0f0051265411c",
         "n": 2,
-        "p50_ms": 5923.954,
-        "p95_ms": 10897.887,
+        "p50_ms": 8600.091,
+        "p95_ms": 10707.354,
         "arm": "no_artifact"
       },
       "cold:8a023cfba479": {
         "trial_kind": "cold",
         "config_hash": "8a023cfba4793e5740bf4aa4a418479fb23094d6163cf50b39a2a2724a602405",
         "n": 2,
-        "p50_ms": 8561.685,
-        "p95_ms": 9061.793,
+        "p50_ms": 7058.281,
+        "p95_ms": 7535.862,
         "arm": "base_artifact"
       },
       "cold:419b78f1ca9f": {
         "trial_kind": "cold",
         "config_hash": "419b78f1ca9f687005266e7d6de46fb52092f1078130b61dcd14cb970e8c1033",
         "n": 2,
-        "p50_ms": 7679.026,
-        "p95_ms": 8422.709,
+        "p50_ms": 6293.348,
+        "p95_ms": 7417.277,
         "arm": "control_summary"
       },
       "cold:94006b3f5141": {
         "trial_kind": "cold",
         "config_hash": "94006b3f51413f6f825b8181cdaa5ec7c5400aa22f25470b5ad8eed25f7a347f",
         "n": 2,
-        "p50_ms": 6569.795,
-        "p95_ms": 7097.214,
+        "p50_ms": 8489.253,
+        "p95_ms": 9508.199,
         "arm": "static_lalr_summary"
       },
       "cold:fe10f00b427e": {
         "trial_kind": "cold",
         "config_hash": "fe10f00b427e732707fe2305a804e444a68e0a5c7f9050605d67cbf1175e10b0",
         "n": 2,
-        "p50_ms": 4952.397,
-        "p95_ms": 12512.862,
+        "p50_ms": 8902.415,
+        "p95_ms": 10503.562,
         "arm": "packed_semantic_summary"
       },
       "cold:6010c325b867": {
         "trial_kind": "cold",
         "config_hash": "6010c325b8679ea351d61616d258f4b8de2de5844e382eb7681f0c3bcc1eeda0",
         "n": 2,
-        "p50_ms": 5528.775,
-        "p95_ms": 8282.672,
+        "p50_ms": 5798.251,
+        "p95_ms": 7100.258,
         "arm": "provider_mediated"
       },
       "cold:a1ccec36f58f": {
         "trial_kind": "cold",
         "config_hash": "a1ccec36f58f93a3b3a784d1198895ebabc806e56d8b086c5e26ddbd8b6bc438",
         "n": 2,
-        "p50_ms": 5218.721,
-        "p95_ms": 5802.767,
+        "p50_ms": 5746.144,
+        "p95_ms": 9952.581,
         "arm": "deliberate_miss"
       },
       "warm:e98219f8b8c8": {
         "trial_kind": "warm",
         "config_hash": "e98219f8b8c8bfb4e08ad065804106e88deb8de197c982da87a87bcb0474d00a",
         "n": 1,
-        "p50_ms": 113.194,
-        "p95_ms": 113.194,
+        "p50_ms": 84.36,
+        "p95_ms": 84.36,
         "arm": "warm_repeated"
       }
     }
@@ -211,21 +211,21 @@
         },
         {
           "phase": "tokenizer_pack_construction",
-          "duration_ms": 2.2730450000381097
+          "duration_ms": 2.0355470005597454
         },
         {
           "phase": "summary_step",
-          "duration_ms": 0.03373200161149725
+          "duration_ms": 0.014207998901838437
         },
         {
           "phase": "first_domain_query",
-          "duration_ms": 2963.813416998164
+          "duration_ms": 4855.79108499951
         }
       ],
-      "total_ms": 5923.953554000036,
-      "peak_rss_kb": 2432,
+      "total_ms": 8600.090691001242,
+      "peak_rss_kb": 21248,
       "exit_code": 0,
-      "trial_hash": "340734f9d94a82110d8fe7814eb28d8f272979c1c36928a644d2cc5ebcd838af"
+      "trial_hash": "a7aa522477f8e7640a751c148bc06fb715314407f25a0a1b38da85ee9f81797b"
     },
     {
       "schema_version": "cold_warm_bench_trial/v1",
@@ -247,21 +247,21 @@
         },
         {
           "phase": "tokenizer_pack_construction",
-          "duration_ms": 6.431219000660349
+          "duration_ms": 1.774675998603925
         },
         {
           "phase": "summary_step",
-          "duration_ms": 0.03281499812146649
+          "duration_ms": 0.013566001143772155
         },
         {
           "phase": "first_domain_query",
-          "duration_ms": 5888.575617002061
+          "duration_ms": 3177.6500249980018
         }
       ],
-      "total_ms": 10897.887053000886,
-      "peak_rss_kb": 236836,
+      "total_ms": 10707.353966001392,
+      "peak_rss_kb": 287280,
       "exit_code": 0,
-      "trial_hash": "7f3f630e721795afba3f034de7e15b23f95593295448106fabf62e53b3c4a8f9"
+      "trial_hash": "df55358b1bb9a3369ef397ce276890fab357215e5c34585aef3cecafc15b1a09"
     },
     {
       "schema_version": "cold_warm_bench_trial/v1",
@@ -283,21 +283,21 @@
         },
         {
           "phase": "tokenizer_pack_construction",
-          "duration_ms": 1.7656939999142196
+          "duration_ms": 2.1010860000387765
         },
         {
           "phase": "summary_step",
-          "duration_ms": 235.46994700154755
+          "duration_ms": 85.31938300075126
         },
         {
           "phase": "first_domain_query",
-          "duration_ms": 3772.6183449995006
+          "duration_ms": 3031.743154999276
         }
       ],
-      "total_ms": 9061.792571999831,
-      "peak_rss_kb": 236836,
+      "total_ms": 7058.280894001655,
+      "peak_rss_kb": 287280,
       "exit_code": 0,
-      "trial_hash": "64aec0f1f865fa676b3c2529305ae9ec8077316ee3f94ae55824700d30d064d5"
+      "trial_hash": "c6171644981de94fe7275c5d2d49eb4f82c87dbb678b17b8b95952b3b640b448"
     },
     {
       "schema_version": "cold_warm_bench_trial/v1",
@@ -319,21 +319,21 @@
         },
         {
           "phase": "tokenizer_pack_construction",
-          "duration_ms": 2.4142040019796696
+          "duration_ms": 2.0655209991673473
         },
         {
           "phase": "summary_step",
-          "duration_ms": 130.31774999763002
+          "duration_ms": 92.07967000111239
         },
         {
           "phase": "first_domain_query",
-          "duration_ms": 3913.850980999996
+          "duration_ms": 4353.36303999793
         }
       ],
-      "total_ms": 8561.685328000749,
-      "peak_rss_kb": 236836,
+      "total_ms": 7535.861822998413,
+      "peak_rss_kb": 287280,
       "exit_code": 0,
-      "trial_hash": "3c8c88794ae1e508f119933e42ea3ee6fd173a41964733bbfa463aa9951288b6"
+      "trial_hash": "06cc62e59441f34f84e10002b799fbd039c69a2286b6fb00438093a1a758430a"
     },
     {
       "schema_version": "cold_warm_bench_trial/v1",
@@ -355,21 +355,21 @@
         },
         {
           "phase": "tokenizer_pack_construction",
-          "duration_ms": 1.8841210003301967
+          "duration_ms": 9.312535999924876
         },
         {
           "phase": "summary_step",
-          "duration_ms": 83.61913699991419
+          "duration_ms": 132.68364800023846
         },
         {
           "phase": "first_domain_query",
-          "duration_ms": 3517.9236699987086
+          "duration_ms": 2649.1969089984195
         }
       ],
-      "total_ms": 7679.02633599806,
-      "peak_rss_kb": 236836,
+      "total_ms": 7417.277413998818,
+      "peak_rss_kb": 287280,
       "exit_code": 0,
-      "trial_hash": "5dcf882f81870425e6ce94e8d35dad1daf32a8f8347cdcf97d62c89e8a0e14d8"
+      "trial_hash": "2947f38e01278084828d28cf8fe26de8ab6b3f5de914de2c88042788c7e8bd94"
     },
     {
       "schema_version": "cold_warm_bench_trial/v1",
@@ -391,21 +391,21 @@
         },
         {
           "phase": "tokenizer_pack_construction",
-          "duration_ms": 2.20878999971319
+          "duration_ms": 1.9229860008636024
         },
         {
           "phase": "summary_step",
-          "duration_ms": 123.70375500177033
+          "duration_ms": 80.76082700063125
         },
         {
           "phase": "first_domain_query",
-          "duration_ms": 4387.483092999901
+          "duration_ms": 2538.1930740004464
         }
       ],
-      "total_ms": 8422.709145997942,
-      "peak_rss_kb": 236836,
+      "total_ms": 6293.348077000701,
+      "peak_rss_kb": 287280,
       "exit_code": 0,
-      "trial_hash": "33fba6136c08182ecab535e4acdeb9f46c3b7729c99ecad0b95f3b95d0a30edb"
+      "trial_hash": "8aea695510384df3e432130d7c7f155c4352529d079f16b5c064f8e082ececc0"
     },
     {
       "schema_version": "cold_warm_bench_trial/v1",
@@ -427,21 +427,21 @@
         },
         {
           "phase": "tokenizer_pack_construction",
-          "duration_ms": 13.890248999814503
+          "duration_ms": 2.0086900003661867
         },
         {
           "phase": "summary_step",
-          "duration_ms": 221.1924250004813
+          "duration_ms": 274.222252999607
         },
         {
           "phase": "first_domain_query",
-          "duration_ms": 3017.345555999782
+          "duration_ms": 4944.456971999898
         }
       ],
-      "total_ms": 6569.794884999283,
-      "peak_rss_kb": 236836,
+      "total_ms": 9508.199021001928,
+      "peak_rss_kb": 287280,
       "exit_code": 0,
-      "trial_hash": "e8374acf217fdfa06b39b2dae0ee16c1f6f844115dbdfbf1c8a1d1a4b0a8b0ac"
+      "trial_hash": "d0b6980f69a12688883b32f2167444e441d80c2a49fc3435b8e33f5101be6d1a"
     },
     {
       "schema_version": "cold_warm_bench_trial/v1",
@@ -463,21 +463,21 @@
         },
         {
           "phase": "tokenizer_pack_construction",
-          "duration_ms": 2.0350890008558054
+          "duration_ms": 1.6536820003238972
         },
         {
           "phase": "summary_step",
-          "duration_ms": 258.77676799791516
+          "duration_ms": 187.3219679982867
         },
         {
           "phase": "first_domain_query",
-          "duration_ms": 3460.3746100001445
+          "duration_ms": 4763.996302001033
         }
       ],
-      "total_ms": 7097.214323999651,
-      "peak_rss_kb": 236836,
+      "total_ms": 8489.253497999016,
+      "peak_rss_kb": 287280,
       "exit_code": 0,
-      "trial_hash": "703fa72943f1253ac368ad5e5fe4191321539575bd6624fa896ebf505ff1739c"
+      "trial_hash": "2f0a474c5e124dbdb92ff50106301403d7fd730fc47cfd6301d58446a1e1da1b"
     },
     {
       "schema_version": "cold_warm_bench_trial/v1",
@@ -499,21 +499,21 @@
         },
         {
           "phase": "tokenizer_pack_construction",
-          "duration_ms": 1.7728429993439931
+          "duration_ms": 2.1333510012482293
         },
         {
           "phase": "summary_step",
-          "duration_ms": 90.00672500042128
+          "duration_ms": 171.41257999901427
         },
         {
           "phase": "first_domain_query",
-          "duration_ms": 2299.1890809971665
+          "duration_ms": 3803.00746300054
         }
       ],
-      "total_ms": 12512.862071998825,
-      "peak_rss_kb": 236836,
+      "total_ms": 10503.561634999642,
+      "peak_rss_kb": 287280,
       "exit_code": 0,
-      "trial_hash": "28cf4e66de5df4673b7fb465241facc261d03c9266d02ae63b65d7d6745d06ab"
+      "trial_hash": "7408f205d8342f364d6312ebe7986ffb9c2a0129075856ac0f91767d406c520f"
     },
     {
       "schema_version": "cold_warm_bench_trial/v1",
@@ -535,21 +535,21 @@
         },
         {
           "phase": "tokenizer_pack_construction",
-          "duration_ms": 1.6860389987414237
+          "duration_ms": 5.003026002668776
         },
         {
           "phase": "summary_step",
-          "duration_ms": 110.75368900128524
+          "duration_ms": 174.222033998376
         },
         {
           "phase": "first_domain_query",
-          "duration_ms": 2359.4046929974866
+          "duration_ms": 3604.195151001477
         }
       ],
-      "total_ms": 4952.397320997989,
-      "peak_rss_kb": 236836,
+      "total_ms": 8902.4149020006,
+      "peak_rss_kb": 287280,
       "exit_code": 0,
-      "trial_hash": "9df01939331c693819aa00c8437a23b0bcdfccf83660a2344ec87bd4827757d6"
+      "trial_hash": "1231a2e179122517758b94843f0f14af7f7776605896454162f7ff07242e9f62"
     },
     {
       "schema_version": "cold_warm_bench_trial/v1",
@@ -571,21 +571,21 @@
         },
         {
           "phase": "tokenizer_pack_construction",
-          "duration_ms": 1.8414980004308745
+          "duration_ms": 5.022092998842709
         },
         {
           "phase": "summary_step",
-          "duration_ms": 151.191025001026
+          "duration_ms": 148.90780499990797
         },
         {
           "phase": "first_domain_query",
-          "duration_ms": 2601.401738000277
+          "duration_ms": 2605.330849000893
         }
       ],
-      "total_ms": 5528.775309001503,
-      "peak_rss_kb": 236836,
+      "total_ms": 5798.250550000375,
+      "peak_rss_kb": 287280,
       "exit_code": 0,
-      "trial_hash": "3fdfbbffae9125d1df486a3940ec0ce2d182140309166d30adb691132f4b8bd4"
+      "trial_hash": "0a3a3d35f1084c3ef6336de26e5c6e9070efff512981f9c8410ec97e2a17da34"
     },
     {
       "schema_version": "cold_warm_bench_trial/v1",
@@ -607,21 +607,21 @@
         },
         {
           "phase": "tokenizer_pack_construction",
-          "duration_ms": 2.390096997260116
+          "duration_ms": 2.105301999108633
         },
         {
           "phase": "summary_step",
-          "duration_ms": 225.01557400028105
+          "duration_ms": 164.8644000015338
         },
         {
           "phase": "first_domain_query",
-          "duration_ms": 4033.700881002005
+          "duration_ms": 3803.2893249983317
         }
       ],
-      "total_ms": 8282.67178799797,
-      "peak_rss_kb": 236836,
+      "total_ms": 7100.258250000479,
+      "peak_rss_kb": 287280,
       "exit_code": 0,
-      "trial_hash": "de9c5e4e6a731dcb3be10eec798fd4c68a9739cab182fcd758b2b1fe0481f4a7"
+      "trial_hash": "eb57b8d29826e03bd60b61a7bebb29418d5bb98e5278f1224bcc30e6b03db4f2"
     },
     {
       "schema_version": "cold_warm_bench_trial/v1",
@@ -643,21 +643,21 @@
         },
         {
           "phase": "tokenizer_pack_construction",
-          "duration_ms": 1.7391110013704747
+          "duration_ms": 2.522367001802195
         },
         {
           "phase": "summary_step",
-          "duration_ms": 44.31328200007556
+          "duration_ms": 81.42592999865883
         },
         {
           "phase": "first_domain_query",
-          "duration_ms": 2320.3107609988365
+          "duration_ms": 4456.301132002409
         }
       ],
-      "total_ms": 5218.7211150012445,
-      "peak_rss_kb": 236836,
+      "total_ms": 9952.581379002368,
+      "peak_rss_kb": 287280,
       "exit_code": 0,
-      "trial_hash": "18c2b19596d04afa9050ce9b8158d919795e09d1f7b70c6f158d781144b25b4b"
+      "trial_hash": "f09d73632bd8a2729b8f0ef9bfac3518f1cb729a0e4a6657571d7fe5d5cd3303"
     },
     {
       "schema_version": "cold_warm_bench_trial/v1",
@@ -679,21 +679,21 @@
         },
         {
           "phase": "tokenizer_pack_construction",
-          "duration_ms": 2.0509460009634495
+          "duration_ms": 2.1419670010800473
         },
         {
           "phase": "summary_step",
-          "duration_ms": 54.24197200045455
+          "duration_ms": 51.07182700157864
         },
         {
           "phase": "first_domain_query",
-          "duration_ms": 2742.087882998021
+          "duration_ms": 2679.171346997464
         }
       ],
-      "total_ms": 5802.7666650014,
-      "peak_rss_kb": 236836,
+      "total_ms": 5746.143854001275,
+      "peak_rss_kb": 287280,
       "exit_code": 0,
-      "trial_hash": "08a5db9130d392006f9c5e285de9ed06a78e731e2fde2334d719a9d1bf16d03e"
+      "trial_hash": "1c41ff4dce968ad4650eb656daf0ba1fb8d5c206d3186f12ee3a7d30b76607ef"
     },
     {
       "schema_version": "cold_warm_bench_trial/v1",
@@ -714,21 +714,21 @@
           "duration_ms": null
         }
       ],
-      "total_ms": 113.19383400041261,
-      "peak_rss_kb": 236836,
+      "total_ms": 84.35967700279434,
+      "peak_rss_kb": 287280,
       "exit_code": 0,
-      "trial_hash": "7c26412db35657c6e4c51a1fa7b22438cb988fac8d59cac474054e17a6fb1587"
+      "trial_hash": "39e831ea79211c48bc2cffef07721046cfe41be4e7be7890467550d5edf189a0"
     }
   ],
   "scope_disclaimer": "Fixture-scale EXP-SR-7 evidence for incremental request-independent summary layers on the certified completion artifact. Parity gate uses the fixed hard prefix plus whole-program/empty-prefix samples from STATIC_LALR_CORPUS; every intermediate prefix is owned by tests/test_dsl/test_static_control_domain.py (E1 suite). Measures process launch, tokenizer/pack construction, summary preload, and first completion-domain query \u2014 not model init, first-forward, or full first-verified-program latency. claim_class=fixture; never promotion_candidate/ship_gate. Request-local symbols/binders/placeholders remain overlay.",
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "507102c38eab292641a8b1e1301ad4152658a2f7",
+    "code_commit": "146980486590753db955a9bb6af084ee3a3fad15",
     "code_dirty": true,
     "components": {
       "harness.experiments": "v159",
       "harness.experiments.slm485_rsp003_static_summary": "v1"
     },
-    "stamped_at": "2026-08-10T21:20:50.933667+00:00"
+    "stamped_at": "2026-08-10T21:51:54.343406+00:00"
   }
 }
