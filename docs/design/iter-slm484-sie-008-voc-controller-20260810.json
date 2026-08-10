@@ -1,0 +1,256 @@
+{
+  "kind": "sie008_voc_controller_fixture/v1",
+  "claim_class": "fixture",
+  "catalogue_claim_class": "diagnostic",
+  "promotion": false,
+  "recipe": {
+    "command": [
+      "python",
+      "-m",
+      "scripts.run_sie008_voc_controller",
+      "--mode",
+      "fixture",
+      "--n-records",
+      "120",
+      "--discovery-fraction",
+      "0.7",
+      "--seeds",
+      "0",
+      "1",
+      "2"
+    ],
+    "docs_path": "docs/design/iter-slm484-sie-008-voc-controller-20260810.json",
+    "device": "cpu",
+    "honesty_mode": "fixture_diagnostic"
+  },
+  "catalogue_id": "exp-sr-5",
+  "catalogue_manifest_sha256": "e536544024e35e4bc59dae48e28e3c734cbdd1307566bf3dd8dbee6b501dbb6b",
+  "manifest_sha256": "a96bcba5ba9fcf18b7b5cd592d9097eb42ebb0c5d174c0617e90f7656daff7cd",
+  "dataset_id": "sie008_fixture_decode_traces_v1",
+  "n_records": 120,
+  "discovery_fraction": 0.7,
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "symbolic_rule": {
+    "rule_id": "sie008-symbolic-v1",
+    "action_expressions": {
+      "bounded_search": "v9",
+      "deterministic_ranker": "(+ v5 v6)",
+      "neural_forward": "v3",
+      "repair": "v11"
+    },
+    "coefficients": [],
+    "abstain_margin": 0.25
+  },
+  "legal_support_parity": {
+    "legal_support_parity_exact": true,
+    "controller_can_change_legality": false,
+    "note": "Controller recommends among authorized compute strategies only; legal domain is grammar-owned and unchanged (I6)."
+  },
+  "compute_value_regret": 0.503562,
+  "aggregate_arms": {
+    "hand_threshold": {
+      "compute_value_regret_mean": 0.212963,
+      "compute_value_regret_per_seed": [
+        0.166667,
+        0.166667,
+        0.305556
+      ],
+      "n_seeds": 3
+    },
+    "linear_scorer": {
+      "compute_value_regret_mean": 0.074074,
+      "compute_value_regret_per_seed": [
+        0.138889,
+        0.055556,
+        0.027778
+      ],
+      "n_seeds": 3
+    },
+    "symbolic_rule": {
+      "compute_value_regret_mean": 0.503562,
+      "compute_value_regret_per_seed": [
+        0.555556,
+        0.538462,
+        0.416667
+      ],
+      "n_seeds": 3
+    },
+    "gold_oracle": {
+      "compute_value_regret_mean": 0.0,
+      "compute_value_regret_per_seed": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "n_seeds": 3
+    }
+  },
+  "effect_vs_hand_threshold": -0.290599,
+  "ceiling_recovery_vs_gold": 0.0,
+  "minimum_effect": 0.05,
+  "paired_vs_hand_threshold": {
+    "deltas": [
+      -0.388889,
+      -0.371795,
+      -0.111111
+    ],
+    "mean": -0.290598,
+    "se": 0.089879,
+    "n_seeds": 3
+  },
+  "falsifier": {
+    "falsifier_holds": true,
+    "clears_hand_threshold_control": false,
+    "clears_minimum_effect": false,
+    "note": "Catalogue falsifier: symbolic regret not below hand-threshold control by minimum_effect on eval traces."
+  },
+  "recommendation": {
+    "disposition": "reject",
+    "rationale": "Catalogue falsifier holds or safety audit failed; controller stays off.",
+    "delta_vs_hand_threshold": -0.290599,
+    "clears_minimum_effect": false
+  },
+  "seed_runs": [
+    {
+      "seed": 0,
+      "n_records": 120,
+      "n_discovery": 84,
+      "n_eval": 36,
+      "singleton_bypass": {
+        "n_singletons": 17,
+        "singleton_bypass_holds": true,
+        "violations": [],
+        "note": "I2: complete singleton domains commit with zero expression evaluations."
+      },
+      "arms": {
+        "hand_threshold": {
+          "compute_value_regret": 0.166667,
+          "agreements": 30,
+          "abstentions": 0,
+          "coverage": 1.0,
+          "expressions_evaluated": 0
+        },
+        "linear_scorer": {
+          "compute_value_regret": 0.138889,
+          "agreements": 31,
+          "abstentions": 0,
+          "coverage": 1.0,
+          "expressions_evaluated": 0
+        },
+        "symbolic_rule": {
+          "compute_value_regret": 0.555556,
+          "agreements": 12,
+          "abstentions": 9,
+          "coverage": 0.75,
+          "expressions_evaluated": 132
+        },
+        "gold_oracle": {
+          "compute_value_regret": 0.0,
+          "agreements": 36,
+          "abstentions": 0,
+          "coverage": 1.0,
+          "expressions_evaluated": 0
+        }
+      }
+    },
+    {
+      "seed": 1,
+      "n_records": 120,
+      "n_discovery": 84,
+      "n_eval": 36,
+      "singleton_bypass": {
+        "n_singletons": 17,
+        "singleton_bypass_holds": true,
+        "violations": [],
+        "note": "I2: complete singleton domains commit with zero expression evaluations."
+      },
+      "arms": {
+        "hand_threshold": {
+          "compute_value_regret": 0.166667,
+          "agreements": 30,
+          "abstentions": 0,
+          "coverage": 1.0,
+          "expressions_evaluated": 0
+        },
+        "linear_scorer": {
+          "compute_value_regret": 0.055556,
+          "agreements": 34,
+          "abstentions": 0,
+          "coverage": 1.0,
+          "expressions_evaluated": 0
+        },
+        "symbolic_rule": {
+          "compute_value_regret": 0.538462,
+          "agreements": 12,
+          "abstentions": 10,
+          "coverage": 0.722222,
+          "expressions_evaluated": 124
+        },
+        "gold_oracle": {
+          "compute_value_regret": 0.0,
+          "agreements": 36,
+          "abstentions": 0,
+          "coverage": 1.0,
+          "expressions_evaluated": 0
+        }
+      }
+    },
+    {
+      "seed": 2,
+      "n_records": 120,
+      "n_discovery": 84,
+      "n_eval": 36,
+      "singleton_bypass": {
+        "n_singletons": 17,
+        "singleton_bypass_holds": true,
+        "violations": [],
+        "note": "I2: complete singleton domains commit with zero expression evaluations."
+      },
+      "arms": {
+        "hand_threshold": {
+          "compute_value_regret": 0.305556,
+          "agreements": 25,
+          "abstentions": 0,
+          "coverage": 1.0,
+          "expressions_evaluated": 0
+        },
+        "linear_scorer": {
+          "compute_value_regret": 0.027778,
+          "agreements": 35,
+          "abstentions": 0,
+          "coverage": 1.0,
+          "expressions_evaluated": 0
+        },
+        "symbolic_rule": {
+          "compute_value_regret": 0.416667,
+          "agreements": 14,
+          "abstentions": 12,
+          "coverage": 0.666667,
+          "expressions_evaluated": 132
+        },
+        "gold_oracle": {
+          "compute_value_regret": 0.0,
+          "agreements": 36,
+          "abstentions": 0,
+          "coverage": 1.0,
+          "expressions_evaluated": 0
+        }
+      }
+    }
+  ],
+  "scope_disclaimer": "Fixture-scale EXP-SR-5 value-of-compute controller replay over deterministic synthetic DecodeStatsRecordV1 traces. Arms compose SIE-007 compute_state_controller (hand threshold, linear scorer fit on discovery only, preregistered symbolic IR, gold oracle ceiling). Primary metric is compute_value_regret on held-out eval traces (decrease is better). Discovery/eval are disjoint. I2 singleton bypass and I6 legality parity are audited. claim_class=fixture; no promotion or production default change.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "400eb083ac5cb365204978e7d696d3597eebfc15",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v159",
+      "harness.experiments.slm484_sie008_voc": "v1"
+    },
+    "stamped_at": "2026-08-10T20:23:19.630353+00:00"
+  }
+}
