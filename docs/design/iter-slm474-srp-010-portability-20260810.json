@@ -1,0 +1,243 @@
+{
+  "canonical_expression": "v0",
+  "claim_class": "fixture",
+  "default_isolation": {
+    "auto_pack_id": "openui",
+    "default_alias_pack_id": "openui",
+    "env_unset": true,
+    "openui_is_default": true,
+    "unresolved_pack_id": "openui"
+  },
+  "evidence": {
+    "canonical_expr": "v0",
+    "canonical_hash": "0270da4daac514f30bece5788a87ad7b800f59476d0d7e6f70d4b61fbc4f5e9e",
+    "coefficient_count": 0,
+    "complexity_formula": "node_count_v1",
+    "depth": 1,
+    "domain_policy": "reject_nonfinite",
+    "fit_condition_number": null,
+    "fit_is_ill_conditioned": null,
+    "fit_is_rank_deficient": null,
+    "fit_rank": null,
+    "fit_status": "no_coefficients",
+    "loss_function": "mean_squared_error",
+    "max_depth_budget": 32,
+    "max_nodes_budget": 256,
+    "node_count": 1,
+    "pack_id": "symbolic_regression",
+    "problem_fingerprint": "e24faef56204128c544fc090576c1aa823b7ae2a6a2f8714dfcb9a323e755bb7",
+    "record_digest": "21c58896e0a84a19a5ccd6ddfd74f964817588ce35d01339551b99852277bc4e",
+    "schema_version": "v1",
+    "solver_identity": null,
+    "splits": [
+      {
+        "failure_class": "none",
+        "loss": 0.0,
+        "n_rows": 2,
+        "n_valid_rows": 2,
+        "split": "train"
+      },
+      {
+        "failure_class": "none",
+        "loss": 0.0,
+        "n_rows": 1,
+        "n_valid_rows": 1,
+        "split": "validation"
+      }
+    ]
+  },
+  "experiment_id": "slm474-srp010-pack-portability",
+  "expression": "v0",
+  "filled_slots": [
+    "pack_id",
+    "backend",
+    "placeholder_policy",
+    "reward_label",
+    "canonicalize",
+    "oracle"
+  ],
+  "forks": [
+    {
+      "detail": "Canonical registration is dsl/pack.py (list_packs includes 'symbolic_regression'); the legacy dsl/packs/ shadow registry still only ships openui/toy-layout/arith_sketch and does not list SR.",
+      "fork_id": "shadow_dsl_packs_registry",
+      "surface": "dsl/packs/"
+    },
+    {
+      "detail": "LanguageContract / OUTPUT_CONTRACT_VERSION remain OpenUI-pinned (LANG_SPEC=openui-lang-0.2.x); SR uses its own problem schema rather than that contract identity.",
+      "fork_id": "openui_pinned_language_contract",
+      "surface": "dsl/language_contract.py"
+    },
+    {
+      "detail": "SyGuS capability report conformance='inspired_interoperability' (inspired interoperability only, not SyGuS-IF standards conformance).",
+      "fork_id": "sygus_inspired_not_conformance",
+      "surface": "data/progspec/synthesis_capability_report.py"
+    }
+  ],
+  "import_audit": [
+    {
+      "offenders": [],
+      "path": "/home/codex/.herdr/worktrees/slm-training/agent-slm-474-srp-010/src/slm_training/dsl/grammar/backends/symbolic_regression.py"
+    },
+    {
+      "offenders": [],
+      "path": "/home/codex/.herdr/worktrees/slm-training/agent-slm-474-srp-010/src/slm_training/dsl/symbolic_expr_canonicalize.py"
+    },
+    {
+      "offenders": [],
+      "path": "/home/codex/.herdr/worktrees/slm-training/agent-slm-474-srp-010/src/slm_training/dsl/symbolic_expr_evaluator.py"
+    },
+    {
+      "offenders": [],
+      "path": "/home/codex/.herdr/worktrees/slm-training/agent-slm-474-srp-010/src/slm_training/dsl/symbolic_expr_fit.py"
+    },
+    {
+      "offenders": [],
+      "path": "/home/codex/.herdr/worktrees/slm-training/agent-slm-474-srp-010/src/slm_training/dsl/symbolic_expr_ir.py"
+    },
+    {
+      "offenders": [],
+      "path": "/home/codex/.herdr/worktrees/slm-training/agent-slm-474-srp-010/src/slm_training/dsl/symbolic_expr_report.py"
+    },
+    {
+      "offenders": [],
+      "path": "/home/codex/.herdr/worktrees/slm-training/agent-slm-474-srp-010/src/slm_training/dsl/symbolic_regression_pack.py"
+    }
+  ],
+  "matrix_set": "slm474_srp010_pack_portability",
+  "matrix_version": "srp010-v1",
+  "missing_slots": [
+    "corpus_generator",
+    "completion_artifact",
+    "scope_extractor",
+    "prop_order",
+    "incremental_engine"
+  ],
+  "notes": [
+    "claim_class=fixture; no ExperimentCampaignV1 lock/execute for promotion",
+    "related catalogue identity: exp-sr-12"
+  ],
+  "oracle_ok": true,
+  "pack_available": true,
+  "pack_id": "symbolic_regression",
+  "problem_fingerprint": "e24faef56204128c544fc090576c1aa823b7ae2a6a2f8714dfcb9a323e755bb7",
+  "readiness": {
+    "blocker": "readiness checklist incomplete: exact_legal_action_or_valid_edit_enumeration, typed_ast_or_program_spec_generator, request_prompt_contract, positive_corpus_and_disjoint_eval, pack_native_semantic_metric_and_audit, bounded_finite_cases",
+    "canonicalizer_available": true,
+    "checklist": {
+      "bounded_finite_cases": false,
+      "canonical_equivalence_fingerprint": true,
+      "exact_legal_action_or_valid_edit_enumeration": false,
+      "pack_native_semantic_metric_and_audit": false,
+      "placeholder_symbol_binder_policy": true,
+      "positive_corpus_and_disjoint_eval": false,
+      "request_prompt_contract": false,
+      "schema_type_scope_oracle": true,
+      "typed_ast_or_program_spec_generator": false,
+      "versioned_grammar_parser": true
+    },
+    "generator_available": false,
+    "oracle_available": true,
+    "pack_available": true,
+    "pack_id": "symbolic_regression",
+    "parser_available": true,
+    "placeholder_policy_available": true,
+    "readiness_pass": false,
+    "symbol_table": {},
+    "unsupported_features": []
+  },
+  "related_catalogue_id": "exp-sr-12",
+  "run_id": "srp010_fixture",
+  "schema": "Slm474Srp010PackPortabilityReportV1",
+  "status": "fixture",
+  "sygus_capability": {
+    "conformance": "inspired_interoperability",
+    "conformance_note": "Inspired interoperability only, not SyGuS-IF standards conformance: sygus_program never emits (check-synth) (no concrete example table is available from the envelope alone), and synth-fun grammar productions may name functions outside any decidable SMT-LIB background logic.",
+    "findings": [
+      {
+        "element": "runtime_symbols[x]",
+        "reason": "symbolic_regression runtime symbols are numeric input variables; a Real-sorted SMT-LIB declaration is exact.",
+        "status": "representable",
+        "sygus_fragment": "(declare-var x Real)"
+      },
+      {
+        "element": "operator_vocabulary",
+        "reason": "Mirrors dsl/symbolic_expr_ir.py's BINARY_OPERATORS/UNARY_OPERATORS exactly -- every production here has a corresponding OpApply arity check in the typed IR.",
+        "status": "representable",
+        "sygus_fragment": "(synth-fun expr ((x Real)) Real ((Start Real (Var Coef (Start * Start) (Start + Start) (Start - Start) (Start / Start) (abs Start) (cos Start) (exp Start) (log Start) (neg Start) (sin Start) (sqrt Start)))))"
+      },
+      {
+        "element": "verification_requirements[r_eval]",
+        "reason": "this repo's verifier gate/evaluator identities (G0-G12 gate names, evaluator version/hash pinning) have no SyGuS-IF equivalent; the envelope alone also carries no concrete example table to emit (constraint ...) rows even for an evaluator requirement, so this is extension-required, not merely absent from a fixed vocabulary.",
+        "status": "extension_required",
+        "sygus_fragment": null
+      },
+      {
+        "element": "objective[fit_error]",
+        "reason": "SyGuS-IF's core (check-synth) is satisfaction-only; weighted multi-objective optimization requires a SyGuS optimization extension not implemented here.",
+        "status": "extension_required",
+        "sygus_fragment": null
+      },
+      {
+        "element": "objective[complexity]",
+        "reason": "SyGuS-IF's core (check-synth) is satisfaction-only; weighted multi-objective optimization requires a SyGuS optimization extension not implemented here.",
+        "status": "extension_required",
+        "sygus_fragment": null
+      }
+    ],
+    "pack_id": "symbolic_regression",
+    "problem_digest": "3d822ea95b3665c48d5f2c7a6bc33a807e54b2825597e22d5586b492ec75e3d3",
+    "problem_id": "srp010-e24faef56204",
+    "report_hash": "d48347e834d09f78ab4487e2ac25d69b21fbcec56a2736fd781570dd86fc5d82",
+    "schema_version": "sygus_capability_report/v1",
+    "sygus_program": "(set-logic NRA)\n(declare-var x Real)\n(synth-fun expr ((x Real)) Real ((Start Real (Var Coef (Start * Start) (Start + Start) (Start - Start) (Start / Start) (abs Start) (cos Start) (exp Start) (log Start) (neg Start) (sin Start) (sqrt Start)))))"
+  },
+  "timestamp": "2026-08-10T19:11:09.444820Z",
+  "unsupported_hooks": [
+    {
+      "detail": "slm_training.dsl.symbolic_expr_corpus not on main (slm_training.dsl.symbolic_expr_corpus); SRP-008/SRP-009 corpus/baseline remain optional",
+      "hook_id": "symbolic_expr_corpus",
+      "status": "unsupported"
+    },
+    {
+      "detail": "slm_training.dsl.symbolic_expr_enumerate not on main (slm_training.dsl.symbolic_expr_enumerate); SRP-008/SRP-009 corpus/baseline remain optional",
+      "hook_id": "symbolic_expr_enumerate",
+      "status": "unsupported"
+    },
+    {
+      "detail": "DslPack slot 'corpus_generator' is None on symbolic_regression (honest partial pack)",
+      "hook_id": "slot.corpus_generator",
+      "status": "unsupported"
+    },
+    {
+      "detail": "DslPack slot 'completion_artifact' is None on symbolic_regression (honest partial pack)",
+      "hook_id": "slot.completion_artifact",
+      "status": "unsupported"
+    },
+    {
+      "detail": "DslPack slot 'scope_extractor' is None on symbolic_regression (honest partial pack)",
+      "hook_id": "slot.scope_extractor",
+      "status": "unsupported"
+    },
+    {
+      "detail": "DslPack slot 'prop_order' is None on symbolic_regression (honest partial pack)",
+      "hook_id": "slot.prop_order",
+      "status": "unsupported"
+    },
+    {
+      "detail": "DslPack slot 'incremental_engine' is None on symbolic_regression (honest partial pack)",
+      "hook_id": "slot.incremental_engine",
+      "status": "unsupported"
+    }
+  ],
+  "version_stamp": {
+    "code_commit": "c447b5f5e8694baed5c7511c3fa59b89b41c0900",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v153",
+      "harness.experiments.slm474_srp010_portability": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-10T19:11:09.444536+00:00"
+  },
+  "vsp_digest": "3d822ea95b3665c48d5f2c7a6bc33a807e54b2825597e22d5586b492ec75e3d3"
+}
