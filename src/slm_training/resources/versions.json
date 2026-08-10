@@ -2874,6 +2874,11 @@
       "history": [
         {
           "version": "v8",
+          "date": "2026-08-10",
+          "note": "no-bump: SLM-474 (SRP-010) knowledge-surface link only — repository-ownership-map.md cites iter-slm474-srp-010-portability-20260810.md on the SRP-010 fixture row and names EXP-SR-12/RSP-008 (SLM-487) as the campaign execution successor; no owner_symbols or ownership_map.json structural change."
+        },
+        {
+          "version": "v8",
           "date": "2026-08-09",
           "note": "no-bump: SLM-472 (SRP-009) registers a new 'symbolic_expr_enumerate' subsystem (src/slm_training/dsl/symbolic_expr_enumerate.py: EnumerationCountersV1/EnumerativeBaselineResultV1/generate_all_expressions/run_enumerative_baseline) per the pre-registered downstream_extension_map row for SRP-009 predicting extension_points: [valid_state_search_generic] (the fixed-hole finite-domain CSP controller) -- that controller's state model does not naturally represent variable-shaped tree generation under a depth/node budget without an artificial fixed-arity template encoding, whereas symbolic_expr_ir's own arity table/budgets already are the natural generative model, so it is registered as its own subsystem instead (same precedent as SGS-008/SRP-004/SRP-005/SRP-007); mirrors the row into repository-ownership-map.md. The new source/test files are not yet tracked by any versions.json component (consistent with the SRP-002/003/004/005/007 sibling-file precedent), so this entry only covers the ownership-map doc update."
         },
