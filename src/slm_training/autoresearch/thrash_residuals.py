@@ -30,6 +30,8 @@ __all__ = [
     "residual_boosts_from_observations",
     "expand_family_boosts",
     "build_slug_stats_payload",
+    "screening_tie_saturation",
+    "rank_absolute_regimes",
 ]
 
 # Soft-related screening arms for binder non-regression residuals (not densify
@@ -176,6 +178,127 @@ def metric_from_delivery(
     return None
 
 
+def screening_tie_saturation(
+    deliveries: Sequence[Mapping[str, Any]],
+    *,
+    threshold: int,
+    epsilon: float = _DELTA_EPS,
+) -> tuple[int, int | None]:
+    """Return the current complete-tie streak and its threshold-crossing cycle.
+
+    Deliveries may be in either order. Incomplete rows are ignored rather than
+    converted to quality zeros; the newest complete non-tie resets the streak.
+    """
+
+    complete: list[tuple[int, float]] = []
+    for row in deliveries:
+        if row.get("measurement_complete") is not True:
+            continue
+        ctrl = row.get("control_metrics")
+        cand = row.get("candidate_metrics")
+        ss_c = metric_from_delivery(ctrl, "structural_similarity")
+        ss_k = metric_from_delivery(cand, "structural_similarity")
+        if ss_c is None or ss_k is None:
+            continue
+        try:
+            cycle = int(row.get("cycle_index") or 0)
+        except (TypeError, ValueError):
+            continue
+        complete.append((cycle, ss_k - ss_c))
+    complete.sort(reverse=True)
+    ties: list[int] = []
+    for cycle, delta in complete:
+        if abs(delta) > epsilon:
+            break
+        ties.append(cycle)
+    required = max(1, int(threshold))
+    trigger = sorted(ties)[required - 1] if len(ties) >= required else None
+    return len(ties), trigger
+
+
+def rank_absolute_regimes(
+    deliveries: Sequence[Mapping[str, Any]],
+    *,
+    through_cycle: int,
+    max_regimes: int,
+    decode_cost_slugs: Iterable[str] = (),
+    minimum_latency_gain_fraction: float = 0.05,
+) -> list[str]:
+    """Rank size-matched complete ties by absolute guarded quality.
+
+    Decode-cost treatments are useful residuals only when they also clear the
+    existing latency-effect floor. This is screening recovery, not promotion.
+    """
+
+    decode_cost = set(decode_cost_slugs)
+    best: dict[str, tuple[float, float, float, float, int]] = {}
+    for row in deliveries:
+        if row.get("measurement_complete") is not True:
+            continue
+        try:
+            cycle = int(row.get("cycle_index") or 0)
+        except (TypeError, ValueError):
+            continue
+        if cycle > int(through_cycle):
+            continue
+        slug = slug_from_candidate_id(str(row.get("candidate_id") or "") or None)
+        if not slug:
+            continue
+        ctrl = row.get("control_metrics")
+        cand = row.get("candidate_metrics")
+        ss_c = metric_from_delivery(ctrl, "structural_similarity")
+        ss_k = metric_from_delivery(cand, "structural_similarity")
+        parse_c = metric_from_delivery(ctrl, "parse_rate")
+        parse_k = metric_from_delivery(cand, "parse_rate")
+        mpr_c = metric_from_delivery(ctrl, "meaningful_program_rate")
+        mpr_k = metric_from_delivery(cand, "meaningful_program_rate")
+        binder_c = metric_from_delivery(ctrl, "binder_reference_f1")
+        binder_k = metric_from_delivery(cand, "binder_reference_f1")
+        latency_c = metric_from_delivery(ctrl, "latency_ms_p50")
+        latency_k = metric_from_delivery(cand, "latency_ms_p50")
+        metrics = (
+            ss_c,
+            ss_k,
+            parse_c,
+            parse_k,
+            mpr_c,
+            mpr_k,
+            binder_c,
+            binder_k,
+            latency_c,
+            latency_k,
+        )
+        if any(value is None for value in metrics):
+            continue
+        assert ss_c is not None and ss_k is not None
+        assert parse_c is not None and parse_k is not None
+        assert mpr_c is not None and mpr_k is not None
+        assert binder_c is not None and binder_k is not None
+        assert latency_c is not None and latency_k is not None
+        if abs(ss_k - ss_c) > _DELTA_EPS:
+            continue
+        if parse_k + _DELTA_EPS < parse_c or mpr_k + _DELTA_EPS < mpr_c:
+            continue
+        if binder_k + _DELTA_EPS < binder_c:
+            continue
+        try:
+            baseline_params = int(row["baseline_trainable_params"])
+            candidate_params = int(row["candidate_trainable_params"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if candidate_params > baseline_params:
+            continue
+        if slug in decode_cost:
+            gain = (latency_c - latency_k) / max(latency_c, _DELTA_EPS)
+            if gain + _DELTA_EPS < float(minimum_latency_gain_fraction):
+                continue
+        score = (ss_k, mpr_k, binder_k, -latency_k, -cycle)
+        if score > best.get(slug, (-1.0, -1.0, -1.0, float("-inf"), 0)):
+            best[slug] = score
+    ranked = sorted(best, key=lambda slug: (*(-v for v in best[slug][:-1]), slug))
+    return ranked[: max(0, int(max_regimes))]
+
+
 def slug_from_candidate_id(candidate_id: str | None) -> str | None:
     """Extract thrash arm slug from continuous experiment id suffix."""
     if not candidate_id:
@@ -232,9 +355,7 @@ def classify_delivery_residual(
     # Clear primary lift (win label or delta past noise). null_or_worse may
     # still carry a positive improvement string on fixture noise — treat Δ>0.02
     # as lift for residual steering only (not Phase-A positive).
-    primary_up = "primary_metric_win:" in blob or (
-        delta is not None and delta > 0.02
-    )
+    primary_up = "primary_metric_win:" in blob or (delta is not None and delta > 0.02)
     binder_down = "non_regression_fail:binder_reference_f1" in blob or (
         b_c is not None
         and b_k is not None
@@ -262,7 +383,9 @@ def classify_delivery_residual(
     elif efficiency and quality_held:
         residual_class = RESIDUAL_EFFICIENCY_WIN_QUALITY_HELD
         score = 0.8 + max(0.0, delta or 0.0)
-    elif max_ss >= high_ss_band and (primary_up or (delta is not None and delta > 0.02)):
+    elif max_ss >= high_ss_band and (
+        primary_up or (delta is not None and delta > 0.02)
+    ):
         residual_class = RESIDUAL_HIGH_BAND_ABSOLUTE
         score = 0.6 + max_ss
     elif max_ss >= high_ss_band and both_high:
@@ -271,9 +394,7 @@ def classify_delivery_residual(
     else:
         return None
 
-    slug = slug_from_candidate_id(
-        str(delivery.get("candidate_id") or "") or None
-    )
+    slug = slug_from_candidate_id(str(delivery.get("candidate_id") or "") or None)
     return ResidualObservation(
         campaign_id=str(campaign_id or delivery.get("campaign_id") or ""),
         cycle_index=cycle_index,
@@ -286,7 +407,9 @@ def classify_delivery_residual(
         mpr_cand=mpr_k,
         binder_control=b_c,
         binder_cand=b_k,
-        positive=delivery.get("positive") if isinstance(delivery.get("positive"), bool) else None,
+        positive=delivery.get("positive")
+        if isinstance(delivery.get("positive"), bool)
+        else None,
         measurement_complete=bool(complete) if complete is not None else None,
         reasons=reasons,
     )
@@ -365,9 +488,7 @@ def soft_rank_slugs(
     """
     stats = stats or {}
     residual_boosts = residual_boosts or {}
-    rot_index = {
-        slug: i for i, slug in enumerate(rotation_order or candidates)
-    }
+    rot_index = {slug: i for i, slug in enumerate(rotation_order or candidates)}
 
     def key(slug: str) -> tuple[float, float, int, str]:
         st = stats.get(slug)

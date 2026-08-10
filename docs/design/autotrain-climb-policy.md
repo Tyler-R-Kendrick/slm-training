@@ -273,14 +273,33 @@ Policy v8 adds (see
 - Editing the policy file changes `promote_authority_sha256` — queued
   champions re-certify on the next cycle (intended).
 
+## Screening saturation recovery (policy v9)
+
+After 15 consecutive complete `smoke.structural_similarity` ties, the driver
+stops normal posterior/rotation/predecessor selection. Incomplete measurements
+are skipped rather than scored as zero; a complete non-tie resets the streak.
+The driver freezes the two best size-matched absolute-quality regimes at the
+threshold crossing, runs one fresh seed for each, and then either enters the
+existing champion path on a real primary win or parks with
+`screening_objective_saturated`.
+
+Absolute ranking requires parse, meaningful-program rate, and binder F1 to
+hold. Decode-cost arms (`bounds`, `canvas`, `both`, compiler cache) are eligible
+only when p50 latency also improves by the existing 5% efficiency floor.
+Reproduced decode-timeout treatments are recorded in the loop's existing
+exhausted-knob ledger and excluded before every selector; the exclusion changes
+only when the policy-owned data/eval identity changes. A historical selection
+that occurred after that retirement emits the typed autoresearch harness signal
+`screening_selector_reintroduced_retired_arm`.
+
 <!-- BEGIN policy v2 (WP-4 conclusion criteria) — appended section -->
 
 ## `policy.v2.json` artifact (conclusion criteria)
 
 `policy.v2.json` is an **exact superset** of `policy.v1.json` as it stands
-(currently `version: v8`, schema family unchanged `autotrain_climb_policy/v1`
+(currently `version: v9`, schema family unchanged `autotrain_climb_policy/v1`
 — including the terminal-governance and `promotion_suite_n` blocks above)
-plus one new top-level block:
+plus one new top-level block. The v2 artifact's own version is `v10`:
 
 ```json
 "conclusion_policy": {

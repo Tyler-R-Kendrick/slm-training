@@ -64,7 +64,9 @@ from slm_training.autoresearch.thrash_residuals import (
     build_slug_stats_payload,
     classify_delivery_residual,
     pick_soft_ranked_slug,
+    rank_absolute_regimes,
     residual_boosts_from_observations,
+    screening_tie_saturation,
 )
 from slm_training.autoresearch.schemas import (
     AutotrainActionReceiptV1,
@@ -76,6 +78,7 @@ from slm_training.autoresearch.schemas import (
     FormalClaimV1,
     FormalObligationV1,
     FormalPreflightV1,
+    HarnessSignalV1,
     HypothesisMatrix,
     NextRunPriorityV1,
     utc_now,
@@ -277,7 +280,9 @@ def _arm_wall_minutes(policy_minutes: float, *, formal_required: bool) -> float:
 
 
 def _arm_wall_seconds(*, policy_minutes: float, formal_required: bool) -> float:
-    return float(_arm_wall_minutes(policy_minutes, formal_required=formal_required)) * 60.0
+    return (
+        float(_arm_wall_minutes(policy_minutes, formal_required=formal_required)) * 60.0
+    )
 
 
 def _fit_screening_decode_timeout_seconds(
@@ -392,7 +397,9 @@ def _write_thrash_timing(
         "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     path = camp_dir / "thrash_timing.json"
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     # camp_dir is root/campaign_id; parent is autoresearch root
     root = camp_dir.parent
     ledger = root / "loops" / loop_id / "thrash_timing.jsonl"
@@ -545,7 +552,9 @@ def _bind_expected_arms(
         if event.get("event_type") != "decision_arms_bound":
             continue
         if event.get("detail") != detail:
-            raise RuntimeError("decision arm binding already exists with different content")
+            raise RuntimeError(
+                "decision arm binding already exists with different content"
+            )
         return event
     return store.append_event(
         "decision_arms_bound",
@@ -1423,6 +1432,59 @@ def _check_regime_parked(*, root: Path, loop_id: str) -> str | None:
     return None
 
 
+def _park_screening_saturation(
+    *,
+    root: Path,
+    loop_id: str,
+    campaign_id: str,
+    cycle_index: int,
+    policy: Any,
+    ranked_regimes: Sequence[str],
+) -> str:
+    """Persist the typed terminal verdict once bounded residual recovery closes."""
+
+    from slm_training.autoresearch import evidence_ledger as _ev
+
+    verdict = _ev.build_regime_exhausted_verdict(
+        campaign_id=campaign_id,
+        loop_id=loop_id,
+        cycle_index=cycle_index,
+        binding_constraint="screening_objective_saturated",
+        closed_slugs=sorted(set(ranked_regimes)),
+        policy_sha256=policy.sha256,
+        resume_predicate=(
+            "the screening metric, suite, saturation policy, or legal arm bank changes"
+        ),
+        bank_fingerprint=_screening_bank_fingerprint(policy_sha256=policy.sha256),
+    )
+    path = _terminal_verdict_path(root, loop_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(verdict, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    _write_loop_state(
+        root,
+        AutotrainLoopStateV1(
+            loop_id=loop_id,
+            state="BLOCKED",
+            phase="blocked",
+            active_campaign_id=None,
+            last_completed_campaign_id=campaign_id,
+            cycle_index=cycle_index,
+            next_action="repair_harness",
+            blocker_fingerprint="screening_objective_saturated",
+            blocker_count=1,
+            pid=os.getpid(),
+        ),
+    )
+    print(
+        f"REGIME_PARK loop={loop_id} campaign={campaign_id} "
+        "constraint=screening_objective_saturated",
+        flush=True,
+    )
+    return _REGIME_PARKED_STATUS
+
+
 def _short_lever_token(key: str) -> str:
     token = key.replace("_loss_weight", "").replace("_weight", "").replace("_", "-")
     return token[:24]
@@ -1488,7 +1550,9 @@ def _append_dynamic_thrash_arms(
                 "schema": "autotrain_dynamic_thrash_arm/v1",
                 "slug": slug,
                 "hypothesis": hyp,
-                "extras": {k: v for k, v in extras.items() if not str(k).startswith("_")},
+                "extras": {
+                    k: v for k, v in extras.items() if not str(k).startswith("_")
+                },
                 "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             }
             fh.write(json.dumps(payload, sort_keys=True) + "\n")
@@ -1502,7 +1566,8 @@ def _thrash_lever_signature(extras: dict[str, Any] | None) -> str:
     raw = {
         k: v
         for k, v in (extras or {}).items()
-        if not str(k).startswith("_") and k not in {"seed", "steps", "decode_timeout_seconds", "generate_batch_size"}
+        if not str(k).startswith("_")
+        and k not in {"seed", "steps", "decode_timeout_seconds", "generate_batch_size"}
     }
     # Prefer registered lever subset when present so static/dynamic arms align.
     levers = _lever_knobs(raw)
@@ -1872,9 +1937,7 @@ def _self_heal_git_ancestry(
             print("SELF_HEAL_GIT_ANCESTRY merged origin/main", flush=True)
             return "git_ancestry_merge"
         except Exception as merge_exc:  # noqa: BLE001
-            finished = _self_heal_incomplete_merge(
-                cwd=cwd, root=root, loop_id=loop_id
-            )
+            finished = _self_heal_incomplete_merge(cwd=cwd, root=root, loop_id=loop_id)
             if finished:
                 print(
                     "SELF_HEAL_GIT_ANCESTRY merged origin/main via conflict resolve",
@@ -1959,9 +2022,7 @@ def _self_heal_bank_exhaust_repair(
     if handoff.loop_id != loop_id or handoff.campaign_id != campaign_id:
         return None
     pending = list(pending_autotrain_actions(root, handoff))
-    bank_pending = [
-        (i, a) for i, a in pending if _is_bank_exhaust_repair_action(a)
-    ]
+    bank_pending = [(i, a) for i, a in pending if _is_bank_exhaust_repair_action(a)]
     if not bank_pending:
         return None
     other_hard = [
@@ -2034,9 +2095,7 @@ def _self_heal_bank_exhaust_repair(
             ),
         }
     )
-    handoff_path.write_text(
-        rebuilt.model_dump_json(indent=2) + "\n", encoding="utf-8"
-    )
+    handoff_path.write_text(rebuilt.model_dump_json(indent=2) + "\n", encoding="utf-8")
     print(
         f"SELF_HEAL_BANK_EXHAUST_REPAIR campaign={campaign_id} "
         f"actions={[a.kind for a in rebuilt.actions]}",
@@ -2047,9 +2106,7 @@ def _self_heal_bank_exhaust_repair(
     )
     pending_after = pending_autotrain_actions(root, rebuilt)
     hard_after = [
-        (i, a)
-        for i, a in pending_after
-        if a.kind in _HARD_PREREQUISITE_ACTION_KINDS
+        (i, a) for i, a in pending_after if a.kind in _HARD_PREREQUISITE_ACTION_KINDS
     ]
     if hard_after:
         return None
@@ -2124,9 +2181,7 @@ def _self_heal_thrash_timeout_repair(
             AutotrainActionV1(
                 kind="document",
                 owner="documenting-experiment-results",
-                reason=(
-                    "persist thrash timeout-residual closeout under docs/design"
-                ),
+                reason=("persist thrash timeout-residual closeout under docs/design"),
                 evidence_ids=(evidence_id,),
             ),
         )
@@ -2155,9 +2210,7 @@ def _self_heal_thrash_timeout_repair(
             ),
         }
     )
-    handoff_path.write_text(
-        rebuilt.model_dump_json(indent=2) + "\n", encoding="utf-8"
-    )
+    handoff_path.write_text(rebuilt.model_dump_json(indent=2) + "\n", encoding="utf-8")
     print(
         f"SELF_HEAL_THRASH_TIMEOUT_REPAIR campaign={campaign_id} "
         f"actions={[a.kind for a in rebuilt.actions]}",
@@ -2170,9 +2223,7 @@ def _self_heal_thrash_timeout_repair(
     # Verify no hard prereqs remain.
     pending_after = pending_autotrain_actions(root, rebuilt)
     hard_after = [
-        (i, a)
-        for i, a in pending_after
-        if a.kind in _HARD_PREREQUISITE_ACTION_KINDS
+        (i, a) for i, a in pending_after if a.kind in _HARD_PREREQUISITE_ACTION_KINDS
     ]
     if hard_after:
         return None
@@ -2286,9 +2337,7 @@ def _self_heal_cycle_error(
     if isinstance(exc, StopIteration):
         pred = _latest_cycle(root, loop_id)[1]
         closed = _recent_completed_nonpositive_slugs(root, pred)
-        if _self_heal_thrash_bank_exhaust(
-            root, loop_id, closed=closed, skip=closed
-        ):
+        if _self_heal_thrash_bank_exhaust(root, loop_id, closed=closed, skip=closed):
             return "stopiteration_bank_heal"
     # Compose arms that collide with static recipes fail matrix validation.
     if "knob signatures must be distinct" in message:
@@ -2337,14 +2386,11 @@ def _self_heal_dedupe_dynamic_thrash_arms(root: Path, loop_id: str) -> bool:
     _DYNAMIC_THRASH_ARMS = kept
     _DYNAMIC_THRASH_LOADED_FOR = f"{root.resolve()}::{loop_id}"
     print(
-        "SELF_HEAL_KNOB_DEDUPE "
-        f"dropped={dropped} kept={[s for s, _, _ in kept]}",
+        f"SELF_HEAL_KNOB_DEDUPE dropped={dropped} kept={[s for s, _, _ in kept]}",
         flush=True,
     )
     # Ensure at least one open unique recipe remains.
-    closed = _recent_completed_nonpositive_slugs(
-        root, _latest_cycle(root, loop_id)[1]
-    )
+    closed = _recent_completed_nonpositive_slugs(root, _latest_cycle(root, loop_id)[1])
     if _self_heal_thrash_bank_exhaust(root, loop_id, closed=closed, skip=closed):
         return True
     return bool(kept)
@@ -2464,9 +2510,7 @@ def _render_continuous_cycle_docs(
     try:
         from slm_training.autoresearch.evidence_ledger import EVAL_KEY_COMPONENTS
 
-        version_stamp: dict[str, Any] | None = build_version_stamp(
-            *EVAL_KEY_COMPONENTS
-        )
+        version_stamp: dict[str, Any] | None = build_version_stamp(*EVAL_KEY_COMPONENTS)
     except Exception:
         version_stamp = None
     payload: dict[str, Any] = {
@@ -2926,9 +2970,7 @@ def self_heal_unblock_loop(
 
     # 0) Incomplete merge (UU) from landing origin/main into the thrash worktree.
     try:
-        merge_kind = _self_heal_incomplete_merge(
-            cwd=cwd, root=root, loop_id=loop_id
-        )
+        merge_kind = _self_heal_incomplete_merge(cwd=cwd, root=root, loop_id=loop_id)
         if merge_kind:
             soft_healed.append(merge_kind)
     except Exception as exc:  # noqa: BLE001
@@ -2957,9 +2999,7 @@ def self_heal_unblock_loop(
     except Exception:  # noqa: BLE001
         porcelain = ""
     if porcelain.strip():
-        foreign = [
-            p for p in _porcelain_paths(porcelain) if _is_foreign_dirty_path(p)
-        ]
+        foreign = [p for p in _porcelain_paths(porcelain) if _is_foreign_dirty_path(p)]
         if foreign:
             hard_pending.append(
                 {
@@ -3045,9 +3085,7 @@ def self_heal_unblock_loop(
                         delivery = {}
                 pending = list(pending_autotrain_actions(root, handoff))
                 if delivery.get("stack_layer") is False:
-                    pending = [
-                        (i, a) for i, a in pending if a.kind != "deliver_stack"
-                    ]
+                    pending = [(i, a) for i, a in pending if a.kind != "deliver_stack"]
                 for index, action in pending:
                     if action.kind == "document":
                         hard_pending.append(
@@ -3119,9 +3157,7 @@ def self_heal_unblock_loop(
             root,
             loop_id,
             reason=(
-                "unblock:" + ",".join(soft_healed)
-                if soft_healed
-                else "unblock:clean"
+                "unblock:" + ",".join(soft_healed) if soft_healed else "unblock:clean"
             ),
         )
         _record_cycle_recovery(
@@ -3145,9 +3181,7 @@ def self_heal_unblock_loop(
                 phase="blocked",
                 cycle_index=max(0, cycle_index),
                 next_action=f"hard_pending:{detail[:200]}",
-                blocker_fingerprint=hashlib.sha256(
-                    detail.encode("utf-8")
-                ).hexdigest(),
+                blocker_fingerprint=hashlib.sha256(detail.encode("utf-8")).hexdigest(),
                 blocker_count=len(hard_pending),
                 pid=os.getpid(),
                 heartbeat_at=utc_now(),
@@ -3758,9 +3792,7 @@ def _paper_recert_promote_entry(
 
     delivery = _read_json(camp / "sdlc_delivery.json")
     formal = str(
-        row.get("formal_preflight_status")
-        or _formal_preflight_status(camp)
-        or ""
+        row.get("formal_preflight_status") or _formal_preflight_status(camp) or ""
     )
     certificate = _load_promote_certificate(camp)
     if formal != "proved" or certificate is None:
@@ -4531,6 +4563,36 @@ def _evidence_ranked_slug(
         return None
 
 
+def _lineage_campaign_ids(
+    root: Path,
+    predecessor_campaign_id: str | None,
+    *,
+    max_cycles: int | None = None,
+) -> list[str]:
+    """Return one loop's content-linked campaign chain, oldest first."""
+
+    cursor = predecessor_campaign_id
+    seen: set[str] = set()
+    loop_id: str | None = None
+    chain: list[str] = []
+    lineage = itertools.count() if max_cycles is None else range(max(0, max_cycles))
+    for _ in lineage:
+        if not cursor or cursor in seen:
+            break
+        seen.add(cursor)
+        camp_dir = root / cursor
+        campaign = _read_json(camp_dir / "campaign.json")
+        handoff = _read_json(camp_dir / "cycle_handoff.json")
+        campaign_loop = str(campaign.get("loop_id") or handoff.get("loop_id") or "")
+        if loop_id is None:
+            loop_id = campaign_loop or None
+        elif campaign_loop and campaign_loop != loop_id:
+            break
+        chain.append(cursor)
+        cursor = str(campaign.get("predecessor_campaign_id") or "")
+    return list(reversed(chain))
+
+
 def _recent_completed_nonpositive_slugs(
     root: Path,
     predecessor_campaign_id: str | None,
@@ -4556,31 +4618,11 @@ def _recent_completed_nonpositive_slugs(
         if min_null_seeds is not None
         else _arm_close_min_null_seeds()
     )
-    cursor = predecessor_campaign_id
-    seen: set[str] = set()
     # slug -> set of seeds with complete non-positive (since last positive)
     null_seeds: dict[str, set[int | None]] = {}
-    loop_id: str | None = None
-    lineage = itertools.count() if max_cycles is None else range(max(0, max_cycles))
-    # Collect tip→root chain then process oldest-first for positive-reset.
-    chain: list[str] = []
-    for _ in lineage:
-        if not cursor or cursor in seen:
-            break
-        seen.add(cursor)
-        chain.append(cursor)
-        camp_dir = root / cursor
-        campaign = _read_json(camp_dir / "campaign.json")
-        handoff = _read_json(camp_dir / "cycle_handoff.json")
-        campaign_loop = str(campaign.get("loop_id") or handoff.get("loop_id") or "")
-        if loop_id is None:
-            loop_id = campaign_loop or None
-        elif campaign_loop and campaign_loop != loop_id:
-            chain.pop()
-            break
-        cursor = str(campaign.get("predecessor_campaign_id") or "")
-
-    for camp_id in reversed(chain):
+    for camp_id in _lineage_campaign_ids(
+        root, predecessor_campaign_id, max_cycles=max_cycles
+    ):
         camp_dir = root / camp_id
         handoff = _read_json(camp_dir / "cycle_handoff.json")
         delivery = _read_json(camp_dir / "sdlc_delivery.json")
@@ -4660,14 +4702,15 @@ def _recent_completed_nonpositive_slugs(
             seed = None
         # Incomplete / harness outcomes never close a thrash approach — even if
         # a buggy delivery marked measurement_complete or positive=False.
-        if any(
-            _reason_is_harness_incomplete(item) for item in handoff_reasons
-        ) or any(
-            _reason_is_harness_incomplete(item)
-            for item in (delivery.get("reasons") or [])
+        if not runtime_terminal and (
+            any(_reason_is_harness_incomplete(item) for item in handoff_reasons)
+            or any(
+                _reason_is_harness_incomplete(item)
+                for item in (delivery.get("reasons") or [])
+            )
         ):
             continue
-        if delivery.get("harness_failure") is True:
+        if delivery.get("harness_failure") is True and not runtime_terminal:
             continue
         if stored_positive is True:
             # Win re-opens the approach; clear prior null tally for this slug.
@@ -4675,9 +4718,7 @@ def _recent_completed_nonpositive_slugs(
             continue
         null_seeds.setdefault(slug, set()).add(seed)
 
-    return {
-        slug for slug, seeds in null_seeds.items() if len(seeds) >= required
-    }
+    return {slug for slug, seeds in null_seeds.items() if len(seeds) >= required}
 
 
 def _interesting_residuals_path(root: Path, loop_id: str) -> Path:
@@ -4688,9 +4729,7 @@ def _slug_stats_path(root: Path, loop_id: str) -> Path:
     return root / "loops" / loop_id / "slug_stats.json"
 
 
-def _load_residual_observations(
-    root: Path, loop_id: str
-) -> list[ResidualObservation]:
+def _load_residual_observations(root: Path, loop_id: str) -> list[ResidualObservation]:
     path = _interesting_residuals_path(root, loop_id)
     if not path.is_file():
         return []
@@ -4793,6 +4832,260 @@ def _iter_loop_deliveries(
         rows.append((cycle, data))
     rows.sort(key=lambda item: item[0], reverse=True)
     return [data for _, data in rows[: max(1, int(limit))]]
+
+
+def _matrix_experiment_knobs(
+    matrix: Mapping[str, Any], experiment_id: str
+) -> dict[str, Any]:
+    by_id = {
+        str((row.get("experiment") or {}).get("experiment_id") or ""): dict(
+            (row.get("experiment") or {}).get("knobs") or {}
+        )
+        for row in matrix.get("hypotheses") or []
+        if isinstance(row, dict)
+    }
+    return by_id.get(experiment_id, {})
+
+
+def _matrix_treatment_signature(
+    matrix: Mapping[str, Any], candidate_id: str, control_id: str
+) -> str | None:
+    """Hash only the candidate-vs-control lever delta for timeout retirement."""
+
+    candidate = _lever_knobs(_matrix_experiment_knobs(matrix, candidate_id))
+    control = _lever_knobs(_matrix_experiment_knobs(matrix, control_id))
+    if not candidate:
+        return None
+    treatment = {
+        key: candidate.get(key)
+        for key in sorted(set(candidate) | set(control))
+        if candidate.get(key) != control.get(key)
+    }
+    if not treatment:
+        return None
+    body = json.dumps(treatment, sort_keys=True, separators=(",", ":"), default=str)
+    return hashlib.sha256(body.encode("utf-8")).hexdigest()
+
+
+def _is_reproduced_timeout_retirement(
+    handoff: Mapping[str, Any], delivery: Mapping[str, Any]
+) -> bool:
+    reasons = [str(item) for item in handoff.get("reasons") or ()]
+    if any(
+        item.startswith(
+            (
+                "candidate_runtime_rejected_after_frozen_replay:",
+                "candidate_runtime_unblock_reproduced:",
+            )
+        )
+        for item in reasons
+    ):
+        return True
+    action_reasons = " ".join(
+        str(item.get("reason") or "")
+        for item in handoff.get("actions") or ()
+        if isinstance(item, dict)
+    ).lower()
+    return bool(
+        handoff.get("cycle_intent") == "retry_measurement"
+        and _delivery_is_thrash_timeout_residual(delivery)
+        and (
+            "retire thrash decode/wall-timeout residual" in action_reasons
+            or "incomplete thrash replay budget exhausted" in action_reasons
+        )
+    )
+
+
+def _sync_reproduced_timeout_retirements(
+    root: Path,
+    loop_id: str,
+    predecessor_campaign_id: str | None,
+    *,
+    policy: Any,
+    train_version: str,
+    eval_version: str,
+    primary_metric: str,
+    direction: str,
+    claim_class: str,
+) -> tuple[set[str], tuple[str, ...]]:
+    """Backfill and enforce exact reproduced-timeout retirements."""
+
+    from slm_training.autoresearch.climb_policy import (
+        load_loop_exhausted_ledger,
+        loop_data_eval_identity,
+        save_loop_exhausted_ledger,
+    )
+
+    ledger = load_loop_exhausted_ledger(root, loop_id, policy)
+    before = len(ledger.entries)
+    retired: dict[tuple[str, str], tuple[str, int, str]] = {}
+    reintroduced: set[str] = set()
+    chain = _lineage_campaign_ids(root, predecessor_campaign_id)
+    for campaign_id in chain:
+        camp_dir = root / campaign_id
+        delivery = _read_json(camp_dir / "sdlc_delivery.json")
+        handoff = _read_json(camp_dir / "cycle_handoff.json")
+        matrix = _read_json(camp_dir / "matrix-proposal.json")
+        candidate_id = str(delivery.get("candidate_id") or "")
+        control_id = str(delivery.get("control_id") or "")
+        knobs = _load_experiment_knobs(
+            camp_dir, candidate_id
+        ) or _matrix_experiment_knobs(matrix, candidate_id)
+        slug = _arm_slug_from_knobs(knobs, candidate_id=candidate_id)
+        signature = _matrix_treatment_signature(matrix, candidate_id, control_id)
+        if not slug or not signature:
+            continue
+        identity = loop_data_eval_identity(
+            policy,
+            claim_class=claim_class,
+            train_version=str(knobs.get("train_version") or train_version),
+            eval_version=str(knobs.get("eval_version") or eval_version),
+            primary_metric=str(handoff.get("primary_metric") or primary_metric),
+            direction=direction,
+        )
+        try:
+            cycle_index = int(
+                delivery.get("cycle_index") or handoff.get("cycle_index") or 0
+            )
+        except (TypeError, ValueError):
+            cycle_index = 0
+        key = (signature, identity)
+        prior = retired.get(key)
+        if prior is not None and cycle_index > prior[1]:
+            reintroduced.add(campaign_id)
+        if not _is_reproduced_timeout_retirement(handoff, delivery):
+            continue
+        manifest = camp_dir / "manifests" / f"{candidate_id}.json"
+        manifest_sha = (
+            hashlib.sha256(manifest.read_bytes()).hexdigest()
+            if manifest.is_file()
+            else "missing"
+        )
+        ledger.record_null(
+            knob_signature_sha256=signature,
+            data_eval_identity=identity,
+            claim_class=claim_class,
+            reason="reproduced_decode_timeout_retirement",
+            note=(f"slug={slug};campaign={campaign_id};manifest_sha256={manifest_sha}"),
+        )
+        retired[key] = (slug, cycle_index, campaign_id)
+    if len(ledger.entries) != before:
+        save_loop_exhausted_ledger(ledger, root, loop_id, policy)
+    current_identity = loop_data_eval_identity(
+        policy,
+        claim_class=claim_class,
+        train_version=train_version,
+        eval_version=eval_version,
+        primary_metric=primary_metric,
+        direction=direction,
+    )
+    retired_slugs = {
+        slug
+        for (signature, identity), (slug, _cycle, _campaign) in retired.items()
+        if identity == current_identity
+        and ledger.is_exhausted(
+            knob_signature_sha256=signature,
+            data_eval_identity=identity,
+            claim_class=claim_class,
+        )
+    }
+    if reintroduced:
+        for campaign_id in chain:
+            for path in (root / campaign_id / "artifacts" / "harness_signals").glob(
+                "*.json"
+            ):
+                if (
+                    _read_json(path).get("code")
+                    == "screening_selector_reintroduced_retired_arm"
+                ):
+                    reintroduced.clear()
+                    break
+            if not reintroduced:
+                break
+    return retired_slugs, tuple(sorted(reintroduced))
+
+
+def _persist_selector_harness_signal(
+    root: Path,
+    campaign_id: str,
+    loop_id: str,
+    source_campaigns: Sequence[str],
+) -> None:
+    """Persist one content-addressed signal for a proven selector regression."""
+
+    if not source_campaigns:
+        return
+    signal = HarnessSignalV1(
+        family="autoresearch",
+        code="screening_selector_reintroduced_retired_arm",
+        evidence_uri=f"loops/{loop_id}/exhausted_knob_ledger.json",
+        reproduced_on_frozen_input=True,
+        primary=True,
+    )
+    store = CampaignStore(campaign_id, root=root)
+    path = store.write_artifact("harness_signals", signal)
+    store.append_event(
+        "harness_signal_recorded",
+        status="reproduced",
+        artifact_sha256=path.stem,
+        detail={"source_campaigns": list(source_campaigns)},
+    )
+
+
+def _screening_saturation_state(
+    root: Path,
+    loop_id: str,
+    *,
+    policy: Any,
+    excluded_slugs: set[str],
+) -> dict[str, Any] | None:
+    block = (getattr(policy, "payload", None) or {}).get("screening_saturation")
+    if not isinstance(block, dict) or block.get("mode") != "residual_multiseed":
+        return None
+    threshold = max(1, int(block.get("complete_tie_streak") or 15))
+    deliveries = _iter_loop_deliveries(root, loop_id, limit=240)
+    streak, trigger_cycle = screening_tie_saturation(deliveries, threshold=threshold)
+    if trigger_cycle is None:
+        return None
+    positive_policy = (getattr(policy, "payload", None) or {}).get(
+        "positive_classification"
+    ) or {}
+    ranked = rank_absolute_regimes(
+        deliveries,
+        through_cycle=trigger_cycle,
+        max_regimes=max(1, int(block.get("max_regimes") or 2)),
+        decode_cost_slugs=DECODE_RESIDUAL_SLUGS,
+        minimum_latency_gain_fraction=float(
+            positive_policy.get("minimum_efficiency_gain_fraction") or 0.05
+        ),
+    )
+    ranked = [slug for slug in ranked if slug not in excluded_slugs]
+    completed_after = {
+        slug
+        for row in deliveries
+        if row.get("measurement_complete") is True
+        and int(row.get("cycle_index") or 0) > trigger_cycle
+        and (
+            slug := _arm_slug_from_knobs(
+                _load_experiment_knobs(
+                    root / str(row.get("campaign_id") or ""),
+                    str(row.get("candidate_id") or ""),
+                ),
+                candidate_id=str(row.get("candidate_id") or ""),
+            )
+        )
+    }
+    pending = [slug for slug in ranked if slug not in completed_after]
+    return {
+        "schema": "screening_saturation_recovery/v1",
+        "mode": "residual_multiseed",
+        "tie_streak": streak,
+        "threshold": threshold,
+        "trigger_cycle": trigger_cycle,
+        "ranked_regimes": ranked,
+        "completed_after_trigger": sorted(completed_after & set(ranked)),
+        "pending_regimes": pending,
+    }
 
 
 def _refresh_slug_stats_ledger(root: Path, loop_id: str) -> None:
@@ -4991,7 +5284,11 @@ def _select_recommended_slug(
             open_candidates.append(slug)
     # Self-heal thrash successors (compose-*) live in the full bank after static.
     for slug, _, _ in full_bank:
-        if slug not in skip and slug.startswith("compose-") and slug not in open_candidates:
+        if (
+            slug not in skip
+            and slug.startswith("compose-")
+            and slug not in open_candidates
+        ):
             open_candidates.append(slug)
     if not open_candidates:
         raise RuntimeError(_BANK_EXHAUST_MSG)
@@ -6478,7 +6775,9 @@ def _reason_is_harness_incomplete(reason: object) -> bool:
     text = str(reason or "")
     if not text:
         return False
-    return any(text.startswith(prefix) for prefix in _HARNESS_INCOMPLETE_REASON_PREFIXES)
+    return any(
+        text.startswith(prefix) for prefix in _HARNESS_INCOMPLETE_REASON_PREFIXES
+    )
 
 
 def _reasons_are_harness_incomplete_only(reasons: object) -> bool:
@@ -7569,9 +7868,8 @@ def _phase_a_delivery(
     if man_dir.exists():
         for path in sorted(man_dir.glob("*.json")):
             eid = path.stem
-            if (
-                control_run is None
-                and (eid.endswith("-control") or eid.endswith("_control"))
+            if control_run is None and (
+                eid.endswith("-control") or eid.endswith("_control")
             ):
                 control_run = eid
             elif any(
@@ -7741,9 +8039,7 @@ def _phase_a_delivery(
                 matrix_regime = None
         if matrix_regime is not None:
             record["thrash_regime"] = matrix_regime
-            out_path.write_text(
-                json.dumps(record, indent=2) + "\n", encoding="utf-8"
-            )
+            out_path.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
         _write_thrash_timing(
             camp_dir,
             loop_id=loop_id,
@@ -7760,9 +8056,7 @@ def _phase_a_delivery(
             candidate_metrics=record.get("candidate_metrics")
             if isinstance(record.get("candidate_metrics"), dict)
             else None,
-            thrash_regime=matrix_regime
-            if isinstance(matrix_regime, dict)
-            else None,
+            thrash_regime=matrix_regime if isinstance(matrix_regime, dict) else None,
         )
     except Exception as exc:  # noqa: BLE001 — never fail Phase A on telemetry
         print(f"THRASH_TIMING_WRITE_SKIP err={exc}", flush=True)
@@ -8099,18 +8393,13 @@ def _completed_candidate_priorities(
             # static bank alone raised StopIteration and hard-blocked the loop
             # after dynamic thrash successors were selected.
             successor = next(
-                (
-                    row
-                    for row in _all_screening_arm_bank()
-                    if row[0] == successor_slug
-                ),
+                (row for row in _all_screening_arm_bank() if row[0] == successor_slug),
                 None,
             )
             if successor is not None:
                 alternative = {
                     "experiment_id": (
-                        candidate_id.removesuffix(candidate_slug or "")
-                        + successor_slug
+                        candidate_id.removesuffix(candidate_slug or "") + successor_slug
                     ),
                     "hypothesis": successor[1],
                     "knobs": successor[2],
@@ -8958,10 +9247,10 @@ def _write_cycle_handoff(
         )
         replay_limit = max_consecutive_frozen_replays(load_climb_policy())
         if replay_count >= replay_limit:
-            if (
-                _delivery_is_thrash_timeout_residual(delivery)
-                and cycle_intent in {"screening", "retry_measurement"}
-            ):
+            if _delivery_is_thrash_timeout_residual(delivery) and cycle_intent in {
+                "screening",
+                "retry_measurement",
+            }:
                 actions.append(
                     AutotrainActionV1(
                         kind="next_experiment",
@@ -9047,6 +9336,14 @@ def _write_cycle_handoff(
             for priority in priorities
         )
     ):
+        saturation = (
+            (matrix.get("thrash_regime") or {}).get("screening_saturation")
+            if isinstance(matrix.get("thrash_regime"), dict)
+            else None
+        )
+        saturation_closed = bool(
+            isinstance(saturation, dict) and not saturation.get("pending_regimes", [])
+        )
         # Prefer compose thrash successors over hard repair_harness so continuous
         # thrash never freezes waiting for a human to "preregister an objective".
         closed = _recent_completed_nonpositive_slugs(root, campaign_id)
@@ -9056,8 +9353,12 @@ def _write_cycle_handoff(
             integration_commit=integration_commit or None,
             include_causal_cap=False,
         )
-        composed = _self_heal_thrash_bank_exhaust(
-            root, loop_id, closed=closed, skip=skip | closed
+        composed = (
+            False
+            if saturation_closed
+            else _self_heal_thrash_bank_exhaust(
+                root, loop_id, closed=closed, skip=skip | closed
+            )
         )
         if composed:
             actions.append(
@@ -9078,9 +9379,14 @@ def _write_cycle_handoff(
                     kind="repair_harness",
                     owner="improve-openui-harnesses",
                     reason=(
-                        "registered quality-arm bank exhausted; no untried "
-                        "size-matched compose pairs remain — preregister and wire "
-                        "a distinct model-build objective before the next run"
+                        "screening primary saturated after bounded residual "
+                        "multi-seed recovery; change the objective or suite"
+                        if saturation_closed
+                        else (
+                            "registered quality-arm bank exhausted; no untried "
+                            "size-matched compose pairs remain — preregister and wire "
+                            "a distinct model-build objective before the next run"
+                        )
                     ),
                     evidence_ids=(evidence_id,),
                     harness_family="model_build",
@@ -9095,12 +9401,21 @@ def _write_cycle_handoff(
                     campaign_id=campaign_id,
                     loop_id=loop_id,
                     cycle_index=cycle_index,
-                    binding_constraint="quality_arm_bank_exhausted",
+                    binding_constraint=(
+                        "screening_objective_saturated"
+                        if saturation_closed
+                        else "quality_arm_bank_exhausted"
+                    ),
                     closed_slugs=sorted(closed),
                     policy_sha256=policy_sha,
                     resume_predicate=(
-                        "a new lever family, budget tier, or metric floor is "
-                        "registered (integrated code identity changes)"
+                        "the screening metric, suite, saturation policy, or legal "
+                        "arm bank changes"
+                        if saturation_closed
+                        else (
+                            "a new lever family, budget tier, or metric floor is "
+                            "registered (integrated code identity changes)"
+                        )
                     ),
                     bank_fingerprint=_screening_bank_fingerprint(
                         policy_sha256=policy_sha
@@ -10512,9 +10827,7 @@ def _matrix(
             )
             control_levers = {
                 "structural_aux_head_profile": str(
-                    bank_by_slug[rec_slug][1].get(
-                        "structural_aux_head_profile", "none"
-                    )
+                    bank_by_slug[rec_slug][1].get("structural_aux_head_profile", "none")
                 ),
                 "compiler_decode_mode": str(
                     bank_by_slug[rec_slug][1].get("compiler_decode_mode", "off")
@@ -10543,8 +10856,7 @@ def _matrix(
                 "smoke eval under the published suite."
             )
             control_rationale = (
-                "All-family margin control for isolated "
-                f"{treatment_key} attribution."
+                f"All-family margin control for isolated {treatment_key} attribution."
                 if treatment_key is not None
                 else "Baseline for size-matched continuous attribution."
             )
@@ -10584,11 +10896,7 @@ def _matrix(
 
         def _materialized_sig(full_knobs: Mapping[str, Any]) -> str:
             return _thrash_lever_signature(
-                {
-                    k: v
-                    for k, v in full_knobs.items()
-                    if k not in _sig_exclude
-                }
+                {k: v for k, v in full_knobs.items() if k not in _sig_exclude}
             )
 
         seen_lever_sigs: set[str] = set()
@@ -10610,9 +10918,7 @@ def _matrix(
                     control_levers=control_levers,
                     residual_extras=arm_extra,
                 )
-                hyp = (
-                    f"Climb residual '{slug}' on sticky champion baseline: {hyp}"
-                )
+                hyp = f"Climb residual '{slug}' on sticky champion baseline: {hyp}"
             full_knobs = knobs(**arm_extra)
             if climb_active:
                 sig = _materialized_sig(full_knobs)
@@ -11292,9 +11598,26 @@ def run_cycle(
     replayed_confirmation = _confirmation_replay_entry(queue_entries, replay)
     _load_dynamic_thrash_arms(root, loop_id)
     recent_exhausted = _recent_completed_nonpositive_slugs(root, pred)
+    screening_primary = primary_for_role(policy, "screening")
+    screening_claim_class = str(
+        policy.defaults.get("claim_class_screening") or "diagnostic"
+    )
+    current_eval_version = default_eval_version()
+    timeout_retired, selector_signal_sources = _sync_reproduced_timeout_retirements(
+        root,
+        loop_id,
+        pred,
+        policy=policy,
+        train_version=train_version,
+        eval_version=current_eval_version,
+        primary_metric=str(screening_primary["metric"]),
+        direction=str(screening_primary["direction"]),
+        claim_class=screening_claim_class,
+    )
     skip_slugs = (
         _skip_arm_slugs(queue_entries, integration_commit=integration)
         | recent_exhausted
+        | timeout_retired
         | extra_skip_slugs
     )
     # Causal-family CAP must not hard-kill thrash when multi-seed-open arms
@@ -11309,6 +11632,7 @@ def run_cycle(
                 include_causal_cap=False,
             )
             | recent_exhausted
+            | timeout_retired
             | extra_skip_slugs
         )
         if thrash_open - soft_skip:
@@ -11358,6 +11682,42 @@ def run_cycle(
             )
         else:
             cycle_intent = "screening"
+    saturation_state: dict[str, Any] | None = None
+    if cycle_intent == "screening" and replay is None:
+        saturation_state = _screening_saturation_state(
+            root,
+            loop_id,
+            policy=policy,
+            excluded_slugs=timeout_retired | set(extra_skip_slugs),
+        )
+        if saturation_state is not None:
+            pending = list(saturation_state["pending_regimes"])
+            if not pending:
+                return _park_screening_saturation(
+                    root=root,
+                    loop_id=loop_id,
+                    campaign_id=str(pred or "screening-saturation"),
+                    cycle_index=idx,
+                    policy=policy,
+                    ranked_regimes=saturation_state["ranked_regimes"],
+                )
+            selected = pending[0]
+            skip_slugs = (
+                {
+                    slug
+                    for slug, _hypothesis, _extras in _all_screening_arm_bank()
+                    if slug != selected
+                }
+                | timeout_retired
+                | set(extra_skip_slugs)
+            )
+            print(
+                "SCREENING_SATURATION_RECOVERY "
+                f"streak={saturation_state['tie_streak']} "
+                f"trigger_cycle={saturation_state['trigger_cycle']} "
+                f"selected={selected} pending={pending}",
+                flush=True,
+            )
     # When multi-seed thrash bank is empty but a retryable promote head still
     # exists (confirmed / promotion_inconclusive / harness_failure), do not hard
     # block the loop — spend a promote slot. Observed: scaffold-prefix was the
@@ -11365,9 +11725,7 @@ def run_cycle(
     # and every screening cycle raised bank-exhausted.
     if cycle_intent == "screening" and promoting_champion is None:
         try:
-            _select_recommended_slug(
-                cycle, skip=skip_slugs, root=root, loop_id=loop_id
-            )
+            _select_recommended_slug(cycle, skip=skip_slugs, root=root, loop_id=loop_id)
         except RuntimeError as exc:
             if _BANK_EXHAUST_MSG not in str(exc):
                 raise
@@ -11704,7 +12062,11 @@ def run_cycle(
     }
     if trace_paths:
         role_citations["prior_trace"] = trace_paths[0]
-    eval_version = default_eval_version()
+    eval_version = current_eval_version
+    if selector_signal_sources:
+        _persist_selector_harness_signal(
+            root, campaign_id, loop_id, selector_signal_sources
+        )
     # Load predecessor matrix feedback only for confirm/promote successors.
     # Thrash bank rotation is NOT a diagnosis successor of the last handoff
     # campaign: continuous pred is last *handoff* campaign, while hypothesize
@@ -11776,9 +12138,7 @@ def run_cycle(
     # Confirm/promote/replay matrices may acknowledge handoff-predecessor
     # feedback. Thrash must not — see comment above (lineage ≠ handoff pred).
     bind_pred_feedback = (
-        confirm_levers is not None
-        or promote_levers is not None
-        or replay is not None
+        confirm_levers is not None or promote_levers is not None or replay is not None
     )
     if bind_pred_feedback and pred:
         pred_dir = root / pred
@@ -11893,6 +12253,15 @@ def run_cycle(
         skip_slugs=skip_slugs,
         thrash_regime=thrash_regime,
     )
+    if saturation_state is not None:
+        regime_payload = matrix.setdefault("thrash_regime", {})
+        if isinstance(regime_payload, dict):
+            recovery_payload = dict(saturation_state)
+            recovery_payload["selected_regime"] = rec_slug
+            recovery_payload["pending_regimes"] = [
+                slug for slug in saturation_state["pending_regimes"] if slug != rec_slug
+            ]
+            regime_payload["screening_saturation"] = recovery_payload
     replay_manifests: dict[str, dict[str, Any]] = {}
     if replay is not None:
         replay_manifests = _apply_frozen_replay(matrix, replay, campaign_id)
@@ -12148,7 +12517,11 @@ def run_cycle(
         pending = []
         pending_seen: set[str] = set()
         for pending_id in order:
-            if pending_id in seen or pending_id not in by_id or pending_id in pending_seen:
+            if (
+                pending_id in seen
+                or pending_id not in by_id
+                or pending_id in pending_seen
+            ):
                 continue
             pending_seen.add(pending_id)
             pending.append(pending_id)
@@ -12477,7 +12850,10 @@ def run_cycle(
         delivery=delivery,
         resolution=resolution,
         formal_status=promote_formal_status,
-        skip_slugs=skip_slugs,
+        skip_slugs=(
+            skip_slugs
+            | ({rec_slug} if saturation_state is not None and rec_slug else set())
+        ),
         cwd=cwd,
     )
     try:

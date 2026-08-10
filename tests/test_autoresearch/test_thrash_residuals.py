@@ -10,7 +10,9 @@ from slm_training.autoresearch.thrash_residuals import (
     aggregate_slug_stats,
     classify_delivery_residual,
     pick_soft_ranked_slug,
+    rank_absolute_regimes,
     residual_boosts_from_observations,
+    screening_tie_saturation,
     slug_from_candidate_id,
     soft_rank_slugs,
 )
@@ -36,16 +38,78 @@ def _delivery(
         "control_id": "control",
         "control_metrics": {
             "structural_similarity": ss_c,
+            "parse_rate": 1.0,
             "meaningful_program_rate": mpr_c,
             "binder_reference_f1": b_c,
+            "latency_ms_p50": 1000.0,
         },
         "candidate_metrics": {
             "structural_similarity": ss_k,
+            "parse_rate": 1.0,
             "meaningful_program_rate": mpr_k,
             "binder_reference_f1": b_k,
+            "latency_ms_p50": 1000.0,
         },
+        "baseline_trainable_params": 100,
+        "candidate_trainable_params": 100,
         "reasons": reasons or [],
     }
+
+
+def test_screening_tie_saturation_ignores_incomplete_and_resets_on_win() -> None:
+    rows = [
+        {**_delivery(cand_id=f"loop-c{i}-bounds", ss_c=0.2, ss_k=0.2), "cycle_index": i}
+        for i in range(1, 16)
+    ]
+    rows.insert(
+        5,
+        {
+            **_delivery(cand_id="loop-c99-bounds", ss_c=0.2, ss_k=0.3, complete=False),
+            "cycle_index": 99,
+        },
+    )
+    assert screening_tie_saturation(rows, threshold=15) == (15, 15)
+    rows.append(
+        {
+            **_delivery(cand_id="loop-c16-bounds", ss_c=0.2, ss_k=0.3),
+            "cycle_index": 16,
+        }
+    )
+    assert screening_tie_saturation(rows, threshold=15) == (0, None)
+
+
+def test_rank_absolute_regimes_prefers_guarded_quality_and_fast_decode_cost() -> None:
+    component_plan = {
+        **_delivery(cand_id="loop-c4-component-plan", ss_c=0.42, ss_k=0.42, b_k=0.95),
+        "cycle_index": 4,
+    }
+    component_edge = {
+        **_delivery(cand_id="loop-c9-component-edge", ss_c=0.28, ss_k=0.28, b_k=0.95),
+        "cycle_index": 9,
+    }
+    canvas = {
+        **_delivery(cand_id="loop-c20-canvas", ss_c=0.5, ss_k=0.5, b_k=0.95),
+        "cycle_index": 20,
+        "control_metrics": {
+            **_delivery(cand_id="x", ss_c=0.5, ss_k=0.5)["control_metrics"],
+            "latency_ms_p50": 1000.0,
+        },
+        "candidate_metrics": {
+            **_delivery(cand_id="x", ss_c=0.5, ss_k=0.5)["candidate_metrics"],
+            "latency_ms_p50": 2000.0,
+        },
+    }
+    capacity_growth = {
+        **_delivery(cand_id="loop-c21-fidelity", ss_c=0.9, ss_k=0.9, b_k=0.95),
+        "cycle_index": 21,
+        "candidate_trainable_params": 101,
+    }
+    assert rank_absolute_regimes(
+        [component_plan, component_edge, canvas, capacity_growth],
+        through_cycle=21,
+        max_regimes=2,
+        decode_cost_slugs={"canvas"},
+    ) == ["component-plan", "component-edge"]
 
 
 def test_slug_from_candidate_id() -> None:
@@ -153,11 +217,14 @@ def test_soft_rank_prefers_residual_boost() -> None:
         rotation_order=["bounds", "canvas", "compose-x"],
     )
     assert ordered[0] == "compose-x"
-    assert pick_soft_ranked_slug(
-        ["bounds", "canvas"],
-        residual_boosts={},
-        rotation_order=["canvas", "bounds"],
-    ) == "canvas"
+    assert (
+        pick_soft_ranked_slug(
+            ["bounds", "canvas"],
+            residual_boosts={},
+            rotation_order=["canvas", "bounds"],
+        )
+        == "canvas"
+    )
 
 
 def test_binder_residual_boosts_family_slugs() -> None:

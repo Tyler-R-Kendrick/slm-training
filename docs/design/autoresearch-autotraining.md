@@ -141,6 +141,18 @@ use `--compiler openai`, whose default is `gpt-5.6-sol` with `store=False`.
 
 ## Closed loop
 
+Campaign harness v203 bounds a saturated screening objective instead of
+continuing to rotate legal arms indefinitely. Fifteen consecutive complete
+smoke structural-similarity ties switch selection to two fresh-seed replays of
+the best absolute, size-matched regimes; incomplete timeout rows do not become
+quality zeros. Decode-cost residuals must preserve guarded quality and clear the
+existing 5% latency floor. Reproduced timeout treatments are hard-retired in the
+existing identity-scoped exhausted-knob ledger before predecessor, posterior,
+or timeout-residual selection, and any historical post-retirement selection is
+persisted as a typed autoresearch harness signal. Exhausted recovery parks as
+`screening_objective_saturated`; it does not weaken smoke gates or create ship
+evidence.
+
 The c1812 frozen-promotion replay exposed a formal-ordering gap: the loader saw
 the source manifest's required Lean obligation and rejected the replay before a
 successor campaign could create the mandated fresh proof. Campaign harness v110

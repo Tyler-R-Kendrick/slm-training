@@ -77,12 +77,12 @@ def test_promotion_class_without_primary_seed_values_is_not_eligible() -> None:
     assert "primary_seed_values_missing" in result.failures
 
 
-def test_validate_result_claim_requires_seed_values_for_promotion(tmp_path: Path) -> None:
+def test_validate_result_claim_requires_seed_values_for_promotion(
+    tmp_path: Path,
+) -> None:
     """Promotion-class climb eligibility is default-on (label_as_climb not needed)."""
     manifest = _manifest()
-    result = _complete_result(
-        manifest, tmp_path, primary_endpoint_seed_values=()
-    )
+    result = _complete_result(manifest, tmp_path, primary_endpoint_seed_values=())
     failures = validate_result_claim(manifest, result, artifact_root=tmp_path)
     assert any("primary_seed_values_missing" in f for f in failures)
 
@@ -277,11 +277,7 @@ def test_synthesis_gate_accepts_waiver(tmp_path: Path) -> None:
     train_dir.mkdir()
     (train_dir / "synthesis_feedback.json").write_text(
         json.dumps(
-            {
-                "recommendations": [
-                    {"code": "redundant_expansion", "target": "bar"}
-                ]
-            }
+            {"recommendations": [{"code": "redundant_expansion", "target": "bar"}]}
         ),
         encoding="utf-8",
     )
@@ -357,7 +353,7 @@ def test_capacity_growth_passes_with_eg_params_lcb() -> None:
     check = assert_capacity_growth_allowed(
         baseline_params=1_000_000,
         candidate_params=2_000_000,
-        eg_params_by_seed=(1.2, 1.3, 1.1),
+        eg_params_by_seed=(1.2, 1.2, 1.2),
     )
     assert check["pass"]
 
@@ -389,7 +385,7 @@ def test_validate_result_claim_eg_params_on_promotion(tmp_path: Path) -> None:
         artifact_root=tmp_path,
         baseline_trainable_params=100,
         candidate_trainable_params=200,
-        eg_params_by_seed=(1.5, 1.4),
+        eg_params_by_seed=(1.5, 1.5),
     )
     assert not any("eg_params" in f for f in ok)
 

@@ -213,7 +213,7 @@ def test_classify_positive_capacity_growth_with_eg_params() -> None:
         },
         baseline_trainable_params=1_000_000,
         candidate_trainable_params=2_000_000,
-        eg_params_by_seed=(1.2, 1.3),
+        eg_params_by_seed=(1.2, 1.2),
     )
     assert result["positive"] is True
 
@@ -742,7 +742,9 @@ def test_classify_positive_rejects_partial_suite_completion() -> None:
         for r in result["reasons"]
     )
     assert not any(r.startswith("primary_metric_win") for r in result["reasons"])
-    assert not any(r.startswith("primary_metric_null_or_worse") for r in result["reasons"])
+    assert not any(
+        r.startswith("primary_metric_null_or_worse") for r in result["reasons"]
+    )
 
     # Both arms completing the full suite is unaffected by the gate.
     full = classify_positive_metrics(

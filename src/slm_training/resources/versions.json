@@ -3086,7 +3086,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v202",
+      "version": "v203",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -3139,6 +3139,21 @@
         "tests/test_autoresearch/test_evidence_ledger.py"
       ],
       "history": [
+        {
+          "version": "v203",
+          "date": "2026-08-10",
+          "note": "no-bump: rebuild evidence_ledger.v1.json after five newly merged design records changed the deterministic scan count; saturation and retirement behavior remain the v203 behavior."
+        },
+        {
+          "version": "v203",
+          "date": "2026-08-10",
+          "note": "no-bump: rebuild evidence_ledger.v1.json after the v203 campaign docs changed; this is the deterministic generated resource for the same saturation and retirement behavior already represented by v203."
+        },
+        {
+          "version": "v203",
+          "date": "2026-08-10",
+          "note": "Bound smoke structural-similarity screening saturation after 15 consecutive complete ties: select at most two guarded absolute-quality regimes for one fresh seed each, require the existing latency floor for decode-cost residuals, persist reproduced timeout retirements in the identity-scoped exhausted-knob ledger before every selector, and emit a typed harness signal for post-retirement reintroduction. Policy v1 advances v8 to v9; no metric or ship gate changes."
+        },
         {
           "version": "v202",
           "date": "2026-08-10",
@@ -6543,6 +6558,16 @@
         "docs/design/semantic-floor-gate-v1.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-10",
+          "note": "no-bump: regenerate the committed gate artifact after newly merged harness components changed its embedded component stamp; verdict remains inconclusive and thresholds and gate behavior are unchanged."
+        },
+        {
+          "version": "v1",
+          "date": "2026-08-10",
+          "note": "no-bump: regenerate the committed gate artifact after harness.autoresearch.experiment_campaign v203 changed its embedded component stamp; verdict remains inconclusive and thresholds and gate behavior are unchanged."
+        },
         {
           "version": "v1",
           "date": "2026-08-10",
@@ -17091,6 +17116,11 @@
         {
           "version": "v3",
           "date": "2026-08-10",
+          "note": "no-bump: policy.v2 mirrors policy.v1 screening saturation and advances its internal artifact version from v9 to v10; conclusion criteria and conclusions.py behavior are unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-10",
           "note": "CodeRabbit fixes: closed_approaches.v1.json written atomically (temp file + os.replace, never truncate the append-only ledger on a mid-write failure); concluded_family plugin returns warn (not a silent pass) on an internal error, matching the sibling plugins' fail-soft convention."
         },
         {
@@ -17106,7 +17136,7 @@
       ]
     },
     "ci.local_merge_gate": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "scripts/verify_merge_ready.py",
@@ -17115,6 +17145,11 @@
         "tests/test_scripts/test_merge_ready_gate.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-10",
+          "note": "Mirror python-static's committed cross-version evidence-ledger freshness check in the local merge gate so workflow and local gate order remain identical."
+        },
         {
           "version": "v2",
           "date": "2026-08-10",
