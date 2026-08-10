@@ -2981,7 +2981,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v201",
+      "version": "v202",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -3034,6 +3034,11 @@
         "tests/test_autoresearch/test_evidence_ledger.py"
       ],
       "history": [
+        {
+          "version": "v202",
+          "date": "2026-08-10",
+          "note": "CodeRabbit fix: the matched-control fingerprint (_manifest's ctrl dict) reset the pre-existing treatment knobs to their off-defaults but never reset solver_energy_loss_weight/solver_energy_decode_weight/legal_edit_hazard_loss_weight/legal_edit_hazard_decode_weight added by the solver-energy-rerank and legal-edit-hazard arms \u2014 a candidate config using either arm could hash-collide its own control, silently invalidating the matched-control contract. Added the four missing resets."
+        },
         {
           "version": "v201",
           "date": "2026-08-10",
@@ -16715,7 +16720,7 @@
       ]
     },
     "evidence.store": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/evidence_store/",
@@ -16726,6 +16731,11 @@
         "tests/test_evidence_store/"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-08-10",
+          "note": "CodeRabbit fix: schema.sql revoked anon/authenticated on evidence_records and relied on RLS bypass for the service-role sync client, but table-level GRANTs and RLS are separate Postgres controls \u2014 RLS bypass does not imply a table-level privilege. Added an explicit 'grant select, insert, update, delete on evidence_records to service_role' so the upsert sync keeps working even on a project without Supabase's default service_role privileges (self-hosted Postgres+PostgREST, or a project with altered default privileges) instead of silently degrading to the local-only mirror on a 42501."
+        },
         {
           "version": "v3",
           "date": "2026-08-10",
@@ -16829,7 +16839,7 @@
       ]
     },
     "ci.local_merge_gate": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "scripts/verify_merge_ready.py",
@@ -16838,6 +16848,11 @@
         "tests/test_scripts/test_merge_ready_gate.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-10",
+          "note": "CodeRabbit fix: report_merge_readiness.sh printed a bare 'READY' verdict for --fast runs even though verify_merge_ready.py's own summary already flags fast=true (changed-test execution skipped) \u2014 the wrapper never read that field. Verdict now reads STATIC-READY for a passing fast run and labels the mode explicitly, so a fast/static pass is never mistaken for full merge readiness."
+        },
         {
           "version": "v1",
           "date": "2026-08-10",
@@ -16874,7 +16889,7 @@
       ]
     },
     "experiments.hf_screening": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "scripts/hf_jobs_screen.py",
@@ -16885,6 +16900,11 @@
         "tests/test_scripts/test_hf_jobs_screen_policy.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-10",
+          "note": "CodeRabbit fixes: (1) ScreenConfig.max_minutes had no upper bound (only ge=1, default 30) while the repo's own MAX_RUN_MINUTES hard-run-cap law caps every run at 3 minutes and hf_jobs_train.py already enforces this exactly \u2014 hf_jobs_screen.py now caps max_minutes at MAX_RUN_MINUTES too, same as its sibling script. (2) collect_results' seed-file identity check omitted run_id and steps, so a stale seed_<n>.json from an earlier run at a different step count could pass identity and silently enter the aggregate; both are now part of the required identity match. (3) a seed file containing valid-but-non-object JSON (an array/scalar/null) crashed with AttributeError on payload.get(...) instead of degrading to incomplete like other malformed inputs \u2014 now guarded before the identity check."
+        },
         {
           "version": "v2",
           "date": "2026-08-10",

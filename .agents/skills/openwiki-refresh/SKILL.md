@@ -55,9 +55,16 @@ and `LANGCHAIN_PROJECT=openwiki`; otherwise `LANGCHAIN_TRACING_V2=false`.
 Never commit, echo into logs, or persist any of these keys — they live only in
 the session environment.
 
-## 3. Run the wrapper (never raw `openwiki`)
+## 3. Prepare the branch, then run the wrapper (never raw `openwiki`)
+
+Prepare `openwiki/update` **before** generating anything — resetting it
+*after* the wrapper runs would discard the wrapper's own uncommitted output
+before `git add` ever sees it:
 
 ```bash
+# git switch -c fails if the branch already exists locally; reset it instead.
+git switch openwiki/update 2>/dev/null || git switch -c openwiki/update
+git reset --hard main            # start the branch clean from main each run
 python -m scripts.update_openwiki --update --print
 ```
 
@@ -70,14 +77,11 @@ them afterwards, and fails loudly if `docs/openwiki/` disappears. Running the
 ## 4. Commit + PR (what the old workflow did)
 
 Only `docs/openwiki/` may change. If `git status` shows no diff there, report
-"no OpenWiki changes" and stop. Otherwise, make both steps idempotent — a
-rerun must never fail just because the branch or PR already exists from a
-prior refresh:
+"no OpenWiki changes" and stop. Otherwise, make the PR step idempotent — a
+rerun must never fail just because the PR already exists from a prior
+refresh:
 
 ```bash
-# git switch -c fails if the branch already exists locally; reset it instead.
-git switch openwiki/update 2>/dev/null || git switch -c openwiki/update
-git reset --hard main            # start the branch clean from main each run
 git add docs/openwiki
 git commit -m "docs: update OpenWiki"
 git push -u origin openwiki/update --force-with-lease

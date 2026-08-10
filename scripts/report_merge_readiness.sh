@@ -35,8 +35,12 @@ import os
 import sys
 
 summary = json.loads(os.environ["MERGE_READY_JSON"])
-verdict = "READY" if summary["ok"] else "BLOCKED"
-print(f"# Merge readiness: {verdict}")
+mode = "fast/static" if summary.get("fast") else "full"
+if summary["ok"]:
+    verdict = "STATIC-READY" if summary.get("fast") else "READY"
+else:
+    verdict = "BLOCKED"
+print(f"# Merge readiness: {verdict} ({mode})")
 print(f"mirrors: {summary['mirrors']}")
 print(f"rule:    {summary['rule']}")
 print()

@@ -72,6 +72,14 @@ if there is none — run in **PR-only mode**: skip claims/state changes, still
 babysit and merge PRs, and report which Linear mutations were skipped. Never
 fabricate Linear state.
 
+Without the Linear claim label, nothing else serializes two concurrent drain
+sessions onto the same PR. Substitute a PR-level compare-and-swap before the
+Work phase: check for an existing `drain-in-review: claimed by <agent>`
+comment on the PR (`gh pr view <n> --json comments`); if one already exists
+from a different, still-active agent, skip that PR this round instead of
+babysitting it. Otherwise post that comment as this session's own claim
+before starting Work.
+
 ## Phases
 
 1. **Discover.** List team `In Review` issues oldest → newest (skip archived /
@@ -95,14 +103,20 @@ fabricate Linear state.
    - Rebase onto `origin/<base>`, resolve conflicts, `push --force-with-lease`.
    - On CI failure: `gh run view --log-failed`, fix root cause, push, re-watch
      — within the round cap. Required checks: `python`, `python-static`,
-     `data-build`; Vercel / CodeRabbit alone must not block a merge.
+     `data-build`; Vercel / CodeRabbit alone must not block a merge. Bound
+     every network/diagnostic command (`gh run view`, `gh pr view`, log
+     fetches) with a wall-time limit and a log-size cap — a hung network call
+     or an oversized CI log must not exhaust the round budget or the worker.
    - **Run the merge preflight (hard rule 1).** A push after preflight but
      before merge can change the PR head, so pin the exact commit it
      validated: capture `headRefOid` (`gh pr view <n> --json headRefOid`)
      immediately before or right after preflight succeeds, then merge with
      `gh pr merge <n> --squash --delete-branch --match-head-commit <sha>`.
-     If the merge rejects the SHA (the head moved), re-run preflight against
-     the new head before merging — never merge a commit preflight never saw.
+     If the merge rejects the SHA (the head moved), fetch the new
+     `headRefOid`, reset the isolated worktree to that exact commit (verify
+     `git rev-parse HEAD` matches it), and re-run preflight against that
+     refreshed head before merging — never merge a commit preflight never saw,
+     and never rerun preflight in a worktree that's still on the stale head.
      Confirm MERGED via `gh pr view`.
    - Move the Linear issue to `Done` with a comment linking the PR; remove the
      claim label.

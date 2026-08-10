@@ -53,6 +53,7 @@ from scripts.hf_jobs_train import (
     hf_token_present,
     submit_jobs_command,
 )
+from slm_training.levers import MAX_RUN_MINUTES
 from slm_training.versioning import build_version_stamp
 
 SCHEMA = "hf_jobs_screening/v1"
@@ -94,7 +95,10 @@ class ScreenConfig(BaseModel):
     extra_train_args: str = ""
     metric: str = "meaningful_program_rate"
     suite: str = "smoke"
-    max_minutes: int = Field(default=30, ge=1)
+    #: hard-capped by the repo's MAX_RUN_MINUTES law (same cap hf_jobs_train
+    #: enforces for the training entry point) — a screening job is never
+    #: allowed a longer wall-clock budget than any other run.
+    max_minutes: int = Field(default=MAX_RUN_MINUTES, ge=1, le=MAX_RUN_MINUTES)
     trackio_project: str = "openui-hf-screening"
 
     @field_validator("screen_id")
@@ -486,16 +490,30 @@ def collect_results(
                 }
             )
             continue
+        if not isinstance(payload, dict):
+            per_seed.append(
+                {
+                    "seed": seed,
+                    "run_id": config.run_id(seed),
+                    "status": "incomplete",
+                    "value": None,
+                    "reason": "seed file must contain a JSON object",
+                }
+            )
+            continue
         # Identity check at this trust boundary: a stale or unrelated seed
-        # file (wrong schema/screen/seed/suite/metric) must never silently
-        # enter this screen's aggregate just because it landed at the
-        # expected filename.
+        # file (wrong schema/screen/seed/suite/metric/run/steps) must never
+        # silently enter this screen's aggregate just because it landed at
+        # the expected filename — a re-run under a different step count is a
+        # different training condition, not the same evidence.
         expected_identity = {
             "schema": SEED_SCHEMA,
             "screen_id": config.screen_id,
             "seed": seed,
+            "run_id": config.run_id(seed),
             "suite": config.suite,
             "metric": config.metric,
+            "steps": config.steps,
         }
         mismatches = [
             f"{key}={payload.get(key)!r} (expected {expected!r})"

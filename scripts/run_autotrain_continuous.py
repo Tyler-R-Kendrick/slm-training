@@ -10938,6 +10938,10 @@ def _manifest(
                 "compiler_decision_token_loss_weight": 0.0,
                 "structure_token_loss_weight": 0.0,
                 "typed_family_balance_loss_weight": 0.0,
+                "solver_energy_loss_weight": 0.0,
+                "solver_energy_decode_weight": 0.0,
+                "legal_edit_hazard_loss_weight": 0.0,
+                "legal_edit_hazard_decode_weight": 0.0,
             },
             sort_keys=True,
         ).encode()

@@ -141,14 +141,14 @@ python -m scripts.hf_jobs_screen --screen-id e123_screen --seeds 8 \
 
 ### Remote wall-clock and the evidence law
 
-Each job carries a hard `--timeout {max-minutes}m` (default 30m) in its
-`hf jobs run` spec. The per-seed result file is written only **after** train +
-eval + metric extraction succeed, so a job the platform kills at the cap never
-publishes one. The collector marks such seeds `"status": "incomplete"` and
-**excludes** them from `values`, `sum`/`sumsq`, `mean`, and the permutation
-p-value — *a timed out, interrupted, or killed run is never evidence* (same
-law as local runs; `SLM_MAX_WALL_MINUTES` inside the job is set to the job's
-own budget).
+Each job carries a hard `--timeout {max-minutes}m` (default and hard ceiling
+`MAX_RUN_MINUTES`, same as `hf_jobs_train`'s own cap) in its `hf jobs run`
+spec. The per-seed result file is written only **after** train + eval + metric
+extraction succeed, so a job the platform kills at the cap never publishes
+one. The collector marks such seeds `"status": "incomplete"` and **excludes**
+them from `values`, `sum`/`sumsq`, `mean`, and the permutation p-value — *a
+timed out, interrupted, or killed run is never evidence* (same law as local
+runs; `SLM_MAX_WALL_MINUTES` inside the job is set to the job's own budget).
 
 ### Result shape mapping
 

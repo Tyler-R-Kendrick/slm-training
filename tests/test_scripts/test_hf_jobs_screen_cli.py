@@ -34,8 +34,8 @@ def test_dry_run_is_the_default_and_never_submits(
     assert plan["dry_run"] is True
     assert plan["job_count"] == 8  # --seeds default
     assert plan["flavor"] == hf_jobs_train.DEFAULT_FLAVOR
-    assert plan["per_job_timeout"] == "30m"  # --max-minutes default
-    assert plan["estimated_gpu_minutes_total"] == 8 * 30
+    assert plan["per_job_timeout"] == "3m"  # --max-minutes default (MAX_RUN_MINUTES)
+    assert plan["estimated_gpu_minutes_total"] == 8 * 3
     assert "--i-understand-this-costs-money" in plan["submit_requires"]
     seeds = [job["seed"] for job in plan["jobs"]]
     assert seeds == list(range(8))
@@ -43,9 +43,9 @@ def test_dry_run_is_the_default_and_never_submits(
     for job in plan["jobs"]:
         cmd = job["command"]
         assert cmd[:3] == ["hf", "jobs", "run"]
-        assert cmd[cmd.index("--timeout") + 1] == "30m"
+        assert cmd[cmd.index("--timeout") + 1] == "3m"
         assert f"--seed {job['seed']}" in job["entrypoint"]
-        assert "SLM_MAX_WALL_MINUTES=30" in job["entrypoint"]
+        assert "SLM_MAX_WALL_MINUTES=3" in job["entrypoint"]
 
 
 def test_no_dry_run_without_money_flag_refuses(
@@ -98,7 +98,7 @@ def test_submit_requires_all_guards_and_prints_flavor_first(
             "--seeds",
             "3",
             "--max-minutes",
-            "12",
+            "3",
             "--no-dry-run",
             "--i-understand-this-costs-money",
             "--out",
@@ -108,7 +108,7 @@ def test_submit_requires_all_guards_and_prints_flavor_first(
     assert rc == 0
     assert len(submitted) == 3
     for cmd in submitted:
-        assert cmd[cmd.index("--timeout") + 1] == "12m"
+        assert cmd[cmd.index("--timeout") + 1] == "3m"
     lines = capsys.readouterr().out.strip().splitlines()
     # Spend transparency: flavor + job count precede any submission output.
     header = json.loads(lines[0])

@@ -17,6 +17,7 @@ def _write_seed(
     value: float | None,
     status: str = "complete",
     screen_id: str = "unit_screen",
+    steps: int = 200,
 ) -> None:
     payload = {
         "schema": hf_jobs_screen.SEED_SCHEMA,
@@ -25,6 +26,7 @@ def _write_seed(
         "run_id": f"{screen_id}_s{seed}",
         "metric": "meaningful_program_rate",
         "suite": "smoke",
+        "steps": steps,
         "value": value,
         "status": status,
     }
@@ -146,6 +148,7 @@ def test_collect_rejects_non_finite_value(tmp_path: Path) -> None:
                 "run_id": "unit_screen_s1",
                 "metric": "meaningful_program_rate",
                 "suite": "smoke",
+                "steps": 200,
                 "value": float("nan"),
                 "status": "complete",
             }
@@ -173,6 +176,41 @@ def test_collect_rejects_malformed_seed_json(tmp_path: Path) -> None:
     assert "unreadable" in result["per_seed"][0]["reason"]
 
 
+@pytest.mark.parametrize("body", ["[1, 2, 3]", "42", "null", '"a string"'])
+def test_collect_rejects_non_object_seed_json(tmp_path: Path, body: str) -> None:
+    """Valid JSON that isn't an object must degrade to incomplete, not crash
+    (`payload.get(...)` on a list/scalar/None raises AttributeError)."""
+    config = hf_jobs_screen.ScreenConfig(screen_id="unit_screen", seeds=2)
+    collect = tmp_path / "screening" / "unit_screen"
+    collect.mkdir(parents=True)
+    (collect / "seed_0.json").write_text(body, encoding="utf-8")
+    _write_seed(collect, 1, value=0.4)
+
+    result = hf_jobs_screen.collect_results(config, collect_dir=collect, baseline=None)
+
+    assert result["n_complete"] == 1
+    assert result["per_seed"][0]["status"] == "incomplete"
+    assert "JSON object" in result["per_seed"][0]["reason"]
+
+
+def test_collect_rejects_seed_file_with_mismatched_steps(tmp_path: Path) -> None:
+    """A stale seed_<n>.json from an earlier run with a different step count
+    is a different training condition, not the same evidence — the identity
+    check must catch it even though schema/screen_id/seed/suite/metric match."""
+    config = hf_jobs_screen.ScreenConfig(screen_id="unit_screen", seeds=2, steps=400)
+    collect = tmp_path / "screening" / "unit_screen"
+    collect.mkdir(parents=True)
+    _write_seed(collect, 0, value=0.4, steps=200)
+    _write_seed(collect, 1, value=0.4, steps=400)
+
+    result = hf_jobs_screen.collect_results(config, collect_dir=collect, baseline=None)
+
+    assert result["n_complete"] == 1
+    row0 = result["per_seed"][0]
+    assert row0["status"] == "incomplete"
+    assert "steps" in row0["reason"]
+
+
 class TestScreenConfigValidation:
     def test_rejects_path_unsafe_screen_id(self) -> None:
         with pytest.raises(ValueError, match="screen_id"):
@@ -193,6 +231,13 @@ class TestScreenConfigValidation:
     def test_accepts_dotted_metric_names(self) -> None:
         config = hf_jobs_screen.ScreenConfig(metric="smoke.structural_similarity")
         assert config.metric == "smoke.structural_similarity"
+
+    def test_max_minutes_capped_at_repo_hard_run_cap(self) -> None:
+        from slm_training.levers import MAX_RUN_MINUTES
+
+        hf_jobs_screen.ScreenConfig(max_minutes=MAX_RUN_MINUTES)
+        with pytest.raises(ValueError):
+            hf_jobs_screen.ScreenConfig(max_minutes=MAX_RUN_MINUTES + 1)
 
 
 def test_collect_without_baseline_reports_no_p_value(tmp_path: Path) -> None:

@@ -65,6 +65,13 @@ create unique index if not exists evidence_records_fingerprint_metric_uq
 -- access is ever genuinely needed.
 alter table evidence_records enable row level security;
 revoke all on evidence_records from anon, authenticated;
+-- Table-level GRANTs and RLS are separate controls — RLS bypass alone does
+-- not imply a table-level privilege. A hosted Supabase project grants
+-- service_role default privileges at provisioning time, but this GRANT keeps
+-- the upsert sync working even where that default isn't in place (self-hosted
+-- Postgres+PostgREST, a project with altered default privileges), instead of
+-- degrading silently to the local-only mirror on a 42501.
+grant select, insert, update, delete on evidence_records to service_role;
 
 -- Full-text search over hypothesis text + flattened lever keys
 -- (PostgREST: ?search_tsv=wfts.<query>).
