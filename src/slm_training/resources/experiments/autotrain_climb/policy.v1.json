@@ -1,6 +1,6 @@
 {
   "schema": "autotrain_climb_policy/v1",
-  "version": "v8",
+  "version": "v9",
   "description": "High-volatility continuous autotrain hill-climb policy. Harness/driver code loads this artifact; change metrics, cadence, caps, and identity fields here without re-authoring classifiers. Dual-regime thrash: isolate (causal OFAT) + climb (residual on sticky champion) + timeout→decode residual routing.",
   "screening_primary": {
     "metric": "smoke.structural_similarity",
@@ -107,6 +107,12 @@
   "screening_arm_closure": {
     "min_complete_null_seeds": 2,
     "description": "Permanent thrash-arm bank close requires this many distinct seeds of complete non-positive measurement. One fixture-noise null never closes the approach."
+  },
+  "screening_saturation": {
+    "complete_tie_streak": 15,
+    "mode": "residual_multiseed",
+    "max_regimes": 2,
+    "description": "After 15 consecutive complete primary ties, stop normal bank selection and spend one fresh seed on each of the two best size-matched absolute-quality regimes. Incompletes are skipped, a complete non-tie resets the streak, and decode-cost regimes must clear the existing latency-effect floor."
   },
   "selection": {
     "mode": "posterior_ucb",

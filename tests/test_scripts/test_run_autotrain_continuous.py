@@ -36,9 +36,7 @@ def _clear_dynamic_thrash_bank_cache() -> None:
     _mod._DYNAMIC_THRASH_LOADED_FOR = None
 
 
-def _inject_terminal_policy(
-    monkeypatch: pytest.MonkeyPatch, *, park: bool
-) -> "object":
+def _inject_terminal_policy(monkeypatch: pytest.MonkeyPatch, *, park: bool) -> "object":
     """Pin ``terminal.park_on_exhaust`` while keeping every other policy block real."""
     from slm_training.autoresearch import climb_policy as cp
 
@@ -1111,9 +1109,7 @@ def test_two_distinct_seed_nulls_close_arm(tmp_path: Path) -> None:
         seed=100_002,
         predecessor="c1",
     )
-    closed = _mod._recent_completed_nonpositive_slugs(
-        root, "c2", min_null_seeds=2
-    )
+    closed = _mod._recent_completed_nonpositive_slugs(root, "c2", min_null_seeds=2)
     assert "bounds" in closed
     # Other arms remain open.
     assert _mod._select_recommended_slug(1, skip=closed) != "bounds"
@@ -2861,9 +2857,7 @@ def test_recent_completed_nonpositive_slugs_follow_predecessor_chain(
     newest.write_text(json.dumps(newest_delivery))
     assert _mod._recent_completed_nonpositive_slugs(
         root, predecessor, min_null_seeds=1
-    ) == {
-        "component-plan"
-    }
+    ) == {"component-plan"}
 
     newest_delivery = json.loads(newest.read_text())
     candidate_id = newest_delivery["candidate_id"]
@@ -3076,9 +3070,10 @@ def test_rejected_confirmation_exhausts_its_source_quality_family(
     assert _mod._recent_completed_nonpositive_slugs(
         root, campaign_id, min_null_seeds=1
     ) == {"component-inventory"}
-    assert _mod._recent_completed_nonpositive_slugs(
-        root, campaign_id, min_null_seeds=2
-    ) == set()
+    assert (
+        _mod._recent_completed_nonpositive_slugs(root, campaign_id, min_null_seeds=2)
+        == set()
+    )
 
 
 def test_predecessor_reclassifies_stale_positive_under_current_policy(
@@ -3142,6 +3137,138 @@ def test_predecessor_reclassifies_stale_positive_under_current_policy(
     assert (
         _mod._predecessor_priority_slug(root, camp.name, skip=set()) == "component-edge"
     )
+
+
+def test_reproduced_timeout_retirement_blocks_reintroduced_exact_arm(
+    tmp_path: Path,
+) -> None:
+    from slm_training.autoresearch.climb_policy import (
+        load_climb_policy,
+        load_loop_exhausted_ledger,
+    )
+
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-1"
+    predecessor = None
+    for cycle in (1, 2):
+        campaign_id = f"continuous-loop-test-c{cycle}"
+        camp = root / campaign_id
+        camp.mkdir(parents=True)
+        control_id = f"c-test-c{cycle}-control"
+        candidate_id = f"c-test-c{cycle}-binder-arity"
+        (camp / "campaign.json").write_text(
+            json.dumps(
+                {
+                    "campaign_id": campaign_id,
+                    "loop_id": loop_id,
+                    "predecessor_campaign_id": predecessor,
+                }
+            )
+        )
+        (camp / "matrix-proposal.json").write_text(
+            json.dumps(
+                {
+                    "hypotheses": [
+                        {
+                            "experiment": {
+                                "experiment_id": control_id,
+                                "knobs": {
+                                    "train_version": "wf_smoke_v2",
+                                    "eval_version": "e_test",
+                                    "binder_arity_loss_weight": 0.0,
+                                    "binder_arity_decode_weight": 0.0,
+                                },
+                            }
+                        },
+                        {
+                            "experiment": {
+                                "experiment_id": candidate_id,
+                                "knobs": {
+                                    "train_version": "wf_smoke_v2",
+                                    "eval_version": "e_test",
+                                    "binder_arity_loss_weight": 1.0,
+                                    "binder_arity_decode_weight": 1.0,
+                                },
+                            }
+                        },
+                    ]
+                }
+            )
+        )
+        (camp / "sdlc_delivery.json").write_text(
+            json.dumps(
+                {
+                    "campaign_id": campaign_id,
+                    "cycle_index": cycle,
+                    "candidate_id": candidate_id,
+                    "control_id": control_id,
+                    "measurement_complete": cycle == 2,
+                    "reasons": [
+                        "measurement_incomplete:control:decode_timeout_count=1"
+                    ],
+                }
+            )
+        )
+        (camp / "cycle_handoff.json").write_text(
+            json.dumps(
+                {
+                    "loop_id": loop_id,
+                    "cycle_index": cycle,
+                    "cycle_intent": "retry_measurement" if cycle == 1 else "screening",
+                    "primary_metric": "smoke.structural_similarity",
+                    "reasons": (
+                        [f"candidate_runtime_unblock_reproduced:{candidate_id}"]
+                        if cycle == 1
+                        else []
+                    ),
+                }
+            )
+        )
+        predecessor = campaign_id
+
+    policy = load_climb_policy()
+    retired, signal_sources = _mod._sync_reproduced_timeout_retirements(
+        root,
+        loop_id,
+        predecessor,
+        policy=policy,
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        primary_metric="smoke.structural_similarity",
+        direction="increase",
+        claim_class="diagnostic",
+    )
+    assert retired == {"binder-arity"}
+    assert signal_sources == ("continuous-loop-test-c2",)
+    ledger = load_loop_exhausted_ledger(root, loop_id, policy)
+    assert ledger.entries[0].reason == "reproduced_decode_timeout_retirement"
+
+    current = "continuous-loop-test-c3"
+    (root / current).mkdir()
+    _mod._persist_selector_harness_signal(root, current, loop_id, signal_sources)
+    signal = next((root / current / "artifacts" / "harness_signals").glob("*.json"))
+    payload = json.loads(signal.read_text())
+    assert payload["code"] == "screening_selector_reintroduced_retired_arm"
+    assert payload["reproduced_on_frozen_input"] is True
+
+
+def test_screening_saturation_parks_with_typed_constraint(tmp_path: Path) -> None:
+    from slm_training.autoresearch.climb_policy import load_climb_policy
+
+    root = tmp_path / "autoresearch"
+    status = _mod._park_screening_saturation(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-15",
+        cycle_index=15,
+        policy=load_climb_policy(),
+        ranked_regimes=["component-plan", "component-edge"],
+    )
+    assert status == _mod._REGIME_PARKED_STATUS
+    verdict = json.loads(
+        (root / "loops" / "loop-1" / "terminal_verdict.json").read_text()
+    )
+    assert verdict["binding_constraint"] == "screening_objective_saturated"
 
 
 def test_promotion_cadence_null_exhausts_completed_arm(tmp_path: Path) -> None:
@@ -3406,7 +3533,9 @@ def test_causal_cap_relaxation_preserves_operator_skip_slugs() -> None:
     extra_skip_slugs = frozenset({"literal-close"})
     hard = _mod._skip_arm_slugs(entries, integration_commit="tip1") | extra_skip_slugs
     soft = (
-        _mod._skip_arm_slugs(entries, integration_commit="tip1", include_causal_cap=False)
+        _mod._skip_arm_slugs(
+            entries, integration_commit="tip1", include_causal_cap=False
+        )
         | extra_skip_slugs
     )
     closed: set[str] = set()
@@ -3501,7 +3630,10 @@ def test_reopen_harness_blocked_champion_after_integration_change(
     by = {e["entry_id"]: e for e in entries}
     assert by["champ-hf-park"]["status"] == "confirmed"
     assert by["champ-hf-park"]["promote_attempts"] == 0
-    assert "harness_retry_after_integration_change" in by["champ-hf-park"]["resolve_reasons"]
+    assert (
+        "harness_retry_after_integration_change"
+        in by["champ-hf-park"]["resolve_reasons"]
+    )
     # Model reject stays terminal.
     assert by["champ-model-fail"]["status"] == "promotion_failed"
 
@@ -3519,7 +3651,7 @@ def test_thrash_close_ignores_harness_incomplete_nulls(tmp_path: Path) -> None:
                     "campaign_id": camp.name,
                     "loop_id": loop,
                     "cycle_index": i + 1,
-                    "predecessor_campaign_id": None if i == 0 else f"c-hf-{i-1}",
+                    "predecessor_campaign_id": None if i == 0 else f"c-hf-{i - 1}",
                 }
             ),
             encoding="utf-8",
@@ -4940,17 +5072,15 @@ def test_recertify_promoted_requeues_when_evidence_missing(tmp_path: Path) -> No
             "resolve_reasons": ["cert_policy:continue", "phase_a_positive"],
         }
     ]
-    assert (
-        _mod._recertify_promoted_champion_entries(root, loop_id, entries) is True
-    )
+    assert _mod._recertify_promoted_champion_entries(root, loop_id, entries) is True
     assert entries[0]["status"] == "confirmed"
     assert entries[0].get("recert_required") is True
     assert any(
         "recert_required" in str(r) for r in entries[0].get("resolve_reasons") or []
     )
-    audit = (
-        root / "loops" / loop_id / "historical_reclassification.jsonl"
-    ).read_text(encoding="utf-8")
+    audit = (root / "loops" / loop_id / "historical_reclassification.jsonl").read_text(
+        encoding="utf-8"
+    )
     assert "promote_authority_recert" in audit
     assert "requeue" in audit
 
@@ -4997,9 +5127,7 @@ def test_recertify_promoted_fails_null_primary_under_current_rules(
             "resolve_reasons": ["cert_policy:continue", "phase_a_positive"],
         }
     ]
-    assert (
-        _mod._recertify_promoted_champion_entries(root, loop_id, entries) is True
-    )
+    assert _mod._recertify_promoted_champion_entries(root, loop_id, entries) is True
     assert entries[0]["status"] == "promotion_failed"
     assert any(
         "recert_under_current_policy" in str(r)
@@ -5041,9 +5169,7 @@ def test_recertify_promoted_keeps_and_restamps_valid_win(tmp_path: Path) -> None
             "resolve_reasons": ["cert_policy:continue"],
         }
     ]
-    assert (
-        _mod._recertify_promoted_champion_entries(root, loop_id, entries) is True
-    )
+    assert _mod._recertify_promoted_champion_entries(root, loop_id, entries) is True
     assert entries[0]["status"] == "climb_accepted"
     assert entries[0].get("promote_authority_sha256")
     assert entries[0]["promote_authority_sha256"] != "stale" * 16
@@ -5052,9 +5178,7 @@ def test_recertify_promoted_keeps_and_restamps_valid_win(tmp_path: Path) -> None
         for r in entries[0].get("resolve_reasons") or []
     )
     # Second pass with current stamp is a no-op.
-    assert (
-        _mod._recertify_promoted_champion_entries(root, loop_id, entries) is False
-    )
+    assert _mod._recertify_promoted_champion_entries(root, loop_id, entries) is False
 
 
 def test_classify_positive_marks_finalized_decode_timeout_incomplete(
@@ -5643,14 +5767,17 @@ def test_expected_arm_binding_is_append_only_and_content_bound(tmp_path: Path) -
         "matrix-control",
         "successor-dose-3",
     ]
-    assert _mod._bind_expected_arms(
-        root=tmp_path,
-        campaign_id=campaign_id,
-        matrix_path=matrix_path,
-        control_id="matrix-control",
-        candidate_id="successor-dose-3",
-        arm_order=("successor-dose-3", "matrix-control"),
-    )["event_id"] == event["event_id"]
+    assert (
+        _mod._bind_expected_arms(
+            root=tmp_path,
+            campaign_id=campaign_id,
+            matrix_path=matrix_path,
+            control_id="matrix-control",
+            candidate_id="successor-dose-3",
+            arm_order=("successor-dose-3", "matrix-control"),
+        )["event_id"]
+        == event["event_id"]
+    )
 
 
 def test_promotion_order_uses_replicate_index_when_cadence_has_same_parity() -> None:
@@ -6173,9 +6300,7 @@ def test_self_heal_thrash_bank_composes_successors(
     root = tmp_path / "ar"
     loop = "L"
     closed = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
-    assert _mod._self_heal_thrash_bank_exhaust(
-        root, loop, closed=closed, skip=set()
-    )
+    assert _mod._self_heal_thrash_bank_exhaust(root, loop, closed=closed, skip=set())
     assert _mod._DYNAMIC_THRASH_ARMS
     path = _mod._dynamic_thrash_arms_path(root, loop)
     assert path.is_file()
@@ -6234,9 +6359,7 @@ def test_thrash_matrix_dedupes_compose_vs_static_knob_signatures() -> None:
         recommended_slug="compose-ltr-tail-ltr-prefix",
     )
     HypothesisMatrix.model_validate(matrix)
-    ids = [
-        h["experiment"]["experiment_id"] for h in matrix["hypotheses"]
-    ]
+    ids = [h["experiment"]["experiment_id"] for h in matrix["hypotheses"]]
     assert not any(i.endswith("compose-ltr-tail-ltr-prefix") for i in ids)
     assert any(i.endswith("compose-ltr-prefix-compiler-decision-token") for i in ids)
     # Recommended retargets to a real hypothesis id.
@@ -6378,8 +6501,7 @@ def test_regime_parked_early_return_and_fingerprint_resume(
     # Unchanged fingerprint: the loop stays parked without running anything.
     _write_verdict(_mod._screening_bank_fingerprint())
     assert (
-        _mod._check_regime_parked(root=root, loop_id=loop)
-        == _mod._REGIME_PARKED_STATUS
+        _mod._check_regime_parked(root=root, loop_id=loop) == _mod._REGIME_PARKED_STATUS
     )
     assert verdict_path.is_file()
     out = capsys.readouterr().out
@@ -6450,9 +6572,7 @@ def test_promotion_manifest_embeds_locked_power_feasibility() -> None:
         "hypothesis": "A confirmed champion holds its held-out primary win.",
         "knobs": {"seed": 7, "eval_version": "e_test"},
     }
-    manifest = _mod._manifest(
-        "cycle-1", experiment, "a" * 40, role="promotion"
-    )
+    manifest = _mod._manifest("cycle-1", experiment, "a" * 40, role="promotion")
     report = manifest.power_feasibility
     assert report is not None
     assert report["schema"] == "power_feasibility/v1"
@@ -6478,9 +6598,7 @@ def test_dispose_champion_promote_refuses_infeasible_power_report() -> None:
         power_feasibility=infeasible,
     )
     assert d["status"] == "promotion_failed"
-    assert any(
-        r.startswith("promotion_infeasible_by_design:") for r in d["reasons"]
-    )
+    assert any(r.startswith("promotion_infeasible_by_design:") for r in d["reasons"])
 
     # A decisive report passes through to the unchanged downstream gates.
     feasible = ev.power_feasibility_report(6, Fraction(1, 20))
@@ -8113,8 +8231,6 @@ def test_thrash_does_not_bind_handoff_pred_feedback_ids(tmp_path: Path) -> None:
     assert result.matrix.predecessor_matrix_id == live.matrix_id
 
 
-
-
 def test_matrix_climb_control_uses_champion_baseline() -> None:
     from slm_training.autoresearch.schemas import HypothesisMatrix
     from slm_training.autoresearch.thrash_regime import (
@@ -8163,10 +8279,6 @@ def test_matrix_climb_control_uses_champion_baseline() -> None:
     assert candidate["binder_arity_loss_weight"] == 1.0
     assert candidate["grammar_completion_bounds"] is True
     assert candidate["compiler_decode_mode"] == "tree"
-
-
-
-
 
 
 def test_matrix_climb_skips_noop_residual_when_champion_already_has_bounds() -> None:
@@ -8235,10 +8347,6 @@ def test_matrix_climb_skips_noop_residual_when_champion_already_has_bounds() -> 
         assert view != ctrl_view, f"no-op treatment leaked: {eid}"
 
 
-
-
-
-
 def test_matrix_isolate_control_zeroes_quality_levers() -> None:
     from slm_training.autoresearch.schemas import HypothesisMatrix
 
@@ -8266,10 +8374,6 @@ def test_matrix_isolate_control_zeroes_quality_levers() -> None:
     assert candidate["binder_arity_loss_weight"] == 1.0
     # Constrained decode preserved (no unconstrained production residual).
     assert candidate.get("allow_unconstrained_fallback") in (None, False)
-
-
-
-
 
 
 def test_predecessor_compiler_ms_timeout_from_eval_detail(tmp_path: Path) -> None:
@@ -8310,10 +8414,6 @@ def test_predecessor_compiler_ms_timeout_from_eval_detail(tmp_path: Path) -> Non
     assert _mod._predecessor_compiler_ms_timeout(root, "missing") is False
 
 
-
-
-
-
 def test_select_cycle_slug_timeout_outranks_quality_predecessor() -> None:
     from slm_training.autoresearch.thrash_regime import decide_screening_regime
 
@@ -8331,10 +8431,6 @@ def test_select_cycle_slug_timeout_outranks_quality_predecessor() -> None:
     )
     assert slug == "bounds"
     assert slug != "binder-arity"
-
-
-
-
 
 
 def test_write_cycle_handoff_records_thrash_regime(tmp_path: Path) -> None:
@@ -8388,12 +8484,8 @@ def test_write_cycle_handoff_records_thrash_regime(tmp_path: Path) -> None:
         if str(h["experiment"]["experiment_id"]).endswith("-control")
     )
     delivery["control_id"] = control_id
-    (camp / "sdlc_delivery.json").write_text(
-        json.dumps(delivery), encoding="utf-8"
-    )
-    (camp / "matrix-proposal.json").write_text(
-        json.dumps(matrix), encoding="utf-8"
-    )
+    (camp / "sdlc_delivery.json").write_text(json.dumps(delivery), encoding="utf-8")
+    (camp / "matrix-proposal.json").write_text(json.dumps(matrix), encoding="utf-8")
     handoff = _mod._write_cycle_handoff(
         root=root,
         loop_id="loop-h",
@@ -8415,14 +8507,9 @@ def test_write_cycle_handoff_records_thrash_regime(tmp_path: Path) -> None:
     assert dumped.get("thrash_regime", {}).get("regime") == "isolate"
 
 
-
-
-
 def _init_git_repo(path: Path) -> None:
     subprocess.check_call(["git", "init"], cwd=path, stdout=subprocess.DEVNULL)
-    subprocess.check_call(
-        ["git", "config", "user.email", "test@example.com"], cwd=path
-    )
+    subprocess.check_call(["git", "config", "user.email", "test@example.com"], cwd=path)
     subprocess.check_call(["git", "config", "user.name", "test"], cwd=path)
     (path / "README.md").write_text("# test\n", encoding="utf-8")
     (path / "docs" / "design").mkdir(parents=True)
@@ -8831,9 +8918,7 @@ def test_self_heal_cycle_error_repairs_thrash_timeout_from_message(
     camp = root / campaign_id
     camp.mkdir(parents=True)
     (camp / "campaign.json").write_text(
-        json.dumps(
-            {"campaign_id": campaign_id, "loop_id": loop_id, "cycle_index": 81}
-        )
+        json.dumps({"campaign_id": campaign_id, "loop_id": loop_id, "cycle_index": 81})
     )
     sha = "d" * 64
     handoff = {
@@ -8936,9 +9021,7 @@ def test_self_heal_unblock_loop_soft_document(
         ],
     )
     (root / campaign_id / "campaign.json").write_text(
-        json.dumps(
-            {"campaign_id": campaign_id, "loop_id": loop_id, "cycle_index": 1}
-        )
+        json.dumps({"campaign_id": campaign_id, "loop_id": loop_id, "cycle_index": 1})
     )
     import slm_training.autoresearch.storage as storage
 
@@ -8963,9 +9046,7 @@ def test_self_heal_unblock_loop_hard_agentv_repair(
     camp = root / campaign_id
     camp.mkdir(parents=True)
     (camp / "campaign.json").write_text(
-        json.dumps(
-            {"campaign_id": campaign_id, "loop_id": loop_id, "cycle_index": 1}
-        )
+        json.dumps({"campaign_id": campaign_id, "loop_id": loop_id, "cycle_index": 1})
     )
     sha = "e" * 64
     handoff = {
@@ -9020,9 +9101,7 @@ def test_soft_document_failures_never_block(tmp_path: Path) -> None:
         count = _mod._record_cycle_failure(
             root=root,
             loop_id="loop-1",
-            exc=RuntimeError(
-                "predecessor c1 has unacknowledged actions: 0:document"
-            ),
+            exc=RuntimeError("predecessor c1 has unacknowledged actions: 0:document"),
             cycle_index=i,
         )
         assert count == 0
@@ -9064,9 +9143,7 @@ def test_self_heal_bank_exhaust_repair_rewrites_handoff(
     camp = root / campaign_id
     camp.mkdir(parents=True)
     (camp / "campaign.json").write_text(
-        json.dumps(
-            {"campaign_id": campaign_id, "loop_id": loop_id, "cycle_index": 1}
-        )
+        json.dumps({"campaign_id": campaign_id, "loop_id": loop_id, "cycle_index": 1})
     )
     handoff = {
         "schema_version": "AutotrainCycleHandoffV1",

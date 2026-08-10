@@ -3086,7 +3086,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v202",
+      "version": "v203",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -3139,6 +3139,11 @@
         "tests/test_autoresearch/test_evidence_ledger.py"
       ],
       "history": [
+        {
+          "version": "v203",
+          "date": "2026-08-10",
+          "note": "Bound smoke structural-similarity screening saturation after 15 consecutive complete ties: select at most two guarded absolute-quality regimes for one fresh seed each, require the existing latency floor for decode-cost residuals, persist reproduced timeout retirements in the identity-scoped exhausted-knob ledger before every selector, and emit a typed harness signal for post-retirement reintroduction. Policy v1 advances v8 to v9; no metric or ship gate changes."
+        },
         {
           "version": "v202",
           "date": "2026-08-10",
@@ -17083,6 +17088,11 @@
         "tests/test_autoresearch/test_conclusions_family_closure.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-10",
+          "note": "no-bump: policy.v2 mirrors policy.v1 screening saturation and advances its internal artifact version from v9 to v10; conclusion criteria and conclusions.py behavior are unchanged."
+        },
         {
           "version": "v3",
           "date": "2026-08-10",
