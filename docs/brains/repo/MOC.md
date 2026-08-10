@@ -66,6 +66,7 @@ reads this section to seed the autotrain hypothesis loop and prunes it as
   [`iter-slm478-sie-005-blinded-packet-20260810.md`](../../design/iter-slm478-sie-005-blinded-packet-20260810.md).
   Real human/provider evidence and EXP-SR-3 execution remain SIE-006.
 - SIE-002 / EXP-SR-1 (2026-08-10, SLM-476): fixture oracle localization — see [`iter-slm476-sie-002-oracle-localization-20260810.md`](../../design/iter-slm476-sie-002-oracle-localization-20260810.md) (authorized_factors: roles, bindings; claim_class=fixture).
+- RSP-003 / EXP-SR-7 (2026-08-10, SLM-485): fixture extended static-artifact + packed semantic-summary — see [`iter-slm485-rsp-003-static-summary-20260810.md`](../../design/iter-slm485-rsp-003-static-summary-20260810.md) (claim_class=fixture; PCT-008 seam; no promotion).
 - SIE-008 / EXP-SR-5 (2026-08-10, SLM-484): fixture value-of-compute controller — see [`iter-slm484-sie-008-voc-controller-20260810.md`](../../design/iter-slm484-sie-008-voc-controller-20260810.md) (claim_class=fixture; SIE-007 substrate; no promotion).
 - Board hygiene (2026-08-07): no claimable SLM issues/projects remain after
   [`slm-linear-project-hygiene-20260807`](../../design/slm-linear-project-hygiene-20260807.md).
