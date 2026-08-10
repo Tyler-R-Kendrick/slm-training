@@ -4851,7 +4851,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v161",
+      "version": "v162",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
@@ -4883,6 +4883,11 @@
         "tests/test_scripts/test_run_sie006_calibration_campaign.py"
       ],
       "history": [
+        {
+          "version": "v162",
+          "date": "2026-08-10",
+          "note": "RSP-009/SLM-490: add rsp009_cross_experiment_disposition.py and scripts/run_rsp009_disposition.py, publishing a machine-auditable SGS-009 MechanismDispositionReportV1 closeout across all EXP-SR-1..12 catalogue families using committed sibling evidence under docs/design/. OpenUI vs symbolic_regression scoped separately (EXP-SR-12 split); fixture/scratch/blocked evidence never yields adopt_primary/adopt_optional; external-blocked PySR maps to blocked not reject; champion_pointer_ids stay empty. Durable evidence: docs/design/iter-slm490-rsp-009-disposition-20260810.{json,md}."
+        },
         {
           "version": "v161",
           "date": "2026-08-10",
@@ -17315,6 +17320,24 @@
           "version": "v1",
           "date": "2026-08-10",
           "note": "RSP-008/SLM-487: EXP-SR-12 diagnostic second-pack portability certification over SRP-010 seams; claim_class=diagnostic; never promotion_candidate/ship_gate."
+        }
+      ]
+    },
+    "harness.experiments.slm490_rsp009_disposition": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/rsp009_cross_experiment_disposition.py",
+        "scripts/run_rsp009_disposition.py",
+        "tests/test_harnesses/experiments/test_rsp009_cross_experiment_disposition.py",
+        "docs/design/iter-slm490-rsp-009-disposition-20260810.json",
+        "docs/design/iter-slm490-rsp-009-disposition-20260810.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-10",
+          "note": "RSP-009/SLM-490: cross-experiment EXP-SR disposition report over mechanism_disposition_report.py (SGS-009); no parallel disposition engine."
         }
       ]
     },

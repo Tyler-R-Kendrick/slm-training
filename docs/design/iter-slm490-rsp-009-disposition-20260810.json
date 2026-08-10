@@ -1,0 +1,490 @@
+{
+  "catalogue_families": [
+    "exp-sr-1",
+    "exp-sr-2",
+    "exp-sr-3",
+    "exp-sr-4",
+    "exp-sr-5",
+    "exp-sr-6",
+    "exp-sr-7",
+    "exp-sr-8",
+    "exp-sr-9",
+    "exp-sr-10",
+    "exp-sr-11",
+    "exp-sr-12"
+  ],
+  "champion_pointer_ids": [],
+  "claim_class": "wiring",
+  "cross_pack_summary": "RSP-009 audited all twelve EXP-SR catalogue families (exp-sr-1..12) using committed sibling evidence. OpenUI-scoped rows (localization, predictor, calibration, static summary, QD) are separated from symbolic-pack rows (e-graph, macro library, PySR) and from the dual-scope EXP-SR-12 portability certification. No row satisfies adopt_primary or adopt_optional under SGS-009 fail-closed rules on fixture/scratch/blocked evidence \u2014 champion pointers stay empty.",
+  "evidence_cutoff_commit": "8b0b58039fb8200d74174fd853a864ea9802292d",
+  "experiment_id": "slm490-rsp-009-disposition",
+  "follow_up_gaps": [
+    "Real blinded human/provider calibration for EXP-SR-3 (SIE-006) \u2014 current evidence is mock/synthetic only.",
+    "Isolated PySR/Julia SRBench environment for EXP-SR-11 (RSP-007) \u2014 external arm is external-blocked, not reject.",
+    "Eliminate shared-seam pack forks for symbolic_regression before EXP-SR-12 can certify second-pack portability.",
+    "Measured (non-fixture) witness CEGIS and bounded-search confirmation on live decode/search loops (EXP-SR-4/6).",
+    "Production cold/warm confirmation for packed semantic summary beyond the fixture differential corpus (EXP-SR-7).",
+    "Re-open EXP-SR-2 only if a learned predictor beats the frequency baseline on a real held-out prompt slice."
+  ],
+  "generated_at": "2026-08-10T22:00:03.444961Z",
+  "linear_issue": "SLM-490",
+  "matrix_set": "slm490_rsp009_disposition",
+  "matrix_version": "rsp009-v1",
+  "mechanism_disposition_report": {
+    "records": [
+      {
+        "activation_evidence": "",
+        "applicable_packs": [
+          "openui"
+        ],
+        "authority_class": "evaluation-only",
+        "cost_cold_effect": "",
+        "default_state": "off",
+        "disposition": "retain_diagnostic",
+        "evidence_class": "fixture",
+        "evidence_cutoff": "8b0b58039fb8200d74174fd853a864ea9802292d",
+        "external_dependencies": [
+          "SLM-476",
+          "SIE-002",
+          "SLM-482"
+        ],
+        "issues": [
+          "SLM-476",
+          "SIE-002",
+          "SLM-482"
+        ],
+        "matched_controls": true,
+        "mechanism_id": "exp-sr-1",
+        "owner_module": "src/slm_training/harnesses/experiments/sie002_oracle_localization.py",
+        "owner_version": "rsp009-v1",
+        "rationale": "Fixture oracle localization authorized roles/bindings for later predictor work; claim_class=fixture \u2014 retain as OpenUI diagnostic, never default-on.",
+        "record_hash": "c85074ee4a9a9620a894bf5afd438b431a3e0581ef081bc55547b32be132ebf4",
+        "safety_invariants": [
+          "I6",
+          "no_production_gate_bypass"
+        ],
+        "schema_version": "mechanism_disposition_record/v1",
+        "semantic_effect": "Prioritize evaluator repair work on the factor families with the largest localized error mass."
+      },
+      {
+        "activation_evidence": "",
+        "applicable_packs": [
+          "openui"
+        ],
+        "authority_class": "evaluation-only",
+        "cost_cold_effect": "",
+        "default_state": "off",
+        "disposition": "reject",
+        "evidence_class": "fixture",
+        "evidence_cutoff": "8b0b58039fb8200d74174fd853a864ea9802292d",
+        "external_dependencies": [
+          "SLM-482",
+          "SIE-004",
+          "SIE-003"
+        ],
+        "issues": [
+          "SLM-482",
+          "SIE-004",
+          "SIE-003"
+        ],
+        "matched_controls": true,
+        "mechanism_id": "exp-sr-2",
+        "owner_module": "src/slm_training/harnesses/experiments/sie004_predictor_campaign.py",
+        "owner_version": "rsp009-v1",
+        "rationale": "Catalogue falsifier holds: predictor F1 does not beat the frequency/no-prediction baseline on the held-out slice (fixture evidence).",
+        "record_hash": "ce4c774bc4ca5f237e9337392568833e5a6e75f0f210396193651a5d24db7496",
+        "safety_invariants": [
+          "I6",
+          "no_production_gate_bypass"
+        ],
+        "schema_version": "mechanism_disposition_record/v1",
+        "semantic_effect": "Gate the advisory-only requirement-prediction seam on measured precision, not on wiring alone."
+      },
+      {
+        "activation_evidence": "",
+        "applicable_packs": [
+          "openui"
+        ],
+        "authority_class": "evaluation-only",
+        "cost_cold_effect": "",
+        "default_state": "off",
+        "disposition": "revise_and_retest",
+        "evidence_class": "fixture",
+        "evidence_cutoff": "8b0b58039fb8200d74174fd853a864ea9802292d",
+        "external_dependencies": [
+          "SLM-478",
+          "SLM-483",
+          "SIE-005",
+          "SIE-006",
+          "VCE-010"
+        ],
+        "issues": [
+          "SLM-478",
+          "SLM-483",
+          "SIE-005",
+          "SIE-006",
+          "VCE-010"
+        ],
+        "matched_controls": true,
+        "mechanism_id": "exp-sr-3",
+        "owner_module": "src/slm_training/harnesses/experiments/sie006_calibration_campaign.py",
+        "owner_version": "rsp009-v1",
+        "rationale": "SIE-005 packet is fixture-only; SIE-006 diagnostic used synthetic/mock human labels and failed the catalogue kappa floor \u2014 real blinded human calibration required before any promotion claim.",
+        "record_hash": "d7ff208c06dc3cb55c1748704bf786473eed56745ee6746c495fbaf019983bda",
+        "safety_invariants": [
+          "I6",
+          "no_production_gate_bypass"
+        ],
+        "schema_version": "mechanism_disposition_record/v1",
+        "semantic_effect": "Calibrate or replace evaluator components whose human agreement falls below the preregistered floor."
+      },
+      {
+        "activation_evidence": "",
+        "applicable_packs": [
+          "openui",
+          "symbolic_regression"
+        ],
+        "authority_class": "evaluation-only",
+        "cost_cold_effect": "",
+        "default_state": "off",
+        "disposition": "retain_diagnostic",
+        "evidence_class": "fixture",
+        "evidence_cutoff": "8b0b58039fb8200d74174fd853a864ea9802292d",
+        "external_dependencies": [
+          "SLM-488",
+          "RSP-001"
+        ],
+        "issues": [
+          "SLM-488",
+          "RSP-001"
+        ],
+        "matched_controls": true,
+        "mechanism_id": "exp-sr-4",
+        "owner_module": "src/slm_training/harnesses/experiments/rsp001_cegis_repair.py",
+        "owner_version": "rsp009-v1",
+        "rationale": "Witness CEGIS cleared matched controls on the fixture corpus (recommendation='adopt-optional'), but claim_class=fixture caps disposition at retain_diagnostic per SGS-009 \u2014 no adopt_primary/adopt_optional.",
+        "record_hash": "f07eb3af92780bd984cfd085e735e9c1ebb0bc3d9e08f2b6020bfe9e55efee9f",
+        "safety_invariants": [
+          "I6",
+          "no_production_gate_bypass"
+        ],
+        "schema_version": "mechanism_disposition_record/v1",
+        "semantic_effect": "Adopt witness-guided repair as an optional lever only if it beats the matched-compute resampling control."
+      },
+      {
+        "activation_evidence": "",
+        "applicable_packs": [
+          "openui",
+          "symbolic_regression"
+        ],
+        "authority_class": "evaluation-only",
+        "cost_cold_effect": "",
+        "default_state": "off",
+        "disposition": "reject",
+        "evidence_class": "fixture",
+        "evidence_cutoff": "8b0b58039fb8200d74174fd853a864ea9802292d",
+        "external_dependencies": [
+          "SLM-484",
+          "SIE-008"
+        ],
+        "issues": [
+          "SLM-484",
+          "SIE-008"
+        ],
+        "matched_controls": true,
+        "mechanism_id": "exp-sr-5",
+        "owner_module": "src/slm_training/harnesses/experiments/sie008_voc_controller.py",
+        "owner_version": "rsp009-v1",
+        "rationale": "Symbolic VoC controller failed the catalogue falsifier versus the hand-threshold control on fixture decode traces.",
+        "record_hash": "13098cd92dc03651cae9a40d6f9cc205fdae74e0026f3b5aaef4ea2ffd358442",
+        "safety_invariants": [
+          "I6",
+          "no_production_gate_bypass"
+        ],
+        "schema_version": "mechanism_disposition_record/v1",
+        "semantic_effect": "Activate the controller only where it is Pareto-better than the fixed-budget control on cost and yield jointly."
+      },
+      {
+        "activation_evidence": "",
+        "applicable_packs": [
+          "openui",
+          "symbolic_regression"
+        ],
+        "authority_class": "evaluation-only",
+        "cost_cold_effect": "",
+        "default_state": "off",
+        "disposition": "retain_diagnostic",
+        "evidence_class": "fixture",
+        "evidence_cutoff": "8b0b58039fb8200d74174fd853a864ea9802292d",
+        "external_dependencies": [
+          "SLM-489",
+          "RSP-002"
+        ],
+        "issues": [
+          "SLM-489",
+          "RSP-002"
+        ],
+        "matched_controls": true,
+        "mechanism_id": "exp-sr-6",
+        "owner_module": "src/slm_training/harnesses/experiments/rsp002_bounded_search.py",
+        "owner_version": "rsp009-v1",
+        "rationale": "Neural-guided ordering beat left-to-right on the bounded fixture (recommendation='adopt-optional'), but claim_class=fixture \u2014 retain default-off.",
+        "record_hash": "412d5a435fd4df07f7b348df198053138225cefee924ff16da34b7f74bf2e42b",
+        "safety_invariants": [
+          "I6",
+          "no_production_gate_bypass"
+        ],
+        "schema_version": "mechanism_disposition_record/v1",
+        "semantic_effect": "Adopt neural-guided ordering only if it beats the matched-budget left-to-right control."
+      },
+      {
+        "activation_evidence": "",
+        "applicable_packs": [
+          "openui"
+        ],
+        "authority_class": "evaluation-only",
+        "cost_cold_effect": "",
+        "default_state": "off",
+        "disposition": "retain_diagnostic",
+        "evidence_class": "fixture",
+        "evidence_cutoff": "8b0b58039fb8200d74174fd853a864ea9802292d",
+        "external_dependencies": [
+          "SLM-485",
+          "RSP-003",
+          "PCT-008"
+        ],
+        "issues": [
+          "SLM-485",
+          "RSP-003",
+          "PCT-008"
+        ],
+        "matched_controls": true,
+        "mechanism_id": "exp-sr-7",
+        "owner_module": "src/slm_training/harnesses/experiments/rsp003_static_summary.py",
+        "owner_version": "rsp009-v1",
+        "rationale": "Packed semantic summary achieved exact domain parity on the differential fixture (certified=true) but cold/warm cost evidence is fixture-scale only \u2014 retain OpenUI diagnostic, not production default.",
+        "record_hash": "7b90c583be3311da5a22c39b79670093513bc99a306c24873091d6ab7b5ab1a2",
+        "safety_invariants": [
+          "I6",
+          "no_production_gate_bypass"
+        ],
+        "schema_version": "mechanism_disposition_record/v1",
+        "semantic_effect": "Adopt the packed summary only if domain parity stays exact and recomputation cost measurably drops."
+      },
+      {
+        "activation_evidence": "",
+        "applicable_packs": [
+          "symbolic_regression"
+        ],
+        "authority_class": "evaluation-only",
+        "cost_cold_effect": "",
+        "default_state": "off",
+        "disposition": "retain_diagnostic",
+        "evidence_class": "fixture",
+        "evidence_cutoff": "8b0b58039fb8200d74174fd853a864ea9802292d",
+        "external_dependencies": [
+          "EXP-SR-8"
+        ],
+        "issues": [
+          "EXP-SR-8"
+        ],
+        "matched_controls": true,
+        "mechanism_id": "exp-sr-8",
+        "owner_module": "src/slm_training/harnesses/experiments/symbolic_egraph.py",
+        "owner_version": "rsp009-v1",
+        "rationale": "E-graph regions match canonical-hash dedup on the fixture with certified rewrites (not_adopted_stays_experimental); no Pareto win \u2014 isolated symbolic-pack experiment only.",
+        "record_hash": "e7d25fac34f8d8a839e4cc33c6b0198105e5cdbd5fcc5df48d9e6e3ee3694d9e",
+        "safety_invariants": [
+          "I6",
+          "no_production_gate_bypass"
+        ],
+        "schema_version": "mechanism_disposition_record/v1",
+        "semantic_effect": "Adopt e-graph regions only where every applied rewrite carries a certified equivalence proof."
+      },
+      {
+        "activation_evidence": "",
+        "applicable_packs": [
+          "symbolic_regression"
+        ],
+        "authority_class": "evaluation-only",
+        "cost_cold_effect": "",
+        "default_state": "off",
+        "disposition": "retain_diagnostic",
+        "evidence_class": "fixture",
+        "evidence_cutoff": "8b0b58039fb8200d74174fd853a864ea9802292d",
+        "external_dependencies": [
+          "EXP-SR-9"
+        ],
+        "issues": [
+          "EXP-SR-9"
+        ],
+        "matched_controls": true,
+        "mechanism_id": "exp-sr-9",
+        "owner_module": "src/slm_training/harnesses/experiments/symbolic_macro_library.py",
+        "owner_version": "rsp009-v1",
+        "rationale": "Certified macro library fixture shows size reduction with zero semantics regressions; claim_class=fixture \u2014 diagnostic for symbolic-pack search only.",
+        "record_hash": "23d1ff32293956d8ae23917c4d91a38add885825db7e23303793e2ec1599aa7c",
+        "safety_invariants": [
+          "I6",
+          "no_production_gate_bypass"
+        ],
+        "schema_version": "mechanism_disposition_record/v1",
+        "semantic_effect": "Adopt learned macros only where size reduction holds with zero certified-semantics regressions."
+      },
+      {
+        "activation_evidence": "",
+        "applicable_packs": [
+          "openui"
+        ],
+        "authority_class": "evaluation-only",
+        "cost_cold_effect": "",
+        "default_state": "off",
+        "disposition": "reject",
+        "evidence_class": "fixture",
+        "evidence_cutoff": "8b0b58039fb8200d74174fd853a864ea9802292d",
+        "external_dependencies": [
+          "SLM-481",
+          "RSP-006"
+        ],
+        "issues": [
+          "SLM-481",
+          "RSP-006"
+        ],
+        "matched_controls": true,
+        "mechanism_id": "exp-sr-10",
+        "owner_module": "src/slm_training/harnesses/experiments/rsp006_quality_diversity.py",
+        "owner_version": "rsp009-v1",
+        "rationale": "Quality-diversity coverage did not beat matched-compute rejection sampling on the OpenUI ProgramSpec fixture grid.",
+        "record_hash": "098ba08a57ecfc94a09cd203568810dcb2bf70a8880ac03ce4f1a9d490ec2ebf",
+        "safety_invariants": [
+          "I6",
+          "no_production_gate_bypass"
+        ],
+        "schema_version": "mechanism_disposition_record/v1",
+        "semantic_effect": "Adopt quality-diversity generation only if it beats matched-compute rejection sampling on coverage without a validity drop."
+      },
+      {
+        "activation_evidence": "",
+        "applicable_packs": [
+          "symbolic_regression"
+        ],
+        "authority_class": "evaluation-only",
+        "cost_cold_effect": "",
+        "default_state": "blocked",
+        "disposition": "blocked",
+        "evidence_class": "blocked",
+        "evidence_cutoff": "8b0b58039fb8200d74174fd853a864ea9802292d",
+        "external_dependencies": [
+          "SLM-486",
+          "RSP-007",
+          "SRP-011"
+        ],
+        "issues": [
+          "SLM-486",
+          "RSP-007",
+          "SRP-011"
+        ],
+        "matched_controls": true,
+        "mechanism_id": "exp-sr-11",
+        "owner_module": "src/slm_training/harnesses/experiments/rsp007_pysr_srbench.py",
+        "owner_version": "rsp009-v1",
+        "rationale": "PySR/SRBench matched arm is external-blocked (no live Julia/PySR env); gap is not scored as a benchmark loss \u2014 blocked, not reject.",
+        "record_hash": "6b0162d397ce17a69c60898f3a655a6202b6975fe9cb45b86c9e091121e80259",
+        "safety_invariants": [
+          "I6",
+          "no_production_gate_bypass"
+        ],
+        "schema_version": "mechanism_disposition_record/v1",
+        "semantic_effect": "Report matched-budget parity honestly; a gap versus PySR/SRBench is not treated as a pack defect without matched compute."
+      },
+      {
+        "activation_evidence": "",
+        "applicable_packs": [
+          "openui"
+        ],
+        "authority_class": "evaluation-only",
+        "cost_cold_effect": "",
+        "default_state": "off",
+        "disposition": "retain_diagnostic",
+        "evidence_class": "scratch",
+        "evidence_cutoff": "8b0b58039fb8200d74174fd853a864ea9802292d",
+        "external_dependencies": [
+          "SLM-487",
+          "RSP-008"
+        ],
+        "issues": [
+          "SLM-487",
+          "RSP-008"
+        ],
+        "matched_controls": true,
+        "mechanism_id": "exp-sr-12:openui",
+        "owner_module": "src/slm_training/harnesses/experiments/rsp008_second_pack_portability.py",
+        "owner_version": "rsp009-v1",
+        "rationale": "OpenUI pack passes shared-seam readiness checks in the RSP-008 diagnostic; reference control only \u2014 not a promotion of second-pack portability.",
+        "record_hash": "0dbec11c3082700ab1c0c55d468548c22bf66afea9ca775ba35e3e112a61b309",
+        "safety_invariants": [
+          "I6",
+          "no_production_gate_bypass"
+        ],
+        "schema_version": "mechanism_disposition_record/v1",
+        "semantic_effect": "Certify second-pack portability only when OpenUI and symbolic-regression share the seam with zero pack-specific forks."
+      },
+      {
+        "activation_evidence": "",
+        "applicable_packs": [
+          "symbolic_regression"
+        ],
+        "authority_class": "evaluation-only",
+        "cost_cold_effect": "",
+        "default_state": "off",
+        "disposition": "revise_and_retest",
+        "evidence_class": "scratch",
+        "evidence_cutoff": "8b0b58039fb8200d74174fd853a864ea9802292d",
+        "external_dependencies": [
+          "SLM-487",
+          "RSP-008"
+        ],
+        "issues": [
+          "SLM-487",
+          "RSP-008"
+        ],
+        "matched_controls": true,
+        "mechanism_id": "exp-sr-12:symbolic_regression",
+        "owner_module": "src/slm_training/harnesses/experiments/rsp008_second_pack_portability.py",
+        "owner_version": "rsp009-v1",
+        "rationale": "Symbolic-regression pack still requires pack-specific seam forks (['shadow_dsl_packs_registry', 'openui_pinned_language_contract', 'sygus_inspired_not_conformance']); zero-fork certification falsified.",
+        "record_hash": "3ce6192435612e2b53021889d6208388932f47426648af497a15d94905110a64",
+        "safety_invariants": [
+          "I6",
+          "no_production_gate_bypass"
+        ],
+        "schema_version": "mechanism_disposition_record/v1",
+        "semantic_effect": "Certify second-pack portability only when OpenUI and symbolic-regression share the seam with zero pack-specific forks."
+      }
+    ],
+    "report_hash": "31bbbb0358e3751a88093ac70195aecc893403274fc9e485c916c1061768d835",
+    "schema_version": "mechanism_disposition_report/v1",
+    "supersessions": []
+  },
+  "mechanism_disposition_report_schema": "mechanism_disposition_report/v1",
+  "rejected_or_blocked_ids": [
+    "exp-sr-2",
+    "exp-sr-5",
+    "exp-sr-10",
+    "exp-sr-11"
+  ],
+  "run_id": "slm490_rsp009_fixture",
+  "schema": "rsp009_cross_experiment_disposition/v1",
+  "status": "fixture",
+  "timestamp": "2026-08-10T22:00:03.482043Z",
+  "version_stamp": {
+    "code_commit": "8b0b58039fb8200d74174fd853a864ea9802292d",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v161",
+      "harness.experiments.slm490_rsp009_disposition": "UNKNOWN"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-10T22:00:03.481925+00:00"
+  }
+}

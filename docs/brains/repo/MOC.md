@@ -95,6 +95,9 @@ instead of duplicating one. (These are **not** dead ends.)
   [iter-slm487-rsp-008-portability-20260810.md](../../design/iter-slm487-rsp-008-portability-20260810.md)
   (`claim_class=diagnostic`; inventored shared-seam forks falsify zero-fork
   certification; never promotion).
+- **RSP-009 / SLM-490** — cross-experiment EXP-SR-1..12 disposition closeout:
+  [iter-slm490-rsp-009-disposition-20260810.md](../../design/iter-slm490-rsp-009-disposition-20260810.md)
+  (SGS-009 mechanism_disposition_report; no adopt_primary; champion pointers empty).
 
 ## Dead ends (do not re-propose)
 
