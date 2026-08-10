@@ -86,10 +86,12 @@ instead of duplicating one. (These are **not** dead ends.)
 - [Repository ownership map](../../design/repository-ownership-map.md) — owner/authority registry all of the above register into.
 - **SRP-010 / SLM-474** — symbolic-pack portability fixture (`srp010_fixture`):
   [iter-slm474-srp-010-portability-20260810.md](../../design/iter-slm474-srp-010-portability-20260810.md)
-  (`claim_class=fixture` only; OpenUI stays default). Campaign execution
-  successor is **EXP-SR-12 / RSP-008 (SLM-487)** — real OpenUI +
-  `symbolic_regression` second-pack portability certification via
-  `ExperimentCampaignV1`, not this fixture.
+  (`claim_class=fixture` only; OpenUI stays default).
+- **RSP-008 / SLM-487** — EXP-SR-12 diagnostic second-pack portability
+  certification:
+  [iter-slm487-rsp-008-portability-20260810.md](../../design/iter-slm487-rsp-008-portability-20260810.md)
+  (`claim_class=diagnostic`; inventored shared-seam forks falsify zero-fork
+  certification; never promotion).
 
 ## Dead ends (do not re-propose)
 

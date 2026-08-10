@@ -2875,7 +2875,11 @@
         {
           "version": "v11",
           "date": "2026-08-10",
+<<<<<<< HEAD
           "note": "SIE-004/SLM-482: add related_overlaps row pointing at docs/design/iter-slm482-sie-004-predictor-campaign-20260810.md (fixture-scale EXP-SR-2 predictor campaign; legal_support_parity exact; SIE-002 authorized_factors gate; no promotion); update SIE-004 downstream_extension_map justification with durable evidence pointer."
+=======
+          "note": "SLM-487 (RSP-008): add related_overlaps row pointing at docs/design/iter-slm487-rsp-008-portability-20260810.md (diagnostic EXP-SR-12 second-pack portability certification; falsifier holds on inventored shared-seam forks)."
+>>>>>>> cb0e4728e (Please ask your administrator.)
         },
         {
           "version": "v10",
@@ -2885,7 +2889,7 @@
         {
           "version": "v9",
           "date": "2026-08-10",
-          "note": "no-bump: SLM-476 (SIE-002) knowledge-surface link only \u2014 repository-ownership-map.md + ownership_map.json cite iter-slm476-sie-002-oracle-localization-20260810.md on the SIE-002 row (authorized_factors roles+bindings, claim_class=fixture); no owner_symbols or structural map change."
+          "note": "no-bump: SLM-476 (SIE-002) knowledge-surface link only — repository-ownership-map.md + ownership_map.json cite iter-slm476-sie-002-oracle-localization-20260810.md on the SIE-002 row (authorized_factors roles+bindings, claim_class=fixture); no owner_symbols or structural map change."
         },
         {
           "version": "v9",
@@ -4843,12 +4847,16 @@
         {
           "version": "v158",
           "date": "2026-08-10",
+<<<<<<< HEAD
           "note": "SIE-004/SLM-482: add sie004_predictor_campaign.py \u2014 fixture-scale EXP-SR-2 matched prompt-requirement predictor campaign composing SIE-003's advisory predictor seam (none/deterministic/frequency/retrieval/learned/gold-oracle arms) with the SIE-001 exp-sr-2 catalogue identity under ExperimentCampaignV1/CampaignStore (claim_class=fixture, promotion=false). Multi-seed (0,1,2) group-by-source_program splits over openui_hard_valid_v1; loads SIE-002 authorized_factors (roles, bindings) as the RequirementFact emission gate; legal_support_parity exact. Durable docs/design/iter-slm482-sie-004-predictor-campaign-20260810.{json,md}."
+=======
+          "note": "RSP-008/SLM-487: add rsp008_second_pack_portability.py — diagnostic EXP-SR-12 second-pack portability certification composing SRP-010 seams on OpenUI (control) and symbolic_regression (candidate) under ExperimentCampaignV1/CampaignStore (claim_class=diagnostic, promotion=false). Scores second_pack_portability_parity_rate; honest fork inventory falsifies zero-fork certification. Dedicated component harness.experiments.slm487_rsp008_portability owns the harness/CLI/tests/docs paths."
+>>>>>>> cb0e4728e (Please ask your administrator.)
         },
         {
           "version": "v157",
           "date": "2026-08-10",
-          "note": "SIE-002/SLM-476: add sie002_oracle_localization.py \u2014 fixture-scale EXP-SR-1 factor-wise semantic oracle localization composing VCE-009's generate_baseline_arms/load_fixture_plan_pool (no forked arm generator) with the SIE-001 exp-sr-1 catalogue identity under ExperimentCampaignV1/CampaignStore (claim_class=fixture, promotion=false). Multi-seed (0,1,2) matched arms over VCE-008-cleaned openui_hard_valid_v1; durable docs/design/iter-slm476-sie-002-oracle-localization-20260810.{json,md} report oracle_factor_localization_precision and authorized_factors for later learned-predictor work. Also re-digest PlanInterventionRecordV1 after attaching compute.apply_ms in VCE-009's generate_baseline_arms so from_dict round-trips."
+          "note": "SIE-002/SLM-476: add sie002_oracle_localization.py — fixture-scale EXP-SR-1 factor-wise semantic oracle localization composing VCE-009's generate_baseline_arms/load_fixture_plan_pool (no forked arm generator) with the SIE-001 exp-sr-1 catalogue identity under ExperimentCampaignV1/CampaignStore (claim_class=fixture, promotion=false). Multi-seed (0,1,2) matched arms over VCE-008-cleaned openui_hard_valid_v1; durable docs/design/iter-slm476-sie-002-oracle-localization-20260810.{json,md} report oracle_factor_localization_precision and authorized_factors for later learned-predictor work. Also re-digest PlanInterventionRecordV1 after attaching compute.apply_ms in VCE-009's generate_baseline_arms so from_dict round-trips."
         },
         {
           "version": "v156",
@@ -17148,6 +17156,7 @@
         }
       ]
     },
+<<<<<<< HEAD
     "harness.experiments.slm482_sie004_predictor_campaign": {
       "version": "v1",
       "kind": "harness",
@@ -17158,12 +17167,28 @@
         "tests/test_scripts/test_run_sie004_predictor_campaign.py",
         "docs/design/iter-slm482-sie-004-predictor-campaign-20260810.json",
         "docs/design/iter-slm482-sie-004-predictor-campaign-20260810.md"
+=======
+    "harness.experiments.slm487_rsp008_portability": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/rsp008_second_pack_portability.py",
+        "scripts/run_rsp008_second_pack_portability.py",
+        "tests/test_harnesses/experiments/test_rsp008_second_pack_portability.py",
+        "tests/test_scripts/test_run_rsp008_second_pack_portability.py",
+        "docs/design/iter-slm487-rsp-008-portability-20260810.json",
+        "docs/design/iter-slm487-rsp-008-portability-20260810.md"
+>>>>>>> cb0e4728e (Please ask your administrator.)
       ],
       "history": [
         {
           "version": "v1",
           "date": "2026-08-10",
+<<<<<<< HEAD
           "note": "SIE-004/SLM-482: fixture-scale EXP-SR-2 prompt-requirement predictor campaign composing SIE-003 + SIE-002 authorized_factors; claim_class=fixture; no promotion."
+=======
+          "note": "RSP-008/SLM-487: EXP-SR-12 diagnostic second-pack portability certification over SRP-010 seams; claim_class=diagnostic; never promotion_candidate/ship_gate."
+>>>>>>> cb0e4728e (Please ask your administrator.)
         }
       ]
     }
