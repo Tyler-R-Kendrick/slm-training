@@ -148,6 +148,14 @@ def main(argv: list[str] | None = None) -> int:
             "(default: outputs/runs/srp010-fixture-<YYYYMMDD>)"
         ),
     )
+    parser.add_argument(
+        "--write-design",
+        action="store_true",
+        help=(
+            "Also write docs/design/iter-slm474-srp-010-portability-20260810."
+            "{json,md} (opt-in so fixture tests do not dirty the tree)"
+        ),
+    )
     try:
         args = parser.parse_args(argv)
     except (argparse.ArgumentError, SystemExit):
@@ -168,7 +176,7 @@ def main(argv: list[str] | None = None) -> int:
     run_json = output_dir / "srp010_pack_portability_report.json"
     run_json.write_text(report_text, encoding="utf-8")
 
-    if args.mode == "fixture":
+    if args.mode == "fixture" and args.write_design:
         root = Path(__file__).resolve().parents[1]
         json_path = root / f"{_DESIGN_STEM}.json"
         md_path = root / f"{_DESIGN_STEM}.md"

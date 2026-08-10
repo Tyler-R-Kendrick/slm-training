@@ -16978,6 +16978,11 @@
         {
           "version": "v1",
           "date": "2026-08-10",
+          "note": "no-bump: make docs/design write opt-in via --write-design so fixture CLI tests do not dirty tracked design artifacts; harness behavior unchanged."
+        },
+        {
+          "version": "v1",
+          "date": "2026-08-10",
           "note": "SLM-474 (SRP-010): end-to-end symbolic-pack portability fixture — default OpenUI isolation, SR pack parse/canonicalize/oracle/evaluate-fit/evidence, VerifiedSynthesisProblemV1 + SyGuS capability export (inspired_interoperability), AST import audit, honest forks/unsupported_hooks inventory. claim_class=fixture; cites exp-sr-12 without locking ExperimentCampaignV1."
         }
       ]
