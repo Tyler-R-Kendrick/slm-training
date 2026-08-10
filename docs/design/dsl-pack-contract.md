@@ -194,9 +194,12 @@ parse/canonicalize/oracle slots and fails closed on honest-`None` slots;
 claim class stays `fixture`. Measured write-up:
 [iter-slm474-srp-010-portability-20260810.md](iter-slm474-srp-010-portability-20260810.md).
 Real second-pack portability certification is **EXP-SR-12 / RSP-008
-(SLM-487)** — campaign execution successor, not this fixture. OpenWiki
-navigation refreshes from this design surface via the scheduled
-`openwiki-update` workflow (no hand-edited `docs/openwiki/` pages).
+(SLM-487)** — campaign execution successor
+([iter-slm487-rsp-008-portability-20260810.md](iter-slm487-rsp-008-portability-20260810.md),
+`claim_class=diagnostic`): SRP-010 seams scored on OpenUI + SR; inventored
+shared-seam forks falsify zero-fork certification. OpenWiki navigation
+refreshes from this design surface via the scheduled `openwiki-update`
+workflow (no hand-edited `docs/openwiki/` pages).
 
 Recipe for a full-size rerun (identical interface, bigger N, real model):
 

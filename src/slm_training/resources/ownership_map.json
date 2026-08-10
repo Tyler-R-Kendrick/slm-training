@@ -668,6 +668,13 @@
       "relation": "Fixture-scale SR pack portability / default-isolation evidence (claim_class=fixture); RSP-008/EXP-SR-12 certification successor must build on this inventory rather than re-deriving it."
     },
     {
+      "linear_id": "SLM-487",
+      "title": "RSP-008: Run real OpenUI + symbolic-regression second-pack portability certification (EXP-SR-12)",
+      "doc": "docs/design/iter-slm487-rsp-008-portability-20260810.md",
+      "status": "diagnostic",
+      "relation": "Diagnostic EXP-SR-12 certification over SRP-010 seams (claim_class=diagnostic); inventored shared-seam forks falsify zero-fork certification; never promotion_candidate/ship_gate."
+    },
+    {
       "linear_id": "SLM-160",
       "title": "SPV4-02: Publish the causal architecture disposition and integrate only qualified winners into model lineage",
       "doc": "docs/design/semantic-planning-valid-state-disposition.md",
@@ -1248,7 +1255,7 @@
         "experiment_campaign"
       ],
       "new_owner_justified": false,
-      "justification": "Runs SRP-010 portability work through the campaign contract, following the SLM-159 replication precedent."
+      "justification": "Runs SRP-010 portability work through ExperimentCampaignV1 (claim_class=diagnostic); evidence in docs/design/iter-slm487-rsp-008-portability-20260810.md. Follows the SLM-159 replication precedent."
     },
     {
       "issue": "RSP-009",
