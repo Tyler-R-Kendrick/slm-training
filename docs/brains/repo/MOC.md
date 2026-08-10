@@ -61,6 +61,10 @@ reads this section to seed the autotrain hypothesis loop and prunes it as
   `recursive_core_positive` (18/20, Wilson 95% CI [0.699, 0.972]). Keep
   that note as the scientific source of truth for recurrence-health /
   LAR follow-ups; do not invent board status from this MOC bullet.
+- SIE-005 packet (2026-08-10, SLM-478): fixture blinded annotation +
+  external-judge schemas prepared — see
+  [`iter-slm478-sie-005-blinded-packet-20260810.md`](../../design/iter-slm478-sie-005-blinded-packet-20260810.md).
+  Real human/provider evidence and EXP-SR-3 execution remain SIE-006.
 - Board hygiene (2026-08-07): no claimable SLM issues/projects remain after
   [`slm-linear-project-hygiene-20260807`](../../design/slm-linear-project-hygiene-20260807.md).
   AP0 “Metric & Judge Validity” stays 0% because SLM-278/280 were canceled,

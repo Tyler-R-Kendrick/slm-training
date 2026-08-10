@@ -1,0 +1,46 @@
+{
+  "annotation_order_sha256": "70f1ecba4fd7f6043692cb63192f30ffba0df6d90d0a99153169ed8dea9e082b",
+  "audit_id": "sie005-construct-validity-packet",
+  "blinding_ok": true,
+  "claim_class": "fixture",
+  "import_complete_pair_n": 8,
+  "independence_ok": true,
+  "matrix_set": "slm478_sie005_blinded_packet",
+  "matrix_version": "sie005-v1",
+  "mock_judge_modes_ok": [
+    "ok",
+    "refusal",
+    "cost_overrun"
+  ],
+  "notes": [
+    "Packet prepared for EXP-SR-3 / SIE-006; no campaign locked here.",
+    "Reuse SLM-106 judge_audit + judge_independence; VCE-010 owns calibration protocol.",
+    "training_records_sha256_pin=d117d385afe9688ecf2bc41547d3081ee4c43832d277e2f41b049bf50044af0a",
+    "conflicting duplicate labels rejected deterministically."
+  ],
+  "pair_n": 8,
+  "private_key_path": "outputs/runs/sie005_blinded_packet/private/unblinding_key.jsonl",
+  "public_dir": "outputs/runs/sie005_blinded_packet/annotation_packet",
+  "related_catalogue_id": "exp-sr-3",
+  "rubric_sha256": "829adbc7adba9366ffa430c54dc8e32861df062ab99591bf9fc294759cb2b321",
+  "schema": "Slm478Sie005BlindedPacketReportV1",
+  "status": "fixture",
+  "strata": [
+    "ambiguity_case",
+    "hard_valid_contrast",
+    "metamorphic_pair",
+    "real_model_output"
+  ],
+  "timestamp": "2026-08-10T19:33:44.185254Z",
+  "training_excluded": true,
+  "version_stamp": {
+    "code_commit": "6c6eacd49c0a680c862f22a0d7ee05d2ad3e3d53",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v155",
+      "harness.experiments.slm478_sie005_blinded_packet": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-10T19:33:44.185128+00:00"
+  }
+}

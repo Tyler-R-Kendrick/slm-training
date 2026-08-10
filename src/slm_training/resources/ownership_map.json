@@ -1081,7 +1081,7 @@
         "verifier_gate_stack"
       ],
       "new_owner_justified": false,
-      "justification": "Coordinates with the existing SLM-106 judge-independence track (see related_overlaps) and VCE-010's protocol."
+      "justification": "Coordinates with the existing SLM-106 judge-independence track (see related_overlaps) and VCE-010's protocol. Fixture packet: docs/design/iter-slm478-sie-005-blinded-packet-20260810.md. Campaign successor: SIE-006 / EXP-SR-3 (SLM-483)."
     },
     {
       "issue": "SIE-006",
