@@ -1175,7 +1175,7 @@
         "verifier_gate_stack"
       ],
       "new_owner_justified": false,
-      "justification": "Runs VCE-010 + SIE-005 through the campaign contract. Diagnostic evidence: docs/design/iter-slm483-sie-006-calibration-campaign-20260810.md (claim_class=diagnostic; evaluator_human_agreement_kappa=0.0 on mock/synthetic evidence, below the 0.1 minimum_effect and the catalogue's own le-0.0 kill gate -- an honest negative result on labeled-mock external-judge/human-rater fixtures, since this environment has no real external-judge credentials or human raters; not a construct-validity claim)."
+      "justification": "Runs VCE-010 + SIE-005 through the campaign contract. Diagnostic evidence: docs/design/iter-slm483-sie-006-calibration-campaign-20260810.md (claim_class=diagnostic; evaluator_human_agreement_kappa=0.0 on mock/synthetic evidence, below the 0.1 minimum_effect and the catalogue's own le-0.0 kill gate -- an honest negative result on labeled-mock external-judge/human-rater fixtures, since this environment has no real external-judge credentials or human raters; not a construct-validity claim). Fixture/external-blocked construct-validity campaign: docs/design/iter-slm483-sie-006-construct-validity-20260810.md."
     },
     {
       "issue": "SIE-007",
