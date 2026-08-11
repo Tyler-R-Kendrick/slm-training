@@ -52,6 +52,7 @@ class ClassificationInputsV1:
     selected: int
     hard_profile: bool
     cap_applied: bool
+    domain_complete: bool
     all_unsupported_replay_valid: bool
     obstruction_present: bool
 
@@ -98,7 +99,7 @@ def classify_domain_adequacy(
         and inputs.all_unsupported_replay_valid
         and inputs.hard_profile
         and not inputs.cap_applied
-        and inputs.obstruction_present
+        and inputs.domain_complete
     ):
         return "domain_inadequate_under_bounds"
     return "coverage_unknown"
@@ -191,6 +192,7 @@ def serialize_structural_case(
             "selected": inputs.selected,
             "hard_profile": inputs.hard_profile,
             "cap_applied": inputs.cap_applied,
+            "domain_complete": inputs.domain_complete,
             "all_unsupported_replay_valid": inputs.all_unsupported_replay_valid,
             "obstruction_present": inputs.obstruction_present,
         },
@@ -230,6 +232,7 @@ def evaluate_structural_case(payload: dict[str, Any]) -> dict[str, Any]:
         selected=int(inputs_raw["selected"]),
         hard_profile=bool(inputs_raw["hard_profile"]),
         cap_applied=bool(inputs_raw["cap_applied"]),
+        domain_complete=bool(inputs_raw["domain_complete"]),
         all_unsupported_replay_valid=bool(inputs_raw["all_unsupported_replay_valid"]),
         obstruction_present=bool(inputs_raw["obstruction_present"]),
     )

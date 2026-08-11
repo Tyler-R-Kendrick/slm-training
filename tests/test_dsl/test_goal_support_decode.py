@@ -158,20 +158,13 @@ def test_goal_support_certified_rejects_non_goal_provider() -> None:
         )
 
 
-def test_goal_support_certified_rejects_evaluation_oracle_profile() -> None:
-    expander, provider = _provider(
-        {"ax"},
-        profile=_profile(mode="evaluation_oracle", authority_tier="evaluation-only"),
-    )
-    with pytest.raises(ValueError, match="rejects non-production"):
-        goal_support_certified_prune(
-            _forest(),
-            [1],
-            provider,
-            pack_id="fixture",
-            constraint_version="cv",
-            bounds=_BOUNDS,
-            state=expander.root_state(),
+def test_goal_support_provider_rejects_evaluation_profile_over_hard_partition() -> None:
+    with pytest.raises(ValueError, match="must be evaluation-only"):
+        _provider(
+            {"ax"},
+            profile=_profile(
+                mode="evaluation_oracle", authority_tier="evaluation-only"
+            ),
         )
 
 

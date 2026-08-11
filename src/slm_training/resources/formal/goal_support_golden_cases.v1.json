@@ -21,6 +21,7 @@
           "selected": 2,
           "hard_profile": true,
           "cap_applied": false,
+          "domain_complete": true,
           "all_unsupported_replay_valid": true,
           "obstruction_present": false
         },
@@ -56,6 +57,7 @@
           "selected": 2,
           "hard_profile": true,
           "cap_applied": false,
+          "domain_complete": true,
           "all_unsupported_replay_valid": true,
           "obstruction_present": false
         },
@@ -91,6 +93,7 @@
           "selected": 3,
           "hard_profile": true,
           "cap_applied": true,
+          "domain_complete": false,
           "all_unsupported_replay_valid": false,
           "obstruction_present": false
         },
@@ -125,6 +128,7 @@
           "selected": 10,
           "hard_profile": true,
           "cap_applied": false,
+          "domain_complete": true,
           "all_unsupported_replay_valid": true,
           "obstruction_present": true
         },
@@ -159,6 +163,7 @@
           "selected": 2,
           "hard_profile": true,
           "cap_applied": false,
+          "domain_complete": true,
           "all_unsupported_replay_valid": false,
           "obstruction_present": false
         },
@@ -192,6 +197,7 @@
           "selected": 1,
           "hard_profile": true,
           "cap_applied": false,
+          "domain_complete": true,
           "all_unsupported_replay_valid": true,
           "obstruction_present": true
         },
@@ -229,6 +235,7 @@
           "selected": 1,
           "hard_profile": true,
           "cap_applied": false,
+          "domain_complete": true,
           "all_unsupported_replay_valid": true,
           "obstruction_present": true
         },

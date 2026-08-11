@@ -1226,6 +1226,7 @@ legal_set_fingerprint = _adequacy.legal_set_fingerprint
 bounds_digest_from_state = _adequacy.bounds_digest_from_state
 domain_adequacy_cap_policy_table = _adequacy.domain_adequacy_cap_policy_table
 domain_adequacy_classification_table = _adequacy.domain_adequacy_classification_table
+classify_domain_adequacy = _adequacy._classify_domain_adequacy
 analyze_goal_domain = _adequacy.analyze_goal_domain
 
 __all__ = [
@@ -1291,6 +1292,7 @@ __all__ = [
     "bounds_digest_from_state",
     "domain_adequacy_cap_policy_table",
     "domain_adequacy_classification_table",
+    "classify_domain_adequacy",
     "analyze_goal_domain",
     "replay_goal_support_result",
     "exact_goal_closure",

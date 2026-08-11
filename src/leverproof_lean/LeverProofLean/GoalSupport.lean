@@ -192,6 +192,7 @@ structure ClassificationInputs where
   selected : Action
   hardProfile : Bool
   capApplied : Bool
+  domainComplete : Bool
   allUnsupportedReplayValid : Bool
   obstruction : ObstructionSummary
 deriving Repr, BEq
@@ -209,7 +210,7 @@ def classifyDomainAdequacy (p : Partitions) (inp : ClassificationInputs) :
       .coverageUnknown
   else if p.unknown.isEmpty ∧ p.unobserved.isEmpty ∧ !p.unsupported.isEmpty ∧
       inp.allUnsupportedReplayValid ∧ inp.hardProfile ∧ !inp.capApplied ∧
-      inp.obstruction.present then
+      inp.domainComplete then
     .domainInadequateUnderBounds
   else
     .coverageUnknown
@@ -227,7 +228,7 @@ def caseSelectionUnresolved (p : Partitions) (inp : ClassificationInputs) : Prop
 def caseDomainInadequate (p : Partitions) (inp : ClassificationInputs) : Prop :=
   p.supported.isEmpty ∧ p.unknown.isEmpty ∧ p.unobserved.isEmpty ∧
     !p.unsupported.isEmpty ∧ inp.allUnsupportedReplayValid ∧ inp.hardProfile ∧
-    !inp.capApplied ∧ inp.obstruction.present
+    !inp.capApplied ∧ inp.domainComplete
 
 theorem classify_adequate (p : Partitions) (inp : ClassificationInputs)
     (h : caseAdequateSelectedSupported p inp) :
@@ -257,6 +258,13 @@ theorem classify_inadequate (p : Partitions) (inp : ClassificationInputs)
     classifyDomainAdequacy p inp = .domainInadequateUnderBounds := by
   unfold classifyDomainAdequacy caseDomainInadequate at *
   simp [h.1, h.2.1, h.2.2.1, h.2.2.2.1, h.2.2.2.2.1, h.2.2.2.2.2.1, h.2.2.2.2.2.2]
+
+theorem classify_partial_coverage_unknown (p : Partitions) (inp : ClassificationInputs)
+    (hnoSupport : p.supported.isEmpty)
+    (hpartial : inp.domainComplete = false) :
+    classifyDomainAdequacy p inp = .coverageUnknown := by
+  unfold classifyDomainAdequacy
+  simp [hnoSupport, hpartial]
 
 theorem classification_exhaustive (p : Partitions) (inp : ClassificationInputs) :
     classifyDomainAdequacy p inp = .adequateSelectedSupported ∨

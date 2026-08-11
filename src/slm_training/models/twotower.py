@@ -11573,16 +11573,30 @@ class TwoTowerModel(nn.Module):
         )
         profile = binding.profile
         constraint_set = binding.constraint_set
+        problem = binding.problem
         request = binding.request
+        from slm_training.dsl.pack import get_pack
+        from slm_training.dsl.solver.openui_support import current_openui_pack_identity
+
+        pack = get_pack("openui")
+        pack_identity = current_openui_pack_identity(self.tokenizer)
 
         def factory() -> OpenUIGoalVerifier:
             return OpenUIGoalVerifier(
                 profile=profile,
                 constraint_set=constraint_set,
+                problem=problem,
                 request=request,
+                pack_identity=pack_identity,
+                pack=pack,
             )
 
-        return GoalSupportProvider(expander, profile, factory), expander, bounds, cv
+        return GoalSupportProvider(
+            expander,
+            verifier_factory=factory,
+            profile=profile,
+            constraint_set=constraint_set,
+        ), expander, bounds, cv
 
     def _record_goal_support_diagnostic(self, observation, stats, *, mode: str, sink) -> None:
         from slm_training.models.decode_stats import fold_goal_support_closure

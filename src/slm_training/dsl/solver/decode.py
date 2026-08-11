@@ -93,6 +93,7 @@ class GoalSupportDecodeBinding:
 
     ready: bool
     disable_reason: str | None = None
+    problem: Any | None = None
     request: GenerationRequest | None = None
     constraint_set: Any | None = None
     profile: Any | None = None
@@ -171,10 +172,7 @@ def build_goal_support_decode_binding(
         from slm_training.data.progspec.prompt_requirements import (
             PromptSemanticRequirementsV1,
         )
-        from slm_training.data.progspec.synthesis_problem import (
-            PackIdentityV1,
-            VerifiedSynthesisProblemV1,
-        )
+        from slm_training.data.progspec.synthesis_problem import VerifiedSynthesisProblemV1
         from slm_training.data.semantic_plan.requirements_compile import (
             compile_goal_constraints,
         )
@@ -183,14 +181,15 @@ def build_goal_support_decode_binding(
             GoalVerifierProfileV1,
             validate_profile_against_constraint_set,
         )
+        from slm_training.dsl.solver.openui_support import current_openui_pack_identity
 
         pack = get_pack(pack_id)
+        pack_identity = current_openui_pack_identity()
+        if pack.pack_id != pack_identity.pack_id:
+            raise ValueError("requested pack does not match the live OpenUI identity")
         problem = VerifiedSynthesisProblemV1(
             problem_id="decode",
-            pack_identity=PackIdentityV1(
-                pack_id=pack.pack_id,
-                contract_version=getattr(pack, "contract_version", 5),
-            ),
+            pack_identity=pack_identity,
             requirements=PromptSemanticRequirementsV1(facts=()),
         )
         constraint_set = compile_goal_constraints(problem, request, pack)
@@ -214,6 +213,7 @@ def build_goal_support_decode_binding(
         return GoalSupportDecodeBinding(
             ready=True,
             disable_reason=None,
+            problem=problem,
             request=request,
             constraint_set=constraint_set,
             profile=profile,
@@ -349,6 +349,60 @@ def goal_support_certified_prune(
         certificate_store=certificate_store,
         closure_fn=exact_goal_closure,
     )
+
+
+def goal_support_prune(
+    forest: CompletionForest,
+    prefix_ids,
+    provider: SupportProvider | None,
+    *,
+    mode: str,
+    pack_id: str,
+    constraint_version: str,
+    bounds: SolverBounds,
+    unknown_policy: str = "keep_and_rank",
+    state=None,
+    cache: dict | None = None,
+    certificate_store: dict[str, SupportCertificate] | None = None,
+    max_queries: int | None = None,
+) -> tuple[CompletionForest, ClosureResult | None]:
+    """Apply the tri-state mode without creating a second closure path."""
+    mode = normalize_goal_support_mode(mode)
+    if mode == "off":
+        return forest, None
+    if provider is None:
+        raise ValueError("goal support requires a request-bound provider")
+    if forest.coverage != "complete" or not forest.paths:
+        return forest, None
+
+    if mode == "certified":
+        from slm_training.dsl.solver.goal_support import exact_goal_closure
+
+        closure_fn = exact_goal_closure
+    else:
+        closure_fn = exact_closure
+    if max_queries is not None:
+        base_closure = closure_fn
+
+        def closure_fn(state, support_provider, **kwargs):
+            return base_closure(
+                state, support_provider, max_queries=max_queries, **kwargs
+            )
+
+    pruned, result = _prune_with_closure(
+        forest,
+        prefix_ids,
+        provider,
+        pack_id=pack_id,
+        constraint_version=constraint_version,
+        bounds=bounds,
+        unknown_policy=unknown_policy,
+        state=state,
+        cache=cache,
+        certificate_store=certificate_store,
+        closure_fn=closure_fn,
+    )
+    return (forest if mode == "diagnostic" else pruned), result
 
 
 def goal_support_diagnostic_observe(
