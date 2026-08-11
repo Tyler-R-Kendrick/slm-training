@@ -19,7 +19,7 @@
   "adr": "docs/design/adr-revmath-reasoning-profile.md",
   "verified_by": "scripts/verify_revmath_harness_parity.py",
   "self_healing": {
-    "notes": "Freeze surface for proposition-preserving repair (implemented by HARN-09; declared here so parity audits fail closed before repair code lands).",
+    "notes": "Freeze surface for proposition-preserving repair (HARN-09 / harnesses/reasoning/revmath/self_healing.py); may_modify/must_freeze are machine-checked for disjointness and non-emptiness.",
     "may_modify": [
       "tactic_sequence",
       "proof_search_strategy",
@@ -246,10 +246,10 @@
     {
       "id": "repair.proposition_preserving_controller",
       "category": "repair",
-      "required_owner": null,
-      "status": "blocker",
-      "blocker_issue": "HARN-09",
-      "notes": "Self-healing controller must honor may_modify / must_freeze declared above."
+      "required_owner": "src/slm_training/harnesses/reasoning/revmath/self_healing.py",
+      "status": "present",
+      "blocker_issue": null,
+      "notes": "HARN-09 proposition-preserving self-healing; honors may_modify / must_freeze; immutable attempt lineage; cycle\u2192unknown."
     },
     {
       "id": "versions.governance_revmath_owners",

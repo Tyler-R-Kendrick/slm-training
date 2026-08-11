@@ -1,6 +1,6 @@
 # Reverse mathematics, computability, and canonical evidence ownership
 
-**Status:** HARN-08 conservative RM labeling / anti-overclaim (SLM-537); HARN-06 constructivization + counterexample validators landed (SLM-546); HARN-07 quantitative-bound extraction (SLM-547); HARN-05 reversal/bidirectional validation (SLM-545); HARN-04 assumption ablation (SLM-544); EVID-03 four-axis ledger (SLM-519); HARN-03 runner/replay/report (SLM-536); HARN-02 schemas (SLM-527); profile + parity (HARN-01 / SLM-520); owner map (EVID-01 / SLM-515)  
+**Status:** HARN-09 proposition-preserving self-healing (SLM-560); HARN-08 conservative RM labeling / anti-overclaim (SLM-537); HARN-06 constructivization + counterexample validators landed (SLM-546); HARN-07 quantitative-bound extraction (SLM-547); HARN-05 reversal/bidirectional validation (SLM-545); HARN-04 assumption ablation (SLM-544); EVID-03 four-axis ledger (SLM-519); HARN-03 runner/replay/report (SLM-536); HARN-02 schemas (SLM-527); profile + parity (HARN-01 / SLM-520); owner map (EVID-01 / SLM-515)  
 **Base SHA:** `980aa465223adf7822f82930550c92b9240333ca` (`origin/main` at audit)  
 **Machine-readable map:** [`src/slm_training/resources/revmath_owner_map.json`](../../src/slm_training/resources/revmath_owner_map.json)  
 **Harness parity matrix:** [`src/slm_training/resources/revmath_harness_parity.json`](../../src/slm_training/resources/revmath_harness_parity.json)  
@@ -80,6 +80,31 @@ reverse mathematics (`report_labeling_disclaimer` /
 Fixtures: `resources/revmath/fixtures/labeling_*.claim.json` (positive +
 negative).
 
+## HARN-09 proposition-preserving self-healing
+
+Owner: `harnesses/reasoning/revmath/self_healing.py` (extends `semantic_repair`
+lineage shape; does not fork distill/OpenUI repair).
+
+**May modify** (parity `self_healing.may_modify` /
+`REVMATH_MUTABLE_REPAIR_KNOBS`): tactic sequence, proof-search strategy,
+retrieval choices, type-equivalent theorem selection, serialization/bridge
+generation, temporary decomposition, and resource allocation *inside* the
+locked budget envelope.
+
+**Must freeze** (`REVMATH_FROZEN_REPAIR_FIELDS`): proposition, base theory /
+allowed assumptions, theorem direction, corpus membership, experiment arms,
+budgets/stopping rules, judge definitions, promotion gates, authority policy,
+expected counterexample semantics.
+
+The controller consumes typed failure/witness data, proposes bounded knob
+deltas, re-runs the *exact* locked task via the HARN-03 runner after every
+attempt, records immutable `RevmathRepairAttemptV1` lineage (before/after
+artifacts, knob digests, search budget, checker/evidence refs, parent id),
+invalidates stale proof digests on re-check, and terminates with
+`cycle_detected` / `budget_exhausted` → unknown rather than looping.
+Successful repair proves the original `task_identity_digest`; mutation tests
+reject weaken-theorem / add-axiom / increase-budget / change-corpus paths.
+
 ## Owner map (one canonical owner per surface)
 
 | Surface id | Kind | Canonical owner | Key symbols | Tier / role |
@@ -111,6 +136,7 @@ negative).
 | `revmath_counterexample` | task_validator | `harnesses/reasoning/revmath/counterexample.py` | `check_counterexample_against_theorem`, `evaluate_counterexample` | HARN-06 checked finite/computable counterexamples; search≠refutation |
 | `revmath_quantitative_bound` | task_validator | `harnesses/reasoning/revmath/quantitative_bound.py` | `extract_quantitative_bound`, `QuantitativeBoundReportV1` | HARN-07 theorem-derived bounds via EVID-04; no invented rates |
 | `revmath_labeling` | task_validator | `harnesses/reasoning/revmath/labeling.py` | `validate_label_claim`, `anti_overclaim_reasons`, `RmLabelClaimV1` | HARN-08 conservative Big-Five labeling; anti-overclaim |
+| `revmath_self_healing` | repair | `harnesses/reasoning/revmath/self_healing.py` | `run_self_healing`, `propose_repair_attempts`, `RevmathRepairSessionV1` | HARN-09 proposition-preserving self-healing |
 | `revmath_replay` | replay | `harnesses/reasoning/revmath/replay.py` | `build_revmath_replay_bundle` | HARN-03 ReplayBundleV1 composition |
 | `revmath_report` | report | `harnesses/reasoning/revmath/report.py` | `build_revmath_report` | HARN-03 typed reports |
 | `continuous_formal_promote` | command | `scripts/run_autotrain_continuous.py` | `ensure_promote_formal_preflight` | promotion gate |
@@ -127,6 +153,7 @@ Cross-links to the global ownership map (`ownership_map.json` subsystems): where
 | EVID-04 / SLM-525 | `formal_preflight_schema` → `bound_ast_schema` | yes (`formal/bound_ast.py`) | **done** — safe symbolic bound AST + exact Fraction evaluator; registry ids cited by ledger |
 | EVID-06 / SLM-526 | `formal_object_schema` | no | v2 envelope adapts v1 objects |
 | HARN-01 / SLM-520 | `reasoning_harness_parent` | no | register `reasoning/revmath` profile + parity matrix |
+| HARN-09 / SLM-560 | `semantic_repair` | yes (`self_healing.py`) | **done** — proposition-preserving repair controller; lineage extends SemanticRepairRecordV1 without forking distill |
 
 ## Prohibited duplicate owners
 
@@ -160,7 +187,7 @@ The profile id is **`reasoning/revmath`**. It parameterizes the G4 reasoning har
 
 **Registration seam (HARN-01):** [`harnesses/reasoning/profiles.py`](../../src/slm_training/harnesses/reasoning/profiles.py) registers `reasoning/g4` (default) and `reasoning/revmath` (opt-in, `task_semantics_ready=True` after HARN-03). `resolve_profile(None)` keeps the historical default — discovering/configuring revmath does not alter G4 bench or warmup behavior.
 
-Task schemas (HARN-02), runner/replay/report (HARN-03), assumption-ablation (HARN-04), reversal (HARN-05), constructivization/counterexample (HARN-06), quantitative-bound extraction (HARN-07), and conservative labeling / anti-overclaim (HARN-08) are present; remaining task-kind validators + repair controller (HARN-09) remain downstream. This document owns **authority boundaries and parity obligations**; missing parity rows are explicit blockers in the matrix, never silent fallbacks.
+Task schemas (HARN-02), runner/replay/report (HARN-03), assumption-ablation (HARN-04), reversal (HARN-05), constructivization/counterexample (HARN-06), quantitative-bound extraction (HARN-07), conservative labeling / anti-overclaim (HARN-08), and proposition-preserving self-healing (HARN-09) are present; remaining campaign CLI binding (HARN-10) and fixture-corpus packaging (HARN-11) stay downstream where still open. This document owns **authority boundaries and parity obligations**; missing parity rows are explicit blockers in the matrix, never silent fallbacks.
 
 ## Harness / self-healing parity matrix (HARN-01)
 
@@ -178,7 +205,8 @@ Every row is either `status=present` with a live `required_owner` path, or `stat
 
 ### Self-healing freeze surface
 
-Declared in the parity resource (`self_healing`); implemented by HARN-09.
+Declared in the parity resource (`self_healing`); implemented by HARN-09
+(`harnesses/reasoning/revmath/self_healing.py`).
 
 | May modify (within locked budget) | Must freeze |
 | --- | --- |

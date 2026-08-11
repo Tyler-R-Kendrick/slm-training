@@ -3079,6 +3079,11 @@
       "history": [
         {
           "version": "v23",
+          "date": "2026-08-11T12:54:41Z",
+          "note": "no-bump: HARN-09 (SLM-560) wires check_changed path\u2192test map for revmath self_healing only; ownership map unchanged."
+        },
+        {
+          "version": "v23",
           "note": "no-bump: HARN-08 (SLM-537) wires check_changed path\u2192test map for revmath labeling only; ownership map unchanged.",
           "date": "2026-08-11T12:35:52Z"
         },
@@ -3365,7 +3370,7 @@
       ]
     },
     "governance.revmath_owners": {
-      "version": "v11",
+      "version": "v12",
       "kind": "gate",
       "paths": [
         "docs/design/adr-revmath-reasoning-profile.md",
@@ -3375,6 +3380,11 @@
         "tests/test_scripts/test_verify_revmath_owners.py"
       ],
       "history": [
+        {
+          "version": "v12",
+          "date": "2026-08-11T12:54:41Z",
+          "note": "HARN-09 (SLM-560): register revmath_self_healing owner surface + extension seam over semantic_repair."
+        },
         {
           "version": "v11",
           "date": "2026-08-11",
@@ -3443,7 +3453,7 @@
       ]
     },
     "governance.revmath_harness_parity": {
-      "version": "v8",
+      "version": "v9",
       "kind": "gate",
       "paths": [
         "src/slm_training/resources/revmath_harness_parity.json",
@@ -3452,6 +3462,11 @@
         "tests/test_scripts/test_verify_revmath_harness_parity.py"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-08-11T12:54:41Z",
+          "note": "HARN-09 (SLM-560): repair.proposition_preserving_controller obligation present with self_healing.py owner."
+        },
         {
           "version": "v8",
           "note": "HARN-08 (SLM-537): document conservative RM labeling / anti-overclaim obligation present.",
@@ -18299,7 +18314,7 @@
       ]
     },
     "harness.reasoning.revmath": {
-      "version": "v9",
+      "version": "v10",
       "kind": "harness",
       "paths": [
         "scripts/run_revmath_task.py",
@@ -18314,9 +18329,16 @@
         "tests/test_harnesses/reasoning/test_revmath_reversal.py",
         "src/slm_training/harnesses/reasoning/revmath/labeling.py",
         "tests/test_harnesses/reasoning/test_revmath_labeling.py",
-        "tests/test_harnesses/reasoning/test_revmath_quantitative_bound.py"
+        "tests/test_harnesses/reasoning/test_revmath_quantitative_bound.py",
+        "src/slm_training/harnesses/reasoning/revmath/self_healing.py",
+        "tests/test_harnesses/reasoning/test_revmath_self_healing.py"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-08-11T12:54:41Z",
+          "note": "HARN-09 (SLM-560): proposition-preserving self-healing controller, immutable attempt lineage, mutation tests for frozen fields."
+        },
         {
           "version": "v9",
           "date": "2026-08-11",

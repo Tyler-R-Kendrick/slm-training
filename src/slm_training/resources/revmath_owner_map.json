@@ -451,6 +451,25 @@
       "notes": "HARN-08 conservative RM labeling + anti-overclaim; Big-Five equivalence only with base/coding/forward/reversal; distinguishes RM-inspired assumption minimization from genuine reverse mathematics."
     },
     {
+      "id": "revmath_self_healing",
+      "kind": "repair",
+      "owner_module": "src/slm_training/harnesses/reasoning/revmath/self_healing.py",
+      "owner_symbols": [
+        "REVMATH_FROZEN_REPAIR_FIELDS",
+        "RevmathRepairKnobStateV1",
+        "RevmathRepairAttemptV1",
+        "RevmathRepairSessionV1",
+        "propose_repair_attempts",
+        "run_self_healing",
+        "reject_forbidden_repair",
+        "assert_serialized_repair_freeze",
+        "semantic_repair_lineage_from_session"
+      ],
+      "design_doc": "docs/design/reverse-mathematics-computability.md",
+      "ownership_map_subsystem": null,
+      "notes": "HARN-09 proposition-preserving self-healing controller; mutable knobs only; immutable attempt lineage; extends SemanticRepairRecordV1 lineage without forking distill repair."
+    },
+    {
       "id": "revmath_replay",
       "kind": "replay",
       "owner_module": "src/slm_training/harnesses/reasoning/revmath/replay.py",
@@ -557,6 +576,13 @@
       "extends": "revmath_plugins",
       "new_owner_justified": true,
       "justification": "Constructivization + computable/finite counterexample validators under harnesses/reasoning/revmath/{constructivization,counterexample}.py; register plugins without forking runner; fail-closed masquerade and search-failure guards."
+    },
+    {
+      "issue": "HARN-09",
+      "linear_id": "SLM-560",
+      "extends": "semantic_repair",
+      "new_owner_justified": true,
+      "justification": "Proposition-preserving self-healing under harnesses/reasoning/revmath/self_healing.py; reuses RevmathRepairRecordV1 freeze + SemanticRepairRecordV1 lineage shape without forking distill/OpenUI repair or campaign/evidence stores."
     }
   ],
   "prohibited_duplicate_risks": [
