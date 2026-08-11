@@ -1,4 +1,4 @@
-"""Goal-verifier profiles and redacted terminal-evidence contracts (PGS-B01 / SLM-497).
+"""Goal-verifier profiles, terminal evidence, and goal-aware support (PGS-B01/C01).
 
 ``GoalVerifierProfileV1`` pins the semantics of every goal-support query: which
 constraints, gates, evaluators, and metric identities are in scope, under which
@@ -7,18 +7,33 @@ request-local, privacy-bounded evidence record that binds verifier outcomes back
 to a profile digest without persisting raw prompts, OpenUI source, witness text,
 secrets, logs, timestamps, process ids, or model scores.
 
-This module defines contracts only — no OpenUI parsing, gate execution,
-meaningful evaluator execution, support search, obstruction, closure, or decode
-wiring.
+``GoalSupportProvider`` (PGS-C01 / SLM-499) is a thin goal-aware wrapper over the
+existing VSS enumerative oracle and certificate replay. The canonical search proof
+remains :class:`~slm_training.dsl.solver.support.SupportCertificate`; property-
+specific semantics travel in digest-bound :class:`GoalSupportResultV1` sidecars
+with a compiler-hard ``exact_goal_closure`` authority guard.
 """
 
 from __future__ import annotations
 
 import hashlib
 import re
-from typing import Any, Literal
+from typing import Any, Callable, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from slm_training.dsl.solver.closure import ClosureResult, QueryOrder, exact_closure
+from slm_training.dsl.solver.state import FiniteDomainState, SupportVerdict
+from slm_training.dsl.solver.support import (
+    EnumerativeSupportOracle,
+    ProblemExpander,
+    ReplayResult,
+    SupportCertificate,
+    SupportQuery,
+    SupportResult,
+    Verifier,
+    replay_support_certificate,
+)
 
 from slm_training.data.progspec.goal_constraints import (
     COMPILED_GOAL_CONSTRAINT_SET_SCHEMA_VERSION,
@@ -31,7 +46,9 @@ from slm_training.data.progspec.synthesis_problem import PackIdentityV1
 __all__ = [
     "GOAL_VERIFIER_PROFILE_SCHEMA_VERSION",
     "GOAL_TERMINAL_EVIDENCE_SCHEMA_VERSION",
+    "GOAL_SUPPORT_RESULT_SCHEMA_VERSION",
     "GOAL_SUPPORT_IMPLEMENTATION_VERSION",
+    "GoalVerifierFactory",
     "GoalVerifierMode",
     "GoalProfileAuthorityTier",
     "GoalTerminalStatus",
@@ -43,17 +60,24 @@ __all__ = [
     "GoalFailureAtomV1",
     "GoalUnknownAtomV1",
     "GoalTerminalEvidenceV1",
+    "GoalSupportResultV1",
+    "GoalSupportProvider",
     "profile_mode_authority_table",
     "terminal_status_decision_table",
+    "exact_goal_closure_authority_table",
     "profile_digest_inputs",
+    "goal_support_backend_version",
     "compute_pack_identity_digest",
     "validate_profile_against_constraint_set",
     "redact_bounded_string",
     "redact_terminal_evidence_dict",
+    "replay_goal_support_result",
+    "exact_goal_closure",
 ]
 
 GOAL_VERIFIER_PROFILE_SCHEMA_VERSION = "goal_verifier_profile/v1"
 GOAL_TERMINAL_EVIDENCE_SCHEMA_VERSION = "goal_terminal_evidence/v1"
+GOAL_SUPPORT_RESULT_SCHEMA_VERSION = "goal_support_result/v1"
 GOAL_SUPPORT_IMPLEMENTATION_VERSION = "goal_support/v1"
 
 GoalVerifierMode = Literal["production_exact", "evaluation_oracle", "advisory_diagnostic"]
@@ -588,3 +612,328 @@ def _terminal_evidence_digest(payload: dict[str, Any]) -> str:
     return hashlib.sha256(
         canonical_json_bytes(_canonical_terminal_payload(payload))
     ).hexdigest()
+
+
+# --------------------------------------------------------------------------- #
+# Goal-aware support provider (PGS-C01 / SLM-499)
+# --------------------------------------------------------------------------- #
+
+
+class GoalVerifierFactory(Protocol):
+    """Deterministic factory: every ``check``/``replay`` gets a fresh verifier."""
+
+    def __call__(self) -> Verifier: ...
+
+
+def goal_support_backend_version(profile: GoalVerifierProfileV1) -> str:
+    """Profile-sensitive backend id for exact-closure cache keys."""
+    digest = profile.digest or profile.compute_digest()
+    return f"goal-support/{GOAL_SUPPORT_IMPLEMENTATION_VERSION}/{digest}"
+
+
+def exact_goal_closure_authority_table() -> dict[str, Any]:
+    """Which profile modes/tiers ``exact_goal_closure`` accepts or rejects."""
+    return {
+        "accepted": {
+            "mode": "production_exact",
+            "authority_tiers": sorted(_HARD_AUTHORITIES),
+        },
+        "rejected_modes": sorted(
+            mode for mode in _MODE_ALLOWED_AUTHORITY if mode != "production_exact"
+        ),
+        "rejected_authority_tiers": sorted(
+            tier for tier in (
+                *_EVALUATION_AUTHORITIES,
+                *_ADVISORY_AUTHORITIES,
+            )
+        ),
+    }
+
+
+class GoalSupportResultV1(_StrictModel):
+    """Digest-bound sidecar keyed by the canonical base certificate digest."""
+
+    schema_version: str = Field(
+        default=GOAL_SUPPORT_RESULT_SCHEMA_VERSION,
+        pattern=r"^goal_support_result/v1$",
+    )
+    base_certificate_digest: str = Field(min_length=1, pattern=r"^[0-9a-f]{64}$")
+    base_verdict: str = Field(min_length=1)
+    profile_digest: str = Field(min_length=1, pattern=r"^[0-9a-f]{64}$")
+    authority_tier: GoalProfileAuthorityTier
+    terminal_evidence_digests: tuple[str, ...] = ()
+    witness_terminal_evidence_digest: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$|^$"
+    )
+    obstruction_core_digest: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$|^$"
+    )
+    digest: str = Field(default="", pattern=r"^[0-9a-f]{64}$|^$")
+
+    @model_validator(mode="after")
+    def _check_integrity(self) -> "GoalSupportResultV1":
+        if self.base_verdict not in {item.value for item in SupportVerdict}:
+            raise ValueError(f"unknown base_verdict {self.base_verdict!r}")
+        if self.digest:
+            expected = self.compute_digest()
+            if self.digest != expected:
+                raise ValueError("digest does not match canonical payload")
+        return self
+
+    def _canonical_payload(self) -> dict[str, Any]:
+        payload = self.model_dump(mode="json")
+        payload.pop("digest", None)
+        payload["terminal_evidence_digests"] = sorted(payload["terminal_evidence_digests"])
+        return payload
+
+    def compute_digest(self) -> str:
+        return hashlib.sha256(
+            canonical_json_bytes(self._canonical_payload())
+        ).hexdigest()
+
+    def to_dict(self, *, include_digest: bool = True) -> dict[str, Any]:
+        payload = self.model_dump(mode="json")
+        if not include_digest:
+            payload.pop("digest", None)
+        elif not payload.get("digest"):
+            payload["digest"] = self.compute_digest()
+        return payload
+
+    @classmethod
+    def from_dict(cls, value: dict[str, Any]) -> "GoalSupportResultV1":
+        if str(value.get("schema_version")) != GOAL_SUPPORT_RESULT_SCHEMA_VERSION:
+            raise ValueError("unsupported GoalSupportResultV1 version")
+        return cls.model_validate(value)
+
+
+def _terminal_records(verifier: Verifier) -> tuple[GoalTerminalEvidenceV1, ...]:
+    trace = getattr(verifier, "last_trace", None)
+    if trace is None:
+        return ()
+    records = getattr(trace, "records", ())
+    return tuple(records)
+
+
+def _record_digest(record: GoalTerminalEvidenceV1) -> str:
+    return record.evidence_digest or record.compute_digest()
+
+
+def _terminal_evidence_digests(verifier: Verifier) -> tuple[str, ...]:
+    return tuple(_record_digest(record) for record in _terminal_records(verifier))
+
+
+def _witness_terminal_evidence_digest(
+    result: SupportResult,
+    verifier: Verifier,
+) -> str | None:
+    if result.verdict is not SupportVerdict.SUPPORTED:
+        return None
+    records = _terminal_records(verifier)
+    if not records:
+        return None
+    for record in reversed(records):
+        digest = _record_digest(record)
+        if record.overall_status == "ACCEPT" and digest:
+            return digest
+    return _record_digest(records[-1])
+
+
+def _build_goal_support_sidecar(
+    result: SupportResult,
+    *,
+    profile: GoalVerifierProfileV1,
+    verifier: Verifier,
+) -> GoalSupportResultV1:
+    profile_digest = profile.digest or profile.compute_digest()
+    payload = {
+        "base_certificate_digest": result.certificate.digest,
+        "base_verdict": result.verdict.value,
+        "profile_digest": profile_digest,
+        "authority_tier": profile.authority_tier,
+        "terminal_evidence_digests": _terminal_evidence_digests(verifier),
+        "witness_terminal_evidence_digest": _witness_terminal_evidence_digest(
+            result, verifier
+        ),
+        "obstruction_core_digest": None,
+    }
+    sidecar = GoalSupportResultV1(**payload)
+    return GoalSupportResultV1.from_dict(sidecar.to_dict(include_digest=True))
+
+
+class GoalSupportProvider:
+    """Goal-aware :class:`SupportProvider` over the enumerative oracle."""
+
+    def __init__(
+        self,
+        expander: ProblemExpander,
+        profile: GoalVerifierProfileV1,
+        verifier_factory: GoalVerifierFactory,
+    ) -> None:
+        self._expander = expander
+        self._profile = profile
+        self._verifier_factory = verifier_factory
+        self._profile_digest = profile.digest or profile.compute_digest()
+
+    @property
+    def expander(self) -> ProblemExpander:
+        return self._expander
+
+    @property
+    def profile(self) -> GoalVerifierProfileV1:
+        return self._profile
+
+    @property
+    def profile_digest(self) -> str:
+        return self._profile_digest
+
+    @property
+    def backend_version(self) -> str:
+        return goal_support_backend_version(self._profile)
+
+    def _fresh_verifier(self) -> Verifier:
+        return self._verifier_factory()
+
+    def validate_identities(self, state: FiniteDomainState) -> None:
+        if (
+            state.problem_id != self._expander.problem_id
+            or state.pack_id != self._expander.pack_id
+            or state.constraint_version != self._expander.constraint_version
+            or state.bounds != self._expander.bounds
+        ):
+            raise ValueError("goal support state identity does not match expander")
+
+    def check_with_sidecar(
+        self, state: FiniteDomainState, query: SupportQuery
+    ) -> tuple[SupportResult, GoalSupportResultV1]:
+        self.validate_identities(state)
+        verifier = self._fresh_verifier()
+        result = EnumerativeSupportOracle(self._expander, verifier).check(state, query)
+        sidecar = _build_goal_support_sidecar(
+            result, profile=self._profile, verifier=verifier
+        )
+        if sidecar.base_certificate_digest != result.certificate.digest:
+            raise ValueError("sidecar base_certificate_digest drift")
+        if sidecar.base_verdict != result.verdict.value:
+            raise ValueError("sidecar base_verdict drift")
+        return result, sidecar
+
+    def check(self, state: FiniteDomainState, query: SupportQuery) -> SupportResult:
+        result, _sidecar = self.check_with_sidecar(state, query)
+        return result
+
+    def replay(
+        self, certificate: SupportCertificate, *, state: FiniteDomainState
+    ) -> ReplayResult:
+        self.validate_identities(state)
+        verifier = self._fresh_verifier()
+        return replay_support_certificate(
+            certificate,
+            state=state,
+            expander=self._expander,
+            verifier=verifier,
+        )
+
+
+def replay_goal_support_result(
+    certificate: SupportCertificate,
+    sidecar: GoalSupportResultV1,
+    *,
+    state: FiniteDomainState,
+    provider: GoalSupportProvider,
+) -> ReplayResult:
+    """Replay base certificate plus digest-bound goal sidecar.
+
+    Replay failures are reported as violations; the certificate verdict is never
+    upgraded to ``UNSUPPORTED`` when replay fails.
+    """
+    violations: list[str] = []
+
+    if sidecar.base_certificate_digest != certificate.digest:
+        violations.append("sidecar base_certificate_digest mismatch")
+    if sidecar.base_verdict != certificate.verdict.value:
+        violations.append("sidecar base_verdict mismatch")
+    if sidecar.profile_digest != provider.profile_digest:
+        violations.append("stale or cross-profile sidecar profile_digest")
+    if sidecar.authority_tier != provider.profile.authority_tier:
+        violations.append("sidecar authority_tier mismatch")
+
+    expected_sidecar_digest = sidecar.compute_digest()
+    if sidecar.digest and sidecar.digest != expected_sidecar_digest:
+        violations.append("tampered sidecar digest")
+
+    provider.validate_identities(state)
+
+    replay_verifier = provider._fresh_verifier()
+    base_replay = replay_support_certificate(
+        certificate,
+        state=state,
+        expander=provider.expander,
+        verifier=replay_verifier,
+    )
+    violations.extend(base_replay.violations)
+
+    evidence_verifier = provider._fresh_verifier()
+    EnumerativeSupportOracle(provider.expander, evidence_verifier).check(
+        state, certificate.query
+    )
+    recomputed_digests = _terminal_evidence_digests(evidence_verifier)
+    if tuple(sidecar.terminal_evidence_digests) != recomputed_digests:
+        violations.append("terminal_evidence_digests mismatch on replay")
+
+    if certificate.verdict is SupportVerdict.SUPPORTED:
+        if sidecar.witness_terminal_evidence_digest is None:
+            violations.append("missing witness_terminal_evidence_digest for SUPPORTED")
+        elif sidecar.witness_terminal_evidence_digest not in recomputed_digests:
+            violations.append("witness_terminal_evidence_digest not found on replay")
+        elif sidecar.witness_terminal_evidence_digest not in set(
+            sidecar.terminal_evidence_digests
+        ):
+            violations.append("witness_terminal_evidence_digest absent from sidecar list")
+
+    # Preserve UNKNOWN as honest non-pruning evidence; never fabricate UNSUPPORTED.
+    verdict = certificate.verdict
+    if verdict is SupportVerdict.UNKNOWN:
+        pass
+    elif not base_replay.ok and verdict is SupportVerdict.UNSUPPORTED:
+        pass
+
+    return ReplayResult(
+        ok=not violations,
+        verdict=verdict,
+        violations=tuple(violations),
+    )
+
+
+def exact_goal_closure(
+    state: FiniteDomainState,
+    provider: GoalSupportProvider,
+    *,
+    query_order: QueryOrder | None = None,
+    cache: dict[str, SupportResult] | None = None,
+    certificate_store: dict[str, SupportCertificate] | None = None,
+    max_queries: int | None = None,
+) -> ClosureResult:
+    """Authority guard over ``exact_closure`` for compiler/verifier-hard profiles."""
+    if not isinstance(provider, GoalSupportProvider):
+        raise ValueError("exact_goal_closure requires GoalSupportProvider")
+    profile = provider.profile
+    if profile.mode != "production_exact":
+        raise ValueError(
+            f"exact_goal_closure rejects non-production profile mode {profile.mode!r}"
+        )
+    if profile.authority_tier not in _HARD_AUTHORITIES:
+        raise ValueError(
+            f"exact_goal_closure rejects non-hard authority tier {profile.authority_tier!r}"
+        )
+    provider.validate_identities(state)
+
+    kwargs: dict[str, Any] = {}
+    if query_order is not None:
+        kwargs["query_order"] = query_order
+    if cache is not None:
+        kwargs["cache"] = cache
+    if certificate_store is not None:
+        kwargs["certificate_store"] = certificate_store
+    if max_queries is not None:
+        kwargs["max_queries"] = max_queries
+    return exact_closure(state, provider, **kwargs)

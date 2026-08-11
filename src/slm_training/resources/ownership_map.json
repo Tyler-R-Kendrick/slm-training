@@ -83,23 +83,28 @@
     },
     {
       "id": "goal_support",
-      "name": "Goal-verifier profiles and redacted terminal-evidence contracts",
+      "name": "Goal-verifier profiles, terminal evidence, and goal-aware support",
       "owner_module": "src/slm_training/dsl/solver/goal_support.py",
       "owner_symbols": [
         "GoalVerifierProfileV1",
         "GoalTerminalEvidenceV1",
+        "GoalSupportResultV1",
+        "GoalSupportProvider",
         "GoalGateResultV1",
         "GoalEvaluatorResultV1",
         "GoalFailureAtomV1",
         "GoalUnknownAtomV1",
         "profile_digest_inputs",
+        "goal_support_backend_version",
         "validate_profile_against_constraint_set",
+        "replay_goal_support_result",
+        "exact_goal_closure",
         "redact_bounded_string",
         "redact_terminal_evidence_dict"
       ],
       "authority_tier": "verifier-hard",
       "design_doc": "docs/design/verified-scope-solver.md",
-      "notes": "PGS-B01/B02 (SLM-497/498): digest-bound GoalVerifierProfileV1 modes and privacy-bounded GoalTerminalEvidenceV1 contracts (goal_support.py); OpenUIGoalVerifier terminal tri-state composition lives in openui_support.py and reuses evaluate_goal_constraints, evaluate_gate, and pinned evaluators without VSS search. Generated JSON Schema: goal_verifier_profile.schema.json and goal_terminal_evidence.schema.json (scripts/sync_goal_support_schema.py --check)."
+      "notes": "PGS-B01/B02/C01 (SLM-497/498/499): digest-bound GoalVerifierProfileV1 and GoalTerminalEvidenceV1 contracts; GoalSupportProvider sidecars over VSS oracle replay; OpenUIGoalVerifier terminal composition in openui_support.py. Generated JSON Schema: goal_verifier_profile.schema.json and goal_terminal_evidence.schema.json (scripts/sync_goal_support_schema.py --check)."
     },
     {
       "id": "requirements_compile",
