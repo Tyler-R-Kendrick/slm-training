@@ -44,6 +44,11 @@
         {
           "version": "v22",
           "date": "2026-08-11",
+          "note": "no-bump: INTEG-02 (SLM-555) docs-only cross-link from kern-08-mechanism-trigger-no-effect.md to the admission preflight adapter; Lean/Python certificate kernel unchanged."
+        },
+        {
+          "version": "v22",
+          "date": "2026-08-11",
           "note": "EVID-09 (SLM-542): ExactClosure/Judgment/GoalSupport replace authority-critical replayOk with identity-bound CheckedRefutationEvidence."
         },
         {
@@ -4918,7 +4923,7 @@
       ]
     },
     "harness.autoresearch.formal": {
-      "version": "v17",
+      "version": "v18",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/formal.py",
@@ -4931,6 +4936,11 @@
         "tests/test_autoresearch/test_formal_four_axis_ledger.py"
       ],
       "history": [
+        {
+          "version": "v18",
+          "date": "2026-08-11",
+          "note": "INTEG-02 (SLM-555): document MechanismTrigger admission via preflight.mechanism_no_effect; break formal\u2194revmath.profile_binding circular import by TYPE_CHECKING-only RevmathFourAxisAnalysisV1 import."
+        },
         {
           "version": "v17",
           "date": "2026-08-11",
@@ -17916,16 +17926,24 @@
       ]
     },
     "autoresearch.preflight": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/preflight/__init__.py",
         "src/slm_training/autoresearch/preflight/prior_attempts.py",
+        "src/slm_training/autoresearch/preflight/mechanism_no_effect.py",
         "docs/design/preflight-gates.md",
+        "docs/design/integ-02-mechanism-no-effect-preflight.md",
         ".agents/skills/skeptic-panel/SKILL.md",
-        "tests/test_autoresearch/test_preflight_gates.py"
+        "tests/test_autoresearch/test_preflight_gates.py",
+        "tests/test_autoresearch/test_mechanism_no_effect_preflight.py"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-08-11",
+          "note": "INTEG-02 (SLM-555): theorem-backed trigger/no-effect admission adapter on the autoresearch preflight seam; skip only on complete trigger-absence certificates (KERN-08); unknown/incomplete always run."
+        },
         {
           "version": "v3",
           "date": "2026-08-10",

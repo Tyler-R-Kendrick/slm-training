@@ -67,6 +67,8 @@ preflight path rather than an unknown-template side path.
 | `EventTrace` | abstract Nat cost folds over named machine models; wall-clock only under external throughput hypotheses (KERN-06) | universal over modeled event traces |
 | `MechanismTrigger` | effect ⇒ necessary trigger; absent trigger ⇒ no-effect; corpus-local dominance; unknown never certifies (KERN-08) | locked finite corpora only — never unseen inputs |
 
+INTEG-02 (SLM-555) admits treatments via `autoresearch.preflight.mechanism_no_effect`: skip only when a complete locked-corpus scan proves every necessary trigger absent; present/unknown/incomplete evidence always runs.
+
 `make -C src/leverproof_lean test` rejects `sorry`, `admit`, custom `axiom`,
 `unsafe`, and `native_decide`; `scripts.verify_formal_contracts` rejects the
 proof placeholders and custom axioms in the Mathlib package. Both audit their
