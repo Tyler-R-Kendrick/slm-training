@@ -1884,7 +1884,7 @@
       ]
     },
     "dsl.solver.goal_support": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/solver/goal_support.py",
@@ -1893,9 +1893,15 @@
         "src/slm_training/resources/goal_terminal_evidence.schema.json",
         "src/slm_training/resources/test_cases/test_dsl/test_solver/test_goal_support.json",
         "tests/test_dsl/test_solver/test_goal_support.py",
+        "tests/test_dsl/test_goal_support.py",
         "tests/test_dsl/test_openui_goal_verifier.py"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-08-10",
+          "note": "PGS-C01 (SLM-499): GoalSupportProvider over enumerative oracle with digest-bound GoalSupportResultV1 sidecars, profile-sensitive backend_version, replay_goal_support_result, and exact_goal_closure authority guard."
+        },
         {
           "version": "v3",
           "date": "2026-08-10",
@@ -2912,7 +2918,7 @@
       ]
     },
     "governance.ownership_map": {
-      "version": "v17",
+      "version": "v18",
       "kind": "gate",
       "paths": [
         "src/slm_training/resources/ownership_map.json",
@@ -2924,6 +2930,11 @@
         "tests/test_data/test_synthesis_contract_versions.py"
       ],
       "history": [
+        {
+          "version": "v18",
+          "date": "2026-08-10",
+          "note": "PGS-C01 (SLM-499): register GoalSupportProvider, GoalSupportResultV1, replay_goal_support_result, and exact_goal_closure under goal_support ownership."
+        },
         {
           "version": "v17",
           "date": "2026-08-10",
@@ -3204,6 +3215,11 @@
         "tests/test_autoresearch/test_evidence_ledger.py"
       ],
       "history": [
+        {
+          "version": "v204",
+          "date": "2026-08-10",
+          "note": "no-bump: rebuild evidence_ledger.v1.json after continuous-loop-20260810 design records in main docs/design changed the deterministic scan count; saturation and retirement behavior remain v204."
+        },
         {
           "version": "v204",
           "date": "2026-08-10",
