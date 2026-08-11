@@ -2,7 +2,7 @@
   "$defs": {
     "GoalConstraintEvaluationV1": {
       "additionalProperties": false,
-      "description": "Minimal evaluation record suitable for PGS-A03 handoff.",
+      "description": "Typed per-constraint evaluation suitable for PGS-A03 / goal-verifier handoff.",
       "properties": {
         "schema_version": {
           "default": "goal_constraint_evaluation/v1",
@@ -20,10 +20,77 @@
             "PASS",
             "FAIL",
             "UNKNOWN",
+            "NOT_APPLICABLE",
             "SKIPPED"
           ],
           "title": "Status",
           "type": "string"
+        },
+        "reason_code": {
+          "default": "",
+          "title": "Reason Code",
+          "type": "string"
+        },
+        "evidence": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/GoalConstraintEvidenceV1"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "evaluator_id": {
+          "default": "",
+          "title": "Evaluator Id",
+          "type": "string"
+        },
+        "evaluator_digest": {
+          "default": "",
+          "pattern": "^[0-9a-f]{64}$|^$",
+          "title": "Evaluator Digest",
+          "type": "string"
+        },
+        "completeness_achieved": {
+          "default": "UNKNOWN",
+          "enum": [
+            "EXACT",
+            "SOUND_OVERAPPROX",
+            "HEURISTIC",
+            "UNKNOWN"
+          ],
+          "title": "Completeness Achieved",
+          "type": "string"
+        },
+        "authority_tier": {
+          "anyOf": [
+            {
+              "enum": [
+                "compiler-hard",
+                "verifier-hard",
+                "advisory-learned",
+                "oracle-diagnostic",
+                "evaluation-only"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Authority Tier"
+        },
+        "may_prune": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "May Prune"
         },
         "detail": {
           "anyOf": [
@@ -43,6 +110,35 @@
         "status"
       ],
       "title": "GoalConstraintEvaluationV1",
+      "type": "object"
+    },
+    "GoalConstraintEvidenceV1": {
+      "additionalProperties": false,
+      "description": "Safe, digest-bound evidence pointer \u2014 never raw prompt/program text.",
+      "properties": {
+        "location": {
+          "minLength": 1,
+          "title": "Location",
+          "type": "string"
+        },
+        "digest": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Digest"
+        }
+      },
+      "required": [
+        "location"
+      ],
+      "title": "GoalConstraintEvidenceV1",
       "type": "object"
     },
     "GoalEvaluatorResultV1": {

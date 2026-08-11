@@ -1,4 +1,4 @@
-"""Deterministic compilation into ``CompiledGoalConstraintSetV1`` (PGS-A02 / SLM-495).
+"""Deterministic compilation and evaluation for goal constraints (PGS-A02/A03).
 
 Structured ``GenerationRequest`` fields, pack contract surfaces, and verifier
 requirements compile as exact hard constraints. ``RequirementFact`` values
@@ -6,9 +6,9 @@ from ``VerifiedSynthesisProblemV1.requirements`` compile only through a closed,
 versioned rule table into advisory, oracle-diagnostic, or evaluation-only
 predicates — never into production pruning.
 
-Gold/target AST material must not enter this entry point. Unknown requirement
-statements are recorded in ``uncompiled_source_ids`` rather than guessed or
-dropped.
+``evaluate_goal_constraints`` deterministically evaluates compiled constraints
+against a candidate ``ProgramSpec``, ``SemanticPlanV1``, and canonical OpenUI
+``source`` without re-running gates or escalating authority.
 """
 
 from __future__ import annotations
@@ -22,9 +22,17 @@ from slm_training.data.contract import GenerationRequest
 from slm_training.data.progspec.goal_constraints import (
     CompiledGoalConstraintSetV1,
     GoalConstraintAmbiguityGroup,
+    GoalConstraintCompleteness,
+    GoalConstraintEvaluationV1,
+    GoalConstraintEvidenceV1,
+    GoalConstraintStatus,
     GoalConstraintV1,
     canonical_json_bytes,
+    combine_completeness,
 )
+from slm_training.data.progspec.schema import ProgramSpec
+from slm_training.data.progspec.semantic_plan import SemanticPlanV1
+from slm_training.data.progspec.binder_graph import derive_binder_graph
 from slm_training.data.progspec.prompt_requirements import (
     PromptSemanticRequirementsV1,
     RequirementFact,
@@ -36,23 +44,32 @@ from slm_training.data.progspec.synthesis_problem import (
     VerifiedSynthesisProblemV1,
 )
 from slm_training.dsl.pack import DslPack
+from slm_training.dsl.placeholders import extract_placeholders
 
 __all__ = [
     "COMPILER_VERSION",
+    "EVALUATOR_VERSION",
     "COMPILE_RULES",
     "CompileRule",
     "GoldTargetAccessError",
     "IdentityMismatchError",
     "compile_goal_constraints",
     "compile_rule_table",
+    "deferred_constraint_kinds",
     "digest_recipe",
+    "evaluate_goal_constraints",
+    "evaluation_state_decision_table",
+    "evaluator_digest",
+    "evaluator_identity",
     "pack_identity_digest",
     "request_production_digest",
     "source_digest",
     "source_to_authority_matrix",
+    "supported_constraint_kinds",
 ]
 
 COMPILER_VERSION = "pgs-a02.requirements_compile/v1"
+EVALUATOR_VERSION = "pgs-a03.requirements_evaluate/v1"
 
 _GOLD_LEAK_KEYS = frozenset(
     {
@@ -84,6 +101,7 @@ _COMPONENT_REQUIRED_RE = re.compile(
 )
 _COMPONENT_FORBIDDEN_RE = re.compile(r"^prompt forbids component ([A-Za-z][A-Za-z0-9]*)$")
 _EITHER_OR_RE = re.compile(r"^prompt offers component alternative ([A-Za-z][A-Za-z0-9]*)$")
+_STATE_DEF_RE = re.compile(r"^(\$[A-Za-z_][A-Za-z0-9_]*)\s*=", re.MULTILINE)
 
 
 class GoldTargetAccessError(ValueError):
@@ -169,6 +187,11 @@ def digest_recipe() -> dict[str, Any]:
             "algorithm": "sha256",
             "payload": "CompiledGoalConstraintSetV1._canonical_payload() excluding digest",
             "notes": "Owned by goal_constraints.py; constraints sorted by constraint_id.",
+        },
+        "evaluator_digest": {
+            "algorithm": "sha256",
+            "payload": "canonical_json({evaluator_version, evaluation_state_decision_table, supported_constraint_kinds, deferred_constraint_kinds})",
+            "notes": "Owned by requirements_compile.py; excludes raw program/prompt content.",
         },
     }
 
@@ -713,3 +736,642 @@ def compile_goal_constraints(
     return CompiledGoalConstraintSetV1.from_dict(
         compiled.model_copy(update={"digest": compiled.compute_digest()}).to_dict()
     )
+
+
+_SUPPORTED_KINDS: frozenset[str] = frozenset(
+    {
+        "slot_inventory_exact",
+        "runtime_symbol_accounted",
+        "output_kind_equals",
+        "output_category_equals",
+        "component_count_at_least",
+        "component_absent",
+        "binding_resolved",
+        "binding_role_compatible",
+        "topology_relation_present",
+        "slot_present",
+    }
+)
+
+_DEFERRED_KINDS: frozenset[str] = frozenset({"required_gate_passes"})
+
+
+def supported_constraint_kinds() -> tuple[str, ...]:
+    return tuple(sorted(_SUPPORTED_KINDS))
+
+
+def deferred_constraint_kinds() -> tuple[str, ...]:
+    return tuple(sorted(_DEFERRED_KINDS))
+
+
+def evaluation_state_decision_table() -> dict[str, Any]:
+    """Machine-readable status semantics for deterministic evaluation."""
+    return {
+        "PASS": "Constraint satisfied under achieved completeness.",
+        "FAIL": "Definite violation under achieved completeness; unrelated unknowns do not soften.",
+        "UNKNOWN": "Required projection missing, ambiguous, or unavailable — never inferred as FAIL.",
+        "NOT_APPLICABLE": "Constraint kind or binding is out of scope for candidate-side evaluation.",
+        "SKIPPED": "Legacy alias retained for round-trip only; prefer NOT_APPLICABLE.",
+    }
+
+
+def evaluator_identity() -> dict[str, str]:
+    return {
+        "evaluator_id": EVALUATOR_VERSION,
+        "evaluator_digest": evaluator_digest(),
+    }
+
+
+def evaluator_digest() -> str:
+    payload = {
+        "evaluator_version": EVALUATOR_VERSION,
+        "decision_table": evaluation_state_decision_table(),
+        "supported_kinds": list(supported_constraint_kinds()),
+        "deferred_kinds": list(deferred_constraint_kinds()),
+    }
+    return hashlib.sha256(canonical_json_bytes(payload)).hexdigest()
+
+
+@dataclass(frozen=True)
+class _EvaluationProjection:
+    slot_inventory: tuple[str, ...]
+    slot_inventory_digest: str
+    external_symbols: frozenset[str]
+    state_definitions: frozenset[str]
+    binder_digest: str
+    component_types: frozenset[str]
+    plan_inventory: dict[str, int] | None
+    plan_inventory_complete: bool
+    plan_inventory_digest: str | None
+    role_slot_ids: frozenset[str]
+    topology_edges: tuple[dict[str, Any], ...] | None
+    topology_digest: str | None
+    bindings_by_role: dict[str, tuple[str, ...]]
+    bindings_digest: str | None
+    request_identity: dict[str, Any]
+
+
+def _build_projection(
+    *,
+    source: str,
+    program_spec: ProgramSpec,
+    plan: SemanticPlanV1,
+) -> _EvaluationProjection:
+    slots = tuple(sorted(extract_placeholders(source)))
+    graph = derive_binder_graph(program_spec)
+    external: set[str] = set()
+    for node in graph.nodes:
+        external.update(node.external_dependencies)
+    state_definitions = frozenset(_STATE_DEF_RE.findall(source))
+
+    component_types: set[str] = set()
+
+    def walk(value: Any) -> None:
+        if isinstance(value, dict):
+            type_name = value.get("typeName")
+            if type_name:
+                component_types.add(str(type_name))
+            for child in value.values():
+                walk(child)
+        elif isinstance(value, list):
+            for child in value:
+                walk(child)
+
+    walk(program_spec.ast)
+
+    plan_inventory: dict[str, int] | None = None
+    plan_inventory_complete = False
+    plan_inventory_digest: str | None = None
+    role_slot_ids = frozenset(slot.role_id for slot in plan.role_slots)
+    if plan.role_slots and not plan.is_abstained:
+        families = [slot.component_family for slot in plan.role_slots]
+        plan_inventory_complete = all(family for family in families)
+        if plan_inventory_complete:
+            counts: dict[str, int] = {}
+            for slot in plan.role_slots:
+                family = slot.component_family or ""
+                weight = slot.min_cardinality if slot.min_cardinality is not None else 1
+                counts[family] = counts.get(family, 0) + max(1, int(weight))
+            plan_inventory = counts
+            plan_inventory_digest = source_digest(
+                {
+                    "role_slots": [
+                        {
+                            "role_id": slot.role_id,
+                            "component_family": slot.component_family,
+                            "min_cardinality": slot.min_cardinality,
+                        }
+                        for slot in sorted(plan.role_slots, key=lambda item: item.role_id)
+                    ]
+                }
+            )
+
+    topology_edges = plan.topology.parent_relation_candidates
+    topology_digest = (
+        source_digest(list(topology_edges))
+        if topology_edges is not None
+        else None
+    )
+    bindings_by_role = {
+        binding.role_slot_id: tuple(binding.candidate_symbols or ())
+        for binding in plan.bindings
+    }
+    bindings_digest = (
+        source_digest(
+            {
+                "bindings": [
+                    {
+                        "role_slot_id": role_id,
+                        "candidate_symbols": list(symbols),
+                    }
+                    for role_id, symbols in sorted(bindings_by_role.items())
+                ]
+            }
+        )
+        if bindings_by_role
+        else None
+    )
+
+    facts = dict(program_spec.facts or {})
+    provenance = dict(program_spec.provenance or {})
+    request_identity = {
+        "output_kind": facts.get("output_kind", provenance.get("output_kind")),
+        "output_category": facts.get("output_category", provenance.get("output_category")),
+    }
+
+    return _EvaluationProjection(
+        slot_inventory=slots,
+        slot_inventory_digest=source_digest({"slots": list(slots)}),
+        external_symbols=frozenset(external),
+        state_definitions=state_definitions,
+        binder_digest=source_digest(
+            {"external": sorted(external), "state_definitions": sorted(state_definitions)}
+        ),
+        component_types=frozenset(component_types),
+        plan_inventory=plan_inventory,
+        plan_inventory_complete=plan_inventory_complete,
+        plan_inventory_digest=plan_inventory_digest,
+        role_slot_ids=role_slot_ids,
+        topology_edges=topology_edges,
+        topology_digest=topology_digest,
+        bindings_by_role=bindings_by_role,
+        bindings_digest=bindings_digest,
+        request_identity=request_identity,
+    )
+
+
+def _evidence(location: str, digest: str | None) -> GoalConstraintEvidenceV1:
+    return GoalConstraintEvidenceV1(location=location, digest=digest)
+
+
+def _result(
+    constraint: GoalConstraintV1,
+    *,
+    status: GoalConstraintStatus,
+    reason_code: str,
+    completeness_achieved: GoalConstraintCompleteness,
+    evidence: tuple[GoalConstraintEvidenceV1, ...] = (),
+    detail: str | None = None,
+) -> GoalConstraintEvaluationV1:
+    identity = evaluator_identity()
+    achieved = combine_completeness(completeness_achieved, constraint.completeness)
+    return GoalConstraintEvaluationV1(
+        constraint_id=constraint.constraint_id,
+        status=status,
+        reason_code=reason_code,
+        evidence=evidence,
+        evaluator_id=identity["evaluator_id"],
+        evaluator_digest=identity["evaluator_digest"],
+        completeness_achieved=achieved,
+        authority_tier=constraint.authority_tier,
+        may_prune=constraint.may_prune,
+        detail=detail,
+    )
+
+
+def _evaluate_one(
+    constraint: GoalConstraintV1,
+    projection: _EvaluationProjection,
+) -> GoalConstraintEvaluationV1:
+    kind = constraint.kind
+    params = constraint.parameters
+
+    if kind in _DEFERRED_KINDS:
+        return _result(
+            constraint,
+            status="UNKNOWN",
+            reason_code="deferred_gate_verifier",
+            completeness_achieved="UNKNOWN",
+            evidence=(_evidence("constraint.source_digest", constraint.source_digest),),
+            detail="gate evaluation deferred to goal verifier",
+        )
+
+    if kind == "slot_inventory_exact":
+        required = tuple(sorted(str(item) for item in params.get("slots") or ()))
+        actual = projection.slot_inventory
+        evidence = (
+            _evidence("program.source.slot_inventory", projection.slot_inventory_digest),
+            _evidence("constraint.source_digest", constraint.source_digest),
+        )
+        if actual == required:
+            return _result(
+                constraint,
+                status="PASS",
+                reason_code="slot_inventory_exact_match",
+                completeness_achieved="EXACT",
+                evidence=evidence,
+            )
+        missing = sorted(set(required) - set(actual))
+        extra = sorted(set(actual) - set(required))
+        if missing or extra:
+            return _result(
+                constraint,
+                status="FAIL",
+                reason_code="slot_inventory_mismatch",
+                completeness_achieved="EXACT",
+                evidence=evidence,
+                detail=f"missing={len(missing)} extra={len(extra)}",
+            )
+        return _result(
+            constraint,
+            status="FAIL",
+            reason_code="slot_inventory_mismatch",
+            completeness_achieved="EXACT",
+            evidence=evidence,
+        )
+
+    if kind == "runtime_symbol_accounted":
+        surface = str(params.get("surface") or "")
+        role = str(params.get("role") or "")
+        evidence = (
+            _evidence("program.binder_graph", projection.binder_digest),
+            _evidence("constraint.source_digest", constraint.source_digest),
+        )
+        if role == "state":
+            accounted = surface in projection.state_definitions
+        elif role == "external_entity":
+            accounted = surface in projection.external_symbols
+        else:
+            return _result(
+                constraint,
+                status="UNKNOWN",
+                reason_code="runtime_symbol_role_unsupported",
+                completeness_achieved="UNKNOWN",
+                evidence=evidence,
+            )
+        if accounted:
+            return _result(
+                constraint,
+                status="PASS",
+                reason_code="runtime_symbol_accounted",
+                completeness_achieved="EXACT",
+                evidence=evidence,
+            )
+        return _result(
+            constraint,
+            status="FAIL",
+            reason_code="runtime_symbol_missing",
+            completeness_achieved="EXACT",
+            evidence=evidence,
+        )
+
+    if kind in {"output_kind_equals", "output_category_equals"}:
+        field = "output_kind" if kind == "output_kind_equals" else "output_category"
+        expected = params.get(field)
+        actual = projection.request_identity.get(field)
+        evidence = (_evidence("constraint.source_digest", constraint.source_digest),)
+        if expected is None:
+            return _result(
+                constraint,
+                status="NOT_APPLICABLE",
+                reason_code="request_identity_not_bound",
+                completeness_achieved="UNKNOWN",
+                evidence=evidence,
+            )
+        if actual is None:
+            return _result(
+                constraint,
+                status="NOT_APPLICABLE",
+                reason_code="request_identity_not_on_candidate",
+                completeness_achieved="UNKNOWN",
+                evidence=evidence,
+                detail="candidate lacks canonical request identity projection",
+            )
+        if str(actual) == str(expected):
+            return _result(
+                constraint,
+                status="PASS",
+                reason_code=f"{field}_match",
+                completeness_achieved="EXACT",
+                evidence=(
+                    _evidence("program_spec.request_identity", source_digest({field: actual})),
+                    _evidence("constraint.source_digest", constraint.source_digest),
+                ),
+            )
+        return _result(
+            constraint,
+            status="FAIL",
+            reason_code=f"{field}_mismatch",
+            completeness_achieved="EXACT",
+            evidence=evidence,
+        )
+
+    if kind == "component_count_at_least":
+        component = str(params.get("component") or "")
+        min_count = int(params.get("min_count") or 0)
+        evidence = (_evidence("constraint.source_digest", constraint.source_digest),)
+        if projection.plan_inventory is None:
+            return _result(
+                constraint,
+                status="UNKNOWN",
+                reason_code="component_inventory_unavailable",
+                completeness_achieved="UNKNOWN",
+                evidence=evidence,
+                detail="role-slot inventory incomplete or abstained",
+            )
+        have = projection.plan_inventory.get(component, 0)
+        evidence = (
+            _evidence("plan.role_slots.inventory", projection.plan_inventory_digest),
+            _evidence("constraint.source_digest", constraint.source_digest),
+        )
+        if have >= min_count:
+            return _result(
+                constraint,
+                status="PASS",
+                reason_code="component_count_satisfied",
+                completeness_achieved="HEURISTIC",
+                evidence=evidence,
+                detail=f"count={have} min={min_count}",
+            )
+        return _result(
+            constraint,
+            status="FAIL",
+            reason_code="component_count_below_min",
+            completeness_achieved="HEURISTIC",
+            evidence=evidence,
+            detail=f"count={have} min={min_count}",
+        )
+
+    if kind == "component_absent":
+        component = str(params.get("component") or "")
+        evidence = (_evidence("constraint.source_digest", constraint.source_digest),)
+        if not projection.plan_inventory_complete or projection.plan_inventory is None:
+            return _result(
+                constraint,
+                status="UNKNOWN",
+                reason_code="component_inventory_unavailable",
+                completeness_achieved="UNKNOWN",
+                evidence=evidence,
+            )
+        have = projection.plan_inventory.get(component, 0)
+        evidence = (
+            _evidence("plan.role_slots.inventory", projection.plan_inventory_digest),
+            _evidence("constraint.source_digest", constraint.source_digest),
+        )
+        if have == 0:
+            return _result(
+                constraint,
+                status="PASS",
+                reason_code="component_absent",
+                completeness_achieved="HEURISTIC",
+                evidence=evidence,
+            )
+        return _result(
+            constraint,
+            status="FAIL",
+            reason_code="component_present_when_forbidden",
+            completeness_achieved="HEURISTIC",
+            evidence=evidence,
+            detail=f"count={have}",
+        )
+
+    if kind == "binding_resolved":
+        if params.get("forbidden"):
+            production_id = str(params.get("production_id") or "")
+            evidence = (
+                _evidence("program_spec.ast.component_types", source_digest(sorted(projection.component_types))),
+                _evidence("constraint.source_digest", constraint.source_digest),
+            )
+            if production_id and production_id in projection.component_types:
+                return _result(
+                    constraint,
+                    status="FAIL",
+                    reason_code="forbidden_production_present",
+                    completeness_achieved="EXACT",
+                    evidence=evidence,
+                )
+            return _result(
+                constraint,
+                status="PASS",
+                reason_code="forbidden_production_absent",
+                completeness_achieved="EXACT",
+                evidence=evidence,
+            )
+        role_slot_id = str(params.get("role_slot_id") or "")
+        if not role_slot_id or projection.bindings_digest is None:
+            return _result(
+                constraint,
+                status="UNKNOWN",
+                reason_code="binding_analysis_unavailable",
+                completeness_achieved="UNKNOWN",
+                evidence=(_evidence("constraint.source_digest", constraint.source_digest),),
+            )
+        symbols = projection.bindings_by_role.get(role_slot_id, ())
+        evidence = (
+            _evidence("plan.bindings", projection.bindings_digest),
+            _evidence("constraint.source_digest", constraint.source_digest),
+        )
+        if len(symbols) == 1:
+            return _result(
+                constraint,
+                status="PASS",
+                reason_code="binding_resolved",
+                completeness_achieved="HEURISTIC",
+                evidence=evidence,
+            )
+        if not symbols:
+            return _result(
+                constraint,
+                status="FAIL",
+                reason_code="binding_unresolved",
+                completeness_achieved="HEURISTIC",
+                evidence=evidence,
+            )
+        return _result(
+            constraint,
+            status="UNKNOWN",
+            reason_code="binding_ambiguous",
+            completeness_achieved="HEURISTIC",
+            evidence=evidence,
+            detail=f"candidates={len(symbols)}",
+        )
+
+    if kind == "binding_role_compatible":
+        role_slot_id = str(params.get("role_slot_id") or "")
+        expected_role = str(params.get("semantic_role") or params.get("expected_role") or "")
+        if not role_slot_id or projection.bindings_digest is None:
+            return _result(
+                constraint,
+                status="UNKNOWN",
+                reason_code="binding_analysis_unavailable",
+                completeness_achieved="UNKNOWN",
+                evidence=(_evidence("constraint.source_digest", constraint.source_digest),),
+            )
+        symbols = projection.bindings_by_role.get(role_slot_id, ())
+        evidence = (
+            _evidence("plan.bindings", projection.bindings_digest),
+            _evidence("constraint.source_digest", constraint.source_digest),
+        )
+        if len(symbols) != 1:
+            return _result(
+                constraint,
+                status="UNKNOWN",
+                reason_code="binding_unresolved",
+                completeness_achieved="HEURISTIC",
+                evidence=evidence,
+            )
+        return _result(
+            constraint,
+            status="UNKNOWN",
+            reason_code="binding_role_projection_unavailable",
+            completeness_achieved="UNKNOWN",
+            evidence=evidence,
+            detail=f"expected_role={expected_role or 'unset'}",
+        )
+
+    if kind == "topology_relation_present":
+        parent_id = str(params.get("parent_role_id") or "")
+        child_id = str(params.get("child_role_id") or "")
+        relation = str(params.get("relation") or "contains")
+        evidence = (_evidence("constraint.source_digest", constraint.source_digest),)
+        if projection.topology_edges is None:
+            return _result(
+                constraint,
+                status="UNKNOWN",
+                reason_code="topology_coverage_unavailable",
+                completeness_achieved="UNKNOWN",
+                evidence=evidence,
+            )
+        evidence = (
+            _evidence("plan.topology.parent_relations", projection.topology_digest),
+            _evidence("constraint.source_digest", constraint.source_digest),
+        )
+        for edge in projection.topology_edges:
+            if (
+                str(edge.get("parent_role_id")) == parent_id
+                and str(edge.get("child_role_id")) == child_id
+                and str(edge.get("relation") or "contains") == relation
+            ):
+                return _result(
+                    constraint,
+                    status="PASS",
+                    reason_code="topology_relation_present",
+                    completeness_achieved="HEURISTIC",
+                    evidence=evidence,
+                )
+        return _result(
+            constraint,
+            status="FAIL",
+            reason_code="topology_relation_missing",
+            completeness_achieved="HEURISTIC",
+            evidence=evidence,
+        )
+
+    if kind == "slot_present":
+        role_id = str(params.get("role_id") or "")
+        evidence = (_evidence("constraint.source_digest", constraint.source_digest),)
+        if not role_id:
+            return _result(
+                constraint,
+                status="NOT_APPLICABLE",
+                reason_code="slot_present_unparameterized",
+                completeness_achieved="UNKNOWN",
+                evidence=evidence,
+            )
+        if not projection.role_slot_ids:
+            return _result(
+                constraint,
+                status="UNKNOWN",
+                reason_code="slot_present_inventory_unavailable",
+                completeness_achieved="UNKNOWN",
+                evidence=evidence,
+            )
+        evidence = (
+            _evidence(
+                "plan.role_slots",
+                projection.plan_inventory_digest
+                or source_digest(sorted(projection.role_slot_ids)),
+            ),
+            _evidence("constraint.source_digest", constraint.source_digest),
+        )
+        if role_id in projection.role_slot_ids:
+            return _result(
+                constraint,
+                status="PASS",
+                reason_code="slot_present",
+                completeness_achieved="HEURISTIC",
+                evidence=evidence,
+            )
+        return _result(
+            constraint,
+            status="FAIL",
+            reason_code="slot_present_missing",
+            completeness_achieved="HEURISTIC",
+            evidence=evidence,
+        )
+
+    if kind not in _SUPPORTED_KINDS:
+        return _result(
+            constraint,
+            status="UNKNOWN",
+            reason_code="kind_unsupported",
+            completeness_achieved="UNKNOWN",
+            evidence=(_evidence("constraint.source_digest", constraint.source_digest),),
+        )
+
+    return _result(
+        constraint,
+        status="UNKNOWN",
+        reason_code="kind_unsupported",
+        completeness_achieved="UNKNOWN",
+        evidence=(_evidence("constraint.source_digest", constraint.source_digest),),
+    )
+
+
+def _ambiguity_member_ids(
+    groups: tuple[GoalConstraintAmbiguityGroup, ...],
+) -> frozenset[str]:
+    members: set[str] = set()
+    for group in groups:
+        members.update(group.member_constraint_ids)
+    return frozenset(members)
+
+
+def evaluate_goal_constraints(
+    *,
+    source: str,
+    program_spec: ProgramSpec,
+    plan: SemanticPlanV1,
+    constraints: CompiledGoalConstraintSetV1,
+) -> tuple[GoalConstraintEvaluationV1, ...]:
+    """Evaluate every compiled constraint against canonical program/plan projections."""
+    projection = _build_projection(source=source, program_spec=program_spec, plan=plan)
+    ambiguity_members = _ambiguity_member_ids(constraints.ambiguity_groups)
+    results: list[GoalConstraintEvaluationV1] = []
+    for constraint in sorted(constraints.constraints, key=lambda item: item.constraint_id):
+        evaluation = _evaluate_one(constraint, projection)
+        if constraint.constraint_id in ambiguity_members:
+            evaluation = GoalConstraintEvaluationV1(
+                constraint_id=evaluation.constraint_id,
+                status="UNKNOWN",
+                reason_code="ambiguity_unresolved",
+                evidence=evaluation.evidence,
+                evaluator_id=evaluation.evaluator_id,
+                evaluator_digest=evaluation.evaluator_digest,
+                completeness_achieved="UNKNOWN",
+                authority_tier=constraint.authority_tier,
+                may_prune=constraint.may_prune,
+                detail="unresolved ambiguity group membership",
+            )
+        results.append(evaluation)
+    return tuple(results)

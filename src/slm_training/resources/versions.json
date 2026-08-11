@@ -1879,7 +1879,7 @@
       ]
     },
     "dsl.solver.goal_support": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/solver/goal_support.py",
@@ -1890,6 +1890,11 @@
         "tests/test_dsl/test_solver/test_goal_support.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-10",
+          "note": "PGS-A03 (SLM-496): regenerate goal_terminal_evidence.schema.json after GoalConstraintEvaluationV1 gains reason_code, evidence digests, evaluator identity, completeness_achieved, authority preservation, and NOT_APPLICABLE status."
+        },
         {
           "version": "v1",
           "date": "2026-08-10",
@@ -17043,7 +17048,7 @@
       ]
     },
     "data.progspec.goal_constraints": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/data/progspec/goal_constraints.py",
@@ -17052,6 +17057,11 @@
         "tests/test_data/test_progspec/test_goal_constraints.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-10",
+          "note": "PGS-A03 (SLM-496): extend GoalConstraintEvaluationV1 with reason_code, digest-bound evidence, evaluator identity/digest, completeness_achieved, authority preservation, and NOT_APPLICABLE status for candidate-side evaluation handoff."
+        },
         {
           "version": "v1",
           "date": "2026-08-10",
@@ -17641,13 +17651,18 @@
       ]
     },
     "data.semantic_plan.requirements_compile": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/data/semantic_plan/requirements_compile.py",
         "tests/test_data/test_semantic_plan_extraction/test_requirements_compile.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-10",
+          "note": "PGS-A03 (SLM-496): add evaluate_goal_constraints candidate-side deterministic evaluator with closed kind coverage, ambiguity UNKNOWN forcing, gate deferral, authority-preserving GoalConstraintEvaluationV1 records, and evaluator digest recipe."
+        },
         {
           "version": "v1",
           "date": "2026-08-10",

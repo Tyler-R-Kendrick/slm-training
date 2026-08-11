@@ -42,6 +42,7 @@ __all__ = [
     "GoalConstraintV1",
     "GoalConstraintAmbiguityGroup",
     "CompiledGoalConstraintSetV1",
+    "GoalConstraintEvidenceV1",
     "GoalConstraintEvaluationV1",
     "INDEPENDENTLY_EXACT_SOURCE_KINDS",
     "combine_authority",
@@ -81,7 +82,7 @@ GoalConstraintAuthority = Literal[
 
 GoalConstraintCompleteness = Literal["EXACT", "SOUND_OVERAPPROX", "HEURISTIC", "UNKNOWN"]
 
-GoalConstraintStatus = Literal["PASS", "FAIL", "UNKNOWN", "SKIPPED"]
+GoalConstraintStatus = Literal["PASS", "FAIL", "UNKNOWN", "NOT_APPLICABLE", "SKIPPED"]
 
 GoalConstraintSourceKind = Literal[
     "generation_request",
@@ -413,8 +414,15 @@ class CompiledGoalConstraintSetV1(_StrictModel):
         return cls.model_validate(value)
 
 
+class GoalConstraintEvidenceV1(_StrictModel):
+    """Safe, digest-bound evidence pointer — never raw prompt/program text."""
+
+    location: str = Field(min_length=1)
+    digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+
+
 class GoalConstraintEvaluationV1(_StrictModel):
-    """Minimal evaluation record suitable for PGS-A03 handoff."""
+    """Typed per-constraint evaluation suitable for PGS-A03 / goal-verifier handoff."""
 
     schema_version: str = Field(
         default=GOAL_CONSTRAINT_EVALUATION_SCHEMA_VERSION,
@@ -422,7 +430,46 @@ class GoalConstraintEvaluationV1(_StrictModel):
     )
     constraint_id: str = Field(min_length=1)
     status: GoalConstraintStatus
+    reason_code: str = ""
+    evidence: tuple[GoalConstraintEvidenceV1, ...] = ()
+    evaluator_id: str = ""
+    evaluator_digest: str = Field(default="", pattern=r"^[0-9a-f]{64}$|^$")
+    completeness_achieved: GoalConstraintCompleteness = "UNKNOWN"
+    authority_tier: GoalConstraintAuthority | None = None
+    may_prune: bool | None = None
     detail: str | None = None
+
+    @field_validator("reason_code")
+    @classmethod
+    def _validate_reason_code(cls, value: str) -> str:
+        if not value:
+            return value
+        if len(value) > 64:
+            raise ValueError("reason_code must be at most 64 characters")
+        allowed = set("abcdefghijklmnopqrstuvwxyz0123456789_.-")
+        if not set(value) <= allowed:
+            raise ValueError("reason_code must use lowercase alnum/._- only")
+        return value
+
+    @field_validator("detail")
+    @classmethod
+    def _validate_detail(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        if len(value) > 280:
+            raise ValueError("detail must be at most 280 characters")
+        lowered = value.lower()
+        if ":slot_" in lowered or "prompt" in lowered or "root =" in lowered:
+            raise ValueError("detail must not contain raw prompt/program content")
+        return value
+
+    @model_validator(mode="after")
+    def _check_authority_preservation(self) -> "GoalConstraintEvaluationV1":
+        if self.authority_tier is None:
+            return self
+        if self.may_prune is None:
+            raise ValueError("may_prune must be set when authority_tier is set")
+        return self
 
     def to_dict(self) -> dict[str, Any]:
         return self.model_dump(mode="json")
