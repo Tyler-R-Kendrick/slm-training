@@ -151,6 +151,10 @@ def test_lean_claim_catalog_exports_and_checks() -> None:
     report = close_formal_loop(objects, min_backends=2, enable_lean=False)
     assert report.closed, report.summary
     assert not report.single_kernel_reliance
+    assert all(
+        item.verification_kind == "redundant_conformance" for item in report.objects
+    )
+    assert all(item.semantic_authority_accepted is False for item in report.objects)
 
 
 def test_closure_laws_close_loop() -> None:
@@ -174,7 +178,7 @@ def test_single_lean_kernel_not_enough() -> None:
             detail="only lean",
         )
     ]
-    accepted, reason, _ok_b, _, _ = loop_requires_multi_backend(results, min_backends=2)
+    accepted, reason, _ok_b, _, _, _report = loop_requires_multi_backend(results, min_backends=2)
     assert accepted is False
     assert "single-kernel" in reason or "need 2" in reason
 
@@ -184,12 +188,31 @@ def test_loop_rejects_empty() -> None:
     assert report.closed is False
 
 
-def test_reference_backend_independent() -> None:
+def test_reference_backend_is_redundant_conformance() -> None:
+    from slm_training.formal.checker_capability import (
+        SEMANTIC_AUTHORITY_POLICY,
+        TRUST_DOMAIN_PYTHON_STRUCTURAL_FAMILY,
+        CheckerRunView,
+        evaluate_acceptance_policy,
+        trust_domain_for,
+    )
+
     obj = export_lean_claim("ExactClosure.closePass_subset")
     a = check_python_structural(obj)
     b = check_python_reference(obj)
     assert a.ok and b.ok
     assert a.backend != b.backend
+    assert trust_domain_for(a.backend) == TRUST_DOMAIN_PYTHON_STRUCTURAL_FAMILY
+    assert trust_domain_for(b.backend) == TRUST_DOMAIN_PYTHON_STRUCTURAL_FAMILY
+    report = evaluate_acceptance_policy(
+        (
+            CheckerRunView(backend=a.backend, ok=True),
+            CheckerRunView(backend=b.backend, ok=True),
+        ),
+        SEMANTIC_AUTHORITY_POLICY,
+    )
+    assert report.accepted is False
+    assert report.verification_kind == "redundant_conformance"
 
 
 def test_structural_laws_enumerate_every_catalog_law_on_both_backends() -> None:

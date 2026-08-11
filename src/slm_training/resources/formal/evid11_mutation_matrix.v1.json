@@ -6,9 +6,9 @@
   "generalizes_beyond_corpus": false,
   "notes": [
     "Release-blocking red-team matrix for formal evidence v2.",
-    "Each mutation reuses EVID-06/07/09/10 gates — no third evidence stack.",
+    "Each mutation reuses EVID-06/07/09/10 gates \u2014 no third evidence stack.",
     "Structural consistency or provenance alone cannot confer semantic authority.",
-    "python_structural and python_reference share a trust domain (EVID-08 reclassification target)."
+    "python_structural and python_reference share a trust domain (EVID-08 production policy: redundant conformance, not independent roots)."
   ],
   "required_families": [
     "proposition_tautology_or_weaken",
@@ -50,7 +50,9 @@
       "capability": "exact_proposition",
       "layer": "EVID-07",
       "expect_reject": true,
-      "source_tests": ["tests/test_formal/test_theorem_binding.py::test_mutation_same_name_to_true_rejected"]
+      "source_tests": [
+        "tests/test_formal/test_theorem_binding.py::test_mutation_same_name_to_true_rejected"
+      ]
     },
     {
       "id": "mut_changed_conclusion",
@@ -60,7 +62,9 @@
       "capability": "exact_proposition",
       "layer": "EVID-07",
       "expect_reject": true,
-      "source_tests": ["tests/test_formal/test_theorem_binding.py::test_mutation_changed_conclusion_rejected"]
+      "source_tests": [
+        "tests/test_formal/test_theorem_binding.py::test_mutation_changed_conclusion_rejected"
+      ]
     },
     {
       "id": "mut_toolchain_lock_drift",
@@ -70,7 +74,9 @@
       "capability": "toolchain_lock",
       "layer": "EVID-07",
       "expect_reject": true,
-      "source_tests": ["tests/test_formal/test_theorem_binding.py::test_mutation_toolchain_lock_rejected"]
+      "source_tests": [
+        "tests/test_formal/test_theorem_binding.py::test_mutation_toolchain_lock_rejected"
+      ]
     },
     {
       "id": "mut_source_tree_drift",
@@ -80,7 +86,9 @@
       "capability": "source_identity",
       "layer": "EVID-07",
       "expect_reject": true,
-      "source_tests": ["tests/test_formal/test_theorem_binding.py::test_mutation_changed_hypotheses_rejected"]
+      "source_tests": [
+        "tests/test_formal/test_theorem_binding.py::test_mutation_changed_hypotheses_rejected"
+      ]
     },
     {
       "id": "mut_catalog_module_redirection",
@@ -90,7 +98,9 @@
       "capability": "module_binding",
       "layer": "EVID-07",
       "expect_reject": true,
-      "source_tests": ["tests/test_formal/test_theorem_binding.py::test_mutation_catalog_redirection_rejected"]
+      "source_tests": [
+        "tests/test_formal/test_theorem_binding.py::test_mutation_catalog_redirection_rejected"
+      ]
     },
     {
       "id": "mut_unexpected_axiom",
@@ -100,7 +110,9 @@
       "capability": "axiom_audit",
       "layer": "EVID-07",
       "expect_reject": true,
-      "source_tests": ["tests/test_formal/test_theorem_binding.py::test_mutation_new_axiom_rejected"]
+      "source_tests": [
+        "tests/test_formal/test_theorem_binding.py::test_mutation_new_axiom_rejected"
+      ]
     },
     {
       "id": "mut_forbidden_proof_escape_token",
@@ -120,7 +132,9 @@
       "capability": "semantic_replay",
       "layer": "EVID-09",
       "expect_reject": true,
-      "source_tests": ["tests/test_formal/test_refutation_authority.py::test_forged_exhausted_coverage_replay_flags_cannot_refute"]
+      "source_tests": [
+        "tests/test_formal/test_refutation_authority.py::test_forged_exhausted_coverage_replay_flags_cannot_refute"
+      ]
     },
     {
       "id": "mut_legacy_exhaustion_telemetry",
@@ -130,7 +144,9 @@
       "capability": "semantic_replay",
       "layer": "EVID-09",
       "expect_reject": true,
-      "source_tests": ["tests/test_formal/test_refutation_authority.py::test_legacy_exhaustion_flags_never_authorize"]
+      "source_tests": [
+        "tests/test_formal/test_refutation_authority.py::test_legacy_exhaustion_flags_never_authorize"
+      ]
     },
     {
       "id": "mut_skipped_checker_as_success",
@@ -153,7 +169,9 @@
       "capability": "checker_trust",
       "layer": "EVID-09",
       "expect_reject": true,
-      "source_tests": ["tests/test_formal/test_refutation_authority.py::test_adapter_failure_modes_strip_evidence_and_block_removal"]
+      "source_tests": [
+        "tests/test_formal/test_refutation_authority.py::test_adapter_failure_modes_strip_evidence_and_block_removal"
+      ]
     },
     {
       "id": "mut_stale_problem_identity",
@@ -163,7 +181,9 @@
       "capability": "binding_identity",
       "layer": "EVID-09",
       "expect_reject": true,
-      "source_tests": ["tests/test_formal/test_refutation_authority.py::test_stale_problem_id_rejects_removal"]
+      "source_tests": [
+        "tests/test_formal/test_refutation_authority.py::test_stale_problem_id_rejects_removal"
+      ]
     },
     {
       "id": "mut_certificate_wrong_encoding",
@@ -173,7 +193,9 @@
       "capability": "encoding_correctness",
       "layer": "EVID-10",
       "expect_reject": true,
-      "source_tests": ["tests/test_formal/test_encoding_adapter.py::test_valid_certificate_wrong_encoding_cannot_authorize"]
+      "source_tests": [
+        "tests/test_formal/test_encoding_adapter.py::test_valid_certificate_wrong_encoding_cannot_authorize"
+      ]
     },
     {
       "id": "mut_stale_problem_digest_on_mint",
@@ -183,17 +205,35 @@
       "capability": "encoding_correctness",
       "layer": "EVID-10",
       "expect_reject": true,
-      "source_tests": ["tests/test_formal/test_encoding_adapter.py::test_mint_checked_certificate_requires_encoding_bridge"]
+      "source_tests": [
+        "tests/test_formal/test_encoding_adapter.py::test_mint_checked_certificate_requires_encoding_bridge"
+      ]
     },
     {
       "id": "mut_shared_parser_family_fault",
       "family": "shared_parser_checker_family_fault",
       "runner": "mutation_shared_parser_family_fault",
-      "gate": "mutation_suite.semantic_authority_requires_distinct_trust_domains",
+      "gate": "checker_capability.semantic_authority_requires_distinct_trust_domains",
       "capability": "trust_domain_diversity",
       "layer": "EVID-11/EVID-08",
       "expect_reject": true,
       "source_tests": []
+    },
+    {
+      "id": "mut_unadvertised_capability_claim",
+      "family": "shared_parser_checker_family_fault",
+      "runner": "mutation_unadvertised_capability_claim",
+      "gate": "checker_capability.capability_satisfied_by",
+      "capability": "runtime_refinement",
+      "expect_reject": true
+    },
+    {
+      "id": "mut_shared_serialization_common_mode",
+      "family": "shared_parser_checker_family_fault",
+      "runner": "mutation_shared_serialization_common_mode",
+      "gate": "checker_capability.evaluate_acceptance_policy",
+      "capability": "trust_domain_diversity",
+      "expect_reject": true
     },
     {
       "id": "mut_v2_content_digest_mismatch",
@@ -203,7 +243,9 @@
       "capability": "provenance_digest",
       "layer": "EVID-06",
       "expect_reject": true,
-      "source_tests": ["tests/test_formal/test_formal_authority_v2.py::test_formal_object_round_trip_upgrade_downgrade"]
+      "source_tests": [
+        "tests/test_formal/test_formal_authority_v2.py::test_formal_object_round_trip_upgrade_downgrade"
+      ]
     },
     {
       "id": "mut_v1_v2_migration_tamper",
@@ -213,7 +255,9 @@
       "capability": "provenance_digest",
       "layer": "EVID-06",
       "expect_reject": true,
-      "source_tests": ["tests/test_formal/test_formal_authority_v2.py::test_contradictory_authority_class_rejected"]
+      "source_tests": [
+        "tests/test_formal/test_formal_authority_v2.py::test_contradictory_authority_class_rejected"
+      ]
     }
   ]
 }

@@ -28,6 +28,8 @@ PYTHONPATH=src python -m scripts.verify_formal_evidence_mutations --write
 - Positive controls (`exact_replay`, honest encoding, sealed binding) pass.
 - `structural_consistency_alone_confers_authority=false`.
 - `python_structural` + `python_reference` share a trust domain and do not
-  satisfy the distinct-domain semantic-authority gate.
+  satisfy the production semantic-authority policy (EVID-08).
+- Shared serialization / unadvertised-capability mutations are rejected.
 
-Component: `formal.objects` v18.
+Component: `formal.objects` v19.
+Capability registry: `resources/formal/checker_capability_registry.v1.json`.

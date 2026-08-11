@@ -17583,9 +17583,14 @@
       ]
     },
     "formal.objects": {
-      "version": "v18",
+      "version": "v19",
       "kind": "harness",
       "paths": [
+        "docs/design/evid-08-checker-capabilities.md",
+        "src/slm_training/formal/checker_capability.py",
+        "src/slm_training/resources/formal/checker_capability_registry.v1.json",
+        "src/slm_training/resources/formal/evid08_capability_fixtures.v1.json",
+        "tests/test_formal/test_checker_capability.py",
         "docs/design/formal-evidence-mutation-suite.md",
         "docs/design/formal-evidence-mutation-results.json",
         "scripts/verify_formal_evidence_mutations.py",
@@ -17628,6 +17633,11 @@
         "src/slm_training/resources/formal/goal_support_golden_cases.v1.json"
       ],
       "history": [
+        {
+          "version": "v19",
+          "date": "2026-08-11",
+          "note": "EVID-08 (SLM-535): checker capability vocabulary, trust-domain registry, conformance vs semantic acceptance policies; reclassify python_structural/python_reference as redundant conformance; promote distinct-trust-domain gate into FormalAuthorityV2 + formal loop reports; shared serialization / unadvertised-capability fixtures."
+        },
         {
           "version": "v18",
           "date": "2026-08-11",
@@ -17726,7 +17736,7 @@
       ]
     },
     "formal.loop": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/formal/loop.py",
@@ -17734,6 +17744,11 @@
         "docs/design/formal-loop-report.json"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-11",
+          "note": "EVID-08 (SLM-535): formal loop reports verification_kind / trust domains / redundant vs independent; wire conformance vs semantic acceptance policies."
+        },
         {
           "version": "v1",
           "date": "2026-07-31",

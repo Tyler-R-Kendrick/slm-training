@@ -13,7 +13,7 @@
   "evid": "EVID-11",
   "issue": "SLM-559",
   "missing_families": [],
-  "mutation_count": 17,
+  "mutation_count": 19,
   "mutations": [
     {
       "capability": "exact_proposition",
@@ -161,14 +161,34 @@
       "detail": "shared python_structural/reference trust domain denied semantic authority",
       "expect_reject": true,
       "family": "shared_parser_checker_family_fault",
-      "gate": "mutation_suite.semantic_authority_requires_distinct_trust_domains",
+      "gate": "checker_capability.semantic_authority_requires_distinct_trust_domains",
+      "ok": true,
+      "rejected": true
+    },
+    {
+      "capability": "runtime_refinement",
+      "case_id": "mut_unadvertised_capability_claim",
+      "detail": "unadvertised runtime_refinement rejected by policy",
+      "expect_reject": true,
+      "family": "shared_parser_checker_family_fault",
+      "gate": "checker_capability.capability_satisfied_by",
+      "ok": true,
+      "rejected": true
+    },
+    {
+      "capability": "trust_domain_diversity",
+      "case_id": "mut_shared_serialization_common_mode",
+      "detail": "shared serialization family common-mode success blocked for semantic authority",
+      "expect_reject": true,
+      "family": "shared_parser_checker_family_fault",
+      "gate": "checker_capability.evaluate_acceptance_policy",
       "ok": true,
       "rejected": true
     },
     {
       "capability": "provenance_digest",
       "case_id": "mut_v2_content_digest_mismatch",
-      "detail": "formal authority content_digest mismatch (declared=0000000000000000000000000000000000000000000000000000000000000000, recomputed=8658ac0c633614c4aff56f7ea29c7b251b4dca07343d2fc812bd12776c2e3aa7)",
+      "detail": "formal authority content_digest mismatch (declared=0000000000000000000000000000000000000000000000000000000000000000, recomputed=4d9842dcd70267e65963785ff961dfdd088f7b0b8e40f3690a5c72b8ae905b14)",
       "expect_reject": true,
       "family": "v1_v2_migration_tamper_or_digest_mismatch",
       "gate": "authority.FormalAuthorityV2.from_dict",
@@ -223,12 +243,12 @@
   "schema": "formal_evidence_mutation_suite_report/v1",
   "structural_consistency_alone_confers_authority": false,
   "version_stamp": {
-    "code_commit": "88857e369417f185d5dba02bb7e43e9aab3425fa",
+    "code_commit": "89dd564a7dc95a2e52dd9fc4f82a89e73db6a96a",
     "code_dirty": true,
     "components": {
-      "formal.objects": "v18"
+      "formal.objects": "v19"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-08-11T14:23:02.564717+00:00"
+    "stamped_at": "2026-08-11T14:39:48.123036+00:00"
   }
 }
