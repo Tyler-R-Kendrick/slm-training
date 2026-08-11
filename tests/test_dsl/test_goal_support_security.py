@@ -16,15 +16,54 @@ from slm_training.data.progspec.goal_constraints import (
 from slm_training.data.progspec.synthesis_problem import PackIdentityV1
 from slm_training.data.semantic_plan.requirements_compile import COMPILER_VERSION
 from slm_training.dsl.solver.goal_support import (
+    DomainObstructionCoreV1,
     EvaluatorIdentityV1,
     GoalFailureAtomV1,
+    GoalDomainAdequacyReportV1,
     GoalGateResultV1,
+    GoalSupportResultV1,
     GoalTerminalEvidenceV1,
     GoalUnknownAtomV1,
     GoalVerifierProfileV1,
     compute_pack_identity_digest,
     validate_profile_against_constraint_set,
 )
+
+
+@pytest.mark.parametrize(
+    ("loader", "schema_version", "digest_field"),
+    (
+        (
+            CompiledGoalConstraintSetV1.from_dict,
+            "compiled_goal_constraint_set/v1",
+            "digest",
+        ),
+        (GoalVerifierProfileV1.from_dict, "goal_verifier_profile/v1", "digest"),
+        (
+            GoalTerminalEvidenceV1.from_dict,
+            "goal_terminal_evidence/v1",
+            "evidence_digest",
+        ),
+        (GoalSupportResultV1.from_dict, "goal_support_result/v1", "digest"),
+        (
+            DomainObstructionCoreV1.from_dict,
+            "domain_obstruction_core/v1",
+            "core_digest",
+        ),
+        (
+            GoalDomainAdequacyReportV1.from_dict,
+            "goal_domain_adequacy_report/v1",
+            "report_digest",
+        ),
+    ),
+)
+def test_persisted_public_loaders_require_explicit_digest(
+    loader,
+    schema_version: str,
+    digest_field: str,
+) -> None:
+    with pytest.raises(ValueError, match=rf"requires {digest_field}$"):
+        loader({"schema_version": schema_version})
 
 
 def _pack(**updates: object) -> PackIdentityV1:
@@ -138,7 +177,7 @@ def test_profile_loader_rejects_authority_and_mode_string_injection() -> None:
     ]
     random.Random(497).shuffle(attacks)
     for field, attack in attacks:
-        forged = {**payload, field: attack, "digest": ""}
+        forged = {**payload, field: attack}
         with pytest.raises(ValidationError):
             GoalVerifierProfileV1.from_dict(forged)
 
@@ -210,7 +249,6 @@ def test_terminal_loader_rejects_unknown_version_and_nested_extra_field() -> Non
         )
     forged = json.loads(json.dumps(payload))
     forged["required_gate_results"][0]["raw_prompt"] = "secret"
-    forged["evidence_digest"] = ""
     with pytest.raises(ValidationError):
         GoalTerminalEvidenceV1.from_dict(forged)
 

@@ -353,6 +353,8 @@ class GoalVerifierProfileV1(_StrictModel):
     def from_dict(cls, value: dict[str, Any]) -> "GoalVerifierProfileV1":
         if str(value.get("schema_version")) != GOAL_VERIFIER_PROFILE_SCHEMA_VERSION:
             raise ValueError("unsupported GoalVerifierProfileV1 version")
+        if not value.get("digest"):
+            raise ValueError("persisted GoalVerifierProfileV1 requires digest")
         return cls.model_validate(value)
 
     def model_copy(
@@ -661,6 +663,8 @@ class GoalTerminalEvidenceV1(_StrictModel):
     def from_dict(cls, value: dict[str, Any]) -> "GoalTerminalEvidenceV1":
         if str(value.get("schema_version")) != GOAL_TERMINAL_EVIDENCE_SCHEMA_VERSION:
             raise ValueError("unsupported GoalTerminalEvidenceV1 version")
+        if not value.get("evidence_digest"):
+            raise ValueError("persisted GoalTerminalEvidenceV1 requires evidence_digest")
         forbidden = _FORBIDDEN_EVIDENCE_FIELD_NAMES & set(value)
         if forbidden:
             raise ValueError(f"forbidden terminal-evidence fields present: {sorted(forbidden)}")
@@ -820,6 +824,8 @@ class GoalSupportResultV1(_StrictModel):
     def from_dict(cls, value: dict[str, Any]) -> "GoalSupportResultV1":
         if str(value.get("schema_version")) != GOAL_SUPPORT_RESULT_SCHEMA_VERSION:
             raise ValueError("unsupported GoalSupportResultV1 version")
+        if not value.get("digest"):
+            raise ValueError("persisted GoalSupportResultV1 requires digest")
         return cls.model_validate(value)
 
 

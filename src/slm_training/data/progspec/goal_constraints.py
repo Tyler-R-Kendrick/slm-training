@@ -432,6 +432,8 @@ class CompiledGoalConstraintSetV1(_StrictModel):
     def from_dict(cls, value: dict[str, Any]) -> "CompiledGoalConstraintSetV1":
         if str(value.get("schema_version")) != COMPILED_GOAL_CONSTRAINT_SET_SCHEMA_VERSION:
             raise ValueError("unsupported CompiledGoalConstraintSetV1 version")
+        if not value.get("digest"):
+            raise ValueError("persisted CompiledGoalConstraintSetV1 requires digest")
         return cls.model_validate(value)
 
 

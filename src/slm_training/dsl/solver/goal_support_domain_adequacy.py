@@ -270,6 +270,8 @@ class GoalDomainAdequacyReportV1(_StrictModel):
     def from_dict(cls, value: dict[str, Any]) -> "GoalDomainAdequacyReportV1":
         if str(value.get("schema_version")) != GOAL_DOMAIN_ADEQUACY_REPORT_SCHEMA_VERSION:
             raise ValueError("unsupported GoalDomainAdequacyReportV1 version")
+        if not value.get("report_digest"):
+            raise ValueError("persisted GoalDomainAdequacyReportV1 requires report_digest")
         return cls.model_validate(value)
 
 

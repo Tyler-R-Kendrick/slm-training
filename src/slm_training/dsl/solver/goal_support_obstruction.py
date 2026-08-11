@@ -146,6 +146,8 @@ class DomainObstructionCoreV1(_StrictModel):
     def from_dict(cls, value: dict[str, Any]) -> "DomainObstructionCoreV1":
         if str(value.get("schema_version")) != DOMAIN_OBSTRUCTION_CORE_SCHEMA_VERSION:
             raise ValueError("unsupported DomainObstructionCoreV1 version")
+        if not value.get("core_digest"):
+            raise ValueError("persisted DomainObstructionCoreV1 requires core_digest")
         return cls.model_validate(value)
 
 
