@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
-import copy
-
 import pytest
 
-from slm_training.dsl.solver.goal_support import action_id_from_value
+from slm_training.dsl.solver.goal_support import (
+    GoalActionEvidenceV1,
+    GoalDomainAdequacyReportV1,
+    action_id_from_value,
+)
 from slm_training.harnesses.preference.counterfactual_probe import (
     GoalSupportProbeConfig,
     GoalSupportProbeInputs,
@@ -23,10 +25,6 @@ from slm_training.harnesses.preference.decision_events_v2 import (
     materialize_goal_support,
 )
 from slm_training.harnesses.preference.local_decisions import split_for_group
-from slm_training.dsl.solver.goal_support import (
-    GoalActionEvidenceV1,
-    GoalDomainAdequacyReportV1,
-)
 from tests.test_dsl.test_goal_domain_adequacy import (
     _REGRET_TREE,
     _hole,
