@@ -104,7 +104,7 @@
       ],
       "design_doc": "docs/design/formal-objects-multi-prover.md",
       "ownership_map_subsystem": null,
-      "notes": "Portable formal objects; not a second evidence stack."
+      "notes": "Portable formal objects; EVID-06 formal_authority/v2 adapters live in formal/authority.py (same schema surface, not a second evidence stack)."
     },
     {
       "id": "formal_object_loop",
@@ -526,7 +526,8 @@
       "linear_id": "SLM-526",
       "extends": "formal_object_schema",
       "new_owner_justified": false,
-      "justification": "v2 authority envelope adapts FormalObjectV1 and FormalPreflightV1; no third stack."
+      "justification": "v2 authority envelope adapts FormalObjectV1 and FormalPreflightV1; no third stack.",
+      "status": "done"
     },
     {
       "issue": "HARN-01",

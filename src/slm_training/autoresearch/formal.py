@@ -695,16 +695,26 @@ def migrate_formal_preflight_v1(payload: Mapping[str, Any]) -> FormalPreflightV1
     Missing ``four_axis_ledger`` stays unset (never invented). Legacy payloads
     that smuggle wall-clock/neural theorem overclaims are rejected even when
     the nested ledger type is absent.
+
+    ``formal_authority/v2`` envelopes with ``surface=formal_preflight`` downgrade
+    through the EVID-06 adapter (no third evidence stack).
     """
 
     if not isinstance(payload, Mapping):
         raise TypeError("formal preflight payload must be a mapping")
     data = dict(payload)
-    schema = data.get("schema_version", "FormalPreflightV1")
+    schema = data.get("schema") or data.get("schema_version", "FormalPreflightV1")
+    if schema == "formal_authority/v2":
+        from slm_training.formal.authority import (
+            FormalAuthorityV2,
+            to_formal_preflight_v1,
+        )
+
+        return to_formal_preflight_v1(FormalAuthorityV2.from_dict(data))
     if schema != "FormalPreflightV1":
         raise ValueError(
             f"unsupported formal preflight schema {schema!r}; "
-            "migrate through FormalPreflightV1 adapters only"
+            "migrate through FormalPreflightV1 / formal_authority/v2 adapters only"
         )
     for key in ("theorem_claim_kinds", "proved_claim_kinds", "claim_kinds"):
         raw = data.get(key)
@@ -718,6 +728,14 @@ def migrate_formal_preflight_v1(payload: Mapping[str, Any]) -> FormalPreflightV1
                 f"{sorted(bad)} cannot be theorem consequences"
             )
     return FormalPreflightV1.model_validate(data)
+
+
+def formal_preflight_as_authority_v2(preflight: FormalPreflightV1):
+    """Facade: emit the preferred EVID-06 authority envelope for a preflight."""
+
+    from slm_training.formal.authority import from_formal_preflight_v1
+
+    return from_formal_preflight_v1(preflight)
 
 
 def attach_four_axis_ledger(

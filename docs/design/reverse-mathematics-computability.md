@@ -151,7 +151,7 @@ Cross-links to the global ownership map (`ownership_map.json` subsystems): where
 | --- | --- | --- | --- |
 | EVID-03 / SLM-519 | `formal_preflight_schema` | no | **done** — `FormalPreflightV1.four_axis_ledger` + `FormalPreflightFourAxisLedgerV1` |
 | EVID-04 / SLM-525 | `formal_preflight_schema` → `bound_ast_schema` | yes (`formal/bound_ast.py`) | **done** — safe symbolic bound AST + exact Fraction evaluator; registry ids cited by ledger |
-| EVID-06 / SLM-526 | `formal_object_schema` | no | v2 envelope adapts v1 objects |
+| EVID-06 / SLM-526 | `formal_object_schema` | no | **done** — `formal_authority/v2` adapts `FormalObjectV1` + `FormalPreflightV1` |
 | HARN-01 / SLM-520 | `reasoning_harness_parent` | no | register `reasoning/revmath` profile + parity matrix |
 | HARN-09 / SLM-560 | `semantic_repair` | yes (`self_healing.py`) | **done** — proposition-preserving repair controller; lineage extends SemanticRepairRecordV1 without forking distill |
 
