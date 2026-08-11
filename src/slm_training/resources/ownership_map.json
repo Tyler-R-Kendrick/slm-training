@@ -89,13 +89,9 @@
         "GoalVerifierProfileV1",
         "GoalTerminalEvidenceV1",
         "GoalGateResultV1",
-        "GoalEvaluatorResultV1",
-        "GoalFailureAtomV1",
-        "GoalUnknownAtomV1",
-        "MetricIdentityV1",
-        "EvaluatorIdentityV1",
-        "profile_mode_authority_table",
-        "terminal_status_decision_table",
+        "GoalSupportMode",
+        "build_goal_verifier_profile",
+        "build_terminal_evidence",
         "profile_digest_inputs",
         "validate_profile_against_constraint_set",
         "redact_bounded_string",
@@ -104,6 +100,26 @@
       "authority_tier": "verifier-hard",
       "design_doc": "docs/design/verified-scope-solver.md",
       "notes": "PGS-B01 (SLM-497): digest-bound GoalVerifierProfileV1 modes (production_exact/evaluation_oracle/advisory_diagnostic) and privacy-bounded GoalTerminalEvidenceV1 terminal records layered on compiled_goal_constraints without duplicating GoalConstraintEvaluationV1 or executing gates/evaluators. Generated JSON Schema: src/slm_training/resources/goal_verifier_profile.schema.json and goal_terminal_evidence.schema.json (scripts/sync_goal_support_schema.py --check)."
+    },
+    {
+      "id": "requirements_compile",
+      "name": "Deterministic goal-constraint compiler (PGS-A02)",
+      "owner_module": "src/slm_training/data/semantic_plan/requirements_compile.py",
+      "owner_symbols": [
+        "compile_goal_constraints",
+        "COMPILE_RULES",
+        "CompileRule",
+        "compile_rule_table",
+        "source_to_authority_matrix",
+        "digest_recipe",
+        "request_production_digest",
+        "pack_identity_digest",
+        "GoldTargetAccessError",
+        "IdentityMismatchError"
+      ],
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/semantic-planning-valid-state.md",
+      "notes": "PGS-A02 (SLM-495): deterministic compilation from VerifiedSynthesisProblemV1, GenerationRequest, and DslPack into CompiledGoalConstraintSetV1. Structured request/pack/verifier facts compile exact; RequirementFact values compile only through a closed rule table into advisory/oracle/evaluation predicates; unknown statements land in uncompiled_source_ids. Does not modify SGS-004 extractor authority."
     },
     {
       "id": "sygus_capability_report",
@@ -613,7 +629,7 @@
       ],
       "authority_tier": "advisory-learned",
       "design_doc": "docs/design/semantic-planning-valid-state.md",
-      "notes": "SIE-003/SLM-477. The downstream_extension_map row for SIE-003 predicted new_owner_justified: false ('Extends SGS-003/004's prompt_requirements owner'), i.e. adding these symbols directly to prompt_requirements.py's owner_symbols. The real dataclasses/classifier are not literally defined in prompt_requirements.py or semantic_plan.py -- per this map's own sibling-file rule it is registered as its own subsystem instead (same precedent as SGS-008/SRP-004/005/007/008/009/011). Honest scope note on 'authorized factor families' (AC: 'No factor without an oracle ceiling is promoted into the model merely for convenience'): EXP-SR-1 (SIE-002/SLM-476) authorized roles+bindings (not archetype/style_layout); DEFAULT_AUTHORIZED_FACTOR_FAMILIES=('style_layout',) remains an explicit placeholder for this seam's archetype target \u2014 SIE-004 gates RequirementFact emission on the real SIE-002-mapped set; prediction_to_requirement_fact fails closed (returns None) for any factor family outside the caller-supplied authorized set. TinyBagOfWordsClassifier is a from-scratch, pure-NumPy multinomial-Naive-Bayes baseline (the issue's own 'tiny trainable baseline') trained only on role='positive' (never the corpus's deliberately-corrupted contrast-negative) rows of the committed openui_hard_valid_v1 corpus, split at the source-program level before train/held-out (EXP-SR-2's own declared leakage control). Calibration/abstention reuses evals/VCE-010's dsl.grammar.fastpath.trust_train.gate_calibration_report directly rather than a second calibration mechanism; resolve_confidence_threshold's fallback (abstain on every call) is exercised for real against the actual fixture corpus, which this tiny baseline does not clear a 5% selective-risk bar on -- an honest negative result, not hidden. predict_factor's signature accepts only prompt text (no plan/oracle parameter exists), and prediction_to_requirement_fact always emits provenance='predicted'/authority='advisory-learned' (RequirementProvenance has no 'gold' value at all), so gold data has no path into production inference. requirements_hard_prune_allowed already requires COMPILER_AUTHORED_CERTIFIED evidence this predictor never produces, so exact legal support is unaffected by the predictor being on or off."
+      "notes": "SIE-003/SLM-477. The downstream_extension_map row for SIE-003 predicted new_owner_justified: false ('Extends SGS-003/004's prompt_requirements owner'), i.e. adding these symbols directly to prompt_requirements.py's owner_symbols. The real dataclasses/classifier are not literally defined in prompt_requirements.py or semantic_plan.py -- per this map's own sibling-file rule it is registered as its own subsystem instead (same precedent as SGS-008/SRP-004/005/007/008/009/011). Honest scope note on 'authorized factor families' (AC: 'No factor without an oracle ceiling is promoted into the model merely for convenience'): EXP-SR-1 (SIE-002/SLM-476) authorized roles+bindings (not archetype/style_layout); DEFAULT_AUTHORIZED_FACTOR_FAMILIES=('style_layout',) remains an explicit placeholder for this seam's archetype target — SIE-004 gates RequirementFact emission on the real SIE-002-mapped set; prediction_to_requirement_fact fails closed (returns None) for any factor family outside the caller-supplied authorized set. TinyBagOfWordsClassifier is a from-scratch, pure-NumPy multinomial-Naive-Bayes baseline (the issue's own 'tiny trainable baseline') trained only on role='positive' (never the corpus's deliberately-corrupted contrast-negative) rows of the committed openui_hard_valid_v1 corpus, split at the source-program level before train/held-out (EXP-SR-2's own declared leakage control). Calibration/abstention reuses evals/VCE-010's dsl.grammar.fastpath.trust_train.gate_calibration_report directly rather than a second calibration mechanism; resolve_confidence_threshold's fallback (abstain on every call) is exercised for real against the actual fixture corpus, which this tiny baseline does not clear a 5% selective-risk bar on -- an honest negative result, not hidden. predict_factor's signature accepts only prompt text (no plan/oracle parameter exists), and prediction_to_requirement_fact always emits provenance='predicted'/authority='advisory-learned' (RequirementProvenance has no 'gold' value at all), so gold data has no path into production inference. requirements_hard_prune_allowed already requires COMPILER_AUTHORED_CERTIFIED evidence this predictor never produces, so exact legal support is unaffected by the predictor being on or off."
     },
     {
       "id": "version_registry",
@@ -843,6 +859,19 @@
       ],
       "new_owner_justified": true,
       "justification": "No existing contract compiles pack/request/plan/verifier inputs into authority-labeled, prune-gated goal constraints; CompiledGoalConstraintSetV1 is a new owner layered on the four extension points it must not duplicate."
+    },
+    {
+      "issue": "PGS-A02",
+      "linear_id": "SLM-495",
+      "title": "Compile structured request, synthesis-problem, and pack facts into typed goal constraints",
+      "extension_points": [
+        "compiled_goal_constraints",
+        "verified_synthesis_problem",
+        "prompt_requirements",
+        "dsl_pack_registry_canonical"
+      ],
+      "new_owner_justified": true,
+      "justification": "No existing owner compiles request/problem/pack inputs into CompiledGoalConstraintSetV1; requirements_compile.py is a new compiler-hard owner layered on compiled_goal_constraints, verified_synthesis_problem, prompt_requirements, and the canonical pack registry without modifying SGS-004 extractor authority."
     },
     {
       "issue": "SGS-008",
