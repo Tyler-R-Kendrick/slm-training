@@ -1,5 +1,8 @@
 # SLM-511 (PGS-H02): Goal-support domain-adequacy fixture campaign evidence
 
+Design / authority / threat model:
+[`proof-carrying-goal-support.md`](proof-carrying-goal-support.md) (PGS-I01 / SLM-512).
+
 **Harness:** SLM-510 / PGS-H01 (preregistered `ExperimentCampaignV1`)
 
 **Claim class:** `diagnostic` — fixture/wiring evidence only (no train, checkpoint, ship, promotion, MODEL_CARD)

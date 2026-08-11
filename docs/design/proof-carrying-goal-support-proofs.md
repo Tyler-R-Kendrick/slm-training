@@ -1,5 +1,8 @@
 # Proof-carrying goal support — finite structural laws (PGS-F01 / SLM-506)
 
+Canonical design, authority, and threat model:
+[`proof-carrying-goal-support.md`](proof-carrying-goal-support.md) (PGS-I01 / SLM-512).
+
 Lean module: [`src/leverproof_lean/LeverProofLean/GoalSupport.lean`](../../src/leverproof_lean/LeverProofLean/GoalSupport.lean)
 
 Python mapping: [`src/slm_training/formal/goal_support_mapping.py`](../../src/slm_training/formal/goal_support_mapping.py)
