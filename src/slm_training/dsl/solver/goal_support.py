@@ -1,4 +1,4 @@
-"""Goal-verifier profiles, terminal evidence, and goal-aware support (PGS-B01/C01).
+"""Goal-verifier profiles, terminal evidence, and goal-aware support (PGS-B01/C01/C02).
 
 ``GoalVerifierProfileV1`` pins the semantics of every goal-support query: which
 constraints, gates, evaluators, and metric identities are in scope, under which
@@ -12,6 +12,10 @@ existing VSS enumerative oracle and certificate replay. The canonical search pro
 remains :class:`~slm_training.dsl.solver.support.SupportCertificate`; property-
 specific semantics travel in digest-bound :class:`GoalSupportResultV1` sidecars
 with a compiler-hard ``exact_goal_closure`` authority guard.
+
+``DomainObstructionCoreV1`` (PGS-C02 / SLM-500) records deterministic bounded
+domain-relative hitting sets over exact mandatory failure atoms when legal
+emission preconditions hold.
 """
 
 from __future__ import annotations
@@ -42,38 +46,6 @@ from slm_training.data.progspec.goal_constraints import (
     canonical_json_bytes,
 )
 from slm_training.data.progspec.synthesis_problem import PackIdentityV1
-
-__all__ = [
-    "GOAL_VERIFIER_PROFILE_SCHEMA_VERSION",
-    "GOAL_TERMINAL_EVIDENCE_SCHEMA_VERSION",
-    "GOAL_SUPPORT_RESULT_SCHEMA_VERSION",
-    "GOAL_SUPPORT_IMPLEMENTATION_VERSION",
-    "GoalVerifierFactory",
-    "GoalVerifierMode",
-    "GoalProfileAuthorityTier",
-    "GoalTerminalStatus",
-    "MetricIdentityV1",
-    "EvaluatorIdentityV1",
-    "GoalVerifierProfileV1",
-    "GoalGateResultV1",
-    "GoalEvaluatorResultV1",
-    "GoalFailureAtomV1",
-    "GoalUnknownAtomV1",
-    "GoalTerminalEvidenceV1",
-    "GoalSupportResultV1",
-    "GoalSupportProvider",
-    "profile_mode_authority_table",
-    "terminal_status_decision_table",
-    "exact_goal_closure_authority_table",
-    "profile_digest_inputs",
-    "goal_support_backend_version",
-    "compute_pack_identity_digest",
-    "validate_profile_against_constraint_set",
-    "redact_bounded_string",
-    "redact_terminal_evidence_dict",
-    "replay_goal_support_result",
-    "exact_goal_closure",
-]
 
 GOAL_VERIFIER_PROFILE_SCHEMA_VERSION = "goal_verifier_profile/v1"
 GOAL_TERMINAL_EVIDENCE_SCHEMA_VERSION = "goal_terminal_evidence/v1"
@@ -493,6 +465,28 @@ def _exact_atom_allowed(atom: GoalFailureAtomV1, *, implementation_version: str)
     return atom.source_kind == "structural"
 
 
+def exact_atom_allowed_for_obstruction(atom: GoalFailureAtomV1) -> bool:
+    """Public guard for exact mandatory atoms eligible in obstruction cores."""
+    return _exact_atom_allowed(
+        atom, implementation_version=GOAL_SUPPORT_IMPLEMENTATION_VERSION
+    )
+
+
+def exact_mandatory_failure_atom_ids(
+    record: GoalTerminalEvidenceV1,
+) -> tuple[str, ...]:
+    """Exact mandatory failure atom ids eligible for obstruction cores."""
+    if record.mandatory_unknown_atoms:
+        return ()
+    return tuple(
+        sorted(
+            atom.atom_id
+            for atom in record.mandatory_failure_atoms
+            if exact_atom_allowed_for_obstruction(atom)
+        )
+    )
+
+
 class GoalTerminalEvidenceV1(_StrictModel):
     """Redacted, digest-bound terminal evidence for one goal-support query."""
 
@@ -743,8 +737,23 @@ def _build_goal_support_sidecar(
     *,
     profile: GoalVerifierProfileV1,
     verifier: Verifier,
+    state: FiniteDomainState,
+    replay_ok: bool,
 ) -> GoalSupportResultV1:
     profile_digest = profile.digest or profile.compute_digest()
+    records = _terminal_records(verifier)
+    obstruction_core_digest: str | None = None
+    from slm_training.dsl.solver import goal_support_obstruction as _obstruction
+
+    core = _obstruction.compute_domain_obstruction_core(
+        certificate=result.certificate,
+        terminal_records=records,
+        profile=profile,
+        state=state,
+        replay_ok=replay_ok,
+    )
+    if core is not None:
+        obstruction_core_digest = core.core_digest or core.compute_digest()
     payload = {
         "base_certificate_digest": result.certificate.digest,
         "base_verdict": result.verdict.value,
@@ -754,7 +763,7 @@ def _build_goal_support_sidecar(
         "witness_terminal_evidence_digest": _witness_terminal_evidence_digest(
             result, verifier
         ),
-        "obstruction_core_digest": None,
+        "obstruction_core_digest": obstruction_core_digest,
     }
     sidecar = GoalSupportResultV1(**payload)
     return GoalSupportResultV1.from_dict(sidecar.to_dict(include_digest=True))
@@ -808,8 +817,18 @@ class GoalSupportProvider:
         self.validate_identities(state)
         verifier = self._fresh_verifier()
         result = EnumerativeSupportOracle(self._expander, verifier).check(state, query)
+        replay = replay_support_certificate(
+            result.certificate,
+            state=state,
+            expander=self._expander,
+            verifier=self._fresh_verifier(),
+        )
         sidecar = _build_goal_support_sidecar(
-            result, profile=self._profile, verifier=verifier
+            result,
+            profile=self._profile,
+            verifier=verifier,
+            state=state,
+            replay_ok=replay.ok,
         )
         if sidecar.base_certificate_digest != result.certificate.digest:
             raise ValueError("sidecar base_certificate_digest drift")
@@ -890,6 +909,12 @@ def replay_goal_support_result(
         ):
             violations.append("witness_terminal_evidence_digest absent from sidecar list")
 
+    if sidecar.obstruction_core_digest is not None:
+        if certificate.verdict is not SupportVerdict.UNSUPPORTED:
+            violations.append("obstruction_core_digest present for non-UNSUPPORTED verdict")
+        elif not base_replay.ok:
+            violations.append("obstruction_core_digest present but base replay failed")
+
     # Preserve UNKNOWN as honest non-pruning evidence; never fabricate UNSUPPORTED.
     verdict = certificate.verdict
     if verdict is SupportVerdict.UNKNOWN:
@@ -937,3 +962,73 @@ def exact_goal_closure(
     if max_queries is not None:
         kwargs["max_queries"] = max_queries
     return exact_closure(state, provider, **kwargs)
+
+
+from slm_training.dsl.solver import goal_support_obstruction as _obstruction
+
+DOMAIN_OBSTRUCTION_CLAIM = _obstruction.DOMAIN_OBSTRUCTION_CLAIM
+DOMAIN_OBSTRUCTION_CORE_SCHEMA_VERSION = _obstruction.DOMAIN_OBSTRUCTION_CORE_SCHEMA_VERSION
+MIN_CARDINALITY_EXACT_ATOM_THRESHOLD = _obstruction.MIN_CARDINALITY_EXACT_ATOM_THRESHOLD
+OBSTRUCTION_ALGORITHM_ID = _obstruction.OBSTRUCTION_ALGORITHM_ID
+OBSTRUCTION_ALGORITHM_VERSION = _obstruction.OBSTRUCTION_ALGORITHM_VERSION
+SUBSET_MINIMAL_DELETION_ATOM_THRESHOLD = _obstruction.SUBSET_MINIMAL_DELETION_ATOM_THRESHOLD
+DomainObstructionCoreV1 = _obstruction.DomainObstructionCoreV1
+ObstructionCoreMode = _obstruction.ObstructionCoreMode
+ObstructionCoreStatsV1 = _obstruction.ObstructionCoreStatsV1
+TerminalFailureSetV1 = _obstruction.TerminalFailureSetV1
+compute_domain_obstruction_core = _obstruction.compute_domain_obstruction_core
+obstruction_core_algorithm_table = _obstruction.obstruction_core_algorithm_table
+obstruction_core_emission_allowed = _obstruction.obstruction_core_emission_allowed
+replay_obstruction_core = _obstruction.replay_obstruction_core
+terminal_failure_set_from_evidence = _obstruction.terminal_failure_set_from_evidence
+validate_domain_obstruction_core = _obstruction.validate_domain_obstruction_core
+
+__all__ = [
+    "GOAL_VERIFIER_PROFILE_SCHEMA_VERSION",
+    "GOAL_TERMINAL_EVIDENCE_SCHEMA_VERSION",
+    "GOAL_SUPPORT_RESULT_SCHEMA_VERSION",
+    "GOAL_SUPPORT_IMPLEMENTATION_VERSION",
+    "DOMAIN_OBSTRUCTION_CORE_SCHEMA_VERSION",
+    "DOMAIN_OBSTRUCTION_CLAIM",
+    "OBSTRUCTION_ALGORITHM_ID",
+    "OBSTRUCTION_ALGORITHM_VERSION",
+    "MIN_CARDINALITY_EXACT_ATOM_THRESHOLD",
+    "SUBSET_MINIMAL_DELETION_ATOM_THRESHOLD",
+    "GoalVerifierFactory",
+    "GoalVerifierMode",
+    "GoalProfileAuthorityTier",
+    "GoalTerminalStatus",
+    "ObstructionCoreMode",
+    "MetricIdentityV1",
+    "EvaluatorIdentityV1",
+    "GoalVerifierProfileV1",
+    "GoalGateResultV1",
+    "GoalEvaluatorResultV1",
+    "GoalFailureAtomV1",
+    "GoalUnknownAtomV1",
+    "GoalTerminalEvidenceV1",
+    "GoalSupportResultV1",
+    "GoalSupportProvider",
+    "DomainObstructionCoreV1",
+    "TerminalFailureSetV1",
+    "ObstructionCoreStatsV1",
+    "profile_mode_authority_table",
+    "terminal_status_decision_table",
+    "exact_goal_closure_authority_table",
+    "obstruction_core_algorithm_table",
+    "profile_digest_inputs",
+    "goal_support_backend_version",
+    "compute_pack_identity_digest",
+    "validate_profile_against_constraint_set",
+    "redact_bounded_string",
+    "redact_terminal_evidence_dict",
+    "exact_atom_allowed_for_obstruction",
+    "exact_mandatory_failure_atom_ids",
+    "terminal_failure_set_from_evidence",
+    "obstruction_core_emission_allowed",
+    "compute_domain_obstruction_core",
+    "validate_domain_obstruction_core",
+    "replay_obstruction_core",
+    "replay_goal_support_result",
+    "exact_goal_closure",
+]
