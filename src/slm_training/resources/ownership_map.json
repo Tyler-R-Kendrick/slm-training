@@ -823,6 +823,19 @@
       "doc": "docs/design/iter-slm483-sie-006-calibration-campaign-20260810.md",
       "status": "diagnostic",
       "relation": "Diagnostic EXP-SR-3 calibration campaign (claim_class=diagnostic) wrapping VCE-010's evaluator_calibration_protocol under the locked catalogue identity; evaluator_human_agreement_kappa=0.0 on labeled-mock external-judge/synthetic-human evidence, below minimum_effect and the catalogue kill gate -- an honest negative result, not a construct-validity claim (no real external-judge credentials or human raters in this environment)."
+    },
+    {
+      "linear_id": "SLM-512",
+      "title": "PGS-I01: Document proof-carrying goal support design, authority, and threat model",
+      "doc": "docs/design/proof-carrying-goal-support.md",
+      "relation": "Canonical design/authority owner for the integrated PGS stack (PGS-A through PGS-H); machine-readable ownership maintained by PGS-I02 (SLM-513)."
+    },
+    {
+      "linear_id": "SLM-511",
+      "title": "PGS-H02: Publish goal-support domain-adequacy fixture campaign evidence",
+      "doc": "docs/design/proof-carrying-goal-support-fixture-results.md",
+      "status": "diagnostic",
+      "relation": "Fixture-scale PGS-H01 campaign evidence (claim_class=diagnostic); wiring/diagnostic only — not model quality, ship gates, or promotion."
     }
   ],
   "downstream_extension_map": [
@@ -916,6 +929,196 @@
       ],
       "new_owner_justified": true,
       "justification": "No existing owner compiles request/problem/pack inputs into CompiledGoalConstraintSetV1; requirements_compile.py is a new compiler-hard owner layered on compiled_goal_constraints, verified_synthesis_problem, prompt_requirements, and the canonical pack registry without modifying SGS-004 extractor authority."
+    },
+    {
+      "issue": "PGS-A03",
+      "linear_id": "SLM-496",
+      "title": "Add deterministic candidate-side goal-constraint evaluation",
+      "extension_points": [
+        "compiled_goal_constraints",
+        "requirements_compile"
+      ],
+      "new_owner_justified": false,
+      "justification": "Extends requirements_compile with evaluate_goal_constraints and GoalConstraintEvaluationV1; no new owner beyond the PGS-A02 compiler."
+    },
+    {
+      "issue": "PGS-B01",
+      "linear_id": "SLM-497",
+      "title": "Implement GoalVerifierProfileV1 and GoalTerminalEvidenceV1 contracts",
+      "extension_points": [
+        "compiled_goal_constraints",
+        "verifier_gate_stack"
+      ],
+      "new_owner_justified": true,
+      "justification": "No existing contract pins goal-verifier mode, required constraint/gate/evaluator identities, and digest-bound terminal evidence; goal_support.py is a new verifier-hard owner layered on compiled_goal_constraints and the gate stack without duplicating either."
+    },
+    {
+      "issue": "PGS-B02",
+      "linear_id": "SLM-498",
+      "title": "Implement OpenUIGoalVerifier with mandatory tri-state terminal semantics",
+      "extension_points": [
+        "goal_support",
+        "verifier_gate_stack",
+        "compiled_goal_constraints"
+      ],
+      "new_owner_justified": false,
+      "justification": "OpenUIGoalVerifier in openui_support.py composes existing well-formedness, ProgramSpec/SemanticPlanV1 projection, evaluate_goal_constraints, and G0-G12 gates under the goal_support profile contract; no new search or verifier-stack owner."
+    },
+    {
+      "issue": "PGS-C01",
+      "linear_id": "SLM-499",
+      "title": "Implement GoalSupportProvider, replay sidecars, and exact_goal_closure guard",
+      "extension_points": [
+        "goal_support",
+        "valid_state_search_generic",
+        "solver_replay"
+      ],
+      "new_owner_justified": false,
+      "justification": "Goal-aware wrapper over EnumerativeSupportOracle and certificate replay; canonical search proof remains SupportCertificate with GoalSupportResultV1 sidecars — no parallel search engine."
+    },
+    {
+      "issue": "PGS-C02",
+      "linear_id": "SLM-500",
+      "title": "Implement DomainObstructionCoreV1 bounded hitting-set cores",
+      "extension_points": [
+        "goal_support"
+      ],
+      "new_owner_justified": false,
+      "justification": "Bounded obstruction cores and replay live under goal_support_obstruction.py as goal_support extensions; no new search owner."
+    },
+    {
+      "issue": "PGS-C03",
+      "linear_id": "SLM-501",
+      "title": "Implement goal-action evidence and domain-adequacy classification",
+      "extension_points": [
+        "goal_support"
+      ],
+      "new_owner_justified": false,
+      "justification": "GoalActionEvidenceV1/GoalDomainAdequacyReportV1 and analyze_goal_domain extend goal_support_domain_adequacy.py under the goal_support owner; no new search or verifier owner."
+    },
+    {
+      "issue": "PGS-D01",
+      "linear_id": "SLM-502",
+      "title": "Add distinct goal-support path to counterfactual probe",
+      "extension_points": [
+        "counterfactual_probe",
+        "goal_support"
+      ],
+      "new_owner_justified": false,
+      "justification": "Distinct GoalSupportProbeInputs/run_goal_support_probe path under counterfactual_probe; does not alias semantic_partition relative rollout evidence."
+    },
+    {
+      "issue": "PGS-D02",
+      "linear_id": "SLM-503",
+      "title": "Materialize goal-support ObjectiveView sets in DecisionEventV2",
+      "extension_points": [
+        "decision_events_v2",
+        "goal_support"
+      ],
+      "new_owner_justified": false,
+      "justification": "materialize_goal_support maps goal-support evidence into existing DecisionEventV2 ObjectiveView sets with profile trainability guards; no new decision schema owner."
+    },
+    {
+      "issue": "PGS-E01",
+      "linear_id": "SLM-504",
+      "title": "Wire default-off goal support into canonical decode",
+      "extension_points": [
+        "goal_support",
+        "valid_state_search_generic",
+        "lattice_search_forest_adapter"
+      ],
+      "new_owner_justified": false,
+      "justification": "Opt-in goal_support_mode seam in dsl/solver/decode.py composes existing forest search with goal_support_certified_prune and diagnostic observe paths; no new decode engine."
+    },
+    {
+      "issue": "PGS-E02",
+      "linear_id": "SLM-505",
+      "title": "Add canonical goal-support decode telemetry counters",
+      "extension_points": [
+        "decode_telemetry",
+        "goal_support"
+      ],
+      "new_owner_justified": false,
+      "justification": "goal_support_* counters and GoalSupportTelemetrySink extend decode_telemetry; observation-only fields never authorize prune."
+    },
+    {
+      "issue": "PGS-F01",
+      "linear_id": "SLM-506",
+      "title": "Prove finite goal-support structural laws in Lean",
+      "extension_points": [
+        "goal_support"
+      ],
+      "new_owner_justified": false,
+      "justification": "Formal drift guard (GoalSupport.lean + goal_support_mapping.py golden cases) over landed Python partition/obstruction contracts; no new runtime search or verifier owner."
+    },
+    {
+      "issue": "PGS-G01",
+      "linear_id": "SLM-507",
+      "title": "Add adversarial goal-support regression suite",
+      "extension_points": [
+        "goal_support",
+        "compiled_goal_constraints"
+      ],
+      "new_owner_justified": false,
+      "justification": "Adversarial regression tests over landed goal_support and compiled_goal_constraints contracts; tests only, no new owner."
+    },
+    {
+      "issue": "PGS-G02",
+      "linear_id": "SLM-508",
+      "title": "Add property tests for partitions, classifier, and obstruction",
+      "extension_points": [
+        "goal_support"
+      ],
+      "new_owner_justified": false,
+      "justification": "Property/oracle-cross-check tests for domain adequacy and obstruction tables; tests only."
+    },
+    {
+      "issue": "PGS-G03",
+      "linear_id": "SLM-509",
+      "title": "Add adversarial decode parity suite for goal support",
+      "extension_points": [
+        "goal_support",
+        "decode_telemetry"
+      ],
+      "new_owner_justified": false,
+      "justification": "Decode singleton-bypass and forest-parity regression tests for the PGS-E01 seam; tests only."
+    },
+    {
+      "issue": "PGS-H01",
+      "linear_id": "SLM-510",
+      "title": "Add goal-support domain-adequacy fixture campaign harness",
+      "extension_points": [
+        "experiment_campaign",
+        "goal_support"
+      ],
+      "new_owner_justified": false,
+      "justification": "Default-off bounded diagnostic ExperimentCampaignV1 over word-tree fixtures composing goal_support analyze_goal_domain and exact_goal_closure; result schema goal_support_domain_adequacy_campaign_fixture/v1."
+    },
+    {
+      "issue": "PGS-H02",
+      "linear_id": "SLM-511",
+      "title": "Publish goal-support domain-adequacy fixture campaign evidence",
+      "extension_points": [
+        "experiment_campaign"
+      ],
+      "new_owner_justified": false,
+      "justification": "Measured-results documentation for the PGS-H01 fixture campaign (claim_class=diagnostic); no new harness owner."
+    },
+    {
+      "issue": "PGS-I01",
+      "linear_id": "SLM-512",
+      "title": "Document proof-carrying goal support design, authority, and threat model",
+      "extension_points": [
+        "goal_support",
+        "compiled_goal_constraints",
+        "requirements_compile",
+        "counterfactual_probe",
+        "decision_events_v2",
+        "decode_telemetry",
+        "experiment_campaign"
+      ],
+      "new_owner_justified": false,
+      "justification": "Pure design documentation over landed PGS owners; no new production code, campaign execution, or ship claim."
     },
     {
       "issue": "SGS-008",

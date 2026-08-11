@@ -74,6 +74,13 @@ from slm_training.dsl.solver.capsule_solver import (
     build_capsule_solve_plan,
     solve_capsule_graph,
 )
+from slm_training.dsl.solver.goal_support import (
+    GoalSupportProvider,
+    GoalSupportResultV1,
+    GoalVerifierProfileV1,
+    exact_goal_closure,
+    replay_goal_support_result,
+)
 from slm_training.dsl.solver.topology_adapter import (
     TopologyAction,
     TopologyAdapterConfig,
@@ -109,6 +116,9 @@ __all__ = [
     "ExpandStatus",
     "ExpandStep",
     "FiniteDomainState",
+    "GoalSupportProvider",
+    "GoalSupportResultV1",
+    "GoalVerifierProfileV1",
     "HoleDomain",
     "HoleId",
     "JsonScalar",
@@ -150,8 +160,10 @@ __all__ = [
     "derive_topology_holes",
     "derive_topology_state",
     "exact_closure",
+    "exact_goal_closure",
     "legal_topology_productions",
     "replay_support_certificate",
+    "replay_goal_support_result",
     "search",
     "solve_capsule_graph",
 ]

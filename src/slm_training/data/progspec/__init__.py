@@ -2,6 +2,15 @@
 
 from typing import Any
 
+from slm_training.data.progspec.goal_constraints import (
+    CompiledGoalConstraintSetV1,
+    GoalConstraintEvaluationV1,
+    GoalConstraintV1,
+    authority_matrix,
+    combine_authority,
+    combine_completeness,
+    merge_goal_constraints,
+)
 from slm_training.data.progspec.schema import ProgramSpec, emit_record
 from slm_training.data.progspec.semantic_plan import (
     PlanArchetype,
@@ -63,11 +72,14 @@ __all__ = [
     "BinderGraphG3Result",
     "BinderGraphV1",
     "CapsuleGraph",
+    "CompiledGoalConstraintSetV1",
     "CoverageCell",
     "CoverageTracker",
     "DependencyKind",
     "GenerationResult",
     "GeneratorConfig",
+    "GoalConstraintEvaluationV1",
+    "GoalConstraintV1",
     "PlanArchetype",
     "PlanBinding",
     "PlanConfidenceCalibration",
@@ -88,6 +100,9 @@ __all__ = [
     "UnresolvedPlaceholder",
     "UnresolvedReference",
     "VerificationCapsule",
+    "authority_matrix",
+    "combine_authority",
+    "combine_completeness",
     "dependency_closed_failure_cone",
     "derive_binder_graph",
     "derive_capsule_graph",
@@ -95,5 +110,6 @@ __all__ = [
     "derive_scope_records",
     "emit_record",
     "generate_program_specs",
+    "merge_goal_constraints",
     "validate_scope_wrapper",
 ]
