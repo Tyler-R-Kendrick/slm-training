@@ -16,6 +16,7 @@ import LeverProofLean.ExactClosure
 import LeverProofLean.EventTrace
 import LeverProofLean.MechanismTrigger
 import LeverProofLean.ResourceBoundParity
+import LeverProofLean.ComputabilityClassification
 import LeverProofLean.DecodeInvariants
 import LeverProofLean.EcosystemTier
 -- Constrained diffusion × topology ADR claim cores

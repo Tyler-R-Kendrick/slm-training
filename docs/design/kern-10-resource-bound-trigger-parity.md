@@ -8,7 +8,7 @@ Frozen cross-language fixtures prove that Python and Lean agree on:
 - machine-cost totals (KERN-06)
 - singleton zero-neural work (KERN-07)
 - mechanism trigger / no-effect / dominance (KERN-08)
-- practical computability labels (EVID-03 vocabulary; KERN-12 may refine)
+- practical computability labels (KERN-12 vocabulary; EVID-03 / KERN-10 consume it)
 
 ## Artifacts
 

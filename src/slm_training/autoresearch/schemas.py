@@ -728,13 +728,18 @@ FormalProofPolicy = Literal["required", "advisory"]
 FormalProofStatus = Literal["proved", "refuted", "conditional", "unknown", "timed_out"]
 FormalEvidenceScope = Literal["universal", "bounded_instance", "conditional"]
 
-# Practical computability labels for EVID-03 ledger (KERN-12 may refine further).
+# Practical computability labels (KERN-12 / SLM-532 vocabulary; extends EVID-03).
+# Legacy alias classical_noncomputable_existence normalizes to noncomputable_existence.
 ComputabilityClassification = Literal[
     "finite_decidable",
+    "primitive_recursive",
     "bounded_search",
     "total_recursive",
     "semidecidable",
+    "co_semidecidable",
     "oracle_relative",
+    "classical_propositional",
+    "noncomputable_existence",
     "classical_noncomputable_existence",
     "unclassified",
 ]

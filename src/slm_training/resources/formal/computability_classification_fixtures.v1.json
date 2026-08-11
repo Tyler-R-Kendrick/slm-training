@@ -1,0 +1,309 @@
+{
+  "schema": "computability_classification/v1",
+  "issue": "SLM-532",
+  "kern": "KERN-12",
+  "notes": [
+    "Production practical computability vocabulary with evidence contracts.",
+    "rm_research:* only with an explicit interpretation package.",
+    "#print axioms alone never yields RCA0/WKL0/rm_research labels.",
+    "Lean label strings mirror lean_label / class_id for parity guards."
+  ],
+  "cases": [
+    {
+      "id": "ex_finite_vss_decidable",
+      "family": "finite_vss",
+      "lean_label": "finite_decidable",
+      "claim": {
+        "schema_version": "computability_classification/v1",
+        "claim_id": "cc.ex.finite_vss",
+        "class_id": "finite_decidable",
+        "evidence_kinds": ["finite_vss_certificate", "finite_search_bound"],
+        "source_family": "finite_vss",
+        "notes": "Complete empty-domain VSS product is finite-decidable."
+      },
+      "expect": {
+        "accepted": true,
+        "class_id": "finite_decidable"
+      }
+    },
+    {
+      "id": "ex_bounded_closure_search",
+      "family": "bounded_closure",
+      "lean_label": "bounded_search",
+      "claim": {
+        "schema_version": "computability_classification/v1",
+        "claim_id": "cc.ex.bounded_closure",
+        "class_id": "bounded_search",
+        "evidence_kinds": ["bounded_closure_certificate"],
+        "source_family": "bounded_closure",
+        "notes": "Closure-height bound licenses bounded_search, not RCA0."
+      },
+      "expect": {
+        "accepted": true,
+        "class_id": "bounded_search"
+      }
+    },
+    {
+      "id": "ex_primitive_recursive_bound",
+      "family": "primitive_recursive",
+      "lean_label": "primitive_recursive",
+      "claim": {
+        "schema_version": "computability_classification/v1",
+        "claim_id": "cc.ex.pr_bound",
+        "class_id": "primitive_recursive",
+        "evidence_kinds": ["primitive_recursive_bound"],
+        "source_family": "primitive_recursive",
+        "notes": "Bounded primitive computation via PR-shaped bound AST."
+      },
+      "expect": {
+        "accepted": true,
+        "class_id": "primitive_recursive"
+      }
+    },
+    {
+      "id": "ex_oracle_relative_black_box",
+      "family": "external_oracle",
+      "lean_label": "oracle_relative",
+      "claim": {
+        "schema_version": "computability_classification/v1",
+        "claim_id": "cc.ex.oracle",
+        "class_id": "oracle_relative",
+        "evidence_kinds": ["oracle_declaration"],
+        "source_family": "external_oracle",
+        "notes": "Black-box lower bound is oracle-relative, not absolute RE."
+      },
+      "expect": {
+        "accepted": true,
+        "class_id": "oracle_relative"
+      }
+    },
+    {
+      "id": "ex_semidecidable_probe",
+      "family": "semidecidable",
+      "lean_label": "semidecidable",
+      "claim": {
+        "schema_version": "computability_classification/v1",
+        "claim_id": "cc.ex.semidecidable",
+        "class_id": "semidecidable",
+        "evidence_kinds": ["semidecision_procedure"],
+        "source_family": "semidecidable",
+        "notes": "Halts on yes; does not imply co_semidecidable."
+      },
+      "expect": {
+        "accepted": true,
+        "class_id": "semidecidable"
+      }
+    },
+    {
+      "id": "ex_co_semidecidable_probe",
+      "family": "co_semidecidable",
+      "lean_label": "co_semidecidable",
+      "claim": {
+        "schema_version": "computability_classification/v1",
+        "claim_id": "cc.ex.co_semidecidable",
+        "class_id": "co_semidecidable",
+        "evidence_kinds": ["co_semidecision_procedure"],
+        "source_family": "co_semidecidable",
+        "notes": "Halts on no; does not imply semidecidable."
+      },
+      "expect": {
+        "accepted": true,
+        "class_id": "co_semidecidable"
+      }
+    },
+    {
+      "id": "ex_classical_propositional",
+      "family": "classical_propositional",
+      "lean_label": "classical_propositional",
+      "claim": {
+        "schema_version": "computability_classification/v1",
+        "claim_id": "cc.ex.classical_prop",
+        "class_id": "classical_propositional",
+        "evidence_kinds": ["classical_propositional_marker"],
+        "source_family": "classical_propositional",
+        "notes": "LEM without constructive witness."
+      },
+      "expect": {
+        "accepted": true,
+        "class_id": "classical_propositional"
+      }
+    },
+    {
+      "id": "ex_noncomputable_existence",
+      "family": "theorem_existence",
+      "lean_label": "noncomputable_existence",
+      "claim": {
+        "schema_version": "computability_classification/v1",
+        "claim_id": "cc.ex.noncomputable_ex",
+        "class_id": "noncomputable_existence",
+        "evidence_kinds": ["noncomputable_existence_claim"],
+        "source_family": "theorem_existence",
+        "notes": "Classical existence theorem; not ACA0/RCA0."
+      },
+      "expect": {
+        "accepted": true,
+        "class_id": "noncomputable_existence"
+      }
+    },
+    {
+      "id": "ex_legacy_alias_noncomputable",
+      "family": "theorem_existence",
+      "lean_label": "noncomputable_existence",
+      "claim": {
+        "schema_version": "computability_classification/v1",
+        "claim_id": "cc.ex.legacy_alias",
+        "class_id": "classical_noncomputable_existence",
+        "evidence_kinds": ["noncomputable_existence_claim"],
+        "source_family": "theorem_existence",
+        "notes": "KERN-10 alias normalizes to noncomputable_existence."
+      },
+      "expect": {
+        "accepted": true,
+        "class_id": "noncomputable_existence"
+      }
+    },
+    {
+      "id": "ex_total_recursive",
+      "family": "primitive_recursive",
+      "lean_label": "total_recursive",
+      "claim": {
+        "schema_version": "computability_classification/v1",
+        "claim_id": "cc.ex.total_recursive",
+        "class_id": "total_recursive",
+        "evidence_kinds": ["total_recursive_certificate"],
+        "source_family": "total_recursive",
+        "notes": "Totality certificate without finite-domain claim."
+      },
+      "expect": {
+        "accepted": true,
+        "class_id": "total_recursive"
+      }
+    },
+    {
+      "id": "ex_unclassified_incomplete",
+      "family": "adversarial",
+      "lean_label": "unclassified",
+      "claim": {
+        "schema_version": "computability_classification/v1",
+        "claim_id": "cc.ex.unclassified",
+        "class_id": "unclassified",
+        "evidence_kinds": ["explicit_unclassified"],
+        "source_family": "incomplete_domain",
+        "notes": "Incomplete domain stays unclassified."
+      },
+      "expect": {
+        "accepted": true,
+        "class_id": "unclassified"
+      }
+    },
+    {
+      "id": "ex_rm_research_with_package",
+      "family": "rm_research",
+      "lean_label": "rm_research:WKL0",
+      "claim": {
+        "schema_version": "computability_classification/v1",
+        "claim_id": "cc.ex.rm_research_ok",
+        "class_id": "rm_research:WKL0",
+        "evidence_kinds": ["interpretation_package"],
+        "source_family": "rm_research",
+        "notes": "Research label only with explicit interpretation package.",
+        "interpretation_package": {
+          "base_theory_id": "RCA0_base",
+          "coding_id": "coding.tree_path.v1",
+          "interpretation_status": "explicit_reversal",
+          "forward_evidence_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "reversal_evidence_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        }
+      },
+      "expect": {
+        "accepted": true,
+        "class_id": "rm_research:WKL0"
+      }
+    },
+    {
+      "id": "neg_print_axioms_as_rca0",
+      "family": "adversarial",
+      "lean_label": "rm_research:RCA0",
+      "claim": {
+        "schema_version": "computability_classification/v1",
+        "claim_id": "cc.neg.print_axioms_rca0",
+        "class_id": "rm_research:RCA0",
+        "evidence_kinds": ["print_axioms_only"],
+        "source_family": "adversarial",
+        "notes": "Counterexample: #print axioms alone is not RCA0."
+      },
+      "expect": {
+        "accepted": false,
+        "rejection_contains": "#print axioms"
+      }
+    },
+    {
+      "id": "neg_rm_research_without_package",
+      "family": "adversarial",
+      "lean_label": "rm_research:fake_RCA0",
+      "claim": {
+        "schema_version": "computability_classification/v1",
+        "claim_id": "cc.neg.rm_no_package",
+        "class_id": "rm_research:fake_RCA0",
+        "evidence_kinds": ["lean_compile_success"],
+        "source_family": "adversarial",
+        "notes": "KERN-10 adversarial label without interpretation package."
+      },
+      "expect": {
+        "accepted": false,
+        "rejection_contains": "interpretation_package"
+      }
+    },
+    {
+      "id": "neg_finite_decidable_without_evidence",
+      "family": "adversarial",
+      "lean_label": "finite_decidable",
+      "claim": {
+        "schema_version": "computability_classification/v1",
+        "claim_id": "cc.neg.finite_no_evidence",
+        "class_id": "finite_decidable",
+        "evidence_kinds": [],
+        "source_family": "adversarial",
+        "notes": "No ambiguous fall-through: empty evidence rejected."
+      },
+      "expect": {
+        "accepted": false,
+        "rejection_contains": "requires at least one"
+      }
+    },
+    {
+      "id": "neg_unknown_class",
+      "family": "adversarial",
+      "lean_label": "unclassified",
+      "claim": {
+        "schema_version": "computability_classification/v1",
+        "claim_id": "cc.neg.unknown_class",
+        "class_id": "quantum_hyperarithmetical",
+        "evidence_kinds": ["explicit_unclassified"],
+        "source_family": "adversarial",
+        "notes": "Unknown class ids fail closed."
+      },
+      "expect": {
+        "accepted": false,
+        "rejection_contains": "unknown practical computability class"
+      }
+    },
+    {
+      "id": "neg_print_axioms_as_finite_decidable",
+      "family": "adversarial",
+      "lean_label": "finite_decidable",
+      "claim": {
+        "schema_version": "computability_classification/v1",
+        "claim_id": "cc.neg.print_as_finite",
+        "class_id": "finite_decidable",
+        "evidence_kinds": ["print_axioms_only"],
+        "source_family": "adversarial",
+        "notes": "#print axioms is not a finite VSS certificate."
+      },
+      "expect": {
+        "accepted": false,
+        "rejection_contains": "#print axioms"
+      }
+    }
+  ]
+}

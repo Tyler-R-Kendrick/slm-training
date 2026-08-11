@@ -15,6 +15,12 @@ from dataclasses import dataclass
 from typing import Any, Literal
 
 from slm_training.harness_core.lineage.records import content_sha
+from slm_training.formal.computability_classification import (
+    PRACTICAL_CLASSES,
+    ComputabilityClassificationError,
+    is_rm_research_label,
+    normalize_class_id,
+)
 from slm_training.harnesses.reasoning.revmath.schemas import (
     KNOWN_RM_SUBSYSTEMS,
     InterpretationStatus,
@@ -189,6 +195,28 @@ class RmLabelClaimV1:
         ):
             if digest is not None and not _is_hex64(str(digest)):
                 raise RevmathSchemaError(f"{digest_name} must be 64 lowercase hex")
+        practical_norm: str | None
+        if practical is None:
+            practical_norm = None
+        else:
+            text = str(practical)
+            if is_rm_research_label(text):
+                # HARN-08 stays production-facing; research labels need KERN-12
+                # interpretation packages via computability_classification.
+                raise RevmathSchemaError(
+                    "practical_class cannot be rm_research:* on an RM label claim; "
+                    "use proposed_subsystem_id + interpretation package, or the "
+                    "KERN-12 computability_classification claim schema"
+                )
+            try:
+                practical_norm = normalize_class_id(text)
+            except ComputabilityClassificationError as exc:
+                raise RevmathSchemaError(str(exc)) from exc
+            if practical_norm not in PRACTICAL_CLASSES:
+                raise RevmathSchemaError(
+                    f"unknown practical_class {text!r} "
+                    "(KERN-12 vocabulary; no ambiguous fall-through)"
+                )
         return cls(
             schema_version=schema,
             claim_id=claim_id,
@@ -201,7 +229,7 @@ class RmLabelClaimV1:
             forward_evidence_sha256=None if forward is None else str(forward),
             reversal_evidence_sha256=None if reverse is None else str(reverse),
             evidence_kinds=tuple(kinds),
-            practical_class=None if practical is None else str(practical),
+            practical_class=practical_norm,
             notes=str(data.get("notes", "")),
         )
 

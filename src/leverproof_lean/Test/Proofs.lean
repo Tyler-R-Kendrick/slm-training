@@ -323,6 +323,11 @@ open LeverProofLean
 #guard ResourceBoundParity.caseId_fs_two_three = "fs_two_three"
 #guard ResourceBoundParity.paritySchema = "resource_bound_trigger_parity/v1"
 
+-- Practical computability vocabulary (KERN-12)
+#guard ComputabilityClassification.classificationSchema = "computability_classification/v1"
+#guard ComputabilityClassification.PracticalClass.finiteDecidable.label = "finite_decidable"
+#guard ComputabilityClassification.rejectsRmResearchPrefix "rm_research:RCA0" = true
+
 #guard FiniteSearchBounds.prefixTreeNodeBound [2, 3] = 9
 #guard FiniteSearchBounds.completeAssignmentCount ([] : List Nat) = 1
 #guard FiniteSearchBounds.prefixTreeNodeBound ([] : List Nat) = 1

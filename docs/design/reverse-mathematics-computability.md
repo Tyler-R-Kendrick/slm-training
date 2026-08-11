@@ -80,6 +80,22 @@ reverse mathematics (`report_labeling_disclaimer` /
 Fixtures: `resources/revmath/fixtures/labeling_*.claim.json` (positive +
 negative).
 
+## KERN-12 practical computability vocabulary
+
+Owner: `formal/computability_classification.py` (+ Lean
+`LeverProofLean.ComputabilityClassification`).
+
+Production classes (`finite_decidable`, `primitive_recursive`, `bounded_search`,
+`total_recursive`, `semidecidable`, `co_semidecidable`, `oracle_relative`,
+`classical_propositional`, `noncomputable_existence`, `unclassified`) each have
+an evidence contract, permitted implications, and non-implications. HARN-08
+`practical_class` and KERN-10 / EVID-03 ledger labels consume this vocabulary
+(legacy alias `classical_noncomputable_existence` → `noncomputable_existence`).
+`rm_research:*` requires an explicit interpretation package — `#print axioms`
+alone never classifies a theorem as `RCA0` / `WKL0` / ….
+
+Design: [kern-12-computability-classification.md](kern-12-computability-classification.md).
+
 ## HARN-09 proposition-preserving self-healing
 
 Owner: `harnesses/reasoning/revmath/self_healing.py` (extends `semantic_repair`
@@ -136,6 +152,7 @@ reject weaken-theorem / add-axiom / increase-budget / change-corpus paths.
 | `revmath_counterexample` | task_validator | `harnesses/reasoning/revmath/counterexample.py` | `check_counterexample_against_theorem`, `evaluate_counterexample` | HARN-06 checked finite/computable counterexamples; search≠refutation |
 | `revmath_quantitative_bound` | task_validator | `harnesses/reasoning/revmath/quantitative_bound.py` | `extract_quantitative_bound`, `QuantitativeBoundReportV1` | HARN-07 theorem-derived bounds via EVID-04; no invented rates |
 | `revmath_labeling` | task_validator | `harnesses/reasoning/revmath/labeling.py` | `validate_label_claim`, `anti_overclaim_reasons`, `RmLabelClaimV1` | HARN-08 conservative Big-Five labeling; anti-overclaim |
+| `formal_computability_classification` | schema | `formal/computability_classification.py` | `CLASS_CONTRACTS`, `validate_classification_claim`, `ClassificationClaimV1` | KERN-12 practical computability vocabulary + evidence contracts |
 | `revmath_self_healing` | repair | `harnesses/reasoning/revmath/self_healing.py` | `run_self_healing`, `propose_repair_attempts`, `RevmathRepairSessionV1` | HARN-09 proposition-preserving self-healing |
 | `revmath_replay` | replay | `harnesses/reasoning/revmath/replay.py` | `build_revmath_replay_bundle` | HARN-03 ReplayBundleV1 composition |
 | `revmath_report` | report | `harnesses/reasoning/revmath/report.py` | `build_revmath_report` | HARN-03 typed reports |

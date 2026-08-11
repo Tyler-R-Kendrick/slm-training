@@ -451,6 +451,21 @@
       "notes": "HARN-08 conservative RM labeling + anti-overclaim; Big-Five equivalence only with base/coding/forward/reversal; distinguishes RM-inspired assumption minimization from genuine reverse mathematics."
     },
     {
+      "id": "formal_computability_classification",
+      "kind": "schema",
+      "owner_module": "src/slm_training/formal/computability_classification.py",
+      "owner_symbols": [
+        "PracticalComputabilityClass",
+        "CLASS_CONTRACTS",
+        "validate_classification_claim",
+        "ClassificationClaimV1",
+        "COMPUTABILITY_LABELS"
+      ],
+      "design_doc": "docs/design/kern-12-computability-classification.md",
+      "ownership_map_subsystem": null,
+      "notes": "KERN-12 (SLM-532) production practical computability vocabulary + evidence contracts; consumed by HARN-08 practical_class and KERN-10/EVID-03 ledger labels; rm_research:* only with interpretation package."
+    },
+    {
       "id": "revmath_self_healing",
       "kind": "repair",
       "owner_module": "src/slm_training/harnesses/reasoning/revmath/self_healing.py",
