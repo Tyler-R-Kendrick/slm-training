@@ -1,0 +1,278 @@
+{
+  "$defs": {
+    "EvaluatorIdentityV1": {
+      "additionalProperties": false,
+      "properties": {
+        "evaluator_id": {
+          "minLength": 1,
+          "title": "Evaluator Id",
+          "type": "string"
+        },
+        "version": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Version"
+        },
+        "implementation_hash": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$|^$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Implementation Hash"
+        }
+      },
+      "required": [
+        "evaluator_id"
+      ],
+      "title": "EvaluatorIdentityV1",
+      "type": "object"
+    },
+    "MetricIdentityV1": {
+      "additionalProperties": false,
+      "properties": {
+        "metric_id": {
+          "minLength": 1,
+          "title": "Metric Id",
+          "type": "string"
+        },
+        "version": {
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        },
+        "implementation_hash": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$|^$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Implementation Hash"
+        }
+      },
+      "required": [
+        "metric_id",
+        "version"
+      ],
+      "title": "MetricIdentityV1",
+      "type": "object"
+    },
+    "PackIdentityV1": {
+      "additionalProperties": false,
+      "description": "DSL pack/contract/grammar/tokenizer/canonicalizer/artifact identities.\n\nField names deliberately mirror\n``slm_training.models.decode_stats.DecodeIdentityV1`` so problem\nauthoring and decode telemetry share one identity vocabulary end to end.",
+      "properties": {
+        "pack_id": {
+          "minLength": 1,
+          "title": "Pack Id",
+          "type": "string"
+        },
+        "contract_version": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Contract Version"
+        },
+        "grammar_sha256": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Grammar Sha256"
+        },
+        "tokenizer_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tokenizer Id"
+        },
+        "canonicalizer_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Canonicalizer Id"
+        },
+        "artifact_schema": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Artifact Schema"
+        },
+        "artifact_sha256": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Artifact Sha256"
+        }
+      },
+      "required": [
+        "pack_id"
+      ],
+      "title": "PackIdentityV1",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Digest-bound profile that pins goal-support query semantics.",
+  "properties": {
+    "schema_version": {
+      "default": "goal_verifier_profile/v1",
+      "pattern": "^goal_verifier_profile/v1$",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "profile_id": {
+      "minLength": 1,
+      "title": "Profile Id",
+      "type": "string"
+    },
+    "mode": {
+      "enum": [
+        "production_exact",
+        "evaluation_oracle",
+        "advisory_diagnostic"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "problem_digest": {
+      "minLength": 1,
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Problem Digest",
+      "type": "string"
+    },
+    "constraint_set_digest": {
+      "minLength": 1,
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Constraint Set Digest",
+      "type": "string"
+    },
+    "pack_identity": {
+      "$ref": "#/$defs/PackIdentityV1"
+    },
+    "pack_identity_digest": {
+      "minLength": 1,
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Pack Identity Digest",
+      "type": "string"
+    },
+    "required_constraint_ids": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Required Constraint Ids",
+      "type": "array"
+    },
+    "required_gates": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Required Gates",
+      "type": "array"
+    },
+    "required_evaluators": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/EvaluatorIdentityV1"
+      },
+      "title": "Required Evaluators",
+      "type": "array"
+    },
+    "metric_identities": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/MetricIdentityV1"
+      },
+      "title": "Metric Identities",
+      "type": "array"
+    },
+    "implementation_version": {
+      "default": "goal_support/v1",
+      "minLength": 1,
+      "title": "Implementation Version",
+      "type": "string"
+    },
+    "authority_tier": {
+      "enum": [
+        "compiler-hard",
+        "verifier-hard",
+        "evaluation-only",
+        "advisory-learned",
+        "oracle-diagnostic"
+      ],
+      "title": "Authority Tier",
+      "type": "string"
+    },
+    "digest": {
+      "default": "",
+      "pattern": "^[0-9a-f]{64}$|^$",
+      "title": "Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "profile_id",
+    "mode",
+    "problem_digest",
+    "constraint_set_digest",
+    "pack_identity",
+    "pack_identity_digest",
+    "authority_tier"
+  ],
+  "title": "GoalVerifierProfileV1",
+  "type": "object"
+}

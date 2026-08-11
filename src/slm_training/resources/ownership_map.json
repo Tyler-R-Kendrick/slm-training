@@ -82,6 +82,30 @@
       "notes": "PGS-A01 (SLM-494): compiled, authority-labeled goal constraints layered on verified_synthesis_problem, prompt_requirements, semantic_plan, and verifier_gate_stack without duplicating request-side or plan-side contracts. may_prune is fail-closed to independently exact sources (pack_contract, verification_requirement) with EXACT completeness and compiler-hard/verifier-hard authority only. Generated JSON Schema: src/slm_training/resources/compiled_goal_constraint_set.schema.json (scripts/sync_compiled_goal_constraint_set_schema.py --check)."
     },
     {
+      "id": "goal_support",
+      "name": "Goal-verifier profiles and redacted terminal-evidence contracts",
+      "owner_module": "src/slm_training/dsl/solver/goal_support.py",
+      "owner_symbols": [
+        "GoalVerifierProfileV1",
+        "GoalTerminalEvidenceV1",
+        "GoalGateResultV1",
+        "GoalEvaluatorResultV1",
+        "GoalFailureAtomV1",
+        "GoalUnknownAtomV1",
+        "MetricIdentityV1",
+        "EvaluatorIdentityV1",
+        "profile_mode_authority_table",
+        "terminal_status_decision_table",
+        "profile_digest_inputs",
+        "validate_profile_against_constraint_set",
+        "redact_bounded_string",
+        "redact_terminal_evidence_dict"
+      ],
+      "authority_tier": "verifier-hard",
+      "design_doc": "docs/design/verified-scope-solver.md",
+      "notes": "PGS-B01 (SLM-497): digest-bound GoalVerifierProfileV1 modes (production_exact/evaluation_oracle/advisory_diagnostic) and privacy-bounded GoalTerminalEvidenceV1 terminal records layered on compiled_goal_constraints without duplicating GoalConstraintEvaluationV1 or executing gates/evaluators. Generated JSON Schema: src/slm_training/resources/goal_verifier_profile.schema.json and goal_terminal_evidence.schema.json (scripts/sync_goal_support_schema.py --check)."
+    },
+    {
       "id": "sygus_capability_report",
       "name": "SyGuS/SemGuS capability report over VerifiedSynthesisProblemV1",
       "owner_module": "src/slm_training/data/progspec/synthesis_capability_report.py",

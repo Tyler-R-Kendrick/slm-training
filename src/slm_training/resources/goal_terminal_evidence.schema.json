@@ -1,0 +1,335 @@
+{
+  "$defs": {
+    "GoalConstraintEvaluationV1": {
+      "additionalProperties": false,
+      "description": "Minimal evaluation record suitable for PGS-A03 handoff.",
+      "properties": {
+        "schema_version": {
+          "default": "goal_constraint_evaluation/v1",
+          "pattern": "^goal_constraint_evaluation/v1$",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "constraint_id": {
+          "minLength": 1,
+          "title": "Constraint Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "PASS",
+            "FAIL",
+            "UNKNOWN",
+            "SKIPPED"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "detail": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Detail"
+        }
+      },
+      "required": [
+        "constraint_id",
+        "status"
+      ],
+      "title": "GoalConstraintEvaluationV1",
+      "type": "object"
+    },
+    "GoalEvaluatorResultV1": {
+      "additionalProperties": false,
+      "properties": {
+        "evaluator_id": {
+          "minLength": 1,
+          "title": "Evaluator Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "ACCEPT",
+            "REJECT",
+            "UNAVAILABLE"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "reason_code": {
+          "default": "",
+          "title": "Reason Code",
+          "type": "string"
+        }
+      },
+      "required": [
+        "evaluator_id",
+        "status"
+      ],
+      "title": "GoalEvaluatorResultV1",
+      "type": "object"
+    },
+    "GoalFailureAtomV1": {
+      "additionalProperties": false,
+      "properties": {
+        "atom_id": {
+          "minLength": 1,
+          "title": "Atom Id",
+          "type": "string"
+        },
+        "reason_code": {
+          "minLength": 1,
+          "title": "Reason Code",
+          "type": "string"
+        },
+        "source_kind": {
+          "enum": [
+            "constraint",
+            "gate",
+            "evaluator",
+            "structural"
+          ],
+          "title": "Source Kind",
+          "type": "string"
+        },
+        "completeness_class": {
+          "enum": [
+            "EXACT",
+            "HEURISTIC",
+            "UNKNOWN"
+          ],
+          "title": "Completeness Class",
+          "type": "string"
+        },
+        "source_identity": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Identity"
+        },
+        "implementation_version": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Implementation Version"
+        }
+      },
+      "required": [
+        "atom_id",
+        "reason_code",
+        "source_kind",
+        "completeness_class"
+      ],
+      "title": "GoalFailureAtomV1",
+      "type": "object"
+    },
+    "GoalGateResultV1": {
+      "additionalProperties": false,
+      "properties": {
+        "gate_id": {
+          "minLength": 1,
+          "title": "Gate Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "ACCEPT",
+            "REJECT",
+            "UNAVAILABLE"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "reason_code": {
+          "default": "",
+          "title": "Reason Code",
+          "type": "string"
+        }
+      },
+      "required": [
+        "gate_id",
+        "status"
+      ],
+      "title": "GoalGateResultV1",
+      "type": "object"
+    },
+    "GoalUnknownAtomV1": {
+      "additionalProperties": false,
+      "properties": {
+        "atom_id": {
+          "minLength": 1,
+          "title": "Atom Id",
+          "type": "string"
+        },
+        "reason_code": {
+          "minLength": 1,
+          "title": "Reason Code",
+          "type": "string"
+        },
+        "source_kind": {
+          "enum": [
+            "constraint",
+            "gate",
+            "evaluator",
+            "structural"
+          ],
+          "title": "Source Kind",
+          "type": "string"
+        },
+        "source_identity": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Identity"
+        }
+      },
+      "required": [
+        "atom_id",
+        "reason_code",
+        "source_kind"
+      ],
+      "title": "GoalUnknownAtomV1",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Redacted, digest-bound terminal evidence for one goal-support query.",
+  "properties": {
+    "schema_version": {
+      "default": "goal_terminal_evidence/v1",
+      "pattern": "^goal_terminal_evidence/v1$",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "profile_digest": {
+      "minLength": 1,
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Profile Digest",
+      "type": "string"
+    },
+    "program_digest": {
+      "minLength": 1,
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Program Digest",
+      "type": "string"
+    },
+    "canonical_program_digest": {
+      "minLength": 1,
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Canonical Program Digest",
+      "type": "string"
+    },
+    "program_spec_digest": {
+      "minLength": 1,
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Program Spec Digest",
+      "type": "string"
+    },
+    "semantic_plan_digest": {
+      "minLength": 1,
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Semantic Plan Digest",
+      "type": "string"
+    },
+    "constraint_evaluations": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/GoalConstraintEvaluationV1"
+      },
+      "title": "Constraint Evaluations",
+      "type": "array"
+    },
+    "required_gate_results": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/GoalGateResultV1"
+      },
+      "title": "Required Gate Results",
+      "type": "array"
+    },
+    "required_evaluator_results": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/GoalEvaluatorResultV1"
+      },
+      "title": "Required Evaluator Results",
+      "type": "array"
+    },
+    "mandatory_failure_atoms": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/GoalFailureAtomV1"
+      },
+      "title": "Mandatory Failure Atoms",
+      "type": "array"
+    },
+    "mandatory_unknown_atoms": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/GoalUnknownAtomV1"
+      },
+      "title": "Mandatory Unknown Atoms",
+      "type": "array"
+    },
+    "structural_status": {
+      "enum": [
+        "ACCEPT",
+        "REJECT",
+        "UNAVAILABLE"
+      ],
+      "title": "Structural Status",
+      "type": "string"
+    },
+    "overall_status": {
+      "enum": [
+        "ACCEPT",
+        "REJECT",
+        "UNAVAILABLE"
+      ],
+      "title": "Overall Status",
+      "type": "string"
+    },
+    "evidence_digest": {
+      "default": "",
+      "pattern": "^[0-9a-f]{64}$|^$",
+      "title": "Evidence Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "profile_digest",
+    "program_digest",
+    "canonical_program_digest",
+    "program_spec_digest",
+    "semantic_plan_digest",
+    "structural_status",
+    "overall_status"
+  ],
+  "title": "GoalTerminalEvidenceV1",
+  "type": "object"
+}
