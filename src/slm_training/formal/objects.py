@@ -224,6 +224,26 @@ _LEAN_CLAIM_CATALOG: dict[str, dict[str, Any]] = {
         "tier": "production_core",
         "laws": ["proved_complete_singleton"],
     },
+    "ExactClosure.strict_progress_or_fixed_point": {
+        "module": "LeverProofLean.ExactClosure",
+        "tier": "production_core",
+        "laws": ["close_pass_subset", "honest_fixed_point"],
+    },
+    "ExactClosure.totalRemovedAcrossHoles_le_strictRemovalBound": {
+        "module": "LeverProofLean.ExactClosure",
+        "tier": "production_core",
+        "laws": ["close_pass_subset"],
+    },
+    "ExactClosure.removals_le_nonempty_invariant": {
+        "module": "LeverProofLean.ExactClosure",
+        "tier": "production_core",
+        "laws": ["close_pass_subset"],
+    },
+    "ExactClosure.closure_complexity_separated_from_assignment_search": {
+        "module": "LeverProofLean.ExactClosure",
+        "tier": "production_core",
+        "laws": ["close_pass_subset"],
+    },
     "EcosystemTier.core_success_ignores_library_size": {
         "module": "LeverProofLean.EcosystemTier",
         "tier": "ecosystem_library",

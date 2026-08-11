@@ -19,10 +19,6 @@ from slm_training.formal.complete_domain import (
     build_complete_domain,
 )
 from slm_training.harness_core.lineage.records import content_sha
-from slm_training.harnesses.reasoning.revmath.schemas import (
-    AxisCertificateRefV1,
-    RevmathFourAxisAnalysisV1,
-)
 
 FINITE_SEARCH_BOUNDS_SCHEMA = "finite_search_bounds/v1"
 BOUND_AST_ID = "bound.finite_search.prefix_tree.v1"
@@ -270,8 +266,15 @@ def export_four_axis_bound_evidence(
     evidence: FiniteSearchBoundEvidenceV1,
     *,
     formal_preflight_sha256: str | None = None,
-) -> RevmathFourAxisAnalysisV1:
+):
     """Export bound evidence through the four-axis ledger interface."""
+
+    # Lazy import: revmath.__init__ eagerly loads quantitative_bound which
+    # imports this module (HARN-07). Avoid the cycle at module import time.
+    from slm_training.harnesses.reasoning.revmath.schemas import (
+        AxisCertificateRefV1,
+        RevmathFourAxisAnalysisV1,
+    )
 
     cert = evidence.certificate_sha256()
     return RevmathFourAxisAnalysisV1(

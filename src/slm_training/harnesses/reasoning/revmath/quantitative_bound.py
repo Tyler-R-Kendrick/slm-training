@@ -136,7 +136,7 @@ class QuantitativeBoundMetaV1:
     expected_bound_value: str | None = None
     exhaustive_small_instance: bool = False
     domain_values_for_exhaustive: tuple[tuple[int, ...], ...] | None = None
-    # Explicit notes when KERN-05 full stabilization is absent.
+    # Notes for partial extraction / open assumptions (KERN-05 closed for live_upper).
     missing_assumption_notes: str = ""
 
     def to_dict(self) -> dict[str, Any]:
@@ -545,11 +545,12 @@ def extract_quantitative_bound(
                 certificate_sha256=None,
                 **base_kwargs,
             )
-        # Full KERN-05 stabilization proofs may still be backlog; live_upper is
-        # the registered ExactClosure survivor cardinality bound.
+        # KERN-05 supplies strict progress + finite stabilization; live_upper
+        # remains the registered survivor-cardinality bound (not maximality).
         detail = (
-            "closure live_upper via ExactClosure.closePass_subset; "
-            "not a wall-clock claim; full KERN-05 stabilization may still be open"
+            "closure live_upper via ExactClosure.strict_progress_or_fixed_point "
+            "(KERN-05); survivor |live| bound; not a wall-clock or maximality claim; "
+            "strict removals ≤ Σ d_i (bound.closure.strict_removals.v1)"
         )
 
     cert_payload = {
@@ -588,7 +589,7 @@ def default_closure_machine_model() -> MachineModelV1:
     return MachineModelV1(
         name="ExactClosureLiveCardinality",
         wall_clock=False,
-        notes="Survivor count ≤ pre-closure live cardinality (closePass_subset)",
+        notes="KERN-05 survivor count ≤ pre-closure live cardinality; strict removals ≤ Σ d_i",
     )
 
 

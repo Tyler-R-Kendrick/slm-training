@@ -2,13 +2,16 @@
   "schema": "bound_ast_parity_fixtures/v1",
   "bound_ast_schema": "bound_ast/v1",
   "wall_clock_claim": false,
-  "notes": "Lean↔Python parity for EVID-04 bound AST evaluations. Lean numbers mirror LeverProofLean.FiniteSearchBounds #guard / theorems; Python evaluates registered BoundAstDocumentV1 expressions with exact Fraction arithmetic.",
+  "notes": "Lean\u2194Python parity for EVID-04 bound AST evaluations. Lean numbers mirror LeverProofLean.FiniteSearchBounds #guard / theorems; Python evaluates registered BoundAstDocumentV1 expressions with exact Fraction arithmetic.",
   "cases": [
     {
       "id": "prefix_tree_two_by_three_unit_cost",
       "bound_ast_id": "bound.finite_search.prefix_tree.v1",
       "env": {
-        "domain_sizes": [2, 3],
+        "domain_sizes": [
+          2,
+          3
+        ],
         "c_exp": 1,
         "c_ver": 1
       },
@@ -29,14 +32,18 @@
       "expected_value": "2",
       "lean_module": "LeverProofLean.FiniteSearchBounds",
       "lean_def": "totalQueryBound",
-      "lean_guard": "empty holes: prefix nodes 1 + assignments 1 under unit costs → 2",
+      "lean_guard": "empty holes: prefix nodes 1 + assignments 1 under unit costs \u2192 2",
       "kern03_field": "total_query_bound"
     },
     {
       "id": "prefix_tree_zero_domain",
       "bound_ast_id": "bound.finite_search.prefix_tree.v1",
       "env": {
-        "domain_sizes": [2, 0, 4],
+        "domain_sizes": [
+          2,
+          0,
+          4
+        ],
         "c_exp": 1,
         "c_ver": 1
       },
@@ -50,13 +57,16 @@
       "id": "coarse_two_by_three",
       "bound_ast_id": "bound.finite_search.coarse.v1",
       "env": {
-        "domain_sizes": [2, 3]
+        "domain_sizes": [
+          2,
+          3
+        ]
       },
       "expected_value": "13",
       "expected_predicate": true,
       "lean_module": "LeverProofLean.FiniteSearchBounds",
       "lean_def": "coarseNodeBound",
-      "lean_guard": "coarseNodeBound [2, 3] = 13 ∧ prefixTreeNodeBound [2, 3] ≤ 13",
+      "lean_guard": "coarseNodeBound [2, 3] = 13 \u2227 prefixTreeNodeBound [2, 3] \u2264 13",
       "kern03_field": "coarse_nodes"
     },
     {
@@ -67,8 +77,8 @@
       },
       "expected_value": "7",
       "lean_module": "LeverProofLean.ExactClosure",
-      "lean_def": "closePass_subset",
-      "lean_guard": "closePass survivors ⊆ live; |survivors| ≤ |live|",
+      "lean_def": "strict_progress_or_fixed_point",
+      "lean_guard": "closePass survivors \u2286 live; non-fixed pass removes \u22651 live candidate (KERN-05 strict_progress_or_fixed_point)",
       "kern03_field": null
     },
     {
@@ -78,8 +88,14 @@
         "op": "ceil",
         "arg": {
           "op": "div",
-          "numerator": {"op": "const_int", "value": 5},
-          "denominator": {"op": "const_int", "value": 2}
+          "numerator": {
+            "op": "const_int",
+            "value": 5
+          },
+          "denominator": {
+            "op": "const_int",
+            "value": 2
+          }
         }
       },
       "inline_variables": [],
@@ -88,6 +104,21 @@
       "lean_module": null,
       "lean_def": null,
       "notes": "Explicit ceil semantics on exact rationals (no float)."
+    },
+    {
+      "id": "closure_strict_removals_two_three",
+      "bound_ast_id": "bound.closure.strict_removals.v1",
+      "env": {
+        "domain_sizes": [
+          2,
+          3
+        ]
+      },
+      "expected_value": "5",
+      "lean_module": "LeverProofLean.ExactClosure",
+      "lean_def": "strictRemovalUpperBound",
+      "lean_guard": "strictRemovalUpperBound [2, 3] = 5",
+      "kern03_field": null
     }
   ]
 }

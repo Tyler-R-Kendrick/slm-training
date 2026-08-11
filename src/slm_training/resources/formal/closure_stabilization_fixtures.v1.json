@@ -1,0 +1,118 @@
+{
+  "schema": "closure_stabilization_fixtures/v1",
+  "bound_ast_id": "bound.closure.strict_removals.v1",
+  "wall_clock_claim": false,
+  "maximality_claimed": false,
+  "lean_module": "LeverProofLean.ExactClosure",
+  "notes": "Frozen Lean\u2194Python parity for KERN-05 strict progress / stabilization bounds.",
+  "cases": [
+    {
+      "id": "flat_two_removals",
+      "live": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "holes": null,
+      "predicted_total_removed": 2,
+      "strict_removal_upper_bound": 4,
+      "nonempty_invariant_upper_bound": 3,
+      "assignment_search_bound": 4,
+      "within_strict_bound": true,
+      "batch_coverage": true
+    },
+    {
+      "id": "fixed_point_empty_batch",
+      "live": [
+        0,
+        1,
+        2
+      ],
+      "holes": null,
+      "predicted_total_removed": 0,
+      "strict_removal_upper_bound": 3,
+      "nonempty_invariant_upper_bound": 2,
+      "assignment_search_bound": 3,
+      "within_strict_bound": true,
+      "batch_coverage": true
+    },
+    {
+      "id": "holes_two_three_one_removal",
+      "live": [
+        10,
+        11,
+        20,
+        21,
+        22
+      ],
+      "holes": [
+        [
+          10,
+          11
+        ],
+        [
+          20,
+          21,
+          22
+        ]
+      ],
+      "predicted_total_removed": 1,
+      "strict_removal_upper_bound": 5,
+      "nonempty_invariant_upper_bound": 3,
+      "assignment_search_bound": 6,
+      "within_strict_bound": true,
+      "batch_coverage": true
+    },
+    {
+      "id": "nonempty_invariant_shrink",
+      "live": [
+        10,
+        11,
+        20,
+        21,
+        22
+      ],
+      "holes": [
+        [
+          10,
+          11
+        ],
+        [
+          20,
+          21,
+          22
+        ]
+      ],
+      "predicted_total_removed": 2,
+      "strict_removal_upper_bound": 5,
+      "nonempty_invariant_upper_bound": 3,
+      "assignment_search_bound": 6,
+      "within_strict_bound": true,
+      "batch_coverage": true
+    },
+    {
+      "id": "lattice_two_three",
+      "domain_sizes": [
+        2,
+        3
+      ],
+      "strict_removal_upper_bound": 5,
+      "nonempty_invariant_upper_bound": 3,
+      "assignment_search_bound": 6,
+      "closure_vs_assignment_separated": true
+    },
+    {
+      "id": "lattice_three_ones",
+      "domain_sizes": [
+        1,
+        1,
+        1
+      ],
+      "strict_removal_upper_bound": 3,
+      "nonempty_invariant_upper_bound": 0,
+      "assignment_search_bound": 1,
+      "closure_vs_assignment_separated": true
+    }
+  ]
+}

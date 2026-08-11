@@ -47,6 +47,13 @@ open LeverProofLean
 #print axioms ExactClosure.finite_search_rejects_partial
 #print axioms ExactClosure.finite_search_rejects_stale_state
 #print axioms ExactClosure.singleton_survivor_requires_proved_domain
+#print axioms ExactClosure.strict_progress_or_fixed_point
+#print axioms ExactClosure.not_fixed_implies_length_decreases
+#print axioms ExactClosure.totalRemovedAcross_le_live
+#print axioms ExactClosure.totalRemovedAcrossHoles_le_strictRemovalBound
+#print axioms ExactClosure.removals_le_nonempty_invariant
+#print axioms ExactClosure.closure_complexity_separated_from_assignment_search
+#print axioms ExactClosure.fixture_two_three_stabilization_bounds
 #print axioms CompleteDomain.forged_coverage_complete_never_authorizes
 #print axioms CompleteDomain.proved_members_eq_legal
 #print axioms CompleteDomain.stale_state_rejects

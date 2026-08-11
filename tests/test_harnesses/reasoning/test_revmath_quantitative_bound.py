@@ -66,7 +66,7 @@ def test_finite_search_extracts_validated_bound() -> None:
     assert report.machine_model.wall_clock is False
 
 
-def test_closure_live_upper_extracts_without_fabricating_kern05() -> None:
+def test_closure_live_upper_extracts_with_kern05() -> None:
     task, meta = _load_pair("quant_closure_live_upper")
     assert_registered_bound_ast_id(BOUND_CLOSURE_LIVE_UPPER)
     report = extract_quantitative_bound(task, meta)  # type: ignore[arg-type]
@@ -75,7 +75,8 @@ def test_closure_live_upper_extracts_without_fabricating_kern05() -> None:
     assert report.bound_value == "7"
     assert report.theorem_derived_bound is True
     assert report.empirical_timing_claimed is False
-    assert "KERN-05" in report.detail or "closePass_subset" in report.detail
+    assert "KERN-05" in report.detail
+    assert "strict_progress_or_fixed_point" in report.detail or "Σ" in report.detail
 
 
 def test_nonextractable_lists_missing_assumptions_no_bound() -> None:
