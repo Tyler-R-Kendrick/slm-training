@@ -10,7 +10,7 @@
       "--mode",
       "fixture"
     ],
-    "source_commit": "5ee0775f572ba03a91ce89b9482fd71cdb48c20a",
+    "source_commit": "6640b4a6b22be5bb7e8cc59607bd909a8b15baee",
     "source_dirty": false,
     "device": "cpu",
     "backend": "in_process_vss",
@@ -30,7 +30,7 @@
   },
   "campaign_governance": {
     "campaign_id": "proof-carrying-goal-support-fixture",
-    "manifest_sha256": "4fb4a79fa442d22bdf448ec4536f9d269ffd12301aeaf3c65c72636361f4cc0f",
+    "manifest_sha256": "c8e2c422ccf20c83652346d902b4aec89fde21b287dcf025876d1d89c9573cb9",
     "event_chain_verified": true,
     "claim_class": "fixture",
     "promotion": false
@@ -89,7 +89,7 @@
         "verifier_calls": 14,
         "expanded_nodes": 16,
         "backtracks": 0,
-        "wall_time": 0.009411
+        "wall_time": 0.018386
       },
       "case_reports": [
         {
@@ -203,7 +203,7 @@
         "verifier_calls": 26,
         "expanded_nodes": 29,
         "backtracks": 0,
-        "wall_time": 0.042659
+        "wall_time": 0.05454
       },
       "case_reports": [
         {
@@ -740,7 +740,7 @@
         "verifier_calls": 21,
         "expanded_nodes": 24,
         "backtracks": 0,
-        "wall_time": 0.023379
+        "wall_time": 0.033179
       },
       "case_reports": [
         {
@@ -1266,7 +1266,7 @@
         "verifier_calls": 37,
         "expanded_nodes": 40,
         "backtracks": 0,
-        "wall_time": 0.06427
+        "wall_time": 0.071434
       },
       "case_reports": [
         {
@@ -1839,8 +1839,8 @@
   },
   "determinism": {
     "canonical_digest_scope": "all identities, partitions, proofs, classifications, and counters; excludes wall_time and event timestamps",
-    "canonical_result_digest_a": "07fe9e2b2d32baf4d8d6175e15766d8cd947f75ad9269e644f19f84af4f1b79c",
-    "canonical_result_digest_b": "07fe9e2b2d32baf4d8d6175e15766d8cd947f75ad9269e644f19f84af4f1b79c",
+    "canonical_result_digest_a": "0b7496690b8b026677d2d0f3d298d5fba04d7e07e14fb9cdac09bafc69a7061c",
+    "canonical_result_digest_b": "0b7496690b8b026677d2d0f3d298d5fba04d7e07e14fb9cdac09bafc69a7061c",
     "match": true
   },
   "scope_disclaimer": "Deterministic local fixture/diagnostic evidence only. It proves bounded-domain support classifications under the pinned identities above; it makes no model-quality, ship-readiness, checkpoint, global unrealizability, or prompt-meaning claim.",
@@ -1848,11 +1848,11 @@
   "model_card_updated": false,
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "5ee0775f572ba03a91ce89b9482fd71cdb48c20a",
+    "code_commit": "6640b4a6b22be5bb7e8cc59607bd909a8b15baee",
     "code_dirty": false,
     "components": {
       "harness.experiments": "v163"
     },
-    "stamped_at": "2026-08-11T05:39:30.511783+00:00"
+    "stamped_at": "2026-08-11T05:58:27.719493+00:00"
   }
 }

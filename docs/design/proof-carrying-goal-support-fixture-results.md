@@ -2,23 +2,23 @@
 
 Claim class: **fixture/diagnostic only**. This is bounded wiring evidence, not a model-quality, ship-readiness, global-unrealizability, or production-performance claim.
 
-- Source commit: `5ee0775f572ba03a91ce89b9482fd71cdb48c20a` (`dirty=false`)
+- Source commit: `6640b4a6b22be5bb7e8cc59607bd909a8b15baee` (`dirty=false`)
 - Suite: `n=4`, seed `0`, local CPU/in-process, no model
 - Solver bounds: `{"max_backtracks": 64, "max_depth": 8, "max_nodes": 64, "max_tokens": 4096, "max_verifier_calls": 64}`
 - Exact action cap: `2`; goal-query cap per arm: `32`
 - Canonical raw bundle: `outputs/autoresearch/proof-carrying-goal-support-fixture`
-- Manifest: `4fb4a79fa442d22bdf448ec4536f9d269ffd12301aeaf3c65c72636361f4cc0f`
-- Canonical result digest: `07fe9e2b2d32baf4d8d6175e15766d8cd947f75ad9269e644f19f84af4f1b79c`
+- Manifest: `c8e2c422ccf20c83652346d902b4aec89fde21b287dcf025876d1d89c9573cb9`
+- Canonical result digest: `0b7496690b8b026677d2d0f3d298d5fba04d7e07e14fb9cdac09bafc69a7061c`
 - Deterministic rerun: `PASS`
 
 ## Arm results
 
 | arm | coverage | supported | unsupported | unknown | unobserved | selection regret | inadequate under bounds | false hard prune | verifier calls | expanded nodes | wall time (s) |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| structural_support_reference | 0.888889 | 0.777778 | 0 | 0.111111 | 0.111111 | 0 | 0 | 0 | 14 | 16 | 0.009411 |
-| goal_support_production_exact_diagnostic | 0.888889 | 0.222222 | 0.555556 | 0.111111 | 0.111111 | 0.25 | 0.25 | 0 | 26 | 29 | 0.042659 |
-| goal_support_evaluation_oracle_diagnostic | 0.888889 | 0.0 | 0.0 | 0.888889 | 0.111111 | 0.0 | 0.0 | 0 | 21 | 24 | 0.023379 |
-| goal_support_certified_fixture | 0.888889 | 0.222222 | 0.555556 | 0.111111 | 0.111111 | 0.25 | 0.25 | 0 | 37 | 40 | 0.06427 |
+| structural_support_reference | 0.888889 | 0.777778 | 0 | 0.111111 | 0.111111 | 0 | 0 | 0 | 14 | 16 | 0.018386 |
+| goal_support_production_exact_diagnostic | 0.888889 | 0.222222 | 0.555556 | 0.111111 | 0.111111 | 0.25 | 0.25 | 0 | 26 | 29 | 0.05454 |
+| goal_support_evaluation_oracle_diagnostic | 0.888889 | 0.0 | 0.0 | 0.888889 | 0.111111 | 0.0 | 0.0 | 0 | 21 | 24 | 0.033179 |
+| goal_support_certified_fixture | 0.888889 | 0.222222 | 0.555556 | 0.111111 | 0.111111 | 0.25 | 0.25 | 0 | 37 | 40 | 0.071434 |
 
 ## Interpretation
 
