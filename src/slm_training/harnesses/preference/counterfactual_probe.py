@@ -6,6 +6,13 @@ exact stored state, roll each forward under common seeds, retain the full ordere
 verifier vector, and derive pure value materializers (Pareto / lexicographic /
 scalar / binary) plus a semantic good/bad partition.
 
+PGS-D01 (SLM-502) adds a **distinct** support-backed path:
+:class:`GoalSupportProbeInputs` + :func:`run_goal_support_probe` query bounded
+goal support per legal action and emit ``GoalActionEvidenceV1`` /
+``GoalDomainAdequacyReportV1``. That path is absolute existential/exhaustive
+evidence under a pinned profile — it does **not** alias, overwrite, or equate to
+the relative ``semantic_partition`` rollout probe above.
+
 This layer is model-free: the actual rollout + G0-G12 verification live behind the
 :class:`RolloutBackend` protocol (the model plug-in "only forces an action and
 produces an outcome"). The orchestration — admission, legal-action selection,
@@ -23,6 +30,28 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal, Protocol
 
+from slm_training.dsl.solver.goal_support import (
+    GOAL_SUPPORT_IMPLEMENTATION_VERSION,
+    GoalActionEvidenceV1,
+    GoalActionWorkCountersV1,
+    GoalDomainActionPartitionsV1,
+    GoalDomainAdequacyReportV1,
+    GoalDomainAdequacyStatsV1,
+    GoalSupportProvider,
+    GoalSupportResultV1,
+    action_id_from_value,
+    bounds_digest_from_state,
+    legal_set_fingerprint,
+    replay_goal_support_result,
+)
+from slm_training.dsl.solver.goal_support_domain_adequacy import (
+    _aggregate_obstruction_summary,
+    _assign_partition,
+    _classify_domain_adequacy,
+    _terminal_records,
+)
+from slm_training.dsl.solver.state import DomainValue, FiniteDomainState, HoleId
+from slm_training.dsl.solver.support import EnumerativeSupportOracle, SupportQuery
 from slm_training.harnesses.preference.decision_events_v2 import (
     ActionOutcomeV2,
     DecisionStateV2,
@@ -31,11 +60,17 @@ from slm_training.harnesses.preference.decision_events_v2 import (
 __all__ = [
     "AdmissionReason",
     "CandidateState",
+    "GoalSupportProbeConfig",
+    "GoalSupportProbeInputs",
     "ProbeConfig",
     "RawOutcome",
     "RolloutBackend",
     "admit_states",
+    "goal_support_cache_key",
+    "goal_support_probe_cap_policy_table",
+    "run_goal_support_probe",
     "select_actions",
+    "select_goal_support_actions",
     "outcome_cache_key",
     "run_probe",
     "pareto_front",
@@ -376,3 +411,455 @@ def semantic_partition(
     return SemanticPartition(
         tuple(sorted(good)), tuple(sorted(bad)), tuple(sorted(ambiguous)), tuple(sorted(unobserved))
     )
+
+
+# --- PGS-D01 goal-support probe (distinct from relative rollout partition) ---
+
+
+@dataclass(frozen=True)
+class GoalSupportProbeConfig:
+    """Bounded goal-support query policy for one exact ``DecisionStateV2``."""
+
+    exact_action_cap: int = 8
+
+    def __post_init__(self) -> None:
+        if self.exact_action_cap <= 0:
+            raise ValueError("exact_action_cap must be positive")
+
+
+@dataclass(frozen=True)
+class GoalSupportProbeInputs:
+    """Frozen bridge from ``DecisionStateV2`` to bounded goal-support queries."""
+
+    decision_state: DecisionStateV2
+    domain_state: FiniteDomainState
+    hole_id: HoleId
+    policy_action: int
+    action_values: Mapping[int, DomainValue]
+    provider: GoalSupportProvider
+    config: GoalSupportProbeConfig = GoalSupportProbeConfig()
+    policy_probs: Mapping[int, float] | None = None
+    action_roles: Mapping[int, str] | None = None
+
+
+def goal_support_probe_cap_policy_table() -> dict[str, Any]:
+    """Policy-aware exact action-cap selection (counterfactual-probe owner).
+
+    Distinct from ``domain_adequacy_cap_policy_table`` lexicographic subset in
+    ``analyze_goal_domain``: this path always retains the policy-selected legal
+    action and ranks the remainder by policy probability, role coverage, then id
+    — mirroring :func:`select_actions`.
+    """
+    return {
+        "within_cap": "query every legal action through bounded VSS goal support",
+        "above_cap": {
+            "selection": (
+                "policy-selected action plus deterministic fill by policy "
+                "probability, then semantic-role coverage, then action id "
+                "(same rank as select_actions)"
+            ),
+            "always_include_policy_action": True,
+            "omitted_partition": "unobserved",
+            "inference_forbidden": True,
+        },
+        "greedy_continuation_forbidden": True,
+        "grammar_legality_independent": True,
+        "semantic_partition_alias_forbidden": True,
+    }
+
+
+def select_goal_support_actions(
+    decision_state: DecisionStateV2,
+    action_values: Mapping[int, DomainValue],
+    *,
+    policy_action: int,
+    cap: int,
+    policy_probs: Mapping[int, float] | None = None,
+    roles: Mapping[int, str] | None = None,
+) -> tuple[tuple[str, ...], tuple[str, ...], bool]:
+    """Choose opaque goal-support action ids to query from the legal int set.
+
+    Uses :func:`select_actions` on compiler ``legal_action_ids`` and maps each
+    chosen int to its ``action_id_from_value`` digest. Returns
+    ``(query_action_ids, unobserved_action_ids, cap_applied)``.
+    """
+    int_selected, int_excluded = select_actions(
+        decision_state,
+        policy_action=policy_action,
+        policy_probs=policy_probs,
+        cap=cap,
+        roles=roles,
+    )
+    query_ids = tuple(
+        sorted(action_id_from_value(action_values[a]) for a in int_selected)
+    )
+    unobserved_ids = tuple(
+        sorted(action_id_from_value(action_values[a]) for a in int_excluded)
+    )
+    return query_ids, unobserved_ids, bool(unobserved_ids)
+
+
+def goal_support_cache_key(
+    *,
+    state_fingerprint: str,
+    action_id: str,
+    profile_digest: str,
+    problem_id: str,
+    pack_id: str,
+    constraint_version: str,
+    bounds_digest: str,
+    legal_set_fingerprint: str,
+    decode_config_hash: str,
+    implementation_version: str = GOAL_SUPPORT_IMPLEMENTATION_VERSION,
+) -> str:
+    """Content identity for one goal-support action query.
+
+    A changed state, action, profile, problem, constraint, pack/bounds, decoder,
+    or implementation version yields a different key — incompatible evidence is
+    never reused.
+    """
+    payload = json.dumps(
+        [
+            state_fingerprint,
+            action_id,
+            profile_digest,
+            problem_id,
+            pack_id,
+            constraint_version,
+            bounds_digest,
+            legal_set_fingerprint,
+            decode_config_hash,
+            implementation_version,
+        ],
+        sort_keys=True,
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _validate_goal_support_inputs(inputs: GoalSupportProbeInputs) -> None:
+    legal = set(inputs.decision_state.legal_action_ids)
+    if inputs.policy_action not in legal:
+        raise ValueError("policy_action must be within the state's legal set")
+    if set(inputs.action_values.keys()) != legal:
+        raise ValueError("action_values must cover exactly the legal action set")
+    domain = inputs.domain_state.domain(inputs.hole_id)
+    domain_by_id = {action_id_from_value(value): value for value in domain.values}
+    for int_id, value in inputs.action_values.items():
+        digest = action_id_from_value(value)
+        if digest not in domain_by_id:
+            raise ValueError(f"action_values[{int_id}] is absent from the domain hole")
+
+
+def _unobserved_goal_evidence(
+    *,
+    state_fingerprint: str,
+    legal_fp: str,
+    profile_digest: str,
+    hole_id: HoleId,
+    action_id: str,
+    authority_tier: str,
+) -> GoalActionEvidenceV1:
+    row = GoalActionEvidenceV1(
+        state_fingerprint=state_fingerprint,
+        legal_set_fingerprint=legal_fp,
+        profile_digest=profile_digest,
+        hole_id=hole_id.to_dict(),
+        action_id=action_id,
+        partition="unobserved",
+        authority_tier=authority_tier,  # type: ignore[arg-type]
+    )
+    return GoalActionEvidenceV1.from_dict(row.to_dict(include_digest=True))
+
+
+def _query_goal_action_evidence(
+    *,
+    state: FiniteDomainState,
+    hole_id: HoleId,
+    action_id: str,
+    value: DomainValue,
+    provider: GoalSupportProvider,
+    legal_fp: str,
+    profile_digest: str,
+    hard_profile: bool,
+) -> tuple[GoalActionEvidenceV1, tuple[str, ...], int, int, int, int, str | None]:
+    """Return evidence row plus work counters and optional obstruction core atoms."""
+    query = SupportQuery(
+        state_fingerprint=state.fingerprint,
+        hole_id=hole_id,
+        candidate=value,
+    )
+    result, sidecar = provider.check_with_sidecar(state, query)
+    replay = replay_goal_support_result(
+        result.certificate,
+        sidecar,
+        state=state,
+        provider=provider,
+    )
+    replay_ok = replay.ok
+    partition = _assign_partition(
+        observed=True,
+        verdict=result.verdict,
+        replay_ok=replay_ok,
+        hard_profile=hard_profile,
+    )
+    terminal_count = len(sidecar.terminal_evidence_digests)
+    sidecar_bound = GoalSupportResultV1.from_dict(sidecar.to_dict(include_digest=True))
+    row = GoalActionEvidenceV1(
+        state_fingerprint=state.fingerprint,
+        legal_set_fingerprint=legal_fp,
+        profile_digest=profile_digest,
+        hole_id=hole_id.to_dict(),
+        action_id=action_id,
+        partition=partition,
+        base_certificate_digest=result.certificate.digest,
+        goal_sidecar_digest=sidecar_bound.digest or sidecar_bound.compute_digest(),
+        authority_tier=provider.profile.authority_tier,
+        replay_ok=replay_ok,
+        work_counters=GoalActionWorkCountersV1(
+            nodes=result.counters.nodes,
+            tokens=result.counters.tokens,
+            depth=result.counters.depth,
+            backtracks=result.counters.backtracks,
+            verifier_calls=result.counters.verifier_calls,
+            terminal_count=terminal_count,
+        ),
+        obstruction_core_digest=sidecar.obstruction_core_digest,
+        stop_reason=result.certificate.stop_reason,
+    )
+    bound = GoalActionEvidenceV1.from_dict(row.to_dict(include_digest=True))
+
+    core_atoms: tuple[str, ...] = ()
+    if (
+        partition == "unsupported"
+        and replay_ok
+        and sidecar.obstruction_core_digest
+    ):
+        from slm_training.dsl.solver.goal_support_obstruction import (
+            compute_domain_obstruction_core,
+        )
+
+        replay_verifier = provider._fresh_verifier()
+        EnumerativeSupportOracle(provider.expander, replay_verifier).check(state, query)
+        core = compute_domain_obstruction_core(
+            certificate=result.certificate,
+            terminal_records=_terminal_records(replay_verifier),
+            profile=provider.profile,
+            state=state,
+            replay_ok=True,
+        )
+        if core is not None:
+            core_atoms = core.core_atoms
+
+    return (
+        bound,
+        core_atoms,
+        result.counters.nodes,
+        result.counters.backtracks,
+        result.counters.verifier_calls,
+        terminal_count,
+        result.certificate.stop_reason,
+    )
+
+
+def run_goal_support_probe(
+    inputs: GoalSupportProbeInputs,
+    *,
+    cache: dict[str, GoalActionEvidenceV1] | None = None,
+) -> tuple[GoalDomainAdequacyReportV1, tuple[GoalActionEvidenceV1, ...]]:
+    """Query bounded goal support for selected legal actions; classify adequacy.
+
+    Resumable: a populated ``cache`` keyed by :func:`goal_support_cache_key`
+    short-circuits already-computed action evidence. This path is model-free
+    except for receiving the frozen exact state and policy-selected action; it
+    never aliases or overwrites relative rollout ``semantic_partition`` evidence.
+    """
+    _validate_goal_support_inputs(inputs)
+    cache = cache if cache is not None else {}
+    state = inputs.domain_state
+    hole_id = inputs.hole_id
+    provider = inputs.provider
+    provider.validate_identities(state)
+
+    profile = provider.profile
+    profile_digest = provider.profile_digest
+    hard_profile = profile.authority_tier in frozenset(
+        {"compiler-hard", "verifier-hard"}
+    )
+
+    value_by_int = dict(inputs.action_values)
+    value_by_id = {
+        action_id_from_value(value): value for value in value_by_int.values()
+    }
+    action_ids = tuple(sorted(value_by_id))
+    selected_action_id = action_id_from_value(value_by_int[inputs.policy_action])
+
+    legal_fp = legal_set_fingerprint(
+        state_fingerprint=state.fingerprint,
+        hole_id=hole_id,
+        action_ids=action_ids,
+    )
+    bounds_digest = bounds_digest_from_state(state)
+    decode_hash = inputs.decision_state.decode_config_hash
+
+    query_ids, unobserved_ids, cap_applied = select_goal_support_actions(
+        inputs.decision_state,
+        inputs.action_values,
+        policy_action=inputs.policy_action,
+        cap=inputs.config.exact_action_cap,
+        policy_probs=inputs.policy_probs,
+        roles=inputs.action_roles,
+    )
+
+    evidence_rows: list[GoalActionEvidenceV1] = []
+    supported: list[str] = []
+    unsupported: list[str] = []
+    unknown: list[str] = []
+    unobserved: list[str] = list(unobserved_ids)
+
+    total_terminals = 0
+    total_verifier_calls = 0
+    total_nodes = 0
+    total_backtracks = 0
+    stop_reasons: set[str] = set()
+    all_unsupported_replay_valid = True
+    obstruction_core_atoms: set[str] = set()
+
+    for action_id in query_ids:
+        key = goal_support_cache_key(
+            state_fingerprint=state.fingerprint,
+            action_id=action_id,
+            profile_digest=profile_digest,
+            problem_id=state.problem_id,
+            pack_id=state.pack_id,
+            constraint_version=state.constraint_version,
+            bounds_digest=bounds_digest,
+            legal_set_fingerprint=legal_fp,
+            decode_config_hash=decode_hash,
+        )
+        row = cache.get(key)
+        if row is None:
+            row, core_atoms, nodes, backtracks, verifier_calls, terminals, stop = (
+                _query_goal_action_evidence(
+                    state=state,
+                    hole_id=hole_id,
+                    action_id=action_id,
+                    value=value_by_id[action_id],
+                    provider=provider,
+                    legal_fp=legal_fp,
+                    profile_digest=profile_digest,
+                    hard_profile=hard_profile,
+                )
+            )
+            cache[key] = row
+            total_terminals += terminals
+            total_verifier_calls += verifier_calls
+            total_nodes += nodes
+            total_backtracks += backtracks
+            if stop:
+                stop_reasons.add(stop)
+            obstruction_core_atoms.update(core_atoms)
+        else:
+            total_terminals += row.work_counters.terminal_count
+            total_verifier_calls += row.work_counters.verifier_calls
+            total_nodes += row.work_counters.nodes
+            total_backtracks += row.work_counters.backtracks
+            if row.stop_reason:
+                stop_reasons.add(row.stop_reason)
+
+        partition = row.partition
+        if partition == "supported":
+            supported.append(action_id)
+        elif partition == "unsupported":
+            unsupported.append(action_id)
+            if not row.replay_ok:
+                all_unsupported_replay_valid = False
+        elif partition == "unknown":
+            unknown.append(action_id)
+            all_unsupported_replay_valid = False
+
+        evidence_rows.append(row)
+
+    for action_id in unobserved_ids:
+        key = goal_support_cache_key(
+            state_fingerprint=state.fingerprint,
+            action_id=action_id,
+            profile_digest=profile_digest,
+            problem_id=state.problem_id,
+            pack_id=state.pack_id,
+            constraint_version=state.constraint_version,
+            bounds_digest=bounds_digest,
+            legal_set_fingerprint=legal_fp,
+            decode_config_hash=decode_hash,
+        )
+        row = cache.get(key)
+        if row is None:
+            row = _unobserved_goal_evidence(
+                state_fingerprint=state.fingerprint,
+                legal_fp=legal_fp,
+                profile_digest=profile_digest,
+                hole_id=hole_id,
+                action_id=action_id,
+                authority_tier=profile.authority_tier,
+            )
+            cache[key] = row
+        evidence_rows.append(row)
+
+    partitions = GoalDomainActionPartitionsV1(
+        supported=tuple(sorted(supported)),
+        unsupported=tuple(sorted(unsupported)),
+        unknown=tuple(sorted(unknown)),
+        unobserved=tuple(sorted(unobserved)),
+    )
+    evidence_tuple = tuple(sorted(evidence_rows, key=lambda item: item.action_id))
+    candidate_summary = _aggregate_obstruction_summary(
+        evidence_tuple,
+        classification="domain_inadequate_under_bounds",
+        hard_profile=hard_profile,
+        core_atoms_union=tuple(sorted(obstruction_core_atoms)),
+    )
+    classification = _classify_domain_adequacy(
+        partitions,
+        selected_action_id,
+        all_unsupported_replay_valid=all_unsupported_replay_valid,
+        hard_profile=hard_profile,
+        cap_applied=cap_applied,
+        obstruction_summary=candidate_summary,
+    )
+    obstruction_summary = (
+        candidate_summary
+        if classification == "domain_inadequate_under_bounds"
+        else None
+    )
+    evidence_digests = tuple(
+        sorted(item.evidence_digest or item.compute_digest() for item in evidence_tuple)
+    )
+
+    report = GoalDomainAdequacyReportV1(
+        classification=classification,
+        state_fingerprint=state.fingerprint,
+        legal_set_fingerprint=legal_fp,
+        selected_action_id=selected_action_id,
+        profile_digest=profile_digest,
+        problem_id=state.problem_id,
+        pack_id=state.pack_id,
+        constraint_version=state.constraint_version,
+        bounds_digest=bounds_digest,
+        hole_id=hole_id.to_dict(),
+        partitions=partitions,
+        evidence_digests=evidence_digests,
+        stats=GoalDomainAdequacyStatsV1(
+            action_count=len(action_ids),
+            queried_action_count=len(query_ids),
+            terminal_count=total_terminals,
+            query_count=len(query_ids),
+            verifier_calls=total_verifier_calls,
+            expanded_nodes=total_nodes,
+            backtracks=total_backtracks,
+            stop_reasons=tuple(sorted(stop_reasons)),
+        ),
+        obstruction_summary=obstruction_summary,
+        exact_action_cap=inputs.config.exact_action_cap,
+        cap_applied=cap_applied,
+    )
+    bound = GoalDomainAdequacyReportV1.from_dict(report.to_dict(include_digest=True))
+    return bound, evidence_tuple
