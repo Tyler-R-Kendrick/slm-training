@@ -1953,6 +1953,11 @@
         {
           "version": "v11",
           "date": "2026-08-11",
+          "note": "no-bump: remove duplicate GoalSupportResultV1 import and identical schema-map entry introduced while reconciling I02; generated schema bytes and behavior are unchanged."
+        },
+        {
+          "version": "v11",
+          "date": "2026-08-11",
           "note": "Remove the shadow auto-authorizing decode binding and dead duplicate TwoTower provider path; certified goal support now has one explicit request-bound owner."
         },
         {
