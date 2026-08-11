@@ -204,6 +204,31 @@ _LEAN_CLAIM_CATALOG: dict[str, dict[str, Any]] = {
         "tier": "ecosystem_library",
         "laws": ["structural_similarity_mono", "recall_mono"],
     },
+    "GoalSupport.unknown_not_in_certified_removal": {
+        "module": "LeverProofLean.GoalSupport",
+        "tier": "production_core",
+        "laws": ["unknown_not_in_certified_removal", "unobserved_not_in_certified_removal"],
+    },
+    "GoalSupport.classification_exhaustive": {
+        "module": "LeverProofLean.GoalSupport",
+        "tier": "production_core",
+        "laws": ["classification_exhaustive", "classify_adequate"],
+    },
+    "GoalSupport.subset_minimal_removing_atom_breaks_hitting": {
+        "module": "LeverProofLean.GoalSupport",
+        "tier": "production_core",
+        "laws": ["subset_minimal_removing_atom_breaks_hitting", "recorded_core_hits_every_failure"],
+    },
+    "GoalSupport.witness_survives_nonrequired_removal": {
+        "module": "LeverProofLean.GoalSupport",
+        "tier": "production_core",
+        "laws": ["witness_survives_nonrequired_removal", "adding_candidates_preserves_witness"],
+    },
+    "GoalSupport.certified_live_singleton_no_learned_choice": {
+        "module": "LeverProofLean.GoalSupport",
+        "tier": "production_core",
+        "laws": ["certified_live_singleton_no_learned_choice"],
+    },
 }
 
 

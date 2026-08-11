@@ -112,6 +112,32 @@ open LeverProofLean
 #print axioms AdvisoryResidual.soft_token_collision
 #print axioms AdvisoryResidual.contraction_factor_lt_one
 
+-- Goal support finite structural laws (PGS-F01 / SLM-506)
+#print axioms GoalSupport.unknown_not_certified_removable
+#print axioms GoalSupport.unobserved_not_certified_removable
+#print axioms GoalSupport.supported_not_certified_removable
+#print axioms GoalSupport.certified_removal_subset_unsupported_evidence
+#print axioms GoalSupport.certified_removal_has_unsupported_evidence
+#print axioms GoalSupport.unknown_not_in_certified_removal
+#print axioms GoalSupport.unobserved_not_in_certified_removal
+#print axioms GoalSupport.WellFormedPartitions.wellformed_partitions_cover_legal
+#print axioms GoalSupport.WellFormedPartitions.buckets_pairwise_disjoint
+#print axioms GoalSupport.classify_adequate
+#print axioms GoalSupport.classify_regret
+#print axioms GoalSupport.classify_unresolved
+#print axioms GoalSupport.classify_inadequate
+#print axioms GoalSupport.classification_exhaustive
+#print axioms GoalSupport.classification_mutually_exclusive_under_wellformed
+#print axioms GoalSupport.recorded_core_hits_every_failure
+#print axioms GoalSupport.subset_minimal_removing_atom_breaks_hitting
+#print axioms GoalSupport.sound_overapprox_not_claimed_subset_minimal
+#print axioms GoalSupport.witness_survives_nonrequired_removal
+#print axioms GoalSupport.adding_candidates_preserves_witness
+#print axioms GoalSupport.certified_live_singleton_no_learned_choice
+#print axioms GoalSupport.certified_live_singleton_forces_unique_survivor
+#print axioms GoalSupport.certified_removal_respects_exact_closure_unknown
+#print axioms GoalSupport.certified_removal_respects_exact_closure_supported
+
 #guard digestValid (String.ofList (List.replicate 64 'a'))
 #guard !(digestValid (String.ofList (List.replicate 63 'a')))
 #guard Workload.valid ⟨1, 9⟩
@@ -142,3 +168,19 @@ open LeverProofLean
   (AdvisoryResidual.encodeIncidence
     [{ factorId := 0, nodes := [1, 2] }, { factorId := 1, nodes := [2, 3] }]) ==
   [{ factorId := 0, nodes := [1, 2] }, { factorId := 1, nodes := [2, 3] }]
+
+-- Goal support executable guards (bridged to goal_support_golden_cases.v1.json)
+#guard GoalSupport.classifyDomainAdequacy
+  { legal := [1, 2, 3], supported := [2], unsupported := [1], unknown := [], unobserved := [3] }
+  { selected := 2, hardProfile := true, capApplied := false,
+    allUnsupportedReplayValid := true, obstruction := { present := false } } ==
+  .adequateSelectedSupported
+#guard GoalSupport.classifyDomainAdequacy
+  { legal := [1, 2], supported := [1], unsupported := [2], unknown := [], unobserved := [] }
+  { selected := 2, hardProfile := true, capApplied := false,
+    allUnsupportedReplayValid := true, obstruction := { present := false } } ==
+  .selectionRegret
+#guard GoalSupport.hitsAllB [10, 11]
+  [{ terminal := 0, atoms := [10, 12] }, { terminal := 1, atoms := [11, 13] }] == true
+#guard GoalSupport.subsetMinimalExactB [10, 11]
+  [{ terminal := 0, atoms := [10] }, { terminal := 1, atoms := [11] }] == true
