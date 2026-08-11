@@ -14,6 +14,7 @@ from slm_training.formal.bound_ast import (
 from slm_training.formal.closure_stabilization import (
     BOUND_AST_STRICT_REMOVALS,
     QueryResultV1,
+    _qr,
     assignment_search_bound,
     batch_covers_removable,
     build_stabilization_evidence,
@@ -57,7 +58,7 @@ def test_strict_progress_or_fixed_point() -> None:
     empty: list[QueryResultV1] = []
     assert is_fixed_point(live, empty)
     assert strict_progress_or_fixed_point(live, empty)
-    rem = [QueryResultV1(0, 1, "unsupported", True)]
+    rem = [_qr(0, 1, "unsupported", True)]
     assert not is_fixed_point(live, rem)
     assert strict_progress_or_fixed_point(live, rem)
     assert removed_count(live, rem) == 1
@@ -67,8 +68,8 @@ def test_strict_progress_or_fixed_point() -> None:
 def test_total_removed_across_le_live() -> None:
     live = [0, 1, 2, 3]
     batches = [
-        [QueryResultV1(0, 1, "unsupported", True)],
-        [QueryResultV1(0, 3, "unsupported", True)],
+        [_qr(0, 1, "unsupported", True)],
+        [_qr(0, 3, "unsupported", True)],
     ]
     assert total_removed_across(live, batches) == 2
     assert total_removed_across(live, batches) <= len(live)
@@ -76,7 +77,7 @@ def test_total_removed_across_le_live() -> None:
 
 def test_batch_coverage_holds_for_encoding() -> None:
     live = [0, 1]
-    results = [QueryResultV1(0, 1, "unsupported", True)]
+    results = [_qr(0, 1, "unsupported", True)]
     assert batch_covers_removable(live, results)
 
 
@@ -120,7 +121,7 @@ def test_mutation_duplicate_live_breaks_uniqueness() -> None:
 
 def test_mutation_nonfixed_pass_no_progress_detected() -> None:
     live = [0, 1, 2]
-    results = [QueryResultV1(0, 1, "unsupported", True)]
+    results = [_qr(0, 1, "unsupported", True)]
     assert not is_fixed_point(live, results)
     fake = mutate_drop_removal_bookkeeping(live, results)
     assert fake == live

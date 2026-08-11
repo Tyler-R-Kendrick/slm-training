@@ -43,8 +43,10 @@ class PartitionsV1:
 class ActionEvidenceV1:
     action: int
     partition: PartitionName
-    replay_ok: bool
+    replay_ok: bool  # telemetry only (EVID-09)
     hard_profile: bool
+    refutation_evidence: Any | None = None
+    expected_binding: Any | None = None
 
 
 @dataclass(frozen=True)
@@ -66,7 +68,13 @@ class TerminalFailureSetV1:
 def certified_removable(evidence: ActionEvidenceV1) -> bool:
     if evidence.partition != "unsupported":
         return False
-    return evidence.replay_ok and evidence.hard_profile
+    if not evidence.hard_profile:
+        return False
+    from slm_training.formal.refutation_authority import evidence_authorizes_removal
+
+    return evidence_authorizes_removal(
+        evidence.refutation_evidence, evidence.expected_binding
+    )
 
 
 def certified_removal_set(
@@ -218,15 +226,39 @@ def evaluate_structural_case(payload: dict[str, Any]) -> dict[str, Any]:
         unknown=tuple(parts_raw["unknown"]),
         unobserved=tuple(parts_raw["unobserved"]),
     )
-    evidence = tuple(
-        ActionEvidenceV1(
-            action=int(item["action"]),
-            partition=item["partition"],
-            replay_ok=bool(item["replay_ok"]),
-            hard_profile=bool(item["hard_profile"]),
-        )
-        for item in payload.get("evidence", [])
+    from slm_training.formal.refutation_authority import (
+        make_exact_replay_evidence,
+        parse_binding,
+        parse_refutation_evidence,
     )
+
+    evidence_rows = []
+    for item in payload.get("evidence", []):
+        binding = parse_binding(item.get("expected_binding"))
+        rev = parse_refutation_evidence(item.get("refutation_evidence"))
+        # Fixture convenience: hard unsupported + replay_ok with binding synthesizes evidence.
+        if (
+            rev is None
+            and binding is not None
+            and item.get("partition") == "unsupported"
+            and bool(item.get("replay_ok"))
+            and bool(item.get("hard_profile"))
+        ):
+            rev = make_exact_replay_evidence(
+                binding,
+                evidence_digest=str(item.get("evidence_digest", f"goal-replay-{item['action']}")),
+            )
+        evidence_rows.append(
+            ActionEvidenceV1(
+                action=int(item["action"]),
+                partition=item["partition"],
+                replay_ok=bool(item["replay_ok"]),
+                hard_profile=bool(item["hard_profile"]),
+                refutation_evidence=rev,
+                expected_binding=binding,
+            )
+        )
+    evidence = tuple(evidence_rows)
     inputs_raw = payload["inputs"]
     inputs = ClassificationInputsV1(
         selected=int(inputs_raw["selected"]),

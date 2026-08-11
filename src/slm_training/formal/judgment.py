@@ -1,8 +1,12 @@
-"""Total solver judgment (KERN-01 / SLM-516).
+"""Total solver judgment (KERN-01 / SLM-516; EVID-09 refutation authority).
 
 Mirrors ``LeverProofLean.Judgment`` with typed payloads, explicit authority
 rules, and lossless adapters from VSS / closure / support-certificate
 outcomes. Theorem-preflight lifecycle status stays separate.
+
+Destructive ``refuted`` authority requires checked refutation evidence
+(``exact_replay`` or ``checked_certificate``) bound to state/problem/source/tool
+identity — never self-attested ``exhausted`` / ``replay_ok`` bits alone.
 """
 
 from __future__ import annotations
@@ -10,6 +14,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Literal
+
+from slm_training.formal.refutation_authority import (
+    BindingIdsV1,
+    CheckedRefutationEvidenceV1,
+    evidence_authorizes_removal,
+    parse_binding,
+    parse_refutation_evidence,
+)
 
 JUDGMENT_SCHEMA = "solver_judgment/v1"
 
@@ -91,9 +103,13 @@ class ClassificationInputsV1:
     vss_verdict: VssVerdictName | None = None
     has_witness_digest: bool = False
     has_counterexample_digest: bool = False
+    # Telemetry only (EVID-09) — never authorize refutation alone.
     exhausted: bool = False
     replay_checked: bool = False
     replay_ok: bool = False
+    # Authority-critical checked evidence reference + expected binding.
+    refutation_evidence: CheckedRefutationEvidenceV1 | None = None
+    expected_binding: BindingIdsV1 | None = None
 
 
 @dataclass(frozen=True)
@@ -226,7 +242,9 @@ def classify_outcome(inputs: ClassificationInputsV1) -> JudgmentOutcome:
     if inputs.vss_verdict == "unsupported":
         if inputs.has_witness_digest:
             return JudgmentOutcome.INVALID
-        if inputs.exhausted and inputs.replay_checked and inputs.replay_ok:
+        if evidence_authorizes_removal(
+            inputs.refutation_evidence, inputs.expected_binding
+        ):
             return JudgmentOutcome.REFUTED
         return JudgmentOutcome.UNKNOWN
     return JudgmentOutcome.UNKNOWN
@@ -246,11 +264,22 @@ def classify_payload(
             source="vss_certificate",
         )
     if outcome is JudgmentOutcome.REFUTED:
-        digest = "checked"
-        source = "vss_exhaustion"
-        if inputs.has_counterexample_digest:
-            source = "counterexample"
-        return RefutationPayloadV1(refutation_digest=digest, source=source)
+        if inputs.refutation_evidence is None:
+            raise ValueError("refuted outcome requires checked refutation evidence")
+        ev = inputs.refutation_evidence
+        source = (
+            "counterexample"
+            if inputs.has_counterexample_digest
+            else (
+                "exact_semantic_replay"
+                if ev.kind == "exact_replay"
+                else "checked_certificate"
+            )
+        )
+        return RefutationPayloadV1(
+            refutation_digest=ev.evidence_digest,
+            source=source,
+        )
     if outcome is JudgmentOutcome.UNKNOWN:
         return _classify_unknown_reason(inputs)
     return _classify_invalid_reason(inputs)
@@ -272,15 +301,21 @@ def _certificate_signal_flags(
     replay_ok: bool,
     skipped_replay: bool = False,
     missing_tool: bool = False,
+    timed_out: bool | None = None,
+    incomplete_coverage: bool | None = None,
+    unsupported_capability: bool | None = None,
+    malformed_input: bool = False,
+    refutation_evidence: CheckedRefutationEvidenceV1 | None = None,
+    expected_binding: BindingIdsV1 | None = None,
 ) -> ClassificationInputsV1:
     from slm_training.dsl.solver.state import SupportVerdict
 
     stop = certificate.stop_reason
-    timed_out = stop is not None and "timeout" in str(stop).lower()
-    incomplete = any(
+    derived_timed_out = stop is not None and "timeout" in str(stop).lower()
+    derived_incomplete = any(
         cov in {"partial", "none"} for cov in certificate.coverage_observations
     )
-    unsupported_capability = any(
+    derived_unsupported = any(
         key.startswith("incomplete:") or key.startswith("unavailable:")
         for key in getattr(certificate, "failure_counts", {}) or {}
     )
@@ -290,12 +325,42 @@ def _certificate_signal_flags(
         payload_mismatch = True
     if certificate.verdict is SupportVerdict.UNSUPPORTED and has_witness:
         payload_mismatch = True
+    # Fail-closed adapter: skipped/timeout/missing/incomplete/unsupported feature
+    # cannot carry checked refutation evidence into classification.
+    blocked = (
+        skipped_replay
+        or bool(timed_out if timed_out is not None else derived_timed_out)
+        or missing_tool
+        or bool(
+            incomplete_coverage
+            if incomplete_coverage is not None
+            else derived_incomplete
+        )
+        or bool(
+            unsupported_capability
+            if unsupported_capability is not None
+            else derived_unsupported
+        )
+        or malformed_input
+        or payload_mismatch
+    )
+    evidence = None if blocked else refutation_evidence
+    binding = None if blocked else expected_binding
     return ClassificationInputsV1(
+        malformed_input=malformed_input,
         payload_mismatch=payload_mismatch,
-        timed_out=timed_out,
+        timed_out=bool(timed_out if timed_out is not None else derived_timed_out),
         skipped_replay=skipped_replay,
-        unsupported_capability=unsupported_capability,
-        incomplete_coverage=incomplete,
+        unsupported_capability=bool(
+            unsupported_capability
+            if unsupported_capability is not None
+            else derived_unsupported
+        ),
+        incomplete_coverage=bool(
+            incomplete_coverage
+            if incomplete_coverage is not None
+            else derived_incomplete
+        ),
         missing_tool=missing_tool,
         vss_verdict=certificate.verdict.value,
         has_witness_digest=has_witness,
@@ -303,6 +368,8 @@ def _certificate_signal_flags(
         exhausted=bool(certificate.exhausted),
         replay_checked=replay_checked,
         replay_ok=replay_ok,
+        refutation_evidence=evidence,
+        expected_binding=binding,
     )
 
 
@@ -314,8 +381,14 @@ def from_support_certificate(
     checked: bool,
     skipped_replay: bool = False,
     missing_tool: bool = False,
+    timed_out: bool | None = None,
+    incomplete_coverage: bool | None = None,
+    unsupported_capability: bool | None = None,
+    malformed_input: bool = False,
+    refutation_evidence: CheckedRefutationEvidenceV1 | None = None,
+    expected_binding: BindingIdsV1 | None = None,
 ) -> SolverJudgmentV1:
-    """Lossless adapter from a VSS support certificate."""
+    """Lossless adapter from a VSS support certificate (EVID-09 fail-closed)."""
 
     inputs = _certificate_signal_flags(
         certificate,
@@ -323,6 +396,12 @@ def from_support_certificate(
         replay_ok=replay_ok,
         skipped_replay=skipped_replay,
         missing_tool=missing_tool,
+        timed_out=timed_out,
+        incomplete_coverage=incomplete_coverage,
+        unsupported_capability=unsupported_capability,
+        malformed_input=malformed_input,
+        refutation_evidence=refutation_evidence,
+        expected_binding=expected_binding,
     )
     judgment = classify(inputs, checked=checked)
     if judgment.outcome is JudgmentOutcome.WITNESSED and isinstance(
@@ -339,11 +418,12 @@ def from_support_certificate(
     if judgment.outcome is JudgmentOutcome.REFUTED and isinstance(
         judgment.payload, RefutationPayloadV1
     ):
+        assert inputs.refutation_evidence is not None
         return SolverJudgmentV1(
             outcome=judgment.outcome,
             payload=RefutationPayloadV1(
-                refutation_digest=certificate.digest,
-                source="vss_exhaustion",
+                refutation_digest=inputs.refutation_evidence.evidence_digest,
+                source=judgment.payload.source,
             ),
             checked=checked,
         )
@@ -359,17 +439,37 @@ def from_exact_closure_query(
     exhausted: bool = False,
     timed_out: bool = False,
     skipped_replay: bool = False,
+    missing_tool: bool = False,
+    incomplete_coverage: bool = False,
+    unsupported_capability: bool = False,
+    malformed_input: bool = False,
+    refutation_evidence: CheckedRefutationEvidenceV1 | None = None,
+    expected_binding: BindingIdsV1 | None = None,
 ) -> SolverJudgmentV1:
-    """Adapter from exact-closure query results."""
+    """Adapter from exact-closure query results (EVID-09 fail-closed)."""
 
+    blocked = (
+        timed_out
+        or skipped_replay
+        or missing_tool
+        or incomplete_coverage
+        or unsupported_capability
+        or malformed_input
+    )
     inputs = ClassificationInputsV1(
+        malformed_input=malformed_input,
         timed_out=timed_out,
         skipped_replay=skipped_replay,
+        unsupported_capability=unsupported_capability,
+        incomplete_coverage=incomplete_coverage,
+        missing_tool=missing_tool,
         vss_verdict=verdict,
         has_witness_digest=verdict == "supported",
         exhausted=exhausted or verdict == "unsupported",
         replay_checked=replay_checked,
         replay_ok=replay_ok,
+        refutation_evidence=None if blocked else refutation_evidence,
+        expected_binding=None if blocked else expected_binding,
     )
     return classify(inputs, checked=checked)
 
@@ -445,6 +545,10 @@ def evaluate_truth_case(raw: dict[str, Any]) -> dict[str, Any]:
         exhausted=bool(inputs_raw.get("exhausted", False)),
         replay_checked=bool(inputs_raw.get("replay_checked", False)),
         replay_ok=bool(inputs_raw.get("replay_ok", False)),
+        refutation_evidence=parse_refutation_evidence(
+            inputs_raw.get("refutation_evidence")
+        ),
+        expected_binding=parse_binding(inputs_raw.get("expected_binding")),
     )
     checked = bool(raw.get("checked", False))
     judgment = classify(inputs, checked=checked)
@@ -476,6 +580,8 @@ def evaluate_truth_case(raw: dict[str, Any]) -> dict[str, Any]:
 
 __all__ = [
     "JUDGMENT_SCHEMA",
+    "BindingIdsV1",
+    "CheckedRefutationEvidenceV1",
     "ClassificationInputsV1",
     "InvalidReason",
     "InvalidReasonName",

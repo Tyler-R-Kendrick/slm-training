@@ -41,19 +41,80 @@ inductive Verdict where
   | unknown
   deriving DecidableEq, Repr, BEq
 
+/-! ### EVID-09 checked refutation evidence (authority-critical) -/
+
+/-- Identity binding for exact-replay / certificate checks. -/
+structure BindingIds where
+  stateId : String
+  problemId : String
+  sourceId : String
+  toolId : String
+  deriving DecidableEq, Repr, BEq
+
+def BindingIds.nonempty (b : BindingIds) : Bool :=
+  !b.stateId.isEmpty && !b.problemId.isEmpty && !b.sourceId.isEmpty && !b.toolId.isEmpty
+
+inductive RefutationKind where
+  | exactReplay
+  | checkedCertificate
+  deriving DecidableEq, Repr, BEq
+
+/-- Authority-bearing checked refutation evidence reference. -/
+structure CheckedRefutationEvidence where
+  kind : RefutationKind
+  binding : BindingIds
+  evidenceDigest : String
+  capabilityPresent : Bool
+  trustChecked : Bool
+  deriving Repr, BEq
+
+def CheckedRefutationEvidence.wellFormed (e : CheckedRefutationEvidence) : Bool :=
+  e.binding.nonempty && !e.evidenceDigest.isEmpty && e.trustChecked &&
+    match e.kind with
+    | .exactReplay => true
+    | .checkedCertificate => e.capabilityPresent
+
+def CheckedRefutationEvidence.bindsExpected
+    (e : CheckedRefutationEvidence) (expected : BindingIds) : Bool :=
+  e.wellFormed && decide (e.binding = expected)
+
+def evidenceAuthorizesRemoval
+    (ev : Option CheckedRefutationEvidence) (expected : BindingIds) : Bool :=
+  match ev with
+  | none => false
+  | some e => e.bindsExpected expected
+
+/-- Telemetry-only self-attested exhaustion / coverage / replay bits. -/
+structure LegacyExhaustionFlag where
+  exhausted : Bool
+  replayOk : Bool
+  coverageComplete : Bool
+  deriving Repr, BEq
+
+def legacyExhaustionAuthorizesRemoval (_ : LegacyExhaustionFlag) : Bool :=
+  false
+
+theorem forged_exhaustion_never_authorizes (flag : LegacyExhaustionFlag) :
+    legacyExhaustionAuthorizesRemoval flag = false :=
+  rfl
+
 /-- One oracle answer for a single (hole, value) query. -/
 structure QueryResult where
   hole : HoleId
   candidate : Candidate
   verdict : Verdict
-  /-- Replay succeeded against the pass-start state. Only meaningful for unsupported. -/
+  /-- Telemetry only (EVID-09); never authorizes removal alone. -/
   replayOk : Bool
+  /-- Authority-critical checked evidence reference. -/
+  refutationEvidence : Option CheckedRefutationEvidence
+  /-- Expected state/problem/source/tool binding for this query. -/
+  expectedBinding : BindingIds
   deriving Repr, BEq
 
-/-- Destructive removal is allowed only for replay-valid UNSUPPORTED. -/
+/-- Destructive removal requires checked refutation evidence bound to identity. -/
 def removable (r : QueryResult) : Bool :=
   match r.verdict with
-  | .unsupported => r.replayOk
+  | .unsupported => evidenceAuthorizesRemoval r.refutationEvidence r.expectedBinding
   | _ => false
 
 /-- Whether a candidate is removable according to a batch of results. -/
@@ -87,10 +148,32 @@ theorem unknown_not_removable (r : QueryResult)
     (h : r.verdict = Verdict.unknown) : removable r = false := by
   simp [removable, h]
 
-/-- Failed certificate replay never authorizes removal. -/
+/-- Missing checked evidence never authorizes removal. -/
+theorem missing_evidence_not_removable (r : QueryResult)
+    (h : r.refutationEvidence = none) : removable r = false := by
+  cases hv : r.verdict <;> simp [removable, hv, evidenceAuthorizesRemoval, h]
+
+/-- Telemetry ``replayOk`` alone never authorizes removal. -/
+theorem telemetry_replay_ok_never_authorizes
+    (r : QueryResult) (h : r.refutationEvidence = none) :
+    removable { r with replayOk := true } = false := by
+  cases r.verdict <;> simp [removable, evidenceAuthorizesRemoval, h]
+
+/-- Failed certificate replay telemetry does not authorize removal without evidence. -/
 theorem failed_replay_not_removable (r : QueryResult)
-    (h : r.replayOk = false) : removable r = false := by
-  cases hv : r.verdict <;> simp [removable, hv, h]
+    (h : r.refutationEvidence = none) : removable r = false :=
+  missing_evidence_not_removable r h
+
+theorem stale_binding_not_removable
+    (r : QueryResult) (e : CheckedRefutationEvidence)
+    (hbind : r.refutationEvidence = some e)
+    (hstale : e.binding ≠ r.expectedBinding) :
+    removable r = false := by
+  cases hv : r.verdict
+  · simp [removable, hv]
+  · simp [removable, hv, evidenceAuthorizesRemoval, hbind,
+      CheckedRefutationEvidence.bindsExpected, hstale]
+  · simp [removable, hv]
 
 /-- A candidate that no result marks removable survives the pass. -/
 theorem survivor_if_not_removable
@@ -627,12 +710,29 @@ theorem fixture_two_three_stabilization_bounds :
       assignmentSearchBound [2, 3] = 6 := by
   decide
 
+private def fixtureBinding : BindingIds :=
+  { stateId := "closure-fixture-state"
+    problemId := "closure-fixture-problem"
+    sourceId := "exact_closure"
+    toolId := "python_replay" }
+
+private def fixtureEvidence (digest : String) : CheckedRefutationEvidence :=
+  { kind := .exactReplay
+    binding := fixtureBinding
+    evidenceDigest := digest
+    capabilityPresent := true
+    trustChecked := true }
+
 theorem fixture_flat_total_removed_le_live :
     let live : List Candidate := [0, 1, 2, 3]
     let r0 : QueryResult :=
-      { hole := 0, candidate := 1, verdict := .unsupported, replayOk := true }
+      { hole := 0, candidate := 1, verdict := .unsupported, replayOk := true,
+        refutationEvidence := some (fixtureEvidence "closure-replay-1"),
+        expectedBinding := fixtureBinding }
     let r1 : QueryResult :=
-      { hole := 0, candidate := 3, verdict := .unsupported, replayOk := true }
+      { hole := 0, candidate := 3, verdict := .unsupported, replayOk := true,
+        refutationEvidence := some (fixtureEvidence "closure-replay-3"),
+        expectedBinding := fixtureBinding }
     totalRemovedAcross live [[r0], [r1]] ≤ live.length ∧
       totalRemovedAcross live [[r0], [r1]] = 2 := by
   decide

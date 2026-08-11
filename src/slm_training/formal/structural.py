@@ -104,19 +104,25 @@ def law_close_monotone(
     return after_b.issubset(after_a)
 
 
-def removable(verdict: str, replay_ok: bool) -> bool:
-    """A candidate is removable only under a replay-confirmed UNSUPPORTED.
+def removable(
+    verdict: str,
+    replay_ok: bool = False,
+    *,
+    evidence: Any | None = None,
+    expected: Any | None = None,
+) -> bool:
+    """A candidate is removable only under checked refutation evidence (EVID-09).
 
-    Mirrors ExactClosure's honesty rule: UNKNOWN and replay-invalid results
-    never license removal (``docs/design/leverproof-integration.md``). This
-    is the shared oracle the three ``*_not_removable`` laws below
-    characterize — no live closure-engine decision is wired into this pure
-    checker (that integration is tracked as open work, not claimed here);
-    what is verified is that the oracle itself agrees with the Lean-mirrored
-    intent at every point of its input domain, so a later edit that loosens
-    or inverts the definition is caught.
+    Mirrors ExactClosure's honesty rule: UNKNOWN / SUPPORTED / missing or
+    unbound evidence never license removal. ``replay_ok`` is telemetry only
+    and cannot authorize destructive authority alone.
     """
-    return verdict == "unsupported" and bool(replay_ok)
+    del replay_ok
+    if verdict != "unsupported":
+        return False
+    from slm_training.formal.refutation_authority import evidence_authorizes_removal
+
+    return evidence_authorizes_removal(evidence, expected)
 
 
 def law_supported_not_removable(verdict: str, replay_ok: bool) -> bool:
