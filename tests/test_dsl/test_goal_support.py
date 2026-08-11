@@ -37,7 +37,7 @@ from slm_training.dsl.solver.support import (
     VerifyOutcome,
     VerifyStatus,
 )
-from tests.test_dsl.test_solver.test_goal_support import _compiled_set, _profile
+from tests.test_dsl.test_solver.test_goal_support import _profile
 
 _GENEROUS = SolverBounds(
     max_tokens=100_000,
