@@ -1899,7 +1899,7 @@
       ]
     },
     "dsl.solver.goal_support": {
-      "version": "v8",
+      "version": "v9",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/solver/decode.py",
@@ -1919,9 +1919,16 @@
         "tests/test_dsl/test_goal_domain_adequacy.py",
         "tests/test_dsl/test_openui_goal_verifier.py",
         "tests/test_dsl/test_goal_support_decode.py",
-        "tests/test_models/test_solver_decode_integration.py"
+        "tests/test_dsl/test_goal_support_decode_g03.py",
+        "tests/test_models/test_solver_decode_integration.py",
+        "tests/test_web/test_onnx_inference.py"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-08-11",
+          "note": "PGS-G03 (SLM-509): adversarial decode parity, singleton bypass, legacy compatibility, and ONNX off-by-default regression tests."
+        },
         {
           "version": "v8",
           "date": "2026-08-10",

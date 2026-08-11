@@ -53,6 +53,12 @@ def test_onnx_forced_singletons_commit_without_a_forward() -> None:
     assert int(evidence["singleton_bypasses"]) > 0
 
 
+def test_onnx_goal_support_mode_stays_off_by_default() -> None:
+    """PGS-G03: serving backend does not silently enable goal-support decode."""
+    model = OnnxTwoTowerModel.from_checkpoint(PLAYGROUND_DEMO_CHECKPOINT)
+    assert getattr(model.config, "goal_support_mode", "off") in ("off", None, "")
+
+
 def test_onnx_forced_tokens_cost_zero_denoiser_runs() -> None:
     """Forced tokens are outside the forward budget, not merely cheaper."""
     model = OnnxTwoTowerModel.from_checkpoint(PLAYGROUND_DEMO_CHECKPOINT)
