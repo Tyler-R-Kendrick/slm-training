@@ -1,0 +1,332 @@
+{
+  "schema": "revmath_owner_map/v1",
+  "base_sha": "980aa465223adf7822f82930550c92b9240333ca",
+  "linear_id": "SLM-515",
+  "issue_key": "EVID-01",
+  "profile_id": "reasoning/revmath",
+  "design_doc": "docs/design/reverse-mathematics-computability.md",
+  "adr": "docs/design/adr-revmath-reasoning-profile.md",
+  "verified_by": "scripts/verify_revmath_owners.py",
+  "profile_decision": {
+    "kind": "typed_reasoning_profile",
+    "parent_harness": "src/slm_training/harnesses/reasoning/",
+    "must_bind": [
+      "experiment_campaign",
+      "formal_preflight_execution",
+      "formal_object_loop",
+      "decode_telemetry",
+      "mechanism_disposition",
+      "verifier_witness",
+      "replay_bundle",
+      "bounded_process"
+    ],
+    "prohibited_parallel_owners": [
+      "revmath_trainer",
+      "revmath_campaign_store",
+      "revmath_evidence_store",
+      "revmath_proof_stack",
+      "revmath_orchestrator"
+    ]
+  },
+  "surfaces": [
+    {
+      "id": "formal_preflight_schema",
+      "kind": "schema",
+      "owner_module": "src/slm_training/autoresearch/schemas.py",
+      "owner_symbols": [
+        "FormalPreflightV1",
+        "FormalClaimV1",
+        "FormalObligationV1",
+        "FormalTraceStepV1",
+        "FormalEvidenceScope",
+        "FormalProofStatus"
+      ],
+      "design_doc": "docs/design/formal-autoresearch.md",
+      "ownership_map_subsystem": null,
+      "notes": "Typed preflight artifact contract only; execution lives in autoresearch/formal.py."
+    },
+    {
+      "id": "formal_preflight_execution",
+      "kind": "formal_preflight",
+      "owner_module": "src/slm_training/autoresearch/formal.py",
+      "owner_symbols": [
+        "run_formal_preflight",
+        "validate_formal_preflight_artifact",
+        "validate_formal_preflights",
+        "bind_preflight",
+        "check_formal_trace",
+        "FormalTemplate"
+      ],
+      "design_doc": "docs/design/formal-autoresearch.md",
+      "ownership_map_subsystem": null,
+      "notes": "Bounded Lean execution, theorem-name presence, project digest, forbidden-proof/axiom audit."
+    },
+    {
+      "id": "formal_preflight_seam",
+      "kind": "command",
+      "owner_module": "scripts/autoresearch.py",
+      "owner_symbols": ["cmd_formalize"],
+      "design_doc": "docs/design/formal-autoresearch.md",
+      "ownership_map_subsystem": "experiment_campaign",
+      "notes": "Autoresearch preflight seam; writes content-addressed artifacts under formal_preflights/."
+    },
+    {
+      "id": "formal_object_schema",
+      "kind": "schema",
+      "owner_module": "src/slm_training/formal/objects.py",
+      "owner_symbols": [
+        "FormalObjectV1",
+        "FormalObjectKind",
+        "export_support_certificate",
+        "export_lean_claim",
+        "export_closure_law",
+        "lean_claim_catalog"
+      ],
+      "design_doc": "docs/design/formal-objects-multi-prover.md",
+      "ownership_map_subsystem": null,
+      "notes": "Portable formal objects; not a second evidence stack."
+    },
+    {
+      "id": "formal_object_loop",
+      "kind": "formal_object",
+      "owner_module": "src/slm_training/formal/loop.py",
+      "owner_symbols": ["close_formal_loop", "write_loop_report", "loop_requires_multi_backend"],
+      "design_doc": "docs/design/formal-objects-multi-prover.md",
+      "ownership_map_subsystem": null,
+      "notes": "Multi-prover loop report; Lean is never sole authority."
+    },
+    {
+      "id": "formal_checkers",
+      "kind": "formal_checker",
+      "owner_module": "src/slm_training/formal/checkers.py",
+      "owner_symbols": [
+        "CheckerResult",
+        "run_checkers",
+        "check_lean_kernel",
+        "FormalProjectLock"
+      ],
+      "design_doc": "docs/design/formal-objects-multi-prover.md",
+      "ownership_map_subsystem": null,
+      "notes": "Independent checker backends over exported objects."
+    },
+    {
+      "id": "formal_objects_cli",
+      "kind": "command",
+      "owner_module": "scripts/verify_formal_objects.py",
+      "owner_symbols": ["main"],
+      "design_doc": "docs/design/formal-objects-multi-prover.md",
+      "ownership_map_subsystem": null,
+      "notes": "Export/verify CLI; diagnostic and loop-close, not promotion authority alone."
+    },
+    {
+      "id": "bounded_process",
+      "kind": "execution",
+      "owner_module": "src/slm_training/harness_core/bounded_process.py",
+      "owner_symbols": ["run_bounded_process", "ProcessOutcome", "BoundedProcessResult"],
+      "design_doc": "docs/design/formal-autoresearch.md",
+      "ownership_map_subsystem": null,
+      "notes": "Canonical bounded subprocess owner for Lean/Lake and other formal tools."
+    },
+    {
+      "id": "experiment_campaign",
+      "kind": "campaign",
+      "owner_module": "src/slm_training/autoresearch/experiment_campaign.py",
+      "owner_symbols": [
+        "ExperimentCampaignV1",
+        "CampaignEndpointV1",
+        "CampaignArmV1",
+        "CampaignGateV1",
+        "campaign_manifest_sha256",
+        "validate_result_claim"
+      ],
+      "design_doc": "docs/design/experiment-campaign-governance.md",
+      "ownership_map_subsystem": "experiment_campaign",
+      "notes": "Revmath runs must lock and execute through this contract; no bypass."
+    },
+    {
+      "id": "decode_stats_record",
+      "kind": "telemetry",
+      "owner_module": "src/slm_training/models/decode_stats.py",
+      "owner_symbols": [
+        "DecodeStatsRecordV1",
+        "append_decode_stats_record",
+        "iter_decode_stats_records",
+        "build_decode_stats_record"
+      ],
+      "design_doc": "docs/design/decode-invariants.md",
+      "ownership_map_subsystem": "decode_telemetry",
+      "notes": "Persisted per-decode evidence envelope."
+    },
+    {
+      "id": "mechanism_activation",
+      "kind": "activation",
+      "owner_module": "src/slm_training/models/decode_stats.py",
+      "owner_symbols": ["MechanismActivationV1", "build_mechanism_activation"],
+      "design_doc": "docs/design/decode-invariants.md",
+      "ownership_map_subsystem": "decode_telemetry",
+      "notes": "Eligible/invoked/changed-top-choice activation envelope."
+    },
+    {
+      "id": "replay_bundle",
+      "kind": "replay",
+      "owner_module": "src/slm_training/runtime/telemetry/replay_bundle.py",
+      "owner_symbols": [
+        "ReplayBundleV1",
+        "build_replay_bundle",
+        "append_replay_bundle",
+        "replay_bundle_integrity_ok"
+      ],
+      "design_doc": "docs/design/decode-invariants.md",
+      "ownership_map_subsystem": "runtime_telemetry",
+      "notes": "Offline-replayable decode identity + solver replay violations."
+    },
+    {
+      "id": "solver_replay",
+      "kind": "replay",
+      "owner_module": "src/slm_training/dsl/solver/replay.py",
+      "owner_symbols": ["solver_replay_violations", "solver_trace_counters"],
+      "design_doc": "docs/design/verified-scope-solver.md",
+      "ownership_map_subsystem": "solver_replay",
+      "notes": "Decode trace replay validation authority."
+    },
+    {
+      "id": "verifier_witness",
+      "kind": "witness",
+      "owner_module": "src/slm_training/evals/semantic_failure.py",
+      "owner_symbols": [
+        "VerifierWitnessV1",
+        "VerifierLocalizationV1",
+        "build_verifier_witness",
+        "witness_integrity_ok"
+      ],
+      "design_doc": "docs/design/semantic-failure-census.md",
+      "ownership_map_subsystem": "semantic_failure_taxonomy",
+      "notes": "Lossless typed verifier witness; extends taxonomy adapter."
+    },
+    {
+      "id": "mechanism_disposition",
+      "kind": "disposition",
+      "owner_module": "src/slm_training/harnesses/experiments/mechanism_disposition_report.py",
+      "owner_symbols": [
+        "MechanismDispositionRecordV1",
+        "MechanismDispositionReportV1",
+        "EVIDENCE_CLASSES",
+        "build_mechanism_disposition_record",
+        "build_disposition_report"
+      ],
+      "design_doc": "docs/design/semantic-planning-valid-state-disposition.md",
+      "ownership_map_subsystem": "mechanism_disposition_report",
+      "notes": "Adopt/supersede disposition; fail-closed on fixture/measured pairing."
+    },
+    {
+      "id": "semantic_repair",
+      "kind": "repair",
+      "owner_module": "src/slm_training/harnesses/distill/semantic_repair.py",
+      "owner_symbols": [
+        "SemanticRepairRecordV1",
+        "RepairResidualV1",
+        "project_repair_residual"
+      ],
+      "design_doc": "docs/design/iter-spv2-05-semantic-repair-20260720.md",
+      "ownership_map_subsystem": "semantic_repair",
+      "notes": "Repair targets and residual projection; optional VerifierWitnessV1 reconciliation."
+    },
+    {
+      "id": "version_registry",
+      "kind": "version",
+      "owner_module": "src/slm_training/resources/versions.json",
+      "owner_symbols": [],
+      "design_doc": "docs/design/version-stamp-contract.md",
+      "ownership_map_subsystem": "version_registry",
+      "notes": "Component-version registry; revmath profile bumps components here, never forks a shadow registry."
+    },
+    {
+      "id": "agent_surface_parity",
+      "kind": "agent_surface",
+      "owner_module": "scripts/verify_agent_surfaces.py",
+      "owner_symbols": ["Obligation", "check", "AgentSurfaceError"],
+      "design_doc": "docs/design/agent-harness-parity-audit.md",
+      "ownership_map_subsystem": "agent_surface_parity",
+      "notes": "Obligation × harness-surface matrix; revmath docs must cite canonical owners here."
+    },
+    {
+      "id": "reasoning_harness_parent",
+      "kind": "profile_parent",
+      "owner_module": "src/slm_training/harnesses/reasoning/__init__.py",
+      "owner_symbols": [],
+      "design_doc": "docs/design/reverse-mathematics-computability.md",
+      "ownership_map_subsystem": null,
+      "notes": "G4 reasoning harness package barrel; symbols live in bench.py (ReasoningBenchConfig, run_reasoning_bench) and abstract_cot_warmup.py (AbstractWarmupCampaignV1, run_abstract_cot_warmup). reasoning/revmath is a typed profile over this owner, not a sibling trainer."
+    },
+    {
+      "id": "continuous_formal_promote",
+      "kind": "command",
+      "owner_module": "scripts/run_autotrain_continuous.py",
+      "owner_symbols": [
+        "ensure_promote_formal_preflight",
+        "record_formal_preflight_status"
+      ],
+      "design_doc": "docs/design/formal-autoresearch.md",
+      "ownership_map_subsystem": "experiment_campaign",
+      "notes": "Promotion gate reuses validate_formal_preflight_artifact; timeout/incomplete never becomes refutation."
+    }
+  ],
+  "extension_seams": [
+    {
+      "issue": "EVID-03",
+      "linear_id": "SLM-519",
+      "extends": "formal_preflight_schema",
+      "new_owner_justified": false,
+      "justification": "Four-axis analysis ledger fields extend FormalPreflightV1 in place."
+    },
+    {
+      "issue": "EVID-04",
+      "linear_id": "SLM-525",
+      "extends": "formal_preflight_schema",
+      "new_owner_justified": true,
+      "justification": "Safe symbolic bound AST is a new eval-only submodule consumed by preflight ledger fields."
+    },
+    {
+      "issue": "EVID-06",
+      "linear_id": "SLM-526",
+      "extends": "formal_object_schema",
+      "new_owner_justified": false,
+      "justification": "v2 authority envelope adapts FormalObjectV1 and FormalPreflightV1; no third stack."
+    },
+    {
+      "issue": "HARN-01",
+      "linear_id": "SLM-520",
+      "extends": "reasoning_harness_parent",
+      "new_owner_justified": false,
+      "justification": "Registers reasoning/revmath profile registration and harness parity matrix."
+    }
+  ],
+  "prohibited_duplicate_risks": [
+    {
+      "concern": "Parallel revmath campaign manifest",
+      "canonical_owner": "src/slm_training/autoresearch/experiment_campaign.py::ExperimentCampaignV1",
+      "shadow_pattern": "revmath.*campaign|RevMathCampaign",
+      "status": "blocked-by-adr"
+    },
+    {
+      "concern": "Parallel revmath evidence store",
+      "canonical_owner": "src/slm_training/models/decode_stats.py::DecodeStatsRecordV1",
+      "shadow_pattern": "revmath.*evidence|RevMathEvidenceStore",
+      "status": "blocked-by-adr"
+    },
+    {
+      "concern": "Parallel revmath proof runner",
+      "canonical_owner": "src/slm_training/autoresearch/formal.py::run_formal_preflight",
+      "shadow_pattern": "revmath.*proof|RevMathProofStack",
+      "status": "blocked-by-adr"
+    }
+  ],
+  "absorbed_predecessors": [
+    {
+      "issue_key": "EVID-02",
+      "title": "Machine-readable formal/evidence owner registry and duplicate-owner CI guard",
+      "absorbed_into": "EVID-01",
+      "reason": "Owner freeze, ADR, revmath_owner_map.json, and verify_revmath_owners.py deliver the registry and parity check without a separate ownership_map.json churn ticket or a second orchestration layer. Global ownership_map extensions remain parent-owned per swarm contract."
+    }
+  ]
+}

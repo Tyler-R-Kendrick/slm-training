@@ -3042,6 +3042,11 @@
         {
           "version": "v23",
           "date": "2026-08-11",
+          "note": "no-bump: EVID-01 (SLM-515) wires verify_revmath_owners into check_changed REVMATH_OWNER_FILES; no ownership_map.json structural change."
+        },
+        {
+          "version": "v23",
+          "date": "2026-08-11",
           "note": "Proof-carrying goal support: register the compiled constraints, verifier, sidecar, adequacy, preference, formal, and governed fixture extension points."
         },
         {
@@ -3278,6 +3283,24 @@
           "version": "v1",
           "date": "2026-08-08",
           "note": "SGS-001 (SLM-435): initial checked-in owner/authority map for the live synthesis stack (semantic plan, G0-G12 verifier gates, semantic-failure taxonomy, repair, counterfactual replay, experiment registry, telemetry, certified completion artifacts, DSL packs, search/lattice state, versioning, generated docs); flags the dsl.pack vs dsl.packs duplicate registry; reconciles the OUTPUT_CONTRACT_VERSION doc/code mismatch (docs said 4, code says 2); maps all 55 downstream SGS/VCE/PCT/SRP/SIE/RSP backlog items to an existing extension point or an explicit new-owner justification."
+        }
+      ]
+    },
+    "governance.revmath_owners": {
+      "version": "v1",
+      "kind": "gate",
+      "paths": [
+        "docs/design/adr-revmath-reasoning-profile.md",
+        "docs/design/reverse-mathematics-computability.md",
+        "scripts/verify_revmath_owners.py",
+        "src/slm_training/resources/revmath_owner_map.json",
+        "tests/test_scripts/test_verify_revmath_owners.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-11",
+          "note": "EVID-01 (SLM-515): freeze formal/evidence/revmath canonical owner map, ADR for reasoning/revmath profile, and verify_revmath_owners parity certificate; absorbs EVID-02 registry scope."
         }
       ]
     },
