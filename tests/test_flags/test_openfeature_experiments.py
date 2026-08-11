@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from slm_training.flags import (
     FlagClient,
     InMemoryProvider,
@@ -15,6 +17,7 @@ from slm_training.flags import (
     experiment_context,
     ruleset_from_mapping,
 )
+from slm_training.flags.levers import LEVER_BY_KEY
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 from slm_training.harnesses.model_build.experiment_flags import (
     apply_levers_from_mapping,
@@ -72,6 +75,15 @@ def test_ruleset_enables_verified_solver_decode() -> None:
     assert applied[0].variant == "on"
     assert applied[0].reason is Reason.STATIC
     assert applied[0].flag_metadata["experiment_id"] == "E-vss"
+
+
+def test_goal_support_requires_request_bound_programmatic_context() -> None:
+    """Public flags cannot enable a mode whose proof inputs they cannot carry."""
+    for key in ("goal_support_mode", "goal_support_query_cap"):
+        assert key not in LEVER_BY_KEY
+        assert key not in ModelBuildConfig.__dataclass_fields__
+        with pytest.raises(KeyError, match=key):
+            ruleset_from_mapping({key: "certified"})
 
 
 def test_cli_overrides_win_over_ruleset() -> None:

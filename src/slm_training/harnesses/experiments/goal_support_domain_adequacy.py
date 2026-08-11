@@ -1,23 +1,10 @@
-"""PGS-H01 (SLM-510): fixture-scale goal-support domain-adequacy campaign.
+"""Governed fixture evidence for proof-carrying goal support.
 
-Default-off, bounded, deterministic diagnostic campaign over complete finite
-OpenUI-style word-tree fixtures. Composes existing
-:class:`~slm_training.dsl.solver.goal_support.GoalSupportProvider`,
-:func:`~slm_training.dsl.solver.goal_support.analyze_goal_domain`, and
-:func:`~slm_training.dsl.solver.goal_support.exact_goal_closure` through the
-governed :class:`~ExperimentCampaignV1` / :class:`~CampaignStore` contract.
-
-Arms (shared fixtures, legal domains, bounds, deterministic ordering):
-
-* ``structural_support_reference`` — enumerative structural well-formedness oracle
-* ``goal_support_production_exact_diagnostic`` — production-exact goal evidence;
-  observation-only (no hard prune)
-* ``goal_support_evaluation_oracle_diagnostic`` — frozen evaluation-oracle facts;
-  non-promotable, cannot authorize prune
-* ``goal_support_certified_fixture`` — certified closure/prune only under complete
-  forest + compiler-hard + replay-valid evidence
-
-Wiring/diagnostic claim only — not model quality, ship gates, or promotion.
+The campaign deliberately contains no model.  It exercises the production
+request -> compiled constraints -> OpenUI goal verifier -> existing VSS oracle
+-> replay sidecar -> domain diagnosis -> guarded exact closure path on small,
+complete finite domains.  Persisted rows contain only digests and bounded
+counters; terminal source strings remain request-local.
 """
 
 from __future__ import annotations
@@ -26,7 +13,8 @@ import hashlib
 import json
 import time
 from dataclasses import asdict, dataclass
-from typing import Any, Literal
+from pathlib import Path
+from typing import Any
 
 from slm_training.autoresearch.experiment_campaign import (
     ArtifactRequirementV1,
@@ -36,30 +24,35 @@ from slm_training.autoresearch.experiment_campaign import (
     CampaignGateV1,
     ExperimentCampaignV1,
     MultiplicityFamilyV1,
-    campaign_manifest_sha256,
 )
 from slm_training.autoresearch.schemas import CampaignBudget, CampaignSpec
 from slm_training.autoresearch.storage import CampaignStore
-from slm_training.data.progspec.goal_constraints import (
-    CompiledGoalConstraintSetV1,
-    GoalConstraintEvaluationV1,
-    GoalConstraintV1,
+from slm_training.data.contract import GenerationRequest
+from slm_training.data.progspec.prompt_requirements import (
+    PromptSemanticRequirementsV1,
+    RequirementFact,
 )
-from slm_training.data.progspec.synthesis_problem import PackIdentityV1
+from slm_training.data.progspec.synthesis_problem import (
+    VerifiedSynthesisProblemV1,
+)
+from slm_training.data.semantic_plan.requirements_compile import (
+    compile_goal_constraints,
+)
+from slm_training.dsl.pack import get_pack
 from slm_training.dsl.solver.goal_support import (
-    EvaluatorIdentityV1,
-    GoalFailureAtomV1,
-    GoalGateResultV1,
+    GoalActionEvidenceV1,
+    GoalDomainAdequacyReportV1,
     GoalSupportProvider,
-    GoalTerminalEvidenceV1,
-    GoalUnknownAtomV1,
     GoalVerifierProfileV1,
-    MetricIdentityV1,
+    action_id_from_value,
     analyze_goal_domain,
-    compute_pack_identity_digest,
     exact_goal_closure,
 )
-from slm_training.dsl.solver.openui_support import GoalTerminalEvidenceTrace
+from slm_training.dsl.solver.openui_support import (
+    OpenUIGoalVerifier,
+    OpenUIWellFormedVerifier,
+    current_openui_pack_identity,
+)
 from slm_training.dsl.solver.state import (
     DomainValue,
     FiniteDomainState,
@@ -72,1166 +65,259 @@ from slm_training.dsl.solver.support import (
     EnumerativeSupportOracle,
     ExpandStatus,
     ExpandStep,
-    SupportCertificate,
     SupportQuery,
-    VerifyOutcome,
-    VerifyStatus,
-    Verifier,
+    replay_support_certificate,
 )
-from slm_training.harness_core.lineage.records import content_sha
 from slm_training.levers import MAX_RUN_MINUTES
+from slm_training.lineage.records import canonical_json
 
-CAMPAIGN_ID = "pgs-h01-goal-support-domain-adequacy-fixture"
-EXPERIMENT_ID = "pgs-h01"
-PRIMARY_METRIC = "exact_action_coverage_rate"
-RESULT_SCHEMA = "goal_support_domain_adequacy_campaign_fixture/v1"
-
-ARM_IDS: tuple[str, ...] = (
+ARM_IDS = (
     "structural_support_reference",
     "goal_support_production_exact_diagnostic",
     "goal_support_evaluation_oracle_diagnostic",
     "goal_support_certified_fixture",
 )
-
-_DIAGNOSTIC_ARMS = frozenset(
-    {
-        "goal_support_production_exact_diagnostic",
-        "goal_support_evaluation_oracle_diagnostic",
-    }
+METRIC_IDS = (
+    "exact_action_coverage_rate",
+    "supported_action_rate",
+    "unsupported_action_rate",
+    "unknown_action_rate",
+    "unobserved_action_rate",
+    "selected_action_supported_rate",
+    "selection_regret_rate",
+    "selection_unresolved_rate",
+    "domain_inadequate_under_bounds_rate",
+    "coverage_unknown_rate",
+    "structural_supported_but_goal_unsupported_rate",
+    "obstruction_core_emission_rate",
+    "obstruction_core_replay_rate",
+    "mean_obstruction_core_size",
+    "false_hard_prune_count",
+    "support_certificate_replay_failure_count",
+    "verifier_calls",
+    "expanded_nodes",
+    "backtracks",
+    "wall_time",
+)
+BOUNDS = SolverBounds(
+    max_tokens=4096,
+    max_nodes=64,
+    max_depth=8,
+    max_backtracks=64,
+    max_verifier_calls=64,
 )
 
-_GENEROUS = SolverBounds(
-    max_tokens=100_000,
-    max_nodes=100_000,
-    max_depth=64,
-    max_backtracks=100_000,
-    max_verifier_calls=100_000,
-)
 
-_REGRET_TREE = {
-    "": (("a", "continue", "complete"), ("b", "continue", "complete")),
-    "a": (("x", "terminal", "complete"),),
-    "b": (("y", "terminal", "complete"),),
-}
-
-_INADEQUATE_TREE = {
-    "": (("a", "terminal", "complete"), ("b", "terminal", "complete"),),
-}
-
-_CAP_TREE = {
-    "": (
-        ("a", "terminal", "complete"),
-        ("b", "terminal", "complete"),
-        ("c", "terminal", "complete"),
-    ),
-}
-
-_PARTIAL_FOREST_TREE = {
-    "": (("a", "continue", "partial"), ("b", "continue", "complete")),
-    "a": (("x", "incomplete", "partial"),),
-    "b": (("y", "terminal", "complete"),),
-}
-
-_UNAVAILABLE_TREE = {
-    "": (("a", "continue", "complete"),),
-    "a": (("x", "terminal", "complete"),),
-}
-
-_AMBIGUITY_TREE = {
-    "": (("a", "continue", "complete"), ("b", "continue", "complete")),
-    "a": (("x", "terminal", "complete"), ("y", "terminal", "complete")),
-    "b": (("z", "terminal", "complete"),),
-}
-
-_FORBIDDEN_RENDER_TERMS = frozenset(
-    {"global unsat", "certified_unsat", "certified unsat", "globally unsatisfiable"}
-)
-
-__all__ = [
-    "ARM_IDS",
-    "CAMPAIGN_ID",
-    "EXPERIMENT_ID",
-    "FIXTURE_IDS",
-    "PRIMARY_METRIC",
-    "RESULT_SCHEMA",
-    "GoalSupportDomainAdequacyCampaignV1",
-    "build_fixture_matrix",
-    "canonical_result_digest",
-    "evaluate_falsifiers",
-    "plan_only_preview",
-    "render_markdown",
-    "run_campaign",
-    "run_fixture_arm",
-]
-
-
-def _program_digest(program: str) -> str:
-    return hashlib.sha256(program.encode()).hexdigest()
-
-
-class _WordExpander:
-    def __init__(
-        self,
-        tree: dict[str, tuple[tuple[str, ...], ...]],
-        *,
-        bounds: SolverBounds = _GENEROUS,
-        constraint_version: str = "v1",
-    ) -> None:
-        self._tree = tree
-        self._bounds = bounds
-        self._cv = constraint_version
-        self._prefix_by_fp: dict[str, str] = {}
-        self._root = self._state_for("")
-        self._prefix_by_fp[self._root.fingerprint] = ""
-
-    @property
-    def problem_id(self) -> str:
-        return self._root.problem_id
-
-    @property
-    def pack_id(self) -> str:
-        return "fixture-word"
-
-    @property
-    def constraint_version(self) -> str:
-        return self._cv
-
-    @property
-    def bounds(self) -> SolverBounds:
-        return self._bounds
-
-    def root_state(self) -> FiniteDomainState:
-        return self._root
-
-    def value_for(self, prefix: str, letter: str) -> DomainValue:
-        return DomainValue.create("letter", {"prefix": prefix, "letter": letter})
-
-    def _state_for(self, prefix: str) -> FiniteDomainState:
-        branches = self._tree.get(prefix, ())
-        hole = HoleId(namespace="word", path=(len(prefix), prefix or "ROOT"), kind="next")
-        values = tuple(self.value_for(prefix, branch[0]) for branch in branches)
-        domain = HoleDomain(hole, values, metadata=(("node", prefix or "ROOT"),))
-        return FiniteDomainState(
-            problem_id=f"word:{prefix or 'ROOT'}",
-            pack_id=self.pack_id,
-            constraint_version=self._cv,
-            bounds=self._bounds,
-            holes=(domain,),
-        )
-
-    def successor(self, state, hole_id, value) -> ExpandStep:
-        prefix = self._prefix_by_fp[state.fingerprint]
-        payload = value.payload
-        letter = payload["letter"]
-        branch = next(b for b in self._tree[prefix] if b[0] == letter)
-        kind = branch[1]
-        coverage = branch[2]
-        forced_next = branch[3] if len(branch) > 3 else None
-        if kind == "terminal":
-            return ExpandStep(
-                ExpandStatus.TERMINAL,
-                program=prefix + letter,
-                coverage=coverage,
-                detail=prefix + letter,
-            )
-        if kind == "dead":
-            return ExpandStep(ExpandStatus.DEAD, coverage=coverage, detail="bottom")
-        if kind == "incomplete":
-            return ExpandStep(ExpandStatus.INCOMPLETE, coverage=coverage, detail="uncovered")
-        next_prefix = forced_next if forced_next is not None else prefix + letter
-        child = self._state_for(next_prefix)
-        self._prefix_by_fp[child.fingerprint] = next_prefix
-        return ExpandStep(ExpandStatus.CONTINUE, next_state=child, coverage=coverage)
-
-
-class _TracingGoalVerifier(Verifier):
-    def __init__(
-        self,
-        accept: set[str],
-        *,
-        unavailable: set[str] | None = None,
-        profile_label: str,
-        profile_digest: str,
-        structural_only: bool = False,
-        unknown_atoms: tuple[GoalUnknownAtomV1, ...] = (),
-        failure_atoms: tuple[GoalFailureAtomV1, ...] = (),
-    ) -> None:
-        self._accept = accept
-        self._unavailable = unavailable or set()
-        self._profile_label = profile_label
-        self._profile_digest = profile_digest
-        self._structural_only = structural_only
-        self._unknown_atoms = unknown_atoms
-        self._failure_atoms = failure_atoms
-        self._trace = GoalTerminalEvidenceTrace()
-
-    @property
-    def last_trace(self) -> GoalTerminalEvidenceTrace:
-        return self._trace
-
-    @property
-    def profile(self) -> str:
-        return f"{self._profile_label}/{self._profile_digest}"
-
-    def verify(self, program: str) -> VerifyOutcome:
-        if program in self._unavailable:
-            return VerifyOutcome(VerifyStatus.UNAVAILABLE, detail="fixture_unavailable")
-        overall = "ACCEPT" if program in self._accept else "REJECT"
-        structural = "REJECT" if self._structural_only and program.endswith("x") else overall
-        gate_status = structural if self._structural_only else overall
-        evidence = GoalTerminalEvidenceV1(
-            profile_digest=self._profile_digest,
-            program_digest=_program_digest(program),
-            canonical_program_digest=_program_digest(program),
-            program_spec_digest="3" * 64,
-            semantic_plan_digest="4" * 64,
-            constraint_evaluations=(
-                GoalConstraintEvaluationV1(constraint_id="c_slot_button", status="PASS"),
-            ),
-            required_gate_results=(GoalGateResultV1(gate_id="G0", status=gate_status),),
-            mandatory_unknown_atoms=self._unknown_atoms,
-            mandatory_failure_atoms=self._failure_atoms,
-            structural_status=structural,
-            overall_status=overall,
-        )
-        bound = GoalTerminalEvidenceV1.from_dict(evidence.to_dict(include_digest=True))
-        self._trace.append(bound)
-        digest = bound.evidence_digest or bound.compute_digest()
-        detail = f"overall={overall};structural={structural};evidence={digest}"
-        if self._structural_only:
-            if structural == "ACCEPT":
-                return VerifyOutcome(VerifyStatus.ACCEPT, detail=detail)
-            return VerifyOutcome(VerifyStatus.REJECT, detail=detail)
-        if overall == "ACCEPT":
-            return VerifyOutcome(VerifyStatus.ACCEPT, detail=detail)
-        return VerifyOutcome(VerifyStatus.REJECT, detail=detail)
-
-
-def _fixture_pack_identity() -> PackIdentityV1:
-    return PackIdentityV1(
-        pack_id="openui",
-        contract_version=2,
-        grammar_sha256="a" * 64,
-        tokenizer_id="tok/v1",
-        canonicalizer_id="canon/v1",
-        artifact_schema="openui/v1",
-        artifact_sha256="b" * 64,
-    )
-
-
-def _fixture_constraint(**overrides: object) -> GoalConstraintV1:
-    defaults: dict[str, object] = {
-        "constraint_id": "c_slot_button",
-        "kind": "slot_present",
-        "parameters": {"role_id": "primary_action"},
-        "source_kind": "pack_contract",
-        "source_id": "pack/openui",
-        "source_digest": "abc123",
-        "authority_tier": "compiler-hard",
-        "completeness": "EXACT",
-        "may_prune": True,
-    }
-    defaults.update(overrides)
-    return GoalConstraintV1(**defaults)
-
-
-def _fixture_compiled_set() -> CompiledGoalConstraintSetV1:
-    hard = _fixture_constraint()
-    advisory = _fixture_constraint(
-        constraint_id="adv_hint",
-        authority_tier="advisory-learned",
-        completeness="HEURISTIC",
-        may_prune=False,
-        source_kind="prompt_requirement",
-    )
-    evaluation = _fixture_constraint(
-        constraint_id="eval_gate",
-        kind="required_gate_passes",
-        parameters={"gate": "G3"},
-        authority_tier="evaluation-only",
-        completeness="EXACT",
-        may_prune=False,
-        source_kind="evaluation_fixture",
-    )
-    payload = CompiledGoalConstraintSetV1(
-        problem_digest="a" * 64,
-        request_digest="b" * 64,
-        pack_identity_digest=compute_pack_identity_digest(_fixture_pack_identity()),
-        compiler_version="compiler/v1",
-        constraints=(hard, advisory, evaluation),
-        hard_constraint_ids=(hard.constraint_id,),
-        advisory_constraint_ids=(advisory.constraint_id,),
-        evaluation_constraint_ids=(evaluation.constraint_id,),
-    ).to_dict(include_digest=True)
-    return CompiledGoalConstraintSetV1.from_dict(payload)
-
-
-def _profile_for_mode(mode: str) -> GoalVerifierProfileV1:
-    constraint_set = _fixture_compiled_set()
-    pack = _fixture_pack_identity()
-    pack_digest = compute_pack_identity_digest(pack)
-    common = {
-        "problem_digest": constraint_set.problem_digest,
-        "constraint_set_digest": constraint_set.digest,
-        "pack_identity": pack,
-        "pack_identity_digest": pack_digest,
-    }
-    if mode == "production_exact":
-        body = {
-            "profile_id": "profile/prod",
-            "mode": "production_exact",
-            "required_constraint_ids": ("c_slot_button",),
-            "required_gates": ("G0", "G3"),
-            "required_evaluators": (
-                EvaluatorIdentityV1(
-                    evaluator_id="meaningful_program/v2",
-                    version="v2",
-                    implementation_hash="c" * 64,
-                ),
-            ),
-            "metric_identities": (
-                MetricIdentityV1(metric_id="meaningful_program", version="v2"),
-            ),
-            "authority_tier": "compiler-hard",
-            **common,
-        }
-    elif mode == "evaluation_oracle":
-        body = {
-            "profile_id": "profile/eval",
-            "mode": "evaluation_oracle",
-            "required_constraint_ids": ("eval_gate",),
-            "required_gates": (),
-            "required_evaluators": (),
-            "metric_identities": (),
-            "authority_tier": "evaluation-only",
-            **common,
-        }
-    elif mode == "advisory_diagnostic":
-        body = {
-            "profile_id": "profile/adv",
-            "mode": "advisory_diagnostic",
-            "required_constraint_ids": ("adv_hint",),
-            "required_gates": (),
-            "required_evaluators": (),
-            "metric_identities": (),
-            "authority_tier": "advisory-learned",
-            **common,
-        }
-    else:
-        raise ValueError(f"unsupported profile mode {mode!r}")
-    return GoalVerifierProfileV1.from_dict(
-        GoalVerifierProfileV1(**body).to_dict(include_digest=True)
-    )
-
-
-def _hole(expander: _WordExpander) -> HoleId:
-    return expander.root_state().holes[0].hole_id
-
-
-def _selected(expander: _WordExpander, letter: str) -> DomainValue:
-    return expander.value_for("", letter)
+def _digest(value: Any) -> str:
+    return hashlib.sha256(canonical_json(value).encode("utf-8")).hexdigest()
 
 
 @dataclass(frozen=True)
-class GoalSupportFixtureSpec:
-    fixture_id: str
-    description: str
-    tree: dict[str, tuple[tuple[str, ...], ...]]
-    accept: frozenset[str]
-    selected_letter: str
-    exact_action_cap: int
-    unavailable: frozenset[str] = frozenset()
-    structural_split: bool = False
-    bounds: SolverBounds = _GENEROUS
-    unknown_atoms: tuple[GoalUnknownAtomV1, ...] = ()
-    failure_atoms: tuple[GoalFailureAtomV1, ...] = ()
-    profile_mode: str = "production_exact"
-    diagnostic_profile_mode: str | None = None
-    skip_arms: frozenset[str] = frozenset()
-    expect_classification: str | None = None
-    expect_hard_prune_allowed: bool = False
+class _Candidate:
+    action_id: str
+    program: str
+    incomplete: bool = False
 
 
-def build_fixture_matrix() -> tuple[GoalSupportFixtureSpec, ...]:
-    failure = GoalFailureAtomV1(
-        atom_id="fixture_fail",
-        reason_code="no_witness",
-        source_kind="constraint",
-        completeness_class="EXACT",
-    )
-    return (
-        GoalSupportFixtureSpec(
-            fixture_id="exact_satisfying_alternative",
-            description="Exact satisfying alternative selected under production-exact goal profile.",
-            tree=_REGRET_TREE,
-            accept=frozenset({"ax"}),
-            selected_letter="a",
-            exact_action_cap=10,
-            expect_classification="domain_adequate_selected_supported",
-        ),
-        GoalSupportFixtureSpec(
-            fixture_id="exact_violating_alternative",
-            description="Supported alternative exists but selected action is goal-unsupported.",
-            tree=_REGRET_TREE,
-            accept=frozenset({"ax"}),
-            selected_letter="b",
-            exact_action_cap=10,
-            expect_classification="selection_regret",
-        ),
-        GoalSupportFixtureSpec(
-            fixture_id="structural_ne_goal_support",
-            description="Structurally supported branch differs from exact-goal support.",
-            tree=_REGRET_TREE,
-            accept=frozenset({"ax"}),
-            selected_letter="b",
-            exact_action_cap=10,
-            structural_split=True,
-            expect_classification="selection_regret",
-        ),
-        GoalSupportFixtureSpec(
-            fixture_id="bounded_domain_inadequacy",
-            description="All observed actions replay-valid unsupported with obstruction core.",
-            tree=_INADEQUATE_TREE,
-            accept=frozenset(),
-            selected_letter="a",
-            exact_action_cap=10,
-            failure_atoms=(failure,),
-            expect_classification="domain_inadequate_under_bounds",
-            expect_hard_prune_allowed=True,
-        ),
-        GoalSupportFixtureSpec(
-            fixture_id="unknown_mandatory_evidence",
-            description="Mandatory unavailable terminal yields unknown partition, not inadequacy.",
-            tree=_UNAVAILABLE_TREE,
-            accept=frozenset(),
-            selected_letter="a",
-            exact_action_cap=10,
-            unavailable=frozenset({"ax"}),
-            expect_classification="coverage_unknown",
-        ),
-        GoalSupportFixtureSpec(
-            fixture_id="partial_forest",
-            description="Partial/incomplete forest coverage stays coverage_unknown.",
-            tree=_PARTIAL_FOREST_TREE,
-            accept=frozenset(),
-            selected_letter="a",
-            exact_action_cap=10,
-            expect_classification="coverage_unknown",
-        ),
-        GoalSupportFixtureSpec(
-            fixture_id="bound_exhaustion",
-            description="Tight solver bounds prevent domain_inadequate classification.",
-            tree=_INADEQUATE_TREE,
-            accept=frozenset(),
-            selected_letter="a",
-            exact_action_cap=10,
-            bounds=SolverBounds(
-                max_tokens=1,
-                max_nodes=1,
-                max_depth=2,
-                max_backtracks=1,
-                max_verifier_calls=1,
-            ),
-            expect_classification="coverage_unknown",
-        ),
-        GoalSupportFixtureSpec(
-            fixture_id="advisory_cannot_prune",
-            description="Advisory profile prose cannot authorize hard prune or inadequacy.",
-            tree=_INADEQUATE_TREE,
-            accept=frozenset(),
-            selected_letter="a",
-            exact_action_cap=10,
-            profile_mode="advisory_diagnostic",
-            diagnostic_profile_mode="advisory_diagnostic",
-            skip_arms=frozenset({"goal_support_certified_fixture"}),
-            expect_classification="coverage_unknown",
-        ),
-        GoalSupportFixtureSpec(
-            fixture_id="evaluation_oracle_cannot_prune",
-            description="Evaluation-oracle reject is observation-only; no certified prune.",
-            tree=_INADEQUATE_TREE,
-            accept=frozenset(),
-            selected_letter="a",
-            exact_action_cap=10,
-            profile_mode="evaluation_oracle",
-            skip_arms=frozenset({"goal_support_certified_fixture"}),
-            expect_classification="coverage_unknown",
-        ),
-        GoalSupportFixtureSpec(
-            fixture_id="cap_excludes_unique_support",
-            description="Action cap omits the only supported witness → coverage_unknown.",
-            tree=_CAP_TREE,
-            accept=frozenset({"c"}),
-            selected_letter="c",
-            exact_action_cap=2,
-            expect_classification="coverage_unknown",
-        ),
-        GoalSupportFixtureSpec(
-            fixture_id="candidate_addition_stale_identity",
-            description="Adding a satisfying candidate invalidates prior inadequacy identity.",
-            tree=_INADEQUATE_TREE,
-            accept=frozenset(),
-            selected_letter="a",
-            exact_action_cap=10,
-            failure_atoms=(failure,),
-            expect_classification="domain_inadequate_under_bounds",
-        ),
-        GoalSupportFixtureSpec(
-            fixture_id="permutation_invariance",
-            description="Deterministic partitions/classification under action-order invariance.",
-            tree=_REGRET_TREE,
-            accept=frozenset({"ax"}),
-            selected_letter="a",
-            exact_action_cap=10,
-            expect_classification="domain_adequate_selected_supported",
-        ),
-        GoalSupportFixtureSpec(
-            fixture_id="ambiguity",
-            description="Unresolved ambiguity retains multiple supported alternatives.",
-            tree=_AMBIGUITY_TREE,
-            accept=frozenset({"ax", "ay"}),
-            selected_letter="a",
-            exact_action_cap=10,
-            expect_classification="domain_adequate_selected_supported",
-        ),
-        GoalSupportFixtureSpec(
-            fixture_id="raw_content_redaction",
-            description="Terminal evidence digests only; no raw prompt/source leakage.",
-            tree=_REGRET_TREE,
-            accept=frozenset({"ax"}),
-            selected_letter="a",
-            exact_action_cap=10,
-            expect_classification="domain_adequate_selected_supported",
-        ),
-        GoalSupportFixtureSpec(
-            fixture_id="certified_singleton_zero_forward",
-            description="Certified singleton closure requires zero model forwards.",
-            tree={"": (("a", "terminal", "complete"),)},
-            accept=frozenset({"a"}),
-            selected_letter="a",
-            exact_action_cap=10,
-            expect_classification="domain_adequate_selected_supported",
-            expect_hard_prune_allowed=False,
-        ),
-    )
+@dataclass(frozen=True)
+class _Case:
+    case_id: str
+    candidates: tuple[_Candidate, ...]
+    selected_action_id: str
+    coverage: str = "complete"
 
 
-FIXTURE_IDS: tuple[str, ...] = tuple(spec.fixture_id for spec in build_fixture_matrix())
-
-
-@dataclass
-class FixtureArmMetrics:
-    fixture_id: str
-    arm_id: str
-    classification: str | None = None
-    skipped: bool = False
-    skip_reason: str | None = None
-    exact_action_coverage_rate: float = 0.0
-    supported_action_rate: float = 0.0
-    unsupported_action_rate: float = 0.0
-    unknown_action_rate: float = 0.0
-    unobserved_action_rate: float = 0.0
-    selected_action_supported: bool | None = None
-    selection_regret: bool = False
-    selection_unresolved: bool = False
-    domain_inadequate_under_bounds: bool = False
-    coverage_unknown: bool = False
-    structural_supported_but_goal_unsupported: bool = False
-    obstruction_core_emitted: int = 0
-    obstruction_core_replay_ok: int = 0
-    mean_obstruction_core_size: float = 0.0
-    false_hard_prune_count: int = 0
-    support_certificate_replay_failure_count: int = 0
-    verifier_calls: int = 0
-    expanded_nodes: int = 0
-    backtracks: int = 0
-    certified_removed_count: int = 0
-    certified_singleton_forwards: int = 0
-    wall_time_ms: float = 0.0
-    profile_digest: str | None = None
-    legal_set_digest: str | None = None
-    bounds_digest: str | None = None
-    stop_reasons: tuple[str, ...] = ()
-
-    def to_dict(self) -> dict[str, Any]:
-        return dict(asdict(self))
-
-
-def _rate(numerator: int, denominator: int) -> float:
-    return round(numerator / denominator, 6) if denominator else 0.0
-
-
-def _partition_rates(partitions: Any, *, action_count: int) -> dict[str, float]:
-    return {
-        "supported_action_rate": _rate(len(partitions.supported), action_count),
-        "unsupported_action_rate": _rate(len(partitions.unsupported), action_count),
-        "unknown_action_rate": _rate(len(partitions.unknown), action_count),
-        "unobserved_action_rate": _rate(len(partitions.unobserved), action_count),
-        "exact_action_coverage_rate": _rate(
-            action_count - len(partitions.unobserved),
-            action_count,
-        ),
-    }
-
-
-def _build_provider(
-    spec: GoalSupportFixtureSpec,
-    *,
-    profile: GoalVerifierProfileV1,
-    structural_only: bool = False,
-) -> tuple[_WordExpander, GoalSupportProvider | None, Verifier | None]:
-    expander = _WordExpander(spec.tree, bounds=spec.bounds)
-    digest = profile.digest or profile.compute_digest()
-
-    def factory() -> _TracingGoalVerifier:
-        return _TracingGoalVerifier(
-            set(spec.accept),
-            unavailable=set(spec.unavailable),
-            profile_label="fixture-goal",
-            profile_digest=digest,
-            structural_only=structural_only or spec.structural_split,
-            unknown_atoms=spec.unknown_atoms,
-            failure_atoms=spec.failure_atoms,
-        )
-
-    if structural_only:
-        return expander, None, factory
-    return expander, GoalSupportProvider(expander, profile, factory), None
-
-
-def run_fixture_arm(spec: GoalSupportFixtureSpec, arm_id: str) -> FixtureArmMetrics:
-    if arm_id in spec.skip_arms:
-        return FixtureArmMetrics(
-            fixture_id=spec.fixture_id,
-            arm_id=arm_id,
-            skipped=True,
-            skip_reason=f"fixture skips arm {arm_id!r}",
-        )
-
-    start = time.perf_counter()
-    metrics = FixtureArmMetrics(fixture_id=spec.fixture_id, arm_id=arm_id)
-
-    if arm_id == "structural_support_reference":
-        profile = _profile_for_mode("production_exact")
-        expander, _, verifier_factory = _build_provider(
-            spec, profile=profile, structural_only=True
-        )
-        state = expander.root_state()
-        hole = _hole(expander)
-        domain = state.domain(hole)
-        action_count = len(domain.values)
-        supported: list[str] = []
-        unsupported: list[str] = []
-        unknown: list[str] = []
-        for value in domain.values:
-            query = SupportQuery(
-                state_fingerprint=state.fingerprint,
-                hole_id=hole,
-                candidate=value,
-            )
-            oracle = EnumerativeSupportOracle(expander, verifier_factory())
-            result = oracle.check(state, query)
-            metrics.verifier_calls += int(result.counters.verifier_calls)
-            metrics.expanded_nodes += int(result.counters.nodes)
-            metrics.backtracks += int(result.counters.backtracks)
-            if result.verdict is SupportVerdict.SUPPORTED:
-                supported.append("1")
-            elif result.verdict is SupportVerdict.UNSUPPORTED:
-                unsupported.append("1")
-            else:
-                unknown.append("1")
-        selected = _selected(expander, spec.selected_letter)
-        selected_query = SupportQuery(
-            state_fingerprint=state.fingerprint,
-            hole_id=hole,
-            candidate=selected,
-        )
-        selected_result = EnumerativeSupportOracle(expander, verifier_factory()).check(
-            state, selected_query
-        )
-        metrics.selected_action_supported = (
-            selected_result.verdict is SupportVerdict.SUPPORTED
-        )
-        metrics.exact_action_coverage_rate = 1.0
-        metrics.supported_action_rate = _rate(len(supported), action_count)
-        metrics.unsupported_action_rate = _rate(len(unsupported), action_count)
-        metrics.unknown_action_rate = _rate(len(unknown), action_count)
-        metrics.classification = "structural_reference"
-        metrics.profile_digest = profile.digest or profile.compute_digest()
-        metrics.wall_time_ms = round((time.perf_counter() - start) * 1000.0, 4)
-        return metrics
-
-    if arm_id == "goal_support_evaluation_oracle_diagnostic":
-        profile = _profile_for_mode("evaluation_oracle")
-    elif arm_id == "goal_support_production_exact_diagnostic":
-        mode = spec.diagnostic_profile_mode or "production_exact"
-        profile = _profile_for_mode(mode)
-    elif arm_id == "goal_support_certified_fixture":
-        profile = _profile_for_mode("production_exact")
-    else:
-        profile = _profile_for_mode(spec.profile_mode)
-
-    expander, provider, _ = _build_provider(spec, profile=profile)
-    assert provider is not None
-    state = expander.root_state()
-    hole = _hole(expander)
-    selected = _selected(expander, spec.selected_letter)
-
-    if arm_id == "goal_support_certified_fixture":
-        try:
-            cert_store: dict[str, SupportCertificate] = {}
-            closure = exact_goal_closure(state, provider, certificate_store=cert_store)
-        except ValueError as exc:
-            metrics.skipped = True
-            metrics.skip_reason = str(exc)
-            metrics.wall_time_ms = round((time.perf_counter() - start) * 1000.0, 4)
-            return metrics
-
-        metrics.certified_removed_count = closure.counters.candidates_removed
-        domain_size = len(state.domain(hole).values)
-        metrics.certified_singleton_forwards = (
-            0
-            if domain_size == 1 and closure.counters.candidates_removed == 0
-            else closure.counters.support_queries
-        )
-        for cert in cert_store.values():
-            replay = provider.replay(cert, state=state)
-            if not replay.ok:
-                metrics.support_certificate_replay_failure_count += 1
-            if cert.verdict is SupportVerdict.UNKNOWN:
-                metrics.false_hard_prune_count += int(
-                    any(cert.digest in deduction.certificate_ids for deduction in closure.deductions)
-                )
-
-        report, evidence = analyze_goal_domain(
-            state=state,
-            hole_id=hole,
-            selected_action=selected,
-            provider=provider,
-            exact_action_cap=spec.exact_action_cap,
-        )
-    else:
-        report, evidence = analyze_goal_domain(
-            state=state,
-            hole_id=hole,
-            selected_action=selected,
-            provider=provider,
-            exact_action_cap=spec.exact_action_cap,
-        )
-        metrics.false_hard_prune_count = 0
-
-    rates = _partition_rates(report.partitions, action_count=report.stats.action_count)
-    metrics.classification = report.classification
-    metrics.exact_action_coverage_rate = rates["exact_action_coverage_rate"]
-    metrics.supported_action_rate = rates["supported_action_rate"]
-    metrics.unsupported_action_rate = rates["unsupported_action_rate"]
-    metrics.unknown_action_rate = rates["unknown_action_rate"]
-    metrics.unobserved_action_rate = rates["unobserved_action_rate"]
-    metrics.selected_action_supported = (
-        report.selected_action_id in report.partitions.supported
-    )
-    metrics.selection_regret = report.classification == "selection_regret"
-    metrics.selection_unresolved = report.classification == "selection_unresolved"
-    metrics.domain_inadequate_under_bounds = (
-        report.classification == "domain_inadequate_under_bounds"
-    )
-    metrics.coverage_unknown = report.classification == "coverage_unknown"
-    metrics.verifier_calls = report.stats.verifier_calls
-    metrics.expanded_nodes = report.stats.expanded_nodes
-    metrics.backtracks = report.stats.backtracks
-    metrics.stop_reasons = report.stats.stop_reasons
-    metrics.profile_digest = report.profile_digest
-    metrics.legal_set_digest = report.legal_set_fingerprint
-    metrics.bounds_digest = report.bounds_digest
-
-    core_sizes: list[int] = []
-    for item in evidence:
-        if item.obstruction_core_digest:
-            metrics.obstruction_core_emitted += 1
-            if item.replay_ok:
-                metrics.obstruction_core_replay_ok += 1
-            core_sizes.append(1)
-        if not item.replay_ok and item.partition == "unsupported":
-            metrics.support_certificate_replay_failure_count += 1
-
-    metrics.mean_obstruction_core_size = (
-        round(sum(core_sizes) / len(core_sizes), 6) if core_sizes else 0.0
-    )
-
-    if spec.structural_split and arm_id == "goal_support_production_exact_diagnostic":
-        struct_profile = _profile_for_mode("production_exact")
-        struct_expander, _, struct_verifier = _build_provider(
-            spec, profile=struct_profile, structural_only=True
-        )
-        struct_state = struct_expander.root_state()
-        struct_hole = _hole(struct_expander)
-        struct_selected = _selected(struct_expander, spec.selected_letter)
-        struct_query = SupportQuery(
-            state_fingerprint=struct_state.fingerprint,
-            hole_id=struct_hole,
-            candidate=struct_selected,
-        )
-        struct_result = EnumerativeSupportOracle(struct_expander, struct_verifier()).check(
-            struct_state, struct_query
-        )
-        goal_supported = report.selected_action_id in report.partitions.supported
-        metrics.structural_supported_but_goal_unsupported = (
-            struct_result.verdict is SupportVerdict.SUPPORTED and not goal_supported
-        )
-
-    if spec.fixture_id == "raw_content_redaction":
-        payload = json.dumps([item.to_dict() for item in evidence])
-        for needle in ("hf_", "sk-", "AKIA", "api_key=", "password=", "alice@example.com"):
-            if needle in payload:
-                metrics.false_hard_prune_count += 1
-
-    metrics.wall_time_ms = round((time.perf_counter() - start) * 1000.0, 4)
-    return metrics
-
-
-def evaluate_falsifiers(
-    fixture_results: dict[str, dict[str, FixtureArmMetrics]],
-) -> dict[str, Any]:
-    false_hard_prune = 0
-    replay_failures = 0
-    eval_called_certified = False
-    advisory_hard_prune = False
-    stale_replay = 0
-    singleton_forward_violations = 0
-    diagnostic_domain_changes = 0
-
-    prod_by_fixture: dict[str, FixtureArmMetrics | None] = {}
-    for fixture_id, arms in fixture_results.items():
-        prod = arms.get("goal_support_production_exact_diagnostic")
-        cert = arms.get("goal_support_certified_fixture")
-        eval_arm = arms.get("goal_support_evaluation_oracle_diagnostic")
-        prod_by_fixture[fixture_id] = prod
-
-        for arm_metrics in arms.values():
-            if arm_metrics.skipped:
-                continue
-            false_hard_prune += arm_metrics.false_hard_prune_count
-            replay_failures += arm_metrics.support_certificate_replay_failure_count
-
-        if eval_arm and not eval_arm.skipped:
-            try:
-                spec = next(s for s in build_fixture_matrix() if s.fixture_id == fixture_id)
-                profile = _profile_for_mode("evaluation_oracle")
-                expander, provider, _ = _build_provider(spec, profile=profile)
-                assert provider is not None
-                exact_goal_closure(expander.root_state(), provider)
-                eval_called_certified = True
-            except ValueError:
-                pass
-
-        if cert and not cert.skipped:
-            if cert.certified_singleton_forwards > 0 and cert.certified_removed_count == 0:
-                singleton_forward_violations += 1
-
-        advisory = arms.get("goal_support_production_exact_diagnostic")
-        if advisory and advisory.domain_inadequate_under_bounds:
-            spec = next(s for s in build_fixture_matrix() if s.fixture_id == fixture_id)
-            if (
-                spec.diagnostic_profile_mode == "advisory_diagnostic"
-                or spec.profile_mode == "advisory_diagnostic"
-            ):
-                advisory_hard_prune = True
-
-    for fixture_id, arms in fixture_results.items():
-        prod = arms.get("goal_support_production_exact_diagnostic")
-        cert = arms.get("goal_support_certified_fixture")
-        if (
-            prod
-            and cert
-            and not prod.skipped
-            and not cert.skipped
-            and prod.legal_set_digest
-            and cert.legal_set_digest
-            and prod.legal_set_digest != cert.legal_set_digest
-        ):
-            diagnostic_domain_changes += 1
-
-    violated = any(
+_CASES = (
+    _Case(
+        "exact_satisfying_alternative",
         (
-            false_hard_prune > 0,
-            replay_failures > 0,
-            eval_called_certified,
-            advisory_hard_prune,
-            singleton_forward_violations > 0,
+            _Candidate("a_supported", 'root = Button(":slot_0")'),
+            _Candidate("b_unsupported", 'root = Button(":slot_1")'),
+        ),
+        "b_unsupported",
+    ),
+    _Case(
+        "domain_relative_inadequacy",
+        (
+            _Candidate("a_unsupported", 'root = Button(":slot_1")'),
+            _Candidate("b_unsupported", 'root = Input(":slot_1")'),
+        ),
+        "a_unsupported",
+    ),
+    _Case(
+        "partial_completion_coverage",
+        (
+            _Candidate("a_unknown", 'root = Button(":slot_0")', incomplete=True),
+            _Candidate("b_unsupported", 'root = Input(":slot_1")'),
+        ),
+        "a_unknown",
+        coverage="partial",
+    ),
+    _Case(
+        "candidate_cap_excludes_unique_support",
+        (
+            _Candidate("a_unsupported", 'root = Button(":slot_1")'),
+            _Candidate("b_unsupported", 'root = Input(":slot_1")'),
+            _Candidate("z_supported", 'root = Button(":slot_0")'),
+        ),
+        "a_unsupported",
+    ),
+)
+
+
+class _TerminalFixtureExpander:
+    """A finite fixture domain; search remains owned by the VSS oracle."""
+
+    def __init__(self, state: FiniteDomainState, case: _Case) -> None:
+        self._state = state
+        self._programs = {
+            hashlib.sha256(candidate.program.encode("utf-8")).hexdigest(): candidate.program
+            for candidate in case.candidates
+        }
+
+    @property
+    def problem_id(self) -> str:
+        return self._state.problem_id
+
+    @property
+    def pack_id(self) -> str:
+        return self._state.pack_id
+
+    @property
+    def constraint_version(self) -> str:
+        return self._state.constraint_version
+
+    @property
+    def bounds(self) -> SolverBounds:
+        return self._state.bounds
+
+    def successor(
+        self, state: FiniteDomainState, hole_id: HoleId, value: DomainValue
+    ) -> ExpandStep:
+        del state, hole_id
+        payload = value.payload
+        if payload.get("incomplete"):
+            return ExpandStep(
+                ExpandStatus.INCOMPLETE,
+                coverage="partial",
+                detail="fixture_completion_unavailable",
+            )
+        program = self._programs.get(str(payload.get("program_digest", "")))
+        if program is None:
+            return ExpandStep(
+                ExpandStatus.INCOMPLETE,
+                coverage="none",
+                detail="fixture_program_digest_unknown",
+            )
+        return ExpandStep(
+            ExpandStatus.TERMINAL,
+            program=program,
+            coverage="complete",
         )
-    )
-    return {
-        "falsifier_holds": violated,
-        "false_hard_prune_count": false_hard_prune,
-        "support_certificate_replay_failure_count": replay_failures,
-        "evaluation_oracle_called_certified_closure": eval_called_certified,
-        "advisory_claimed_domain_inadequate": advisory_hard_prune,
-        "certified_singleton_forward_violations": singleton_forward_violations,
-        "diagnostic_domain_digest_changes": diagnostic_domain_changes,
-        "stale_replay_acceptance_count": stale_replay,
-        "immediate_falsify_on": [
-            "false_hard_prune_count > 0",
-            "unsupported with incomplete evidence",
-            "evaluation_oracle calling certified closure",
-            "advisory claiming domain_inadequate_under_bounds",
-            "support_certificate_replay_failure_count > 0",
-            "certified_singleton nonzero forward without removal",
-        ],
-        "note": (
-            "Primary success is correctness/diagnosis under exact fixtures, not "
-            "higher model score. Timeouts/interrupts count as incomplete evidence."
-        ),
-    }
-
-
-def _aggregate_arm_metrics(
-    rows: list[FixtureArmMetrics],
-) -> dict[str, Any]:
-    active = [row for row in rows if not row.skipped]
-    if not active:
-        return {"n_fixtures": len(rows), "n_active": 0}
-
-    def _mean(field_name: str) -> float:
-        values = [getattr(row, field_name) for row in active]
-        return round(sum(values) / len(values), 6)
-
-    return {
-        "n_fixtures": len(rows),
-        "n_active": len(active),
-        "exact_action_coverage_rate_mean": _mean("exact_action_coverage_rate"),
-        "supported_action_rate_mean": _mean("supported_action_rate"),
-        "unsupported_action_rate_mean": _mean("unsupported_action_rate"),
-        "unknown_action_rate_mean": _mean("unknown_action_rate"),
-        "unobserved_action_rate_mean": _mean("unobserved_action_rate"),
-        "selected_action_supported_rate": _rate(
-            sum(1 for row in active if row.selected_action_supported),
-            len(active),
-        ),
-        "selection_regret_rate": _rate(
-            sum(1 for row in active if row.selection_regret),
-            len(active),
-        ),
-        "selection_unresolved_rate": _rate(
-            sum(1 for row in active if row.selection_unresolved),
-            len(active),
-        ),
-        "domain_inadequate_under_bounds_rate": _rate(
-            sum(1 for row in active if row.domain_inadequate_under_bounds),
-            len(active),
-        ),
-        "coverage_unknown_rate": _rate(
-            sum(1 for row in active if row.coverage_unknown),
-            len(active),
-        ),
-        "structural_supported_but_goal_unsupported_rate": _rate(
-            sum(1 for row in active if row.structural_supported_but_goal_unsupported),
-            len(active),
-        ),
-        "obstruction_core_emission_rate": _rate(
-            sum(1 for row in active if row.obstruction_core_emitted > 0),
-            len(active),
-        ),
-        "obstruction_core_replay_rate": _rate(
-            sum(1 for row in active if row.obstruction_core_replay_ok > 0),
-            len(active),
-        ),
-        "mean_obstruction_core_size": _mean("mean_obstruction_core_size"),
-        "false_hard_prune_count": sum(row.false_hard_prune_count for row in active),
-        "support_certificate_replay_failure_count": sum(
-            row.support_certificate_replay_failure_count for row in active
-        ),
-        "verifier_calls_total": sum(row.verifier_calls for row in active),
-        "expanded_nodes_total": sum(row.expanded_nodes for row in active),
-        "backtracks_total": sum(row.backtracks for row in active),
-        "wall_time_ms_total": round(sum(row.wall_time_ms for row in active), 4),
-    }
-
-
-def canonical_result_digest(result: dict[str, Any]) -> str:
-    """Deterministic digest over canonical payload (no timestamps)."""
-
-    def _strip(obj: Any) -> Any:
-        if isinstance(obj, dict):
-            return {
-                key: _strip(value)
-                for key, value in sorted(obj.items())
-                if key not in {"wall_time_ms", "wall_time_ms_total", "created_at"}
-            }
-        if isinstance(obj, list):
-            return [_strip(item) for item in obj]
-        return obj
-
-    return content_sha(_strip(result))
-
-
-def render_markdown(result: dict[str, Any]) -> str:
-    """Human-readable summary without global UNSAT language."""
-    text = json.dumps(result)
-    lowered = text.lower()
-    for term in _FORBIDDEN_RENDER_TERMS:
-        if term in lowered:
-            raise ValueError(f"result renderer must not use global UNSAT language: {term!r}")
-
-    falsifier = result.get("falsifier", {})
-    aggregate = result.get("aggregate_arms", {})
-    lines = [
-        "# SLM-510 (PGS-H01): Goal-support domain-adequacy fixture campaign",
-        "",
-        f"**Claim class:** `{result.get('claim_class', 'diagnostic')}` (wiring/diagnostic only)",
-        "",
-        f"**Campaign:** `{result.get('campaign_id')}`",
-        "",
-        f"**Primary metric (`{PRIMARY_METRIC}`):** "
-        f"{result.get('primary_metric_value')}",
-        "",
-        f"**Deterministic digest:** `{result.get('result_digest')}`",
-        "",
-        "## Acceptance snapshot",
-        "",
-        "| Check | Value |",
-        "| --- | --- |",
-        f"| falsifier_holds | {falsifier.get('falsifier_holds')} |",
-        f"| false_hard_prune_count | {falsifier.get('false_hard_prune_count')} |",
-        f"| replay_failures | {falsifier.get('support_certificate_replay_failure_count')} |",
-        f"| eval_oracle_called_certified | "
-        f"{falsifier.get('evaluation_oracle_called_certified_closure')} |",
-        f"| fixture_count | {len(result.get('fixture_results', {}))} |",
-        f"| promotion | {result.get('promotion')} |",
-        "",
-        "## Arms (aggregate means)",
-        "",
-        "| Arm | exact_action_coverage_rate | domain_inadequate_rate | false_hard_prune |",
-        "| --- | ---: | ---: | ---: |",
-    ]
-    for arm_id, stats in aggregate.items():
-        lines.append(
-            f"| {arm_id} | {stats.get('exact_action_coverage_rate_mean')} | "
-            f"{stats.get('domain_inadequate_under_bounds_rate')} | "
-            f"{stats.get('false_hard_prune_count')} |"
-        )
-    lines.extend(
-        [
-            "",
-            "## Scope",
-            "",
-            result.get("scope_disclaimer", ""),
-            "",
-            "Language note: classifications use bounded domain-adequacy vocabulary "
-            "(supported/unsupported/unknown/unobserved); no whole-domain contradiction claims.",
-            "",
-        ]
-    )
-    return "\n".join(lines)
 
 
 @dataclass(frozen=True)
 class GoalSupportDomainAdequacyCampaignV1:
-    campaign_id: str = CAMPAIGN_ID
+    campaign_id: str = "proof-carrying-goal-support-fixture"
+    exact_action_cap: int = 2
+    goal_support_query_cap: int = 32
+    seed: int = 0
     source_commit: str = "0" * 40
-    claim_class: Literal["diagnostic", "fixture"] = "diagnostic"
+    source_dirty: bool = False
     max_wall_minutes: float = float(MAX_RUN_MINUTES)
 
     def __post_init__(self) -> None:
-        if self.claim_class not in {"diagnostic", "fixture"}:
-            raise ValueError("PGS-H01 must stay diagnostic/fixture — no promotion path")
+        if self.exact_action_cap < 1:
+            raise ValueError("exact_action_cap must be positive")
+        if self.goal_support_query_cap < 0:
+            raise ValueError("goal_support_query_cap must be non-negative")
         if self.max_wall_minutes <= 0 or self.max_wall_minutes > MAX_RUN_MINUTES:
             raise ValueError("max_wall_minutes must obey MAX_RUN_MINUTES")
 
     @property
     def fingerprint(self) -> str:
-        return content_sha(asdict(self))
+        return _digest(
+            {
+                "config": asdict(self),
+                "solver_bounds": BOUNDS.to_dict(),
+                "fixture_suite_digest": _digest([asdict(case) for case in _CASES]),
+            }
+        )
 
     def manifest(self) -> ExperimentCampaignV1:
-        fingerprint = self.fingerprint
-        arms = tuple(
-            CampaignArmV1(
-                arm_id=arm,
-                role="control" if arm == "structural_support_reference" else "candidate",
-                config_sha256=content_sha({"campaign": fingerprint, "arm": arm}),
-            )
-            for arm in ARM_IDS
-        )
         return ExperimentCampaignV1(
             campaign_id=self.campaign_id,
-            experiment_id=EXPERIMENT_ID,
+            experiment_id=self.campaign_id,
             hypothesis=(
-                "On complete finite fixtures, goal-support substrate distinguishes "
-                "structural vs goal support, selection regret vs bounded-domain "
-                "inadequacy, unknown/unobserved vs replay-certified unsupported, "
-                "and diagnostic vs certified pruning — with zero false hard prunes "
-                "and decode invariants preserved."
+                "Pinned goal verification separates supported, unsupported, "
+                "unknown, and unobserved legal actions while certified closure "
+                "removes only replay-valid compiler-hard exact obstructions."
             ),
             decision=(
-                "Fixture-scale wiring evidence only: verify correctness/diagnosis "
-                "under exact fixtures. No model-quality, ship-gate, or promotion claim."
+                "Retain proof-carrying goal support as a default-off deterministic "
+                "diagnostic/certified seam only if replay and authority controls hold."
             ),
             endpoints=(
                 CampaignEndpointV1(
-                    endpoint_id=f"{EXPERIMENT_ID}_primary",
-                    metric=PRIMARY_METRIC,
+                    endpoint_id="false_hard_prune_count",
+                    metric="replay_invalid_or_nonhard_candidate_removals",
                     role="primary",
-                    direction="increase",
-                    minimum_effect=0.0,
-                ),
-                CampaignEndpointV1(
-                    endpoint_id=f"{EXPERIMENT_ID}_falsifier",
-                    metric="false_hard_prune_count",
-                    role="secondary",
                     direction="decrease",
                     minimum_effect=0.0,
                 ),
             ),
-            arms=arms,
-            seeds=(0,),
+            arms=tuple(
+                CampaignArmV1(
+                    arm_id=arm_id,
+                    role="control" if arm_id == ARM_IDS[0] else "candidate",
+                    config_sha256=_digest(
+                        {"campaign": self.fingerprint, "arm_id": arm_id}
+                    ),
+                )
+                for arm_id in ARM_IDS
+            ),
+            seeds=(self.seed,),
             budget=CampaignBudget(
-                max_experiments=len(ARM_IDS) * len(FIXTURE_IDS),
+                max_experiments=len(ARM_IDS) * len(_CASES),
                 max_wall_minutes=self.max_wall_minutes,
             ),
             stopping_rules=(
-                "Every arm runs every non-skipped fixture with deterministic ordering.",
-                "Diagnostic arms never authorize hard prune.",
-                "Certified arm prunes only replay-valid unsupported under production_exact.",
-                "Evaluation-oracle arm cannot call exact_goal_closure.",
-                "Timeouts/interrupts are incomplete evidence, not pass/fail.",
+                "Stop goal queries at goal_support_query_cap and classify omitted actions unobserved.",
+                "Any incomplete expansion, verifier unavailability, or VSS bound exhaustion is UNKNOWN.",
+                "Abort the fixture claim if any replay-invalid or nonhard action is removed.",
             ),
             controls=(
                 CampaignControlV1(
                     control_id="structural_reference",
-                    description=(
-                        "Structural well-formedness oracle baseline — no goal-sidecar "
-                        "authority."
-                    ),
+                    description="The same finite actions are checked by the structural verifier only.",
                     kind="quality",
                 ),
                 CampaignControlV1(
-                    control_id="zero_false_hard_prune",
-                    description=(
-                        "Any false hard prune, stale replay acceptance, or diagnostic "
-                        "domain mutation falsifies immediately."
-                    ),
+                    control_id="evaluation_authority_isolation",
+                    description="Evaluation-only evidence remains observation-only and never reaches exact closure.",
                     kind="negative",
                 ),
             ),
-            negative_controls=("zero_false_hard_prune",),
+            negative_controls=("evaluation_authority_isolation",),
             multiplicity_families=(
                 MultiplicityFamilyV1(
-                    family_id=f"{EXPERIMENT_ID}_family",
-                    hypothesis_ids=(f"{EXPERIMENT_ID}_primary", f"{EXPERIMENT_ID}_falsifier"),
+                    family_id="proof_carrying_goal_support_fixture",
+                    hypothesis_ids=("false_hard_prune_count",),
                     alpha=0.05,
                 ),
             ),
             promotion_gates=(
                 CampaignGateV1(
-                    gate_id="fixture_wiring_only",
-                    endpoint_id=f"{EXPERIMENT_ID}_primary",
-                    operator="ge",
+                    gate_id="fixture_only_no_false_prune",
+                    endpoint_id="false_hard_prune_count",
+                    operator="eq",
                     threshold=0.0,
                 ),
             ),
             rollback_gates=(
                 CampaignGateV1(
-                    gate_id=f"{EXPERIMENT_ID}_false_prune_kill",
-                    endpoint_id=f"{EXPERIMENT_ID}_falsifier",
+                    gate_id="false_hard_prune_detected",
+                    endpoint_id="false_hard_prune_count",
                     operator="gt",
                     threshold=0.0,
                 ),
@@ -1240,113 +326,597 @@ class GoalSupportDomainAdequacyCampaignV1:
                 ArtifactRequirementV1(kind="version_stamp"),
                 ArtifactRequirementV1(kind="endpoint_result"),
             ),
-            claim_class=self.claim_class,
+            claim_class="fixture",
             source_commit=self.source_commit,
-            source_dirty=False,
+            source_dirty=self.source_dirty,
             author="slm-training",
             created_at="1970-01-01T00:00:00Z",
         )
 
 
-def plan_only_preview() -> dict[str, Any]:
-    campaign = GoalSupportDomainAdequacyCampaignV1()
-    manifest = campaign.manifest()
-    return {
-        "status": "plan_only",
-        "campaign_id": campaign.campaign_id,
-        "experiment_id": EXPERIMENT_ID,
-        "claim_class": campaign.claim_class,
-        "promotion": False,
-        "manifest": manifest.model_dump(mode="json"),
-        "manifest_sha256": campaign_manifest_sha256(manifest),
-        "fixture_ids": list(FIXTURE_IDS),
-        "arms": list(ARM_IDS),
-        "primary_metric": PRIMARY_METRIC,
-        "scope_disclaimer": (
-            "Harness + tests only (SLM-510). SLM-511 executes the final governed "
-            "run and publishes measured evidence. No train/checkpoint/AgentV/ship/"
-            "MODEL_CARD/promotion."
+@dataclass(frozen=True)
+class _Context:
+    request: GenerationRequest
+    problem: VerifiedSynthesisProblemV1
+    constraints: Any
+    profile: GoalVerifierProfileV1
+
+
+def _contexts() -> tuple[_Context, _Context]:
+    pack = get_pack("openui")
+    identity = current_openui_pack_identity()
+    request = GenerationRequest(
+        prompt="Fill the exact opaque slot contract.", slot_contract=(":slot_0",)
+    )
+    problem = VerifiedSynthesisProblemV1(
+        problem_id="goal-support-production-fixture", pack_identity=identity
+    )
+    constraints = compile_goal_constraints(problem, request, pack)
+    required = tuple(
+        constraint_id
+        for constraint_id in constraints.hard_constraint_ids
+        if constraint_id in {"hard.output_kind_equals", "hard.slot_inventory_exact"}
+    )
+    profile = GoalVerifierProfileV1.from_dict(
+        GoalVerifierProfileV1(
+            profile_id="goal-support/production-exact-fixture",
+            mode="production_exact",
+            problem_digest=constraints.problem_digest,
+            constraint_set_digest=constraints.digest,
+            pack_identity=identity,
+            pack_identity_digest=constraints.pack_identity_digest,
+            required_constraint_ids=required,
+            authority_tier="compiler-hard",
+        ).to_dict()
+    )
+
+    evaluation_request = GenerationRequest(prompt="Frozen evaluation fixture.")
+    evaluation_problem = VerifiedSynthesisProblemV1(
+        problem_id="goal-support-evaluation-fixture",
+        pack_identity=identity,
+        requirements=PromptSemanticRequirementsV1(
+            facts=(
+                RequirementFact(
+                    fact_id="evaluation.button.required",
+                    factor_family="Button",
+                    disposition="required",
+                    statement="frozen fixture expects Button",
+                    confidence=1.0,
+                    provenance="retrieved",
+                    authority="evaluation-only",
+                ),
+            )
         ),
+    )
+    evaluation_constraints = compile_goal_constraints(
+        evaluation_problem, evaluation_request, pack
+    )
+    evaluation_profile = GoalVerifierProfileV1.from_dict(
+        GoalVerifierProfileV1(
+            profile_id="goal-support/evaluation-oracle-fixture",
+            mode="evaluation_oracle",
+            problem_digest=evaluation_constraints.problem_digest,
+            constraint_set_digest=evaluation_constraints.digest,
+            pack_identity=identity,
+            pack_identity_digest=evaluation_constraints.pack_identity_digest,
+            required_constraint_ids=evaluation_constraints.evaluation_constraint_ids,
+            required_gates=("G11",),
+            authority_tier="evaluation-only",
+        ).to_dict()
+    )
+    return (
+        _Context(request, problem, constraints, profile),
+        _Context(
+            evaluation_request,
+            evaluation_problem,
+            evaluation_constraints,
+            evaluation_profile,
+        ),
+    )
+
+
+def _state(
+    case: _Case, constraint_version: str
+) -> tuple[FiniteDomainState, DomainValue]:
+    values = {
+        candidate.action_id: DomainValue.create(
+            "action",
+            {
+                "incomplete": candidate.incomplete,
+                "program_digest": hashlib.sha256(
+                    candidate.program.encode("utf-8")
+                ).hexdigest(),
+            },
+        )
+        for candidate in case.candidates
     }
+    state = FiniteDomainState(
+        problem_id=f"proof-carrying-goal-support:{case.case_id}",
+        pack_id="openui",
+        constraint_version=constraint_version,
+        bounds=BOUNDS,
+        holes=(
+            HoleDomain(
+                HoleId("goal-support-fixture", (case.case_id,), "action"),
+                tuple(values.values()),
+                (("coverage", case.coverage),),
+            ),
+        ),
+    )
+    return state, values[case.selected_action_id]
+
+
+def _provider(
+    state: FiniteDomainState, context: _Context, case: _Case
+) -> GoalSupportProvider:
+    pack = get_pack("openui")
+    expander = _TerminalFixtureExpander(state, case)
+
+    def verifier() -> OpenUIGoalVerifier:
+        return OpenUIGoalVerifier(
+            profile=context.profile,
+            constraint_set=context.constraints,
+            problem=context.problem,
+            request=context.request,
+            pack_identity=context.problem.pack_identity,
+            pack=pack,
+        )
+
+    return GoalSupportProvider(
+        expander,
+        verifier_factory=verifier,
+        profile=context.profile,
+        constraint_set=context.constraints,
+    )
+
+
+def _empty_metrics() -> dict[str, float | int]:
+    return {metric: 0 for metric in METRIC_IDS}
+
+
+def _rate(numerator: int, denominator: int) -> float:
+    return round(numerator / denominator, 6) if denominator else 0.0
+
+
+def _summarize_goal_reports(
+    reports: list[GoalDomainAdequacyReportV1],
+    evidence_sets: list[tuple[GoalActionEvidenceV1, ...]],
+    providers: list[GoalSupportProvider],
+    *,
+    elapsed: float,
+) -> dict[str, float | int]:
+    metrics = _empty_metrics()
+    legal_n = sum(report.stats.action_count for report in reports)
+    observed_n = sum(report.stats.queried_action_count for report in reports)
+    supported_n = sum(len(report.partitions.supported) for report in reports)
+    unsupported_n = sum(len(report.partitions.unsupported) for report in reports)
+    unknown_n = sum(len(report.partitions.unknown) for report in reports)
+    unobserved_n = sum(len(report.partitions.unobserved) for report in reports)
+    classifications = [report.classification for report in reports]
+    cores = []
+    replay_failures = 0
+    for actions, provider in zip(evidence_sets, providers, strict=True):
+        for action in actions:
+            if action.partition != "unobserved" and not action.replay_ok:
+                replay_failures += 1
+            if not action.base_certificate_digest:
+                continue
+            core = provider.obstruction_core(action.base_certificate_digest)
+            if core is not None:
+                cores.append(core)
+    metrics.update(
+        exact_action_coverage_rate=_rate(observed_n, legal_n),
+        supported_action_rate=_rate(supported_n, legal_n),
+        unsupported_action_rate=_rate(unsupported_n, legal_n),
+        unknown_action_rate=_rate(unknown_n, legal_n),
+        unobserved_action_rate=_rate(unobserved_n, legal_n),
+        selected_action_supported_rate=_rate(
+            classifications.count("domain_adequate_selected_supported"), len(reports)
+        ),
+        selection_regret_rate=_rate(
+            classifications.count("selection_regret"), len(reports)
+        ),
+        selection_unresolved_rate=_rate(
+            classifications.count("selection_unresolved"), len(reports)
+        ),
+        domain_inadequate_under_bounds_rate=_rate(
+            classifications.count("domain_inadequate_under_bounds"), len(reports)
+        ),
+        coverage_unknown_rate=_rate(
+            classifications.count("coverage_unknown"), len(reports)
+        ),
+        obstruction_core_emission_rate=_rate(len(cores), unsupported_n),
+        obstruction_core_replay_rate=(
+            1.0 if cores and not replay_failures else 0.0
+        ),
+        mean_obstruction_core_size=(
+            round(sum(len(core.core_atoms) for core in cores) / len(cores), 6)
+            if cores
+            else 0.0
+        ),
+        support_certificate_replay_failure_count=replay_failures,
+        verifier_calls=sum(r.stats.verifier_calls for r in reports),
+        expanded_nodes=sum(r.stats.expanded_nodes for r in reports),
+        backtracks=sum(r.stats.backtracks for r in reports),
+        wall_time=round(elapsed, 6),
+    )
+    return metrics
+
+
+def _run_goal_arm(
+    context: _Context,
+    campaign: GoalSupportDomainAdequacyCampaignV1,
+    *,
+    deadline: float,
+) -> tuple[dict[str, Any], list[GoalDomainAdequacyReportV1], list[GoalSupportProvider]]:
+    started = time.perf_counter()
+    remaining = campaign.goal_support_query_cap
+    reports: list[GoalDomainAdequacyReportV1] = []
+    evidence_sets: list[tuple[GoalActionEvidenceV1, ...]] = []
+    providers: list[GoalSupportProvider] = []
+    for case in _CASES:
+        if time.monotonic() >= deadline:
+            raise TimeoutError("goal-support fixture campaign exceeded max_wall_minutes")
+        state, selected = _state(case, context.constraints.digest)
+        provider = _provider(state, context, case)
+        cap = min(campaign.exact_action_cap, len(state.holes[0].values), remaining)
+        report, action_evidence = analyze_goal_domain(
+            state=state,
+            hole_id=state.holes[0].hole_id,
+            provider=provider,
+            selected_action=selected,
+            exact_action_cap=cap,
+        )
+        remaining -= report.stats.query_count
+        reports.append(report)
+        evidence_sets.append(action_evidence)
+        providers.append(provider)
+    elapsed = time.perf_counter() - started
+    return (
+        {
+            "metrics": _summarize_goal_reports(
+                reports, evidence_sets, providers, elapsed=elapsed
+            ),
+            "case_reports": [
+                {
+                    "report": report.to_dict(),
+                    "action_evidence": [item.to_dict() for item in actions],
+                }
+                for report, actions in zip(reports, evidence_sets, strict=True)
+            ],
+            "query_cap": campaign.goal_support_query_cap,
+            "query_cap_remaining": remaining,
+        },
+        reports,
+        providers,
+    )
+
+
+def _run_structural_arm(
+    campaign: GoalSupportDomainAdequacyCampaignV1,
+    constraint_version: str,
+    *,
+    deadline: float,
+) -> dict[str, Any]:
+    started = time.perf_counter()
+    rows: list[dict[str, Any]] = []
+    supported_n = unknown_n = unobserved_n = replay_failures = 0
+    verifier_calls = expanded_nodes = backtracks = 0
+    selected_supported = 0
+    legal_n = 0
+    remaining = campaign.goal_support_query_cap
+    for case in _CASES:
+        if time.monotonic() >= deadline:
+            raise TimeoutError("goal-support fixture campaign exceeded max_wall_minutes")
+        state, selected = _state(case, constraint_version)
+        expander = _TerminalFixtureExpander(state, case)
+        values = tuple(sorted(state.holes[0].values, key=action_id_from_value))
+        cap = min(campaign.exact_action_cap, len(values), remaining)
+        observed = values[:cap]
+        unobserved = values[cap:]
+        remaining -= len(observed)
+        action_rows: list[dict[str, Any]] = []
+        selected_verdict = None
+        for value in observed:
+            verifier = OpenUIWellFormedVerifier()
+            query = SupportQuery(state.fingerprint, state.holes[0].hole_id, value)
+            result = EnumerativeSupportOracle(expander, verifier).check(state, query)
+            replay = replay_support_certificate(
+                result.certificate, state=state, expander=expander, verifier=verifier
+            )
+            verdict = result.verdict if replay.ok else SupportVerdict.UNKNOWN
+            replay_failures += int(not replay.ok)
+            supported_n += int(verdict is SupportVerdict.SUPPORTED)
+            unknown_n += int(verdict is SupportVerdict.UNKNOWN)
+            verifier_calls += result.counters.verifier_calls + replay.counters.verifier_calls
+            expanded_nodes += result.counters.nodes + replay.counters.nodes
+            backtracks += result.counters.backtracks + replay.counters.backtracks
+            action_digest = action_id_from_value(value)
+            if value == selected:
+                selected_verdict = verdict
+            action_rows.append(
+                {
+                    "action_digest": action_digest,
+                    "observation_status": "observed",
+                    "support_verdict": verdict.name,
+                    "base_certificate_digest": result.certificate.digest,
+                    "replay_valid": replay.ok,
+                }
+            )
+        for value in unobserved:
+            action_rows.append(
+                {
+                    "action_digest": action_id_from_value(value),
+                    "observation_status": "unobserved",
+                }
+            )
+        legal_n += len(values)
+        unobserved_n += len(unobserved)
+        selected_supported += int(selected_verdict is SupportVerdict.SUPPORTED)
+        rows.append(
+            {
+                "case_id": case.case_id,
+                "state_fingerprint": state.fingerprint,
+                "selected_action_digest": action_id_from_value(selected),
+                "action_evidence": sorted(
+                    action_rows, key=lambda row: row["action_digest"]
+                ),
+            }
+        )
+    observed_n = legal_n - unobserved_n
+    metrics = _empty_metrics()
+    metrics.update(
+        exact_action_coverage_rate=_rate(observed_n, legal_n),
+        supported_action_rate=_rate(supported_n, legal_n),
+        unknown_action_rate=_rate(unknown_n, legal_n),
+        unobserved_action_rate=_rate(unobserved_n, legal_n),
+        selected_action_supported_rate=_rate(selected_supported, len(_CASES)),
+        coverage_unknown_rate=_rate(
+            sum(
+                any(
+                    action.get("support_verdict") == "UNKNOWN"
+                    or action["observation_status"] == "unobserved"
+                    for action in row["action_evidence"]
+                )
+                for row in rows
+            ),
+            len(rows),
+        ),
+        support_certificate_replay_failure_count=replay_failures,
+        verifier_calls=verifier_calls,
+        expanded_nodes=expanded_nodes,
+        backtracks=backtracks,
+        wall_time=round(time.perf_counter() - started, 6),
+    )
+    return {"metrics": metrics, "case_reports": rows}
+
+
+def _run_certified_arm(
+    context: _Context,
+    campaign: GoalSupportDomainAdequacyCampaignV1,
+    *,
+    deadline: float,
+) -> dict[str, Any]:
+    started = time.perf_counter()
+    result, reports, _ = _run_goal_arm(context, campaign, deadline=deadline)
+    remaining = int(result["query_cap_remaining"])
+    false_prunes = pruned_n = empty_domains = skipped_n = 0
+    certified_rows: list[dict[str, Any]] = []
+    closure_verifier_calls = closure_nodes = closure_backtracks = 0
+    for case, report in zip(_CASES, reports, strict=True):
+        if time.monotonic() >= deadline:
+            raise TimeoutError("goal-support fixture campaign exceeded max_wall_minutes")
+        state, _ = _state(case, context.constraints.digest)
+        legal = {
+            *report.partitions.supported,
+            *report.partitions.unsupported,
+            *report.partitions.unknown,
+            *report.partitions.unobserved,
+        }
+        unsupported = set(report.partitions.unsupported)
+        can_certify = (
+            case.coverage == "complete"
+            and not report.partitions.unknown
+            and not report.partitions.unobserved
+            and len(legal) <= remaining
+        )
+        if not can_certify:
+            skipped_n += 1
+            certified_rows.append(
+                {
+                    "case_id": case.case_id,
+                    "status": "unchanged",
+                    "reason_code": (
+                        "incomplete_or_unresolved"
+                        if case.coverage != "complete" or report.partitions.unknown
+                        else "query_cap_or_unobserved"
+                    ),
+                    "live_action_digests": sorted(legal),
+                    "pruned_action_digests": [],
+                }
+            )
+            continue
+        closure = exact_goal_closure(
+            state, _provider(state, context, case), max_queries=remaining
+        )
+        remaining -= closure.counters.support_queries
+        closure_verifier_calls += closure.counters.verifier_calls
+        closure_nodes += closure.counters.expanded_nodes
+        closure_backtracks += closure.counters.backtracks
+        live = {
+            action_id_from_value(value) for value in closure.state.holes[0].values
+        }
+        removed = legal - live
+        false_prunes += len(removed - unsupported)
+        pruned_n += len(removed)
+        empty_domains += int(not live)
+        certified_rows.append(
+            {
+                "case_id": case.case_id,
+                "status": "certified",
+                "reason_code": "exact_goal_closure",
+                "live_action_digests": sorted(live),
+                "pruned_action_digests": sorted(removed),
+            }
+        )
+    result["metrics"]["false_hard_prune_count"] = false_prunes
+    result["metrics"]["verifier_calls"] += closure_verifier_calls
+    result["metrics"]["expanded_nodes"] += closure_nodes
+    result["metrics"]["backtracks"] += closure_backtracks
+    result["metrics"]["wall_time"] = round(time.perf_counter() - started, 6)
+    result.update(
+        certified_case_reports=certified_rows,
+        goal_support_pruned=pruned_n,
+        certified_empty_domains=empty_domains,
+        certified_cases_skipped=skipped_n,
+        query_cap_remaining=remaining,
+    )
+    return result
+
+
+def _semantic_result_digest(result: dict[str, Any]) -> str:
+    payload = {
+        key: value
+        for key, value in json.loads(canonical_json(result)).items()
+        if key not in {"canonical_result_digest", "event_chain_verified"}
+    }
+    arms = payload.get("arm_results", {})
+    for arm in arms.values():
+        if isinstance(arm, dict) and isinstance(arm.get("metrics"), dict):
+            arm["metrics"] = {
+                key: value
+                for key, value in arm["metrics"].items()
+                if key != "wall_time"
+            }
+    return _digest(payload)
 
 
 def run_campaign(
-    campaign: GoalSupportDomainAdequacyCampaignV1,
-    *,
-    root: Any,
+    campaign: GoalSupportDomainAdequacyCampaignV1, *, root: Path
 ) -> dict[str, Any]:
-    from pathlib import Path
-
-    root = Path(root)
+    """Run and persist one bounded, fixture-only governed campaign."""
+    deadline = time.monotonic() + campaign.max_wall_minutes * 60.0
     store = CampaignStore(campaign.campaign_id, root)
     store.initialize(
         CampaignSpec(
             campaign_id=campaign.campaign_id,
-            objective="PGS-H01 goal-support domain-adequacy fixture campaign",
-            primary_metric=PRIMARY_METRIC,
-            budget=CampaignBudget(
-                max_experiments=len(ARM_IDS) * len(FIXTURE_IDS),
-                max_wall_minutes=campaign.max_wall_minutes,
-            ),
+            objective="Fixture diagnosis of grammar-legal goal support and inadequacy",
+            primary_metric="false_hard_prune_count",
+            budget=campaign.manifest().budget,
             created_at="1970-01-01T00:00:00Z",
         )
     )
     lock = store.lock_experiment_campaign(campaign.manifest())
+    store.append_event(
+        "experiment_started",
+        experiment_id=campaign.campaign_id,
+        status="fixture",
+        detail={"campaign_manifest_sha256": lock.manifest_sha256},
+    )
+    production, evaluation = _contexts()
+    structural = _run_structural_arm(
+        campaign, production.constraints.digest, deadline=deadline
+    )
+    production_result, production_reports, _ = _run_goal_arm(
+        production, campaign, deadline=deadline
+    )
+    evaluation_result, evaluation_reports, _ = _run_goal_arm(
+        evaluation, campaign, deadline=deadline
+    )
+    certified = _run_certified_arm(production, campaign, deadline=deadline)
 
-    fixture_results: dict[str, dict[str, FixtureArmMetrics]] = {}
-    for spec in build_fixture_matrix():
-        fixture_results[spec.fixture_id] = {}
-        for arm_id in ARM_IDS:
-            fixture_results[spec.fixture_id][arm_id] = run_fixture_arm(spec, arm_id)
-
-    aggregate_arms = {
-        arm: _aggregate_arm_metrics(
-            [fixture_results[fid][arm] for fid in FIXTURE_IDS]
+    for arm, reports in (
+        (production_result, production_reports),
+        (evaluation_result, evaluation_reports),
+        (certified, production_reports),
+    ):
+        structural_goal_mismatches = sum(
+            len(
+                {
+                    action["action_digest"]
+                    for action in structural_case["action_evidence"]
+                    if action.get("support_verdict") == "SUPPORTED"
+                }
+                & set(report.partitions.unsupported)
+            )
+            for structural_case, report in zip(
+                structural["case_reports"], reports, strict=True
+            )
         )
-        for arm in ARM_IDS
-    }
-    falsifier = evaluate_falsifiers(fixture_results)
-    primary_value = aggregate_arms[
-        "goal_support_production_exact_diagnostic"
-    ].get("exact_action_coverage_rate_mean", 0.0)
+        observed = sum(report.stats.query_count for report in reports)
+        arm["metrics"]["structural_supported_but_goal_unsupported_rate"] = _rate(
+            structural_goal_mismatches, observed
+        )
 
-    result: dict[str, Any] = {
-        "schema": RESULT_SCHEMA,
+    result = {
+        "schema": "proof_carrying_goal_support_fixture_result/v1",
         "campaign_id": campaign.campaign_id,
-        "experiment_id": EXPERIMENT_ID,
         "manifest_sha256": lock.manifest_sha256,
-        "claim_class": campaign.claim_class,
+        "claim_class": "fixture",
         "promotion": False,
-        "primary_metric": PRIMARY_METRIC,
-        "primary_metric_value": primary_value,
-        "fixture_ids": list(FIXTURE_IDS),
-        "arms": list(ARM_IDS),
-        "aggregate_arms": aggregate_arms,
-        "fixture_results": {
-            fixture_id: {arm: metrics.to_dict() for arm, metrics in arms.items()}
-            for fixture_id, arms in fixture_results.items()
+        "suite_n": len(_CASES),
+        "seed": campaign.seed,
+        "problem_digests": {
+            "production_exact": production.problem.digest,
+            "evaluation_oracle": evaluation.problem.digest,
         },
-        "falsifier": falsifier,
+        "request_digests": {
+            "production_exact": production.constraints.request_digest,
+            "evaluation_oracle": evaluation.constraints.request_digest,
+        },
+        "constraint_set_digests": {
+            "production_exact": production.constraints.digest,
+            "evaluation_oracle": evaluation.constraints.digest,
+        },
+        "profile_digests": {
+            "production_exact": production.profile.digest,
+            "evaluation_oracle": evaluation.profile.digest,
+        },
+        "pack_identity_digests": {
+            "production_exact": production.constraints.pack_identity_digest,
+            "evaluation_oracle": evaluation.constraints.pack_identity_digest,
+        },
+        "bounds": {
+            "solver": BOUNDS.to_dict(),
+            "exact_action_cap": campaign.exact_action_cap,
+            "goal_support_query_cap": campaign.goal_support_query_cap,
+            "max_wall_minutes": campaign.max_wall_minutes,
+        },
+        "arm_results": {
+            ARM_IDS[0]: structural,
+            ARM_IDS[1]: production_result,
+            ARM_IDS[2]: evaluation_result,
+            ARM_IDS[3]: certified,
+        },
+        "metric_definitions": {
+            "action_rates": "counts divided by all grammar-legal actions, including unobserved",
+            "classification_rates": "case count divided by suite_n",
+            "obstruction_core_emission_rate": "replayable sidecars with a core divided by unsupported observed actions",
+            "obstruction_core_replay_rate": "one iff every emitted core rederived during sidecar replay",
+            "wall_time": "complete local in-process arm seconds; excluded from canonical semantic digest",
+        },
+        "event_chain_verified": True,
         "scope_disclaimer": (
-            "Default-off, bounded, deterministic fixture/diagnostic campaign over "
-            "word-tree OpenUI-style fixtures. Wiring/diagnostic claim only — not model "
-            "quality, ship gates, or global semantic completeness. Split-safe; no "
-            "hidden gold in production-exact compilation."
+            "Deterministic local fixture/diagnostic evidence only. It proves bounded-domain "
+            "support classifications under the pinned identities above; it makes no model-quality, "
+            "ship-readiness, checkpoint, global unrealizability, or prompt-meaning claim."
         ),
+        "checkpoint_created": False,
+        "model_card_updated": False,
     }
-    result["result_digest"] = canonical_result_digest(result)
-
+    result["canonical_result_digest"] = _semantic_result_digest(result)
+    store.verify_event_chain()
     artifact = store.write_artifact("goal_support_domain_adequacy_result", result)
     store.append_event(
-        "goal_support_domain_adequacy_completed",
+        "experiment_finished",
         experiment_id=campaign.campaign_id,
-        status="diagnostic",
+        status="fixture",
         artifact_sha256=artifact.stem,
         detail={
-            "manifest_sha256": lock.manifest_sha256,
-            "result_digest": result["result_digest"],
-            "falsifier_holds": falsifier["falsifier_holds"],
-            "false_hard_prune_count": falsifier["false_hard_prune_count"],
+            "campaign_manifest_sha256": lock.manifest_sha256,
+            "canonical_result_digest": result["canonical_result_digest"],
+            "false_hard_prune_count": certified["metrics"]["false_hard_prune_count"],
         },
     )
+    store.verify_event_chain()
     return result

@@ -14,15 +14,17 @@ from slm_training.data.progspec.goal_constraints import (
     GoalConstraintV1,
 )
 from slm_training.data.progspec.synthesis_problem import PackIdentityV1
+from slm_training.data.semantic_plan.requirements_compile import (
+    COMPILER_VERSION,
+    evaluator_digest,
+)
 from slm_training.dsl.solver.goal_support import (
-    EvaluatorIdentityV1,
     GoalEvaluatorResultV1,
     GoalFailureAtomV1,
     GoalGateResultV1,
     GoalTerminalEvidenceV1,
     GoalUnknownAtomV1,
     GoalVerifierProfileV1,
-    MetricIdentityV1,
     compute_pack_identity_digest,
     profile_digest_inputs,
     profile_mode_authority_table,
@@ -84,7 +86,7 @@ def _compiled_set(**overrides: object) -> CompiledGoalConstraintSetV1:
         "problem_digest": "a" * 64,
         "request_digest": "b" * 64,
         "pack_identity_digest": compute_pack_identity_digest(_pack_identity()),
-        "compiler_version": "compiler/v1",
+        "compiler_version": COMPILER_VERSION,
         "constraints": (hard, advisory, evaluation),
         "hard_constraint_ids": (hard.constraint_id,),
         "advisory_constraint_ids": (advisory.constraint_id,),
@@ -107,16 +109,8 @@ def _profile(**overrides: object) -> GoalVerifierProfileV1:
         "pack_identity_digest": compute_pack_identity_digest(pack),
         "required_constraint_ids": ("c_slot_button",),
         "required_gates": ("G0", "G3"),
-        "required_evaluators": (
-            EvaluatorIdentityV1(
-                evaluator_id="meaningful_program/v2",
-                version="v2",
-                implementation_hash="c" * 64,
-            ),
-        ),
-        "metric_identities": (
-            MetricIdentityV1(metric_id="meaningful_program", version="v2"),
-        ),
+        "required_evaluators": (),
+        "metric_identities": (),
         "authority_tier": "compiler-hard",
     }
     defaults.update(overrides)
@@ -209,6 +203,22 @@ def test_stale_constraint_set_digest_rejected() -> None:
         validate_profile_against_constraint_set(profile, constraint_set)
 
 
+def test_stale_constraint_compiler_identity_rejected() -> None:
+    current = _compiled_set()
+    stale = CompiledGoalConstraintSetV1.from_dict(
+        current.model_copy(update={"compiler_version": "compiler/old", "digest": ""})
+        .to_dict(include_digest=True)
+    )
+    profile = _profile(constraint_set_digest=stale.digest)
+    with pytest.raises(ValueError, match="constraint compiler identity is stale"):
+        validate_profile_against_constraint_set(profile, stale)
+
+
+def test_profile_implementation_binds_typed_constraint_evaluator() -> None:
+    profile = _profile()
+    assert f"c-{evaluator_digest()[:16]}" in profile.implementation_version
+
+
 def test_stale_pack_identity_digest_rejected() -> None:
     pack_a = _pack_identity()
     pack_b = _pack_identity(pack_id="other-pack")
@@ -250,11 +260,27 @@ def test_unresolved_ambiguity_rejected_in_production_exact() -> None:
     )
     profile = _profile(
         required_constraint_ids=(hard.constraint_id,),
+        required_evaluators=(),
+        metric_identities=(),
         problem_digest=constraint_set.problem_digest,
         constraint_set_digest=constraint_set.digest,
         pack_identity_digest=constraint_set.pack_identity_digest,
     )
     with pytest.raises(ValueError, match="unresolved hard ambiguity"):
+        validate_profile_against_constraint_set(profile, constraint_set)
+
+
+def test_production_profile_rejects_context_dependent_grounding_gate() -> None:
+    constraint_set = _compiled_set()
+    profile = _profile(
+        required_gates=("G7",),
+        required_evaluators=(),
+        metric_identities=(),
+        problem_digest=constraint_set.problem_digest,
+        constraint_set_digest=constraint_set.digest,
+        pack_identity_digest=constraint_set.pack_identity_digest,
+    )
+    with pytest.raises(ValueError, match="context-free exact gates"):
         validate_profile_against_constraint_set(profile, constraint_set)
 
 
@@ -324,7 +350,8 @@ def test_long_literal_redacted_in_terminal_evidence_to_dict() -> None:
     payload = evidence.to_dict()
     reason = payload["required_gate_results"][0]["reason_code"]
     assert len(reason) <= 280
-    assert "truncated:" in reason
+    assert reason.startswith("[REDACTED:")
+    assert "x" not in reason
 
 
 def test_profile_digest_tampering_rejected() -> None:

@@ -14,6 +14,10 @@ from slm_training.formal.goal_support_mapping import (
     hits_all,
     subset_minimal_exact,
 )
+from slm_training.dsl.solver.goal_support import (
+    GoalDomainActionPartitionsV1,
+    classify_domain_adequacy,
+)
 
 _GOLDEN = (
     Path(__file__).resolve().parents[2]
@@ -72,6 +76,7 @@ def test_unknown_unobserved_never_certified_removed() -> None:
                 "selected": 2,
                 "hard_profile": True,
                 "cap_applied": False,
+                "domain_complete": False,
                 "all_unsupported_replay_valid": False,
                 "obstruction_present": False,
             },
@@ -86,3 +91,27 @@ def test_unknown_unobserved_never_certified_removed() -> None:
     assert got["certified_removal"] == [1]
     assert 2 not in got["certified_removal"]
     assert 3 not in got["certified_removal"]
+
+
+def test_formal_classifier_matches_production_without_requiring_a_core() -> None:
+    partitions = GoalDomainActionPartitionsV1(
+        supported=(), unsupported=("a",), unknown=(), unobserved=()
+    )
+    assert classify_domain_adequacy(
+        partitions,
+        "a",
+        all_unsupported_replay_valid=True,
+        hard_profile=True,
+        cap_applied=False,
+        domain_complete=True,
+        obstruction_summary=None,
+    ) == "domain_inadequate_under_bounds"
+    assert classify_domain_adequacy(
+        partitions,
+        "a",
+        all_unsupported_replay_valid=True,
+        hard_profile=True,
+        cap_applied=False,
+        domain_complete=False,
+        obstruction_summary=None,
+    ) == "coverage_unknown"

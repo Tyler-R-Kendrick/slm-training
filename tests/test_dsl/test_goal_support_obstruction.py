@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import itertools
 import random
+from dataclasses import replace
 
 import pytest
 from pydantic import ValidationError
@@ -80,8 +81,9 @@ def _terminal(
     unknown_atoms: tuple[GoalUnknownAtomV1, ...] = (),
 ) -> GoalTerminalEvidenceV1:
     digest = hashlib.sha256(digest_seed.encode()).hexdigest()
+    profile = _profile()
     payload = GoalTerminalEvidenceV1(
-        profile_digest="a" * 64,
+        profile_digest=profile.digest,
         program_digest=digest,
         canonical_program_digest=digest,
         program_spec_digest="3" * 64,
@@ -101,6 +103,7 @@ def _certificate(
     coverage: tuple[str, ...] = ("complete",),
     stop_reason: str | None = None,
 ) -> SupportCertificate:
+    profile = _profile()
     state = _state()
     hole = HoleId(namespace="fixture", path=(0, "ROOT"), kind="next")
     candidate = DomainValue.create("letter", {"letter": "a"})
@@ -120,7 +123,7 @@ def _certificate(
         search_order="dfs",
         explored_state_fingerprints=(),
         coverage_observations=coverage,
-        verifier_profile="fixture",
+        verifier_profile=f"openui/goal-support/v1/{profile.digest}",
         exhausted=exhausted,
         stop_reason=stop_reason,
     )
@@ -349,6 +352,7 @@ def test_zero_rejected_terminal_rejects_emission() -> None:
     assert not obstruction_core_emission_allowed(
         certificate=_certificate(),
         terminal_records=records,
+        profile=_profile(),
         replay_ok=True,
     )
     assert _core_from_records(records) is None
@@ -371,6 +375,7 @@ def test_mandatory_unknown_rejects_emission() -> None:
     assert not obstruction_core_emission_allowed(
         certificate=_certificate(),
         terminal_records=records,
+        profile=_profile(),
         replay_ok=True,
     )
     assert exact_mandatory_failure_atom_ids(records[0]) == ()
@@ -534,8 +539,34 @@ def test_partial_coverage_never_emits_core() -> None:
     assert not obstruction_core_emission_allowed(
         certificate=cert,
         terminal_records=records,
+        profile=_profile(),
         replay_ok=True,
     )
+
+
+def test_cross_profile_terminal_or_certificate_cannot_emit_core() -> None:
+    record = _terminal("t0", failure_atoms=(_failure_atom("a1"),))
+    stale_record = record.model_copy(
+        update={"profile_digest": "b" * 64, "evidence_digest": ""}
+    )
+    profile = _profile()
+    state = _state()
+    certificate = _certificate()
+
+    assert compute_domain_obstruction_core(
+        certificate=certificate,
+        terminal_records=(stale_record,),
+        profile=profile,
+        state=state,
+        replay_ok=True,
+    ) is None
+    assert compute_domain_obstruction_core(
+        certificate=replace(certificate, verifier_profile="stale/profile"),
+        terminal_records=(record,),
+        profile=profile,
+        state=state,
+        replay_ok=True,
+    ) is None
 
 
 def test_duplicate_core_atoms_rejected_at_parse() -> None:
@@ -625,6 +656,7 @@ def test_empty_mandatory_failure_set_forbids_exact_core() -> None:
     assert not obstruction_core_emission_allowed(
         certificate=_certificate(),
         terminal_records=records,
+        profile=_profile(),
         replay_ok=True,
     )
     assert _core_from_records(records) is None

@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import hashlib
 import re
 from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
+from pathlib import Path
 from typing import Any, Callable
 
 from slm_training.data.verify.runtime import RuntimeEvidence
@@ -13,6 +15,11 @@ from slm_training.dsl.grammar.backends import GrammarBackend, get_backend
 from slm_training.dsl.lang_core import ParseError, validate
 from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.schema import ExampleRecord
+
+
+def gate_stack_implementation_digest() -> str:
+    """Content identity for profiles that pin the deterministic gate stack."""
+    return hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 
 
 class Gate(str, Enum):
@@ -226,6 +233,8 @@ def _lexical(source: str) -> GateResult:
 def _grammar(source: str) -> GateResult:
     try:
         _grammar_backend().validate(source)
+    except (TimeoutError, RuntimeError):
+        raise
     except Exception as exc:  # noqa: BLE001 - adversarial inputs must fail closed
         return _fail(Gate.GRAMMAR, str(exc).splitlines()[0][:200])
     return _pass(Gate.GRAMMAR)
@@ -234,7 +243,9 @@ def _grammar(source: str) -> GateResult:
 def _schema(source: str) -> GateResult:
     try:
         validate(source)
-    except (ParseError, RuntimeError, ValueError) as exc:
+    except (TimeoutError, RuntimeError):
+        raise
+    except (ParseError, ValueError) as exc:
         return _fail(Gate.SCHEMA, str(exc).splitlines()[0][:200])
     # E60: when both authorities are installed, a one-sided accept or
     # structural AST mismatch is quarantined instead of hidden by fallback.
@@ -393,7 +404,9 @@ def _canonical(source: str) -> GateResult:
     try:
         first = (validate(source).serialized or source).strip()
         second = (validate(first).serialized or first).strip()
-    except (ParseError, RuntimeError, ValueError) as exc:
+    except (TimeoutError, RuntimeError):
+        raise
+    except (ParseError, ValueError) as exc:
         return _fail(Gate.CANONICAL, str(exc).splitlines()[0][:200])
     if first != second:
         return _fail(Gate.CANONICAL, "canonicalization is not idempotent")

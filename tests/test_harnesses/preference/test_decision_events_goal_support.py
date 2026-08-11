@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 import pytest
 
 from slm_training.dsl.solver.goal_support import (
@@ -47,7 +49,7 @@ def _probe_bundle(*, accept: set[str], selected_letter: str = "a"):
         legal_action_ids=tuple(mapping),
         decision_kind="component",
         abstract_state_role="root",
-        grammar_state_hash="gh",
+        grammar_state_hash=expander.root_state().fingerprint,
         policy_checkpoint_sha="pol",
         tokenizer_sha="tok",
         decode_config_hash="dec",
@@ -103,6 +105,13 @@ def test_partitions_map_exactly_and_cover_legal_set():
     ) == set(state.legal_action_ids)
 
 
+def test_materializer_rejects_cross_state_decision_substitution() -> None:
+    state, report, evidence, binding = _probe_bundle(accept={"ax", "by"})
+    substituted = replace(state, grammar_state_hash="other-state")
+    with pytest.raises(ValueError, match="goal-support domain"):
+        _materialize(substituted, report, evidence, binding)
+
+
 def test_multiple_supported_remain_set_valued_positives():
     state, report, evidence, binding = _probe_bundle(accept={"ax", "by"})
     view = _materialize(state, report, evidence, binding)
@@ -156,14 +165,12 @@ def test_stale_report_digest_fails():
 
 
 def test_evidence_partition_mismatch_fails():
-    state, report, evidence, binding = _probe_bundle(accept={"ax", "by"})
+    _state, _report, evidence, _binding = _probe_bundle(accept={"ax", "by"})
     row = evidence[0]
-    tampered_row = GoalActionEvidenceV1.from_dict(
-        {**row.to_dict(include_digest=False), "partition": "unknown"}
-    )
-    bad = (tampered_row, *evidence[1:])
-    with pytest.raises(ValueError, match="partition"):
-        _materialize(state, report, bad, binding)
+    with pytest.raises(ValueError, match="evidence_digest"):
+        GoalActionEvidenceV1.from_dict(
+            {**row.to_dict(include_digest=True), "partition": "unknown"}
+        )
 
 
 def test_evaluation_oracle_requires_diagnostic_permission():

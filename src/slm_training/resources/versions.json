@@ -12,7 +12,7 @@
   ],
   "components": {
     "formal.leverproof": {
-      "version": "v12",
+      "version": "v13",
       "kind": "harness",
       "paths": [
         "src/leverproof_lean/",
@@ -30,6 +30,11 @@
         "src/leverproof_lean/Test/Proofs.lean"
       ],
       "history": [
+        {
+          "version": "v13",
+          "date": "2026-08-11",
+          "note": "Proof-carrying goal support: align the finite classifier with complete-domain evidence, make obstruction summaries optional, and check Python-to-Lean correspondence plus axiom audit."
+        },
         {
           "version": "v12",
           "date": "2026-08-11",
@@ -311,7 +316,7 @@
       ]
     },
     "data.corpus_certification": {
-      "version": "v4",
+      "version": "v5",
       "kind": "data_builder",
       "paths": [
         "src/slm_training/data/verify/",
@@ -325,6 +330,11 @@
         "tests/test_dsl/test_grammar_backends.py"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-08-11",
+          "note": "Proof-carrying goal support: preserve timeout and capability unavailability through required G1/G2/G8 gate evaluation instead of converting it to exact rejection."
+        },
         {
           "version": "v4",
           "date": "2026-08-09",
@@ -1212,7 +1222,7 @@
       ]
     },
     "dsl.completion_kernel": {
-      "version": "v24",
+      "version": "v25",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/grammar/fastpath/engine.py",
@@ -1245,6 +1255,16 @@
         "docs/design/hybrid-unmask-hx5-20260804.md"
       ],
       "history": [
+        {
+          "version": "v25",
+          "date": "2026-08-11",
+          "note": "no-bump: externalize the request-authority mismatch regression into the canonical generated case resource; completion behavior is unchanged."
+        },
+        {
+          "version": "v25",
+          "date": "2026-08-10",
+          "note": "Require a live PackIdentityV1 when constructing OpenUIGoalVerifier and reject profile/pack identity drift before terminal evaluation."
+        },
         {
           "version": "v24",
           "date": "2026-08-10",
@@ -1904,7 +1924,7 @@
       ]
     },
     "dsl.solver.goal_support": {
-      "version": "v9",
+      "version": "v11",
       "kind": "harness",
       "paths": [
         "scripts/sync_goal_support_schema.py",
@@ -1930,6 +1950,21 @@
         "tests/test_web/test_onnx_inference.py"
       ],
       "history": [
+        {
+          "version": "v11",
+          "date": "2026-08-11",
+          "note": "no-bump: remove duplicate GoalSupportResultV1 import and identical schema-map entry introduced while reconciling I02; generated schema bytes and behavior are unchanged."
+        },
+        {
+          "version": "v11",
+          "date": "2026-08-11",
+          "note": "Remove the shadow auto-authorizing decode binding and dead duplicate TwoTower provider path; certified goal support now has one explicit request-bound owner."
+        },
+        {
+          "version": "v10",
+          "date": "2026-08-11",
+          "note": "Proof-carrying goal support: harden live identity, replay, privacy, obstruction, completeness, cache, timeout, and tri-state decode authority while retaining the canonical VSS oracle and closure."
+        },
         {
           "version": "v9",
           "note": "no-bump: PGS-I02 (SLM-513) registers goal_support_result.schema.json snapshot and extends synthesis contract-version parity tests; no runtime behavior change.",
@@ -3006,6 +3041,11 @@
       "history": [
         {
           "version": "v23",
+          "date": "2026-08-11",
+          "note": "Proof-carrying goal support: register the compiled constraints, verifier, sidecar, adequacy, preference, formal, and governed fixture extension points."
+        },
+        {
+          "version": "v23",
           "note": "PGS-I02 (SLM-513): integrate landed goal-support into ownership map downstream rows (PGS-A03..PGS-I01), serialized-contract registry for all PGS contracts, render_repository_ownership_map.py generator, package exports, GoalSupportResultV1 JSON Schema, and related_overlaps for SLM-512/511.",
           "date": "2026-08-11"
         },
@@ -3314,6 +3354,11 @@
         "tests/test_autoresearch/test_evidence_ledger.py"
       ],
       "history": [
+        {
+          "version": "v204",
+          "date": "2026-08-11",
+          "note": "no-bump: rebuild evidence_ledger.v1.json after the proof-carrying goal-support design and fixture records changed the deterministic scan digest; campaign selection behavior is unchanged."
+        },
         {
           "version": "v204",
           "date": "2026-08-11",
@@ -5105,7 +5150,12 @@
         {
           "version": "v163",
           "date": "2026-08-11",
-          "note": "PGS-H01 (SLM-510): add goal_support_domain_adequacy.py fixture campaign harness + scripts/run_goal_support_domain_adequacy.py \u2014 default-off bounded diagnostic ExperimentCampaignV1 over word-tree fixtures with structural/production-exact/evaluation-oracle/certified arms, falsifiers (zero false hard prune), deterministic result digest, and harness/CLI tests. Harness + tests only; SLM-511 publishes measured evidence."
+          "note": "Proof-carrying goal support: add the deterministic, bounded ExperimentCampaignV1 fixture campaign and replay/work accounting."
+        },
+        {
+          "version": "v163",
+          "date": "2026-08-11",
+          "note": "PGS-H01 (SLM-510): add goal_support_domain_adequacy.py fixture campaign harness + scripts/run_goal_support_domain_adequacy.py — default-off bounded diagnostic ExperimentCampaignV1 over word-tree fixtures with structural/production-exact/evaluation-oracle/certified arms, falsifiers (zero false hard prune), deterministic result digest, and harness/CLI tests. Harness + tests only; SLM-511 publishes measured evidence."
         },
         {
           "version": "v162",
@@ -8960,6 +9010,11 @@
         {
           "version": "v3",
           "date": "2026-08-11",
+          "note": "no-bump: add proof-carrying goal-support research lineage only; spectral disposition behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-11",
           "note": "no-bump: PGS-I01 (SLM-512) adds PGS0 proof-carrying goal support lineage section and link to proof-carrying-goal-support.md; SLM-228 spectral-disposition behavior unchanged."
         },
         {
@@ -12213,7 +12268,7 @@
       ]
     },
     "harness.flags": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/flags/",
@@ -12222,6 +12277,11 @@
         "tests/test_flags/test_openfeature_experiments.py"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-08-11",
+          "note": "Proof-carrying goal support: remove unbound OpenFeature and model-build controls; authority-bearing profiles remain request-local programmatic inputs."
+        },
         {
           "version": "v3",
           "date": "2026-08-10",
@@ -12310,7 +12370,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v98",
+      "version": "v99",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -12331,6 +12391,11 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v99",
+          "date": "2026-08-11",
+          "note": "Proof-carrying goal support: add distinct support, coverage, replay, obstruction, and bounded-work decode telemetry without changing default-off output."
+        },
         {
           "version": "v98",
           "date": "2026-08-10",
@@ -13189,7 +13254,7 @@
       ]
     },
     "harness.preference.counterfactual_probe": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/preference/counterfactual_probe.py",
@@ -13200,6 +13265,11 @@
       ],
       "history": [
         {
+          "version": "v2",
+          "date": "2026-08-11",
+          "note": "Proof-carrying goal support: replay and rebind cached same-state action evidence, preserve unobserved actions, and charge live replay work."
+        },
+        {
           "version": "v1",
           "date": "2026-08-11",
           "note": "PGS-D01 (SLM-502): add distinct goal-support probe path (GoalSupportProbeInputs, run_goal_support_probe, policy-aware cap selection, cache/resume) without aliasing semantic_partition relative rollout evidence."
@@ -13207,7 +13277,7 @@
       ]
     },
     "harness.preference.decision_events_v2": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/preference/decision_events_v2.py",
@@ -13215,6 +13285,11 @@
         "tests/test_harnesses/preference/test_decision_events_goal_support.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-11",
+          "note": "Proof-carrying goal support: bind finite-domain evidence to the exact DecisionStateV2 grammar fingerprint and keep evaluation-only views non-trainable."
+        },
         {
           "version": "v1",
           "date": "2026-08-11",
@@ -14871,7 +14946,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v315",
+      "version": "v317",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -14916,6 +14991,16 @@
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
       "history": [
+        {
+          "version": "v317",
+          "date": "2026-08-11",
+          "note": "Remove dead duplicate goal-support binding/provider methods so TwoTower uses only the request-bound canonical solver-prune path."
+        },
+        {
+          "version": "v316",
+          "date": "2026-08-11",
+          "note": "Proof-carrying goal support: add request-bound default-off diagnostic/certified forest closure, exact completion-authority identity, complete telemetry, and real zero-forward singleton evidence."
+        },
         {
           "version": "v315",
           "date": "2026-08-10",
@@ -17272,7 +17357,7 @@
       ]
     },
     "data.progspec.goal_constraints": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/data/progspec/goal_constraints.py",
@@ -17281,6 +17366,11 @@
         "tests/test_data/test_progspec/test_goal_constraints.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-11",
+          "note": "Proof-carrying goal support: enforce immutable authority, strict persisted digests, no copy escalation, and tamper-safe typed constraint evaluation evidence."
+        },
         {
           "version": "v2",
           "date": "2026-08-10",
@@ -17461,15 +17551,21 @@
       ]
     },
     "ci.local_merge_gate": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "scripts/verify_merge_ready.py",
         "scripts/report_merge_readiness.sh",
         ".githooks/pre-push",
+        ".githooks/check-changed",
         "tests/test_scripts/test_merge_ready_gate.py"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-08-11",
+          "note": "Resolve pre-push and changed-test gates from the active linked worktree and bind its src path, so they validate the branch being pushed rather than the shared primary checkout."
+        },
         {
           "version": "v3",
           "date": "2026-08-10",
@@ -17875,13 +17971,18 @@
       ]
     },
     "data.semantic_plan.requirements_compile": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/data/semantic_plan/requirements_compile.py",
         "tests/test_data/test_semantic_plan_extraction/test_requirements_compile.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-11",
+          "note": "Proof-carrying goal support: replay compiler-hard constraints from live structured sources, keep optional and unsupported pack facts non-pruning, and bind evaluator implementation identity."
+        },
         {
           "version": "v2",
           "date": "2026-08-10",

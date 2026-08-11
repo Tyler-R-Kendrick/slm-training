@@ -26,7 +26,9 @@ from __future__ import annotations
 
 import hashlib
 import re
-from typing import Any, Literal, Protocol
+from collections.abc import Mapping
+from dataclasses import replace
+from typing import Any, Literal, Protocol, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -36,6 +38,7 @@ from slm_training.dsl.solver.support import (
     EnumerativeSupportOracle,
     ProblemExpander,
     ReplayResult,
+    SearchCounters,
     SupportCertificate,
     SupportQuery,
     SupportResult,
@@ -50,11 +53,19 @@ from slm_training.data.progspec.goal_constraints import (
     canonical_json_bytes,
 )
 from slm_training.data.progspec.synthesis_problem import PackIdentityV1
+from slm_training.data.semantic_plan.requirements_compile import (
+    COMPILER_VERSION,
+    evaluator_digest,
+)
+from slm_training.data.verify.stack import gate_stack_implementation_digest
 
 GOAL_VERIFIER_PROFILE_SCHEMA_VERSION = "goal_verifier_profile/v1"
 GOAL_TERMINAL_EVIDENCE_SCHEMA_VERSION = "goal_terminal_evidence/v1"
 GOAL_SUPPORT_RESULT_SCHEMA_VERSION = "goal_support_result/v1"
-GOAL_SUPPORT_IMPLEMENTATION_VERSION = "goal_support/v1"
+GOAL_SUPPORT_IMPLEMENTATION_VERSION = (
+    f"goal_support/v1:g-{gate_stack_implementation_digest()[:16]}:"
+    f"c-{evaluator_digest()[:16]}"
+)
 
 GoalVerifierMode = Literal["production_exact", "evaluation_oracle", "advisory_diagnostic"]
 
@@ -90,6 +101,9 @@ _MODE_ALLOWED_AUTHORITY: dict[str, frozenset[str]] = {
 # Gates whose pass/fail is not a deterministic exact decision (mirrors
 # evals/semantic_failure.py heuristic gate set — referenced by identity only).
 _HEURISTIC_GATE_IDS: frozenset[str] = frozenset({"G11", "G12", "independent_judge", "human_audit"})
+_PRODUCTION_EXACT_GATE_IDS: frozenset[str] = frozenset(
+    {"G0", "G1", "G2", "G3", "G4", "G8"}
+)
 
 _FORBIDDEN_EVIDENCE_FIELD_NAMES: frozenset[str] = frozenset(
     {
@@ -122,21 +136,27 @@ _MAX_BOUNDED_FIELD_CHARS = 240
 class _StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    def model_copy(
+        self, *, update: Mapping[str, Any] | None = None, deep: bool = False
+    ) -> Self:
+        """Copy through validation so mode/authority cannot bypass validators."""
+        payload = self.model_dump(mode="python", round_trip=True)
+        payload.update(dict(update or {}))
+        return type(self).model_validate(payload)
+
 
 def redact_bounded_string(text: str) -> str:
     """Strip secret-shaped substrings and bound length for terminal evidence."""
     if not text:
         return text
-    if len(text) == 64 and all(char in "0123456789abcdef" for char in text):
-        return text
-    if "...[truncated:" in text:
+    if text.startswith("[REDACTED:") and text.endswith("]"):
         return text
     scrubbed = text
     for pattern in _SECRET_PATTERNS:
         scrubbed = pattern.sub("[REDACTED]", scrubbed)
-    if len(scrubbed) > _MAX_BOUNDED_FIELD_CHARS:
+    if len(text) > _MAX_BOUNDED_FIELD_CHARS:
         digest = hashlib.sha256(text.encode("utf-8")).hexdigest()[:12]
-        scrubbed = f"{scrubbed[:_MAX_BOUNDED_FIELD_CHARS]}...[truncated:{digest}]"
+        scrubbed = f"[REDACTED:{digest}]"
     return scrubbed
 
 
@@ -281,10 +301,14 @@ class GoalVerifierProfileV1(_StrictModel):
         evaluator_ids = [item.evaluator_id for item in self.required_evaluators]
         if len(evaluator_ids) != len(set(evaluator_ids)):
             raise ValueError("required_evaluators evaluator_id values must be unique")
+        if any(not item.implementation_hash for item in self.required_evaluators):
+            raise ValueError("required evaluators must bind an implementation_hash")
 
         metric_ids = [item.metric_id for item in self.metric_identities]
         if len(metric_ids) != len(set(metric_ids)):
             raise ValueError("metric_identities metric_id values must be unique")
+        if any(not item.implementation_hash for item in self.metric_identities):
+            raise ValueError("metric identities must bind an implementation_hash")
 
         if self.mode == "production_exact":
             heuristic = sorted(set(self.required_gates) & _HEURISTIC_GATE_IDS)
@@ -329,7 +353,17 @@ class GoalVerifierProfileV1(_StrictModel):
     def from_dict(cls, value: dict[str, Any]) -> "GoalVerifierProfileV1":
         if str(value.get("schema_version")) != GOAL_VERIFIER_PROFILE_SCHEMA_VERSION:
             raise ValueError("unsupported GoalVerifierProfileV1 version")
+        if not value.get("digest"):
+            raise ValueError("persisted GoalVerifierProfileV1 requires digest")
         return cls.model_validate(value)
+
+    def model_copy(
+        self, *, update: Mapping[str, Any] | None = None, deep: bool = False
+    ) -> Self:
+        copied = super().model_copy(update=update, deep=deep)
+        if copied.mode != self.mode or copied.authority_tier != self.authority_tier:
+            raise ValueError("copy cannot change goal-verifier mode or authority")
+        return copied
 
 
 def validate_profile_against_constraint_set(
@@ -339,6 +373,14 @@ def validate_profile_against_constraint_set(
     """Fail closed when profile identities are stale or mode/partition laws break."""
     if constraint_set.schema_version != COMPILED_GOAL_CONSTRAINT_SET_SCHEMA_VERSION:
         raise ValueError("unsupported CompiledGoalConstraintSetV1 version")
+    if constraint_set.compiler_version != COMPILER_VERSION:
+        raise ValueError("constraint compiler identity is stale")
+    if not constraint_set.digest or constraint_set.compute_digest() != constraint_set.digest:
+        raise ValueError("constraint set digest is stale or its payload was mutated")
+    if not profile.digest or profile.compute_digest() != profile.digest:
+        raise ValueError("goal-verifier profile digest is stale or tampered")
+    if profile.implementation_version != GOAL_SUPPORT_IMPLEMENTATION_VERSION:
+        raise ValueError("goal-verifier implementation identity is stale")
 
     if profile.problem_digest != constraint_set.problem_digest:
         raise ValueError("profile problem_digest is stale vs constraint set")
@@ -359,6 +401,36 @@ def validate_profile_against_constraint_set(
     }
 
     if profile.mode == "production_exact":
+        unsafe_gates = sorted(
+            set(profile.required_gates) - _PRODUCTION_EXACT_GATE_IDS
+        )
+        if unsafe_gates:
+            raise ValueError(
+                "production_exact requires context-free exact gates only: "
+                f"{unsafe_gates}"
+            )
+        missing_identity = [
+            name
+            for name in (
+                "contract_version",
+                "grammar_sha256",
+                "tokenizer_id",
+                "canonicalizer_id",
+                "artifact_schema",
+                "artifact_sha256",
+            )
+            if getattr(profile.pack_identity, name) is None
+        ]
+        if missing_identity:
+            raise ValueError(
+                "production_exact requires complete pack identity fields: "
+                f"{missing_identity}"
+            )
+        if profile.required_evaluators or profile.metric_identities:
+            raise ValueError(
+                "production_exact has no certified exact evaluator registry; "
+                "required evaluators and metrics are diagnostic-only"
+            )
         allowed_partition = set(constraint_set.hard_constraint_ids)
         wrong_partition = sorted(
             cid for cid in profile.required_constraint_ids if cid not in allowed_partition
@@ -373,6 +445,10 @@ def validate_profile_against_constraint_set(
             if constraint.completeness != "EXACT":
                 raise ValueError(
                     f"production_exact requires EXACT completeness for {constraint_id!r}"
+                )
+            if not constraint.may_prune:
+                raise ValueError(
+                    f"production_exact requires explicit may_prune authority for {constraint_id!r}"
                 )
         for group in constraint_set.ambiguity_groups:
             members = set(group.member_constraint_ids)
@@ -537,6 +613,32 @@ class GoalTerminalEvidenceV1(_StrictModel):
                     f"(atom_id={atom.atom_id!r})"
                 )
 
+        has_reject = (
+            self.structural_status == "REJECT"
+            or bool(self.mandatory_failure_atoms)
+            or any(item.status == "FAIL" for item in self.constraint_evaluations)
+            or any(item.status == "REJECT" for item in self.required_gate_results)
+            or any(item.status == "REJECT" for item in self.required_evaluator_results)
+        )
+        has_unknown = (
+            self.structural_status == "UNAVAILABLE"
+            or bool(self.mandatory_unknown_atoms)
+            or any(
+                item.status in {"UNKNOWN", "SKIPPED", "NOT_APPLICABLE"}
+                for item in self.constraint_evaluations
+            )
+            or any(item.status == "UNAVAILABLE" for item in self.required_gate_results)
+            or any(
+                item.status == "UNAVAILABLE" for item in self.required_evaluator_results
+            )
+        )
+        expected = "REJECT" if has_reject else "UNAVAILABLE" if has_unknown else "ACCEPT"
+        if self.overall_status != expected:
+            raise ValueError(
+                f"overall_status {self.overall_status!r} conflicts with terminal evidence; "
+                f"expected {expected!r}"
+            )
+
         if self.evidence_digest:
             expected = self.compute_digest()
             if self.evidence_digest != expected:
@@ -561,6 +663,8 @@ class GoalTerminalEvidenceV1(_StrictModel):
     def from_dict(cls, value: dict[str, Any]) -> "GoalTerminalEvidenceV1":
         if str(value.get("schema_version")) != GOAL_TERMINAL_EVIDENCE_SCHEMA_VERSION:
             raise ValueError("unsupported GoalTerminalEvidenceV1 version")
+        if not value.get("evidence_digest"):
+            raise ValueError("persisted GoalTerminalEvidenceV1 requires evidence_digest")
         forbidden = _FORBIDDEN_EVIDENCE_FIELD_NAMES & set(value)
         if forbidden:
             raise ValueError(f"forbidden terminal-evidence fields present: {sorted(forbidden)}")
@@ -570,15 +674,33 @@ class GoalTerminalEvidenceV1(_StrictModel):
 def redact_terminal_evidence_dict(payload: dict[str, Any]) -> dict[str, Any]:
     """Recursively redact string leaves and reject forbidden persistence keys."""
 
-    def _walk(value: Any, *, path: str) -> Any:
+    def _walk(value: Any, *, path: str, digest_field: bool = False) -> Any:
         if isinstance(value, dict):
             for key in value:
                 if key in _FORBIDDEN_EVIDENCE_FIELD_NAMES:
                     raise ValueError(f"forbidden terminal-evidence field at {path}.{key}")
-            return {key: _walk(item, path=f"{path}.{key}") for key, item in value.items()}
+            return {
+                key: _walk(
+                    item,
+                    path=f"{path}.{key}",
+                    digest_field=(
+                        key == "digest"
+                        or key.endswith("_digest")
+                        or key.endswith("_digests")
+                    ),
+                )
+                for key, item in value.items()
+            }
         if isinstance(value, list):
-            return [_walk(item, path=f"{path}[{index}]") for index, item in enumerate(value)]
+            return [
+                _walk(item, path=f"{path}[{index}]", digest_field=digest_field)
+                for index, item in enumerate(value)
+            ]
         if isinstance(value, str):
+            if digest_field and len(value) == 64 and all(
+                char in "0123456789abcdef" for char in value
+            ):
+                return value
             return redact_bounded_string(value)
         return value
 
@@ -634,13 +756,14 @@ def exact_goal_closure_authority_table() -> dict[str, Any]:
     return {
         "accepted": {
             "mode": "production_exact",
-            "authority_tiers": sorted(_HARD_AUTHORITIES),
+            "authority_tiers": ["compiler-hard"],
         },
         "rejected_modes": sorted(
             mode for mode in _MODE_ALLOWED_AUTHORITY if mode != "production_exact"
         ),
         "rejected_authority_tiers": sorted(
             tier for tier in (
+                "verifier-hard",
                 *_EVALUATION_AUTHORITIES,
                 *_ADVISORY_AUTHORITIES,
             )
@@ -701,56 +824,94 @@ class GoalSupportResultV1(_StrictModel):
     def from_dict(cls, value: dict[str, Any]) -> "GoalSupportResultV1":
         if str(value.get("schema_version")) != GOAL_SUPPORT_RESULT_SCHEMA_VERSION:
             raise ValueError("unsupported GoalSupportResultV1 version")
+        if not value.get("digest"):
+            raise ValueError("persisted GoalSupportResultV1 requires digest")
         return cls.model_validate(value)
 
 
-def _terminal_records(verifier: Verifier) -> tuple[GoalTerminalEvidenceV1, ...]:
-    trace = getattr(verifier, "last_trace", None)
-    if trace is None:
-        return ()
-    records = getattr(trace, "records", ())
-    return tuple(records)
+def _terminal_records(
+    verifier: Verifier, *, profile_digest: str
+) -> tuple[GoalTerminalEvidenceV1, ...]:
+    records = getattr(verifier, "terminal_evidence", None)
+    if records is None:
+        trace = getattr(verifier, "last_trace", None)
+        records = getattr(trace, "records", None) if trace is not None else None
+    if records is None:
+        raise ValueError("goal verifier must expose query-local terminal evidence")
+    by_key: dict[tuple[str, str], GoalTerminalEvidenceV1] = {}
+    for raw in records:
+        if not isinstance(raw, GoalTerminalEvidenceV1):
+            raise ValueError("goal verifier emitted invalid terminal evidence")
+        record = GoalTerminalEvidenceV1.from_dict(raw.to_dict())
+        if record.profile_digest != profile_digest:
+            raise ValueError("terminal evidence profile digest mismatch")
+        key = (record.profile_digest, record.canonical_program_digest)
+        previous = by_key.get(key)
+        if previous is not None:
+            def semantics(item: GoalTerminalEvidenceV1) -> dict[str, Any]:
+                payload = item.to_dict()
+                payload.pop("program_digest", None)
+                payload.pop("evidence_digest", None)
+                return payload
+
+            if semantics(previous) != semantics(record):
+                raise ValueError("conflicting duplicate terminal evidence")
+            if record.compute_digest() >= previous.compute_digest():
+                continue
+        by_key[key] = record
+    return tuple(by_key[key] for key in sorted(by_key))
 
 
 def _record_digest(record: GoalTerminalEvidenceV1) -> str:
     return record.evidence_digest or record.compute_digest()
 
 
-def _terminal_evidence_digests(verifier: Verifier) -> tuple[str, ...]:
-    return tuple(_record_digest(record) for record in _terminal_records(verifier))
-
-
-def _witness_terminal_evidence_digest(
-    result: SupportResult,
-    verifier: Verifier,
-) -> str | None:
-    if result.verdict is not SupportVerdict.SUPPORTED:
-        return None
-    records = _terminal_records(verifier)
-    if not records:
-        return None
-    for record in reversed(records):
-        digest = _record_digest(record)
-        if record.overall_status == "ACCEPT" and digest:
-            return digest
-    return _record_digest(records[-1])
+def _sum_counters(*values: SearchCounters) -> SearchCounters:
+    return SearchCounters(
+        nodes=sum(item.nodes for item in values),
+        tokens=sum(item.tokens for item in values),
+        depth=max((item.depth for item in values), default=0),
+        backtracks=sum(item.backtracks for item in values),
+        verifier_calls=sum(item.verifier_calls for item in values),
+    )
 
 
 def _build_goal_support_sidecar(
-    result: SupportResult,
+    certificate: SupportCertificate,
     *,
     profile: GoalVerifierProfileV1,
-    verifier: Verifier,
+    records: tuple[GoalTerminalEvidenceV1, ...],
     state: FiniteDomainState,
     replay_ok: bool,
 ) -> GoalSupportResultV1:
     profile_digest = profile.digest or profile.compute_digest()
-    records = _terminal_records(verifier)
+    if certificate.verdict is SupportVerdict.SUPPORTED:
+        accepted = tuple(
+            item
+            for item in records
+            if item.overall_status == "ACCEPT"
+            and item.program_digest == certificate.witness_digest
+        )
+        if len(accepted) != 1:
+            raise ValueError(
+                "SUPPORTED certificate must bind one matching terminal evidence"
+            )
+        witness_digest = _record_digest(accepted[0])
+    else:
+        witness_digest = None
+    if certificate.verdict is SupportVerdict.UNKNOWN and any(
+        item.overall_status == "ACCEPT" for item in records
+    ):
+        raise ValueError("UNKNOWN goal result cannot contain accepted terminal evidence")
+    if certificate.verdict is SupportVerdict.UNSUPPORTED and any(
+        item.overall_status != "REJECT" for item in records
+    ):
+        raise ValueError("UNSUPPORTED goal result can contain only rejected evidence")
     obstruction_core_digest: str | None = None
     from slm_training.dsl.solver import goal_support_obstruction as _obstruction
 
     core = _obstruction.compute_domain_obstruction_core(
-        certificate=result.certificate,
+        certificate=certificate,
         terminal_records=records,
         profile=profile,
         state=state,
@@ -759,14 +920,12 @@ def _build_goal_support_sidecar(
     if core is not None:
         obstruction_core_digest = core.core_digest or core.compute_digest()
     payload = {
-        "base_certificate_digest": result.certificate.digest,
-        "base_verdict": result.verdict.value,
+        "base_certificate_digest": certificate.digest,
+        "base_verdict": certificate.verdict.value,
         "profile_digest": profile_digest,
         "authority_tier": profile.authority_tier,
-        "terminal_evidence_digests": _terminal_evidence_digests(verifier),
-        "witness_terminal_evidence_digest": _witness_terminal_evidence_digest(
-            result, verifier
-        ),
+        "terminal_evidence_digests": tuple(_record_digest(item) for item in records),
+        "witness_terminal_evidence_digest": witness_digest,
         "obstruction_core_digest": obstruction_core_digest,
     }
     sidecar = GoalSupportResultV1(**payload)
@@ -781,11 +940,19 @@ class GoalSupportProvider:
         expander: ProblemExpander,
         profile: GoalVerifierProfileV1,
         verifier_factory: GoalVerifierFactory,
+        *,
+        constraint_set: CompiledGoalConstraintSetV1,
     ) -> None:
+        validate_profile_against_constraint_set(profile, constraint_set)
         self._expander = expander
         self._profile = profile
+        self._constraint_set = constraint_set
         self._verifier_factory = verifier_factory
         self._profile_digest = profile.digest or profile.compute_digest()
+        self._verifier_instances: list[Verifier] = []
+        self._certificates: dict[str, SupportCertificate] = {}
+        self._sidecars: dict[str, GoalSupportResultV1] = {}
+        self._obstruction_cores: dict[str, Any] = {}
 
     @property
     def expander(self) -> ProblemExpander:
@@ -801,10 +968,16 @@ class GoalSupportProvider:
 
     @property
     def backend_version(self) -> str:
-        return goal_support_backend_version(self._profile)
+        base = goal_support_backend_version(self._profile)
+        expander_backend = getattr(self._expander, "backend_version", None)
+        return f"{base}/{expander_backend}" if expander_backend else base
 
     def _fresh_verifier(self) -> Verifier:
-        return self._verifier_factory()
+        verifier = self._verifier_factory()
+        if any(verifier is previous for previous in self._verifier_instances):
+            raise ValueError("goal verifier factory reused mutable query state")
+        self._verifier_instances.append(verifier)
+        return verifier
 
     def validate_identities(self, state: FiniteDomainState) -> None:
         if (
@@ -827,10 +1000,15 @@ class GoalSupportProvider:
             expander=self._expander,
             verifier=self._fresh_verifier(),
         )
-        sidecar = _build_goal_support_sidecar(
+        result = replace(
             result,
+            counters=_sum_counters(result.counters, replay.counters),
+        )
+        records = _terminal_records(verifier, profile_digest=self._profile_digest)
+        sidecar = _build_goal_support_sidecar(
+            result.certificate,
             profile=self._profile,
-            verifier=verifier,
+            records=records,
             state=state,
             replay_ok=replay.ok,
         )
@@ -838,6 +1016,26 @@ class GoalSupportProvider:
             raise ValueError("sidecar base_certificate_digest drift")
         if sidecar.base_verdict != result.verdict.value:
             raise ValueError("sidecar base_verdict drift")
+        self._certificates[result.certificate.digest] = result.certificate
+        previous = self._sidecars.get(result.certificate.digest)
+        if previous is not None and previous.digest != sidecar.digest:
+            raise ValueError("same base certificate produced conflicting goal sidecars")
+        self._sidecars[result.certificate.digest] = sidecar
+        if sidecar.obstruction_core_digest is not None:
+            from slm_training.dsl.solver import goal_support_obstruction as _obstruction
+
+            core = _obstruction.compute_domain_obstruction_core(
+                certificate=result.certificate,
+                terminal_records=records,
+                profile=self._profile,
+                state=state,
+                replay_ok=replay.ok,
+            )
+            if core is None or (core.core_digest or core.compute_digest()) != (
+                sidecar.obstruction_core_digest
+            ):
+                raise ValueError("obstruction core changed while binding sidecar")
+            self._obstruction_cores[result.certificate.digest] = core
         return result, sidecar
 
     def check(self, state: FiniteDomainState, query: SupportQuery) -> SupportResult:
@@ -847,14 +1045,33 @@ class GoalSupportProvider:
     def replay(
         self, certificate: SupportCertificate, *, state: FiniteDomainState
     ) -> ReplayResult:
-        self.validate_identities(state)
-        verifier = self._fresh_verifier()
-        return replay_support_certificate(
-            certificate,
-            state=state,
-            expander=self._expander,
-            verifier=verifier,
+        try:
+            self.validate_identities(state)
+        except ValueError as exc:
+            return ReplayResult(False, certificate.verdict, (str(exc),))
+        sidecar = self._sidecars.get(certificate.digest)
+        if sidecar is None:
+            return ReplayResult(
+                False, certificate.verdict, ("goal sidecar missing",)
+            )
+        return replay_goal_support_result(
+            certificate, sidecar, state=state, provider=self
         )
+
+    def goal_result(self, base_certificate_digest: str) -> GoalSupportResultV1:
+        try:
+            return self._sidecars[base_certificate_digest]
+        except KeyError as exc:
+            raise LookupError("no goal sidecar for base certificate") from exc
+
+    def certificate(self, base_certificate_digest: str) -> SupportCertificate:
+        try:
+            return self._certificates[base_certificate_digest]
+        except KeyError as exc:
+            raise LookupError("no base certificate for goal sidecar") from exc
+
+    def obstruction_core(self, base_certificate_digest: str) -> Any | None:
+        return self._obstruction_cores.get(base_certificate_digest)
 
 
 def replay_goal_support_result(
@@ -884,7 +1101,15 @@ def replay_goal_support_result(
     if sidecar.digest and sidecar.digest != expected_sidecar_digest:
         violations.append("tampered sidecar digest")
 
-    provider.validate_identities(state)
+    try:
+        provider.validate_identities(state)
+    except ValueError as exc:
+        violations.append(str(exc))
+        return ReplayResult(
+            ok=False,
+            verdict=certificate.verdict,
+            violations=tuple(violations),
+        )
 
     replay_verifier = provider._fresh_verifier()
     base_replay = replay_support_certificate(
@@ -895,29 +1120,21 @@ def replay_goal_support_result(
     )
     violations.extend(base_replay.violations)
 
-    evidence_verifier = provider._fresh_verifier()
-    EnumerativeSupportOracle(provider.expander, evidence_verifier).check(
-        state, certificate.query
-    )
-    recomputed_digests = _terminal_evidence_digests(evidence_verifier)
-    if tuple(sidecar.terminal_evidence_digests) != recomputed_digests:
-        violations.append("terminal_evidence_digests mismatch on replay")
-
-    if certificate.verdict is SupportVerdict.SUPPORTED:
-        if sidecar.witness_terminal_evidence_digest is None:
-            violations.append("missing witness_terminal_evidence_digest for SUPPORTED")
-        elif sidecar.witness_terminal_evidence_digest not in recomputed_digests:
-            violations.append("witness_terminal_evidence_digest not found on replay")
-        elif sidecar.witness_terminal_evidence_digest not in set(
-            sidecar.terminal_evidence_digests
-        ):
-            violations.append("witness_terminal_evidence_digest absent from sidecar list")
-
-    if sidecar.obstruction_core_digest is not None:
-        if certificate.verdict is not SupportVerdict.UNSUPPORTED:
-            violations.append("obstruction_core_digest present for non-UNSUPPORTED verdict")
-        elif not base_replay.ok:
-            violations.append("obstruction_core_digest present but base replay failed")
+    try:
+        records = _terminal_records(
+            replay_verifier, profile_digest=provider.profile_digest
+        )
+        rederived = _build_goal_support_sidecar(
+            certificate,
+            profile=provider.profile,
+            records=records,
+            state=state,
+            replay_ok=base_replay.ok,
+        )
+        if rederived.digest != sidecar.digest:
+            violations.append("goal support sidecar changed on replay")
+    except ValueError as exc:
+        violations.append(f"goal sidecar replay failed: {exc}")
 
     # Preserve UNKNOWN as honest non-pruning evidence; never fabricate UNSUPPORTED.
     verdict = certificate.verdict
@@ -930,6 +1147,7 @@ def replay_goal_support_result(
         ok=not violations,
         verdict=verdict,
         violations=tuple(violations),
+        counters=base_replay.counters,
     )
 
 
@@ -950,9 +1168,10 @@ def exact_goal_closure(
         raise ValueError(
             f"exact_goal_closure rejects non-production profile mode {profile.mode!r}"
         )
-    if profile.authority_tier not in _HARD_AUTHORITIES:
+    if profile.authority_tier != "compiler-hard":
         raise ValueError(
-            f"exact_goal_closure rejects non-hard authority tier {profile.authority_tier!r}"
+            "exact_goal_closure requires compiler-hard authority; "
+            f"got {profile.authority_tier!r}"
         )
     provider.validate_identities(state)
 
@@ -1007,6 +1226,7 @@ legal_set_fingerprint = _adequacy.legal_set_fingerprint
 bounds_digest_from_state = _adequacy.bounds_digest_from_state
 domain_adequacy_cap_policy_table = _adequacy.domain_adequacy_cap_policy_table
 domain_adequacy_classification_table = _adequacy.domain_adequacy_classification_table
+classify_domain_adequacy = _adequacy._classify_domain_adequacy
 analyze_goal_domain = _adequacy.analyze_goal_domain
 
 __all__ = [
@@ -1072,6 +1292,7 @@ __all__ = [
     "bounds_digest_from_state",
     "domain_adequacy_cap_policy_table",
     "domain_adequacy_classification_table",
+    "classify_domain_adequacy",
     "analyze_goal_domain",
     "replay_goal_support_result",
     "exact_goal_closure",

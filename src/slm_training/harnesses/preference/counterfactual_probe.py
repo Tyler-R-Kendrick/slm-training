@@ -51,7 +51,11 @@ from slm_training.dsl.solver.goal_support_domain_adequacy import (
     _terminal_records,
 )
 from slm_training.dsl.solver.state import DomainValue, FiniteDomainState, HoleId
-from slm_training.dsl.solver.support import EnumerativeSupportOracle, SupportQuery
+from slm_training.dsl.solver.support import (
+    EnumerativeSupportOracle,
+    SearchCounters,
+    SupportQuery,
+)
 from slm_training.harnesses.preference.decision_events_v2 import (
     ActionOutcomeV2,
     DecisionStateV2,
@@ -536,7 +540,82 @@ def goal_support_cache_key(
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
+def _validated_cached_goal_evidence(
+    row: GoalActionEvidenceV1 | None,
+    *,
+    state: FiniteDomainState,
+    hole_id: HoleId,
+    action_id: str,
+    value: DomainValue,
+    legal_fp: str,
+    profile_digest: str,
+    provider: GoalSupportProvider,
+    hard_profile: bool,
+    observed: bool,
+) -> tuple[GoalActionEvidenceV1, tuple[str, ...], SearchCounters] | None:
+    """Re-bind and replay cached proof rows; untrusted cache input never labels."""
+    if row is None or not row.evidence_digest:
+        return None
+    try:
+        bound = GoalActionEvidenceV1.from_dict(row.to_dict(include_digest=True))
+    except (TypeError, ValueError):
+        return None
+    if (
+        bound.state_fingerprint != state.fingerprint
+        or bound.legal_set_fingerprint != legal_fp
+        or bound.profile_digest != profile_digest
+        or bound.hole_id != hole_id.to_dict()
+        or bound.action_id != action_id
+        or bound.authority_tier != provider.profile.authority_tier
+        or bound.legal is not True
+    ):
+        return None
+    if not observed:
+        return (
+            (bound, (), SearchCounters())
+            if bound.partition == "unobserved"
+            else None
+        )
+    if bound.partition == "unobserved":
+        return None
+    try:
+        certificate = provider.certificate(bound.base_certificate_digest)
+        sidecar = provider.goal_result(bound.base_certificate_digest)
+    except LookupError:
+        return None
+    if (
+        certificate.query.state_fingerprint != state.fingerprint
+        or certificate.query.hole_id != hole_id
+        or action_id_from_value(certificate.query.candidate) != action_id
+        or certificate.query.candidate != value
+        or sidecar.digest != bound.goal_sidecar_digest
+    ):
+        return None
+    replay = provider.replay(certificate, state=state)
+    expected = _assign_partition(
+        observed=True,
+        verdict=certificate.verdict,
+        replay_ok=replay.ok,
+        hard_profile=hard_profile,
+    )
+    if not replay.ok or bound.partition != expected or not bound.replay_ok:
+        return None
+    core_atoms: tuple[str, ...] = ()
+    core = provider.obstruction_core(bound.base_certificate_digest)
+    if bound.obstruction_core_digest is not None:
+        if core is None or (core.core_digest or core.compute_digest()) != (
+            bound.obstruction_core_digest
+        ):
+            return None
+        core_atoms = core.core_atoms
+    return bound, core_atoms, replay.counters
+
+
 def _validate_goal_support_inputs(inputs: GoalSupportProbeInputs) -> None:
+    if inputs.decision_state.grammar_state_hash != inputs.domain_state.fingerprint:
+        raise ValueError(
+            "decision_state grammar_state_hash must equal domain_state fingerprint"
+        )
     legal = set(inputs.decision_state.legal_action_ids)
     if inputs.policy_action not in legal:
         raise ValueError("policy_action must be within the state's legal set")
@@ -603,6 +682,41 @@ def _query_goal_action_evidence(
         hard_profile=hard_profile,
     )
     terminal_count = len(sidecar.terminal_evidence_digests)
+    nodes = result.counters.nodes + replay.counters.nodes
+    tokens = result.counters.tokens + replay.counters.tokens
+    depth = max(result.counters.depth, replay.counters.depth)
+    backtracks = result.counters.backtracks + replay.counters.backtracks
+    verifier_calls = result.counters.verifier_calls + replay.counters.verifier_calls
+
+    core_atoms: tuple[str, ...] = ()
+    if (
+        partition == "unsupported"
+        and replay_ok
+        and sidecar.obstruction_core_digest
+    ):
+        from slm_training.dsl.solver.goal_support_obstruction import (
+            compute_domain_obstruction_core,
+        )
+
+        replay_verifier = provider._fresh_verifier()
+        core_result = EnumerativeSupportOracle(
+            provider.expander, replay_verifier
+        ).check(state, query)
+        nodes += core_result.counters.nodes
+        tokens += core_result.counters.tokens
+        depth = max(depth, core_result.counters.depth)
+        backtracks += core_result.counters.backtracks
+        verifier_calls += core_result.counters.verifier_calls
+        core = compute_domain_obstruction_core(
+            certificate=result.certificate,
+            terminal_records=_terminal_records(replay_verifier),
+            profile=provider.profile,
+            state=state,
+            replay_ok=True,
+        )
+        if core is not None:
+            core_atoms = core.core_atoms
+
     sidecar_bound = GoalSupportResultV1.from_dict(sidecar.to_dict(include_digest=True))
     row = GoalActionEvidenceV1(
         state_fingerprint=state.fingerprint,
@@ -616,46 +730,28 @@ def _query_goal_action_evidence(
         authority_tier=provider.profile.authority_tier,
         replay_ok=replay_ok,
         work_counters=GoalActionWorkCountersV1(
-            nodes=result.counters.nodes,
-            tokens=result.counters.tokens,
-            depth=result.counters.depth,
-            backtracks=result.counters.backtracks,
-            verifier_calls=result.counters.verifier_calls,
+            nodes=nodes,
+            tokens=tokens,
+            depth=depth,
+            backtracks=backtracks,
+            verifier_calls=verifier_calls,
             terminal_count=terminal_count,
         ),
-        obstruction_core_digest=sidecar.obstruction_core_digest,
+        obstruction_core_digest=(
+            sidecar.obstruction_core_digest
+            if partition == "unsupported" and replay_ok
+            else None
+        ),
         stop_reason=result.certificate.stop_reason,
     )
     bound = GoalActionEvidenceV1.from_dict(row.to_dict(include_digest=True))
 
-    core_atoms: tuple[str, ...] = ()
-    if (
-        partition == "unsupported"
-        and replay_ok
-        and sidecar.obstruction_core_digest
-    ):
-        from slm_training.dsl.solver.goal_support_obstruction import (
-            compute_domain_obstruction_core,
-        )
-
-        replay_verifier = provider._fresh_verifier()
-        EnumerativeSupportOracle(provider.expander, replay_verifier).check(state, query)
-        core = compute_domain_obstruction_core(
-            certificate=result.certificate,
-            terminal_records=_terminal_records(replay_verifier),
-            profile=provider.profile,
-            state=state,
-            replay_ok=True,
-        )
-        if core is not None:
-            core_atoms = core.core_atoms
-
     return (
         bound,
         core_atoms,
-        result.counters.nodes,
-        result.counters.backtracks,
-        result.counters.verifier_calls,
+        nodes,
+        backtracks,
+        verifier_calls,
         terminal_count,
         result.certificate.stop_reason,
     )
@@ -677,6 +773,11 @@ def run_goal_support_probe(
     cache = cache if cache is not None else {}
     state = inputs.domain_state
     hole_id = inputs.hole_id
+    domain_coverage = str(
+        dict(state.domain(hole_id).metadata).get("coverage", "complete")
+    )
+    if domain_coverage not in {"complete", "partial", "none"}:
+        raise ValueError("domain coverage must be complete, partial, or none")
     provider = inputs.provider
     provider.validate_identities(state)
 
@@ -736,8 +837,19 @@ def run_goal_support_probe(
             legal_set_fingerprint=legal_fp,
             decode_config_hash=decode_hash,
         )
-        row = cache.get(key)
-        if row is None:
+        cached = _validated_cached_goal_evidence(
+            cache.get(key),
+            state=state,
+            hole_id=hole_id,
+            action_id=action_id,
+            value=value_by_id[action_id],
+            legal_fp=legal_fp,
+            profile_digest=profile_digest,
+            provider=provider,
+            hard_profile=hard_profile,
+            observed=True,
+        )
+        if cached is None:
             row, core_atoms, nodes, backtracks, verifier_calls, terminals, stop = (
                 _query_goal_action_evidence(
                     state=state,
@@ -759,12 +871,18 @@ def run_goal_support_probe(
                 stop_reasons.add(stop)
             obstruction_core_atoms.update(core_atoms)
         else:
+            row, core_atoms, replay_counters = cached
             total_terminals += row.work_counters.terminal_count
-            total_verifier_calls += row.work_counters.verifier_calls
-            total_nodes += row.work_counters.nodes
-            total_backtracks += row.work_counters.backtracks
+            total_verifier_calls += (
+                row.work_counters.verifier_calls + replay_counters.verifier_calls
+            )
+            total_nodes += row.work_counters.nodes + replay_counters.nodes
+            total_backtracks += (
+                row.work_counters.backtracks + replay_counters.backtracks
+            )
             if row.stop_reason:
                 stop_reasons.add(row.stop_reason)
+            obstruction_core_atoms.update(core_atoms)
 
         partition = row.partition
         if partition == "supported":
@@ -791,8 +909,19 @@ def run_goal_support_probe(
             legal_set_fingerprint=legal_fp,
             decode_config_hash=decode_hash,
         )
-        row = cache.get(key)
-        if row is None:
+        cached = _validated_cached_goal_evidence(
+            cache.get(key),
+            state=state,
+            hole_id=hole_id,
+            action_id=action_id,
+            value=value_by_id[action_id],
+            legal_fp=legal_fp,
+            profile_digest=profile_digest,
+            provider=provider,
+            hard_profile=hard_profile,
+            observed=False,
+        )
+        if cached is None:
             row = _unobserved_goal_evidence(
                 state_fingerprint=state.fingerprint,
                 legal_fp=legal_fp,
@@ -802,6 +931,8 @@ def run_goal_support_probe(
                 authority_tier=profile.authority_tier,
             )
             cache[key] = row
+        else:
+            row, _core_atoms, _replay_counters = cached
         evidence_rows.append(row)
 
     partitions = GoalDomainActionPartitionsV1(
@@ -823,6 +954,7 @@ def run_goal_support_probe(
         all_unsupported_replay_valid=all_unsupported_replay_valid,
         hard_profile=hard_profile,
         cap_applied=cap_applied,
+        domain_complete=domain_coverage == "complete",
         obstruction_summary=candidate_summary,
     )
     obstruction_summary = (
@@ -860,6 +992,7 @@ def run_goal_support_probe(
         obstruction_summary=obstruction_summary,
         exact_action_cap=inputs.config.exact_action_cap,
         cap_applied=cap_applied,
+        domain_coverage=domain_coverage,
     )
     bound = GoalDomainAdequacyReportV1.from_dict(report.to_dict(include_digest=True))
     return bound, evidence_tuple

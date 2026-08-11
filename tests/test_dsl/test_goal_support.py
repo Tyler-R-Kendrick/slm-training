@@ -9,6 +9,7 @@ from dataclasses import replace
 import pytest
 
 from slm_training.data.progspec.goal_constraints import GoalConstraintEvaluationV1
+from slm_training.dsl.solver.closure import _cache_key
 from slm_training.dsl.solver.goal_support import (
     GoalGateResultV1,
     GoalSupportProvider,
@@ -37,7 +38,7 @@ from slm_training.dsl.solver.support import (
     VerifyOutcome,
     VerifyStatus,
 )
-from tests.test_dsl.test_solver.test_goal_support import _profile
+from tests.test_dsl.test_solver.test_goal_support import _compiled_set, _profile
 
 _GENEROUS = SolverBounds(
     max_tokens=100_000,
@@ -179,9 +180,15 @@ def _provider(
     expander = _WordExpander(tree)
 
     def factory() -> _TracingGoalVerifier:
-        return _TracingGoalVerifier(accept, profile_label="fixture-goal", profile_digest=digest)
+        return _TracingGoalVerifier(
+            accept,
+            profile_label="openui/goal-support/v1",
+            profile_digest=digest,
+        )
 
-    return expander, GoalSupportProvider(expander, prof, factory)
+    return expander, GoalSupportProvider(
+        expander, prof, factory, constraint_set=_compiled_set()
+    )
 
 
 def _query(expander: _WordExpander, letter: str) -> SupportQuery:
@@ -241,6 +248,24 @@ def test_fresh_verifier_factory_prevents_trace_contamination():
     )
 
 
+def test_reused_mutable_verifier_factory_fails_closed():
+    profile = _profile()
+    expander = _WordExpander(_LINEAR_TREE)
+    verifier = _TracingGoalVerifier(
+        {"ax"},
+        profile_label="openui/goal-support/v1",
+        profile_digest=profile.digest,
+    )
+    provider = GoalSupportProvider(
+        expander,
+        profile,
+        lambda: verifier,
+        constraint_set=_compiled_set(),
+    )
+    with pytest.raises(ValueError, match="reused mutable query state"):
+        provider.check_with_sidecar(expander.root_state(), _query(expander, "a"))
+
+
 def test_sidecar_digest_tampering_rejected():
     expander, provider = _provider({"ax"})
     result, sidecar = provider.check_with_sidecar(expander.root_state(), _query(expander, "a"))
@@ -281,6 +306,21 @@ def test_replay_rejects_stale_profile_digest():
     assert any("profile_digest" in item for item in replay.violations)
 
 
+def test_provider_replay_reports_stale_state_instead_of_raising():
+    expander, provider = _provider({"ax"})
+    state = expander.root_state()
+    result, _sidecar = provider.check_with_sidecar(state, _query(expander, "a"))
+
+    replay = provider.replay(
+        result.certificate,
+        state=replace(state, constraint_version="stale-constraint-set"),
+    )
+
+    assert not replay.ok
+    assert replay.verdict is SupportVerdict.SUPPORTED
+    assert replay.violations == ("goal support state identity does not match expander",)
+
+
 def test_replay_failure_never_upgrades_unknown_to_unsupported():
     tree = {
         "": (("b", "continue", "complete"),),
@@ -310,6 +350,28 @@ def test_exact_goal_closure_accepts_production_exact_hard_profile():
     state = expander.root_state()
     result = exact_goal_closure(state, provider, max_queries=8)
     assert result.reached_fixed_point or result.stop_reason is not None
+    assert result.counters.verifier_calls > result.counters.support_queries
+
+
+def test_exact_goal_closure_rejects_cross_candidate_cache_substitution() -> None:
+    expander, provider = _provider({"bz"})
+    state = expander.root_state()
+    unsupported = _query(expander, "a")
+    supported = _query(expander, "b")
+    stale = provider.check(state, unsupported)
+    cache = {
+        _cache_key(
+            state,
+            supported.hole_id,
+            supported.candidate,
+            provider.backend_version,
+        ): stale
+    }
+
+    result = exact_goal_closure(state, provider, cache=cache)
+
+    assert supported.candidate in result.state.holes[0].values
+    assert result.counters.cache_hits == 0
 
 
 def test_exact_goal_closure_rejects_evaluation_oracle_profile():
@@ -336,10 +398,19 @@ def test_exact_goal_closure_rejects_advisory_profile():
         exact_goal_closure(expander.root_state(), provider)
 
 
+def test_exact_goal_closure_rejects_verifier_hard_profile():
+    profile = _profile(authority_tier="verifier-hard")
+    expander, provider = _provider({"ax"}, profile=profile)
+    with pytest.raises(ValueError, match="requires compiler-hard authority"):
+        exact_goal_closure(expander.root_state(), provider)
+
+
 def test_exact_goal_closure_authority_table():
     table = exact_goal_closure_authority_table()
     assert table["accepted"]["mode"] == "production_exact"
+    assert table["accepted"]["authority_tiers"] == ["compiler-hard"]
     assert "evaluation_oracle" in table["rejected_modes"]
+    assert "verifier-hard" in table["rejected_authority_tiers"]
     assert "advisory-learned" in table["rejected_authority_tiers"]
 
 

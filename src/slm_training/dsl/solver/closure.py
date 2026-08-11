@@ -81,7 +81,9 @@ class EnumerativeSupportProvider:
 
     @property
     def backend_version(self) -> str:
-        return f"enumerative/{self._verifier.profile}"
+        base = f"enumerative/{self._verifier.profile}"
+        expander_backend = getattr(self._expander, "backend_version", None)
+        return f"{base}/{expander_backend}" if expander_backend else base
 
     def check(self, state: FiniteDomainState, query: SupportQuery) -> SupportResult:
         return self._oracle.check(state, query)
@@ -163,6 +165,7 @@ class ClosureCounters:
     candidates_removed: int = 0
     verifier_calls: int = 0
     expanded_nodes: int = 0
+    backtracks: int = 0
 
     def to_dict(self) -> dict[str, int]:
         return {
@@ -175,6 +178,7 @@ class ClosureCounters:
             "candidates_removed": self.candidates_removed,
             "verifier_calls": self.verifier_calls,
             "expanded_nodes": self.expanded_nodes,
+            "backtracks": self.backtracks,
         }
 
 
@@ -207,6 +211,7 @@ class _MutCounters:
     __slots__ = (
         "passes", "support_queries", "cache_hits", "supported", "unsupported",
         "unknown", "candidates_removed", "verifier_calls", "expanded_nodes",
+        "backtracks",
     )
 
     def __init__(self) -> None:
@@ -277,13 +282,26 @@ def exact_closure(
                 )
                 key = _cache_key(current, hole.hole_id, value, provider.backend_version)
                 if cache is not None and key in cache:
-                    result = cache[key]
-                    counters.cache_hits += 1
+                    cached = cache[key]
+                    if (
+                        cached.certificate.query == query
+                        and cached.certificate.verdict is cached.verdict
+                    ):
+                        result = cached
+                        counters.cache_hits += 1
+                    else:
+                        result = provider.check(current, query)
+                        counters.support_queries += 1
+                        counters.verifier_calls += result.counters.verifier_calls
+                        counters.expanded_nodes += result.counters.nodes
+                        counters.backtracks += result.counters.backtracks
+                        cache[key] = result
                 else:
                     result = provider.check(current, query)
                     counters.support_queries += 1
                     counters.verifier_calls += result.counters.verifier_calls
                     counters.expanded_nodes += result.counters.nodes
+                    counters.backtracks += result.counters.backtracks
                     if cache is not None:
                         cache[key] = result
 
@@ -305,6 +323,9 @@ def exact_closure(
                     # Replay/validate against the exact pre-refinement state before
                     # removing anything. A stale or tampered proof does not remove.
                     replay = provider.replay(result.certificate, state=current)
+                    counters.verifier_calls += replay.counters.verifier_calls
+                    counters.expanded_nodes += replay.counters.nodes
+                    counters.backtracks += replay.counters.backtracks
                     if replay.ok and replay.verdict is SupportVerdict.UNSUPPORTED:
                         removed.append(value)
                         cert_ids.append(result.certificate.digest)

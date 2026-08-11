@@ -28,6 +28,7 @@ from slm_training.dsl.solver.support import (
     SearchCounters,
 )
 from slm_training.dsl.solver.closure import (
+    _cache_key,
     default_query_order,
     exact_closure,
 )
@@ -288,6 +289,25 @@ def test_cache_reuses_results_by_full_identity():
         state, _RuleProvider(_propagation_rule, profile="other-vX"), cache=cache
     )
     assert third.counters.support_queries > 0
+
+
+def test_cross_candidate_cache_row_cannot_remove_current_candidate() -> None:
+    state = _state({"A": ["a1", "a3"]})
+    provider = _RuleProvider(_propagation_rule)
+    hole = state.holes[0]
+    unsupported = next(value for value in hole.values if _v(value) == "a1")
+    supported = next(value for value in hole.values if _v(value) == "a3")
+    stale = provider.check(
+        state, SupportQuery(state.fingerprint, hole.hole_id, unsupported)
+    )
+    cache = {
+        _cache_key(state, hole.hole_id, supported, provider.backend_version): stale
+    }
+
+    result = exact_closure(state, provider, cache=cache)
+
+    assert any(_v(value) == "a3" for value in result.state.holes[0].values)
+    assert result.counters.cache_hits == 0
 
 
 def test_default_query_order_is_smallest_domain_first():

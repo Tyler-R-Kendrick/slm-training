@@ -177,7 +177,7 @@ def test_exact_slot_inventory_compiles_as_hard_constraint() -> None:
     assert constraint.parameters["slots"] == [":slot_0", ":slot_1"]
     assert constraint.authority_tier == "compiler-hard"
     assert constraint.completeness == "EXACT"
-    assert constraint.may_prune is False
+    assert constraint.may_prune is True
     assert constraint.constraint_id in compiled.hard_constraint_ids
 
 
@@ -202,7 +202,7 @@ def test_runtime_symbols_compile_as_hard_constraints() -> None:
         if item.kind == "runtime_symbol_accounted"
     }
     assert surfaces == {"$state", ":slot_0"}
-    assert all(item.may_prune is False for item in compiled.constraints if item.kind == "runtime_symbol_accounted")
+    assert all(item.may_prune is True for item in compiled.constraints if item.kind == "runtime_symbol_accounted")
 
 
 def test_output_kind_and_category_compile_as_hard_constraints() -> None:
@@ -215,6 +215,24 @@ def test_output_kind_and_category_compile_as_hard_constraints() -> None:
     kinds = {item.kind: item for item in compiled.constraints}
     assert kinds["output_kind_equals"].parameters == {"output_kind": "statement"}
     assert kinds["output_category_equals"].parameters == {"output_category": "dashboard.card"}
+
+
+def test_optional_verification_requirement_does_not_gain_hard_authority() -> None:
+    problem = _problem(
+        verification_requirements=(
+            VerificationRequirementV1(
+                requirement_id="optional_judge",
+                kind="gate",
+                gate="G11",
+                mandatory=False,
+            ),
+        )
+    )
+    compiled = _compile(problem=problem)
+    assert not any(
+        item.source_id == "verification_requirements:optional_judge"
+        for item in compiled.constraints
+    )
 
 
 def test_advisory_component_prose_stays_advisory_and_non_pruning() -> None:
@@ -258,6 +276,23 @@ def test_unknown_statement_recorded_as_uncompiled() -> None:
         constraint.source_id.endswith("custom.unknown.v1:1")
         for constraint in compiled.constraints
     )
+
+
+def test_pack_unsupported_productions_wait_for_exact_terminal_trace() -> None:
+    pack = get_pack("openui")
+    alternatives = pack.grammar_capability_authority.unsupported_alternatives
+    assert alternatives
+
+    compiled = compile_goal_constraints(_problem(), _request(), pack)
+
+    assert not any(
+        item.constraint_id.startswith("hard.pack.unsupported.")
+        for item in compiled.constraints
+    )
+    assert {
+        f"pgs-a02.pack_unsupported_production.v1:{production_id}"
+        for production_id in alternatives
+    }.issubset(compiled.uncompiled_source_ids)
 
 
 def test_evaluation_fixture_stays_evaluation_only() -> None:
@@ -379,6 +414,7 @@ def test_compiler_metadata_exports() -> None:
     assert "prompt_component_required" in table["rules"]
     matrix = source_to_authority_matrix()
     assert matrix["prompt_requirement"]["may_prune"] is False
+    assert matrix["generation_request"]["may_prune"] is True
     assert matrix["pack_contract"]["may_prune"] is True
     assert "request_production_digest" in digest_recipe()
 

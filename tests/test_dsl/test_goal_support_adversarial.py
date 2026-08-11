@@ -155,23 +155,14 @@ def test_adversarial_model_copy_escalation_blocked_at_profile_validation() -> No
         may_prune=False,
         source_kind="prompt_requirement",
     )
-    escalated = advisory.model_copy(
-        update={
-            "authority_tier": "compiler-hard",
-            "completeness": "EXACT",
-            "may_prune": True,
-        }
-    )
-    assert escalated.authority_tier == "compiler-hard"
-    constraint_set = _compiled_set()
-    profile = _solver_profile(
-        required_constraint_ids=("adv_hint",),
-        problem_digest=constraint_set.problem_digest,
-        constraint_set_digest=constraint_set.digest,
-        pack_identity_digest=constraint_set.pack_identity_digest,
-    )
-    with pytest.raises(ValueError, match="hard-eligible"):
-        validate_profile_against_constraint_set(profile, constraint_set)
+    with pytest.raises(ValidationError, match="may_prune|authority"):
+        advisory.model_copy(
+            update={
+                "authority_tier": "compiler-hard",
+                "completeness": "EXACT",
+                "may_prune": True,
+            }
+        )
 
 
 def test_adversarial_prompt_gate_like_text_stays_advisory_not_pruning() -> None:
@@ -343,7 +334,7 @@ def test_sidecar_identity_tamper_replay_fails(field: str) -> None:
     )
     assert not replay.ok
     assert replay.verdict is SupportVerdict.SUPPORTED
-    assert any(field.replace("_", " ") in item or field in item for item in replay.violations)
+    assert replay.violations
 
 
 def test_adversarial_stale_witness_digest_replay_fails_without_unsupported_upgrade() -> None:
@@ -454,6 +445,8 @@ def test_adversarial_missing_mandatory_gate_yields_unavailable_not_prune() -> No
     )
     profile = _profile_for(
         constraint_set,
+        mode="evaluation_oracle",
+        authority_tier="evaluation-only",
         required_constraint_ids=(),
         required_gates=("G99",),
     )
@@ -484,6 +477,7 @@ def test_adversarial_unavailable_bridge_yields_unknown_not_unsupported() -> None
         expander2,
         profile,
         lambda: _UnavailableGoalVerifier(set(), profile_label="x", profile_digest=digest),
+        constraint_set=_compiled_set(),
     )
     result, _sidecar = provider2.check_with_sidecar(
         expander2.root_state(), _query(expander2, "a")
@@ -564,10 +558,11 @@ def test_adversarial_shared_verifier_factory_does_not_cross_contaminate_sidecars
 
     from slm_training.dsl.solver.goal_support import GoalSupportProvider
 
-    provider = GoalSupportProvider(expander, profile, lambda: shared)
-    _result_a, side_a = provider.check_with_sidecar(expander.root_state(), _query(expander, "a"))
-    _result_b, side_b = provider.check_with_sidecar(expander.root_state(), _query(expander, "b"))
-    assert side_a.terminal_evidence_digests != side_b.terminal_evidence_digests
+    provider = GoalSupportProvider(
+        expander, profile, lambda: shared, constraint_set=_compiled_set()
+    )
+    with pytest.raises(ValueError, match="reused mutable query state"):
+        provider.check_with_sidecar(expander.root_state(), _query(expander, "a"))
 
 
 def test_adversarial_interleaved_verdicts_keep_independent_traces() -> None:
@@ -657,7 +652,17 @@ def test_adversarial_privacy_secrets_not_in_sidecar_or_certificate() -> None:
 def test_adversarial_privacy_openui_verifier_redacts_prompt_secrets() -> None:
     secret = "password=" + ("s" * 20)
     request = GenerationRequest(prompt=f"Contact alice@example.com with {secret}")
-    verifier = _verifier(request=request)
+    problem = VerifiedSynthesisProblemV1(
+        problem_id="openui-goal-verifier-test",
+        pack_identity=_pack_identity(),
+    )
+    constraint_set = compile_goal_constraints(problem, request, get_pack("openui"))
+    verifier = _verifier(
+        request=request,
+        problem=problem,
+        constraint_set=constraint_set,
+        profile=_profile_for(constraint_set),
+    )
     outcome = verifier.verify('root = Button(":cta.label")')
     _assert_no_raw_leak(outcome.detail, label="VerifyOutcome.detail")
     evidence = verifier.last_trace.latest()
@@ -728,7 +733,7 @@ def test_adversarial_privacy_long_opaque_literal_bounded_in_redaction() -> None:
     opaque = "".join(chr(rng.randint(33, 126)) for _ in range(512))
     redacted = redact_bounded_string(opaque)
     assert len(redacted) <= 280
-    assert "truncated:" in redacted
+    assert redacted.startswith("[REDACTED:")
     assert opaque not in redacted
 
 

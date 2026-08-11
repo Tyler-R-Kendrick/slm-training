@@ -17,19 +17,19 @@ def main(argv: list[str] | None = None) -> int:
         DomainObstructionCoreV1,
         GoalActionEvidenceV1,
         GoalDomainAdequacyReportV1,
+        GoalSupportResultV1,
         GoalTerminalEvidenceV1,
         GoalVerifierProfileV1,
-        GoalSupportResultV1,
     )
 
     resources = repo_root() / "src" / "slm_training" / "resources"
     schemas = {
         "goal_verifier_profile.schema.json": GoalVerifierProfileV1.model_json_schema(),
         "goal_terminal_evidence.schema.json": GoalTerminalEvidenceV1.model_json_schema(),
+        "goal_support_result.schema.json": GoalSupportResultV1.model_json_schema(),
         "domain_obstruction_core.schema.json": DomainObstructionCoreV1.model_json_schema(),
         "goal_action_evidence.schema.json": GoalActionEvidenceV1.model_json_schema(),
         "goal_domain_adequacy_report.schema.json": GoalDomainAdequacyReportV1.model_json_schema(),
-        "goal_support_result.schema.json": GoalSupportResultV1.model_json_schema(),
     }
     for filename, schema in schemas.items():
         path = resources / filename

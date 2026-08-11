@@ -1,0 +1,57 @@
+{
+  "schema": "test_cases/v1",
+  "module": "tests/test_dsl/test_solver_packed_reuse.py",
+  "case_sets": {
+    "test_request_authority_mismatch_rejects_root_forest": {
+      "parameters": [
+        "text",
+        "forest_kwargs",
+        "expander_kwargs"
+      ],
+      "cases": [
+        {
+          "id": "case-001",
+          "values": [
+            "root = TextContent(",
+            {
+              "slot_contract": [
+                ":slot_0"
+              ],
+              "remaining_tokens": 32
+            },
+            {
+              "slot_contract": [],
+              "remaining_tokens": 32
+            }
+          ]
+        },
+        {
+          "id": "case-002",
+          "values": [
+            "root = Card([])",
+            {
+              "min_content": 0,
+              "remaining_tokens": 32
+            },
+            {
+              "min_content": 2,
+              "remaining_tokens": 32
+            }
+          ]
+        },
+        {
+          "id": "case-003",
+          "values": [
+            "root = Card([",
+            {
+              "remaining_tokens": 32
+            },
+            {
+              "remaining_tokens": 8
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

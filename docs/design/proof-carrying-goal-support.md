@@ -105,7 +105,7 @@ VerifiedSynthesisProblemV1 ──┼──► compile_goal_constraints (requirem
 | Obstruction | `DomainObstructionCoreV1`, `compute_domain_obstruction_core`, `obstruction_core_algorithm_table` | `dsl/solver/goal_support_obstruction.py` |
 | Domain adequacy | `GoalActionEvidenceV1`, `GoalDomainAdequacyReportV1`, `analyze_goal_domain`, `domain_adequacy_classification_table` | `dsl/solver/goal_support_domain_adequacy.py` |
 | Decision materialization | `DecisionEventV2`, `GoalSupportStateBinding`, `materialize_goal_support` | `harnesses/preference/local_decisions.py`, `decision_events_v2.py` |
-| Decode integration | `GOAL_SUPPORT_MODES`, `build_goal_support_decode_binding`, `goal_support_certified_prune`, `goal_support_diagnostic_observe` | `dsl/solver/decode.py` |
+| Decode integration | `GOAL_SUPPORT_MODES`, `normalize_goal_support_mode`, `goal_support_prune`, `goal_support_certified_prune`, `goal_support_diagnostic_observe` | `dsl/solver/decode.py` |
 | Formal drift guard | `goal_support_mapping.py`, Lean `GoalSupport.lean` | `formal/`, `src/leverproof_lean/` |
 
 **Why no new stack components:** PGS is a thin composition layer. Search remains
@@ -146,6 +146,11 @@ N `action_id`s in lexicographic order are queried; remainder → `unobserved`.
 | `UNSUPPORTED` | Complete bounded search proves no goal-verified terminal | `production_exact` + hard replay only |
 | `UNKNOWN` | Partial coverage, budget stop, stale identity, replay failure | **Never** |
 
+Replay creates another fresh verifier, replays the base certificate, rederives
+the sidecar, and checks the problem, constraint, pack, profile, bounds,
+implementation, and evidence identities. `UNKNOWN` remains non-pruning.
+Search, replay, and obstruction work is charged to the bounded counters.
+
 ### Five domain-adequacy classifications (`DomainAdequacyClassification`)
 
 Closed table in `domain_adequacy_classification_table()`:
@@ -155,7 +160,7 @@ Closed table in `domain_adequacy_classification_table()`:
 | `domain_adequate_selected_supported` | `supported` nonempty and selected action ∈ supported |
 | `selection_regret` | `supported` nonempty and selected ∈ unsupported |
 | `selection_unresolved` | `supported` nonempty and selected ∈ unknown ∪ unobserved |
-| `domain_inadequate_under_bounds` | No supported/unknown/unobserved actions; every legal action replay-valid `UNSUPPORTED` under hard profile; cap not applied; obstruction summary present |
+| `domain_inadequate_under_bounds` | No supported/unknown/unobserved actions; every legal action is observed and replay-valid `UNSUPPORTED` under the hard profile; a core is optional when no rejected terminal exists |
 | `coverage_unknown` | All other cases (partial forest, bound exhaustion, cap exclusion, advisory/eval modes, etc.) |
 
 > **Never use global UNSAT language.** Inadequacy is always
@@ -176,15 +181,41 @@ unless the recorded `algorithm_mode` explicitly claims finite search and
 Emission requires replay-valid hard `UNSUPPORTED`, complete action coverage, no
 cap, and no budget-stop classification — see `obstruction_core_emission_allowed`.
 
+### Same-state preference integration
+
+`run_goal_support_probe` collects same-state evidence through the existing
+counterfactual probe owner. `materialize_goal_support` uses materializer
+`goal_support_set_v2`:
+
+- good = supported;
+- bad = unsupported;
+- ambiguous = unknown;
+- unobserved = unqueried.
+
+Unknown and unobserved actions are masked from hard losses while retaining
+their grammar legality. Evaluation-only profiles are refused by default; an
+explicitly permitted diagnostic view is non-trainable and non-promotable.
+
 ---
 
 ## Authority matrix — sources, profiles, and operations
 
 ### A. Compile-time source → authority (`source_to_authority_matrix`)
 
+`goal_support_mode` is `off`, `diagnostic`, or `certified`; the default is
+`off`. `goal_support_query_cap` defaults to 32. Request-local
+`goal_support_contexts` supply the live synthesis problem, pinned profile, and
+constraint set and are not
+stored in checkpoints. These controls are available only through the
+programmatic `TwoTowerConfig` plus `generate_batch_requests` context API. They
+are deliberately absent from ModelBuild, CLI, and OpenFeature surfaces: those
+surfaces cannot construct or bind a request-local `VerifiedSynthesisProblemV1`,
+so exposing an enable switch there would be unusable or invite invented
+authority.
+
 | Source kind | Authority tier | Completeness | `may_prune` | Partition |
 | --- | --- | --- | --- | --- |
-| `generation_request` | compiler-hard | EXACT | **False** | hard |
+| `generation_request` | compiler-hard | EXACT | **True** | hard |
 | `pack_contract` | compiler-hard | EXACT | **True** | hard |
 | `verification_requirement` | verifier-hard | EXACT | **True** | hard |
 | `prompt_requirement` | advisory-learned | HEURISTIC | False | advisory |
@@ -192,7 +223,9 @@ cap, and no budget-stop classification — see `obstruction_core_emission_allowe
 | `evaluation_fixture` | evaluation-only | EXACT | False | evaluation |
 
 Prune law: `may_prune=True` requires hard authority + EXACT + source ∈
-`{pack_contract, verification_requirement}` only (`GoalConstraintV1`).
+`{generation_request, pack_contract, verification_requirement}` only
+(`GoalConstraintV1`). Certified closure narrows this further to a
+`compiler-hard` profile.
 
 ### B. Profile mode → authority (`profile_mode_authority_table`)
 
@@ -204,6 +237,48 @@ Prune law: `may_prune=True` requires hard authority + EXACT + source ∈
 | Heuristic gates forbidden | G11, G12, independent_judge, human_audit | — | — |
 | May authorize pruning | **True** | False | False |
 | Unresolved hard ambiguity forbidden | **True** | False | False |
+
+Incomplete forests are unchanged. UNKNOWN and unobserved candidates stay live.
+No path widens the grammar or adds a full-vocabulary fallback. If certified
+closure leaves one live candidate, the existing singleton path commits it
+without a neural forward or learned ranking. The programmatic configuration
+fields have behavior-preserving defaults and add no model parameters.
+
+## Persisted schemas and invalidation
+
+All persisted contracts are exact-version only; there is no implicit migration
+or permissive compatibility path.
+
+| Contract | Accepted schema version |
+| --- | --- |
+| `GoalConstraintV1` | `goal_constraint/v1` |
+| `CompiledGoalConstraintSetV1` | `compiled_goal_constraint_set/v1` |
+| `GoalConstraintEvaluationV1` | `goal_constraint_evaluation/v1` |
+| `GoalVerifierProfileV1` | `goal_verifier_profile/v1` |
+| `GoalTerminalEvidenceV1` | `goal_terminal_evidence/v1` |
+| `GoalSupportResultV1` | `goal_support_result/v1` |
+| `GoalActionEvidenceV1` | `goal_action_evidence/v1` |
+| `DomainObstructionCoreV1` | `domain_obstruction_core/v1` |
+| `GoalDomainAdequacyReportV1` | `goal_domain_adequacy_report/v1` |
+
+An unknown version, unknown field, digest mismatch, or identity mismatch is
+rejected; old records must be replayed and re-emitted under the new pinned
+profile rather than silently upgraded.
+
+Generated strict schemas are under `src/slm_training/resources/`:
+
+- `compiled_goal_constraint_set.schema.json`;
+- `goal_verifier_profile.schema.json`;
+- `goal_terminal_evidence.schema.json`;
+- `goal_support_result.schema.json`;
+- `goal_action_evidence.schema.json`;
+- `domain_obstruction_core.schema.json`;
+- `goal_domain_adequacy_report.schema.json`.
+
+Digests bind the problem/request, constraint payload, pack/contract/grammar/
+tokenizer/canonicalizer identities, required gate/evaluator/metric identities,
+solver bounds, and implementation/schema versions. Any change prevents stale
+cache or replay reuse.
 
 ### C. Operation permissions (closed)
 
@@ -228,7 +303,7 @@ Legend: ✅ allowed · ⚠ diagnostic only · ❌ forbidden · — not applicabl
 | --- | --- | --- | --- | --- |
 | `off` | **Yes** | No | No | — |
 | `diagnostic` | No | **No** — decode-identical to off | Yes — counters only | `production_exact` binding; eval/advisory **forbidden** |
-| `certified` | No | **Yes** — `goal_support_certified_prune` | Yes | `goal_support_profile_mode=production_exact`, `compiler_decode_mode ≠ off` |
+| `certified` | No | **Yes** — `goal_support_certified_prune` | Yes | request-bound `production_exact` / `compiler-hard` context, `compiler_decode_mode ≠ off` |
 
 `goal_support_mode` is **not** in `CONSTRAINT_WEAKENING_LEVERS` (`levers.py`).
 
@@ -281,7 +356,7 @@ Legend: ✅ allowed · ⚠ diagnostic only · ❌ forbidden · — not applicabl
 | **Timeout-as-unsupported** — budget stop treated as proof | Budget exhaustion → `UNKNOWN` / `coverage_unknown`; obstruction emission blocked | Misconfigured bounds in production |
 | **Raw-content exposure** — prompts in logs | Redaction + forbidden fields; H02 `raw_content_redaction` fixture | Downstream loggers bypass redaction |
 | **Diagnostic drift** — telemetry path mutates decode | Tests pin forest parity for `diagnostic`; certified isolated | ONNX/backend divergence |
-| **Certified misuse** — prune without production profile | `build_goal_support_decode_binding` hardcodes production profile; mode validation in decode | Manual API calls bypassing decode seam |
+| **Certified misuse** — prune without production profile | No auto-binding path; callers supply the request-bound problem/profile/constraint set and `exact_goal_closure` revalidates compiler-hard authority | Manual API callers must retain the same explicit binding |
 
 ---
 
@@ -295,7 +370,7 @@ Legend: ✅ allowed · ⚠ diagnostic only · ❌ forbidden · — not applicabl
 | **Schema migration** | Versioned schemas (`goal_verifier_profile/v1`, `goal_support_result/v1`, …); `scripts/sync_goal_support_schema.py` |
 | **Checkpoint defaults** | `goal_support_mode=off`; certified requires explicit opt-in |
 | **Backend limits** | Bounded by `SolverBounds` (tokens, nodes, depth, backtracks, verifier calls) — same VSS carrier |
-| **Performance** | H02 fixture wall time ≈30 ms / 15 fixtures CPU — not a latency SLA |
+| **Performance** | Governed fixture suite `n=4`; recorded wall time is diagnostic only, not a latency SLA |
 | **Privacy** | Digest-bound evidence; bounded strings; no raw OpenUI in sidecars |
 | **Zero-forward singleton** | Certified arm fixture `certified_singleton_zero_forward`: `forwards=0`, replay ok |
 

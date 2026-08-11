@@ -126,6 +126,7 @@ open LeverProofLean
 #print axioms GoalSupport.classify_regret
 #print axioms GoalSupport.classify_unresolved
 #print axioms GoalSupport.classify_inadequate
+#print axioms GoalSupport.classify_partial_coverage_unknown
 #print axioms GoalSupport.classification_exhaustive
 #print axioms GoalSupport.classification_mutually_exclusive_under_wellformed
 #print axioms GoalSupport.recorded_core_hits_every_failure
@@ -173,13 +174,21 @@ open LeverProofLean
 #guard GoalSupport.classifyDomainAdequacy
   { legal := [1, 2, 3], supported := [2], unsupported := [1], unknown := [], unobserved := [3] }
   { selected := 2, hardProfile := true, capApplied := false,
+    domainComplete := true,
     allUnsupportedReplayValid := true, obstruction := { present := false } } ==
   .adequateSelectedSupported
 #guard GoalSupport.classifyDomainAdequacy
   { legal := [1, 2], supported := [1], unsupported := [2], unknown := [], unobserved := [] }
   { selected := 2, hardProfile := true, capApplied := false,
+    domainComplete := true,
     allUnsupportedReplayValid := true, obstruction := { present := false } } ==
   .selectionRegret
+#guard GoalSupport.classifyDomainAdequacy
+  { legal := [1, 2], supported := [], unsupported := [1, 2], unknown := [], unobserved := [] }
+  { selected := 1, hardProfile := true, capApplied := false,
+    domainComplete := false,
+    allUnsupportedReplayValid := true, obstruction := { present := false } } ==
+  .coverageUnknown
 #guard GoalSupport.hitsAllB [10, 11]
   [{ terminal := 0, atoms := [10, 12] }, { terminal := 1, atoms := [11, 13] }] == true
 #guard GoalSupport.subsetMinimalExactB [10, 11]

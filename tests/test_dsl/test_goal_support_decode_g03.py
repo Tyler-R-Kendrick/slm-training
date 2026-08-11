@@ -113,14 +113,13 @@ def _diagnostic_vs_off_forest(
 def test_historical_twotower_config_without_goal_support_fields_defaults_off() -> None:
     config = TwoTowerConfig(**_HISTORICAL_TWOTOWER_DEFAULTS)
     assert config.goal_support_mode == "off"
-    assert config.goal_support_profile_mode is None
+    assert config.goal_support_query_cap == 32
 
 
 def test_historical_checkpoint_dict_missing_goal_support_round_trips_off() -> None:
     config = TwoTowerConfig(
         **_HISTORICAL_TWOTOWER_DEFAULTS,
         goal_support_mode="diagnostic",
-        goal_support_profile_mode="production_exact",
     )
     dumped = dataclasses.asdict(config)
     fields = TwoTowerConfig.__dataclass_fields__
@@ -131,15 +130,15 @@ def test_historical_checkpoint_dict_missing_goal_support_round_trips_off() -> No
     }
     restored = TwoTowerConfig(**legacy)
     assert restored.goal_support_mode == "off"
-    assert restored.goal_support_profile_mode is None
+    assert restored.goal_support_query_cap == 32
 
 
 def test_model_build_config_and_factory_default_goal_support_off() -> None:
     build = ModelBuildConfig(train_dir=".", output_tokenizer="lexer")
-    assert build.goal_support_mode == "off"
+    assert "goal_support_mode" not in build.__dataclass_fields__
     runtime = _twotower_config_from_build(build)
     assert runtime.goal_support_mode == "off"
-    assert runtime.goal_support_profile_mode is None
+    assert runtime.goal_support_query_cap == 32
 
 
 def test_unknown_future_goal_support_mode_fails_closed() -> None:
@@ -323,19 +322,12 @@ def test_certified_rejects_non_goal_support_provider() -> None:
 
 
 def test_certified_rejects_evaluation_oracle_provider() -> None:
-    expander, provider = _provider(
-        {"ax"},
-        profile=_profile(mode="evaluation_oracle", authority_tier="evaluation-only"),
-    )
-    with pytest.raises(ValueError, match="rejects non-production"):
-        goal_support_certified_prune(
-            _forest(),
-            [1],
-            provider,
-            pack_id=expander.pack_id,
-            constraint_version=expander.constraint_version,
-            bounds=expander.bounds,
-            state=expander.root_state(),
+    with pytest.raises(ValueError, match="must be evaluation-only"):
+        _provider(
+            {"ax"},
+            profile=_profile(
+                mode="evaluation_oracle", authority_tier="evaluation-only"
+            ),
         )
 
 
@@ -612,8 +604,6 @@ def test_certified_singleton_bypass_zero_forwards_with_spies(monkeypatch: pytest
         device="cpu",
     )
     model.eval()
-    model._prepare_goal_support_bindings(["card"])
-
     singleton = CompletionForest(
         (CompletionPath((model.tokenizer.eos_id,), "eos"),),
         "complete",
@@ -639,10 +629,10 @@ def test_certified_singleton_bypass_zero_forwards_with_spies(monkeypatch: pytest
         ),
     )
 
-    def _certified_singleton(forest, prefix, plan_row):
+    def _certified_singleton(forest, prefix, plan_row=0, **_kwargs):
         return singleton
 
-    monkeypatch.setattr(model, "_goal_support_apply_forest", _certified_singleton)
+    monkeypatch.setattr(model, "_solver_prune_forest", _certified_singleton)
     monkeypatch.setattr(
         model,
         "_denoiser_forward",

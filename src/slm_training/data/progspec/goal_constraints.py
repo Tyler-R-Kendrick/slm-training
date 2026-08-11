@@ -11,8 +11,8 @@ Design invariants (see SLM-494 acceptance criteria):
 
 * ``may_prune=True`` only when authority is ``compiler-hard`` or
   ``verifier-hard``, completeness is ``EXACT``, and ``source_kind`` is an
-  independently exact source (``pack_contract`` or
-  ``verification_requirement`` only — fail-closed).
+  independently exact source (structured ``generation_request``,
+  ``pack_contract``, or ``verification_requirement`` — fail-closed).
 * No constructor, loader, migration, copy, merge, or projection may increase
   authority, completeness, or pruning power.
 * Identical constraints merge to the weaker authority/completeness; same-id
@@ -26,7 +26,8 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-from typing import Any, Literal
+from collections.abc import Mapping
+from typing import Any, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -94,7 +95,7 @@ GoalConstraintSourceKind = Literal[
 ]
 
 INDEPENDENTLY_EXACT_SOURCE_KINDS: frozenset[str] = frozenset(
-    {"pack_contract", "verification_requirement"}
+    {"generation_request", "pack_contract", "verification_requirement"}
 )
 
 _AUTHORITY_RANK: dict[str, int] = {
@@ -203,6 +204,14 @@ def authority_matrix() -> dict[str, Any]:
 class _StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    def model_copy(
+        self, *, update: Mapping[str, Any] | None = None, deep: bool = False
+    ) -> Self:
+        """Copy through validation; Pydantic's unchecked update can launder authority."""
+        payload = self.model_dump(mode="python", round_trip=True)
+        payload.update(dict(update or {}))
+        return type(self).model_validate(payload)
+
 
 class GoalConstraintV1(_StrictModel):
     """One compiled goal constraint with explicit authority and completeness."""
@@ -242,6 +251,18 @@ class GoalConstraintV1(_StrictModel):
 
     def to_dict(self) -> dict[str, Any]:
         return self.model_dump(mode="json")
+
+    def model_copy(
+        self, *, update: Mapping[str, Any] | None = None, deep: bool = False
+    ) -> Self:
+        copied = super().model_copy(update=update, deep=deep)
+        if _AUTHORITY_RANK[copied.authority_tier] > _AUTHORITY_RANK[self.authority_tier]:
+            raise ValueError("copy cannot increase goal-constraint authority")
+        if _COMPLETENESS_RANK[copied.completeness] > _COMPLETENESS_RANK[self.completeness]:
+            raise ValueError("copy cannot increase goal-constraint completeness")
+        if copied.may_prune and not self.may_prune:
+            raise ValueError("copy cannot add goal-constraint pruning authority")
+        return copied
 
     @classmethod
     def from_dict(cls, value: dict[str, Any]) -> "GoalConstraintV1":
@@ -411,6 +432,8 @@ class CompiledGoalConstraintSetV1(_StrictModel):
     def from_dict(cls, value: dict[str, Any]) -> "CompiledGoalConstraintSetV1":
         if str(value.get("schema_version")) != COMPILED_GOAL_CONSTRAINT_SET_SCHEMA_VERSION:
             raise ValueError("unsupported CompiledGoalConstraintSetV1 version")
+        if not value.get("digest"):
+            raise ValueError("persisted CompiledGoalConstraintSetV1 requires digest")
         return cls.model_validate(value)
 
 

@@ -53,7 +53,7 @@ from slm_training.dsl.solver.support import (
     VerifyOutcome,
     VerifyStatus,
 )
-from tests.test_dsl.test_solver.test_goal_support import _profile
+from tests.test_dsl.test_solver.test_goal_support import _compiled_set, _profile
 
 _SEED = 508
 _MAX_LEGAL_ACTIONS = 4
@@ -88,6 +88,10 @@ _INADEQUATE_TREE = {
     "": (("a", "terminal", "complete"), ("b", "terminal", "complete")),
 }
 
+_DEAD_TREE = {
+    "": (("a", "dead", "complete"), ("b", "dead", "complete")),
+}
+
 _CAP_TREE = {
     "": (
         ("a", "terminal", "complete"),
@@ -104,10 +108,18 @@ _UNKNOWN_TREE = {
 
 
 class _WordExpander:
-    def __init__(self, tree, *, bounds=_GENEROUS, constraint_version="v1"):
+    def __init__(
+        self,
+        tree,
+        *,
+        bounds=_GENEROUS,
+        constraint_version="v1",
+        coverage="complete",
+    ):
         self._tree = tree
         self._bounds = bounds
         self._cv = constraint_version
+        self._coverage = coverage
         self._prefix_by_fp: dict[str, str] = {}
         self._root = self._state_for("")
         self._prefix_by_fp[self._root.fingerprint] = ""
@@ -138,7 +150,11 @@ class _WordExpander:
         branches = self._tree.get(prefix, ())
         hole = HoleId(namespace="word", path=(len(prefix), prefix or "ROOT"), kind="next")
         values = tuple(self.value_for(prefix, branch[0]) for branch in branches)
-        domain = HoleDomain(hole, values, metadata=(("node", prefix or "ROOT"),))
+        domain = HoleDomain(
+            hole,
+            values,
+            metadata=(("coverage", self._coverage), ("node", prefix or "ROOT")),
+        )
         return FiniteDomainState(
             problem_id=f"word:{prefix or 'ROOT'}",
             pack_id=self.pack_id,
@@ -205,7 +221,13 @@ class _TracingGoalVerifier:
     def verify(self, program: str) -> VerifyOutcome:
         if program in self._unavailable:
             return VerifyOutcome(VerifyStatus.UNAVAILABLE, detail="fixture_unavailable")
-        overall = "ACCEPT" if program in self._accept else "REJECT"
+        overall = (
+            "UNAVAILABLE"
+            if self._unknown_atoms
+            else "ACCEPT"
+            if program in self._accept
+            else "REJECT"
+        )
         evidence = GoalTerminalEvidenceV1(
             profile_digest=self._profile_digest,
             program_digest=_program_digest(program),
@@ -217,8 +239,10 @@ class _TracingGoalVerifier:
             ),
             required_gate_results=(GoalGateResultV1(gate_id="G0", status="ACCEPT"),),
             mandatory_unknown_atoms=self._unknown_atoms,
-            mandatory_failure_atoms=self._failure_atoms,
-            structural_status="ACCEPT" if overall == "ACCEPT" else "REJECT",
+            mandatory_failure_atoms=(
+                () if overall == "ACCEPT" else self._failure_atoms
+            ),
+            structural_status="REJECT" if overall == "REJECT" else "ACCEPT",
             overall_status=overall,
         )
         payload = evidence.to_dict(include_digest=True)
@@ -226,7 +250,9 @@ class _TracingGoalVerifier:
         self._trace.append(bound)
         digest = bound.evidence_digest or bound.compute_digest()
         detail = f"overall={overall};reason=fixture;evidence={digest}"
-        if program in self._accept:
+        if overall == "UNAVAILABLE":
+            return VerifyOutcome(VerifyStatus.UNAVAILABLE, detail=detail)
+        if overall == "ACCEPT":
             return VerifyOutcome(VerifyStatus.ACCEPT, detail=detail)
         return VerifyOutcome(VerifyStatus.REJECT, detail=detail)
 
@@ -239,22 +265,25 @@ def _provider(
     unavailable: set[str] | None = None,
     unknown_atoms: tuple[GoalUnknownAtomV1, ...] = (),
     failure_atoms: tuple[GoalFailureAtomV1, ...] = (),
+    coverage: str = "complete",
 ) -> tuple[_WordExpander, GoalSupportProvider]:
     prof = profile or _profile()
     digest = prof.digest or prof.compute_digest()
-    expander = _WordExpander(tree or _REGRET_TREE)
+    expander = _WordExpander(tree or _REGRET_TREE, coverage=coverage)
 
     def factory() -> _TracingGoalVerifier:
         return _TracingGoalVerifier(
             accept,
             unavailable=unavailable,
-            profile_label="fixture-goal",
+            profile_label="openui/goal-support/v1",
             profile_digest=digest,
             unknown_atoms=unknown_atoms,
             failure_atoms=failure_atoms,
         )
 
-    return expander, GoalSupportProvider(expander, prof, factory)
+    return expander, GoalSupportProvider(
+        expander, prof, factory, constraint_set=_compiled_set()
+    )
 
 
 def _selected(expander: _WordExpander, letter: str) -> DomainValue:
@@ -347,6 +376,7 @@ def _ref_classify_from_report(
         selected=id_to_int[report.selected_action_id],
         hard_profile=hard_profile,
         cap_applied=report.cap_applied,
+        domain_complete=report.domain_coverage == "complete",
         all_unsupported_replay_valid=all(
             item.replay_ok for item in evidence if item.partition == "unsupported"
         ),
@@ -361,6 +391,7 @@ def _production_classify_from_partitions(
     selected: int,
     hard_profile: bool,
     cap_applied: bool,
+    domain_complete: bool,
     all_unsupported_replay_valid: bool,
     obstruction_present: bool,
 ) -> str:
@@ -391,6 +422,7 @@ def _production_classify_from_partitions(
         all_unsupported_replay_valid=all_unsupported_replay_valid,
         hard_profile=hard_profile,
         cap_applied=cap_applied,
+        domain_complete=domain_complete,
         obstruction_summary=obstruction_summary,
     )
 
@@ -420,7 +452,7 @@ class _StructuralGoalSplitVerifier(_TracingGoalVerifier):
 
     def verify(self, program: str) -> VerifyOutcome:
         overall = "ACCEPT" if program in self._accept else "REJECT"
-        structural = "REJECT" if program.endswith("x") else overall
+        structural = "ACCEPT"
         evidence = GoalTerminalEvidenceV1(
             profile_digest=self._profile_digest,
             program_digest=_program_digest(program),
@@ -428,7 +460,10 @@ class _StructuralGoalSplitVerifier(_TracingGoalVerifier):
             program_spec_digest="3" * 64,
             semantic_plan_digest="4" * 64,
             constraint_evaluations=(
-                GoalConstraintEvaluationV1(constraint_id="c_slot_button", status="PASS"),
+                GoalConstraintEvaluationV1(
+                    constraint_id="c_slot_button",
+                    status="PASS" if overall == "ACCEPT" else "FAIL",
+                ),
             ),
             required_gate_results=(GoalGateResultV1(gate_id="G0", status="ACCEPT"),),
             mandatory_unknown_atoms=self._unknown_atoms,
@@ -462,6 +497,10 @@ def test_selection_regret_with_supported_and_unsupported_alternatives():
     assert selected_id in report.partitions.unsupported
     assert report.obstruction_summary is None
     assert len(evidence) == 2
+    assert report.stats.verifier_calls == sum(
+        item.work_counters.verifier_calls for item in evidence
+    )
+    assert all(item.work_counters.verifier_calls >= 2 for item in evidence)
 
 
 def test_domain_adequate_selected_supported():
@@ -503,6 +542,48 @@ def test_domain_inadequate_under_bounds_with_obstruction_summary():
     assert report.obstruction_summary is not None
     assert report.obstruction_summary.obstruction_core_digests
     assert all(item.obstruction_core_digest for item in evidence if item.partition == "unsupported")
+
+
+def test_domain_inadequate_dead_branches_need_no_obstruction_core() -> None:
+    expander, provider = _provider(set(), tree=_DEAD_TREE)
+    report, evidence = analyze_goal_domain(
+        state=expander.root_state(),
+        hole_id=_hole(expander),
+        selected_action=_selected(expander, "a"),
+        provider=provider,
+        exact_action_cap=10,
+    )
+
+    assert report.classification == "domain_inadequate_under_bounds"
+    assert len(report.partitions.unsupported) == 2
+    assert report.obstruction_summary is None
+    assert all(item.replay_ok for item in evidence)
+    assert all(item.obstruction_core_digest is None for item in evidence)
+
+
+def test_partial_domain_cannot_claim_inadequacy() -> None:
+    failure = GoalFailureAtomV1(
+        atom_id="fixture_fail",
+        reason_code="no_witness",
+        source_kind="constraint",
+        completeness_class="EXACT",
+    )
+    expander, provider = _provider(
+        set(),
+        tree=_INADEQUATE_TREE,
+        failure_atoms=(failure,),
+        coverage="partial",
+    )
+    report, _ = analyze_goal_domain(
+        state=expander.root_state(),
+        hole_id=_hole(expander),
+        selected_action=_selected(expander, "a"),
+        provider=provider,
+        exact_action_cap=10,
+    )
+    assert report.domain_coverage == "partial"
+    assert report.classification == "coverage_unknown"
+    assert report.obstruction_summary is None
 
 
 def _action_id_for_letter(expander: _WordExpander, letter: str) -> str:
@@ -827,33 +908,36 @@ def test_exhaustive_classifier_matches_frozen_truth_table() -> None:
                 for hard_profile in (True, False):
                     for cap_applied in (True, False):
                         for all_unsupported_replay_valid in (True, False):
-                            for obstruction_present in (True, False):
-                                inputs = ClassificationInputsV1(
-                                    selected=selected,
-                                    hard_profile=hard_profile,
-                                    cap_applied=cap_applied,
-                                    all_unsupported_replay_valid=all_unsupported_replay_valid,
-                                    obstruction_present=obstruction_present,
-                                )
-                                expected = ref_classify_domain_adequacy(partitions, inputs)
-                                got = _production_classify_from_partitions(
-                                    partitions,
-                                    selected=selected,
-                                    hard_profile=hard_profile,
-                                    cap_applied=cap_applied,
-                                    all_unsupported_replay_valid=all_unsupported_replay_valid,
-                                    obstruction_present=obstruction_present,
-                                )
-                                checked += 1
-                                if got != expected:
-                                    mismatches.append(
-                                        {
-                                            "partitions": partitions,
-                                            "inputs": inputs,
-                                            "expected": expected,
-                                            "got": got,
-                                        }
+                            for domain_complete in (True, False):
+                                for obstruction_present in (True, False):
+                                    inputs = ClassificationInputsV1(
+                                        selected=selected,
+                                        hard_profile=hard_profile,
+                                        cap_applied=cap_applied,
+                                        domain_complete=domain_complete,
+                                        all_unsupported_replay_valid=all_unsupported_replay_valid,
+                                        obstruction_present=obstruction_present,
                                     )
+                                    expected = ref_classify_domain_adequacy(partitions, inputs)
+                                    got = _production_classify_from_partitions(
+                                        partitions,
+                                        selected=selected,
+                                        hard_profile=hard_profile,
+                                        cap_applied=cap_applied,
+                                        domain_complete=domain_complete,
+                                        all_unsupported_replay_valid=all_unsupported_replay_valid,
+                                        obstruction_present=obstruction_present,
+                                    )
+                                    checked += 1
+                                    if got != expected:
+                                        mismatches.append(
+                                            {
+                                                "partitions": partitions,
+                                                "inputs": inputs,
+                                                "expected": expected,
+                                                "got": got,
+                                            }
+                                        )
     assert not mismatches, mismatches[:3]
     assert checked >= 512
 
@@ -931,7 +1015,9 @@ def test_structural_support_differs_from_goal_support() -> None:
             profile_digest=digest,
         )
 
-    provider = GoalSupportProvider(expander, prof, factory)
+    provider = GoalSupportProvider(
+        expander, prof, factory, constraint_set=_compiled_set()
+    )
     report, _ = analyze_goal_domain(
         state=expander.root_state(),
         hole_id=_hole(expander),
@@ -976,6 +1062,7 @@ def test_bound_exhaustion_prevents_domain_inadequacy() -> None:
             profile_label="tight",
             profile_digest=digest,
         ),
+        constraint_set=_compiled_set(),
     )
     report, _ = analyze_goal_domain(
         state=expander.root_state(),

@@ -318,6 +318,7 @@ def test_evaluation_rejects_unknown_version() -> None:
 def test_authority_matrix_is_machine_readable() -> None:
     matrix = authority_matrix()
     assert matrix["may_prune_requires"]["source_kind"] == [
+        "generation_request",
         "pack_contract",
         "verification_requirement",
     ]

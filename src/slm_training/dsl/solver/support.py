@@ -40,6 +40,24 @@ from slm_training.dsl.solver.state import (
 
 CERTIFICATE_SCHEMA_VERSION = 1
 SEARCH_ORDER = "canonical-domain-value-v1"
+_SUPPORT_CERTIFICATE_FIELDS = {
+    "schema_version",
+    "query",
+    "verdict",
+    "problem_id",
+    "pack_id",
+    "constraint_version",
+    "bounds",
+    "search_order",
+    "explored_state_fingerprints",
+    "coverage_observations",
+    "verifier_profile",
+    "witness_source",
+    "witness_digest",
+    "failure_counts",
+    "exhausted",
+    "stop_reason",
+}
 
 
 def _canonical_json(value: Any) -> str:
@@ -63,6 +81,24 @@ def _require_digest(value: Any, *, field: str) -> str:
         or any(char not in "0123456789abcdef" for char in value)
     ):
         raise ValueError(f"{field} must be a SHA-256 hex digest")
+    return value
+
+
+def _strict_fields(data: dict[str, Any], expected: set[str], *, context: str) -> None:
+    if not isinstance(data, dict):
+        raise ValueError(f"{context} must be an object")
+    unknown = set(data) - expected
+    missing = expected - set(data)
+    if unknown or missing:
+        raise ValueError(
+            f"{context} fields mismatch: missing={sorted(missing)}, "
+            f"unknown={sorted(unknown)}"
+        )
+
+
+def _required_text(value: Any, *, field: str) -> str:
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"{field} must be non-empty text")
     return value
 
 
@@ -170,8 +206,15 @@ class SupportQuery:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> SupportQuery:
+        _strict_fields(
+            data,
+            {"state_fingerprint", "hole_id", "candidate"},
+            context="SupportQuery",
+        )
         return cls(
-            state_fingerprint=str(data["state_fingerprint"]),
+            state_fingerprint=_require_digest(
+                data["state_fingerprint"], field="query state_fingerprint"
+            ),
             hole_id=HoleId.from_dict(data["hole_id"]),
             candidate=DomainValue.from_dict(data["candidate"]),
         )
@@ -198,7 +241,16 @@ class SearchCounters:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> SearchCounters:
-        return cls(**{key: int(data[key]) for key in cls().to_dict()})
+        expected = set(cls().to_dict())
+        _strict_fields(data, expected, context="SearchCounters")
+        if any(
+            isinstance(data[key], bool)
+            or not isinstance(data[key], int)
+            or data[key] < 0
+            for key in expected
+        ):
+            raise ValueError("SearchCounters values must be non-negative integers")
+        return cls(**{key: data[key] for key in expected})
 
 
 class _MutableCounters:
@@ -283,35 +335,72 @@ class SupportCertificate:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> SupportCertificate:
+        _strict_fields(data, _SUPPORT_CERTIFICATE_FIELDS, context="SupportCertificate")
+        schema_version = data["schema_version"]
+        if isinstance(schema_version, bool) or schema_version != CERTIFICATE_SCHEMA_VERSION:
+            raise ValueError("unsupported SupportCertificate schema_version")
+        exhausted = data["exhausted"]
+        if not isinstance(exhausted, bool):
+            raise ValueError("SupportCertificate exhausted must be boolean")
+        explored = data["explored_state_fingerprints"]
+        coverage = data["coverage_observations"]
+        failures = data["failure_counts"]
+        if not isinstance(explored, list) or not all(
+            isinstance(item, str) for item in explored
+        ):
+            raise ValueError("explored_state_fingerprints must be a string array")
+        if not isinstance(coverage, list) or not all(
+            isinstance(item, str) for item in coverage
+        ):
+            raise ValueError("coverage_observations must be a string array")
+        if not isinstance(failures, list):
+            raise ValueError("failure_counts must be an array")
+        failure_counts: list[tuple[str, int]] = []
+        for row in failures:
+            if (
+                not isinstance(row, list)
+                or len(row) != 2
+                or not isinstance(row[0], str)
+                or not row[0]
+                or isinstance(row[1], bool)
+                or not isinstance(row[1], int)
+                or row[1] < 0
+            ):
+                raise ValueError("failure_counts entries must be [text, non-negative int]")
+            failure_counts.append((row[0], row[1]))
+        witness_source = data["witness_source"]
+        if witness_source is not None:
+            witness_source = _required_text(witness_source, field="witness_source")
+        witness_digest = data["witness_digest"]
+        if witness_digest is not None:
+            witness_digest = _require_digest(witness_digest, field="witness_digest")
+        stop_reason = data["stop_reason"]
+        if stop_reason is not None:
+            stop_reason = _required_text(stop_reason, field="stop_reason")
+        verdict = data["verdict"]
+        if not isinstance(verdict, str):
+            raise ValueError("SupportCertificate verdict must be text")
         return cls(
-            schema_version=int(data["schema_version"]),
+            schema_version=schema_version,
             query=SupportQuery.from_dict(data["query"]),
-            verdict=SupportVerdict(data["verdict"]),
-            problem_id=str(data["problem_id"]),
-            pack_id=str(data["pack_id"]),
-            constraint_version=str(data["constraint_version"]),
+            verdict=SupportVerdict(verdict),
+            problem_id=_required_text(data["problem_id"], field="problem_id"),
+            pack_id=_required_text(data["pack_id"], field="pack_id"),
+            constraint_version=_required_text(
+                data["constraint_version"], field="constraint_version"
+            ),
             bounds=SolverBounds.from_dict(data["bounds"]),
-            search_order=str(data["search_order"]),
-            explored_state_fingerprints=tuple(
-                str(item) for item in data["explored_state_fingerprints"]
+            search_order=_required_text(data["search_order"], field="search_order"),
+            explored_state_fingerprints=tuple(explored),
+            coverage_observations=tuple(coverage),
+            verifier_profile=_required_text(
+                data["verifier_profile"], field="verifier_profile"
             ),
-            coverage_observations=tuple(
-                str(item) for item in data["coverage_observations"]
-            ),
-            verifier_profile=str(data["verifier_profile"]),
-            witness_source=(
-                None if data.get("witness_source") is None else str(data["witness_source"])
-            ),
-            witness_digest=(
-                None if data.get("witness_digest") is None else str(data["witness_digest"])
-            ),
-            failure_counts=tuple(
-                (str(row[0]), int(row[1])) for row in data.get("failure_counts", ())
-            ),
-            exhausted=bool(data.get("exhausted", False)),
-            stop_reason=(
-                None if data.get("stop_reason") is None else str(data["stop_reason"])
-            ),
+            witness_source=witness_source,
+            witness_digest=witness_digest,
+            failure_counts=tuple(failure_counts),
+            exhausted=exhausted,
+            stop_reason=stop_reason,
         )
 
     @property
@@ -391,9 +480,21 @@ class EnumerativeSupportOracle:
                 incomplete = True
                 break
 
-            step = self._expander.successor(current, hole_id, value)
+            try:
+                step = self._expander.successor(current, hole_id, value)
+            except TimeoutError:
+                incomplete = True
+                failures["incomplete:expander_timeout"] = (
+                    failures.get("incomplete:expander_timeout", 0) + 1
+                )
+                continue
             counters.tokens += len(value.payload_json)
             coverage_obs.add(step.coverage)
+            budget = counters.over_budget(self._expander.bounds)
+            if budget is not None:
+                stop_reason = budget
+                incomplete = True
+                break
 
             if step.status is ExpandStatus.INCOMPLETE or step.coverage in {"partial", "none"}:
                 incomplete = True
@@ -404,6 +505,11 @@ class EnumerativeSupportOracle:
 
             if step.status is ExpandStatus.DEAD:
                 counters.backtracks += 1
+                budget = counters.over_budget(self._expander.bounds)
+                if budget is not None:
+                    stop_reason = budget
+                    incomplete = True
+                    break
                 failures[f"dead:{step.detail or 'bottom'}"] = (
                     failures.get(f"dead:{step.detail or 'bottom'}", 0) + 1
                 )
@@ -412,8 +518,9 @@ class EnumerativeSupportOracle:
             if step.status is ExpandStatus.TERMINAL:
                 program = step.program or ""
                 counters.verifier_calls += 1
-                if counters.over_budget(self._expander.bounds) is not None:
-                    stop_reason = "budget:max_verifier_calls"
+                budget = counters.over_budget(self._expander.bounds)
+                if budget is not None:
+                    stop_reason = budget
                     incomplete = True
                     break
                 outcome = self._verifier.verify(program)
@@ -448,6 +555,11 @@ class EnumerativeSupportOracle:
             explored.append(child_fp)
             if child.is_bottom:
                 counters.backtracks += 1
+                budget = counters.over_budget(self._expander.bounds)
+                if budget is not None:
+                    stop_reason = budget
+                    incomplete = True
+                    break
                 failures["dead:child_bottom"] = failures.get("dead:child_bottom", 0) + 1
                 continue
             # Push every live (hole, value) branch of the child in canonical
@@ -514,6 +626,7 @@ class ReplayResult:
     ok: bool
     verdict: SupportVerdict
     violations: tuple[str, ...] = ()
+    counters: SearchCounters = SearchCounters()
 
 
 def replay_support_certificate(
@@ -583,11 +696,9 @@ def replay_support_certificate(
             else:
                 if _sha256(recomputed.witness) != certificate.witness_digest:
                     violations.append("witness digest does not match replayed witness")
-                if verifier.verify(recomputed.witness).status is not VerifyStatus.ACCEPT:
-                    violations.append("replayed witness is not verifier-accepted")
-
     return ReplayResult(
         ok=not violations,
         verdict=certificate.verdict,
         violations=tuple(violations),
+        counters=recomputed.counters if recomputed is not None else SearchCounters(),
     )

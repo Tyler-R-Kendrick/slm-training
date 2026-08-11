@@ -118,6 +118,8 @@ class GoalActionEvidenceV1(_StrictModel):
     def from_dict(cls, value: dict[str, Any]) -> "GoalActionEvidenceV1":
         if str(value.get("schema_version")) != GOAL_ACTION_EVIDENCE_SCHEMA_VERSION:
             raise ValueError("unsupported GoalActionEvidenceV1 version")
+        if not value.get("evidence_digest"):
+            raise ValueError("persisted GoalActionEvidenceV1 requires evidence_digest")
         return cls.model_validate(value)
 
 
@@ -208,8 +210,9 @@ class GoalDomainAdequacyReportV1(_StrictModel):
     implementation_version: str = Field(
         default=GOAL_SUPPORT_IMPLEMENTATION_VERSION, min_length=1
     )
-    exact_action_cap: int = Field(ge=1)
+    exact_action_cap: int = Field(ge=0)
     cap_applied: bool
+    domain_coverage: Literal["complete", "partial", "none"] = "complete"
     report_digest: str = Field(default="", pattern=r"^[0-9a-f]{64}$|^$")
 
     @model_validator(mode="after")
@@ -239,9 +242,9 @@ class GoalDomainAdequacyReportV1(_StrictModel):
                 raise ValueError(
                     "domain_inadequate_under_bounds forbids cap-applied subsets"
                 )
-            if self.obstruction_summary is None:
+            if self.domain_coverage != "complete":
                 raise ValueError(
-                    "domain_inadequate_under_bounds requires obstruction_summary"
+                    "domain_inadequate_under_bounds requires complete domain coverage"
                 )
         return self
 
@@ -267,6 +270,8 @@ class GoalDomainAdequacyReportV1(_StrictModel):
     def from_dict(cls, value: dict[str, Any]) -> "GoalDomainAdequacyReportV1":
         if str(value.get("schema_version")) != GOAL_DOMAIN_ADEQUACY_REPORT_SCHEMA_VERSION:
             raise ValueError("unsupported GoalDomainAdequacyReportV1 version")
+        if not value.get("report_digest"):
+            raise ValueError("persisted GoalDomainAdequacyReportV1 requires report_digest")
         return cls.model_validate(value)
 
 
@@ -376,6 +381,7 @@ def _classify_domain_adequacy(
     all_unsupported_replay_valid: bool,
     hard_profile: bool,
     cap_applied: bool,
+    domain_complete: bool,
     obstruction_summary: AggregateObstructionSummaryV1 | None,
 ) -> DomainAdequacyClassification:
     if partitions.supported:
@@ -397,7 +403,7 @@ def _classify_domain_adequacy(
         and all_unsupported_replay_valid
         and hard_profile
         and not cap_applied
-        and obstruction_summary is not None
+        and domain_complete
     ):
         return "domain_inadequate_under_bounds"
     return "coverage_unknown"
@@ -446,8 +452,8 @@ def analyze_goal_domain(
     exact_action_cap: int,
 ) -> tuple[GoalDomainAdequacyReportV1, tuple[GoalActionEvidenceV1, ...]]:
     """Query bounded goal support over one legal set and classify adequacy."""
-    if exact_action_cap < 1:
-        raise ValueError("exact_action_cap must be at least 1")
+    if exact_action_cap < 0:
+        raise ValueError("exact_action_cap must be non-negative")
 
     provider.validate_identities(state)
     profile = provider.profile
@@ -455,6 +461,9 @@ def analyze_goal_domain(
     hard_profile = profile.authority_tier in _HARD_AUTHORITIES
 
     domain = state.domain(hole_id)
+    domain_coverage = str(dict(domain.metadata).get("coverage", "complete"))
+    if domain_coverage not in {"complete", "partial", "none"}:
+        raise ValueError("domain coverage must be complete, partial, or none")
     value_by_id = {action_id_from_value(value): value for value in domain.values}
     action_ids = tuple(sorted(value_by_id))
     if not action_ids:
@@ -521,12 +530,49 @@ def analyze_goal_domain(
 
         terminal_count = len(sidecar.terminal_evidence_digests)
         total_terminals += terminal_count
-        total_verifier_calls += result.counters.verifier_calls
-        total_nodes += result.counters.nodes
-        total_backtracks += result.counters.backtracks
+        action_verifier_calls = (
+            result.counters.verifier_calls + replay.counters.verifier_calls
+        )
+        action_nodes = result.counters.nodes + replay.counters.nodes
+        action_tokens = result.counters.tokens + replay.counters.tokens
+        action_backtracks = result.counters.backtracks + replay.counters.backtracks
+        action_depth = max(result.counters.depth, replay.counters.depth)
         if result.certificate.stop_reason:
             stop_reasons.add(result.certificate.stop_reason)
 
+        if (
+            partition == "unsupported"
+            and replay_ok
+            and sidecar.obstruction_core_digest
+        ):
+            from slm_training.dsl.solver.goal_support_obstruction import (
+                compute_domain_obstruction_core,
+            )
+
+            replay_verifier = provider._fresh_verifier()
+            core_result = EnumerativeSupportOracle(
+                provider.expander, replay_verifier
+            ).check(
+                state, query
+            )
+            action_verifier_calls += core_result.counters.verifier_calls
+            action_nodes += core_result.counters.nodes
+            action_tokens += core_result.counters.tokens
+            action_backtracks += core_result.counters.backtracks
+            action_depth = max(action_depth, core_result.counters.depth)
+            core = compute_domain_obstruction_core(
+                certificate=result.certificate,
+                terminal_records=_terminal_records(replay_verifier),
+                profile=profile,
+                state=state,
+                replay_ok=True,
+            )
+            if core is not None:
+                obstruction_core_atoms.update(core.core_atoms)
+
+        total_verifier_calls += action_verifier_calls
+        total_nodes += action_nodes
+        total_backtracks += action_backtracks
         sidecar_bound = GoalSupportResultV1.from_dict(
             sidecar.to_dict(include_digest=True)
         )
@@ -542,42 +588,23 @@ def analyze_goal_domain(
             authority_tier=profile.authority_tier,
             replay_ok=replay_ok,
             work_counters=GoalActionWorkCountersV1(
-                nodes=result.counters.nodes,
-                tokens=result.counters.tokens,
-                depth=result.counters.depth,
-                backtracks=result.counters.backtracks,
-                verifier_calls=result.counters.verifier_calls,
+                nodes=action_nodes,
+                tokens=action_tokens,
+                depth=action_depth,
+                backtracks=action_backtracks,
+                verifier_calls=action_verifier_calls,
                 terminal_count=terminal_count,
             ),
-            obstruction_core_digest=sidecar.obstruction_core_digest,
+            obstruction_core_digest=(
+                sidecar.obstruction_core_digest
+                if partition == "unsupported" and replay_ok
+                else None
+            ),
             stop_reason=result.certificate.stop_reason,
         )
         evidence_rows.append(
             GoalActionEvidenceV1.from_dict(row.to_dict(include_digest=True))
         )
-
-        if (
-            partition == "unsupported"
-            and replay_ok
-            and sidecar.obstruction_core_digest
-        ):
-            from slm_training.dsl.solver.goal_support_obstruction import (
-                compute_domain_obstruction_core,
-            )
-
-            replay_verifier = provider._fresh_verifier()
-            EnumerativeSupportOracle(provider.expander, replay_verifier).check(
-                state, query
-            )
-            core = compute_domain_obstruction_core(
-                certificate=result.certificate,
-                terminal_records=_terminal_records(replay_verifier),
-                profile=profile,
-                state=state,
-                replay_ok=True,
-            )
-            if core is not None:
-                obstruction_core_atoms.update(core.core_atoms)
 
     for action_id in unobserved_ids:
         row = GoalActionEvidenceV1(
@@ -614,6 +641,7 @@ def analyze_goal_domain(
         all_unsupported_replay_valid=all_unsupported_replay_valid,
         hard_profile=hard_profile,
         cap_applied=cap_applied,
+        domain_complete=domain_coverage == "complete",
         obstruction_summary=candidate_summary,
     )
     obstruction_summary = (
@@ -651,6 +679,7 @@ def analyze_goal_domain(
         obstruction_summary=obstruction_summary,
         exact_action_cap=exact_action_cap,
         cap_applied=cap_applied,
+        domain_coverage=domain_coverage,
     )
     bound = GoalDomainAdequacyReportV1.from_dict(report.to_dict(include_digest=True))
     return bound, evidence_tuple

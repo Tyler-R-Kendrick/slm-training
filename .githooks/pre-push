@@ -19,11 +19,12 @@ EOF
   exit 0
 fi
 
-root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+root=$(git rev-parse --show-toplevel)
 common_git_dir=$(git -C "$root" rev-parse --path-format=absolute --git-common-dir)
 common_root=$(dirname -- "$common_git_dir")
 unset $(git rev-parse --local-env-vars)
 cd "$root"
+export PYTHONPATH="$root/src${PYTHONPATH:+:$PYTHONPATH}"
 if [ -x .venv/bin/python ]; then
   exec .venv/bin/python -m scripts.verify_merge_ready --fast
 fi

@@ -31,7 +31,6 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from slm_training.data.contract import GenerationRequest
 from slm_training.dsl.grammar.fastpath.compiler_draft import CompletionForest
 from slm_training.dsl.solver.adapters import completion_forest_state
 from slm_training.dsl.solver.closure import (
@@ -85,17 +84,6 @@ def validate_goal_support_config(config: Any, *, context: str = "config") -> Non
             f"{context}: goal_support_mode=certified requires "
             "compiler_decode_mode != off"
         )
-
-
-@dataclass(frozen=True)
-class GoalSupportDecodeBinding:
-    """Structured decode inputs required to construct a :class:`GoalSupportProvider`."""
-
-    ready: bool
-    disable_reason: str | None = None
-    request: GenerationRequest | None = None
-    constraint_set: Any | None = None
-    profile: Any | None = None
 
 
 @dataclass(frozen=True)
@@ -155,74 +143,6 @@ def instrument_goal_support_provider(
     if isinstance(provider, GoalSupportProvider):
         return InstrumentedGoalSupportProvider(provider, sink)
     return provider
-
-
-def build_goal_support_decode_binding(
-    request: GenerationRequest | None,
-    *,
-    pack_id: str = "openui",
-) -> GoalSupportDecodeBinding:
-    """Compile request/profile inputs or return an explicit disable reason."""
-    if request is None:
-        return GoalSupportDecodeBinding(
-            ready=False, disable_reason="missing_generation_request"
-        )
-    try:
-        from slm_training.data.progspec.prompt_requirements import (
-            PromptSemanticRequirementsV1,
-        )
-        from slm_training.data.progspec.synthesis_problem import (
-            PackIdentityV1,
-            VerifiedSynthesisProblemV1,
-        )
-        from slm_training.data.semantic_plan.requirements_compile import (
-            compile_goal_constraints,
-        )
-        from slm_training.dsl.pack import get_pack
-        from slm_training.dsl.solver.goal_support import (
-            GoalVerifierProfileV1,
-            validate_profile_against_constraint_set,
-        )
-
-        pack = get_pack(pack_id)
-        problem = VerifiedSynthesisProblemV1(
-            problem_id="decode",
-            pack_identity=PackIdentityV1(
-                pack_id=pack.pack_id,
-                contract_version=getattr(pack, "contract_version", 5),
-            ),
-            requirements=PromptSemanticRequirementsV1(facts=()),
-        )
-        constraint_set = compile_goal_constraints(problem, request, pack)
-        profile = GoalVerifierProfileV1(
-            profile_id="decode/production_exact",
-            mode="production_exact",
-            problem_digest=constraint_set.problem_digest,
-            constraint_set_digest=constraint_set.digest,
-            pack_identity=problem.pack_identity,
-            pack_identity_digest=constraint_set.pack_identity_digest,
-            required_constraint_ids=constraint_set.hard_constraint_ids,
-            required_gates=(),
-            required_evaluators=(),
-            metric_identities=(),
-            authority_tier="compiler-hard",
-        )
-        profile = GoalVerifierProfileV1.from_dict(
-            profile.model_copy(update={"digest": profile.compute_digest()}).to_dict()
-        )
-        validate_profile_against_constraint_set(profile, constraint_set)
-        return GoalSupportDecodeBinding(
-            ready=True,
-            disable_reason=None,
-            request=request,
-            constraint_set=constraint_set,
-            profile=profile,
-        )
-    except Exception as exc:  # noqa: BLE001 — surface construction failure honestly
-        return GoalSupportDecodeBinding(
-            ready=False,
-            disable_reason=f"{type(exc).__name__}:{exc}",
-        )
 
 
 def _value_key(value) -> tuple[str, tuple[int, ...]]:
@@ -349,6 +269,60 @@ def goal_support_certified_prune(
         certificate_store=certificate_store,
         closure_fn=exact_goal_closure,
     )
+
+
+def goal_support_prune(
+    forest: CompletionForest,
+    prefix_ids,
+    provider: SupportProvider | None,
+    *,
+    mode: str,
+    pack_id: str,
+    constraint_version: str,
+    bounds: SolverBounds,
+    unknown_policy: str = "keep_and_rank",
+    state=None,
+    cache: dict | None = None,
+    certificate_store: dict[str, SupportCertificate] | None = None,
+    max_queries: int | None = None,
+) -> tuple[CompletionForest, ClosureResult | None]:
+    """Apply the tri-state mode without creating a second closure path."""
+    mode = normalize_goal_support_mode(mode)
+    if mode == "off":
+        return forest, None
+    if provider is None:
+        raise ValueError("goal support requires a request-bound provider")
+    if forest.coverage != "complete" or not forest.paths:
+        return forest, None
+
+    if mode == "certified":
+        from slm_training.dsl.solver.goal_support import exact_goal_closure
+
+        closure_fn = exact_goal_closure
+    else:
+        closure_fn = exact_closure
+    if max_queries is not None:
+        base_closure = closure_fn
+
+        def closure_fn(state, support_provider, **kwargs):
+            return base_closure(
+                state, support_provider, max_queries=max_queries, **kwargs
+            )
+
+    pruned, result = _prune_with_closure(
+        forest,
+        prefix_ids,
+        provider,
+        pack_id=pack_id,
+        constraint_version=constraint_version,
+        bounds=bounds,
+        unknown_policy=unknown_policy,
+        state=state,
+        cache=cache,
+        certificate_store=certificate_store,
+        closure_fn=closure_fn,
+    )
+    return (forest if mode == "diagnostic" else pruned), result
 
 
 def goal_support_diagnostic_observe(

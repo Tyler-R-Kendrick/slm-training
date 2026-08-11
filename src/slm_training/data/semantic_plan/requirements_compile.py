@@ -16,6 +16,7 @@ from __future__ import annotations
 import hashlib
 import re
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Iterable, Mapping
 
 from slm_training.data.contract import GenerationRequest
@@ -60,6 +61,7 @@ __all__ = [
     "evaluate_goal_constraints",
     "evaluation_state_decision_table",
     "evaluator_digest",
+    "evaluator_implementation_digest",
     "evaluator_identity",
     "pack_identity_digest",
     "request_production_digest",
@@ -70,6 +72,11 @@ __all__ = [
 
 COMPILER_VERSION = "pgs-a02.requirements_compile/v1"
 EVALUATOR_VERSION = "pgs-a03.requirements_evaluate/v1"
+
+
+def evaluator_implementation_digest() -> str:
+    """Content identity for profiles that pin typed constraint semantics."""
+    return hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 
 _GOLD_LEAK_KEYS = frozenset(
     {
@@ -160,7 +167,7 @@ COMPILE_RULES: Mapping[str, CompileRule] = {
     "pack_unsupported_production": CompileRule(
         "pgs-a02.pack_unsupported_production",
         "v1",
-        "Pack-declared unsupported grammar productions.",
+        "Pack-declared unsupported grammar productions; uncompiled until terminal production traces exist.",
         "pack_contract",
     ),
 }
@@ -190,7 +197,7 @@ def digest_recipe() -> dict[str, Any]:
         },
         "evaluator_digest": {
             "algorithm": "sha256",
-            "payload": "canonical_json({evaluator_version, evaluation_state_decision_table, supported_constraint_kinds, deferred_constraint_kinds})",
+            "payload": "canonical_json({evaluator_version, implementation_digest, evaluation_state_decision_table, supported_constraint_kinds, deferred_constraint_kinds})",
             "notes": "Owned by requirements_compile.py; excludes raw program/prompt content.",
         },
     }
@@ -215,7 +222,6 @@ def compile_rule_table() -> dict[str, Any]:
             "generation_request.runtime_symbols",
             "generation_request.output_kind",
             "generation_request.output_category",
-            "pack.grammar_capability_authority.unsupported_alternatives",
             "problem.verification_requirements",
         ],
         "structured_extractor_skip_prefixes": sorted(_STRUCTURED_EXTRACTOR_PREFIXES),
@@ -228,7 +234,7 @@ def source_to_authority_matrix() -> dict[str, Any]:
         "generation_request": {
             "authority_tier": "compiler-hard",
             "completeness": "EXACT",
-            "may_prune": False,
+            "may_prune": True,
             "partition": "hard",
         },
         "pack_contract": {
@@ -341,7 +347,7 @@ def _hard_slot_inventory(request: GenerationRequest) -> GoalConstraintV1 | None:
         source_digest=source_digest(payload),
         authority_tier="compiler-hard",
         completeness="EXACT",
-        may_prune=False,
+        may_prune=True,
     )
 
 
@@ -359,7 +365,7 @@ def _hard_runtime_symbols(request: GenerationRequest) -> tuple[GoalConstraintV1,
                 source_digest=source_digest(payload),
                 authority_tier="compiler-hard",
                 completeness="EXACT",
-                may_prune=False,
+                may_prune=True,
             )
         )
     return tuple(constraints)
@@ -376,7 +382,7 @@ def _hard_output_kind(request: GenerationRequest) -> GoalConstraintV1:
         source_digest=source_digest(payload),
         authority_tier="compiler-hard",
         completeness="EXACT",
-        may_prune=False,
+        may_prune=True,
     )
 
 
@@ -393,7 +399,7 @@ def _hard_output_category(request: GenerationRequest) -> GoalConstraintV1 | None
         source_digest=source_digest(payload),
         authority_tier="compiler-hard",
         completeness="EXACT",
-        may_prune=False,
+        may_prune=True,
     )
 
 
@@ -402,6 +408,8 @@ def _hard_verification_requirements(
 ) -> tuple[GoalConstraintV1, ...]:
     constraints: list[GoalConstraintV1] = []
     for requirement in sorted(requirements, key=lambda item: item.requirement_id):
+        if not requirement.mandatory:
+            continue
         if requirement.kind == "gate":
             payload = {
                 "gate": requirement.gate,
@@ -435,29 +443,15 @@ def _hard_verification_requirements(
     return tuple(constraints)
 
 
-def _hard_pack_restrictions(pack: DslPack) -> tuple[GoalConstraintV1, ...]:
+def _uncompiled_pack_restrictions(pack: DslPack) -> tuple[str, ...]:
     authority = pack.grammar_capability_authority
     if authority is None or not authority.unsupported_alternatives:
         return ()
     rule = COMPILE_RULES["pack_unsupported_production"]
-    constraints: list[GoalConstraintV1] = []
-    for production_id in sorted(authority.unsupported_alternatives):
-        reason = authority.unsupported_alternatives[production_id]
-        payload = {"production_id": production_id, "reason": reason}
-        constraints.append(
-            GoalConstraintV1(
-                constraint_id=f"hard.pack.unsupported.{production_id}",
-                kind="binding_resolved",
-                parameters={"production_id": production_id, "forbidden": True, "reason": reason},
-                source_kind="pack_contract",
-                source_id=f"{rule.qualified_id}:{production_id}",
-                source_digest=source_digest(payload),
-                authority_tier="compiler-hard",
-                completeness="EXACT",
-                may_prune=True,
-            )
-        )
-    return tuple(constraints)
+    return tuple(
+        f"{rule.qualified_id}:{production_id}"
+        for production_id in sorted(authority.unsupported_alternatives)
+    )
 
 
 def _extractor_rule_key(fact: RequirementFact) -> str | None:
@@ -700,9 +694,7 @@ def compile_goal_constraints(
     if output_category is not None:
         constraints.append(output_category)
     constraints.extend(_hard_verification_requirements(problem.verification_requirements))
-    constraints.extend(_hard_pack_restrictions(pack))
-
-    uncompiled: list[str] = []
+    uncompiled: list[str] = list(_uncompiled_pack_restrictions(pack))
     compiled_ids_by_fact: dict[str, str] = {}
     for fact in sorted(problem.requirements.facts, key=lambda item: item.fact_id):
         compiled = _compile_requirement_fact(fact)
@@ -785,6 +777,7 @@ def evaluator_identity() -> dict[str, str]:
 def evaluator_digest() -> str:
     payload = {
         "evaluator_version": EVALUATOR_VERSION,
+        "implementation_digest": evaluator_implementation_digest(),
         "decision_table": evaluation_state_decision_table(),
         "supported_kinds": list(supported_constraint_kinds()),
         "deferred_kinds": list(deferred_constraint_kinds()),
