@@ -65,3 +65,10 @@ hooks these certificates into the existing preflight seam
 (`autoresearch/preflight/mechanism_no_effect.py`). Skip only on complete
 trigger-absence; unknown / incomplete always run.
 
+## Autoresearch dominance skip (INTEG-08)
+
+[`integ-08-corpus-local-dominance.md`](integ-08-corpus-local-dominance.md)
+seals corpus-local dominance evidence on the preflight seam
+(`autoresearch/preflight/mechanism_dominance.py`), records dominated skips into
+`ExhaustedKnobLedger`, and projects into `mechanism_disposition_report`.
+Cheaper no-effect is distinguished from dominated; unknown never certifies.

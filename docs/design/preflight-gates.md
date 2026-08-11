@@ -199,3 +199,26 @@ Candidate keys (all optional; check idles without `mechanism_id`)::
 
 Design notes: [`integ-02-mechanism-no-effect-preflight.md`](integ-02-mechanism-no-effect-preflight.md).
 
+## The `mechanism_dominance` check (INTEG-08 / SLM-562)
+
+Optional corpus-local dominance admission. Reuses KERN-08
+`emit_dominance_certificate` — durable skip evidence into exhausted-knob /
+disposition owners, never a parallel store.
+
+Candidate keys (opt-in; requires `mechanism_id` **and**
+`baseline_id`/`treatment_id`/`model_id`)::
+
+    mechanism_id, baseline_id, treatment_id, model_id, corpus_id,
+    corpus_version, observations|locked_corpus, scan_complete,
+    cost_model, campaign_id, experiment_id, manifest_sha256,
+    knob_signature_sha256, claim_class
+
+| verdict | condition |
+| --- | --- |
+| `block` (`skip_dominated`) | complete scan + dominance certificate emits |
+| `pass` (`no_effect_cheaper` / `unknown` / idle) | cheaper no-effect, incomplete evidence, or missing identity |
+| `warn` | check crash (package fail-soft law) |
+
+Design notes: [`integ-08-corpus-local-dominance.md`](integ-08-corpus-local-dominance.md).
+
+

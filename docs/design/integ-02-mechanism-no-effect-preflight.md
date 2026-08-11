@@ -47,3 +47,8 @@ not rewritten — admission only decides spend vs skip.
 ## Tests
 
 `tests/test_autoresearch/test_mechanism_no_effect_preflight.py`.
+
+## Related
+
+Corpus-local dominance skip evidence (same output and not cheaper):
+[`integ-08-corpus-local-dominance.md`](integ-08-corpus-local-dominance.md).
