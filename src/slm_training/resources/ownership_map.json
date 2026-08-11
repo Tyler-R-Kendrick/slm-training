@@ -99,7 +99,7 @@
       ],
       "authority_tier": "verifier-hard",
       "design_doc": "docs/design/verified-scope-solver.md",
-      "notes": "PGS-B01 (SLM-497): digest-bound GoalVerifierProfileV1 modes (production_exact/evaluation_oracle/advisory_diagnostic) and privacy-bounded GoalTerminalEvidenceV1 terminal records layered on compiled_goal_constraints without duplicating GoalConstraintEvaluationV1 or executing gates/evaluators. Generated JSON Schema: src/slm_training/resources/goal_verifier_profile.schema.json and goal_terminal_evidence.schema.json (scripts/sync_goal_support_schema.py --check)."
+      "notes": "PGS-B01/B02 (SLM-497/498): digest-bound GoalVerifierProfileV1 modes and privacy-bounded GoalTerminalEvidenceV1 contracts (goal_support.py); OpenUIGoalVerifier terminal tri-state composition lives in openui_support.py and reuses evaluate_goal_constraints, evaluate_gate, and pinned evaluators without VSS search. Generated JSON Schema: goal_verifier_profile.schema.json and goal_terminal_evidence.schema.json (scripts/sync_goal_support_schema.py --check)."
     },
     {
       "id": "requirements_compile",

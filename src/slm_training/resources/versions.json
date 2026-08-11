@@ -1197,7 +1197,7 @@
       ]
     },
     "dsl.completion_kernel": {
-      "version": "v23",
+      "version": "v24",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/grammar/fastpath/engine.py",
@@ -1230,6 +1230,11 @@
         "docs/design/hybrid-unmask-hx5-20260804.md"
       ],
       "history": [
+        {
+          "version": "v24",
+          "date": "2026-08-10",
+          "note": "PGS-B02 (SLM-498): add OpenUIGoalVerifier, GoalTerminalEvidenceTrace, and tri-state terminal composition helpers to openui_support.py."
+        },
         {
           "version": "v23",
           "date": "2026-08-10",
@@ -1879,7 +1884,7 @@
       ]
     },
     "dsl.solver.goal_support": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/solver/goal_support.py",
@@ -1887,9 +1892,15 @@
         "src/slm_training/resources/goal_verifier_profile.schema.json",
         "src/slm_training/resources/goal_terminal_evidence.schema.json",
         "src/slm_training/resources/test_cases/test_dsl/test_solver/test_goal_support.json",
-        "tests/test_dsl/test_solver/test_goal_support.py"
+        "tests/test_dsl/test_solver/test_goal_support.py",
+        "tests/test_dsl/test_openui_goal_verifier.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-10",
+          "note": "PGS-B02 (SLM-498): OpenUIGoalVerifier with mandatory tri-state ACCEPT/REJECT/UNAVAILABLE composition over well-formedness, ProgramSpec/SemanticPlanV1 projection, evaluate_goal_constraints, evaluate_gate, pinned evaluators, and GoalTerminalEvidenceV1 trace emission."
+        },
         {
           "version": "v2",
           "date": "2026-08-10",
@@ -2901,7 +2912,7 @@
       ]
     },
     "governance.ownership_map": {
-      "version": "v16",
+      "version": "v17",
       "kind": "gate",
       "paths": [
         "src/slm_training/resources/ownership_map.json",
@@ -2913,6 +2924,11 @@
         "tests/test_data/test_synthesis_contract_versions.py"
       ],
       "history": [
+        {
+          "version": "v17",
+          "date": "2026-08-10",
+          "note": "PGS-B02 (SLM-498): document OpenUIGoalVerifier terminal verifier ownership under goal_support/openui_support."
+        },
         {
           "version": "v16",
           "date": "2026-08-10",
