@@ -2877,7 +2877,7 @@
       ]
     },
     "governance.ownership_map": {
-      "version": "v12",
+      "version": "v13",
       "kind": "gate",
       "paths": [
         "src/slm_training/resources/ownership_map.json",
@@ -2889,6 +2889,11 @@
         "tests/test_data/test_synthesis_contract_versions.py"
       ],
       "history": [
+        {
+          "version": "v13",
+          "date": "2026-08-10",
+          "note": "PGS-A01 (SLM-494): register compiled_goal_constraints subsystem (GoalConstraintV1/CompiledGoalConstraintSetV1/GoalConstraintEvaluationV1) and downstream_extension_map row; mirrors into repository-ownership-map.md."
+        },
         {
           "version": "v12",
           "date": "2026-08-10",
@@ -6949,6 +6954,11 @@
         "docs/design/iter-slm146-semantic-plan-compiler-20260720.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-10",
+          "note": "no-bump: PGS-A01 (SLM-494) publishes AUTHORITY_TIER_VERIFIER_HARD beside existing ownership-map tier constants; no projection behavior change."
+        },
         {
           "version": "v2",
           "date": "2026-08-08",
@@ -16642,6 +16652,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-08-10",
+          "note": "no-bump: PGS-A01 (SLM-494) module docstring cross-links goal_constraints as the compiled constraint owner; no SemanticPlanV1 schema/behavior change."
+        },
+        {
+          "version": "v1",
           "date": "2026-08-08",
           "note": "no-bump: SLM-458 (VCE-005) adds select_shuffled_oracle/build_baseline_intervention re-exports to data/semantic_plan/__init__.py (the underlying symbols are owned by governance.ownership_map's 'plan_oracle_substitutor' row, not this component); import-surface change only, no behavior here."
         },
@@ -16990,6 +17005,23 @@
           "version": "v1",
           "date": "2026-07-31",
           "note": "Default-off advisory semantic-factor frontier: role-ported factors, HyCE-style restart diffusion, residual scorer with singleton zero-work, anti-E237 fixture campaign SFF-anti-e237-v1 (wiring-only). RL/spectral/topology-authority/recurrent-SHIFT not implemented."
+        }
+      ]
+    },
+    "data.progspec.goal_constraints": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/data/progspec/goal_constraints.py",
+        "scripts/sync_compiled_goal_constraint_set_schema.py",
+        "src/slm_training/resources/compiled_goal_constraint_set.schema.json",
+        "tests/test_data/test_progspec/test_goal_constraints.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-10",
+          "note": "PGS-A01 (SLM-494): register CompiledGoalConstraintSetV1 / GoalConstraintV1 / GoalConstraintEvaluationV1 with fail-closed may_prune law, non-escalating merge helpers, deterministic digest, and generated JSON Schema snapshot."
         }
       ]
     },

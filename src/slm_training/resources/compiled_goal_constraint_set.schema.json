@@ -1,0 +1,231 @@
+{
+  "$defs": {
+    "GoalConstraintAmbiguityGroup": {
+      "additionalProperties": false,
+      "description": "Mutually exclusive compiled constraints that must not be silently resolved.",
+      "properties": {
+        "group_id": {
+          "minLength": 1,
+          "title": "Group Id",
+          "type": "string"
+        },
+        "member_constraint_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 2,
+          "title": "Member Constraint Ids",
+          "type": "array"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Note"
+        }
+      },
+      "required": [
+        "group_id",
+        "member_constraint_ids"
+      ],
+      "title": "GoalConstraintAmbiguityGroup",
+      "type": "object"
+    },
+    "GoalConstraintV1": {
+      "additionalProperties": false,
+      "description": "One compiled goal constraint with explicit authority and completeness.",
+      "properties": {
+        "schema_version": {
+          "default": "goal_constraint/v1",
+          "pattern": "^goal_constraint/v1$",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "constraint_id": {
+          "minLength": 1,
+          "title": "Constraint Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "slot_present",
+            "slot_inventory_exact",
+            "runtime_symbol_accounted",
+            "output_kind_equals",
+            "output_category_equals",
+            "component_count_at_least",
+            "component_absent",
+            "binding_resolved",
+            "binding_role_compatible",
+            "topology_relation_present",
+            "required_gate_passes"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "parameters": {
+          "additionalProperties": true,
+          "title": "Parameters",
+          "type": "object"
+        },
+        "source_kind": {
+          "enum": [
+            "generation_request",
+            "pack_contract",
+            "verification_requirement",
+            "prompt_requirement",
+            "evaluation_fixture",
+            "oracle_diagnostic"
+          ],
+          "title": "Source Kind",
+          "type": "string"
+        },
+        "source_id": {
+          "minLength": 1,
+          "title": "Source Id",
+          "type": "string"
+        },
+        "source_digest": {
+          "minLength": 1,
+          "title": "Source Digest",
+          "type": "string"
+        },
+        "authority_tier": {
+          "enum": [
+            "compiler-hard",
+            "verifier-hard",
+            "advisory-learned",
+            "oracle-diagnostic",
+            "evaluation-only"
+          ],
+          "title": "Authority Tier",
+          "type": "string"
+        },
+        "completeness": {
+          "enum": [
+            "EXACT",
+            "SOUND_OVERAPPROX",
+            "HEURISTIC",
+            "UNKNOWN"
+          ],
+          "title": "Completeness",
+          "type": "string"
+        },
+        "may_prune": {
+          "default": false,
+          "title": "May Prune",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "constraint_id",
+        "kind",
+        "source_kind",
+        "source_id",
+        "source_digest",
+        "authority_tier",
+        "completeness"
+      ],
+      "title": "GoalConstraintV1",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Versioned compiled goal-constraint bundle with deterministic digest.",
+  "properties": {
+    "schema_version": {
+      "default": "compiled_goal_constraint_set/v1",
+      "pattern": "^compiled_goal_constraint_set/v1$",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "problem_digest": {
+      "minLength": 1,
+      "title": "Problem Digest",
+      "type": "string"
+    },
+    "request_digest": {
+      "minLength": 1,
+      "title": "Request Digest",
+      "type": "string"
+    },
+    "pack_identity_digest": {
+      "minLength": 1,
+      "title": "Pack Identity Digest",
+      "type": "string"
+    },
+    "compiler_version": {
+      "minLength": 1,
+      "title": "Compiler Version",
+      "type": "string"
+    },
+    "constraints": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/GoalConstraintV1"
+      },
+      "title": "Constraints",
+      "type": "array"
+    },
+    "hard_constraint_ids": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Hard Constraint Ids",
+      "type": "array"
+    },
+    "advisory_constraint_ids": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Advisory Constraint Ids",
+      "type": "array"
+    },
+    "evaluation_constraint_ids": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Evaluation Constraint Ids",
+      "type": "array"
+    },
+    "uncompiled_source_ids": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Uncompiled Source Ids",
+      "type": "array"
+    },
+    "ambiguity_groups": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/GoalConstraintAmbiguityGroup"
+      },
+      "title": "Ambiguity Groups",
+      "type": "array"
+    },
+    "digest": {
+      "default": "",
+      "pattern": "^[0-9a-f]{64}$|^$",
+      "title": "Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "problem_digest",
+    "request_digest",
+    "pack_identity_digest",
+    "compiler_version"
+  ],
+  "title": "CompiledGoalConstraintSetV1",
+  "type": "object"
+}
