@@ -34,9 +34,14 @@ from typing import Any
 from slm_training.data.contract import GenerationRequest
 from slm_training.dsl.grammar.fastpath.compiler_draft import CompletionForest
 from slm_training.dsl.solver.adapters import completion_forest_state
-from slm_training.dsl.solver.closure import ClosureResult, SupportProvider, exact_closure
-from slm_training.dsl.solver.state import SolverBounds
+from slm_training.dsl.solver.closure import (
+    ClosureResult,
+    SupportProvider,
+    exact_closure,
+)
+from slm_training.dsl.solver.state import SolverBounds, SupportVerdict
 from slm_training.dsl.solver.support import SupportCertificate
+from slm_training.models.decode_stats import GoalSupportTelemetrySink
 
 UNKNOWN_POLICIES = ("keep_and_rank",)
 GOAL_SUPPORT_MODES = ("off", "diagnostic", "certified")
@@ -102,6 +107,56 @@ class GoalSupportDiagnosticObservation:
     closure_result: ClosureResult | None = None
 
 
+class InstrumentedGoalSupportProvider:
+    """Thin telemetry wrapper over :class:`GoalSupportProvider` for decode paths."""
+
+    def __init__(self, inner: SupportProvider, sink: GoalSupportTelemetrySink) -> None:
+        self._inner = inner
+        self._sink = sink
+
+    @property
+    def backend_version(self) -> str:
+        return self._inner.backend_version
+
+    def validate_identities(self, state) -> None:
+        self._inner.validate_identities(state)
+
+    def check(self, state, query):
+        from slm_training.dsl.solver.goal_support import GoalSupportProvider
+
+        if not isinstance(self._inner, GoalSupportProvider):
+            return self._inner.check(state, query)
+        result, sidecar = self._inner.check_with_sidecar(state, query)
+        self._sink.backtracks += int(result.counters.backtracks)
+        if sidecar.obstruction_core_digest:
+            self._sink.obstruction_cores += 1
+        replay = self._inner.replay(result.certificate, state=state)
+        if not replay.ok:
+            self._sink.replay_failures += 1
+        elif result.verdict is SupportVerdict.UNKNOWN:
+            # Replay failure or budget UNKNOWN — never count as unsupported/pruned.
+            pass
+        return result
+
+    def replay(self, certificate, *, state):
+        replay = self._inner.replay(certificate, state=state)
+        if not replay.ok:
+            self._sink.replay_failures += 1
+        return replay
+
+
+def instrument_goal_support_provider(
+    provider: SupportProvider,
+    sink: GoalSupportTelemetrySink,
+) -> SupportProvider:
+    """Wrap a goal-support provider for request-local telemetry when enabled."""
+    from slm_training.dsl.solver.goal_support import GoalSupportProvider
+
+    if isinstance(provider, GoalSupportProvider):
+        return InstrumentedGoalSupportProvider(provider, sink)
+    return provider
+
+
 def build_goal_support_decode_binding(
     request: GenerationRequest | None,
     *,
@@ -113,12 +168,12 @@ def build_goal_support_decode_binding(
             ready=False, disable_reason="missing_generation_request"
         )
     try:
+        from slm_training.data.progspec.prompt_requirements import (
+            PromptSemanticRequirementsV1,
+        )
         from slm_training.data.progspec.synthesis_problem import (
             PackIdentityV1,
             VerifiedSynthesisProblemV1,
-        )
-        from slm_training.data.progspec.prompt_requirements import (
-            PromptSemanticRequirementsV1,
         )
         from slm_training.data.semantic_plan.requirements_compile import (
             compile_goal_constraints,
@@ -274,7 +329,10 @@ def goal_support_certified_prune(
     certificate_store: dict[str, SupportCertificate] | None = None,
 ) -> tuple[CompletionForest, ClosureResult | None]:
     """Certified goal-support pruning via ``exact_goal_closure`` authority guard."""
-    from slm_training.dsl.solver.goal_support import GoalSupportProvider, exact_goal_closure
+    from slm_training.dsl.solver.goal_support import (
+        GoalSupportProvider,
+        exact_goal_closure,
+    )
 
     if not isinstance(provider, GoalSupportProvider):
         raise ValueError("goal_support_certified_prune requires GoalSupportProvider")
@@ -306,7 +364,10 @@ def goal_support_diagnostic_observe(
     certificate_store: dict[str, SupportCertificate] | None = None,
 ) -> tuple[CompletionForest, GoalSupportDiagnosticObservation]:
     """Run goal-support closure for counters/evidence; return the original forest."""
-    from slm_training.dsl.solver.goal_support import GoalSupportProvider, exact_goal_closure
+    from slm_training.dsl.solver.goal_support import (
+        GoalSupportProvider,
+        exact_goal_closure,
+    )
 
     if not isinstance(provider, GoalSupportProvider):
         raise ValueError("goal_support_diagnostic_observe requires GoalSupportProvider")

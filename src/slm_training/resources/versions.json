@@ -1440,6 +1440,11 @@
       "history": [
         {
           "version": "v14",
+          "date": "2026-08-10",
+          "note": "no-bump: PGS-E02 (SLM-505) goal_support_* telemetry regression tests in tests/test_models/test_decode_stats.py; decode_stats.py owned by harness.model_build.eval."
+        },
+        {
+          "version": "v14",
           "date": "2026-08-08",
           "note": "no-bump: add PCT-007/SLM-452 MechanismActivationV1 regression tests to tests/test_models/test_decode_stats.py; registry.py and pack.py unchanged."
         },
@@ -1884,7 +1889,7 @@
       ]
     },
     "dsl.solver.goal_support": {
-      "version": "v7",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/solver/decode.py",
@@ -1907,6 +1912,11 @@
         "tests/test_models/test_solver_decode_integration.py"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-08-10",
+          "note": "PGS-E02 (SLM-505): InstrumentedGoalSupportProvider telemetry wrapper on decode seam; goal-support counter folding from closure/domain-adequacy into DecodeStats; focused decode/integration tests."
+        },
         {
           "version": "v7",
           "date": "2026-08-10",
@@ -12242,7 +12252,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v97",
+      "version": "v98",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -12263,6 +12273,11 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v98",
+          "date": "2026-08-10",
+          "note": "PGS-E02 (SLM-505): canonical goal_support_* decode telemetry counters, GoalSupportTelemetrySink, fold_goal_support_closure/classification, build_goal_support_mechanism_activation, DecodeStats.from_dict additive migration, and instrumented provider wiring tests."
+        },
         {
           "version": "v97",
           "date": "2026-08-10",
@@ -14798,7 +14813,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v314",
+      "version": "v315",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -14843,6 +14858,11 @@
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
       "history": [
+        {
+          "version": "v315",
+          "date": "2026-08-10",
+          "note": "PGS-E02 (SLM-505): fold goal_support_* decode telemetry via InstrumentedGoalSupportProvider + fold_goal_support_closure; diagnostic no longer aliases solver_* counters; incomplete-forest skip counter."
+        },
         {
           "version": "v314",
           "date": "2026-08-10",

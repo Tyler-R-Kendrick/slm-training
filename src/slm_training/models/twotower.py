@@ -11563,21 +11563,18 @@ class TwoTowerModel(nn.Module):
 
         return GoalSupportProvider(expander, profile, factory), expander, bounds, cv
 
-    def _record_goal_support_diagnostic(self, observation, stats) -> None:
-        if stats is None:
+    def _record_goal_support_diagnostic(self, observation, stats, *, mode: str, sink) -> None:
+        from slm_training.models.decode_stats import fold_goal_support_closure
+
+        if stats is None or observation is None:
             return
-        stats.solver_enabled += 1
-        if not observation.observed:
-            return
-        result = observation.closure_result
-        if result is None:
-            return
-        stats.solver_closure_passes += 1
-        stats.solver_support_queries += int(result.counters.support_queries)
-        stats.solver_supported += int(result.counters.supported)
-        stats.solver_unsupported += int(result.counters.unsupported)
-        stats.solver_unknown += int(result.counters.unknown)
-        stats.solver_certified_removed += int(result.counters.candidates_removed)
+        if observation.observed and observation.closure_result is not None:
+            fold_goal_support_closure(
+                stats,
+                observation.closure_result,
+                mode=mode,
+                sink=sink,
+            )
 
     def _goal_support_apply_forest(self, forest, prefix, plan_row: int):
         mode = self._goal_support_mode()
@@ -11595,24 +11592,35 @@ class TwoTowerModel(nn.Module):
         from slm_training.dsl.solver.decode import (
             goal_support_certified_prune,
             goal_support_diagnostic_observe,
+            instrument_goal_support_provider,
         )
-        from slm_training.models.decode_stats import get_active_stats, timed_ms
+        from slm_training.models.decode_stats import (
+            GoalSupportTelemetrySink,
+            get_active_stats,
+            record_goal_support_incomplete_forest_skip,
+            timed_ms,
+            fold_goal_support_closure,
+        )
 
+        stats = get_active_stats()
+        if forest.coverage != "complete" or not forest.paths:
+            record_goal_support_incomplete_forest_skip(stats, mode)
+            return forest
+        paths_before = {(path.kind, tuple(path.token_ids)) for path in forest.paths}
         provider, expander, bounds, cv = self._build_goal_support_provider(
             prefix, binding
         )
+        sink = GoalSupportTelemetrySink()
+        instrumented = instrument_goal_support_provider(provider, sink)
         policy = str(getattr(self.config, "solver_unknown_policy", "keep_and_rank"))
         root_state = expander.root_state()
         certificate_store: dict = {}
-        stats = get_active_stats()
-        if forest.coverage != "complete" or not forest.paths:
-            return forest
         if mode == "diagnostic":
             with timed_ms(stats, "solver_ms"):
                 forest, observation = goal_support_diagnostic_observe(
                     forest,
                     prefix,
-                    provider,
+                    instrumented,
                     pack_id="openui",
                     constraint_version=cv,
                     bounds=bounds,
@@ -11620,13 +11628,15 @@ class TwoTowerModel(nn.Module):
                     cache={},
                     certificate_store=certificate_store,
                 )
-            self._record_goal_support_diagnostic(observation, stats)
+            self._record_goal_support_diagnostic(
+                observation, stats, mode=mode, sink=sink
+            )
             return forest
         with timed_ms(stats, "solver_ms"):
             pruned, result = goal_support_certified_prune(
                 forest,
                 prefix,
-                provider,
+                instrumented,
                 pack_id="openui",
                 constraint_version=cv,
                 bounds=bounds,
@@ -11635,8 +11645,15 @@ class TwoTowerModel(nn.Module):
                 cache={},
                 certificate_store=certificate_store,
             )
-        if result is not None:
-            self._record_solver_metrics(result, root_state, certificate_store, stats)
+        if stats is not None and result is not None:
+            paths_after = {(path.kind, tuple(path.token_ids)) for path in pruned.paths}
+            fold_goal_support_closure(
+                stats,
+                result,
+                mode=mode,
+                sink=sink,
+                forest_choice_changed=(paths_after != paths_before),
+            )
         return pruned
 
     def _solver_prune_forest(self, forest, prefix):
