@@ -298,6 +298,14 @@
       "status": "present",
       "blocker_issue": null,
       "notes": "may_modify / must_freeze sets are machine-checked for disjointness and non-emptiness."
+    },
+    {
+      "id": "evidence.campaign_formal_empirical",
+      "category": "evidence",
+      "required_owner": "src/slm_training/autoresearch/campaign_formal_evidence.py",
+      "status": "present",
+      "blocker_issue": null,
+      "notes": "INTEG-03 / SLM-556: optional formal\u2194empirical split on CampaignResultV1; proof cannot authorize ship/promotion."
     }
   ]
 }

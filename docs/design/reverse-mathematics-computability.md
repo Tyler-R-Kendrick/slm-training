@@ -1,6 +1,6 @@
 # Reverse mathematics, computability, and canonical evidence ownership
 
-**Status:** KERN-11 fixture-level proof-trace refinement (SLM-539); INTEG-01 canonical proof-trace projection (SLM-528); HARN-09 proposition-preserving self-healing (SLM-560); HARN-08 conservative RM labeling / anti-overclaim (SLM-537); HARN-06 constructivization + counterexample validators landed (SLM-546); HARN-07 quantitative-bound extraction (SLM-547); HARN-05 reversal/bidirectional validation (SLM-545); HARN-04 assumption ablation (SLM-544); EVID-03 four-axis ledger (SLM-519); HARN-03 runner/replay/report (SLM-536); HARN-02 schemas (SLM-527); profile + parity (HARN-01 / SLM-520); owner map (EVID-01 / SLM-515)  
+**Status:** INTEG-03 campaign formal/empirical linkage (SLM-556); KERN-11 fixture-level proof-trace refinement (SLM-539); INTEG-01 canonical proof-trace projection (SLM-528); HARN-09 proposition-preserving self-healing (SLM-560); HARN-08 conservative RM labeling / anti-overclaim (SLM-537); HARN-06 constructivization + counterexample validators landed (SLM-546); HARN-07 quantitative-bound extraction (SLM-547); HARN-05 reversal/bidirectional validation (SLM-545); HARN-04 assumption ablation (SLM-544); EVID-03 four-axis ledger (SLM-519); HARN-03 runner/replay/report (SLM-536); HARN-02 schemas (SLM-527); profile + parity (HARN-01 / SLM-520); owner map (EVID-01 / SLM-515)  
 **Base SHA:** `980aa465223adf7822f82930550c92b9240333ca` (`origin/main` at audit)  
 **Machine-readable map:** [`src/slm_training/resources/revmath_owner_map.json`](../../src/slm_training/resources/revmath_owner_map.json)  
 **Harness parity matrix:** [`src/slm_training/resources/revmath_harness_parity.json`](../../src/slm_training/resources/revmath_harness_parity.json)  
@@ -181,6 +181,7 @@ reject weaken-theorem / add-axiom / increase-budget / change-corpus paths.
 | `revmath_failure_witness` | witness_adapter | `harnesses/reasoning/revmath/failure_witness.py` | `route_revmath_failure`, `RevmathFailureEvidenceV1`, `feed_repair_session_to_disposition` | INTEG-05 failure→VerifierWitnessV1 + disposition feedback |
 | `revmath_replay` | replay | `harnesses/reasoning/revmath/replay.py` | `build_revmath_replay_bundle` | HARN-03 ReplayBundleV1 composition |
 | `revmath_report` | report | `harnesses/reasoning/revmath/report.py` | `build_revmath_report` | HARN-03 typed reports |
+| `campaign_formal_evidence` | campaign_evidence_link | `autoresearch/campaign_formal_evidence.py` | `CampaignFormalEmpiricalSplitV1`, `link_four_axis_and_revmath`, `decision_support_report` | INTEG-03 optional formal↔empirical refs on CampaignResultV1 |
 | `revmath_profile_binding` | campaign_binding | `harnesses/reasoning/revmath/profile_binding.py` | `run_revmath_profile` | HARN-10 ExperimentCampaignV1 lock + evidence |
 | `revmath_profile_cli` | command | `scripts/run_revmath_profile.py` | `main` | HARN-10 locked profile CLI |
 | `continuous_formal_promote` | command | `scripts/run_autotrain_continuous.py` | `ensure_promote_formal_preflight` | promotion gate |
@@ -198,6 +199,7 @@ Cross-links to the global ownership map (`ownership_map.json` subsystems): where
 | EVID-06 / SLM-526 | `formal_object_schema` | no | **done** — `formal_authority/v2` adapts `FormalObjectV1` + `FormalPreflightV1` |
 | HARN-01 / SLM-520 | `reasoning_harness_parent` | no | register `reasoning/revmath` profile + parity matrix |
 | HARN-09 / SLM-560 | `semantic_repair` | yes (`self_healing.py`) | **done** — proposition-preserving repair controller; lineage extends SemanticRepairRecordV1 without forking distill |
+| INTEG-03 / SLM-556 | `experiment_campaign` | yes (`campaign_formal_evidence.py` + profile_binding) | **done** — optional formal/empirical split on CampaignResultV1; decision-support report; locks unchanged |
 | HARN-10 / SLM-548 | `experiment_campaign` | yes (`profile_binding.py`) | **done** — lock ExperimentCampaignV1 via CampaignStore; formal/evidence/disposition/replay through canonical owners; `run_revmath_profile` CLI |
 
 ## Prohibited duplicate owners
@@ -212,6 +214,15 @@ Agents **must not** add modules that claim semantic authority for:
 | Orchestration / trainer | `harnesses/reasoning/` + campaign owners | `revmath_trainer`, `revmath_orchestrator` |
 
 `verify_revmath_owners` scans `src/` and `scripts/` for these shadow patterns and fails closed.
+
+## INTEG-03 — Campaign formal/empirical linkage (SLM-556)
+
+Optional `CampaignResultV1.formal_empirical` (`campaign_formal_empirical_split/v1`)
+links FormalAuthorityV2, four-axis ledgers, revmath reports/results, bound ASTs,
+and an optional KERN-11 refinement-trace digest slot. Formal and empirical
+statuses are independent: proved preflight + failed empirical (or weak formal +
+successful empirical) must not conflate. Query via `decision_support_report`.
+Design note: [`integ-03-campaign-formal-evidence.md`](integ-03-campaign-formal-evidence.md).
 
 ## INTEG-05 — Failure/repair routing through witness & disposition (SLM-571)
 

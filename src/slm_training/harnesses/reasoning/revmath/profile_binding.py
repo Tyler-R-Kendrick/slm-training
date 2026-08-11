@@ -17,6 +17,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from slm_training.autoresearch.campaign_formal_evidence import (
+    decision_support_report,
+    empirical_status_from_result,
+    formal_status_from_authority,
+    ledger_axis_statuses,
+    link_four_axis_and_revmath,
+    revmath_report_digest,
+)
 from slm_training.autoresearch.experiment_campaign import (
     ArtifactRequirementV1,
     CampaignArmV1,
@@ -623,6 +631,70 @@ def run_revmath_profile(
     )
     store.write_artifact("mechanism_dispositions", disposition)
 
+    formal_status = "absent"
+    authority_digests: list[str] = []
+    ledger_digest = None
+    axis_statuses = ledger_axis_statuses(None)
+    remainder_ids: list[str] = []
+    # Prefer latest formal_authority/v2 artifact when present (EVID-06).
+    auth_dir = store.root / "artifacts" / "formal_authority"
+    if auth_dir.is_dir():
+        auth_files = sorted(auth_dir.glob("*.json"))
+        if auth_files:
+            auth_payload = json.loads(auth_files[-1].read_text(encoding="utf-8"))
+            formal_status = formal_status_from_authority(auth_payload)
+            authority_digests.append(auth_files[-1].stem)
+            # four_axis digest may be on the authority envelope
+            ledger_digest = auth_payload.get("four_axis_ledger_sha256")
+            remainder_ids = [
+                str(x) for x in auth_payload.get("empirical_remainder_claim_ids", ())
+            ]
+    report_digest = revmath_report_digest(report)
+    result_digests = tuple(
+        content_sha(run.result.model_dump(mode="json")) for run in runs
+    )
+    failed_runs = False
+    for run in runs:
+        judgment = run.result.judgment
+        payload = judgment.to_dict() if hasattr(judgment, "to_dict") else judgment
+        if isinstance(payload, dict):
+            outcome = str(payload.get("outcome", "")).lower()
+            # KERN-01: witnessed == successful formal observation; refuted/unknown/invalid fail.
+            if outcome not in {"witnessed", "proved", "proven", "certified"}:
+                failed_runs = True
+                break
+    empirical_status = empirical_status_from_result(
+        ship_gates_passed=False,
+        exploratory=lock.manifest.claim_class in {"fixture", "wiring", "diagnostic"},
+        claim_class=lock.manifest.claim_class,
+        endpoint_success=False if failed_runs else (True if runs else None),
+        runs_failed=failed_runs,
+    )
+    # Fixture/wiring profile runs stay exploratory even when tasks prove.
+    if lock.manifest.claim_class in {"fixture", "wiring", "diagnostic"}:
+        empirical_status = "exploratory"
+    formal_empirical = link_four_axis_and_revmath(
+        formal_status=formal_status,  # type: ignore[arg-type]
+        empirical_status=empirical_status,  # type: ignore[arg-type]
+        formal_authority_digests=authority_digests,
+        formal_preflight_digests=formal_digests,
+        four_axis_ledger_sha256=ledger_digest,
+        revmath_report_sha256=report_digest,
+        revmath_result_digests=result_digests,
+        empirical_remainder_claim_ids=remainder_ids,
+        assumption_axis_status=axis_statuses["assumption_strength"],
+        computability_axis_status=axis_statuses["computability"],
+        resource_bounds_axis_status=axis_statuses["resource_bounds"],
+        refinement_axis_status=axis_statuses["implementation_refinement"],
+        notes=(
+            "INTEG-03 linked revmath profile evidence; formal status does not "
+            "authorize ship/promotion."
+        ),
+    )
+    # Persist decision-support report beside campaign results (query surface).
+    support_report = decision_support_report(formal_empirical)
+    store.write_artifact("campaign_decision_support_reports", support_report)
+
     campaign_result = CampaignResultV1(
         campaign_id=lock.manifest.campaign_id,
         experiment_id=lock.manifest.experiment_id,
@@ -635,6 +707,7 @@ def run_revmath_profile(
         artifacts=(),
         exploratory=lock.manifest.claim_class in {"fixture", "wiring", "diagnostic"},
         ship_gates_passed=False,
+        formal_empirical=formal_empirical,
     )
     result_path = store.write_artifact("campaign_results", campaign_result)
     profile = RevmathProfileRunV1(

@@ -611,6 +611,23 @@
       "design_doc": "docs/design/reverse-mathematics-computability.md",
       "ownership_map_subsystem": "experiment_campaign",
       "notes": "HARN-10 CLI entry for locked reasoning/revmath profile runs."
+    },
+    {
+      "id": "campaign_formal_evidence",
+      "kind": "campaign_evidence_link",
+      "owner_module": "src/slm_training/autoresearch/campaign_formal_evidence.py",
+      "owner_symbols": [
+        "CampaignFormalEmpiricalSplitV1",
+        "ContentBoundEvidenceRefV1",
+        "CampaignDecisionSupportV1",
+        "link_four_axis_and_revmath",
+        "decision_support_report",
+        "migrate_campaign_result_payload",
+        "validate_formal_empirical_separation"
+      ],
+      "design_doc": "docs/design/integ-03-campaign-formal-evidence.md",
+      "ownership_map_subsystem": "experiment_campaign",
+      "notes": "INTEG-03 adapter: optional formal\u2194empirical split on CampaignResultV1; reuses FormalAuthorityV2 / four-axis / revmath digests; no parallel campaign DB."
     }
   ],
   "extension_seams": [
@@ -714,6 +731,14 @@
       "extends": "verifier_witness",
       "new_owner_justified": true,
       "justification": "Adapter module under revmath/ localizes failures into evals.semantic_failure.VerifierWitnessV1 and feeds HARN-09 before/after refs into mechanism_disposition; does not fork a failure store.",
+      "status": "done"
+    },
+    {
+      "issue": "INTEG-03",
+      "linear_id": "SLM-556",
+      "extends": "experiment_campaign",
+      "new_owner_justified": true,
+      "justification": "Link adapter under autoresearch/campaign_formal_evidence.py + optional CampaignResultV1.formal_empirical; HARN-10 profile_binding attaches refs; does not fork a campaign or evidence store.",
       "status": "done"
     }
   ],

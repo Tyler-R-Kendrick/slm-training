@@ -1,6 +1,11 @@
 """Autonomous, evidence-grounded OpenUI training research harness."""
 
 from slm_training.autoresearch.rl_gate import assert_rl_ready, assess_rl_readiness
+from slm_training.autoresearch.campaign_formal_evidence import (
+    CampaignFormalEmpiricalSplitV1,
+    decision_support_report,
+    link_four_axis_and_revmath,
+)
 from slm_training.autoresearch.experiment_campaign import (
     CampaignDeviationV1,
     CampaignResultV1,
@@ -35,6 +40,7 @@ __all__ = [
     "AutotrainLoopStateV1",
     "CampaignSpec",
     "CampaignDeviationV1",
+    "CampaignFormalEmpiricalSplitV1",
     "CampaignResultV1",
     "CampaignStore",
     "Diagnosis",
@@ -54,5 +60,7 @@ __all__ = [
     "assert_rl_ready",
     "assess_rl_readiness",
     "campaign_manifest_sha256",
+    "decision_support_report",
+    "link_four_axis_and_revmath",
     "validate_result_claim",
 ]
