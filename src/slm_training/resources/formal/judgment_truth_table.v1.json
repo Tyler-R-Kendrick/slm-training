@@ -1,0 +1,1551 @@
+{
+  "schema": "solver_judgment_truth_table/v1",
+  "cases": [
+    {
+      "id": "invalid_malformed",
+      "inputs": {
+        "malformed_input": true
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "invalid",
+        "payload_kind": "invalid_reason",
+        "unknown_reason": null,
+        "invalid_reason": "malformed_input",
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "invalid_payload_mismatch",
+      "inputs": {
+        "payload_mismatch": true
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "invalid",
+        "payload_kind": "invalid_reason",
+        "unknown_reason": null,
+        "invalid_reason": "payload_mismatch",
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "invalid_unsupported_with_witness",
+      "inputs": {
+        "vss_verdict": "unsupported",
+        "has_witness_digest": true,
+        "exhausted": true,
+        "replay_checked": true,
+        "replay_ok": true
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "invalid",
+        "payload_kind": "invalid_reason",
+        "unknown_reason": null,
+        "invalid_reason": "payload_mismatch",
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "unknown_timeout",
+      "inputs": {
+        "timed_out": true,
+        "vss_verdict": "unsupported",
+        "exhausted": true,
+        "replay_checked": true,
+        "replay_ok": true
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "timeout",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "unknown_skipped_replay",
+      "inputs": {
+        "skipped_replay": true,
+        "vss_verdict": "unsupported",
+        "exhausted": true,
+        "replay_checked": true,
+        "replay_ok": true
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "skipped_replay",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "unknown_unsupported_capability",
+      "inputs": {
+        "unsupported_capability": true
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "unsupported_capability",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "unknown_incomplete_coverage",
+      "inputs": {
+        "incomplete_coverage": true,
+        "vss_verdict": "unsupported"
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "incomplete_coverage",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "unknown_missing_tool",
+      "inputs": {
+        "missing_tool": true
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "missing_tool",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "unknown_inconclusive_no_verdict",
+      "inputs": {},
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "unknown_inconclusive_supported_no_witness",
+      "inputs": {
+        "vss_verdict": "supported",
+        "replay_checked": true,
+        "replay_ok": true
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "witnessed_checked",
+      "inputs": {
+        "vss_verdict": "supported",
+        "has_witness_digest": true,
+        "replay_checked": true,
+        "replay_ok": true
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "witnessed",
+        "payload_kind": "witness",
+        "unknown_reason": null,
+        "invalid_reason": null,
+        "authorizes_semantic": true,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "witnessed_unchecked",
+      "inputs": {
+        "vss_verdict": "supported",
+        "has_witness_digest": true,
+        "replay_checked": true,
+        "replay_ok": true
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "witnessed",
+        "payload_kind": "witness",
+        "unknown_reason": null,
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "refuted_checked",
+      "inputs": {
+        "vss_verdict": "unsupported",
+        "exhausted": true,
+        "replay_checked": true,
+        "replay_ok": true
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "refuted",
+        "payload_kind": "refutation",
+        "unknown_reason": null,
+        "invalid_reason": null,
+        "authorizes_semantic": true,
+        "authorizes_removal": true
+      }
+    },
+    {
+      "id": "refuted_unchecked",
+      "inputs": {
+        "vss_verdict": "unsupported",
+        "exhausted": true,
+        "replay_checked": true,
+        "replay_ok": true
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "refuted",
+        "payload_kind": "refutation",
+        "unknown_reason": null,
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "adversarial_timed_out_blocks_refuted",
+      "inputs": {
+        "vss_verdict": "unsupported",
+        "exhausted": true,
+        "replay_checked": true,
+        "replay_ok": true,
+        "timed_out": true
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "timeout",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "adversarial_skipped_replay_blocks_refuted",
+      "inputs": {
+        "vss_verdict": "unsupported",
+        "exhausted": true,
+        "replay_checked": true,
+        "replay_ok": true,
+        "skipped_replay": true
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "skipped_replay",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "adversarial_unsupported_capability_blocks_refuted",
+      "inputs": {
+        "vss_verdict": "unsupported",
+        "exhausted": true,
+        "replay_checked": true,
+        "replay_ok": true,
+        "unsupported_capability": true
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "unsupported_capability",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "adversarial_incomplete_coverage_blocks_refuted",
+      "inputs": {
+        "vss_verdict": "unsupported",
+        "exhausted": true,
+        "replay_checked": true,
+        "replay_ok": true,
+        "incomplete_coverage": true
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "incomplete_coverage",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "adversarial_missing_tool_blocks_refuted",
+      "inputs": {
+        "vss_verdict": "unsupported",
+        "exhausted": true,
+        "replay_checked": true,
+        "replay_ok": true,
+        "missing_tool": true
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "missing_tool",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_None_False_False_False_False",
+      "inputs": {
+        "vss_verdict": null,
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": false,
+        "replay_ok": false
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_None_False_False_False_True",
+      "inputs": {
+        "vss_verdict": null,
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": false,
+        "replay_ok": false
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_None_False_False_True_False",
+      "inputs": {
+        "vss_verdict": null,
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": false,
+        "replay_ok": false
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_None_False_False_True_True",
+      "inputs": {
+        "vss_verdict": null,
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": false,
+        "replay_ok": false
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_None_False_True_False_False",
+      "inputs": {
+        "vss_verdict": null,
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": false,
+        "replay_ok": true
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_None_False_True_False_True",
+      "inputs": {
+        "vss_verdict": null,
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": false,
+        "replay_ok": true
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_None_False_True_True_False",
+      "inputs": {
+        "vss_verdict": null,
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": false,
+        "replay_ok": true
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_None_False_True_True_True",
+      "inputs": {
+        "vss_verdict": null,
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": false,
+        "replay_ok": true
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_None_True_False_False_False",
+      "inputs": {
+        "vss_verdict": null,
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": true,
+        "replay_ok": false
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_None_True_False_False_True",
+      "inputs": {
+        "vss_verdict": null,
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": true,
+        "replay_ok": false
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_None_True_False_True_False",
+      "inputs": {
+        "vss_verdict": null,
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": true,
+        "replay_ok": false
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_None_True_False_True_True",
+      "inputs": {
+        "vss_verdict": null,
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": true,
+        "replay_ok": false
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_None_True_True_False_False",
+      "inputs": {
+        "vss_verdict": null,
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": true,
+        "replay_ok": true
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_None_True_True_False_True",
+      "inputs": {
+        "vss_verdict": null,
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": true,
+        "replay_ok": true
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_None_True_True_True_False",
+      "inputs": {
+        "vss_verdict": null,
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": true,
+        "replay_ok": true
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_None_True_True_True_True",
+      "inputs": {
+        "vss_verdict": null,
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": true,
+        "replay_ok": true
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_supported_False_False_False_False",
+      "inputs": {
+        "vss_verdict": "supported",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": false,
+        "replay_ok": false
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_supported_False_False_False_True",
+      "inputs": {
+        "vss_verdict": "supported",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": false,
+        "replay_ok": false
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_supported_False_False_True_False",
+      "inputs": {
+        "vss_verdict": "supported",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": false,
+        "replay_ok": false
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_supported_False_False_True_True",
+      "inputs": {
+        "vss_verdict": "supported",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": false,
+        "replay_ok": false
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_supported_False_True_False_False",
+      "inputs": {
+        "vss_verdict": "supported",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": false,
+        "replay_ok": true
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_supported_False_True_False_True",
+      "inputs": {
+        "vss_verdict": "supported",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": false,
+        "replay_ok": true
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_supported_False_True_True_False",
+      "inputs": {
+        "vss_verdict": "supported",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": false,
+        "replay_ok": true
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_supported_False_True_True_True",
+      "inputs": {
+        "vss_verdict": "supported",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": false,
+        "replay_ok": true
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_supported_True_False_False_False",
+      "inputs": {
+        "vss_verdict": "supported",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": true,
+        "replay_ok": false
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_supported_True_False_False_True",
+      "inputs": {
+        "vss_verdict": "supported",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": true,
+        "replay_ok": false
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_supported_True_False_True_False",
+      "inputs": {
+        "vss_verdict": "supported",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": true,
+        "replay_ok": false
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_supported_True_False_True_True",
+      "inputs": {
+        "vss_verdict": "supported",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": true,
+        "replay_ok": false
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_supported_True_True_False_False",
+      "inputs": {
+        "vss_verdict": "supported",
+        "has_witness_digest": true,
+        "exhausted": false,
+        "replay_checked": true,
+        "replay_ok": true
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "witnessed",
+        "payload_kind": "witness",
+        "unknown_reason": null,
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_supported_True_True_False_True",
+      "inputs": {
+        "vss_verdict": "supported",
+        "has_witness_digest": true,
+        "exhausted": false,
+        "replay_checked": true,
+        "replay_ok": true
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "witnessed",
+        "payload_kind": "witness",
+        "unknown_reason": null,
+        "invalid_reason": null,
+        "authorizes_semantic": true,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_supported_True_True_True_False",
+      "inputs": {
+        "vss_verdict": "supported",
+        "has_witness_digest": true,
+        "exhausted": false,
+        "replay_checked": true,
+        "replay_ok": true
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "witnessed",
+        "payload_kind": "witness",
+        "unknown_reason": null,
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_supported_True_True_True_True",
+      "inputs": {
+        "vss_verdict": "supported",
+        "has_witness_digest": true,
+        "exhausted": false,
+        "replay_checked": true,
+        "replay_ok": true
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "witnessed",
+        "payload_kind": "witness",
+        "unknown_reason": null,
+        "invalid_reason": null,
+        "authorizes_semantic": true,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_unsupported_False_False_False_False",
+      "inputs": {
+        "vss_verdict": "unsupported",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": false,
+        "replay_ok": false
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_unsupported_False_False_False_True",
+      "inputs": {
+        "vss_verdict": "unsupported",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": false,
+        "replay_ok": false
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_unsupported_False_False_True_False",
+      "inputs": {
+        "vss_verdict": "unsupported",
+        "has_witness_digest": false,
+        "exhausted": true,
+        "replay_checked": false,
+        "replay_ok": false
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_unsupported_False_False_True_True",
+      "inputs": {
+        "vss_verdict": "unsupported",
+        "has_witness_digest": false,
+        "exhausted": true,
+        "replay_checked": false,
+        "replay_ok": false
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_unsupported_False_True_False_False",
+      "inputs": {
+        "vss_verdict": "unsupported",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": false,
+        "replay_ok": true
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_unsupported_False_True_False_True",
+      "inputs": {
+        "vss_verdict": "unsupported",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": false,
+        "replay_ok": true
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_unsupported_False_True_True_False",
+      "inputs": {
+        "vss_verdict": "unsupported",
+        "has_witness_digest": false,
+        "exhausted": true,
+        "replay_checked": false,
+        "replay_ok": true
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_unsupported_False_True_True_True",
+      "inputs": {
+        "vss_verdict": "unsupported",
+        "has_witness_digest": false,
+        "exhausted": true,
+        "replay_checked": false,
+        "replay_ok": true
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_unsupported_True_False_False_False",
+      "inputs": {
+        "vss_verdict": "unsupported",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": true,
+        "replay_ok": false
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_unsupported_True_False_False_True",
+      "inputs": {
+        "vss_verdict": "unsupported",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": true,
+        "replay_ok": false
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_unsupported_True_False_True_False",
+      "inputs": {
+        "vss_verdict": "unsupported",
+        "has_witness_digest": false,
+        "exhausted": true,
+        "replay_checked": true,
+        "replay_ok": false
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_unsupported_True_False_True_True",
+      "inputs": {
+        "vss_verdict": "unsupported",
+        "has_witness_digest": false,
+        "exhausted": true,
+        "replay_checked": true,
+        "replay_ok": false
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_unsupported_True_True_False_False",
+      "inputs": {
+        "vss_verdict": "unsupported",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": true,
+        "replay_ok": true
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_unsupported_True_True_False_True",
+      "inputs": {
+        "vss_verdict": "unsupported",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": true,
+        "replay_ok": true
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_unsupported_True_True_True_False",
+      "inputs": {
+        "vss_verdict": "unsupported",
+        "has_witness_digest": false,
+        "exhausted": true,
+        "replay_checked": true,
+        "replay_ok": true
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "refuted",
+        "payload_kind": "refutation",
+        "unknown_reason": null,
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_unsupported_True_True_True_True",
+      "inputs": {
+        "vss_verdict": "unsupported",
+        "has_witness_digest": false,
+        "exhausted": true,
+        "replay_checked": true,
+        "replay_ok": true
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "refuted",
+        "payload_kind": "refutation",
+        "unknown_reason": null,
+        "invalid_reason": null,
+        "authorizes_semantic": true,
+        "authorizes_removal": true
+      }
+    },
+    {
+      "id": "grid_unknown_False_False_False_False",
+      "inputs": {
+        "vss_verdict": "unknown",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": false,
+        "replay_ok": false
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_unknown_False_False_False_True",
+      "inputs": {
+        "vss_verdict": "unknown",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": false,
+        "replay_ok": false
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_unknown_False_False_True_False",
+      "inputs": {
+        "vss_verdict": "unknown",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": false,
+        "replay_ok": false
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_unknown_False_False_True_True",
+      "inputs": {
+        "vss_verdict": "unknown",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": false,
+        "replay_ok": false
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_unknown_False_True_False_False",
+      "inputs": {
+        "vss_verdict": "unknown",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": false,
+        "replay_ok": true
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_unknown_False_True_False_True",
+      "inputs": {
+        "vss_verdict": "unknown",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": false,
+        "replay_ok": true
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_unknown_False_True_True_False",
+      "inputs": {
+        "vss_verdict": "unknown",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": false,
+        "replay_ok": true
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_unknown_False_True_True_True",
+      "inputs": {
+        "vss_verdict": "unknown",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": false,
+        "replay_ok": true
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_unknown_True_False_False_False",
+      "inputs": {
+        "vss_verdict": "unknown",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": true,
+        "replay_ok": false
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_unknown_True_False_False_True",
+      "inputs": {
+        "vss_verdict": "unknown",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": true,
+        "replay_ok": false
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_unknown_True_False_True_False",
+      "inputs": {
+        "vss_verdict": "unknown",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": true,
+        "replay_ok": false
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_unknown_True_False_True_True",
+      "inputs": {
+        "vss_verdict": "unknown",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": true,
+        "replay_ok": false
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_unknown_True_True_False_False",
+      "inputs": {
+        "vss_verdict": "unknown",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": true,
+        "replay_ok": true
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_unknown_True_True_False_True",
+      "inputs": {
+        "vss_verdict": "unknown",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": true,
+        "replay_ok": true
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_unknown_True_True_True_False",
+      "inputs": {
+        "vss_verdict": "unknown",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": true,
+        "replay_ok": true
+      },
+      "checked": false,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    },
+    {
+      "id": "grid_unknown_True_True_True_True",
+      "inputs": {
+        "vss_verdict": "unknown",
+        "has_witness_digest": false,
+        "exhausted": false,
+        "replay_checked": true,
+        "replay_ok": true
+      },
+      "checked": true,
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "inconclusive",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false
+      }
+    }
+  ]
+}

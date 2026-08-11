@@ -139,6 +139,21 @@ open LeverProofLean
 #print axioms GoalSupport.certified_removal_respects_exact_closure_unknown
 #print axioms GoalSupport.certified_removal_respects_exact_closure_supported
 
+-- Solver judgment (KERN-01 / SLM-516)
+#print axioms Judgment.invalid_never_authorizes
+#print axioms Judgment.unknown_never_authorizes
+#print axioms Judgment.unchecked_never_authorizes
+#print axioms Judgment.timeout_never_refuted
+#print axioms Judgment.skipped_replay_never_refuted
+#print axioms Judgment.unsupported_capability_never_refuted
+#print axioms Judgment.incomplete_coverage_never_refuted
+#print axioms Judgment.missing_tool_never_refuted
+#print axioms Judgment.timeout_never_authorizes_removal
+#print axioms Judgment.skipped_replay_never_authorizes_removal
+#print axioms Judgment.classification_exhaustive
+#print axioms Judgment.classified_payload_matches
+#print axioms Judgment.exact_closure_unknown_never_authorizes_removal
+
 #guard digestValid (String.ofList (List.replicate 64 'a'))
 #guard !(digestValid (String.ofList (List.replicate 63 'a')))
 #guard Workload.valid ⟨1, 9⟩
@@ -193,3 +208,33 @@ open LeverProofLean
   [{ terminal := 0, atoms := [10, 12] }, { terminal := 1, atoms := [11, 13] }] == true
 #guard GoalSupport.subsetMinimalExactB [10, 11]
   [{ terminal := 0, atoms := [10] }, { terminal := 1, atoms := [11] }] == true
+
+-- Solver judgment executable guards (bridged to judgment_truth_table.v1.json)
+#guard Judgment.classifyOutcome
+  { malformedInput := false, payloadMismatch := false, timedOut := true,
+    skippedReplay := false, unsupportedCapability := false, incompleteCoverage := false,
+    missingTool := false, vssVerdict := some .unsupported, hasWitnessDigest := false,
+    hasCounterexampleDigest := false, exhausted := true, replayChecked := true,
+    replayOk := true } == .unknown
+#guard Judgment.classifyOutcome
+  { malformedInput := false, payloadMismatch := false, timedOut := false,
+    skippedReplay := true, unsupportedCapability := false, incompleteCoverage := false,
+    missingTool := false, vssVerdict := some .unsupported, hasWitnessDigest := false,
+    hasCounterexampleDigest := false, exhausted := true, replayChecked := true,
+    replayOk := true } == .unknown
+#guard Judgment.authorizesSemanticConclusion
+  (Judgment.classify
+    { malformedInput := false, payloadMismatch := false, timedOut := false,
+      skippedReplay := false, unsupportedCapability := false, incompleteCoverage := false,
+      missingTool := false, vssVerdict := some .supported, hasWitnessDigest := true,
+      hasCounterexampleDigest := false, exhausted := false, replayChecked := true,
+      replayOk := true }
+    true) == true
+#guard !Judgment.authorizesRemoval
+  (Judgment.classify
+    { malformedInput := false, payloadMismatch := false, timedOut := true,
+      skippedReplay := false, unsupportedCapability := false, incompleteCoverage := false,
+      missingTool := false, vssVerdict := some .unsupported, hasWitnessDigest := false,
+      hasCounterexampleDigest := false, exhausted := true, replayChecked := true,
+      replayOk := true }
+    true)
