@@ -340,6 +340,14 @@ class GoalVerifierProfileV1(_StrictModel):
             raise ValueError("unsupported GoalVerifierProfileV1 version")
         return cls.model_validate(value)
 
+    def model_copy(
+        self, *, update: Mapping[str, Any] | None = None, deep: bool = False
+    ) -> Self:
+        copied = super().model_copy(update=update, deep=deep)
+        if copied.mode != self.mode or copied.authority_tier != self.authority_tier:
+            raise ValueError("copy cannot change goal-verifier mode or authority")
+        return copied
+
 
 def validate_profile_against_constraint_set(
     profile: GoalVerifierProfileV1,

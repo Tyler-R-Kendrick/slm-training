@@ -252,6 +252,18 @@ class GoalConstraintV1(_StrictModel):
     def to_dict(self) -> dict[str, Any]:
         return self.model_dump(mode="json")
 
+    def model_copy(
+        self, *, update: Mapping[str, Any] | None = None, deep: bool = False
+    ) -> Self:
+        copied = super().model_copy(update=update, deep=deep)
+        if _AUTHORITY_RANK[copied.authority_tier] > _AUTHORITY_RANK[self.authority_tier]:
+            raise ValueError("copy cannot increase goal-constraint authority")
+        if _COMPLETENESS_RANK[copied.completeness] > _COMPLETENESS_RANK[self.completeness]:
+            raise ValueError("copy cannot increase goal-constraint completeness")
+        if copied.may_prune and not self.may_prune:
+            raise ValueError("copy cannot add goal-constraint pruning authority")
+        return copied
+
     @classmethod
     def from_dict(cls, value: dict[str, Any]) -> "GoalConstraintV1":
         if str(value.get("schema_version")) != GOAL_CONSTRAINT_SCHEMA_VERSION:
