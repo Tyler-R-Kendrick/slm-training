@@ -241,7 +241,7 @@
       ],
       "lean_module": "LeverProofLean.ProofTraceRefinement",
       "design_doc": "docs/design/kern-11-proof-trace-refinement.md",
-      "ownership_map_subsystem": "formal_objects",
+      "ownership_map_subsystem": null,
       "notes": "KERN-11 (SLM-539) fixture-subset refinement of sealed INTEG-01 CanonicalProofTraceV1 against abstract Judgment/CompleteDomain/EventTrace/DecodeInvariants semantics. Runtime untrusted; compact trace checked. Does not claim full PyTorch semantics or physical latency equivalence. Successful checks bind formal_authority/v2."
     },
     {

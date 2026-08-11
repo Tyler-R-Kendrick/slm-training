@@ -3465,7 +3465,7 @@
         {
           "version": "v20",
           "date": "2026-08-11",
-          "note": "INTEG-03 (SLM-556): register campaign_formal_evidence surface + extension seam over experiment_campaign."
+          "note": "INTEG-03 (SLM-556): register campaign_formal_evidence surface + extension seam over experiment_campaign; fix KERN-11 proof_trace_refinement ownership_map_subsystem null (formal_objects was not a registered subsystem)."
         },
         {
           "version": "v19",
