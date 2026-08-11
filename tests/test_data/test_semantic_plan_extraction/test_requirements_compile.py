@@ -1,14 +1,30 @@
-"""Tests for PGS-A02 goal-constraint compilation."""
+"""Tests for PGS-A02 goal-constraint compilation and PGS-A03 evaluation."""
 
 from __future__ import annotations
+
+import hashlib
 
 import pytest
 
 from slm_training.data.contract import GenerationRequest, RuntimeSymbol
-from slm_training.data.progspec.goal_constraints import CompiledGoalConstraintSetV1
+from slm_training.data.progspec.goal_constraints import (
+    CompiledGoalConstraintSetV1,
+    GoalConstraintAmbiguityGroup,
+    GoalConstraintEvaluationV1,
+    GoalConstraintV1,
+)
 from slm_training.data.progspec.prompt_requirements import (
     PromptSemanticRequirementsV1,
     RequirementFact,
+)
+from slm_training.data.progspec.schema import ProgramSpec
+from slm_training.data.progspec.semantic_plan import (
+    PlanBinding,
+    PlanIdentity,
+    PlanSymbol,
+    PlanTopology,
+    RoleSlot,
+    SemanticPlanV1,
 )
 from slm_training.data.progspec.synthesis_problem import (
     PackIdentityV1,
@@ -18,16 +34,97 @@ from slm_training.data.progspec.synthesis_problem import (
 )
 from slm_training.data.semantic_plan.requirements_compile import (
     COMPILER_VERSION,
+    EVALUATOR_VERSION,
     GoldTargetAccessError,
     IdentityMismatchError,
     compile_goal_constraints,
     compile_rule_table,
+    deferred_constraint_kinds,
     digest_recipe,
+    evaluate_goal_constraints,
+    evaluation_state_decision_table,
+    evaluator_digest,
+    evaluator_identity,
     request_production_digest,
     source_to_authority_matrix,
+    supported_constraint_kinds,
 )
 from slm_training.data.semantic_plan.requirements_extract import extract_prompt_requirements
+from slm_training.dsl.language_contract import contract_id
 from slm_training.dsl.pack import get_pack
+from slm_training.dsl.placeholders import extract_placeholders
+
+
+def _digest(label: str) -> str:
+    return hashlib.sha256(label.encode()).hexdigest()
+
+
+def _evaluate(
+    *,
+    source: str,
+    program_spec: ProgramSpec,
+    plan: SemanticPlanV1,
+    constraints: CompiledGoalConstraintSetV1,
+) -> tuple[GoalConstraintEvaluationV1, ...]:
+    return evaluate_goal_constraints(
+        source=source,
+        program_spec=program_spec,
+        plan=plan,
+        constraints=constraints,
+    )
+
+
+def _plan(**overrides: object) -> SemanticPlanV1:
+    defaults: dict[str, object] = {
+        "identity": PlanIdentity(pack_id="openui", provenance="predicted"),
+    }
+    defaults.update(overrides)
+    return SemanticPlanV1(**defaults)
+
+
+def _constraint_set(*constraints: GoalConstraintV1) -> CompiledGoalConstraintSetV1:
+    hard = [item.constraint_id for item in constraints if item.authority_tier in {"compiler-hard", "verifier-hard"}]
+    advisory = [
+        item.constraint_id
+        for item in constraints
+        if item.authority_tier in {"advisory-learned", "oracle-diagnostic"}
+    ]
+    evaluation = [item.constraint_id for item in constraints if item.authority_tier == "evaluation-only"]
+    payload = CompiledGoalConstraintSetV1(
+        problem_digest="a" * 64,
+        request_digest="b" * 64,
+        pack_identity_digest="c" * 64,
+        compiler_version=COMPILER_VERSION,
+        constraints=constraints,
+        hard_constraint_ids=tuple(hard),
+        advisory_constraint_ids=tuple(advisory),
+        evaluation_constraint_ids=tuple(evaluation),
+    ).to_dict(include_digest=True)
+    return CompiledGoalConstraintSetV1.from_dict(payload)
+
+
+def _program_spec(openui: str, **overrides: object) -> ProgramSpec:
+    spec_id = str(overrides.pop("id", "spec_eval"))
+    ast = overrides.pop("ast", None)
+    if ast is None:
+        placeholders = extract_placeholders(openui)
+        ast = {
+            "type": "element",
+            "typeName": "TextContent",
+            "statementId": "root",
+            "props": {"text": placeholders[0] if placeholders else ":copy.value"},
+        }
+    defaults: dict[str, object] = {
+        "ast": ast,
+        "canonical_openui": openui,
+        "facts": {},
+        "contract_id": contract_id(),
+        "program_family_id": "pf1",
+        "lineage_id": "ln1",
+        "split_group_id": "sg1",
+    }
+    defaults.update(overrides)
+    return ProgramSpec(id=spec_id, **defaults)  # type: ignore[arg-type]
 
 
 def _problem(**overrides: object) -> VerifiedSynthesisProblemV1:
@@ -293,3 +390,394 @@ def test_bound_identities_match_inputs() -> None:
     assert compiled.problem_digest == problem.digest
     assert compiled.request_digest == request_production_digest(request)
     assert compiled.compiler_version == COMPILER_VERSION
+
+
+def test_evaluate_slot_inventory_exact_pass_and_fail() -> None:
+    source = 'root = Stack([title])\ntitle = TextContent(":hello.text")'
+    spec = _program_spec(source)
+    plan = _plan()
+    passing = _constraint_set(
+        GoalConstraintV1(
+            constraint_id="hard.slot_inventory_exact",
+            kind="slot_inventory_exact",
+            parameters={"slots": [":hello.text"]},
+            source_kind="generation_request",
+            source_id="generation_request.slot_contract",
+            source_digest=_digest("slot-pass"),
+            authority_tier="compiler-hard",
+            completeness="EXACT",
+            may_prune=False,
+        )
+    )
+    results = _evaluate(source=source, program_spec=spec, plan=plan, constraints=passing)
+    assert results[0].status == "PASS"
+    assert results[0].reason_code == "slot_inventory_exact_match"
+
+    failing = _constraint_set(
+        GoalConstraintV1(
+            constraint_id="hard.slot_inventory_exact",
+            kind="slot_inventory_exact",
+            parameters={"slots": [":hello.text", ":missing.slot"]},
+            source_kind="generation_request",
+            source_id="generation_request.slot_contract",
+            source_digest=_digest("slot-fail"),
+            authority_tier="compiler-hard",
+            completeness="EXACT",
+            may_prune=False,
+        )
+    )
+    fail_results = _evaluate(source=source, program_spec=spec, plan=plan, constraints=failing)
+    assert fail_results[0].status == "FAIL"
+    assert fail_results[0].reason_code == "slot_inventory_mismatch"
+
+
+def test_evaluate_runtime_symbol_accounted() -> None:
+    source = '$state = ":slot_0"\nroot = TextContent($state)'
+    spec = _program_spec(
+        source,
+        ast={
+            "type": "element",
+            "typeName": "TextContent",
+            "statementId": "root",
+            "props": {"text": {"type": "ref", "name": "$state"}},
+            "zdefs": [
+                {
+                    "type": "element",
+                    "typeName": "State",
+                    "statementId": "$state",
+                    "props": {"value": ":slot_0"},
+                }
+            ],
+        },
+    )
+    plan = _plan()
+    constraints = _constraint_set(
+        GoalConstraintV1(
+            constraint_id="hard.runtime_symbol.state",
+            kind="runtime_symbol_accounted",
+            parameters={"surface": "$state", "role": "state"},
+            source_kind="generation_request",
+            source_id="generation_request.runtime_symbols:$state",
+            source_digest=_digest("runtime-state"),
+            authority_tier="compiler-hard",
+            completeness="EXACT",
+            may_prune=False,
+        ),
+        GoalConstraintV1(
+            constraint_id="hard.runtime_symbol.slot",
+            kind="runtime_symbol_accounted",
+            parameters={"surface": ":slot_0", "role": "external_entity"},
+            source_kind="generation_request",
+            source_id="generation_request.runtime_symbols::slot_0",
+            source_digest=_digest("runtime-slot"),
+            authority_tier="compiler-hard",
+            completeness="EXACT",
+            may_prune=False,
+        ),
+    )
+    results = {
+        item.constraint_id: item
+        for item in _evaluate(source=source, program_spec=spec, plan=plan, constraints=constraints)
+    }
+    assert results["hard.runtime_symbol.state"].status == "PASS"
+    assert results["hard.runtime_symbol.slot"].status == "PASS"
+
+
+def test_evaluate_component_inventory_complete_vs_unavailable() -> None:
+    constraint = GoalConstraintV1(
+        constraint_id="adv.button",
+        kind="component_count_at_least",
+        parameters={"component": "Button", "min_count": 1},
+        source_kind="prompt_requirement",
+        source_id="compiled:fact",
+        source_digest=_digest("component-count"),
+        authority_tier="advisory-learned",
+        completeness="HEURISTIC",
+        may_prune=False,
+    )
+    constraints = _constraint_set(constraint)
+    source = 'root = Button(":cta.label")'
+    spec = _program_spec(source)
+    complete_plan = _plan(
+        role_slots=(
+            RoleSlot(role_id="role_0000", component_family="Button"),
+        )
+    )
+    complete = _evaluate(source=source, program_spec=spec, plan=complete_plan, constraints=constraints)[0]
+    assert complete.status == "PASS"
+
+    incomplete_plan = _plan(
+        role_slots=(
+            RoleSlot(role_id="role_0000", component_family=None),
+        )
+    )
+    unknown = _evaluate(source=source, program_spec=spec, plan=incomplete_plan, constraints=constraints)[0]
+    assert unknown.status == "UNKNOWN"
+    assert unknown.reason_code == "component_inventory_unavailable"
+
+
+def test_evaluate_component_absent_requires_complete_inventory() -> None:
+    constraint = GoalConstraintV1(
+        constraint_id="adv.no_button",
+        kind="component_absent",
+        parameters={"component": "Button"},
+        source_kind="prompt_requirement",
+        source_id="compiled:forbidden",
+        source_digest=_digest("component-absent"),
+        authority_tier="advisory-learned",
+        completeness="HEURISTIC",
+        may_prune=False,
+    )
+    constraints = _constraint_set(constraint)
+    source = 'root = TextContent(":copy.value")'
+    spec = _program_spec(source)
+    complete_plan = _plan(
+        role_slots=(
+            RoleSlot(role_id="role_0000", component_family="TextContent"),
+        )
+    )
+    assert _evaluate(source=source, program_spec=spec, plan=complete_plan, constraints=constraints)[0].status == "PASS"
+
+    incomplete_plan = _plan(role_slots=(RoleSlot(role_id="role_0000", component_family=None),))
+    unavailable = _evaluate(source=source, program_spec=spec, plan=incomplete_plan, constraints=constraints)[0]
+    assert unavailable.status == "UNKNOWN"
+
+
+def test_evaluate_binding_resolved_unresolved_unavailable() -> None:
+    constraint = GoalConstraintV1(
+        constraint_id="bind.role",
+        kind="binding_resolved",
+        parameters={"role_slot_id": "role_0000"},
+        source_kind="pack_contract",
+        source_id="pack/bind",
+        source_digest=_digest("binding"),
+        authority_tier="compiler-hard",
+        completeness="HEURISTIC",
+        may_prune=False,
+    )
+    constraints = _constraint_set(constraint)
+    source = 'root = TextContent(":copy.value")'
+    spec = _program_spec(source)
+    resolved_plan = _plan(
+        role_slots=(RoleSlot(role_id="role_0000", component_family="TextContent"),),
+        symbols=(PlanSymbol(symbol_id="sym_0000", semantic_role="text"),),
+        bindings=(PlanBinding(role_slot_id="role_0000", candidate_symbols=("sym_0000",)),),
+    )
+    assert _evaluate(source=source, program_spec=spec, plan=resolved_plan, constraints=constraints)[0].status == "PASS"
+
+    unresolved_plan = _plan(
+        role_slots=(RoleSlot(role_id="role_0000", component_family="TextContent"),),
+        bindings=(PlanBinding(role_slot_id="role_0000", candidate_symbols=()),),
+    )
+    assert _evaluate(source=source, program_spec=spec, plan=unresolved_plan, constraints=constraints)[0].status == "FAIL"
+
+    unavailable_plan = _plan()
+    assert _evaluate(source=source, program_spec=spec, plan=unavailable_plan, constraints=constraints)[0].status == "UNKNOWN"
+
+
+def test_evaluate_topology_known_and_unknown() -> None:
+    constraint = GoalConstraintV1(
+        constraint_id="topo.contains",
+        kind="topology_relation_present",
+        parameters={
+            "parent_role_id": "role_parent",
+            "child_role_id": "role_child",
+            "relation": "contains",
+        },
+        source_kind="pack_contract",
+        source_id="pack/topo",
+        source_digest=_digest("topology"),
+        authority_tier="compiler-hard",
+        completeness="HEURISTIC",
+        may_prune=False,
+    )
+    constraints = _constraint_set(constraint)
+    source = 'root = TextContent(":copy.value")'
+    spec = _program_spec(source)
+    known_plan = _plan(
+        topology=PlanTopology(
+            parent_relation_candidates=(
+                {
+                    "parent_role_id": "role_parent",
+                    "child_role_id": "role_child",
+                    "relation": "contains",
+                },
+            )
+        )
+    )
+    assert _evaluate(source=source, program_spec=spec, plan=known_plan, constraints=constraints)[0].status == "PASS"
+    assert _evaluate(source=source, program_spec=spec, plan=_plan(), constraints=constraints)[0].status == "UNKNOWN"
+
+
+def test_evaluate_ambiguity_forces_unknown() -> None:
+    left = GoalConstraintV1(
+        constraint_id="alt.button",
+        kind="component_count_at_least",
+        parameters={"component": "Button", "min_count": 0, "alternative": True},
+        source_kind="prompt_requirement",
+        source_id="compiled:button",
+        source_digest=_digest("ambiguity-button"),
+        authority_tier="advisory-learned",
+        completeness="HEURISTIC",
+        may_prune=False,
+    )
+    right = GoalConstraintV1(
+        constraint_id="alt.input",
+        kind="component_count_at_least",
+        parameters={"component": "Input", "min_count": 0, "alternative": True},
+        source_kind="prompt_requirement",
+        source_id="compiled:input",
+        source_digest=_digest("ambiguity-input"),
+        authority_tier="advisory-learned",
+        completeness="HEURISTIC",
+        may_prune=False,
+    )
+    payload = CompiledGoalConstraintSetV1(
+        problem_digest="a" * 64,
+        request_digest="b" * 64,
+        pack_identity_digest="c" * 64,
+        compiler_version=COMPILER_VERSION,
+        constraints=(left, right),
+        hard_constraint_ids=(),
+        advisory_constraint_ids=(left.constraint_id, right.constraint_id),
+        evaluation_constraint_ids=(),
+        ambiguity_groups=(
+            GoalConstraintAmbiguityGroup(
+                group_id="ambiguity.0000",
+                member_constraint_ids=(left.constraint_id, right.constraint_id),
+            ),
+        ),
+    ).to_dict(include_digest=True)
+    constraints = CompiledGoalConstraintSetV1.from_dict(payload)
+    source = 'root = Button(":cta.label")'
+    spec = _program_spec(source)
+    plan = _plan(role_slots=(RoleSlot(role_id="role_0000", component_family="Button"),))
+    results = _evaluate(source=source, program_spec=spec, plan=plan, constraints=constraints)
+    assert all(item.status == "UNKNOWN" for item in results)
+    assert all(item.reason_code == "ambiguity_unresolved" for item in results)
+
+
+def test_evaluate_result_order_is_canonical() -> None:
+    z = GoalConstraintV1(
+        constraint_id="z.last",
+        kind="required_gate_passes",
+        parameters={"gate": "G3"},
+        source_kind="verification_requirement",
+        source_id="verification:z",
+        source_digest=_digest("order-gate"),
+        authority_tier="verifier-hard",
+        completeness="EXACT",
+        may_prune=True,
+    )
+    a = GoalConstraintV1(
+        constraint_id="a.first",
+        kind="slot_inventory_exact",
+        parameters={"slots": []},
+        source_kind="generation_request",
+        source_id="generation_request.slot_contract",
+        source_digest=_digest("order-slot"),
+        authority_tier="compiler-hard",
+        completeness="EXACT",
+        may_prune=False,
+    )
+    constraints = _constraint_set(a, z)
+    source = 'root = TextContent(":copy.value")'
+    spec = _program_spec(source)
+    plan = _plan()
+    ids = [item.constraint_id for item in _evaluate(source=source, program_spec=spec, plan=plan, constraints=constraints)]
+    assert ids == ["a.first", "z.last"]
+
+
+def test_evaluate_redacts_raw_content_from_detail() -> None:
+    with pytest.raises(ValueError, match="raw prompt/program content"):
+        GoalConstraintEvaluationV1(
+            constraint_id="c",
+            status="FAIL",
+            authority_tier="advisory-learned",
+            may_prune=False,
+            detail='missing slot :slot_0 in root = Button(":slot_0")',
+        )
+
+
+def test_evaluate_preserves_advisory_authority() -> None:
+    constraint = GoalConstraintV1(
+        constraint_id="adv.button",
+        kind="component_count_at_least",
+        parameters={"component": "Button", "min_count": 1},
+        source_kind="prompt_requirement",
+        source_id="compiled:fact",
+        source_digest=_digest("advisory"),
+        authority_tier="advisory-learned",
+        completeness="HEURISTIC",
+        may_prune=False,
+    )
+    constraints = _constraint_set(constraint)
+    source = 'root = Button(":cta.label")'
+    spec = _program_spec(source)
+    plan = _plan(role_slots=(RoleSlot(role_id="role_0000", component_family="Button"),))
+    result = _evaluate(source=source, program_spec=spec, plan=plan, constraints=constraints)[0]
+    assert result.authority_tier == "advisory-learned"
+    assert result.may_prune is False
+    assert result.completeness_achieved == "HEURISTIC"
+
+
+def test_evaluate_required_gate_passes_is_deferred_unknown() -> None:
+    constraint = GoalConstraintV1(
+        constraint_id="hard.verification.g3",
+        kind="required_gate_passes",
+        parameters={"gate": "G3"},
+        source_kind="verification_requirement",
+        source_id="verification:g3",
+        source_digest=_digest("gate-deferred"),
+        authority_tier="verifier-hard",
+        completeness="EXACT",
+        may_prune=True,
+    )
+    constraints = _constraint_set(constraint)
+    source = 'root = TextContent(":copy.value")'
+    spec = _program_spec(source)
+    result = _evaluate(source=source, program_spec=spec, plan=_plan(), constraints=constraints)[0]
+    assert result.status == "UNKNOWN"
+    assert result.reason_code == "deferred_gate_verifier"
+
+
+def test_evaluate_output_kind_not_applicable_without_candidate_identity() -> None:
+    constraint = GoalConstraintV1(
+        constraint_id="hard.output_kind_equals",
+        kind="output_kind_equals",
+        parameters={"output_kind": "statement"},
+        source_kind="generation_request",
+        source_id="generation_request.output_kind",
+        source_digest=_digest("output-kind"),
+        authority_tier="compiler-hard",
+        completeness="EXACT",
+        may_prune=False,
+    )
+    constraints = _constraint_set(constraint)
+    source = 'root = TextContent(":copy.value")'
+    spec = _program_spec(source)
+    result = _evaluate(source=source, program_spec=spec, plan=_plan(), constraints=constraints)[0]
+    assert result.status == "NOT_APPLICABLE"
+
+
+def test_evaluate_is_byte_deterministic() -> None:
+    request = _request(
+        prompt="Fill slots.",
+        slot_contract=(":slot_0",),
+    )
+    compiled = _compile(request=request)
+    source = 'root = TextContent(":slot_0")'
+    spec = _program_spec(source)
+    plan = _plan(role_slots=(RoleSlot(role_id="role_0000", component_family="TextContent"),))
+    first = _evaluate(source=source, program_spec=spec, plan=plan, constraints=compiled)
+    second = _evaluate(source=source, program_spec=spec, plan=plan, constraints=compiled)
+    assert [item.to_dict() for item in first] == [item.to_dict() for item in second]
+
+
+def test_evaluator_metadata_exports() -> None:
+    assert EVALUATOR_VERSION.startswith("pgs-a03")
+    assert "required_gate_passes" in deferred_constraint_kinds()
+    assert "slot_inventory_exact" in supported_constraint_kinds()
+    assert set(evaluation_state_decision_table()) >= {"PASS", "FAIL", "UNKNOWN", "NOT_APPLICABLE"}
+    assert evaluator_identity()["evaluator_digest"] == evaluator_digest()
+    assert "evaluator_digest" in digest_recipe()
