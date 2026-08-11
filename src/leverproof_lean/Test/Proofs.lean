@@ -96,6 +96,11 @@ open LeverProofLean
 #print axioms MechanismTrigger.unknown_activation_blocks_no_effect_certificate
 #print axioms MechanismTrigger.fixture_singleton_absent_no_effect
 #print axioms MechanismTrigger.fixture_dominated_locally
+#print axioms ResourceBoundParity.parity_fs_two_three_assignments
+#print axioms ResourceBoundParity.parity_bb_two_three
+#print axioms ResourceBoundParity.parity_cl_two_three
+#print axioms ResourceBoundParity.parity_et_unit_28
+
 #print axioms DecodeInvariants.singleton_bypasses_ranker
 #print axioms DecodeInvariants.forged_coverage_complete_never_bypasses
 #print axioms DecodeInvariants.coverage_complete_flag_not_singleton
@@ -315,6 +320,9 @@ open LeverProofLean
 
 -- Finite search bounds (KERN-03)
 #guard FiniteSearchBounds.completeAssignmentCount [2, 3] = 6
+#guard ResourceBoundParity.caseId_fs_two_three = "fs_two_three"
+#guard ResourceBoundParity.paritySchema = "resource_bound_trigger_parity/v1"
+
 #guard FiniteSearchBounds.prefixTreeNodeBound [2, 3] = 9
 #guard FiniteSearchBounds.completeAssignmentCount ([] : List Nat) = 1
 #guard FiniteSearchBounds.prefixTreeNodeBound ([] : List Nat) = 1

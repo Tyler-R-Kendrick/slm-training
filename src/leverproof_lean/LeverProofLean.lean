@@ -15,6 +15,7 @@ import LeverProofLean.BlackBoxUnsupportedLowerBound
 import LeverProofLean.ExactClosure
 import LeverProofLean.EventTrace
 import LeverProofLean.MechanismTrigger
+import LeverProofLean.ResourceBoundParity
 import LeverProofLean.DecodeInvariants
 import LeverProofLean.EcosystemTier
 -- Constrained diffusion × topology ADR claim cores
