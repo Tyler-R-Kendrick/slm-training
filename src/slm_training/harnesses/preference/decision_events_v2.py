@@ -756,6 +756,10 @@ def _validate_goal_support_evidence(
     """Fail closed on stale, duplicated, or identity-mismatched goal evidence."""
     if report.state_fingerprint != binding.domain_state_fingerprint:
         raise ValueError("report state_fingerprint does not match binding")
+    if state.grammar_state_hash != binding.domain_state_fingerprint:
+        raise ValueError(
+            "decision state grammar_state_hash does not match goal-support domain"
+        )
     expected_digests = set(report.evidence_digests)
     rows = sorted(evidence, key=lambda row: row.action_id)
     if len(rows) != len({row.action_id for row in rows}):

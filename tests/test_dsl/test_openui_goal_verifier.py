@@ -240,7 +240,7 @@ def _verifier(**overrides: object) -> OpenUIGoalVerifier:
         _compiled_set(request_digest=request_production_digest(request)),
     )
     profile = overrides.pop("profile", _profile_for(constraint_set))
-    structural_verifier = overrides.pop("structural_verifier", _AcceptingStructuralVerifier())
+    structural_verifier = overrides.pop("structural_verifier", None)
     return OpenUIGoalVerifier(
         profile=profile,
         constraint_set=constraint_set,
@@ -263,6 +263,11 @@ def test_reference_tables_and_profile_string_format() -> None:
     verifier = _verifier()
     assert verifier.profile.startswith(f"{GOAL_SUPPORT_PROFILE_PREFIX}/")
     assert len(verifier.profile.split("/")[-1]) == 64
+
+
+def test_production_profile_rejects_substitute_structural_verifier() -> None:
+    with pytest.raises(ValueError, match="canonical OpenUI structural verifier"):
+        _verifier(structural_verifier=_AcceptingStructuralVerifier())
 
 
 def test_well_formed_but_exact_goal_fail_returns_reject() -> None:
@@ -499,7 +504,6 @@ def test_stale_pack_identity_fails_closed_at_construction() -> None:
             problem=_test_problem(),
             request=_test_request(),
             pack_identity=_pack_identity(tokenizer_id="stale"),
-            structural_verifier=_AcceptingStructuralVerifier(),
         )
 
 
@@ -514,7 +518,6 @@ def test_same_id_noncanonical_pack_fails_closed_at_construction() -> None:
             request=_test_request(),
             pack_identity=_pack_identity(),
             pack=replace(get_pack("openui")),
-            structural_verifier=_AcceptingStructuralVerifier(),
         )
 
 
@@ -721,7 +724,6 @@ def test_compile_and_verify_round_trip() -> None:
         problem=problem,
         request=request,
         pack_identity=problem.pack_identity,
-        structural_verifier=_AcceptingStructuralVerifier(),
     )
     accept = verifier.verify('root = Button(":slot_0")')
     assert accept.status is VerifyStatus.ACCEPT
@@ -741,7 +743,6 @@ def test_request_output_kind_is_compared_with_candidate_kind() -> None:
         problem=problem,
         request=request,
         pack_identity=problem.pack_identity,
-        structural_verifier=_AcceptingStructuralVerifier(),
     )
     assert verifier.verify('root = Button(":slot_0")').status is VerifyStatus.REJECT
 
@@ -763,7 +764,6 @@ def test_unobserved_output_category_is_unavailable() -> None:
         problem=problem,
         request=request,
         pack_identity=problem.pack_identity,
-        structural_verifier=_AcceptingStructuralVerifier(),
     )
     assert verifier.verify('root = Button(":slot_0")').status is VerifyStatus.UNAVAILABLE
 

@@ -612,6 +612,10 @@ def _validated_cached_goal_evidence(
 
 
 def _validate_goal_support_inputs(inputs: GoalSupportProbeInputs) -> None:
+    if inputs.decision_state.grammar_state_hash != inputs.domain_state.fingerprint:
+        raise ValueError(
+            "decision_state grammar_state_hash must equal domain_state fingerprint"
+        )
     legal = set(inputs.decision_state.legal_action_ids)
     if inputs.policy_action not in legal:
         raise ValueError("policy_action must be within the state's legal set")

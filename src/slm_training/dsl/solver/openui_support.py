@@ -564,6 +564,13 @@ class OpenUIGoalVerifier:
                     )
         self._verification_context = verification_context
         self._structural = structural_verifier or OpenUIWellFormedVerifier()
+        if profile.mode == "production_exact" and (
+            type(self._structural) is not OpenUIWellFormedVerifier
+            or self._structural.profile != WELL_FORMED_PROFILE
+        ):
+            raise ValueError(
+                "production_exact requires the canonical OpenUI structural verifier"
+            )
         self._plan_extractor = OpenUISemanticPlanExtractor()
         self._trace = GoalTerminalEvidenceTrace()
 

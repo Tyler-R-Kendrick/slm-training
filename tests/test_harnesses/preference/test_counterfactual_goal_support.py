@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
+import pytest
+
 from slm_training.dsl.solver.goal_support import GoalActionEvidenceV1, action_id_from_value
 from slm_training.harnesses.preference.counterfactual_probe import (
     GoalSupportProbeConfig,
@@ -46,7 +50,7 @@ def _inputs(
         legal_action_ids=tuple(mapping),
         decision_kind="component",
         abstract_state_role="root",
-        grammar_state_hash="gh",
+        grammar_state_hash=expander.root_state().fingerprint,
         policy_checkpoint_sha="pol",
         tokenizer_sha="tok",
         decode_config_hash="dec",
@@ -79,6 +83,16 @@ def test_small_legal_set_queries_all_with_empty_unobserved():
     assert len(evidence) == report.stats.action_count
 
 
+def test_probe_rejects_cross_state_decision_substitution() -> None:
+    inputs = _inputs(accept={"ax"})
+    substituted = replace(
+        inputs,
+        decision_state=replace(inputs.decision_state, grammar_state_hash="other-state"),
+    )
+    with pytest.raises(ValueError, match="domain_state fingerprint"):
+        run_goal_support_probe(substituted)
+
+
 def test_policy_action_always_included_above_cap():
     expander, provider = _provider({"c"}, tree=_CAP_TREE)
     letters = ("a", "b", "c")
@@ -91,7 +105,7 @@ def test_policy_action_always_included_above_cap():
         legal_action_ids=(1, 2, 3),
         decision_kind="component",
         abstract_state_role="root",
-        grammar_state_hash="gh",
+        grammar_state_hash=expander.root_state().fingerprint,
         policy_checkpoint_sha="pol",
         tokenizer_sha="tok",
         decode_config_hash="dec",
@@ -144,7 +158,7 @@ def test_cap_omitting_unique_support_yields_coverage_unknown():
         legal_action_ids=(1, 2, 3),
         decision_kind="component",
         abstract_state_role="root",
-        grammar_state_hash="gh",
+        grammar_state_hash=expander.root_state().fingerprint,
         policy_checkpoint_sha="pol",
         tokenizer_sha="tok",
         decode_config_hash="dec",
@@ -187,7 +201,7 @@ def test_unavailable_evidence_stays_unknown():
         legal_action_ids=(1,),
         decision_kind="component",
         abstract_state_role="root",
-        grammar_state_hash="gh",
+        grammar_state_hash=expander.root_state().fingerprint,
         policy_checkpoint_sha="pol",
         tokenizer_sha="tok",
         decode_config_hash="dec",
