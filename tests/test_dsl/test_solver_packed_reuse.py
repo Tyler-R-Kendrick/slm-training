@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import pytest
 
+from slm_training.data.contract import RuntimeSymbol
 from slm_training.dsl.grammar.fastpath.compiler_draft import build_completion_forest
 from slm_training.dsl.solver.adapters import completion_forest_state
 from slm_training.dsl.solver.openui_support import (
@@ -29,6 +30,7 @@ from slm_training.dsl.solver.support import (
     replay_support_certificate,
 )
 from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+from slm_training.models.grammar import make_grammar_state
 
 
 @pytest.fixture(scope="module")
@@ -63,6 +65,52 @@ def _reference_state(tok, prefix, forest, bounds):
     )
 
 
+def _request_bound_expander(
+    tok,
+    prefix,
+    bounds,
+    *,
+    slot_contract=(),
+    min_content=0,
+    runtime_symbols=(),
+    remaining_tokens=32,
+):
+    request_bounds = SolverBounds(
+        max_tokens=max(1, remaining_tokens),
+        max_nodes=bounds.max_nodes,
+        max_depth=bounds.max_depth,
+        max_backtracks=bounds.max_backtracks,
+        max_verifier_calls=bounds.max_verifier_calls,
+    )
+    decode_state = make_grammar_state()
+    forest = build_completion_forest(
+        tok,
+        list(prefix),
+        state=decode_state,
+        slot_contract=list(slot_contract),
+        max_path_tokens=8,
+        min_content=min_content,
+        runtime_symbols=runtime_symbols,
+        remaining_tokens=remaining_tokens,
+    )
+    expander = OpenUIForestExpander(
+        tok,
+        prefix,
+        pack_id="openui",
+        constraint_version="test-cv",
+        bounds=request_bounds,
+        max_path_tokens=8,
+        slot_contract=slot_contract,
+        min_content=min_content,
+        runtime_symbols=runtime_symbols,
+        remaining_tokens=remaining_tokens,
+        root_forest=forest,
+        completion_session=decode_state.completion_session,
+        completion_state_id=decode_state.completion_state_id,
+    )
+    return forest, decode_state, expander
+
+
 _PREFIXES = (
     "root = Card([",
     "root = Card([b1",
@@ -94,6 +142,143 @@ def test_expander_root_payload_matches_fresh_forest(
         bounds,
     )
     assert _state_payload(expander.root_state()) == _state_payload(reference)
+
+
+def test_request_bound_root_reuses_exact_session_and_forest(
+    tok: DSLNativeTokenizer, bounds: SolverBounds
+) -> None:
+    prefix = tuple([tok.bos_id, *tok.encode("root = Card([", add_special=False)])
+    runtime_symbols = (RuntimeSymbol(":slot_0", "external_entity"),)
+    forest, decode_state, expander = _request_bound_expander(
+        tok,
+        prefix,
+        bounds,
+        slot_contract=(":slot_0",),
+        min_content=1,
+        runtime_symbols=runtime_symbols,
+        remaining_tokens=32,
+    )
+
+    assert expander._session is decode_state.completion_session
+    assert _state_payload(expander.root_state()) == _state_payload(
+        _reference_state(tok, prefix, forest, expander.bounds)
+    )
+
+
+@pytest.mark.parametrize(
+    ("text", "forest_kwargs", "expander_kwargs"),
+    (
+        (
+            "root = TextContent(",
+            {"slot_contract": (":slot_0",), "remaining_tokens": 32},
+            {"slot_contract": (), "remaining_tokens": 32},
+        ),
+        (
+            "root = Card([])",
+            {"min_content": 0, "remaining_tokens": 32},
+            {"min_content": 2, "remaining_tokens": 32},
+        ),
+        (
+            "root = Card([",
+            {"remaining_tokens": 32},
+            {"remaining_tokens": 8},
+        ),
+    ),
+    ids=("slot-contract", "min-content", "remaining-token-horizon"),
+)
+def test_request_authority_mismatch_rejects_root_forest(
+    tok: DSLNativeTokenizer,
+    bounds: SolverBounds,
+    text: str,
+    forest_kwargs: dict,
+    expander_kwargs: dict,
+) -> None:
+    prefix = tuple([tok.bos_id, *tok.encode(text, add_special=False)])
+    forest = build_completion_forest(
+        tok, list(prefix), max_path_tokens=8, **forest_kwargs
+    )
+
+    with pytest.raises(ValueError, match="root forest differs"):
+        request_bounds = SolverBounds(
+            max_tokens=max(1, expander_kwargs["remaining_tokens"]),
+            max_nodes=bounds.max_nodes,
+            max_depth=bounds.max_depth,
+            max_backtracks=bounds.max_backtracks,
+            max_verifier_calls=bounds.max_verifier_calls,
+        )
+        OpenUIForestExpander(
+            tok,
+            prefix,
+            pack_id="openui",
+            constraint_version="test-cv",
+            bounds=request_bounds,
+            max_path_tokens=8,
+            root_forest=forest,
+            **expander_kwargs,
+        )
+
+
+def test_request_horizon_must_equal_solver_token_bound(
+    tok: DSLNativeTokenizer, bounds: SolverBounds
+) -> None:
+    prefix = tuple([tok.bos_id, *tok.encode("root = Card([", add_special=False)])
+    forest = build_completion_forest(
+        tok, list(prefix), max_path_tokens=8, remaining_tokens=32
+    )
+
+    with pytest.raises(ValueError, match="token bound must equal"):
+        OpenUIForestExpander(
+            tok,
+            prefix,
+            pack_id="openui",
+            constraint_version="test-cv",
+            bounds=bounds,
+            max_path_tokens=8,
+            remaining_tokens=32,
+            root_forest=forest,
+        )
+
+
+def test_successor_forwards_runtime_authority_and_reduces_horizon(
+    tok: DSLNativeTokenizer,
+    bounds: SolverBounds,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import slm_training.dsl.solver.openui_support as openui_support
+
+    prefix = tuple([tok.bos_id, *tok.encode("root = Card([", add_special=False)])
+    runtime_symbols = (RuntimeSymbol(":slot_0", "external_entity"),)
+    _forest, _decode_state, expander = _request_bound_expander(
+        tok,
+        prefix,
+        bounds,
+        slot_contract=(":slot_0",),
+        min_content=1,
+        runtime_symbols=runtime_symbols,
+        remaining_tokens=32,
+    )
+    root = expander.root_state()
+    value = next(
+        item
+        for item in root.holes[0].values
+        if item.payload.get("kind") != "eos"
+    )
+    token_count = len(value.payload["token_ids"])
+    calls = []
+    real_build = openui_support.build_completion_forest
+
+    def _recording_build(*args, **kwargs):
+        calls.append(kwargs)
+        return real_build(*args, **kwargs)
+
+    monkeypatch.setattr(openui_support, "build_completion_forest", _recording_build)
+    expander.successor(root, root.holes[0].hole_id, value)
+
+    assert len(calls) == 1
+    assert tuple(calls[0]["slot_contract"]) == (":slot_0",)
+    assert calls[0]["min_content"] == 1
+    assert calls[0]["runtime_symbols"] == runtime_symbols
+    assert calls[0]["remaining_tokens"] == 32 - token_count
 
 
 @pytest.mark.parametrize("text", _PREFIXES, ids=lambda p: repr(p[-16:]))

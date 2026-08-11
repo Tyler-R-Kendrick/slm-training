@@ -55,6 +55,10 @@ from slm_training.dsl.grammar.fastpath.completion_artifact import (
     tokenizer_authority,
 )
 from slm_training.dsl.grammar.fastpath.completion_kernel import CompletionSession
+from slm_training.dsl.grammar.fastpath.compiler_draft import (
+    CompletionForest,
+    build_completion_forest,
+)
 from slm_training.dsl.language_contract import current_contract
 from slm_training.dsl.pack import DslPack, get_pack
 from slm_training.dsl.solver.goal_support import (
@@ -902,11 +906,11 @@ class OpenUIForestExpander:
 
     Holds one request-local packed
     :class:`~slm_training.dsl.grammar.fastpath.completion_kernel.CompletionSession`:
-    ``_project``/``successor`` reuse interned states (advance along the chosen
-    path's token ids, then project the target state's outgoing edges) instead
-    of building a fresh forest per node with no shared state.  Certificates
-    remain payload-based (kind, token ids, versions, digests) — interned
-    state ids never leave the expander.
+    ``_project``/``successor`` reuse interned transition states while every
+    projected domain is rebuilt through the canonical request-bound forest API
+    with the original slot, content, runtime-symbol, and horizon authority.
+    Certificates remain payload-based (kind, token ids, versions, digests) —
+    interned state ids never leave the expander.
     """
 
     def __init__(
@@ -918,23 +922,96 @@ class OpenUIForestExpander:
         constraint_version: str,
         bounds: SolverBounds,
         max_path_tokens: int = 8,
+        slot_contract: tuple[str, ...] | list[str] = (),
+        min_content: int = 0,
+        runtime_symbols: tuple[Any, ...] = (),
+        remaining_tokens: int | None = None,
+        root_forest: CompletionForest | None = None,
+        completion_session: CompletionSession | None = None,
+        completion_state_id: int | None = None,
     ) -> None:
         self._tok = tokenizer
         self._pack_id = pack_id
         self._cv = constraint_version
         self._bounds = bounds
         self._mpt = max(1, int(max_path_tokens))
+        self._slot_contract = tuple(slot_contract or ())
+        self._min_content = int(min_content)
+        self._runtime_symbols = tuple(runtime_symbols)
+        self._remaining_tokens = (
+            None if remaining_tokens is None else max(0, int(remaining_tokens))
+        )
+        if self._remaining_tokens is not None and bounds.max_tokens != max(
+            1, self._remaining_tokens
+        ):
+            raise ValueError(
+                "solver token bound must equal the request completion horizon"
+            )
+        self._root_prefix = tuple(int(t) for t in prefix_ids)
         self._eos = int(tokenizer.eos_id)
-        self._session = CompletionSession(tokenizer, max_path_tokens=self._mpt)
+        if (completion_session is None) != (completion_state_id is None):
+            raise ValueError(
+                "completion_session and completion_state_id must be supplied together"
+            )
+        self._session = completion_session or CompletionSession(
+            tokenizer,
+            slot_contract=self._slot_contract,
+            min_content=self._min_content,
+            max_path_tokens=self._mpt,
+            runtime_symbols=self._runtime_symbols,
+        )
         self._prefix_by_fp: dict[str, tuple[int, ...]] = {}
         self._sid_by_fp: dict[str, int] = {}
-        self._root = self._project(tuple(int(t) for t in prefix_ids), None)
+        rebuilt_root = self._forest_for(self._root_prefix)
+        if root_forest is not None and self._forest_key(root_forest) != self._forest_key(
+            rebuilt_root
+        ):
+            raise ValueError(
+                "solver root forest differs from request-bound completion authority"
+            )
+        self._root = self._project(
+            self._root_prefix,
+            completion_state_id,
+            forest=root_forest if root_forest is not None else rebuilt_root,
+        )
+
+    @staticmethod
+    def _forest_key(forest: CompletionForest) -> tuple[Any, ...]:
+        """Behavioral forest identity; explanatory traces are non-authoritative."""
+        return (
+            forest.coverage,
+            tuple((path.kind, tuple(path.token_ids)) for path in forest.paths),
+            tuple(forest.terminals),
+        )
+
+    def _forest_for(self, prefix: tuple[int, ...]) -> CompletionForest:
+        consumed = len(prefix) - len(self._root_prefix)
+        remaining = (
+            None
+            if self._remaining_tokens is None
+            else max(0, self._remaining_tokens - consumed)
+        )
+        return build_completion_forest(
+            self._tok,
+            list(prefix),
+            slot_contract=list(self._slot_contract),
+            max_path_tokens=self._mpt,
+            min_content=self._min_content,
+            remaining_tokens=remaining,
+            runtime_symbols=self._runtime_symbols,
+        )
 
     def _project(
-        self, prefix: tuple[int, ...], state_id: int | None
+        self,
+        prefix: tuple[int, ...],
+        state_id: int | None,
+        *,
+        forest: CompletionForest | None = None,
     ) -> FiniteDomainState:
         sid = self._session.seed(prefix) if state_id is None else state_id
-        forest = self._session.outgoing(sid)
+        if self._session.prefix_ids_of(sid) != prefix:
+            raise ValueError("completion session state does not match solver prefix")
+        forest = self._forest_for(prefix) if forest is None else forest
         state = completion_forest_state(
             prefix_ids=prefix,
             forest=forest,
@@ -1007,7 +1084,7 @@ class OpenUIForestExpander:
             return ExpandStep(
                 ExpandStatus.DEAD, coverage="none", detail="illegal_prefix"
             )
-        forest = self._session.outgoing(child_sid)
+        forest = self._forest_for(new_prefix)
         if forest.coverage == "none":
             return ExpandStep(ExpandStatus.DEAD, coverage="none", detail="illegal_prefix")
         if not forest.paths:

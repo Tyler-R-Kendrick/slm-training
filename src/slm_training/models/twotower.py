@@ -11677,7 +11677,19 @@ class TwoTowerModel(nn.Module):
             )
         return pruned
 
-    def _solver_prune_forest(self, forest, prefix, row: int = 0):
+    def _solver_prune_forest(
+        self,
+        forest,
+        prefix,
+        row: int = 0,
+        *,
+        slot_contract: list[str] | None = None,
+        min_content: int = 0,
+        runtime_symbols: tuple[object, ...] = (),
+        remaining_tokens: int | None = None,
+        completion_session=None,
+        completion_state_id: int | None = None,
+    ):
         """VSS1-03: prune the compiler forest to the certified live subset.
 
         Only reached when ``verified_solver_decode`` is on. Runs certificate-checked
@@ -11713,7 +11725,12 @@ class TwoTowerModel(nn.Module):
 
         max_nodes = int(getattr(self.config, "solver_max_nodes", 512) or 512)
         bounds = SolverBounds(
-            max_tokens=max(1, max_nodes * 64),
+            max_tokens=max(
+                1,
+                int(remaining_tokens)
+                if remaining_tokens is not None
+                else max_nodes * 64,
+            ),
             max_nodes=max_nodes,
             max_depth=int(getattr(self.config, "solver_max_depth", 64) or 64),
             max_backtracks=int(getattr(self.config, "solver_max_backtracks", 64) or 64),
@@ -11741,6 +11758,13 @@ class TwoTowerModel(nn.Module):
             constraint_version=cv,
             bounds=bounds,
             max_path_tokens=window,
+            slot_contract=slot_contract or (),
+            min_content=min_content,
+            runtime_symbols=runtime_symbols,
+            remaining_tokens=remaining_tokens,
+            root_forest=forest,
+            completion_session=completion_session,
+            completion_state_id=completion_state_id,
         )
         provider = EnumerativeSupportProvider(expander, OpenUIWellFormedVerifier())
         if goal_mode != "off":
@@ -12053,10 +12077,16 @@ class TwoTowerModel(nn.Module):
                 # VSS1-03: certified exact closure prunes the forest to the live
                 # subset before any soft ranking. Disabled by default (guard above),
                 # so the default decode path is untouched.
-                forest = (
-                    self._solver_prune_forest(forest, prefix, _plan_row)
-                    if _plan_row
-                    else self._solver_prune_forest(forest, prefix)
+                forest = self._solver_prune_forest(
+                    forest,
+                    prefix,
+                    _plan_row,
+                    slot_contract=slot_contract,
+                    min_content=self._effective_min_content(slot_contract),
+                    runtime_symbols=self._runtime_symbols_for_row(_plan_row),
+                    remaining_tokens=length - len(prefix),
+                    completion_session=getattr(state, "completion_session", None),
+                    completion_state_id=getattr(state, "completion_state_id", None),
                 )
             # Partial coverage still contains individually grammar-admitted
             # paths. Tree/restricted modes must consume those paths; falling
@@ -12581,7 +12611,17 @@ class TwoTowerModel(nn.Module):
                         state._collect_completion_stats()
                 check_decode_deadline()
                 if verified_solver_decode:
-                    forest = self._solver_prune_forest(forest, prefix, row)
+                    forest = self._solver_prune_forest(
+                        forest,
+                        prefix,
+                        row,
+                        slot_contract=contracts[row],
+                        min_content=self._effective_min_content(contracts[row]),
+                        runtime_symbols=self._runtime_symbols_for_row(row),
+                        remaining_tokens=length - len(prefix),
+                        completion_session=state.completion_session,
+                        completion_state_id=state.completion_state_id,
+                    )
                 forests[row] = forest
                 if not forest.paths:
                     if stats is not None:

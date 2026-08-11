@@ -3113,7 +3113,9 @@ def test_verified_solver_decode_skips_unpruned_forced_closure(monkeypatch) -> No
     monkeypatch.setattr(
         compiler_draft, "build_completion_forest", lambda *_args, **_kwargs: forest
     )
-    monkeypatch.setattr(model, "_solver_prune_forest", lambda value, _prefix: value)
+    monkeypatch.setattr(
+        model, "_solver_prune_forest", lambda value, _prefix, *_args, **_kwargs: value
+    )
     ctx, ctx_pad = model._encode_context(["card"])
 
     result = model._compiler_ltr_decode_one(

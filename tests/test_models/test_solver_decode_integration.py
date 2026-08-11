@@ -367,7 +367,7 @@ def test_decode_invokes_solver_only_when_enabled() -> None:
     # unchanged keeps decode on the baseline trajectory.
     calls = {"n": 0}
 
-    def _spy(forest, prefix):
+    def _spy(forest, prefix, *_args, **_kwargs):
         calls["n"] += 1
         return forest
 
@@ -431,7 +431,7 @@ def test_goal_certified_singleton_uses_existing_zero_forward_path(monkeypatch) -
     certificate_store = {}
     closure_results = []
 
-    def _certified_prune(value, live_prefix):
+    def _certified_prune(value, live_prefix, *_args, **_kwargs):
         assert value is forest
         assert list(live_prefix) == prefix
         pruned, result = goal_support_prune(
