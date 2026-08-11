@@ -16,6 +16,7 @@ from __future__ import annotations
 import hashlib
 import re
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Iterable, Mapping
 
 from slm_training.data.contract import GenerationRequest
@@ -60,6 +61,7 @@ __all__ = [
     "evaluate_goal_constraints",
     "evaluation_state_decision_table",
     "evaluator_digest",
+    "evaluator_implementation_digest",
     "evaluator_identity",
     "pack_identity_digest",
     "request_production_digest",
@@ -70,6 +72,11 @@ __all__ = [
 
 COMPILER_VERSION = "pgs-a02.requirements_compile/v1"
 EVALUATOR_VERSION = "pgs-a03.requirements_evaluate/v1"
+
+
+def evaluator_implementation_digest() -> str:
+    """Content identity for profiles that pin typed constraint semantics."""
+    return hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 
 _GOLD_LEAK_KEYS = frozenset(
     {
@@ -190,7 +197,7 @@ def digest_recipe() -> dict[str, Any]:
         },
         "evaluator_digest": {
             "algorithm": "sha256",
-            "payload": "canonical_json({evaluator_version, evaluation_state_decision_table, supported_constraint_kinds, deferred_constraint_kinds})",
+            "payload": "canonical_json({evaluator_version, implementation_digest, evaluation_state_decision_table, supported_constraint_kinds, deferred_constraint_kinds})",
             "notes": "Owned by requirements_compile.py; excludes raw program/prompt content.",
         },
     }
@@ -787,6 +794,7 @@ def evaluator_identity() -> dict[str, str]:
 def evaluator_digest() -> str:
     payload = {
         "evaluator_version": EVALUATOR_VERSION,
+        "implementation_digest": evaluator_implementation_digest(),
         "decision_table": evaluation_state_decision_table(),
         "supported_kinds": list(supported_constraint_kinds()),
         "deferred_kinds": list(deferred_constraint_kinds()),

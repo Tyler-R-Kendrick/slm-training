@@ -283,6 +283,8 @@ class DecodeStats:
     goal_support_verifier_calls: int = 0
     goal_support_expanded_nodes: int = 0
     goal_support_backtracks: int = 0
+    goal_support_diagnostic_decisions: int = 0
+    goal_support_certified_decisions: int = 0
     constrained_dead_ends: int = 0
     constrained_dead_end_last_position: int = -1
     constrained_dead_end_forced_rank: int = -1
@@ -1239,6 +1241,8 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "goal_support_verifier_calls",
         "goal_support_expanded_nodes",
         "goal_support_backtracks",
+        "goal_support_diagnostic_decisions",
+        "goal_support_certified_decisions",
     ]
     out: dict[str, Any] = {"n": len(rows)}
     # Timings always report (a 0ms phase is a measurement); feature counters

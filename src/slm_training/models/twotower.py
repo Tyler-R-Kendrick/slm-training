@@ -566,11 +566,10 @@ class TwoTowerConfig:
     solver_max_wall_ms: int = 0
     solver_unknown_policy: str = "keep_and_rank"
     solver_certificate_mode: str = "summary"  # none | summary | full
-    # PGS-E01 (SLM-504): default-off goal-support decode modes on the compiler-tree
-    # seam. ``off`` is byte-identical to existing decode; ``diagnostic`` observes
-    # only; ``certified`` prunes via ``exact_goal_closure`` + ``solver_prune``.
+    # Proof-carrying goal support over the same completion forest. Runtime
+    # profiles/constraints are request-bound and deliberately not checkpointed.
     goal_support_mode: str = "off"  # off | diagnostic | certified
-    goal_support_profile_mode: str | None = None
+    goal_support_query_cap: int = 32
     # VSS3-02 learned cost-to-go energy scorer. Ranking-only: it orders the exact
     # live candidates and never alters hard membership, certificates, or UNKNOWN.
     # Disabled by default; ``solver_ranker="deterministic"`` is byte-identical to
@@ -798,6 +797,17 @@ class TwoTowerConfig:
             validate_twotower_config(self)
         except NumericValidationError as exc:
             raise ValueError(str(exc)) from exc
+        if self.goal_support_mode not in {"off", "diagnostic", "certified"}:
+            raise ValueError(
+                "goal_support_mode must be one of: off, diagnostic, certified"
+            )
+        if self.goal_support_query_cap < 0:
+            raise ValueError("goal_support_query_cap must be non-negative")
+        if self.goal_support_mode != "off" and self.compiler_decode_mode == "off":
+            raise ValueError(
+                "enabled goal support requires compiler_decode_mode to own a "
+                "completion forest"
+            )
         unsupported = [
             name
             for name in (
@@ -2110,7 +2120,15 @@ class TwoTowerModel(nn.Module):
         self._component_edge_cache: dict[str, tuple[tuple[int, int], ...]] = {}
         self._abstract_plan_target_cache: dict[str, tuple[int, ...]] = {}
         self._slot_contracts: list[list[str] | None] | None = None
-        self._goal_support_bindings: list[object] | None = None
+        # Request-local (problem, profile, compiled constraints, request) rows. Strict
+        # persisted contracts live in goal_support.py/goal_constraints.py;
+        # this mutable carrier is cleared after every generation call.
+        self._goal_support_contexts: tuple[
+            tuple[object, object, object, GenerationRequest], ...
+        ] = ()
+        self._goal_support_action_status: dict[
+            tuple[int, tuple[int, ...]], dict[tuple[str, tuple[int, ...]], str]
+        ] = {}
         self._semantic_role_candidates: list[dict[str, tuple[str, ...]]] | None = None
         self._semantic_role_properties: list[dict[str, tuple[str, ...]]] | None = None
         self._semantic_plan_action_scores: list[dict[int, float]] | None = None
@@ -11659,7 +11677,7 @@ class TwoTowerModel(nn.Module):
             )
         return pruned
 
-    def _solver_prune_forest(self, forest, prefix):
+    def _solver_prune_forest(self, forest, prefix, row: int = 0):
         """VSS1-03: prune the compiler forest to the certified live subset.
 
         Only reached when ``verified_solver_decode`` is on. Runs certificate-checked
@@ -11671,7 +11689,7 @@ class TwoTowerModel(nn.Module):
         """
         from slm_training.dsl.language_contract import contract_id
         from slm_training.dsl.solver.closure import EnumerativeSupportProvider
-        from slm_training.dsl.solver.decode import solver_prune
+        from slm_training.dsl.solver.decode import goal_support_prune, solver_prune
         from slm_training.dsl.solver.openui_support import (
             OpenUIForestExpander,
             OpenUIWellFormedVerifier,
@@ -11685,7 +11703,12 @@ class TwoTowerModel(nn.Module):
                 "verified_solver_decode requires a DSL-native tokenizer/pack; "
                 f"{type(self.tokenizer).__name__} is unsupported"
             )
+        goal_mode = str(getattr(self.config, "goal_support_mode", "off") or "off")
+        stats = get_active_stats()
         if forest.coverage != "complete" or not forest.paths:
+            if stats is not None and goal_mode != "off":
+                stats.goal_support_skipped_incomplete_forest += 1
+                stats.goal_support_unobserved += len(forest.paths)
             return forest  # closure is authoritative only over an exhaustive set
 
         max_nodes = int(getattr(self.config, "solver_max_nodes", 512) or 512)
@@ -11698,7 +11721,18 @@ class TwoTowerModel(nn.Module):
                 getattr(self.config, "solver_max_verifier_calls", 64) or 64
             ),
         )
-        cv = contract_id()
+        goal_context = None
+        if goal_mode != "off":
+            if row >= len(self._goal_support_contexts):
+                raise ValueError(
+                    "enabled goal support is missing request-bound profile evidence"
+                )
+            goal_context = self._goal_support_contexts[row]
+        cv = (
+            str(goal_context[2].digest)
+            if goal_context is not None
+            else contract_id()
+        )
         window = int(getattr(self.config, "grammar_draft_window", 8) or 8)
         expander = OpenUIForestExpander(
             self.tokenizer,
@@ -11709,16 +11743,38 @@ class TwoTowerModel(nn.Module):
             max_path_tokens=window,
         )
         provider = EnumerativeSupportProvider(expander, OpenUIWellFormedVerifier())
+        if goal_mode != "off":
+            assert goal_context is not None
+            problem, profile, constraint_set, request = goal_context
+            from slm_training.dsl.pack import get_pack
+            from slm_training.dsl.solver.goal_support import GoalSupportProvider
+            from slm_training.dsl.solver.openui_support import (
+                OpenUIGoalVerifier,
+                current_openui_pack_identity,
+            )
+
+            pack = get_pack("openui")
+            if profile.pack_identity != current_openui_pack_identity(self.tokenizer):
+                raise ValueError("goal-support profile does not match live tokenizer identity")
+            provider = GoalSupportProvider(
+                expander,
+                verifier_factory=lambda: OpenUIGoalVerifier(
+                    profile=profile,
+                    constraint_set=constraint_set,
+                    problem=problem,
+                    request=request,
+                    pack_identity=profile.pack_identity,
+                    pack=pack,
+                ),
+                profile=profile,
+                constraint_set=constraint_set,
+            )
         policy = str(getattr(self.config, "solver_unknown_policy", "keep_and_rank"))
         root_state = expander.root_state()
         certificate_store: dict = {}
-        stats = get_active_stats()
         # Solver wall time is separated from denoiser_ms/projection_ms (VSS1-04).
         with timed_ms(stats, "solver_ms"):
-            pruned, result = solver_prune(
-                forest,
-                prefix,
-                provider,
+            common = dict(
                 pack_id="openui",
                 constraint_version=cv,
                 bounds=bounds,
@@ -11727,11 +11783,111 @@ class TwoTowerModel(nn.Module):
                 cache={},
                 certificate_store=certificate_store,
             )
+            if goal_mode == "off":
+                pruned, result = solver_prune(forest, prefix, provider, **common)
+            else:
+                goal_query_cap = int(
+                    getattr(self.config, "goal_support_query_cap", 32) or 0
+                )
+                pruned, result = goal_support_prune(
+                    forest,
+                    prefix,
+                    provider,
+                    mode=goal_mode,
+                    max_queries=goal_query_cap,
+                    **common,
+                )
         if result is not None:
-            self._record_solver_metrics(result, root_state, certificate_store, stats)
+            self._record_solver_metrics(
+                result,
+                root_state,
+                certificate_store,
+                stats,
+                applied_removals=goal_mode != "diagnostic",
+            )
+            if goal_mode != "off" and stats is not None:
+                counters = result.counters
+                observed_values = {witness.value for witness in result.witnesses}
+                observed_values.update(
+                    value
+                    for deduction in result.deductions
+                    for value in deduction.removed
+                )
+                observed_values.update(
+                    query.candidate for query in result.unknown_queries
+                )
+                stats.goal_support_queries += counters.support_queries
+                stats.goal_support_unobserved += sum(
+                    value not in observed_values
+                    for hole in root_state.holes
+                    for value in hole.values
+                )
+                stats.goal_support_supported += counters.supported
+                stats.goal_support_unsupported += counters.unsupported
+                stats.goal_support_unknown += counters.unknown
+                stats.goal_support_replay_failures += max(
+                    0, counters.unsupported - counters.candidates_removed
+                )
+                stats.goal_support_verifier_calls += counters.verifier_calls
+                stats.goal_support_expanded_nodes += counters.expanded_nodes
+                if goal_mode == "diagnostic":
+                    stats.goal_support_diagnostic_decisions += 1
+                else:
+                    stats.goal_support_certified_decisions += 1
+                    stats.goal_support_pruned += counters.candidates_removed
+                if result.state.is_bottom and not result.unknown_queries:
+                    stats.goal_support_domain_inadequate += 1
+                elif result.unknown_queries or not result.reached_fixed_point:
+                    stats.goal_support_coverage_unknown += 1
+                if hasattr(provider, "goal_result"):
+                    stats.goal_support_obstruction_cores += sum(
+                        provider.goal_result(digest).obstruction_core is not None
+                        for digest in certificate_store
+                    )
+            if goal_mode != "off":
+                status: dict[tuple[str, tuple[int, ...]], str] = {}
+                for witness in result.witnesses:
+                    payload = witness.value.payload
+                    status[(str(payload["kind"]), tuple(payload["token_ids"]))] = (
+                        "SUPPORTED"
+                    )
+                for deduction in result.deductions:
+                    for value in deduction.removed:
+                        payload = value.payload
+                        status[(str(payload["kind"]), tuple(payload["token_ids"]))] = (
+                            "UNSUPPORTED"
+                        )
+                for query in result.unknown_queries:
+                    payload = query.candidate.payload
+                    status[(str(payload["kind"]), tuple(payload["token_ids"]))] = (
+                        "UNKNOWN"
+                    )
+                self._goal_support_action_status[(row, tuple(prefix))] = status
         return pruned
 
-    def _record_solver_metrics(self, result, root_state, certificate_store, stats):
+    def _record_goal_support_selection(self, row: int, prefix, path) -> None:
+        from slm_training.models.decode_stats import get_active_stats
+
+        status = self._goal_support_action_status.get((row, tuple(prefix)), {}).get(
+            (str(path.kind), tuple(path.token_ids))
+        )
+        stats = get_active_stats()
+        if stats is None:
+            return
+        if status == "SUPPORTED":
+            stats.goal_support_selected_supported += 1
+        elif status == "UNSUPPORTED":
+            stats.goal_support_selection_regret += 1
+
+    def _record_solver_metrics(
+        self,
+        result,
+        root_state,
+        certificate_store,
+        stats,
+        *,
+        applied_removals: bool = True,
+    ):
         """VSS1-04: fold solver work into decode stats and, when a trace recorder
         is attached, emit replayable solver-transition events + a bounded
         certificate/counter sidecar. Counters ride the existing DecodeStats
@@ -11754,7 +11910,8 @@ class TwoTowerModel(nn.Module):
             stats.solver_supported += counters.supported
             stats.solver_unsupported += counters.unsupported
             stats.solver_unknown += counters.unknown
-            stats.solver_certified_removed += counters.candidates_removed
+            if applied_removals:
+                stats.solver_certified_removed += counters.candidates_removed
             stats.solver_expanded_nodes += counters.expanded_nodes
             stats.solver_verifier_calls += counters.verifier_calls
             stats.solver_terminal_status = closure_status(result)
@@ -11860,10 +12017,10 @@ class TwoTowerModel(nn.Module):
             if stats is not None and search_mode != "greedy":
                 stats.compiler_lattice_recurrences += 1
             forced_closure: tuple[int, ...] = ()
-            verified_solver_decode = bool(
-                getattr(self.config, "verified_solver_decode", False)
+            verified_solver_decode = (
+                bool(getattr(self.config, "verified_solver_decode", False))
+                or str(getattr(self.config, "goal_support_mode", "off")) != "off"
             )
-            goal_support_certified = self._goal_support_certified_active()
             with timed_ms(stats, "compiler_ms"):
                 forest = build_completion_forest(
                     self.tokenizer,
@@ -11884,11 +12041,7 @@ class TwoTowerModel(nn.Module):
                 # compiler-tree search cost as the call it chains from and
                 # must not silently fall into unattributed_ms — see
                 # docs/design/compiler-tree-forced-closure-decode-metering-gap.md.
-                if (
-                    forest.coverage == "complete"
-                    and not verified_solver_decode
-                    and not goal_support_certified
-                ):
+                if forest.coverage == "complete" and not verified_solver_decode:
                     closure = state.completion_forced_closure(length - len(prefix))
                     if closure is not None:
                         closure_tokens, _closure_state, closure_coverage = closure
@@ -11896,13 +12049,15 @@ class TwoTowerModel(nn.Module):
                             forced_closure = tuple(
                                 int(token_id) for token_id in closure_tokens
                             )
-            if self._goal_support_mode() != "off":
-                forest = self._goal_support_apply_forest(forest, prefix, _plan_row)
             if verified_solver_decode:
                 # VSS1-03: certified exact closure prunes the forest to the live
                 # subset before any soft ranking. Disabled by default (guard above),
                 # so the default decode path is untouched.
-                forest = self._solver_prune_forest(forest, prefix)
+                forest = (
+                    self._solver_prune_forest(forest, prefix, _plan_row)
+                    if _plan_row
+                    else self._solver_prune_forest(forest, prefix)
+                )
             # Partial coverage still contains individually grammar-admitted
             # paths. Tree/restricted modes must consume those paths; falling
             # back merely because the vocabulary is not exhaustive discards
@@ -12387,10 +12542,10 @@ class TwoTowerModel(nn.Module):
                 state = states[row]
                 state.remaining_tokens = length - len(prefix)
                 forced_closure: tuple[int, ...] = ()
-                verified_solver_decode = bool(
-                    getattr(self.config, "verified_solver_decode", False)
+                verified_solver_decode = (
+                    bool(getattr(self.config, "verified_solver_decode", False))
+                    or str(getattr(self.config, "goal_support_mode", "off")) != "off"
                 )
-                goal_support_certified = self._goal_support_certified_active()
                 with timed_ms(stats, "compiler_ms"):
                     try:
                         forest = build_completion_forest(
@@ -12410,7 +12565,7 @@ class TwoTowerModel(nn.Module):
                         # compiler-tree search cost as the call it chains from
                         # and must not silently fall into unattributed_ms —
                         # see docs/design/compiler-tree-forced-closure-decode-metering-gap.md.
-                        if forest.coverage == "complete" and not verified_solver_decode and not goal_support_certified:
+                        if forest.coverage == "complete" and not verified_solver_decode:
                             closure = state.completion_forced_closure(
                                 length - len(prefix)
                             )
@@ -12425,10 +12580,8 @@ class TwoTowerModel(nn.Module):
                     finally:
                         state._collect_completion_stats()
                 check_decode_deadline()
-                if self._goal_support_mode() != "off":
-                    forest = self._goal_support_apply_forest(forest, prefix, row)
                 if verified_solver_decode:
-                    forest = self._solver_prune_forest(forest, prefix)
+                    forest = self._solver_prune_forest(forest, prefix, row)
                 forests[row] = forest
                 if not forest.paths:
                     if stats is not None:
@@ -13935,6 +14088,7 @@ class TwoTowerModel(nn.Module):
         *,
         max_len: int | None = None,
         grammar_constrained: bool | None = None,
+        goal_support_contexts: Sequence[tuple[object, object, object]] | None = None,
         _opaque_slot_projection: bool = False,
     ) -> list[str]:
         """Generate while scoping opaque codec identity to this call only."""
@@ -13949,6 +14103,41 @@ class TwoTowerModel(nn.Module):
                 "stochastic grammar selection is disabled for deterministic generation"
             )
         _require_symbol_only_tokenizer(self.tokenizer)
+        goal_mode = str(getattr(self.config, "goal_support_mode", "off") or "off")
+        contexts = tuple(goal_support_contexts or ())
+        if goal_mode != "off":
+            if any(request.output_kind != "document" for request in requests):
+                raise ValueError("goal support currently requires document output")
+            if len(contexts) != len(requests):
+                raise ValueError(
+                    "enabled goal support requires one "
+                    "(problem, profile, constraint_set) "
+                    "context per GenerationRequest"
+                )
+            from slm_training.dsl.solver.goal_support import (
+                validate_profile_against_constraint_set,
+            )
+
+            for problem, profile, constraint_set in contexts:
+                validate_profile_against_constraint_set(profile, constraint_set)
+                if problem.digest != profile.problem_digest:
+                    raise ValueError(
+                        "goal-support context problem does not match profile"
+                    )
+                if goal_mode == "certified" and (
+                    profile.mode != "production_exact"
+                    or profile.authority_tier != "compiler-hard"
+                ):
+                    raise ValueError(
+                        "certified goal support requires a compiler-hard "
+                        "production_exact profile"
+                    )
+            self._goal_support_contexts = tuple(
+                (problem, profile, constraint_set, request)
+                for request, (problem, profile, constraint_set) in zip(
+                    requests, contexts, strict=True
+                )
+            )
         active = set(_OPAQUE_PROJECTION_MODELS.get())
         if _opaque_slot_projection:
             active.add(id(self))
@@ -13963,6 +14152,8 @@ class TwoTowerModel(nn.Module):
                 _opaque_slot_projection=_opaque_slot_projection,
             )
         finally:
+            self._goal_support_contexts = ()
+            self._goal_support_action_status = {}
             _OPAQUE_PROJECTION_MODELS.reset(token)
 
     def _generate_batch_requests_impl(
@@ -14431,15 +14622,6 @@ class TwoTowerModel(nn.Module):
                 )
         else:
             self._slot_contracts = None
-        self._prepare_goal_support_bindings(
-            prompts,
-            slot_contracts=slot_contracts,
-            schemas=schemas,
-            design_mds=design_mds,
-            runtime_symbols=runtime_symbols,
-            output_kinds=output_kinds,
-            output_categories=output_categories,
-        )
         if not use_contract_decode:
             # E617: schema_role_slot_decode_weight, slot_coverage_close_decode_weight,
             # the semantic_plan_typed_array_*/repeated_slot_margin decode weights,

@@ -31,6 +31,7 @@ from slm_training.data.progspec.goal_constraints import (
     GoalConstraintV1,
 )
 from slm_training.data.progspec.synthesis_problem import PackIdentityV1
+from slm_training.data.semantic_plan.requirements_compile import COMPILER_VERSION
 from slm_training.dsl.solver.goal_support import (
     GoalFailureAtomV1,
     GoalSupportProvider,
@@ -47,16 +48,16 @@ from slm_training.dsl.solver.state import (
 from slm_training.dsl.solver.support import ExpandStatus, ExpandStep, VerifyOutcome, VerifyStatus
 from slm_training.dsl.grammar.fastpath.compiler_draft import (
     CompletionForest,
+    CompletionPath,
     build_completion_forest,
 )
 from slm_training.dsl.solver.adapters import completion_forest_state
 from slm_training.dsl.schema import ExampleRecord
+from slm_training.data.contract import GenerationRequest
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 
 _SOLVER_DEFAULTS = {
     "verified_solver_decode": False,
-    "goal_support_mode": "off",
-    "goal_support_profile_mode": None,
     "solver_max_nodes": 512,
     "solver_max_depth": 64,
     "solver_max_backtracks": 64,
@@ -64,6 +65,8 @@ _SOLVER_DEFAULTS = {
     "solver_max_wall_ms": 0,
     "solver_unknown_policy": "keep_and_rank",
     "solver_certificate_mode": "summary",
+    "goal_support_mode": "off",
+    "goal_support_query_cap": 32,
 }
 
 
@@ -207,7 +210,7 @@ def _goal_provider_for_forest(
             problem_digest="d" * 64,
             request_digest="e" * 64,
             pack_identity_digest=compute_pack_identity_digest(pack_identity),
-            compiler_version="compiler/v1",
+            compiler_version=COMPILER_VERSION,
             constraints=(constraint,),
             hard_constraint_ids=(constraint.constraint_id,),
         ).to_dict()
@@ -253,6 +256,32 @@ def test_solver_fields_default_disabled() -> None:
     for field, expected in _SOLVER_DEFAULTS.items():
         assert getattr(config, field) == expected
     assert config.verified_solver_decode is False
+
+
+def test_goal_support_config_fails_closed_without_completion_forest() -> None:
+    with pytest.raises(ValueError, match="completion forest"):
+        TwoTowerConfig(goal_support_mode="diagnostic")
+    with pytest.raises(ValueError, match="goal_support_mode"):
+        TwoTowerConfig(goal_support_mode="unsafe", compiler_decode_mode="tree")
+
+
+def test_goal_support_selected_action_telemetry_uses_observed_verdict() -> None:
+    from slm_training.dsl.grammar.fastpath.compiler_draft import CompletionPath
+    from slm_training.models.decode_stats import collect_decode_stats
+
+    model = _model(goal_support_mode="diagnostic", compiler_decode_mode="tree")
+    prefix = (model.tokenizer.bos_id,)
+    supported = CompletionPath((model.tokenizer.eos_id,), "supported")
+    unsupported = CompletionPath((model.tokenizer.mask_id,), "unsupported")
+    model._goal_support_action_status[(0, prefix)] = {
+        (supported.kind, supported.token_ids): "SUPPORTED",
+        (unsupported.kind, unsupported.token_ids): "UNSUPPORTED",
+    }
+    with collect_decode_stats() as stats:
+        model._record_goal_support_selection(0, prefix, supported)
+        model._record_goal_support_selection(0, prefix, unsupported)
+    assert stats.goal_support_selected_supported == 1
+    assert stats.goal_support_selection_regret == 1
 
 
 def test_solver_config_round_trips_and_old_checkpoints_default() -> None:
@@ -356,26 +385,10 @@ def test_decode_invokes_solver_only_when_enabled() -> None:
     assert calls["n"] >= 1  # enabled: pruned at least once before soft ranking
 
 
-def test_goal_support_defaults_off_and_legacy_checkpoint_loads() -> None:
-    config = TwoTowerConfig(context_backend="scratch", output_tokenizer="lexer")
-    assert config.goal_support_mode == "off"
-    assert config.goal_support_query_cap == 32
-    dumped = dataclasses.asdict(
-        TwoTowerConfig(
-            context_backend="scratch",
-            output_tokenizer="lexer",
-            goal_support_mode="diagnostic",
-        )
-    )
-    fields = TwoTowerConfig.__dataclass_fields__
-    legacy = {
-        key: value
-        for key, value in dumped.items()
-        if key in fields and not key.startswith("goal_support_")
-    }
-    legacy_config = TwoTowerConfig(**legacy)
-    assert legacy_config.goal_support_mode == "off"
-    assert legacy_config.goal_support_query_cap == 32
+def test_enabled_goal_support_requires_request_bound_profile_evidence() -> None:
+    model = _model(goal_support_mode="diagnostic", compiler_decode_mode="tree")
+    with pytest.raises(ValueError, match="one .* context per GenerationRequest"):
+        model.generate_batch_requests([GenerationRequest(prompt="card")])
 
 
 def test_goal_certified_singleton_uses_existing_zero_forward_path(monkeypatch) -> None:
@@ -450,6 +463,7 @@ def test_goal_certified_singleton_uses_existing_zero_forward_path(monkeypatch) -
         result = model._compiler_ltr_decode_one(
             ctx, ctx_pad, 4, mode="tree", slot_contract=None
         )
+
     assert int(result[1]) == component
     assert int(result[2]) == eos
     assert len(closure_results) == 1

@@ -53,13 +53,18 @@ from slm_training.data.progspec.goal_constraints import (
     canonical_json_bytes,
 )
 from slm_training.data.progspec.synthesis_problem import PackIdentityV1
+from slm_training.data.semantic_plan.requirements_compile import (
+    COMPILER_VERSION,
+    evaluator_digest,
+)
 from slm_training.data.verify.stack import gate_stack_implementation_digest
 
 GOAL_VERIFIER_PROFILE_SCHEMA_VERSION = "goal_verifier_profile/v1"
 GOAL_TERMINAL_EVIDENCE_SCHEMA_VERSION = "goal_terminal_evidence/v1"
 GOAL_SUPPORT_RESULT_SCHEMA_VERSION = "goal_support_result/v1"
 GOAL_SUPPORT_IMPLEMENTATION_VERSION = (
-    f"goal_support/v1:gates-{gate_stack_implementation_digest()[:16]}"
+    f"goal_support/v1:g-{gate_stack_implementation_digest()[:16]}:"
+    f"c-{evaluator_digest()[:16]}"
 )
 
 GoalVerifierMode = Literal["production_exact", "evaluation_oracle", "advisory_diagnostic"]
@@ -368,6 +373,8 @@ def validate_profile_against_constraint_set(
     """Fail closed when profile identities are stale or mode/partition laws break."""
     if constraint_set.schema_version != COMPILED_GOAL_CONSTRAINT_SET_SCHEMA_VERSION:
         raise ValueError("unsupported CompiledGoalConstraintSetV1 version")
+    if constraint_set.compiler_version != COMPILER_VERSION:
+        raise ValueError("constraint compiler identity is stale")
     if not constraint_set.digest or constraint_set.compute_digest() != constraint_set.digest:
         raise ValueError("constraint set digest is stale or its payload was mutated")
     if not profile.digest or profile.compute_digest() != profile.digest:

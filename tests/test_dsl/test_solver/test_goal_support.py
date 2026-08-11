@@ -14,6 +14,10 @@ from slm_training.data.progspec.goal_constraints import (
     GoalConstraintV1,
 )
 from slm_training.data.progspec.synthesis_problem import PackIdentityV1
+from slm_training.data.semantic_plan.requirements_compile import (
+    COMPILER_VERSION,
+    evaluator_digest,
+)
 from slm_training.dsl.solver.goal_support import (
     GoalEvaluatorResultV1,
     GoalFailureAtomV1,
@@ -82,7 +86,7 @@ def _compiled_set(**overrides: object) -> CompiledGoalConstraintSetV1:
         "problem_digest": "a" * 64,
         "request_digest": "b" * 64,
         "pack_identity_digest": compute_pack_identity_digest(_pack_identity()),
-        "compiler_version": "compiler/v1",
+        "compiler_version": COMPILER_VERSION,
         "constraints": (hard, advisory, evaluation),
         "hard_constraint_ids": (hard.constraint_id,),
         "advisory_constraint_ids": (advisory.constraint_id,),
@@ -197,6 +201,22 @@ def test_stale_constraint_set_digest_rejected() -> None:
     constraint_set = _compiled_set()
     with pytest.raises(ValueError, match="constraint_set_digest is stale"):
         validate_profile_against_constraint_set(profile, constraint_set)
+
+
+def test_stale_constraint_compiler_identity_rejected() -> None:
+    current = _compiled_set()
+    stale = CompiledGoalConstraintSetV1.from_dict(
+        current.model_copy(update={"compiler_version": "compiler/old", "digest": ""})
+        .to_dict(include_digest=True)
+    )
+    profile = _profile(constraint_set_digest=stale.digest)
+    with pytest.raises(ValueError, match="constraint compiler identity is stale"):
+        validate_profile_against_constraint_set(profile, stale)
+
+
+def test_profile_implementation_binds_typed_constraint_evaluator() -> None:
+    profile = _profile()
+    assert f"c-{evaluator_digest()[:16]}" in profile.implementation_version
 
 
 def test_stale_pack_identity_digest_rejected() -> None:

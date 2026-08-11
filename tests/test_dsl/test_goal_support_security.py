@@ -14,6 +14,7 @@ from slm_training.data.progspec.goal_constraints import (
     GoalConstraintV1,
 )
 from slm_training.data.progspec.synthesis_problem import PackIdentityV1
+from slm_training.data.semantic_plan.requirements_compile import COMPILER_VERSION
 from slm_training.dsl.solver.goal_support import (
     EvaluatorIdentityV1,
     GoalFailureAtomV1,
@@ -69,7 +70,7 @@ def _constraint_set(constraint: GoalConstraintV1 | None = None) -> CompiledGoalC
         problem_digest="d" * 64,
         request_digest="e" * 64,
         pack_identity_digest=compute_pack_identity_digest(_pack()),
-        compiler_version="compiler/v1",
+        compiler_version=COMPILER_VERSION,
         constraints=(item,),
         hard_constraint_ids=hard_ids,
         advisory_constraint_ids=advisory_ids,

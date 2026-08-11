@@ -241,7 +241,7 @@
       "type": "array"
     },
     "implementation_version": {
-      "default": "goal_support/v1:gates-6a29fb49eab90ff7",
+      "default": "goal_support/v1:g-6a29fb49eab90ff7:c-5e678a7135da77ea",
       "minLength": 1,
       "title": "Implementation Version",
       "type": "string"
