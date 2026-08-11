@@ -31,7 +31,10 @@ def export_spdx(obj: Any) -> dict[str, Any]:
     }
     if digest:
         element["checksums"] = [
-            {"algorithm": "SHA256", "checksumValue": _strip_algo(digest)}
+            {
+                "algorithm": "SHA256",
+                "checksumValue": _strip_algo(digest).lower(),
+            }
         ]
 
     payload = base_envelope(

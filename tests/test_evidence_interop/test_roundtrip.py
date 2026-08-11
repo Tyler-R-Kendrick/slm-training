@@ -9,6 +9,7 @@ import pytest
 from slm_training.evidence_interop import (
     AuthorityRoundtripError,
     UnsupportedFieldError,
+    authority_ids_equal,
     export_prov_o,
     extract_authority,
     import_projection,
@@ -111,7 +112,7 @@ def test_roundtrip_all_preserves_authority(factory):
     }
     for view in views.values():
         assert view.semantic_authority is False
-        assert view.authority_ids == expected.authority_ids
+        assert authority_ids_equal(view.authority_ids, expected.authority_ids)
         assert view.kind == expected.kind
 
 

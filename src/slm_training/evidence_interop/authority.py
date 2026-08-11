@@ -7,7 +7,9 @@ constructors and checkers, not these projections.
 
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass
+from types import MappingProxyType
 from typing import Any, Mapping
 
 from slm_training.evidence_interop.profile import (
@@ -35,18 +37,38 @@ class AuthorityRoundtripError(ValueError):
     """Round-trip dropped or mutated an authority-relevant identifier."""
 
 
+def _freeze(value: Any) -> Any:
+    """Recursively freeze mappings/sequences so AuthorityRecord stays immutable."""
+    if isinstance(value, Mapping):
+        return MappingProxyType({str(k): _freeze(v) for k, v in value.items()})
+    if isinstance(value, (list, tuple)):
+        return tuple(_freeze(item) for item in value)
+    return value
+
+
+def _unfreeze(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return {str(k): _unfreeze(v) for k, v in value.items()}
+    if isinstance(value, tuple):
+        return [_unfreeze(item) for item in value]
+    return deepcopy(value) if isinstance(value, (dict, list)) else value
+
+
 @dataclass(frozen=True)
 class AuthorityRecord:
     """Flat authority-relevant identifiers extracted from a native object."""
 
     kind: str
-    authority_ids: dict[str, Any]
+    authority_ids: Mapping[str, Any]
     source_schema: str
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "authority_ids", _freeze(self.authority_ids))
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "kind": self.kind,
-            "authority_ids": dict(self.authority_ids),
+            "authority_ids": _unfreeze(self.authority_ids),
             "source_schema": self.source_schema,
             "profile": PROFILE_ID,
             "semantic_authority": SEMANTIC_AUTHORITY_DEFAULT,

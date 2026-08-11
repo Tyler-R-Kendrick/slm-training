@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Mapping
 
 from slm_training.evidence_interop._envelope import base_envelope
 from slm_training.evidence_interop.authority import extract_authority
@@ -11,7 +11,7 @@ from slm_training.evidence_interop.profile import INTOTO_PREDICATE_TYPES
 FORMAT = "intoto"
 
 
-def export_intoto(obj: Any, *, predicate: str = "test_result") -> dict[str, Any]:
+def export_intoto(obj: Any, *, predicate: str = "slsa_provenance") -> dict[str, Any]:
     """Emit an in-toto Statement-shaped envelope (no signatures, no network).
 
     Attestation packaging only. Does **not** grant semantic authority, prove
@@ -24,7 +24,12 @@ def export_intoto(obj: Any, *, predicate: str = "test_result") -> dict[str, Any]
         )
     authority = extract_authority(obj)
     primary = _primary_id(authority.authority_ids)
-    digest = _best_digest(authority.authority_ids) or "0" * 64
+    digest = _best_digest(authority.authority_ids)
+    if digest is None:
+        raise ValueError(
+            "in-toto export requires a content digest in authority_ids "
+            "(no synthetic zero digest)"
+        )
 
     subject = [
         {
@@ -33,7 +38,7 @@ def export_intoto(obj: Any, *, predicate: str = "test_result") -> dict[str, Any]
         }
     ]
     suite = authority.authority_ids.get("suite_hashes") or {}
-    if isinstance(suite, dict):
+    if isinstance(suite, Mapping):
         for name, sha in sorted(suite.items()):
             subject.append(
                 {"name": str(name), "digest": {"sha256": _strip_algo(str(sha))}}
@@ -43,16 +48,19 @@ def export_intoto(obj: Any, *, predicate: str = "test_result") -> dict[str, Any]
             {"name": "raw_envelope", "digest": {"sha256": _strip_algo(str(sha))}}
         )
 
-    predicate_body: dict[str, Any] = {
-        "result": "PASSED_PROJECTION_ONLY",
-        "passed": True,
-        "note": (
-            "Projection packaging only; does not certify checkers, ship gates, "
-            "or campaign locks."
-        ),
-        "authority_ids": dict(authority.authority_ids),
-    }
-    if predicate == "slsa_provenance":
+    # Never emit a PASSED test-result without native test evidence. Default is
+    # SLSA provenance packaging; test_result stays FAIL-closed / documentary.
+    if predicate == "test_result":
+        predicate_body: dict[str, Any] = {
+            "result": "FAILED",
+            "configuration": [],
+            "note": (
+                "No verified native test evidence bound to this projection; "
+                "unsigned packaging only — not a ship-gate or checker pass."
+            ),
+            "authority_ids": dict(authority.authority_ids),
+        }
+    elif predicate == "slsa_provenance":
         predicate_body = {
             "buildDefinition": {
                 "buildType": "https://slm-training.invalid/build/projection/v1",
@@ -62,6 +70,17 @@ def export_intoto(obj: Any, *, predicate: str = "test_result") -> dict[str, Any]
                 "builder": {"id": "urn:slm:agent:evidence-interop-exporter"},
             },
             "authority_ids": dict(authority.authority_ids),
+        }
+    else:
+        predicate_body = {
+            "attributes": [
+                {
+                    "attribute": "slm.projection_only",
+                    "value": True,
+                }
+            ],
+            "authority_ids": dict(authority.authority_ids),
+            "note": "Unsigned SCAI-shaped projection packaging only.",
         }
 
     statement = {
@@ -84,7 +103,7 @@ def export_intoto(obj: Any, *, predicate: str = "test_result") -> dict[str, Any]
     return payload
 
 
-def _primary_id(ids: dict[str, Any]) -> str:
+def _primary_id(ids: Mapping[str, Any]) -> str:
     for key in ("object_id", "run_id", "campaign_id", "snapshot_id"):
         value = ids.get(key)
         if value:
@@ -92,18 +111,20 @@ def _primary_id(ids: dict[str, Any]) -> str:
     return "unknown"
 
 
-def _best_digest(ids: dict[str, Any]) -> str | None:
+def _best_digest(ids: Mapping[str, Any]) -> str | None:
     for key in (
         "content_digest",
         "config_sha256",
         "records_sha",
         "locked_eval_manifest_sha256",
         "corpus_sha256",
-        "source_commit",
     ):
         value = ids.get(key)
-        if value:
-            return str(value)
+        if not value:
+            continue
+        text = _strip_algo(str(value)).lower()
+        if len(text) == 64 and all(c in "0123456789abcdef" for c in text):
+            return text
     return None
 
 

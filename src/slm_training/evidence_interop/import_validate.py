@@ -43,7 +43,9 @@ def import_projection(
         raise TypeError("projection document must be a mapping")
 
     profile = document.get(PROFILE_BLOCK_KEY)
-    if profile is not None and profile != PROFILE_ID:
+    if profile is None:
+        raise ValueError("projection missing slm:profile")
+    if profile != PROFILE_ID:
         raise ValueError(f"unsupported interop profile: {profile!r}")
 
     fmt = str(document.get("slm:format") or expected_format or _infer_format(document))
@@ -79,7 +81,7 @@ def import_projection(
         authority_ids=dict(authority_ids),
         unsupported_fields=tuple(unsupported),
         semantic_authority=False,
-        profile_id=str(profile or PROFILE_ID),
+        profile_id=str(profile),
     )
 
 
@@ -128,6 +130,9 @@ def _walk(node: Any, path: tuple[str, ...], found: list[str]) -> None:
     if isinstance(node, Mapping):
         for key, value in node.items():
             key_s = str(key)
+            # Only fail closed on unknown *document* predicates: top-level keys,
+            # or namespaced prov:/spdx: predicates anywhere. Nested plain keys
+            # inside known exporter structures are not authority and are ignored.
             if path == () and key_s not in KNOWN_EXTERNAL_PREDICATES:
                 if not key_s.startswith("slm:"):
                     found.append(key_s)
@@ -137,5 +142,5 @@ def _walk(node: Any, path: tuple[str, ...], found: list[str]) -> None:
                 found.append(key_s)
             _walk(value, path + (key_s,), found)
     elif isinstance(node, (list, tuple)):
-        for item in node:
-            _walk(item, path, found)
+        for index, item in enumerate(node):
+            _walk(item, path + (str(index),), found)
