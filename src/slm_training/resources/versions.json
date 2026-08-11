@@ -3330,7 +3330,7 @@
       ]
     },
     "governance.revmath_owners": {
-      "version": "v4",
+      "version": "v5",
       "kind": "gate",
       "paths": [
         "docs/design/adr-revmath-reasoning-profile.md",
@@ -3340,6 +3340,11 @@
         "tests/test_scripts/test_verify_revmath_owners.py"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-08-11",
+          "note": "EVID-03 (SLM-519): document FormalPreflightV1.four_axis_ledger extension seam as done."
+        },
         {
           "version": "v4",
           "date": "2026-08-11",
@@ -3409,7 +3414,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v204",
+      "version": "v205",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -3462,6 +3467,11 @@
         "tests/test_autoresearch/test_evidence_ledger.py"
       ],
       "history": [
+        {
+          "version": "v205",
+          "date": "2026-08-11",
+          "note": "EVID-03 (SLM-519): FormalPreflightV1.four_axis_ledger + FormalPreflightFourAxisLedgerV1 typed fields on schemas.py."
+        },
         {
           "version": "v204",
           "date": "2026-08-11",
@@ -4730,7 +4740,7 @@
       ]
     },
     "harness.autoresearch.formal": {
-      "version": "v14",
+      "version": "v15",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/formal.py",
@@ -4739,9 +4749,15 @@
         "tests/test_autoresearch/test_formal.py",
         "docs/design/formal-autoresearch.md",
         ".github/workflows/ci.yml",
-        "docs/design/ci-minutes-and-speed-plan-20260806.md"
+        "docs/design/ci-minutes-and-speed-plan-20260806.md",
+        "tests/test_autoresearch/test_formal_four_axis_ledger.py"
       ],
       "history": [
+        {
+          "version": "v15",
+          "date": "2026-08-11",
+          "note": "EVID-03 (SLM-519): FormalPreflight four-axis ledger migration adapters, digest-stable payload helpers, focused tests."
+        },
         {
           "version": "v14",
           "date": "2026-08-10",
@@ -17449,6 +17465,11 @@
       "history": [
         {
           "version": "v11",
+          "date": "2026-08-11",
+          "note": "no-bump: route SFF preflight read/write through formal_preflight_payload / migrate_formal_preflight_v1 for EVID-03 digest stability; no SFF campaign semantics change."
+        },
+        {
+          "version": "v11",
           "date": "2026-08-03",
           "note": "Bound SFF Lean proof regeneration and version probes, serialize project builds, and validate committed proof digests fail-closed."
         },
@@ -18144,7 +18165,7 @@
       ]
     },
     "harness.reasoning.revmath": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/reasoning/revmath/",
@@ -18154,6 +18175,11 @@
         "scripts/run_revmath_task.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-11",
+          "note": "EVID-03 (SLM-519): export KNOWN_RM_SUBSYSTEMS for formal-preflight ledger RM interpretation checks."
+        },
         {
           "version": "v2",
           "date": "2026-08-11",

@@ -172,3 +172,24 @@ Use the cheapest sound level that can falsify the proposal:
 
 This ordering saves compute by rejecting contradictions and underspecified claims
 early. It does not use a toy proof as a surrogate quality score.
+
+## Four-axis analysis ledger (EVID-03 / SLM-519)
+
+`FormalPreflightV1` optionally carries `four_axis_ledger`
+(`FormalPreflightFourAxisLedgerV1`) with the HARN-02
+`RevmathFourAxisAnalysisV1` vocabulary. The ledger records assumption strength,
+computability classification, resource upper/lower bounds by stable
+`bound_ast_id` (EVID-04 AST placeholders; KERN-03
+`bound.finite_search.prefix_tree.v1`), and implementation refinement with
+explicit empirical remainders.
+
+Fail closed:
+
+- `wall_clock_latency` / `neural_quality` cannot appear in `theorem_claim_kinds`
+  merely because an abstract work bound is proved.
+- `RCA0` / `WKL0` / … labels require `explicit_reversal` or
+  `explicit_interpretation` — never inferred from `#print axioms`.
+
+Historical FormalPreflightV1 JSON without the ledger remains readable through
+`migrate_formal_preflight_v1`; digests use `formal_preflight_sha256` so an unset
+ledger does not rewrite historical hashes.

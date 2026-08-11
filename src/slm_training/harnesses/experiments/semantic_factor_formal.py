@@ -11,8 +11,9 @@ from __future__ import annotations
 import hashlib
 import json
 import time
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 from slm_training.autoresearch.schemas import FormalObligationV1, FormalPreflightV1
 from slm_training.formal.checkers import (
@@ -24,13 +25,13 @@ from slm_training.formal.checkers import (
 from slm_training.lineage.records import canonical_json
 
 __all__ = [
-    "SFF_FORMAL_TEMPLATES",
     "SFF_FORMAL_DIR",
+    "SFF_FORMAL_TEMPLATES",
+    "SFFFormalError",
     "load_sff_formal_obligations",
     "regenerate_sff_formal_preflights",
-    "verify_sff_formal_sources",
     "validate_committed_preflights",
-    "SFFFormalError",
+    "verify_sff_formal_sources",
 ]
 
 _REPO = Path(__file__).resolve().parents[4]
@@ -303,10 +304,12 @@ def regenerate_sff_formal_preflights(*, require_lean: bool = True) -> list[Path]
                 f"refusing to write non-proved preflight for {template['template_id']}"
             )
         # Round-trip validate before write.
-        FormalPreflightV1.model_validate(preflight.model_dump())
+        from slm_training.autoresearch.formal import formal_preflight_payload
+
+        FormalPreflightV1.model_validate(formal_preflight_payload(preflight))
         path = _preflight_path(str(template["template_id"]))
         path.write_text(
-            json.dumps(preflight.model_dump(mode="json"), indent=2, sort_keys=True)
+            json.dumps(formal_preflight_payload(preflight), indent=2, sort_keys=True)
             + "\n",
             encoding="utf-8",
         )
@@ -317,6 +320,8 @@ def regenerate_sff_formal_preflights(*, require_lean: bool = True) -> list[Path]
 def validate_committed_preflights() -> list[FormalPreflightV1]:
     """Load and schema-validate every committed preflight (fail closed)."""
 
+    from slm_training.autoresearch.formal import migrate_formal_preflight_v1
+
     out: list[FormalPreflightV1] = []
     for template in SFF_FORMAL_TEMPLATES:
         tid = str(template["template_id"])
@@ -325,7 +330,7 @@ def validate_committed_preflights() -> list[FormalPreflightV1]:
             raise SFFFormalError(f"missing formal preflight for {tid}")
         raw = json.loads(path.read_text(encoding="utf-8"))
         try:
-            preflight = FormalPreflightV1.model_validate(raw)
+            preflight = migrate_formal_preflight_v1(raw)
         except Exception as exc:
             raise SFFFormalError(
                 f"formal preflight for {tid} is not FormalPreflightV1: {exc}"

@@ -69,9 +69,12 @@ REVMATH_MUTABLE_REPAIR_KNOBS: frozenset[str] = frozenset(
 )
 
 # Simpson-style subsystems: labels require explicit interpretation/reversal.
-_KNOWN_RM_SUBSYSTEMS: frozenset[str] = frozenset(
+# Public alias for EVID-03 formal-preflight ledger validators (do not infer from
+# ``#print axioms``).
+KNOWN_RM_SUBSYSTEMS: frozenset[str] = frozenset(
     {"RCA0", "WKL0", "ACA0", "ATR0", "Pi11-CA0", "RCA", "WKL", "ACA", "ATR"}
 )
+_KNOWN_RM_SUBSYSTEMS = KNOWN_RM_SUBSYSTEMS
 
 _HEX64 = r"^[0-9a-f]{64}$"
 _ID = r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
@@ -257,10 +260,10 @@ class AxisCertificateRefV1(StrictModel):
 
 
 class RevmathFourAxisAnalysisV1(StrictModel):
-    """Four independent claim axes carried by results.
+    """Four independent claim axes carried by results and formal preflights.
 
-    Ledger field owners land on FormalPreflightV1 under EVID-03; this type is
-    the result attachment, not a parallel evidence store.
+    Canonical vocabulary for EVID-03 ``FormalPreflightFourAxisLedgerV1`` and
+    HARN-02 result attachments. Do not fork a second four-axis enum.
     """
 
     schema_version: Literal["revmath_four_axis/v1"] = "revmath_four_axis/v1"
@@ -479,6 +482,7 @@ def dump_canonical(model: BaseModel) -> str:
 
 
 __all__ = [
+    "KNOWN_RM_SUBSYSTEMS",
     "REVMATH_MUTABLE_REPAIR_KNOBS",
     "REVMATH_SCHEMA_VERSIONS",
     "AxisCertificateRefV1",

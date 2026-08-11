@@ -6643,6 +6643,7 @@ def ensure_promote_formal_preflight(
 
     try:
         from slm_training.autoresearch.formal import (
+            formal_preflight_payload,
             run_formal_preflight,
             validate_formal_preflight_artifact,
         )
@@ -6678,7 +6679,7 @@ def ensure_promote_formal_preflight(
         )
         status = str(preflight.status)
         duration = float(getattr(preflight, "duration_seconds", 0.0) or 0.0)
-        payload = preflight.model_dump(mode="json")
+        payload = formal_preflight_payload(preflight)
         content_sha = hashlib.sha256(
             canonical_json(payload).encode("utf-8")
         ).hexdigest()

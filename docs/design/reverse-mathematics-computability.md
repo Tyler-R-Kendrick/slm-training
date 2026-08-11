@@ -58,7 +58,7 @@ Cross-links to the global ownership map (`ownership_map.json` subsystems): where
 
 | Issue | Extends | New owner? | Rule |
 | --- | --- | --- | --- |
-| EVID-03 / SLM-519 | `formal_preflight_schema` | no | four-axis ledger fields on `FormalPreflightV1` |
+| EVID-03 / SLM-519 | `formal_preflight_schema` | no | **done** — `FormalPreflightV1.four_axis_ledger` + `FormalPreflightFourAxisLedgerV1` |
 | EVID-04 / SLM-525 | `formal_preflight_schema` | yes (eval submodule) | safe symbolic bound AST consumed by ledger |
 | EVID-06 / SLM-526 | `formal_object_schema` | no | v2 envelope adapts v1 objects |
 | HARN-01 / SLM-520 | `reasoning_harness_parent` | no | register `reasoning/revmath` profile + parity matrix |
@@ -160,7 +160,21 @@ Typed contracts live under [`harnesses/reasoning/revmath/schemas.py`](../../src/
 | `RevmathRepairRecordV1` | Immutable before/after proof digests; only `self_healing.may_modify` knobs |
 | `RevmathReportV1` | Campaign-bound report with closed judgment counts |
 
-Malformed tasks fail closed. Repairs cannot alter proposition / assumption / campaign identity (`assert_repair_preserves_identity`). Unknown judgment payloads cannot be normalized into witnessed/refuted. Four-axis ledger *fields* on `FormalPreflightV1` remain EVID-03; results carry the analysis attachment now.
+Malformed tasks fail closed. Repairs cannot alter proposition / assumption / campaign identity (`assert_repair_preserves_identity`). Unknown judgment payloads cannot be normalized into witnessed/refuted. Four-axis ledger fields on `FormalPreflightV1` are owned in place as `four_axis_ledger: FormalPreflightFourAxisLedgerV1` (EVID-03 / SLM-519), reusing HARN-02 `RevmathFourAxisAnalysisV1` vocabulary; results carry the analysis attachment.
+
+### EVID-03 formal-preflight ledger (SLM-519)
+
+| Field / type | Role |
+| --- | --- |
+| `FormalPreflightV1.four_axis_ledger` | Optional in-place ledger; historical v1 JSON without it stays readable |
+| `FormalPreflightFourAxisLedgerV1.analysis` | `RevmathFourAxisAnalysisV1` (assumption / computability / resource_bounds / implementation_refinement) |
+| `computability_classification` | Practical labels: `finite_decidable`, `bounded_search`, `total_recursive`, `semidecidable`, `oracle_relative`, `classical_noncomputable_existence`, `unclassified` |
+| `rm_subsystem_id` + `rm_interpretation_status` | Genuine `RCA0`/`WKL0`/… labels require `explicit_reversal` or `explicit_interpretation` (never inferred from `#print axioms`) |
+| `resource_bounds.bound_ast_id` | Stable id into EVID-04 safe bound AST (`bound.finite_search.prefix_tree.v1`, `bound.placeholder.pending_evid04.v1`, …); no raw `eval` |
+| `empirical_remainder_claim_ids` | Claims that remain empirical (e.g. wall-clock, neural quality) |
+| `theorem_claim_kinds` | Fail closed if `wall_clock_latency` or `neural_quality` are asserted as theorem consequences |
+
+Migration: `migrate_formal_preflight_v1` / `formal_preflight_payload` / `formal_preflight_sha256` in `autoresearch/formal.py`. Digests omit an unset ledger so historical artifacts keep their hashes.
 
 ## HARN-03 runner / replay / report (SLM-536)
 
@@ -173,6 +187,7 @@ Malformed tasks fail closed. Repairs cannot alter proposition / assumption / cam
 | [`scripts/run_revmath_task.py`](../../scripts/run_revmath_task.py) | Hermetic/Lean CLI |
 
 Timeout, missing tool, incomplete check, unsupported kind, and malformed proof stay `unknown`/`invalid` — never witnessed/refuted. Runner does not mutate proposition or campaign state. Hermetic fixtures live under `resources/revmath/fixtures/`.
+
 
 ## Honesty
 
