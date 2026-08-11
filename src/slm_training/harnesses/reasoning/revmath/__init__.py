@@ -1,11 +1,24 @@
-"""reasoning/revmath typed contracts + deterministic runner (HARN-02/03).
+"""reasoning/revmath typed contracts + deterministic runner (HARN-02/03/04).
 
 Schemas: HARN-02. Runner / replay / report: HARN-03.
+Assumption ablation: HARN-04.
 """
 
 from __future__ import annotations
 
+from slm_training.harnesses.reasoning.revmath.assumption_ablation import (
+    MINIMALITY_CLAIM_SCOPE,
+    AblationCandidateV1,
+    AblationMetaV1,
+    AblationSearchReportV1,
+    audit_hidden_reintroduction,
+    evaluate_ablation_lattice,
+    generate_ablation_candidates,
+    materialize_candidate_task,
+    parse_ablation_meta,
+)
 from slm_training.harnesses.reasoning.revmath.plugins import (
+    AssumptionAblationPlugin,
     HermeticForwardPlugin,
     PluginCheckEvidence,
     RevmathCheckPlan,
@@ -54,7 +67,17 @@ __all__ = [
     "REVMATH_MUTABLE_REPAIR_KNOBS",
     "REVMATH_SCHEMA_VERSIONS",
     "AxisCertificateRefV1",
+    "AssumptionAblationPlugin",
     "HermeticForwardPlugin",
+    "parse_ablation_meta",
+    "materialize_candidate_task",
+    "generate_ablation_candidates",
+    "evaluate_ablation_lattice",
+    "audit_hidden_reintroduction",
+    "AblationSearchReportV1",
+    "AblationMetaV1",
+    "AblationCandidateV1",
+    "MINIMALITY_CLAIM_SCOPE",
     "PluginCheckEvidence",
     "RevmathBaseTheoryV1",
     "RevmathBudgetV1",

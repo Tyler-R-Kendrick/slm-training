@@ -333,11 +333,27 @@
         "RevmathCheckPlan",
         "PluginCheckEvidence",
         "default_plugin_registry",
-        "resolve_plugin"
+        "resolve_plugin",
+        "AssumptionAblationPlugin"
       ],
       "design_doc": "docs/design/reverse-mathematics-computability.md",
       "ownership_map_subsystem": null,
-      "notes": "HARN-03 task-kind plugin seam; plan/interpret only \u2014 shared runner owns orchestration."
+      "notes": "HARN-03 task-kind plugin seam; plan/interpret only \u2014 shared runner owns orchestration. HARN-04 registers AssumptionAblationPlugin here."
+    },
+    {
+      "id": "revmath_assumption_ablation",
+      "kind": "task_validator",
+      "owner_module": "src/slm_training/harnesses/reasoning/revmath/assumption_ablation.py",
+      "owner_symbols": [
+        "AblationMetaV1",
+        "generate_ablation_candidates",
+        "evaluate_ablation_lattice",
+        "audit_hidden_reintroduction",
+        "MINIMALITY_CLAIM_SCOPE"
+      ],
+      "design_doc": "docs/design/reverse-mathematics-computability.md",
+      "ownership_map_subsystem": null,
+      "notes": "HARN-04 assumption-ablation generator/validator; finite explored-lattice minimality only; plugin registered in plugins.py."
     },
     {
       "id": "revmath_replay",
@@ -417,6 +433,13 @@
       "extends": "reasoning_harness_parent",
       "new_owner_justified": true,
       "justification": "Deterministic runner/replay/report + task plugin seam under harnesses/reasoning/revmath/; compose bounded_process, SolverJudgmentV1, ReplayBundleV1, DecodeStatsRecordV1 without parallel evidence/campaign/proof stacks."
+    },
+    {
+      "issue": "HARN-04",
+      "linear_id": "SLM-544",
+      "extends": "revmath_plugins",
+      "new_owner_justified": true,
+      "justification": "Assumption-ablation generator/validator under harnesses/reasoning/revmath/assumption_ablation.py; registers AssumptionAblationPlugin without forking runner orchestration."
     }
   ],
   "prohibited_duplicate_risks": [

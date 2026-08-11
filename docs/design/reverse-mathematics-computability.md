@@ -1,6 +1,6 @@
 # Reverse mathematics, computability, and canonical evidence ownership
 
-**Status:** HARN-03 runner/replay/report landed (SLM-536); HARN-02 schemas (SLM-527); profile + parity (HARN-01 / SLM-520); owner map (EVID-01 / SLM-515)  
+**Status:** HARN-04 assumption ablation landed (SLM-544); EVID-03 four-axis ledger (SLM-519); HARN-03 runner/replay/report (SLM-536); HARN-02 schemas (SLM-527); profile + parity (HARN-01 / SLM-520); owner map (EVID-01 / SLM-515)  
 **Base SHA:** `980aa465223adf7822f82930550c92b9240333ca` (`origin/main` at audit)  
 **Machine-readable map:** [`src/slm_training/resources/revmath_owner_map.json`](../../src/slm_training/resources/revmath_owner_map.json)  
 **Harness parity matrix:** [`src/slm_training/resources/revmath_harness_parity.json`](../../src/slm_training/resources/revmath_harness_parity.json)  
@@ -46,6 +46,7 @@ Every revmath run **must** bind to `ExperimentCampaignV1`, emit or consume evide
 | `revmath_schemas` | schema | `harnesses/reasoning/revmath/schemas.py` | `RevmathTaskV1`, `RevmathResultV1`, `RevmathRepairRecordV1`, … | HARN-02 typed contracts |
 | `revmath_runner` | runner | `harnesses/reasoning/revmath/runner.py` | `run_revmath_task`, `RevmathRunRecord` | HARN-03 bounded deterministic runner |
 | `revmath_plugins` | plugin | `harnesses/reasoning/revmath/plugins.py` | `RevmathTaskPlugin`, `resolve_plugin` | HARN-03 task-kind seam |
+| `revmath_assumption_ablation` | task_validator | `harnesses/reasoning/revmath/assumption_ablation.py` | `generate_ablation_candidates`, `evaluate_ablation_lattice`, `audit_hidden_reintroduction` | HARN-04 finite-lattice ablation; minimality scoped to explored set |
 | `revmath_replay` | replay | `harnesses/reasoning/revmath/replay.py` | `build_revmath_replay_bundle` | HARN-03 ReplayBundleV1 composition |
 | `revmath_report` | report | `harnesses/reasoning/revmath/report.py` | `build_revmath_report` | HARN-03 typed reports |
 | `continuous_formal_promote` | command | `scripts/run_autotrain_continuous.py` | `ensure_promote_formal_preflight` | promotion gate |
@@ -95,7 +96,7 @@ The profile id is **`reasoning/revmath`**. It parameterizes the G4 reasoning har
 
 **Registration seam (HARN-01):** [`harnesses/reasoning/profiles.py`](../../src/slm_training/harnesses/reasoning/profiles.py) registers `reasoning/g4` (default) and `reasoning/revmath` (opt-in, `task_semantics_ready=True` after HARN-03). `resolve_profile(None)` keeps the historical default — discovering/configuring revmath does not alter G4 bench or warmup behavior.
 
-Task schemas (HARN-02) and deterministic runner/replay/report (HARN-03) are present; repair controller remains HARN-09. This document owns **authority boundaries and parity obligations**; missing parity rows are explicit blockers in the matrix, never silent fallbacks.
+Task schemas (HARN-02), deterministic runner/replay/report (HARN-03), and assumption-ablation validation (HARN-04) are present; other task-kind validators + repair controller (HARN-09) remain downstream. This document owns **authority boundaries and parity obligations**; missing parity rows are explicit blockers in the matrix, never silent fallbacks.
 
 ## Harness / self-healing parity matrix (HARN-01)
 
@@ -188,6 +189,16 @@ Migration: `migrate_formal_preflight_v1` / `formal_preflight_payload` / `formal_
 
 Timeout, missing tool, incomplete check, unsupported kind, and malformed proof stay `unknown`/`invalid` — never witnessed/refuted. Runner does not mutate proposition or campaign state. Hermetic fixtures live under `resources/revmath/fixtures/`.
 
+
+## HARN-04 assumption ablation (SLM-544)
+
+| Module | Role |
+| --- | --- |
+| [`assumption_ablation.py`](../../src/slm_training/harnesses/reasoning/revmath/assumption_ablation.py) | Deterministic candidate generation + dependency audit + finite-lattice search report |
+| [`AssumptionAblationPlugin`](../../src/slm_training/harnesses/reasoning/revmath/plugins.py) | Plan/interpret seam for `task_kind=assumption_ablation` (shared runner owns orchestration) |
+| Hermetic fixtures | `resources/revmath/fixtures/ablation_{positive,redundant,necessary,timeout,hidden_import}.{task,meta}.json` + `hermetic_ablation_checker.py` |
+
+A successful ablation proves the **same proposition** (`statement_sha256`) under a recorded weaker `allowed_assumption_ids` set. Hidden reintroduction is detected when proof dependencies intersect `import_edges` for removed assumptions (strength-bearing lemmas). **Minimality is never claimed beyond** `MINIMALITY_CLAIM_SCOPE=explored_finite_candidate_lattice`. Timeout stays `unknown` (KERN-01). Replay remains deterministic via the HARN-03 runner.
 
 ## Honesty
 
