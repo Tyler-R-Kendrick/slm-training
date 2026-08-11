@@ -43,6 +43,14 @@ OWNERSHIP_MAP_FILES = frozenset(
         "docs/design/symbol-only-output-contract.md",
     }
 )
+REVMATH_OWNER_FILES = frozenset(
+    {
+        "src/slm_training/resources/revmath_owner_map.json",
+        "scripts/verify_revmath_owners.py",
+        "docs/design/reverse-mathematics-computability.md",
+        "docs/design/adr-revmath-reasoning-profile.md",
+    }
+)
 GLOBAL_TEST_FILES = {
     "pyproject.toml",
     "pytest.ini",
@@ -120,6 +128,10 @@ SUITES_BY_PREFIX = (
     (
         "scripts/verify_agent_surfaces.py",
         ("tests/test_scripts/test_verify_agent_surfaces.py",),
+    ),
+    (
+        "scripts/verify_revmath_owners.py",
+        ("tests/test_scripts/test_verify_revmath_owners.py",),
     ),
     (
         "scripts/check_changed.py",
@@ -384,6 +396,9 @@ def check(
         if _run([sys.executable, "-m", "scripts.render_repository_ownership_map", "--check"]):
             return 1
         if _run([sys.executable, "-m", "scripts.verify_ownership_map"]):
+            return 1
+    if any(path in REVMATH_OWNER_FILES for path in paths):
+        if _run([sys.executable, "-m", "scripts.verify_revmath_owners"]):
             return 1
     tests = hook_test_targets(paths) if changed_tests_only else select_tests(paths)
     python_paths = [
