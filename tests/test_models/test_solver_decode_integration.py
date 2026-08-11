@@ -21,14 +21,35 @@ file only pins the Torch model wiring.
 from __future__ import annotations
 
 import dataclasses
+import hashlib
 
 import pytest
 import torch
 
+from slm_training.data.progspec.goal_constraints import (
+    CompiledGoalConstraintSetV1,
+    GoalConstraintV1,
+)
+from slm_training.data.progspec.synthesis_problem import PackIdentityV1
+from slm_training.dsl.solver.goal_support import (
+    GoalFailureAtomV1,
+    GoalSupportProvider,
+    GoalTerminalEvidenceV1,
+    GoalVerifierProfileV1,
+    compute_pack_identity_digest,
+)
+from slm_training.dsl.solver.state import (
+    DomainValue,
+    FiniteDomainState,
+    HoleId,
+    SolverBounds,
+)
+from slm_training.dsl.solver.support import ExpandStatus, ExpandStep, VerifyOutcome, VerifyStatus
 from slm_training.dsl.grammar.fastpath.compiler_draft import (
     CompletionForest,
     build_completion_forest,
 )
+from slm_training.dsl.solver.adapters import completion_forest_state
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 
@@ -72,6 +93,159 @@ def _model(**config_overrides) -> TwoTowerModel:
     model = TwoTowerModel.from_records([record], config=config, device="cpu")
     model.eval()
     return model
+
+
+def _digest(value: str) -> str:
+    return hashlib.sha256(value.encode()).hexdigest()
+
+
+class _TerminalExpander:
+    """Exact two-terminal fixture for the real goal-support provider."""
+
+    def __init__(self, state: FiniteDomainState, programs: dict[DomainValue, str]):
+        self._state = state
+        self._programs = programs
+
+    @property
+    def problem_id(self) -> str:
+        return self._state.problem_id
+
+    @property
+    def pack_id(self) -> str:
+        return self._state.pack_id
+
+    @property
+    def constraint_version(self) -> str:
+        return self._state.constraint_version
+
+    @property
+    def bounds(self) -> SolverBounds:
+        return self._state.bounds
+
+    def successor(
+        self, state: FiniteDomainState, hole_id: HoleId, value: DomainValue
+    ) -> ExpandStep:
+        assert hole_id == state.holes[0].hole_id
+        return ExpandStep(
+            ExpandStatus.TERMINAL,
+            program=self._programs[value],
+            coverage="complete",
+        )
+
+
+class _GoalTraceVerifier:
+    """Fresh deterministic terminal verifier with strict replayable evidence."""
+
+    def __init__(self, profile: GoalVerifierProfileV1) -> None:
+        self._goal_profile = profile
+        self._records: dict[str, GoalTerminalEvidenceV1] = {}
+
+    @property
+    def profile(self) -> str:
+        return f"openui/goal-support/v1/{self._goal_profile.digest}"
+
+    @property
+    def terminal_evidence(self) -> tuple[GoalTerminalEvidenceV1, ...]:
+        return tuple(self._records[key] for key in sorted(self._records))
+
+    def verify(self, program: str) -> VerifyOutcome:
+        accepted = program == "goal-satisfying"
+        program_digest = _digest(program)
+        failures = () if accepted else (
+            GoalFailureAtomV1(
+                atom_id="constraint:c_required",
+                reason_code="required_fact_failed",
+                source_kind="constraint",
+                completeness_class="EXACT",
+                source_identity="c_required",
+            ),
+        )
+        evidence = GoalTerminalEvidenceV1.from_dict(
+            GoalTerminalEvidenceV1(
+                profile_digest=self._goal_profile.digest,
+                program_digest=program_digest,
+                canonical_program_digest=program_digest,
+                program_spec_digest=_digest(f"spec:{program}"),
+                semantic_plan_digest=_digest(f"plan:{program}"),
+                mandatory_failure_atoms=failures,
+                structural_status="ACCEPT",
+                overall_status="ACCEPT" if accepted else "REJECT",
+            ).to_dict()
+        )
+        self._records[program_digest] = evidence
+        return VerifyOutcome(
+            VerifyStatus.ACCEPT if accepted else VerifyStatus.REJECT,
+            None if accepted else "goal_failed",
+        )
+
+
+def _goal_provider_for_forest(
+    forest: CompletionForest, prefix: list[int]
+) -> tuple[FiniteDomainState, GoalSupportProvider]:
+    pack_identity = PackIdentityV1(
+        pack_id="openui",
+        contract_version=2,
+        grammar_sha256="a" * 64,
+        tokenizer_id="tok/v1",
+        canonicalizer_id="canon/v1",
+        artifact_schema="openui/v1",
+        artifact_sha256="b" * 64,
+    )
+    constraint = GoalConstraintV1(
+        constraint_id="c_required",
+        kind="slot_present",
+        parameters={"role_id": "primary_action"},
+        source_kind="pack_contract",
+        source_id="pack/openui",
+        source_digest="c" * 64,
+        authority_tier="compiler-hard",
+        completeness="EXACT",
+        may_prune=True,
+    )
+    constraint_set = CompiledGoalConstraintSetV1.from_dict(
+        CompiledGoalConstraintSetV1(
+            problem_digest="d" * 64,
+            request_digest="e" * 64,
+            pack_identity_digest=compute_pack_identity_digest(pack_identity),
+            compiler_version="compiler/v1",
+            constraints=(constraint,),
+            hard_constraint_ids=(constraint.constraint_id,),
+        ).to_dict()
+    )
+    profile = GoalVerifierProfileV1.from_dict(
+        GoalVerifierProfileV1(
+            profile_id="fixture/prod",
+            mode="production_exact",
+            problem_digest=constraint_set.problem_digest,
+            constraint_set_digest=constraint_set.digest,
+            pack_identity=pack_identity,
+            pack_identity_digest=constraint_set.pack_identity_digest,
+            required_constraint_ids=(constraint.constraint_id,),
+            authority_tier="compiler-hard",
+        ).to_dict()
+    )
+    bounds = SolverBounds(1000, 100, 10, 100, 100)
+    state = completion_forest_state(
+        prefix_ids=prefix,
+        forest=forest,
+        pack_id="openui",
+        constraint_version="goal/v1",
+        bounds=bounds,
+    )
+    values = state.holes[0].values
+    expander = _TerminalExpander(
+        state,
+        {
+            values[0]: "goal-satisfying",
+            values[1]: "goal-violating",
+        },
+    )
+    return state, GoalSupportProvider(
+        expander,
+        verifier_factory=lambda: _GoalTraceVerifier(profile),
+        profile=profile,
+        constraint_set=constraint_set,
+    )
 
 
 def test_solver_fields_default_disabled() -> None:
@@ -197,7 +371,6 @@ def test_goal_support_defaults_off_and_legacy_checkpoint_loads() -> None:
     legacy_config = TwoTowerConfig(**legacy)
     assert legacy_config.goal_support_mode == "off"
     assert legacy_config.goal_support_profile_mode is None
-
 
 def test_diagnostic_goal_support_is_decode_identical() -> None:
     baseline = _model()

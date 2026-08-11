@@ -182,6 +182,16 @@ cap, and no budget-stop classification — see `obstruction_core_emission_allowe
 
 ### A. Compile-time source → authority (`source_to_authority_matrix`)
 
+`goal_support_mode` is `off`, `diagnostic`, or `certified`; the default is
+`off`. `goal_support_query_cap` defaults to 32. Request-local
+`goal_support_contexts` supply the pinned profile and constraint set and are not
+stored in checkpoints. These controls are available only through the
+programmatic `TwoTowerConfig` plus `generate_batch_requests` context API. They
+are deliberately absent from ModelBuild, CLI, and OpenFeature surfaces: those
+surfaces cannot construct or bind a request-local `VerifiedSynthesisProblemV1`,
+so exposing an enable switch there would be unusable or invite invented
+authority.
+
 | Source kind | Authority tier | Completeness | `may_prune` | Partition |
 | --- | --- | --- | --- | --- |
 | `generation_request` | compiler-hard | EXACT | **False** | hard |
@@ -204,6 +214,12 @@ Prune law: `may_prune=True` requires hard authority + EXACT + source ∈
 | Heuristic gates forbidden | G11, G12, independent_judge, human_audit | — | — |
 | May authorize pruning | **True** | False | False |
 | Unresolved hard ambiguity forbidden | **True** | False | False |
+
+Incomplete forests are unchanged. UNKNOWN and unobserved candidates stay live.
+No path widens the grammar or adds a full-vocabulary fallback. If certified
+closure leaves one live candidate, the existing singleton path commits it
+without a neural forward or learned ranking. The programmatic configuration
+fields have behavior-preserving defaults and add no model parameters.
 
 ## Persisted schemas and invalidation
 
