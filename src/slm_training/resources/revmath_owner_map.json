@@ -214,6 +214,22 @@
       "notes": "Offline-replayable decode identity + solver replay violations."
     },
     {
+      "id": "canonical_proof_trace",
+      "kind": "projection",
+      "owner_module": "src/slm_training/formal/proof_trace.py",
+      "owner_symbols": [
+        "CanonicalProofTraceV1",
+        "project_runtime_evidence",
+        "project_replay_bundle",
+        "match_proof_trace_to_evidence",
+        "replay_proof_trace",
+        "proof_trace_integrity_ok"
+      ],
+      "design_doc": "docs/design/integ-01-canonical-proof-trace.md",
+      "ownership_map_subsystem": null,
+      "notes": "INTEG-01 (SLM-528) projects existing ReplayBundleV1 / DecodeStats / MechanismActivationV1 / VerifierWitnessV1 into a canonical proof-trace vocabulary reusing KERN-06 Event/cost models. Not a second telemetry stack; claims_abstract_refinement always false (KERN-11 deferred)."
+    },
+    {
       "id": "solver_replay",
       "kind": "replay",
       "owner_module": "src/slm_training/dsl/solver/replay.py",
@@ -679,6 +695,12 @@
       "concern": "Parallel revmath proof runner",
       "canonical_owner": "src/slm_training/autoresearch/formal.py::run_formal_preflight",
       "shadow_pattern": "revmath.*proof|RevMathProofStack",
+      "status": "blocked-by-adr"
+    },
+    {
+      "concern": "Parallel canonical proof-trace / second runtime recorder",
+      "canonical_owner": "src/slm_training/formal/proof_trace.py::project_runtime_evidence",
+      "shadow_pattern": "ProofTraceRecorder|SecondTelemetryStack|parallel.*proof.?trace.?recorder",
       "status": "blocked-by-adr"
     }
   ],

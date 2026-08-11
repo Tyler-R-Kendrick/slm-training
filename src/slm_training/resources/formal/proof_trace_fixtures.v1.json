@@ -1,0 +1,29 @@
+{
+  "schema": "proof_trace_fixtures/v1",
+  "proof_trace_schema": "canonical_proof_trace/v1",
+  "issue": "SLM-528",
+  "key": "INTEG-01",
+  "claims_abstract_refinement": false,
+  "kern11_deferred": true,
+  "canonical_fields": [
+    "state_input_identity",
+    "legal_domain",
+    "ranker_model_invocation",
+    "chosen_action",
+    "verifier_solver_certificate",
+    "cache_mechanism",
+    "state_transition",
+    "observed_work"
+  ],
+  "cases": [
+    {
+      "id": "bundle_stats_mechanism",
+      "trace_hash": "16422c059f03ef88adaffd3ca5c72dcf69aa8fd164a59a797dc3c9144fd0b52c",
+      "event_count": 9,
+      "abstract_cost": 28,
+      "machine_model": "DecodeUnitWorkModel",
+      "claims_abstract_refinement": false,
+      "kern11_deferred": true
+    }
+  ]
+}

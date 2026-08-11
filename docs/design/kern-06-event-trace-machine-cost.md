@@ -48,3 +48,7 @@ counters; `export_four_axis_event_trace_evidence` persists
 `DecodeStats.*_ms` fields and unobserved event kinds remain empirical remainder.
 Wall-clock transfer is only the shape `cost × latency_per_cost_unit` under a
 caller-supplied assumption — never a free latency theorem.
+
+## Downstream
+
+INTEG-01 ([integ-01-canonical-proof-trace.md](integ-01-canonical-proof-trace.md)) projects runtime evidence into this Event/cost vocabulary; it does not fork the cost models and does not claim refinement (KERN-11).
