@@ -8,6 +8,7 @@ Conservative RM labeling / anti-overclaim: HARN-08.
 Proposition-preserving self-healing: HARN-09.
 Campaign locking / profile CLI: HARN-10.
 Frozen fixture corpus: HARN-11.
+Failure/repair witness routing: INTEG-05.
 """
 
 from __future__ import annotations
@@ -168,7 +169,25 @@ from slm_training.harnesses.reasoning.revmath.self_healing import (
     semantic_repair_lineage_from_session,
 )
 
+from slm_training.harnesses.reasoning.revmath.failure_witness import (
+    REVMATH_FAILURE_TAXONOMY_VERSION,
+    BoundedRepairActionV1,
+    RevmathFailureClass,
+    RevmathFailureEvidenceV1,
+    bounded_repair_actions_for,
+    feed_repair_session_to_disposition,
+    route_revmath_failure,
+)
+
 __all__ = [
+    "REVMATH_FAILURE_TAXONOMY_VERSION",
+    "BoundedRepairActionV1",
+    "RevmathFailureClass",
+    "RevmathFailureEvidenceV1",
+    "bounded_repair_actions_for",
+    "feed_repair_session_to_disposition",
+    "route_revmath_failure",
+
     "AblationCandidateV1",
     "AblationMetaV1",
     "AblationSearchReportV1",

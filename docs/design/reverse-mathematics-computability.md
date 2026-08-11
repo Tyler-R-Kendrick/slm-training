@@ -166,6 +166,7 @@ reject weaken-theorem / add-axiom / increase-budget / change-corpus paths.
 | `canonical_proof_trace` | projection | `formal/proof_trace.py` | `CanonicalProofTraceV1`, `project_runtime_evidence`, `match_proof_trace_to_evidence` | INTEG-01 project existing evidence into canonical proof trace |
 | `formal_computability_classification` | schema | `formal/computability_classification.py` | `CLASS_CONTRACTS`, `validate_classification_claim`, `ClassificationClaimV1` | KERN-12 practical computability vocabulary + evidence contracts |
 | `revmath_self_healing` | repair | `harnesses/reasoning/revmath/self_healing.py` | `run_self_healing`, `propose_repair_attempts`, `RevmathRepairSessionV1` | HARN-09 proposition-preserving self-healing |
+| `revmath_failure_witness` | witness_adapter | `harnesses/reasoning/revmath/failure_witness.py` | `route_revmath_failure`, `RevmathFailureEvidenceV1`, `feed_repair_session_to_disposition` | INTEG-05 failure→VerifierWitnessV1 + disposition feedback |
 | `revmath_replay` | replay | `harnesses/reasoning/revmath/replay.py` | `build_revmath_replay_bundle` | HARN-03 ReplayBundleV1 composition |
 | `revmath_report` | report | `harnesses/reasoning/revmath/report.py` | `build_revmath_report` | HARN-03 typed reports |
 | `revmath_profile_binding` | campaign_binding | `harnesses/reasoning/revmath/profile_binding.py` | `run_revmath_profile` | HARN-10 ExperimentCampaignV1 lock + evidence |
@@ -199,6 +200,12 @@ Agents **must not** add modules that claim semantic authority for:
 | Orchestration / trainer | `harnesses/reasoning/` + campaign owners | `revmath_trainer`, `revmath_orchestrator` |
 
 `verify_revmath_owners` scans `src/` and `scripts/` for these shadow patterns and fails closed.
+
+## INTEG-05 — Failure/repair routing through witness & disposition (SLM-571)
+
+Adapter owner: [`harnesses/reasoning/revmath/failure_witness.py`](../../src/slm_training/harnesses/reasoning/revmath/failure_witness.py).
+
+Revmath-localized failures (missing/necessary assumption candidate, failed reversal direction, nonconstructive remainder, quantitative bound unavailable, checked counterexample, checker/tool/environment error, blocked semantic mutation) are sealed into the existing [`VerifierWitnessV1`](../../src/slm_training/evals/semantic_failure.py) taxonomy. Unknown/unlocalized failures stay explicitly unresolved. Bounded repair suggestions touch only HARN-09 mutable knobs and never change proposition/theory/campaign authority. Immutable HARN-09 before/after proof refs feed [`MechanismDispositionRecordV1`](../../src/slm_training/harnesses/experiments/mechanism_disposition_report.py) as `retain_diagnostic` / `inconclusive` / `blocked` — never adopt/promote. A diagnostic witness cannot turn failed/unknown into proof success.
 
 ## Migration rules
 
