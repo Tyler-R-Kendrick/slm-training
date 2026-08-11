@@ -14,7 +14,7 @@ import hashlib
 import pytest
 
 from slm_training.dsl.grammar.fastpath.compiler_draft import CompletionForest, CompletionPath
-from slm_training.dsl.solver.decode import solver_prune
+from slm_training.dsl.solver.decode import goal_support_prune, solver_prune
 from slm_training.dsl.solver.state import SolverBounds, SupportVerdict
 from slm_training.dsl.solver.support import (
     ReplayResult,
@@ -134,6 +134,44 @@ def test_non_complete_coverage_is_never_pruned():
         # Closure is authoritative only over an exhaustive candidate set.
         assert pruned is forest
         assert result is None
+
+
+def test_goal_diagnostic_observes_but_preserves_forest_identity():
+    forest = _forest()
+    observed, result = goal_support_prune(
+        forest,
+        [1],
+        _RuleProvider(lambda _tids: SupportVerdict.UNSUPPORTED),
+        mode="diagnostic",
+        pack_id="openui",
+        constraint_version="cv",
+        bounds=_BOUNDS,
+    )
+    assert observed is forest
+    assert result is not None and result.counters.unsupported == len(forest.paths)
+
+
+def test_goal_off_does_no_work_and_incomplete_diagnostic_stays_live():
+    forest = _forest()
+    assert goal_support_prune(
+        forest,
+        [1],
+        None,
+        mode="off",
+        pack_id="openui",
+        constraint_version="cv",
+        bounds=_BOUNDS,
+    ) == (forest, None)
+    partial = _forest("partial")
+    assert goal_support_prune(
+        partial,
+        [1],
+        _RuleProvider(lambda _tids: SupportVerdict.UNSUPPORTED),
+        mode="diagnostic",
+        pack_id="openui",
+        constraint_version="cv",
+        bounds=_BOUNDS,
+    ) == (partial, None)
 
 
 def test_unsupported_policy_rejected():
