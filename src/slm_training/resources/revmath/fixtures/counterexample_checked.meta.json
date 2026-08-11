@@ -1,0 +1,29 @@
+{
+  "baseline_assumption_ids": [
+    "ISigma1",
+    "WKL"
+  ],
+  "hermetic_scenario": "checked_refutation",
+  "meta_id": "meta.counterexample.checked",
+  "model": {
+    "model_digest": "950ba5d9576b331305aae4c4ec38b9f72f345f95e4c95e3fb56dfba0247aab45",
+    "model_id": "model.cex.finite.no_wkl",
+    "model_kind": "finite_model",
+    "payload": "FinTree={epsilon}; no infinite path; WKL dropped",
+    "schema_version": "revmath_counterexample_model/v1",
+    "target_assumption_ids": [
+      "ISigma1"
+    ],
+    "target_statement_sha256": "d404a5f0236fb040ab4071e80fbccfbc8b9d93b1da8deaeff186c08d8b03df8a"
+  },
+  "removed_assumption_ids": [
+    "WKL"
+  ],
+  "schema_version": "revmath_counterexample_meta/v1",
+  "search_status": "ok",
+  "weakened_assumption_ids": [
+    "ISigma1"
+  ],
+  "weakened_statement": "forall X infinite, exists Y subset X, Y is path through the tree (no WKL)",
+  "weakened_statement_sha256": "d404a5f0236fb040ab4071e80fbccfbc8b9d93b1da8deaeff186c08d8b03df8a"
+}

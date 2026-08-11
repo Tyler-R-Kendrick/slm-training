@@ -1,7 +1,8 @@
-"""reasoning/revmath typed contracts + deterministic runner (HARN-02/03/04/05/07).
+"""reasoning/revmath typed contracts + deterministic runner (HARN-02..07).
 
 Schemas: HARN-02. Runner / replay / report: HARN-03.
 Assumption ablation: HARN-04. Reversal / bidirectional: HARN-05.
+Constructivization + computable/finite counterexample: HARN-06.
 Quantitative-bound extraction: HARN-07.
 """
 
@@ -12,6 +13,25 @@ from slm_training.harnesses.reasoning.revmath.quantitative_bound import (
     QuantitativeBoundReportV1,
     extract_quantitative_bound,
     parse_quantitative_bound_meta,
+)
+from slm_training.harnesses.reasoning.revmath.constructivization import (
+    ConstructivizationMetaV1,
+    ConstructivizationReportV1,
+    ConstructivizationVariantV1,
+    assert_not_masquerading,
+    evaluate_constructivization,
+    generate_constructivization_variant,
+    materialize_constructivized_task,
+    parse_constructivization_meta,
+)
+from slm_training.harnesses.reasoning.revmath.counterexample import (
+    CounterexampleMetaV1,
+    CounterexampleModelV1,
+    CounterexampleReportV1,
+    build_counterexample_model,
+    check_counterexample_against_theorem,
+    evaluate_counterexample,
+    parse_counterexample_meta,
 )
 from slm_training.harnesses.reasoning.revmath.reversal import (
     ReversalMetaV1,
@@ -38,6 +58,8 @@ from slm_training.harnesses.reasoning.revmath.plugins import (
     HermeticForwardPlugin,
     ReversalPlugin,
     QuantitativeBoundPlugin,
+    ConstructivizationPlugin,
+    CounterexamplePlugin,
     PluginCheckEvidence,
     RevmathCheckPlan,
     RevmathTaskPlugin,
@@ -86,6 +108,23 @@ __all__ = [
     "REVMATH_SCHEMA_VERSIONS",
     "AxisCertificateRefV1",
     "AssumptionAblationPlugin",
+    "parse_counterexample_meta",
+    "parse_constructivization_meta",
+    "materialize_constructivized_task",
+    "generate_constructivization_variant",
+    "evaluate_counterexample",
+    "evaluate_constructivization",
+    "check_counterexample_against_theorem",
+    "build_counterexample_model",
+    "assert_not_masquerading",
+    "CounterexampleReportV1",
+    "CounterexampleModelV1",
+    "CounterexampleMetaV1",
+    "CounterexamplePlugin",
+    "ConstructivizationVariantV1",
+    "ConstructivizationReportV1",
+    "ConstructivizationMetaV1",
+    "ConstructivizationPlugin",
     "evaluate_reversal",
     "generate_reversal_obligations",
     "materialize_obligation_task",

@@ -1,0 +1,44 @@
+{
+  "base_theory": {
+    "allowed_assumption_ids": [
+      "ISigma1"
+    ],
+    "base_theory_id": "RCA0",
+    "interpretation_status": "explicit_interpretation"
+  },
+  "budget": {
+    "max_memory_mb": null,
+    "max_tactic_steps": 32,
+    "max_wall_seconds": 5.0,
+    "stopping_rule_ids": [
+      "wall_or_steps"
+    ]
+  },
+  "campaign": {
+    "campaign_id": "camp.rm.hermetic",
+    "campaign_manifest_sha256": "dfceae62e1bfe4f852368de75fe7597c99cb5b77715a02132a3185e5b955b41d",
+    "experiment_id": "exp.rm.hermetic.constructivization.bounded",
+    "locked_arm_ids": [
+      "control"
+    ]
+  },
+  "corpus": {
+    "corpus_id": "corpus.rm.hermetic",
+    "corpus_sha256": "fe091cbe54a9e2d49852bae50765454d041570e518188bde41445cd9d99b635c",
+    "entry_id": "entry.constructivization.bounded"
+  },
+  "proposition": {
+    "proposition_id": "prop.constructivization.bounded",
+    "statement": "exists N : Nat, exists f : Fin N -> Nat, forall n : Fin N, f n.val > n.val  (bound N <= 8)",
+    "statement_sha256": "45344fdd5dcbbae8b55ab7e1facc54135aff2eff219c73567e4c96a90eb74e3b"
+  },
+  "schema_version": "revmath_task/v1",
+  "task_id": "task.constructivization.bounded",
+  "task_kind": "constructivization",
+  "theorem_direction": "forward",
+  "verifier_judge": {
+    "judge_id": "solver_judgment.v1",
+    "judgment_schema": "solver_judgment/v1",
+    "verifier_id": "lean.kernel"
+  }
+}

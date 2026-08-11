@@ -358,7 +358,7 @@
       ],
       "design_doc": "docs/design/reverse-mathematics-computability.md",
       "ownership_map_subsystem": null,
-      "notes": "HARN-03 task-kind plugin seam; plan/interpret only \u2014 shared runner owns orchestration. HARN-04 registers AssumptionAblationPlugin; HARN-05 registers ReversalPlugin; HARN-07 registers QuantitativeBoundPlugin here."
+      "notes": "HARN-03 task-kind plugin seam; plan/interpret only \u2014 shared runner owns orchestration. HARN-04/05/06/07 register AssumptionAblationPlugin, ReversalPlugin, ConstructivizationPlugin, CounterexamplePlugin, QuantitativeBoundPlugin here."
     },
     {
       "id": "revmath_assumption_ablation",
@@ -389,6 +389,34 @@
       "design_doc": "docs/design/reverse-mathematics-computability.md",
       "ownership_map_subsystem": null,
       "notes": "HARN-05 reversal generator/validator; equivalence only when both B+A\u22a2T and B+T\u22a2A succeed over the same base/interpretation; plugin registered in plugins.py."
+    },
+    {
+      "id": "revmath_constructivization",
+      "kind": "task_validator",
+      "owner_module": "src/slm_training/harnesses/reasoning/revmath/constructivization.py",
+      "owner_symbols": [
+        "ConstructivizationMetaV1",
+        "generate_constructivization_variant",
+        "evaluate_constructivization",
+        "assert_not_masquerading"
+      ],
+      "design_doc": "docs/design/reverse-mathematics-computability.md",
+      "ownership_map_subsystem": null,
+      "notes": "HARN-06 constructivization modes (bounded/witness/oracle/remainder); never masquerades as original theorem; plugin registered in plugins.py."
+    },
+    {
+      "id": "revmath_counterexample",
+      "kind": "task_validator",
+      "owner_module": "src/slm_training/harnesses/reasoning/revmath/counterexample.py",
+      "owner_symbols": [
+        "CounterexampleMetaV1",
+        "check_counterexample_against_theorem",
+        "evaluate_counterexample",
+        "build_counterexample_model"
+      ],
+      "design_doc": "docs/design/reverse-mathematics-computability.md",
+      "ownership_map_subsystem": null,
+      "notes": "HARN-06 computable/finite counterexample validator; requires replayable model/trace against exact weakened theorem; search failure stays unknown (KERN-01)."
     },
     {
       "id": "revmath_quantitative_bound",
@@ -504,6 +532,13 @@
       "extends": "revmath_plugins",
       "new_owner_justified": true,
       "justification": "Quantitative-bound extractor/validator under harnesses/reasoning/revmath/quantitative_bound.py; registers QuantitativeBoundPlugin without forking runner orchestration; fail-closed nonextractable outcomes via EVID-04 bound AST."
+    },
+    {
+      "issue": "HARN-06",
+      "linear_id": "SLM-546",
+      "extends": "revmath_plugins",
+      "new_owner_justified": true,
+      "justification": "Constructivization + computable/finite counterexample validators under harnesses/reasoning/revmath/{constructivization,counterexample}.py; register plugins without forking runner; fail-closed masquerade and search-failure guards."
     }
   ],
   "prohibited_duplicate_risks": [

@@ -1,0 +1,16 @@
+{
+  "bound_ast_id": null,
+  "constructivized_statement": "exists f : Nat -> Nat, forall n, f n > n  [relative to oracle Halt]",
+  "constructivized_statement_sha256": "2ea7d434144743876b0875b0ba53f3737782d6c865ba5384d940804bacf2ef24",
+  "hermetic_scenario": "oracle_ok",
+  "meta_id": "meta.constructivization.oracle",
+  "mode": "oracle_relative",
+  "oracle_id": "oracle.Halt",
+  "oracle_status": "ok",
+  "original_statement": "exists f : Nat -> Nat, forall n, f n > n",
+  "original_statement_sha256": "23edb1c1916525d99a571bd503fce59944774d120e007ad4917747f61d723761",
+  "remainder_note": null,
+  "schema_version": "revmath_constructivization_meta/v1",
+  "weakening_description": "Relativize ascending function existence to Halt oracle.",
+  "witness_spec": null
+}
