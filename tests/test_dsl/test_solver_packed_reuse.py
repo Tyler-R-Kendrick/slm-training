@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import pytest
 
+from tests.casefiles import case_values
+
 from slm_training.data.contract import RuntimeSymbol
 from slm_training.dsl.grammar.fastpath.compiler_draft import build_completion_forest
 from slm_training.dsl.solver.adapters import completion_forest_state
@@ -176,23 +178,7 @@ def test_request_bound_root_reuses_exact_session_and_forest(
 
 @pytest.mark.parametrize(
     ("text", "forest_kwargs", "expander_kwargs"),
-    (
-        (
-            "root = TextContent(",
-            {"slot_contract": (":slot_0",), "remaining_tokens": 32},
-            {"slot_contract": (), "remaining_tokens": 32},
-        ),
-        (
-            "root = Card([])",
-            {"min_content": 0, "remaining_tokens": 32},
-            {"min_content": 2, "remaining_tokens": 32},
-        ),
-        (
-            "root = Card([",
-            {"remaining_tokens": 32},
-            {"remaining_tokens": 8},
-        ),
-    ),
+    case_values(__file__, "test_request_authority_mismatch_rejects_root_forest"),
     ids=("slot-contract", "min-content", "remaining-token-horizon"),
 )
 def test_request_authority_mismatch_rejects_root_forest(

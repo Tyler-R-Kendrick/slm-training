@@ -13,6 +13,8 @@ from dataclasses import replace
 
 import pytest
 
+from tests.casefiles import case_values
+
 from slm_training.dsl.solver.state import (
     DomainValue,
     FiniteDomainState,
@@ -387,11 +389,7 @@ def test_certificate_and_query_round_trip_json():
 
 @pytest.mark.parametrize(
     "update",
-    (
-        {"extra": "ignored"},
-        {"schema_version": "1"},
-        {"exhausted": "false"},
-    ),
+    case_values(__file__, "test_certificate_loader_rejects_unknown_or_coerced_fields"),
 )
 def test_certificate_loader_rejects_unknown_or_coerced_fields(update) -> None:
     _e, _v, result = _run(_LINEAR_TREE, {"ax"}, "b")

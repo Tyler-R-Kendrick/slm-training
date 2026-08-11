@@ -148,10 +148,17 @@ def test_pre_push_hook_runs_fast_gate_with_loud_escape_hatch() -> None:
     hook = ROOT / ".githooks/pre-push"
     assert os.access(hook, os.X_OK), "pre-push must be executable"
     text = hook.read_text(encoding="utf-8")
+    assert "root=$(git rev-parse --show-toplevel)" in text
+    assert 'export PYTHONPATH="$root/src${PYTHONPATH:+:$PYTHONPATH}"' in text
     assert "scripts.verify_merge_ready --fast" in text
     assert "SLM_SKIP_PREPUSH" in text
     assert "UNVERIFIED" in text, "escape hatch must warn loudly"
     assert "GHA silence is not" in text
+
+    changed_hook = ROOT / ".githooks/check-changed"
+    changed_text = changed_hook.read_text(encoding="utf-8")
+    assert "root=$(git rev-parse --show-toplevel)" in changed_text
+    assert 'export PYTHONPATH="$root/src${PYTHONPATH:+:$PYTHONPATH}"' in changed_text
 
 
 def test_reporter_is_a_read_only_json_wrapper() -> None:
