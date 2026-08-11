@@ -29,6 +29,12 @@ from slm_training.formal.authority import (
     to_formal_object_v1,
     to_formal_preflight_v1,
 )
+from slm_training.formal.theorem_binding import (
+    LEAN_THEOREM_BINDING_SCHEMA,
+    LeanTheoremBindingV1,
+    seal_theorem_binding,
+    verify_theorem_binding,
+)
 from slm_training.formal.objects import (
     FORMAL_OBJECT_SCHEMA,
     FormalObjectKind,
@@ -63,4 +69,8 @@ __all__ = [
     "run_checkers",
     "to_formal_object_v1",
     "to_formal_preflight_v1",
+    "LEAN_THEOREM_BINDING_SCHEMA",
+    "LeanTheoremBindingV1",
+    "seal_theorem_binding",
+    "verify_theorem_binding",
 ]

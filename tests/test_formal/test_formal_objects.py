@@ -240,11 +240,27 @@ def test_check_law_and_reference_disagreement_is_detectable_via_shared_cases() -
             assert structural_ok == reference_ok == case.expect, (law_id, case)
 
 
-def _write_theorem_stub(root, module: str, local_name: str) -> None:
+def _write_theorem_stub(
+    root,
+    module: str,
+    local_name: str,
+    *,
+    proposition: str = "True",
+) -> None:
     """Write a minimal Lean source so the theorem-presence check passes."""
     path = root.joinpath(*module.split(".")).with_suffix(".lean")
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(f"theorem {local_name} : True := trivial\n", encoding="utf-8")
+    path.write_text(
+        f"theorem {local_name} : {proposition} := trivial\n",
+        encoding="utf-8",
+    )
+
+
+def _seed_lean_toolchain(root) -> None:
+    (root / "lean-toolchain").write_text("leanprover/lean4:v4.30.0\n", encoding="utf-8")
+    (root / "lakefile.toml").write_text('name = "stub"\n', encoding="utf-8")
+    (root / "lake-manifest.json").write_text("{\n}\n", encoding="utf-8")
+
 
 
 def test_theorem_presence_violation_when_declaration_missing(tmp_path) -> None:
@@ -285,8 +301,19 @@ def test_lean_kernel_clamps_timeout_and_reaps_with_canonical_budget(
 
     import slm_training.formal.checkers as checkers
 
-    obj = export_lean_claim("ExactClosure.closePass_subset")
-    _write_theorem_stub(tmp_path, "LeverProofLean.ExactClosure", "closePass_subset")
+    _seed_lean_toolchain(tmp_path)
+    _write_theorem_stub(
+        tmp_path,
+        "LeverProofLean.ExactClosure",
+        "closePass_subset",
+        proposition="True",
+    )
+    # Match catalog module path but seal against the stub tree.
+    obj = export_lean_claim(
+        "ExactClosure.closePass_subset",
+        lean_root=tmp_path,
+        axiom_footprint=(),
+    )
     monkeypatch.setattr(checkers, "LEAN_ROOT", tmp_path)
     calls: dict[str, float] = {}
 
@@ -306,7 +333,11 @@ def test_lean_kernel_clamps_timeout_and_reaps_with_canonical_budget(
 
     monkeypatch.setattr(checkers, "run_bounded_process", fake_runner)
     result = checkers.check_lean_kernel(
-        obj, timeout_s=MAX_RUN_SECONDS * 100, enabled=True
+        obj,
+        timeout_s=MAX_RUN_SECONDS * 100,
+        enabled=True,
+        run_binding_bridge=False,
+        live_axiom_footprint=(),
     )
 
     assert result.ok
@@ -317,8 +348,13 @@ def test_lean_kernel_clamps_timeout_and_reaps_with_canonical_budget(
 def test_lean_kernel_timeout_is_not_success(monkeypatch, tmp_path) -> None:
     import slm_training.formal.checkers as checkers
 
-    obj = export_lean_claim("ExactClosure.closePass_subset")
+    _seed_lean_toolchain(tmp_path)
     _write_theorem_stub(tmp_path, "LeverProofLean.ExactClosure", "closePass_subset")
+    obj = export_lean_claim(
+        "ExactClosure.closePass_subset",
+        lean_root=tmp_path,
+        axiom_footprint=(),
+    )
     monkeypatch.setattr(checkers, "LEAN_ROOT", tmp_path)
     monkeypatch.setattr(
         checkers,
@@ -334,7 +370,13 @@ def test_lean_kernel_timeout_is_not_success(monkeypatch, tmp_path) -> None:
         ),
     )
 
-    result = checkers.check_lean_kernel(obj, timeout_s=1.0, enabled=True)
+    result = checkers.check_lean_kernel(
+        obj,
+        timeout_s=1.0,
+        enabled=True,
+        run_binding_bridge=False,
+        live_axiom_footprint=(),
+    )
 
     assert not result.ok
     assert "timed out" in result.detail

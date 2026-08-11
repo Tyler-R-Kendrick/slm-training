@@ -104,7 +104,7 @@
       ],
       "design_doc": "docs/design/formal-objects-multi-prover.md",
       "ownership_map_subsystem": null,
-      "notes": "Portable formal objects; EVID-06 formal_authority/v2 adapters live in formal/authority.py (same schema surface, not a second evidence stack)."
+      "notes": "Portable formal objects; EVID-06 formal_authority/v2 adapters + EVID-07 lean.theorem_binding/v1 (formal/theorem_binding.py) live in the same formal/ stack."
     },
     {
       "id": "formal_object_loop",

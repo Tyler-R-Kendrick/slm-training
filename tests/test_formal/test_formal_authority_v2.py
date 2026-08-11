@@ -183,7 +183,7 @@ def test_version_negotiation() -> None:
 
 
 def test_load_formal_object_requires_explicit_judgment() -> None:
-    obj = export_lean_claim("Judgment.authorizes_semantic_only_when_checked")
+    obj = export_lean_claim("Judgment.unchecked_never_authorizes")
     assert obj.schema == FORMAL_OBJECT_SCHEMA
     with pytest.raises(ValueError, match="explicit"):
         load_formal_authority(obj.to_dict())
