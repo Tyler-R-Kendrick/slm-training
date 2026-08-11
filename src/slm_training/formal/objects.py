@@ -192,7 +192,22 @@ _LEAN_CLAIM_CATALOG: dict[str, dict[str, Any]] = {
     "DecodeInvariants.singleton_bypasses_ranker": {
         "module": "LeverProofLean.DecodeInvariants",
         "tier": "production_core",
-        "laws": ["singleton_bypass", "empty_dead_end"],
+        "laws": ["proved_complete_singleton", "empty_dead_end"],
+    },
+    "DecodeInvariants.forged_coverage_complete_never_bypasses": {
+        "module": "LeverProofLean.DecodeInvariants",
+        "tier": "production_core",
+        "laws": ["singleton_bypass"],
+    },
+    "CompleteDomain.forged_coverage_complete_never_authorizes": {
+        "module": "LeverProofLean.CompleteDomain",
+        "tier": "production_core",
+        "laws": ["singleton_bypass", "proved_complete_singleton"],
+    },
+    "ExactClosure.finite_search_rejects_stale_state": {
+        "module": "LeverProofLean.ExactClosure",
+        "tier": "production_core",
+        "laws": ["proved_complete_singleton"],
     },
     "EcosystemTier.core_success_ignores_library_size": {
         "module": "LeverProofLean.EcosystemTier",
@@ -207,50 +222,44 @@ _LEAN_CLAIM_CATALOG: dict[str, dict[str, Any]] = {
     "GoalSupport.unknown_not_in_certified_removal": {
         "module": "LeverProofLean.GoalSupport",
         "tier": "production_core",
-        "laws": ["unknown_not_in_certified_removal", "unobserved_not_in_certified_removal"],
+        # Parity owned by goal_support golden cases; no structural _LAW_CASES hook.
+        "laws": ["unknown_not_removable", "failed_replay_not_removable"],
     },
     "GoalSupport.classification_exhaustive": {
         "module": "LeverProofLean.GoalSupport",
         "tier": "production_core",
-        "laws": ["classification_exhaustive", "classify_adequate"],
+        "laws": ["honest_fixed_point"],
     },
     "GoalSupport.subset_minimal_removing_atom_breaks_hitting": {
         "module": "LeverProofLean.GoalSupport",
         "tier": "production_core",
-        "laws": ["subset_minimal_removing_atom_breaks_hitting", "recorded_core_hits_every_failure"],
+        "laws": ["close_pass_subset"],
     },
     "GoalSupport.witness_survives_nonrequired_removal": {
         "module": "LeverProofLean.GoalSupport",
         "tier": "production_core",
-        "laws": ["witness_survives_nonrequired_removal", "adding_candidates_preserves_witness"],
+        "laws": ["close_idempotent"],
     },
     "GoalSupport.certified_live_singleton_no_learned_choice": {
         "module": "LeverProofLean.GoalSupport",
         "tier": "production_core",
-        "laws": ["certified_live_singleton_no_learned_choice"],
+        "laws": ["proved_complete_singleton"],
     },
     "Judgment.timeout_never_refuted": {
         "module": "LeverProofLean.Judgment",
         "tier": "production_core",
-        "laws": ["timeout_never_refuted", "skipped_replay_never_refuted"],
+        # Authority parity owned by judgment_truth_table.v1.json.
+        "laws": ["unknown_not_removable"],
     },
     "Judgment.authorizes_semantic_only_when_checked": {
         "module": "LeverProofLean.Judgment",
         "tier": "production_core",
-        "laws": [
-            "invalid_never_authorizes",
-            "unknown_never_authorizes",
-            "unchecked_never_authorizes",
-        ],
+        "laws": ["failed_replay_not_removable"],
     },
     "Judgment.failure_flags_never_authorize_removal": {
         "module": "LeverProofLean.Judgment",
         "tier": "production_core",
-        "laws": [
-            "timeout_never_authorizes_removal",
-            "skipped_replay_never_authorizes_removal",
-            "exact_closure_unknown_never_authorizes_removal",
-        ],
+        "laws": ["supported_not_removable", "unknown_not_removable"],
     },
 }
 

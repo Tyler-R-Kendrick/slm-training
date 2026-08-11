@@ -13,6 +13,7 @@
 -/
 
 import LeverProofLean.ListSet
+import LeverProofLean.CompleteDomain
 
 namespace LeverProofLean.ExactClosure
 
@@ -192,5 +193,45 @@ theorem honest_when_no_accepted_unsupported
       -- isRemovable (r :: rest) c = ((r.candidate == c) && removable r) || isRemovable rest c
       simp only [isRemovable, List.any_cons, hr, Bool.and_false, Bool.false_or]
       exact ih'
+
+/-! ### KERN-02 bridge: finite search / singleton require proved complete domains -/
+
+/--
+  Finite completion search is authorized only over a proved complete domain
+  bound to the query state. A bare coverage Boolean is not accepted here.
+-/
+def finiteSearchAuthorized (auth : CompleteDomain.DomainAuthority) (sid : CompleteDomain.StateId) : Bool :=
+  match auth with
+  | .provedComplete d => decide (d.stateId = sid)
+  | .partialCoverage => false
+  | .unknownCoverage => false
+
+theorem finite_search_rejects_partial (sid : CompleteDomain.StateId) :
+    finiteSearchAuthorized .partialCoverage sid = false := by
+  simp [finiteSearchAuthorized]
+
+theorem finite_search_rejects_unknown (sid : CompleteDomain.StateId) :
+    finiteSearchAuthorized .unknownCoverage sid = false := by
+  simp [finiteSearchAuthorized]
+
+theorem finite_search_rejects_stale_state
+    (d : CompleteDomain.CompleteDomain) (sid : CompleteDomain.StateId) (h : d.stateId ≠ sid) :
+    finiteSearchAuthorized (.provedComplete d) sid = false := by
+  simp [finiteSearchAuthorized, h]
+
+/-- Certified bottom over a proved-empty complete domain. -/
+theorem certified_bottom_of_proved_empty
+    (d : CompleteDomain.CompleteDomain) (hempty : d.candidates = []) :
+    certifiedBottom d.candidates := by
+  simp [certifiedBottom, hempty]
+
+/--
+  Singleton survivor conclusions require a proved complete domain. Legacy
+  coverage flags never authorize the conclusion on their own.
+-/
+theorem singleton_survivor_requires_proved_domain
+    (flag : CompleteDomain.LegacyCoverageFlag) :
+    CompleteDomain.legacyFlagAuthorizesCompleteness flag = false :=
+  CompleteDomain.forged_coverage_complete_never_authorizes flag
 
 end LeverProofLean.ExactClosure
