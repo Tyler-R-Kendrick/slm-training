@@ -269,6 +269,30 @@
       "notes": "Actively imported by decision_events_v2.py and local_decisions.py. Does not cross-reference counterfactual_probe.py; audit should confirm the split is intentional layering, not redundancy."
     },
     {
+      "id": "decision_events_v2",
+      "name": "DecisionEventV2 state / evidence / objective-view contract",
+      "owner_module": "src/slm_training/harnesses/preference/decision_events_v2.py",
+      "owner_symbols": [
+        "DecisionStateV2",
+        "ActionOutcomeV2",
+        "ObjectiveView",
+        "GoalSupportStateBinding",
+        "GOAL_SUPPORT_MATERIALIZER_ID",
+        "GOAL_SUPPORT_MATERIALIZER_VERSION",
+        "materialize_goal_support",
+        "goal_support_materializer_config_hash",
+        "goal_support_trainability_table",
+        "guard_goal_support_view",
+        "materialize_constraint_shadow",
+        "materialize_pareto",
+        "materialize_set_valued",
+        "admit_semantic_corpus"
+      ],
+      "authority_tier": "verifier-hard",
+      "design_doc": "docs/design/local-decision-interventions.md",
+      "notes": "LDI0-02 DecisionEventV2 plus PGS-D02/SLM-503 goal-support ObjectiveView materialization (materialize_goal_support) with profile trainability guards; does not redefine legality or counterfactual relative value."
+    },
+    {
       "id": "semantic_counterfactual_synthesis",
       "name": "Training-pair counterfactual mutation generator",
       "owner_module": "src/slm_training/harnesses/train_data/semantic_counterfactuals.py",
