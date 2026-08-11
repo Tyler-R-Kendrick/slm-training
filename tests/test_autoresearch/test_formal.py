@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import hashlib
+import json
 import os
 import shutil
 import subprocess
@@ -41,14 +41,11 @@ from slm_training.autoresearch.schemas import (
     ExperimentSpec,
     FormalClaimV1,
     FormalObligationV1,
-    FormalPreflightV1,
     FormalTraceStepV1,
 )
 from slm_training.autoresearch.storage import CampaignStore
 from slm_training.harnesses.model_build.eval_runner import structural_similarity
 from slm_training.levers import MAX_RUN_MINUTES
-from slm_training.lineage.records import canonical_json
-
 ROOT = Path(__file__).resolve().parents[2]
 LEVERPROOF_MAKEFILE = ROOT / "src/leverproof_lean/Makefile"
 
@@ -563,21 +560,24 @@ def test_formal_preflight_forwards_liveness_callbacks(
 
 
 def test_sff_preflights_resolve_through_canonical_formal_registry() -> None:
+    from slm_training.autoresearch.formal import (
+        formal_preflight_sha256,
+        migrate_formal_preflight_v1,
+    )
+
     root = (
         ROOT
         / "src/slm_training/resources/experiments/semantic_factor_frontier"
         / "formal_preflights"
     )
     for path in sorted(root.glob("sff_*.json")):
-        preflight = FormalPreflightV1.model_validate_json(path.read_text())
+        preflight = migrate_formal_preflight_v1(json.loads(path.read_text()))
         claim = FormalClaimV1(
             template_id=preflight.template_id,
             claim=preflight.claim,
             policy=preflight.policy,
         )
-        expected_sha = hashlib.sha256(
-            canonical_json(preflight.model_dump(mode="json")).encode("utf-8")
-        ).hexdigest()
+        expected_sha = formal_preflight_sha256(preflight)
 
         assert (
             validate_formal_preflight_artifact(

@@ -3,13 +3,24 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from collections.abc import Mapping
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Literal, Mapping
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StrictInt, model_validator
 
 from slm_training.levers import MAX_RUN_MINUTES
+
+_REV_MATH_ID = r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+
+# Align with HARN-02 InterpretationStatus (same literals; no second axis enum).
+RmInterpretationStatus = Literal[
+    "explicit_reversal",
+    "explicit_interpretation",
+    "uninterpreted",
+    "not_applicable",
+]
 
 HarnessFamily = Literal[
     "autoresearch",
@@ -26,7 +37,7 @@ HarnessFamily = Literal[
 
 
 def utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    return datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
 
 _EVALUATION_COUNTERS = (
@@ -95,7 +106,9 @@ def evaluation_completeness_failures(
     suites = payload.get("suites")
     if isinstance(suites, Mapping):
         suite_names = tuple(str(name) for name in suites)
-        prefix_for = lambda name: f"suites.{name}"  # noqa: E731
+
+        def prefix_for(name: str) -> str:
+            return f"suites.{name}"
     else:
         prefixes = {
             key.rsplit(".", 1)[0]
@@ -105,7 +118,9 @@ def evaluation_completeness_failures(
             and not key.startswith(("evals.", "gates."))
         }
         suite_names = tuple(sorted(prefixes))
-        prefix_for = lambda name: name  # noqa: E731
+
+        def prefix_for(name: str) -> str:
+            return name
 
     failures: list[str] = []
     if not suite_names:
@@ -681,11 +696,11 @@ class ExperimentKnobs(StrictModel):
     def validate_mixture(self) -> ExperimentKnobs:
         if self.train_version and self.data_source:
             raise ValueError("choose train_version or data_source, not both")
-        if self.mixture_weights is not None:
-            if not self.mixture_weights or any(
-                v <= 0 for v in self.mixture_weights.values()
-            ):
-                raise ValueError("mixture weights must be non-empty and positive")
+        if self.mixture_weights is not None and (
+            not self.mixture_weights
+            or any(v <= 0 for v in self.mixture_weights.values())
+        ):
+            raise ValueError("mixture weights must be non-empty and positive")
         if self.data_source == "existing" and not self.derive_from:
             raise ValueError("data_source=existing requires derive_from")
         scope_fields = (
@@ -710,6 +725,124 @@ FormalProofPolicy = Literal["required", "advisory"]
 FormalProofStatus = Literal["proved", "refuted", "conditional", "unknown", "timed_out"]
 FormalEvidenceScope = Literal["universal", "bounded_instance", "conditional"]
 
+# Practical computability labels for EVID-03 ledger (KERN-12 may refine further).
+ComputabilityClassification = Literal[
+    "finite_decidable",
+    "bounded_search",
+    "total_recursive",
+    "semidecidable",
+    "oracle_relative",
+    "classical_noncomputable_existence",
+    "unclassified",
+]
+
+# Abstract resource-bound claims must not be rebranded as these empirical kinds.
+FORBIDDEN_THEOREM_OVERCLAIM_KINDS: frozenset[str] = frozenset(
+    {"wall_clock_latency", "neural_quality"}
+)
+
+# Bound-AST id placeholders until EVID-04 ships the safe evaluator (KERN-03 uses the
+# finite-search id; other ids may be recorded but are not evaluated here).
+BOUND_AST_ID_PLACEHOLDERS: frozenset[str] = frozenset(
+    {
+        "bound.finite_search.prefix_tree.v1",
+        "bound.placeholder.pending_evid04.v1",
+    }
+)
+
+
+class FormalPreflightFourAxisLedgerV1(StrictModel):
+    """Four-axis analysis ledger owned by ``FormalPreflightV1`` (EVID-03 / SLM-519).
+
+    Reuses HARN-02 ``RevmathFourAxisAnalysisV1`` / ``AxisCertificateRefV1`` —
+    never a parallel evidence store or second axis enum. Analysis is coerced via
+    a lazy import so ``schemas`` does not circular-import the reasoning package.
+    """
+
+    schema_version: Literal["formal_preflight_four_axis_ledger/v1"] = (
+        "formal_preflight_four_axis_ledger/v1"
+    )
+    # Runtime type: RevmathFourAxisAnalysisV1 (validated in mode=before).
+    analysis: Any
+    computability_classification: ComputabilityClassification = "unclassified"
+    rm_subsystem_id: str | None = Field(default=None, pattern=_REV_MATH_ID)
+    rm_interpretation_status: RmInterpretationStatus = "not_applicable"
+    resource_cost_model_id: str | None = Field(default=None, pattern=_REV_MATH_ID)
+    empirical_remainder_claim_ids: tuple[str, ...] = ()
+    # Explicit kinds this preflight asserts as theorem consequences. Wall-clock
+    # latency and neural quality are rejected here (fail closed).
+    theorem_claim_kinds: tuple[str, ...] = ()
+
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce_analysis(cls, data: Any) -> Any:
+        if not isinstance(data, Mapping):
+            return data
+        from slm_training.harnesses.reasoning.revmath.schemas import (
+            RevmathFourAxisAnalysisV1,
+        )
+
+        payload = dict(data)
+        analysis = payload.get("analysis")
+        if analysis is not None and not isinstance(analysis, RevmathFourAxisAnalysisV1):
+            payload["analysis"] = RevmathFourAxisAnalysisV1.model_validate(analysis)
+        return payload
+
+    @model_validator(mode="after")
+    def validate_ledger(self) -> FormalPreflightFourAxisLedgerV1:
+        from slm_training.harnesses.reasoning.revmath.schemas import (
+            KNOWN_RM_SUBSYSTEMS,
+            RevmathFourAxisAnalysisV1,
+        )
+
+        if not isinstance(self.analysis, RevmathFourAxisAnalysisV1):
+            raise TypeError(
+                "four-axis ledger analysis must be RevmathFourAxisAnalysisV1 "
+                "(HARN-02 vocabulary; do not fork axis enums)"
+            )
+        overclaims = FORBIDDEN_THEOREM_OVERCLAIM_KINDS.intersection(self.theorem_claim_kinds)
+        if overclaims:
+            raise ValueError(
+                "formal preflight ledger cannot represent "
+                f"{sorted(overclaims)} as theorem consequences of an abstract "
+                "work/resource bound; record them only under "
+                "empirical_remainder_claim_ids (fail closed)"
+            )
+        if self.rm_subsystem_id in KNOWN_RM_SUBSYSTEMS and self.rm_interpretation_status in (
+            "uninterpreted",
+            "not_applicable",
+        ):
+            raise ValueError(
+                f"RM subsystem {self.rm_subsystem_id!r} requires "
+                "explicit_reversal or explicit_interpretation status "
+                "(never inferred from #print axioms)"
+            )
+        rb = self.analysis.resource_bounds
+        if rb.status in ("proved_axis", "refuted_axis") and rb.bound_ast_id is None:
+            raise ValueError(
+                "resource_bounds proved/refuted claims require bound_ast_id "
+                "(EVID-04 safe AST id placeholder; no raw eval)"
+            )
+        if (
+            self.computability_classification != "unclassified"
+            and self.analysis.computability.status == "not_claimed"
+        ):
+            raise ValueError(
+                "computability_classification requires a claimed computability axis "
+                "(status other than not_claimed)"
+            )
+        empirical = set(self.empirical_remainder_claim_ids)
+        if (
+            self.analysis.implementation_refinement.status == "empirical_remainder"
+            and not empirical
+            and not self.analysis.implementation_refinement.notes
+        ):
+            raise ValueError(
+                "implementation_refinement empirical_remainder requires "
+                "empirical_remainder_claim_ids or notes naming the remainder"
+            )
+        return self
+
 
 class FormalClaimV1(StrictModel):
     """A hypothesis claim routed to one versioned formal template."""
@@ -729,7 +862,13 @@ class FormalObligationV1(StrictModel):
 
 
 class FormalPreflightV1(StrictModel):
-    """Auditable proof or counterexample result produced before execution."""
+    """Auditable proof or counterexample result produced before execution.
+
+    Optional ``four_axis_ledger`` extends the preflight in place (EVID-03).
+    Historical v1 payloads without the ledger remain readable via
+    ``migrate_formal_preflight_v1``; digests use ``formal_preflight_sha256`` so
+    an unset ledger does not rewrite historical hashes.
+    """
 
     schema_version: Literal["FormalPreflightV1"] = "FormalPreflightV1"
     campaign_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
@@ -754,6 +893,7 @@ class FormalPreflightV1(StrictModel):
     counterexample: dict[str, Any] | None = None
     duration_seconds: float = Field(ge=0)
     created_at: str = Field(default_factory=utc_now)
+    four_axis_ledger: FormalPreflightFourAxisLedgerV1 | None = None
 
     @model_validator(mode="after")
     def validate_evidence(self) -> FormalPreflightV1:

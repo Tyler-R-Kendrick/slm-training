@@ -12,25 +12,33 @@ import re
 import shutil
 import subprocess
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
 from slm_training.autoresearch.experiment_campaign import ExperimentCampaignV1
 from slm_training.autoresearch.schemas import (
+    BOUND_AST_ID_PLACEHOLDERS,
+    FORBIDDEN_THEOREM_OVERCLAIM_KINDS,
+    ComputabilityClassification,
     ExperimentSpec,
     FormalClaimV1,
     FormalEvidenceScope,
     FormalObligationV1,
+    FormalPreflightFourAxisLedgerV1,
     FormalPreflightV1,
     FormalProofStatus,
     FormalTraceStepV1,
+    RmInterpretationStatus,
 )
 from slm_training.formal.checkers import FormalProjectLock
 from slm_training.harness_core.bounded_process import (
     ProcessOutcome,
     run_bounded_process,
+)
+from slm_training.harnesses.reasoning.revmath.schemas import (
+    RevmathFourAxisAnalysisV1,
 )
 from slm_training.levers import (
     INTERRUPT_AFTER_SECONDS,
@@ -219,8 +227,10 @@ FORMAL_TEMPLATES: dict[str, FormalTemplate] = {
             "the declared layerscale bound holds",
         ),
         open_assumptions=(
-            "establish a global contraction or task-local margin bound for the "
-            "trained transition",
+            (
+                "establish a global contraction or task-local margin bound for the "
+                "trained transition"
+            ),
         ),
         source_paths=(
             "src/slm_training/formal/lean/OpenUIProofs/Recurrence.lean",
@@ -655,6 +665,116 @@ def run_formal_preflight(
     return preflight, obligation
 
 
+
+def formal_preflight_payload(preflight: FormalPreflightV1) -> dict[str, Any]:
+    """Canonical dump for digest/storage (EVID-03 migration-stable).
+
+    Full dump of core FormalPreflightV1 fields (including defaults such as
+    ``created_at``), but omit ``four_axis_ledger`` when unset so historical
+    artifacts keep their content digests. Explicit ledger attachment is
+    included and participates in the digest.
+    """
+
+    data = preflight.model_dump(mode="json")
+    if "four_axis_ledger" not in preflight.model_fields_set:
+        data.pop("four_axis_ledger", None)
+    return data
+
+
+def formal_preflight_sha256(preflight: FormalPreflightV1) -> str:
+    """Content digest of a formal preflight (migration-stable)."""
+
+    return hashlib.sha256(
+        canonical_json(formal_preflight_payload(preflight)).encode("utf-8")
+    ).hexdigest()
+
+
+def migrate_formal_preflight_v1(payload: Mapping[str, Any]) -> FormalPreflightV1:
+    """Read historical or current FormalPreflightV1 JSON fail-closed.
+
+    Missing ``four_axis_ledger`` stays unset (never invented). Legacy payloads
+    that smuggle wall-clock/neural theorem overclaims are rejected even when
+    the nested ledger type is absent.
+    """
+
+    if not isinstance(payload, Mapping):
+        raise TypeError("formal preflight payload must be a mapping")
+    data = dict(payload)
+    schema = data.get("schema_version", "FormalPreflightV1")
+    if schema != "FormalPreflightV1":
+        raise ValueError(
+            f"unsupported formal preflight schema {schema!r}; "
+            "migrate through FormalPreflightV1 adapters only"
+        )
+    for key in ("theorem_claim_kinds", "proved_claim_kinds", "claim_kinds"):
+        raw = data.get(key)
+        if raw is None:
+            continue
+        kinds = {str(item) for item in raw}
+        bad = FORBIDDEN_THEOREM_OVERCLAIM_KINDS.intersection(kinds)
+        if bad:
+            raise ValueError(
+                "historical formal preflight overclaim rejected: "
+                f"{sorted(bad)} cannot be theorem consequences"
+            )
+    return FormalPreflightV1.model_validate(data)
+
+
+def attach_four_axis_ledger(
+    preflight: FormalPreflightV1,
+    ledger: FormalPreflightFourAxisLedgerV1,
+    *,
+    bind_preflight_digest: bool = True,
+) -> FormalPreflightV1:
+    """Attach a validated four-axis ledger to a preflight (in-place owner).
+
+    When ``bind_preflight_digest`` is true, copies the pre-attachment digest
+    into ``analysis.formal_preflight_sha256`` so the result attachment can
+    cite the historical preflight before the ledger widens the artifact.
+    """
+
+    analysis = ledger.analysis
+    if bind_preflight_digest and analysis.formal_preflight_sha256 is None:
+        digest = formal_preflight_sha256(preflight)
+        analysis = analysis.model_copy(update={"formal_preflight_sha256": digest})
+        ledger = ledger.model_copy(update={"analysis": analysis})
+    rb = ledger.analysis.resource_bounds
+    if (
+        rb.status in ("proved_axis", "refuted_axis")
+        and rb.bound_ast_id is not None
+        and rb.bound_ast_id not in BOUND_AST_ID_PLACEHOLDERS
+        and not rb.bound_ast_id.startswith("bound.")
+    ):
+        raise ValueError(
+            f"bound_ast_id {rb.bound_ast_id!r} must be a stable bound.* id "
+            "(EVID-04 AST placeholder; no raw eval expressions)"
+        )
+    return preflight.model_copy(update={"four_axis_ledger": ledger})
+
+
+def ledger_from_four_axis_analysis(
+    analysis: RevmathFourAxisAnalysisV1,
+    *,
+    computability_classification: ComputabilityClassification = "unclassified",
+    rm_subsystem_id: str | None = None,
+    rm_interpretation_status: RmInterpretationStatus = "not_applicable",
+    resource_cost_model_id: str | None = None,
+    empirical_remainder_claim_ids: tuple[str, ...] = (),
+    theorem_claim_kinds: tuple[str, ...] = (),
+) -> FormalPreflightFourAxisLedgerV1:
+    """Build a ledger from a HARN-02/KERN-03 ``RevmathFourAxisAnalysisV1``."""
+
+    return FormalPreflightFourAxisLedgerV1(
+        analysis=analysis,
+        computability_classification=computability_classification,
+        rm_subsystem_id=rm_subsystem_id,
+        rm_interpretation_status=rm_interpretation_status,
+        resource_cost_model_id=resource_cost_model_id,
+        empirical_remainder_claim_ids=empirical_remainder_claim_ids,
+        theorem_claim_kinds=theorem_claim_kinds,
+    )
+
+
 def bind_preflight(
     obligation: FormalObligationV1, preflight_sha256: str
 ) -> FormalObligationV1:
@@ -672,10 +792,9 @@ def validate_formal_preflight_artifact(
     """Validate one cached preflight against its current claim and proof bundle."""
 
     obligation_id = formal_obligation_id(campaign_id, experiment_id, claim)
-    preflight = FormalPreflightV1.model_validate_json(path.read_text(encoding="utf-8"))
-    content_sha = hashlib.sha256(
-        canonical_json(preflight.model_dump(mode="json")).encode("utf-8")
-    ).hexdigest()
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    preflight = migrate_formal_preflight_v1(raw)
+    content_sha = formal_preflight_sha256(preflight)
     if content_sha != expected_sha256:
         raise ValueError(f"formal preflight digest mismatch: {obligation_id}")
     template = FORMAL_TEMPLATES.get(claim.template_id)
