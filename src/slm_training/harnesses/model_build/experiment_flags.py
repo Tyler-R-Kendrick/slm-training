@@ -82,9 +82,6 @@ def cli_lever_overrides(
     overrides: dict[str, Any] = {}
     if getattr(args, "verified_solver_decode", False):
         overrides["verified_solver_decode"] = True
-    mode = getattr(args, "goal_support_mode", None)
-    if supplied("--goal-support-mode") and mode is not None:
-        overrides["goal_support_mode"] = mode
     if getattr(args, "honest_slot_contract", False) or getattr(args, "ship_gates", False):
         overrides["honest_slot_contract"] = True
     mode = getattr(args, "compiler_decode_mode", None)

@@ -104,8 +104,6 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "solver_max_wall_ms",
         "solver_unknown_policy",
         "solver_certificate_mode",
-        "goal_support_mode",
-        "goal_support_profile_mode",
         "topology_verified_solver",
         "topology_capsule_solver",
         "topology_solver_ranker",
@@ -497,8 +495,6 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         solver_certificate_mode=str(
             getattr(config, "solver_certificate_mode", "summary")
         ),
-        goal_support_mode=str(getattr(config, "goal_support_mode", "off") or "off"),
-        goal_support_profile_mode=getattr(config, "goal_support_profile_mode", None),
         fastpath_aux_weight=getattr(config, "fastpath_aux_weight", 0.0),
         fastpath_gate_threshold=float(
             getattr(config, "fastpath_gate_threshold", 0.5) or 0.5
@@ -1098,10 +1094,7 @@ def build_model(
         )
 
     if name in {"twotower", "two_tower", "two-tower"}:
-        from slm_training.dsl.solver.decode import validate_goal_support_config
         from slm_training.models.twotower import TwoTowerModel
-
-        validate_goal_support_config(config, context="ModelBuildConfig")
 
         if checkpoint and checkpoint.exists():
             loaded = TwoTowerModel.from_checkpoint(

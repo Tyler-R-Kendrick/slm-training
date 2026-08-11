@@ -57,11 +57,6 @@ LEVER_FLAGS: tuple[LeverSpec, ...] = (
         False,
         "VSS1-03: prune compiler forest via certified exact closure before ranking",
     ),
-    _str(
-        "goal_support_mode",
-        "off",
-        "PGS-E01: off | diagnostic | certified goal-support decode on compiler-tree seam",
-    ),
     _bool(
         "topology_verified_solver",
         False,

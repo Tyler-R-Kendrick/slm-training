@@ -359,8 +359,7 @@ def test_decode_invokes_solver_only_when_enabled() -> None:
 def test_goal_support_defaults_off_and_legacy_checkpoint_loads() -> None:
     config = TwoTowerConfig(context_backend="scratch", output_tokenizer="lexer")
     assert config.goal_support_mode == "off"
-    assert config.goal_support_profile_mode is None
-
+    assert config.goal_support_query_cap == 32
     dumped = dataclasses.asdict(
         TwoTowerConfig(
             context_backend="scratch",
@@ -369,97 +368,96 @@ def test_goal_support_defaults_off_and_legacy_checkpoint_loads() -> None:
         )
     )
     fields = TwoTowerConfig.__dataclass_fields__
-    legacy = {k: v for k, v in dumped.items() if k in fields and not k.startswith("goal_support_")}
+    legacy = {
+        key: value
+        for key, value in dumped.items()
+        if key in fields and not key.startswith("goal_support_")
+    }
     legacy_config = TwoTowerConfig(**legacy)
     assert legacy_config.goal_support_mode == "off"
-    assert legacy_config.goal_support_profile_mode is None
-
-def test_diagnostic_goal_support_is_decode_identical() -> None:
-    baseline = _model()
-    ctx, ctx_pad = baseline._encode_context(["card"])
-    expected = baseline._compiler_ltr_decode_one(
-        ctx, ctx_pad, 24, mode="tree", slot_contract=None
-    )
-
-    diagnostic = _model(goal_support_mode="diagnostic", compiler_decode_mode="tree")
-    ctx2, ctx_pad2 = diagnostic._encode_context(["card"])
-    ids = diagnostic._compiler_ltr_decode_one(
-        ctx2, ctx_pad2, 24, mode="tree", slot_contract=None
-    )
-    assert torch.equal(ids, expected)
+    assert legacy_config.goal_support_query_cap == 32
 
 
-def test_goal_support_seam_invoked_only_when_enabled() -> None:
-    from slm_training.data.contract import GenerationRequest
-    from slm_training.dsl.solver.decode import build_goal_support_decode_binding
+def test_goal_certified_singleton_uses_existing_zero_forward_path(monkeypatch) -> None:
+    from types import SimpleNamespace
 
-    calls = {"n": 0}
-
-    def _spy(forest, prefix, plan_row):
-        calls["n"] += 1
-        return forest
-
-    off = _model(goal_support_mode="off", compiler_decode_mode="tree")
-    off._goal_support_apply_forest = _spy  # type: ignore[assignment]
-    ctx, ctx_pad = off._encode_context(["card"])
-    off._compiler_ltr_decode_one(ctx, ctx_pad, 8, mode="tree", slot_contract=None)
-    assert calls["n"] == 0
-
-    calls["n"] = 0
-    on = _model(goal_support_mode="diagnostic", compiler_decode_mode="tree")
-    on._goal_support_bindings = [
-        build_goal_support_decode_binding(GenerationRequest(prompt="card"))
-    ]
-    on._goal_support_apply_forest = _spy  # type: ignore[assignment]
-    ctx2, ctx_pad2 = on._encode_context(["card"])
-    on._compiler_ltr_decode_one(ctx2, ctx_pad2, 8, mode="tree", slot_contract=None)
-    assert calls["n"] >= 1
-
-
-def test_off_mode_goal_support_counters_stay_zero() -> None:
-    from slm_training.models.decode_stats import (
-        collect_decode_stats,
-        proves_goal_support_off,
-    )
-
-    model = _model(goal_support_mode="off", compiler_decode_mode="tree")
-    ctx, ctx_pad = model._encode_context(["card"])
-    with collect_decode_stats() as stats:
-        model._compiler_ltr_decode_one(ctx, ctx_pad, 8, mode="tree", slot_contract=None)
-    assert proves_goal_support_off(stats)
-
-
-def test_diagnostic_goal_support_records_queries_without_prune() -> None:
-    from slm_training.data.contract import GenerationRequest
-    from slm_training.dsl.solver.decode import build_goal_support_decode_binding
-    from slm_training.models.decode_stats import collect_decode_stats
-
-    model = _model(goal_support_mode="diagnostic", compiler_decode_mode="tree")
-    model._prepare_goal_support_bindings(["card"])
-    model._goal_support_bindings = [
-        build_goal_support_decode_binding(GenerationRequest(prompt="card"))
-    ]
-    ctx, ctx_pad = model._encode_context(["card"])
-    with collect_decode_stats() as stats:
-        model._compiler_ltr_decode_one(ctx, ctx_pad, 8, mode="tree", slot_contract=None)
-    assert stats.goal_support_pruned == 0
-
-
-def test_certified_singleton_bypass_has_zero_forwards_when_collapsed() -> None:
+    from slm_training.dsl.grammar.fastpath import compiler_draft
+    from slm_training.dsl.solver.decode import goal_support_prune
     from slm_training.models.decode_stats import (
         collect_decode_stats,
         proves_zero_neural_work,
     )
 
-    model = _model(
-        goal_support_mode="certified",
-        compiler_decode_mode="tree",
-        grammar_draft_window=4,
-        grammar_ltr_max_tokens=8,
+    model = _model(goal_support_mode="certified", compiler_decode_mode="tree")
+    eos = int(model.tokenizer.eos_id)
+    component = next(
+        token_id
+        for token_id in model.tokenizer.id_to_token
+        if getattr(model.tokenizer.kind_of(token_id), "value", "") == "component"
     )
-    model._prepare_goal_support_bindings(["card"])
+    other = next(
+        token_id
+        for token_id in model.tokenizer.id_to_token
+        if token_id
+        not in {
+            model.tokenizer.bos_id,
+            eos,
+            model.tokenizer.pad_id,
+            component,
+        }
+    )
+    forest = CompletionForest(
+        (
+            CompletionPath((int(component), eos), "component"),
+            CompletionPath((int(other),), "other"),
+        ),
+        "complete",
+    )
+    prefix = [int(model.tokenizer.bos_id)]
+    goal_state, goal_provider = _goal_provider_for_forest(forest, prefix)
+    certificate_store = {}
+    closure_results = []
+
+    def _certified_prune(value, live_prefix):
+        assert value is forest
+        assert list(live_prefix) == prefix
+        pruned, result = goal_support_prune(
+            value,
+            live_prefix,
+            goal_provider,
+            mode="certified",
+            pack_id="openui",
+            constraint_version="goal/v1",
+            bounds=goal_state.bounds,
+            state=goal_state,
+            certificate_store=certificate_store,
+        )
+        assert pruned.paths == (forest.paths[0],)
+        closure_results.append(result)
+        return pruned
+
+    state = SimpleNamespace(remaining_tokens=None)
+    state.advance_token = lambda *_args: None
+    state._collect_completion_stats = lambda: None
+    monkeypatch.setattr(model, "_new_grammar_states", lambda _rows: [state])
+    monkeypatch.setattr(
+        compiler_draft, "build_completion_forest", lambda *_args, **_kwargs: forest
+    )
+    monkeypatch.setattr(model, "_solver_prune_forest", _certified_prune)
     ctx, ctx_pad = model._encode_context(["card"])
+
     with collect_decode_stats() as stats:
-        model._compiler_ltr_decode_one(ctx, ctx_pad, 6, mode="tree", slot_contract=None)
-    if stats.forwards_count == 0:
-        assert proves_zero_neural_work(stats)
+        result = model._compiler_ltr_decode_one(
+            ctx, ctx_pad, 4, mode="tree", slot_contract=None
+        )
+    assert int(result[1]) == component
+    assert int(result[2]) == eos
+    assert len(closure_results) == 1
+    closure = closure_results[0]
+    assert closure is not None
+    assert closure.reached_fixed_point
+    assert closure.counters.support_queries == 2
+    assert closure.counters.candidates_removed == 1
+    assert len(certificate_store) == 2
+    assert proves_zero_neural_work(stats)
+    assert stats.semantic_singleton_bypasses == 1
