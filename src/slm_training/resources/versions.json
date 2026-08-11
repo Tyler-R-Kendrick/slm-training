@@ -18976,7 +18976,7 @@
       ]
     },
     "evidence.interop": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/evidence_interop/",
@@ -18985,6 +18985,11 @@
         "tests/test_evidence_interop/"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-11",
+          "note": "EVID-12 review: fail-closed missing profile; immutable authority_ids; no fake PASSED/OCI zero digest; PROV relations on entity."
+        },
         {
           "version": "v1",
           "date": "2026-08-11",

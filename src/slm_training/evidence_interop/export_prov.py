@@ -28,22 +28,19 @@ def export_prov_o(obj: Any) -> dict[str, Any]:
             "@type": PROV_O_MAPPING["entity"],
             "prov:label": authority.kind,
             "slm:authority_ids": dict(authority.authority_ids),
+            PROV_O_MAPPING["generation"]: {"@id": activity_id},
+            PROV_O_MAPPING["attribution"]: {"@id": agent_id},
         },
         {
             "@id": activity_id,
             "@type": PROV_O_MAPPING["activity"],
             "prov:label": "project-to-prov-o",
+            PROV_O_MAPPING["association"]: {"@id": agent_id},
         },
         {
             "@id": agent_id,
             "@type": PROV_O_MAPPING["agent"],
             "prov:label": "slm-training-evidence-interop",
-        },
-        {
-            "@id": f"{entity_id}#links",
-            PROV_O_MAPPING["generation"]: {"@id": activity_id},
-            PROV_O_MAPPING["attribution"]: {"@id": agent_id},
-            PROV_O_MAPPING["derivation"]: {"@id": entity_id},
         },
     ]
 
