@@ -15,9 +15,6 @@ from slm_training.data.progspec.goal_constraints import (
 )
 from slm_training.data.progspec.synthesis_problem import PackIdentityV1
 from slm_training.dsl.solver.goal_support import (
-    GOAL_SUPPORT_IMPLEMENTATION_VERSION,
-    GOAL_TERMINAL_EVIDENCE_SCHEMA_VERSION,
-    GOAL_VERIFIER_PROFILE_SCHEMA_VERSION,
     EvaluatorIdentityV1,
     GoalEvaluatorResultV1,
     GoalFailureAtomV1,
