@@ -1,0 +1,477 @@
+{
+  "schema": "research_citation_catalog/v1",
+  "issue_key": "RESEARCH-01",
+  "linear_id": "SLM-518",
+  "base_sha": "bb9e2dcdd16946e949e1f364a5ca6b301601213f",
+  "base_sha_note": "origin/main at INTEG-10 close; repo-head links below are delta baselines, not static truth — re-audit latest main before citing as current.",
+  "design_doc": "docs/design/research-citation-catalog.md",
+  "lineage_doc": "docs/design/research-lineage.md",
+  "revmath_doc": "docs/design/reverse-mathematics-computability.md",
+  "verified_by": "scripts/verify_research_citation_catalog.py",
+  "source_scope": "Repository-native catalog tying reverse-mathematics / computability / solver / provenance priors to concrete repo applications, assumptions, falsifiers, and derivative experiment keys. Deduplicates citations and records what each source does not prove before entries may enter experiment manifests.",
+  "source_types": [
+    "foundational_research",
+    "solver_certificate",
+    "lean_tooling",
+    "provenance_standard",
+    "repository_evidence"
+  ],
+  "trust_levels": [
+    "primary",
+    "secondary",
+    "repository_baseline",
+    "adjacent"
+  ],
+  "sources": [
+    {
+      "source_id": "simpson-sosoa",
+      "source_type": "foundational_research",
+      "title": "Subsystems of Second Order Arithmetic",
+      "authors": ["Stephen G. Simpson"],
+      "year": 2009,
+      "url": "https://sgslogic.net/t20/sosoa/chapter1.pdf",
+      "claim_supported": "Classical reverse mathematics organizes theorems by the second-order comprehension/choice axioms needed over a weak base theory (RCA0 and the Big Five).",
+      "does_not_prove": [
+        "That any OpenUI / TwoTower empirical result is RCA0/WKL0/ACA0-equivalent",
+        "That #print axioms or Lean compile success yields a genuine RM label",
+        "That a finite fixture analogue is an interpretation package"
+      ],
+      "repo_relevance": "Vocabulary and anti-overclaim ceiling for HARN-05/08 and KERN-12 rm_research:* labels.",
+      "repo_application": "Use as primary citation when defining base_theory_id / Big-Five naming; never as automatic promotion evidence.",
+      "assumption": "Interpretation packages must supply coding + both-direction evidence before reversed_equivalent.",
+      "falsifier": "Any automatic upgrade from practical_computability_only or finite analogue to Big-Five equivalence without interpretation_package evidence.",
+      "trust_level": "primary",
+      "derivative_keys": ["HARN-05", "HARN-08", "KERN-12", "RESEARCH-02", "SLM-533"],
+      "delta_baseline": {
+        "kind": "repo_head_link",
+        "path": "docs/design/reverse-mathematics-computability.md",
+        "note": "Repo-head RM policy is a delta over Simpson; re-audit main before treating local labels as SOSOA claims."
+      }
+    },
+    {
+      "source_id": "arxiv-1804.05495",
+      "source_type": "foundational_research",
+      "title": "Constructive Reverse Mathematics: An Introduction",
+      "authors": ["Hajime Ishihara"],
+      "year": 2018,
+      "url": "https://arxiv.org/abs/1804.05495",
+      "claim_supported": "Constructive reverse mathematics studies which constructive principles are needed for theorems, distinct from classical Big-Five reverse mathematics.",
+      "does_not_prove": [
+        "That constructivization modes in this repo are faithful CRM theorems",
+        "That bounded_finite_analogue equals a constructive equivalence",
+        "Classical RCA0/WKL0 labels from constructive weakenings alone"
+      ],
+      "repo_relevance": "Prior for HARN-06 constructivization modes and documented_nonconstructive_remainder.",
+      "repo_application": "Cite when recording weakening_description / constructivized_statement_sha256; keep classical and constructive claims separate.",
+      "assumption": "Every constructivized claim is a distinct proposition with an explicit weakening.",
+      "falsifier": "Masquerading a finite analogue or classical existence as the original constructive theorem.",
+      "trust_level": "primary",
+      "derivative_keys": ["HARN-06", "RESEARCH-02", "SLM-533"],
+      "delta_baseline": {
+        "kind": "repo_head_link",
+        "path": "docs/design/reverse-mathematics-computability.md",
+        "note": "HARN-06 owners are repo deltas; re-check main before equating modes to CRM literature."
+      }
+    },
+    {
+      "source_id": "arxiv-2212.00489",
+      "source_type": "foundational_research",
+      "title": "The Reverse Mathematics Zoo: A Survey",
+      "authors": ["Damir D. Dzhafarov", "Carl Mummert"],
+      "year": 2022,
+      "url": "https://arxiv.org/abs/2212.00489",
+      "claim_supported": "Surveys the Reverse Mathematics Zoo: many principles sit strictly between or outside the classical Big Five, with careful reducibility relations.",
+      "does_not_prove": [
+        "That repo task ids map onto Zoo principles",
+        "Completeness of any local principle inventory",
+        "Automatic Zoo membership from naming similarity"
+      ],
+      "repo_relevance": "Context for not collapsing every RM-inspired experiment into Big-Five labels.",
+      "repo_application": "Cite when arguing a principle may be intermediate / incomparable; prefer unclassified until coded.",
+      "assumption": "Local principle ids are hypotheses until an interpretation package exists.",
+      "falsifier": "Treating Zoo survey citations as certificates that a harness principle equals a named Zoo entry.",
+      "trust_level": "secondary",
+      "derivative_keys": ["HARN-08", "KERN-12", "RESEARCH-02"],
+      "delta_baseline": {
+        "kind": "repo_head_link",
+        "path": "docs/design/kern-12-computability-classification.md",
+        "note": "KERN-12 vocabulary is a repo delta; Zoo citations do not enlarge the production label set."
+      }
+    },
+    {
+      "source_id": "mathlib-partrec",
+      "source_type": "lean_tooling",
+      "title": "Mathlib Computability.Partrec — Partial Recursive Functions",
+      "authors": ["Lean prover community"],
+      "year": 2024,
+      "url": "https://leanprover-community.github.io/mathlib4_docs/Mathlib/Computability/Partrec.html",
+      "claim_supported": "mathlib formalizes partial recursive functions and related computability notions as Lean definitions and theorems.",
+      "does_not_prove": [
+        "That LeverProofLean mirrors mathlib Partrec API",
+        "That a Lean compile of a fixture implies Partrec membership",
+        "Production ship gates from mathlib presence alone"
+      ],
+      "repo_relevance": "Lean/tooling prior for computability vocabulary and future formal bridges.",
+      "repo_application": "Cite when comparing repo Lean computability labels to mathlib; do not import mathlib as a silent dependency of ship gates.",
+      "assumption": "Any mathlib bridge is an explicit experiment with pinned revisions.",
+      "falsifier": "Claiming repo total_recursive / primitive_recursive labels are mathlib theorems without a checked bridge artifact.",
+      "trust_level": "secondary",
+      "derivative_keys": ["KERN-12", "EVID-03", "RESEARCH-02"],
+      "delta_baseline": {
+        "kind": "repo_head_link",
+        "path": "src/leverproof_lean/LeverProofLean/ComputabilityClassification.lean",
+        "note": "Local Lean inductives are delta baselines vs mathlib; re-audit docs URL and API on main."
+      }
+    },
+    {
+      "source_id": "buss-marktoberdorf95",
+      "source_type": "foundational_research",
+      "title": "Bounded Arithmetic, Proof Complexity and Feasible Reasoning",
+      "authors": ["Samuel R. Buss"],
+      "year": 1995,
+      "url": "https://www.math.ucsd.edu/~sbuss/ResearchWeb/marktoberdorf95/paper.pdf",
+      "claim_supported": "Bounded arithmetic and proof complexity connect feasible reasoning strength to resource-bounded proof systems.",
+      "does_not_prove": [
+        "That MAX_RUN_MINUTES or wall-time caps are bounded-arithmetic theorems",
+        "Complexity class separations for OpenUI decode",
+        "That EG_params LCB is a proof-complexity measure"
+      ],
+      "repo_relevance": "Literature prior for feasible / resource-bounded reasoning narratives around formal and decode budgets.",
+      "repo_application": "Cite when motivating bounded search / resource witnesses; keep separate from empirical latency gates.",
+      "assumption": "Repo cost axes remain measured engineering budgets unless a formal reduction is certified.",
+      "falsifier": "Equating a timed-out run with a complexity lower bound.",
+      "trust_level": "secondary",
+      "derivative_keys": ["KERN-12", "INTEG-10", "RESEARCH-02"],
+      "delta_baseline": {
+        "kind": "repo_head_link",
+        "path": "docs/design/kern-12-computability-classification.md",
+        "note": "Practical computability classes are repo deltas; Buss is not their soundness proof."
+      }
+    },
+    {
+      "source_id": "arxiv-2601.15571",
+      "source_type": "lean_tooling",
+      "title": "Verified Complexity Reductions in Lean",
+      "authors": ["(see arXiv abstract)"],
+      "year": 2026,
+      "url": "https://arxiv.org/abs/2601.15571",
+      "claim_supported": "Complexity reductions can be stated and machine-checked in Lean so that claimed reductions carry formal certificates.",
+      "does_not_prove": [
+        "That any current LeverProofLean object is a verified complexity reduction",
+        "Ship readiness from citing this paper",
+        "Automatic transfer of external Lean proofs into repo evidence envelopes"
+      ],
+      "repo_relevance": "Lean/tooling prior for future certified reductions between local computability claims.",
+      "repo_application": "Cite when proposing reduction experiments; require content-addressed formal objects before promotion.",
+      "assumption": "Reductions are experiments until bound to ExperimentCampaignV1 + formal evidence.",
+      "falsifier": "Promotion of a reduction claim without a checked Lean/formal artifact hash.",
+      "trust_level": "secondary",
+      "derivative_keys": ["RESEARCH-02", "EVID-01", "SLM-533"],
+      "delta_baseline": {
+        "kind": "repo_head_link",
+        "path": "docs/design/formal-objects-multi-prover.md",
+        "note": "Formal-object owners on main are the delta baseline for any reduction pilot."
+      }
+    },
+    {
+      "source_id": "arxiv-2410.15986",
+      "source_type": "foundational_research",
+      "title": "Proof Mining and Quantitative Extraction",
+      "authors": ["(see arXiv abstract)"],
+      "year": 2024,
+      "url": "https://arxiv.org/abs/2410.15986",
+      "claim_supported": "Proof mining extracts quantitative bounds and computational content from (often non-constructive) proofs.",
+      "does_not_prove": [
+        "That repo telemetry or NLL numbers are proof-mined bounds",
+        "Automatic extraction pipelines for OpenUI theorems",
+        "That finite_search_bound evidence is a Kohlenbach-style extract"
+      ],
+      "repo_relevance": "Prior for quantitative witnesses and bound.* AST placeholders in constructivization.",
+      "repo_application": "Cite when arguing for explicit numerical bounds on search/closure; require replayable witnesses.",
+      "assumption": "Extracted bounds must be independently checkable artifacts, not narrative.",
+      "falsifier": "Calling a heuristic hyperparameter a proof-mined modulus.",
+      "trust_level": "secondary",
+      "derivative_keys": ["HARN-06", "EVID-04", "RESEARCH-02"],
+      "delta_baseline": {
+        "kind": "repo_head_link",
+        "path": "docs/design/reverse-mathematics-computability.md",
+        "note": "bound.* / witness owners on main are deltas; re-audit before claiming mining fidelity."
+      }
+    },
+    {
+      "source_id": "arxiv-1707.03202",
+      "source_type": "foundational_research",
+      "title": "Weihrauch Complexity and Related Topics: A Survey",
+      "authors": ["Vasco Brattka", "Guido Gherardi", "Arno Pauly"],
+      "year": 2017,
+      "url": "https://arxiv.org/abs/1707.03202",
+      "claim_supported": "Weihrauch reducibility compares multi-valued computational problems uniformly, finer than many classical computability reductions.",
+      "does_not_prove": [
+        "That any repo harness task is Weihrauch-equivalent to a named problem",
+        "Big-Five RM labels from Weihrauch degrees",
+        "That oracle_relative practical labels are Weihrauch degrees"
+      ],
+      "repo_relevance": "Uniform reduction vocabulary for comparing problem strengths without overclaiming RM equivalence.",
+      "repo_application": "Cite for default-off experiments on problem reducibility; keep separate from HARN-08 Big-Five packages.",
+      "assumption": "Named Weihrauch degrees require explicit problem representations and reductions.",
+      "falsifier": "Using Weihrauch citations to justify RCA0/WKL0 production labels.",
+      "trust_level": "primary",
+      "derivative_keys": ["KERN-12", "HARN-08", "RESEARCH-02", "SLM-533"],
+      "delta_baseline": {
+        "kind": "repo_head_link",
+        "path": "docs/design/kern-12-computability-classification.md",
+        "note": "Practical classes on main are not Weihrauch degrees; treat as delta baseline only."
+      }
+    },
+    {
+      "source_id": "arxiv-2607.00815",
+      "source_type": "solver_certificate",
+      "title": "LRAT-Catcher",
+      "authors": ["(see arXiv abstract)"],
+      "year": 2026,
+      "url": "https://arxiv.org/abs/2607.00815",
+      "claim_supported": "LRAT-oriented tooling supports checking/catching SAT proof certificates in the LRAT family.",
+      "does_not_prove": [
+        "That the repo ships an LRAT checker as a production dependency",
+        "Unsat certificates for OpenUI grammar obligations",
+        "That missing LRAT tools refute a semantic claim (timeouts stay unknown)"
+      ],
+      "repo_relevance": "Solver/certificate standard prior for optional external proof checking experiments.",
+      "repo_application": "Cite in default-off formal pilots; external solvers remain experiments per revmath ADR.",
+      "assumption": "Certificate formats are opt-in; absence maps to unknown/inconclusive.",
+      "falsifier": "Treating solver absence or timeout as semantic refutation.",
+      "trust_level": "adjacent",
+      "derivative_keys": ["EVID-01", "RESEARCH-02"],
+      "delta_baseline": {
+        "kind": "repo_head_link",
+        "path": "docs/design/formal-objects-multi-prover.md",
+        "note": "Pilot format names on main are deltas; re-check before claiming LRAT integration."
+      }
+    },
+    {
+      "source_id": "arxiv-2602.08692",
+      "source_type": "solver_certificate",
+      "title": "PBLean",
+      "authors": ["(see arXiv abstract)"],
+      "year": 2026,
+      "url": "https://arxiv.org/abs/2602.08692",
+      "claim_supported": "PBLean-style tooling targets pseudo-Boolean / related proof certificates in a Lean-adjacent workflow.",
+      "does_not_prove": [
+        "Production PB certificate checking in this repo",
+        "That VSS or formal objects are PBLean certificates",
+        "Ship gates from PBLean citation"
+      ],
+      "repo_relevance": "Solver/certificate prior for optional multi-prover certificate experiments.",
+      "repo_application": "Cite only for explicit default-off certificate pilots with content-addressed artifacts.",
+      "assumption": "Certificate backends are swappable experiments, not merge prerequisites.",
+      "falsifier": "Making PBLean a hard dependency of verify_merge_ready or ship gates.",
+      "trust_level": "adjacent",
+      "derivative_keys": ["EVID-01", "RESEARCH-02"],
+      "delta_baseline": {
+        "kind": "repo_head_link",
+        "path": "docs/design/formal-objects-multi-prover.md",
+        "note": "Multi-prover pilots on main are delta baselines for any PBLean experiment."
+      }
+    },
+    {
+      "source_id": "szs-ontology",
+      "source_type": "solver_certificate",
+      "title": "SZS Ontologies for Automated Theorem Proving",
+      "authors": ["TPTP / Geoff Sutcliffe et al."],
+      "year": 2024,
+      "url": "https://tptp.org/UserDocs/SZSOntology/",
+      "claim_supported": "SZS status values standardize reporting of ATP outcomes (Theorem, Unsatisfiable, Timeout, GaveUp, …).",
+      "does_not_prove": [
+        "Semantic truth of a repo claim from an SZS string alone",
+        "That Timeout/GaveUp are refutations",
+        "Equivalence between SZS and ExperimentCampaignV1 gate outcomes without a mapping table"
+      ],
+      "repo_relevance": "Solver reporting ontology for mapping external prover exits to unknown vs success/fail.",
+      "repo_application": "Cite when normalizing external solver status into evidence envelopes; map Timeout→unknown.",
+      "assumption": "Only Success-class SZS values may support positive formal claims after independent checks.",
+      "falsifier": "Recording GaveUp/Timeout as counterexample_known or reversed_equivalent.",
+      "trust_level": "primary",
+      "derivative_keys": ["EVID-01", "KERN-01", "RESEARCH-02"],
+      "delta_baseline": {
+        "kind": "repo_head_link",
+        "path": "docs/design/reverse-mathematics-computability.md",
+        "note": "Repo unknown/inconclusive policy is a delta overlay on SZS; re-audit mapping on main."
+      }
+    },
+    {
+      "source_id": "leandojo",
+      "source_type": "lean_tooling",
+      "title": "LeanDojo",
+      "authors": ["Kaiyu Yang et al."],
+      "year": 2023,
+      "url": "https://leandojo.org/leandojo.html",
+      "claim_supported": "LeanDojo provides data, tools, and benchmarks for learning-based theorem proving in Lean.",
+      "does_not_prove": [
+        "That repo agents must call LeanDojo",
+        "Proof search success implies RM interpretation",
+        "Dataset contamination / decontamination properties for OpenUI evals"
+      ],
+      "repo_relevance": "Lean/tooling prior for optional ML-for-theorem-proving experiments.",
+      "repo_application": "Cite for default-off tooling spikes; keep outside production decode and ship paths.",
+      "assumption": "Any LeanDojo integration is an experiment with pinned data snapshots.",
+      "falsifier": "Wiring LeanDojo into production constrained decode or ship gates.",
+      "trust_level": "adjacent",
+      "derivative_keys": ["RESEARCH-02"],
+      "delta_baseline": {
+        "kind": "repo_head_link",
+        "path": "docs/design/adr-revmath-reasoning-profile.md",
+        "note": "Repo-head ADR delta baseline marks external solvers/tools as experiments; LeanDojo stays in that bucket on main."
+      }
+    },
+    {
+      "source_id": "arxiv-2605.20244",
+      "source_type": "lean_tooling",
+      "title": "Lean Refactor",
+      "authors": ["(see arXiv abstract)"],
+      "year": 2026,
+      "url": "https://arxiv.org/abs/2605.20244",
+      "claim_supported": "Automated Lean refactoring / maintenance tooling can assist large formal libraries.",
+      "does_not_prove": [
+        "Correctness of LeverProofLean refactors without lake build + guards",
+        "That refactor success preserves semantic evidence hashes",
+        "License to weaken formal evidence mutation gates"
+      ],
+      "repo_relevance": "Lean/tooling prior for maintenance experiments on LeverProofLean.",
+      "repo_application": "Cite when proposing assisted Lean refactors; require verify_formal_* and lake build.",
+      "assumption": "Refactors are behavior-preserving only when formal mutation gates stay green.",
+      "falsifier": "Landing Lean refactors that skip formal evidence mutation checks.",
+      "trust_level": "adjacent",
+      "derivative_keys": ["RESEARCH-02", "EVID-01"],
+      "delta_baseline": {
+        "kind": "repo_head_link",
+        "path": "scripts/verify_formal_evidence_mutations.py",
+        "note": "Formal mutation gate on main is the delta baseline for any refactor tool claim."
+      }
+    },
+    {
+      "source_id": "w3c-prov-o",
+      "source_type": "provenance_standard",
+      "title": "PROV-O: The PROV Ontology (W3C Recommendation)",
+      "authors": ["W3C Provenance Working Group"],
+      "year": 2013,
+      "url": "https://www.w3.org/TR/prov-o/",
+      "claim_supported": "PROV-O defines a standard OWL ontology for provenance entities, activities, and agents.",
+      "does_not_prove": [
+        "That current version_stamp / lineage records are PROV-O instances",
+        "Interoperability with external PROV stores without an explicit mapping",
+        "Model quality or ship readiness from provenance markup alone"
+      ],
+      "repo_relevance": "Provenance standard for aligning experiment/data lineage vocabulary.",
+      "repo_application": "Cite when extending lineage or evidence envelopes toward interoperable provenance; keep local schemas authoritative until mapped.",
+      "assumption": "Repo lineage schemas remain authoritative; PROV-O is an interchange target.",
+      "falsifier": "Replacing version_stamp or EvidenceCampaign contracts with ad-hoc PROV JSON without a mapping doc.",
+      "trust_level": "primary",
+      "derivative_keys": ["RESEARCH-02", "EVID-01", "SLM-533"],
+      "delta_baseline": {
+        "kind": "repo_head_link",
+        "path": "docs/design/version-stamp-contract.md",
+        "note": "version_stamp on main is the delta baseline; PROV-O does not supersede it."
+      }
+    },
+    {
+      "source_id": "spdx-ai-model",
+      "source_type": "provenance_standard",
+      "title": "SPDX 3 AI Model Profile",
+      "authors": ["SPDX / Linux Foundation"],
+      "year": 2024,
+      "url": "https://spdx.github.io/spdx-spec/v3.0.1/model/AI/AI/",
+      "claim_supported": "SPDX 3 defines an AI model profile for describing AI/ML artifact metadata and relationships.",
+      "does_not_prove": [
+        "That MODEL_CARD.md is an SPDX AI document",
+        "Training-data legality from SPDX fields alone",
+        "Ship-gate passage from SPDX export presence"
+      ],
+      "repo_relevance": "Provenance/metadata standard for model cards and dataset declarations.",
+      "repo_application": "Cite when proposing SPDX AI exports for checkpoints; keep honest ship gates authoritative.",
+      "assumption": "SPDX is additive metadata; it cannot weaken honesty or constrained-decode law.",
+      "falsifier": "Claiming SPDX export replaces MODEL_CARD + ship-gate evaluation.",
+      "trust_level": "secondary",
+      "derivative_keys": ["RESEARCH-02"],
+      "delta_baseline": {
+        "kind": "repo_head_link",
+        "path": "docs/MODEL_CARD.md",
+        "note": "Model card + README summary on main remain the human provenance baseline."
+      }
+    },
+    {
+      "source_id": "repo-research-lineage",
+      "source_type": "repository_evidence",
+      "title": "Repository research lineage ledger",
+      "authors": ["Tyler-R-Kendrick/slm-training contributors"],
+      "year": 2026,
+      "url": "https://github.com/Tyler-R-Kendrick/slm-training/blob/main/docs/design/research-lineage.md",
+      "claim_supported": "The committed research-lineage.md page records paper→code fidelity tags for OpenUI TwoTower levers actually present in this repository.",
+      "does_not_prove": [
+        "External theorems beyond the tagged rows",
+        "That lineage tags are RM interpretation packages",
+        "Frozen truth independent of current main (links are delta baselines)"
+      ],
+      "repo_relevance": "Canonical human narrative index for implemented decode/train levers.",
+      "repo_application": "Cite as repository_evidence when an experiment depends on an already-adapted lever rather than a new external prior.",
+      "assumption": "Agents re-fetch latest main before treating a lineage row as current.",
+      "falsifier": "Citing a stale lineage row after the owning code was removed or retagged on main.",
+      "trust_level": "repository_baseline",
+      "derivative_keys": ["RESEARCH-01", "RESEARCH-02"],
+      "delta_baseline": {
+        "kind": "repo_head_link",
+        "path": "docs/design/research-lineage.md",
+        "note": "This entry is explicitly a repo-head delta baseline."
+      }
+    },
+    {
+      "source_id": "repo-revmath-policy",
+      "source_type": "repository_evidence",
+      "title": "Repository reverse-mathematics and computability policy",
+      "authors": ["Tyler-R-Kendrick/slm-training contributors"],
+      "year": 2026,
+      "url": "https://github.com/Tyler-R-Kendrick/slm-training/blob/main/docs/design/reverse-mathematics-computability.md",
+      "claim_supported": "The committed revmath design doc + owner map define local profiles, anti-overclaim rules, and evidence ownership for reverse-mathematics-inspired work.",
+      "does_not_prove": [
+        "Classical RM theorems",
+        "That local profiles equal Simpson subsystems",
+        "External solver availability"
+      ],
+      "repo_relevance": "Authoritative repository policy for RM-inspired harnesses.",
+      "repo_application": "Required repository_evidence citation for revmath harness experiments alongside any external prior.",
+      "assumption": "Policy docs on main override outdated chat summaries.",
+      "falsifier": "Running a revmath experiment that contradicts verify_revmath_owners without updating the owner map.",
+      "trust_level": "repository_baseline",
+      "derivative_keys": ["RESEARCH-01", "RESEARCH-02", "EVID-01", "HARN-08"],
+      "delta_baseline": {
+        "kind": "repo_head_link",
+        "path": "docs/design/reverse-mathematics-computability.md",
+        "note": "Repo-head policy is the delta baseline for all RM-inspired claims."
+      }
+    },
+    {
+      "source_id": "repo-only-hypothesis",
+      "source_type": "repository_evidence",
+      "title": "Explicit repository-only hypothesis (no external prior)",
+      "authors": ["Tyler-R-Kendrick/slm-training contributors"],
+      "year": 2026,
+      "url": "https://github.com/Tyler-R-Kendrick/slm-training/blob/main/docs/design/research-citation-catalog.md",
+      "claim_supported": "Some derivative experiments are repository-only hypotheses: they must declare this source_id and must not borrow authority from external literature.",
+      "does_not_prove": [
+        "Anything about external mathematics or solvers",
+        "That the hypothesis is true",
+        "Exemption from ExperimentCampaignV1 or ship-gate honesty"
+      ],
+      "repo_relevance": "Escape hatch so experiments can proceed without false external citations.",
+      "repo_application": "Every default-off experiment without a grounded external source_id must cite repo-only-hypothesis explicitly.",
+      "assumption": "Manifests name this source_id when no external prior applies.",
+      "falsifier": "Executing an experiment with neither a grounded catalog source_id nor this explicit repository-only marker.",
+      "trust_level": "repository_baseline",
+      "derivative_keys": ["RESEARCH-01", "RESEARCH-02", "SLM-533"],
+      "delta_baseline": {
+        "kind": "repo_head_link",
+        "path": "docs/design/research-citation-catalog.md",
+        "note": "Catalog policy delta baseline on main defines the repository-only gate."
+      }
+    }
+  ]
+}
