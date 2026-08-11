@@ -1,0 +1,192 @@
+{
+  "schema": "integ06_adversarial_acceptance_matrix/v1",
+  "issue": "SLM-573",
+  "integ": "INTEG-06",
+  "claim_class": "fixture",
+  "generalizes_beyond_corpus": false,
+  "notes": [
+    "End-to-end adversarial acceptance over existing EVID-11 / KERN-07/08/11 / HARN-09/11 / INTEG-01/02/03/05 gates.",
+    "Runners call live public APIs and canonical CLIs — no test-only shortcuts, no third evidence stack.",
+    "Each injected fault maps to exactly one gate; failures never become destructive semantic authority."
+  ],
+  "required_scenarios": [
+    "S01_singleton_zero_neural",
+    "S02_exhaustive_vs_incomplete_refutation",
+    "S03_encoding_bound_certificate",
+    "S04_exact_proposition_binding",
+    "S05_source_toolchain_axiom_drift",
+    "S06_runtime_trace_integrity",
+    "S07_self_healing_freeze",
+    "S08_trigger_preflight_admission",
+    "S09_dominance_identity",
+    "S10_revmath_semantic_classification"
+  ],
+  "positive_controls": [
+    {
+      "id": "pos_S01_complete_singleton_zero_neural",
+      "scenario": "S01_singleton_zero_neural",
+      "runner": "pos_complete_singleton_zero_neural",
+      "gate": "singleton_neural_policy.singleton_policy_neural_cost_zero",
+      "layer": "KERN-07",
+      "source_suites": ["KERN-07", "INTEG-01"]
+    },
+    {
+      "id": "pos_S02_exact_replay_authorizes_removal",
+      "scenario": "S02_exhaustive_vs_incomplete_refutation",
+      "runner": "pos_exact_replay_authorizes_removal",
+      "gate": "refutation_authority.evidence_authorizes_removal",
+      "layer": "EVID-09/EVID-11",
+      "source_suites": ["EVID-11", "EVID-09"]
+    },
+    {
+      "id": "pos_S03_honest_encoding_authorizes",
+      "scenario": "S03_encoding_bound_certificate",
+      "runner": "pos_honest_encoding_authorizes",
+      "gate": "encoding_adapter.encoding_authorizes_semantic_result",
+      "layer": "EVID-10/EVID-11",
+      "source_suites": ["EVID-11", "EVID-10"]
+    },
+    {
+      "id": "pos_S04_sealed_binding_holds",
+      "scenario": "S04_exact_proposition_binding",
+      "runner": "pos_sealed_binding_holds",
+      "gate": "theorem_binding.verify_theorem_binding",
+      "layer": "EVID-07/EVID-11",
+      "source_suites": ["EVID-11", "EVID-07"]
+    },
+    {
+      "id": "pos_S06_frozen_trace_refines",
+      "scenario": "S06_runtime_trace_integrity",
+      "runner": "pos_frozen_trace_refines",
+      "gate": "trace_refinement.check_trace_refinement",
+      "layer": "KERN-11/INTEG-01",
+      "source_suites": ["KERN-11", "INTEG-01"]
+    },
+    {
+      "id": "pos_S08_absent_trigger_skips",
+      "scenario": "S08_trigger_preflight_admission",
+      "runner": "pos_absent_trigger_skips_treatment",
+      "gate": "mechanism_no_effect.admit_mechanism_treatment",
+      "layer": "INTEG-02/KERN-08",
+      "source_suites": ["INTEG-02", "KERN-08"]
+    },
+    {
+      "id": "pos_S09_dominance_emits",
+      "scenario": "S09_dominance_identity",
+      "runner": "pos_dominance_certificate_emits",
+      "gate": "mechanism_trigger.emit_dominance_certificate",
+      "layer": "KERN-08",
+      "source_suites": ["KERN-08"]
+    },
+    {
+      "id": "pos_S10_revmath_classes_retain",
+      "scenario": "S10_revmath_semantic_classification",
+      "runner": "pos_revmath_classes_through_campaign",
+      "gate": "revmath.corpus+campaign_formal_evidence+run_revmath_profile",
+      "layer": "HARN-11/INTEG-03/INTEG-05",
+      "source_suites": ["HARN-11", "INTEG-03", "INTEG-05"]
+    }
+  ],
+  "adversarial_cases": [
+    {
+      "id": "adv_S01_incomplete_singleton_must_not_force",
+      "scenario": "S01_singleton_zero_neural",
+      "runner": "adv_incomplete_singleton_must_not_force",
+      "gate": "singleton_neural_policy.singleton_proof_valid",
+      "layer": "KERN-07",
+      "expect_reject": true,
+      "fault": "incomplete_singleton_domain",
+      "source_suites": ["KERN-07"]
+    },
+    {
+      "id": "adv_S02_timeout_skipped_incomplete_preserve_candidate",
+      "scenario": "S02_exhaustive_vs_incomplete_refutation",
+      "runner": "adv_timeout_skipped_incomplete_preserve_candidate",
+      "gate": "judgment.from_exact_closure_query",
+      "layer": "EVID-09/EVID-11",
+      "expect_reject": true,
+      "fault": "timeout_skipped_incomplete_as_refutation",
+      "source_suites": ["EVID-11", "EVID-09"]
+    },
+    {
+      "id": "adv_S03_valid_cert_wrong_encoding_rejected",
+      "scenario": "S03_encoding_bound_certificate",
+      "runner": "adv_valid_cert_wrong_encoding_rejected",
+      "gate": "encoding_adapter.encoding_authorizes_semantic_result",
+      "layer": "EVID-10/EVID-11",
+      "expect_reject": true,
+      "fault": "certificate_over_wrong_encoding",
+      "source_suites": ["EVID-11", "EVID-10"]
+    },
+    {
+      "id": "adv_S04_same_name_changed_proposition_rejected",
+      "scenario": "S04_exact_proposition_binding",
+      "runner": "adv_same_name_changed_proposition_rejected",
+      "gate": "theorem_binding.verify_theorem_binding",
+      "layer": "EVID-07/EVID-11",
+      "expect_reject": true,
+      "fault": "same_name_proposition_drift",
+      "source_suites": ["EVID-11", "EVID-07"]
+    },
+    {
+      "id": "adv_S05_source_toolchain_axiom_drift_rejected",
+      "scenario": "S05_source_toolchain_axiom_drift",
+      "runner": "adv_source_toolchain_axiom_drift_rejected",
+      "gate": "theorem_binding.verify_theorem_binding",
+      "layer": "EVID-07/EVID-11",
+      "expect_reject": true,
+      "fault": "source_toolchain_dependency_axiom_drift",
+      "source_suites": ["EVID-11", "EVID-07"]
+    },
+    {
+      "id": "adv_S06_illegal_reorder_stale_hidden_forward_rejected",
+      "scenario": "S06_runtime_trace_integrity",
+      "runner": "adv_illegal_reorder_stale_hidden_forward_rejected",
+      "gate": "trace_refinement.check_trace_refinement",
+      "layer": "KERN-11",
+      "expect_reject": true,
+      "fault": "illegal_commit_reorder_stale_hidden_forward",
+      "source_suites": ["KERN-11", "INTEG-01"]
+    },
+    {
+      "id": "adv_S07_forbidden_self_heal_mutations_rejected",
+      "scenario": "S07_self_healing_freeze",
+      "runner": "adv_forbidden_self_heal_mutations_rejected",
+      "gate": "revmath.self_healing.reject_forbidden_repair",
+      "layer": "HARN-09",
+      "expect_reject": true,
+      "fault": "weaken_theorem_add_assumption_change_budget_corpus",
+      "source_suites": ["HARN-09"]
+    },
+    {
+      "id": "adv_S08_unknown_incomplete_trigger_runs_treatment",
+      "scenario": "S08_trigger_preflight_admission",
+      "runner": "adv_unknown_incomplete_trigger_runs_treatment",
+      "gate": "mechanism_no_effect.admit_mechanism_treatment",
+      "layer": "INTEG-02/KERN-08",
+      "expect_reject": true,
+      "fault": "unknown_incomplete_trigger_as_skip",
+      "source_suites": ["INTEG-02", "KERN-08"]
+    },
+    {
+      "id": "adv_S09_dominance_identity_drift_invalidates",
+      "scenario": "S09_dominance_identity",
+      "runner": "adv_dominance_identity_drift_invalidates",
+      "gate": "mechanism_trigger.dominance_identity",
+      "layer": "KERN-08",
+      "expect_reject": true,
+      "fault": "corpus_model_cost_identity_drift",
+      "source_suites": ["KERN-08"]
+    },
+    {
+      "id": "adv_S10_revmath_class_mutation_rejected",
+      "scenario": "S10_revmath_semantic_classification",
+      "runner": "adv_revmath_class_mutation_rejected",
+      "gate": "revmath.corpus.demonstrate_mutation_failures",
+      "layer": "HARN-11",
+      "expect_reject": true,
+      "fault": "semantic_classification_mutation",
+      "source_suites": ["HARN-11", "INTEG-05"]
+    }
+  ]
+}

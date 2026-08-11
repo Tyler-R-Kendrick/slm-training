@@ -1,0 +1,215 @@
+{
+  "adversarial_cases": [
+    {
+      "case_id": "adv_S01_incomplete_singleton_must_not_force",
+      "detail": "incomplete singleton correctly refused force",
+      "expect_reject": true,
+      "gate": "singleton_neural_policy.singleton_proof_valid",
+      "layer": "KERN-07",
+      "ok": true,
+      "rejected": true,
+      "scenario": "S01_singleton_zero_neural"
+    },
+    {
+      "case_id": "adv_S02_timeout_skipped_incomplete_preserve_candidate",
+      "detail": "['timed_out']->unknown; ['missing_tool']->unknown; ['skipped_replay']->unknown",
+      "expect_reject": true,
+      "gate": "judgment.from_exact_closure_query",
+      "layer": "EVID-09/EVID-11",
+      "ok": true,
+      "rejected": true,
+      "scenario": "S02_exhaustive_vs_incomplete_refutation"
+    },
+    {
+      "case_id": "adv_S03_valid_cert_wrong_encoding_rejected",
+      "detail": "wrong encoding digest blocked authority",
+      "expect_reject": true,
+      "gate": "encoding_adapter.encoding_authorizes_semantic_result",
+      "layer": "EVID-10/EVID-11",
+      "ok": true,
+      "rejected": true,
+      "scenario": "S03_encoding_bound_certificate"
+    },
+    {
+      "case_id": "adv_S04_same_name_changed_proposition_rejected",
+      "detail": "source-tree digest drift; proposition mutation: live type fingerprint != sealed expected; proposition mutation: live ascription != sealed expected_proposition",
+      "expect_reject": true,
+      "gate": "theorem_binding.verify_theorem_binding",
+      "layer": "EVID-07/EVID-11",
+      "ok": true,
+      "rejected": true,
+      "scenario": "S04_exact_proposition_binding"
+    },
+    {
+      "case_id": "adv_S05_source_toolchain_axiom_drift_rejected",
+      "detail": "toolchain:lake manifest/lock digest drift; source_tree:source-tree digest drift; axiom:unexpected axiom footprint: live=['classical.choice'] sealed=[]; axiom footprint digest drift",
+      "expect_reject": true,
+      "gate": "theorem_binding.verify_theorem_binding",
+      "layer": "EVID-07/EVID-11",
+      "ok": true,
+      "rejected": true,
+      "scenario": "S05_source_toolchain_axiom_drift"
+    },
+    {
+      "case_id": "adv_S06_illegal_reorder_stale_hidden_forward_rejected",
+      "detail": "rejected:illegal_commit,reordered_events,stale_state_domain,omitted_model_forwards",
+      "expect_reject": true,
+      "gate": "trace_refinement.check_trace_refinement",
+      "layer": "KERN-11",
+      "ok": true,
+      "rejected": true,
+      "scenario": "S06_runtime_trace_integrity"
+    },
+    {
+      "case_id": "adv_S07_forbidden_self_heal_mutations_rejected",
+      "detail": "weaken_theorem:RevmathSchemaError; add_axiom:RevmathSchemaError; increase_budget:RevmathSchemaError; change_corpus:RevmathSchemaError; proposition:RevmathSchemaError; allowed_assumption_ids:RevmathSchemaError; max_wall_seconds:RevmathSchemaError; corpus_sha256:RevmathSchemaError",
+      "expect_reject": true,
+      "gate": "revmath.self_healing.reject_forbidden_repair",
+      "layer": "HARN-09",
+      "ok": true,
+      "rejected": true,
+      "scenario": "S07_self_healing_freeze"
+    },
+    {
+      "case_id": "adv_S08_unknown_incomplete_trigger_runs_treatment",
+      "detail": "unknown/incomplete correctly force run",
+      "expect_reject": true,
+      "gate": "mechanism_no_effect.admit_mechanism_treatment",
+      "layer": "INTEG-02/KERN-08",
+      "ok": true,
+      "rejected": true,
+      "scenario": "S08_trigger_preflight_admission"
+    },
+    {
+      "case_id": "adv_S09_dominance_identity_drift_invalidates",
+      "detail": "invalidated:corpus_id,cost_model,corpus_row",
+      "expect_reject": true,
+      "gate": "mechanism_trigger.dominance_identity",
+      "layer": "KERN-08",
+      "ok": true,
+      "rejected": true,
+      "scenario": "S09_dominance_identity"
+    },
+    {
+      "case_id": "adv_S10_revmath_class_mutation_rejected",
+      "detail": "mutation_proposition:1; mutation_toolchain:1; mutation_source:1; mutation_certificate:1",
+      "expect_reject": true,
+      "gate": "revmath.corpus.demonstrate_mutation_failures",
+      "layer": "HARN-11",
+      "ok": true,
+      "rejected": true,
+      "scenario": "S10_revmath_semantic_classification"
+    }
+  ],
+  "adversarial_count": 10,
+  "covered_scenarios": [
+    "S01_singleton_zero_neural",
+    "S02_exhaustive_vs_incomplete_refutation",
+    "S03_encoding_bound_certificate",
+    "S04_exact_proposition_binding",
+    "S05_source_toolchain_axiom_drift",
+    "S06_runtime_trace_integrity",
+    "S07_self_healing_freeze",
+    "S08_trigger_preflight_admission",
+    "S09_dominance_identity",
+    "S10_revmath_semantic_classification"
+  ],
+  "integ": "INTEG-06",
+  "issue": "SLM-573",
+  "missing_scenarios": [],
+  "no_failure_becomes_destructive_authority": true,
+  "passed": true,
+  "positive_controls": [
+    {
+      "case_id": "pos_S01_complete_singleton_zero_neural",
+      "detail": "complete singleton \u2192 zero neural work + matching runtime",
+      "expect_reject": false,
+      "gate": "singleton_neural_policy.singleton_policy_neural_cost_zero",
+      "layer": "KERN-07",
+      "ok": true,
+      "rejected": false,
+      "scenario": "S01_singleton_zero_neural"
+    },
+    {
+      "case_id": "pos_S02_exact_replay_authorizes_removal",
+      "detail": "exact replay authorized",
+      "expect_reject": false,
+      "gate": "refutation_authority.evidence_authorizes_removal",
+      "layer": "EVID-09/EVID-11",
+      "ok": true,
+      "rejected": false,
+      "scenario": "S02_exhaustive_vs_incomplete_refutation"
+    },
+    {
+      "case_id": "pos_S03_honest_encoding_authorizes",
+      "detail": "honest encoding authorized",
+      "expect_reject": false,
+      "gate": "encoding_adapter.encoding_authorizes_semantic_result",
+      "layer": "EVID-10/EVID-11",
+      "ok": true,
+      "rejected": false,
+      "scenario": "S03_encoding_bound_certificate"
+    },
+    {
+      "case_id": "pos_S04_sealed_binding_holds",
+      "detail": "sealed binding holds",
+      "expect_reject": false,
+      "gate": "theorem_binding.verify_theorem_binding",
+      "layer": "EVID-07/EVID-11",
+      "ok": true,
+      "rejected": false,
+      "scenario": "S04_exact_proposition_binding"
+    },
+    {
+      "case_id": "pos_S06_frozen_trace_refines",
+      "detail": "frozen INTEG-01/KERN-11 fixture refines",
+      "expect_reject": false,
+      "gate": "trace_refinement.check_trace_refinement",
+      "layer": "KERN-11/INTEG-01",
+      "ok": true,
+      "rejected": false,
+      "scenario": "S06_runtime_trace_integrity"
+    },
+    {
+      "case_id": "pos_S08_absent_trigger_skips",
+      "detail": "absent trigger \u2192 skip_no_effect",
+      "expect_reject": false,
+      "gate": "mechanism_no_effect.admit_mechanism_treatment",
+      "layer": "INTEG-02/KERN-08",
+      "ok": true,
+      "rejected": false,
+      "scenario": "S08_trigger_preflight_admission"
+    },
+    {
+      "case_id": "pos_S09_dominance_emits",
+      "detail": "dominance sealed digest=15ed0dc9215c7364",
+      "expect_reject": false,
+      "gate": "mechanism_trigger.emit_dominance_certificate",
+      "layer": "KERN-08",
+      "ok": true,
+      "rejected": false,
+      "scenario": "S09_dominance_identity"
+    },
+    {
+      "case_id": "pos_S10_revmath_classes_retain",
+      "detail": "classes retained; campaign manifest=fa6cd125800e80cd corpus=f52e7514c02a79fd",
+      "expect_reject": false,
+      "gate": "revmath.corpus+campaign_formal_evidence+run_revmath_profile",
+      "layer": "HARN-11/INTEG-03/INTEG-05",
+      "ok": true,
+      "rejected": false,
+      "scenario": "S10_revmath_semantic_classification"
+    }
+  ],
+  "positive_count": 8,
+  "schema": "integ06_adversarial_acceptance_report/v1",
+  "version_stamp": {
+    "code_commit": "088a66aabf83af1a9f96812ad2570175e41a3a38",
+    "code_dirty": true,
+    "components": {
+      "formal.objects": "v22"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-11T15:37:01.095221+00:00"
+  }
+}

@@ -119,6 +119,15 @@ def merge_gate_steps(*, fast: bool = False) -> tuple[Step, ...]:
                 "--check",
             ),
         ),
+        Step(
+            "integ06_adversarial_acceptance",
+            (
+                python,
+                "-m",
+                "scripts.verify_integ06_adversarial_acceptance",
+                "--check",
+            ),
+        ),
     ]
     if not fast:
         steps.append(
