@@ -7,10 +7,11 @@ import json
 import math
 import os
 import time
+from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
-from dataclasses import asdict, dataclass, field, replace
+from dataclasses import MISSING, asdict, dataclass, field, fields, replace
 from pathlib import Path
-from typing import Any, Iterable, Iterator
+from typing import Any
 
 
 @dataclass
@@ -261,6 +262,27 @@ class DecodeStats:
     solver_verifier_calls: int = 0
     solver_certificate_replay_failures: int = 0
     solver_terminal_status: str = ""
+    # PGS-E02 (SLM-505): canonical goal-support decode telemetry. Zero on every
+    # path with goal_support_mode=off; diagnostic records eligibility/work/
+    # classification without prune/choice-change; certified records full
+    # semantics including pruning and selection classification.
+    goal_support_queries: int = 0
+    goal_support_supported: int = 0
+    goal_support_unsupported: int = 0
+    goal_support_unknown: int = 0
+    goal_support_unobserved: int = 0
+    goal_support_pruned: int = 0
+    goal_support_replay_failures: int = 0
+    goal_support_obstruction_cores: int = 0
+    goal_support_selected_supported: int = 0
+    goal_support_selection_regret: int = 0
+    goal_support_selection_unresolved: int = 0
+    goal_support_domain_inadequate: int = 0
+    goal_support_coverage_unknown: int = 0
+    goal_support_skipped_incomplete_forest: int = 0
+    goal_support_verifier_calls: int = 0
+    goal_support_expanded_nodes: int = 0
+    goal_support_backtracks: int = 0
     constrained_dead_ends: int = 0
     constrained_dead_end_last_position: int = -1
     constrained_dead_end_forced_rank: int = -1
@@ -278,7 +300,21 @@ class DecodeStats:
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
 
-    def merge(self, other: "DecodeStats") -> None:
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> DecodeStats:
+        """Additive-default migration: unknown keys dropped, new counters default 0."""
+        kwargs: dict[str, Any] = {}
+        for item in fields(cls):
+            if item.name not in payload:
+                continue
+            value = payload[item.name]
+            if item.default_factory is not MISSING:
+                kwargs[item.name] = list(value) if value is not None else []
+            else:
+                kwargs[item.name] = value
+        return cls(**kwargs)
+
+    def merge(self, other: DecodeStats) -> None:
         for key, value in other.as_dict().items():
             if key == "attempts":
                 self.attempts = max(self.attempts, int(value))
@@ -352,11 +388,11 @@ class DecodeIdentityV1:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, payload: dict[str, Any]) -> "DecodeIdentityV1":
+    def from_dict(cls, payload: dict[str, Any]) -> DecodeIdentityV1:
         return cls(**payload)
 
 
-def _decode_record_digest(record: "DecodeStatsRecordV1") -> str:
+def _decode_record_digest(record: DecodeStatsRecordV1) -> str:
     payload = asdict(record)
     payload.pop("record_digest", None)
     return _canonical_digest(payload)
@@ -387,7 +423,7 @@ class DecodeStatsRecordV1:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, payload: dict[str, Any]) -> "DecodeStatsRecordV1":
+    def from_dict(cls, payload: dict[str, Any]) -> DecodeStatsRecordV1:
         if payload.get("schema_version") != DECODE_STATS_RECORD_SCHEMA:
             raise ValueError(
                 f"unsupported decode stats record schema: {payload.get('schema_version')!r}"
@@ -499,7 +535,7 @@ MECHANISM_EVIDENCE_CLASSES = frozenset(
 )
 
 
-def _mechanism_activation_digest(activation: "MechanismActivationV1") -> str:
+def _mechanism_activation_digest(activation: MechanismActivationV1) -> str:
     payload = asdict(activation)
     payload.pop("activation_hash", None)
     return _canonical_digest(payload)
@@ -540,7 +576,7 @@ class MechanismActivationV1:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, payload: dict[str, Any]) -> "MechanismActivationV1":
+    def from_dict(cls, payload: dict[str, Any]) -> MechanismActivationV1:
         if payload.get("schema_version") != MECHANISM_ACTIVATION_SCHEMA:
             raise ValueError(
                 f"unsupported mechanism activation schema: {payload.get('schema_version')!r}"
@@ -617,6 +653,168 @@ def build_mechanism_activation(
 def mechanism_activation_integrity_ok(activation: MechanismActivationV1) -> bool:
     """Recompute the activation hash and compare; used by replay/tamper checks."""
     return _mechanism_activation_digest(activation) == activation.activation_hash
+
+
+GOAL_SUPPORT_MECHANISM_ID = "goal_support"
+
+GOAL_SUPPORT_CLOSURE_COUNTER_MAP: dict[str, str] = {
+    "support_queries": "goal_support_queries",
+    "supported": "goal_support_supported",
+    "unsupported": "goal_support_unsupported",
+    "unknown": "goal_support_unknown",
+    "candidates_removed": "goal_support_pruned",
+    "verifier_calls": "goal_support_verifier_calls",
+    "expanded_nodes": "goal_support_expanded_nodes",
+}
+
+GOAL_SUPPORT_CLASSIFICATION_COUNTER_MAP: dict[str, str] = {
+    "domain_adequate_selected_supported": "goal_support_selected_supported",
+    "selection_regret": "goal_support_selection_regret",
+    "selection_unresolved": "goal_support_selection_unresolved",
+    "domain_inadequate_under_bounds": "goal_support_domain_inadequate",
+    "coverage_unknown": "goal_support_coverage_unknown",
+}
+
+
+def goal_support_counter_mapping() -> dict[str, Any]:
+    """Document goal_support_* counters and shared-counter mappings."""
+    return {
+        "closure_counters": dict(GOAL_SUPPORT_CLOSURE_COUNTER_MAP),
+        "classification_counters": dict(GOAL_SUPPORT_CLASSIFICATION_COUNTER_MAP),
+        "sink_counters": {
+            "replay_failures": "goal_support_replay_failures",
+            "obstruction_cores": "goal_support_obstruction_cores",
+            "backtracks": "goal_support_backtracks",
+            "unobserved": "goal_support_unobserved",
+        },
+        "mechanism_activation": {
+            "mechanism_id": GOAL_SUPPORT_MECHANISM_ID,
+            "eligible": "goal_support_mode != off and binding.ready",
+            "invoked": "exact_goal_closure ran on a complete forest",
+            "changed_top_choice": "certified only; forest path set changed after prune",
+            "changed_final_program": "certified only; final emitted program changed",
+            "diagnostic_prune_zero": "diagnostic mode never increments goal_support_pruned",
+        },
+        "attribution": {
+            "off": "all goal_support_* counters remain zero",
+            "diagnostic": "work/classification counters only; prune/choice-change zero",
+            "certified": "full counter set including prune and selection classification",
+        },
+    }
+
+
+@dataclass
+class GoalSupportTelemetrySink:
+    """Request-local sidecar counters collected by the instrumented provider."""
+
+    replay_failures: int = 0
+    obstruction_cores: int = 0
+    backtracks: int = 0
+    unobserved: int = 0
+
+
+def record_goal_support_incomplete_forest_skip(
+    stats: DecodeStats | None,
+    mode: str,
+) -> None:
+    """Count incomplete/partial forests explicitly; never claim unsupported/pruned."""
+    if stats is None or mode == "off":
+        return
+    stats.goal_support_skipped_incomplete_forest += 1
+
+
+def fold_goal_support_closure(
+    stats: DecodeStats,
+    result: Any,
+    *,
+    mode: str,
+    sink: GoalSupportTelemetrySink | None = None,
+    forest_choice_changed: bool = False,
+) -> None:
+    """Fold one goal-support closure pass into canonical decode counters."""
+    del forest_choice_changed  # reserved for mechanism-activation callers
+    if mode == "off" or result is None:
+        return
+    counters = result.counters
+    stats.goal_support_queries += int(counters.support_queries)
+    stats.goal_support_supported += int(counters.supported)
+    stats.goal_support_unsupported += int(counters.unsupported)
+    stats.goal_support_unknown += int(counters.unknown)
+    stats.goal_support_verifier_calls += int(counters.verifier_calls)
+    stats.goal_support_expanded_nodes += int(counters.expanded_nodes)
+    if mode == "certified":
+        stats.goal_support_pruned += int(counters.candidates_removed)
+    if sink is not None:
+        stats.goal_support_replay_failures += int(sink.replay_failures)
+        stats.goal_support_obstruction_cores += int(sink.obstruction_cores)
+        stats.goal_support_backtracks += int(sink.backtracks)
+        stats.goal_support_unobserved += int(sink.unobserved)
+
+
+def fold_goal_support_classification(
+    stats: DecodeStats,
+    classification: str,
+    *,
+    mode: str,
+    unobserved: int = 0,
+) -> None:
+    """Fold one domain-adequacy classification into selection counters."""
+    if mode != "certified":
+        return
+    if classification == "domain_adequate_selected_supported":
+        stats.goal_support_selected_supported += 1
+    elif classification == "selection_regret":
+        stats.goal_support_selection_regret += 1
+    elif classification == "selection_unresolved":
+        stats.goal_support_selection_unresolved += 1
+    elif classification == "domain_inadequate_under_bounds":
+        stats.goal_support_domain_inadequate += 1
+    elif classification == "coverage_unknown":
+        stats.goal_support_coverage_unknown += 1
+    if unobserved > 0:
+        stats.goal_support_unobserved += int(unobserved)
+
+
+def build_goal_support_mechanism_activation(
+    *,
+    mode: str,
+    binding_ready: bool,
+    invoked: bool,
+    changed_top_choice: bool = False,
+    changed_final_program: bool = False,
+    forwards: int = 0,
+    verifier_calls: int = 0,
+    failure_reason: str | None = None,
+    evidence_class: str = "fixture",
+) -> MechanismActivationV1 | None:
+    """Build one PCT-007 activation record for goal-support decode."""
+    if mode == "off":
+        return None
+    eligible = binding_ready and mode in {"diagnostic", "certified"}
+    if mode == "diagnostic":
+        changed_top_choice = False
+        changed_final_program = False
+    return build_mechanism_activation(
+        mechanism_id=GOAL_SUPPORT_MECHANISM_ID,
+        eligible=eligible,
+        invoked=invoked,
+        no_op=invoked and not changed_top_choice and not changed_final_program,
+        changed_top_choice=changed_top_choice,
+        changed_final_program=changed_final_program,
+        forwards=forwards,
+        verifier_calls=verifier_calls,
+        failure_reason=failure_reason,
+        evidence_class=evidence_class,
+        default_state=(mode == "off"),
+    )
+
+
+def proves_goal_support_off(stats: DecodeStats) -> bool:
+    """True when every goal_support_* counter stayed at its additive default."""
+    goal_fields = [
+        item.name for item in fields(DecodeStats) if item.name.startswith("goal_support_")
+    ]
+    return all(int(getattr(stats, name)) == 0 for name in goal_fields)
 
 
 @contextmanager
@@ -776,7 +974,7 @@ ATTRIBUTED_PHASE_FIELDS = (
 )
 
 
-def attributed_time_summary(rows: list["DecodeStats"]) -> dict[str, float]:
+def attributed_time_summary(rows: list[DecodeStats]) -> dict[str, float]:
     """Advisory coverage of total_ms by the coarse phase spans.
 
     `attributed_fraction` near 1.0 means the phase spans explain the wall
@@ -815,7 +1013,7 @@ def collect_decode_stats(stats: DecodeStats | None = None) -> Iterator[DecodeSta
         yield bucket
     except BaseException as exc:
         if getattr(exc, "decode_stats", None) is None:
-            setattr(exc, "decode_stats", bucket)
+            exc.decode_stats = bucket
         raise
     finally:
         bucket.total_ms += (time.perf_counter() - t0) * 1000.0
@@ -1024,6 +1222,23 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "solver_expanded_nodes",
         "solver_verifier_calls",
         "solver_certificate_replay_failures",
+        "goal_support_queries",
+        "goal_support_supported",
+        "goal_support_unsupported",
+        "goal_support_unknown",
+        "goal_support_unobserved",
+        "goal_support_pruned",
+        "goal_support_replay_failures",
+        "goal_support_obstruction_cores",
+        "goal_support_selected_supported",
+        "goal_support_selection_regret",
+        "goal_support_selection_unresolved",
+        "goal_support_domain_inadequate",
+        "goal_support_coverage_unknown",
+        "goal_support_skipped_incomplete_forest",
+        "goal_support_verifier_calls",
+        "goal_support_expanded_nodes",
+        "goal_support_backtracks",
     ]
     out: dict[str, Any] = {"n": len(rows)}
     # Timings always report (a 0ms phase is a measurement); feature counters
@@ -1068,6 +1283,9 @@ __all__ = [
     "ATTRIBUTED_PHASE_FIELDS",
     "COMPLETENESS_STATES",
     "DECODE_STATS_RECORD_SCHEMA",
+    "GOAL_SUPPORT_CLASSIFICATION_COUNTER_MAP",
+    "GOAL_SUPPORT_CLOSURE_COUNTER_MAP",
+    "GOAL_SUPPORT_MECHANISM_ID",
     "LEGAL_DOMAIN_STATUSES",
     "MEASUREMENT_STAGES",
     "MECHANISM_ACTIVATION_SCHEMA",
@@ -1075,21 +1293,28 @@ __all__ = [
     "DecodeIdentityV1",
     "DecodeStats",
     "DecodeStatsRecordV1",
+    "GoalSupportTelemetrySink",
     "MechanismActivationV1",
     "aggregate_stats",
     "append_decode_stats_record",
     "attributed_time_summary",
     "build_decode_stats_record",
+    "build_goal_support_mechanism_activation",
     "build_mechanism_activation",
     "collect_completion_session_delta",
     "collect_decode_stats",
     "collect_engine_stats",
     "completed_steady_state",
+    "fold_goal_support_classification",
+    "fold_goal_support_closure",
     "get_active_stats",
+    "goal_support_counter_mapping",
     "iter_decode_stats_records",
     "mechanism_activation_integrity_ok",
+    "proves_goal_support_off",
     "proves_zero_neural_work",
     "proves_zero_search_work",
+    "record_goal_support_incomplete_forest_skip",
     "set_active_stats",
     "timed_ms",
 ]

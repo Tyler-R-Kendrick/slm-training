@@ -2,24 +2,32 @@ import dataclasses
 
 import pytest
 
+from slm_training.dsl.solver.closure import ClosureCounters, ClosureResult
+from slm_training.harnesses.model_build.eval_runner import _nearest_rank
 from slm_training.models.decode_stats import (
     DecodeIdentityV1,
     DecodeStats,
     DecodeStatsRecordV1,
+    GoalSupportTelemetrySink,
     MechanismActivationV1,
     aggregate_stats,
     append_decode_stats_record,
     build_decode_stats_record,
+    build_goal_support_mechanism_activation,
     build_mechanism_activation,
-    collect_decode_stats,
     collect_completion_session_delta,
+    collect_decode_stats,
     completed_steady_state,
+    fold_goal_support_classification,
+    fold_goal_support_closure,
+    goal_support_counter_mapping,
     iter_decode_stats_records,
     mechanism_activation_integrity_ok,
+    proves_goal_support_off,
     proves_zero_neural_work,
     proves_zero_search_work,
+    record_goal_support_incomplete_forest_skip,
 )
-from slm_training.harnesses.model_build.eval_runner import _nearest_rank
 
 
 def test_small_sample_percentiles_are_monotonic() -> None:
@@ -524,3 +532,136 @@ def test_mechanism_activation_tamper_and_schema_rejection() -> None:
     wrong_schema["schema_version"] = "mechanism_activation_record/v0"
     with pytest.raises(ValueError, match="unsupported mechanism activation schema"):
         MechanismActivationV1.from_dict(wrong_schema)
+
+
+def _closure_result(**counter_kwargs) -> ClosureResult:
+    from slm_training.dsl.solver.state import FiniteDomainState, SolverBounds
+
+    bounds = SolverBounds(
+        max_tokens=8,
+        max_nodes=8,
+        max_depth=4,
+        max_backtracks=4,
+        max_verifier_calls=4,
+    )
+    state = FiniteDomainState(
+        problem_id="p",
+        pack_id="fixture",
+        constraint_version="cv",
+        bounds=bounds,
+        holes=(),
+    )
+    counters = ClosureCounters(**counter_kwargs)
+    return ClosureResult(
+        state=state,
+        deductions=(),
+        unknown_queries=(),
+        witnesses=(),
+        counters=counters,
+        reached_fixed_point=True,
+    )
+
+
+def test_goal_support_off_leaves_counters_zero() -> None:
+    stats = DecodeStats()
+    fold_goal_support_closure(stats, _closure_result(support_queries=3), mode="off")
+    assert proves_goal_support_off(stats)
+
+
+def test_diagnostic_folds_work_not_prune() -> None:
+    stats = DecodeStats()
+    sink = GoalSupportTelemetrySink(replay_failures=1, obstruction_cores=2)
+    fold_goal_support_closure(
+        stats,
+        _closure_result(
+            support_queries=4,
+            supported=2,
+            unsupported=1,
+            unknown=1,
+            candidates_removed=3,
+            verifier_calls=5,
+            expanded_nodes=6,
+        ),
+        mode="diagnostic",
+        sink=sink,
+    )
+    assert stats.goal_support_queries == 4
+    assert stats.goal_support_pruned == 0
+    assert stats.goal_support_replay_failures == 1
+    assert stats.goal_support_obstruction_cores == 2
+
+
+def test_certified_folds_prune_counter() -> None:
+    stats = DecodeStats()
+    fold_goal_support_closure(
+        stats,
+        _closure_result(candidates_removed=2),
+        mode="certified",
+    )
+    assert stats.goal_support_pruned == 2
+
+
+def test_fold_goal_support_classification_certified_only() -> None:
+    stats = DecodeStats()
+    fold_goal_support_classification(
+        stats, "selection_regret", mode="diagnostic", unobserved=2
+    )
+    assert stats.goal_support_selection_regret == 0
+    fold_goal_support_classification(
+        stats, "selection_regret", mode="certified", unobserved=2
+    )
+    assert stats.goal_support_selection_regret == 1
+    assert stats.goal_support_unobserved == 2
+
+
+def test_decode_stats_from_dict_additive_migration() -> None:
+    legacy = {"total_ms": 1.0, "forwards_count": 0}
+    stats = DecodeStats.from_dict(legacy)
+    assert stats.total_ms == 1.0
+    assert stats.goal_support_queries == 0
+    assert proves_goal_support_off(stats)
+
+
+def test_goal_support_mechanism_activation_diagnostic_never_claims_choice_change() -> None:
+    activation = build_goal_support_mechanism_activation(
+        mode="diagnostic",
+        binding_ready=True,
+        invoked=True,
+        changed_top_choice=True,
+    )
+    assert activation is not None
+    assert activation.changed_top_choice is False
+    assert activation.invoked is True
+
+
+def test_goal_support_mechanism_activation_certified_can_claim_choice_change() -> None:
+    activation = build_goal_support_mechanism_activation(
+        mode="certified",
+        binding_ready=True,
+        invoked=True,
+        changed_top_choice=True,
+    )
+    assert activation is not None
+    assert activation.changed_top_choice is True
+    assert activation.no_op is False
+
+
+def test_record_goal_support_incomplete_forest_skip() -> None:
+    stats = DecodeStats()
+    record_goal_support_incomplete_forest_skip(stats, "diagnostic")
+    assert stats.goal_support_skipped_incomplete_forest == 1
+    record_goal_support_incomplete_forest_skip(stats, "off")
+    assert stats.goal_support_skipped_incomplete_forest == 1
+
+
+def test_aggregate_stats_includes_goal_support_counters() -> None:
+    stats = DecodeStats(goal_support_queries=2, goal_support_pruned=1)
+    summary = aggregate_stats([stats])
+    assert summary["goal_support_queries_sum"] == 2.0
+    assert summary["goal_support_pruned_sum"] == 1.0
+
+
+def test_goal_support_counter_mapping_documents_shared_counters() -> None:
+    mapping = goal_support_counter_mapping()
+    assert mapping["closure_counters"]["support_queries"] == "goal_support_queries"
+    assert mapping["attribution"]["diagnostic"].startswith("work")

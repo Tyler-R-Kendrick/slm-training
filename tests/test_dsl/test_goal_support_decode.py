@@ -7,7 +7,10 @@ from types import SimpleNamespace
 import pytest
 
 from slm_training.data.contract import GenerationRequest
-from slm_training.dsl.grammar.fastpath.compiler_draft import CompletionForest, CompletionPath
+from slm_training.dsl.grammar.fastpath.compiler_draft import (
+    CompletionForest,
+    CompletionPath,
+)
 from slm_training.dsl.solver.decode import (
     GOAL_SUPPORT_MODES,
     build_goal_support_decode_binding,
@@ -19,7 +22,6 @@ from slm_training.dsl.solver.decode import (
 )
 from slm_training.dsl.solver.state import SolverBounds, SupportVerdict
 from tests.test_dsl.test_goal_support import _profile, _provider
-
 
 _BOUNDS = SolverBounds(
     max_tokens=1000,
@@ -187,3 +189,57 @@ def test_solver_prune_still_uses_exact_closure_for_generic_provider() -> None:
     )
     assert result is not None
     assert [path.kind for path in pruned.paths] == ["b", "c"]
+
+
+def test_validate_goal_support_config_rejects_evaluation_profile() -> None:
+    config = SimpleNamespace(
+        goal_support_mode="diagnostic",
+        compiler_decode_mode="tree",
+        goal_support_profile_mode="evaluation_oracle",
+    )
+    with pytest.raises(ValueError, match="forbidden"):
+        validate_goal_support_config(config)
+
+
+def test_validate_goal_support_config_certified_requires_production_exact() -> None:
+    config = SimpleNamespace(
+        goal_support_mode="certified",
+        compiler_decode_mode="tree",
+        goal_support_profile_mode="evaluation_oracle",
+    )
+    with pytest.raises(ValueError, match="production_exact"):
+        validate_goal_support_config(config)
+
+
+def test_instrumented_provider_counts_replay_failure_without_unsupported_claim(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from slm_training.dsl.solver.decode import instrument_goal_support_provider
+    from slm_training.dsl.solver.support import ReplayResult, SupportQuery
+    from slm_training.models.decode_stats import GoalSupportTelemetrySink
+
+    expander, provider = _provider({"ax"})
+    sink = GoalSupportTelemetrySink()
+    wrapped = instrument_goal_support_provider(provider, sink)
+
+    real_check = provider.check_with_sidecar
+
+    def _bad_replay(state, query):
+        result, sidecar = real_check(state, query)
+        monkeypatch.setattr(
+            provider,
+            "replay",
+            lambda *_a, **_k: ReplayResult(ok=False, verdict=result.verdict, violations=("x",)),
+        )
+        return result, sidecar
+
+    monkeypatch.setattr(provider, "check_with_sidecar", _bad_replay)
+    state = expander.root_state()
+    hole = state.holes[0]
+    query = SupportQuery(
+        state_fingerprint=state.fingerprint,
+        hole_id=hole.hole_id,
+        candidate=hole.values[0],
+    )
+    wrapped.check(state, query)
+    assert sink.replay_failures >= 1

@@ -239,3 +239,52 @@ def test_goal_support_seam_invoked_only_when_enabled() -> None:
     ctx2, ctx_pad2 = on._encode_context(["card"])
     on._compiler_ltr_decode_one(ctx2, ctx_pad2, 8, mode="tree", slot_contract=None)
     assert calls["n"] >= 1
+
+
+def test_off_mode_goal_support_counters_stay_zero() -> None:
+    from slm_training.models.decode_stats import (
+        collect_decode_stats,
+        proves_goal_support_off,
+    )
+
+    model = _model(goal_support_mode="off", compiler_decode_mode="tree")
+    ctx, ctx_pad = model._encode_context(["card"])
+    with collect_decode_stats() as stats:
+        model._compiler_ltr_decode_one(ctx, ctx_pad, 8, mode="tree", slot_contract=None)
+    assert proves_goal_support_off(stats)
+
+
+def test_diagnostic_goal_support_records_queries_without_prune() -> None:
+    from slm_training.data.contract import GenerationRequest
+    from slm_training.dsl.solver.decode import build_goal_support_decode_binding
+    from slm_training.models.decode_stats import collect_decode_stats
+
+    model = _model(goal_support_mode="diagnostic", compiler_decode_mode="tree")
+    model._prepare_goal_support_bindings(["card"])
+    model._goal_support_bindings = [
+        build_goal_support_decode_binding(GenerationRequest(prompt="card"))
+    ]
+    ctx, ctx_pad = model._encode_context(["card"])
+    with collect_decode_stats() as stats:
+        model._compiler_ltr_decode_one(ctx, ctx_pad, 8, mode="tree", slot_contract=None)
+    assert stats.goal_support_pruned == 0
+
+
+def test_certified_singleton_bypass_has_zero_forwards_when_collapsed() -> None:
+    from slm_training.models.decode_stats import (
+        collect_decode_stats,
+        proves_zero_neural_work,
+    )
+
+    model = _model(
+        goal_support_mode="certified",
+        compiler_decode_mode="tree",
+        grammar_draft_window=4,
+        grammar_ltr_max_tokens=8,
+    )
+    model._prepare_goal_support_bindings(["card"])
+    ctx, ctx_pad = model._encode_context(["card"])
+    with collect_decode_stats() as stats:
+        model._compiler_ltr_decode_one(ctx, ctx_pad, 6, mode="tree", slot_contract=None)
+    if stats.forwards_count == 0:
+        assert proves_zero_neural_work(stats)
