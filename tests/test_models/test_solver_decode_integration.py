@@ -34,6 +34,8 @@ from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 
 _SOLVER_DEFAULTS = {
     "verified_solver_decode": False,
+    "goal_support_mode": "off",
+    "goal_support_profile_mode": None,
     "solver_max_nodes": 512,
     "solver_max_depth": 64,
     "solver_max_backtracks": 64,
@@ -176,3 +178,64 @@ def test_decode_invokes_solver_only_when_enabled() -> None:
     ctx2, ctx_pad2 = on._encode_context(["card"])
     on._compiler_ltr_decode_one(ctx2, ctx_pad2, 8, mode="tree", slot_contract=None)
     assert calls["n"] >= 1  # enabled: pruned at least once before soft ranking
+
+
+def test_goal_support_defaults_off_and_legacy_checkpoint_loads() -> None:
+    config = TwoTowerConfig(context_backend="scratch", output_tokenizer="lexer")
+    assert config.goal_support_mode == "off"
+    assert config.goal_support_profile_mode is None
+
+    dumped = dataclasses.asdict(
+        TwoTowerConfig(
+            context_backend="scratch",
+            output_tokenizer="lexer",
+            goal_support_mode="diagnostic",
+        )
+    )
+    fields = TwoTowerConfig.__dataclass_fields__
+    legacy = {k: v for k, v in dumped.items() if k in fields and not k.startswith("goal_support_")}
+    legacy_config = TwoTowerConfig(**legacy)
+    assert legacy_config.goal_support_mode == "off"
+    assert legacy_config.goal_support_profile_mode is None
+
+
+def test_diagnostic_goal_support_is_decode_identical() -> None:
+    baseline = _model()
+    ctx, ctx_pad = baseline._encode_context(["card"])
+    expected = baseline._compiler_ltr_decode_one(
+        ctx, ctx_pad, 24, mode="tree", slot_contract=None
+    )
+
+    diagnostic = _model(goal_support_mode="diagnostic", compiler_decode_mode="tree")
+    ctx2, ctx_pad2 = diagnostic._encode_context(["card"])
+    ids = diagnostic._compiler_ltr_decode_one(
+        ctx2, ctx_pad2, 24, mode="tree", slot_contract=None
+    )
+    assert torch.equal(ids, expected)
+
+
+def test_goal_support_seam_invoked_only_when_enabled() -> None:
+    from slm_training.data.contract import GenerationRequest
+    from slm_training.dsl.solver.decode import build_goal_support_decode_binding
+
+    calls = {"n": 0}
+
+    def _spy(forest, prefix, plan_row):
+        calls["n"] += 1
+        return forest
+
+    off = _model(goal_support_mode="off", compiler_decode_mode="tree")
+    off._goal_support_apply_forest = _spy  # type: ignore[assignment]
+    ctx, ctx_pad = off._encode_context(["card"])
+    off._compiler_ltr_decode_one(ctx, ctx_pad, 8, mode="tree", slot_contract=None)
+    assert calls["n"] == 0
+
+    calls["n"] = 0
+    on = _model(goal_support_mode="diagnostic", compiler_decode_mode="tree")
+    on._goal_support_bindings = [
+        build_goal_support_decode_binding(GenerationRequest(prompt="card"))
+    ]
+    on._goal_support_apply_forest = _spy  # type: ignore[assignment]
+    ctx2, ctx_pad2 = on._encode_context(["card"])
+    on._compiler_ltr_decode_one(ctx2, ctx_pad2, 8, mode="tree", slot_contract=None)
+    assert calls["n"] >= 1

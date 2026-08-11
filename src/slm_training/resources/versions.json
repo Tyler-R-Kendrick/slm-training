@@ -1884,9 +1884,10 @@
       ]
     },
     "dsl.solver.goal_support": {
-      "version": "v6",
+      "version": "v7",
       "kind": "harness",
       "paths": [
+        "src/slm_training/dsl/solver/decode.py",
         "src/slm_training/dsl/solver/goal_support.py",
         "src/slm_training/dsl/solver/goal_support_obstruction.py",
         "src/slm_training/dsl/solver/goal_support_domain_adequacy.py",
@@ -1901,9 +1902,16 @@
         "tests/test_dsl/test_goal_support.py",
         "tests/test_dsl/test_goal_support_obstruction.py",
         "tests/test_dsl/test_goal_domain_adequacy.py",
-        "tests/test_dsl/test_openui_goal_verifier.py"
+        "tests/test_dsl/test_openui_goal_verifier.py",
+        "tests/test_dsl/test_goal_support_decode.py",
+        "tests/test_models/test_solver_decode_integration.py"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-08-10",
+          "note": "PGS-E01 (SLM-504): decode-time goal_support_mode seam in dsl/solver/decode.py — normalize/validate config, build_goal_support_decode_binding, goal_support_certified_prune via exact_goal_closure, goal_support_diagnostic_observe forest-parity path."
+        },
         {
           "version": "v6",
           "date": "2026-08-10",
@@ -12137,7 +12145,7 @@
       ]
     },
     "harness.flags": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/flags/",
@@ -12146,6 +12154,11 @@
         "tests/test_flags/test_openfeature_experiments.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-10",
+          "note": "PGS-E01 (SLM-504): register goal_support_mode OpenFeature lever and CLI override wiring."
+        },
         {
           "version": "v2",
           "date": "2026-08-02",
@@ -12229,7 +12242,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v96",
+      "version": "v97",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -12250,6 +12263,11 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v97",
+          "date": "2026-08-10",
+          "note": "PGS-E01 (SLM-504): evaluate_model --goal-support-mode CLI/runtime override for off/diagnostic/certified goal-support decode."
+        },
         {
           "version": "v96",
           "date": "2026-08-10",
@@ -14780,7 +14798,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v313",
+      "version": "v314",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -14825,6 +14843,11 @@
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
       "history": [
+        {
+          "version": "v314",
+          "date": "2026-08-10",
+          "note": "PGS-E01 (SLM-504): default-off goal_support_mode off/diagnostic/certified on compiler-tree decode — GoalSupportProvider construction from structured GenerationRequest inputs, diagnostic exact_goal_closure observation without forest mutation, certified goal_support_certified_prune via exact_goal_closure, factory/runtime override + CLI wiring; off remains byte-identical."
+        },
         {
           "version": "v313",
           "date": "2026-08-09",
