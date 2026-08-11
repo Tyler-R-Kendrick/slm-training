@@ -91,6 +91,11 @@
         "GoalSupportResultV1",
         "GoalSupportProvider",
         "DomainObstructionCoreV1",
+        "GoalActionEvidenceV1",
+        "GoalDomainAdequacyReportV1",
+        "analyze_goal_domain",
+        "domain_adequacy_classification_table",
+        "domain_adequacy_cap_policy_table",
         "GoalGateResultV1",
         "GoalEvaluatorResultV1",
         "GoalFailureAtomV1",
@@ -108,7 +113,7 @@
       ],
       "authority_tier": "verifier-hard",
       "design_doc": "docs/design/verified-scope-solver.md",
-      "notes": "PGS-B01/B02/C01/C02 (SLM-497/498/499/500): digest-bound GoalVerifierProfileV1 and GoalTerminalEvidenceV1 contracts; GoalSupportProvider sidecars over VSS oracle replay; DomainObstructionCoreV1 bounded hitting sets; OpenUIGoalVerifier terminal composition in openui_support.py. Generated JSON Schema: goal_verifier_profile.schema.json, goal_terminal_evidence.schema.json, domain_obstruction_core.schema.json (scripts/sync_goal_support_schema.py --check)."
+      "notes": "PGS-B01/B02/C01/C02/C03 (SLM-497/498/499/500/501): digest-bound GoalVerifierProfileV1 and GoalTerminalEvidenceV1 contracts; GoalSupportProvider sidecars over VSS oracle replay; DomainObstructionCoreV1 bounded hitting sets; GoalActionEvidenceV1/GoalDomainAdequacyReportV1 domain-adequacy classification; OpenUIGoalVerifier terminal composition in openui_support.py. Generated JSON Schema: goal_verifier_profile.schema.json, goal_terminal_evidence.schema.json, domain_obstruction_core.schema.json, goal_action_evidence.schema.json, goal_domain_adequacy_report.schema.json (scripts/sync_goal_support_schema.py --check)."
     },
     {
       "id": "requirements_compile",

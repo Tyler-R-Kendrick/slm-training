@@ -1,0 +1,273 @@
+{
+  "$defs": {
+    "AggregateObstructionSummaryV1": {
+      "additionalProperties": false,
+      "properties": {
+        "obstruction_core_digests": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Obstruction Core Digests",
+          "type": "array"
+        },
+        "core_atoms_union": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Core Atoms Union",
+          "type": "array"
+        }
+      },
+      "required": [
+        "obstruction_core_digests",
+        "core_atoms_union"
+      ],
+      "title": "AggregateObstructionSummaryV1",
+      "type": "object"
+    },
+    "GoalDomainActionPartitionsV1": {
+      "additionalProperties": false,
+      "properties": {
+        "supported": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Supported",
+          "type": "array"
+        },
+        "unsupported": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Unsupported",
+          "type": "array"
+        },
+        "unknown": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Unknown",
+          "type": "array"
+        },
+        "unobserved": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Unobserved",
+          "type": "array"
+        }
+      },
+      "title": "GoalDomainActionPartitionsV1",
+      "type": "object"
+    },
+    "GoalDomainAdequacyStatsV1": {
+      "additionalProperties": false,
+      "properties": {
+        "action_count": {
+          "minimum": 0,
+          "title": "Action Count",
+          "type": "integer"
+        },
+        "queried_action_count": {
+          "minimum": 0,
+          "title": "Queried Action Count",
+          "type": "integer"
+        },
+        "terminal_count": {
+          "minimum": 0,
+          "title": "Terminal Count",
+          "type": "integer"
+        },
+        "query_count": {
+          "minimum": 0,
+          "title": "Query Count",
+          "type": "integer"
+        },
+        "verifier_calls": {
+          "minimum": 0,
+          "title": "Verifier Calls",
+          "type": "integer"
+        },
+        "expanded_nodes": {
+          "minimum": 0,
+          "title": "Expanded Nodes",
+          "type": "integer"
+        },
+        "backtracks": {
+          "minimum": 0,
+          "title": "Backtracks",
+          "type": "integer"
+        },
+        "stop_reasons": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Stop Reasons",
+          "type": "array"
+        }
+      },
+      "required": [
+        "action_count",
+        "queried_action_count",
+        "terminal_count",
+        "query_count",
+        "verifier_calls",
+        "expanded_nodes",
+        "backtracks"
+      ],
+      "title": "GoalDomainAdequacyStatsV1",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "State-level domain-adequacy diagnosis over one exact legal set.",
+  "properties": {
+    "schema_version": {
+      "default": "goal_domain_adequacy_report/v1",
+      "pattern": "^goal_domain_adequacy_report/v1$",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "classification": {
+      "enum": [
+        "domain_adequate_selected_supported",
+        "selection_regret",
+        "selection_unresolved",
+        "domain_inadequate_under_bounds",
+        "coverage_unknown"
+      ],
+      "title": "Classification",
+      "type": "string"
+    },
+    "state_fingerprint": {
+      "minLength": 1,
+      "title": "State Fingerprint",
+      "type": "string"
+    },
+    "legal_set_fingerprint": {
+      "minLength": 1,
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Legal Set Fingerprint",
+      "type": "string"
+    },
+    "selected_action_id": {
+      "minLength": 1,
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Selected Action Id",
+      "type": "string"
+    },
+    "profile_digest": {
+      "minLength": 1,
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Profile Digest",
+      "type": "string"
+    },
+    "problem_id": {
+      "minLength": 1,
+      "title": "Problem Id",
+      "type": "string"
+    },
+    "pack_id": {
+      "minLength": 1,
+      "title": "Pack Id",
+      "type": "string"
+    },
+    "constraint_version": {
+      "minLength": 1,
+      "title": "Constraint Version",
+      "type": "string"
+    },
+    "bounds_digest": {
+      "minLength": 1,
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Bounds Digest",
+      "type": "string"
+    },
+    "hole_id": {
+      "additionalProperties": true,
+      "title": "Hole Id",
+      "type": "object"
+    },
+    "partitions": {
+      "$ref": "#/$defs/GoalDomainActionPartitionsV1"
+    },
+    "evidence_digests": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Evidence Digests",
+      "type": "array"
+    },
+    "stats": {
+      "$ref": "#/$defs/GoalDomainAdequacyStatsV1"
+    },
+    "obstruction_summary": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/AggregateObstructionSummaryV1"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "classifier_id": {
+      "default": "goal_support_domain_adequacy/v1",
+      "minLength": 1,
+      "title": "Classifier Id",
+      "type": "string"
+    },
+    "classifier_version": {
+      "default": "v1",
+      "minLength": 1,
+      "title": "Classifier Version",
+      "type": "string"
+    },
+    "implementation_version": {
+      "default": "goal_support/v1",
+      "minLength": 1,
+      "title": "Implementation Version",
+      "type": "string"
+    },
+    "exact_action_cap": {
+      "minimum": 1,
+      "title": "Exact Action Cap",
+      "type": "integer"
+    },
+    "cap_applied": {
+      "title": "Cap Applied",
+      "type": "boolean"
+    },
+    "report_digest": {
+      "default": "",
+      "pattern": "^[0-9a-f]{64}$|^$",
+      "title": "Report Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "classification",
+    "state_fingerprint",
+    "legal_set_fingerprint",
+    "selected_action_id",
+    "profile_digest",
+    "problem_id",
+    "pack_id",
+    "constraint_version",
+    "bounds_digest",
+    "hole_id",
+    "partitions",
+    "evidence_digests",
+    "stats",
+    "exact_action_cap",
+    "cap_applied"
+  ],
+  "title": "GoalDomainAdequacyReportV1",
+  "type": "object"
+}

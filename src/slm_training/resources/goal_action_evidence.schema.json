@@ -1,0 +1,173 @@
+{
+  "$defs": {
+    "GoalActionWorkCountersV1": {
+      "additionalProperties": false,
+      "properties": {
+        "nodes": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Nodes",
+          "type": "integer"
+        },
+        "tokens": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Tokens",
+          "type": "integer"
+        },
+        "depth": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Depth",
+          "type": "integer"
+        },
+        "backtracks": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Backtracks",
+          "type": "integer"
+        },
+        "verifier_calls": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Verifier Calls",
+          "type": "integer"
+        },
+        "terminal_count": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Terminal Count",
+          "type": "integer"
+        }
+      },
+      "title": "GoalActionWorkCountersV1",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Digest-bound per-action goal-support evidence (no raw terminal content).",
+  "properties": {
+    "schema_version": {
+      "default": "goal_action_evidence/v1",
+      "pattern": "^goal_action_evidence/v1$",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "state_fingerprint": {
+      "minLength": 1,
+      "title": "State Fingerprint",
+      "type": "string"
+    },
+    "legal_set_fingerprint": {
+      "minLength": 1,
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Legal Set Fingerprint",
+      "type": "string"
+    },
+    "profile_digest": {
+      "minLength": 1,
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Profile Digest",
+      "type": "string"
+    },
+    "hole_id": {
+      "additionalProperties": true,
+      "title": "Hole Id",
+      "type": "object"
+    },
+    "action_id": {
+      "minLength": 1,
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Action Id",
+      "type": "string"
+    },
+    "legal": {
+      "default": true,
+      "title": "Legal",
+      "type": "boolean"
+    },
+    "partition": {
+      "enum": [
+        "supported",
+        "unsupported",
+        "unknown",
+        "unobserved"
+      ],
+      "title": "Partition",
+      "type": "string"
+    },
+    "base_certificate_digest": {
+      "default": "",
+      "pattern": "^[0-9a-f]{64}$|^$",
+      "title": "Base Certificate Digest",
+      "type": "string"
+    },
+    "goal_sidecar_digest": {
+      "default": "",
+      "pattern": "^[0-9a-f]{64}$|^$",
+      "title": "Goal Sidecar Digest",
+      "type": "string"
+    },
+    "authority_tier": {
+      "enum": [
+        "compiler-hard",
+        "verifier-hard",
+        "evaluation-only",
+        "advisory-learned",
+        "oracle-diagnostic"
+      ],
+      "title": "Authority Tier",
+      "type": "string"
+    },
+    "replay_ok": {
+      "default": false,
+      "title": "Replay Ok",
+      "type": "boolean"
+    },
+    "work_counters": {
+      "$ref": "#/$defs/GoalActionWorkCountersV1"
+    },
+    "obstruction_core_digest": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$|^$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Obstruction Core Digest"
+    },
+    "stop_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Stop Reason"
+    },
+    "evidence_digest": {
+      "default": "",
+      "pattern": "^[0-9a-f]{64}$|^$",
+      "title": "Evidence Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "state_fingerprint",
+    "legal_set_fingerprint",
+    "profile_digest",
+    "hole_id",
+    "action_id",
+    "partition",
+    "authority_tier"
+  ],
+  "title": "GoalActionEvidenceV1",
+  "type": "object"
+}
