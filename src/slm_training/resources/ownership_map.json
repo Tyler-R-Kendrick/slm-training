@@ -65,6 +65,23 @@
       "notes": "SGS-007 (SLM-444): new owner layered on semantic_plan, verifier_gate_stack, and dsl_pack_registry_canonical without duplicating any of them -- carries a PromptSemanticRequirementsV1 verbatim, references verifier/evaluator identities by string, and bounds search resources without granting search authority. Excludes authority in {compiler-hard, verifier-hard} at the type level, mirroring prompt_requirements, so no request can declare itself compiler-certified merely through this envelope. Generated JSON Schema: src/slm_training/resources/verified_synthesis_problem.schema.json (scripts/sync_verified_synthesis_problem_schema.py --check)."
     },
     {
+      "id": "compiled_goal_constraints",
+      "name": "CompiledGoalConstraintSetV1 compiled goal-constraint contract",
+      "owner_module": "src/slm_training/data/progspec/goal_constraints.py",
+      "owner_symbols": [
+        "GoalConstraintV1",
+        "CompiledGoalConstraintSetV1",
+        "GoalConstraintEvaluationV1",
+        "combine_authority",
+        "combine_completeness",
+        "merge_goal_constraints",
+        "authority_matrix"
+      ],
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/semantic-planning-valid-state.md",
+      "notes": "PGS-A01 (SLM-494): compiled, authority-labeled goal constraints layered on verified_synthesis_problem, prompt_requirements, semantic_plan, and verifier_gate_stack without duplicating request-side or plan-side contracts. may_prune is fail-closed to independently exact sources (pack_contract, verification_requirement) with EXACT completeness and compiler-hard/verifier-hard authority only. Generated JSON Schema: src/slm_training/resources/compiled_goal_constraint_set.schema.json (scripts/sync_compiled_goal_constraint_set_schema.py --check)."
+    },
+    {
       "id": "sygus_capability_report",
       "name": "SyGuS/SemGuS capability report over VerifiedSynthesisProblemV1",
       "owner_module": "src/slm_training/data/progspec/synthesis_capability_report.py",
@@ -789,6 +806,19 @@
       ],
       "new_owner_justified": true,
       "justification": "No existing contract shapes a pack-supplied, verifier-checked synthesis problem; a new VerifiedSynthesisProblemV1 owner is justified, layered on the three existing owners it must not duplicate."
+    },
+    {
+      "issue": "PGS-A01",
+      "linear_id": "SLM-494",
+      "title": "Implement compiled goal-constraint contract (GoalConstraintV1 / CompiledGoalConstraintSetV1)",
+      "extension_points": [
+        "verified_synthesis_problem",
+        "prompt_requirements",
+        "semantic_plan",
+        "verifier_gate_stack"
+      ],
+      "new_owner_justified": true,
+      "justification": "No existing contract compiles pack/request/plan/verifier inputs into authority-labeled, prune-gated goal constraints; CompiledGoalConstraintSetV1 is a new owner layered on the four extension points it must not duplicate."
     },
     {
       "issue": "SGS-008",
