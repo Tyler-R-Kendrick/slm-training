@@ -71,6 +71,9 @@ Self-contained axiomatized theories for the structural safety layer (no Mathlib)
 | `StructuralMetrics` | recall / structural-similarity / means are monotone under declared inequalities |
 | `ExactClosure` | VSS exact-closure removes only replay-valid UNSUPPORTED; passes only shrink |
 | `DecodeInvariants` | I1/I2/I6 commit rules: singleton bypass, empty=dead-end, ranker ⊆ legal |
+| `CompleteDomain` | proof-bearing finite domains; forged coverageComplete never authorizes |
+| `FiniteSearchBounds` | assignment/prefix-tree query bounds under ExpansionVerificationQueryModel (not wall-clock) |
+| `Judgment` | total four-outcome solver judgment; failure flags never refute |
 | `EcosystemTier` | production-core vs ecosystem-library formal partition; core success ignores library size |
 
 Design notes: [`docs/design/core-formal-claims.md`](../../docs/design/core-formal-claims.md),

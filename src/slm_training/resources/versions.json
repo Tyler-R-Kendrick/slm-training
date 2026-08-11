@@ -12,7 +12,7 @@
   ],
   "components": {
     "formal.leverproof": {
-      "version": "v15",
+      "version": "v16",
       "kind": "harness",
       "paths": [
         "src/leverproof_lean/",
@@ -35,9 +35,19 @@
         "src/leverproof_lean/LeverProofLean/CompleteDomain.lean",
         "src/slm_training/formal/complete_domain.py",
         "tests/test_formal/test_complete_domain.py",
-        "docs/design/kern-02-complete-domain.md"
+        "docs/design/kern-02-complete-domain.md",
+        "src/leverproof_lean/LeverProofLean/FiniteSearchBounds.lean",
+        "src/slm_training/formal/finite_search_bounds.py",
+        "src/slm_training/resources/formal/finite_search_bounds_fixtures.v1.json",
+        "tests/test_formal/test_finite_search_bounds.py",
+        "docs/design/kern-03-finite-search-bounds.md"
       ],
       "history": [
+        {
+          "version": "v16",
+          "date": "2026-08-11",
+          "note": "KERN-03 (SLM-521): finite completion-search upper bounds under ExpansionVerificationQueryModel; Lean<->Python parity fixtures and four-axis export."
+        },
         {
           "version": "v15",
           "date": "2026-08-11",
@@ -17286,7 +17296,7 @@
       ]
     },
     "formal.objects": {
-      "version": "v7",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "src/slm_training/formal/__init__.py",
@@ -17297,6 +17307,11 @@
         "docs/design/formal-objects-multi-prover.md"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-08-11",
+          "note": "KERN-03 (SLM-521): register FiniteSearchBounds Lean claim catalog entries."
+        },
         {
           "version": "v7",
           "date": "2026-08-11",
