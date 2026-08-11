@@ -12,7 +12,7 @@
   ],
   "components": {
     "formal.leverproof": {
-      "version": "v17",
+      "version": "v18",
       "kind": "harness",
       "paths": [
         "src/leverproof_lean/",
@@ -23,28 +23,24 @@
         "src/leverproof_lean/LeverProofLean/AdvisoryResidual.lean",
         "src/leverproof_lean/LeverProofLean/GoalSupport.lean",
         "docs/design/proof-carrying-goal-support-proofs.md",
-        "src/slm_training/formal/goal_support_mapping.py",
-        "src/slm_training/resources/formal/goal_support_golden_cases.v1.json",
-        "tests/test_formal/test_goal_support_mapping.py",
         "src/leverproof_lean/LeverProofLean/Judgment.lean",
-        "src/slm_training/formal/judgment.py",
-        "src/slm_training/resources/formal/judgment_truth_table.v1.json",
-        "tests/test_formal/test_judgment.py",
         "src/leverproof_lean/LeverProofLean.lean",
         "src/leverproof_lean/Test/Proofs.lean",
         "src/leverproof_lean/LeverProofLean/CompleteDomain.lean",
-        "src/slm_training/formal/complete_domain.py",
-        "tests/test_formal/test_complete_domain.py",
         "docs/design/kern-02-complete-domain.md",
         "src/leverproof_lean/LeverProofLean/FiniteSearchBounds.lean",
-        "src/slm_training/formal/finite_search_bounds.py",
-        "src/slm_training/resources/formal/finite_search_bounds_fixtures.v1.json",
-        "tests/test_formal/test_finite_search_bounds.py",
         "docs/design/kern-03-finite-search-bounds.md",
         "src/leverproof_lean/LeverProofLean/ExactClosure.lean",
-        "docs/design/kern-05-closure-stabilization.md"
+        "docs/design/kern-05-closure-stabilization.md",
+        "src/leverproof_lean/LeverProofLean/BlackBoxUnsupportedLowerBound.lean",
+        "docs/design/kern-04-black-box-unsupported-lower-bound.md"
       ],
       "history": [
+        {
+          "version": "v18",
+          "date": "2026-08-11",
+          "note": "KERN-04 (SLM-522): black-box UNSUPPORTED query lower bound under BlackBoxVerifierQueryModel; Lean module, docs, and escapes."
+        },
         {
           "version": "v17",
           "date": "2026-08-11",
@@ -3372,6 +3368,16 @@
         "tests/test_scripts/test_verify_revmath_owners.py"
       ],
       "history": [
+        {
+          "version": "v11",
+          "date": "2026-08-11",
+          "note": "no-bump: KERN-04 docs cross-link only in reverse-mathematics-computability.md"
+        },
+        {
+          "version": "v11",
+          "date": "2026-08-11",
+          "note": "no-bump: KERN-04 (SLM-522) cross-link black-box lower-bound AST id in reverse-mathematics-computability.md; owner map unchanged."
+        },
         {
           "version": "v11",
           "note": "HARN-08 (SLM-537): register revmath_labeling owner surface.",
@@ -17429,7 +17435,7 @@
       ]
     },
     "formal.objects": {
-      "version": "v9",
+      "version": "v10",
       "kind": "harness",
       "paths": [
         "src/slm_training/formal/__init__.py",
@@ -17440,9 +17446,17 @@
         "docs/design/formal-objects-multi-prover.md",
         "src/slm_training/formal/closure_stabilization.py",
         "src/slm_training/resources/formal/closure_stabilization_fixtures.v1.json",
-        "tests/test_formal/test_closure_stabilization.py"
+        "tests/test_formal/test_closure_stabilization.py",
+        "src/slm_training/formal/black_box_unsupported_lower_bound.py",
+        "src/slm_training/resources/formal/black_box_unsupported_fixtures.v1.json",
+        "tests/test_formal/test_black_box_unsupported_lower_bound.py"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-08-11",
+          "note": "KERN-04 (SLM-522): register BlackBoxUnsupportedLowerBound Lean claim catalog entries; Python black-box lower-bound parity module + fixtures."
+        },
         {
           "version": "v9",
           "date": "2026-08-11",
@@ -18336,7 +18350,7 @@
       ]
     },
     "formal.bound_ast": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/formal/bound_ast.py",
@@ -18345,6 +18359,11 @@
         "tests/test_formal/test_bound_ast.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-11",
+          "note": "KERN-04 (SLM-522): register bound.black_box.unsupported_query_lower.v1 and parity fixture."
+        },
         {
           "version": "v2",
           "date": "2026-08-11",

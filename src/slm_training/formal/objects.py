@@ -219,6 +219,16 @@ _LEAN_CLAIM_CATALOG: dict[str, dict[str, Any]] = {
         "tier": "production_core",
         "laws": ["proved_complete_singleton"],
     },
+    "BlackBoxUnsupportedLowerBound.black_box_unsupported_query_lower_bound": {
+        "module": "LeverProofLean.BlackBoxUnsupportedLowerBound",
+        "tier": "production_core",
+        "laws": ["proved_complete_singleton"],
+    },
+    "BlackBoxUnsupportedLowerBound.early_stop_distinguishes": {
+        "module": "LeverProofLean.BlackBoxUnsupportedLowerBound",
+        "tier": "production_core",
+        "laws": ["proved_complete_singleton"],
+    },
     "ExactClosure.finite_search_rejects_stale_state": {
         "module": "LeverProofLean.ExactClosure",
         "tier": "production_core",

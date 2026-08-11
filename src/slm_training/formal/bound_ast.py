@@ -42,6 +42,7 @@ BOUND_FINITE_SEARCH_PREFIX_TREE = "bound.finite_search.prefix_tree.v1"
 BOUND_FINITE_SEARCH_COARSE = "bound.finite_search.coarse.v1"
 BOUND_CLOSURE_LIVE_UPPER = "bound.closure.live_upper.v1"
 BOUND_CLOSURE_STRICT_REMOVALS = "bound.closure.strict_removals.v1"
+BOUND_BLACK_BOX_UNSUPPORTED_QUERY_LOWER = "bound.black_box.unsupported_query_lower.v1"
 BOUND_PLACEHOLDER_PENDING = "bound.placeholder.pending_evid04.v1"
 
 REGISTERED_BOUND_AST_IDS: frozenset[str] = frozenset(
@@ -50,6 +51,7 @@ REGISTERED_BOUND_AST_IDS: frozenset[str] = frozenset(
         BOUND_FINITE_SEARCH_COARSE,
         BOUND_CLOSURE_LIVE_UPPER,
         BOUND_CLOSURE_STRICT_REMOVALS,
+        BOUND_BLACK_BOX_UNSUPPORTED_QUERY_LOWER,
         BOUND_PLACEHOLDER_PENDING,
     }
 )
@@ -637,6 +639,7 @@ __all__ = [
     "BOUND_AST_PARITY_SCHEMA",
     "BOUND_AST_REGISTRY_SCHEMA",
     "BOUND_AST_SCHEMA",
+    "BOUND_BLACK_BOX_UNSUPPORTED_QUERY_LOWER",
     "BOUND_CLOSURE_LIVE_UPPER",
     "BOUND_CLOSURE_STRICT_REMOVALS",
     "BOUND_FINITE_SEARCH_COARSE",

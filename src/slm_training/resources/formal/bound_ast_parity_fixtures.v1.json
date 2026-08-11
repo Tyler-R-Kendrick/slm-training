@@ -119,6 +119,21 @@
       "lean_def": "strictRemovalUpperBound",
       "lean_guard": "strictRemovalUpperBound [2, 3] = 5",
       "kern03_field": null
+    },
+    {
+      "id": "black_box_lower_two_by_three",
+      "bound_ast_id": "bound.black_box.unsupported_query_lower.v1",
+      "env": {
+        "domain_sizes": [
+          2,
+          3
+        ]
+      },
+      "expected_value": "6",
+      "lean_module": "LeverProofLean.BlackBoxUnsupportedLowerBound",
+      "lean_def": "worstCaseQueryLowerBound",
+      "lean_guard": "modelFromDomainSizes [2, 3] |>.assignmentCount = 6",
+      "kern04_field": "worst_case_query_lower_bound"
     }
   ]
 }

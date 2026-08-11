@@ -73,6 +73,7 @@ Self-contained axiomatized theories for the structural safety layer (no Mathlib)
 | `DecodeInvariants` | I1/I2/I6 commit rules: singleton bypass, empty=dead-end, ranker ⊆ legal |
 | `CompleteDomain` | proof-bearing finite domains; forged coverageComplete never authorizes |
 | `FiniteSearchBounds` | assignment/prefix-tree query bounds under ExpansionVerificationQueryModel (not wall-clock) |
+| `BlackBoxUnsupportedLowerBound` | model-relative black-box query lower bound for sound UNSUPPORTED (not universal) |
 | `Judgment` | total four-outcome solver judgment; failure flags never refute |
 | `EcosystemTier` | production-core vs ecosystem-library formal partition; core success ignores library size |
 

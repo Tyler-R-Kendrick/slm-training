@@ -225,6 +225,35 @@
     },
     {
       "schema_version": "bound_ast/v1",
+      "bound_ast_id": "bound.black_box.unsupported_query_lower.v1",
+      "meaning": "Black-box worst-case query lower bound for sound UNSUPPORTED certification: P = prod(domain_sizes) assignment Boolean queries under BlackBoxVerifierQueryModel. Model-relative, not a universal solver or wall-clock claim.",
+      "variables": [
+        {
+          "name": "domain_sizes",
+          "kind": "finite_sequence",
+          "domain": "nat",
+          "unit": "cardinality",
+          "meaning": "Per-hole complete-domain sizes; P is their product"
+        }
+      ],
+      "expression": {
+        "op": "prod_over",
+        "index": "d",
+        "sequence": "domain_sizes",
+        "body": {
+          "op": "var",
+          "name": "d"
+        }
+      },
+      "predicate": null,
+      "evaluable": true,
+      "wall_clock_claim": false,
+      "lean_module": "LeverProofLean.BlackBoxUnsupportedLowerBound",
+      "lean_def": "worstCaseQueryLowerBound",
+      "digest_sha256": "2dbe185f0aba3543d866ac06bd4a5ab3c7bba274913fbfedcbc01c20d7e41a3f"
+    },
+    {
+      "schema_version": "bound_ast/v1",
       "bound_ast_id": "bound.placeholder.pending_evid04.v1",
       "meaning": "Transitional citation id for resource_bounds claims that are not yet bound to a specialised evaluable expression.",
       "variables": [],
