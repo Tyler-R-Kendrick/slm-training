@@ -49,6 +49,7 @@ This ADR is **violated** if:
 - Schemas (HARN-02): [`harnesses/reasoning/revmath/schemas.py`](../../src/slm_training/harnesses/reasoning/revmath/schemas.py)
 - Runner / replay / report (HARN-03): [`harnesses/reasoning/revmath/runner.py`](../../src/slm_training/harnesses/reasoning/revmath/runner.py), [`replay.py`](../../src/slm_training/harnesses/reasoning/revmath/replay.py), [`report.py`](../../src/slm_training/harnesses/reasoning/revmath/report.py)
 - Profile binding / CLI (HARN-10): [`profile_binding.py`](../../src/slm_training/harnesses/reasoning/revmath/profile_binding.py), `python -m scripts.run_revmath_profile`
+- Frozen fixture corpus (HARN-11): [`corpus.py`](../../src/slm_training/harnesses/reasoning/revmath/corpus.py) · manifest under `resources/revmath/corpus/`
 - Assumption ablation (HARN-04): [`assumption_ablation.py`](../../src/slm_training/harnesses/reasoning/revmath/assumption_ablation.py) + `AssumptionAblationPlugin`
 - Formal autoresearch: [formal-autoresearch.md](formal-autoresearch.md)
 - Formal objects: [formal-objects-multi-prover.md](formal-objects-multi-prover.md)

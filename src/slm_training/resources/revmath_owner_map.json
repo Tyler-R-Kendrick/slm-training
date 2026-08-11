@@ -470,6 +470,22 @@
       "notes": "HARN-09 proposition-preserving self-healing controller; mutable knobs only; immutable attempt lineage; extends SemanticRepairRecordV1 lineage without forking distill repair."
     },
     {
+      "id": "revmath_fixture_corpus",
+      "kind": "resource",
+      "owner_module": "src/slm_training/harnesses/reasoning/revmath/corpus.py",
+      "owner_symbols": [
+        "FixtureCorpusManifestV1",
+        "build_fixture_corpus_manifest",
+        "load_fixture_corpus_manifest",
+        "verify_corpus_replay",
+        "detect_train_eval_leakage",
+        "demonstrate_mutation_failures"
+      ],
+      "design_doc": "docs/design/reverse-mathematics-computability.md",
+      "ownership_map_subsystem": null,
+      "notes": "HARN-11 frozen content-addressed hermetic fixture corpus; packages existing fixtures without forking task plugins or evidence stores."
+    },
+    {
       "id": "revmath_replay",
       "kind": "replay",
       "owner_module": "src/slm_training/harnesses/reasoning/revmath/replay.py",
@@ -622,6 +638,13 @@
       "new_owner_justified": true,
       "justification": "Profile campaign-binding adapter under harnesses/reasoning/revmath/profile_binding.py + run_revmath_profile CLI; reuses CampaignStore/ExperimentCampaignV1/formal/disposition/replay owners without a parallel campaign or evidence store.",
       "status": "done"
+    },
+    {
+      "issue": "HARN-11",
+      "linear_id": "SLM-554",
+      "extends": "revmath_plugins",
+      "new_owner_justified": true,
+      "justification": "Frozen fixture corpus under harnesses/reasoning/revmath/corpus.py + resources/revmath/corpus/; assembles existing hermetic fixtures into a content-addressed manifest without forking plugins, campaigns, or evidence stores."
     }
   ],
   "prohibited_duplicate_risks": [

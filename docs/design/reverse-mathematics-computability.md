@@ -190,7 +190,7 @@ The profile id is **`reasoning/revmath`**. It parameterizes the G4 reasoning har
 
 **Registration seam (HARN-01):** [`harnesses/reasoning/profiles.py`](../../src/slm_training/harnesses/reasoning/profiles.py) registers `reasoning/g4` (default) and `reasoning/revmath` (opt-in, `task_semantics_ready=True` after HARN-03). `resolve_profile(None)` keeps the historical default — discovering/configuring revmath does not alter G4 bench or warmup behavior.
 
-Task schemas (HARN-02), runner/replay/report (HARN-03), assumption-ablation (HARN-04), reversal (HARN-05), constructivization/counterexample (HARN-06), quantitative-bound extraction (HARN-07), conservative labeling / anti-overclaim (HARN-08), proposition-preserving self-healing (HARN-09), and campaign-locked profile CLI binding (HARN-10) are present; remaining fixture-corpus packaging (HARN-11) stays downstream where still open. This document owns **authority boundaries and parity obligations**; missing parity rows are explicit blockers in the matrix, never silent fallbacks.
+Task schemas (HARN-02), runner/replay/report (HARN-03), assumption-ablation (HARN-04), reversal (HARN-05), constructivization/counterexample (HARN-06), quantitative-bound extraction (HARN-07), conservative labeling / anti-overclaim (HARN-08), proposition-preserving self-healing (HARN-09), campaign-locked profile CLI binding (HARN-10), and fixture-corpus packaging (HARN-11) are present. This document owns **authority boundaries and parity obligations**; missing parity rows are explicit blockers in the matrix, never silent fallbacks.
 
 ## Harness / self-healing parity matrix (HARN-01)
 
@@ -316,6 +316,18 @@ A successful ablation proves the **same proposition** (`statement_sha256`) under
 | Hermetic fixtures | `constructivization_{bounded,witness,oracle,remainder,timeout}.*` + `counterexample_{checked,search_failed,no_counterexample,mismatch_prop}.*` |
 
 Constructivized tasks bind `proposition` to the **constructivized** statement only. Counterexample refutation requires `independently_checked`; search failure stays `unknown`.
+
+
+## HARN-11 frozen fixture corpus (SLM-554)
+
+| Module / artifact | Role |
+| --- | --- |
+| [`corpus.py`](../../src/slm_training/harnesses/reasoning/revmath/corpus.py) | Assemble hermetic fixtures into a versioned content-addressed catalog; portable replay digests; train/eval root-family leakage detection; mutation-gate probes |
+| [`hermetic_v1.manifest.json`](../../src/slm_training/resources/revmath/corpus/hermetic_v1.manifest.json) | Frozen manifest (`revmath_fixture_corpus/v1`) binding proposition/assumptions, toolchain, four-outcome expectations, labels, budgets, checker refs, replay digests, mutation expectations |
+| Tests | `tests/test_harnesses/reasoning/test_revmath_corpus.py` — exact replay, distinct unknown/invalid vs refutation, declared mutation failures |
+
+Coverage classes: ablation success/necessary; reversal equivalence/one-way; constructivization success/unknown; checked counterexample; quantitative-bound success/nonextractable; practical computability; proposition/toolchain/source/certificate mutations; timeout/missing-tool/unsupported/malformed/incomplete-domain. Does not invent task plugins — reuses HARN-03..09 hermetic checkers under `resources/revmath/fixtures/`.
+
 
 ## Honesty
 

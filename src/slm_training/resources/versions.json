@@ -3375,7 +3375,7 @@
       ]
     },
     "governance.revmath_owners": {
-      "version": "v14",
+      "version": "v15",
       "kind": "gate",
       "paths": [
         "docs/design/adr-revmath-reasoning-profile.md",
@@ -3385,6 +3385,11 @@
         "tests/test_scripts/test_verify_revmath_owners.py"
       ],
       "history": [
+        {
+          "version": "v15",
+          "date": "2026-08-11T13:29:36Z",
+          "note": "HARN-11 (SLM-554): revmath_fixture_corpus surface + extension_seams row."
+        },
         {
           "version": "v14",
           "date": "2026-08-11T13:20:00Z",
@@ -3468,7 +3473,7 @@
       ]
     },
     "governance.revmath_harness_parity": {
-      "version": "v10",
+      "version": "v11",
       "kind": "gate",
       "paths": [
         "src/slm_training/resources/revmath_harness_parity.json",
@@ -3477,6 +3482,11 @@
         "tests/test_scripts/test_verify_revmath_harness_parity.py"
       ],
       "history": [
+        {
+          "version": "v11",
+          "date": "2026-08-11T13:29:36Z",
+          "note": "HARN-11 (SLM-554): resources.frozen_fixture_corpus obligation present with corpus.py owner."
+        },
         {
           "version": "v10",
           "date": "2026-08-11T13:14:28Z",
@@ -18347,7 +18357,7 @@
       ]
     },
     "harness.reasoning.revmath": {
-      "version": "v11",
+      "version": "v12",
       "kind": "harness",
       "paths": [
         "scripts/run_revmath_task.py",
@@ -18367,9 +18377,17 @@
         "tests/test_harnesses/reasoning/test_revmath_self_healing.py",
         "scripts/run_revmath_profile.py",
         "src/slm_training/harnesses/reasoning/revmath/profile_binding.py",
-        "tests/test_harnesses/reasoning/test_revmath_profile_binding.py"
+        "tests/test_harnesses/reasoning/test_revmath_profile_binding.py",
+        "src/slm_training/harnesses/reasoning/revmath/corpus.py",
+        "src/slm_training/resources/revmath/corpus/",
+        "tests/test_harnesses/reasoning/test_revmath_corpus.py"
       ],
       "history": [
+        {
+          "version": "v12",
+          "date": "2026-08-11T13:29:36Z",
+          "note": "HARN-11 (SLM-554): frozen content-addressed hermetic fixture corpus, portable replay digests, train/eval leakage detection, mutation-gate coverage."
+        },
         {
           "version": "v11",
           "date": "2026-08-11T13:14:28Z",
