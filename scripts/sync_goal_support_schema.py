@@ -14,6 +14,7 @@ def main(argv: list[str] | None = None) -> int:
 
     from slm_training.bridge_utils import repo_root
     from slm_training.dsl.solver.goal_support import (
+        DomainObstructionCoreV1,
         GoalTerminalEvidenceV1,
         GoalVerifierProfileV1,
     )
@@ -22,6 +23,7 @@ def main(argv: list[str] | None = None) -> int:
     schemas = {
         "goal_verifier_profile.schema.json": GoalVerifierProfileV1.model_json_schema(),
         "goal_terminal_evidence.schema.json": GoalTerminalEvidenceV1.model_json_schema(),
+        "domain_obstruction_core.schema.json": DomainObstructionCoreV1.model_json_schema(),
     }
     for filename, schema in schemas.items():
         path = resources / filename

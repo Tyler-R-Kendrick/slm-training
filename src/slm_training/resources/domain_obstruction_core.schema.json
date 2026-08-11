@@ -1,0 +1,189 @@
+{
+  "$defs": {
+    "ObstructionCoreStatsV1": {
+      "additionalProperties": false,
+      "properties": {
+        "atom_universe_size": {
+          "minimum": 0,
+          "title": "Atom Universe Size",
+          "type": "integer"
+        },
+        "terminal_count": {
+          "minimum": 0,
+          "title": "Terminal Count",
+          "type": "integer"
+        },
+        "subsets_examined": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Subsets Examined",
+          "type": "integer"
+        },
+        "deletion_steps": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Deletion Steps",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "atom_universe_size",
+        "terminal_count"
+      ],
+      "title": "ObstructionCoreStatsV1",
+      "type": "object"
+    },
+    "TerminalFailureSetV1": {
+      "additionalProperties": false,
+      "description": "One rejected terminal and its exact mandatory failure atom ids.",
+      "properties": {
+        "terminal_evidence_digest": {
+          "minLength": 1,
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Terminal Evidence Digest",
+          "type": "string"
+        },
+        "exact_mandatory_failure_atom_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Exact Mandatory Failure Atom Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "terminal_evidence_digest",
+        "exact_mandatory_failure_atom_ids"
+      ],
+      "title": "TerminalFailureSetV1",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Digest-bound hitting set over exact mandatory failure atoms.",
+  "properties": {
+    "schema_version": {
+      "default": "domain_obstruction_core/v1",
+      "pattern": "^domain_obstruction_core/v1$",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "claim": {
+      "default": "Every fully observed rejected terminal in the declared bounded domain fails at least one exact mandatory atom in this recorded hitting set.",
+      "minLength": 1,
+      "title": "Claim",
+      "type": "string"
+    },
+    "mode": {
+      "enum": [
+        "minimum_cardinality_exact",
+        "subset_minimal_exact",
+        "sound_overapprox"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "core_atoms": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Core Atoms",
+      "type": "array"
+    },
+    "terminal_failure_sets": {
+      "items": {
+        "$ref": "#/$defs/TerminalFailureSetV1"
+      },
+      "title": "Terminal Failure Sets",
+      "type": "array"
+    },
+    "algorithm_id": {
+      "default": "goal_support_obstruction/v1",
+      "minLength": 1,
+      "title": "Algorithm Id",
+      "type": "string"
+    },
+    "algorithm_version": {
+      "default": "v1",
+      "minLength": 1,
+      "title": "Algorithm Version",
+      "type": "string"
+    },
+    "min_cardinality_exact_threshold": {
+      "default": 16,
+      "minimum": 1,
+      "title": "Min Cardinality Exact Threshold",
+      "type": "integer"
+    },
+    "subset_minimal_deletion_threshold": {
+      "default": 64,
+      "minimum": 1,
+      "title": "Subset Minimal Deletion Threshold",
+      "type": "integer"
+    },
+    "profile_digest": {
+      "minLength": 1,
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Profile Digest",
+      "type": "string"
+    },
+    "state_fingerprint": {
+      "minLength": 1,
+      "title": "State Fingerprint",
+      "type": "string"
+    },
+    "bounds_digest": {
+      "minLength": 1,
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Bounds Digest",
+      "type": "string"
+    },
+    "base_certificate_digest": {
+      "minLength": 1,
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Base Certificate Digest",
+      "type": "string"
+    },
+    "terminal_set_digest": {
+      "minLength": 1,
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Terminal Set Digest",
+      "type": "string"
+    },
+    "atom_vocabulary_digest": {
+      "minLength": 1,
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Atom Vocabulary Digest",
+      "type": "string"
+    },
+    "implementation_version": {
+      "default": "goal_support/v1",
+      "minLength": 1,
+      "title": "Implementation Version",
+      "type": "string"
+    },
+    "stats": {
+      "$ref": "#/$defs/ObstructionCoreStatsV1"
+    },
+    "core_digest": {
+      "default": "",
+      "pattern": "^[0-9a-f]{64}$|^$",
+      "title": "Core Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "mode",
+    "core_atoms",
+    "terminal_failure_sets",
+    "profile_digest",
+    "state_fingerprint",
+    "bounds_digest",
+    "base_certificate_digest",
+    "terminal_set_digest",
+    "atom_vocabulary_digest",
+    "stats"
+  ],
+  "title": "DomainObstructionCoreV1",
+  "type": "object"
+}
