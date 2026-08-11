@@ -17,6 +17,10 @@ new owner layered on three existing ones it must never duplicate:
   do it themselves (see ``tests/test_data/test_progspec/test_synthesis_problem.py``
   for a round trip through both the ``openui`` and ``symbolic_regression``
   packs).
+* ``goal_constraints`` (:mod:`slm_training.data.progspec.goal_constraints`) —
+  compiled, authority-labeled goal constraints are emitted separately as
+  ``CompiledGoalConstraintSetV1``; this request envelope never declares
+  compiler-hard or verifier-hard pruning authority by itself.
 
 Design invariants (see SLM-444 acceptance criteria):
 

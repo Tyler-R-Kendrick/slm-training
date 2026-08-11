@@ -400,6 +400,7 @@ class OpenUISemanticPlanCompiler:
 # / resources/ownership_map.json "authority_tiers"). EvidenceKind values map
 # to it below rather than inventing a second restriction/authority system.
 AUTHORITY_TIER_COMPILER_HARD = "compiler-hard"
+AUTHORITY_TIER_VERIFIER_HARD = "verifier-hard"
 AUTHORITY_TIER_ORACLE_DIAGNOSTIC = "oracle-diagnostic"
 AUTHORITY_TIER_ADVISORY_LEARNED = "advisory-learned"
 AUTHORITY_TIER_EVALUATION_ONLY = "evaluation-only"

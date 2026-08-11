@@ -1,4 +1,10 @@
-"""Versioned, provenance-aware semantic plan skeleton for SPV0."""
+"""Versioned, provenance-aware semantic plan skeleton for SPV0.
+
+Compiled goal constraints that a candidate must satisfy are owned separately
+by :mod:`slm_training.data.progspec.goal_constraints` (``GoalConstraintV1`` /
+``CompiledGoalConstraintSetV1``). ``SemanticPlanV1`` remains the program-side
+plan IR; it must not absorb that compiled constraint contract.
+"""
 
 from __future__ import annotations
 
