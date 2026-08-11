@@ -281,6 +281,26 @@
       "notes": "G4 reasoning harness package barrel; symbols live in bench.py (ReasoningBenchConfig, run_reasoning_bench) and abstract_cot_warmup.py (AbstractWarmupCampaignV1, run_abstract_cot_warmup). reasoning/revmath is a typed profile over this owner, not a sibling trainer."
     },
     {
+      "id": "revmath_schemas",
+      "kind": "schema",
+      "owner_module": "src/slm_training/harnesses/reasoning/revmath/schemas.py",
+      "owner_symbols": [
+        "RevmathTaskV1",
+        "RevmathCorpusEntryV1",
+        "RevmathResultV1",
+        "RevmathRepairRecordV1",
+        "RevmathReportV1",
+        "RevmathFourAxisAnalysisV1",
+        "assert_repair_preserves_identity",
+        "parse_revmath_task",
+        "parse_revmath_result",
+        "parse_revmath_repair"
+      ],
+      "design_doc": "docs/design/reverse-mathematics-computability.md",
+      "ownership_map_subsystem": null,
+      "notes": "HARN-02 typed contracts for reasoning/revmath; runner semantics remain HARN-03."
+    },
+    {
       "id": "continuous_formal_promote",
       "kind": "command",
       "owner_module": "scripts/run_autotrain_continuous.py",
@@ -321,6 +341,13 @@
       "extends": "reasoning_harness_parent",
       "new_owner_justified": false,
       "justification": "Registers reasoning/revmath in harnesses/reasoning/profiles.py and certifies harness/self-healing parity via revmath_harness_parity.json; absorbs HARN-12 audit scope."
+    },
+    {
+      "issue": "HARN-02",
+      "linear_id": "SLM-527",
+      "extends": "reasoning_harness_parent",
+      "new_owner_justified": true,
+      "justification": "Strict task/corpus/result/repair/report schemas live under harnesses/reasoning/revmath/ (new schema owner justified); bind SolverJudgmentV1 and campaign identity without a parallel evidence store."
     }
   ],
   "prohibited_duplicate_risks": [

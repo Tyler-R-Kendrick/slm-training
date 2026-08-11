@@ -7,8 +7,8 @@ bench / warmup path — this module adds discovery only, not task semantics.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Mapping
 
 DEFAULT_PROFILE_ID = "reasoning/g4"
 REVMATH_PROFILE_ID = "reasoning/revmath"
@@ -63,7 +63,7 @@ PROFILES: Mapping[str, ReasoningProfileV1] = {
         profile_id=REVMATH_PROFILE_ID,
         description=(
             "Reverse-mathematics / computability typed profile over the G4 "
-            "reasoning harness; task schemas and runner land downstream."
+            "reasoning harness; HARN-02 schemas present, runner remains HARN-03."
         ),
         opt_in=True,
         task_semantics_ready=False,
@@ -112,14 +112,14 @@ def assert_default_unchanged() -> None:
     if revmath.task_semantics_ready:
         raise ReasoningProfileError(
             f"{REVMATH_PROFILE_ID!r} must stay task_semantics_ready=False "
-            "until HARN-02+ lands schemas and runner"
+            "until HARN-03 lands the deterministic runner"
         )
 
 
 __all__ = [
     "DEFAULT_PROFILE_ID",
-    "PROFILE_PARENT",
     "PROFILES",
+    "PROFILE_PARENT",
     "REVMATH_BIND_OWNERS",
     "REVMATH_PROFILE_ID",
     "ReasoningProfileError",

@@ -78,10 +78,10 @@
     {
       "id": "schemas.revmath_task_corpus_result_repair",
       "category": "schemas",
-      "required_owner": null,
-      "status": "blocker",
-      "blocker_issue": "HARN-02",
-      "notes": "Strict task/corpus/result/repair/report schemas; registration must not invent interim schemas."
+      "required_owner": "src/slm_training/harnesses/reasoning/revmath/schemas.py",
+      "status": "present",
+      "blocker_issue": null,
+      "notes": "HARN-02 strict task/corpus/result/repair/report schemas; SolverJudgmentV1 + four-axis attachment; repair freeze enforced."
     },
     {
       "id": "resources.owner_map",
@@ -193,7 +193,7 @@
       "required_owner": "src/slm_training/harnesses/distill/semantic_repair.py",
       "status": "present",
       "blocker_issue": null,
-      "notes": "SemanticRepairRecordV1 / RepairResidualV1 — extend, do not fork."
+      "notes": "SemanticRepairRecordV1 / RepairResidualV1 \u2014 extend, do not fork."
     },
     {
       "id": "repair.proposition_preserving_controller",

@@ -1,6 +1,6 @@
 # Reverse mathematics, computability, and canonical evidence ownership
 
-**Status:** profile registered + harness/self-healing parity audited (HARN-01 / SLM-520); owner map frozen (EVID-01 / SLM-515)  
+**Status:** HARN-02 schemas landed (SLM-527); profile registered + harness parity (HARN-01 / SLM-520); owner map frozen (EVID-01 / SLM-515)  
 **Base SHA:** `980aa465223adf7822f82930550c92b9240333ca` (`origin/main` at audit)  
 **Machine-readable map:** [`src/slm_training/resources/revmath_owner_map.json`](../../src/slm_training/resources/revmath_owner_map.json)  
 **Harness parity matrix:** [`src/slm_training/resources/revmath_harness_parity.json`](../../src/slm_training/resources/revmath_harness_parity.json)  
@@ -43,6 +43,7 @@ Every revmath run **must** bind to `ExperimentCampaignV1`, emit or consume evide
 | `version_registry` | version | `resources/versions.json` | (registry file) | component versions |
 | `agent_surface_parity` | agent surface | `scripts/verify_agent_surfaces.py` | `Obligation`, `check` | harness law matrix |
 | `reasoning_harness_parent` | profile parent | `harnesses/reasoning/__init__.py` | `run_reasoning_bench`, `AbstractWarmupCampaignV1` | G4 reasoning harness |
+| `revmath_schemas` | schema | `harnesses/reasoning/revmath/schemas.py` | `RevmathTaskV1`, `RevmathResultV1`, `RevmathRepairRecordV1`, … | HARN-02 typed contracts |
 | `continuous_formal_promote` | command | `scripts/run_autotrain_continuous.py` | `ensure_promote_formal_preflight` | promotion gate |
 
 Design references: [formal-autoresearch.md](formal-autoresearch.md), [formal-objects-multi-prover.md](formal-objects-multi-prover.md), [experiment-campaign-governance.md](experiment-campaign-governance.md), [repository-ownership-map.md](repository-ownership-map.md).
@@ -141,6 +142,21 @@ Reason: a standalone HARN-12 would duplicate the registration seam certificate a
 | Global `ownership_map.json` churn | deferred to parent integration agent per swarm contract |
 
 Reason: a standalone EVID-02 would duplicate EVID-01's ADR and force premature global map edits; the focused map + verifier satisfies fail-closed acceptance without a parallel orchestration layer.
+
+
+## HARN-02 schemas (SLM-527)
+
+Typed contracts live under [`harnesses/reasoning/revmath/schemas.py`](../../src/slm_training/harnesses/reasoning/revmath/schemas.py):
+
+| Type | Role |
+| --- | --- |
+| `RevmathTaskV1` | Task kinds + frozen proposition / base-theory / direction / corpus / budget / verifier-judge / campaign binding |
+| `RevmathCorpusEntryV1` | Corpus entry wrapping a task with matching corpus identity |
+| `RevmathResultV1` | Embeds `SolverJudgmentV1` (KERN-01) + proof/checker refs + `RevmathFourAxisAnalysisV1` |
+| `RevmathRepairRecordV1` | Immutable before/after proof digests; only `self_healing.may_modify` knobs |
+| `RevmathReportV1` | Campaign-bound report with closed judgment counts |
+
+Malformed tasks fail closed. Repairs cannot alter proposition / assumption / campaign identity (`assert_repair_preserves_identity`). Unknown judgment payloads cannot be normalized into witnessed/refuted. Four-axis ledger *fields* on `FormalPreflightV1` remain EVID-03; results carry the analysis attachment now. **Runner / replay / report path:** HARN-03.
 
 ## Honesty
 
