@@ -25,6 +25,21 @@ JSON Schema: `src/slm_training/resources/formal_object.schema.json`
 | `required_checkers` | Minimum backends that must run |
 | `tier` | `production_core` or `ecosystem_library` |
 
+### Authority envelope (EVID-06)
+
+Schema: `formal_authority/v2`  
+Code: `src/slm_training/formal/authority.py`  
+JSON Schema: `src/slm_training/resources/formal_authority.schema.json`
+
+Converges portable `FormalObjectV1` and campaign `FormalPreflightV1` into one
+claim/evidence authority contract via **adapters** (not a third evidence stack).
+The envelope carries KERN-01 `SolverJudgmentV1`, optional EVID-03 four-axis
+ledger digest + EVID-04 `bound_ast_ids`, checker results/capabilities,
+source/toolchain identity, certificate/replay digests, and an explicit
+`authority_class`. Incomplete/skipped/unknown checker or preflight evidence
+cannot be represented as checked semantic refutation. Historical v1 artifacts
+remain readable; preferred writes emit v2 (`prefer_write_payload`).
+
 ### Exports
 
 | Source | Exporter |

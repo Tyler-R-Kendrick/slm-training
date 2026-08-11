@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "formal_authority/v2",
+  "title": "FormalAuthorityV2",
+  "type": "object",
+  "required": [
+    "schema",
+    "claim_id",
+    "surface",
+    "judgment",
+    "authority_class",
+    "v1_artifact",
+    "v1_content_digest",
+    "four_axis_ledger_sha256",
+    "bound_ast_ids",
+    "checker_results",
+    "checker_capabilities",
+    "source_digests",
+    "toolchain",
+    "certificate_digest",
+    "replay_digest",
+    "empirical_remainder_claim_ids",
+    "empirical_remainder_notes",
+    "content_digest"
+  ],
+  "properties": {
+    "schema": { "const": "formal_authority/v2" },
+    "claim_id": { "type": "string", "minLength": 1 },
+    "surface": {
+      "type": "string",
+      "enum": ["formal_object", "formal_preflight"]
+    },
+    "judgment": {
+      "type": "object",
+      "required": ["schema", "outcome", "payload", "checked"],
+      "properties": {
+        "schema": { "const": "solver_judgment/v1" },
+        "outcome": {
+          "type": "string",
+          "enum": ["witnessed", "refuted", "unknown", "invalid"]
+        },
+        "payload": { "type": "object" },
+        "checked": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    },
+    "authority_class": {
+      "type": "string",
+      "enum": [
+        "checked_semantic",
+        "unchecked",
+        "invalid",
+        "empirical_remainder"
+      ]
+    },
+    "v1_artifact": { "type": "object" },
+    "v1_content_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "four_axis_ledger_sha256": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "bound_ast_ids": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "checker_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["backend", "status"],
+        "properties": {
+          "backend": { "type": "string", "minLength": 1 },
+          "status": {
+            "type": "string",
+            "enum": ["pass", "fail", "skipped", "unknown"]
+          },
+          "detail": { "type": "string" },
+          "result_digest": {
+            "type": ["string", "null"],
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "checker_capabilities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["backend", "available"],
+        "properties": {
+          "backend": { "type": "string", "minLength": 1 },
+          "available": { "type": "boolean" },
+          "notes": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "source_digests": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      }
+    },
+    "toolchain": {
+      "type": "object",
+      "properties": {
+        "lean_version": { "type": ["string", "null"] },
+        "mathlib_version": { "type": ["string", "null"] },
+        "build_output_sha256": {
+          "type": ["string", "null"],
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "checker_contract": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "certificate_digest": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "replay_digest": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "empirical_remainder_claim_ids": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "empirical_remainder_notes": { "type": "string" },
+    "content_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "additionalProperties": false
+}

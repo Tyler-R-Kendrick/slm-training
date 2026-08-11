@@ -3370,7 +3370,7 @@
       ]
     },
     "governance.revmath_owners": {
-      "version": "v12",
+      "version": "v13",
       "kind": "gate",
       "paths": [
         "docs/design/adr-revmath-reasoning-profile.md",
@@ -3380,6 +3380,11 @@
         "tests/test_scripts/test_verify_revmath_owners.py"
       ],
       "history": [
+        {
+          "version": "v13",
+          "date": "2026-08-11",
+          "note": "EVID-06 (SLM-526): mark formal_authority/v2 extension seam done; document adapter ownership on formal_object_schema."
+        },
         {
           "version": "v12",
           "date": "2026-08-11T12:54:41Z",
@@ -4860,7 +4865,7 @@
       ]
     },
     "harness.autoresearch.formal": {
-      "version": "v16",
+      "version": "v17",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/formal.py",
@@ -4873,6 +4878,11 @@
         "tests/test_autoresearch/test_formal_four_axis_ledger.py"
       ],
       "history": [
+        {
+          "version": "v17",
+          "date": "2026-08-11",
+          "note": "EVID-06 (SLM-526): FormalPreflight migrate/read accepts formal_authority/v2 downgrade adapter; facade formal_preflight_as_authority_v2."
+        },
         {
           "version": "v16",
           "date": "2026-08-11",
@@ -17457,9 +17467,12 @@
       ]
     },
     "formal.objects": {
-      "version": "v11",
+      "version": "v12",
       "kind": "harness",
       "paths": [
+        "src/slm_training/formal/authority.py",
+        "src/slm_training/resources/formal_authority.schema.json",
+        "tests/test_formal/test_formal_authority_v2.py",
         "src/slm_training/formal/__init__.py",
         "src/slm_training/formal/objects.py",
         "src/slm_training/formal/checkers.py",
@@ -17477,6 +17490,11 @@
         "tests/test_formal/test_event_trace.py"
       ],
       "history": [
+        {
+          "version": "v12",
+          "date": "2026-08-11",
+          "note": "EVID-06 (SLM-526): formal_authority/v2 claim/evidence envelope with FormalObjectV1 and FormalPreflightV1 adapters; incomplete/skipped/unknown cannot be checked semantic refutation."
+        },
         {
           "version": "v11",
           "date": "2026-08-11",
