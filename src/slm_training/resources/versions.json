@@ -41,6 +41,11 @@
         {
           "version": "v19",
           "date": "2026-08-11",
+          "note": "no-bump: ignore Test/Generated/ bridge artifacts from EVID-07 theorem binding."
+        },
+        {
+          "version": "v19",
+          "date": "2026-08-11",
           "note": "KERN-06 (SLM-524): EventTrace machine cost models + composition/nonnegativity/conditional wall-clock transfer; repair Judgment/DecodeInvariants proofs for Lean 4.30; ExactClosure fixtures use decide (Makefile audit)."
         },
         {
@@ -3389,6 +3394,11 @@
           "version": "v15",
           "date": "2026-08-11T13:29:36Z",
           "note": "HARN-11 (SLM-554): revmath_fixture_corpus surface + extension_seams row."
+        },
+        {
+          "version": "v14",
+          "date": "2026-08-11",
+          "note": "no-bump: EVID-07 ownership note on formal objects / theorem_binding.py (same owners)."
         },
         {
           "version": "v14",
@@ -17492,9 +17502,11 @@
       ]
     },
     "formal.objects": {
-      "version": "v12",
+      "version": "v13",
       "kind": "harness",
       "paths": [
+        "tests/test_formal/test_theorem_binding.py",
+        "src/slm_training/formal/theorem_binding.py",
         "src/slm_training/formal/authority.py",
         "src/slm_training/resources/formal_authority.schema.json",
         "tests/test_formal/test_formal_authority_v2.py",
@@ -17515,6 +17527,11 @@
         "tests/test_formal/test_event_trace.py"
       ],
       "history": [
+        {
+          "version": "v13",
+          "date": "2026-08-11",
+          "note": "EVID-07 (SLM-534): bind Lean claims to exact proposition, toolchain/lake lock, source-tree digest, and #print axioms footprint; bridge example check; mutation suite."
+        },
         {
           "version": "v12",
           "date": "2026-08-11",

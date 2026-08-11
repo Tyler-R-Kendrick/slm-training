@@ -40,6 +40,13 @@ source/toolchain identity, certificate/replay digests, and an explicit
 cannot be represented as checked semantic refutation. Historical v1 artifacts
 remain readable; preferred writes emit v2 (`prefer_write_payload`).
 
+### Exact theorem binding (EVID-07)
+
+Schema: `lean.theorem_binding/v1`  
+Code: `src/slm_training/formal/theorem_binding.py` (wired through `export_lean_claim`, `check_lean_kernel`, and `FormalAuthorityV2.theorem_binding`).
+
+A Lean claim seals the fully-qualified declaration name, expected proposition fingerprint, Lean toolchain, lake manifest/lock digest, source-tree digest, and transitive axiom footprint. The Lean checker generates a bridge that `#check`s the declaration and proves `example : ExpectedProposition := Fully.Qualified.name`, runs `#print axioms` for that declaration, and fails on proposition mutation, module/catalog redirection, source/toolchain drift, unexpected axioms, missing declarations, or stale digests. The project-wide forbidden-proof audit (`make test`) remains an *additional* check — never a substitute for exact binding.
+
 ### Exports
 
 | Source | Exporter |
@@ -55,7 +62,7 @@ remain readable; preferred writes emit v2 (`prefer_write_payload`).
 | `python_structural` | Pure list-based law encoding + certificate honesty | all kinds |
 | `python_reference` | Independent set/digest-first re-encoding of the same laws | all kinds |
 | `python_replay` | Full enumerative search replay (`replay_support_certificate`) when expander+verifier context is supplied | support certificates |
-| `lean_kernel` | Optional `lake build LeverProofLean` | lean claims / closure laws |
+| `lean_kernel` | Optional exact theorem binding bridge + `#print axioms` + additional `make test` audit | lean claims / closure laws |
 
 **Rule:** Lean is never sole authority. `loop_requires_multi_backend` rejects
 acceptance when only `lean_kernel` succeeds (`single-kernel reliance`).

@@ -1,4 +1,4 @@
-"""Formal claim/evidence authority envelope (EVID-06 / SLM-526).
+"""Formal claim/evidence authority envelope (EVID-06 / EVID-07).
 
 Converges portable ``FormalObjectV1`` and campaign ``FormalPreflightV1`` into
 one ``formal_authority/v2`` contract via adapters — not a third evidence stack,
@@ -124,6 +124,8 @@ class ToolchainIdentityV1:
     mathlib_version: str | None = None
     build_output_sha256: str | None = None
     checker_contract: str | None = None
+    lake_manifest_digest: str | None = None
+    source_tree_digest: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -131,6 +133,8 @@ class ToolchainIdentityV1:
             "mathlib_version": self.mathlib_version,
             "build_output_sha256": self.build_output_sha256,
             "checker_contract": self.checker_contract,
+            "lake_manifest_digest": self.lake_manifest_digest,
+            "source_tree_digest": self.source_tree_digest,
         }
 
     @classmethod
@@ -138,6 +142,8 @@ class ToolchainIdentityV1:
         if not data:
             return cls()
         build = data.get("build_output_sha256")
+        lake = data.get("lake_manifest_digest")
+        tree = data.get("source_tree_digest")
         return cls(
             lean_version=None if data.get("lean_version") is None else str(data["lean_version"]),
             mathlib_version=(
@@ -151,6 +157,8 @@ class ToolchainIdentityV1:
                 if data.get("checker_contract") is None
                 else str(data["checker_contract"])
             ),
+            lake_manifest_digest=None if lake is None else str(lake),
+            source_tree_digest=None if tree is None else str(tree),
         )
 
 
@@ -256,10 +264,11 @@ class FormalAuthorityV2:
     empirical_remainder_claim_ids: tuple[str, ...]
     empirical_remainder_notes: str
     content_digest: str
+    theorem_binding: dict[str, Any] | None = None
     schema: str = FORMAL_AUTHORITY_SCHEMA
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        out = {
             "schema": self.schema,
             "claim_id": self.claim_id,
             "surface": self.surface,
@@ -281,6 +290,9 @@ class FormalAuthorityV2:
             "empirical_remainder_notes": self.empirical_remainder_notes,
             "content_digest": self.content_digest,
         }
+        if self.theorem_binding is not None:
+            out["theorem_binding"] = dict(self.theorem_binding)
+        return out
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> FormalAuthorityV2:
@@ -350,6 +362,11 @@ class FormalAuthorityV2:
             empirical_remainder_claim_ids=empirical_ids,
             empirical_remainder_notes=str(data.get("empirical_remainder_notes", "")),
             content_digest=str(data["content_digest"]),
+            theorem_binding=(
+                None
+                if data.get("theorem_binding") is None
+                else dict(data["theorem_binding"])
+            ),
             schema=str(data["schema"]),
         )
         recomputed = _sha256(_canonical_json(_authority_digest_body(obj.to_dict())))
@@ -379,6 +396,7 @@ def build_formal_authority_v2(
     empirical_remainder_claim_ids: Sequence[str] = (),
     empirical_remainder_notes: str = "",
     authority_class: AuthorityClassName | None = None,
+    theorem_binding: Mapping[str, Any] | None = None,
 ) -> FormalAuthorityV2:
     """Construct a validated v2 envelope (preferred write path)."""
 
@@ -417,6 +435,8 @@ def build_formal_authority_v2(
         "empirical_remainder_claim_ids": list(empirical_ids),
         "empirical_remainder_notes": empirical_remainder_notes,
     }
+    if theorem_binding is not None:
+        provisional["theorem_binding"] = dict(theorem_binding)
     digest = _sha256(_canonical_json(provisional))
     return FormalAuthorityV2.from_dict({**provisional, "content_digest": digest})
 
@@ -471,6 +491,24 @@ def from_formal_object_v1(
             CheckerCapabilityRefV1(backend=name, available=True)
             for name in obj.required_checkers
         )
+    source_digests: dict[str, str] = {
+        "formal_object.content_digest": obj.content_digest
+    }
+    toolchain = ToolchainIdentityV1()
+    binding_payload = None
+    raw_binding = obj.payload.get("theorem_binding") if isinstance(obj.payload, dict) else None
+    if isinstance(raw_binding, Mapping):
+        from slm_training.formal.theorem_binding import LeanTheoremBindingV1
+
+        binding = LeanTheoremBindingV1.from_dict(raw_binding)
+        binding_payload = binding.to_dict()
+        source_digests.update(binding.source_digest_map())
+        toolchain = ToolchainIdentityV1(
+            lean_version=binding.lean_version,
+            lake_manifest_digest=binding.lake_manifest_digest,
+            source_tree_digest=binding.source_tree_digest,
+            checker_contract="lean.theorem_binding/v1",
+        )
     return build_formal_authority_v2(
         claim_id=obj.object_id,
         surface="formal_object",
@@ -479,11 +517,13 @@ def from_formal_object_v1(
         v1_content_digest=obj.content_digest,
         checker_results=checker_results,
         checker_capabilities=capabilities,
-        source_digests={"formal_object.content_digest": obj.content_digest},
+        source_digests=source_digests,
+        toolchain=toolchain,
         certificate_digest=cert,
         replay_digest=replay_digest,
         empirical_remainder_claim_ids=empirical_remainder_claim_ids,
         empirical_remainder_notes=empirical_remainder_notes,
+        theorem_binding=binding_payload,
     )
 
 
@@ -706,6 +746,7 @@ __all__ = [
     "CheckerResultRefV1",
     "FormalAuthorityV2",
     "ToolchainIdentityV1",
+    # theorem binding helpers re-exported via formal.theorem_binding
     "build_formal_authority_v2",
     "checker_result_from_backend",
     "derive_authority_class",

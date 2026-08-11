@@ -14,7 +14,7 @@ Backends
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 import fcntl
 import hashlib
@@ -323,21 +323,232 @@ def _theorem_presence_violation(obj: FormalObjectV1) -> str | None:
     return None
 
 
+def _theorem_binding_violations(
+    obj: FormalObjectV1,
+    *,
+    live_axiom_footprint: Sequence[str] | None = None,
+    require_axioms: bool = True,
+) -> list[str]:
+    """EVID-07 exact proposition/environment binding (not project-wide audit)."""
+
+    from slm_training.formal.objects import lean_claim_catalog
+    from slm_training.formal.theorem_binding import (
+        LeanTheoremBindingV1,
+        verify_theorem_binding,
+    )
+
+    raw = obj.payload.get("theorem_binding")
+    if not isinstance(raw, Mapping):
+        return ["lean claim missing payload.theorem_binding (EVID-07)"]
+    try:
+        binding = LeanTheoremBindingV1.from_dict(raw)
+    except (KeyError, TypeError, ValueError) as exc:
+        return [f"invalid theorem_binding: {exc}"]
+
+    theorem_id = obj.statement.get("theorem_id")
+    module = obj.statement.get("module")
+    if isinstance(theorem_id, str) and theorem_id != binding.fq_name:
+        return [
+            f"fq_name mismatch: statement.theorem_id={theorem_id!r} "
+            f"binding.fq_name={binding.fq_name!r}"
+        ]
+    if isinstance(module, str) and module != binding.module:
+        return [
+            f"module redirection: statement.module={module!r} "
+            f"binding.module={binding.module!r}"
+        ]
+
+    catalog_module: str | None = None
+    if isinstance(theorem_id, str):
+        catalog = lean_claim_catalog().get(theorem_id)
+        if catalog is not None:
+            catalog_module = str(catalog["module"])
+
+    return verify_theorem_binding(
+        binding,
+        lean_root=LEAN_ROOT,
+        catalog_module=catalog_module,
+        live_axiom_footprint=live_axiom_footprint,
+        require_axioms=require_axioms,
+    )
+
+
+def write_theorem_binding_bridge(
+    obj: FormalObjectV1,
+    *,
+    destination: Path | None = None,
+) -> Path:
+    """Write the EVID-07 ``#check`` / ``example : Expected := fq`` bridge file."""
+
+    from slm_training.formal.theorem_binding import (
+        LeanTheoremBindingV1,
+        render_bridge_lean,
+    )
+
+    raw = obj.payload.get("theorem_binding")
+    if not isinstance(raw, Mapping):
+        raise ValueError("lean claim missing payload.theorem_binding")
+    binding = LeanTheoremBindingV1.from_dict(raw)
+    text = render_bridge_lean(
+        module=binding.module,
+        fq_name=binding.fq_name,
+        expected_proposition=binding.expected_proposition,
+    )
+    out = destination or (
+        LEAN_ROOT
+        / "Test"
+        / "Generated"
+        / f"Bind_{binding.fq_name.replace('.', '_')}.lean"
+    )
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(text, encoding="utf-8")
+    return out
+
+
+def run_theorem_binding_bridge(
+    obj: FormalObjectV1,
+    *,
+    timeout_s: float | None = None,
+    already_locked: bool = False,
+) -> tuple[CheckerResult | None, tuple[str, ...] | None]:
+    """Run the binding bridge under ``lake env lean`` and parse axiom print.
+
+    Returns ``(failure_result_or_None, live_axiom_footprint_or_None)``.
+    When ``already_locked`` is true, the caller holds ``FormalProjectLock``.
+    """
+
+    from slm_training.formal.theorem_binding import (
+        LeanTheoremBindingV1,
+        parse_axiom_print,
+    )
+
+    raw = obj.payload.get("theorem_binding")
+    if not isinstance(raw, Mapping):
+        return (
+            CheckerResult(
+                checker_id=CHECKER_LEAN_KERNEL,
+                backend=CHECKER_LEAN_KERNEL,
+                ok=False,
+                detail="lean claim missing payload.theorem_binding",
+            ),
+            None,
+        )
+    try:
+        binding = LeanTheoremBindingV1.from_dict(raw)
+    except (KeyError, TypeError, ValueError) as exc:
+        return (
+            CheckerResult(
+                checker_id=CHECKER_LEAN_KERNEL,
+                backend=CHECKER_LEAN_KERNEL,
+                ok=False,
+                detail=f"invalid theorem_binding: {exc}",
+            ),
+            None,
+        )
+
+    total, _interrupt_after, _grace = formal_process_budget(timeout_s)
+    try:
+        bridge_path = write_theorem_binding_bridge(obj)
+    except (OSError, ValueError) as exc:
+        return (
+            CheckerResult(
+                checker_id=CHECKER_LEAN_KERNEL,
+                backend=CHECKER_LEAN_KERNEL,
+                ok=False,
+                detail=f"bridge write failed: {exc}",
+            ),
+            None,
+        )
+
+    def _run(budget: float) -> BoundedProcessResult:
+        return run_formal_process(
+            ["lake", "env", "lean", str(bridge_path.relative_to(LEAN_ROOT))],
+            cwd=LEAN_ROOT,
+            timeout_seconds=budget,
+        )
+
+    try:
+        if already_locked:
+            bounded = _run(max(0.001, float(total)))
+        else:
+            with FormalProjectLock(LEAN_ROOT, timeout_seconds=total) as lock:
+                remaining = max(0.001, total - lock.wait_seconds)
+                bounded = _run(remaining)
+    except TimeoutError as exc:
+        return (
+            CheckerResult(
+                checker_id=CHECKER_LEAN_KERNEL,
+                backend=CHECKER_LEAN_KERNEL,
+                ok=False,
+                detail=str(exc),
+            ),
+            None,
+        )
+
+    if bounded.outcome is ProcessOutcome.LAUNCH_FAILED:
+        return (
+            CheckerResult(
+                checker_id=CHECKER_LEAN_KERNEL,
+                backend=CHECKER_LEAN_KERNEL,
+                ok=False,
+                detail=f"binding bridge launch failed: {bounded.launch_error or 'unknown'}",
+            ),
+            None,
+        )
+    if bounded.timed_out:
+        return (
+            CheckerResult(
+                checker_id=CHECKER_LEAN_KERNEL,
+                backend=CHECKER_LEAN_KERNEL,
+                ok=False,
+                detail="binding bridge timed out",
+            ),
+            None,
+        )
+    combined = (bounded.stdout or "") + "\n" + (bounded.stderr or "")
+    if int(bounded.returncode or 0) != 0:
+        tail = combined[-500:]
+        return (
+            CheckerResult(
+                checker_id=CHECKER_LEAN_KERNEL,
+                backend=CHECKER_LEAN_KERNEL,
+                ok=False,
+                detail=f"binding bridge failed (proposition/module): {tail}",
+            ),
+            None,
+        )
+    try:
+        axioms = parse_axiom_print(combined, fq_name=binding.fq_name)
+    except ValueError as exc:
+        return (
+            CheckerResult(
+                checker_id=CHECKER_LEAN_KERNEL,
+                backend=CHECKER_LEAN_KERNEL,
+                ok=False,
+                detail=str(exc),
+            ),
+            None,
+        )
+    return None, axioms
+
+
 def check_lean_kernel(
     obj: FormalObjectV1,
     *,
     timeout_s: float | None = None,
     enabled: bool = True,
+    run_binding_bridge: bool = True,
+    run_project_audit: bool = True,
+    live_axiom_footprint: Sequence[str] | None = None,
 ) -> CheckerResult:
     """Optional Lean 4 kernel audit — never sole authority for the loop.
 
-    Runs the project's canonical trust check (``make test``: forbidden-token
-    scan over every proof source, a build, and an axiom-purity audit of every
-    exported theorem via ``Test/Proofs.lean`` + a ``sorryAx`` scan — see
-    ``docs/design/leverproof-integration.md``), not a bare ``lake build``. A
-    passing project-wide audit does not by itself confirm this claim's
-    specific theorem still exists under its cited name, so Lean-claim objects
-    also get a source-level presence check first.
+    For Lean claims (EVID-07):
+    1. Source-level declaration presence.
+    2. Exact proposition/environment binding (sealed digests + bridge).
+    3. ``#print axioms`` for the exact declaration (via binding bridge).
+    4. Project-wide ``make test`` forbidden-proof / axiom-purity audit as an
+       *additional* check — never a substitute for (2)/(3).
     """
 
     if not enabled:
@@ -364,6 +575,10 @@ def check_lean_kernel(
             detail=f"lean package missing at {LEAN_ROOT}",
         )
 
+    live_axioms = live_axiom_footprint
+    notes: list[str] = []
+    lock_wait = 0.0
+
     if obj.kind is FormalObjectKind.LEAN_CLAIM:
         presence_violation = _theorem_presence_violation(obj)
         if presence_violation is not None:
@@ -373,60 +588,129 @@ def check_lean_kernel(
                 ok=False,
                 detail=presence_violation,
             )
-
-    # The formal checker is an eval-adjacent subprocess and must obey the same
-    # repository wall cap as every other run.  ``subprocess.run(timeout=...)``
-    # does not reap descendants and previously allowed callers to pass a
-    # timeout larger than MAX_RUN_SECONDS.  Use the canonical process-group
-    # runner so Lake/Lean children are interrupted and reaped within the
-    # derived interrupt + kill-grace budget.
-    total, _interrupt_after, _grace = formal_process_budget(timeout_s)
-    try:
-        with FormalProjectLock(LEAN_ROOT, timeout_seconds=total) as lock:
-            remaining = max(0.001, total - lock.wait_seconds)
-            bounded = run_formal_process(
-                ["make", "test"],
-                cwd=LEAN_ROOT,
-                timeout_seconds=remaining,
+        # Digest/proposition checks without requiring axioms yet.
+        binding_violations = _theorem_binding_violations(
+            obj,
+            live_axiom_footprint=live_axioms,
+            require_axioms=live_axioms is not None,
+        )
+        if binding_violations:
+            return CheckerResult(
+                checker_id=CHECKER_LEAN_KERNEL,
+                backend=CHECKER_LEAN_KERNEL,
+                ok=False,
+                detail="; ".join(binding_violations),
             )
-    except TimeoutError as exc:
-        return CheckerResult(
-            checker_id=CHECKER_LEAN_KERNEL,
-            backend=CHECKER_LEAN_KERNEL,
-            ok=False,
-            detail=str(exc),
+
+    want_bridge = (
+        obj.kind is FormalObjectKind.LEAN_CLAIM
+        and run_binding_bridge
+        and live_axioms is None
+    )
+    want_audit = run_project_audit
+    total, _interrupt_after, _grace = formal_process_budget(timeout_s)
+    bounded: BoundedProcessResult | None = None
+
+    if want_bridge or want_audit:
+        try:
+            with FormalProjectLock(LEAN_ROOT, timeout_seconds=total) as lock:
+                lock_wait = lock.wait_seconds
+                remaining = max(0.001, total - lock.wait_seconds)
+                if want_bridge:
+                    bridge_budget = (
+                        max(0.001, remaining * 0.5) if want_audit else remaining
+                    )
+                    failure, live_axioms = run_theorem_binding_bridge(
+                        obj,
+                        timeout_s=bridge_budget,
+                        already_locked=True,
+                    )
+                    if failure is not None:
+                        return failure
+                    notes.append("binding bridge ok")
+                    remaining = max(0.001, remaining - bridge_budget)
+                if obj.kind is FormalObjectKind.LEAN_CLAIM:
+                    if want_bridge or live_axioms is not None:
+                        axiom_violations = _theorem_binding_violations(
+                            obj,
+                            live_axiom_footprint=live_axioms,
+                            require_axioms=True,
+                        )
+                        if axiom_violations:
+                            return CheckerResult(
+                                checker_id=CHECKER_LEAN_KERNEL,
+                                backend=CHECKER_LEAN_KERNEL,
+                                ok=False,
+                                detail="; ".join(axiom_violations),
+                            )
+                    notes.append("theorem binding ok")
+                if want_audit:
+                    bounded = run_formal_process(
+                        ["make", "test"],
+                        cwd=LEAN_ROOT,
+                        timeout_seconds=remaining,
+                    )
+        except TimeoutError as exc:
+            return CheckerResult(
+                checker_id=CHECKER_LEAN_KERNEL,
+                backend=CHECKER_LEAN_KERNEL,
+                ok=False,
+                detail=str(exc),
+            )
+    elif obj.kind is FormalObjectKind.LEAN_CLAIM:
+        # Caller supplied axioms (or skipped bridge+audit): still seal-check.
+        axiom_violations = _theorem_binding_violations(
+            obj,
+            live_axiom_footprint=live_axioms,
+            require_axioms=live_axioms is not None,
         )
-    if bounded.outcome is ProcessOutcome.LAUNCH_FAILED:
-        return CheckerResult(
-            checker_id=CHECKER_LEAN_KERNEL,
-            backend=CHECKER_LEAN_KERNEL,
-            ok=False,
-            detail=f"lean test launch failed: {bounded.launch_error or 'unknown error'}",
+        if axiom_violations:
+            return CheckerResult(
+                checker_id=CHECKER_LEAN_KERNEL,
+                backend=CHECKER_LEAN_KERNEL,
+                ok=False,
+                detail="; ".join(axiom_violations),
+            )
+        notes.append("theorem binding ok")
+
+    if want_audit:
+        assert bounded is not None
+        if bounded.outcome is ProcessOutcome.LAUNCH_FAILED:
+            return CheckerResult(
+                checker_id=CHECKER_LEAN_KERNEL,
+                backend=CHECKER_LEAN_KERNEL,
+                ok=False,
+                detail=f"lean test launch failed: {bounded.launch_error or 'unknown error'}",
+            )
+        if bounded.timed_out:
+            return CheckerResult(
+                checker_id=CHECKER_LEAN_KERNEL,
+                backend=CHECKER_LEAN_KERNEL,
+                ok=False,
+                detail=f"lean test timed out after {total:.3f}s",
+            )
+        if int(bounded.returncode or 0) != 0:
+            tail = (bounded.stderr or bounded.stdout or "")[-500:]
+            return CheckerResult(
+                checker_id=CHECKER_LEAN_KERNEL,
+                backend=CHECKER_LEAN_KERNEL,
+                ok=False,
+                detail=f"make test failed: {tail}",
+            )
+        notes.append(
+            "make test ok (additional project-wide forbidden-proof audit; "
+            f"project_lock_wait_s={lock_wait:.3f})"
         )
-    if bounded.timed_out:
-        return CheckerResult(
-            checker_id=CHECKER_LEAN_KERNEL,
-            backend=CHECKER_LEAN_KERNEL,
-            ok=False,
-            detail=f"lean test timed out after {total:.3f}s",
-        )
-    if int(bounded.returncode or 0) != 0:
-        tail = (bounded.stderr or bounded.stdout or "")[-500:]
-        return CheckerResult(
-            checker_id=CHECKER_LEAN_KERNEL,
-            backend=CHECKER_LEAN_KERNEL,
-            ok=False,
-            detail=f"make test failed: {tail}",
-        )
+    else:
+        notes.append("project audit skipped")
+
     return CheckerResult(
         checker_id=CHECKER_LEAN_KERNEL,
         backend=CHECKER_LEAN_KERNEL,
         ok=True,
-        detail=(
-            "make test ok (theorem presence + axiom-purity audit; "
-            f"project_lock_wait_s={lock.wait_seconds:.3f})"
-        ),
+        detail="; ".join(notes) or "lean kernel ok",
     )
+
 
 
 def run_checkers(
@@ -489,4 +773,6 @@ __all__ = [
     "formal_process_budget",
     "run_formal_process",
     "run_checkers",
+    "run_theorem_binding_bridge",
+    "write_theorem_binding_bridge",
 ]

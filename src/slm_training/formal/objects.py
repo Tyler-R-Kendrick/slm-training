@@ -311,12 +311,12 @@ _LEAN_CLAIM_CATALOG: dict[str, dict[str, Any]] = {
         # Authority parity owned by judgment_truth_table.v1.json.
         "laws": ["unknown_not_removable"],
     },
-    "Judgment.authorizes_semantic_only_when_checked": {
+    "Judgment.unchecked_never_authorizes": {
         "module": "LeverProofLean.Judgment",
         "tier": "production_core",
         "laws": ["failed_replay_not_removable"],
     },
-    "Judgment.failure_flags_never_authorize_removal": {
+    "Judgment.timeout_never_authorizes_removal": {
         "module": "LeverProofLean.Judgment",
         "tier": "production_core",
         "laws": ["supported_not_removable", "unknown_not_removable"],
@@ -335,12 +335,24 @@ def export_lean_claim(
     *,
     object_id: str | None = None,
     proof_status: str = "proved",
+    lean_root: Any | None = None,
+    axiom_footprint: tuple[str, ...] | None = None,
+    seal_binding: bool = True,
 ) -> FormalObjectV1:
     """Export a Lean theorem as a formal object with structural law hooks.
 
     ``proof_status`` records the Lean-side status when known; structural and
     multi-backend checks do not trust that field alone.
+
+    When ``seal_binding`` is true (default), EVID-07 seals the exact
+    proposition + source/toolchain digests into ``payload.theorem_binding``.
+    Pass ``axiom_footprint`` from a live ``#print axioms`` when available;
+    otherwise the sealed footprint is empty and the Lean checker confirms it.
     """
+
+    from pathlib import Path
+
+    from slm_training.formal.theorem_binding import seal_theorem_binding
 
     if theorem_id not in _LEAN_CLAIM_CATALOG:
         raise KeyError(f"unknown lean claim theorem_id: {theorem_id!r}")
@@ -352,12 +364,27 @@ def export_lean_claim(
         "laws": list(meta["laws"]),
         "proof_status_declared": proof_status,
     }
-    payload = {
+    payload: dict[str, Any] = {
         "theorem_id": theorem_id,
         "module": meta["module"],
         "laws": list(meta["laws"]),
         "lean_source_hint": f"src/leverproof_lean/{meta['module'].replace('.', '/')}.lean",
     }
+    if seal_binding:
+        root = Path(lean_root) if lean_root is not None else (
+            Path(__file__).resolve().parents[2] / "leverproof_lean"
+        )
+        binding = seal_theorem_binding(
+            fq_name=theorem_id,
+            module=str(meta["module"]),
+            lean_root=root,
+            axiom_footprint=axiom_footprint,
+        )
+        payload["theorem_binding"] = binding.to_dict()
+        statement["expected_proposition_fingerprint"] = (
+            binding.expected_proposition_fingerprint
+        )
+        statement["fq_name"] = binding.fq_name
     oid = object_id or f"lean-claim:{theorem_id}"
     digest = _object_digest(FormalObjectKind.LEAN_CLAIM, oid, statement, payload)
     return FormalObjectV1(
