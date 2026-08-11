@@ -1,6 +1,6 @@
 # Reverse mathematics, computability, and canonical evidence ownership
 
-**Status:** HARN-02 schemas landed (SLM-527); profile registered + harness parity (HARN-01 / SLM-520); owner map frozen (EVID-01 / SLM-515)  
+**Status:** HARN-03 runner/replay/report landed (SLM-536); HARN-02 schemas (SLM-527); profile + parity (HARN-01 / SLM-520); owner map (EVID-01 / SLM-515)  
 **Base SHA:** `980aa465223adf7822f82930550c92b9240333ca` (`origin/main` at audit)  
 **Machine-readable map:** [`src/slm_training/resources/revmath_owner_map.json`](../../src/slm_training/resources/revmath_owner_map.json)  
 **Harness parity matrix:** [`src/slm_training/resources/revmath_harness_parity.json`](../../src/slm_training/resources/revmath_harness_parity.json)  
@@ -44,6 +44,10 @@ Every revmath run **must** bind to `ExperimentCampaignV1`, emit or consume evide
 | `agent_surface_parity` | agent surface | `scripts/verify_agent_surfaces.py` | `Obligation`, `check` | harness law matrix |
 | `reasoning_harness_parent` | profile parent | `harnesses/reasoning/__init__.py` | `run_reasoning_bench`, `AbstractWarmupCampaignV1` | G4 reasoning harness |
 | `revmath_schemas` | schema | `harnesses/reasoning/revmath/schemas.py` | `RevmathTaskV1`, `RevmathResultV1`, `RevmathRepairRecordV1`, … | HARN-02 typed contracts |
+| `revmath_runner` | runner | `harnesses/reasoning/revmath/runner.py` | `run_revmath_task`, `RevmathRunRecord` | HARN-03 bounded deterministic runner |
+| `revmath_plugins` | plugin | `harnesses/reasoning/revmath/plugins.py` | `RevmathTaskPlugin`, `resolve_plugin` | HARN-03 task-kind seam |
+| `revmath_replay` | replay | `harnesses/reasoning/revmath/replay.py` | `build_revmath_replay_bundle` | HARN-03 ReplayBundleV1 composition |
+| `revmath_report` | report | `harnesses/reasoning/revmath/report.py` | `build_revmath_report` | HARN-03 typed reports |
 | `continuous_formal_promote` | command | `scripts/run_autotrain_continuous.py` | `ensure_promote_formal_preflight` | promotion gate |
 
 Design references: [formal-autoresearch.md](formal-autoresearch.md), [formal-objects-multi-prover.md](formal-objects-multi-prover.md), [experiment-campaign-governance.md](experiment-campaign-governance.md), [repository-ownership-map.md](repository-ownership-map.md).
@@ -89,9 +93,9 @@ The profile id is **`reasoning/revmath`**. It parameterizes the G4 reasoning har
 - route all measured results through `ExperimentCampaignV1` and honest ship gates;
 - consume witnesses, activations, replay bundles, and dispositions from the owners above.
 
-**Registration seam (HARN-01):** [`harnesses/reasoning/profiles.py`](../../src/slm_training/harnesses/reasoning/profiles.py) registers `reasoning/g4` (default) and `reasoning/revmath` (opt-in, `task_semantics_ready=False`). `resolve_profile(None)` keeps the historical default — discovering/configuring revmath does not alter G4 bench or warmup behavior.
+**Registration seam (HARN-01):** [`harnesses/reasoning/profiles.py`](../../src/slm_training/harnesses/reasoning/profiles.py) registers `reasoning/g4` (default) and `reasoning/revmath` (opt-in, `task_semantics_ready=True` after HARN-03). `resolve_profile(None)` keeps the historical default — discovering/configuring revmath does not alter G4 bench or warmup behavior.
 
-Task schemas, runner, and repair controller are downstream (HARN-02+, HARN-03, HARN-09). This document owns **authority boundaries and parity obligations**; missing parity rows are explicit blockers in the matrix, never silent fallbacks.
+Task schemas (HARN-02) and deterministic runner/replay/report (HARN-03) are present; repair controller remains HARN-09. This document owns **authority boundaries and parity obligations**; missing parity rows are explicit blockers in the matrix, never silent fallbacks.
 
 ## Harness / self-healing parity matrix (HARN-01)
 
@@ -156,7 +160,19 @@ Typed contracts live under [`harnesses/reasoning/revmath/schemas.py`](../../src/
 | `RevmathRepairRecordV1` | Immutable before/after proof digests; only `self_healing.may_modify` knobs |
 | `RevmathReportV1` | Campaign-bound report with closed judgment counts |
 
-Malformed tasks fail closed. Repairs cannot alter proposition / assumption / campaign identity (`assert_repair_preserves_identity`). Unknown judgment payloads cannot be normalized into witnessed/refuted. Four-axis ledger *fields* on `FormalPreflightV1` remain EVID-03; results carry the analysis attachment now. **Runner / replay / report path:** HARN-03.
+Malformed tasks fail closed. Repairs cannot alter proposition / assumption / campaign identity (`assert_repair_preserves_identity`). Unknown judgment payloads cannot be normalized into witnessed/refuted. Four-axis ledger *fields* on `FormalPreflightV1` remain EVID-03; results carry the analysis attachment now.
+
+## HARN-03 runner / replay / report (SLM-536)
+
+| Module | Role |
+| --- | --- |
+| [`runner.py`](../../src/slm_training/harnesses/reasoning/revmath/runner.py) | Bounded `run_revmath_task`; maps process + plugin evidence through `SolverJudgmentV1` |
+| [`plugins.py`](../../src/slm_training/harnesses/reasoning/revmath/plugins.py) | Task-kind plan/interpret seam — no per-kind orchestrator fork |
+| [`replay.py`](../../src/slm_training/harnesses/reasoning/revmath/replay.py) | Deterministic `ReplayBundleV1` composition with identity + capture digests |
+| [`report.py`](../../src/slm_training/harnesses/reasoning/revmath/report.py) | `RevmathReportV1` aggregation + version stamp |
+| [`scripts/run_revmath_task.py`](../../scripts/run_revmath_task.py) | Hermetic/Lean CLI |
+
+Timeout, missing tool, incomplete check, unsupported kind, and malformed proof stay `unknown`/`invalid` — never witnessed/refuted. Runner does not mutate proposition or campaign state. Hermetic fixtures live under `resources/revmath/fixtures/`.
 
 ## Honesty
 
@@ -165,6 +181,7 @@ This document freezes **ownership and extension seams** — not ship readiness, 
 ## Commands
 
 ```bash
+python -m scripts.run_revmath_task --task src/slm_training/resources/revmath/fixtures/hermetic_forward_theorem.task.json --hermetic
 python -m scripts.verify_revmath_owners
 python -m scripts.verify_revmath_harness_parity
 python -m scripts.verify_agent_surfaces

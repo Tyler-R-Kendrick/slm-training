@@ -150,10 +150,10 @@
     {
       "id": "evidence.revmath_emit_path",
       "category": "evidence",
-      "required_owner": null,
-      "status": "blocker",
-      "blocker_issue": "HARN-03",
-      "notes": "Runner must emit canonical envelopes; no profile-local evidence store."
+      "required_owner": "src/slm_training/harnesses/reasoning/revmath/runner.py",
+      "status": "present",
+      "blocker_issue": null,
+      "notes": "HARN-03 runner emits DecodeStatsRecordV1 + typed results; no profile-local evidence store."
     },
     {
       "id": "replay.replay_bundle",
@@ -166,10 +166,10 @@
     {
       "id": "replay.revmath_deterministic_path",
       "category": "replay",
-      "required_owner": null,
-      "status": "blocker",
-      "blocker_issue": "HARN-03",
-      "notes": "Deterministic revmath runner + replay bundles."
+      "required_owner": "src/slm_training/harnesses/reasoning/revmath/replay.py",
+      "status": "present",
+      "blocker_issue": null,
+      "notes": "HARN-03 deterministic revmath runner + ReplayBundleV1 composition."
     },
     {
       "id": "bounded_execution.run_bounded_process",
