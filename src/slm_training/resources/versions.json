@@ -12,7 +12,7 @@
   ],
   "components": {
     "formal.leverproof": {
-      "version": "v16",
+      "version": "v17",
       "kind": "harness",
       "paths": [
         "src/leverproof_lean/",
@@ -40,9 +40,16 @@
         "src/slm_training/formal/finite_search_bounds.py",
         "src/slm_training/resources/formal/finite_search_bounds_fixtures.v1.json",
         "tests/test_formal/test_finite_search_bounds.py",
-        "docs/design/kern-03-finite-search-bounds.md"
+        "docs/design/kern-03-finite-search-bounds.md",
+        "src/leverproof_lean/LeverProofLean/ExactClosure.lean",
+        "docs/design/kern-05-closure-stabilization.md"
       ],
       "history": [
+        {
+          "version": "v17",
+          "date": "2026-08-11",
+          "note": "KERN-05: ExactClosure strict progress + finite stabilization bounds"
+        },
         {
           "version": "v16",
           "date": "2026-08-11",
@@ -17422,7 +17429,7 @@
       ]
     },
     "formal.objects": {
-      "version": "v8",
+      "version": "v9",
       "kind": "harness",
       "paths": [
         "src/slm_training/formal/__init__.py",
@@ -17430,9 +17437,17 @@
         "src/slm_training/formal/checkers.py",
         "src/slm_training/formal/structural.py",
         "src/slm_training/resources/formal_object.schema.json",
-        "docs/design/formal-objects-multi-prover.md"
+        "docs/design/formal-objects-multi-prover.md",
+        "src/slm_training/formal/closure_stabilization.py",
+        "src/slm_training/resources/formal/closure_stabilization_fixtures.v1.json",
+        "tests/test_formal/test_closure_stabilization.py"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-08-11",
+          "note": "KERN-05: closure stabilization Python parity + fixtures"
+        },
         {
           "version": "v8",
           "date": "2026-08-11",
@@ -18255,7 +18270,7 @@
       ]
     },
     "harness.reasoning.revmath": {
-      "version": "v8",
+      "version": "v9",
       "kind": "harness",
       "paths": [
         "scripts/run_revmath_task.py",
@@ -18273,6 +18288,11 @@
         "tests/test_harnesses/reasoning/test_revmath_quantitative_bound.py"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-08-11",
+          "note": "KERN-05: align quantitative closure extraction with stabilization bound certificate"
+        },
         {
           "version": "v8",
           "note": "HARN-08 (SLM-537): conservative RM labeling states + anti-overclaim validators; fixtures for positive/negative Big-Five mislabel cases; report disclaimers.",
@@ -18316,7 +18336,7 @@
       ]
     },
     "formal.bound_ast": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/formal/bound_ast.py",
@@ -18325,6 +18345,11 @@
         "tests/test_formal/test_bound_ast.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-11",
+          "note": "KERN-05: register bound.closure.stabilization.v1 certificate"
+        },
         {
           "version": "v1",
           "date": "2026-08-11",

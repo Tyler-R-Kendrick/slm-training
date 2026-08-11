@@ -30,8 +30,8 @@
   },
   "proposition": {
     "proposition_id": "thm.closure.live_upper",
-    "statement": "qualitative: exact closure never increases live candidates; survivors are at most pre-closure live cardinality",
-    "statement_sha256": "63fe86181b062c329e5d69619c92873cb43286436a60edf64e7c7330968913b4"
+    "statement": "qualitative: exact closure is fixed-point or removes >=1 live candidate; survivors at most pre-closure live cardinality (KERN-05)",
+    "statement_sha256": "828afa5425ceb8ae4a1a4665375901050a226218e7d901f53ce3ee7ee7b93088"
   },
   "schema_version": "revmath_task/v1",
   "task_id": "task.quant.closure_live_upper",

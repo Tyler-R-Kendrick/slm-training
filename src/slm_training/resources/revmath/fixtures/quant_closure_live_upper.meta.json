@@ -5,23 +5,23 @@
   "expected_bound_value": "7",
   "hermetic_scenario": "extractable",
   "kern_target": "closure_live_upper",
-  "lean_def": "closePass_subset",
+  "lean_def": "strict_progress_or_fixed_point",
   "lean_module": "LeverProofLean.ExactClosure",
   "machine_model": {
     "cost_per_expansion": null,
     "cost_per_verification": null,
     "name": "ExactClosureLiveCardinality",
-    "notes": "Survivor count \u2264 pre-closure live cardinality (closePass_subset)",
+    "notes": "KERN-05 survivor count \u2264 pre-closure live cardinality; strict removals \u2264 \u03a3 d_i",
     "wall_clock": false
   },
   "meta_id": "meta.quant.closure_live_upper",
-  "missing_assumption_notes": "Full KERN-05 strict progress/stabilization proofs may still be backlog; reporting registered live_upper only.",
+  "missing_assumption_notes": "KERN-05 strict progress/stabilization proved; reporting registered live_upper cardinality (not maximality). Strict-removal sum bound is bound.closure.strict_removals.v1.",
   "present_assumptions": [
     "exact_closure_certificate_checked",
     "finite_live_domain"
   ],
-  "qualitative_statement": "qualitative: exact closure never increases live candidates; survivors are at most pre-closure live cardinality",
-  "qualitative_statement_sha256": "63fe86181b062c329e5d69619c92873cb43286436a60edf64e7c7330968913b4",
+  "qualitative_statement": "qualitative: exact closure is fixed-point or removes >=1 live candidate; survivors at most pre-closure live cardinality (KERN-05)",
+  "qualitative_statement_sha256": "828afa5425ceb8ae4a1a4665375901050a226218e7d901f53ce3ee7ee7b93088",
   "qualitative_theorem_id": "thm.closure.live_upper",
   "required_assumptions": [
     "exact_closure_certificate_checked",
@@ -31,5 +31,5 @@
   "size_parameters": {
     "live_count": 7
   },
-  "theorem_ref": "ExactClosure.closePass_subset"
+  "theorem_ref": "ExactClosure.strict_progress_or_fixed_point"
 }

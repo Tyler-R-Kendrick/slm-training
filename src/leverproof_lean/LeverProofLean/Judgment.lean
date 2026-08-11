@@ -251,7 +251,7 @@ def sourceFromQueryResult (r : ExactClosure.QueryResult)
 theorem unknown_query_never_refuted_when_replay_skipped
     (r : ExactClosure.QueryResult) :
     classifyOutcome
-      (sourceFromQueryResult r false true false false false false false false true false false) ≠
+      (sourceFromQueryResult r false true false false false false false false true false) ≠
       .refuted :=
   skipped_replay_never_refuted _ (by decide)
 
@@ -259,7 +259,7 @@ theorem exact_closure_unknown_never_authorizes_removal
     (r : ExactClosure.QueryResult)
     (h : r.verdict = ExactClosure.Verdict.unknown) :
     authorizesRemoval (classify
-      (sourceFromQueryResult r false false false false false false false false false true r.replayOk)
+      (sourceFromQueryResult r false false false false false false false false false r.replayOk)
       true) = false := by
   have hout : classifyOutcome _ = .unknown := by
     unfold classifyOutcome sourceFromQueryResult h

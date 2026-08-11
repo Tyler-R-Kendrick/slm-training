@@ -173,7 +173,7 @@
     {
       "schema_version": "bound_ast/v1",
       "bound_ast_id": "bound.closure.live_upper.v1",
-      "meaning": "Certified closure never increases live candidates; survivor count is at most the pre-closure live cardinality (ExactClosure closePass_subset).",
+      "meaning": "KERN-05: certified closure never increases live candidates; survivor count is at most the pre-closure live cardinality (ExactClosure closePass_subset / strict_progress_or_fixed_point). Not a maximality claim.",
       "variables": [
         {
           "name": "live_count",
@@ -191,8 +191,37 @@
       "evaluable": true,
       "wall_clock_claim": false,
       "lean_module": "LeverProofLean.ExactClosure",
-      "lean_def": "closePass_subset",
-      "digest_sha256": "4268315e137a00a8b95fa1af6bc0cd658a68e4206fa535f1cae898435f699700"
+      "lean_def": "strict_progress_or_fixed_point",
+      "digest_sha256": "6522836fd8da94a89ccf50aa4e25dc4b09c70101332a95cde2db3b3df9bc4d56"
+    },
+    {
+      "schema_version": "bound_ast/v1",
+      "bound_ast_id": "bound.closure.strict_removals.v1",
+      "meaning": "KERN-05 product-lattice height: cumulative strict closure removals are at most the sum of per-hole domain sizes (ExactClosure.strictRemovalUpperBound). Not assignment-search (product) and not a wall-clock claim.",
+      "variables": [
+        {
+          "name": "domain_sizes",
+          "kind": "finite_sequence",
+          "domain": "nat",
+          "unit": "cardinality",
+          "meaning": "Per-hole live domain sizes before closure"
+        }
+      ],
+      "expression": {
+        "op": "sum_over",
+        "index": "d",
+        "sequence": "domain_sizes",
+        "body": {
+          "op": "var",
+          "name": "d"
+        }
+      },
+      "predicate": null,
+      "evaluable": true,
+      "wall_clock_claim": false,
+      "lean_module": "LeverProofLean.ExactClosure",
+      "lean_def": "strictRemovalUpperBound",
+      "digest_sha256": "b13b46e4a9681272ed8ac8a57d1d75600c1037e5a6ed696bb51196ca9f106210"
     },
     {
       "schema_version": "bound_ast/v1",
