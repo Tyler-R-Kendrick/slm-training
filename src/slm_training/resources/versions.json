@@ -3741,7 +3741,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v207",
+      "version": "v208",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -3797,6 +3797,11 @@
         "docs/design/integ-03-campaign-formal-evidence.md"
       ],
       "history": [
+        {
+          "version": "v208",
+          "date": "2026-08-11",
+          "note": "Strip private thrash bank keys (_thrash_slug) from continuous matrix knobs so OFAT control packages validate under HypothesisMatrix extra-forbidden schema after bank rotate onto treatment_key arms."
+        },
         {
           "version": "v207",
           "date": "2026-08-11",
