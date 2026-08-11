@@ -1,0 +1,1002 @@
+{
+  "corpus_id": "corpus.rm.hermetic.v1",
+  "corpus_sha256": "f52e7514c02a79fdb21f694c5268f9d44abc870c1ca4f474a6e814c1fbb1da4a",
+  "entries": [
+    {
+      "allowed_assumption_ids": [
+        "ISigma1",
+        "WKL_redundant"
+      ],
+      "allowed_labels": [
+        "rm_inspired_assumption_minimization"
+      ],
+      "artifact_sha256": "b91bab022052f87c380c58a86d53023b5ae5bcf1ea58c1266f8d567f25294242",
+      "base_theory_id": "RCA0",
+      "budget": {
+        "max_memory_mb": null,
+        "max_tactic_steps": 32,
+        "max_wall_seconds": 5.0,
+        "stopping_rule_ids": [
+          "wall_or_steps"
+        ]
+      },
+      "checker_ref": "hermetic_ablation_checker.py",
+      "claim_stem": null,
+      "corpus_class": "ablation_success",
+      "entry_id": "entry.corpus.ablation_success",
+      "expected_label_accepted": null,
+      "expected_outcome": null,
+      "expected_report": {
+        "minimal_remaining": [
+          "ISigma1"
+        ],
+        "weaker_witnessed": true
+      },
+      "expected_unknown_reason": null,
+      "meta_stem": "ablation_positive",
+      "mutation_expectations": [
+        {
+          "gate": "proposition_identity",
+          "kind": "proposition",
+          "must_fail": true
+        },
+        {
+          "gate": "judge_definitions",
+          "kind": "toolchain",
+          "must_fail": true
+        },
+        {
+          "gate": "base_theory_or_allowed_assumptions",
+          "kind": "source",
+          "must_fail": true
+        },
+        {
+          "gate": "expected_counterexample_semantics",
+          "kind": "certificate",
+          "must_fail": true
+        },
+        {
+          "gate": "corpus_membership",
+          "kind": "corpus_membership",
+          "must_fail": true
+        }
+      ],
+      "probe_id": null,
+      "proposition_id": "prop.add_zero",
+      "replay_digest": "c3ea47677daa77859cf39b207dbbd61cf6cb805986e915e97f555dc9383de6fb",
+      "replay_mode": "ablation_lattice",
+      "root_family_id": "family.add_zero",
+      "source_toolchain": "hermetic_python_checker",
+      "split": "train",
+      "statement_sha256": "a57e5a404ed69965bc146576bae8528a6fecafb7f10299d4f589a367bfdecd85",
+      "task_stem": "ablation_positive"
+    },
+    {
+      "allowed_assumption_ids": [
+        "ISigma1",
+        "extra_unused"
+      ],
+      "allowed_labels": [
+        "rm_inspired_assumption_minimization"
+      ],
+      "artifact_sha256": "cd833e77edfc0b1cdb9a9309cc4d1244b722e42a666b97d370368e5295753374",
+      "base_theory_id": "RCA0",
+      "budget": {
+        "max_memory_mb": null,
+        "max_tactic_steps": 32,
+        "max_wall_seconds": 5.0,
+        "stopping_rule_ids": [
+          "wall_or_steps"
+        ]
+      },
+      "checker_ref": "hermetic_ablation_checker.py",
+      "claim_stem": null,
+      "corpus_class": "ablation_necessary",
+      "entry_id": "entry.corpus.ablation_necessary",
+      "expected_label_accepted": null,
+      "expected_outcome": null,
+      "expected_report": {
+        "baseline_outcome": "witnessed",
+        "removed_ISigma1_outcome": "refuted"
+      },
+      "expected_unknown_reason": null,
+      "meta_stem": "ablation_necessary",
+      "mutation_expectations": [
+        {
+          "gate": "proposition_identity",
+          "kind": "proposition",
+          "must_fail": true
+        },
+        {
+          "gate": "judge_definitions",
+          "kind": "toolchain",
+          "must_fail": true
+        },
+        {
+          "gate": "base_theory_or_allowed_assumptions",
+          "kind": "source",
+          "must_fail": true
+        },
+        {
+          "gate": "expected_counterexample_semantics",
+          "kind": "certificate",
+          "must_fail": true
+        },
+        {
+          "gate": "corpus_membership",
+          "kind": "corpus_membership",
+          "must_fail": true
+        }
+      ],
+      "probe_id": null,
+      "proposition_id": "prop.add_zero",
+      "replay_digest": "f4912f69e456707f5aaae1bcd29cab653b37a6641d3a0afac1db52086c0fbdbd",
+      "replay_mode": "ablation_lattice",
+      "root_family_id": "family.add_zero",
+      "source_toolchain": "hermetic_python_checker",
+      "split": "eval",
+      "statement_sha256": "a57e5a404ed69965bc146576bae8528a6fecafb7f10299d4f589a367bfdecd85",
+      "task_stem": "ablation_necessary"
+    },
+    {
+      "allowed_assumption_ids": [
+        "ISigma1"
+      ],
+      "allowed_labels": [
+        "genuine_reverse_mathematics",
+        "reversed_equivalent"
+      ],
+      "artifact_sha256": "7120bce71fe6804e4db311008c77799f2d70b01452955b17daf32d82aa2d25cd",
+      "base_theory_id": "RCA0",
+      "budget": {
+        "max_memory_mb": null,
+        "max_tactic_steps": 32,
+        "max_wall_seconds": 5.0,
+        "stopping_rule_ids": [
+          "wall_or_steps"
+        ]
+      },
+      "checker_ref": "hermetic_reversal_checker.py",
+      "claim_stem": null,
+      "corpus_class": "reversal_equivalence",
+      "entry_id": "entry.corpus.reversal_equivalence",
+      "expected_label_accepted": null,
+      "expected_outcome": null,
+      "expected_report": {
+        "claims_equivalence": true,
+        "equivalence_label": "equivalent"
+      },
+      "expected_unknown_reason": null,
+      "meta_stem": "reversal_equivalence",
+      "mutation_expectations": [
+        {
+          "gate": "proposition_identity",
+          "kind": "proposition",
+          "must_fail": true
+        },
+        {
+          "gate": "judge_definitions",
+          "kind": "toolchain",
+          "must_fail": true
+        },
+        {
+          "gate": "base_theory_or_allowed_assumptions",
+          "kind": "source",
+          "must_fail": true
+        },
+        {
+          "gate": "expected_counterexample_semantics",
+          "kind": "certificate",
+          "must_fail": true
+        },
+        {
+          "gate": "corpus_membership",
+          "kind": "corpus_membership",
+          "must_fail": true
+        }
+      ],
+      "probe_id": null,
+      "proposition_id": "prop.reversal.equivalence",
+      "replay_digest": "3946f9fbc0767687834df2fff0ccdc448cd0a57014f042c5604be81761f87f8b",
+      "replay_mode": "reversal_pair",
+      "root_family_id": "family.wkl_path",
+      "source_toolchain": "hermetic_python_checker",
+      "split": "train",
+      "statement_sha256": "ca1007c05b658ae272f6775253aa74c5fdf061e5b714002b8170574a3b8601a9",
+      "task_stem": "reversal_equivalence"
+    },
+    {
+      "allowed_assumption_ids": [
+        "ISigma1"
+      ],
+      "allowed_labels": [
+        "genuine_reverse_mathematics"
+      ],
+      "artifact_sha256": "c8099876ac82985125bcc704dde090395a45a325afacdcfac9e25427a27fe40a",
+      "base_theory_id": "RCA0",
+      "budget": {
+        "max_memory_mb": null,
+        "max_tactic_steps": 32,
+        "max_wall_seconds": 5.0,
+        "stopping_rule_ids": [
+          "wall_or_steps"
+        ]
+      },
+      "checker_ref": "hermetic_reversal_checker.py",
+      "claim_stem": null,
+      "corpus_class": "reversal_one_way",
+      "entry_id": "entry.corpus.reversal_one_way",
+      "expected_label_accepted": null,
+      "expected_outcome": null,
+      "expected_report": {
+        "claims_equivalence": false,
+        "equivalence_label": "one_way_forward"
+      },
+      "expected_unknown_reason": null,
+      "meta_stem": "reversal_one_way_forward",
+      "mutation_expectations": [
+        {
+          "gate": "proposition_identity",
+          "kind": "proposition",
+          "must_fail": true
+        },
+        {
+          "gate": "judge_definitions",
+          "kind": "toolchain",
+          "must_fail": true
+        },
+        {
+          "gate": "base_theory_or_allowed_assumptions",
+          "kind": "source",
+          "must_fail": true
+        },
+        {
+          "gate": "expected_counterexample_semantics",
+          "kind": "certificate",
+          "must_fail": true
+        },
+        {
+          "gate": "corpus_membership",
+          "kind": "corpus_membership",
+          "must_fail": true
+        }
+      ],
+      "probe_id": null,
+      "proposition_id": "prop.reversal.one_way_forward",
+      "replay_digest": "dbe002271697e2d3ea96f35f1c9f9df404bc20eb4d63a173abc5f4060d6f0c87",
+      "replay_mode": "reversal_pair",
+      "root_family_id": "family.wkl_path",
+      "source_toolchain": "hermetic_python_checker",
+      "split": "eval",
+      "statement_sha256": "7533af5be5afda404e59a5962b76853d0330fc095ede3225aff205d6fcbd8ff1",
+      "task_stem": "reversal_one_way_forward"
+    },
+    {
+      "allowed_assumption_ids": [
+        "ISigma1"
+      ],
+      "allowed_labels": [
+        "constructive_variant"
+      ],
+      "artifact_sha256": "17878eaa6e29f0c83bf6f1a73080d1fd46329b1c385c08f4a1cec95d5bd6bcff",
+      "base_theory_id": "RCA0",
+      "budget": {
+        "max_memory_mb": null,
+        "max_tactic_steps": 32,
+        "max_wall_seconds": 5.0,
+        "stopping_rule_ids": [
+          "wall_or_steps"
+        ]
+      },
+      "checker_ref": "hermetic_constructivization_checker.py",
+      "claim_stem": null,
+      "corpus_class": "constructivization_success",
+      "entry_id": "entry.corpus.constructivization_success",
+      "expected_label_accepted": null,
+      "expected_outcome": "witnessed",
+      "expected_report": null,
+      "expected_unknown_reason": null,
+      "meta_stem": "constructivization_bounded",
+      "mutation_expectations": [
+        {
+          "gate": "proposition_identity",
+          "kind": "proposition",
+          "must_fail": true
+        },
+        {
+          "gate": "judge_definitions",
+          "kind": "toolchain",
+          "must_fail": true
+        },
+        {
+          "gate": "base_theory_or_allowed_assumptions",
+          "kind": "source",
+          "must_fail": true
+        },
+        {
+          "gate": "expected_counterexample_semantics",
+          "kind": "certificate",
+          "must_fail": true
+        },
+        {
+          "gate": "corpus_membership",
+          "kind": "corpus_membership",
+          "must_fail": true
+        }
+      ],
+      "probe_id": null,
+      "proposition_id": "prop.constructivization.bounded",
+      "replay_digest": "db7ed045a53624c5449940ed2a7bed824a0ee53cec18665e5702bfd3e918d710",
+      "replay_mode": "single_runner",
+      "root_family_id": "family.constructivization.bounded",
+      "source_toolchain": "hermetic_python_checker",
+      "split": "train",
+      "statement_sha256": "45344fdd5dcbbae8b55ab7e1facc54135aff2eff219c73567e4c96a90eb74e3b",
+      "task_stem": "constructivization_bounded"
+    },
+    {
+      "allowed_assumption_ids": [
+        "ISigma1"
+      ],
+      "allowed_labels": [
+        "constructive_variant"
+      ],
+      "artifact_sha256": "225812028289c5aaeade7bb58976afc216ff020beee7da9b0fd52630cd5185b2",
+      "base_theory_id": "RCA0",
+      "budget": {
+        "max_memory_mb": null,
+        "max_tactic_steps": 32,
+        "max_wall_seconds": 5.0,
+        "stopping_rule_ids": [
+          "wall_or_steps"
+        ]
+      },
+      "checker_ref": "hermetic_constructivization_checker.py",
+      "claim_stem": null,
+      "corpus_class": "constructivization_unknown",
+      "entry_id": "entry.corpus.constructivization_unknown",
+      "expected_label_accepted": null,
+      "expected_outcome": "unknown",
+      "expected_report": null,
+      "expected_unknown_reason": "timeout",
+      "meta_stem": "constructivization_timeout",
+      "mutation_expectations": [
+        {
+          "gate": "proposition_identity",
+          "kind": "proposition",
+          "must_fail": true
+        },
+        {
+          "gate": "judge_definitions",
+          "kind": "toolchain",
+          "must_fail": true
+        },
+        {
+          "gate": "base_theory_or_allowed_assumptions",
+          "kind": "source",
+          "must_fail": true
+        },
+        {
+          "gate": "expected_counterexample_semantics",
+          "kind": "certificate",
+          "must_fail": true
+        },
+        {
+          "gate": "corpus_membership",
+          "kind": "corpus_membership",
+          "must_fail": true
+        }
+      ],
+      "probe_id": null,
+      "proposition_id": "prop.constructivization.timeout",
+      "replay_digest": "0d18ff06941369828e6f2be15804e2b55306f86f65902121cd44f809ce007dce",
+      "replay_mode": "single_runner",
+      "root_family_id": "family.constructivization.timeout",
+      "source_toolchain": "hermetic_python_checker",
+      "split": "eval",
+      "statement_sha256": "45344fdd5dcbbae8b55ab7e1facc54135aff2eff219c73567e4c96a90eb74e3b",
+      "task_stem": "constructivization_timeout"
+    },
+    {
+      "allowed_assumption_ids": [
+        "ISigma1"
+      ],
+      "allowed_labels": [
+        "computable_finite_counterexample"
+      ],
+      "artifact_sha256": "730852b7d34d879c52551339e1271ae73336b9f33010b18c11260d16b3ad498d",
+      "base_theory_id": "RCA0",
+      "budget": {
+        "max_memory_mb": null,
+        "max_tactic_steps": 32,
+        "max_wall_seconds": 5.0,
+        "stopping_rule_ids": [
+          "wall_or_steps"
+        ]
+      },
+      "checker_ref": "hermetic_counterexample_checker.py",
+      "claim_stem": null,
+      "corpus_class": "counterexample_checked",
+      "entry_id": "entry.corpus.counterexample_checked",
+      "expected_label_accepted": null,
+      "expected_outcome": "refuted",
+      "expected_report": null,
+      "expected_unknown_reason": null,
+      "meta_stem": "counterexample_checked",
+      "mutation_expectations": [
+        {
+          "gate": "proposition_identity",
+          "kind": "proposition",
+          "must_fail": true
+        },
+        {
+          "gate": "expected_counterexample_semantics",
+          "kind": "certificate",
+          "must_fail": true
+        },
+        {
+          "gate": "base_theory_or_allowed_assumptions",
+          "kind": "source",
+          "must_fail": true
+        }
+      ],
+      "probe_id": null,
+      "proposition_id": "prop.counterexample.checked",
+      "replay_digest": "6c32d1887123316fb9abba4f553b8cf7d41ae6feff95c0f30d7ea1569d52dce4",
+      "replay_mode": "single_runner",
+      "root_family_id": "family.counterexample.checked",
+      "source_toolchain": "hermetic_python_checker",
+      "split": "train",
+      "statement_sha256": "d404a5f0236fb040ab4071e80fbccfbc8b9d93b1da8deaeff186c08d8b03df8a",
+      "task_stem": "counterexample_checked"
+    },
+    {
+      "allowed_assumption_ids": [
+        "finite_domain_sizes",
+        "algorithm_correspondence_prefix_tree_enumeration",
+        "cost_model:ExpansionVerificationQueryModel",
+        "not_wall_clock"
+      ],
+      "allowed_labels": [
+        "quantitative_bound_extraction"
+      ],
+      "artifact_sha256": "6781e2522d4655ee85d719f2b3d75da413a94e3f7d07f574d956b96d88ef53ec",
+      "base_theory_id": "RCA0",
+      "budget": {
+        "max_memory_mb": null,
+        "max_tactic_steps": 32,
+        "max_wall_seconds": 5.0,
+        "stopping_rule_ids": [
+          "wall_or_steps"
+        ]
+      },
+      "checker_ref": "hermetic_quantitative_bound_checker.py",
+      "claim_stem": null,
+      "corpus_class": "quantitative_bound_success",
+      "entry_id": "entry.corpus.quant_success",
+      "expected_label_accepted": null,
+      "expected_outcome": "witnessed",
+      "expected_report": null,
+      "expected_unknown_reason": null,
+      "meta_stem": "quant_finite_search",
+      "mutation_expectations": [
+        {
+          "gate": "proposition_identity",
+          "kind": "proposition",
+          "must_fail": true
+        },
+        {
+          "gate": "judge_definitions",
+          "kind": "toolchain",
+          "must_fail": true
+        },
+        {
+          "gate": "base_theory_or_allowed_assumptions",
+          "kind": "source",
+          "must_fail": true
+        },
+        {
+          "gate": "expected_counterexample_semantics",
+          "kind": "certificate",
+          "must_fail": true
+        },
+        {
+          "gate": "corpus_membership",
+          "kind": "corpus_membership",
+          "must_fail": true
+        }
+      ],
+      "probe_id": null,
+      "proposition_id": "thm.finite_search.completion",
+      "replay_digest": "e48c1de7ea5b2ee02d36ee54bb066d8b2270cd5f96b5012a80ebe4a6c78fc0c1",
+      "replay_mode": "single_runner",
+      "root_family_id": "family.quant.finite_search",
+      "source_toolchain": "hermetic_python_checker",
+      "split": "train",
+      "statement_sha256": "d7074d4cb58fdcca3a8576ec9a2413246a0152be5242cad4c969ff523d0e2efa",
+      "task_stem": "quant_finite_search"
+    },
+    {
+      "allowed_assumption_ids": [],
+      "allowed_labels": [
+        "quantitative_bound_extraction",
+        "nonextractable"
+      ],
+      "artifact_sha256": "41891dafcb004a516fcf2cf24fdab6e3ea50add34e87f80f1b7b7249200cfc42",
+      "base_theory_id": "RCA0",
+      "budget": {
+        "max_memory_mb": null,
+        "max_tactic_steps": 32,
+        "max_wall_seconds": 5.0,
+        "stopping_rule_ids": [
+          "wall_or_steps"
+        ]
+      },
+      "checker_ref": "hermetic_quantitative_bound_checker.py",
+      "claim_stem": null,
+      "corpus_class": "quantitative_bound_nonextractable",
+      "entry_id": "entry.corpus.quant_nonextractable",
+      "expected_label_accepted": null,
+      "expected_outcome": "witnessed",
+      "expected_report": {
+        "status": "nonextractable",
+        "theorem_derived_bound": false
+      },
+      "expected_unknown_reason": null,
+      "meta_stem": "quant_nonextractable",
+      "mutation_expectations": [
+        {
+          "gate": "proposition_identity",
+          "kind": "proposition",
+          "must_fail": true
+        },
+        {
+          "gate": "judge_definitions",
+          "kind": "toolchain",
+          "must_fail": true
+        },
+        {
+          "gate": "base_theory_or_allowed_assumptions",
+          "kind": "source",
+          "must_fail": true
+        },
+        {
+          "gate": "expected_counterexample_semantics",
+          "kind": "certificate",
+          "must_fail": true
+        },
+        {
+          "gate": "corpus_membership",
+          "kind": "corpus_membership",
+          "must_fail": true
+        }
+      ],
+      "probe_id": null,
+      "proposition_id": "thm.neural.global_min",
+      "replay_digest": "a196e52dfbfd9b09808baba2d794464b2c991f0640f353699360511a33cb9bd6",
+      "replay_mode": "single_runner",
+      "root_family_id": "family.quant.nonextractable",
+      "source_toolchain": "hermetic_python_checker",
+      "split": "eval",
+      "statement_sha256": "d742182aa5d3fc995b1c98104d772e59a1c51b3322f90f09a140ceb6411497ec",
+      "task_stem": "quant_nonextractable"
+    },
+    {
+      "allowed_assumption_ids": [],
+      "allowed_labels": [
+        "practical_computability"
+      ],
+      "artifact_sha256": "51e7a5226335d65ba755b71b6fb6b42935100026fb921b7d4f357c2fa65b7efc",
+      "base_theory_id": null,
+      "budget": null,
+      "checker_ref": null,
+      "claim_stem": "labeling_practical_computability",
+      "corpus_class": "practical_computability",
+      "entry_id": "entry.corpus.practical_computability",
+      "expected_label_accepted": true,
+      "expected_outcome": null,
+      "expected_report": null,
+      "expected_unknown_reason": null,
+      "meta_stem": null,
+      "mutation_expectations": [
+        {
+          "gate": "proposition_identity",
+          "kind": "proposition",
+          "must_fail": true
+        },
+        {
+          "gate": "base_theory_or_allowed_assumptions",
+          "kind": "source",
+          "must_fail": true
+        }
+      ],
+      "probe_id": null,
+      "proposition_id": "label.pos.practical",
+      "replay_digest": "74313f68af02f4a0ebdbd9ecf8c025e998c9d27e49bbe42cd39b3d600997e3a8",
+      "replay_mode": "label_claim",
+      "root_family_id": "family.label.practical_computability",
+      "source_toolchain": "label_claim_validator",
+      "split": "train",
+      "statement_sha256": null,
+      "task_stem": null
+    },
+    {
+      "allowed_assumption_ids": [
+        "ISigma1"
+      ],
+      "allowed_labels": [],
+      "artifact_sha256": "8e7241c3f045a96d2ce950563a8e705edad0efc3af2d45ecb49ab0ea4e0b7a6b",
+      "base_theory_id": "RCA0",
+      "budget": {
+        "max_memory_mb": null,
+        "max_tactic_steps": 32,
+        "max_wall_seconds": 5.0,
+        "stopping_rule_ids": [
+          "wall_or_steps"
+        ]
+      },
+      "checker_ref": "hermetic_checker.py",
+      "claim_stem": null,
+      "corpus_class": "mutation_proposition",
+      "entry_id": "entry.corpus.mutation_proposition",
+      "expected_label_accepted": null,
+      "expected_outcome": "witnessed",
+      "expected_report": null,
+      "expected_unknown_reason": null,
+      "meta_stem": null,
+      "mutation_expectations": [
+        {
+          "gate": "proposition_identity",
+          "kind": "proposition",
+          "must_fail": true
+        }
+      ],
+      "probe_id": null,
+      "proposition_id": "prop.add_zero",
+      "replay_digest": "9be90a6a70fd9132b67a8c7f78c5cae5ebf2312152f31b65d3ce603570f8fd8f",
+      "replay_mode": "single_runner",
+      "root_family_id": "family.add_zero",
+      "source_toolchain": "hermetic_python_checker",
+      "split": "diag",
+      "statement_sha256": "a57e5a404ed69965bc146576bae8528a6fecafb7f10299d4f589a367bfdecd85",
+      "task_stem": "hermetic_forward_theorem"
+    },
+    {
+      "allowed_assumption_ids": [
+        "ISigma1"
+      ],
+      "allowed_labels": [],
+      "artifact_sha256": "8e7241c3f045a96d2ce950563a8e705edad0efc3af2d45ecb49ab0ea4e0b7a6b",
+      "base_theory_id": "RCA0",
+      "budget": {
+        "max_memory_mb": null,
+        "max_tactic_steps": 32,
+        "max_wall_seconds": 5.0,
+        "stopping_rule_ids": [
+          "wall_or_steps"
+        ]
+      },
+      "checker_ref": "hermetic_checker.py",
+      "claim_stem": null,
+      "corpus_class": "mutation_toolchain",
+      "entry_id": "entry.corpus.mutation_toolchain",
+      "expected_label_accepted": null,
+      "expected_outcome": "witnessed",
+      "expected_report": null,
+      "expected_unknown_reason": null,
+      "meta_stem": null,
+      "mutation_expectations": [
+        {
+          "gate": "judge_definitions",
+          "kind": "toolchain",
+          "must_fail": true
+        }
+      ],
+      "probe_id": null,
+      "proposition_id": "prop.add_zero",
+      "replay_digest": "9be90a6a70fd9132b67a8c7f78c5cae5ebf2312152f31b65d3ce603570f8fd8f",
+      "replay_mode": "single_runner",
+      "root_family_id": "family.add_zero",
+      "source_toolchain": "hermetic_python_checker",
+      "split": "diag",
+      "statement_sha256": "a57e5a404ed69965bc146576bae8528a6fecafb7f10299d4f589a367bfdecd85",
+      "task_stem": "hermetic_forward_theorem"
+    },
+    {
+      "allowed_assumption_ids": [
+        "ISigma1"
+      ],
+      "allowed_labels": [],
+      "artifact_sha256": "8e7241c3f045a96d2ce950563a8e705edad0efc3af2d45ecb49ab0ea4e0b7a6b",
+      "base_theory_id": "RCA0",
+      "budget": {
+        "max_memory_mb": null,
+        "max_tactic_steps": 32,
+        "max_wall_seconds": 5.0,
+        "stopping_rule_ids": [
+          "wall_or_steps"
+        ]
+      },
+      "checker_ref": "hermetic_checker.py",
+      "claim_stem": null,
+      "corpus_class": "mutation_source",
+      "entry_id": "entry.corpus.mutation_source",
+      "expected_label_accepted": null,
+      "expected_outcome": "witnessed",
+      "expected_report": null,
+      "expected_unknown_reason": null,
+      "meta_stem": null,
+      "mutation_expectations": [
+        {
+          "gate": "base_theory_or_allowed_assumptions",
+          "kind": "source",
+          "must_fail": true
+        }
+      ],
+      "probe_id": null,
+      "proposition_id": "prop.add_zero",
+      "replay_digest": "9be90a6a70fd9132b67a8c7f78c5cae5ebf2312152f31b65d3ce603570f8fd8f",
+      "replay_mode": "single_runner",
+      "root_family_id": "family.add_zero",
+      "source_toolchain": "hermetic_python_checker",
+      "split": "diag",
+      "statement_sha256": "a57e5a404ed69965bc146576bae8528a6fecafb7f10299d4f589a367bfdecd85",
+      "task_stem": "hermetic_forward_theorem"
+    },
+    {
+      "allowed_assumption_ids": [
+        "ISigma1"
+      ],
+      "allowed_labels": [],
+      "artifact_sha256": "730852b7d34d879c52551339e1271ae73336b9f33010b18c11260d16b3ad498d",
+      "base_theory_id": "RCA0",
+      "budget": {
+        "max_memory_mb": null,
+        "max_tactic_steps": 32,
+        "max_wall_seconds": 5.0,
+        "stopping_rule_ids": [
+          "wall_or_steps"
+        ]
+      },
+      "checker_ref": "hermetic_counterexample_checker.py",
+      "claim_stem": null,
+      "corpus_class": "mutation_certificate",
+      "entry_id": "entry.corpus.mutation_certificate",
+      "expected_label_accepted": null,
+      "expected_outcome": "refuted",
+      "expected_report": null,
+      "expected_unknown_reason": null,
+      "meta_stem": "counterexample_checked",
+      "mutation_expectations": [
+        {
+          "gate": "expected_counterexample_semantics",
+          "kind": "certificate",
+          "must_fail": true
+        }
+      ],
+      "probe_id": null,
+      "proposition_id": "prop.counterexample.checked",
+      "replay_digest": "6c32d1887123316fb9abba4f553b8cf7d41ae6feff95c0f30d7ea1569d52dce4",
+      "replay_mode": "single_runner",
+      "root_family_id": "family.counterexample.checked",
+      "source_toolchain": "hermetic_python_checker",
+      "split": "diag",
+      "statement_sha256": "d404a5f0236fb040ab4071e80fbccfbc8b9d93b1da8deaeff186c08d8b03df8a",
+      "task_stem": "counterexample_checked"
+    },
+    {
+      "allowed_assumption_ids": [
+        "ISigma1",
+        "WKL_redundant"
+      ],
+      "allowed_labels": [],
+      "artifact_sha256": "7ffe7e210e33e7297e35080a9f60f988f4c9424454f9be05be2532d338ef98a2",
+      "base_theory_id": "RCA0",
+      "budget": {
+        "max_memory_mb": null,
+        "max_tactic_steps": 32,
+        "max_wall_seconds": 0.2,
+        "stopping_rule_ids": [
+          "wall_or_steps"
+        ]
+      },
+      "checker_ref": "hermetic_ablation_checker.py",
+      "claim_stem": null,
+      "corpus_class": "timeout",
+      "entry_id": "entry.corpus.timeout",
+      "expected_label_accepted": null,
+      "expected_outcome": "unknown",
+      "expected_report": null,
+      "expected_unknown_reason": "timeout",
+      "meta_stem": "ablation_timeout",
+      "mutation_expectations": [
+        {
+          "gate": "budgets_and_stopping_rules",
+          "kind": "budget",
+          "must_fail": true
+        }
+      ],
+      "probe_id": null,
+      "proposition_id": "prop.add_zero",
+      "replay_digest": "e8c0ae43c40e9c1a258bdf999ff4bf389aa0c894d95e12f954e1e59550dda004",
+      "replay_mode": "single_runner",
+      "root_family_id": "family.add_zero",
+      "source_toolchain": "hermetic_python_checker",
+      "split": "diag",
+      "statement_sha256": "a57e5a404ed69965bc146576bae8528a6fecafb7f10299d4f589a367bfdecd85",
+      "task_stem": "ablation_timeout"
+    },
+    {
+      "allowed_assumption_ids": [
+        "ISigma1"
+      ],
+      "allowed_labels": [],
+      "artifact_sha256": "630535585e5ba9f7da0b97ea5481f479665f8beedade9685960bd4c9b4d48e18",
+      "base_theory_id": "RCA0",
+      "budget": {
+        "max_memory_mb": null,
+        "max_tactic_steps": 32,
+        "max_wall_seconds": 5.0,
+        "stopping_rule_ids": [
+          "wall_or_steps"
+        ]
+      },
+      "checker_ref": null,
+      "claim_stem": null,
+      "corpus_class": "missing_tool",
+      "entry_id": "entry.corpus.missing_tool",
+      "expected_label_accepted": null,
+      "expected_outcome": "unknown",
+      "expected_report": null,
+      "expected_unknown_reason": "missing_tool",
+      "meta_stem": null,
+      "mutation_expectations": [
+        {
+          "gate": "judge_definitions",
+          "kind": "toolchain",
+          "must_fail": true
+        }
+      ],
+      "probe_id": "missing_lean_tool",
+      "proposition_id": "prop.add_zero",
+      "replay_digest": "0630055b0f051927c58083149a1f0563c0563d7e221bcae74f2cad10f8519700",
+      "replay_mode": "runner_probe",
+      "root_family_id": "family.add_zero",
+      "source_toolchain": "runner_probe",
+      "split": "diag",
+      "statement_sha256": "a57e5a404ed69965bc146576bae8528a6fecafb7f10299d4f589a367bfdecd85",
+      "task_stem": "hermetic_forward_theorem"
+    },
+    {
+      "allowed_assumption_ids": [
+        "ISigma1"
+      ],
+      "allowed_labels": [],
+      "artifact_sha256": "93f71272fb44118f8498b1e907b72e0ad276fcaf832e6d16a726df9da931a452",
+      "base_theory_id": "RCA0",
+      "budget": {
+        "max_memory_mb": null,
+        "max_tactic_steps": 32,
+        "max_wall_seconds": 5.0,
+        "stopping_rule_ids": [
+          "wall_or_steps"
+        ]
+      },
+      "checker_ref": null,
+      "claim_stem": null,
+      "corpus_class": "unsupported_feature",
+      "entry_id": "entry.corpus.unsupported_feature",
+      "expected_label_accepted": null,
+      "expected_outcome": "unknown",
+      "expected_report": null,
+      "expected_unknown_reason": "unsupported_capability",
+      "meta_stem": null,
+      "mutation_expectations": [
+        {
+          "gate": "judge_definitions",
+          "kind": "toolchain",
+          "must_fail": true
+        }
+      ],
+      "probe_id": "unsupported_task_kind",
+      "proposition_id": "prop.add_zero",
+      "replay_digest": "7da80f6f62f876211b1edd77f156ad34edb6fbdce1de4ef96401c5162db8487e",
+      "replay_mode": "runner_probe",
+      "root_family_id": "family.add_zero",
+      "source_toolchain": "runner_probe",
+      "split": "diag",
+      "statement_sha256": "a57e5a404ed69965bc146576bae8528a6fecafb7f10299d4f589a367bfdecd85",
+      "task_stem": "hermetic_forward_theorem"
+    },
+    {
+      "allowed_assumption_ids": [
+        "ISigma1"
+      ],
+      "allowed_labels": [],
+      "artifact_sha256": "d9e9f5af5940a4abf3b7ce8266df5b356686e16cedb3f6b6a184cd938338ea63",
+      "base_theory_id": "RCA0",
+      "budget": {
+        "max_memory_mb": null,
+        "max_tactic_steps": 32,
+        "max_wall_seconds": 5.0,
+        "stopping_rule_ids": [
+          "wall_or_steps"
+        ]
+      },
+      "checker_ref": "hermetic_counterexample_checker.py",
+      "claim_stem": null,
+      "corpus_class": "malformed_evidence",
+      "entry_id": "entry.corpus.malformed_evidence",
+      "expected_label_accepted": null,
+      "expected_outcome": "invalid",
+      "expected_report": null,
+      "expected_unknown_reason": "malformed_input",
+      "meta_stem": "counterexample_mismatch_prop",
+      "mutation_expectations": [
+        {
+          "gate": "expected_counterexample_semantics",
+          "kind": "certificate",
+          "must_fail": true
+        },
+        {
+          "gate": "proposition_identity",
+          "kind": "proposition",
+          "must_fail": true
+        }
+      ],
+      "probe_id": null,
+      "proposition_id": "prop.counterexample.mismatch_prop",
+      "replay_digest": "fbcb6b925b542fdf15e44cfcc43f515ba0c367f9ab599e3506eba050615e2b2b",
+      "replay_mode": "single_runner",
+      "root_family_id": "family.counterexample.mismatch",
+      "source_toolchain": "hermetic_python_checker",
+      "split": "diag",
+      "statement_sha256": "d404a5f0236fb040ab4071e80fbccfbc8b9d93b1da8deaeff186c08d8b03df8a",
+      "task_stem": "counterexample_mismatch_prop"
+    },
+    {
+      "allowed_assumption_ids": [
+        "ISigma1"
+      ],
+      "allowed_labels": [],
+      "artifact_sha256": "22b5f053975f14f866003c37c64f94db0ec9f969ad5e2d153c94b61b965f4858",
+      "base_theory_id": "RCA0",
+      "budget": {
+        "max_memory_mb": null,
+        "max_tactic_steps": 32,
+        "max_wall_seconds": 5.0,
+        "stopping_rule_ids": [
+          "wall_or_steps"
+        ]
+      },
+      "checker_ref": "hermetic_counterexample_checker.py",
+      "claim_stem": null,
+      "corpus_class": "incomplete_domain",
+      "entry_id": "entry.corpus.incomplete_domain",
+      "expected_label_accepted": null,
+      "expected_outcome": "unknown",
+      "expected_report": null,
+      "expected_unknown_reason": "incomplete_coverage",
+      "meta_stem": "counterexample_search_failed",
+      "mutation_expectations": [
+        {
+          "gate": "expected_counterexample_semantics",
+          "kind": "certificate",
+          "must_fail": true
+        }
+      ],
+      "probe_id": null,
+      "proposition_id": "prop.counterexample.search_failed",
+      "replay_digest": "72a6c393cc381204b285a1ed5d9a4fc7c6d4aa9d7beb6b32630dadf5acf13782",
+      "replay_mode": "single_runner",
+      "root_family_id": "family.counterexample.search_failed",
+      "source_toolchain": "hermetic_python_checker",
+      "split": "diag",
+      "statement_sha256": "d404a5f0236fb040ab4071e80fbccfbc8b9d93b1da8deaeff186c08d8b03df8a",
+      "task_stem": "counterexample_search_failed"
+    }
+  ],
+  "entry_count": 19,
+  "fixtures_dir": "src/slm_training/resources/revmath/fixtures",
+  "schema_version": "revmath_fixture_corpus/v1"
+}

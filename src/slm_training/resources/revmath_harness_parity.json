@@ -148,6 +148,14 @@
       "notes": "This matrix; missing rows must be explicit blockers."
     },
     {
+      "id": "resources.frozen_fixture_corpus",
+      "category": "resources",
+      "required_owner": "src/slm_training/harnesses/reasoning/revmath/corpus.py",
+      "status": "present",
+      "blocker_issue": null,
+      "notes": "HARN-11 frozen content-addressed hermetic fixture corpus + replay/leakage/mutation tests."
+    },
+    {
       "id": "resources.profile_registration",
       "category": "resources",
       "required_owner": "src/slm_training/harnesses/reasoning/profiles.py",

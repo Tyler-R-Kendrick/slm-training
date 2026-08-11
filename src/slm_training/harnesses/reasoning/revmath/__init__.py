@@ -1,4 +1,4 @@
-"""reasoning/revmath typed contracts + deterministic runner (HARN-02..10).
+"""reasoning/revmath typed contracts + deterministic runner (HARN-02..11).
 
 Schemas: HARN-02. Runner / replay / report: HARN-03.
 Assumption ablation: HARN-04. Reversal / bidirectional: HARN-05.
@@ -7,10 +7,25 @@ Quantitative-bound extraction: HARN-07.
 Conservative RM labeling / anti-overclaim: HARN-08.
 Proposition-preserving self-healing: HARN-09.
 Campaign locking / profile CLI: HARN-10.
+Frozen fixture corpus: HARN-11.
 """
 
 from __future__ import annotations
 
+from slm_training.harnesses.reasoning.revmath.corpus import (
+    CORPUS_ID,
+    CORPUS_SCHEMA,
+    REQUIRED_CORPUS_CLASSES,
+    FixtureCorpusEntryV1,
+    FixtureCorpusManifestV1,
+    assert_no_undeclared_train_eval_leakage,
+    build_fixture_corpus_manifest,
+    coverage_table,
+    demonstrate_mutation_failures,
+    detect_train_eval_leakage,
+    load_fixture_corpus_manifest,
+    verify_corpus_replay,
+)
 from slm_training.harnesses.reasoning.revmath.profile_binding import (
     RevmathCampaignBindingError,
     RevmathProfilePlanV1,
@@ -154,18 +169,14 @@ from slm_training.harnesses.reasoning.revmath.self_healing import (
 )
 
 __all__ = [
-    "DEFAULT_MAX_ATTEMPTS",
-    "INSUFFICIENT_FOR_BIG_FIVE",
-    "MINIMALITY_CLAIM_SCOPE",
-    "REVMATH_FROZEN_REPAIR_FIELDS",
-    "REVMATH_MUTABLE_REPAIR_KNOBS",
-    "REVMATH_SCHEMA_VERSIONS",
     "AblationCandidateV1",
     "AblationMetaV1",
     "AblationSearchReportV1",
     "AnalysisKind",
     "AssumptionAblationPlugin",
     "AxisCertificateRefV1",
+    "CORPUS_ID",
+    "CORPUS_SCHEMA",
     "ConstructivizationMetaV1",
     "ConstructivizationPlugin",
     "ConstructivizationReportV1",
@@ -174,19 +185,28 @@ __all__ = [
     "CounterexampleModelV1",
     "CounterexamplePlugin",
     "CounterexampleReportV1",
+    "DEFAULT_MAX_ATTEMPTS",
     "EvidenceKind",
+    "FixtureCorpusEntryV1",
+    "FixtureCorpusManifestV1",
     "HermeticForwardPlugin",
+    "INSUFFICIENT_FOR_BIG_FIVE",
+    "MINIMALITY_CLAIM_SCOPE",
     "PluginCheckEvidence",
     "QuantitativeBoundMetaV1",
     "QuantitativeBoundPlugin",
     "QuantitativeBoundReportV1",
+    "REQUIRED_CORPUS_CLASSES",
+    "REVMATH_FROZEN_REPAIR_FIELDS",
+    "REVMATH_MUTABLE_REPAIR_KNOBS",
+    "REVMATH_SCHEMA_VERSIONS",
     "ReversalMetaV1",
     "ReversalObligationV1",
     "ReversalPlugin",
     "ReversalReportV1",
-    "RevmathCampaignBindingError",
     "RevmathBaseTheoryV1",
     "RevmathBudgetV1",
+    "RevmathCampaignBindingError",
     "RevmathCampaignBindingV1",
     "RevmathCheckPlan",
     "RevmathCorpusEntryV1",
@@ -216,21 +236,26 @@ __all__ = [
     "TheoremDirection",
     "anti_overclaim_reasons",
     "assert_label_claim_accepted",
-    "assert_tasks_match_lock",
+    "assert_no_undeclared_train_eval_leakage",
     "assert_not_masquerading",
     "assert_repair_preserves_identity",
     "assert_revmath_replay_integrity",
     "assert_serialized_repair_freeze",
+    "assert_tasks_match_lock",
     "audit_hidden_reintroduction",
     "bind_tasks_to_lock",
     "build_counterexample_model",
+    "build_fixture_corpus_manifest",
     "build_repair_record",
     "build_revmath_replay_bundle",
     "build_revmath_report",
     "canonical_hash",
     "check_counterexample_against_theorem",
+    "coverage_table",
     "default_analysis_kind_for_task",
     "default_plugin_registry",
+    "demonstrate_mutation_failures",
+    "detect_train_eval_leakage",
     "equivalent_repair_signature",
     "evaluate_ablation_lattice",
     "evaluate_constructivization",
@@ -243,9 +268,10 @@ __all__ = [
     "generate_reversal_obligations",
     "has_big_five_equivalence_package",
     "labeling_notes_for_tasks",
+    "load_fixture_corpus_manifest",
     "materialize_candidate_task",
-    "materialize_fixture_campaign",
     "materialize_constructivized_task",
+    "materialize_fixture_campaign",
     "materialize_obligation_task",
     "parse_ablation_meta",
     "parse_constructivization_meta",
@@ -269,4 +295,5 @@ __all__ = [
     "run_self_healing",
     "semantic_repair_lineage_from_session",
     "validate_label_claim",
+    "verify_corpus_replay",
 ]
