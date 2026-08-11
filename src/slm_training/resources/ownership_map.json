@@ -245,11 +245,17 @@
       "name": "Verifier-backed counterfactual action-value probe",
       "owner_module": "src/slm_training/harnesses/preference/counterfactual_probe.py",
       "owner_symbols": [
-        "RolloutBackend"
+        "GoalSupportProbeConfig",
+        "GoalSupportProbeInputs",
+        "RolloutBackend",
+        "goal_support_cache_key",
+        "goal_support_probe_cap_policy_table",
+        "run_goal_support_probe",
+        "select_goal_support_actions"
       ],
       "authority_tier": "advisory-learned",
       "design_doc": "docs/design/ldi3-03-counterfactual-action-values-20260718.md",
-      "notes": "LDI3-03/SLM-131. Named by semantic_repair.py as the eventual authority for verifier-backed repair action values -- currently a parallel, not yet merged, track."
+      "notes": "LDI3-03/SLM-131 relative rollout probe plus PGS-D01/SLM-502 distinct goal-support path (GoalSupportProbeInputs, run_goal_support_probe). Named by semantic_repair.py as the eventual authority for verifier-backed repair action values -- currently a parallel, not yet merged, track."
     },
     {
       "id": "counterfactual_replay",

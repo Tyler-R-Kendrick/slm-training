@@ -2945,7 +2945,7 @@
       ]
     },
     "governance.ownership_map": {
-      "version": "v20",
+      "version": "v21",
       "kind": "gate",
       "paths": [
         "src/slm_training/resources/ownership_map.json",
@@ -2957,6 +2957,11 @@
         "tests/test_data/test_synthesis_contract_versions.py"
       ],
       "history": [
+        {
+          "version": "v21",
+          "date": "2026-08-11",
+          "note": "PGS-D01 (SLM-502): register GoalSupportProbeConfig, GoalSupportProbeInputs, run_goal_support_probe, select_goal_support_actions, goal_support_cache_key, and goal_support_probe_cap_policy_table under counterfactual_probe ownership."
+        },
         {
           "version": "v20",
           "date": "2026-08-10",
@@ -13084,6 +13089,24 @@
           "version": "v1",
           "date": "2026-07-20",
           "note": "initial registration; SLM-208 SDE5-01 constraint-debt V1 telemetry and pre/post-mask grammar-distortion KL wiring"
+        }
+      ]
+    },
+    "harness.preference.counterfactual_probe": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/preference/counterfactual_probe.py",
+        "tests/test_harnesses/preference/test_counterfactual_probe.py",
+        "tests/test_harnesses/preference/test_counterfactual_goal_support.py",
+        "scripts/run_counterfactual_probe.py",
+        "docs/design/ldi3-03-counterfactual-action-values-20260718.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-11",
+          "note": "PGS-D01 (SLM-502): add distinct goal-support probe path (GoalSupportProbeInputs, run_goal_support_probe, policy-aware cap selection, cache/resume) without aliasing semantic_partition relative rollout evidence."
         }
       ]
     },
