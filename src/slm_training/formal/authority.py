@@ -23,6 +23,11 @@ from slm_training.formal.judgment import (
     UnknownReason,
     from_formal_preflight_status,
 )
+from slm_training.formal.checker_capability import (
+    SEMANTIC_AUTHORITY_POLICY,
+    evaluate_acceptance_policy,
+    runs_from_checker_results,
+)
 from slm_training.formal.objects import (
     FORMAL_OBJECT_SCHEMA,
     FormalObjectV1,
@@ -227,6 +232,21 @@ def _validate_authority_invariants(
             raise ValueError(
                 "unchecked refutation cannot be checked semantic refutation"
             )
+        # EVID-08: redundant same-domain conformance checkers are not independent
+        # trust roots — they cannot alone authorize checked semantic authority.
+        successful = tuple(
+            item for item in checker_results if item.status == "pass"
+        )
+        if successful:
+            report = evaluate_acceptance_policy(
+                runs_from_checker_results(successful),
+                SEMANTIC_AUTHORITY_POLICY,
+            )
+            if not report.accepted:
+                raise ValueError(
+                    "checked semantic authority rejected by capability/trust-domain "
+                    f"policy: {report.reason}"
+                )
 
     if judgment.outcome is JudgmentOutcome.REFUTED and judgment.checked:
         if _has_incomplete_checker_evidence(checker_results):

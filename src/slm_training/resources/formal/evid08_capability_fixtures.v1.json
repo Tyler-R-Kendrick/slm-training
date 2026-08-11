@@ -1,0 +1,53 @@
+{
+  "schema": "evid08_capability_fixtures/v1",
+  "description": "EVID-08 shared parser/serialization common-mode fixtures. A bug in FormalObjectV1 JSON parsing/serialization affects both nominal Python backends that share the structural trust domain.",
+  "shared_trust_domain": "python_cpython_formal_structural_family",
+  "backends": ["python_structural", "python_reference"],
+  "fixtures": [
+    {
+      "id": "shared_serialization_corrupt_content_digest",
+      "kind": "shared_parser_serialization",
+      "mutation": "flip_content_digest_hex_nibble",
+      "affects_backends": ["python_structural", "python_reference"],
+      "expect": {
+        "both_fail_or_reject_object": true,
+        "distinct_trust_domains_for_semantic_authority": false,
+        "verification_kind_if_only_these_pass": "redundant_conformance"
+      },
+      "notes": "Corrupted content_digest fails FormalObjectV1.from_dict on the structural path; reference still consumes the same FormalObject payload channel — common-mode parser/serialization family."
+    },
+    {
+      "id": "shared_payload_key_alias_injection",
+      "kind": "shared_parser_serialization",
+      "mutation": "inject_unknown_top_level_key",
+      "affects_backends": ["python_structural", "python_reference"],
+      "expect": {
+        "object_roundtrip_rejects": true,
+        "semantic_authority_blocked": true
+      },
+      "notes": "Unknown top-level keys are rejected by FormalObjectV1; both backends share that parser."
+    },
+    {
+      "id": "unadvertised_capability_claim",
+      "kind": "capability_advertisement",
+      "claimed_capability": "runtime_refinement",
+      "backend": "python_structural",
+      "expect": {
+        "capability_satisfied": false,
+        "policy_unadvertised_or_missing": true
+      },
+      "notes": "python_structural advertises only structural_consistency; cannot satisfy runtime_refinement."
+    },
+    {
+      "id": "skipped_replay_not_semantic_success",
+      "kind": "skipped_not_success",
+      "backend": "python_replay",
+      "status": "skipped",
+      "expect": {
+        "is_successful_run": false,
+        "semantic_policy_accepted": false,
+        "verification_kind": "incomplete"
+      }
+    }
+  ]
+}

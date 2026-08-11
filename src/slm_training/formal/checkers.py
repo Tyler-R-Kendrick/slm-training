@@ -1,15 +1,23 @@
-"""Independent formal-object checkers (multi-prover backends).
+"""Formal-object checkers (multi-prover backends) with advertised capabilities.
+
+Backend *names* are not automatically independent trust roots (EVID-08). See
+``checker_capability`` for capability vocabulary, trust domains, and roles.
 
 Backends
 --------
 ``python_structural``
-    Pure Python re-implementation of Lean / VSS honesty laws. No Lean kernel.
+    Pure Python structural consistency / honesty laws. Trust domain shared with
+    ``python_reference`` — redundant conformance, not an independent root.
+``python_reference``
+    Set/digest-first re-encoding of the same laws in the same trust domain.
 ``python_replay``
     Full VSS certificate search replay (``replay_support_certificate``). Needs
     a live expander+verifier context when provided; otherwise structural-only
-    honesty is still enforced and replay is reported as skipped.
+    honesty is still enforced and replay is reported as skipped. Independent
+    trust domain. Skipped replay is not a successful semantic check.
 ``lean_kernel``
-    Optional Lean 4 package build / theorem audit. Never sole authority.
+    Optional Lean 4 exact proposition / axiom audit. Independent trust domain.
+    Never sole multi-backend loop authority.
 """
 
 from __future__ import annotations
@@ -163,7 +171,7 @@ ReplayProvider = Callable[[FormalObjectV1], ReplayContext | None]
 
 
 def check_python_structural(obj: FormalObjectV1) -> CheckerResult:
-    """Structural independent prover — always available, no Lean."""
+    """Structural consistency checker — shared Python formal trust domain."""
 
     violations: list[str] = []
     try:
@@ -192,7 +200,7 @@ def check_python_structural(obj: FormalObjectV1) -> CheckerResult:
 
 
 def check_python_reference(obj: FormalObjectV1) -> CheckerResult:
-    """Second pure-Python prover path (set/digest-first encodings)."""
+    """Redundant conformance checker (same trust domain as structural)."""
 
     violations: list[str] = []
     if obj.kind is FormalObjectKind.SUPPORT_CERTIFICATE:

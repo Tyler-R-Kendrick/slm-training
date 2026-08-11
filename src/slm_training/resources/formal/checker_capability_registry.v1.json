@@ -1,0 +1,146 @@
+{
+  "schema": "checker_capability_registry/v1",
+  "capability_vocabulary": [
+    "axiom_audit",
+    "binding_identity",
+    "certificate_checking",
+    "encoding_correctness",
+    "exact_proposition",
+    "module_binding",
+    "provenance_only",
+    "runtime_refinement",
+    "semantic_replay",
+    "source_identity",
+    "structural_consistency",
+    "toolchain_lock",
+    "trust_domain_diversity"
+  ],
+  "trust_domains": {
+    "python_cpython_formal_structural_family": {
+      "language_runtime": "python_cpython",
+      "parser_family": "formal_object_v1_python",
+      "kernel": null,
+      "encoding_family": null,
+      "notes": "Shared by python_structural and python_reference \u2014 redundant conformance, not independent roots."
+    },
+    "python_enumerative_replay": {
+      "language_runtime": "python_cpython",
+      "parser_family": "vss_support_certificate",
+      "kernel": null,
+      "encoding_family": null,
+      "notes": "Enumerative replay path with expander+verifier."
+    },
+    "lean4_kernel": {
+      "language_runtime": "lean4",
+      "parser_family": "lean4_syntax",
+      "kernel": "lean4",
+      "encoding_family": null,
+      "notes": "Lean 4 kernel + theorem binding."
+    },
+    "python_encoding_bridge": {
+      "language_runtime": "python_cpython",
+      "parser_family": "cnf_ref_encoding",
+      "kernel": null,
+      "encoding_family": "cnf_ref",
+      "notes": "Verified encoding adapter bridge."
+    }
+  },
+  "checkers": [
+    {
+      "backend": "python_structural",
+      "capabilities": [
+        "structural_consistency"
+      ],
+      "trust_domain": "python_cpython_formal_structural_family",
+      "role": "redundant_conformance",
+      "required_evidence_inputs": [
+        "formal_object"
+      ],
+      "language_runtime": "python_cpython",
+      "notes": "List-based honesty/law encoding over FormalObjectV1. Shares parser/runtime/semantics with python_reference \u2014 not an independent trust root."
+    },
+    {
+      "backend": "python_reference",
+      "capabilities": [
+        "structural_consistency"
+      ],
+      "trust_domain": "python_cpython_formal_structural_family",
+      "role": "redundant_conformance",
+      "required_evidence_inputs": [
+        "formal_object"
+      ],
+      "language_runtime": "python_cpython",
+      "notes": "Set/digest-first re-encoding of the same laws. Redundant conformance check in the shared structural family."
+    },
+    {
+      "backend": "python_replay",
+      "capabilities": [
+        "certificate_checking",
+        "semantic_replay"
+      ],
+      "trust_domain": "python_enumerative_replay",
+      "role": "independent",
+      "required_evidence_inputs": [
+        "support_certificate",
+        "expander",
+        "verifier"
+      ],
+      "language_runtime": "python_cpython",
+      "notes": "Enumerative replay; skipped without live expander+verifier context."
+    },
+    {
+      "backend": "lean_kernel",
+      "capabilities": [
+        "axiom_audit",
+        "exact_proposition",
+        "module_binding",
+        "source_identity",
+        "toolchain_lock"
+      ],
+      "trust_domain": "lean4_kernel",
+      "role": "independent",
+      "required_evidence_inputs": [
+        "theorem_binding",
+        "lean_source_tree",
+        "lake_manifest"
+      ],
+      "language_runtime": "lean4",
+      "notes": "Exact binding + axiom audit. Never sole semantic authority."
+    },
+    {
+      "backend": "python_encoding_ref",
+      "capabilities": [
+        "binding_identity",
+        "certificate_checking",
+        "encoding_correctness"
+      ],
+      "trust_domain": "python_encoding_bridge",
+      "role": "independent",
+      "required_evidence_inputs": [
+        "original_problem",
+        "encoded_problem",
+        "certificate"
+      ],
+      "language_runtime": "python_cpython",
+      "notes": "Verified encoding bridge (EVID-10)."
+    }
+  ],
+  "policies": [
+    {
+      "policy_id": "formal_object_conformance/v1",
+      "required_capabilities": [
+        "structural_consistency"
+      ],
+      "min_distinct_trust_domains": 1,
+      "require_independent_verification": false,
+      "notes": "Structural/reference agreement is redundant conformance inside one trust domain \u2014 not independent semantic verification."
+    },
+    {
+      "policy_id": "formal_semantic_authority/v1",
+      "required_capabilities": [],
+      "min_distinct_trust_domains": 2,
+      "require_independent_verification": true,
+      "notes": "Checked semantic authority needs an independent trust domain. Shared python_structural/python_reference conformance alone fails. A single independent backend (encoding/replay/lean) may authorize; two nominal backends in one domain never count as diversity."
+    }
+  ]
+}

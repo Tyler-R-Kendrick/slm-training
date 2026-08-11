@@ -67,12 +67,22 @@ def test_formal_object_round_trip_upgrade_downgrade() -> None:
         ),
         checked=True,
     )
+    with pytest.raises(ValueError, match="trust-domain|redundant conformance"):
+        from_formal_object_v1(
+            obj,
+            judgment=judgment,
+            checker_results=(
+                checker_result_from_backend(backend="python_structural", ok=True),
+                checker_result_from_backend(backend="python_reference", ok=True),
+            ),
+        )
+
     authority = from_formal_object_v1(
         obj,
         judgment=judgment,
         checker_results=(
             checker_result_from_backend(backend="python_structural", ok=True),
-            checker_result_from_backend(backend="python_reference", ok=True),
+            checker_result_from_backend(backend="lean_kernel", ok=True),
         ),
     )
     assert authority.schema == FORMAL_AUTHORITY_SCHEMA

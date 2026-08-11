@@ -86,7 +86,7 @@ fixtures map each required mutation family to the exact gate/capability that
 must reject it (reusing EVID-06/07/09/10 — no third evidence stack). Positive
 controls still pass. Shared `python_structural`/`python_reference` trust
 domains do **not** count as independent semantic authority (EVID-08
-reclassification target). Structural consistency / provenance alone cannot
+production policy). Structural consistency / provenance alone cannot
 confer semantic authority.
 
 | Family | Gate (intended layer) |
@@ -116,20 +116,29 @@ A Lean claim seals the fully-qualified declaration name, expected proposition fi
 | Lean theorem catalog | `export_lean_claim` / `lean_claim_catalog` |
 | Exact-closure honesty laws | `export_closure_law` |
 
-## Independent checkers (provers)
+## Checkers (capability + trust domains)
 
-| Backend | What it trusts | Used for |
-| --- | --- | --- |
-| `python_structural` | Pure list-based law encoding + certificate honesty | all kinds |
-| `python_reference` | Independent set/digest-first re-encoding of the same laws | all kinds |
-| `python_replay` | Full enumerative search replay (`replay_support_certificate`) when expander+verifier context is supplied | support certificates |
-| `lean_kernel` | Optional exact theorem binding bridge + `#print axioms` + additional `make test` audit | lean claims / closure laws |
+Registry: `resources/formal/checker_capability_registry.v1.json`  
+Code: `src/slm_training/formal/checker_capability.py` (EVID-08)
 
-**Rule:** Lean is never sole authority. `loop_requires_multi_backend` rejects
-acceptance when only `lean_kernel` succeeds (`single-kernel reliance`).
+| Backend | Role | Trust domain | Advertised capabilities |
+| --- | --- | --- | --- |
+| `python_structural` | redundant conformance | `python_cpython_formal_structural_family` | `structural_consistency` |
+| `python_reference` | redundant conformance | *same family* | `structural_consistency` |
+| `python_replay` | independent | `python_enumerative_replay` | `semantic_replay`, `certificate_checking` |
+| `lean_kernel` | independent | `lean4_kernel` | `exact_proposition`, `axiom_audit`, … |
+| `python_encoding_ref` | independent | `python_encoding_bridge` | `encoding_correctness`, … |
 
-Default `min_backends = 2`. Support certificates and Lean claims require
-`python_structural` **and** `python_reference` by construction.
+**Rule:** Lean is never sole multi-backend loop authority. Distinct backend
+*names* are not automatic independent trust roots. Policy reports label
+`redundant_conformance` vs `independent_verification`. Skipped checks are not
+successful semantic checks. A checker cannot satisfy an unadvertised capability.
+
+Default loop policy is conformance (`formal_object_conformance/v1`):
+`min_backends = 2` with structural+reference closes the loop as **redundant
+conformance**, not semantic authority. `formal_semantic_authority/v1` requires
+an independent trust domain (and ≥2 domains when mixing conformance with
+another family).
 
 ## Close the loop
 

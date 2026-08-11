@@ -1,8 +1,9 @@
 """Exportable formal objects and multi-prover verification loop.
 
 Closes the formal loop for VSS support certificates and Lean claim modules
-using **independent checkers** (structural Python + certificate replay +
-optional Lean kernel). A single kernel is never sufficient authority.
+using advertised checkers (structural Python conformance + certificate replay +
+optional Lean kernel). Backend names are not automatic independent trust roots
+(EVID-08). A single kernel is never sufficient multi-backend loop authority.
 """
 
 from slm_training.formal.checkers import (
@@ -46,9 +47,14 @@ from slm_training.formal.theorem_binding import (
     seal_theorem_binding,
     verify_theorem_binding,
 )
+from slm_training.formal.checker_capability import (
+    CONFORMANCE_POLICY,
+    SEMANTIC_AUTHORITY_POLICY,
+    evaluate_acceptance_policy,
+    semantic_authority_requires_distinct_trust_domains,
+)
 from slm_training.formal.mutation_suite import (
     run_suite as run_formal_evidence_mutation_suite,
-    semantic_authority_requires_distinct_trust_domains,
 )
 from slm_training.formal.objects import (
     FORMAL_OBJECT_SCHEMA,
@@ -96,5 +102,8 @@ __all__ = [
     "seal_theorem_binding",
     "verify_theorem_binding",
     "run_formal_evidence_mutation_suite",
+    "CONFORMANCE_POLICY",
+    "SEMANTIC_AUTHORITY_POLICY",
+    "evaluate_acceptance_policy",
     "semantic_authority_requires_distinct_trust_domains",
 ]

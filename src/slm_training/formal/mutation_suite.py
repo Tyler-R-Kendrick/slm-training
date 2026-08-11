@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import re
 import tempfile
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -19,6 +19,14 @@ from slm_training.formal.authority import (
     FormalAuthorityV2,
     build_formal_authority_v2,
     from_formal_object_v1,
+)
+from slm_training.formal.checker_capability import (
+    CHECKER_TRUST_DOMAINS,
+    SEMANTIC_AUTHORITY_POLICY,
+    CheckerRunView,
+    capability_satisfied_by,
+    evaluate_acceptance_policy,
+    semantic_authority_requires_distinct_trust_domains,
 )
 from slm_training.formal.encoding_adapter import (
     CnfRefEncodingAdapter,
@@ -54,15 +62,6 @@ MATRIX_RELPATH = (
     "src/slm_training/resources/formal/evid11_mutation_matrix.v1.json"
 )
 DEFAULT_RESULTS_RELPATH = "docs/design/formal-evidence-mutation-results.json"
-
-# EVID-08 target: nominal backend names ≠ independent trust roots.
-CHECKER_TRUST_DOMAINS: Mapping[str, str] = {
-    "python_structural": "python_cpython_formal_structural_family",
-    "python_reference": "python_cpython_formal_structural_family",
-    "python_replay": "python_enumerative_replay",
-    "lean_kernel": "lean4_kernel",
-    "python_encoding_ref": "python_encoding_bridge",
-}
 
 _FORBIDDEN_SOURCE = re.compile(r"\b(?:sorry|admit|axiom)\b")
 
@@ -112,23 +111,6 @@ def load_matrix(*, root: Path | None = None) -> dict[str, Any]:
     if payload.get("schema") != MATRIX_SCHEMA:
         raise ValueError(f"expected schema {MATRIX_SCHEMA!r}")
     return payload
-
-
-def semantic_authority_requires_distinct_trust_domains(
-    backends_ok: Sequence[str],
-    *,
-    min_domains: int = 2,
-) -> bool:
-    """Semantic authority needs distinct trust domains, not just backend names.
-
-    ``python_structural`` and ``python_reference`` share a parser/runtime
-    family — agreeing alone cannot confer independent semantic authority.
-    """
-
-    domains = {
-        CHECKER_TRUST_DOMAINS.get(name, f"unknown:{name}") for name in backends_ok
-    }
-    return len(domains) >= min_domains
 
 
 def _seed_project(root: Path, *, proposition: str = "True") -> None:
@@ -393,9 +375,86 @@ def mutation_shared_parser_family_fault() -> tuple[bool, str]:
         ("python_structural", "lean_kernel")
     ):
         return _accept("distinct trust domains failed positive diversity check")
+    report = evaluate_acceptance_policy(
+        (
+            CheckerRunView(backend="python_structural", ok=True),
+            CheckerRunView(backend="python_reference", ok=True),
+        ),
+        SEMANTIC_AUTHORITY_POLICY,
+    )
+    if report.accepted or report.verification_kind != "redundant_conformance":
+        return _accept(
+            f"production semantic policy misclassified shared family: {report.to_dict()}"
+        )
     return _reject(
         "shared python_structural/reference trust domain denied semantic authority"
     )
+
+
+def mutation_shared_serialization_common_mode() -> tuple[bool, str]:
+    """Shared FormalObject serialization fault hits both nominal Python backends."""
+
+    from slm_training.formal.checkers import (
+        check_python_reference,
+        check_python_structural,
+    )
+    from slm_training.formal.objects import FormalObjectV1
+
+    obj = export_lean_claim("Judgment.timeout_never_refuted")
+    raw = obj.to_dict()
+    digest = raw["content_digest"]
+    flipped = ("0" if digest[0] != "0" else "1") + digest[1:]
+    raw["content_digest"] = flipped
+    try:
+        FormalObjectV1.from_dict(raw)
+        parse_rejected = False
+    except ValueError:
+        parse_rejected = True
+    if not parse_rejected:
+        return _accept("corrupted digest still parsed as FormalObjectV1")
+
+    structural = check_python_structural(obj)
+    reference = check_python_reference(obj)
+    if not (structural.ok and reference.ok):
+        return _accept("honest object failed shared structural family checkers")
+    if CHECKER_TRUST_DOMAINS[structural.backend] != CHECKER_TRUST_DOMAINS[
+        reference.backend
+    ]:
+        return _accept("structural/reference unexpectedly split trust domains")
+    report = evaluate_acceptance_policy(
+        (
+            CheckerRunView(backend=structural.backend, ok=True),
+            CheckerRunView(backend=reference.backend, ok=True),
+        ),
+        SEMANTIC_AUTHORITY_POLICY,
+    )
+    if report.accepted:
+        return _accept("common-mode structural pair conferred semantic authority")
+    return _reject(
+        "shared serialization family common-mode success blocked for semantic authority"
+    )
+
+
+def mutation_unadvertised_capability_claim() -> tuple[bool, str]:
+    """A checker cannot satisfy a capability it does not advertise."""
+
+    from slm_training.formal.checker_capability import AcceptancePolicyV1
+
+    if capability_satisfied_by("runtime_refinement", backend="python_structural"):
+        return _accept("python_structural incorrectly advertises runtime_refinement")
+    report = evaluate_acceptance_policy(
+        (CheckerRunView(backend="python_structural", ok=True),),
+        AcceptancePolicyV1(
+            policy_id="probe_runtime_refinement/v1",
+            required_capabilities=frozenset({"runtime_refinement"}),
+            min_distinct_trust_domains=1,
+            require_independent_verification=False,
+        ),
+        claimed_capabilities=("runtime_refinement",),
+    )
+    if report.accepted or "runtime_refinement" not in report.missing_capabilities:
+        return _accept(f"unadvertised capability accepted: {report.to_dict()}")
+    return _reject("unadvertised runtime_refinement rejected by policy")
 
 
 def mutation_v2_content_digest_mismatch() -> tuple[bool, str]:
@@ -494,6 +553,8 @@ _RUNNERS: dict[str, Callable[[], tuple[bool, str]]] = {
     "mutation_certificate_wrong_encoding": mutation_certificate_wrong_encoding,
     "mutation_stale_problem_digest_on_mint": mutation_stale_problem_digest_on_mint,
     "mutation_shared_parser_family_fault": mutation_shared_parser_family_fault,
+    "mutation_shared_serialization_common_mode": mutation_shared_serialization_common_mode,
+    "mutation_unadvertised_capability_claim": mutation_unadvertised_capability_claim,
     "mutation_v2_content_digest_mismatch": mutation_v2_content_digest_mismatch,
     "mutation_v1_v2_migration_tamper": mutation_v1_v2_migration_tamper,
     "positive_exact_replay_authorizes": positive_exact_replay_authorizes,
