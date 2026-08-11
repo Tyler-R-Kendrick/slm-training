@@ -1,4 +1,4 @@
-"""Formal claim/evidence authority envelope (EVID-06 / EVID-07).
+"""Formal claim/evidence authority envelope (EVID-06 / EVID-07 / EVID-09).
 
 Converges portable ``FormalObjectV1`` and campaign ``FormalPreflightV1`` into
 one ``formal_authority/v2`` contract via adapters — not a third evidence stack,

@@ -111,14 +111,19 @@ end WellFormedPartitions
 structure ActionEvidence where
   action : Action
   partition : Partition
+  /-- Telemetry only (EVID-09). -/
   replayOk : Bool
   hardProfile : Bool
+  refutationEvidence : Option ExactClosure.CheckedRefutationEvidence
+  expectedBinding : ExactClosure.BindingIds
 deriving Repr, BEq
 
-/-- Certified removal authority mirrors ``_assign_partition`` unsupported branch. -/
+/-- Certified removal requires hard profile + checked identity-bound evidence. -/
 def certifiedRemovable (e : ActionEvidence) : Bool :=
   match e.partition with
-  | .unsupported => e.replayOk && e.hardProfile
+  | .unsupported =>
+      e.hardProfile &&
+        ExactClosure.evidenceAuthorizesRemoval e.refutationEvidence e.expectedBinding
   | _ => false
 
 /-- Certified removal actions live in the unsupported bucket with replay-valid hard evidence. -/

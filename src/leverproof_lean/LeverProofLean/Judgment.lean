@@ -81,9 +81,15 @@ structure SourceInput where
   vssVerdict : Option VssVerdict
   hasWitnessDigest : Bool
   hasCounterexampleDigest : Bool
+  /-- Telemetry only (EVID-09). -/
   exhausted : Bool
+  /-- Telemetry only (EVID-09). -/
   replayChecked : Bool
+  /-- Telemetry only (EVID-09). -/
   replayOk : Bool
+  /-- Authority-critical checked refutation evidence. -/
+  refutationEvidence : Option ExactClosure.CheckedRefutationEvidence
+  expectedBinding : ExactClosure.BindingIds
 deriving Repr, BEq
 
 def classifyUnknownReason (s : SourceInput) : UnknownReason :=
@@ -114,7 +120,7 @@ def classifyOutcome (s : SourceInput) : Outcome :=
     | some .unsupported =>
       if s.hasWitnessDigest then
         .invalid
-      else if s.exhausted && s.replayChecked && s.replayOk then
+      else if ExactClosure.evidenceAuthorizesRemoval s.refutationEvidence s.expectedBinding then
         .refuted
       else
         .unknown
@@ -125,7 +131,19 @@ def classifyPayload (s : SourceInput) (o : Outcome) : Payload :=
   | .witnessed =>
     .witness { witnessDigest := "checked", source := "vss_certificate" }
   | .refuted =>
-    .refutation { refutationDigest := "checked", source := "vss_exhaustion" }
+    .refutation {
+      refutationDigest :=
+        match s.refutationEvidence with
+        | some e => e.evidenceDigest
+        | none => "unchecked"
+      source :=
+        match s.refutationEvidence with
+        | some e =>
+          match e.kind with
+          | .exactReplay => "exact_semantic_replay"
+          | .checkedCertificate => "checked_certificate"
+        | none => "vss_exhaustion"
+    }
   | .unknown => .unknownReason (classifyUnknownReason s)
   | .invalid => .invalidReason (classifyInvalidReason s)
 
@@ -270,7 +288,12 @@ def sourceFromQueryResult (r : ExactClosure.QueryResult)
     hasCounterexampleDigest := hasCounter
     exhausted := exhausted
     replayChecked := replayChecked
-    replayOk := replayOk }
+    replayOk := replayOk
+    refutationEvidence :=
+      if timedOut || skippedReplay || unsupportedCapability || incompleteCoverage ||
+          missingTool then none
+      else r.refutationEvidence
+    expectedBinding := r.expectedBinding }
 
 theorem unknown_query_never_refuted_when_replay_skipped
     (r : ExactClosure.QueryResult) :
@@ -278,6 +301,19 @@ theorem unknown_query_never_refuted_when_replay_skipped
       (sourceFromQueryResult r false true false false false false false false true false) ≠
       .refuted := by
   exact skipped_replay_never_refuted _ rfl
+
+
+theorem forged_exhaustion_flags_never_refuted
+    (exhausted replayChecked replayOk : Bool)
+    (binding : ExactClosure.BindingIds) :
+    classifyOutcome
+      { malformedInput := false, payloadMismatch := false, timedOut := false,
+        skippedReplay := false, unsupportedCapability := false, incompleteCoverage := false,
+        missingTool := false, vssVerdict := some .unsupported, hasWitnessDigest := false,
+        hasCounterexampleDigest := false, exhausted := exhausted,
+        replayChecked := replayChecked, replayOk := replayOk,
+        refutationEvidence := none, expectedBinding := binding } ≠ .refuted := by
+  simp [classifyOutcome, ExactClosure.evidenceAuthorizesRemoval]
 
 theorem exact_closure_unknown_never_authorizes_removal
     (r : ExactClosure.QueryResult)

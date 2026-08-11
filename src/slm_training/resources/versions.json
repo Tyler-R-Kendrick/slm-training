@@ -12,7 +12,7 @@
   ],
   "components": {
     "formal.leverproof": {
-      "version": "v21",
+      "version": "v22",
       "kind": "harness",
       "paths": [
         "src/leverproof_lean/",
@@ -41,6 +41,11 @@
         "docs/design/kern-08-mechanism-trigger-no-effect.md"
       ],
       "history": [
+        {
+          "version": "v22",
+          "date": "2026-08-11",
+          "note": "EVID-09 (SLM-542): ExactClosure/Judgment/GoalSupport replace authority-critical replayOk with identity-bound CheckedRefutationEvidence."
+        },
         {
           "version": "v21",
           "date": "2026-08-11",
@@ -17520,7 +17525,7 @@
       ]
     },
     "formal.objects": {
-      "version": "v15",
+      "version": "v16",
       "kind": "harness",
       "paths": [
         "tests/test_formal/test_theorem_binding.py",
@@ -17548,9 +17553,19 @@
         "tests/test_formal/test_singleton_neural_policy.py",
         "src/slm_training/formal/mechanism_trigger.py",
         "src/slm_training/resources/formal/mechanism_trigger_fixtures.v1.json",
-        "tests/test_formal/test_mechanism_trigger.py"
+        "tests/test_formal/test_mechanism_trigger.py",
+        "src/slm_training/formal/refutation_authority.py",
+        "src/slm_training/formal/judgment.py",
+        "tests/test_formal/test_refutation_authority.py",
+        "src/slm_training/resources/formal/judgment_truth_table.v1.json",
+        "src/slm_training/resources/formal/goal_support_golden_cases.v1.json"
       ],
       "history": [
+        {
+          "version": "v16",
+          "date": "2026-08-11",
+          "note": "EVID-09 (SLM-542): checked refutation evidence required for destructive UNSUPPORTED/refuted authority; demote exhausted/replay_ok/coverage flags to telemetry."
+        },
         {
           "version": "v15",
           "date": "2026-08-11",

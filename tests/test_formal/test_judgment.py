@@ -15,6 +15,11 @@ from slm_training.dsl.solver.state import (
     SupportVerdict,
 )
 from slm_training.dsl.solver.support import SupportCertificate, SupportQuery
+from slm_training.formal.refutation_authority import (
+    BindingIdsV1,
+    CheckedRefutationEvidenceV1,
+    make_exact_replay_evidence,
+)
 from slm_training.formal.judgment import (
     ClassificationInputsV1,
     JudgmentOutcome,
@@ -28,6 +33,18 @@ from slm_training.formal.judgment import (
     from_formal_preflight_status,
     from_support_certificate,
 )
+
+
+_BINDING = BindingIdsV1(
+    state_id="judgment-test-state",
+    problem_id="judgment-test-problem",
+    source_id="vss",
+    tool_id="python_replay",
+)
+
+
+def _refutation_evidence(digest: str = "checked-refutation-digest") -> CheckedRefutationEvidenceV1:
+    return make_exact_replay_evidence(_BINDING, evidence_digest=digest)
 
 _TRUTH_TABLE = (
     Path(__file__).resolve().parents[2]
@@ -94,6 +111,8 @@ def test_round_trip_persisted_schema() -> None:
             exhausted=True,
             replay_checked=True,
             replay_ok=True,
+            refutation_evidence=_refutation_evidence(),
+            expected_binding=_BINDING,
         ),
         checked=True,
     )
@@ -133,6 +152,8 @@ def test_only_checked_witnessed_and_refuted_authorize_semantic() -> None:
             exhausted=True,
             replay_checked=True,
             replay_ok=True,
+            refutation_evidence=_refutation_evidence(),
+            expected_binding=_BINDING,
         ),
         checked=True,
     )
@@ -261,6 +282,8 @@ def test_exact_closure_adapter() -> None:
         replay_checked=True,
         checked=True,
         exhausted=True,
+        refutation_evidence=_refutation_evidence(),
+        expected_binding=_BINDING,
     )
     assert refuted.outcome is JudgmentOutcome.REFUTED
     skipped = from_exact_closure_query(
@@ -270,6 +293,8 @@ def test_exact_closure_adapter() -> None:
         checked=True,
         exhausted=True,
         skipped_replay=True,
+        refutation_evidence=_refutation_evidence(),
+        expected_binding=_BINDING,
     )
     assert skipped.outcome is JudgmentOutcome.UNKNOWN
 

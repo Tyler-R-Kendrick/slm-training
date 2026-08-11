@@ -40,6 +40,21 @@ source/toolchain identity, certificate/replay digests, and an explicit
 cannot be represented as checked semantic refutation. Historical v1 artifacts
 remain readable; preferred writes emit v2 (`prefer_write_payload`).
 
+
+### Checked refutation authority (EVID-09)
+
+Code: `src/slm_training/formal/refutation_authority.py` (wired through
+`judgment.py`, ExactClosure / GoalSupport Lean mirrors, and support-certificate /
+closure adapters).
+
+Destructive `refuted` / UNSUPPORTED authority requires either exact bounded
+semantic replay or a checked proof-certificate path, each bound to
+state/problem/source/tool identity. Self-attested `exhausted`,
+`coverage=complete`, and `replay_ok` bits remain telemetry only and cannot
+remove candidates. Skipped replay, timeout, missing tool/context, incomplete
+coverage, malformed input, or unsupported features return `unknown`/`invalid`
+and strip evidence at the adapter boundary.
+
 ### Exact theorem binding (EVID-07)
 
 Schema: `lean.theorem_binding/v1`  

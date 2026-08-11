@@ -41,6 +41,9 @@ open LeverProofLean
 #print axioms ExactClosure.supported_not_removable
 #print axioms ExactClosure.unknown_not_removable
 #print axioms ExactClosure.failed_replay_not_removable
+#print axioms ExactClosure.forged_exhaustion_never_authorizes
+#print axioms ExactClosure.stale_binding_not_removable
+#print axioms Judgment.forged_exhaustion_flags_never_refuted
 #print axioms ExactClosure.iterate_subset
 #print axioms ExactClosure.certified_bottom_of_all_removed
 #print axioms ExactClosure.honest_when_no_accepted_unsupported
@@ -279,20 +282,23 @@ open LeverProofLean
     skippedReplay := false, unsupportedCapability := false, incompleteCoverage := false,
     missingTool := false, vssVerdict := some .unsupported, hasWitnessDigest := false,
     hasCounterexampleDigest := false, exhausted := true, replayChecked := true,
-    replayOk := true } == .unknown
+    replayOk := true, refutationEvidence := none,
+    expectedBinding := { stateId := "t", problemId := "p", sourceId := "s", toolId := "tool" } } == .unknown
 #guard Judgment.classifyOutcome
   { malformedInput := false, payloadMismatch := false, timedOut := false,
     skippedReplay := true, unsupportedCapability := false, incompleteCoverage := false,
     missingTool := false, vssVerdict := some .unsupported, hasWitnessDigest := false,
     hasCounterexampleDigest := false, exhausted := true, replayChecked := true,
-    replayOk := true } == .unknown
+    replayOk := true, refutationEvidence := none,
+    expectedBinding := { stateId := "t", problemId := "p", sourceId := "s", toolId := "tool" } } == .unknown
 #guard Judgment.authorizesSemanticConclusion
   (Judgment.classify
     { malformedInput := false, payloadMismatch := false, timedOut := false,
       skippedReplay := false, unsupportedCapability := false, incompleteCoverage := false,
       missingTool := false, vssVerdict := some .supported, hasWitnessDigest := true,
       hasCounterexampleDigest := false, exhausted := false, replayChecked := true,
-      replayOk := true }
+      replayOk := true, refutationEvidence := none,
+      expectedBinding := { stateId := "t", problemId := "p", sourceId := "s", toolId := "tool" } }
     true) == true
 #guard !Judgment.authorizesRemoval
   (Judgment.classify
@@ -300,7 +306,8 @@ open LeverProofLean
       skippedReplay := false, unsupportedCapability := false, incompleteCoverage := false,
       missingTool := false, vssVerdict := some .unsupported, hasWitnessDigest := false,
       hasCounterexampleDigest := false, exhausted := true, replayChecked := true,
-      replayOk := true }
+      replayOk := true, refutationEvidence := none,
+      expectedBinding := { stateId := "t", problemId := "p", sourceId := "s", toolId := "tool" } }
     true)
 
 -- Finite search bounds (KERN-03)

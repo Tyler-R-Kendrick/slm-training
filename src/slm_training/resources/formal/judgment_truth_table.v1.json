@@ -206,7 +206,26 @@
         "vss_verdict": "unsupported",
         "exhausted": true,
         "replay_checked": true,
-        "replay_ok": true
+        "replay_ok": true,
+        "refutation_evidence": {
+          "schema": "checked_refutation_evidence/v1",
+          "kind": "exact_replay",
+          "binding": {
+            "state_id": "judgment-fixture-state",
+            "problem_id": "judgment-fixture-problem",
+            "source_id": "vss",
+            "tool_id": "python_replay"
+          },
+          "evidence_digest": "checked-refutation-digest",
+          "capability_present": true,
+          "trust_checked": true
+        },
+        "expected_binding": {
+          "state_id": "judgment-fixture-state",
+          "problem_id": "judgment-fixture-problem",
+          "source_id": "vss",
+          "tool_id": "python_replay"
+        }
       },
       "checked": true,
       "expect": {
@@ -224,7 +243,26 @@
         "vss_verdict": "unsupported",
         "exhausted": true,
         "replay_checked": true,
-        "replay_ok": true
+        "replay_ok": true,
+        "refutation_evidence": {
+          "schema": "checked_refutation_evidence/v1",
+          "kind": "exact_replay",
+          "binding": {
+            "state_id": "judgment-fixture-state",
+            "problem_id": "judgment-fixture-problem",
+            "source_id": "vss",
+            "tool_id": "python_replay"
+          },
+          "evidence_digest": "checked-refutation-digest",
+          "capability_present": true,
+          "trust_checked": true
+        },
+        "expected_binding": {
+          "state_id": "judgment-fixture-state",
+          "problem_id": "judgment-fixture-problem",
+          "source_id": "vss",
+          "tool_id": "python_replay"
+        }
       },
       "checked": false,
       "expect": {
@@ -1212,7 +1250,26 @@
         "has_witness_digest": false,
         "exhausted": true,
         "replay_checked": true,
-        "replay_ok": true
+        "replay_ok": true,
+        "refutation_evidence": {
+          "schema": "checked_refutation_evidence/v1",
+          "kind": "exact_replay",
+          "binding": {
+            "state_id": "judgment-fixture-state",
+            "problem_id": "judgment-fixture-problem",
+            "source_id": "vss",
+            "tool_id": "python_replay"
+          },
+          "evidence_digest": "checked-refutation-digest",
+          "capability_present": true,
+          "trust_checked": true
+        },
+        "expected_binding": {
+          "state_id": "judgment-fixture-state",
+          "problem_id": "judgment-fixture-problem",
+          "source_id": "vss",
+          "tool_id": "python_replay"
+        }
       },
       "checked": false,
       "expect": {
@@ -1231,7 +1288,26 @@
         "has_witness_digest": false,
         "exhausted": true,
         "replay_checked": true,
-        "replay_ok": true
+        "replay_ok": true,
+        "refutation_evidence": {
+          "schema": "checked_refutation_evidence/v1",
+          "kind": "exact_replay",
+          "binding": {
+            "state_id": "judgment-fixture-state",
+            "problem_id": "judgment-fixture-problem",
+            "source_id": "vss",
+            "tool_id": "python_replay"
+          },
+          "evidence_digest": "checked-refutation-digest",
+          "capability_present": true,
+          "trust_checked": true
+        },
+        "expected_binding": {
+          "state_id": "judgment-fixture-state",
+          "problem_id": "judgment-fixture-problem",
+          "source_id": "vss",
+          "tool_id": "python_replay"
+        }
       },
       "checked": true,
       "expect": {

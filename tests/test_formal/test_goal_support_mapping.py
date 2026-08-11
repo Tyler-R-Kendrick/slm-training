@@ -68,7 +68,19 @@ def test_unknown_unobserved_never_certified_removed() -> None:
                 "unobserved": [3],
             },
             "evidence": [
-                {"action": 1, "partition": "unsupported", "replay_ok": True, "hard_profile": True},
+                {
+                    "action": 1,
+                    "partition": "unsupported",
+                    "replay_ok": True,
+                    "hard_profile": True,
+                    "expected_binding": {
+                        "state_id": "goal-support-state",
+                        "problem_id": "goal-support-problem",
+                        "source_id": "goal_support",
+                        "tool_id": "python_replay",
+                    },
+                    "evidence_digest": "goal-replay-1",
+                },
                 {"action": 2, "partition": "unknown", "replay_ok": False, "hard_profile": True},
                 {"action": 3, "partition": "unobserved", "replay_ok": False, "hard_profile": True},
             ],

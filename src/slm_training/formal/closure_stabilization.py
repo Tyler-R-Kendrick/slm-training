@@ -16,12 +16,32 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Literal, Sequence
 
+from slm_training.formal.refutation_authority import (
+    BindingIdsV1,
+    CheckedRefutationEvidenceV1,
+    make_exact_replay_evidence,
+)
 from slm_training.formal.structural import close_pass, removable
 from slm_training.harness_core.lineage.records import content_sha
 
 CLOSURE_STABILIZATION_SCHEMA = "closure_stabilization/v1"
 BOUND_AST_STRICT_REMOVALS = "bound.closure.strict_removals.v1"
 BOUND_AST_LIVE_UPPER = "bound.closure.live_upper.v1"
+
+# Shared fixture binding for frozen closure traces (identity-bound replay).
+_FIXTURE_BINDING = BindingIdsV1(
+    state_id="closure-fixture-state",
+    problem_id="closure-fixture-problem",
+    source_id="exact_closure",
+    tool_id="python_replay",
+)
+
+
+def _fixture_evidence(candidate: int) -> CheckedRefutationEvidenceV1:
+    return make_exact_replay_evidence(
+        _FIXTURE_BINDING,
+        evidence_digest=f"closure-replay-{candidate}",
+    )
 
 
 def list_sum(sizes: Sequence[int]) -> int:
@@ -81,18 +101,30 @@ class QueryResultV1:
     hole: int
     candidate: int
     verdict: Literal["supported", "unsupported", "unknown"]
-    replay_ok: bool
+    replay_ok: bool = False  # telemetry only (EVID-09)
+    refutation_evidence: CheckedRefutationEvidenceV1 | None = None
+    expected_binding: BindingIdsV1 | None = None
 
     def is_removable(self) -> bool:
-        return removable(self.verdict, self.replay_ok)
+        return removable(
+            self.verdict,
+            self.replay_ok,
+            evidence=self.refutation_evidence,
+            expected=self.expected_binding,
+        )
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        out: dict[str, Any] = {
             "hole": self.hole,
             "candidate": self.candidate,
             "verdict": self.verdict,
             "replay_ok": self.replay_ok,
         }
+        if self.refutation_evidence is not None:
+            out["refutation_evidence"] = self.refutation_evidence.to_dict()
+        if self.expected_binding is not None:
+            out["expected_binding"] = self.expected_binding.to_dict()
+        return out
 
 
 def is_removable_in_batch(results: Sequence[QueryResultV1], candidate: int) -> bool:
@@ -332,11 +364,18 @@ def cross_check_trace(trace: ClosureTraceV1) -> dict[str, Any]:
 def _qr(
     hole: int, candidate: int, verdict: str, replay_ok: bool
 ) -> QueryResultV1:
+    evidence = None
+    binding = None
+    if verdict == "unsupported" and replay_ok:
+        evidence = _fixture_evidence(candidate)
+        binding = _FIXTURE_BINDING
     return QueryResultV1(
         hole=hole,
         candidate=candidate,
         verdict=verdict,  # type: ignore[arg-type]
         replay_ok=replay_ok,
+        refutation_evidence=evidence,
+        expected_binding=binding,
     )
 
 

@@ -6,16 +6,48 @@
       "input": {
         "schema": "goal_support_formal_mapping/v1",
         "partitions": {
-          "legal": [1, 2, 3],
-          "supported": [2],
-          "unsupported": [1],
+          "legal": [
+            1,
+            2,
+            3
+          ],
+          "supported": [
+            2
+          ],
+          "unsupported": [
+            1
+          ],
           "unknown": [],
-          "unobserved": [3]
+          "unobserved": [
+            3
+          ]
         },
         "evidence": [
-          {"action": 1, "partition": "unsupported", "replay_ok": true, "hard_profile": true},
-          {"action": 2, "partition": "supported", "replay_ok": true, "hard_profile": true},
-          {"action": 3, "partition": "unobserved", "replay_ok": false, "hard_profile": true}
+          {
+            "action": 1,
+            "partition": "unsupported",
+            "replay_ok": true,
+            "hard_profile": true,
+            "expected_binding": {
+              "state_id": "goal-support-state",
+              "problem_id": "goal-support-problem",
+              "source_id": "goal_support",
+              "tool_id": "python_replay"
+            },
+            "evidence_digest": "goal-replay-1"
+          },
+          {
+            "action": 2,
+            "partition": "supported",
+            "replay_ok": true,
+            "hard_profile": true
+          },
+          {
+            "action": 3,
+            "partition": "unobserved",
+            "replay_ok": false,
+            "hard_profile": true
+          }
         ],
         "inputs": {
           "selected": 2,
@@ -34,7 +66,9 @@
       },
       "expect": {
         "classification": "domain_adequate_selected_supported",
-        "certified_removal": [1],
+        "certified_removal": [
+          1
+        ],
         "partition_violations": []
       }
     },
@@ -43,15 +77,39 @@
       "input": {
         "schema": "goal_support_formal_mapping/v1",
         "partitions": {
-          "legal": [1, 2],
-          "supported": [1],
-          "unsupported": [2],
+          "legal": [
+            1,
+            2
+          ],
+          "supported": [
+            1
+          ],
+          "unsupported": [
+            2
+          ],
           "unknown": [],
           "unobserved": []
         },
         "evidence": [
-          {"action": 1, "partition": "supported", "replay_ok": true, "hard_profile": true},
-          {"action": 2, "partition": "unsupported", "replay_ok": true, "hard_profile": true}
+          {
+            "action": 1,
+            "partition": "supported",
+            "replay_ok": true,
+            "hard_profile": true
+          },
+          {
+            "action": 2,
+            "partition": "unsupported",
+            "replay_ok": true,
+            "hard_profile": true,
+            "expected_binding": {
+              "state_id": "goal-support-state",
+              "problem_id": "goal-support-problem",
+              "source_id": "goal_support",
+              "tool_id": "python_replay"
+            },
+            "evidence_digest": "goal-replay-2"
+          }
         ],
         "inputs": {
           "selected": 2,
@@ -70,7 +128,9 @@
       },
       "expect": {
         "classification": "selection_regret",
-        "certified_removal": [2]
+        "certified_removal": [
+          2
+        ]
       }
     },
     {
@@ -78,16 +138,41 @@
       "input": {
         "schema": "goal_support_formal_mapping/v1",
         "partitions": {
-          "legal": [1, 2, 3],
-          "supported": [1],
+          "legal": [
+            1,
+            2,
+            3
+          ],
+          "supported": [
+            1
+          ],
           "unsupported": [],
-          "unknown": [2],
-          "unobserved": [3]
+          "unknown": [
+            2
+          ],
+          "unobserved": [
+            3
+          ]
         },
         "evidence": [
-          {"action": 1, "partition": "supported", "replay_ok": true, "hard_profile": true},
-          {"action": 2, "partition": "unknown", "replay_ok": false, "hard_profile": true},
-          {"action": 3, "partition": "unobserved", "replay_ok": false, "hard_profile": true}
+          {
+            "action": 1,
+            "partition": "supported",
+            "replay_ok": true,
+            "hard_profile": true
+          },
+          {
+            "action": 2,
+            "partition": "unknown",
+            "replay_ok": false,
+            "hard_profile": true
+          },
+          {
+            "action": 3,
+            "partition": "unobserved",
+            "replay_ok": false,
+            "hard_profile": true
+          }
         ],
         "inputs": {
           "selected": 3,
@@ -114,15 +199,45 @@
       "input": {
         "schema": "goal_support_formal_mapping/v1",
         "partitions": {
-          "legal": [10, 11],
+          "legal": [
+            10,
+            11
+          ],
           "supported": [],
-          "unsupported": [10, 11],
+          "unsupported": [
+            10,
+            11
+          ],
           "unknown": [],
           "unobserved": []
         },
         "evidence": [
-          {"action": 10, "partition": "unsupported", "replay_ok": true, "hard_profile": true},
-          {"action": 11, "partition": "unsupported", "replay_ok": true, "hard_profile": true}
+          {
+            "action": 10,
+            "partition": "unsupported",
+            "replay_ok": true,
+            "hard_profile": true,
+            "expected_binding": {
+              "state_id": "goal-support-state",
+              "problem_id": "goal-support-problem",
+              "source_id": "goal_support",
+              "tool_id": "python_replay"
+            },
+            "evidence_digest": "goal-replay-10"
+          },
+          {
+            "action": 11,
+            "partition": "unsupported",
+            "replay_ok": true,
+            "hard_profile": true,
+            "expected_binding": {
+              "state_id": "goal-support-state",
+              "problem_id": "goal-support-problem",
+              "source_id": "goal_support",
+              "tool_id": "python_replay"
+            },
+            "evidence_digest": "goal-replay-11"
+          }
         ],
         "inputs": {
           "selected": 10,
@@ -141,7 +256,10 @@
       },
       "expect": {
         "classification": "domain_inadequate_under_bounds",
-        "certified_removal": [10, 11]
+        "certified_removal": [
+          10,
+          11
+        ]
       }
     },
     {
@@ -149,15 +267,39 @@
       "input": {
         "schema": "goal_support_formal_mapping/v1",
         "partitions": {
-          "legal": [1, 2],
+          "legal": [
+            1,
+            2
+          ],
           "supported": [],
-          "unsupported": [1],
-          "unknown": [2],
+          "unsupported": [
+            1
+          ],
+          "unknown": [
+            2
+          ],
           "unobserved": []
         },
         "evidence": [
-          {"action": 1, "partition": "unsupported", "replay_ok": true, "hard_profile": true},
-          {"action": 2, "partition": "unknown", "replay_ok": false, "hard_profile": true}
+          {
+            "action": 1,
+            "partition": "unsupported",
+            "replay_ok": true,
+            "hard_profile": true,
+            "expected_binding": {
+              "state_id": "goal-support-state",
+              "problem_id": "goal-support-problem",
+              "source_id": "goal_support",
+              "tool_id": "python_replay"
+            },
+            "evidence_digest": "goal-replay-1"
+          },
+          {
+            "action": 2,
+            "partition": "unknown",
+            "replay_ok": false,
+            "hard_profile": true
+          }
         ],
         "inputs": {
           "selected": 2,
@@ -176,7 +318,9 @@
       },
       "expect": {
         "classification": "coverage_unknown",
-        "certified_removal": [1]
+        "certified_removal": [
+          1
+        ]
       }
     },
     {
@@ -184,14 +328,30 @@
       "input": {
         "schema": "goal_support_formal_mapping/v1",
         "partitions": {
-          "legal": [1],
+          "legal": [
+            1
+          ],
           "supported": [],
-          "unsupported": [1],
+          "unsupported": [
+            1
+          ],
           "unknown": [],
           "unobserved": []
         },
         "evidence": [
-          {"action": 1, "partition": "unsupported", "replay_ok": true, "hard_profile": true}
+          {
+            "action": 1,
+            "partition": "unsupported",
+            "replay_ok": true,
+            "hard_profile": true,
+            "expected_binding": {
+              "state_id": "goal-support-state",
+              "problem_id": "goal-support-problem",
+              "source_id": "goal_support",
+              "tool_id": "python_replay"
+            },
+            "evidence_digest": "goal-replay-1"
+          }
         ],
         "inputs": {
           "selected": 1,
@@ -202,21 +362,50 @@
           "obstruction_present": true
         },
         "failures": [
-          {"terminal": 0, "atoms": [10]},
-          {"terminal": 1, "atoms": [11]}
+          {
+            "terminal": 0,
+            "atoms": [
+              10
+            ]
+          },
+          {
+            "terminal": 1,
+            "atoms": [
+              11
+            ]
+          }
         ],
-        "core": [10, 11],
-        "required_constraints": [1, 2, 3],
-        "satisfied_constraints": [1, 2, 3, 4],
-        "live": [5, 6],
-        "removed": [6]
+        "core": [
+          10,
+          11
+        ],
+        "required_constraints": [
+          1,
+          2,
+          3
+        ],
+        "satisfied_constraints": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "live": [
+          5,
+          6
+        ],
+        "removed": [
+          6
+        ]
       },
       "expect": {
         "hits_all": true,
         "subset_minimal_exact": true,
         "witness_ok": true,
         "witness_ok_after_required_subset": true,
-        "survivors": [5]
+        "survivors": [
+          5
+        ]
       }
     },
     {
@@ -224,9 +413,13 @@
       "input": {
         "schema": "goal_support_formal_mapping/v1",
         "partitions": {
-          "legal": [1],
+          "legal": [
+            1
+          ],
           "supported": [],
-          "unsupported": [1],
+          "unsupported": [
+            1
+          ],
           "unknown": [],
           "unobserved": []
         },
@@ -240,13 +433,31 @@
           "obstruction_present": true
         },
         "failures": [
-          {"terminal": 0, "atoms": [10, 12]},
-          {"terminal": 1, "atoms": [11, 12]}
+          {
+            "terminal": 0,
+            "atoms": [
+              10,
+              12
+            ]
+          },
+          {
+            "terminal": 1,
+            "atoms": [
+              11,
+              12
+            ]
+          }
         ],
-        "core": [10, 11, 12],
+        "core": [
+          10,
+          11,
+          12
+        ],
         "required_constraints": [],
         "satisfied_constraints": [],
-        "live": [9],
+        "live": [
+          9
+        ],
         "removed": []
       },
       "expect": {
