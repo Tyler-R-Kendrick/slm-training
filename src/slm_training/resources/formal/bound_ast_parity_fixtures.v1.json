@@ -134,6 +134,35 @@
       "lean_def": "worstCaseQueryLowerBound",
       "lean_guard": "modelFromDomainSizes [2, 3] |>.assignmentCount = 6",
       "kern04_field": "worst_case_query_lower_bound"
+    },
+    {
+      "id": "event_trace_unit_work_2_3_5_7_11",
+      "bound_ast_id": "bound.event_trace.decode_unit_work.v1",
+      "env": {
+        "tokenize": 2,
+        "grammar_transition": 3,
+        "solver_expansion": 5,
+        "certificate_check": 7,
+        "neural_forward": 11
+      },
+      "expected_value": "28",
+      "lean_module": "LeverProofLean.EventTrace",
+      "lean_def": "decodeUnitWorkCostOfCounts",
+      "lean_guard": "decodeUnitWorkCostOfCounts { tokenize := 2, grammarTransition := 3, solverExpansion := 5, certificateCheck := 7, neuralForward := 11 } = 28",
+      "kern06_field": "decode_unit_work_cost"
+    },
+    {
+      "id": "event_trace_compose_2_3",
+      "bound_ast_id": "bound.event_trace.compose.v1",
+      "env": {
+        "cost_left": 2,
+        "cost_right": 3
+      },
+      "expected_value": "5",
+      "lean_module": "LeverProofLean.EventTrace",
+      "lean_def": "traceCost_append",
+      "lean_guard": "traceCost decodeUnitWorkModel ([.neuralForward 2] ++ [.solverExpansion 3]) = 5",
+      "kern06_field": "compose"
     }
   ]
 }

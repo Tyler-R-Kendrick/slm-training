@@ -1,0 +1,27 @@
+{
+  "schema": "event_trace_fixtures/v1",
+  "cost_model": "DecodeUnitWorkModel",
+  "cost_model_version": 1,
+  "bound_ast_id": "bound.event_trace.decode_unit_work.v1",
+  "wall_clock_claim": false,
+  "unobserved_under_decode": [
+    "neural_backward",
+    "optimizer_step",
+    "memory_write",
+    "kernel_launch"
+  ],
+  "cases": [
+    {
+      "id": "unit_work_2_3_5_7_11",
+      "expected_cost": 28
+    },
+    {
+      "id": "zero_work",
+      "expected_cost": 0
+    },
+    {
+      "id": "forward_only_three",
+      "expected_cost": 3
+    }
+  ]
+}

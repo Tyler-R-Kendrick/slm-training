@@ -70,6 +70,12 @@ open LeverProofLean
 #print axioms BlackBoxUnsupportedLowerBound.early_stop_distinguishes
 #print axioms BlackBoxUnsupportedLowerBound.worst_case_bound_eq_P
 #print axioms BlackBoxUnsupportedLowerBound.fixture_two_three_P
+#print axioms EventTrace.traceCost_append
+#print axioms EventTrace.cost_nonneg
+#print axioms EventTrace.decodeUnitWork_traceCost_eq_sum
+#print axioms EventTrace.physical_bound_from_hypothesis
+#print axioms EventTrace.wallClockUpperBound_append
+#print axioms EventTrace.fixture_decode_unit_work_sum
 #print axioms DecodeInvariants.singleton_bypasses_ranker
 #print axioms DecodeInvariants.forged_coverage_complete_never_bypasses
 #print axioms DecodeInvariants.coverage_complete_flag_not_singleton
@@ -280,3 +286,12 @@ open LeverProofLean
 #guard (BlackBoxUnsupportedLowerBound.modelFromDomainSizes ([] : List Nat)).assignmentCount = 1
 #guard BlackBoxUnsupportedLowerBound.worstCaseQueryLowerBound ⟨6⟩ = 6
 #guard BlackBoxUnsupportedLowerBound.escapeLeavesBlackBox .symbolicConstraint = true
+
+-- Event traces / machine cost models (KERN-06)
+#guard EventTrace.decodeUnitWorkCostOfCounts
+  { tokenize := 2, grammarTransition := 3, solverExpansion := 5,
+    certificateCheck := 7, neuralForward := 11 } = 28
+#guard EventTrace.traceCost EventTrace.decodeUnitWorkModel
+  ([.neuralForward 2] ++ [.solverExpansion 3]) = 5
+#guard EventTrace.wallClockUpperBound EventTrace.decodeUnitWorkModel ⟨10⟩
+  [.neuralForward 3] = 30

@@ -229,6 +229,21 @@ _LEAN_CLAIM_CATALOG: dict[str, dict[str, Any]] = {
         "tier": "production_core",
         "laws": ["proved_complete_singleton"],
     },
+    "EventTrace.traceCost_append": {
+        "module": "LeverProofLean.EventTrace",
+        "tier": "production_core",
+        "laws": ["proved_complete_singleton"],
+    },
+    "EventTrace.decodeUnitWork_traceCost_eq_sum": {
+        "module": "LeverProofLean.EventTrace",
+        "tier": "production_core",
+        "laws": ["proved_complete_singleton"],
+    },
+    "EventTrace.physical_bound_from_hypothesis": {
+        "module": "LeverProofLean.EventTrace",
+        "tier": "production_core",
+        "laws": ["proved_complete_singleton"],
+    },
     "ExactClosure.finite_search_rejects_stale_state": {
         "module": "LeverProofLean.ExactClosure",
         "tier": "production_core",

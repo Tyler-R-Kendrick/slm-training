@@ -130,8 +130,7 @@ theorem forged_coverage_complete_never_bypasses
     (hprod : productionLegal cfg) :
     commit cfg ⟨[token], true⟩ rankerTop ≠ .singletonBypass token := by
   simp [commit, hprod.1, hprod.2, List.isEmpty]
-  intro h
-  cases h
+  split <;> (intro h; cases h)
 
 /-- I6: empty legal domain is a dead end under production configs. -/
 theorem empty_domain_is_dead_end
@@ -251,7 +250,7 @@ def domainFromLegacyTelemetry (domain : Domain) : CompleteDomain.DomainAuthority
 
 theorem legacy_telemetry_never_proved (domain : Domain) :
     CompleteDomain.authorizesPruning (domainFromLegacyTelemetry domain) = false := by
-  unfold domainFromLegacyTelemetry CompleteDomain.authorizesPruning
-  split <;> rfl
+  dsimp [domainFromLegacyTelemetry]
+  split <;> simp [CompleteDomain.authorizesPruning]
 
 end LeverProofLean.DecodeInvariants
