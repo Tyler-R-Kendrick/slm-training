@@ -137,6 +137,15 @@ def merge_gate_steps(*, fast: bool = False) -> tuple[Step, ...]:
                 "--check",
             ),
         ),
+        Step(
+            "integ10_release_matrix",
+            (
+                python,
+                "-m",
+                "scripts.verify_integ10_release_matrix",
+                "--check",
+            ),
+        ),
     ]
     if not fast:
         steps.append(
