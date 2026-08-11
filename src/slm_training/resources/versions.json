@@ -1919,7 +1919,7 @@
       ]
     },
     "dsl.solver.goal_support": {
-      "version": "v10",
+      "version": "v11",
       "kind": "harness",
       "paths": [
         "scripts/sync_goal_support_schema.py",
@@ -1945,6 +1945,11 @@
         "tests/test_web/test_onnx_inference.py"
       ],
       "history": [
+        {
+          "version": "v11",
+          "date": "2026-08-11",
+          "note": "Remove the shadow auto-authorizing decode binding and dead duplicate TwoTower provider path; certified goal support now has one explicit request-bound owner."
+        },
         {
           "version": "v10",
           "date": "2026-08-11",
@@ -14931,7 +14936,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v316",
+      "version": "v317",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -14976,6 +14981,11 @@
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
       "history": [
+        {
+          "version": "v317",
+          "date": "2026-08-11",
+          "note": "Remove dead duplicate goal-support binding/provider methods so TwoTower uses only the request-bound canonical solver-prune path."
+        },
         {
           "version": "v316",
           "date": "2026-08-11",

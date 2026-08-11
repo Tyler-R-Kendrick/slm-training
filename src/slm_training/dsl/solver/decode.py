@@ -31,7 +31,6 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from slm_training.data.contract import GenerationRequest
 from slm_training.dsl.grammar.fastpath.compiler_draft import CompletionForest
 from slm_training.dsl.solver.adapters import completion_forest_state
 from slm_training.dsl.solver.closure import (
@@ -85,18 +84,6 @@ def validate_goal_support_config(config: Any, *, context: str = "config") -> Non
             f"{context}: goal_support_mode=certified requires "
             "compiler_decode_mode != off"
         )
-
-
-@dataclass(frozen=True)
-class GoalSupportDecodeBinding:
-    """Structured decode inputs required to construct a :class:`GoalSupportProvider`."""
-
-    ready: bool
-    disable_reason: str | None = None
-    problem: Any | None = None
-    request: GenerationRequest | None = None
-    constraint_set: Any | None = None
-    profile: Any | None = None
 
 
 @dataclass(frozen=True)
@@ -156,73 +143,6 @@ def instrument_goal_support_provider(
     if isinstance(provider, GoalSupportProvider):
         return InstrumentedGoalSupportProvider(provider, sink)
     return provider
-
-
-def build_goal_support_decode_binding(
-    request: GenerationRequest | None,
-    *,
-    pack_id: str = "openui",
-) -> GoalSupportDecodeBinding:
-    """Compile request/profile inputs or return an explicit disable reason."""
-    if request is None:
-        return GoalSupportDecodeBinding(
-            ready=False, disable_reason="missing_generation_request"
-        )
-    try:
-        from slm_training.data.progspec.prompt_requirements import (
-            PromptSemanticRequirementsV1,
-        )
-        from slm_training.data.progspec.synthesis_problem import VerifiedSynthesisProblemV1
-        from slm_training.data.semantic_plan.requirements_compile import (
-            compile_goal_constraints,
-        )
-        from slm_training.dsl.pack import get_pack
-        from slm_training.dsl.solver.goal_support import (
-            GoalVerifierProfileV1,
-            validate_profile_against_constraint_set,
-        )
-        from slm_training.dsl.solver.openui_support import current_openui_pack_identity
-
-        pack = get_pack(pack_id)
-        pack_identity = current_openui_pack_identity()
-        if pack.pack_id != pack_identity.pack_id:
-            raise ValueError("requested pack does not match the live OpenUI identity")
-        problem = VerifiedSynthesisProblemV1(
-            problem_id="decode",
-            pack_identity=pack_identity,
-            requirements=PromptSemanticRequirementsV1(facts=()),
-        )
-        constraint_set = compile_goal_constraints(problem, request, pack)
-        profile = GoalVerifierProfileV1(
-            profile_id="decode/production_exact",
-            mode="production_exact",
-            problem_digest=constraint_set.problem_digest,
-            constraint_set_digest=constraint_set.digest,
-            pack_identity=problem.pack_identity,
-            pack_identity_digest=constraint_set.pack_identity_digest,
-            required_constraint_ids=constraint_set.hard_constraint_ids,
-            required_gates=(),
-            required_evaluators=(),
-            metric_identities=(),
-            authority_tier="compiler-hard",
-        )
-        profile = GoalVerifierProfileV1.from_dict(
-            profile.model_copy(update={"digest": profile.compute_digest()}).to_dict()
-        )
-        validate_profile_against_constraint_set(profile, constraint_set)
-        return GoalSupportDecodeBinding(
-            ready=True,
-            disable_reason=None,
-            problem=problem,
-            request=request,
-            constraint_set=constraint_set,
-            profile=profile,
-        )
-    except Exception as exc:  # noqa: BLE001 — surface construction failure honestly
-        return GoalSupportDecodeBinding(
-            ready=False,
-            disable_reason=f"{type(exc).__name__}:{exc}",
-        )
 
 
 def _value_key(value) -> tuple[str, tuple[int, ...]]:

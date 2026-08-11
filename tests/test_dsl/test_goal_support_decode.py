@@ -6,14 +6,12 @@ from types import SimpleNamespace
 
 import pytest
 
-from slm_training.data.contract import GenerationRequest
 from slm_training.dsl.grammar.fastpath.compiler_draft import (
     CompletionForest,
     CompletionPath,
 )
 from slm_training.dsl.solver.decode import (
     GOAL_SUPPORT_MODES,
-    build_goal_support_decode_binding,
     goal_support_certified_prune,
     goal_support_diagnostic_observe,
     normalize_goal_support_mode,
@@ -61,16 +59,6 @@ def test_validate_goal_support_config_rejects_certified_without_compiler_tree() 
     )
     with pytest.raises(ValueError, match="compiler_decode_mode != off"):
         validate_goal_support_config(config)
-
-
-def test_build_goal_support_decode_binding_compiles_structured_request() -> None:
-    binding = build_goal_support_decode_binding(
-        GenerationRequest(prompt="Build a card")
-    )
-    assert binding.ready is True
-    assert binding.profile is not None
-    assert binding.profile.mode == "production_exact"
-    assert binding.constraint_set is not None
 
 
 def test_goal_support_diagnostic_observe_preserves_forest_identity() -> None:
