@@ -124,6 +124,14 @@
       "notes": "HARN-07 quantitative-bound extractor/validator; theorem-derived bounds via EVID-04 AST; nonextractable outcomes list missing assumptions; never invent rates."
     },
     {
+      "id": "task_validators.rm_labeling",
+      "category": "schemas",
+      "required_owner": "src/slm_training/harnesses/reasoning/revmath/labeling.py",
+      "status": "present",
+      "blocker_issue": null,
+      "notes": "HARN-08 conservative labeling states + anti-overclaim validators; #print axioms / compile / finite / classical / empirical cannot alone yield RCA0/WKL0/...; reports distinguish RM-inspired minimization from genuine reverse mathematics."
+    },
+    {
       "id": "resources.owner_map",
       "category": "resources",
       "required_owner": "src/slm_training/resources/revmath_owner_map.json",

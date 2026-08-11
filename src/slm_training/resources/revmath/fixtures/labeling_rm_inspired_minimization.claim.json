@@ -1,0 +1,17 @@
+{
+  "analysis_kind": "rm_inspired_assumption_minimization",
+  "base_theory_id": "toy.base",
+  "claim_id": "label.pos.rm_inspired",
+  "coding_id": null,
+  "evidence_kinds": [
+    "assumption_ablation_lattice"
+  ],
+  "forward_evidence_sha256": null,
+  "interpretation_status": "uninterpreted",
+  "labeling_state": "candidate_upper_bound",
+  "notes": "HARN-04 lattice minimization; not genuine RM",
+  "practical_class": null,
+  "proposed_subsystem_id": null,
+  "reversal_evidence_sha256": null,
+  "schema_version": "revmath_label_claim/v1"
+}

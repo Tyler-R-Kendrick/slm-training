@@ -1,6 +1,6 @@
 # Reverse mathematics, computability, and canonical evidence ownership
 
-**Status:** HARN-06 constructivization + counterexample validators landed (SLM-546); HARN-07 quantitative-bound extraction (SLM-547); HARN-05 reversal/bidirectional validation (SLM-545); HARN-04 assumption ablation (SLM-544); EVID-03 four-axis ledger (SLM-519); HARN-03 runner/replay/report (SLM-536); HARN-02 schemas (SLM-527); profile + parity (HARN-01 / SLM-520); owner map (EVID-01 / SLM-515)  
+**Status:** HARN-08 conservative RM labeling / anti-overclaim (SLM-537); HARN-06 constructivization + counterexample validators landed (SLM-546); HARN-07 quantitative-bound extraction (SLM-547); HARN-05 reversal/bidirectional validation (SLM-545); HARN-04 assumption ablation (SLM-544); EVID-03 four-axis ledger (SLM-519); HARN-03 runner/replay/report (SLM-536); HARN-02 schemas (SLM-527); profile + parity (HARN-01 / SLM-520); owner map (EVID-01 / SLM-515)  
 **Base SHA:** `980aa465223adf7822f82930550c92b9240333ca` (`origin/main` at audit)  
 **Machine-readable map:** [`src/slm_training/resources/revmath_owner_map.json`](../../src/slm_training/resources/revmath_owner_map.json)  
 **Harness parity matrix:** [`src/slm_training/resources/revmath_harness_parity.json`](../../src/slm_training/resources/revmath_harness_parity.json)  
@@ -53,6 +53,33 @@ explicit `weakening_description` and a distinct `constructivized_statement_sha25
 Toy fixtures: `resources/revmath/fixtures/constructivization_*.{task,meta}.json`
 and `counterexample_*.{task,meta}.json`.
 
+## HARN-08 conservative labeling and anti-overclaim
+
+Owner: `harnesses/reasoning/revmath/labeling.py` (+ `labeling_notes_for_tasks` in
+`report.py`).
+
+**Labeling states:** `practical_computability_only`, `candidate_upper_bound`,
+`interpreted`, `reversed_equivalent`, `counterexample_known`, `unclassified`.
+
+**Big-Five equivalence** (`RCA0` / `WKL0` / `ACA0` / … as `reversed_equivalent`)
+requires an explicit package: `base_theory_id`, `coding_id`,
+`interpretation_status ∈ {explicit_interpretation, explicit_reversal}`,
+`forward_evidence_sha256`, `reversal_evidence_sha256`, and evidence kinds
+`interpretation_package` + `forward_implication` + `reversal`.
+
+**Anti-overclaim:** `#print axioms` alone, Lean compile success / no
+project-specific axioms, finite bounded analogues without a real interpretation,
+classical existence, and empirical claims cannot yield Big-Five labels.
+Assumption ablation stays `analysis_kind=rm_inspired_assumption_minimization`
+and is never upgraded to genuine reverse mathematics without the package above.
+
+**Reports** must distinguish RM-inspired assumption minimization from genuine
+reverse mathematics (`report_labeling_disclaimer` /
+`default_analysis_kind_for_task`).
+
+Fixtures: `resources/revmath/fixtures/labeling_*.claim.json` (positive +
+negative).
+
 ## Owner map (one canonical owner per surface)
 
 | Surface id | Kind | Canonical owner | Key symbols | Tier / role |
@@ -82,6 +109,8 @@ and `counterexample_*.{task,meta}.json`.
 | `revmath_assumption_ablation` | task_validator | `harnesses/reasoning/revmath/assumption_ablation.py` | `generate_ablation_candidates`, `evaluate_ablation_lattice`, `audit_hidden_reintroduction` | HARN-04 finite-lattice ablation; minimality scoped to explored set |
 | `revmath_constructivization` | task_validator | `harnesses/reasoning/revmath/constructivization.py` | `generate_constructivization_variant`, `evaluate_constructivization`, `assert_not_masquerading` | HARN-06 constructivization modes; no masquerade |
 | `revmath_counterexample` | task_validator | `harnesses/reasoning/revmath/counterexample.py` | `check_counterexample_against_theorem`, `evaluate_counterexample` | HARN-06 checked finite/computable counterexamples; search≠refutation |
+| `revmath_quantitative_bound` | task_validator | `harnesses/reasoning/revmath/quantitative_bound.py` | `extract_quantitative_bound`, `QuantitativeBoundReportV1` | HARN-07 theorem-derived bounds via EVID-04; no invented rates |
+| `revmath_labeling` | task_validator | `harnesses/reasoning/revmath/labeling.py` | `validate_label_claim`, `anti_overclaim_reasons`, `RmLabelClaimV1` | HARN-08 conservative Big-Five labeling; anti-overclaim |
 | `revmath_replay` | replay | `harnesses/reasoning/revmath/replay.py` | `build_revmath_replay_bundle` | HARN-03 ReplayBundleV1 composition |
 | `revmath_report` | report | `harnesses/reasoning/revmath/report.py` | `build_revmath_report` | HARN-03 typed reports |
 | `continuous_formal_promote` | command | `scripts/run_autotrain_continuous.py` | `ensure_promote_formal_preflight` | promotion gate |
@@ -131,7 +160,7 @@ The profile id is **`reasoning/revmath`**. It parameterizes the G4 reasoning har
 
 **Registration seam (HARN-01):** [`harnesses/reasoning/profiles.py`](../../src/slm_training/harnesses/reasoning/profiles.py) registers `reasoning/g4` (default) and `reasoning/revmath` (opt-in, `task_semantics_ready=True` after HARN-03). `resolve_profile(None)` keeps the historical default — discovering/configuring revmath does not alter G4 bench or warmup behavior.
 
-Task schemas (HARN-02), runner/replay/report (HARN-03), assumption-ablation (HARN-04), reversal (HARN-05), constructivization/counterexample (HARN-06), and quantitative-bound extraction (HARN-07) are present; remaining task-kind validators + repair controller (HARN-09) remain downstream. This document owns **authority boundaries and parity obligations**; missing parity rows are explicit blockers in the matrix, never silent fallbacks.
+Task schemas (HARN-02), runner/replay/report (HARN-03), assumption-ablation (HARN-04), reversal (HARN-05), constructivization/counterexample (HARN-06), quantitative-bound extraction (HARN-07), and conservative labeling / anti-overclaim (HARN-08) are present; remaining task-kind validators + repair controller (HARN-09) remain downstream. This document owns **authority boundaries and parity obligations**; missing parity rows are explicit blockers in the matrix, never silent fallbacks.
 
 ## Harness / self-healing parity matrix (HARN-01)
 

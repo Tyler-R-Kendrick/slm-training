@@ -1,0 +1,19 @@
+{
+  "analysis_kind": "genuine_reverse_mathematics",
+  "base_theory_id": "RCA0",
+  "claim_id": "label.neg.empirical",
+  "coding_id": "coding.wkl_path.v1",
+  "evidence_kinds": [
+    "empirical_claim",
+    "interpretation_package",
+    "forward_implication"
+  ],
+  "forward_evidence_sha256": "abababababababababababababababababababababababababababababababab",
+  "interpretation_status": "explicit_interpretation",
+  "labeling_state": "candidate_upper_bound",
+  "notes": "Negative: empirical timing cannot support RM",
+  "practical_class": null,
+  "proposed_subsystem_id": "WKL0",
+  "reversal_evidence_sha256": null,
+  "schema_version": "revmath_label_claim/v1"
+}

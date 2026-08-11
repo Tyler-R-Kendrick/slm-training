@@ -1,0 +1,17 @@
+{
+  "analysis_kind": "rm_inspired_assumption_minimization",
+  "base_theory_id": "toy.base",
+  "claim_id": "label.neg.ablation_eq",
+  "coding_id": null,
+  "evidence_kinds": [
+    "assumption_ablation_lattice"
+  ],
+  "forward_evidence_sha256": null,
+  "interpretation_status": "uninterpreted",
+  "labeling_state": "reversed_equivalent",
+  "notes": "Negative: ablation lattice promoted to RCA0 equivalence",
+  "practical_class": null,
+  "proposed_subsystem_id": "RCA0",
+  "reversal_evidence_sha256": null,
+  "schema_version": "revmath_label_claim/v1"
+}

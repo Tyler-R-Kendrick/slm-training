@@ -1,0 +1,18 @@
+{
+  "analysis_kind": "practical_computability",
+  "base_theory_id": null,
+  "claim_id": "label.pos.practical",
+  "coding_id": null,
+  "evidence_kinds": [
+    "practical_computability_certificate",
+    "finite_bounded_analogue"
+  ],
+  "forward_evidence_sha256": null,
+  "interpretation_status": "not_applicable",
+  "labeling_state": "practical_computability_only",
+  "notes": "Finite decidable status; not RCA0",
+  "practical_class": "finite_decidable",
+  "proposed_subsystem_id": null,
+  "reversal_evidence_sha256": null,
+  "schema_version": "revmath_label_claim/v1"
+}

@@ -1,0 +1,18 @@
+{
+  "analysis_kind": "genuine_reverse_mathematics",
+  "base_theory_id": "Lean4",
+  "claim_id": "label.neg.lean_compile",
+  "coding_id": null,
+  "evidence_kinds": [
+    "lean_compile_success",
+    "no_project_axioms"
+  ],
+  "forward_evidence_sha256": null,
+  "interpretation_status": "not_applicable",
+  "labeling_state": "candidate_upper_bound",
+  "notes": "Negative: compile + no project axioms",
+  "practical_class": null,
+  "proposed_subsystem_id": "RCA0",
+  "reversal_evidence_sha256": null,
+  "schema_version": "revmath_label_claim/v1"
+}
