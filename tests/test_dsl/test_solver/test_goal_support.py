@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import pytest
+
+from tests.casefiles import case_values
 from pydantic import ValidationError
 
 from slm_training.data.progspec.goal_constraints import (
@@ -189,12 +191,7 @@ def test_extra_field_rejected_on_terminal_evidence() -> None:
 
 @pytest.mark.parametrize(
     ("mode", "authority_tier"),
-    [
-        ("production_exact", "evaluation-only"),
-        ("production_exact", "advisory-learned"),
-        ("evaluation_oracle", "compiler-hard"),
-        ("advisory_diagnostic", "verifier-hard"),
-    ],
+    case_values(__file__, "test_mode_authority_mismatch_rejected"),
 )
 def test_mode_authority_mismatch_rejected(mode: str, authority_tier: str) -> None:
     with pytest.raises(ValidationError, match="authority_tier .* incompatible with mode"):
