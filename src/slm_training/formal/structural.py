@@ -140,17 +140,31 @@ def law_honest_fixed_point(live: Sequence[int], removable_ids: Sequence[int]) ->
 def is_singleton_bypass_state(
     candidates: Sequence[int], coverage_complete: bool
 ) -> bool:
-    """True exactly at the I2 bypass condition: a proven, complete singleton.
+    """KERN-02: bare ``coverage_complete`` has zero singleton authority.
 
-    Mirrors ``DecodeInvariants.singleton_bypasses_ranker``. This is a
-    classifier, not a universal implication — it is checked by table (input,
-    expected) below, not by requiring ``True`` on every input.
+    Forced emission requires ``CompleteDomainEvidenceV1.authorizes_forced_emission``.
+    This classifier stays for telemetry-shaped law rows and always returns
+    False when only a Boolean coverage flag is supplied.
     """
-    return bool(coverage_complete) and len(candidates) == 1
+    del candidates, coverage_complete
+    return False
 
 
 def law_singleton_bypass(candidates: Sequence[int], coverage_complete: bool) -> bool:
     return is_singleton_bypass_state(candidates, coverage_complete)
+
+
+def law_proved_complete_singleton(
+    state_id: str,
+    candidates: Sequence[int],
+    legal_members: Sequence[int],
+    expected_state_id: str,
+) -> bool:
+    """True when proved complete-domain evidence authorizes forced emission."""
+    from slm_training.formal.complete_domain import build_complete_domain
+
+    evidence = build_complete_domain(state_id, candidates, legal_members)
+    return evidence.authorizes_forced_emission(expected_state_id=expected_state_id)
 
 
 def is_empty_dead_end(candidates: Sequence[int]) -> bool:
@@ -276,10 +290,57 @@ _LAW_CASES: dict[str, tuple[_LawCase, ...]] = {
     ),
     "singleton_bypass": (
         _LawCase({"candidates": [], "coverage_complete": True}, expect=False),
-        _LawCase({"candidates": [7], "coverage_complete": True}, expect=True),
+        _LawCase({"candidates": [7], "coverage_complete": True}, expect=False),
         _LawCase({"candidates": [7], "coverage_complete": False}, expect=False),
         _LawCase({"candidates": [1, 2], "coverage_complete": True}, expect=False),
         _LawCase({"candidates": [1, 2, 3], "coverage_complete": False}, expect=False),
+    ),
+    "proved_complete_singleton": (
+        _LawCase(
+            {
+                "state_id": "s1",
+                "candidates": [7],
+                "legal_members": [7],
+                "expected_state_id": "s1",
+            },
+            expect=True,
+        ),
+        _LawCase(
+            {
+                "state_id": "s1",
+                "candidates": [7],
+                "legal_members": [7],
+                "expected_state_id": "stale",
+            },
+            expect=False,
+        ),
+        _LawCase(
+            {
+                "state_id": "s1",
+                "candidates": [7],
+                "legal_members": [7, 8],
+                "expected_state_id": "s1",
+            },
+            expect=False,
+        ),
+        _LawCase(
+            {
+                "state_id": "s1",
+                "candidates": [7, 8],
+                "legal_members": [7],
+                "expected_state_id": "s1",
+            },
+            expect=False,
+        ),
+        _LawCase(
+            {
+                "state_id": "s1",
+                "candidates": [7, 7],
+                "legal_members": [7],
+                "expected_state_id": "s1",
+            },
+            expect=False,
+        ),
     ),
     "empty_dead_end": (
         _LawCase({"candidates": []}, expect=True),
@@ -349,6 +410,13 @@ def _eval_law(law_id: str, ctx: Mapping[str, Any]) -> bool:
     if law_id == "singleton_bypass":
         return law_singleton_bypass(
             list(ctx["candidates"]), bool(ctx["coverage_complete"])
+        )
+    if law_id == "proved_complete_singleton":
+        return law_proved_complete_singleton(
+            str(ctx["state_id"]),
+            list(ctx["candidates"]),
+            list(ctx["legal_members"]),
+            str(ctx["expected_state_id"]),
         )
     if law_id == "empty_dead_end":
         return law_empty_dead_end(list(ctx["candidates"]))
@@ -485,8 +553,16 @@ def _eval_law_reference(law_id: str, ctx: Mapping[str, Any]) -> bool:
             return True
         return close_pass_ref(live, rem) == set(live)
     if canonical == "singleton_bypass":
-        cands = list(ctx["candidates"])
-        return bool(ctx["coverage_complete"]) and len(cands) == 1
+        return law_singleton_bypass(
+            list(ctx["candidates"]), bool(ctx["coverage_complete"])
+        )
+    if canonical == "proved_complete_singleton":
+        return law_proved_complete_singleton(
+            str(ctx["state_id"]),
+            list(ctx["candidates"]),
+            list(ctx["legal_members"]),
+            str(ctx["expected_state_id"]),
+        )
     if canonical == "empty_dead_end":
         return len(list(ctx["candidates"])) == 0
     if canonical == "structural_similarity_mono":
@@ -621,6 +697,7 @@ __all__ = [
     "law_honest_fixed_point",
     "law_recall_mono",
     "law_singleton_bypass",
+    "law_proved_complete_singleton",
     "law_structural_similarity_mono",
     "law_supported_not_removable",
     "law_unknown_not_removable",
