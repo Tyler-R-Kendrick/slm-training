@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import hashlib
 import re
-from typing import Any, Callable, Literal, Protocol
+from typing import Any, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
