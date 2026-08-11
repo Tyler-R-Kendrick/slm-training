@@ -12,7 +12,7 @@
   ],
   "components": {
     "formal.leverproof": {
-      "version": "v20",
+      "version": "v21",
       "kind": "harness",
       "paths": [
         "src/leverproof_lean/",
@@ -36,9 +36,16 @@
         "docs/design/kern-04-black-box-unsupported-lower-bound.md",
         "src/leverproof_lean/LeverProofLean/EventTrace.lean",
         "docs/design/kern-06-event-trace-machine-cost.md",
-        "docs/design/kern-07-singleton-zero-neural-policy.md"
+        "docs/design/kern-07-singleton-zero-neural-policy.md",
+        "src/leverproof_lean/LeverProofLean/MechanismTrigger.lean",
+        "docs/design/kern-08-mechanism-trigger-no-effect.md"
       ],
       "history": [
+        {
+          "version": "v21",
+          "date": "2026-08-11",
+          "note": "KERN-08 (SLM-531): MechanismTrigger necessary-trigger/no-effect/dominance certificates; corpus-local only; unknown never no-effect."
+        },
         {
           "version": "v20",
           "date": "2026-08-11",
@@ -4919,6 +4926,11 @@
         "tests/test_autoresearch/test_formal_four_axis_ledger.py"
       ],
       "history": [
+        {
+          "version": "v17",
+          "date": "2026-08-11",
+          "note": "no-bump: KERN-08 docs cross-link in formal-autoresearch table only (EventTrace/MechanismTrigger rows); harness code unchanged."
+        },
         {
           "version": "v17",
           "date": "2026-08-11",
@@ -17508,7 +17520,7 @@
       ]
     },
     "formal.objects": {
-      "version": "v14",
+      "version": "v15",
       "kind": "harness",
       "paths": [
         "tests/test_formal/test_theorem_binding.py",
@@ -17533,9 +17545,17 @@
         "tests/test_formal/test_event_trace.py",
         "src/slm_training/formal/singleton_neural_policy.py",
         "src/slm_training/resources/formal/singleton_neural_policy_fixtures.v1.json",
-        "tests/test_formal/test_singleton_neural_policy.py"
+        "tests/test_formal/test_singleton_neural_policy.py",
+        "src/slm_training/formal/mechanism_trigger.py",
+        "src/slm_training/resources/formal/mechanism_trigger_fixtures.v1.json",
+        "tests/test_formal/test_mechanism_trigger.py"
       ],
       "history": [
+        {
+          "version": "v15",
+          "date": "2026-08-11",
+          "note": "KERN-08 (SLM-531): mechanism_trigger Python mirror + fixtures; claim catalog entries for no-effect/dominance theorems."
+        },
         {
           "version": "v14",
           "date": "2026-08-11",

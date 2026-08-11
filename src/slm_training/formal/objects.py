@@ -259,6 +259,46 @@ _LEAN_CLAIM_CATALOG: dict[str, dict[str, Any]] = {
         "tier": "production_core",
         "laws": ["proved_complete_singleton", "singleton_bypass"],
     },
+    "MechanismTrigger.no_effect_of_necessary_and_absent": {
+        "module": "LeverProofLean.MechanismTrigger",
+        "tier": "production_core",
+        "laws": ["proved_complete_singleton"],
+    },
+    "MechanismTrigger.singleton_bypass_output_change_implies_trigger": {
+        "module": "LeverProofLean.MechanismTrigger",
+        "tier": "production_core",
+        "laws": ["proved_complete_singleton", "singleton_bypass"],
+    },
+    "MechanismTrigger.closure_removal_output_change_implies_trigger": {
+        "module": "LeverProofLean.MechanismTrigger",
+        "tier": "production_core",
+        "laws": ["close_pass_subset"],
+    },
+    "MechanismTrigger.cache_reuse_output_change_implies_trigger": {
+        "module": "LeverProofLean.MechanismTrigger",
+        "tier": "production_core",
+        "laws": ["proved_complete_singleton"],
+    },
+    "MechanismTrigger.forced_span_output_change_implies_trigger": {
+        "module": "LeverProofLean.MechanismTrigger",
+        "tier": "production_core",
+        "laws": ["proved_complete_singleton"],
+    },
+    "MechanismTrigger.dominanceCertificate_dominates": {
+        "module": "LeverProofLean.MechanismTrigger",
+        "tier": "production_core",
+        "laws": ["proved_complete_singleton"],
+    },
+    "MechanismTrigger.unknown_activation_blocks_no_effect_certificate": {
+        "module": "LeverProofLean.MechanismTrigger",
+        "tier": "production_core",
+        "laws": ["unknown_not_removable"],
+    },
+    "MechanismTrigger.unconstrained_rerank_no_safe_trigger_theorem": {
+        "module": "LeverProofLean.MechanismTrigger",
+        "tier": "production_core",
+        "laws": ["proved_complete_singleton"],
+    },
     "ExactClosure.finite_search_rejects_stale_state": {
         "module": "LeverProofLean.ExactClosure",
         "tier": "production_core",

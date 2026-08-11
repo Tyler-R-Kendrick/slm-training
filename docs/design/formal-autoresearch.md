@@ -64,6 +64,8 @@ preflight path rather than an unknown-template side path.
 | `Forest` | certified closure is monotone/idempotent, never adds live candidates, extends history, and rollback preserves the declared partition | universal over finite modeled states |
 | `Trace` | the Boolean JSON trace contract implies every accepted step applies its declared certified-removal set and prefix-preserves history | universal over accepted traces, assuming certificate replay happened first |
 | `Recurrence` | delta/LayerScale update norms and winner-margin perturbations obey explicit algebraic bounds | conditional on the scale, contraction, and margin assumptions |
+| `EventTrace` | abstract Nat cost folds over named machine models; wall-clock only under external throughput hypotheses (KERN-06) | universal over modeled event traces |
+| `MechanismTrigger` | effect ⇒ necessary trigger; absent trigger ⇒ no-effect; corpus-local dominance; unknown never certifies (KERN-08) | locked finite corpora only — never unseen inputs |
 
 `make -C src/leverproof_lean test` rejects `sorry`, `admit`, custom `axiom`,
 `unsafe`, and `native_decide`; `scripts.verify_formal_contracts` rejects the

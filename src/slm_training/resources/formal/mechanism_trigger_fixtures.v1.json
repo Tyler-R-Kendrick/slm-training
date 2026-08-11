@@ -1,0 +1,136 @@
+{
+  "schema": "mechanism_trigger_fixtures/v1",
+  "issue": "SLM-531",
+  "kern": "KERN-08",
+  "claim_class": "fixture",
+  "generalizes_beyond_corpus": false,
+  "notes": [
+    "No-effect/dominance certificates require complete trigger evidence.",
+    "Unknown activation never becomes no-effect.",
+    "Corpus-local only — do not generalize to unseen inputs."
+  ],
+  "cases": [
+    {
+      "id": "singleton_bypass_absent_no_effect",
+      "kind": "no_effect",
+      "mechanism_id": "singleton_bypass",
+      "has_safe_trigger_theorem": true,
+      "corpus_id": "kern08/singleton_bypass",
+      "cost_model": "NeuralForwardOnlyModel",
+      "cost_model_version": 1,
+      "theorem_ref": "MechanismTrigger.singleton_bypass_output_change_implies_trigger",
+      "observation": {
+        "input_id": "fixture/singleton_absent",
+        "baseline_output": 42,
+        "enabled_output": 42,
+        "baseline_cost": 3,
+        "enabled_cost": 3,
+        "trigger": "absent"
+      }
+    },
+    {
+      "id": "closure_removal_absent_no_effect",
+      "kind": "no_effect",
+      "mechanism_id": "closure_removal",
+      "has_safe_trigger_theorem": true,
+      "corpus_id": "kern08/closure_removal",
+      "cost_model": "DecodeUnitWorkModel",
+      "cost_model_version": 1,
+      "theorem_ref": "MechanismTrigger.closure_removal_output_change_implies_trigger",
+      "observation": {
+        "input_id": "fixture/closure_absent",
+        "baseline_output": 7,
+        "enabled_output": 7,
+        "baseline_cost": 5,
+        "enabled_cost": 5,
+        "trigger": "absent"
+      }
+    },
+    {
+      "id": "cache_reuse_absent_no_effect",
+      "kind": "no_effect",
+      "mechanism_id": "cache_reuse",
+      "has_safe_trigger_theorem": true,
+      "corpus_id": "kern08/cache_reuse",
+      "cost_model": "DecodeUnitWorkModel",
+      "cost_model_version": 1,
+      "theorem_ref": "MechanismTrigger.cache_reuse_output_change_implies_trigger",
+      "observation": {
+        "input_id": "fixture/cache_absent",
+        "baseline_output": 11,
+        "enabled_output": 11,
+        "baseline_cost": 9,
+        "enabled_cost": 9,
+        "trigger": "absent"
+      }
+    },
+    {
+      "id": "forced_span_absent_no_effect",
+      "kind": "no_effect",
+      "mechanism_id": "forced_span",
+      "has_safe_trigger_theorem": true,
+      "corpus_id": "kern08/forced_span",
+      "cost_model": "NeuralForwardOnlyModel",
+      "cost_model_version": 1,
+      "theorem_ref": "MechanismTrigger.forced_span_output_change_implies_trigger",
+      "observation": {
+        "input_id": "fixture/forced_absent",
+        "baseline_output": 13,
+        "enabled_output": 13,
+        "baseline_cost": 4,
+        "enabled_cost": 4,
+        "trigger": "absent"
+      }
+    },
+    {
+      "id": "singleton_bypass_dominated",
+      "kind": "dominance",
+      "mechanism_id": "singleton_bypass",
+      "has_safe_trigger_theorem": true,
+      "corpus_id": "kern08/singleton_bypass_dominance",
+      "cost_model": "NeuralForwardOnlyModel",
+      "cost_model_version": 1,
+      "theorem_ref": "MechanismTrigger.dominanceCertificate_dominates",
+      "observation": {
+        "input_id": "fixture/dominated_absent",
+        "baseline_output": 1,
+        "enabled_output": 1,
+        "baseline_cost": 2,
+        "enabled_cost": 5,
+        "trigger": "absent"
+      }
+    },
+    {
+      "id": "unknown_activation_rejected",
+      "kind": "counterexample",
+      "mechanism_id": "singleton_bypass",
+      "has_safe_trigger_theorem": true,
+      "corpus_id": "counterexample/unknown",
+      "expect_certificate_error": true,
+      "observation": {
+        "input_id": "counterexample/unknown_activation",
+        "baseline_output": 1,
+        "enabled_output": 1,
+        "baseline_cost": 1,
+        "enabled_cost": 1,
+        "trigger": "unknown"
+      }
+    },
+    {
+      "id": "unconstrained_rerank_no_safe_theorem",
+      "kind": "counterexample",
+      "mechanism_id": "unconstrained_rerank",
+      "has_safe_trigger_theorem": false,
+      "corpus_id": "counterexample/unconstrained",
+      "expect_certificate_error": true,
+      "observation": {
+        "input_id": "counterexample/unconstrained_rerank",
+        "baseline_output": 0,
+        "enabled_output": 1,
+        "baseline_cost": 1,
+        "enabled_cost": 1,
+        "trigger": "unknown"
+      }
+    }
+  ]
+}
