@@ -318,7 +318,7 @@
       ],
       "design_doc": "docs/design/agent-harness-parity-audit.md",
       "ownership_map_subsystem": "agent_surface_parity",
-      "notes": "Obligation \u00d7 harness-surface matrix; revmath docs must cite canonical owners here."
+      "notes": "Obligation × harness-surface matrix; revmath docs must cite canonical owners here."
     },
     {
       "id": "reasoning_harness_parent",
@@ -389,7 +389,7 @@
       ],
       "design_doc": "docs/design/reverse-mathematics-computability.md",
       "ownership_map_subsystem": null,
-      "notes": "HARN-03 task-kind plugin seam; plan/interpret only \u2014 shared runner owns orchestration. HARN-04/05/06/07 register AssumptionAblationPlugin, ReversalPlugin, ConstructivizationPlugin, CounterexamplePlugin, QuantitativeBoundPlugin here."
+      "notes": "HARN-03 task-kind plugin seam; plan/interpret only — shared runner owns orchestration. HARN-04/05/06/07 register AssumptionAblationPlugin, ReversalPlugin, ConstructivizationPlugin, CounterexamplePlugin, QuantitativeBoundPlugin here."
     },
     {
       "id": "revmath_assumption_ablation",
@@ -419,7 +419,7 @@
       ],
       "design_doc": "docs/design/reverse-mathematics-computability.md",
       "ownership_map_subsystem": null,
-      "notes": "HARN-05 reversal generator/validator; equivalence only when both B+A\u22a2T and B+T\u22a2A succeed over the same base/interpretation; plugin registered in plugins.py."
+      "notes": "HARN-05 reversal generator/validator; equivalence only when both B+A⊢T and B+T⊢A succeed over the same base/interpretation; plugin registered in plugins.py."
     },
     {
       "id": "revmath_constructivization",
@@ -627,7 +627,21 @@
       ],
       "design_doc": "docs/design/integ-03-campaign-formal-evidence.md",
       "ownership_map_subsystem": "experiment_campaign",
-      "notes": "INTEG-03 adapter: optional formal\u2194empirical split on CampaignResultV1; reuses FormalAuthorityV2 / four-axis / revmath digests; no parallel campaign DB."
+      "notes": "INTEG-03 adapter: optional formal↔empirical split on CampaignResultV1; reuses FormalAuthorityV2 / four-axis / revmath digests; no parallel campaign DB."
+    },
+    {
+      "id": "harness_four_axis_ledger_adapters",
+      "kind": "adapter",
+      "owner_module": "src/slm_training/harnesses/four_axis_ledger.py",
+      "owner_symbols": [
+        "project_four_axis_ledger",
+        "attach_four_axis_ledger_projection",
+        "attach_to_evaluation_report_metadata",
+        "HarnessFourAxisLedgerProjectionV1"
+      ],
+      "design_doc": "docs/design/integ-04-harness-four-axis-ledger-adapters.md",
+      "ownership_map_subsystem": null,
+      "notes": "INTEG-04 (SLM-529) opt-in four-axis ledger projection for harness report seams (reasoning/revmath, train_data, model_build)."
     }
   ],
   "extension_seams": [
@@ -739,6 +753,14 @@
       "extends": "experiment_campaign",
       "new_owner_justified": true,
       "justification": "Link adapter under autoresearch/campaign_formal_evidence.py + optional CampaignResultV1.formal_empirical; HARN-10 profile_binding attaches refs; does not fork a campaign or evidence store.",
+      "status": "done"
+    },
+    {
+      "issue": "INTEG-04",
+      "linear_id": "SLM-529",
+      "extends": "formal_preflight_schema",
+      "new_owner_justified": true,
+      "justification": "Shared harness report-seam adapter under harnesses/four_axis_ledger.py projects EVID-03 four-axis ledger refs into existing family reports; does not fork a revmath reporting stack or campaign store.",
       "status": "done"
     }
   ],

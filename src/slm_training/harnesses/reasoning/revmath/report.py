@@ -58,6 +58,13 @@ def build_revmath_report(
     results: Sequence[RevmathResultV1],
     repair_ids: Sequence[str] = (),
     version_stamp: dict[str, Any] | None = None,
+    enable_four_axis_ledger: bool = False,
+    four_axis_analysis: Any | None = None,
+    four_axis_ledger: Any | None = None,
+    computability_class_id: str | None = None,
+    refinement_trace_hash: str | None = None,
+    refinement_certificate_sha256: str | None = None,
+    formal_authority_class: str | None = None,
 ) -> RevmathReportV1:
     """Aggregate a campaign-bound report from frozen tasks + results.
 
@@ -92,6 +99,23 @@ def build_revmath_report(
     stamp = version_stamp
     if stamp is None:
         stamp = build_version_stamp("harness.reasoning.revmath")
+    projection = None
+    if enable_four_axis_ledger:
+        from slm_training.harnesses.four_axis_ledger import project_four_axis_ledger
+
+        # Prefer explicit analysis; else fold result four_axis rows when homogeneous.
+        analysis = four_axis_analysis
+        if analysis is None and four_axis_ledger is None and results:
+            analysis = results[0].four_axis
+        projection = project_four_axis_ledger(
+            harness_family="reasoning/revmath",
+            analysis=analysis,
+            ledger=four_axis_ledger,
+            computability_class_id=computability_class_id,
+            refinement_trace_hash=refinement_trace_hash,
+            refinement_certificate_sha256=refinement_certificate_sha256,
+            formal_authority_class=formal_authority_class,  # type: ignore[arg-type]
+        ).to_dict()
     return RevmathReportV1(
         report_id=report_id,
         corpus_id=next(iter(corpus_ids)),
@@ -101,6 +125,7 @@ def build_revmath_report(
         repair_ids=tuple(repair_ids),
         judgment_counts=_judgment_counts(results),
         version_stamp=stamp,
+        four_axis_ledger_projection=projection,
     )
 
 

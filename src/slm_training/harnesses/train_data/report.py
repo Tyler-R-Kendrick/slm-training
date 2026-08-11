@@ -173,6 +173,13 @@ def build_quality_report(
     engines: dict[str, Any],
     decontamination_extra: dict[str, Any] | None = None,
     sanitization: dict[str, Any] | None = None,
+    enable_four_axis_ledger: bool = False,
+    four_axis_analysis: Any | None = None,
+    four_axis_ledger: Any | None = None,
+    computability_class_id: str | None = None,
+    refinement_trace_hash: str | None = None,
+    refinement_certificate_sha256: str | None = None,
+    formal_authority_class: str | None = None,
 ) -> dict[str, Any]:
     by_stage = _stage_histogram(rejections)
     parse_failures = by_stage.get("normalize", 0)
@@ -274,7 +281,7 @@ def build_quality_report(
                 "mode; stored targets are not yet canonical/templatized",
             }
         )
-    return {
+    report = {
         "schema_version": REPORT_SCHEMA_VERSION,
         "version": version,
         "profile": profile,
@@ -329,6 +336,23 @@ def build_quality_report(
         "engines": engines,
         "warnings": warnings,
     }
+    if enable_four_axis_ledger:
+        from slm_training.harnesses.four_axis_ledger import (
+            attach_four_axis_ledger_projection,
+        )
+
+        report = attach_four_axis_ledger_projection(
+            report,
+            enabled=True,
+            harness_family="train_data",
+            analysis=four_axis_analysis,
+            ledger=four_axis_ledger,
+            computability_class_id=computability_class_id,
+            refinement_trace_hash=refinement_trace_hash,
+            refinement_certificate_sha256=refinement_certificate_sha256,
+            formal_authority_class=formal_authority_class,  # type: ignore[arg-type]
+        )
+    return report
 
 
 def write_quality_report(out_dir: Path, report: dict[str, Any]) -> Path:

@@ -197,3 +197,10 @@ Fail closed:
 Historical FormalPreflightV1 JSON without the ledger remains readable through
 `migrate_formal_preflight_v1`; digests use `formal_preflight_sha256` so an unset
 ledger does not rewrite historical hashes.
+
+
+## Harness four-axis ledger adapters (INTEG-04 / SLM-529)
+
+Opt-in projection of the EVID-03 ledger into existing harness report seams via
+`harnesses/four_axis_ledger.py` (see [integ-04-harness-four-axis-ledger-adapters.md](integ-04-harness-four-axis-ledger-adapters.md)).
+Default-off; absent evidence stays absent/unknown; authority ceilings are fail-closed.
