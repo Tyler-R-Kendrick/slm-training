@@ -8,6 +8,8 @@
   Closed development only (Makefile forbids open proof escapes).
 -/
 
+import LeverProofLean.EventTrace
+
 namespace LeverProofLean
 namespace ConstrainedDiffusion
 
@@ -253,33 +255,101 @@ theorem incomplete_cannot_be_forced_edge
   intro h
   cases h.1
 
-/-! ### E8 / I2 — singleton complete domain ⇒ forwards optimum 0 -/
+/-! ### E8 / I2 / KERN-07 — complete singleton admits zero-neural-forward policy
+
+  Scoped claim (not implementation optimality): under the named
+  ``NeuralForwardOnlyModel`` forward-count cost (KERN-06), a *valid*
+  complete singleton proof admits a bypass policy whose neural-ranker
+  forward cost is 0.
+
+  Outside this theorem: grammar transitions, certificate checks, memory
+  traffic, kernel launches, and wall-clock latency. ``Nat.zero_le`` is
+  never used as an optimality certificate for a concrete backend —
+  runtime evidence/refinement lives in decode telemetry
+  (``DecodeStats.forwards_count``) and Python parity fixtures.
+-/
 
 structure SingletonProof where
   domain : Domain
   forcedToken : Option Nat
 deriving Repr
 
+/--
+  Valid iff the domain is complete and the forced token equals the sole
+  complete-domain candidate (presented as ``[[token]]``).
+  Incomplete status, multi-candidate domains, missing forced tokens, and
+  forced/candidate mismatches are all invalid.
+-/
 def SingletonProof.valid (p : SingletonProof) : Prop :=
   p.domain.status = .complete ∧
-  p.domain.candidates.length = 1 ∧
-  p.forcedToken.isSome = true
+  ∃ token, p.forcedToken = some token ∧ p.domain.candidates = [[token]]
 
-def ForwardsOptimum (p : SingletonProof) : Nat :=
-  if p.domain.status = .complete ∧ p.domain.candidates.length = 1 then 0 else 1
+/-- Executable validity (mutation / `#guard` surface). -/
+def SingletonProof.validBool (p : SingletonProof) : Bool :=
+  (p.domain.status == .complete) &&
+  match p.forcedToken, p.domain.candidates with
+  | some token, [c] => decide (c = [token])
+  | _, _ => false
 
-theorem singleton_forwards_optimum_zero
+theorem singleton_forced_eq_sole_candidate
     (p : SingletonProof) (hv : SingletonProof.valid p) :
-    ForwardsOptimum p = 0 := by
-  rcases hv with ⟨hs, hc, _⟩
-  simp [ForwardsOptimum, hs, hc]
+    ∃ token, p.forcedToken = some token ∧ p.domain.candidates = [[token]] :=
+  hv.2
 
-theorem singleton_forwards_optimum_is_minimum
-    (p : SingletonProof) (hv : SingletonProof.valid p) (f : Nat) :
-    ForwardsOptimum p ≤ f := by
-  have h0 := singleton_forwards_optimum_zero p hv
-  rw [h0]
-  exact Nat.zero_le f
+/-- Named forward-count model (KERN-06 ``NeuralForwardOnlyModel``). -/
+def neuralForwardCountModel : EventTrace.MachineModel :=
+  EventTrace.neuralForwardOnlyModel
+
+/--
+  Policy neural cost under the named forward-count model.
+  Non-forward events (grammar / certificate / memory / …) cost 0 here by
+  model definition — they are tracked on other axes, not discharged as
+  “optimum 0” by this theorem.
+-/
+def policyNeuralCost (trace : EventTrace.Trace) : Nat :=
+  EventTrace.traceCost neuralForwardCountModel trace
+
+/--
+  Singleton bypass policy neural trace: commit the forced token with
+  **no** ``neuralForward`` events. Does not assert that grammar,
+  certificate, memory, or wall-clock work is zero.
+-/
+def singletonBypassNeuralTrace (_p : SingletonProof) : EventTrace.Trace := []
+
+theorem singleton_policy_neural_cost_zero
+    (p : SingletonProof) (_hv : SingletonProof.valid p) :
+    policyNeuralCost (singletonBypassNeuralTrace p) = 0 := by
+  simp [policyNeuralCost, singletonBypassNeuralTrace, neuralForwardCountModel,
+    EventTrace.traceCost]
+
+/-- A valid complete singleton admits a policy execution with zero neural
+    ranker forwards under ``NeuralForwardOnlyModel``. -/
+theorem singleton_admits_zero_neural_policy
+    (p : SingletonProof) (hv : SingletonProof.valid p) :
+    ∃ trace : EventTrace.Trace, policyNeuralCost trace = 0 :=
+  ⟨singletonBypassNeuralTrace p, singleton_policy_neural_cost_zero p hv⟩
+
+/-- Scope: the named model charges only neural forwards. -/
+theorem neural_forward_model_ignores_grammar (n : Nat) :
+    EventTrace.neuralForwardOnlyCost (.grammarTransition n) = 0 :=
+  rfl
+
+theorem neural_forward_model_ignores_certificate (n : Nat) :
+    EventTrace.neuralForwardOnlyCost (.certificateCheck n) = 0 :=
+  rfl
+
+theorem neural_forward_model_ignores_memory (n : Nat) :
+    EventTrace.neuralForwardOnlyCost (.memoryRead n) = 0 ∧
+    EventTrace.neuralForwardOnlyCost (.memoryWrite n) = 0 :=
+  ⟨rfl, rfl⟩
+
+/-- Wall-clock transfer remains external: empty neural trace → zero abstract
+    bound shape; physical latency still needs a caller-supplied
+    ``ThroughputAssumption`` (KERN-06) — never discharged here. -/
+theorem neural_forward_zero_payload_wall_clock_shape
+    (a : EventTrace.ThroughputAssumption) :
+    EventTrace.wallClockUpperBound neuralForwardCountModel a [] = 0 := by
+  simp [EventTrace.wallClockUpperBound, EventTrace.traceCost]
 
 /-! ### E9 — request-local memo reuse is not AOT cold -/
 
@@ -460,10 +530,12 @@ theorem score_keys_subset
     k ∈ legal :=
   h k hk
 
-/-- Complete singleton forbids residual/neural work (counts are Nat optima).
+/-- Complete singleton forbids residual/neural *policy* work under a stated
+  policy hypothesis (not an implementation-optimality proof).
 
-  Policy-form retained for ADR docs; harness-refined theorem is
-  `AdvisoryResidual.singleton_is_zero_work`.
+  Prefer `singleton_policy_neural_cost_zero` / KERN-07 for the named
+  NeuralForwardOnlyModel surface, and
+  `AdvisoryResidual.singleton_is_zero_work` for harness refinement.
 -/
 structure ResidualWorkCounts where
   factorCalls : Nat

@@ -34,7 +34,7 @@ Lean proves **calculation and set laws**, not sensor truth. Runtime E1/E4/E8 tes
 | No silent UNKNOWN→UNSUPPORTED | `no_silent_unknown_to_unsupported` | Multiset-equal domains cannot pair `unsupported` with oracle `incomplete` |
 | E4 no literals in forced macros | `forced_macro_no_literals`, `forced_macro_empty`, `forced_macro_append` | Every token in a forced macro is outside the literal-boundary id set; empty is forced; concatenation preserves the property |
 | E4 incomplete ≠ forced edge | `forced_edge_requires_complete`, `incomplete_cannot_be_forced_edge` | A forced edge requires complete coverage; incomplete coverage is never a forced edge |
-| E8 / I2 singleton zero-forward optimum | `singleton_forwards_optimum_zero`, `singleton_forwards_optimum_is_minimum` | Under a valid complete singleton proof, the optimum forward count is 0 and is minimal |
+| E8 / I2 / KERN-07 singleton zero-neural policy | `singleton_policy_neural_cost_zero`, `singleton_admits_zero_neural_policy`, `singleton_forced_eq_sole_candidate` | Valid complete singleton (forced = sole candidate) admits a policy with neural-forward cost 0 under `NeuralForwardOnlyModel`; not wall-clock / grammar / cert optimality |
 | Artifact is proof payload | `artifact_not_sole_executor` | Honest artifact role accelerates projection and is **not** the sole execution substrate |
 | E9 memo ≠ AOT cold | `e9_honest_not_aot`, `e9_honest_fixture_class` | Honest warm claim is `requestLocalMemoReuse` under `fixtureOrScratch`, not `aotCold` |
 
@@ -76,14 +76,17 @@ Formal: `production_subset_static`, `production_preserves_status`.
 
 **Proof.** By computation on the defined functions (`rank_all_illegal_two`, `rank_skips_illegal_higher_score`). Membership in `legalScored` implies a true flag was present (`legalScored_only_from_true`). □
 
-### Singleton forwards optimum is zero
+### Singleton policy neural cost is zero (KERN-07)
 
-**Setup.** Domain complete with exactly one candidate; forced token present.
+**Setup.** Domain complete; forced token equals the sole candidate ``[[token]]``.
 
-**Claim.** `ForwardsOptimum = 0` and for all \(f \in \mathbb{N}\), \(0 \le f\).
+**Claim.** Under ``NeuralForwardOnlyModel``, the singleton bypass policy has
+neural-forward cost 0 (empty neural trace). Grammar / certificate / memory /
+wall-clock are outside the model. ``Nat.zero_le`` is **not** an optimality proof.
 
-**Proof.** Unfold definition: the if-guard is true, so result is 0; zero is ≤ any Nat. □  
-Runtime E8 still must show a concrete backend achieves this optimum.
+**Proof.** Bypass neural trace is ``[]``; ``traceCost`` of nil is 0. □  
+Runtime refinement: decode telemetry fixtures with ``forwards_count == 0``
+(empirical remainder — see ``docs/design/kern-07-singleton-zero-neural-policy.md``).
 
 ### Never put (6) before (1)
 
@@ -107,7 +110,8 @@ This is the ADR stack law as a ranking obligation, not a schedule algorithm.
 ```text
 rankInsideLegal [1, 9, 2] [true, false, true] == some 2
 rankInsideLegal [1, 9] [false, false] == none
-ForwardsOptimum { complete, one candidate, forced some } == 0
+SingletonProof.validBool { complete, [[0]], forced 0 }
+policyNeuralCost (singletonBypassNeuralTrace …) == 0
 ```
 
 ### Advisory residual plane (SFF harness-refined)

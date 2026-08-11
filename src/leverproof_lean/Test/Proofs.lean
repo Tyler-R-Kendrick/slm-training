@@ -108,8 +108,13 @@ open LeverProofLean
 #print axioms ConstrainedDiffusion.forced_macro_no_literals
 #print axioms ConstrainedDiffusion.forced_macro_append
 #print axioms ConstrainedDiffusion.incomplete_cannot_be_forced_edge
-#print axioms ConstrainedDiffusion.singleton_forwards_optimum_zero
-#print axioms ConstrainedDiffusion.singleton_forwards_optimum_is_minimum
+#print axioms ConstrainedDiffusion.singleton_forced_eq_sole_candidate
+#print axioms ConstrainedDiffusion.singleton_policy_neural_cost_zero
+#print axioms ConstrainedDiffusion.singleton_admits_zero_neural_policy
+#print axioms ConstrainedDiffusion.neural_forward_model_ignores_grammar
+#print axioms ConstrainedDiffusion.neural_forward_model_ignores_certificate
+#print axioms ConstrainedDiffusion.neural_forward_model_ignores_memory
+#print axioms ConstrainedDiffusion.neural_forward_zero_payload_wall_clock_shape
 #print axioms ConstrainedDiffusion.e9_honest_not_aot
 #print axioms ConstrainedDiffusion.never_put_six_before_one
 #print axioms ConstrainedDiffusion.circuit_has_max_rank
@@ -197,8 +202,15 @@ open LeverProofLean
 -- Executable residual ranking guards
 #guard ConstrainedDiffusion.rankInsideLegal [1, 9, 2] [true, false, true] == some 2
 #guard ConstrainedDiffusion.rankInsideLegal [1, 9] [false, false] == none
-#guard ConstrainedDiffusion.ForwardsOptimum
-  { domain := { status := .complete, candidates := [[0]] }, forcedToken := some 0 } == 0
+#guard ConstrainedDiffusion.SingletonProof.validBool
+  { domain := { status := .complete, candidates := [[0]] }, forcedToken := some 0 }
+#guard !(ConstrainedDiffusion.SingletonProof.validBool
+  { domain := { status := .complete, candidates := [[0]] }, forcedToken := some 1 })
+#guard !(ConstrainedDiffusion.SingletonProof.validBool
+  { domain := { status := .incomplete, candidates := [[0]] }, forcedToken := some 0 })
+#guard ConstrainedDiffusion.policyNeuralCost
+  (ConstrainedDiffusion.singletonBypassNeuralTrace
+    { domain := { status := .complete, candidates := [[0]] }, forcedToken := some 0 }) == 0
 
 -- Advisory residual executable guards (bridged to golden_vectors.v1.json)
 #guard AdvisoryResidual.filterLegal [0, 1, 2] [0, 9, 1, 7] == [0, 1]

@@ -92,7 +92,7 @@ for the ADR in
 - E1 multiset parity and no silent UNKNOWN→UNSUPPORTED collapse;
 - residual ranking skips illegal scores; soft legality is never well-formed when true;
 - forced macros exclude literal-boundary tokens; incomplete coverage is not a forced edge;
-- valid singleton ⇒ neural-forward *optimum* is 0 (I2 law, not a wall-clock proof);
+- valid singleton (forced = sole candidate) ⇒ policy neural cost 0 under NeuralForwardOnlyModel (KERN-07 / I2; not wall-clock / grammar / cert optimality);
 - E9 honest warm claim is memo reuse under fixture/scratch, not AOT cold;
 - ordered stack ranks: never put circuit (6) before executor (1);
 - forest-verified draft ⊆ legal domain (I3 branding).
