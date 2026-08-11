@@ -381,6 +381,8 @@ class RevmathReportV1(StrictModel):
     repair_ids: tuple[str, ...] = ()
     judgment_counts: dict[str, int] = Field(default_factory=dict)
     version_stamp: dict[str, Any] | None = None
+    # INTEG-04 / SLM-529: opt-in four-axis ledger projection (absent when unset).
+    four_axis_ledger_projection: dict[str, Any] | None = None
 
     @model_validator(mode="after")
     def _judgment_counts_closed(self) -> RevmathReportV1:
@@ -394,6 +396,23 @@ class RevmathReportV1(StrictModel):
         for key, value in self.judgment_counts.items():
             if value < 0:
                 raise ValueError(f"judgment_counts[{key!r}] must be >= 0")
+        return self
+
+    @model_validator(mode="after")
+    def _projection_valid(self) -> RevmathReportV1:
+        if self.four_axis_ledger_projection is None:
+            return self
+        from slm_training.harnesses.four_axis_ledger import (
+            validate_harness_four_axis_projection,
+        )
+
+        validate_harness_four_axis_projection(self.four_axis_ledger_projection)
+        family = self.four_axis_ledger_projection.get("harness_family")
+        if family != "reasoning/revmath":
+            raise ValueError(
+                "revmath report four_axis_ledger_projection.harness_family "
+                f"must be 'reasoning/revmath' (got {family!r})"
+            )
         return self
 
 

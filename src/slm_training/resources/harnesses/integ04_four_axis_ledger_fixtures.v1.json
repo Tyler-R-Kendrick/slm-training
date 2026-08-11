@@ -1,0 +1,450 @@
+{
+  "issue_key": "INTEG-04",
+  "linear_id": "SLM-529",
+  "notes": "Parity fixtures for INTEG-04 harness report seams. Same four-axis analysis projects across reasoning/revmath and non-reasoning families; default-off reports omit the projection key.",
+  "projection_schema": "harness_four_axis_ledger_projection/v1",
+  "rows": [
+    {
+      "harness_family": "reasoning/revmath",
+      "id": "parity_reasoning_revmath",
+      "projection": {
+        "authority_ceiling": "unchecked",
+        "computability": {
+          "axis": "computability",
+          "presence": "unknown",
+          "status": "unknown_axis"
+        },
+        "computability_class_id": "unclassified",
+        "content_sha256": "1c4660fe6537be182bb12f102d3446608f882d4dd7237f47f176701e788451f7",
+        "formal_preflight_sha256": null,
+        "harness_family": "reasoning/revmath",
+        "issue_key": "INTEG-04",
+        "linear_id": "SLM-529",
+        "logical_strength": {
+          "axis": "assumption_strength",
+          "presence": "unknown",
+          "status": "unknown_axis"
+        },
+        "refinement_certificate_sha256": null,
+        "refinement_empirical_remainder": {
+          "axis": "implementation_refinement",
+          "notes": "wall_clock_latency remains empirical",
+          "presence": "referenced",
+          "status": "empirical_remainder"
+        },
+        "refinement_trace_hash": "abababababababababababababababababababababababababababababababab",
+        "resource_bound": {
+          "axis": "resource_bounds",
+          "bound_ast_id": "bound.finite_search.prefix_tree.v1",
+          "certificate_sha256": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+          "presence": "referenced",
+          "status": "proved_axis",
+          "theorem_ref": "Thm.resource_bounds"
+        },
+        "rm_subsystem_id": null,
+        "schema_version": "harness_four_axis_ledger_projection/v1"
+      },
+      "report_default_off": {
+        "harness_family": "reasoning/revmath",
+        "report_id": "integ04-reasoning-revmath",
+        "schema_note": "parity fixture envelope"
+      },
+      "report_enabled": {
+        "four_axis_ledger_projection": {
+          "authority_ceiling": "unchecked",
+          "computability": {
+            "axis": "computability",
+            "presence": "unknown",
+            "status": "unknown_axis"
+          },
+          "computability_class_id": "unclassified",
+          "content_sha256": "1c4660fe6537be182bb12f102d3446608f882d4dd7237f47f176701e788451f7",
+          "formal_preflight_sha256": null,
+          "harness_family": "reasoning/revmath",
+          "issue_key": "INTEG-04",
+          "linear_id": "SLM-529",
+          "logical_strength": {
+            "axis": "assumption_strength",
+            "presence": "unknown",
+            "status": "unknown_axis"
+          },
+          "refinement_certificate_sha256": null,
+          "refinement_empirical_remainder": {
+            "axis": "implementation_refinement",
+            "notes": "wall_clock_latency remains empirical",
+            "presence": "referenced",
+            "status": "empirical_remainder"
+          },
+          "refinement_trace_hash": "abababababababababababababababababababababababababababababababab",
+          "resource_bound": {
+            "axis": "resource_bounds",
+            "bound_ast_id": "bound.finite_search.prefix_tree.v1",
+            "certificate_sha256": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+            "presence": "referenced",
+            "status": "proved_axis",
+            "theorem_ref": "Thm.resource_bounds"
+          },
+          "rm_subsystem_id": null,
+          "schema_version": "harness_four_axis_ledger_projection/v1"
+        },
+        "harness_family": "reasoning/revmath",
+        "report_id": "integ04-reasoning-revmath",
+        "schema_note": "parity fixture envelope"
+      },
+      "shared_analysis": {
+        "assumption_strength": {
+          "axis": "assumption_strength",
+          "bound_ast_id": null,
+          "certificate_sha256": null,
+          "notes": "",
+          "status": "unknown_axis",
+          "theorem_ref": null
+        },
+        "computability": {
+          "axis": "computability",
+          "bound_ast_id": null,
+          "certificate_sha256": null,
+          "notes": "",
+          "status": "unknown_axis",
+          "theorem_ref": null
+        },
+        "formal_preflight_sha256": null,
+        "implementation_refinement": {
+          "axis": "implementation_refinement",
+          "bound_ast_id": null,
+          "certificate_sha256": null,
+          "notes": "wall_clock_latency remains empirical",
+          "status": "empirical_remainder",
+          "theorem_ref": null
+        },
+        "resource_bounds": {
+          "axis": "resource_bounds",
+          "bound_ast_id": "bound.finite_search.prefix_tree.v1",
+          "certificate_sha256": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+          "notes": "",
+          "status": "proved_axis",
+          "theorem_ref": "Thm.resource_bounds"
+        },
+        "schema_version": "revmath_four_axis/v1"
+      }
+    },
+    {
+      "harness_family": "train_data",
+      "id": "parity_train_data",
+      "projection": {
+        "authority_ceiling": "unchecked",
+        "computability": {
+          "axis": "computability",
+          "presence": "unknown",
+          "status": "unknown_axis"
+        },
+        "computability_class_id": "unclassified",
+        "content_sha256": "e4a7ba6c4fd432ebb9faf8622f0d1973ea565da78b2be2fc53edd9d88270e79e",
+        "formal_preflight_sha256": null,
+        "harness_family": "train_data",
+        "issue_key": "INTEG-04",
+        "linear_id": "SLM-529",
+        "logical_strength": {
+          "axis": "assumption_strength",
+          "presence": "unknown",
+          "status": "unknown_axis"
+        },
+        "refinement_certificate_sha256": null,
+        "refinement_empirical_remainder": {
+          "axis": "implementation_refinement",
+          "notes": "wall_clock_latency remains empirical",
+          "presence": "referenced",
+          "status": "empirical_remainder"
+        },
+        "refinement_trace_hash": "abababababababababababababababababababababababababababababababab",
+        "resource_bound": {
+          "axis": "resource_bounds",
+          "bound_ast_id": "bound.finite_search.prefix_tree.v1",
+          "certificate_sha256": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+          "presence": "referenced",
+          "status": "proved_axis",
+          "theorem_ref": "Thm.resource_bounds"
+        },
+        "rm_subsystem_id": null,
+        "schema_version": "harness_four_axis_ledger_projection/v1"
+      },
+      "report_default_off": {
+        "harness_family": "train_data",
+        "report_id": "integ04-train_data",
+        "schema_note": "parity fixture envelope"
+      },
+      "report_enabled": {
+        "four_axis_ledger_projection": {
+          "authority_ceiling": "unchecked",
+          "computability": {
+            "axis": "computability",
+            "presence": "unknown",
+            "status": "unknown_axis"
+          },
+          "computability_class_id": "unclassified",
+          "content_sha256": "e4a7ba6c4fd432ebb9faf8622f0d1973ea565da78b2be2fc53edd9d88270e79e",
+          "formal_preflight_sha256": null,
+          "harness_family": "train_data",
+          "issue_key": "INTEG-04",
+          "linear_id": "SLM-529",
+          "logical_strength": {
+            "axis": "assumption_strength",
+            "presence": "unknown",
+            "status": "unknown_axis"
+          },
+          "refinement_certificate_sha256": null,
+          "refinement_empirical_remainder": {
+            "axis": "implementation_refinement",
+            "notes": "wall_clock_latency remains empirical",
+            "presence": "referenced",
+            "status": "empirical_remainder"
+          },
+          "refinement_trace_hash": "abababababababababababababababababababababababababababababababab",
+          "resource_bound": {
+            "axis": "resource_bounds",
+            "bound_ast_id": "bound.finite_search.prefix_tree.v1",
+            "certificate_sha256": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+            "presence": "referenced",
+            "status": "proved_axis",
+            "theorem_ref": "Thm.resource_bounds"
+          },
+          "rm_subsystem_id": null,
+          "schema_version": "harness_four_axis_ledger_projection/v1"
+        },
+        "harness_family": "train_data",
+        "report_id": "integ04-train_data",
+        "schema_note": "parity fixture envelope"
+      },
+      "shared_analysis": {
+        "assumption_strength": {
+          "axis": "assumption_strength",
+          "bound_ast_id": null,
+          "certificate_sha256": null,
+          "notes": "",
+          "status": "unknown_axis",
+          "theorem_ref": null
+        },
+        "computability": {
+          "axis": "computability",
+          "bound_ast_id": null,
+          "certificate_sha256": null,
+          "notes": "",
+          "status": "unknown_axis",
+          "theorem_ref": null
+        },
+        "formal_preflight_sha256": null,
+        "implementation_refinement": {
+          "axis": "implementation_refinement",
+          "bound_ast_id": null,
+          "certificate_sha256": null,
+          "notes": "wall_clock_latency remains empirical",
+          "status": "empirical_remainder",
+          "theorem_ref": null
+        },
+        "resource_bounds": {
+          "axis": "resource_bounds",
+          "bound_ast_id": "bound.finite_search.prefix_tree.v1",
+          "certificate_sha256": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+          "notes": "",
+          "status": "proved_axis",
+          "theorem_ref": "Thm.resource_bounds"
+        },
+        "schema_version": "revmath_four_axis/v1"
+      }
+    },
+    {
+      "harness_family": "model_build",
+      "id": "parity_model_build",
+      "projection": {
+        "authority_ceiling": "unchecked",
+        "computability": {
+          "axis": "computability",
+          "presence": "unknown",
+          "status": "unknown_axis"
+        },
+        "computability_class_id": "unclassified",
+        "content_sha256": "4894c670d23a0fb612d9926d1fcfb8a31f795fddb60059d72837c29d1505b8e1",
+        "formal_preflight_sha256": null,
+        "harness_family": "model_build",
+        "issue_key": "INTEG-04",
+        "linear_id": "SLM-529",
+        "logical_strength": {
+          "axis": "assumption_strength",
+          "presence": "unknown",
+          "status": "unknown_axis"
+        },
+        "refinement_certificate_sha256": null,
+        "refinement_empirical_remainder": {
+          "axis": "implementation_refinement",
+          "notes": "wall_clock_latency remains empirical",
+          "presence": "referenced",
+          "status": "empirical_remainder"
+        },
+        "refinement_trace_hash": "abababababababababababababababababababababababababababababababab",
+        "resource_bound": {
+          "axis": "resource_bounds",
+          "bound_ast_id": "bound.finite_search.prefix_tree.v1",
+          "certificate_sha256": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+          "presence": "referenced",
+          "status": "proved_axis",
+          "theorem_ref": "Thm.resource_bounds"
+        },
+        "rm_subsystem_id": null,
+        "schema_version": "harness_four_axis_ledger_projection/v1"
+      },
+      "report_default_off": {
+        "harness_family": "model_build",
+        "report_id": "integ04-model_build",
+        "schema_note": "parity fixture envelope"
+      },
+      "report_enabled": {
+        "four_axis_ledger_projection": {
+          "authority_ceiling": "unchecked",
+          "computability": {
+            "axis": "computability",
+            "presence": "unknown",
+            "status": "unknown_axis"
+          },
+          "computability_class_id": "unclassified",
+          "content_sha256": "4894c670d23a0fb612d9926d1fcfb8a31f795fddb60059d72837c29d1505b8e1",
+          "formal_preflight_sha256": null,
+          "harness_family": "model_build",
+          "issue_key": "INTEG-04",
+          "linear_id": "SLM-529",
+          "logical_strength": {
+            "axis": "assumption_strength",
+            "presence": "unknown",
+            "status": "unknown_axis"
+          },
+          "refinement_certificate_sha256": null,
+          "refinement_empirical_remainder": {
+            "axis": "implementation_refinement",
+            "notes": "wall_clock_latency remains empirical",
+            "presence": "referenced",
+            "status": "empirical_remainder"
+          },
+          "refinement_trace_hash": "abababababababababababababababababababababababababababababababab",
+          "resource_bound": {
+            "axis": "resource_bounds",
+            "bound_ast_id": "bound.finite_search.prefix_tree.v1",
+            "certificate_sha256": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+            "presence": "referenced",
+            "status": "proved_axis",
+            "theorem_ref": "Thm.resource_bounds"
+          },
+          "rm_subsystem_id": null,
+          "schema_version": "harness_four_axis_ledger_projection/v1"
+        },
+        "harness_family": "model_build",
+        "report_id": "integ04-model_build",
+        "schema_note": "parity fixture envelope"
+      },
+      "shared_analysis": {
+        "assumption_strength": {
+          "axis": "assumption_strength",
+          "bound_ast_id": null,
+          "certificate_sha256": null,
+          "notes": "",
+          "status": "unknown_axis",
+          "theorem_ref": null
+        },
+        "computability": {
+          "axis": "computability",
+          "bound_ast_id": null,
+          "certificate_sha256": null,
+          "notes": "",
+          "status": "unknown_axis",
+          "theorem_ref": null
+        },
+        "formal_preflight_sha256": null,
+        "implementation_refinement": {
+          "axis": "implementation_refinement",
+          "bound_ast_id": null,
+          "certificate_sha256": null,
+          "notes": "wall_clock_latency remains empirical",
+          "status": "empirical_remainder",
+          "theorem_ref": null
+        },
+        "resource_bounds": {
+          "axis": "resource_bounds",
+          "bound_ast_id": "bound.finite_search.prefix_tree.v1",
+          "certificate_sha256": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+          "notes": "",
+          "status": "proved_axis",
+          "theorem_ref": "Thm.resource_bounds"
+        },
+        "schema_version": "revmath_four_axis/v1"
+      }
+    },
+    {
+      "harness_family": "train_data",
+      "id": "absent_evidence_train_data",
+      "projection": {
+        "authority_ceiling": null,
+        "computability": {
+          "axis": "computability",
+          "presence": "absent"
+        },
+        "computability_class_id": null,
+        "content_sha256": "ada35084bf1cd9553d2e336d09dcb86c1ca99a63773092fd5a802ac8e88937a8",
+        "formal_preflight_sha256": null,
+        "harness_family": "train_data",
+        "issue_key": "INTEG-04",
+        "linear_id": "SLM-529",
+        "logical_strength": {
+          "axis": "assumption_strength",
+          "presence": "absent"
+        },
+        "refinement_certificate_sha256": null,
+        "refinement_empirical_remainder": {
+          "axis": "implementation_refinement",
+          "presence": "absent"
+        },
+        "refinement_trace_hash": null,
+        "resource_bound": {
+          "axis": "resource_bounds",
+          "presence": "absent"
+        },
+        "rm_subsystem_id": null,
+        "schema_version": "harness_four_axis_ledger_projection/v1"
+      },
+      "report_default_off": {
+        "ok": true
+      },
+      "report_enabled": {
+        "four_axis_ledger_projection": {
+          "authority_ceiling": null,
+          "computability": {
+            "axis": "computability",
+            "presence": "absent"
+          },
+          "computability_class_id": null,
+          "content_sha256": "ada35084bf1cd9553d2e336d09dcb86c1ca99a63773092fd5a802ac8e88937a8",
+          "formal_preflight_sha256": null,
+          "harness_family": "train_data",
+          "issue_key": "INTEG-04",
+          "linear_id": "SLM-529",
+          "logical_strength": {
+            "axis": "assumption_strength",
+            "presence": "absent"
+          },
+          "refinement_certificate_sha256": null,
+          "refinement_empirical_remainder": {
+            "axis": "implementation_refinement",
+            "presence": "absent"
+          },
+          "refinement_trace_hash": null,
+          "resource_bound": {
+            "axis": "resource_bounds",
+            "presence": "absent"
+          },
+          "rm_subsystem_id": null,
+          "schema_version": "harness_four_axis_ledger_projection/v1"
+        },
+        "ok": true
+      },
+      "shared_analysis": null
+    }
+  ],
+  "schema": "integ04_harness_four_axis_ledger_fixtures/v1"
+}

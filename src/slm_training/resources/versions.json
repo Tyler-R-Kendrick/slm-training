@@ -3452,7 +3452,7 @@
       ]
     },
     "governance.revmath_owners": {
-      "version": "v20",
+      "version": "v21",
       "kind": "gate",
       "paths": [
         "docs/design/adr-revmath-reasoning-profile.md",
@@ -3462,6 +3462,11 @@
         "tests/test_scripts/test_verify_revmath_owners.py"
       ],
       "history": [
+        {
+          "version": "v21",
+          "date": "2026-08-11",
+          "note": "INTEG-04 (SLM-529): register harness_four_axis_ledger_adapters surface + extension seam on report seams (not campaign store)."
+        },
         {
           "version": "v20",
           "date": "2026-08-11",
@@ -5043,6 +5048,11 @@
         "tests/test_autoresearch/test_formal_four_axis_ledger.py"
       ],
       "history": [
+        {
+          "version": "v19",
+          "date": "2026-08-11",
+          "note": "no-bump: INTEG-04 (SLM-529) docs-only cross-link from formal-autoresearch.md to integ-04 harness ledger adapters; FormalPreflightV1 schemas unchanged."
+        },
         {
           "version": "v19",
           "date": "2026-08-11",
@@ -14205,7 +14215,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v25",
+      "version": "v26",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -14221,6 +14231,11 @@
         "docs/design/dsh1-08-harness-qa-completion-20260725.json"
       ],
       "history": [
+        {
+          "version": "v26",
+          "date": "2026-08-11",
+          "note": "INTEG-04 (SLM-529): opt-in four-axis ledger projection on quality_report.json seam."
+        },
         {
           "version": "v25",
           "date": "2026-08-03",
@@ -18615,7 +18630,7 @@
       ]
     },
     "harness.reasoning.revmath": {
-      "version": "v15",
+      "version": "v16",
       "kind": "harness",
       "paths": [
         "scripts/run_revmath_task.py",
@@ -18643,6 +18658,11 @@
         "tests/test_harnesses/reasoning/test_revmath_failure_witness.py"
       ],
       "history": [
+        {
+          "version": "v16",
+          "date": "2026-08-11",
+          "note": "INTEG-04 (SLM-529): optional four_axis_ledger_projection on RevmathReportV1 + build_revmath_report opt-in seam."
+        },
         {
           "version": "v15",
           "date": "2026-08-11",
@@ -18792,6 +18812,23 @@
           "version": "v1",
           "date": "2026-08-11",
           "note": "KERN-12 (SLM-532): practical computability vocabulary + evidence contracts + Lean/Python parity fixtures"
+        }
+      ]
+    },
+    "harness.four_axis_ledger": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/four_axis_ledger.py",
+        "src/slm_training/resources/harnesses/integ04_four_axis_ledger_fixtures.v1.json",
+        "tests/test_harnesses/test_four_axis_ledger_adapters.py",
+        "docs/design/integ-04-harness-four-axis-ledger-adapters.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-11",
+          "note": "INTEG-04 (SLM-529): opt-in four-axis ledger projection adapters for harness report seams; absent evidence stays absent/unknown; authority ceiling fail-closed."
         }
       ]
     }
