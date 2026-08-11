@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from dataclasses import replace
 
 import re
 
@@ -319,6 +320,41 @@ def test_mandatory_skipped_gate_returns_unavailable() -> None:
     assert any(atom.source_kind == "gate" for atom in evidence.mandatory_unknown_atoms)
 
 
+@pytest.mark.parametrize(
+    ("gate_id", "context"),
+    (
+        ("G11", VerificationContext(independent_judge_passed=False)),
+        ("G12", VerificationContext(human_audit_passed=False)),
+    ),
+)
+def test_heuristic_gate_rejection_has_no_exact_failure_atom(
+    gate_id: str, context: VerificationContext
+) -> None:
+    constraint_set = _compiled_set(
+        constraints=(),
+        hard_constraint_ids=(),
+        advisory_constraint_ids=(),
+        evaluation_constraint_ids=(),
+    )
+    profile = _profile_for(
+        constraint_set,
+        mode="evaluation_oracle",
+        authority_tier="evaluation-only",
+        required_constraint_ids=(),
+        required_gates=(gate_id,),
+    )
+    verifier = _verifier(
+        profile=profile,
+        constraint_set=constraint_set,
+        verification_context=context,
+    )
+    outcome = verifier.verify('root = Button(":slot_0")')
+    evidence = verifier.terminal_evidence[-1]
+    assert outcome.status is VerifyStatus.REJECT
+    assert evidence.overall_status == "REJECT"
+    assert not evidence.mandatory_failure_atoms
+
+
 def test_production_profile_rejects_uncertified_required_evaluator() -> None:
     constraint_set = _compiled_set()
     profile = _profile_for(
@@ -327,6 +363,7 @@ def test_production_profile_rejects_uncertified_required_evaluator() -> None:
             EvaluatorIdentityV1(
                 evaluator_id="meaningful_program/v2",
                 version="v2",
+                implementation_hash="c" * 64,
             ),
         ),
     )
@@ -353,6 +390,7 @@ def test_evaluation_evaluator_version_mismatch_is_unavailable() -> None:
             EvaluatorIdentityV1(
                 evaluator_id="meaningful_program/v2",
                 version="not-the-live-version",
+                implementation_hash="0" * 64,
             ),
         ),
     )
@@ -387,6 +425,7 @@ def test_evaluation_profile_cannot_emit_compiler_hard_failure_atoms() -> None:
             EvaluatorIdentityV1(
                 evaluator_id="meaningful_program/v2",
                 version="v2",
+                implementation_hash="c" * 64,
             ),
         ),
     )
@@ -419,6 +458,37 @@ def test_stale_request_fails_closed_at_construction() -> None:
         )
 
 
+def test_self_asserted_hard_constraint_fails_source_replay() -> None:
+    problem = _test_problem()
+    request = _test_request()
+    compiled = compile_goal_constraints(problem, request, get_pack("openui"))
+    constraints = tuple(
+        GoalConstraintV1(
+            **{
+                **item.model_dump(),
+                "parameters": {"output_kind": "screen"},
+                "source_digest": source_digest({"output_kind": "screen"}),
+            }
+        )
+        if item.constraint_id == "hard.output_kind_equals"
+        else item
+        for item in compiled.constraints
+    )
+    payload = compiled.model_dump(exclude={"digest"})
+    payload["constraints"] = constraints
+    tampered = CompiledGoalConstraintSetV1.from_dict(
+        CompiledGoalConstraintSetV1(**payload).to_dict(include_digest=True)
+    )
+    profile = _profile_for(tampered)
+    with pytest.raises(ValueError, match="does not replay from live sources"):
+        _verifier(
+            problem=problem,
+            request=request,
+            constraint_set=tampered,
+            profile=profile,
+        )
+
+
 def test_stale_pack_identity_fails_closed_at_construction() -> None:
     constraint_set = _compiled_set()
     profile = _profile_for(constraint_set)
@@ -433,9 +503,24 @@ def test_stale_pack_identity_fails_closed_at_construction() -> None:
         )
 
 
+def test_same_id_noncanonical_pack_fails_closed_at_construction() -> None:
+    constraint_set = _compiled_set()
+    profile = _profile_for(constraint_set)
+    with pytest.raises(ValueError, match="canonical live pack"):
+        OpenUIGoalVerifier(
+            profile=profile,
+            constraint_set=constraint_set,
+            problem=_test_problem(),
+            request=_test_request(),
+            pack_identity=_pack_identity(),
+            pack=replace(get_pack("openui")),
+            structural_verifier=_AcceptingStructuralVerifier(),
+        )
+
+
 def test_mandatory_not_applicable_is_unavailable() -> None:
     constraint = _constraint(
-        constraint_id="hard.output_category",
+        constraint_id="ordinary-customer-literal",
         kind="output_category_equals",
         parameters={"output_category": "dashboard.card"},
         source_kind="evaluation_fixture",
@@ -460,14 +545,29 @@ def test_mandatory_not_applicable_is_unavailable() -> None:
     )
     assert verifier.verify('root = Button(":slot_0")').status is VerifyStatus.UNAVAILABLE
     assert any(
-        atom.atom_id == "constraint:hard.output_category"
+        atom.source_kind == "constraint"
         for atom in verifier.terminal_evidence[-1].mandatory_unknown_atoms
+    )
+    assert "ordinary-customer-literal" not in json.dumps(
+        verifier.terminal_evidence[-1].to_dict()
     )
 
 
 def test_structural_timeout_is_unavailable() -> None:
     verifier = _verifier()
     verifier._structural.verify = lambda _program: (_ for _ in ()).throw(TimeoutError())
+    assert verifier.verify('root = Button(":slot_0")').status is VerifyStatus.UNAVAILABLE
+
+
+def test_constraint_evaluation_timeout_is_unavailable(monkeypatch) -> None:
+    verifier = _verifier()
+
+    def timeout(**_kwargs):
+        raise TimeoutError
+
+    monkeypatch.setattr(
+        "slm_training.dsl.solver.openui_support.evaluate_goal_constraints", timeout
+    )
     assert verifier.verify('root = Button(":slot_0")').status is VerifyStatus.UNAVAILABLE
 
 
@@ -511,6 +611,37 @@ def test_secret_shaped_content_not_in_outcome_or_evidence() -> None:
     assert "[REDACTED]" in redact_bounded_string(secret)
 
 
+def test_gate_detail_is_replaced_by_closed_reason_code(monkeypatch) -> None:
+    from slm_training.data.verify.stack import GateResult, GateStatus
+
+    constraint_set = _compiled_set(
+        constraints=(),
+        hard_constraint_ids=(),
+        advisory_constraint_ids=(),
+        evaluation_constraint_ids=(),
+    )
+    profile = _profile_for(
+        constraint_set,
+        mode="evaluation_oracle",
+        authority_tier="evaluation-only",
+        required_constraint_ids=(),
+        required_gates=("G0",),
+    )
+    monkeypatch.setattr(
+        "slm_training.dsl.solver.openui_support.evaluate_gate",
+        lambda gate, *_args: GateResult(
+            gate=gate,
+            status=GateStatus.FAIL,
+            detail="ordinary-user-literal-must-not-persist",
+        ),
+    )
+    verifier = _verifier(profile=profile, constraint_set=constraint_set)
+    verifier.verify('root = Button(":slot_0")')
+    payload = json.dumps(verifier.terminal_evidence[-1].to_dict())
+    assert "ordinary-user-literal" not in payload
+    assert "gate_fail" in payload
+
+
 def test_compile_and_verify_round_trip() -> None:
     request = GenerationRequest(prompt="Build a Button")
     problem = VerifiedSynthesisProblemV1(
@@ -535,6 +666,47 @@ def test_compile_and_verify_round_trip() -> None:
     )
     accept = verifier.verify('root = Button(":slot_0")')
     assert accept.status is VerifyStatus.ACCEPT
+
+
+def test_request_output_kind_is_compared_with_candidate_kind() -> None:
+    request = GenerationRequest(prompt="Return one statement", output_kind="statement")
+    problem = VerifiedSynthesisProblemV1(
+        problem_id="output-kind-mismatch",
+        pack_identity=_pack_identity(),
+    )
+    compiled = compile_goal_constraints(problem, request, get_pack("openui"))
+    profile = _profile_for(compiled)
+    verifier = OpenUIGoalVerifier(
+        profile=profile,
+        constraint_set=compiled,
+        problem=problem,
+        request=request,
+        pack_identity=problem.pack_identity,
+        structural_verifier=_AcceptingStructuralVerifier(),
+    )
+    assert verifier.verify('root = Button(":slot_0")').status is VerifyStatus.REJECT
+
+
+def test_unobserved_output_category_is_unavailable() -> None:
+    request = GenerationRequest(
+        prompt="Build a dashboard",
+        output_category="dashboard.card",
+    )
+    problem = VerifiedSynthesisProblemV1(
+        problem_id="output-category-unobserved",
+        pack_identity=_pack_identity(),
+    )
+    compiled = compile_goal_constraints(problem, request, get_pack("openui"))
+    profile = _profile_for(compiled)
+    verifier = OpenUIGoalVerifier(
+        profile=profile,
+        constraint_set=compiled,
+        problem=problem,
+        request=request,
+        pack_identity=problem.pack_identity,
+        structural_verifier=_AcceptingStructuralVerifier(),
+    )
+    assert verifier.verify('root = Button(":slot_0")').status is VerifyStatus.UNAVAILABLE
 
 
 @pytest.mark.skipif(

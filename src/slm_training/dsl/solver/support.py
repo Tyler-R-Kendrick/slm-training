@@ -537,6 +537,7 @@ class ReplayResult:
     ok: bool
     verdict: SupportVerdict
     violations: tuple[str, ...] = ()
+    counters: SearchCounters = SearchCounters()
 
 
 def replay_support_certificate(
@@ -606,11 +607,9 @@ def replay_support_certificate(
             else:
                 if _sha256(recomputed.witness) != certificate.witness_digest:
                     violations.append("witness digest does not match replayed witness")
-                if verifier.verify(recomputed.witness).status is not VerifyStatus.ACCEPT:
-                    violations.append("replayed witness is not verifier-accepted")
-
     return ReplayResult(
         ok=not violations,
         verdict=certificate.verdict,
         violations=tuple(violations),
+        counters=recomputed.counters if recomputed is not None else SearchCounters(),
     )

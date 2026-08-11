@@ -115,7 +115,11 @@ def _profile(**overrides: object) -> GoalVerifierProfileV1:
             ),
         ),
         "metric_identities": (
-            MetricIdentityV1(metric_id="meaningful_program", version="v2"),
+            MetricIdentityV1(
+                metric_id="meaningful_program",
+                version="v2",
+                implementation_hash="d" * 64,
+            ),
         ),
         "authority_tier": "compiler-hard",
     }
@@ -250,11 +254,27 @@ def test_unresolved_ambiguity_rejected_in_production_exact() -> None:
     )
     profile = _profile(
         required_constraint_ids=(hard.constraint_id,),
+        required_evaluators=(),
+        metric_identities=(),
         problem_digest=constraint_set.problem_digest,
         constraint_set_digest=constraint_set.digest,
         pack_identity_digest=constraint_set.pack_identity_digest,
     )
     with pytest.raises(ValueError, match="unresolved hard ambiguity"):
+        validate_profile_against_constraint_set(profile, constraint_set)
+
+
+def test_production_profile_rejects_context_dependent_grounding_gate() -> None:
+    constraint_set = _compiled_set()
+    profile = _profile(
+        required_gates=("G7",),
+        required_evaluators=(),
+        metric_identities=(),
+        problem_digest=constraint_set.problem_digest,
+        constraint_set_digest=constraint_set.digest,
+        pack_identity_digest=constraint_set.pack_identity_digest,
+    )
+    with pytest.raises(ValueError, match="context-free exact gates"):
         validate_profile_against_constraint_set(profile, constraint_set)
 
 

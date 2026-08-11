@@ -10629,6 +10629,7 @@ class TwoTowerModel(nn.Module):
         if len(paths) == 1 and coverage == "complete":
             if paths[0].token_ids:
                 self._record_exact_bypass(int(paths[0].token_ids[0]))
+            self._record_goal_support_selection(plan_row, prefix, paths[0])
             return tuple(paths[0].token_ids)
         stats = get_active_stats()
         recorder = getattr(self, "trace_recorder", None)
@@ -10652,6 +10653,7 @@ class TwoTowerModel(nn.Module):
                     stats.speculative_rank_evaluations += 1
                 if choice.confident:
                     selected = paths[choice.best_index]
+                    self._record_goal_support_selection(plan_row, prefix, selected)
                     if stats is not None:
                         stats.speculative_rank_commits += 1
                         stats.speculative_rank_tokens += len(selected.token_ids)
@@ -10688,6 +10690,7 @@ class TwoTowerModel(nn.Module):
             first_edge_scores: list[float] | None = None,
             raw_logits: torch.Tensor | None = None,
         ) -> None:
+            self._record_goal_support_selection(plan_row, prefix, paths[chosen])
             if stats is not None and len(stats.constrained_selection_traces) < 64:
                 legal_token_ids = tuple(
                     sorted({int(path.token_ids[0]) for path in paths})

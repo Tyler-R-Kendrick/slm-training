@@ -184,7 +184,8 @@ cap, and no budget-stop classification — see `obstruction_core_emission_allowe
 
 `goal_support_mode` is `off`, `diagnostic`, or `certified`; the default is
 `off`. `goal_support_query_cap` defaults to 32. Request-local
-`goal_support_contexts` supply the pinned profile and constraint set and are not
+`goal_support_contexts` supply the live synthesis problem, pinned profile, and
+constraint set and are not
 stored in checkpoints. These controls are available only through the
 programmatic `TwoTowerConfig` plus `generate_batch_requests` context API. They
 are deliberately absent from ModelBuild, CLI, and OpenFeature surfaces: those

@@ -45,6 +45,7 @@ from slm_training.dsl.solver.goal_support import (
     GoalVerifierProfileV1,
     analyze_goal_domain,
     exact_goal_closure,
+    goal_action_digest,
 )
 from slm_training.dsl.solver.openui_support import (
     OpenUIGoalVerifier,
@@ -528,12 +529,16 @@ def _summarize_goal_reports(
 def _run_goal_arm(
     context: _Context,
     campaign: GoalSupportDomainAdequacyCampaignV1,
+    *,
+    deadline: float,
 ) -> tuple[dict[str, Any], list[GoalDomainAdequacyReportV1], list[GoalSupportProvider]]:
     started = time.perf_counter()
     remaining = campaign.goal_support_query_cap
     reports: list[GoalDomainAdequacyReportV1] = []
     providers: list[GoalSupportProvider] = []
     for case in _CASES:
+        if time.monotonic() >= deadline:
+            raise TimeoutError("goal-support fixture campaign exceeded max_wall_minutes")
         state, selected = _state(case, context.constraints.digest)
         provider = _provider(state, context)
         cap = min(campaign.exact_action_cap, len(state.holes[0].values), remaining)
@@ -557,7 +562,10 @@ def _run_goal_arm(
 
 
 def _run_structural_arm(
-    campaign: GoalSupportDomainAdequacyCampaignV1, constraint_version: str
+    campaign: GoalSupportDomainAdequacyCampaignV1,
+    constraint_version: str,
+    *,
+    deadline: float,
 ) -> dict[str, Any]:
     started = time.perf_counter()
     rows: list[dict[str, Any]] = []
@@ -565,13 +573,17 @@ def _run_structural_arm(
     verifier_calls = expanded_nodes = backtracks = 0
     selected_supported = 0
     legal_n = 0
+    remaining = campaign.goal_support_query_cap
     for case in _CASES:
+        if time.monotonic() >= deadline:
+            raise TimeoutError("goal-support fixture campaign exceeded max_wall_minutes")
         state, selected = _state(case, constraint_version)
         expander = _TerminalFixtureExpander(state)
-        values = state.holes[0].values
-        cap = min(campaign.exact_action_cap, len(values))
+        values = tuple(sorted(state.holes[0].values, key=goal_action_digest))
+        cap = min(campaign.exact_action_cap, len(values), remaining)
         observed = values[:cap]
         unobserved = values[cap:]
+        remaining -= len(observed)
         action_rows: list[dict[str, Any]] = []
         selected_verdict = None
         for value in observed:
@@ -585,9 +597,9 @@ def _run_structural_arm(
             replay_failures += int(not replay.ok)
             supported_n += int(verdict is SupportVerdict.SUPPORTED)
             unknown_n += int(verdict is SupportVerdict.UNKNOWN)
-            verifier_calls += result.counters.verifier_calls
-            expanded_nodes += result.counters.nodes
-            backtracks += result.counters.backtracks
+            verifier_calls += result.counters.verifier_calls + replay.counters.verifier_calls
+            expanded_nodes += result.counters.nodes + replay.counters.nodes
+            backtracks += result.counters.backtracks + replay.counters.backtracks
             action_digest = _digest(value.to_dict())
             if value == selected:
                 selected_verdict = verdict
@@ -651,14 +663,18 @@ def _run_structural_arm(
 def _run_certified_arm(
     context: _Context,
     campaign: GoalSupportDomainAdequacyCampaignV1,
+    *,
+    deadline: float,
 ) -> dict[str, Any]:
     started = time.perf_counter()
-    result, reports, _ = _run_goal_arm(context, campaign)
+    result, reports, _ = _run_goal_arm(context, campaign, deadline=deadline)
     remaining = int(result["query_cap_remaining"])
     false_prunes = pruned_n = empty_domains = skipped_n = 0
     certified_rows: list[dict[str, Any]] = []
     closure_verifier_calls = closure_nodes = 0
     for case, report in zip(_CASES, reports, strict=True):
+        if time.monotonic() >= deadline:
+            raise TimeoutError("goal-support fixture campaign exceeded max_wall_minutes")
         state, _ = _state(case, context.constraints.digest)
         legal = set(report.legal_action_digests)
         unsupported = set(report.unsupported_action_digests)
@@ -737,6 +753,7 @@ def run_campaign(
     campaign: GoalSupportDomainAdequacyCampaignV1, *, root: Path
 ) -> dict[str, Any]:
     """Run and persist one bounded, fixture-only governed campaign."""
+    deadline = time.monotonic() + campaign.max_wall_minutes * 60.0
     store = CampaignStore(campaign.campaign_id, root)
     store.initialize(
         CampaignSpec(
@@ -755,10 +772,16 @@ def run_campaign(
         detail={"campaign_manifest_sha256": lock.manifest_sha256},
     )
     production, evaluation = _contexts()
-    structural = _run_structural_arm(campaign, production.constraints.digest)
-    production_result, production_reports, _ = _run_goal_arm(production, campaign)
-    evaluation_result, evaluation_reports, _ = _run_goal_arm(evaluation, campaign)
-    certified = _run_certified_arm(production, campaign)
+    structural = _run_structural_arm(
+        campaign, production.constraints.digest, deadline=deadline
+    )
+    production_result, production_reports, _ = _run_goal_arm(
+        production, campaign, deadline=deadline
+    )
+    evaluation_result, evaluation_reports, _ = _run_goal_arm(
+        evaluation, campaign, deadline=deadline
+    )
+    certified = _run_certified_arm(production, campaign, deadline=deadline)
 
     for arm, reports in (
         (production_result, production_reports),

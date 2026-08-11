@@ -241,7 +241,7 @@
       "type": "array"
     },
     "implementation_version": {
-      "default": "goal_support/v1",
+      "default": "goal_support/v1:gates-caf24769add29e32",
       "minLength": 1,
       "title": "Implementation Version",
       "type": "string"

@@ -305,6 +305,8 @@ def exact_closure(
                     # Replay/validate against the exact pre-refinement state before
                     # removing anything. A stale or tampered proof does not remove.
                     replay = provider.replay(result.certificate, state=current)
+                    counters.verifier_calls += replay.counters.verifier_calls
+                    counters.expanded_nodes += replay.counters.nodes
                     if replay.ok and replay.verdict is SupportVerdict.UNSUPPORTED:
                         removed.append(value)
                         cert_ids.append(result.certificate.digest)

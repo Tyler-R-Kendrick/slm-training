@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from slm_training.autoresearch.storage import CampaignStore
 from slm_training.harnesses.experiments.goal_support_domain_adequacy import (
     ARM_IDS,
@@ -87,3 +89,9 @@ def test_independent_runs_have_identical_semantic_digest(tmp_path) -> None:
     first = run_campaign(campaign, root=tmp_path / "a")
     second = run_campaign(campaign, root=tmp_path / "b")
     assert first["canonical_result_digest"] == second["canonical_result_digest"]
+
+
+def test_campaign_enforces_declared_wall_cap(tmp_path) -> None:
+    campaign = GoalSupportDomainAdequacyCampaignV1(max_wall_minutes=1e-12)
+    with pytest.raises(TimeoutError, match="max_wall_minutes"):
+        run_campaign(campaign, root=tmp_path)

@@ -12,7 +12,8 @@ problem-independent :class:`~slm_training.dsl.solver.support.EnumerativeSupportO
 * :class:`OpenUIWellFormedVerifier` runs the deterministic lang-core parse/schema
   check. A genuine ``ParseError`` is a hard ``REJECT``; a missing bridge, timeout,
   or other runtime fault is ``UNAVAILABLE`` (→ ``UNKNOWN``), **never**
-  ``UNSUPPORTED`` — the timeout-vs-UNSAT distinction the contract requires.
+  ``UNSUPPORTED`` — the timeout-vs-bounded-UNSUPPORTED distinction the contract
+  requires.
 * :class:`OpenUIGoalVerifier` composes well-formedness, ``ProgramSpec`` /
   ``SemanticPlanV1`` extraction, goal-constraint evaluation, G0–G12 gates, and
   pinned evaluators into explicit ``ACCEPT`` / ``REJECT`` / ``UNAVAILABLE``
@@ -33,6 +34,7 @@ from slm_training.data.progspec.goal_constraints import (
     CompiledGoalConstraintSetV1,
     GoalConstraintEvaluationV1,
     GoalConstraintV1,
+    canonical_json_bytes,
 )
 from slm_training.data.progspec.schema import ProgramSpec, emit_record
 from slm_training.data.progspec.semantic_plan import SemanticPlanV1
@@ -50,6 +52,7 @@ from slm_training.data.semantic_plan.requirements_compile import (
 from slm_training.data.verify.stack import Gate, GateStatus, VerificationContext, evaluate_gate
 from slm_training.dsl.grammar.fastpath.completion_artifact import (
     completion_artifact_checkpoint_identity,
+    tokenizer_authority,
 )
 from slm_training.dsl.grammar.fastpath.completion_kernel import CompletionSession
 from slm_training.dsl.language_contract import current_contract
@@ -88,10 +91,16 @@ WELL_FORMED_PROFILE = "openui/lang-core-validate/well-formed@0.2.x"
 GOAL_SUPPORT_PROFILE_PREFIX = "openui/goal-support/v1"
 
 
-def current_openui_pack_identity() -> PackIdentityV1:
+def current_openui_pack_identity(tokenizer: Any | None = None) -> PackIdentityV1:
     """Return the complete live identity required by production goal support."""
     contract = current_contract()
     artifact = completion_artifact_checkpoint_identity()
+    if tokenizer is not None:
+        tokenizer_digest = hashlib.sha256(
+            canonical_json_bytes(tokenizer_authority(tokenizer))
+        ).hexdigest()
+        if tokenizer_digest != artifact["tokenizer_authority_sha256"]:
+            raise ValueError("live tokenizer does not match completion-artifact authority")
     return PackIdentityV1(
         pack_id="openui",
         contract_version=contract.output_contract_version,
@@ -299,13 +308,14 @@ def _build_failure_atoms(
     gate_results: tuple[GoalGateResultV1, ...],
     profile: GoalVerifierProfileV1,
 ) -> tuple[GoalFailureAtomV1, ...]:
+    if profile.mode != "production_exact":
+        return ()
     atoms: list[GoalFailureAtomV1] = []
     for evaluation in constraint_results:
         if evaluation.status != "FAIL":
             continue
         if (
-            profile.mode != "production_exact"
-            or evaluation.authority_tier not in {"compiler-hard", "verifier-hard"}
+            evaluation.authority_tier not in {"compiler-hard", "verifier-hard"}
             or not evaluation.may_prune
             or evaluation.completeness_achieved != "EXACT"
         ):
@@ -450,6 +460,55 @@ def _bounded_outcome_detail(
     return redact_bounded_string(detail)
 
 
+def _evidence_identifier(namespace: str, value: str) -> str:
+    digest = hashlib.sha256(value.encode("utf-8")).hexdigest()[:40]
+    return f"{namespace}:{digest}"
+
+
+def _redact_terminal_items(
+    constraint_results: tuple[GoalConstraintEvaluationV1, ...],
+    gate_results: tuple[GoalGateResultV1, ...],
+    evaluator_results: tuple[GoalEvaluatorResultV1, ...],
+) -> tuple[
+    tuple[GoalConstraintEvaluationV1, ...],
+    tuple[GoalGateResultV1, ...],
+    tuple[GoalEvaluatorResultV1, ...],
+]:
+    safe_constraints = tuple(
+        GoalConstraintEvaluationV1.model_validate(
+            {
+                **item.model_dump(mode="python"),
+                "constraint_id": _evidence_identifier(
+                    "constraint", item.constraint_id
+                ),
+                "detail": None,
+            }
+        )
+        for item in constraint_results
+    )
+    safe_gates = tuple(
+        item
+        if item.gate_id in _GATE_BY_ID
+        else item.model_copy(
+            update={"gate_id": _evidence_identifier("gate", item.gate_id)}
+        )
+        for item in gate_results
+    )
+    safe_evaluators = tuple(
+        item
+        if item.evaluator_id in _EVALUATOR_ALIASES
+        else item.model_copy(
+            update={
+                "evaluator_id": _evidence_identifier(
+                    "evaluator", item.evaluator_id
+                )
+            }
+        )
+        for item in evaluator_results
+    )
+    return safe_constraints, safe_gates, safe_evaluators
+
+
 class OpenUIGoalVerifier:
     """Profile-bound OpenUI terminal goal verifier (PGS-B02 / SLM-498)."""
 
@@ -479,6 +538,8 @@ class OpenUIGoalVerifier:
         self._problem = problem
         self._request = request
         self._pack = pack or get_pack("openui")
+        if self._pack is not get_pack("openui"):
+            raise ValueError("OpenUI goal verification requires the canonical live pack")
         self._constraints_by_id = {
             item.constraint_id: item for item in constraint_set.constraints
         }
@@ -556,10 +617,7 @@ class OpenUIGoalVerifier:
             spec = ProgramSpec.from_openui(
                 id=program_id,
                 openui=program,
-                facts={
-                    "output_kind": self._request.output_kind,
-                    "output_category": self._request.output_category,
-                },
+                facts={"output_kind": "document"},
                 program_family_id=program_id,
                 lineage_id=program_id,
                 split_group_id=program_id,
@@ -595,12 +653,36 @@ class OpenUIGoalVerifier:
                 ),
             )
 
-        all_evaluations = evaluate_goal_constraints(
-            source=program,
-            program_spec=spec,
-            plan=plan,
-            constraints=self._constraint_set,
-        )
+        try:
+            all_evaluations = evaluate_goal_constraints(
+                source=program,
+                program_spec=spec,
+                plan=plan,
+                constraints=self._constraint_set,
+            )
+        except (RuntimeError, ValueError, TimeoutError):
+            evidence = self._emit_evidence(
+                program=program,
+                program_id=program_id,
+                structural_status="ACCEPT",
+                overall_status="UNAVAILABLE",
+                constraint_results=(),
+                gate_results=(),
+                evaluator_results=(),
+                spec=spec,
+                plan=plan,
+                reason_code="constraint_evaluation_unavailable",
+            )
+            trace.append(evidence)
+            digest = evidence.evidence_digest or evidence.compute_digest()
+            return VerifyOutcome(
+                VerifyStatus.UNAVAILABLE,
+                detail=_bounded_outcome_detail(
+                    overall="UNAVAILABLE",
+                    reason_code="constraint_evaluation_unavailable",
+                    evidence_digest=digest,
+                ),
+            )
         required_ids = set(self._profile.required_constraint_ids)
         constraint_results = tuple(
             item for item in all_evaluations if item.constraint_id in required_ids
@@ -733,6 +815,9 @@ class OpenUIGoalVerifier:
         plan: SemanticPlanV1 | None,
         reason_code: str,
     ) -> GoalTerminalEvidenceV1:
+        constraint_results, gate_results, evaluator_results = _redact_terminal_items(
+            constraint_results, gate_results, evaluator_results
+        )
         profile_digest = self._profile.digest or self._profile.compute_digest()
         canonical = spec.canonical_openui if spec is not None else program.strip()
         program_digest = hashlib.sha256(program.encode("utf-8")).hexdigest()

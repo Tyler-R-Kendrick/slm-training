@@ -284,7 +284,9 @@ def test_solver_config_round_trips_and_old_checkpoints_default() -> None:
     legacy = {
         k: v
         for k, v in dumped.items()
-        if k != "verified_solver_decode" and not k.startswith("solver_")
+        if k != "verified_solver_decode"
+        and not k.startswith("solver_")
+        and not k.startswith("goal_support_")
     }
     legacy_config = TwoTowerConfig(**{k: v for k, v in legacy.items() if k in fields})
     for field, expected in _SOLVER_DEFAULTS.items():

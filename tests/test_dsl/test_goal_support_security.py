@@ -103,9 +103,10 @@ def _evaluation(status: str = "PASS") -> GoalConstraintEvaluationV1:
         constraint_id="hard.slot",
         status=status,
         authority_tier="compiler-hard",
-        completeness="EXACT",
+        completeness_achieved="EXACT",
+        may_prune=True,
         reason_code="checked",
-        evidence_digest="f" * 64,
+        evaluator_digest="f" * 64,
     )
 
 
@@ -241,6 +242,12 @@ def test_terminal_accept_cannot_carry_mandatory_unknown() -> None:
                 ),
             )
         )
+
+
+@pytest.mark.parametrize("status", ("SKIPPED", "NOT_APPLICABLE"))
+def test_terminal_accept_cannot_carry_unresolved_constraint(status: str) -> None:
+    with pytest.raises((ValidationError, ValueError), match="status|ACCEPT|UNAVAILABLE"):
+        _terminal(constraint_evaluations=(_evaluation(status),))
 
 
 def test_terminal_accept_cannot_hide_structural_or_gate_rejection() -> None:

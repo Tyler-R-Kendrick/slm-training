@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import hashlib
 import re
 from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
+from pathlib import Path
 from typing import Any, Callable
 
 from slm_training.data.verify.runtime import RuntimeEvidence
@@ -13,6 +15,11 @@ from slm_training.dsl.grammar.backends import GrammarBackend, get_backend
 from slm_training.dsl.lang_core import ParseError, validate
 from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.schema import ExampleRecord
+
+
+def gate_stack_implementation_digest() -> str:
+    """Content identity for profiles that pin the deterministic gate stack."""
+    return hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 
 
 class Gate(str, Enum):
