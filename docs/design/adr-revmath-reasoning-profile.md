@@ -2,13 +2,14 @@
 
 ## Status
 
-Accepted — 2026-08-11 (SLM-515 / EVID-01). Authorizes owner boundaries and extension seams only; no production ship claim.
+Accepted — 2026-08-11 (SLM-515 / EVID-01); discoverability closed by INTEG-09 / SLM-575. Authorizes owner boundaries and extension seams only; no production ship claim.
 
 ## Context
 
 The repository already implements formal preflights (`FormalPreflightV1`), portable formal objects (`FormalObjectV1`), bounded Lean execution, theorem-name and forbidden-proof auditing, preregistered campaigns (`ExperimentCampaignV1`), decode telemetry (`DecodeStatsRecordV1`, `MechanismActivationV1`), replay bundles (`ReplayBundleV1`), verifier witnesses (`VerifierWitnessV1`), mechanism dispositions (`MechanismDispositionRecordV1`), and the autoresearch `formalize` preflight seam. Reverse-mathematics / computability work was at risk of sprouting parallel trainers, proof stacks, evidence stores, and orchestrators — violating I14 (goals are fixed; approaches are disposable) and the experiment-campaign law.
 
-Audit base: `980aa465223adf7822f82930550c92b9240333ca`.
+Audit base (EVID-01): `980aa465223adf7822f82930550c92b9240333ca`.
+INTEG-09 close base: `f0477cb1c8206423615d9c27fe1a536e4413515d`.
 
 ## Decision
 
@@ -16,6 +17,7 @@ Audit base: `980aa465223adf7822f82930550c92b9240333ca`.
 2. **No parallel authority modules.** Revmath runs bind to `ExperimentCampaignV1`, write formal artifacts through `run_formal_preflight` / `cmd_formalize`, and persist evidence through `DecodeStatsRecordV1`, `ReplayBundleV1`, `VerifierWitnessV1`, and disposition records — never through profile-local stores.
 3. **Owner map is frozen in `revmath_owner_map.json`** and certified by `scripts/verify_revmath_owners.py`. Global `ownership_map.json` extensions for formal subsystems remain parent-owned; this ADR does not recreate owners already on main.
 4. **EVID-02 is absorbed:** the standalone registry/duplicate-owner ticket is superseded by EVID-01's map + verifier (see design doc).
+5. **INTEG-09 closes agent discoverability:** canonical skill `.agents/skills/revmath`, `verify_agent_surfaces` obligation `revmath.canonical-owners`, and examples under `resources/revmath/examples/` — no second registry; optional external solvers stay experiments, not prerequisites.
 
 ## Consequences
 
@@ -37,7 +39,9 @@ This ADR is **violated** if:
 - a revmath run can bypass `ExperimentCampaignV1` or canonical evidence envelopes;
 - two modules claim the same semantic decision authority without a documented adapter;
 - the ADR recreates an owner that already exists on main under a new name;
-- timeout/incomplete/skipped checking is treated as semantic refutation.
+- timeout/incomplete/skipped checking is treated as semantic refutation;
+- the canonical `revmath` skill is missing, or docs advertise a retired write path / duplicate owner;
+- external solvers are documented as hard prerequisites for agent onboarding.
 
 ## References
 
@@ -46,6 +50,8 @@ This ADR is **violated** if:
 - Verifier: `python -m scripts.verify_revmath_owners`
 - Harness parity (HARN-01): [`revmath_harness_parity.json`](../../src/slm_training/resources/revmath_harness_parity.json) · `python -m scripts.verify_revmath_harness_parity`
 - Profile registration: [`harnesses/reasoning/profiles.py`](../../src/slm_training/harnesses/reasoning/profiles.py)
+- Skill (INTEG-09): [`.agents/skills/revmath/SKILL.md`](../../.agents/skills/revmath/SKILL.md)
+- Examples: [`resources/revmath/examples/README.md`](../../src/slm_training/resources/revmath/examples/README.md)
 - Schemas (HARN-02): [`harnesses/reasoning/revmath/schemas.py`](../../src/slm_training/harnesses/reasoning/revmath/schemas.py)
 - Runner / replay / report (HARN-03): [`harnesses/reasoning/revmath/runner.py`](../../src/slm_training/harnesses/reasoning/revmath/runner.py), [`replay.py`](../../src/slm_training/harnesses/reasoning/revmath/replay.py), [`report.py`](../../src/slm_training/harnesses/reasoning/revmath/report.py)
 - Profile binding / CLI (HARN-10): [`profile_binding.py`](../../src/slm_training/harnesses/reasoning/revmath/profile_binding.py), `python -m scripts.run_revmath_profile`

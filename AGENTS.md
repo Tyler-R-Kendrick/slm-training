@@ -198,6 +198,7 @@ remote CI and managed jobs are last-resort convenience surfaces. A timed
 out, interrupted, or killed run is never evidence.
 
 Start: `README.md`, `docs/MODEL_CARD.md`, `docs/design/openui-twotower.md`,
+`docs/design/reverse-mathematics-computability.md` (revmath owners; `verify_revmath_owners`),
 `docs/design/quality-experiment-matrix.md`,
 `docs/design/perf-experiment-matrix.md`, `docs/design/research-lineage.md`,
 `docs/design/checkpoint-bucket.md`, `docs/repository-organization.md`.
@@ -217,6 +218,7 @@ directly (never create `.codex/skills/`).
 | `honest-ship-eval` | Eval, gates, readiness claims, metric changes, demo vs ship |
 | `running-experiment-matrices` | Running or extending E* / X* / PQR / phase matrices |
 | `openui-autoresearch` | Evidence-grounded campaigns, data/researcher repair, telemetry persistence, and RL readiness |
+| `revmath` | Reverse-mathematics / computability profile discoverability (`reasoning/revmath`); owners, hermetic fixture runs, labeling honesty |
 | `improve-openui-harnesses` | Enhancing canonical research, data, model, eval, preference, distill, promotion, annotation, quality, or RL harnesses without parallel paths or artifact sprawl |
 | `improve-lean-optimums` | Diagnosing or improving Lean4-calculated metric bands and out-of-band autotraining feedback |
 | `autotrain` | Running any training pipeline phase (train/test data, SFT, eval, distill, preference, RL, experiments, checkpoints, annotations, bench, autoresearch self-improvement + hypothesis loop) — per-phase references load on demand |

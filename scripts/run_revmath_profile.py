@@ -1,5 +1,9 @@
 """CLI: lock ExperimentCampaignV1 and run reasoning/revmath tasks (HARN-10 / SLM-548).
 
+Owners/docs: docs/design/reverse-mathematics-computability.md +
+.agents/skills/revmath. Fixture/wiring claim_class is not ship authority.
+External Lean/provers remain optional experiments (default --hermetic).
+
 Materialize example:
     PYTHONPATH=src uv run python -m scripts.run_revmath_profile \\
       --task src/slm_training/resources/revmath/fixtures/ablation_necessary.task.json \\

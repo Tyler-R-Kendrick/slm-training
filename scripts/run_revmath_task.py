@@ -1,7 +1,11 @@
 """CLI: run one frozen reasoning/revmath task (HARN-03 / SLM-536).
 
+Owners/docs: docs/design/reverse-mathematics-computability.md +
+.agents/skills/revmath. Lean/external checkers are optional experiments;
+default --hermetic needs no external solver. Schemas: revmath_task/v1 only.
+
 Hermetic example:
-    python -m scripts.run_revmath_task \\
+    PYTHONPATH=src uv run python -m scripts.run_revmath_task \\
       --task src/slm_training/resources/revmath/fixtures/hermetic_forward_theorem.task.json \\
       --hermetic --output-dir outputs/revmath/hermetic
 """

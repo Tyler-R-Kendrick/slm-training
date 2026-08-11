@@ -205,6 +205,31 @@ OBLIGATIONS: tuple[Obligation, ...] = (
         ),
     ),
     Obligation(
+        id="revmath.canonical-owners",
+        why="agents must find one canonical owner per revmath/computability concept",
+        requires=(
+            (
+                ".agents/skills/revmath/SKILL.md",
+                (
+                    "reasoning/revmath",
+                    "verify_revmath_owners",
+                    "reverse-mathematics-computability.md",
+                    "practical_computability_only",
+                    "experiments, not prerequisites",
+                ),
+            ),
+            (
+                "AGENTS.md",
+                (
+                    "`revmath`",
+                    "verify_revmath_owners",
+                    "reverse-mathematics-computability.md",
+                ),
+            ),
+        ),
+        scope="skills",
+    ),
+    Obligation(
         id="skills.canonical-root",
         why="skills are edited only under .agents/skills; the rest are discovery symlinks",
         requires=_on(PRIMARY_SURFACES, ".agents/skills"),

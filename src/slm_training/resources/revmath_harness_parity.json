@@ -286,10 +286,10 @@
     {
       "id": "docs.skills_and_agent_surfaces",
       "category": "agent_surfaces",
-      "required_owner": null,
-      "status": "blocker",
-      "blocker_issue": "INTEG-09",
-      "notes": "Canonical skills + verify_agent_surfaces obligation coverage for revmath profile."
+      "required_owner": ".agents/skills/revmath/SKILL.md",
+      "status": "present",
+      "blocker_issue": null,
+      "notes": "INTEG-09: canonical revmath skill + verify_agent_surfaces obligation revmath.canonical-owners + examples README."
     },
     {
       "id": "self_healing.freeze_declared",

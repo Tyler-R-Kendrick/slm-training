@@ -1,11 +1,12 @@
 # Reverse mathematics, computability, and canonical evidence ownership
 
-**Status:** INTEG-04 harness four-axis ledger adapters (SLM-529); INTEG-03 campaign formal/empirical linkage (SLM-556); KERN-11 fixture-level proof-trace refinement (SLM-539); INTEG-01 canonical proof-trace projection (SLM-528); HARN-09 proposition-preserving self-healing (SLM-560); HARN-08 conservative RM labeling / anti-overclaim (SLM-537); HARN-06 constructivization + counterexample validators landed (SLM-546); HARN-07 quantitative-bound extraction (SLM-547); HARN-05 reversal/bidirectional validation (SLM-545); HARN-04 assumption ablation (SLM-544); EVID-03 four-axis ledger (SLM-519); HARN-03 runner/replay/report (SLM-536); HARN-02 schemas (SLM-527); profile + parity (HARN-01 / SLM-520); owner map (EVID-01 / SLM-515)  
-**Base SHA:** `980aa465223adf7822f82930550c92b9240333ca` (`origin/main` at audit)  
+**Status:** INTEG-09 discoverability/version/skill/agent-surface parity (SLM-575); prior HARN/EVID/INTEG seams landed through INTEG-07
+**Base SHA:** `f0477cb1c8206423615d9c27fe1a536e4413515d` (`origin/main` at INTEG-09 close)
 **Machine-readable map:** [`src/slm_training/resources/revmath_owner_map.json`](../../src/slm_training/resources/revmath_owner_map.json)  
 **Harness parity matrix:** [`src/slm_training/resources/revmath_harness_parity.json`](../../src/slm_training/resources/revmath_harness_parity.json)  
 **ADR:** [adr-revmath-reasoning-profile.md](adr-revmath-reasoning-profile.md)  
-**Verified by:** `python -m scripts.verify_revmath_owners` · `python -m scripts.verify_revmath_harness_parity`
+**Skill:** [`.agents/skills/revmath/SKILL.md`](../../.agents/skills/revmath/SKILL.md)  
+**Verified by:** `python -m scripts.verify_revmath_owners` · `python -m scripts.verify_revmath_harness_parity` · `python -m scripts.verify_agent_surfaces --obligation revmath.canonical-owners`
 
 > **Goal law:** bound by [decode-invariants.md](decode-invariants.md). Reverse mathematics here means *which assumptions suffice for which conclusion* — not a second training stack.
 
@@ -185,6 +186,7 @@ reject weaken-theorem / add-axiom / increase-budget / change-corpus paths.
 | `revmath_profile_binding` | campaign_binding | `harnesses/reasoning/revmath/profile_binding.py` | `run_revmath_profile` | HARN-10 ExperimentCampaignV1 lock + evidence |
 | `revmath_profile_cli` | command | `scripts/run_revmath_profile.py` | `main` | HARN-10 locked profile CLI |
 | `continuous_formal_promote` | command | `scripts/run_autotrain_continuous.py` | `ensure_promote_formal_preflight` | promotion gate |
+| `revmath_skill` | agent_skill | `.agents/skills/revmath/SKILL.md` | (skill doc) | INTEG-09 discoverability |
 
 Design references: [formal-autoresearch.md](formal-autoresearch.md), [formal-objects-multi-prover.md](formal-objects-multi-prover.md), [experiment-campaign-governance.md](experiment-campaign-governance.md), [repository-ownership-map.md](repository-ownership-map.md).
 
@@ -201,6 +203,7 @@ Cross-links to the global ownership map (`ownership_map.json` subsystems): where
 | HARN-09 / SLM-560 | `semantic_repair` | yes (`self_healing.py`) | **done** — proposition-preserving repair controller; lineage extends SemanticRepairRecordV1 without forking distill |
 | INTEG-03 / SLM-556 | `experiment_campaign` | yes (`campaign_formal_evidence.py` + profile_binding) | **done** — optional formal/empirical split on CampaignResultV1; decision-support report; locks unchanged |
 | HARN-10 / SLM-548 | `experiment_campaign` | yes (`profile_binding.py`) | **done** — lock ExperimentCampaignV1 via CampaignStore; formal/evidence/disposition/replay through canonical owners; `run_revmath_profile` CLI |
+| INTEG-09 / SLM-575 | `agent_surface_parity` | yes (`.agents/skills/revmath`) | **done** — skill + examples + agent obligation + schema/command parity checks |
 
 ## Prohibited duplicate owners
 
@@ -272,7 +275,7 @@ Machine-checkable obligations live in [`revmath_harness_parity.json`](../../src/
 | campaign_binding / evidence / replay | No bypass of `ExperimentCampaignV1` or canonical envelopes |
 | bounded_execution | `run_bounded_process` / formal preflight only |
 | repair | Extend `SemanticRepairRecordV1`; honor freeze surface |
-| versions / docs / agent_surfaces | Single version registry; design/ADR; INTEG-09 for skill surfaces |
+| versions / docs / agent_surfaces | Single version registry; design/ADR; **INTEG-09 done** — `revmath` skill + agent-surface obligation |
 
 Every row is either `status=present` with a live `required_owner` path, or `status=blocker` with a non-empty `blocker_issue`. Unknown statuses fail the verifier.
 
@@ -399,6 +402,83 @@ Constructivized tasks bind `proposition` to the **constructivized** statement on
 Coverage classes: ablation success/necessary; reversal equivalence/one-way; constructivization success/unknown; checked counterexample; quantitative-bound success/nonextractable; practical computability; proposition/toolchain/source/certificate mutations; timeout/missing-tool/unsupported/malformed/incomplete-domain. Does not invent task plugins — reuses HARN-03..09 hermetic checkers under `resources/revmath/fixtures/`.
 
 
+
+## INTEG-09 — Discoverability, versions, skills, agent parity (SLM-575)
+
+Closes the HARN-01 `docs.skills_and_agent_surfaces` blocker. Fresh agents locate
+**one** owner per concept via this doc + `revmath_owner_map.json` + the
+`revmath` skill — never a second registry.
+
+### Trust boundaries
+
+| Boundary | Rule |
+| --- | --- |
+| Campaign lock | `ExperimentCampaignV1` / CampaignStore only; profile cannot rewrite arms/gates after lock |
+| Formal authority | `formal_authority/v2` + checkers; timeout/incomplete ≠ refutation |
+| Empirical / ship | Honest `--ship-gates` + model card; fixture/hermetic runs stay wiring/diagnostic |
+| Evidence envelopes | `DecodeStatsRecordV1`, `ReplayBundleV1`, `VerifierWitnessV1`, dispositions — no profile-local store |
+| Versions | `resources/versions.json` only (`governance.revmath_*`, `harness.reasoning.revmath`, …) |
+
+### Practical vs genuine RM labels
+
+| Label family | Authority |
+| --- | --- |
+| Practical computability (KERN-12 / `practical_computability_only`) | Engineering class + evidence contract; never Big-Five equivalence |
+| RM-inspired ablation | `analysis_kind=rm_inspired_assumption_minimization` |
+| Genuine reverse mathematics | Explicit interpretation package + forward + reversal evidence digests |
+
+### Exact-refutation authority
+
+Only an independently checked finite model / computable trace against the exact
+weakened proposition may refute. Search failure, missing tool, incomplete
+coverage, and wall-clock timeout remain `unknown` under KERN-01 /
+`SolverJudgmentV1`.
+
+### Cost models
+
+Observed work uses KERN-06 Event/cost fields on sealed proof traces and
+four-axis `resource_bounds` via EVID-04 bound ASTs (`Fraction` exact eval).
+Wall-clock and neural quality stay in `empirical_remainder_claim_ids` — never
+theorem consequences.
+
+### Runtime refinement scope
+
+INTEG-01 projects existing evidence into `canonical_proof_trace/v1`. KERN-11
+refinement is **fixture/subset-scoped** (`bundle_stats_mechanism`); sealed
+traces never claim abstract refinement without a separate certificate. Not full
+PyTorch semantics or physical latency equivalence.
+
+### Self-healing invariants
+
+HARN-09 may_modify / must_freeze (parity resource) are machine-checked disjoint.
+Repair re-runs the locked task identity; forbidden mutations fail closed.
+INTEG-05 routes failures through `VerifierWitnessV1` + disposition feedback
+without promoting unknowns.
+
+### Experiment promotion rules
+
+1. Lock confirmatory endpoint/arms/seeds/gates before outcomes (`ExperimentCampaignV1`).
+2. Formal preflight on the continuous promote path (`ensure_promote_formal_preflight`).
+3. Empirical promotion needs honest ship gates + model card — revmath reports are
+   decision support only (`campaign_formal_evidence`).
+4. Size-matched arms / `EG_params` when capacity differs (goal invariant VI).
+5. Fixture-demo ≠ ship; never weaken gates to green CI.
+
+### Optional external tools (experiments, not prerequisites)
+
+Lean, alternate provers, and third-party checkers are **optional experiment
+arms**. Hermetic fixtures + `--hermetic` CLIs are the default discoverability
+path. Absence of an external solver must not block agent onboarding or be
+documented as a hard prerequisite. Enabling a tool never silently upgrades
+authority.
+
+### Examples + retired write paths
+
+Runnable recipes: [`resources/revmath/examples/README.md`](../../src/slm_training/resources/revmath/examples/README.md).
+Parity checks reject retired schema write paths (`revmath_task/v0`, shadow
+campaign/evidence modules) and require current CLI entrypoints.
+
+
 ## Honesty
 
 This document freezes **ownership and extension seams** — not ship readiness, model quality, or empirical reverse-mathematics conclusions. Fixture and formal-preflight evidence remain wiring/diagnostic until promoted under normal campaign and `--ship-gates` policy.
@@ -406,10 +486,11 @@ This document freezes **ownership and extension seams** — not ship readiness, 
 ## Commands
 
 ```bash
-python -m scripts.run_revmath_task --task src/slm_training/resources/revmath/fixtures/hermetic_forward_theorem.task.json --hermetic
-python -m scripts.verify_revmath_owners
-python -m scripts.verify_revmath_harness_parity
-python -m scripts.verify_agent_surfaces
-python -m scripts.verify_ownership_map
-python -m scripts.repo_policy
+PYTHONPATH=src uv run python -m scripts.run_revmath_task \
+  --task src/slm_training/resources/revmath/fixtures/hermetic_forward_theorem.task.json --hermetic
+PYTHONPATH=src uv run python -m scripts.verify_revmath_owners
+PYTHONPATH=src uv run python -m scripts.verify_revmath_harness_parity
+PYTHONPATH=src uv run python -m scripts.verify_agent_surfaces --obligation revmath.canonical-owners
+PYTHONPATH=src uv run python -m scripts.verify_ownership_map
+PYTHONPATH=src uv run python -m scripts.repo_policy
 ```

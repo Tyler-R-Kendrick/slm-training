@@ -29,7 +29,8 @@ def test_passes_on_the_real_repository():
     assert result["registration"]["profile_id"] == REVMATH_PROFILE_ID
     assert result["registration"]["default_profile_id"] == DEFAULT_PROFILE_ID
     assert "HARN-12" in result["absorbed_predecessors"]
-    assert result["obligations"]["blockers"]
+    assert result["obligations"]["blockers"] == []
+    assert "docs.skills_and_agent_surfaces" in result["obligations"]["present"]
     assert "commands" in result["obligations"]["categories"]
 
 
