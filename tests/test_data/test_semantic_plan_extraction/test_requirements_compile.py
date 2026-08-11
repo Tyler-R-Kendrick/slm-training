@@ -177,7 +177,7 @@ def test_exact_slot_inventory_compiles_as_hard_constraint() -> None:
     assert constraint.parameters["slots"] == [":slot_0", ":slot_1"]
     assert constraint.authority_tier == "compiler-hard"
     assert constraint.completeness == "EXACT"
-    assert constraint.may_prune is False
+    assert constraint.may_prune is True
     assert constraint.constraint_id in compiled.hard_constraint_ids
 
 
@@ -202,7 +202,7 @@ def test_runtime_symbols_compile_as_hard_constraints() -> None:
         if item.kind == "runtime_symbol_accounted"
     }
     assert surfaces == {"$state", ":slot_0"}
-    assert all(item.may_prune is False for item in compiled.constraints if item.kind == "runtime_symbol_accounted")
+    assert all(item.may_prune is True for item in compiled.constraints if item.kind == "runtime_symbol_accounted")
 
 
 def test_output_kind_and_category_compile_as_hard_constraints() -> None:
@@ -379,6 +379,7 @@ def test_compiler_metadata_exports() -> None:
     assert "prompt_component_required" in table["rules"]
     matrix = source_to_authority_matrix()
     assert matrix["prompt_requirement"]["may_prune"] is False
+    assert matrix["generation_request"]["may_prune"] is True
     assert matrix["pack_contract"]["may_prune"] is True
     assert "request_production_digest" in digest_recipe()
 

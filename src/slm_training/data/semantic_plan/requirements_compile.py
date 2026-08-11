@@ -228,7 +228,7 @@ def source_to_authority_matrix() -> dict[str, Any]:
         "generation_request": {
             "authority_tier": "compiler-hard",
             "completeness": "EXACT",
-            "may_prune": False,
+            "may_prune": True,
             "partition": "hard",
         },
         "pack_contract": {
@@ -341,7 +341,7 @@ def _hard_slot_inventory(request: GenerationRequest) -> GoalConstraintV1 | None:
         source_digest=source_digest(payload),
         authority_tier="compiler-hard",
         completeness="EXACT",
-        may_prune=False,
+        may_prune=True,
     )
 
 
@@ -359,7 +359,7 @@ def _hard_runtime_symbols(request: GenerationRequest) -> tuple[GoalConstraintV1,
                 source_digest=source_digest(payload),
                 authority_tier="compiler-hard",
                 completeness="EXACT",
-                may_prune=False,
+                may_prune=True,
             )
         )
     return tuple(constraints)
@@ -376,7 +376,7 @@ def _hard_output_kind(request: GenerationRequest) -> GoalConstraintV1:
         source_digest=source_digest(payload),
         authority_tier="compiler-hard",
         completeness="EXACT",
-        may_prune=False,
+        may_prune=True,
     )
 
 
@@ -393,7 +393,7 @@ def _hard_output_category(request: GenerationRequest) -> GoalConstraintV1 | None
         source_digest=source_digest(payload),
         authority_tier="compiler-hard",
         completeness="EXACT",
-        may_prune=False,
+        may_prune=True,
     )
 
 

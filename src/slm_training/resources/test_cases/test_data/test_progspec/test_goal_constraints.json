@@ -28,21 +28,13 @@
         {
           "id": "case-003",
           "values": [
-            "generation_request",
-            "compiler-hard",
-            "EXACT"
-          ]
-        },
-        {
-          "id": "case-004",
-          "values": [
             "oracle_diagnostic",
             "verifier-hard",
             "EXACT"
           ]
         },
         {
-          "id": "case-005",
+          "id": "case-004",
           "values": [
             "pack_contract",
             "compiler-hard",
@@ -50,7 +42,7 @@
           ]
         },
         {
-          "id": "case-006",
+          "id": "case-005",
           "values": [
             "verification_requirement",
             "verifier-hard",

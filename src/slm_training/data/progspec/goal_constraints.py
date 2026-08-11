@@ -94,7 +94,7 @@ GoalConstraintSourceKind = Literal[
 ]
 
 INDEPENDENTLY_EXACT_SOURCE_KINDS: frozenset[str] = frozenset(
-    {"pack_contract", "verification_requirement"}
+    {"generation_request", "pack_contract", "verification_requirement"}
 )
 
 _AUTHORITY_RANK: dict[str, int] = {
