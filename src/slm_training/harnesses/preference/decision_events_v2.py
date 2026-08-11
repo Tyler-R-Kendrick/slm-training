@@ -34,6 +34,12 @@ from pathlib import Path
 from typing import Any, Literal
 
 from slm_training.data.verify import Gate
+from slm_training.dsl.solver.goal_support import (
+    GoalActionEvidenceV1,
+    GoalDomainAdequacyReportV1,
+    GoalProfileAuthorityTier,
+    GoalVerifierMode,
+)
 from slm_training.harnesses.preference.counterfactuals import (
     SEMANTIC_VERIFIER_V1,
     _METRICS,
@@ -53,6 +59,9 @@ GateStatusStr = Literal["pass", "fail", "skip"]
 GATE_ORDER: tuple[str, ...] = tuple(gate.value for gate in Gate)
 _GATE_STATUSES = frozenset({"pass", "fail", "skip"})
 _CONSTRAINT_SHADOW_VERIFIER = "constraint_shadow_legality_only"
+_GOAL_SUPPORT_HARD_AUTHORITIES = frozenset({"compiler-hard", "verifier-hard"})
+GOAL_SUPPORT_MATERIALIZER_ID = "goal_support_set_v2"
+GOAL_SUPPORT_MATERIALIZER_VERSION = "v1"
 
 __all__ = [
     "SCHEMA_VERSION",
@@ -62,7 +71,14 @@ __all__ = [
     "ObjectiveView",
     "admit_semantic_corpus",
     "append_action_outcomes",
+    "GOAL_SUPPORT_MATERIALIZER_ID",
+    "GOAL_SUPPORT_MATERIALIZER_VERSION",
+    "GoalSupportStateBinding",
+    "guard_goal_support_view",
+    "goal_support_materializer_config_hash",
+    "goal_support_trainability_table",
     "materialize_constraint_shadow",
+    "materialize_goal_support",
     "materialize_pareto",
     "materialize_set_valued",
     "materialize_single_best_worst",
@@ -642,6 +658,240 @@ def materialize_set_valued(
         materializer_config_hash=content_sha({"rule": "verifier_all_pass"}),
         trainable=True,
     )
+
+
+# --------------------------------------------------------------------------- #
+# Goal-support materializer (PGS-D02 / SLM-503).
+# --------------------------------------------------------------------------- #
+@dataclass(frozen=True)
+class GoalSupportStateBinding:
+    """Bind a DecisionStateV2 row to goal-support domain identities."""
+
+    domain_state_fingerprint: str
+    action_id_map: Mapping[str, int]
+
+    def __post_init__(self) -> None:
+        if not self.domain_state_fingerprint:
+            raise ValueError("domain_state_fingerprint is required")
+        if not self.action_id_map:
+            raise ValueError("action_id_map must be non-empty")
+        values = tuple(int(value) for value in self.action_id_map.values())
+        if len(values) != len(set(values)):
+            raise ValueError("action_id_map values must be unique")
+
+
+def goal_support_trainability_table() -> dict[str, Any]:
+    """Closed profile-mode → trainability matrix for goal-support ObjectiveViews."""
+    return {
+        "production_exact": {
+            "trainable_when": "authority_tier ∈ {compiler-hard, verifier-hard}",
+            "may_supervise_semantic_corpus": True,
+            "promotion_allowed": True,
+        },
+        "evaluation_oracle": {
+            "trainable_when": "never",
+            "may_supervise_semantic_corpus": False,
+            "promotion_allowed": False,
+            "materialize_requires": "allow_evaluation_diagnostic=True",
+            "contamination_stamp": "evaluation_only_contamination",
+        },
+        "advisory_diagnostic": {
+            "trainable_when": "never",
+            "may_supervise_semantic_corpus": False,
+            "promotion_allowed": False,
+            "hard_good_bad_labels_forbidden": True,
+        },
+    }
+
+
+def goal_support_materializer_config_hash(
+    *,
+    profile_mode: GoalVerifierMode,
+    report: GoalDomainAdequacyReportV1,
+    suppress_unsupported_mass: bool = False,
+    allow_evaluation_diagnostic: bool = False,
+) -> str:
+    """Stable config digest for one goal-support materialization."""
+    report_digest = report.report_digest or report.compute_digest()
+    return content_sha(
+        {
+            "materializer_id": GOAL_SUPPORT_MATERIALIZER_ID,
+            "materializer_version": GOAL_SUPPORT_MATERIALIZER_VERSION,
+            "profile_mode": profile_mode,
+            "profile_digest": report.profile_digest,
+            "report_digest": report_digest,
+            "suppress_unsupported_mass": suppress_unsupported_mass,
+            "allow_evaluation_diagnostic": allow_evaluation_diagnostic,
+            "evaluation_contamination": (
+                profile_mode == "evaluation_oracle" and allow_evaluation_diagnostic
+            ),
+        }
+    )
+
+
+def _goal_support_trainable(
+    profile_mode: GoalVerifierMode, authority_tier: GoalProfileAuthorityTier
+) -> bool:
+    if profile_mode != "production_exact":
+        return False
+    return authority_tier in _GOAL_SUPPORT_HARD_AUTHORITIES
+
+
+def _assert_goal_support_materialization_allowed(
+    profile_mode: GoalVerifierMode, *, allow_evaluation_diagnostic: bool
+) -> None:
+    if profile_mode == "evaluation_oracle" and not allow_evaluation_diagnostic:
+        raise ValueError(
+            "evaluation_oracle goal-support evidence requires "
+            "allow_evaluation_diagnostic=True"
+        )
+
+
+def _validate_goal_support_evidence(
+    state: DecisionStateV2,
+    report: GoalDomainAdequacyReportV1,
+    evidence: Sequence[GoalActionEvidenceV1],
+    binding: GoalSupportStateBinding,
+) -> GoalProfileAuthorityTier:
+    """Fail closed on stale, duplicated, or identity-mismatched goal evidence."""
+    if report.state_fingerprint != binding.domain_state_fingerprint:
+        raise ValueError("report state_fingerprint does not match binding")
+    expected_digests = set(report.evidence_digests)
+    rows = sorted(evidence, key=lambda row: row.action_id)
+    if len(rows) != len({row.action_id for row in rows}):
+        dupes = sorted(
+            action
+            for action in {row.action_id for row in rows}
+            if sum(1 for row in rows if row.action_id == action) > 1
+        )
+        raise ValueError(f"duplicate goal-support evidence for action {dupes[0]}")
+    if len(rows) != report.stats.action_count:
+        raise ValueError("evidence row count does not match report action_count")
+    authority_tiers: set[str] = set()
+    observed_digests: list[str] = []
+    partition_by_action = {
+        digest: name
+        for name, bucket in (
+            ("supported", report.partitions.supported),
+            ("unsupported", report.partitions.unsupported),
+            ("unknown", report.partitions.unknown),
+            ("unobserved", report.partitions.unobserved),
+        )
+        for digest in bucket
+    }
+    for row in rows:
+        if row.state_fingerprint != report.state_fingerprint:
+            raise ValueError("evidence state_fingerprint does not match report")
+        if row.legal_set_fingerprint != report.legal_set_fingerprint:
+            raise ValueError("evidence legal_set_fingerprint does not match report")
+        if row.profile_digest != report.profile_digest:
+            raise ValueError("evidence profile_digest does not match report")
+        if not row.legal:
+            raise ValueError("goal-support evidence must retain legal=True")
+        expected_partition = partition_by_action.get(row.action_id)
+        if expected_partition is None:
+            raise ValueError(f"evidence action {row.action_id} is absent from report partitions")
+        if row.partition != expected_partition:
+            raise ValueError(
+                f"evidence partition for {row.action_id} does not match report "
+                f"({row.partition!r} != {expected_partition!r})"
+            )
+        digest = row.evidence_digest or row.compute_digest()
+        observed_digests.append(digest)
+        authority_tiers.add(row.authority_tier)
+    if set(observed_digests) != expected_digests:
+        raise ValueError("evidence digests do not match report.evidence_digests")
+    if len(authority_tiers) != 1:
+        raise ValueError("conflicting authority_tier across goal-support evidence rows")
+    mapped = {int(value) for value in binding.action_id_map.values()}
+    legal = set(state.legal_action_ids)
+    if mapped != legal:
+        raise ValueError("action_id_map must cover exactly the state's legal_action_ids")
+    partition_digests = set(partition_by_action)
+    if set(binding.action_id_map) != partition_digests:
+        raise ValueError("action_id_map keys must match report partition action ids")
+    return next(iter(authority_tiers))  # type: ignore[return-value]
+
+
+def _map_goal_support_partitions(
+    report: GoalDomainAdequacyReportV1, action_id_map: Mapping[str, int]
+) -> tuple[tuple[int, ...], tuple[int, ...], tuple[int, ...], tuple[int, ...]]:
+    def mapped(ids: Sequence[str]) -> tuple[int, ...]:
+        return tuple(sorted(action_id_map[digest] for digest in ids))
+
+    return (
+        mapped(report.partitions.supported),
+        mapped(report.partitions.unsupported),
+        mapped(report.partitions.unknown),
+        mapped(report.partitions.unobserved),
+    )
+
+
+def materialize_goal_support(
+    state: DecisionStateV2,
+    report: GoalDomainAdequacyReportV1,
+    evidence: Sequence[GoalActionEvidenceV1],
+    binding: GoalSupportStateBinding,
+    *,
+    profile_mode: GoalVerifierMode,
+    suppress_unsupported_mass: bool = False,
+    allow_evaluation_diagnostic: bool = False,
+) -> ObjectiveView:
+    """Materialize a set-valued goal-support ObjectiveView for one exact state.
+
+    Maps ``supported/unsupported/unknown/unobserved`` from
+    :class:`GoalDomainAdequacyReportV1` to good/bad/ambiguous/unobserved without
+    altering ``legal_action_ids``. Multiple supported actions remain set-valued
+    positives with equal unit weights for downstream ``-log mass(supported)``
+    objectives; ``suppress_unsupported_mass`` is recorded in the config digest
+    for optional unsupported-mass suppression but does not change partitions.
+    """
+    _assert_goal_support_materialization_allowed(
+        profile_mode, allow_evaluation_diagnostic=allow_evaluation_diagnostic
+    )
+    bound_report = GoalDomainAdequacyReportV1.from_dict(
+        report.to_dict(include_digest=True)
+    )
+    bound_rows = tuple(
+        GoalActionEvidenceV1.from_dict(row.to_dict(include_digest=True))
+        for row in evidence
+    )
+    authority_tier = _validate_goal_support_evidence(
+        state, bound_report, bound_rows, binding
+    )
+    good, bad, ambiguous, unobserved = _map_goal_support_partitions(
+        bound_report, binding.action_id_map
+    )
+    covered = set(good) | set(bad) | set(ambiguous) | set(unobserved)
+    if covered != set(state.legal_action_ids):
+        raise ValueError("goal-support partitions must exactly cover legal_action_ids")
+    config_hash = goal_support_materializer_config_hash(
+        profile_mode=profile_mode,
+        report=bound_report,
+        suppress_unsupported_mass=suppress_unsupported_mass,
+        allow_evaluation_diagnostic=allow_evaluation_diagnostic,
+    )
+    return ObjectiveView(
+        good_action_ids=good,
+        bad_action_ids=bad,
+        ambiguous_action_ids=ambiguous,
+        unobserved_action_ids=unobserved,
+        weights=tuple((action, 1.0) for action in good),
+        materializer_id=GOAL_SUPPORT_MATERIALIZER_ID,
+        materializer_config_hash=config_hash,
+        trainable=_goal_support_trainable(profile_mode, authority_tier),
+    )
+
+
+def guard_goal_support_view(view: ObjectiveView) -> None:
+    """Raise if a goal-support view is non-trainable under its profile authority."""
+    if view.materializer_id != GOAL_SUPPORT_MATERIALIZER_ID:
+        return
+    if not view.trainable:
+        raise ValueError(
+            "goal-support objective view is non-trainable under its profile authority "
+            "and cannot supervise semantic trainers or promotion claims"
+        )
 
 
 # --------------------------------------------------------------------------- #

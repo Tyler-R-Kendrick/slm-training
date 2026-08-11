@@ -2945,7 +2945,7 @@
       ]
     },
     "governance.ownership_map": {
-      "version": "v21",
+      "version": "v22",
       "kind": "gate",
       "paths": [
         "src/slm_training/resources/ownership_map.json",
@@ -2957,6 +2957,11 @@
         "tests/test_data/test_synthesis_contract_versions.py"
       ],
       "history": [
+        {
+          "version": "v22",
+          "date": "2026-08-11",
+          "note": "PGS-D02 (SLM-503): register decision_events_v2 owner with materialize_goal_support, GoalSupportStateBinding, and goal-support trainability guards."
+        },
         {
           "version": "v21",
           "date": "2026-08-11",
@@ -13107,6 +13112,22 @@
           "version": "v1",
           "date": "2026-08-11",
           "note": "PGS-D01 (SLM-502): add distinct goal-support probe path (GoalSupportProbeInputs, run_goal_support_probe, policy-aware cap selection, cache/resume) without aliasing semantic_partition relative rollout evidence."
+        }
+      ]
+    },
+    "harness.preference.decision_events_v2": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/preference/decision_events_v2.py",
+        "tests/test_harnesses/preference/test_decision_events_v2.py",
+        "tests/test_harnesses/preference/test_decision_events_goal_support.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-11",
+          "note": "PGS-D02 (SLM-503): materialize_goal_support ObjectiveView from GoalDomainAdequacyReportV1/GoalActionEvidenceV1 with profile trainability guards and evidence identity validation."
         }
       ]
     },
