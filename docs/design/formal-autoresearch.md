@@ -69,6 +69,8 @@ preflight path rather than an unknown-template side path.
 
 INTEG-02 (SLM-555) admits treatments via `autoresearch.preflight.mechanism_no_effect`: skip only when a complete locked-corpus scan proves every necessary trigger absent; present/unknown/incomplete evidence always runs.
 
+INTEG-08 (SLM-562) seals corpus-local dominance evidence via `autoresearch.preflight.mechanism_dominance`: skip only when a KERN-08 dominance certificate emits on the exact baseline/treatment/corpus/version/model/cost identity; cheaper no-effect and unknown remain non-skips.
+
 `make -C src/leverproof_lean test` rejects `sorry`, `admit`, custom `axiom`,
 `unsafe`, and `native_decide`; `scripts.verify_formal_contracts` rejects the
 proof placeholders and custom axioms in the Mathlib package. Both audit their
