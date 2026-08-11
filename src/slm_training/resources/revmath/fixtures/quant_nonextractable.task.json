@@ -1,0 +1,42 @@
+{
+  "base_theory": {
+    "allowed_assumption_ids": [],
+    "base_theory_id": "RCA0",
+    "interpretation_status": "explicit_interpretation"
+  },
+  "budget": {
+    "max_memory_mb": null,
+    "max_tactic_steps": 32,
+    "max_wall_seconds": 5.0,
+    "stopping_rule_ids": [
+      "wall_or_steps"
+    ]
+  },
+  "campaign": {
+    "campaign_id": "camp.rm.hermetic",
+    "campaign_manifest_sha256": "dfceae62e1bfe4f852368de75fe7597c99cb5b77715a02132a3185e5b955b41d",
+    "experiment_id": "exp.rm.hermetic.quant",
+    "locked_arm_ids": [
+      "control"
+    ]
+  },
+  "corpus": {
+    "corpus_id": "corpus.rm.hermetic",
+    "corpus_sha256": "fe091cbe54a9e2d49852bae50765454d041570e518188bde41445cd9d99b635c",
+    "entry_id": "entry.quant_nonextractable"
+  },
+  "proposition": {
+    "proposition_id": "thm.neural.global_min",
+    "statement": "qualitative: neural training converges to a global minimum (no finite-size or cost model assumptions)",
+    "statement_sha256": "d742182aa5d3fc995b1c98104d772e59a1c51b3322f90f09a140ceb6411497ec"
+  },
+  "schema_version": "revmath_task/v1",
+  "task_id": "task.quant.nonextractable",
+  "task_kind": "quantitative_bound_extraction",
+  "theorem_direction": "forward",
+  "verifier_judge": {
+    "judge_id": "solver_judgment.v1",
+    "judgment_schema": "solver_judgment/v1",
+    "verifier_id": "lean.kernel"
+  }
+}

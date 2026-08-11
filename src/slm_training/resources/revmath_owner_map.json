@@ -353,11 +353,12 @@
         "default_plugin_registry",
         "resolve_plugin",
         "AssumptionAblationPlugin",
-        "ReversalPlugin"
+        "ReversalPlugin",
+        "QuantitativeBoundPlugin"
       ],
       "design_doc": "docs/design/reverse-mathematics-computability.md",
       "ownership_map_subsystem": null,
-      "notes": "HARN-03 task-kind plugin seam; plan/interpret only \u2014 shared runner owns orchestration. HARN-04 registers AssumptionAblationPlugin; HARN-05 registers ReversalPlugin here."
+      "notes": "HARN-03 task-kind plugin seam; plan/interpret only \u2014 shared runner owns orchestration. HARN-04 registers AssumptionAblationPlugin; HARN-05 registers ReversalPlugin; HARN-07 registers QuantitativeBoundPlugin here."
     },
     {
       "id": "revmath_assumption_ablation",
@@ -388,6 +389,20 @@
       "design_doc": "docs/design/reverse-mathematics-computability.md",
       "ownership_map_subsystem": null,
       "notes": "HARN-05 reversal generator/validator; equivalence only when both B+A\u22a2T and B+T\u22a2A succeed over the same base/interpretation; plugin registered in plugins.py."
+    },
+    {
+      "id": "revmath_quantitative_bound",
+      "kind": "task_validator",
+      "owner_module": "src/slm_training/harnesses/reasoning/revmath/quantitative_bound.py",
+      "owner_symbols": [
+        "QuantitativeBoundMetaV1",
+        "QuantitativeBoundReportV1",
+        "extract_quantitative_bound",
+        "parse_quantitative_bound_meta"
+      ],
+      "design_doc": "docs/design/reverse-mathematics-computability.md",
+      "ownership_map_subsystem": null,
+      "notes": "HARN-07 quantitative-bound extractor/validator; EVID-04 bound AST only; never invents rates; theorem-derived vs empirical timing kept distinct; plugin registered in plugins.py."
     },
     {
       "id": "revmath_replay",
@@ -482,6 +497,13 @@
       "extends": "revmath_plugins",
       "new_owner_justified": true,
       "justification": "Reversal generator/validator under harnesses/reasoning/revmath/reversal.py; registers ReversalPlugin without forking runner orchestration; fail-closed bidirectional equivalence."
+    },
+    {
+      "issue": "HARN-07",
+      "linear_id": "SLM-547",
+      "extends": "revmath_plugins",
+      "new_owner_justified": true,
+      "justification": "Quantitative-bound extractor/validator under harnesses/reasoning/revmath/quantitative_bound.py; registers QuantitativeBoundPlugin without forking runner orchestration; fail-closed nonextractable outcomes via EVID-04 bound AST."
     }
   ],
   "prohibited_duplicate_risks": [

@@ -1,11 +1,18 @@
-"""reasoning/revmath typed contracts + deterministic runner (HARN-02/03/04/05).
+"""reasoning/revmath typed contracts + deterministic runner (HARN-02/03/04/05/07).
 
 Schemas: HARN-02. Runner / replay / report: HARN-03.
 Assumption ablation: HARN-04. Reversal / bidirectional: HARN-05.
+Quantitative-bound extraction: HARN-07.
 """
 
 from __future__ import annotations
 
+from slm_training.harnesses.reasoning.revmath.quantitative_bound import (
+    QuantitativeBoundMetaV1,
+    QuantitativeBoundReportV1,
+    extract_quantitative_bound,
+    parse_quantitative_bound_meta,
+)
 from slm_training.harnesses.reasoning.revmath.reversal import (
     ReversalMetaV1,
     ReversalObligationV1,
@@ -30,6 +37,7 @@ from slm_training.harnesses.reasoning.revmath.plugins import (
     AssumptionAblationPlugin,
     HermeticForwardPlugin,
     ReversalPlugin,
+    QuantitativeBoundPlugin,
     PluginCheckEvidence,
     RevmathCheckPlan,
     RevmathTaskPlugin,
@@ -82,10 +90,15 @@ __all__ = [
     "generate_reversal_obligations",
     "materialize_obligation_task",
     "parse_reversal_meta",
+    "parse_quantitative_bound_meta",
+    "extract_quantitative_bound",
+    "QuantitativeBoundReportV1",
+    "QuantitativeBoundMetaV1",
     "ReversalObligationV1",
     "ReversalMetaV1",
     "ReversalReportV1",
     "ReversalPlugin",
+    "QuantitativeBoundPlugin",
     "HermeticForwardPlugin",
     "parse_ablation_meta",
     "materialize_candidate_task",

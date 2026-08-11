@@ -1,0 +1,35 @@
+{
+  "bound_ast_id": "bound.closure.live_upper.v1",
+  "domain_values_for_exhaustive": null,
+  "exhaustive_small_instance": false,
+  "expected_bound_value": "7",
+  "hermetic_scenario": "extractable",
+  "kern_target": "closure_live_upper",
+  "lean_def": "closePass_subset",
+  "lean_module": "LeverProofLean.ExactClosure",
+  "machine_model": {
+    "cost_per_expansion": null,
+    "cost_per_verification": null,
+    "name": "ExactClosureLiveCardinality",
+    "notes": "Survivor count \u2264 pre-closure live cardinality (closePass_subset)",
+    "wall_clock": false
+  },
+  "meta_id": "meta.quant.closure_live_upper",
+  "missing_assumption_notes": "Full KERN-05 strict progress/stabilization proofs may still be backlog; reporting registered live_upper only.",
+  "present_assumptions": [
+    "exact_closure_certificate_checked",
+    "finite_live_domain"
+  ],
+  "qualitative_statement": "qualitative: exact closure never increases live candidates; survivors are at most pre-closure live cardinality",
+  "qualitative_statement_sha256": "63fe86181b062c329e5d69619c92873cb43286436a60edf64e7c7330968913b4",
+  "qualitative_theorem_id": "thm.closure.live_upper",
+  "required_assumptions": [
+    "exact_closure_certificate_checked",
+    "finite_live_domain"
+  ],
+  "schema_version": "revmath_quantitative_bound_meta/v1",
+  "size_parameters": {
+    "live_count": 7
+  },
+  "theorem_ref": "ExactClosure.closePass_subset"
+}

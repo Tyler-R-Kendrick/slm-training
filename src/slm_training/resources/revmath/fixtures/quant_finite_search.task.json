@@ -1,0 +1,47 @@
+{
+  "base_theory": {
+    "allowed_assumption_ids": [
+      "finite_domain_sizes",
+      "algorithm_correspondence_prefix_tree_enumeration",
+      "cost_model:ExpansionVerificationQueryModel",
+      "not_wall_clock"
+    ],
+    "base_theory_id": "RCA0",
+    "interpretation_status": "explicit_interpretation"
+  },
+  "budget": {
+    "max_memory_mb": null,
+    "max_tactic_steps": 32,
+    "max_wall_seconds": 5.0,
+    "stopping_rule_ids": [
+      "wall_or_steps"
+    ]
+  },
+  "campaign": {
+    "campaign_id": "camp.rm.hermetic",
+    "campaign_manifest_sha256": "dfceae62e1bfe4f852368de75fe7597c99cb5b77715a02132a3185e5b955b41d",
+    "experiment_id": "exp.rm.hermetic.quant",
+    "locked_arm_ids": [
+      "control"
+    ]
+  },
+  "corpus": {
+    "corpus_id": "corpus.rm.hermetic",
+    "corpus_sha256": "fe091cbe54a9e2d49852bae50765454d041570e518188bde41445cd9d99b635c",
+    "entry_id": "entry.quant_finite_search"
+  },
+  "proposition": {
+    "proposition_id": "thm.finite_search.completion",
+    "statement": "qualitative: finite complete domains imply finite exhaustive assignment search with prefix-tree expansion bound",
+    "statement_sha256": "d7074d4cb58fdcca3a8576ec9a2413246a0152be5242cad4c969ff523d0e2efa"
+  },
+  "schema_version": "revmath_task/v1",
+  "task_id": "task.quant.finite_search",
+  "task_kind": "quantitative_bound_extraction",
+  "theorem_direction": "forward",
+  "verifier_judge": {
+    "judge_id": "solver_judgment.v1",
+    "judgment_schema": "solver_judgment/v1",
+    "verifier_id": "lean.kernel"
+  }
+}
