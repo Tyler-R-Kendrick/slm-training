@@ -1,9 +1,10 @@
-"""Tests for deterministic bounded domain-obstruction cores (PGS-C02 / SLM-500)."""
+"""Tests for deterministic bounded domain-obstruction cores (PGS-C02 / SLM-500, PGS-G02 / SLM-508)."""
 
 from __future__ import annotations
 
 import hashlib
 import itertools
+import random
 
 import pytest
 from pydantic import ValidationError
@@ -25,7 +26,17 @@ from slm_training.dsl.solver.goal_support_obstruction import (
 )
 from slm_training.dsl.solver.state import DomainValue, FiniteDomainState, HoleId, SolverBounds, SupportVerdict
 from slm_training.dsl.solver.support import SupportCertificate, SupportQuery
+from slm_training.formal.goal_support_mapping import (
+    TerminalFailureSetV1 as FormalTerminalFailureSetV1,
+    hits_all as ref_hits_all,
+    subset_minimal_exact as ref_subset_minimal_exact,
+)
 from tests.test_dsl.test_solver.test_goal_support import _profile
+
+_SEED = 508
+_MAX_GENERATED_FAILURE_FAMILIES = 48
+_MAX_ATOM_UNIVERSE = 6
+_MAX_TERMINALS_PER_FAMILY = 5
 
 
 def _bounds() -> SolverBounds:
@@ -143,6 +154,66 @@ def _brute_force_min_hitting(
         if best is not None:
             return best
     raise AssertionError("no hitting set")
+
+
+def _ref_formal_failures(
+    failure_sets: tuple[TerminalFailureSetV1, ...],
+) -> tuple[FormalTerminalFailureSetV1, ...]:
+    """Map production failure sets to int-keyed formal reference sets."""
+    atom_to_int = {
+        atom: index
+        for index, atom in enumerate(
+            sorted({a for item in failure_sets for a in item.exact_mandatory_failure_atom_ids})
+        )
+    }
+    return tuple(
+        FormalTerminalFailureSetV1(
+            terminal=index,
+            atoms=tuple(atom_to_int[atom] for atom in item.exact_mandatory_failure_atom_ids),
+        )
+        for index, item in enumerate(failure_sets)
+    )
+
+
+def _ref_core_ints(core: tuple[str, ...], failure_sets: tuple[TerminalFailureSetV1, ...]) -> tuple[int, ...]:
+    atom_to_int = {
+        atom: index
+        for index, atom in enumerate(
+            sorted({a for item in failure_sets for a in item.exact_mandatory_failure_atom_ids})
+        )
+    }
+    return tuple(atom_to_int[atom] for atom in core)
+
+
+def _ref_subset_minimal_remove_any_breaks(
+    core: tuple[str, ...],
+    failure_sets: tuple[TerminalFailureSetV1, ...],
+) -> bool:
+    formal_failures = _ref_formal_failures(failure_sets)
+    formal_core = _ref_core_ints(core, failure_sets)
+    if not ref_hits_all(formal_core, formal_failures):
+        return False
+    for atom in formal_core:
+        trial = tuple(item for item in formal_core if item != atom)
+        if trial and ref_hits_all(trial, formal_failures):
+            return False
+    return True
+
+
+def _rng() -> random.Random:
+    return random.Random(_SEED)
+
+
+def _generated_failure_family(rng: random.Random) -> tuple[dict[str, tuple[str, ...]], tuple[str, ...]]:
+    universe_size = rng.randint(2, _MAX_ATOM_UNIVERSE)
+    universe = tuple(f"a{i}" for i in range(universe_size))
+    terminal_count = rng.randint(1, _MAX_TERMINALS_PER_FAMILY)
+    specs: dict[str, tuple[str, ...]] = {}
+    for index in range(terminal_count):
+        pick_count = rng.randint(1, min(3, universe_size))
+        atoms = tuple(sorted(rng.sample(list(universe), pick_count)))
+        specs[f"t{index}"] = atoms
+    return specs, universe
 
 
 def _core_from_records(
@@ -494,3 +565,149 @@ def test_round_trip_core_json() -> None:
     assert core is not None
     restored = DomainObstructionCoreV1.from_dict(core.to_dict())
     assert restored == core
+
+
+# --------------------------------------------------------------------------- #
+# PGS-G02 / SLM-508 — independent reference models + generated properties
+# --------------------------------------------------------------------------- #
+
+
+def test_generated_minimum_cardinality_matches_brute_force_reference() -> None:
+    rng = _rng()
+    checked = 0
+    for _ in range(_MAX_GENERATED_FAILURE_FAMILIES):
+        specs, universe = _generated_failure_family(rng)
+        failure_sets = _failure_sets(specs)
+        try:
+            expected = _brute_force_min_hitting(failure_sets, universe)
+        except AssertionError:
+            continue
+        records = tuple(
+            _terminal(name, failure_atoms=tuple(_failure_atom(a) for a in atoms))
+            for name, atoms in specs.items()
+        )
+        core = _core_from_records(records, mode="minimum_cardinality_exact")
+        assert core is not None, {"specs": specs, "universe": universe}
+        assert tuple(core.core_atoms) == expected, {
+            "specs": specs,
+            "expected": expected,
+            "got": core.core_atoms,
+        }
+        formal_failures = _ref_formal_failures(failure_sets)
+        formal_core = _ref_core_ints(tuple(core.core_atoms), failure_sets)
+        assert ref_hits_all(formal_core, formal_failures)
+        checked += 1
+    assert checked >= 8, "too few generated hitting-set families exercised"
+
+
+def test_generated_subset_minimal_loses_hitting_after_any_removal() -> None:
+    specs = {f"t{i}": tuple(f"a{j}" for j in range(i, i + 2)) for i in range(4)}
+    records = tuple(
+        _terminal(name, failure_atoms=tuple(_failure_atom(a) for a in atoms))
+        for name, atoms in specs.items()
+    )
+    core = _core_from_records(records, mode="subset_minimal_exact")
+    assert core is not None
+    failure_sets = _failure_sets(specs)
+    assert _ref_subset_minimal_remove_any_breaks(tuple(core.core_atoms), failure_sets)
+    formal_core = _ref_core_ints(tuple(core.core_atoms), failure_sets)
+    assert ref_subset_minimal_exact(formal_core, _ref_formal_failures(failure_sets))
+
+
+def test_empty_mandatory_failure_set_forbids_exact_core() -> None:
+    records = (
+        _terminal(
+            "reject_no_atoms",
+            failure_atoms=(),
+            unknown_atoms=(),
+        ),
+    )
+    assert not obstruction_core_emission_allowed(
+        certificate=_certificate(),
+        terminal_records=records,
+        replay_ok=True,
+    )
+    assert _core_from_records(records) is None
+
+
+def test_duplicate_terminal_records_reject_core_construction() -> None:
+    atom = _failure_atom("dup")
+    record = _terminal("dup", failure_atoms=(atom,))
+    records = (record, record)
+    with pytest.raises(ValidationError, match="terminal_failure_sets digests must be unique"):
+        _core_from_records(records, mode="minimum_cardinality_exact")
+
+
+def test_terminal_order_permutation_preserves_core_digest() -> None:
+    specs = {"t0": ("a1", "a2"), "t1": ("a2", "a3"), "t2": ("a1", "a3")}
+    records_a = tuple(
+        _terminal(name, failure_atoms=tuple(_failure_atom(a) for a in atoms))
+        for name, atoms in specs.items()
+    )
+    records_b = tuple(reversed(records_a))
+    core_a = _core_from_records(records_a, mode="minimum_cardinality_exact")
+    core_b = _core_from_records(records_b, mode="minimum_cardinality_exact")
+    assert core_a is not None and core_b is not None
+    assert core_a.compute_digest() == core_b.compute_digest()
+    assert tuple(core_a.core_atoms) == tuple(core_b.core_atoms)
+
+
+def test_candidate_addition_invalidates_old_obstruction_core_identity() -> None:
+    records = (_terminal("t0", failure_atoms=(_failure_atom("a1"),)),)
+    core_before = _core_from_records(records, mode="minimum_cardinality_exact")
+    assert core_before is not None
+    stale_state = _state(problem_id="enriched-domain")
+    ok, violations = validate_domain_obstruction_core(
+        core_before,
+        certificate=_certificate(),
+        terminal_records=records,
+        profile=_profile(),
+        state=stale_state,
+        replay_ok=True,
+    )
+    assert not ok
+    assert any("state_fingerprint" in item for item in violations)
+
+
+def test_profile_digest_mutation_stales_obstruction_core() -> None:
+    records = (_terminal("t0", failure_atoms=(_failure_atom("a1"),)),)
+    core = _core_from_records(records, mode="minimum_cardinality_exact")
+    assert core is not None
+    stale_profile = _profile(profile_id="mutated-profile")
+    ok, violations = validate_domain_obstruction_core(
+        core,
+        certificate=_certificate(),
+        terminal_records=records,
+        profile=stale_profile,
+        state=_state(),
+        replay_ok=True,
+    )
+    assert not ok
+    assert any("profile_digest" in item for item in violations)
+
+
+def test_sound_overapprox_never_claims_minimality_mode() -> None:
+    specs = {"t0": ("a", "b"), "t1": ("b", "c"), "t2": ("d", "e")}
+    records = tuple(
+        _terminal(name, failure_atoms=tuple(_failure_atom(a) for a in atoms))
+        for name, atoms in specs.items()
+    )
+    core = _core_from_records(records, mode="sound_overapprox")
+    assert core is not None
+    assert core.mode == "sound_overapprox"
+    assert core.mode != "subset_minimal_exact"
+    assert core.mode != "minimum_cardinality_exact"
+    failure_sets = _failure_sets(specs)
+    formal_core = _ref_core_ints(tuple(core.core_atoms), failure_sets)
+    assert ref_hits_all(formal_core, _ref_formal_failures(failure_sets))
+
+
+def test_obstruction_reference_models_are_independent_of_validate() -> None:
+    """Reference hitting/subset-minimal checks do not call validate_domain_obstruction_core."""
+    specs = {"t0": ("x", "y"), "t1": ("y", "z")}
+    failure_sets = _failure_sets(specs)
+    expected = _brute_force_min_hitting(failure_sets, ("x", "y", "z"))
+    formal = _ref_formal_failures(failure_sets)
+    formal_core = _ref_core_ints(expected, failure_sets)
+    assert ref_hits_all(formal_core, formal)
+    assert ref_subset_minimal_exact(formal_core, formal)

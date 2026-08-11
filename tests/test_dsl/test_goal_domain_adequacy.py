@@ -1,8 +1,10 @@
-"""Tests for goal-action evidence and domain-adequacy classification (PGS-C03 / SLM-501)."""
+"""Tests for goal-action evidence and domain-adequacy classification (PGS-C03 / SLM-501, PGS-G02 / SLM-508)."""
 
 from __future__ import annotations
 
 import hashlib
+import itertools
+import random
 
 import pytest
 from pydantic import ValidationError
@@ -23,7 +25,19 @@ from slm_training.dsl.solver.goal_support import (
     domain_adequacy_classification_table,
     legal_set_fingerprint,
 )
+from slm_training.dsl.solver.goal_support_domain_adequacy import (
+    GoalDomainActionPartitionsV1,
+    _classify_domain_adequacy,
+)
 from slm_training.dsl.solver.openui_support import GoalTerminalEvidenceTrace
+from slm_training.formal.goal_support_mapping import (
+    ClassificationInputsV1,
+    PartitionsV1,
+    ActionEvidenceV1,
+    certified_removal_set,
+    classify_domain_adequacy as ref_classify_domain_adequacy,
+    validate_well_formed_partitions,
+)
 from slm_training.dsl.solver.state import (
     DomainValue,
     FiniteDomainState,
@@ -40,6 +54,21 @@ from slm_training.dsl.solver.support import (
     VerifyStatus,
 )
 from tests.test_dsl.test_solver.test_goal_support import _profile
+
+_SEED = 508
+_MAX_LEGAL_ACTIONS = 4
+
+_PARTIAL_FOREST_TREE = {
+    "": (("a", "continue", "partial"), ("b", "continue", "complete")),
+    "a": (("x", "incomplete", "partial"),),
+    "b": (("y", "terminal", "complete"),),
+}
+
+_AMBIGUITY_TREE = {
+    "": (("a", "continue", "complete"), ("b", "continue", "complete")),
+    "a": (("x", "terminal", "complete"), ("y", "terminal", "complete")),
+    "b": (("z", "terminal", "complete"),),
+}
 
 _GENEROUS = SolverBounds(
     max_tokens=100_000,
@@ -269,6 +298,152 @@ def _brute_force_partitions(
         else:
             unknown.add(action_id)
     return supported, unsupported, unknown, unobserved
+
+
+def _rng() -> random.Random:
+    return random.Random(_SEED)
+
+
+def _ref_partition_violations(
+    legal: tuple[str, ...],
+    supported: tuple[str, ...],
+    unsupported: tuple[str, ...],
+    unknown: tuple[str, ...],
+    unobserved: tuple[str, ...],
+) -> list[str]:
+    id_to_int = {action_id: index for index, action_id in enumerate(sorted(set(legal)))}
+    partitions = PartitionsV1(
+        legal=tuple(id_to_int[item] for item in sorted(set(legal))),
+        supported=tuple(id_to_int[item] for item in supported),
+        unsupported=tuple(id_to_int[item] for item in unsupported),
+        unknown=tuple(id_to_int[item] for item in unknown),
+        unobserved=tuple(id_to_int[item] for item in unobserved),
+    )
+    return validate_well_formed_partitions(partitions)
+
+
+def _ref_classify_from_report(
+    report: GoalDomainAdequacyReportV1,
+    evidence: tuple[GoalActionEvidenceV1, ...],
+) -> str:
+    action_ids = sorted(
+        {
+            *report.partitions.supported,
+            *report.partitions.unsupported,
+            *report.partitions.unknown,
+            *report.partitions.unobserved,
+        }
+    )
+    id_to_int = {action_id: index for index, action_id in enumerate(action_ids)}
+    partitions = PartitionsV1(
+        legal=tuple(range(len(action_ids))),
+        supported=tuple(id_to_int[item] for item in report.partitions.supported),
+        unsupported=tuple(id_to_int[item] for item in report.partitions.unsupported),
+        unknown=tuple(id_to_int[item] for item in report.partitions.unknown),
+        unobserved=tuple(id_to_int[item] for item in report.partitions.unobserved),
+    )
+    hard_profile = any(item.authority_tier == "compiler-hard" for item in evidence)
+    inputs = ClassificationInputsV1(
+        selected=id_to_int[report.selected_action_id],
+        hard_profile=hard_profile,
+        cap_applied=report.cap_applied,
+        all_unsupported_replay_valid=all(
+            item.replay_ok for item in evidence if item.partition == "unsupported"
+        ),
+        obstruction_present=report.obstruction_summary is not None,
+    )
+    return ref_classify_domain_adequacy(partitions, inputs)
+
+
+def _production_classify_from_partitions(
+    partitions: PartitionsV1,
+    *,
+    selected: int,
+    hard_profile: bool,
+    cap_applied: bool,
+    all_unsupported_replay_valid: bool,
+    obstruction_present: bool,
+) -> str:
+    from slm_training.dsl.solver.goal_support_domain_adequacy import (
+        AggregateObstructionSummaryV1,
+    )
+
+    def sid(index: int) -> str:
+        return f"action-{index}"
+
+    prod_partitions = GoalDomainActionPartitionsV1(
+        supported=tuple(sid(i) for i in partitions.supported),
+        unsupported=tuple(sid(i) for i in partitions.unsupported),
+        unknown=tuple(sid(i) for i in partitions.unknown),
+        unobserved=tuple(sid(i) for i in partitions.unobserved),
+    )
+    obstruction_summary = (
+        AggregateObstructionSummaryV1(
+            obstruction_core_digests=("a" * 64,),
+            core_atoms_union=("atom",),
+        )
+        if obstruction_present
+        else None
+    )
+    return _classify_domain_adequacy(
+        prod_partitions,
+        sid(selected),
+        all_unsupported_replay_valid=all_unsupported_replay_valid,
+        hard_profile=hard_profile,
+        cap_applied=cap_applied,
+        obstruction_summary=obstruction_summary,
+    )
+
+
+def _enumerate_valid_partitions(legal_size: int) -> list[PartitionsV1]:
+    legal = tuple(range(legal_size))
+    results: list[PartitionsV1] = []
+    for assignment in itertools.product(range(4), repeat=legal_size):
+        buckets: list[list[int]] = [[], [], [], []]
+        for action, bucket in zip(legal, assignment, strict=True):
+            buckets[bucket].append(action)
+        partitions = PartitionsV1(
+            legal=legal,
+            supported=tuple(sorted(buckets[0])),
+            unsupported=tuple(sorted(buckets[1])),
+            unknown=tuple(sorted(buckets[2])),
+            unobserved=tuple(sorted(buckets[3])),
+        )
+        if validate_well_formed_partitions(partitions):
+            continue
+        results.append(partitions)
+    return results
+
+
+class _StructuralGoalSplitVerifier(_TracingGoalVerifier):
+    """Fixture verifier where structural and goal outcomes diverge."""
+
+    def verify(self, program: str) -> VerifyOutcome:
+        overall = "ACCEPT" if program in self._accept else "REJECT"
+        structural = "REJECT" if program.endswith("x") else overall
+        evidence = GoalTerminalEvidenceV1(
+            profile_digest=self._profile_digest,
+            program_digest=_program_digest(program),
+            canonical_program_digest=_program_digest(program),
+            program_spec_digest="3" * 64,
+            semantic_plan_digest="4" * 64,
+            constraint_evaluations=(
+                GoalConstraintEvaluationV1(constraint_id="c_slot_button", status="PASS"),
+            ),
+            required_gate_results=(GoalGateResultV1(gate_id="G0", status="ACCEPT"),),
+            mandatory_unknown_atoms=self._unknown_atoms,
+            mandatory_failure_atoms=self._failure_atoms,
+            structural_status=structural,
+            overall_status=overall,
+        )
+        payload = evidence.to_dict(include_digest=True)
+        bound = GoalTerminalEvidenceV1.from_dict(payload)
+        self._trace.append(bound)
+        digest = bound.evidence_digest or bound.compute_digest()
+        detail = f"overall={overall};structural={structural};evidence={digest}"
+        if overall == "ACCEPT":
+            return VerifyOutcome(VerifyStatus.ACCEPT, detail=detail)
+        return VerifyOutcome(VerifyStatus.REJECT, detail=detail)
 
 
 def test_selection_regret_with_supported_and_unsupported_alternatives():
@@ -636,3 +811,386 @@ def test_exhaustive_finite_fixtures_cover_all_classifications():
             exact_action_cap=cap,
         )
         assert report.classification == expected, (accept, tree, selected, cap)
+
+
+# --------------------------------------------------------------------------- #
+# PGS-G02 / SLM-508 — independent reference models + generated properties
+# --------------------------------------------------------------------------- #
+
+
+def test_exhaustive_classifier_matches_frozen_truth_table() -> None:
+    mismatches: list[dict[str, object]] = []
+    checked = 0
+    for legal_size in range(1, _MAX_LEGAL_ACTIONS + 1):
+        for partitions in _enumerate_valid_partitions(legal_size):
+            for selected in partitions.legal:
+                for hard_profile in (True, False):
+                    for cap_applied in (True, False):
+                        for all_unsupported_replay_valid in (True, False):
+                            for obstruction_present in (True, False):
+                                inputs = ClassificationInputsV1(
+                                    selected=selected,
+                                    hard_profile=hard_profile,
+                                    cap_applied=cap_applied,
+                                    all_unsupported_replay_valid=all_unsupported_replay_valid,
+                                    obstruction_present=obstruction_present,
+                                )
+                                expected = ref_classify_domain_adequacy(partitions, inputs)
+                                got = _production_classify_from_partitions(
+                                    partitions,
+                                    selected=selected,
+                                    hard_profile=hard_profile,
+                                    cap_applied=cap_applied,
+                                    all_unsupported_replay_valid=all_unsupported_replay_valid,
+                                    obstruction_present=obstruction_present,
+                                )
+                                checked += 1
+                                if got != expected:
+                                    mismatches.append(
+                                        {
+                                            "partitions": partitions,
+                                            "inputs": inputs,
+                                            "expected": expected,
+                                            "got": got,
+                                        }
+                                    )
+    assert not mismatches, mismatches[:3]
+    assert checked >= 512
+
+
+def test_generated_partition_law_on_analyze_goal_domain() -> None:
+    trees = [_REGRET_TREE, _INADEQUATE_TREE, _CAP_TREE, _UNKNOWN_TREE, _PARTIAL_FOREST_TREE]
+    for tree in trees:
+        accept = {"ax"} if tree is not _INADEQUATE_TREE else set()
+        expander, provider = _provider(accept, tree=tree)
+        selected = "a" if "a" in dict.fromkeys(
+            branch[0] for branch in tree.get("", ())
+        ) else next(iter(tree[""]))[0]
+        report, evidence = analyze_goal_domain(
+            state=expander.root_state(),
+            hole_id=_hole(expander),
+            selected_action=_selected(expander, selected),
+            provider=provider,
+            exact_action_cap=10,
+        )
+        legal = sorted(
+            {
+                *report.partitions.supported,
+                *report.partitions.unsupported,
+                *report.partitions.unknown,
+                *report.partitions.unobserved,
+            }
+        )
+        violations = _ref_partition_violations(
+            tuple(legal),
+            report.partitions.supported,
+            report.partitions.unsupported,
+            report.partitions.unknown,
+            report.partitions.unobserved,
+        )
+        assert not violations, violations
+        assert report.selected_action_id in legal
+        ref_class = _ref_classify_from_report(report, evidence)
+        assert report.classification == ref_class, {
+            "tree": tree,
+            "got": report.classification,
+            "ref": ref_class,
+        }
+        for item in evidence:
+            if item.partition in {"unknown", "unobserved"}:
+                assert item.partition != "unsupported"
+
+
+def test_unknown_unobserved_never_certified_removed_reference() -> None:
+    partitions = PartitionsV1(
+        legal=(0, 1, 2),
+        supported=(),
+        unsupported=(0,),
+        unknown=(1,),
+        unobserved=(2,),
+    )
+    evidence = (
+        ActionEvidenceV1(action=0, partition="unsupported", replay_ok=True, hard_profile=True),
+        ActionEvidenceV1(action=1, partition="unknown", replay_ok=False, hard_profile=True),
+        ActionEvidenceV1(action=2, partition="unobserved", replay_ok=False, hard_profile=True),
+    )
+    removed = certified_removal_set(partitions, evidence)
+    assert removed == (0,)
+    assert 1 not in removed and 2 not in removed
+
+
+def test_structural_support_differs_from_goal_support() -> None:
+    prof = _profile()
+    digest = prof.digest or prof.compute_digest()
+    expander = _WordExpander(_REGRET_TREE)
+
+    def factory() -> _StructuralGoalSplitVerifier:
+        return _StructuralGoalSplitVerifier(
+            {"ax"},
+            profile_label="split",
+            profile_digest=digest,
+        )
+
+    provider = GoalSupportProvider(expander, prof, factory)
+    report, _ = analyze_goal_domain(
+        state=expander.root_state(),
+        hole_id=_hole(expander),
+        selected_action=_selected(expander, "b"),
+        provider=provider,
+        exact_action_cap=10,
+    )
+    assert report.classification == "selection_regret"
+    assert report.partitions.supported
+
+
+def test_partial_forest_stays_coverage_unknown_not_inadequate() -> None:
+    expander, provider = _provider(set(), tree=_PARTIAL_FOREST_TREE)
+    report, _ = analyze_goal_domain(
+        state=expander.root_state(),
+        hole_id=_hole(expander),
+        selected_action=_selected(expander, "a"),
+        provider=provider,
+        exact_action_cap=10,
+    )
+    assert report.classification == "coverage_unknown"
+    assert report.classification != "domain_inadequate_under_bounds"
+    assert report.partitions.unknown or report.partitions.unsupported
+
+
+def test_bound_exhaustion_prevents_domain_inadequacy() -> None:
+    tight = SolverBounds(
+        max_tokens=1,
+        max_nodes=1,
+        max_depth=2,
+        max_backtracks=1,
+        max_verifier_calls=1,
+    )
+    expander = _WordExpander(_INADEQUATE_TREE, bounds=tight)
+    prof = _profile()
+    digest = prof.digest or prof.compute_digest()
+    provider = GoalSupportProvider(
+        expander,
+        prof,
+        lambda: _TracingGoalVerifier(
+            set(),
+            profile_label="tight",
+            profile_digest=digest,
+        ),
+    )
+    report, _ = analyze_goal_domain(
+        state=expander.root_state(),
+        hole_id=_hole(expander),
+        selected_action=_selected(expander, "a"),
+        provider=provider,
+        exact_action_cap=10,
+    )
+    assert report.classification != "domain_inadequate_under_bounds"
+
+
+def test_advisory_profile_cannot_claim_domain_inadequate() -> None:
+    profile = _profile(
+        mode="advisory_diagnostic",
+        authority_tier="advisory-learned",
+        required_constraint_ids=("adv_hint",),
+        required_gates=(),
+    )
+    expander, provider = _provider(set(), tree=_INADEQUATE_TREE, profile=profile)
+    report, _ = analyze_goal_domain(
+        state=expander.root_state(),
+        hole_id=_hole(expander),
+        selected_action=_selected(expander, "a"),
+        provider=provider,
+        exact_action_cap=10,
+    )
+    assert report.classification == "coverage_unknown"
+    assert report.obstruction_summary is None
+
+
+def test_evaluation_oracle_profile_cannot_claim_domain_inadequate() -> None:
+    profile = _profile(
+        mode="evaluation_oracle",
+        authority_tier="evaluation-only",
+        required_constraint_ids=("eval_gate",),
+        required_gates=(),
+    )
+    expander, provider = _provider(set(), tree=_INADEQUATE_TREE, profile=profile)
+    report, _ = analyze_goal_domain(
+        state=expander.root_state(),
+        hole_id=_hole(expander),
+        selected_action=_selected(expander, "a"),
+        provider=provider,
+        exact_action_cap=10,
+    )
+    assert report.classification == "coverage_unknown"
+
+
+def test_selection_unresolved_when_selected_unobserved_with_support() -> None:
+    expander, provider = _provider({"a", "b"}, tree=_CAP_TREE)
+    state = expander.root_state()
+    hole = _hole(expander)
+    cap = 2
+    probe, _ = analyze_goal_domain(
+        state=state,
+        hole_id=hole,
+        selected_action=_selected(expander, "a"),
+        provider=provider,
+        exact_action_cap=cap,
+    )
+    if not probe.partitions.unobserved:
+        pytest.skip("cap queries entire legal set in this fixture ordering")
+    unobserved_id = probe.partitions.unobserved[0]
+    letter_by_id = {
+        action_id_from_value(_selected(expander, letter)): letter for letter in "abc"
+    }
+    selected_letter = letter_by_id[unobserved_id]
+    report, _ = analyze_goal_domain(
+        state=state,
+        hole_id=hole,
+        selected_action=_selected(expander, selected_letter),
+        provider=provider,
+        exact_action_cap=cap,
+    )
+    assert report.partitions.supported
+    assert report.classification == "selection_unresolved"
+
+
+def test_ambiguity_fixture_keeps_multiple_supported_alternatives() -> None:
+    expander, provider = _provider({"ax", "ay"}, tree=_AMBIGUITY_TREE)
+    report, _ = analyze_goal_domain(
+        state=expander.root_state(),
+        hole_id=_hole(expander),
+        selected_action=_selected(expander, "a"),
+        provider=provider,
+        exact_action_cap=10,
+    )
+    assert report.classification == "domain_adequate_selected_supported"
+    assert len(report.partitions.supported) >= 1
+
+
+def test_action_order_permutation_preserves_semantic_output() -> None:
+    expander, provider = _provider({"ax"})
+    state = expander.root_state()
+    hole = _hole(expander)
+    ids_original = sorted(
+        action_id_from_value(value) for value in state.domain(hole).values
+    )
+    ids_shuffled = list(ids_original)
+    random.Random(_SEED).shuffle(ids_shuffled)
+    assert sorted(ids_shuffled) == ids_original
+    report_a, _ = analyze_goal_domain(
+        state=state,
+        hole_id=hole,
+        selected_action=_selected(expander, "a"),
+        provider=provider,
+        exact_action_cap=10,
+    )
+    report_b, _ = analyze_goal_domain(
+        state=state,
+        hole_id=hole,
+        selected_action=_selected(expander, "a"),
+        provider=provider,
+        exact_action_cap=10,
+    )
+    assert report_a.partitions == report_b.partitions
+    assert report_a.classification == report_b.classification
+    assert report_a.legal_set_fingerprint == legal_set_fingerprint(
+        state_fingerprint=state.fingerprint,
+        hole_id=hole,
+        action_ids=tuple(sorted(ids_shuffled)),
+    )
+
+
+def test_domain_mutation_stales_report_on_profile_change() -> None:
+    expander, provider = _provider({"ax"})
+    report, _ = analyze_goal_domain(
+        state=expander.root_state(),
+        hole_id=_hole(expander),
+        selected_action=_selected(expander, "a"),
+        provider=provider,
+        exact_action_cap=10,
+    )
+    stale_profile = _profile(profile_id="mutated")
+    assert report.profile_digest != (stale_profile.digest or stale_profile.compute_digest())
+
+
+def test_adding_satisfying_candidate_invalidates_old_inadequacy_identity() -> None:
+    failure = GoalFailureAtomV1(
+        atom_id="fixture_fail",
+        reason_code="no_witness",
+        source_kind="constraint",
+        completeness_class="EXACT",
+    )
+    expander, provider = _provider(
+        set(),
+        tree=_INADEQUATE_TREE,
+        failure_atoms=(failure,),
+    )
+    report_before, _ = analyze_goal_domain(
+        state=expander.root_state(),
+        hole_id=_hole(expander),
+        selected_action=_selected(expander, "a"),
+        provider=provider,
+        exact_action_cap=10,
+    )
+    assert report_before.classification == "domain_inadequate_under_bounds"
+    enriched_tree = {
+        "": (
+            *_INADEQUATE_TREE[""],
+            ("z", "terminal", "complete"),
+        ),
+    }
+    expander2, provider2 = _provider({"z"}, tree=enriched_tree, failure_atoms=(failure,))
+    report_after, _ = analyze_goal_domain(
+        state=expander2.root_state(),
+        hole_id=_hole(expander2),
+        selected_action=_selected(expander2, "z"),
+        provider=provider2,
+        exact_action_cap=10,
+    )
+    assert report_after.partitions.supported
+    assert report_before.report_digest != report_after.report_digest
+    assert report_after.classification == "domain_adequate_selected_supported"
+
+
+def test_malformed_partition_overlap_rejected() -> None:
+    with pytest.raises(ValidationError, match="overlap"):
+        GoalDomainActionPartitionsV1(
+            supported=("a" * 64,),
+            unsupported=("a" * 64,),
+            unknown=(),
+            unobserved=(),
+        )
+
+
+def test_malformed_partition_dangling_rejected_by_reference() -> None:
+    partitions = PartitionsV1(
+        legal=(0, 1),
+        supported=(0, 2),
+        unsupported=(),
+        unknown=(),
+        unobserved=(1,),
+    )
+    violations = validate_well_formed_partitions(partitions)
+    assert violations
+
+
+_CANONICAL_G02_FIXTURES = [
+    "exact_satisfying_alternative",
+    "structural_ne_goal_support",
+    "bounded_domain_inadequacy",
+    "unknown_mandatory_evidence",
+    "partial_forest",
+    "bound_exhaustion",
+    "advisory_cannot_prune",
+    "evaluation_oracle_cannot_prune",
+    "cap_excludes_unique_support",
+    "candidate_addition_stale_identity",
+    "permutation_invariance",
+    "ambiguity",
+    "zero_rejected_terminals",
+    "heuristic_only_failure_atoms",
+]
+
+
+def test_canonical_g02_fixture_matrix_is_complete() -> None:
+    assert len(_CANONICAL_G02_FIXTURES) == 14
