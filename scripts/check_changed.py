@@ -57,6 +57,11 @@ REVMATH_HARNESS_PARITY_FILES = frozenset(
         "scripts/verify_revmath_harness_parity.py",
         "src/slm_training/harnesses/reasoning/profiles.py",
         "src/slm_training/harnesses/reasoning/revmath/schemas.py",
+        "src/slm_training/harnesses/reasoning/revmath/runner.py",
+        "src/slm_training/harnesses/reasoning/revmath/replay.py",
+        "src/slm_training/harnesses/reasoning/revmath/report.py",
+        "src/slm_training/harnesses/reasoning/revmath/plugins.py",
+        "scripts/run_revmath_task.py",
         "docs/design/reverse-mathematics-computability.md",
         "docs/design/adr-revmath-reasoning-profile.md",
     }

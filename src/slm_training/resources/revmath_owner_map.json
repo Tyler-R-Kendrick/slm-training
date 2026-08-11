@@ -298,7 +298,7 @@
       ],
       "design_doc": "docs/design/reverse-mathematics-computability.md",
       "ownership_map_subsystem": null,
-      "notes": "HARN-02 typed contracts for reasoning/revmath; runner semantics remain HARN-03."
+      "notes": "HARN-02 typed contracts for reasoning/revmath; runner/replay/report owned by HARN-03 surfaces."
     },
     {
       "id": "continuous_formal_promote",
@@ -311,6 +311,68 @@
       "design_doc": "docs/design/formal-autoresearch.md",
       "ownership_map_subsystem": "experiment_campaign",
       "notes": "Promotion gate reuses validate_formal_preflight_artifact; timeout/incomplete never becomes refutation."
+    },
+    {
+      "id": "revmath_runner",
+      "kind": "runner",
+      "owner_module": "src/slm_training/harnesses/reasoning/revmath/runner.py",
+      "owner_symbols": [
+        "RevmathRunRecord",
+        "run_revmath_task"
+      ],
+      "design_doc": "docs/design/reverse-mathematics-computability.md",
+      "ownership_map_subsystem": null,
+      "notes": "HARN-03 bounded deterministic task runner; uses bounded_process + SolverJudgmentV1; never mutates proposition/campaign."
+    },
+    {
+      "id": "revmath_plugins",
+      "kind": "plugin_seam",
+      "owner_module": "src/slm_training/harnesses/reasoning/revmath/plugins.py",
+      "owner_symbols": [
+        "RevmathTaskPlugin",
+        "RevmathCheckPlan",
+        "PluginCheckEvidence",
+        "default_plugin_registry",
+        "resolve_plugin"
+      ],
+      "design_doc": "docs/design/reverse-mathematics-computability.md",
+      "ownership_map_subsystem": null,
+      "notes": "HARN-03 task-kind plugin seam; plan/interpret only \u2014 shared runner owns orchestration."
+    },
+    {
+      "id": "revmath_replay",
+      "kind": "replay",
+      "owner_module": "src/slm_training/harnesses/reasoning/revmath/replay.py",
+      "owner_symbols": [
+        "build_revmath_replay_bundle",
+        "assert_revmath_replay_integrity",
+        "revmath_request_id"
+      ],
+      "design_doc": "docs/design/reverse-mathematics-computability.md",
+      "ownership_map_subsystem": null,
+      "notes": "HARN-03 composition over ReplayBundleV1; no profile-local replay store."
+    },
+    {
+      "id": "revmath_report",
+      "kind": "report",
+      "owner_module": "src/slm_training/harnesses/reasoning/revmath/report.py",
+      "owner_symbols": [
+        "build_revmath_report"
+      ],
+      "design_doc": "docs/design/reverse-mathematics-computability.md",
+      "ownership_map_subsystem": null,
+      "notes": "HARN-03 typed RevmathReportV1 aggregation with closed judgment counts."
+    },
+    {
+      "id": "revmath_runner_cli",
+      "kind": "command",
+      "owner_module": "scripts/run_revmath_task.py",
+      "owner_symbols": [
+        "main"
+      ],
+      "design_doc": "docs/design/reverse-mathematics-computability.md",
+      "ownership_map_subsystem": null,
+      "notes": "HARN-03 CLI for frozen-task hermetic/Lean runs; campaign binding remains HARN-10."
     }
   ],
   "extension_seams": [
@@ -348,6 +410,13 @@
       "extends": "reasoning_harness_parent",
       "new_owner_justified": true,
       "justification": "Strict task/corpus/result/repair/report schemas live under harnesses/reasoning/revmath/ (new schema owner justified); bind SolverJudgmentV1 and campaign identity without a parallel evidence store."
+    },
+    {
+      "issue": "HARN-03",
+      "linear_id": "SLM-536",
+      "extends": "reasoning_harness_parent",
+      "new_owner_justified": true,
+      "justification": "Deterministic runner/replay/report + task plugin seam under harnesses/reasoning/revmath/; compose bounded_process, SolverJudgmentV1, ReplayBundleV1, DecodeStatsRecordV1 without parallel evidence/campaign/proof stacks."
     }
   ],
   "prohibited_duplicate_risks": [

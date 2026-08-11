@@ -47,6 +47,7 @@ This ADR is **violated** if:
 - Harness parity (HARN-01): [`revmath_harness_parity.json`](../../src/slm_training/resources/revmath_harness_parity.json) · `python -m scripts.verify_revmath_harness_parity`
 - Profile registration: [`harnesses/reasoning/profiles.py`](../../src/slm_training/harnesses/reasoning/profiles.py)
 - Schemas (HARN-02): [`harnesses/reasoning/revmath/schemas.py`](../../src/slm_training/harnesses/reasoning/revmath/schemas.py)
+- Runner / replay / report (HARN-03): [`harnesses/reasoning/revmath/runner.py`](../../src/slm_training/harnesses/reasoning/revmath/runner.py), [`replay.py`](../../src/slm_training/harnesses/reasoning/revmath/replay.py), [`report.py`](../../src/slm_training/harnesses/reasoning/revmath/report.py)
 - Formal autoresearch: [formal-autoresearch.md](formal-autoresearch.md)
 - Formal objects: [formal-objects-multi-prover.md](formal-objects-multi-prover.md)
 - Campaign law: [experiment-campaign-governance.md](experiment-campaign-governance.md)

@@ -37,7 +37,7 @@ def test_profile_discovery_keeps_default():
     assert resolve_profile(None).profile_id == DEFAULT_PROFILE_ID
     assert resolve_profile("").profile_id == DEFAULT_PROFILE_ID
     assert get_profile(REVMATH_PROFILE_ID).opt_in is True
-    assert get_profile(REVMATH_PROFILE_ID).task_semantics_ready is False
+    assert get_profile(REVMATH_PROFILE_ID).task_semantics_ready is True
     assert REVMATH_PROFILE_ID in list_profile_ids()
     assert_default_unchanged()
     with pytest.raises(ReasoningProfileError, match="unknown reasoning profile"):

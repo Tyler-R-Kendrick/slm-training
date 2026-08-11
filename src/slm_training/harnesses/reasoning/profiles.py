@@ -63,10 +63,10 @@ PROFILES: Mapping[str, ReasoningProfileV1] = {
         profile_id=REVMATH_PROFILE_ID,
         description=(
             "Reverse-mathematics / computability typed profile over the G4 "
-            "reasoning harness; HARN-02 schemas present, runner remains HARN-03."
+            "reasoning harness; HARN-03 deterministic runner/replay/report ready."
         ),
         opt_in=True,
-        task_semantics_ready=False,
+        task_semantics_ready=True,
         binds_owners=REVMATH_BIND_OWNERS,
     ),
 }
@@ -109,10 +109,10 @@ def assert_default_unchanged() -> None:
     revmath = get_profile(REVMATH_PROFILE_ID)
     if not revmath.opt_in:
         raise ReasoningProfileError(f"{REVMATH_PROFILE_ID!r} must remain opt-in")
-    if revmath.task_semantics_ready:
+    if not revmath.task_semantics_ready:
         raise ReasoningProfileError(
-            f"{REVMATH_PROFILE_ID!r} must stay task_semantics_ready=False "
-            "until HARN-03 lands the deterministic runner"
+            f"{REVMATH_PROFILE_ID!r} must set task_semantics_ready=True "
+            "once the HARN-03 deterministic runner is present"
         )
 
 
