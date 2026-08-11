@@ -1,0 +1,219 @@
+{
+  "schema": "formal_evidence_mutation_matrix/v1",
+  "issue": "SLM-559",
+  "evid": "EVID-11",
+  "claim_class": "fixture",
+  "generalizes_beyond_corpus": false,
+  "notes": [
+    "Release-blocking red-team matrix for formal evidence v2.",
+    "Each mutation reuses EVID-06/07/09/10 gates — no third evidence stack.",
+    "Structural consistency or provenance alone cannot confer semantic authority.",
+    "python_structural and python_reference share a trust domain (EVID-08 reclassification target)."
+  ],
+  "required_families": [
+    "proposition_tautology_or_weaken",
+    "declaration_module_source_toolchain_lock_drift",
+    "unexpected_axiom_or_forbidden_proof_escape",
+    "forged_completeness_exhaustion_replay_metadata",
+    "skipped_timeout_missing_checker_as_success",
+    "stale_problem_state_identity",
+    "certificate_mutation_or_wrong_encoding",
+    "shared_parser_checker_family_fault",
+    "v1_v2_migration_tamper_or_digest_mismatch"
+  ],
+  "positive_controls": [
+    {
+      "id": "pos_exact_replay_authorizes",
+      "runner": "positive_exact_replay_authorizes",
+      "gate": "refutation_authority.evidence_authorizes_removal",
+      "capability": "semantic_replay"
+    },
+    {
+      "id": "pos_honest_encoding_authorizes",
+      "runner": "positive_honest_encoding_authorizes",
+      "gate": "encoding_adapter.encoding_authorizes_semantic_result",
+      "capability": "encoding_correctness"
+    },
+    {
+      "id": "pos_sealed_binding_holds",
+      "runner": "positive_sealed_binding_holds",
+      "gate": "theorem_binding.verify_theorem_binding",
+      "capability": "exact_proposition"
+    }
+  ],
+  "mutations": [
+    {
+      "id": "mut_same_name_proposition_to_true",
+      "family": "proposition_tautology_or_weaken",
+      "runner": "mutation_same_name_proposition_to_true",
+      "gate": "theorem_binding.verify_theorem_binding",
+      "capability": "exact_proposition",
+      "layer": "EVID-07",
+      "expect_reject": true,
+      "source_tests": ["tests/test_formal/test_theorem_binding.py::test_mutation_same_name_to_true_rejected"]
+    },
+    {
+      "id": "mut_changed_conclusion",
+      "family": "proposition_tautology_or_weaken",
+      "runner": "mutation_changed_conclusion",
+      "gate": "theorem_binding.verify_theorem_binding",
+      "capability": "exact_proposition",
+      "layer": "EVID-07",
+      "expect_reject": true,
+      "source_tests": ["tests/test_formal/test_theorem_binding.py::test_mutation_changed_conclusion_rejected"]
+    },
+    {
+      "id": "mut_toolchain_lock_drift",
+      "family": "declaration_module_source_toolchain_lock_drift",
+      "runner": "mutation_toolchain_lock_drift",
+      "gate": "theorem_binding.verify_theorem_binding",
+      "capability": "toolchain_lock",
+      "layer": "EVID-07",
+      "expect_reject": true,
+      "source_tests": ["tests/test_formal/test_theorem_binding.py::test_mutation_toolchain_lock_rejected"]
+    },
+    {
+      "id": "mut_source_tree_drift",
+      "family": "declaration_module_source_toolchain_lock_drift",
+      "runner": "mutation_source_tree_drift",
+      "gate": "theorem_binding.verify_theorem_binding",
+      "capability": "source_identity",
+      "layer": "EVID-07",
+      "expect_reject": true,
+      "source_tests": ["tests/test_formal/test_theorem_binding.py::test_mutation_changed_hypotheses_rejected"]
+    },
+    {
+      "id": "mut_catalog_module_redirection",
+      "family": "declaration_module_source_toolchain_lock_drift",
+      "runner": "mutation_catalog_module_redirection",
+      "gate": "theorem_binding.verify_theorem_binding",
+      "capability": "module_binding",
+      "layer": "EVID-07",
+      "expect_reject": true,
+      "source_tests": ["tests/test_formal/test_theorem_binding.py::test_mutation_catalog_redirection_rejected"]
+    },
+    {
+      "id": "mut_unexpected_axiom",
+      "family": "unexpected_axiom_or_forbidden_proof_escape",
+      "runner": "mutation_unexpected_axiom",
+      "gate": "theorem_binding.verify_theorem_binding",
+      "capability": "axiom_audit",
+      "layer": "EVID-07",
+      "expect_reject": true,
+      "source_tests": ["tests/test_formal/test_theorem_binding.py::test_mutation_new_axiom_rejected"]
+    },
+    {
+      "id": "mut_forbidden_proof_escape_token",
+      "family": "unexpected_axiom_or_forbidden_proof_escape",
+      "runner": "mutation_forbidden_proof_escape_token",
+      "gate": "formal_contracts.FORBIDDEN_SOURCE",
+      "capability": "axiom_audit",
+      "layer": "EVID-07",
+      "expect_reject": true,
+      "source_tests": []
+    },
+    {
+      "id": "mut_forged_exhaustion_replay_flags",
+      "family": "forged_completeness_exhaustion_replay_metadata",
+      "runner": "mutation_forged_exhaustion_replay_flags",
+      "gate": "judgment.classify",
+      "capability": "semantic_replay",
+      "layer": "EVID-09",
+      "expect_reject": true,
+      "source_tests": ["tests/test_formal/test_refutation_authority.py::test_forged_exhausted_coverage_replay_flags_cannot_refute"]
+    },
+    {
+      "id": "mut_legacy_exhaustion_telemetry",
+      "family": "forged_completeness_exhaustion_replay_metadata",
+      "runner": "mutation_legacy_exhaustion_telemetry",
+      "gate": "refutation_authority.legacy_exhaustion_authorizes_removal",
+      "capability": "semantic_replay",
+      "layer": "EVID-09",
+      "expect_reject": true,
+      "source_tests": ["tests/test_formal/test_refutation_authority.py::test_legacy_exhaustion_flags_never_authorize"]
+    },
+    {
+      "id": "mut_skipped_checker_as_success",
+      "family": "skipped_timeout_missing_checker_as_success",
+      "runner": "mutation_skipped_checker_as_success",
+      "gate": "authority.from_formal_object_v1",
+      "capability": "checker_trust",
+      "layer": "EVID-06/EVID-09",
+      "expect_reject": true,
+      "source_tests": [
+        "tests/test_formal/test_refutation_authority.py::test_skipped_checker_blocks_checked_refutation_authority",
+        "tests/test_formal/test_formal_authority_v2.py::test_skipped_checker_blocks_checked_refutation"
+      ]
+    },
+    {
+      "id": "mut_timeout_missing_tool_strip_evidence",
+      "family": "skipped_timeout_missing_checker_as_success",
+      "runner": "mutation_timeout_missing_tool_strip_evidence",
+      "gate": "judgment.from_exact_closure_query",
+      "capability": "checker_trust",
+      "layer": "EVID-09",
+      "expect_reject": true,
+      "source_tests": ["tests/test_formal/test_refutation_authority.py::test_adapter_failure_modes_strip_evidence_and_block_removal"]
+    },
+    {
+      "id": "mut_stale_problem_identity",
+      "family": "stale_problem_state_identity",
+      "runner": "mutation_stale_problem_identity",
+      "gate": "refutation_authority.evidence_authorizes_removal",
+      "capability": "binding_identity",
+      "layer": "EVID-09",
+      "expect_reject": true,
+      "source_tests": ["tests/test_formal/test_refutation_authority.py::test_stale_problem_id_rejects_removal"]
+    },
+    {
+      "id": "mut_certificate_wrong_encoding",
+      "family": "certificate_mutation_or_wrong_encoding",
+      "runner": "mutation_certificate_wrong_encoding",
+      "gate": "encoding_adapter.encoding_authorizes_semantic_result",
+      "capability": "encoding_correctness",
+      "layer": "EVID-10",
+      "expect_reject": true,
+      "source_tests": ["tests/test_formal/test_encoding_adapter.py::test_valid_certificate_wrong_encoding_cannot_authorize"]
+    },
+    {
+      "id": "mut_stale_problem_digest_on_mint",
+      "family": "certificate_mutation_or_wrong_encoding",
+      "runner": "mutation_stale_problem_digest_on_mint",
+      "gate": "encoding_adapter.mint_checked_certificate_via_encoding",
+      "capability": "encoding_correctness",
+      "layer": "EVID-10",
+      "expect_reject": true,
+      "source_tests": ["tests/test_formal/test_encoding_adapter.py::test_mint_checked_certificate_requires_encoding_bridge"]
+    },
+    {
+      "id": "mut_shared_parser_family_fault",
+      "family": "shared_parser_checker_family_fault",
+      "runner": "mutation_shared_parser_family_fault",
+      "gate": "mutation_suite.semantic_authority_requires_distinct_trust_domains",
+      "capability": "trust_domain_diversity",
+      "layer": "EVID-11/EVID-08",
+      "expect_reject": true,
+      "source_tests": []
+    },
+    {
+      "id": "mut_v2_content_digest_mismatch",
+      "family": "v1_v2_migration_tamper_or_digest_mismatch",
+      "runner": "mutation_v2_content_digest_mismatch",
+      "gate": "authority.FormalAuthorityV2.from_dict",
+      "capability": "provenance_digest",
+      "layer": "EVID-06",
+      "expect_reject": true,
+      "source_tests": ["tests/test_formal/test_formal_authority_v2.py::test_formal_object_round_trip_upgrade_downgrade"]
+    },
+    {
+      "id": "mut_v1_v2_migration_tamper",
+      "family": "v1_v2_migration_tamper_or_digest_mismatch",
+      "runner": "mutation_v1_v2_migration_tamper",
+      "gate": "authority.load_formal_authority",
+      "capability": "provenance_digest",
+      "layer": "EVID-06",
+      "expect_reject": true,
+      "source_tests": ["tests/test_formal/test_formal_authority_v2.py::test_contradictory_authority_class_rejected"]
+    }
+  ]
+}

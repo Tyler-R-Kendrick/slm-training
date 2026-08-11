@@ -214,6 +214,8 @@ jobs:
           else
             python -m scripts.verify_version_stamps --check
           fi
+      - name: Certify formal-evidence mutation / red-team suite
+        run: PYTHONPATH=src python -m scripts.verify_formal_evidence_mutations --check
       - name: Verify the cross-version evidence ledger is not stale
         # The committed ledger is the durable cross-harness-version memory the
         # hill-climb selector reads. It is a deterministic fold of docs/design;
