@@ -3060,6 +3060,11 @@
         {
           "version": "v23",
           "date": "2026-08-11",
+          "note": "no-bump: HARN-02 (SLM-527) wires check_changed path\u2192test map for harnesses/reasoning/revmath/ and owner-map refresh; no ownership_map.json structural change."
+        },
+        {
+          "version": "v23",
+          "date": "2026-08-11",
           "note": "no-bump: wire REVMATH_HARNESS_PARITY_FILES into check_changed only; ownership_map contract and verify_ownership_map behavior unchanged."
         },
         {
@@ -3310,7 +3315,7 @@
       ]
     },
     "governance.revmath_owners": {
-      "version": "v2",
+      "version": "v3",
       "kind": "gate",
       "paths": [
         "docs/design/adr-revmath-reasoning-profile.md",
@@ -3320,6 +3325,11 @@
         "tests/test_scripts/test_verify_revmath_owners.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-11",
+          "note": "HARN-02 (SLM-527): register revmath_schemas surface and HARN-02 extension seam on the owner map."
+        },
         {
           "version": "v2",
           "date": "2026-08-11",
@@ -3333,7 +3343,7 @@
       ]
     },
     "governance.revmath_harness_parity": {
-      "version": "v1",
+      "version": "v2",
       "kind": "gate",
       "paths": [
         "src/slm_training/resources/revmath_harness_parity.json",
@@ -3342,6 +3352,11 @@
         "tests/test_scripts/test_verify_revmath_harness_parity.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-11",
+          "note": "HARN-02 (SLM-527): schemas.revmath_task_corpus_result_repair obligation present with schemas.py owner."
+        },
         {
           "version": "v1",
           "date": "2026-08-11",
@@ -13570,12 +13585,17 @@
       ]
     },
     "harness.reasoning.bench": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/reasoning/"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-11",
+          "note": "HARN-02 (SLM-527): add harnesses/reasoning/revmath typed task/result/repair/report schemas."
+        },
         {
           "version": "v2",
           "date": "2026-08-11",
@@ -18085,6 +18105,21 @@
           "version": "v1",
           "date": "2026-08-10",
           "note": "PGS-A02 (SLM-495): deterministic compile_goal_constraints from VerifiedSynthesisProblemV1 + GenerationRequest + DslPack into CompiledGoalConstraintSetV1 with closed compile rules, identity binding, and fail-closed gold rejection."
+        }
+      ]
+    },
+    "harness.reasoning.revmath": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/reasoning/revmath/",
+        "tests/test_harnesses/reasoning/test_revmath_schemas.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-11",
+          "note": "HARN-02 (SLM-527): strict revmath task/corpus/result/repair/report schemas with SolverJudgmentV1, four-axis attachment, repair identity freeze, JSON schema export."
         }
       ]
     }

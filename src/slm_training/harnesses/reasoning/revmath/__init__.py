@@ -1,0 +1,68 @@
+"""reasoning/revmath typed contracts (HARN-02 / SLM-527).
+
+Schema surface only — runner semantics belong to HARN-03.
+"""
+
+from __future__ import annotations
+
+from slm_training.harnesses.reasoning.revmath.schemas import (
+    REVMATH_MUTABLE_REPAIR_KNOBS,
+    REVMATH_SCHEMA_VERSIONS,
+    AxisCertificateRefV1,
+    RevmathBaseTheoryV1,
+    RevmathBudgetV1,
+    RevmathCampaignBindingV1,
+    RevmathCorpusEntryV1,
+    RevmathCorpusIdentityV1,
+    RevmathFourAxisAnalysisV1,
+    RevmathProofArtifactRefV1,
+    RevmathPropositionIdentityV1,
+    RevmathRepairKnobChangeV1,
+    RevmathRepairRecordV1,
+    RevmathReportV1,
+    RevmathResultV1,
+    RevmathSchemaError,
+    RevmathTaskKind,
+    RevmathTaskV1,
+    RevmathVerifierJudgeIdentityV1,
+    TheoremDirection,
+    assert_repair_preserves_identity,
+    canonical_hash,
+    export_json_schemas,
+    parse_revmath_corpus_entry,
+    parse_revmath_repair,
+    parse_revmath_report,
+    parse_revmath_result,
+    parse_revmath_task,
+)
+
+__all__ = [
+    "REVMATH_MUTABLE_REPAIR_KNOBS",
+    "REVMATH_SCHEMA_VERSIONS",
+    "AxisCertificateRefV1",
+    "RevmathBaseTheoryV1",
+    "RevmathBudgetV1",
+    "RevmathCampaignBindingV1",
+    "RevmathCorpusEntryV1",
+    "RevmathCorpusIdentityV1",
+    "RevmathFourAxisAnalysisV1",
+    "RevmathProofArtifactRefV1",
+    "RevmathPropositionIdentityV1",
+    "RevmathRepairKnobChangeV1",
+    "RevmathRepairRecordV1",
+    "RevmathReportV1",
+    "RevmathResultV1",
+    "RevmathSchemaError",
+    "RevmathTaskKind",
+    "RevmathTaskV1",
+    "RevmathVerifierJudgeIdentityV1",
+    "TheoremDirection",
+    "assert_repair_preserves_identity",
+    "canonical_hash",
+    "export_json_schemas",
+    "parse_revmath_corpus_entry",
+    "parse_revmath_repair",
+    "parse_revmath_report",
+    "parse_revmath_result",
+    "parse_revmath_task",
+]
