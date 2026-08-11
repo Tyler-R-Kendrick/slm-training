@@ -656,6 +656,7 @@ def test_empty_mandatory_failure_set_forbids_exact_core() -> None:
     assert not obstruction_core_emission_allowed(
         certificate=_certificate(),
         terminal_records=records,
+        profile=_profile(),
         replay_ok=True,
     )
     assert _core_from_records(records) is None

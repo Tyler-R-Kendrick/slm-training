@@ -239,7 +239,9 @@ class _TracingGoalVerifier:
             ),
             required_gate_results=(GoalGateResultV1(gate_id="G0", status="ACCEPT"),),
             mandatory_unknown_atoms=self._unknown_atoms,
-            mandatory_failure_atoms=self._failure_atoms,
+            mandatory_failure_atoms=(
+                () if overall == "ACCEPT" else self._failure_atoms
+            ),
             structural_status="REJECT" if overall == "REJECT" else "ACCEPT",
             overall_status=overall,
         )
@@ -374,6 +376,7 @@ def _ref_classify_from_report(
         selected=id_to_int[report.selected_action_id],
         hard_profile=hard_profile,
         cap_applied=report.cap_applied,
+        domain_complete=report.domain_coverage == "complete",
         all_unsupported_replay_valid=all(
             item.replay_ok for item in evidence if item.partition == "unsupported"
         ),
@@ -388,6 +391,7 @@ def _production_classify_from_partitions(
     selected: int,
     hard_profile: bool,
     cap_applied: bool,
+    domain_complete: bool,
     all_unsupported_replay_valid: bool,
     obstruction_present: bool,
 ) -> str:
@@ -418,6 +422,7 @@ def _production_classify_from_partitions(
         all_unsupported_replay_valid=all_unsupported_replay_valid,
         hard_profile=hard_profile,
         cap_applied=cap_applied,
+        domain_complete=domain_complete,
         obstruction_summary=obstruction_summary,
     )
 
@@ -447,7 +452,7 @@ class _StructuralGoalSplitVerifier(_TracingGoalVerifier):
 
     def verify(self, program: str) -> VerifyOutcome:
         overall = "ACCEPT" if program in self._accept else "REJECT"
-        structural = "REJECT" if program.endswith("x") else overall
+        structural = "ACCEPT"
         evidence = GoalTerminalEvidenceV1(
             profile_digest=self._profile_digest,
             program_digest=_program_digest(program),
@@ -455,7 +460,10 @@ class _StructuralGoalSplitVerifier(_TracingGoalVerifier):
             program_spec_digest="3" * 64,
             semantic_plan_digest="4" * 64,
             constraint_evaluations=(
-                GoalConstraintEvaluationV1(constraint_id="c_slot_button", status="PASS"),
+                GoalConstraintEvaluationV1(
+                    constraint_id="c_slot_button",
+                    status="PASS" if overall == "ACCEPT" else "FAIL",
+                ),
             ),
             required_gate_results=(GoalGateResultV1(gate_id="G0", status="ACCEPT"),),
             mandatory_unknown_atoms=self._unknown_atoms,
@@ -900,33 +908,36 @@ def test_exhaustive_classifier_matches_frozen_truth_table() -> None:
                 for hard_profile in (True, False):
                     for cap_applied in (True, False):
                         for all_unsupported_replay_valid in (True, False):
-                            for obstruction_present in (True, False):
-                                inputs = ClassificationInputsV1(
-                                    selected=selected,
-                                    hard_profile=hard_profile,
-                                    cap_applied=cap_applied,
-                                    all_unsupported_replay_valid=all_unsupported_replay_valid,
-                                    obstruction_present=obstruction_present,
-                                )
-                                expected = ref_classify_domain_adequacy(partitions, inputs)
-                                got = _production_classify_from_partitions(
-                                    partitions,
-                                    selected=selected,
-                                    hard_profile=hard_profile,
-                                    cap_applied=cap_applied,
-                                    all_unsupported_replay_valid=all_unsupported_replay_valid,
-                                    obstruction_present=obstruction_present,
-                                )
-                                checked += 1
-                                if got != expected:
-                                    mismatches.append(
-                                        {
-                                            "partitions": partitions,
-                                            "inputs": inputs,
-                                            "expected": expected,
-                                            "got": got,
-                                        }
+                            for domain_complete in (True, False):
+                                for obstruction_present in (True, False):
+                                    inputs = ClassificationInputsV1(
+                                        selected=selected,
+                                        hard_profile=hard_profile,
+                                        cap_applied=cap_applied,
+                                        domain_complete=domain_complete,
+                                        all_unsupported_replay_valid=all_unsupported_replay_valid,
+                                        obstruction_present=obstruction_present,
                                     )
+                                    expected = ref_classify_domain_adequacy(partitions, inputs)
+                                    got = _production_classify_from_partitions(
+                                        partitions,
+                                        selected=selected,
+                                        hard_profile=hard_profile,
+                                        cap_applied=cap_applied,
+                                        domain_complete=domain_complete,
+                                        all_unsupported_replay_valid=all_unsupported_replay_valid,
+                                        obstruction_present=obstruction_present,
+                                    )
+                                    checked += 1
+                                    if got != expected:
+                                        mismatches.append(
+                                            {
+                                                "partitions": partitions,
+                                                "inputs": inputs,
+                                                "expected": expected,
+                                                "got": got,
+                                            }
+                                        )
     assert not mismatches, mismatches[:3]
     assert checked >= 512
 
@@ -1004,7 +1015,9 @@ def test_structural_support_differs_from_goal_support() -> None:
             profile_digest=digest,
         )
 
-    provider = GoalSupportProvider(expander, prof, factory)
+    provider = GoalSupportProvider(
+        expander, prof, factory, constraint_set=_compiled_set()
+    )
     report, _ = analyze_goal_domain(
         state=expander.root_state(),
         hole_id=_hole(expander),
@@ -1049,6 +1062,7 @@ def test_bound_exhaustion_prevents_domain_inadequacy() -> None:
             profile_label="tight",
             profile_digest=digest,
         ),
+        constraint_set=_compiled_set(),
     )
     report, _ = analyze_goal_domain(
         state=expander.root_state(),
