@@ -26,7 +26,8 @@ from __future__ import annotations
 
 import hashlib
 import re
-from typing import Any, Literal, Protocol
+from collections.abc import Mapping
+from typing import Any, Literal, Protocol, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -122,6 +123,14 @@ _MAX_BOUNDED_FIELD_CHARS = 240
 class _StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    def model_copy(
+        self, *, update: Mapping[str, Any] | None = None, deep: bool = False
+    ) -> Self:
+        """Copy through validation so mode/authority cannot bypass validators."""
+        payload = self.model_dump(mode="python", round_trip=True)
+        payload.update(dict(update or {}))
+        return type(self).model_validate(payload)
+
 
 def redact_bounded_string(text: str) -> str:
     """Strip secret-shaped substrings and bound length for terminal evidence."""
@@ -129,14 +138,14 @@ def redact_bounded_string(text: str) -> str:
         return text
     if len(text) == 64 and all(char in "0123456789abcdef" for char in text):
         return text
-    if "...[truncated:" in text:
+    if text.startswith("[REDACTED:") and text.endswith("]"):
         return text
     scrubbed = text
     for pattern in _SECRET_PATTERNS:
         scrubbed = pattern.sub("[REDACTED]", scrubbed)
-    if len(scrubbed) > _MAX_BOUNDED_FIELD_CHARS:
+    if len(text) > _MAX_BOUNDED_FIELD_CHARS:
         digest = hashlib.sha256(text.encode("utf-8")).hexdigest()[:12]
-        scrubbed = f"{scrubbed[:_MAX_BOUNDED_FIELD_CHARS]}...[truncated:{digest}]"
+        scrubbed = f"[REDACTED:{digest}]"
     return scrubbed
 
 
@@ -339,6 +348,10 @@ def validate_profile_against_constraint_set(
     """Fail closed when profile identities are stale or mode/partition laws break."""
     if constraint_set.schema_version != COMPILED_GOAL_CONSTRAINT_SET_SCHEMA_VERSION:
         raise ValueError("unsupported CompiledGoalConstraintSetV1 version")
+    if not constraint_set.digest or constraint_set.compute_digest() != constraint_set.digest:
+        raise ValueError("constraint set digest is stale or its payload was mutated")
+    if not profile.digest or profile.compute_digest() != profile.digest:
+        raise ValueError("goal-verifier profile digest is stale or tampered")
 
     if profile.problem_digest != constraint_set.problem_digest:
         raise ValueError("profile problem_digest is stale vs constraint set")
@@ -536,6 +549,32 @@ class GoalTerminalEvidenceV1(_StrictModel):
                     "unknown, skipped, heuristic, advisory, or version-mismatched "
                     f"(atom_id={atom.atom_id!r})"
                 )
+
+        has_reject = (
+            self.structural_status == "REJECT"
+            or bool(self.mandatory_failure_atoms)
+            or any(item.status == "FAIL" for item in self.constraint_evaluations)
+            or any(item.status == "REJECT" for item in self.required_gate_results)
+            or any(item.status == "REJECT" for item in self.required_evaluator_results)
+        )
+        has_unknown = (
+            self.structural_status == "UNAVAILABLE"
+            or bool(self.mandatory_unknown_atoms)
+            or any(
+                item.status in {"UNKNOWN", "NOT_APPLICABLE"}
+                for item in self.constraint_evaluations
+            )
+            or any(item.status == "UNAVAILABLE" for item in self.required_gate_results)
+            or any(
+                item.status == "UNAVAILABLE" for item in self.required_evaluator_results
+            )
+        )
+        expected = "REJECT" if has_reject else "UNAVAILABLE" if has_unknown else "ACCEPT"
+        if self.overall_status != expected:
+            raise ValueError(
+                f"overall_status {self.overall_status!r} conflicts with terminal evidence; "
+                f"expected {expected!r}"
+            )
 
         if self.evidence_digest:
             expected = self.compute_digest()

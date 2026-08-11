@@ -324,7 +324,8 @@ def test_long_literal_redacted_in_terminal_evidence_to_dict() -> None:
     payload = evidence.to_dict()
     reason = payload["required_gate_results"][0]["reason_code"]
     assert len(reason) <= 280
-    assert "truncated:" in reason
+    assert reason.startswith("[REDACTED:")
+    assert "x" not in reason
 
 
 def test_profile_digest_tampering_rejected() -> None:

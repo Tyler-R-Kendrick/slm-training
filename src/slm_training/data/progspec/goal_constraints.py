@@ -11,8 +11,8 @@ Design invariants (see SLM-494 acceptance criteria):
 
 * ``may_prune=True`` only when authority is ``compiler-hard`` or
   ``verifier-hard``, completeness is ``EXACT``, and ``source_kind`` is an
-  independently exact source (``pack_contract`` or
-  ``verification_requirement`` only — fail-closed).
+  independently exact source (structured ``generation_request``,
+  ``pack_contract``, or ``verification_requirement`` — fail-closed).
 * No constructor, loader, migration, copy, merge, or projection may increase
   authority, completeness, or pruning power.
 * Identical constraints merge to the weaker authority/completeness; same-id
@@ -26,7 +26,8 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-from typing import Any, Literal
+from collections.abc import Mapping
+from typing import Any, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -202,6 +203,14 @@ def authority_matrix() -> dict[str, Any]:
 
 class _StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
+
+    def model_copy(
+        self, *, update: Mapping[str, Any] | None = None, deep: bool = False
+    ) -> Self:
+        """Copy through validation; Pydantic's unchecked update can launder authority."""
+        payload = self.model_dump(mode="python", round_trip=True)
+        payload.update(dict(update or {}))
+        return type(self).model_validate(payload)
 
 
 class GoalConstraintV1(_StrictModel):
