@@ -1,0 +1,234 @@
+{
+  "covered_families": [
+    "certificate_mutation_or_wrong_encoding",
+    "declaration_module_source_toolchain_lock_drift",
+    "forged_completeness_exhaustion_replay_metadata",
+    "proposition_tautology_or_weaken",
+    "shared_parser_checker_family_fault",
+    "skipped_timeout_missing_checker_as_success",
+    "stale_problem_state_identity",
+    "unexpected_axiom_or_forbidden_proof_escape",
+    "v1_v2_migration_tamper_or_digest_mismatch"
+  ],
+  "evid": "EVID-11",
+  "issue": "SLM-559",
+  "missing_families": [],
+  "mutation_count": 17,
+  "mutations": [
+    {
+      "capability": "exact_proposition",
+      "case_id": "mut_same_name_proposition_to_true",
+      "detail": "source-tree digest drift; proposition mutation: live type fingerprint != sealed expected; proposition mutation: live ascription != sealed expected_proposition",
+      "expect_reject": true,
+      "family": "proposition_tautology_or_weaken",
+      "gate": "theorem_binding.verify_theorem_binding",
+      "ok": true,
+      "rejected": true
+    },
+    {
+      "capability": "exact_proposition",
+      "case_id": "mut_changed_conclusion",
+      "detail": "source-tree digest drift; proposition mutation: live type fingerprint != sealed expected; proposition mutation: live ascription != sealed expected_proposition",
+      "expect_reject": true,
+      "family": "proposition_tautology_or_weaken",
+      "gate": "theorem_binding.verify_theorem_binding",
+      "ok": true,
+      "rejected": true
+    },
+    {
+      "capability": "toolchain_lock",
+      "case_id": "mut_toolchain_lock_drift",
+      "detail": "lake manifest/lock digest drift",
+      "expect_reject": true,
+      "family": "declaration_module_source_toolchain_lock_drift",
+      "gate": "theorem_binding.verify_theorem_binding",
+      "ok": true,
+      "rejected": true
+    },
+    {
+      "capability": "source_identity",
+      "case_id": "mut_source_tree_drift",
+      "detail": "source-tree digest drift",
+      "expect_reject": true,
+      "family": "declaration_module_source_toolchain_lock_drift",
+      "gate": "theorem_binding.verify_theorem_binding",
+      "ok": true,
+      "rejected": true
+    },
+    {
+      "capability": "module_binding",
+      "case_id": "mut_catalog_module_redirection",
+      "detail": "catalog redirection: catalog module 'LeverProofLean.OtherModule' != binding module 'LeverProofLean.ExactClosure'",
+      "expect_reject": true,
+      "family": "declaration_module_source_toolchain_lock_drift",
+      "gate": "theorem_binding.verify_theorem_binding",
+      "ok": true,
+      "rejected": true
+    },
+    {
+      "capability": "axiom_audit",
+      "case_id": "mut_unexpected_axiom",
+      "detail": "unexpected axiom footprint: live=['classical.choice'] sealed=[]; axiom footprint digest drift",
+      "expect_reject": true,
+      "family": "unexpected_axiom_or_forbidden_proof_escape",
+      "gate": "theorem_binding.verify_theorem_binding",
+      "ok": true,
+      "rejected": true
+    },
+    {
+      "capability": "axiom_audit",
+      "case_id": "mut_forbidden_proof_escape_token",
+      "detail": "forbidden token 'sorry' matched",
+      "expect_reject": true,
+      "family": "unexpected_axiom_or_forbidden_proof_escape",
+      "gate": "formal_contracts.FORBIDDEN_SOURCE",
+      "ok": true,
+      "rejected": true
+    },
+    {
+      "capability": "semantic_replay",
+      "case_id": "mut_forged_exhaustion_replay_flags",
+      "detail": "forged exhaustion/replay flags did not authorize removal",
+      "expect_reject": true,
+      "family": "forged_completeness_exhaustion_replay_metadata",
+      "gate": "judgment.classify",
+      "ok": true,
+      "rejected": true
+    },
+    {
+      "capability": "semantic_replay",
+      "case_id": "mut_legacy_exhaustion_telemetry",
+      "detail": "legacy exhaustion telemetry correctly inert",
+      "expect_reject": true,
+      "family": "forged_completeness_exhaustion_replay_metadata",
+      "gate": "refutation_authority.legacy_exhaustion_authorizes_removal",
+      "ok": true,
+      "rejected": true
+    },
+    {
+      "capability": "checker_trust",
+      "case_id": "mut_skipped_checker_as_success",
+      "detail": "incomplete/skipped/unknown checker evidence cannot be checked semantic authority",
+      "expect_reject": true,
+      "family": "skipped_timeout_missing_checker_as_success",
+      "gate": "authority.from_formal_object_v1",
+      "ok": true,
+      "rejected": true
+    },
+    {
+      "capability": "checker_trust",
+      "case_id": "mut_timeout_missing_tool_strip_evidence",
+      "detail": "['timed_out']->unknown; ['missing_tool']->unknown; ['skipped_replay']->unknown",
+      "expect_reject": true,
+      "family": "skipped_timeout_missing_checker_as_success",
+      "gate": "judgment.from_exact_closure_query",
+      "ok": true,
+      "rejected": true
+    },
+    {
+      "capability": "binding_identity",
+      "case_id": "mut_stale_problem_identity",
+      "detail": "stale problem_id rejected",
+      "expect_reject": true,
+      "family": "stale_problem_state_identity",
+      "gate": "refutation_authority.evidence_authorizes_removal",
+      "ok": true,
+      "rejected": true
+    },
+    {
+      "capability": "encoding_correctness",
+      "case_id": "mut_certificate_wrong_encoding",
+      "detail": "wrong encoding digest blocked authority",
+      "expect_reject": true,
+      "family": "certificate_mutation_or_wrong_encoding",
+      "gate": "encoding_adapter.encoding_authorizes_semantic_result",
+      "ok": true,
+      "rejected": true
+    },
+    {
+      "capability": "encoding_correctness",
+      "case_id": "mut_stale_problem_digest_on_mint",
+      "detail": "stale problem digest blocked mint",
+      "expect_reject": true,
+      "family": "certificate_mutation_or_wrong_encoding",
+      "gate": "encoding_adapter.mint_checked_certificate_via_encoding",
+      "ok": true,
+      "rejected": true
+    },
+    {
+      "capability": "trust_domain_diversity",
+      "case_id": "mut_shared_parser_family_fault",
+      "detail": "shared python_structural/reference trust domain denied semantic authority",
+      "expect_reject": true,
+      "family": "shared_parser_checker_family_fault",
+      "gate": "mutation_suite.semantic_authority_requires_distinct_trust_domains",
+      "ok": true,
+      "rejected": true
+    },
+    {
+      "capability": "provenance_digest",
+      "case_id": "mut_v2_content_digest_mismatch",
+      "detail": "formal authority content_digest mismatch (declared=0000000000000000000000000000000000000000000000000000000000000000, recomputed=8658ac0c633614c4aff56f7ea29c7b251b4dca07343d2fc812bd12776c2e3aa7)",
+      "expect_reject": true,
+      "family": "v1_v2_migration_tamper_or_digest_mismatch",
+      "gate": "authority.FormalAuthorityV2.from_dict",
+      "ok": true,
+      "rejected": true
+    },
+    {
+      "capability": "provenance_digest",
+      "case_id": "mut_v1_v2_migration_tamper",
+      "detail": "authority_class 'checked_semantic' contradicts judgment (derived='unchecked')",
+      "expect_reject": true,
+      "family": "v1_v2_migration_tamper_or_digest_mismatch",
+      "gate": "authority.load_formal_authority",
+      "ok": true,
+      "rejected": true
+    }
+  ],
+  "passed": true,
+  "positive_controls": [
+    {
+      "capability": "semantic_replay",
+      "case_id": "pos_exact_replay_authorizes",
+      "detail": "exact replay authorized",
+      "expect_reject": false,
+      "family": "positive",
+      "gate": "refutation_authority.evidence_authorizes_removal",
+      "ok": true,
+      "rejected": false
+    },
+    {
+      "capability": "encoding_correctness",
+      "case_id": "pos_honest_encoding_authorizes",
+      "detail": "honest encoding authorized",
+      "expect_reject": false,
+      "family": "positive",
+      "gate": "encoding_adapter.encoding_authorizes_semantic_result",
+      "ok": true,
+      "rejected": false
+    },
+    {
+      "capability": "exact_proposition",
+      "case_id": "pos_sealed_binding_holds",
+      "detail": "sealed binding holds",
+      "expect_reject": false,
+      "family": "positive",
+      "gate": "theorem_binding.verify_theorem_binding",
+      "ok": true,
+      "rejected": false
+    }
+  ],
+  "positive_count": 3,
+  "schema": "formal_evidence_mutation_suite_report/v1",
+  "structural_consistency_alone_confers_authority": false,
+  "version_stamp": {
+    "code_commit": "88857e369417f185d5dba02bb7e43e9aab3425fa",
+    "code_dirty": true,
+    "components": {
+      "formal.objects": "v18"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-11T14:23:02.564717+00:00"
+  }
+}

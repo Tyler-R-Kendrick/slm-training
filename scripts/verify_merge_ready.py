@@ -110,6 +110,15 @@ def merge_gate_steps(*, fast: bool = False) -> tuple[Step, ...]:
             "evidence_ledger",
             (python, "-m", "scripts.build_evidence_ledger", "--check"),
         ),
+        Step(
+            "formal_evidence_mutations",
+            (
+                python,
+                "-m",
+                "scripts.verify_formal_evidence_mutations",
+                "--check",
+            ),
+        ),
     ]
     if not fast:
         steps.append(

@@ -46,6 +46,10 @@ from slm_training.formal.theorem_binding import (
     seal_theorem_binding,
     verify_theorem_binding,
 )
+from slm_training.formal.mutation_suite import (
+    run_suite as run_formal_evidence_mutation_suite,
+    semantic_authority_requires_distinct_trust_domains,
+)
 from slm_training.formal.objects import (
     FORMAL_OBJECT_SCHEMA,
     FormalObjectKind,
@@ -91,4 +95,6 @@ __all__ = [
     "LeanTheoremBindingV1",
     "seal_theorem_binding",
     "verify_theorem_binding",
+    "run_formal_evidence_mutation_suite",
+    "semantic_authority_requires_distinct_trust_domains",
 ]

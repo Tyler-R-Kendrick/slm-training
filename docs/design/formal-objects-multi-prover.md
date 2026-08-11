@@ -74,6 +74,33 @@ capability/trust domain, and original problem digest on `FormalAuthorityV2`.
 Pilot formats (`lrat_pilot` / `pblean_pilot` / `alethe_pilot`) are named for
 future RESEARCH pilots and are not production dependencies.
 
+### Mutation / red-team acceptance suite (EVID-11)
+
+Code: `src/slm_training/formal/mutation_suite.py`  
+Matrix: `resources/formal/evid11_mutation_matrix.v1.json`  
+Results: [`formal-evidence-mutation-results.json`](formal-evidence-mutation-results.json)  
+CI: `python -m scripts.verify_formal_evidence_mutations --check`
+
+Release-blocking adversarial suite for formal evidence v2. Deterministic
+fixtures map each required mutation family to the exact gate/capability that
+must reject it (reusing EVID-06/07/09/10 — no third evidence stack). Positive
+controls still pass. Shared `python_structural`/`python_reference` trust
+domains do **not** count as independent semantic authority (EVID-08
+reclassification target). Structural consistency / provenance alone cannot
+confer semantic authority.
+
+| Family | Gate (intended layer) |
+| --- | --- |
+| proposition tautology / weaken | `theorem_binding.verify_theorem_binding` (EVID-07) |
+| declaration / module / source / toolchain / lock drift | `theorem_binding.verify_theorem_binding` (EVID-07) |
+| unexpected axiom / forbidden proof escape | binding axiom audit + `FORBIDDEN_SOURCE` (EVID-07) |
+| forged completeness / exhaustion / replay metadata | `judgment.classify` / legacy exhaustion (EVID-09) |
+| skipped / timeout / missing checker as success | `authority.from_formal_object_v1` + adapters (EVID-06/09) |
+| stale problem / state identity | `evidence_authorizes_removal` (EVID-09) |
+| certificate mutation / wrong encoding | `encoding_authorizes_semantic_result` (EVID-10) |
+| shared parser / checker-family fault | distinct trust-domain gate (EVID-11/08) |
+| v1/v2 migration tamper / digest mismatch | `FormalAuthorityV2.from_dict` / `build_formal_authority_v2` (EVID-06) |
+
 ### Exact theorem binding (EVID-07)
 
 Schema: `lean.theorem_binding/v1`  
