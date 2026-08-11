@@ -57,3 +57,11 @@ non-dominance.
 
 Frozen fixtures:
 `src/slm_training/resources/formal/mechanism_trigger_fixtures.v1.json`.
+
+## Autoresearch admission (INTEG-02)
+
+[`integ-02-mechanism-no-effect-preflight.md`](integ-02-mechanism-no-effect-preflight.md)
+hooks these certificates into the existing preflight seam
+(`autoresearch/preflight/mechanism_no_effect.py`). Skip only on complete
+trigger-absence; unknown / incomplete always run.
+

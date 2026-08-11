@@ -179,3 +179,23 @@ also computes the candidate's arm fingerprint from its `slug`
 fingerprint, without weakening `_knobs_fingerprint`'s established
 (steps-excluded, 16-hex, truncated) identity used elsewhere for
 champion-queue dedup.
+
+## The `mechanism_no_effect` check (INTEG-02 / SLM-555)
+
+Optional theorem-backed admission for mechanism treatments. Reuses KERN-08
+`emit_no_effect_certificate` — never invents a second no-effect authority.
+
+Candidate keys (all optional; check idles without `mechanism_id`)::
+
+    mechanism_id, corpus_id, observations|locked_corpus, scan_complete,
+    campaign_id, experiment_id, manifest_sha256, cost_model, theorem_ref,
+    claim_class
+
+| verdict | condition |
+| --- | --- |
+| `block` (`skip_no_effect`) | complete scan + every trigger proved absent + certificate emits |
+| `pass` (`run`) | present trigger, unknown evidence, incomplete scan, unsafe mechanism, or missing corpus |
+| `warn` | check crash (package fail-soft law) |
+
+Design notes: [`integ-02-mechanism-no-effect-preflight.md`](integ-02-mechanism-no-effect-preflight.md).
+

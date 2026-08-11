@@ -37,9 +37,6 @@ from slm_training.harness_core.bounded_process import (
     ProcessOutcome,
     run_bounded_process,
 )
-from slm_training.harnesses.reasoning.revmath.schemas import (
-    RevmathFourAxisAnalysisV1,
-)
 from slm_training.levers import (
     INTERRUPT_AFTER_SECONDS,
     KILL_GRACE_SECONDS,
@@ -48,6 +45,9 @@ from slm_training.levers import (
 from slm_training.lineage.records import canonical_json
 
 if TYPE_CHECKING:
+    from slm_training.harnesses.reasoning.revmath.schemas import (
+        RevmathFourAxisAnalysisV1,
+    )
     from slm_training.dsl.solver.closure import ClosureResult
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -853,6 +853,7 @@ def validate_formal_preflight_artifact(
             f"({preflight.status})"
         )
     return preflight
+
 
 
 def validate_formal_preflights(
