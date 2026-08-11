@@ -502,7 +502,37 @@
       ],
       "design_doc": "docs/design/reverse-mathematics-computability.md",
       "ownership_map_subsystem": null,
-      "notes": "HARN-03 CLI for frozen-task hermetic/Lean runs; campaign binding remains HARN-10."
+      "notes": "HARN-03 CLI for frozen-task hermetic/Lean runs; campaign-locked profile path is revmath_profile_cli (HARN-10)."
+    },
+    {
+      "id": "revmath_profile_binding",
+      "kind": "campaign_binding",
+      "owner_module": "src/slm_training/harnesses/reasoning/revmath/profile_binding.py",
+      "owner_symbols": [
+        "RevmathProfilePlanV1",
+        "RevmathProfileRunV1",
+        "materialize_fixture_campaign",
+        "assert_tasks_match_lock",
+        "bind_tasks_to_lock",
+        "require_locked_campaign",
+        "run_revmath_profile",
+        "replay_profile_run_from_store",
+        "persist_formal_preflight"
+      ],
+      "design_doc": "docs/design/reverse-mathematics-computability.md",
+      "ownership_map_subsystem": "experiment_campaign",
+      "notes": "HARN-10 adapter: locks ExperimentCampaignV1 via CampaignStore, validates formal obligations, persists decode/replay/disposition through canonical owners; module name avoids revmath*campaign shadow ban."
+    },
+    {
+      "id": "revmath_profile_cli",
+      "kind": "command",
+      "owner_module": "scripts/run_revmath_profile.py",
+      "owner_symbols": [
+        "main"
+      ],
+      "design_doc": "docs/design/reverse-mathematics-computability.md",
+      "ownership_map_subsystem": "experiment_campaign",
+      "notes": "HARN-10 CLI entry for locked reasoning/revmath profile runs."
     }
   ],
   "extension_seams": [
@@ -584,6 +614,14 @@
       "extends": "semantic_repair",
       "new_owner_justified": true,
       "justification": "Proposition-preserving self-healing under harnesses/reasoning/revmath/self_healing.py; reuses RevmathRepairRecordV1 freeze + SemanticRepairRecordV1 lineage shape without forking distill/OpenUI repair or campaign/evidence stores."
+    },
+    {
+      "issue": "HARN-10",
+      "linear_id": "SLM-548",
+      "extends": "experiment_campaign",
+      "new_owner_justified": true,
+      "justification": "Profile campaign-binding adapter under harnesses/reasoning/revmath/profile_binding.py + run_revmath_profile CLI; reuses CampaignStore/ExperimentCampaignV1/formal/disposition/replay owners without a parallel campaign or evidence store.",
+      "status": "done"
     }
   ],
   "prohibited_duplicate_risks": [

@@ -3079,6 +3079,11 @@
       "history": [
         {
           "version": "v23",
+          "date": "2026-08-11T13:14:39Z",
+          "note": "no-bump: HARN-10 (SLM-548) wires check_changed path\u2192test map for revmath profile_binding / run_revmath_profile only; ownership map unchanged."
+        },
+        {
+          "version": "v23",
           "date": "2026-08-11T12:54:41Z",
           "note": "no-bump: HARN-09 (SLM-560) wires check_changed path\u2192test map for revmath self_healing only; ownership map unchanged."
         },
@@ -3370,7 +3375,7 @@
       ]
     },
     "governance.revmath_owners": {
-      "version": "v13",
+      "version": "v14",
       "kind": "gate",
       "paths": [
         "docs/design/adr-revmath-reasoning-profile.md",
@@ -3380,6 +3385,11 @@
         "tests/test_scripts/test_verify_revmath_owners.py"
       ],
       "history": [
+        {
+          "version": "v14",
+          "date": "2026-08-11T13:20:00Z",
+          "note": "HARN-10 (SLM-548): register revmath_profile_binding + revmath_profile_cli surfaces and HARN-10 extension seam."
+        },
         {
           "version": "v13",
           "date": "2026-08-11",
@@ -3458,7 +3468,7 @@
       ]
     },
     "governance.revmath_harness_parity": {
-      "version": "v9",
+      "version": "v10",
       "kind": "gate",
       "paths": [
         "src/slm_training/resources/revmath_harness_parity.json",
@@ -3467,6 +3477,11 @@
         "tests/test_scripts/test_verify_revmath_harness_parity.py"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-08-11T13:14:28Z",
+          "note": "HARN-10 (SLM-548): flip commands.revmath_profile_cli and campaign.revmath_run_binding obligations to present."
+        },
         {
           "version": "v9",
           "date": "2026-08-11T12:54:41Z",
@@ -18332,7 +18347,7 @@
       ]
     },
     "harness.reasoning.revmath": {
-      "version": "v10",
+      "version": "v11",
       "kind": "harness",
       "paths": [
         "scripts/run_revmath_task.py",
@@ -18349,9 +18364,17 @@
         "tests/test_harnesses/reasoning/test_revmath_labeling.py",
         "tests/test_harnesses/reasoning/test_revmath_quantitative_bound.py",
         "src/slm_training/harnesses/reasoning/revmath/self_healing.py",
-        "tests/test_harnesses/reasoning/test_revmath_self_healing.py"
+        "tests/test_harnesses/reasoning/test_revmath_self_healing.py",
+        "scripts/run_revmath_profile.py",
+        "src/slm_training/harnesses/reasoning/revmath/profile_binding.py",
+        "tests/test_harnesses/reasoning/test_revmath_profile_binding.py"
       ],
       "history": [
+        {
+          "version": "v11",
+          "date": "2026-08-11T13:14:28Z",
+          "note": "HARN-10 (SLM-548): profile_binding adapter + run_revmath_profile CLI; lock ExperimentCampaignV1, formal/evidence/disposition persistence."
+        },
         {
           "version": "v10",
           "date": "2026-08-11T12:54:41Z",
