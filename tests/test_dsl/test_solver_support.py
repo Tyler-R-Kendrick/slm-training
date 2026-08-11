@@ -201,18 +201,39 @@ def test_unknown_from_partial_coverage_never_unsupported():
     assert "partial" in result.certificate.coverage_observations
 
 
-def test_unknown_from_each_budget_class():
-    # A deep chain; a tiny node budget forces a budget stop -> UNKNOWN.
-    tree = {"": (("a", "continue", "complete"),), "a": (("b", "continue", "complete"),),
-            "ab": (("c", "terminal", "complete"),)}
-    expander = _WordExpander(tree, bounds=replace(_GENEROUS, max_nodes=1))
-    verifier = _AcceptVerifier({"abc"})
+@pytest.mark.parametrize(
+    ("tree", "bounds", "reason"),
+    (
+        ({"": (("a", "terminal", "complete"),)}, replace(_GENEROUS, max_nodes=0), "budget:max_nodes"),
+        ({"": (("a", "terminal", "complete"),)}, replace(_GENEROUS, max_tokens=0), "budget:max_tokens"),
+        ({"": (("a", "continue", "complete"),), "a": (("b", "terminal", "complete"),)}, replace(_GENEROUS, max_depth=0), "budget:max_depth"),
+        ({"": (("a", "dead", "complete"),)}, replace(_GENEROUS, max_backtracks=0), "budget:max_backtracks"),
+        ({"": (("a", "terminal", "complete"),)}, replace(_GENEROUS, max_verifier_calls=0), "budget:max_verifier_calls"),
+    ),
+)
+def test_unknown_from_each_budget_class(tree, bounds, reason):
+    expander = _WordExpander(tree, bounds=bounds)
+    verifier = _AcceptVerifier(set())
     result = EnumerativeSupportOracle(expander, verifier).check(
         expander.root_state(), _query(expander, "a")
     )
     assert result.verdict is SupportVerdict.UNKNOWN
-    assert result.certificate.stop_reason == "budget:max_nodes"
+    assert result.certificate.stop_reason == reason
     assert result.certificate.exhausted is False
+
+
+def test_expander_timeout_is_unknown() -> None:
+    expander = _WordExpander({"": (("a", "terminal", "complete"),)})
+
+    def timeout(*_args):
+        raise TimeoutError
+
+    expander.successor = timeout  # type: ignore[method-assign]
+    result = EnumerativeSupportOracle(expander, _AcceptVerifier(set())).check(
+        expander.root_state(), _query(expander, "a")
+    )
+    assert result.verdict is SupportVerdict.UNKNOWN
+    assert ("incomplete:expander_timeout", 1) in result.certificate.failure_counts
 
 
 def test_supported_witness_found_before_a_partial_branch():

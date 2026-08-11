@@ -217,6 +217,24 @@ def test_output_kind_and_category_compile_as_hard_constraints() -> None:
     assert kinds["output_category_equals"].parameters == {"output_category": "dashboard.card"}
 
 
+def test_optional_verification_requirement_does_not_gain_hard_authority() -> None:
+    problem = _problem(
+        verification_requirements=(
+            VerificationRequirementV1(
+                requirement_id="optional_judge",
+                kind="gate",
+                gate="G11",
+                mandatory=False,
+            ),
+        )
+    )
+    compiled = _compile(problem=problem)
+    assert not any(
+        item.source_id == "verification_requirements:optional_judge"
+        for item in compiled.constraints
+    )
+
+
 def test_advisory_component_prose_stays_advisory_and_non_pruning() -> None:
     request = _request(prompt="Build a form with a Button")
     requirements = _aligned_requirements(

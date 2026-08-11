@@ -402,6 +402,8 @@ def _hard_verification_requirements(
 ) -> tuple[GoalConstraintV1, ...]:
     constraints: list[GoalConstraintV1] = []
     for requirement in sorted(requirements, key=lambda item: item.requirement_id):
+        if not requirement.mandatory:
+            continue
         if requirement.kind == "gate":
             payload = {
                 "gate": requirement.gate,

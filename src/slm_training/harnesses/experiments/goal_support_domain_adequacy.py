@@ -33,7 +33,6 @@ from slm_training.data.progspec.prompt_requirements import (
     RequirementFact,
 )
 from slm_training.data.progspec.synthesis_problem import (
-    PackIdentityV1,
     VerifiedSynthesisProblemV1,
 )
 from slm_training.data.semantic_plan.requirements_compile import (
@@ -50,6 +49,7 @@ from slm_training.dsl.solver.goal_support import (
 from slm_training.dsl.solver.openui_support import (
     OpenUIGoalVerifier,
     OpenUIWellFormedVerifier,
+    current_openui_pack_identity,
 )
 from slm_training.dsl.solver.state import (
     DomainValue,
@@ -331,7 +331,7 @@ class _Context:
 
 def _contexts() -> tuple[_Context, _Context]:
     pack = get_pack("openui")
-    identity = PackIdentityV1(pack_id="openui")
+    identity = current_openui_pack_identity()
     request = GenerationRequest(
         prompt="Fill the exact opaque slot contract.", slot_contract=(":slot_0",)
     )
@@ -438,11 +438,12 @@ def _provider(state: FiniteDomainState, context: _Context) -> GoalSupportProvide
 
     def verifier() -> OpenUIGoalVerifier:
         return OpenUIGoalVerifier(
-            goal_profile=context.profile,
-            constraints=context.constraints,
-            pack=pack,
+            profile=context.profile,
+            constraint_set=context.constraints,
+            problem=context.problem,
+            request=context.request,
             pack_identity=context.problem.pack_identity,
-            generation_request=context.request,
+            pack=pack,
         )
 
     return GoalSupportProvider(

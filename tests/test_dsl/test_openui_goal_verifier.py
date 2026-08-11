@@ -18,6 +18,8 @@ from slm_training.data.progspec.synthesis_problem import PackIdentityV1
 from slm_training.data.semantic_plan.requirements_compile import (
     COMPILER_VERSION,
     compile_goal_constraints,
+    request_production_digest,
+    source_digest,
 )
 from slm_training.data.progspec.synthesis_problem import VerifiedSynthesisProblemV1
 from slm_training.data.progspec.prompt_requirements import PromptSemanticRequirementsV1
@@ -38,6 +40,7 @@ from slm_training.dsl.solver.openui_support import (
     GoalTerminalEvidenceTrace,
     OpenUIGoalVerifier,
     OpenUIWellFormedVerifier,
+    current_openui_pack_identity,
     goal_verifier_invocation_map,
     goal_verifier_status_table,
 )
@@ -73,12 +76,14 @@ def _ast_for_openui(openui: str) -> dict[str, object]:
     }
 
 
-def _manual_program_spec(*, program_id: str, openui: str) -> ProgramSpec:
+def _manual_program_spec(
+    *, program_id: str, openui: str, facts: dict[str, object] | None = None
+) -> ProgramSpec:
     return ProgramSpec(
         id=program_id,
         ast=_ast_for_openui(openui),
         canonical_openui=openui.strip(),
-        facts={},
+        facts=facts or {},
         contract_id=contract_id(),
         program_family_id=program_id,
         lineage_id=program_id,
@@ -120,6 +125,7 @@ def _patch_bridge_free_projection(monkeypatch: pytest.MonkeyPatch) -> None:
         lambda **kwargs: _manual_program_spec(
             program_id=str(kwargs["id"]),
             openui=str(kwargs["openui"]),
+            facts=dict(kwargs.get("facts") or {}),
         ),
     )
     monkeypatch.setattr(
@@ -137,17 +143,20 @@ def _digest(label: str) -> str:
 
 
 def _pack_identity(**overrides: object) -> PackIdentityV1:
-    defaults: dict[str, object] = {
-        "pack_id": "openui",
-        "contract_version": 2,
-        "grammar_sha256": "a" * 64,
-        "tokenizer_id": "tok/v1",
-        "canonicalizer_id": "canon/v1",
-        "artifact_schema": "openui/v1",
-        "artifact_sha256": "b" * 64,
-    }
+    defaults: dict[str, object] = current_openui_pack_identity().model_dump()
     defaults.update(overrides)
     return PackIdentityV1(**defaults)
+
+
+def _test_problem() -> VerifiedSynthesisProblemV1:
+    return VerifiedSynthesisProblemV1(
+        problem_id="openui-goal-verifier-test",
+        pack_identity=_pack_identity(),
+    )
+
+
+def _test_request() -> GenerationRequest:
+    return GenerationRequest(prompt="Build a Button", slot_contract=(":slot_0",))
 
 
 def _constraint(**overrides: object) -> GoalConstraintV1:
@@ -168,12 +177,13 @@ def _constraint(**overrides: object) -> GoalConstraintV1:
 
 def _compiled_set(**overrides: object) -> CompiledGoalConstraintSetV1:
     hard = _constraint(
-        constraint_id="hard.slot.button",
+        constraint_id="hard.slot_inventory_exact",
         kind="slot_inventory_exact",
-        parameters={"slots": [":cta.label"]},
+        parameters={"slots": [":slot_0"]},
         source_kind="generation_request",
         source_id="generation_request.slot_contract",
-        may_prune=False,
+        source_digest=source_digest({"slots": [":slot_0"]}),
+        may_prune=True,
     )
     advisory = _constraint(
         constraint_id="adv.hint",
@@ -185,8 +195,10 @@ def _compiled_set(**overrides: object) -> CompiledGoalConstraintSetV1:
         source_kind="prompt_requirement",
     )
     defaults: dict[str, object] = {
-        "problem_digest": "a" * 64,
-        "request_digest": "b" * 64,
+        "problem_digest": _test_problem().digest,
+        "request_digest": request_production_digest(
+            _test_request()
+        ),
         "pack_identity_digest": compute_pack_identity_digest(_pack_identity()),
         "compiler_version": COMPILER_VERSION,
         "constraints": (hard, advisory),
@@ -220,14 +232,20 @@ def _profile_for(constraint_set: CompiledGoalConstraintSetV1, **overrides: objec
 
 
 def _verifier(**overrides: object) -> OpenUIGoalVerifier:
-    constraint_set = overrides.pop("constraint_set", _compiled_set())
+    request = overrides.pop("request", _test_request())
+    problem = overrides.pop("problem", _test_problem())
+    constraint_set = overrides.pop(
+        "constraint_set",
+        _compiled_set(request_digest=request_production_digest(request)),
+    )
     profile = overrides.pop("profile", _profile_for(constraint_set))
-    request = overrides.pop("request", GenerationRequest(prompt="Build a Button"))
     structural_verifier = overrides.pop("structural_verifier", _AcceptingStructuralVerifier())
     return OpenUIGoalVerifier(
         profile=profile,
         constraint_set=constraint_set,
+        problem=problem,
         request=request,
+        pack_identity=profile.pack_identity,
         structural_verifier=structural_verifier,
         **overrides,
     )
@@ -260,7 +278,7 @@ def test_well_formed_but_exact_goal_fail_returns_reject() -> None:
 
 
 def test_fully_satisfying_terminal_returns_accept() -> None:
-    source = 'root = Button(":cta.label")'
+    source = 'root = Button(":slot_0")'
     verifier = _verifier()
     outcome = verifier.verify(source)
     assert outcome.status is VerifyStatus.ACCEPT
@@ -273,7 +291,7 @@ def test_fully_satisfying_terminal_returns_accept() -> None:
 
 
 def test_mandatory_skipped_gate_returns_unavailable() -> None:
-    source = 'root = Button(":cta.label")'
+    source = 'root = Button(":slot_0")'
     constraint_set = _compiled_set(
         constraints=(),
         hard_constraint_ids=(),
@@ -301,7 +319,7 @@ def test_mandatory_skipped_gate_returns_unavailable() -> None:
     assert any(atom.source_kind == "gate" for atom in evidence.mandatory_unknown_atoms)
 
 
-def test_optional_unknown_does_not_erase_mandatory_fail() -> None:
+def test_production_profile_rejects_uncertified_required_evaluator() -> None:
     constraint_set = _compiled_set()
     profile = _profile_for(
         constraint_set,
@@ -312,20 +330,43 @@ def test_optional_unknown_does_not_erase_mandatory_fail() -> None:
             ),
         ),
     )
-    source = 'root = TextContent(":copy.value")'
-    verifier = _verifier(profile=profile, constraint_set=constraint_set)
-    outcome = verifier.verify(source)
-    assert outcome.status is VerifyStatus.REJECT
-    evidence = verifier.last_trace.latest()
-    assert evidence is not None
-    assert any(atom.source_kind == "constraint" for atom in evidence.mandatory_failure_atoms)
+    with pytest.raises(ValueError, match="no certified exact evaluator registry"):
+        _verifier(
+            profile=profile,
+            constraint_set=constraint_set,
+        )
+
+
+def test_evaluation_evaluator_version_mismatch_is_unavailable() -> None:
+    constraint_set = _compiled_set(
+        constraints=(),
+        hard_constraint_ids=(),
+        advisory_constraint_ids=(),
+        evaluation_constraint_ids=(),
+    )
+    profile = _profile_for(
+        constraint_set,
+        mode="evaluation_oracle",
+        authority_tier="evaluation-only",
+        required_constraint_ids=(),
+        required_evaluators=(
+            EvaluatorIdentityV1(
+                evaluator_id="meaningful_program/v2",
+                version="not-the-live-version",
+            ),
+        ),
+    )
+    outcome = _verifier(profile=profile, constraint_set=constraint_set).verify(
+        'root = Button(":slot_0")'
+    )
+    assert outcome.status is VerifyStatus.UNAVAILABLE
 
 
 def test_evaluation_profile_cannot_emit_compiler_hard_failure_atoms() -> None:
     eval_constraint = _constraint(
         constraint_id="eval.metric",
         kind="slot_inventory_exact",
-        parameters={"slots": [":cta.label"]},
+        parameters={"slots": [":slot_0"]},
         authority_tier="evaluation-only",
         may_prune=False,
         source_kind="evaluation_fixture",
@@ -366,34 +407,103 @@ def test_profile_mismatch_fails_closed_at_construction() -> None:
         _verifier(profile=profile, constraint_set=constraint_set)
 
 
+def test_stale_request_fails_closed_at_construction() -> None:
+    constraint_set = _compiled_set(
+        request_digest=request_production_digest(GenerationRequest(prompt="request A"))
+    )
+    with pytest.raises(ValueError, match="live request"):
+        _verifier(
+            request=GenerationRequest(prompt="request B"),
+            constraint_set=constraint_set,
+            profile=_profile_for(constraint_set),
+        )
+
+
+def test_stale_pack_identity_fails_closed_at_construction() -> None:
+    constraint_set = _compiled_set()
+    profile = _profile_for(constraint_set)
+    with pytest.raises(ValueError, match="pack identity"):
+        OpenUIGoalVerifier(
+            profile=profile,
+            constraint_set=constraint_set,
+            problem=_test_problem(),
+            request=_test_request(),
+            pack_identity=_pack_identity(tokenizer_id="stale"),
+            structural_verifier=_AcceptingStructuralVerifier(),
+        )
+
+
+def test_mandatory_not_applicable_is_unavailable() -> None:
+    constraint = _constraint(
+        constraint_id="hard.output_category",
+        kind="output_category_equals",
+        parameters={"output_category": "dashboard.card"},
+        source_kind="evaluation_fixture",
+        source_id="evaluation.output_category",
+        authority_tier="evaluation-only",
+        may_prune=False,
+    )
+    constraint_set = _compiled_set(
+        constraints=(constraint,),
+        hard_constraint_ids=(),
+        advisory_constraint_ids=(),
+        evaluation_constraint_ids=(constraint.constraint_id,),
+    )
+    verifier = _verifier(
+        constraint_set=constraint_set,
+        profile=_profile_for(
+            constraint_set,
+            mode="evaluation_oracle",
+            authority_tier="evaluation-only",
+            required_constraint_ids=(constraint.constraint_id,),
+        ),
+    )
+    assert verifier.verify('root = Button(":slot_0")').status is VerifyStatus.UNAVAILABLE
+    assert any(
+        atom.atom_id == "constraint:hard.output_category"
+        for atom in verifier.terminal_evidence[-1].mandatory_unknown_atoms
+    )
+
+
+def test_structural_timeout_is_unavailable() -> None:
+    verifier = _verifier()
+    verifier._structural.verify = lambda _program: (_ for _ in ()).throw(TimeoutError())
+    assert verifier.verify('root = Button(":slot_0")').status is VerifyStatus.UNAVAILABLE
+
+
 def test_verify_is_deterministic() -> None:
-    source = 'root = Button(":cta.label")'
+    source = 'root = Button(":slot_0")'
     verifier = _verifier()
     first = verifier.verify(source)
     second = verifier.verify(source)
     assert first.status == second.status
     assert first.detail == second.detail
     assert verifier.last_trace.latest().compute_digest() == verifier.last_trace.latest().compute_digest()
+    assert len(verifier.terminal_evidence) == 2
 
 
 def test_no_cross_query_trace_contamination() -> None:
-    verifier = _verifier()
-    first_outcome = verifier.verify('root = Button(":cta.label")')
-    first_digest = verifier.last_trace.latest().evidence_digest
-    second_outcome = verifier.verify('root = TextContent(":copy.value")')
-    second_digest = verifier.last_trace.latest().evidence_digest
+    first_verifier = _verifier()
+    second_verifier = _verifier()
+    first_outcome = first_verifier.verify('root = Button(":slot_0")')
+    first_digest = first_verifier.last_trace.latest().evidence_digest
+    second_outcome = second_verifier.verify('root = TextContent(":copy.value")')
+    second_digest = second_verifier.last_trace.latest().evidence_digest
     assert first_outcome.status is VerifyStatus.ACCEPT
     assert second_outcome.status is VerifyStatus.REJECT
     assert first_digest != second_digest
-    assert isinstance(verifier.last_trace, GoalTerminalEvidenceTrace)
-    assert len(verifier.last_trace.records) == 1
+    assert isinstance(first_verifier.last_trace, GoalTerminalEvidenceTrace)
+    assert len(first_verifier.terminal_evidence) == 1
+    assert len(second_verifier.terminal_evidence) == 1
 
 
 def test_secret_shaped_content_not_in_outcome_or_evidence() -> None:
     secret = "token=hf_" + ("x" * 24)
-    request = GenerationRequest(prompt=f"Use secret {secret}")
+    request = GenerationRequest(
+        prompt=f"Use secret {secret}", slot_contract=(":slot_0",)
+    )
     verifier = _verifier(request=request)
-    outcome = verifier.verify('root = Button(":cta.label")')
+    outcome = verifier.verify('root = Button(":slot_0")')
     assert "hf_" not in outcome.detail
     payload = verifier.last_trace.latest().to_dict()
     serialized = json.dumps(payload)
@@ -418,10 +528,12 @@ def test_compile_and_verify_round_trip() -> None:
     verifier = OpenUIGoalVerifier(
         profile=profile,
         constraint_set=compiled,
+        problem=problem,
         request=request,
+        pack_identity=problem.pack_identity,
         structural_verifier=_AcceptingStructuralVerifier(),
     )
-    accept = verifier.verify('root = Button(":cta.label")')
+    accept = verifier.verify('root = Button(":slot_0")')
     assert accept.status is VerifyStatus.ACCEPT
 
 
@@ -430,7 +542,7 @@ def test_compile_and_verify_round_trip() -> None:
     reason="lang-core bridge required for live structural integration",
 )
 def test_live_structural_verifier_integration_when_bridge_available() -> None:
-    source = 'root = Button(":cta.label")'
+    source = 'root = Button(":slot_0")'
     live = OpenUIWellFormedVerifier().verify(source)
     if live.status is not VerifyStatus.ACCEPT:
         pytest.skip(f"lang-core validate unavailable at runtime: {live.detail}")

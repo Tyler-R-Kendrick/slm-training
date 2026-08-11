@@ -391,9 +391,21 @@ class EnumerativeSupportOracle:
                 incomplete = True
                 break
 
-            step = self._expander.successor(current, hole_id, value)
+            try:
+                step = self._expander.successor(current, hole_id, value)
+            except TimeoutError:
+                incomplete = True
+                failures["incomplete:expander_timeout"] = (
+                    failures.get("incomplete:expander_timeout", 0) + 1
+                )
+                continue
             counters.tokens += len(value.payload_json)
             coverage_obs.add(step.coverage)
+            budget = counters.over_budget(self._expander.bounds)
+            if budget is not None:
+                stop_reason = budget
+                incomplete = True
+                break
 
             if step.status is ExpandStatus.INCOMPLETE or step.coverage in {"partial", "none"}:
                 incomplete = True
@@ -404,6 +416,11 @@ class EnumerativeSupportOracle:
 
             if step.status is ExpandStatus.DEAD:
                 counters.backtracks += 1
+                budget = counters.over_budget(self._expander.bounds)
+                if budget is not None:
+                    stop_reason = budget
+                    incomplete = True
+                    break
                 failures[f"dead:{step.detail or 'bottom'}"] = (
                     failures.get(f"dead:{step.detail or 'bottom'}", 0) + 1
                 )
@@ -412,8 +429,9 @@ class EnumerativeSupportOracle:
             if step.status is ExpandStatus.TERMINAL:
                 program = step.program or ""
                 counters.verifier_calls += 1
-                if counters.over_budget(self._expander.bounds) is not None:
-                    stop_reason = "budget:max_verifier_calls"
+                budget = counters.over_budget(self._expander.bounds)
+                if budget is not None:
+                    stop_reason = budget
                     incomplete = True
                     break
                 outcome = self._verifier.verify(program)
@@ -448,6 +466,11 @@ class EnumerativeSupportOracle:
             explored.append(child_fp)
             if child.is_bottom:
                 counters.backtracks += 1
+                budget = counters.over_budget(self._expander.bounds)
+                if budget is not None:
+                    stop_reason = budget
+                    incomplete = True
+                    break
                 failures["dead:child_bottom"] = failures.get("dead:child_bottom", 0) + 1
                 continue
             # Push every live (hole, value) branch of the child in canonical
