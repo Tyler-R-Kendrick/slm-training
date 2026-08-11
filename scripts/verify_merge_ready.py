@@ -89,6 +89,10 @@ def merge_gate_steps(*, fast: bool = False) -> tuple[Step, ...]:
         Step("decode_invariants", (python, "-m", "scripts.verify_decode_invariants")),
         Step("agent_surfaces", (python, "-m", "scripts.verify_agent_surfaces")),
         Step("ownership_map", (python, "-m", "scripts.verify_ownership_map")),
+        Step(
+            "research_citation_catalog",
+            (python, "-m", "scripts.verify_research_citation_catalog"),
+        ),
         Step("extract_test_cases", (python, "-m", "scripts.extract_test_cases")),
         Step(
             "refresh_test_cases",

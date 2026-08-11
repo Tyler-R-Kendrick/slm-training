@@ -3142,6 +3142,11 @@
         {
           "version": "v27",
           "date": "2026-08-11",
+          "note": "no-bump: RESEARCH-01 (SLM-518) extends RESEARCH_CITATION_CATALOG_FILES in check_changed only; ownership_map.json contract unchanged."
+        },
+        {
+          "version": "v27",
+          "date": "2026-08-11",
           "note": "no-bump: INTEG-09 (SLM-575) extends REVMATH_OWNER_FILES path set in check_changed only; ownership_map.json contract unchanged."
         },
         {
@@ -3461,6 +3466,24 @@
         }
       ]
     },
+    "governance.research_citation_catalog": {
+      "version": "v1",
+      "kind": "gate",
+      "paths": [
+        "docs/design/research-citation-catalog.md",
+        "scripts/verify_research_citation_catalog.py",
+        "src/slm_training/citation_catalog.py",
+        "src/slm_training/resources/research_citation_catalog.json",
+        "tests/test_scripts/test_verify_research_citation_catalog.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-11",
+          "note": "RESEARCH-01 (SLM-518): repository-native research citation catalog with does_not_prove boundaries, source-type taxonomy, verify gate, and merge/check_changed wiring."
+        }
+      ]
+    },
     "governance.revmath_owners": {
       "version": "v22",
       "kind": "gate",
@@ -3474,6 +3497,11 @@
         "src/slm_training/resources/revmath/examples/README.md"
       ],
       "history": [
+        {
+          "version": "v22",
+          "date": "2026-08-11",
+          "note": "no-bump: RESEARCH-01 (SLM-518) docs-only pointer to research citation catalog in reverse-mathematics-computability.md; owner map unchanged."
+        },
         {
           "version": "v22",
           "date": "2026-08-11",
@@ -5105,6 +5133,11 @@
         "tests/test_autoresearch/test_formal_four_axis_ledger.py"
       ],
       "history": [
+        {
+          "version": "v21",
+          "date": "2026-08-11",
+          "note": "no-bump: RESEARCH-01 (SLM-518) wires verify_research_citation_catalog into python-static CI only; formal harness behavior unchanged."
+        },
         {
           "version": "v21",
           "date": "2026-08-11",
@@ -9538,6 +9571,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-11",
+          "note": "no-bump: RESEARCH-01 (SLM-518) adds research-citation-catalog pointer in research-lineage.md; spectral disposition behavior unchanged."
+        },
         {
           "version": "v3",
           "date": "2026-08-11",
@@ -18313,6 +18351,11 @@
         "tests/test_scripts/test_merge_ready_gate.py"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-08-11",
+          "note": "no-bump: RESEARCH-01 (SLM-518) wires verify_research_citation_catalog into merge-ready gate only; gate contract otherwise unchanged."
+        },
         {
           "version": "v8",
           "date": "2026-08-11",

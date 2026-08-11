@@ -7,6 +7,7 @@
 **ADR:** [adr-revmath-reasoning-profile.md](adr-revmath-reasoning-profile.md)  
 **Skill:** [`.agents/skills/revmath/SKILL.md`](../../.agents/skills/revmath/SKILL.md)  
 **Verified by:** `python -m scripts.verify_revmath_owners` · `python -m scripts.verify_revmath_harness_parity` · `python -m scripts.verify_agent_surfaces --obligation revmath.canonical-owners`
+**Research citations (RESEARCH-01):** [research-citation-catalog.md](research-citation-catalog.md) · machine-readable [`research_citation_catalog.json`](../../src/slm_training/resources/research_citation_catalog.json) · `python -m scripts.verify_research_citation_catalog`
 
 > **Goal law:** bound by [decode-invariants.md](decode-invariants.md). Reverse mathematics here means *which assumptions suffice for which conclusion* — not a second training stack.
 

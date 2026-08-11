@@ -53,6 +53,16 @@ REVMATH_OWNER_FILES = frozenset(
         "src/slm_training/resources/revmath/examples/README.md",
     }
 )
+RESEARCH_CITATION_CATALOG_FILES = frozenset(
+    {
+        "src/slm_training/resources/research_citation_catalog.json",
+        "scripts/verify_research_citation_catalog.py",
+        "src/slm_training/citation_catalog.py",
+        "docs/design/research-citation-catalog.md",
+        "docs/design/research-lineage.md",
+        "tests/test_scripts/test_verify_research_citation_catalog.py",
+    }
+)
 REVMATH_HARNESS_PARITY_FILES = frozenset(
     {
         "src/slm_training/resources/revmath_harness_parity.json",
@@ -486,6 +496,9 @@ def check(
             return 1
     if any(path in REVMATH_OWNER_FILES for path in paths):
         if _run([sys.executable, "-m", "scripts.verify_revmath_owners"]):
+            return 1
+    if any(path in RESEARCH_CITATION_CATALOG_FILES for path in paths):
+        if _run([sys.executable, "-m", "scripts.verify_research_citation_catalog"]):
             return 1
     if any(path in REVMATH_HARNESS_PARITY_FILES for path in paths):
         if _run([sys.executable, "-m", "scripts.verify_revmath_harness_parity"]):

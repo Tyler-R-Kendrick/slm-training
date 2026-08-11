@@ -5,6 +5,14 @@ This repo borrows ideas from several papers and systems. This page is the
 lives. Prefer linking here instead of repeating informal “inspired by 2026 …”
 notes elsewhere.
 
+Stable citation IDs, trust levels, `does_not_prove` boundaries, and derivative
+experiment keys for reverse-mathematics / computability / solver / provenance
+priors live in the RESEARCH-01 catalog:
+[research-citation-catalog.md](research-citation-catalog.md) ·
+[`research_citation_catalog.json`](../../src/slm_training/resources/research_citation_catalog.json)
+(`python -m scripts.verify_research_citation_catalog`). Repo-head links there
+are **delta baselines**, not static truth — re-audit latest `main`.
+
 Legend:
 
 | Tag | Meaning |
