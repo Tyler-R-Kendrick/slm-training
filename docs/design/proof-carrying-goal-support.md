@@ -105,7 +105,7 @@ VerifiedSynthesisProblemV1 ──┼──► compile_goal_constraints (requirem
 | Obstruction | `DomainObstructionCoreV1`, `compute_domain_obstruction_core`, `obstruction_core_algorithm_table` | `dsl/solver/goal_support_obstruction.py` |
 | Domain adequacy | `GoalActionEvidenceV1`, `GoalDomainAdequacyReportV1`, `analyze_goal_domain`, `domain_adequacy_classification_table` | `dsl/solver/goal_support_domain_adequacy.py` |
 | Decision materialization | `DecisionEventV2`, `GoalSupportStateBinding`, `materialize_goal_support` | `harnesses/preference/local_decisions.py`, `decision_events_v2.py` |
-| Decode integration | `GOAL_SUPPORT_MODES`, `build_goal_support_decode_binding`, `goal_support_certified_prune`, `goal_support_diagnostic_observe` | `dsl/solver/decode.py` |
+| Decode integration | `GOAL_SUPPORT_MODES`, `normalize_goal_support_mode`, `goal_support_prune`, `goal_support_certified_prune`, `goal_support_diagnostic_observe` | `dsl/solver/decode.py` |
 | Formal drift guard | `goal_support_mapping.py`, Lean `GoalSupport.lean` | `formal/`, `src/leverproof_lean/` |
 
 **Why no new stack components:** PGS is a thin composition layer. Search remains
@@ -160,7 +160,7 @@ Closed table in `domain_adequacy_classification_table()`:
 | `domain_adequate_selected_supported` | `supported` nonempty and selected action ∈ supported |
 | `selection_regret` | `supported` nonempty and selected ∈ unsupported |
 | `selection_unresolved` | `supported` nonempty and selected ∈ unknown ∪ unobserved |
-| `domain_inadequate_under_bounds` | No supported/unknown/unobserved actions; every legal action replay-valid `UNSUPPORTED` under hard profile; cap not applied; obstruction summary present |
+| `domain_inadequate_under_bounds` | No supported/unknown/unobserved actions; every legal action is observed and replay-valid `UNSUPPORTED` under the hard profile; a core is optional when no rejected terminal exists |
 | `coverage_unknown` | All other cases (partial forest, bound exhaustion, cap exclusion, advisory/eval modes, etc.) |
 
 > **Never use global UNSAT language.** Inadequacy is always
@@ -215,7 +215,7 @@ authority.
 
 | Source kind | Authority tier | Completeness | `may_prune` | Partition |
 | --- | --- | --- | --- | --- |
-| `generation_request` | compiler-hard | EXACT | **False** | hard |
+| `generation_request` | compiler-hard | EXACT | **True** | hard |
 | `pack_contract` | compiler-hard | EXACT | **True** | hard |
 | `verification_requirement` | verifier-hard | EXACT | **True** | hard |
 | `prompt_requirement` | advisory-learned | HEURISTIC | False | advisory |
@@ -223,7 +223,9 @@ authority.
 | `evaluation_fixture` | evaluation-only | EXACT | False | evaluation |
 
 Prune law: `may_prune=True` requires hard authority + EXACT + source ∈
-`{pack_contract, verification_requirement}` only (`GoalConstraintV1`).
+`{generation_request, pack_contract, verification_requirement}` only
+(`GoalConstraintV1`). Certified closure narrows this further to a
+`compiler-hard` profile.
 
 ### B. Profile mode → authority (`profile_mode_authority_table`)
 
@@ -301,7 +303,7 @@ Legend: ✅ allowed · ⚠ diagnostic only · ❌ forbidden · — not applicabl
 | --- | --- | --- | --- | --- |
 | `off` | **Yes** | No | No | — |
 | `diagnostic` | No | **No** — decode-identical to off | Yes — counters only | `production_exact` binding; eval/advisory **forbidden** |
-| `certified` | No | **Yes** — `goal_support_certified_prune` | Yes | `goal_support_profile_mode=production_exact`, `compiler_decode_mode ≠ off` |
+| `certified` | No | **Yes** — `goal_support_certified_prune` | Yes | request-bound `production_exact` / `compiler-hard` context, `compiler_decode_mode ≠ off` |
 
 `goal_support_mode` is **not** in `CONSTRAINT_WEAKENING_LEVERS` (`levers.py`).
 
@@ -354,7 +356,7 @@ Legend: ✅ allowed · ⚠ diagnostic only · ❌ forbidden · — not applicabl
 | **Timeout-as-unsupported** — budget stop treated as proof | Budget exhaustion → `UNKNOWN` / `coverage_unknown`; obstruction emission blocked | Misconfigured bounds in production |
 | **Raw-content exposure** — prompts in logs | Redaction + forbidden fields; H02 `raw_content_redaction` fixture | Downstream loggers bypass redaction |
 | **Diagnostic drift** — telemetry path mutates decode | Tests pin forest parity for `diagnostic`; certified isolated | ONNX/backend divergence |
-| **Certified misuse** — prune without production profile | `build_goal_support_decode_binding` hardcodes production profile; mode validation in decode | Manual API calls bypassing decode seam |
+| **Certified misuse** — prune without production profile | No auto-binding path; callers supply the request-bound problem/profile/constraint set and `exact_goal_closure` revalidates compiler-hard authority | Manual API callers must retain the same explicit binding |
 
 ---
 
@@ -368,7 +370,7 @@ Legend: ✅ allowed · ⚠ diagnostic only · ❌ forbidden · — not applicabl
 | **Schema migration** | Versioned schemas (`goal_verifier_profile/v1`, `goal_support_result/v1`, …); `scripts/sync_goal_support_schema.py` |
 | **Checkpoint defaults** | `goal_support_mode=off`; certified requires explicit opt-in |
 | **Backend limits** | Bounded by `SolverBounds` (tokens, nodes, depth, backtracks, verifier calls) — same VSS carrier |
-| **Performance** | H02 fixture wall time ≈30 ms / 15 fixtures CPU — not a latency SLA |
+| **Performance** | Governed fixture suite `n=4`; recorded wall time is diagnostic only, not a latency SLA |
 | **Privacy** | Digest-bound evidence; bounded strings; no raw OpenUI in sidecars |
 | **Zero-forward singleton** | Certified arm fixture `certified_singleton_zero_forward`: `forwards=0`, replay ok |
 
