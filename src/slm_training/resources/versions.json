@@ -1878,6 +1878,25 @@
         }
       ]
     },
+    "dsl.solver.goal_support": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/solver/goal_support.py",
+        "scripts/sync_goal_support_schema.py",
+        "src/slm_training/resources/goal_verifier_profile.schema.json",
+        "src/slm_training/resources/goal_terminal_evidence.schema.json",
+        "src/slm_training/resources/test_cases/test_dsl/test_solver/test_goal_support.json",
+        "tests/test_dsl/test_solver/test_goal_support.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-10",
+          "note": "PGS-B01 (SLM-497): GoalVerifierProfileV1 / GoalTerminalEvidenceV1 contracts with closed profile modes, digest-bound identities, redacted terminal evidence, and fail-closed validation against CompiledGoalConstraintSetV1."
+        }
+      ]
+    },
     "dsl.solver.partial_state": {
       "version": "v1",
       "kind": "harness",
@@ -2877,7 +2896,7 @@
       ]
     },
     "governance.ownership_map": {
-      "version": "v13",
+      "version": "v14",
       "kind": "gate",
       "paths": [
         "src/slm_training/resources/ownership_map.json",
@@ -2889,6 +2908,11 @@
         "tests/test_data/test_synthesis_contract_versions.py"
       ],
       "history": [
+        {
+          "version": "v14",
+          "date": "2026-08-10",
+          "note": "PGS-B01 (SLM-497): register goal_support subsystem (GoalVerifierProfileV1/GoalTerminalEvidenceV1) under dsl/solver/goal_support.py; mirrors into repository-ownership-map.md."
+        },
         {
           "version": "v13",
           "date": "2026-08-10",

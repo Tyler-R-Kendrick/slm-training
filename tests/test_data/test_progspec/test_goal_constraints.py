@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import pytest
+
+from tests.casefiles import case_values
 from pydantic import ValidationError
 
 from slm_training.data.progspec.goal_constraints import (
@@ -94,14 +96,7 @@ def test_may_prune_without_exact_hard_authority_rejected() -> None:
 
 @pytest.mark.parametrize(
     ("source_kind", "authority_tier", "completeness"),
-    [
-        ("prompt_requirement", "compiler-hard", "EXACT"),
-        ("evaluation_fixture", "verifier-hard", "EXACT"),
-        ("generation_request", "compiler-hard", "EXACT"),
-        ("oracle_diagnostic", "verifier-hard", "EXACT"),
-        ("pack_contract", "compiler-hard", "HEURISTIC"),
-        ("verification_requirement", "verifier-hard", "SOUND_OVERAPPROX"),
-    ],
+    case_values(__file__, "test_may_prune_fail_closed_unless_independently_exact_and_exact"),
 )
 def test_may_prune_fail_closed_unless_independently_exact_and_exact(
     source_kind: str,
@@ -243,11 +238,7 @@ def test_ambiguity_group_unresolved_member_rejected() -> None:
 
 @pytest.mark.parametrize(
     ("left", "right", "expected"),
-    [
-        ("compiler-hard", "evaluation-only", "evaluation-only"),
-        ("verifier-hard", "advisory-learned", "advisory-learned"),
-        ("oracle-diagnostic", "advisory-learned", "oracle-diagnostic"),
-    ],
+    case_values(__file__, "test_combine_authority_never_escalates"),
 )
 def test_combine_authority_never_escalates(left: str, right: str, expected: str) -> None:
     assert combine_authority(left, right) == expected
@@ -255,11 +246,7 @@ def test_combine_authority_never_escalates(left: str, right: str, expected: str)
 
 @pytest.mark.parametrize(
     ("left", "right", "expected"),
-    [
-        ("EXACT", "UNKNOWN", "UNKNOWN"),
-        ("SOUND_OVERAPPROX", "HEURISTIC", "HEURISTIC"),
-        ("EXACT", "EXACT", "EXACT"),
-    ],
+    case_values(__file__, "test_combine_completeness_never_escalates"),
 )
 def test_combine_completeness_never_escalates(left: str, right: str, expected: str) -> None:
     assert combine_completeness(left, right) == expected
