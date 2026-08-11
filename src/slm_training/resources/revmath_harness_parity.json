@@ -70,10 +70,10 @@
     {
       "id": "commands.revmath_profile_cli",
       "category": "commands",
-      "required_owner": null,
-      "status": "blocker",
-      "blocker_issue": "HARN-10",
-      "notes": "Opt-in revmath CLI / skill entry that materializes ExperimentCampaignV1 is downstream."
+      "required_owner": "scripts/run_revmath_profile.py",
+      "status": "present",
+      "blocker_issue": null,
+      "notes": "HARN-10 opt-in revmath profile CLI; materializes/locks ExperimentCampaignV1 and binds tasks before execution."
     },
     {
       "id": "schemas.revmath_task_corpus_result_repair",
@@ -166,10 +166,10 @@
     {
       "id": "campaign.revmath_run_binding",
       "category": "campaign_binding",
-      "required_owner": null,
-      "status": "blocker",
-      "blocker_issue": "HARN-10",
-      "notes": "Wire live revmath runs to locked ExperimentCampaignV1 manifests."
+      "required_owner": "src/slm_training/harnesses/reasoning/revmath/profile_binding.py",
+      "status": "present",
+      "blocker_issue": null,
+      "notes": "HARN-10 wires live revmath runs to locked ExperimentCampaignV1 via CampaignStore; rejects unlocked/inconsistent bindings."
     },
     {
       "id": "evidence.decode_stats_record",

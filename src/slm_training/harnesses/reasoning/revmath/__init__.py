@@ -1,4 +1,4 @@
-"""reasoning/revmath typed contracts + deterministic runner (HARN-02..09).
+"""reasoning/revmath typed contracts + deterministic runner (HARN-02..10).
 
 Schemas: HARN-02. Runner / replay / report: HARN-03.
 Assumption ablation: HARN-04. Reversal / bidirectional: HARN-05.
@@ -6,10 +6,22 @@ Constructivization + computable/finite counterexample: HARN-06.
 Quantitative-bound extraction: HARN-07.
 Conservative RM labeling / anti-overclaim: HARN-08.
 Proposition-preserving self-healing: HARN-09.
+Campaign locking / profile CLI: HARN-10.
 """
 
 from __future__ import annotations
 
+from slm_training.harnesses.reasoning.revmath.profile_binding import (
+    RevmathCampaignBindingError,
+    RevmathProfilePlanV1,
+    RevmathProfileRunV1,
+    assert_tasks_match_lock,
+    bind_tasks_to_lock,
+    materialize_fixture_campaign,
+    replay_profile_run_from_store,
+    require_locked_campaign,
+    run_revmath_profile,
+)
 from slm_training.harnesses.reasoning.revmath.assumption_ablation import (
     MINIMALITY_CLAIM_SCOPE,
     AblationCandidateV1,
@@ -172,6 +184,7 @@ __all__ = [
     "ReversalObligationV1",
     "ReversalPlugin",
     "ReversalReportV1",
+    "RevmathCampaignBindingError",
     "RevmathBaseTheoryV1",
     "RevmathBudgetV1",
     "RevmathCampaignBindingV1",
@@ -179,6 +192,8 @@ __all__ = [
     "RevmathCorpusEntryV1",
     "RevmathCorpusIdentityV1",
     "RevmathFourAxisAnalysisV1",
+    "RevmathProfilePlanV1",
+    "RevmathProfileRunV1",
     "RevmathProofArtifactRefV1",
     "RevmathPropositionIdentityV1",
     "RevmathRepairAttemptV1",
@@ -201,11 +216,13 @@ __all__ = [
     "TheoremDirection",
     "anti_overclaim_reasons",
     "assert_label_claim_accepted",
+    "assert_tasks_match_lock",
     "assert_not_masquerading",
     "assert_repair_preserves_identity",
     "assert_revmath_replay_integrity",
     "assert_serialized_repair_freeze",
     "audit_hidden_reintroduction",
+    "bind_tasks_to_lock",
     "build_counterexample_model",
     "build_repair_record",
     "build_revmath_replay_bundle",
@@ -227,6 +244,7 @@ __all__ = [
     "has_big_five_equivalence_package",
     "labeling_notes_for_tasks",
     "materialize_candidate_task",
+    "materialize_fixture_campaign",
     "materialize_constructivized_task",
     "materialize_obligation_task",
     "parse_ablation_meta",
@@ -242,8 +260,11 @@ __all__ = [
     "parse_revmath_task",
     "propose_repair_attempts",
     "reject_forbidden_repair",
+    "replay_profile_run_from_store",
     "report_labeling_disclaimer",
+    "require_locked_campaign",
     "resolve_plugin",
+    "run_revmath_profile",
     "run_revmath_task",
     "run_self_healing",
     "semantic_repair_lineage_from_session",

@@ -205,6 +205,14 @@ SUITES_BY_PREFIX = (
         "src/slm_training/harnesses/reasoning/revmath/self_healing.py",
         ("tests/test_harnesses/reasoning/test_revmath_self_healing.py",),
     ),
+    (
+        "src/slm_training/harnesses/reasoning/revmath/profile_binding.py",
+        ("tests/test_harnesses/reasoning/test_revmath_profile_binding.py",),
+    ),
+    (
+        "scripts/run_revmath_profile.py",
+        ("tests/test_harnesses/reasoning/test_revmath_profile_binding.py",),
+    ),
     ("scripts/", ("tests/test_scripts",)),
     (
         "src/slm_training/data/",

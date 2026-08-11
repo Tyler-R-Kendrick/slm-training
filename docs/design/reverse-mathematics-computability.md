@@ -139,6 +139,8 @@ reject weaken-theorem / add-axiom / increase-budget / change-corpus paths.
 | `revmath_self_healing` | repair | `harnesses/reasoning/revmath/self_healing.py` | `run_self_healing`, `propose_repair_attempts`, `RevmathRepairSessionV1` | HARN-09 proposition-preserving self-healing |
 | `revmath_replay` | replay | `harnesses/reasoning/revmath/replay.py` | `build_revmath_replay_bundle` | HARN-03 ReplayBundleV1 composition |
 | `revmath_report` | report | `harnesses/reasoning/revmath/report.py` | `build_revmath_report` | HARN-03 typed reports |
+| `revmath_profile_binding` | campaign_binding | `harnesses/reasoning/revmath/profile_binding.py` | `run_revmath_profile` | HARN-10 ExperimentCampaignV1 lock + evidence |
+| `revmath_profile_cli` | command | `scripts/run_revmath_profile.py` | `main` | HARN-10 locked profile CLI |
 | `continuous_formal_promote` | command | `scripts/run_autotrain_continuous.py` | `ensure_promote_formal_preflight` | promotion gate |
 
 Design references: [formal-autoresearch.md](formal-autoresearch.md), [formal-objects-multi-prover.md](formal-objects-multi-prover.md), [experiment-campaign-governance.md](experiment-campaign-governance.md), [repository-ownership-map.md](repository-ownership-map.md).
@@ -154,6 +156,7 @@ Cross-links to the global ownership map (`ownership_map.json` subsystems): where
 | EVID-06 / SLM-526 | `formal_object_schema` | no | **done** — `formal_authority/v2` adapts `FormalObjectV1` + `FormalPreflightV1` |
 | HARN-01 / SLM-520 | `reasoning_harness_parent` | no | register `reasoning/revmath` profile + parity matrix |
 | HARN-09 / SLM-560 | `semantic_repair` | yes (`self_healing.py`) | **done** — proposition-preserving repair controller; lineage extends SemanticRepairRecordV1 without forking distill |
+| HARN-10 / SLM-548 | `experiment_campaign` | yes (`profile_binding.py`) | **done** — lock ExperimentCampaignV1 via CampaignStore; formal/evidence/disposition/replay through canonical owners; `run_revmath_profile` CLI |
 
 ## Prohibited duplicate owners
 
@@ -187,7 +190,7 @@ The profile id is **`reasoning/revmath`**. It parameterizes the G4 reasoning har
 
 **Registration seam (HARN-01):** [`harnesses/reasoning/profiles.py`](../../src/slm_training/harnesses/reasoning/profiles.py) registers `reasoning/g4` (default) and `reasoning/revmath` (opt-in, `task_semantics_ready=True` after HARN-03). `resolve_profile(None)` keeps the historical default — discovering/configuring revmath does not alter G4 bench or warmup behavior.
 
-Task schemas (HARN-02), runner/replay/report (HARN-03), assumption-ablation (HARN-04), reversal (HARN-05), constructivization/counterexample (HARN-06), quantitative-bound extraction (HARN-07), conservative labeling / anti-overclaim (HARN-08), and proposition-preserving self-healing (HARN-09) are present; remaining campaign CLI binding (HARN-10) and fixture-corpus packaging (HARN-11) stay downstream where still open. This document owns **authority boundaries and parity obligations**; missing parity rows are explicit blockers in the matrix, never silent fallbacks.
+Task schemas (HARN-02), runner/replay/report (HARN-03), assumption-ablation (HARN-04), reversal (HARN-05), constructivization/counterexample (HARN-06), quantitative-bound extraction (HARN-07), conservative labeling / anti-overclaim (HARN-08), proposition-preserving self-healing (HARN-09), and campaign-locked profile CLI binding (HARN-10) are present; remaining fixture-corpus packaging (HARN-11) stays downstream where still open. This document owns **authority boundaries and parity obligations**; missing parity rows are explicit blockers in the matrix, never silent fallbacks.
 
 ## Harness / self-healing parity matrix (HARN-01)
 
