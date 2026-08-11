@@ -9,6 +9,7 @@ from dataclasses import replace
 import pytest
 
 from slm_training.data.progspec.goal_constraints import GoalConstraintEvaluationV1
+from slm_training.dsl.solver.closure import _cache_key
 from slm_training.dsl.solver.goal_support import (
     GoalGateResultV1,
     GoalSupportProvider,
@@ -179,7 +180,11 @@ def _provider(
     expander = _WordExpander(tree)
 
     def factory() -> _TracingGoalVerifier:
-        return _TracingGoalVerifier(accept, profile_label="fixture-goal", profile_digest=digest)
+        return _TracingGoalVerifier(
+            accept,
+            profile_label="openui/goal-support/v1",
+            profile_digest=digest,
+        )
 
     return expander, GoalSupportProvider(
         expander, prof, factory, constraint_set=_compiled_set()
@@ -248,7 +253,7 @@ def test_reused_mutable_verifier_factory_fails_closed():
     expander = _WordExpander(_LINEAR_TREE)
     verifier = _TracingGoalVerifier(
         {"ax"},
-        profile_label="fixture-goal",
+        profile_label="openui/goal-support/v1",
         profile_digest=profile.digest,
     )
     provider = GoalSupportProvider(
@@ -346,6 +351,27 @@ def test_exact_goal_closure_accepts_production_exact_hard_profile():
     result = exact_goal_closure(state, provider, max_queries=8)
     assert result.reached_fixed_point or result.stop_reason is not None
     assert result.counters.verifier_calls > result.counters.support_queries
+
+
+def test_exact_goal_closure_rejects_cross_candidate_cache_substitution() -> None:
+    expander, provider = _provider({"bz"})
+    state = expander.root_state()
+    unsupported = _query(expander, "a")
+    supported = _query(expander, "b")
+    stale = provider.check(state, unsupported)
+    cache = {
+        _cache_key(
+            state,
+            supported.hole_id,
+            supported.candidate,
+            provider.backend_version,
+        ): stale
+    }
+
+    result = exact_goal_closure(state, provider, cache=cache)
+
+    assert supported.candidate in result.state.holes[0].values
+    assert result.counters.cache_hits == 0
 
 
 def test_exact_goal_closure_rejects_evaluation_oracle_profile():

@@ -205,6 +205,7 @@ def obstruction_core_emission_allowed(
     *,
     certificate: SupportCertificate,
     terminal_records: tuple[GoalTerminalEvidenceV1, ...],
+    profile: GoalVerifierProfileV1,
     replay_ok: bool,
 ) -> bool:
     """Return True only when all legal emission preconditions hold."""
@@ -217,6 +218,12 @@ def obstruction_core_emission_allowed(
     if certificate.stop_reason is not None:
         return False
     if not _certificate_coverage_complete(certificate):
+        return False
+
+    profile_digest = profile.digest or profile.compute_digest()
+    if certificate.verifier_profile != f"openui/goal-support/v1/{profile_digest}":
+        return False
+    if any(record.profile_digest != profile_digest for record in terminal_records):
         return False
 
     rejected = 0
@@ -340,6 +347,7 @@ def compute_domain_obstruction_core(
     if not obstruction_core_emission_allowed(
         certificate=certificate,
         terminal_records=terminal_records,
+        profile=profile,
         replay_ok=replay_ok,
     ):
         return None
@@ -419,6 +427,7 @@ def validate_domain_obstruction_core(
     if not obstruction_core_emission_allowed(
         certificate=certificate,
         terminal_records=terminal_records,
+        profile=profile,
         replay_ok=replay_ok,
     ):
         violations.append("emission preconditions no longer hold")

@@ -273,7 +273,7 @@ def _provider(
         return _TracingGoalVerifier(
             accept,
             unavailable=unavailable,
-            profile_label="fixture-goal",
+            profile_label="openui/goal-support/v1",
             profile_digest=digest,
             unknown_atoms=unknown_atoms,
             failure_atoms=failure_atoms,

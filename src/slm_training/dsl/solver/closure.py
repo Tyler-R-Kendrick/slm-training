@@ -282,8 +282,20 @@ def exact_closure(
                 )
                 key = _cache_key(current, hole.hole_id, value, provider.backend_version)
                 if cache is not None and key in cache:
-                    result = cache[key]
-                    counters.cache_hits += 1
+                    cached = cache[key]
+                    if (
+                        cached.certificate.query == query
+                        and cached.certificate.verdict is cached.verdict
+                    ):
+                        result = cached
+                        counters.cache_hits += 1
+                    else:
+                        result = provider.check(current, query)
+                        counters.support_queries += 1
+                        counters.verifier_calls += result.counters.verifier_calls
+                        counters.expanded_nodes += result.counters.nodes
+                        counters.backtracks += result.counters.backtracks
+                        cache[key] = result
                 else:
                     result = provider.check(current, query)
                     counters.support_queries += 1
