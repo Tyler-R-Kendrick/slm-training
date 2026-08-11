@@ -7,7 +7,7 @@ Existing runtime evidence (`ReplayBundleV1`, `DecodeStats` /
 deterministically into one canonical proof-trace vocabulary that reuses
 KERN-06 `Event` / named machine-cost models for observed work. The projection
 **does not** introduce a second telemetry recorder and **does not** claim
-abstract refinement — KERN-11 (SLM-539) proves refinement separately.
+abstract refinement — KERN-11 (SLM-539) proves refinement separately ([kern-11-proof-trace-refinement.md](kern-11-proof-trace-refinement.md)).
 
 ## Canonical fields
 

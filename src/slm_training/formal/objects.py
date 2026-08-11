@@ -244,6 +244,21 @@ _LEAN_CLAIM_CATALOG: dict[str, dict[str, Any]] = {
         "tier": "production_core",
         "laws": ["proved_complete_singleton"],
     },
+    "ProofTraceRefinement.fixture_bundle_stats_mechanism_refines": {
+        "module": "LeverProofLean.ProofTraceRefinement",
+        "tier": "production_core",
+        "laws": ["proved_complete_singleton", "honest_fixed_point"],
+    },
+    "ProofTraceRefinement.injected_illegal_commit_fails": {
+        "module": "LeverProofLean.ProofTraceRefinement",
+        "tier": "production_core",
+        "laws": ["proved_complete_singleton"],
+    },
+    "ProofTraceRefinement.scope_is_fixture_subset": {
+        "module": "LeverProofLean.ProofTraceRefinement",
+        "tier": "production_core",
+        "laws": ["honest_fixed_point"],
+    },
     "ConstrainedDiffusion.singleton_policy_neural_cost_zero": {
         "module": "LeverProofLean.ConstrainedDiffusion",
         "tier": "production_core",

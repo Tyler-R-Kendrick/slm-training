@@ -51,4 +51,4 @@ caller-supplied assumption — never a free latency theorem.
 
 ## Downstream
 
-INTEG-01 ([integ-01-canonical-proof-trace.md](integ-01-canonical-proof-trace.md)) projects runtime evidence into this Event/cost vocabulary; it does not fork the cost models and does not claim refinement (KERN-11).
+INTEG-01 ([integ-01-canonical-proof-trace.md](integ-01-canonical-proof-trace.md)) projects runtime evidence into this Event/cost vocabulary; it does not fork the cost models and does not claim refinement (KERN-11 / [kern-11-proof-trace-refinement.md](kern-11-proof-trace-refinement.md)).
