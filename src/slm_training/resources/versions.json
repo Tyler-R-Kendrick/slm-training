@@ -3772,6 +3772,11 @@
         {
           "version": "v207",
           "date": "2026-08-11",
+          "note": "no-bump: rebuild evidence_ledger.v1.json after INTEG-10 design/results docs; deterministic fold, no ledger schema or selection behavior change."
+        },
+        {
+          "version": "v207",
+          "date": "2026-08-11",
           "note": "no-bump: evidence ledger rebuild after INTEG-07 (SLM-561) design doc addition; no campaign contract change."
         },
         {
@@ -5077,7 +5082,7 @@
       ]
     },
     "harness.autoresearch.formal": {
-      "version": "v20",
+      "version": "v21",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/formal.py",
@@ -5090,6 +5095,11 @@
         "tests/test_autoresearch/test_formal_four_axis_ledger.py"
       ],
       "history": [
+        {
+          "version": "v21",
+          "date": "2026-08-11",
+          "note": "INTEG-10 (SLM-576): wire verify_integ10_release_matrix --check into python-static CI."
+        },
         {
           "version": "v20",
           "date": "2026-08-11",
@@ -17724,9 +17734,15 @@
       ]
     },
     "formal.objects": {
-      "version": "v23",
+      "version": "v24",
       "kind": "harness",
       "paths": [
+        "tests/test_formal/test_integ10_release_matrix.py",
+        "src/slm_training/formal/integ10_release_matrix.py",
+        "src/slm_training/resources/formal/integ10_release_matrix.v1.json",
+        "scripts/verify_integ10_release_matrix.py",
+        "docs/design/integ-10-bounded-release-matrix-results.json",
+        "docs/design/integ-10-bounded-release-matrix.md",
         "tests/test_formal/test_integ07_activation_preflight.py",
         "src/slm_training/formal/integ07_activation_preflight.py",
         "src/slm_training/resources/formal/integ07_activation_preflight_replay.v1.json",
@@ -17794,6 +17810,11 @@
         "src/slm_training/resources/formal/goal_support_golden_cases.v1.json"
       ],
       "history": [
+        {
+          "version": "v24",
+          "date": "2026-08-11",
+          "note": "INTEG-10 (SLM-576): bounded release matrix + content-addressed release-evidence summary."
+        },
         {
           "version": "v23",
           "date": "2026-08-11",
@@ -18272,7 +18293,7 @@
       ]
     },
     "ci.local_merge_gate": {
-      "version": "v7",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "scripts/verify_merge_ready.py",
@@ -18282,6 +18303,11 @@
         "tests/test_scripts/test_merge_ready_gate.py"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-08-11",
+          "note": "INTEG-10 (SLM-576): wire verify_integ10_release_matrix --check into merge-ready gate."
+        },
         {
           "version": "v7",
           "date": "2026-08-11",

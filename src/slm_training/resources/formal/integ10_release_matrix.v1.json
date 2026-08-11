@@ -1,0 +1,285 @@
+{
+  "schema": "integ10_bounded_release_matrix/v1",
+  "integ": "INTEG-10",
+  "issue": "SLM-576",
+  "claim_class": "infrastructure_release",
+  "generalizes_beyond_corpus": false,
+  "notes": [
+    "Bounded release matrix: proves infrastructure contracts without requiring default-off research pilots.",
+    "Required gates call existing verify_* / pytest owners; optional tools use explicit skip semantics.",
+    "Timeout or skipped optional dependency is never false success and never a semantic refutation.",
+    "Physical performance measurements stay empirical and are out of scope for this abstract-proof matrix."
+  ],
+  "skip_semantics": {
+    "skipped_optional": "optional tool unavailable; reported, not counted toward release.passed",
+    "timeout_required": "required gate wall-budget exceeded; counts as failure (never evidence)",
+    "timeout_optional": "optional probe timed out; status skipped_optional_timeout, not ok and not refutation",
+    "research_default_off": "research/pilot arm; visible in summary; not required for infrastructure release",
+    "delegated": "owned by merge_ready / CI job already executing the same CLI; identity certified here"
+  },
+  "gates": [
+    {
+      "id": "python_formal_v2_schema_property",
+      "category": "required",
+      "check_mode": "invoke",
+      "owner": "release_matrix",
+      "module": "pytest",
+      "argv": [
+        "tests/test_formal/test_formal_authority_v2.py",
+        "tests/test_formal/test_judgment.py",
+        "tests/test_formal/test_mutation_suite.py",
+        "tests/test_formal/test_refutation_authority.py",
+        "tests/test_formal/test_theorem_binding.py",
+        "-q",
+        "--tb=line"
+      ],
+      "identities": {
+        "component": "formal.objects",
+        "schemas": [
+          "formal_authority/v2",
+          "integ06_adversarial_acceptance_matrix/v1",
+          "integ07_activation_preflight_replay/v1"
+        ],
+        "docs": ["docs/design/formal-autoresearch.md"]
+      },
+      "budget_seconds": 90,
+      "description": "Python schema/unit/property coverage for v2 formal evidence, judgments, mutations, bindings."
+    },
+    {
+      "id": "lean_contracts_axioms",
+      "category": "required",
+      "check_mode": "delegate",
+      "owner": "ci.lean-formal",
+      "module": "scripts.verify_formal_contracts",
+      "argv": [],
+      "owner_markers": [
+        "scripts.verify_formal_contracts",
+        "lake-package-directory: src/slm_training/formal/lean"
+      ],
+      "identities": {
+        "component": "harness.autoresearch.formal",
+        "lean_package": "src/slm_training/formal/lean",
+        "docs": ["docs/design/formal-autoresearch.md"]
+      },
+      "budget_seconds": 120,
+      "description": "Lean build + axiom/sorry audit and finite-domain/search/bound/closure proofs (lean-formal CI)."
+    },
+    {
+      "id": "cross_language_resource_bound_parity",
+      "category": "required",
+      "check_mode": "invoke",
+      "owner": "release_matrix",
+      "module": "scripts.verify_resource_bound_parity",
+      "argv": [],
+      "identities": {
+        "component": "formal.resource_bound_parity",
+        "docs": ["docs/design/kern-10-resource-bound-trigger-parity.md"]
+      },
+      "budget_seconds": 60,
+      "description": "Cross-language resource-bound parity fixtures (KERN-10)."
+    },
+    {
+      "id": "formal_evidence_mutations",
+      "category": "required",
+      "check_mode": "delegate",
+      "owner": "ci.python-static",
+      "module": "scripts.verify_formal_evidence_mutations",
+      "argv": ["--check"],
+      "owner_markers": [
+        "scripts.verify_formal_evidence_mutations",
+        "formal_evidence_mutations"
+      ],
+      "identities": {
+        "component": "formal.objects",
+        "results": "docs/design/formal-evidence-mutation-results.json",
+        "matrix": "src/slm_training/resources/formal/evid11_mutation_matrix.v1.json"
+      },
+      "budget_seconds": 90,
+      "description": "EVID-11 formal mutation / red-team suite."
+    },
+    {
+      "id": "integ06_adversarial_acceptance",
+      "category": "required",
+      "check_mode": "delegate",
+      "owner": "ci.python-static",
+      "module": "scripts.verify_integ06_adversarial_acceptance",
+      "argv": ["--check"],
+      "owner_markers": [
+        "scripts.verify_integ06_adversarial_acceptance",
+        "integ06_adversarial_acceptance"
+      ],
+      "identities": {
+        "component": "formal.objects",
+        "matrix": "src/slm_training/resources/formal/integ06_adversarial_matrix.v1.json",
+        "results": "docs/design/integ-06-adversarial-acceptance-results.json",
+        "issue": "SLM-573"
+      },
+      "budget_seconds": 90,
+      "description": "INTEG-06 full end-to-end adversarial acceptance scenarios."
+    },
+    {
+      "id": "revmath_harness_parity",
+      "category": "required",
+      "check_mode": "invoke",
+      "owner": "release_matrix",
+      "module": "scripts.verify_revmath_harness_parity",
+      "argv": [],
+      "identities": {
+        "resource": "src/slm_training/resources/revmath_harness_parity.json"
+      },
+      "budget_seconds": 30,
+      "description": "Revmath harness parity / corpus replay registration (positive/negative/unknown/mutation)."
+    },
+    {
+      "id": "revmath_owners",
+      "category": "required",
+      "check_mode": "invoke",
+      "owner": "release_matrix",
+      "module": "scripts.verify_revmath_owners",
+      "argv": [],
+      "identities": {
+        "resource": "src/slm_training/resources/revmath_owner_map.json"
+      },
+      "budget_seconds": 30,
+      "description": "Revmath owner-map surface certification."
+    },
+    {
+      "id": "integ07_activation_preflight_recall",
+      "category": "required",
+      "check_mode": "delegate",
+      "owner": "ci.python-static",
+      "module": "scripts.verify_integ07_activation_preflight",
+      "argv": ["--check"],
+      "owner_markers": [
+        "scripts.verify_integ07_activation_preflight",
+        "integ07_activation_preflight_recall"
+      ],
+      "identities": {
+        "component": "formal.objects",
+        "replay": "src/slm_training/resources/formal/integ07_activation_preflight_replay.v1.json",
+        "results": "docs/design/integ-07-activation-preflight-recall-results.json",
+        "issue": "SLM-561"
+      },
+      "budget_seconds": 60,
+      "description": "INTEG-07 activation-preflight recall and false-skip gate."
+    },
+    {
+      "id": "integ08_dominance_evidence",
+      "category": "required",
+      "check_mode": "invoke",
+      "owner": "release_matrix",
+      "module": "pytest",
+      "argv": [
+        "tests/test_autoresearch/test_mechanism_dominance.py",
+        "-q",
+        "--tb=line"
+      ],
+      "identities": {
+        "component": "autoresearch.preflight",
+        "module": "slm_training.autoresearch.preflight.mechanism_dominance",
+        "schemas": [
+          "corpus_local_dominance_evidence/v1",
+          "mechanism_dominance_admission/v1"
+        ],
+        "docs": ["docs/design/integ-08-corpus-local-dominance.md"],
+        "issue": "SLM-562"
+      },
+      "budget_seconds": 60,
+      "description": "INTEG-08 corpus-local dominance and skip-decision evidence tests."
+    },
+    {
+      "id": "agent_surface_parity",
+      "category": "required",
+      "check_mode": "delegate",
+      "owner": "ci.python-static",
+      "module": "scripts.verify_agent_surfaces",
+      "argv": [],
+      "owner_markers": ["scripts.verify_agent_surfaces", "agent_surfaces"],
+      "identities": {
+        "docs": ["docs/design/agent-harness-parity-audit.md"]
+      },
+      "budget_seconds": 60,
+      "description": "Harness/CLI/resources/versions/skills/docs agent-surface parity."
+    },
+    {
+      "id": "ownership_map",
+      "category": "required",
+      "check_mode": "delegate",
+      "owner": "ci.python-static",
+      "module": "scripts.verify_ownership_map",
+      "argv": [],
+      "owner_markers": ["scripts.verify_ownership_map", "ownership_map"],
+      "identities": {},
+      "budget_seconds": 30,
+      "description": "Repository ownership map certification."
+    },
+    {
+      "id": "version_stamps",
+      "category": "required",
+      "check_mode": "delegate",
+      "owner": "ci.python-static",
+      "module": "scripts.verify_version_stamps",
+      "argv": ["--check"],
+      "owner_markers": ["scripts.verify_version_stamps", "version_stamps"],
+      "identities": {
+        "registry": "src/slm_training/resources/versions.json"
+      },
+      "budget_seconds": 30,
+      "description": "Normalized component version stamps."
+    },
+    {
+      "id": "historical_v1_read_compat",
+      "category": "required",
+      "check_mode": "invoke",
+      "owner": "release_matrix",
+      "module": "pytest",
+      "argv": [
+        "tests/test_formal/test_formal_authority_v2.py::test_formal_preflight_v1_remains_readable_and_round_trips",
+        "-q",
+        "--tb=line"
+      ],
+      "identities": {
+        "schemas": ["formal_authority/v2", "formal_preflight/v1"],
+        "module": "slm_training.formal.authority"
+      },
+      "budget_seconds": 45,
+      "description": "Historical v1 formal-preflight read compatibility and default write preference."
+    },
+    {
+      "id": "optional_lean_lake_probe",
+      "category": "optional_tool",
+      "check_mode": "probe_optional",
+      "owner": "release_matrix",
+      "module": "scripts.verify_formal_contracts",
+      "argv": [],
+      "probe": {"which": ["lake", "lean"]},
+      "identities": {
+        "component": "harness.autoresearch.formal"
+      },
+      "budget_seconds": 120,
+      "description": "Optional local Lean/lake availability; skip when absent (not false success)."
+    },
+    {
+      "id": "research_default_off_status",
+      "category": "research_default_off",
+      "check_mode": "status_only",
+      "owner": "release_matrix",
+      "module": null,
+      "argv": [],
+      "identities": {
+        "note": "Research pilots and default-off experiment arms are out of scope for infrastructure release."
+      },
+      "budget_seconds": 1,
+      "description": "Explicit report that research/default-off pilots are not release gates.",
+      "status_payload": {
+        "required_for_release": false,
+        "infrastructure_release_needs_pilot": false,
+        "examples": [
+          "unconstrained-control diagnostic arms",
+          "capacity-scaling diagnostic arms",
+          "default-off research experiment runners"
+        ]
+      }
+    }
+  ]
+}

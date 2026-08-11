@@ -1,0 +1,550 @@
+{
+  "empirical_performance_separate": true,
+  "evidence_content_address": "cas://sha256/0c945416ade4cb72f9a00e1e2be1b07602314bddc0fc781e9abb876fcd89eb23",
+  "evidence_sha256": "0c945416ade4cb72f9a00e1e2be1b07602314bddc0fc781e9abb876fcd89eb23",
+  "execute": false,
+  "gate_identity_table": [
+    {
+      "category": "required",
+      "content_address": "cas://sha256/25e2e39679cd3844406c691e3563efa26e86a469087d43a8ec01683285534788",
+      "gate_id": "python_formal_v2_schema_property",
+      "identities": {
+        "component": "formal.objects",
+        "docs": [
+          "docs/design/formal-autoresearch.md"
+        ],
+        "schemas": [
+          "formal_authority/v2",
+          "integ06_adversarial_acceptance_matrix/v1",
+          "integ07_activation_preflight_replay/v1"
+        ]
+      },
+      "module": "pytest",
+      "owner": "release_matrix",
+      "status": "ok"
+    },
+    {
+      "category": "required",
+      "content_address": "cas://sha256/09efb48d3d7a0d1df7b5759960e55ef265d2f13fcb3c3639e3bd129308dffc53",
+      "gate_id": "lean_contracts_axioms",
+      "identities": {
+        "component": "harness.autoresearch.formal",
+        "docs": [
+          "docs/design/formal-autoresearch.md"
+        ],
+        "lean_package": "src/slm_training/formal/lean"
+      },
+      "module": "scripts.verify_formal_contracts",
+      "owner": "ci.lean-formal",
+      "status": "delegated"
+    },
+    {
+      "category": "required",
+      "content_address": "cas://sha256/1c780093428959674456dfde9a6e9a5b7e326056e7f7a44cfb00891e0efd40c4",
+      "gate_id": "cross_language_resource_bound_parity",
+      "identities": {
+        "component": "formal.resource_bound_parity",
+        "docs": [
+          "docs/design/kern-10-resource-bound-trigger-parity.md"
+        ]
+      },
+      "module": "scripts.verify_resource_bound_parity",
+      "owner": "release_matrix",
+      "status": "ok"
+    },
+    {
+      "category": "required",
+      "content_address": "cas://sha256/9dd074454f8a93c87a84357defc60e07fe3d22f80cdf82263b6f99f2b5886681",
+      "gate_id": "formal_evidence_mutations",
+      "identities": {
+        "component": "formal.objects",
+        "matrix": "src/slm_training/resources/formal/evid11_mutation_matrix.v1.json",
+        "results": "docs/design/formal-evidence-mutation-results.json"
+      },
+      "module": "scripts.verify_formal_evidence_mutations",
+      "owner": "ci.python-static",
+      "status": "delegated"
+    },
+    {
+      "category": "required",
+      "content_address": "cas://sha256/7aef3147bb4db75de50b5c074d9b88e514d4876eb8aa8a5b3553f5b3e3e59448",
+      "gate_id": "integ06_adversarial_acceptance",
+      "identities": {
+        "component": "formal.objects",
+        "issue": "SLM-573",
+        "matrix": "src/slm_training/resources/formal/integ06_adversarial_matrix.v1.json",
+        "results": "docs/design/integ-06-adversarial-acceptance-results.json"
+      },
+      "module": "scripts.verify_integ06_adversarial_acceptance",
+      "owner": "ci.python-static",
+      "status": "delegated"
+    },
+    {
+      "category": "required",
+      "content_address": "cas://sha256/3be522e7683b2c081a69b834d37c7682d4885dff6ce6f50e82b4757354842a40",
+      "gate_id": "revmath_harness_parity",
+      "identities": {
+        "resource": "src/slm_training/resources/revmath_harness_parity.json"
+      },
+      "module": "scripts.verify_revmath_harness_parity",
+      "owner": "release_matrix",
+      "status": "ok"
+    },
+    {
+      "category": "required",
+      "content_address": "cas://sha256/9b4bdf437243ad00ed6d432a7016d19273df0228c48f40bb15b742f2b36b1f28",
+      "gate_id": "revmath_owners",
+      "identities": {
+        "resource": "src/slm_training/resources/revmath_owner_map.json"
+      },
+      "module": "scripts.verify_revmath_owners",
+      "owner": "release_matrix",
+      "status": "ok"
+    },
+    {
+      "category": "required",
+      "content_address": "cas://sha256/0b13b24a174aadc45d5e0c044c10cb812aa066d7ea198efe17ab0a0bc2bdea16",
+      "gate_id": "integ07_activation_preflight_recall",
+      "identities": {
+        "component": "formal.objects",
+        "issue": "SLM-561",
+        "replay": "src/slm_training/resources/formal/integ07_activation_preflight_replay.v1.json",
+        "results": "docs/design/integ-07-activation-preflight-recall-results.json"
+      },
+      "module": "scripts.verify_integ07_activation_preflight",
+      "owner": "ci.python-static",
+      "status": "delegated"
+    },
+    {
+      "category": "required",
+      "content_address": "cas://sha256/eaeabe41ee250889ded9c8b14a9de403f2cdadd3daf0f7269b695c163d367d96",
+      "gate_id": "integ08_dominance_evidence",
+      "identities": {
+        "component": "autoresearch.preflight",
+        "docs": [
+          "docs/design/integ-08-corpus-local-dominance.md"
+        ],
+        "issue": "SLM-562",
+        "module": "slm_training.autoresearch.preflight.mechanism_dominance",
+        "schemas": [
+          "corpus_local_dominance_evidence/v1",
+          "mechanism_dominance_admission/v1"
+        ]
+      },
+      "module": "pytest",
+      "owner": "release_matrix",
+      "status": "ok"
+    },
+    {
+      "category": "required",
+      "content_address": "cas://sha256/ab8f0d25dc526c385c642e5713b8752ec35a2f5472a080639a33389a8271b795",
+      "gate_id": "agent_surface_parity",
+      "identities": {
+        "docs": [
+          "docs/design/agent-harness-parity-audit.md"
+        ]
+      },
+      "module": "scripts.verify_agent_surfaces",
+      "owner": "ci.python-static",
+      "status": "delegated"
+    },
+    {
+      "category": "required",
+      "content_address": "cas://sha256/01d24d74067dd7d109d0389d452c79f7ba23245228910ee6fa075ca21d0c1f9d",
+      "gate_id": "ownership_map",
+      "identities": {},
+      "module": "scripts.verify_ownership_map",
+      "owner": "ci.python-static",
+      "status": "delegated"
+    },
+    {
+      "category": "required",
+      "content_address": "cas://sha256/b94b2b9c9ed5e89724136d7ec1742be4c57744ffc33d7e8ee9b3746c71695501",
+      "gate_id": "version_stamps",
+      "identities": {
+        "registry": "src/slm_training/resources/versions.json"
+      },
+      "module": "scripts.verify_version_stamps",
+      "owner": "ci.python-static",
+      "status": "delegated"
+    },
+    {
+      "category": "required",
+      "content_address": "cas://sha256/7d40d19cda847e374f41ba7de73710a35cd56350ee58184b1d0db6822f03c8f2",
+      "gate_id": "historical_v1_read_compat",
+      "identities": {
+        "module": "slm_training.formal.authority",
+        "schemas": [
+          "formal_authority/v2",
+          "formal_preflight/v1"
+        ]
+      },
+      "module": "pytest",
+      "owner": "release_matrix",
+      "status": "ok"
+    },
+    {
+      "category": "optional_tool",
+      "content_address": "cas://sha256/b77d498c8d5134e75cbfc358e528675e564c7d7594b085160cba01e79733e62a",
+      "gate_id": "optional_lean_lake_probe",
+      "identities": {
+        "component": "harness.autoresearch.formal"
+      },
+      "module": "scripts.verify_formal_contracts",
+      "owner": "release_matrix",
+      "status": "skipped_optional"
+    },
+    {
+      "category": "research_default_off",
+      "content_address": "cas://sha256/0d38dad724429967f88098f34460bc0a19d15bb70053296aa8c265a773926920",
+      "gate_id": "research_default_off_status",
+      "identities": {
+        "note": "Research pilots and default-off experiment arms are out of scope for infrastructure release."
+      },
+      "module": null,
+      "owner": "release_matrix",
+      "status": "research_default_off"
+    }
+  ],
+  "gates": [
+    {
+      "category": "required",
+      "check_mode": "invoke",
+      "cmd": "python -m pytest tests/test_formal/test_formal_authority_v2.py tests/test_formal/test_judgment.py tests/test_formal/test_mutation_suite.py tests/test_formal/test_refutation_authority.py tests/test_formal/test_theorem_binding.py -q --tb=line",
+      "description": "Python schema/unit/property coverage for v2 formal evidence, judgments, mutations, bindings.",
+      "gate_id": "python_formal_v2_schema_property",
+      "identities": {
+        "component": "formal.objects",
+        "docs": [
+          "docs/design/formal-autoresearch.md"
+        ],
+        "schemas": [
+          "formal_authority/v2",
+          "integ06_adversarial_acceptance_matrix/v1",
+          "integ07_activation_preflight_replay/v1"
+        ]
+      },
+      "module": "pytest",
+      "owner": "release_matrix",
+      "seconds": 4.08,
+      "status": "ok"
+    },
+    {
+      "category": "required",
+      "check_mode": "delegate",
+      "cmd": null,
+      "delegated_owner": "ci.lean-formal",
+      "description": "Lean build + axiom/sorry audit and finite-domain/search/bound/closure proofs (lean-formal CI).",
+      "gate_id": "lean_contracts_axioms",
+      "identities": {
+        "component": "harness.autoresearch.formal",
+        "docs": [
+          "docs/design/formal-autoresearch.md"
+        ],
+        "lean_package": "src/slm_training/formal/lean"
+      },
+      "markers_verified": [
+        "scripts.verify_formal_contracts",
+        "lake-package-directory: src/slm_training/formal/lean"
+      ],
+      "module": "scripts.verify_formal_contracts",
+      "owner": "ci.lean-formal",
+      "seconds": 0.0,
+      "status": "delegated"
+    },
+    {
+      "category": "required",
+      "check_mode": "invoke",
+      "cmd": "python -m scripts.verify_resource_bound_parity",
+      "description": "Cross-language resource-bound parity fixtures (KERN-10).",
+      "gate_id": "cross_language_resource_bound_parity",
+      "identities": {
+        "component": "formal.resource_bound_parity",
+        "docs": [
+          "docs/design/kern-10-resource-bound-trigger-parity.md"
+        ]
+      },
+      "module": "scripts.verify_resource_bound_parity",
+      "owner": "release_matrix",
+      "seconds": 8.01,
+      "status": "ok"
+    },
+    {
+      "category": "required",
+      "check_mode": "delegate",
+      "cmd": null,
+      "delegated_owner": "ci.python-static",
+      "description": "EVID-11 formal mutation / red-team suite.",
+      "gate_id": "formal_evidence_mutations",
+      "identities": {
+        "component": "formal.objects",
+        "matrix": "src/slm_training/resources/formal/evid11_mutation_matrix.v1.json",
+        "results": "docs/design/formal-evidence-mutation-results.json"
+      },
+      "markers_verified": [
+        "scripts.verify_formal_evidence_mutations",
+        "formal_evidence_mutations"
+      ],
+      "module": "scripts.verify_formal_evidence_mutations",
+      "owner": "ci.python-static",
+      "seconds": 0.0,
+      "status": "delegated"
+    },
+    {
+      "category": "required",
+      "check_mode": "delegate",
+      "cmd": null,
+      "delegated_owner": "ci.python-static",
+      "description": "INTEG-06 full end-to-end adversarial acceptance scenarios.",
+      "gate_id": "integ06_adversarial_acceptance",
+      "identities": {
+        "component": "formal.objects",
+        "issue": "SLM-573",
+        "matrix": "src/slm_training/resources/formal/integ06_adversarial_matrix.v1.json",
+        "results": "docs/design/integ-06-adversarial-acceptance-results.json"
+      },
+      "markers_verified": [
+        "scripts.verify_integ06_adversarial_acceptance",
+        "integ06_adversarial_acceptance"
+      ],
+      "module": "scripts.verify_integ06_adversarial_acceptance",
+      "owner": "ci.python-static",
+      "seconds": 0.0,
+      "status": "delegated"
+    },
+    {
+      "category": "required",
+      "check_mode": "invoke",
+      "cmd": "python -m scripts.verify_revmath_harness_parity",
+      "description": "Revmath harness parity / corpus replay registration (positive/negative/unknown/mutation).",
+      "gate_id": "revmath_harness_parity",
+      "identities": {
+        "resource": "src/slm_training/resources/revmath_harness_parity.json"
+      },
+      "module": "scripts.verify_revmath_harness_parity",
+      "owner": "release_matrix",
+      "seconds": 0.09,
+      "status": "ok"
+    },
+    {
+      "category": "required",
+      "check_mode": "invoke",
+      "cmd": "python -m scripts.verify_revmath_owners",
+      "description": "Revmath owner-map surface certification.",
+      "gate_id": "revmath_owners",
+      "identities": {
+        "resource": "src/slm_training/resources/revmath_owner_map.json"
+      },
+      "module": "scripts.verify_revmath_owners",
+      "owner": "release_matrix",
+      "seconds": 0.94,
+      "status": "ok"
+    },
+    {
+      "category": "required",
+      "check_mode": "delegate",
+      "cmd": null,
+      "delegated_owner": "ci.python-static",
+      "description": "INTEG-07 activation-preflight recall and false-skip gate.",
+      "gate_id": "integ07_activation_preflight_recall",
+      "identities": {
+        "component": "formal.objects",
+        "issue": "SLM-561",
+        "replay": "src/slm_training/resources/formal/integ07_activation_preflight_replay.v1.json",
+        "results": "docs/design/integ-07-activation-preflight-recall-results.json"
+      },
+      "markers_verified": [
+        "scripts.verify_integ07_activation_preflight",
+        "integ07_activation_preflight_recall"
+      ],
+      "module": "scripts.verify_integ07_activation_preflight",
+      "owner": "ci.python-static",
+      "seconds": 0.0,
+      "status": "delegated"
+    },
+    {
+      "category": "required",
+      "check_mode": "invoke",
+      "cmd": "python -m pytest tests/test_autoresearch/test_mechanism_dominance.py -q --tb=line",
+      "description": "INTEG-08 corpus-local dominance and skip-decision evidence tests.",
+      "gate_id": "integ08_dominance_evidence",
+      "identities": {
+        "component": "autoresearch.preflight",
+        "docs": [
+          "docs/design/integ-08-corpus-local-dominance.md"
+        ],
+        "issue": "SLM-562",
+        "module": "slm_training.autoresearch.preflight.mechanism_dominance",
+        "schemas": [
+          "corpus_local_dominance_evidence/v1",
+          "mechanism_dominance_admission/v1"
+        ]
+      },
+      "module": "pytest",
+      "owner": "release_matrix",
+      "seconds": 8.3,
+      "status": "ok"
+    },
+    {
+      "category": "required",
+      "check_mode": "delegate",
+      "cmd": null,
+      "delegated_owner": "ci.python-static",
+      "description": "Harness/CLI/resources/versions/skills/docs agent-surface parity.",
+      "gate_id": "agent_surface_parity",
+      "identities": {
+        "docs": [
+          "docs/design/agent-harness-parity-audit.md"
+        ]
+      },
+      "markers_verified": [
+        "scripts.verify_agent_surfaces",
+        "agent_surfaces"
+      ],
+      "module": "scripts.verify_agent_surfaces",
+      "owner": "ci.python-static",
+      "seconds": 0.0,
+      "status": "delegated"
+    },
+    {
+      "category": "required",
+      "check_mode": "delegate",
+      "cmd": null,
+      "delegated_owner": "ci.python-static",
+      "description": "Repository ownership map certification.",
+      "gate_id": "ownership_map",
+      "identities": {},
+      "markers_verified": [
+        "scripts.verify_ownership_map",
+        "ownership_map"
+      ],
+      "module": "scripts.verify_ownership_map",
+      "owner": "ci.python-static",
+      "seconds": 0.0,
+      "status": "delegated"
+    },
+    {
+      "category": "required",
+      "check_mode": "delegate",
+      "cmd": null,
+      "delegated_owner": "ci.python-static",
+      "description": "Normalized component version stamps.",
+      "gate_id": "version_stamps",
+      "identities": {
+        "registry": "src/slm_training/resources/versions.json"
+      },
+      "markers_verified": [
+        "scripts.verify_version_stamps",
+        "version_stamps"
+      ],
+      "module": "scripts.verify_version_stamps",
+      "owner": "ci.python-static",
+      "seconds": 0.0,
+      "status": "delegated"
+    },
+    {
+      "category": "required",
+      "check_mode": "invoke",
+      "cmd": "python -m pytest tests/test_formal/test_formal_authority_v2.py::test_formal_preflight_v1_remains_readable_and_round_trips -q --tb=line",
+      "description": "Historical v1 formal-preflight read compatibility and default write preference.",
+      "gate_id": "historical_v1_read_compat",
+      "identities": {
+        "module": "slm_training.formal.authority",
+        "schemas": [
+          "formal_authority/v2",
+          "formal_preflight/v1"
+        ]
+      },
+      "module": "pytest",
+      "owner": "release_matrix",
+      "seconds": 3.49,
+      "status": "ok"
+    },
+    {
+      "category": "optional_tool",
+      "check_mode": "probe_optional",
+      "cmd": null,
+      "description": "Optional local Lean/lake availability; skip when absent (not false success).",
+      "gate_id": "optional_lean_lake_probe",
+      "identities": {
+        "component": "harness.autoresearch.formal"
+      },
+      "module": "scripts.verify_formal_contracts",
+      "owner": "release_matrix",
+      "seconds": 0.0,
+      "skip_reason": "optional tools present but check mode does not invoke heavy optional probes; use --execute",
+      "status": "skipped_optional"
+    },
+    {
+      "category": "research_default_off",
+      "check_mode": "status_only",
+      "cmd": null,
+      "description": "Explicit report that research/default-off pilots are not release gates.",
+      "gate_id": "research_default_off_status",
+      "identities": {
+        "note": "Research pilots and default-off experiment arms are out of scope for infrastructure release."
+      },
+      "module": null,
+      "owner": "release_matrix",
+      "research_status": {
+        "examples": [
+          "unconstrained-control diagnostic arms",
+          "capacity-scaling diagnostic arms",
+          "default-off research experiment runners"
+        ],
+        "infrastructure_release_needs_pilot": false,
+        "required_for_release": false
+      },
+      "seconds": 0.0,
+      "status": "research_default_off"
+    }
+  ],
+  "infrastructure_release_needs_research_pilot": false,
+  "integ": "INTEG-10",
+  "issue": "SLM-576",
+  "matrix_content_address": "cas://sha256/1122ef843bf69e54ca4e2d5433de23fc69b152d207a95d69f625c5d9c863eeff",
+  "matrix_relpath": "src/slm_training/resources/formal/integ10_release_matrix.v1.json",
+  "matrix_schema": "integ10_bounded_release_matrix/v1",
+  "matrix_sha256": "1122ef843bf69e54ca4e2d5433de23fc69b152d207a95d69f625c5d9c863eeff",
+  "no_optional_skip_is_refutation": true,
+  "no_optional_skip_is_success": true,
+  "optional_status": [
+    {
+      "counted_as_refutation": false,
+      "counted_as_success": false,
+      "gate_id": "optional_lean_lake_probe",
+      "skip_reason": "optional tools present but check mode does not invoke heavy optional probes; use --execute",
+      "status": "skipped_optional"
+    }
+  ],
+  "passed": true,
+  "required_count": 13,
+  "required_failed": [],
+  "required_ok_count": 13,
+  "research_default_off": [
+    {
+      "gate_id": "research_default_off_status",
+      "payload": {
+        "examples": [
+          "unconstrained-control diagnostic arms",
+          "capacity-scaling diagnostic arms",
+          "default-off research experiment runners"
+        ],
+        "infrastructure_release_needs_pilot": false,
+        "required_for_release": false
+      },
+      "required_for_release": false,
+      "status": "research_default_off"
+    }
+  ],
+  "schema": "integ10_release_evidence_summary/v1",
+  "version_stamp": {
+    "code_commit": "f0477cb1c8206423615d9c27fe1a536e4413515d",
+    "code_dirty": true,
+    "components": {
+      "formal.objects": "v24"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-11T16:33:45.382681+00:00"
+  }
+}

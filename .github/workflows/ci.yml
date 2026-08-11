@@ -226,6 +226,8 @@ jobs:
         run: PYTHONPATH=src python -m scripts.verify_integ06_adversarial_acceptance --check
       - name: Certify INTEG-07 activation-preflight recall
         run: PYTHONPATH=src python -m scripts.verify_integ07_activation_preflight --check
+      - name: Certify INTEG-10 bounded release matrix
+        run: PYTHONPATH=src python -m scripts.verify_integ10_release_matrix --check
 
   lean-formal:
     runs-on: ubuntu-latest
