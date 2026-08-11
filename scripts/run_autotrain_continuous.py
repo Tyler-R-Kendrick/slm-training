@@ -10326,7 +10326,13 @@ def _matrix(
         # Semantic-contrast train_loop requires batch_size >= 3. Matched controls
         # that share contrast pair exposure (dir/margin/fraction) use the same
         # batch for size/dynamics match even when contrast weight is 0.
-        extra_map = dict(extra)
+        # Private bank keys (``_thrash_slug``, ``_steps_factor``, …) are
+        # classification-only and must never enter the extra-forbidden knobs
+        # schema — OFAT control packages copy bank extras and previously
+        # leaked ``_thrash_slug`` into hypotheses[0].
+        extra_map = {
+            k: v for k, v in dict(extra).items() if not str(k).startswith("_")
+        }
         contrast_weight = float(extra_map.get("semantic_contrast_loss_weight") or 0.0)
         contrast_exposure = bool(
             extra_map.get("semantic_contrast_dir")
@@ -10792,10 +10798,14 @@ def _matrix(
                 control_extra = {
                     key: value
                     for key, value in bank_by_slug[rec_slug][1].items()
-                    if key != treatment_key
+                    if key != treatment_key and not str(key).startswith("_")
                 }
             if rec_slug == "exposure-targeted-compiler-decision-margin":
-                control_extra = dict(bank_by_slug[rec_slug][1])
+                control_extra = {
+                    key: value
+                    for key, value in bank_by_slug[rec_slug][1].items()
+                    if not str(key).startswith("_")
+                }
                 control_extra["mixture_sampling_policy"] = "capacity_aware"
         if rec_slug == "exposure-targeted-semantic-exhaustive-compiler-decision-margin":
             precursor_slug = "exposure-targeted-compiler-decision-margin"

@@ -1872,6 +1872,12 @@ def test_bounded_compiler_decision_margin_isolates_runtime_treatment() -> None:
     assert candidate["grammar_completion_bounds"] is True
     assert _mod._arm_slug_from_knobs(candidate) == ("bounded-compiler-decision-margin")
     assert f"{prefix}-compiler-decision-margin" not in knobs
+    # Private bank keys must never materialize into experiment knobs
+    # (extra-forbidden schema). Regression for OFAT control package leak of
+    # ``_thrash_slug`` after thrash bank rotate onto treatment_key arms.
+    for eid, arm_knobs in knobs.items():
+        private = [k for k in arm_knobs if str(k).startswith("_")]
+        assert not private, f"{eid} leaked private knobs {private}"
     HypothesisMatrix.model_validate(matrix)
 
 
