@@ -385,6 +385,20 @@ def test_certificate_and_query_round_trip_json():
     assert SupportQuery.from_dict(json.loads(json.dumps(q.to_dict()))) == q
 
 
+@pytest.mark.parametrize(
+    "update",
+    (
+        {"extra": "ignored"},
+        {"schema_version": "1"},
+        {"exhausted": "false"},
+    ),
+)
+def test_certificate_loader_rejects_unknown_or_coerced_fields(update) -> None:
+    _e, _v, result = _run(_LINEAR_TREE, {"ax"}, "b")
+    with pytest.raises(ValueError):
+        SupportCertificate.from_dict({**result.certificate.to_dict(), **update})
+
+
 def test_solver_support_is_torch_free():
     import slm_training.dsl.solver.support as support_mod
     import slm_training.dsl.solver.state as state_mod

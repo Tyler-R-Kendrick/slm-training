@@ -11,8 +11,14 @@ from slm_training.harnesses.experiments.goal_support_domain_adequacy import (
     ARM_IDS,
     METRIC_IDS,
     GoalSupportDomainAdequacyCampaignV1,
+    _Candidate,
+    _Case,
+    _contexts,
+    _provider,
+    _state,
     run_campaign,
 )
+from slm_training.dsl.solver.support import SupportQuery
 
 
 def test_manifest_preregisters_the_four_authority_separated_arms() -> None:
@@ -66,6 +72,29 @@ def test_campaign_runs_live_compiler_verifier_vss_replay_and_closure(tmp_path) -
         < event_types.index("experiment_started")
         < event_types.index("experiment_finished")
     )
+
+
+def test_fixture_base_proof_never_persists_terminal_source() -> None:
+    secret = "hf_fixture_secret_1234567890"
+    case = _Case(
+        case_id="privacy",
+        candidates=(_Candidate("a", f'root = TextContent("{secret}")'),),
+        selected_action_id="a",
+    )
+    context = _contexts()[0]
+    state, selected = _state(case, context.constraints.digest)
+    provider = _provider(state, context, case)
+    result, sidecar = provider.check_with_sidecar(
+        state,
+        SupportQuery(state.fingerprint, state.holes[0].hole_id, selected),
+    )
+
+    persisted = json.dumps(
+        {"certificate": result.certificate.to_dict(), "sidecar": sidecar.to_dict()},
+        sort_keys=True,
+    )
+    assert secret not in persisted
+    assert "root =" not in persisted
 
 
 def test_query_cap_exhaustion_is_unobserved_not_unsupported(tmp_path) -> None:

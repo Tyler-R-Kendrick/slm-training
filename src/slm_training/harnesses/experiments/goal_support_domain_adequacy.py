@@ -168,8 +168,12 @@ _CASES = (
 class _TerminalFixtureExpander:
     """A finite fixture domain; search remains owned by the VSS oracle."""
 
-    def __init__(self, state: FiniteDomainState) -> None:
+    def __init__(self, state: FiniteDomainState, case: _Case) -> None:
         self._state = state
+        self._programs = {
+            hashlib.sha256(candidate.program.encode("utf-8")).hexdigest(): candidate.program
+            for candidate in case.candidates
+        }
 
     @property
     def problem_id(self) -> str:
@@ -198,9 +202,16 @@ class _TerminalFixtureExpander:
                 coverage="partial",
                 detail="fixture_completion_unavailable",
             )
+        program = self._programs.get(str(payload.get("program_digest", "")))
+        if program is None:
+            return ExpandStep(
+                ExpandStatus.INCOMPLETE,
+                coverage="none",
+                detail="fixture_program_digest_unknown",
+            )
         return ExpandStep(
             ExpandStatus.TERMINAL,
-            program=str(payload["program"]),
+            program=program,
             coverage="complete",
         )
 
@@ -411,9 +422,10 @@ def _state(
         candidate.action_id: DomainValue.create(
             "action",
             {
-                "action_id": candidate.action_id,
                 "incomplete": candidate.incomplete,
-                "program": candidate.program,
+                "program_digest": hashlib.sha256(
+                    candidate.program.encode("utf-8")
+                ).hexdigest(),
             },
         )
         for candidate in case.candidates
@@ -434,9 +446,11 @@ def _state(
     return state, values[case.selected_action_id]
 
 
-def _provider(state: FiniteDomainState, context: _Context) -> GoalSupportProvider:
+def _provider(
+    state: FiniteDomainState, context: _Context, case: _Case
+) -> GoalSupportProvider:
     pack = get_pack("openui")
-    expander = _TerminalFixtureExpander(state)
+    expander = _TerminalFixtureExpander(state, case)
 
     def verifier() -> OpenUIGoalVerifier:
         return OpenUIGoalVerifier(
@@ -544,7 +558,7 @@ def _run_goal_arm(
         if time.monotonic() >= deadline:
             raise TimeoutError("goal-support fixture campaign exceeded max_wall_minutes")
         state, selected = _state(case, context.constraints.digest)
-        provider = _provider(state, context)
+        provider = _provider(state, context, case)
         cap = min(campaign.exact_action_cap, len(state.holes[0].values), remaining)
         report, action_evidence = analyze_goal_domain(
             state=state,
@@ -595,7 +609,7 @@ def _run_structural_arm(
         if time.monotonic() >= deadline:
             raise TimeoutError("goal-support fixture campaign exceeded max_wall_minutes")
         state, selected = _state(case, constraint_version)
-        expander = _TerminalFixtureExpander(state)
+        expander = _TerminalFixtureExpander(state, case)
         values = tuple(sorted(state.holes[0].values, key=action_id_from_value))
         cap = min(campaign.exact_action_cap, len(values), remaining)
         observed = values[:cap]
@@ -723,7 +737,7 @@ def _run_certified_arm(
             )
             continue
         closure = exact_goal_closure(
-            state, _provider(state, context), max_queries=remaining
+            state, _provider(state, context, case), max_queries=remaining
         )
         remaining -= closure.counters.support_queries
         closure_verifier_calls += closure.counters.verifier_calls
