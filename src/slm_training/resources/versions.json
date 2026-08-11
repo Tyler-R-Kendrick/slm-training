@@ -3218,6 +3218,11 @@
         {
           "version": "v204",
           "date": "2026-08-10",
+          "note": "no-bump: rebuild evidence_ledger.v1.json after continuous-loop-20260810 design records in main docs/design changed the deterministic scan count; saturation and retirement behavior remain v204."
+        },
+        {
+          "version": "v204",
+          "date": "2026-08-10",
           "note": "no-bump: rebuild evidence_ledger.v1.json after SLM-490 closeout alias docs (exp-sr-disposition-20260810.{md,json}) changed the deterministic scan count; saturation and retirement behavior remain v204."
         },
         {
