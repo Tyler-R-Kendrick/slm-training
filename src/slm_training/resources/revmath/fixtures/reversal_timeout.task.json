@@ -1,0 +1,44 @@
+{
+  "base_theory": {
+    "allowed_assumption_ids": [
+      "ISigma1"
+    ],
+    "base_theory_id": "RCA0",
+    "interpretation_status": "explicit_reversal"
+  },
+  "budget": {
+    "max_memory_mb": null,
+    "max_tactic_steps": 32,
+    "max_wall_seconds": 0.2,
+    "stopping_rule_ids": [
+      "wall_or_steps"
+    ]
+  },
+  "campaign": {
+    "campaign_id": "camp.rm.hermetic",
+    "campaign_manifest_sha256": "dfceae62e1bfe4f852368de75fe7597c99cb5b77715a02132a3185e5b955b41d",
+    "experiment_id": "exp.rm.hermetic.reversal",
+    "locked_arm_ids": [
+      "control"
+    ]
+  },
+  "corpus": {
+    "corpus_id": "corpus.rm.hermetic",
+    "corpus_sha256": "fe091cbe54a9e2d49852bae50765454d041570e518188bde41445cd9d99b635c",
+    "entry_id": "entry.reversal.timeout"
+  },
+  "proposition": {
+    "proposition_id": "prop.reversal.timeout",
+    "statement": "B+A proves T and B+T proves A (toy timeout unknown)",
+    "statement_sha256": "d295c662c7c6a7eb0f7b4a83057b85b60d788753126ae0690551205e99c57cc4"
+  },
+  "schema_version": "revmath_task/v1",
+  "task_id": "task.reversal.timeout",
+  "task_kind": "reversal",
+  "theorem_direction": "equivalence",
+  "verifier_judge": {
+    "judge_id": "solver_judgment.v1",
+    "judgment_schema": "solver_judgment/v1",
+    "verifier_id": "lean.kernel"
+  }
+}

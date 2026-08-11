@@ -112,7 +112,8 @@ def test_incomplete_check_stays_unknown(hermetic_task: RevmathTaskV1) -> None:
 
 
 def test_unsupported_task_kind_stays_unknown(hermetic_task: RevmathTaskV1) -> None:
-    task = hermetic_task.model_copy(update={"task_kind": "reversal"})
+    # HARN-05 owns reversal; keep this probe on a still-unimplemented kind.
+    task = hermetic_task.model_copy(update={"task_kind": "constructivization"})
     record = run_revmath_task(task, hermetic=True)
     judgment = record.result.solver_judgment()
     assert judgment.outcome is JudgmentOutcome.UNKNOWN
@@ -154,6 +155,7 @@ def test_plugin_registry_covers_kinds_without_duplicating_runner() -> None:
     registry = default_plugin_registry()
     assert "forward_theorem" in registry
     assert "assumption_ablation" in registry
+    assert "reversal" in registry
 
 
 def test_replay_bundle_round_trip_fields(hermetic_task: RevmathTaskV1) -> None:

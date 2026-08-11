@@ -1,0 +1,44 @@
+{
+  "base_theory_id": "RCA0",
+  "claim_statement_sha256": "d295c662c7c6a7eb0f7b4a83057b85b60d788753126ae0690551205e99c57cc4",
+  "coding_id": "coding.timeout.v1",
+  "hermetic_scenario": "timeout",
+  "import_edges": {
+    "ax.ISigma1": [
+      "ISigma1"
+    ],
+    "ax.principle.A": [
+      "principle.A"
+    ],
+    "ax.theorem.T": [
+      "theorem.T"
+    ]
+  },
+  "interpretation_status": "explicit_reversal",
+  "meta_id": "meta.reversal.timeout",
+  "oracle_by_direction": {
+    "forward": "timeout",
+    "reverse": "timeout"
+  },
+  "principle": {
+    "statement": "principle: every infinite binary tree has a path",
+    "statement_id": "principle.A",
+    "statement_sha256": "4e2b961c50917f685cbae66c34988109e5535fbdbf1d83919a0bf99d2824abd5",
+    "strength_class": "WKL"
+  },
+  "proof_deps_by_direction": {
+    "forward": [],
+    "reverse": []
+  },
+  "schema_version": "revmath_reversal_meta/v1",
+  "strength_bearing_lemmas": [
+    "ax.principle.A",
+    "ax.theorem.T"
+  ],
+  "theorem": {
+    "statement": "theorem: every infinite 0-1 tree admits a path",
+    "statement_id": "theorem.T",
+    "statement_sha256": "3fffaa4e8f2f3a364d8d655ae9cb334ccc88e8927b2f68400ce9eac6253bd417",
+    "strength_class": "WKL"
+  }
+}

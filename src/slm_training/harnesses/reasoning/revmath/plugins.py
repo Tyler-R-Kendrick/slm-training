@@ -1,4 +1,4 @@
-"""Revmath task plugins (HARN-03/HARN-04).
+"""Revmath task plugins (HARN-03/HARN-04/HARN-05).
 
 Plugins plan a bounded check command and interpret capture; the shared
 runner owns orchestration, judgment classification, replay, and reports.
@@ -12,7 +12,7 @@ import shutil
 from collections.abc import Mapping, MutableMapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol
 
 from slm_training.harness_core.bounded_process import BoundedProcessResult
 from slm_training.harness_core.lineage.records import content_sha
@@ -21,6 +21,12 @@ from slm_training.harnesses.reasoning.revmath.assumption_ablation import (
     AblationMetaV1,
     audit_hidden_reintroduction,
     parse_ablation_meta,
+)
+from slm_training.harnesses.reasoning.revmath.reversal import (
+    ReversalMetaV1,
+    ReversalObligationV1,
+    audit_hidden_stronger,
+    parse_reversal_meta,
 )
 from slm_training.harnesses.reasoning.revmath.schemas import (
     RevmathSchemaError,
@@ -35,6 +41,7 @@ FIXTURES_DIR = (
 )
 HERMETIC_CHECKER = FIXTURES_DIR / "hermetic_checker.py"
 HERMETIC_ABLATION_CHECKER = FIXTURES_DIR / "hermetic_ablation_checker.py"
+HERMETIC_REVERSAL_CHECKER = FIXTURES_DIR / "hermetic_reversal_checker.py"
 
 # Frozen fixture task_id prefix → sidecar meta filename stem.
 _ABLATION_META_BY_TASK_PREFIX: Mapping[str, str] = {
@@ -43,6 +50,13 @@ _ABLATION_META_BY_TASK_PREFIX: Mapping[str, str] = {
     "task.ablation.necessary": "ablation_necessary",
     "task.ablation.timeout": "ablation_timeout",
     "task.ablation.hidden_import": "ablation_hidden_import",
+}
+_REVERSAL_META_BY_TASK_PREFIX: Mapping[str, str] = {
+    "task.reversal.equivalence": "reversal_equivalence",
+    "task.reversal.one_way_forward": "reversal_one_way_forward",
+    "task.reversal.timeout": "reversal_timeout",
+    "task.reversal.hidden_stronger": "reversal_hidden_stronger",
+    "task.reversal.strength_mismatch": "reversal_strength_mismatch",
 }
 
 
@@ -525,6 +539,282 @@ class AssumptionAblationPlugin:
         )
 
 
+
+def load_reversal_meta_for_task(
+    task: RevmathTaskV1,
+    *,
+    meta: ReversalMetaV1 | None = None,
+    fixtures_dir: Path | None = None,
+) -> ReversalMetaV1 | None:
+    """Load frozen reversal sidecar meta for hermetic fixture tasks."""
+
+    if meta is not None:
+        return meta
+    root = fixtures_dir or FIXTURES_DIR
+    stem: str | None = None
+    task_id = task.task_id
+    # Obligation clones keep the parent stem prefix before ".obl.".
+    lookup_id = task_id.split(".obl.", 1)[0]
+    for prefix, name in _REVERSAL_META_BY_TASK_PREFIX.items():
+        if lookup_id == prefix or lookup_id.startswith(prefix + "."):
+            stem = name
+            break
+    if stem is None:
+        return None
+    path = root / f"{stem}.meta.json"
+    if not path.is_file():
+        raise RevmathSchemaError(f"reversal meta missing at {path}")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise RevmathSchemaError(f"reversal meta at {path} must be an object")
+    return parse_reversal_meta(payload)
+
+
+def _infer_reversal_direction(
+    task: RevmathTaskV1,
+    meta: ReversalMetaV1 | None,
+    override: Literal["forward", "reverse"] | None,
+) -> Literal["forward", "reverse"]:
+    if override is not None:
+        return override
+    if task.task_id.endswith(".obl.forward") or ".obl.forward." in task.task_id:
+        return "forward"
+    if task.task_id.endswith(".obl.reverse") or ".obl.reverse." in task.task_id:
+        return "reverse"
+    if meta is not None:
+        if task.proposition.statement_sha256 == meta.theorem.statement_sha256:
+            return "forward"
+        if task.proposition.statement_sha256 == meta.principle.statement_sha256:
+            return "reverse"
+    raise RevmathSchemaError(
+        f"cannot infer reversal direction for task_id={task.task_id!r}"
+    )
+
+
+@dataclass(frozen=True)
+class ReversalPlugin:
+    """Hermetic bidirectional reversal checks (HARN-05); plan/interpret only."""
+
+    task_kind: RevmathTaskKind = "reversal"
+    meta_override: ReversalMetaV1 | None = None
+    direction_override: Literal["forward", "reverse"] | None = None
+    fixtures_dir: Path | None = None
+
+    def supports(self, task: RevmathTaskV1) -> bool:
+        return task.task_kind == self.task_kind
+
+    def plan_check(
+        self,
+        task: RevmathTaskV1,
+        *,
+        lean_root: Path,
+        hermetic: bool,
+    ) -> RevmathCheckPlan:
+        if hermetic:
+            checker = HERMETIC_REVERSAL_CHECKER
+            if self.fixtures_dir is not None:
+                checker = self.fixtures_dir / "hermetic_reversal_checker.py"
+            if not checker.is_file():
+                raise RevmathSchemaError(
+                    f"hermetic reversal checker missing at {checker}"
+                )
+            meta = load_reversal_meta_for_task(
+                task, meta=self.meta_override, fixtures_dir=self.fixtures_dir
+            )
+            direction = _infer_reversal_direction(task, meta, self.direction_override)
+            scenario = meta.hermetic_scenario if meta is not None else "equivalence"
+            coding_id = meta.coding_id if meta is not None else ""
+            proof_deps = ""
+            if meta is not None:
+                deps = meta.proof_deps_by_direction.get(direction)
+                if deps is not None:
+                    proof_deps = ",".join(deps)
+            antecedents = ",".join(sorted(task.base_theory.allowed_assumption_ids))
+            return RevmathCheckPlan(
+                command=(
+                    "python",
+                    "-u",
+                    str(checker),
+                    "--task-id",
+                    task.task_id,
+                    "--statement-sha256",
+                    task.proposition.statement_sha256,
+                    "--direction",
+                    direction,
+                    "--base-theory-id",
+                    task.base_theory.base_theory_id,
+                    "--interpretation-status",
+                    task.base_theory.interpretation_status,
+                    "--coding-id",
+                    coding_id,
+                    "--antecedent-assumptions",
+                    antecedents,
+                    "--scenario",
+                    scenario,
+                    "--proof-deps",
+                    proof_deps,
+                    "--mode",
+                    "auto",
+                ),
+                cwd=checker.parent,
+                requires_lean_tool=False,
+                lean_project_root=None,
+                checker_id="revmath.hermetic_reversal",
+            )
+        root = lean_root.resolve()
+        return RevmathCheckPlan(
+            command=("make", "test"),
+            cwd=root,
+            requires_lean_tool=True,
+            lean_project_root=root,
+            checker_id="revmath.lean_reversal",
+        )
+
+    def interpret_capture(
+        self,
+        task: RevmathTaskV1,
+        proc: BoundedProcessResult,
+        *,
+        plan: RevmathCheckPlan,
+    ) -> PluginCheckEvidence:
+        report_sha = content_sha(
+            {
+                "stdout": proc.stdout,
+                "stderr": proc.stderr,
+                "returncode": proc.returncode,
+                "outcome": proc.outcome.value,
+            }
+        )
+        if plan.checker_id != "revmath.hermetic_reversal":
+            if proc.returncode == 0:
+                return PluginCheckEvidence(
+                    checker_id=plan.checker_id,
+                    checked=False,
+                    incomplete=True,
+                    checker_report_sha256=report_sha,
+                    detail="lean reversal check ok; theorem witness deferred",
+                )
+            return PluginCheckEvidence(
+                checker_id=plan.checker_id,
+                checked=False,
+                incomplete=True,
+                checker_report_sha256=report_sha,
+                detail="lean reversal check failed or incomplete",
+            )
+
+        payload = _parse_checker_json(proc.stdout)
+        if payload is None:
+            return PluginCheckEvidence(
+                checker_id=plan.checker_id,
+                checked=False,
+                malformed_proof=True,
+                checker_report_sha256=report_sha,
+                detail="hermetic reversal checker emitted no JSON trailer",
+            )
+
+        deps_raw = payload.get("proof_dependency_ids") or []
+        if isinstance(deps_raw, str):
+            deps = tuple(
+                sorted({p.strip() for p in deps_raw.split(",") if p.strip()})
+            )
+        else:
+            deps = tuple(sorted(str(x) for x in deps_raw))
+
+        meta = load_reversal_meta_for_task(
+            task, meta=self.meta_override, fixtures_dir=self.fixtures_dir
+        )
+        direction = _infer_reversal_direction(task, meta, self.direction_override)
+        hidden: tuple[str, ...] = ()
+        if meta is not None:
+            forbidden = (
+                (meta.theorem.statement_id,)
+                if direction == "forward"
+                else (meta.principle.statement_id,)
+            )
+            hidden = audit_hidden_stronger(
+                direction=direction,
+                proof_dependency_ids=deps,
+                import_edges=meta.import_edges,
+                strength_bearing_lemmas=meta.strength_bearing_lemmas,
+                forbidden_assumption_ids=forbidden,
+            )
+
+        status = str(payload.get("status", ""))
+        if payload.get("unsupported"):
+            return PluginCheckEvidence(
+                checker_id=plan.checker_id,
+                checked=False,
+                incomplete=True,
+                checker_report_sha256=report_sha,
+                detail=str(payload.get("detail", "unsupported direction")),
+            )
+        if status == "malformed":
+            return PluginCheckEvidence(
+                checker_id=plan.checker_id,
+                checked=True,
+                malformed_proof=True,
+                checker_report_sha256=report_sha,
+                detail=str(payload.get("detail", "malformed proof")),
+            )
+        if status == "incomplete":
+            return PluginCheckEvidence(
+                checker_id=plan.checker_id,
+                checked=False,
+                incomplete=True,
+                checker_report_sha256=report_sha,
+                detail=str(payload.get("detail", "incomplete check")),
+            )
+        if status == "refuted":
+            digest = str(payload.get("refutation_digest") or report_sha)
+            return PluginCheckEvidence(
+                checker_id=plan.checker_id,
+                checked=True,
+                refuted=True,
+                refutation_digest=digest,
+                proof_present=True,
+                proof_sha256=str(payload.get("proof_sha256") or digest),
+                checker_report_sha256=report_sha,
+                detail=str(payload.get("detail", "refuted")),
+            )
+        if status == "ok":
+            if hidden:
+                return PluginCheckEvidence(
+                    checker_id=plan.checker_id,
+                    checked=True,
+                    malformed_proof=True,
+                    checker_report_sha256=report_sha,
+                    detail=(
+                        "hidden_stronger:"
+                        + ",".join(hidden)
+                        + f"; deps={','.join(deps)}"
+                    ),
+                )
+            proof_sha = payload.get("proof_sha256")
+            if not isinstance(proof_sha, str) or len(proof_sha) != 64:
+                return PluginCheckEvidence(
+                    checker_id=plan.checker_id,
+                    checked=True,
+                    malformed_proof=True,
+                    checker_report_sha256=report_sha,
+                    detail="ok status missing proof_sha256",
+                )
+            return PluginCheckEvidence(
+                checker_id=plan.checker_id,
+                checked=True,
+                proof_present=True,
+                proof_sha256=proof_sha,
+                checker_report_sha256=report_sha,
+                detail=str(payload.get("detail", "ok")),
+            )
+        return PluginCheckEvidence(
+            checker_id=plan.checker_id,
+            checked=False,
+            incomplete=True,
+            checker_report_sha256=report_sha,
+            detail=f"unrecognized hermetic reversal status {status!r}",
+        )
+
+
 @dataclass(frozen=True)
 class UnsupportedKindPlugin:
     """Explicit unsupported marker for kinds without a validator yet."""
@@ -567,10 +857,22 @@ def ablation_plugin_for_candidate(
     )
 
 
+def reversal_plugin_for_obligation(
+    meta: ReversalMetaV1,
+    obligation: ReversalObligationV1,
+) -> ReversalPlugin:
+    """Plugin bound to one reversal direction (tests / evaluate_reversal)."""
+
+    return ReversalPlugin(
+        meta_override=meta,
+        direction_override=obligation.direction,
+    )
+
+
 _DEFAULT_PLUGINS: tuple[RevmathTaskPlugin, ...] = (
     HermeticForwardPlugin(),
     AssumptionAblationPlugin(),
-    UnsupportedKindPlugin("reversal"),
+    ReversalPlugin(),
     UnsupportedKindPlugin("constructivization"),
     UnsupportedKindPlugin("computable_finite_counterexample"),
     UnsupportedKindPlugin("quantitative_bound_extraction"),
@@ -619,9 +921,11 @@ __all__ = [
     "FIXTURES_DIR",
     "HERMETIC_ABLATION_CHECKER",
     "HERMETIC_CHECKER",
+    "HERMETIC_REVERSAL_CHECKER",
     "AssumptionAblationPlugin",
     "HermeticForwardPlugin",
     "PluginCheckEvidence",
+    "ReversalPlugin",
     "RevmathCheckPlan",
     "RevmathTaskPlugin",
     "UnsupportedKindPlugin",
@@ -629,7 +933,9 @@ __all__ = [
     "default_plugin_registry",
     "lean_tool_available",
     "load_ablation_meta_for_task",
+    "load_reversal_meta_for_task",
     "override_hermetic_mode",
     "register_plugin",
     "resolve_plugin",
+    "reversal_plugin_for_obligation",
 ]

@@ -3070,6 +3070,11 @@
         {
           "version": "v23",
           "date": "2026-08-11",
+          "note": "no-bump: HARN-05 (SLM-545) wires check_changed path\u2192test map for revmath reversal only; ownership map unchanged."
+        },
+        {
+          "version": "v23",
+          "date": "2026-08-11",
           "note": "no-bump: HARN-04 (SLM-544) wires check_changed path\u2192test map for revmath assumption_ablation only; ownership map unchanged."
         },
         {
@@ -3335,7 +3340,7 @@
       ]
     },
     "governance.revmath_owners": {
-      "version": "v6",
+      "version": "v7",
       "kind": "gate",
       "paths": [
         "docs/design/adr-revmath-reasoning-profile.md",
@@ -3345,6 +3350,11 @@
         "tests/test_scripts/test_verify_revmath_owners.py"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-08-11",
+          "note": "HARN-05 (SLM-545): register revmath_reversal owner surface."
+        },
         {
           "version": "v6",
           "date": "2026-08-11",
@@ -3378,7 +3388,7 @@
       ]
     },
     "governance.revmath_harness_parity": {
-      "version": "v4",
+      "version": "v5",
       "kind": "gate",
       "paths": [
         "src/slm_training/resources/revmath_harness_parity.json",
@@ -3387,6 +3397,11 @@
         "tests/test_scripts/test_verify_revmath_harness_parity.py"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-08-11",
+          "note": "HARN-05 (SLM-545): document reversal task validator present; bidirectional equivalence gate."
+        },
         {
           "version": "v4",
           "date": "2026-08-11",
@@ -18180,7 +18195,7 @@
       ]
     },
     "harness.reasoning.revmath": {
-      "version": "v4",
+      "version": "v5",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/reasoning/revmath/",
@@ -18191,6 +18206,11 @@
         "tests/test_harnesses/reasoning/test_revmath_assumption_ablation.py"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-08-11",
+          "note": "HARN-05 (SLM-545): reversal generator/validator plugin, bidirectional equivalence fail-closed, hermetic fixtures (equivalence/one-way/timeout/hidden-stronger/strength-mismatch)."
+        },
         {
           "version": "v4",
           "date": "2026-08-11",

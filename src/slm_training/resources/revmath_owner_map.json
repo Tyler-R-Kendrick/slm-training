@@ -334,11 +334,12 @@
         "PluginCheckEvidence",
         "default_plugin_registry",
         "resolve_plugin",
-        "AssumptionAblationPlugin"
+        "AssumptionAblationPlugin",
+        "ReversalPlugin"
       ],
       "design_doc": "docs/design/reverse-mathematics-computability.md",
       "ownership_map_subsystem": null,
-      "notes": "HARN-03 task-kind plugin seam; plan/interpret only \u2014 shared runner owns orchestration. HARN-04 registers AssumptionAblationPlugin here."
+      "notes": "HARN-03 task-kind plugin seam; plan/interpret only \u2014 shared runner owns orchestration. HARN-04 registers AssumptionAblationPlugin; HARN-05 registers ReversalPlugin here."
     },
     {
       "id": "revmath_assumption_ablation",
@@ -354,6 +355,21 @@
       "design_doc": "docs/design/reverse-mathematics-computability.md",
       "ownership_map_subsystem": null,
       "notes": "HARN-04 assumption-ablation generator/validator; finite explored-lattice minimality only; plugin registered in plugins.py."
+    },
+    {
+      "id": "revmath_reversal",
+      "kind": "task_validator",
+      "owner_module": "src/slm_training/harnesses/reasoning/revmath/reversal.py",
+      "owner_symbols": [
+        "ReversalMetaV1",
+        "generate_reversal_obligations",
+        "evaluate_reversal",
+        "audit_hidden_stronger",
+        "ReversalReportV1"
+      ],
+      "design_doc": "docs/design/reverse-mathematics-computability.md",
+      "ownership_map_subsystem": null,
+      "notes": "HARN-05 reversal generator/validator; equivalence only when both B+A\u22a2T and B+T\u22a2A succeed over the same base/interpretation; plugin registered in plugins.py."
     },
     {
       "id": "revmath_replay",
@@ -440,6 +456,13 @@
       "extends": "revmath_plugins",
       "new_owner_justified": true,
       "justification": "Assumption-ablation generator/validator under harnesses/reasoning/revmath/assumption_ablation.py; registers AssumptionAblationPlugin without forking runner orchestration."
+    },
+    {
+      "issue": "HARN-05",
+      "linear_id": "SLM-545",
+      "extends": "revmath_plugins",
+      "new_owner_justified": true,
+      "justification": "Reversal generator/validator under harnesses/reasoning/revmath/reversal.py; registers ReversalPlugin without forking runner orchestration; fail-closed bidirectional equivalence."
     }
   ],
   "prohibited_duplicate_risks": [
