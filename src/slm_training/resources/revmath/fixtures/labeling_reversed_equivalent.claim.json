@@ -1,0 +1,19 @@
+{
+  "analysis_kind": "genuine_reverse_mathematics",
+  "base_theory_id": "RCA0",
+  "claim_id": "label.pos.reversed_equivalent",
+  "coding_id": "coding.wkl_path.v1",
+  "evidence_kinds": [
+    "interpretation_package",
+    "forward_implication",
+    "reversal"
+  ],
+  "forward_evidence_sha256": "abababababababababababababababababababababababababababababababab",
+  "interpretation_status": "explicit_reversal",
+  "labeling_state": "reversed_equivalent",
+  "notes": "HARN-05 both directions + explicit coding",
+  "practical_class": null,
+  "proposed_subsystem_id": "WKL0",
+  "reversal_evidence_sha256": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+  "schema_version": "revmath_label_claim/v1"
+}

@@ -1,0 +1,17 @@
+{
+  "analysis_kind": "practical_computability",
+  "base_theory_id": "RCA0_base_toy",
+  "claim_id": "label.pos.counterexample",
+  "coding_id": null,
+  "evidence_kinds": [
+    "checked_counterexample"
+  ],
+  "forward_evidence_sha256": null,
+  "interpretation_status": "not_applicable",
+  "labeling_state": "counterexample_known",
+  "notes": "Checked finite counterexample; no Big-Five upgrade",
+  "practical_class": "finite_decidable",
+  "proposed_subsystem_id": null,
+  "reversal_evidence_sha256": null,
+  "schema_version": "revmath_label_claim/v1"
+}

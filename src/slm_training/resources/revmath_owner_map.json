@@ -433,6 +433,24 @@
       "notes": "HARN-07 quantitative-bound extractor/validator; EVID-04 bound AST only; never invents rates; theorem-derived vs empirical timing kept distinct; plugin registered in plugins.py."
     },
     {
+      "id": "revmath_labeling",
+      "kind": "task_validator",
+      "owner_module": "src/slm_training/harnesses/reasoning/revmath/labeling.py",
+      "owner_symbols": [
+        "RmLabelClaimV1",
+        "RmLabelVerdictV1",
+        "RmLabelingState",
+        "anti_overclaim_reasons",
+        "validate_label_claim",
+        "assert_label_claim_accepted",
+        "report_labeling_disclaimer",
+        "default_analysis_kind_for_task"
+      ],
+      "design_doc": "docs/design/reverse-mathematics-computability.md",
+      "ownership_map_subsystem": null,
+      "notes": "HARN-08 conservative RM labeling + anti-overclaim; Big-Five equivalence only with base/coding/forward/reversal; distinguishes RM-inspired assumption minimization from genuine reverse mathematics."
+    },
+    {
       "id": "revmath_replay",
       "kind": "replay",
       "owner_module": "src/slm_training/harnesses/reasoning/revmath/replay.py",

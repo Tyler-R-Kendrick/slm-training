@@ -1,16 +1,46 @@
-"""Typed revmath reports (HARN-03)."""
+"""Typed revmath reports (HARN-03) + labeling disclaimers (HARN-08)."""
 
 from __future__ import annotations
 
 from collections.abc import Sequence
 from typing import Any
 
+from slm_training.harnesses.reasoning.revmath.labeling import (
+    AnalysisKind,
+    RmLabelingState,
+    default_analysis_kind_for_task,
+    report_labeling_disclaimer,
+)
 from slm_training.harnesses.reasoning.revmath.schemas import (
     RevmathReportV1,
     RevmathResultV1,
     RevmathTaskV1,
 )
 from slm_training.versioning import build_version_stamp
+
+
+def labeling_notes_for_tasks(
+    tasks: Sequence[RevmathTaskV1],
+    *,
+    labeling_state: RmLabelingState = "unclassified",
+) -> tuple[dict[str, Any], ...]:
+    """Per-task analysis_kind + disclaimer (ablation ≠ genuine RM)."""
+
+    notes: list[dict[str, Any]] = []
+    for task in tasks:
+        kind: AnalysisKind = default_analysis_kind_for_task(task.task_kind)
+        notes.append(
+            {
+                "task_id": task.task_id,
+                "task_kind": task.task_kind,
+                "analysis_kind": kind,
+                "labeling_state": labeling_state,
+                "disclaimer": report_labeling_disclaimer(
+                    analysis_kind=kind, labeling_state=labeling_state
+                ),
+            }
+        )
+    return tuple(notes)
 
 
 def _judgment_counts(results: Sequence[RevmathResultV1]) -> dict[str, int]:
@@ -74,4 +104,4 @@ def build_revmath_report(
     )
 
 
-__all__ = ["build_revmath_report"]
+__all__ = ["build_revmath_report", "labeling_notes_for_tasks"]

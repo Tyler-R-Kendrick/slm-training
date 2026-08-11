@@ -1,0 +1,17 @@
+{
+  "analysis_kind": "genuine_reverse_mathematics",
+  "base_theory_id": "RCA0",
+  "claim_id": "label.neg.finite_bounded",
+  "coding_id": null,
+  "evidence_kinds": [
+    "finite_bounded_analogue"
+  ],
+  "forward_evidence_sha256": null,
+  "interpretation_status": "uninterpreted",
+  "labeling_state": "interpreted",
+  "notes": "Negative: finite analogue mislabeled RCA0",
+  "practical_class": "finite_decidable",
+  "proposed_subsystem_id": "RCA0",
+  "reversal_evidence_sha256": null,
+  "schema_version": "revmath_label_claim/v1"
+}

@@ -1,0 +1,18 @@
+{
+  "analysis_kind": "genuine_reverse_mathematics",
+  "base_theory_id": "RCA0",
+  "claim_id": "label.pos.interpreted",
+  "coding_id": "coding.aca_jump.v1",
+  "evidence_kinds": [
+    "interpretation_package",
+    "forward_implication"
+  ],
+  "forward_evidence_sha256": "abababababababababababababababababababababababababababababababab",
+  "interpretation_status": "explicit_interpretation",
+  "labeling_state": "interpreted",
+  "notes": "Forward implication under explicit coding; not equivalence",
+  "practical_class": null,
+  "proposed_subsystem_id": "ACA0",
+  "reversal_evidence_sha256": null,
+  "schema_version": "revmath_label_claim/v1"
+}

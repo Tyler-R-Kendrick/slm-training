@@ -1,0 +1,17 @@
+{
+  "analysis_kind": "genuine_reverse_mathematics",
+  "base_theory_id": null,
+  "claim_id": "label.neg.classical",
+  "coding_id": null,
+  "evidence_kinds": [
+    "classical_existence"
+  ],
+  "forward_evidence_sha256": null,
+  "interpretation_status": "not_applicable",
+  "labeling_state": "candidate_upper_bound",
+  "notes": "Negative: classical existence as ACA0",
+  "practical_class": "classical_noncomputable_existence",
+  "proposed_subsystem_id": "ACA0",
+  "reversal_evidence_sha256": null,
+  "schema_version": "revmath_label_claim/v1"
+}

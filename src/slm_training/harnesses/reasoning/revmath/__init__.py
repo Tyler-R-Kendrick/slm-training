@@ -1,13 +1,29 @@
-"""reasoning/revmath typed contracts + deterministic runner (HARN-02..07).
+"""reasoning/revmath typed contracts + deterministic runner (HARN-02..08).
 
 Schemas: HARN-02. Runner / replay / report: HARN-03.
 Assumption ablation: HARN-04. Reversal / bidirectional: HARN-05.
 Constructivization + computable/finite counterexample: HARN-06.
 Quantitative-bound extraction: HARN-07.
+Conservative RM labeling / anti-overclaim: HARN-08.
 """
 
 from __future__ import annotations
 
+from slm_training.harnesses.reasoning.revmath.labeling import (
+    INSUFFICIENT_FOR_BIG_FIVE,
+    AnalysisKind,
+    EvidenceKind,
+    RmLabelClaimV1,
+    RmLabelVerdictV1,
+    RmLabelingState,
+    anti_overclaim_reasons,
+    assert_label_claim_accepted,
+    default_analysis_kind_for_task,
+    has_big_five_equivalence_package,
+    parse_label_claim,
+    report_labeling_disclaimer,
+    validate_label_claim,
+)
 from slm_training.harnesses.reasoning.revmath.quantitative_bound import (
     QuantitativeBoundMetaV1,
     QuantitativeBoundReportV1,
@@ -66,7 +82,10 @@ from slm_training.harnesses.reasoning.revmath.plugins import (
     default_plugin_registry,
     resolve_plugin,
 )
-from slm_training.harnesses.reasoning.revmath.report import build_revmath_report
+from slm_training.harnesses.reasoning.revmath.report import (
+    build_revmath_report,
+    labeling_notes_for_tasks,
+)
 from slm_training.harnesses.reasoning.revmath.replay import (
     assert_revmath_replay_integrity,
     build_revmath_replay_bundle,
@@ -106,6 +125,19 @@ from slm_training.harnesses.reasoning.revmath.schemas import (
 __all__ = [
     "REVMATH_MUTABLE_REPAIR_KNOBS",
     "REVMATH_SCHEMA_VERSIONS",
+    "INSUFFICIENT_FOR_BIG_FIVE",
+    "AnalysisKind",
+    "EvidenceKind",
+    "RmLabelClaimV1",
+    "RmLabelVerdictV1",
+    "RmLabelingState",
+    "anti_overclaim_reasons",
+    "assert_label_claim_accepted",
+    "default_analysis_kind_for_task",
+    "has_big_five_equivalence_package",
+    "parse_label_claim",
+    "report_labeling_disclaimer",
+    "validate_label_claim",
     "AxisCertificateRefV1",
     "AssumptionAblationPlugin",
     "parse_counterexample_meta",
@@ -173,6 +205,7 @@ __all__ = [
     "assert_revmath_replay_integrity",
     "build_revmath_replay_bundle",
     "build_revmath_report",
+    "labeling_notes_for_tasks",
     "canonical_hash",
     "default_plugin_registry",
     "export_json_schemas",

@@ -1,0 +1,17 @@
+{
+  "analysis_kind": "genuine_reverse_mathematics",
+  "base_theory_id": null,
+  "claim_id": "label.neg.print_axioms",
+  "coding_id": null,
+  "evidence_kinds": [
+    "print_axioms_only"
+  ],
+  "forward_evidence_sha256": null,
+  "interpretation_status": "uninterpreted",
+  "labeling_state": "reversed_equivalent",
+  "notes": "Negative: #print axioms only",
+  "practical_class": null,
+  "proposed_subsystem_id": "RCA0",
+  "reversal_evidence_sha256": null,
+  "schema_version": "revmath_label_claim/v1"
+}
