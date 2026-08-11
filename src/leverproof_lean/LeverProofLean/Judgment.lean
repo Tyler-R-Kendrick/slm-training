@@ -165,37 +165,61 @@ theorem unknown_never_authorizes (s : SourceInput) (checked : Bool)
   simp [authorizesSemanticConclusion, classify, h]
 
 theorem unchecked_never_authorizes (s : SourceInput)
-    (h : classifyOutcome s = .witnessed ∨ classifyOutcome s = .refuted) :
+    (_h : classifyOutcome s = .witnessed ∨ classifyOutcome s = .refuted) :
     authorizesSemanticConclusion (classify s false) = false := by
   simp [authorizesSemanticConclusion, classify]
-  rcases h with h | h <;> simp [h]
 
 theorem timeout_never_refuted (s : SourceInput) (h : s.timedOut = true) :
     classifyOutcome s ≠ .refuted := by
-  unfold classifyOutcome
-  simp [h]
+  cases hmal : (s.malformedInput || s.payloadMismatch)
+  · have : classifyOutcome s = .unknown := by
+      simp [classifyOutcome, hmal, h]
+    simp [this]
+  · have : classifyOutcome s = .invalid := by
+      simp [classifyOutcome, hmal]
+    simp [this]
 
 theorem skipped_replay_never_refuted (s : SourceInput) (h : s.skippedReplay = true) :
     classifyOutcome s ≠ .refuted := by
-  unfold classifyOutcome
-  simp [h]
+  cases hmal : (s.malformedInput || s.payloadMismatch)
+  · have : classifyOutcome s = .unknown := by
+      simp [classifyOutcome, hmal, h]
+    simp [this]
+  · have : classifyOutcome s = .invalid := by
+      simp [classifyOutcome, hmal]
+    simp [this]
 
 theorem unsupported_capability_never_refuted (s : SourceInput)
     (h : s.unsupportedCapability = true) :
     classifyOutcome s ≠ .refuted := by
-  unfold classifyOutcome
-  simp [h]
+  cases hmal : (s.malformedInput || s.payloadMismatch)
+  · have : classifyOutcome s = .unknown := by
+      simp [classifyOutcome, hmal, h]
+    simp [this]
+  · have : classifyOutcome s = .invalid := by
+      simp [classifyOutcome, hmal]
+    simp [this]
 
 theorem incomplete_coverage_never_refuted (s : SourceInput)
     (h : s.incompleteCoverage = true) :
     classifyOutcome s ≠ .refuted := by
-  unfold classifyOutcome
-  simp [h]
+  cases hmal : (s.malformedInput || s.payloadMismatch)
+  · have : classifyOutcome s = .unknown := by
+      simp [classifyOutcome, hmal, h]
+    simp [this]
+  · have : classifyOutcome s = .invalid := by
+      simp [classifyOutcome, hmal]
+    simp [this]
 
 theorem missing_tool_never_refuted (s : SourceInput) (h : s.missingTool = true) :
     classifyOutcome s ≠ .refuted := by
-  unfold classifyOutcome
-  simp [h]
+  cases hmal : (s.malformedInput || s.payloadMismatch)
+  · have : classifyOutcome s = .unknown := by
+      simp [classifyOutcome, hmal, h]
+    simp [this]
+  · have : classifyOutcome s = .invalid := by
+      simp [classifyOutcome, hmal]
+    simp [this]
 
 theorem timeout_never_authorizes_removal (s : SourceInput) (checked : Bool)
     (h : s.timedOut = true) :
@@ -222,8 +246,8 @@ theorem classification_exhaustive (s : SourceInput) :
 
 theorem classified_payload_matches (s : SourceInput) (checked : Bool) :
     payloadMatchesOutcome (classify s checked) = true := by
-  unfold classify payloadMatchesOutcome classifyPayload classifyOutcome
-  split <;> split <;> simp
+  simp [classify, payloadMatchesOutcome, classifyPayload]
+  cases classifyOutcome s <;> simp
 
 /-! ### Bridge to exact-closure removable law -/
 
@@ -252,8 +276,8 @@ theorem unknown_query_never_refuted_when_replay_skipped
     (r : ExactClosure.QueryResult) :
     classifyOutcome
       (sourceFromQueryResult r false true false false false false false false true false) ≠
-      .refuted :=
-  skipped_replay_never_refuted _ (by decide)
+      .refuted := by
+  exact skipped_replay_never_refuted _ rfl
 
 theorem exact_closure_unknown_never_authorizes_removal
     (r : ExactClosure.QueryResult)
@@ -261,9 +285,11 @@ theorem exact_closure_unknown_never_authorizes_removal
     authorizesRemoval (classify
       (sourceFromQueryResult r false false false false false false false false false r.replayOk)
       true) = false := by
-  have hout : classifyOutcome _ = .unknown := by
-    unfold classifyOutcome sourceFromQueryResult h
-    simp [h]
+  have hout :
+      classifyOutcome
+        (sourceFromQueryResult r false false false false false false false false false
+          r.replayOk) = .unknown := by
+    simp [classifyOutcome, sourceFromQueryResult, h]
   simp [authorizesRemoval, classify, hout]
 
 end LeverProofLean.Judgment

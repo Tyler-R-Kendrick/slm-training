@@ -486,7 +486,7 @@ theorem closure_complexity_separated_from_assignment_search :
     strictRemovalUpperBound [1, 1, 1] = 3 ∧
       assignmentSearchBound [1, 1, 1] = 1 ∧
       strictRemovalUpperBound [1, 1, 1] ≠ assignmentSearchBound [1, 1, 1] := by
-  native_decide
+  decide
 
 theorem totalLiveCount_eq_sum_sizes (holes : HoleDomains) :
     totalLiveCount holes = listSum (holeSizes holes) :=
@@ -625,7 +625,7 @@ theorem fixture_two_three_stabilization_bounds :
     strictRemovalUpperBound [2, 3] = 5 ∧
       nonemptyInvariantUpperBound [2, 3] = 3 ∧
       assignmentSearchBound [2, 3] = 6 := by
-  native_decide
+  decide
 
 theorem fixture_flat_total_removed_le_live :
     let live : List Candidate := [0, 1, 2, 3]
@@ -635,7 +635,7 @@ theorem fixture_flat_total_removed_le_live :
       { hole := 0, candidate := 3, verdict := .unsupported, replayOk := true }
     totalRemovedAcross live [[r0], [r1]] ≤ live.length ∧
       totalRemovedAcross live [[r0], [r1]] = 2 := by
-  native_decide
+  decide
 
 /-- Fixed points are not claimed maximal; coverage is recorded beside the fixed point. -/
 theorem fixed_point_not_automatic_maximum

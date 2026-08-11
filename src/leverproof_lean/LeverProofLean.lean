@@ -13,6 +13,7 @@ import LeverProofLean.CompleteDomain
 import LeverProofLean.FiniteSearchBounds
 import LeverProofLean.BlackBoxUnsupportedLowerBound
 import LeverProofLean.ExactClosure
+import LeverProofLean.EventTrace
 import LeverProofLean.DecodeInvariants
 import LeverProofLean.EcosystemTier
 -- Constrained diffusion × topology ADR claim cores
