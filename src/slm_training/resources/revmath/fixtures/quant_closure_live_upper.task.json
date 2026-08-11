@@ -1,0 +1,45 @@
+{
+  "base_theory": {
+    "allowed_assumption_ids": [
+      "exact_closure_certificate_checked",
+      "finite_live_domain"
+    ],
+    "base_theory_id": "RCA0",
+    "interpretation_status": "explicit_interpretation"
+  },
+  "budget": {
+    "max_memory_mb": null,
+    "max_tactic_steps": 32,
+    "max_wall_seconds": 5.0,
+    "stopping_rule_ids": [
+      "wall_or_steps"
+    ]
+  },
+  "campaign": {
+    "campaign_id": "camp.rm.hermetic",
+    "campaign_manifest_sha256": "dfceae62e1bfe4f852368de75fe7597c99cb5b77715a02132a3185e5b955b41d",
+    "experiment_id": "exp.rm.hermetic.quant",
+    "locked_arm_ids": [
+      "control"
+    ]
+  },
+  "corpus": {
+    "corpus_id": "corpus.rm.hermetic",
+    "corpus_sha256": "fe091cbe54a9e2d49852bae50765454d041570e518188bde41445cd9d99b635c",
+    "entry_id": "entry.quant_closure_live_upper"
+  },
+  "proposition": {
+    "proposition_id": "thm.closure.live_upper",
+    "statement": "qualitative: exact closure never increases live candidates; survivors are at most pre-closure live cardinality",
+    "statement_sha256": "63fe86181b062c329e5d69619c92873cb43286436a60edf64e7c7330968913b4"
+  },
+  "schema_version": "revmath_task/v1",
+  "task_id": "task.quant.closure_live_upper",
+  "task_kind": "quantitative_bound_extraction",
+  "theorem_direction": "forward",
+  "verifier_judge": {
+    "judge_id": "solver_judgment.v1",
+    "judgment_schema": "solver_judgment/v1",
+    "verifier_id": "lean.kernel"
+  }
+}

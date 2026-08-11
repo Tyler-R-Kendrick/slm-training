@@ -182,6 +182,10 @@ SUITES_BY_PREFIX = (
         "src/slm_training/harnesses/reasoning/revmath/reversal.py",
         ("tests/test_harnesses/reasoning/test_revmath_reversal.py",),
     ),
+    (
+        "src/slm_training/harnesses/reasoning/revmath/quantitative_bound.py",
+        ("tests/test_harnesses/reasoning/test_revmath_quantitative_bound.py",),
+    ),
     ("scripts/", ("tests/test_scripts",)),
     (
         "src/slm_training/data/",

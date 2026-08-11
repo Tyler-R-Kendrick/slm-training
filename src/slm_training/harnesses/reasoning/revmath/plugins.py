@@ -1,4 +1,4 @@
-"""Revmath task plugins (HARN-03/HARN-04/HARN-05).
+"""Revmath task plugins (HARN-03/HARN-04/HARN-05/HARN-07).
 
 Plugins plan a bounded check command and interpret capture; the shared
 runner owns orchestration, judgment classification, replay, and reports.
@@ -22,6 +22,10 @@ from slm_training.harnesses.reasoning.revmath.assumption_ablation import (
     audit_hidden_reintroduction,
     parse_ablation_meta,
 )
+from slm_training.harnesses.reasoning.revmath.quantitative_bound import (
+    QuantitativeBoundMetaV1,
+    parse_quantitative_bound_meta,
+)
 from slm_training.harnesses.reasoning.revmath.reversal import (
     ReversalMetaV1,
     ReversalObligationV1,
@@ -42,6 +46,7 @@ FIXTURES_DIR = (
 HERMETIC_CHECKER = FIXTURES_DIR / "hermetic_checker.py"
 HERMETIC_ABLATION_CHECKER = FIXTURES_DIR / "hermetic_ablation_checker.py"
 HERMETIC_REVERSAL_CHECKER = FIXTURES_DIR / "hermetic_reversal_checker.py"
+HERMETIC_QUANT_CHECKER = FIXTURES_DIR / "hermetic_quantitative_bound_checker.py"
 
 # Frozen fixture task_id prefix → sidecar meta filename stem.
 _ABLATION_META_BY_TASK_PREFIX: Mapping[str, str] = {
@@ -57,6 +62,11 @@ _REVERSAL_META_BY_TASK_PREFIX: Mapping[str, str] = {
     "task.reversal.timeout": "reversal_timeout",
     "task.reversal.hidden_stronger": "reversal_hidden_stronger",
     "task.reversal.strength_mismatch": "reversal_strength_mismatch",
+}
+_QUANT_META_BY_TASK_PREFIX: Mapping[str, str] = {
+    "task.quant.finite_search": "quant_finite_search",
+    "task.quant.closure_live_upper": "quant_closure_live_upper",
+    "task.quant.nonextractable": "quant_nonextractable",
 }
 
 
@@ -815,6 +825,223 @@ class ReversalPlugin:
         )
 
 
+
+
+def load_quantitative_bound_meta_for_task(
+    task: RevmathTaskV1,
+    *,
+    meta: QuantitativeBoundMetaV1 | None = None,
+    fixtures_dir: Path | None = None,
+) -> QuantitativeBoundMetaV1 | None:
+    """Load frozen quantitative-bound sidecar meta for hermetic fixtures."""
+
+    if meta is not None:
+        return meta
+    root = fixtures_dir or FIXTURES_DIR
+    stem: str | None = None
+    for prefix, name in _QUANT_META_BY_TASK_PREFIX.items():
+        if task.task_id == prefix or task.task_id.startswith(prefix + "."):
+            stem = name
+            break
+    if stem is None:
+        return None
+    path = root / f"{stem}.meta.json"
+    if not path.is_file():
+        raise RevmathSchemaError(f"quantitative-bound meta missing at {path}")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise RevmathSchemaError(f"quantitative-bound meta at {path} must be an object")
+    return parse_quantitative_bound_meta(payload)
+
+
+@dataclass(frozen=True)
+class QuantitativeBoundPlugin:
+    """Hermetic quantitative-bound extraction checks (HARN-07); plan/interpret only."""
+
+    task_kind: RevmathTaskKind = "quantitative_bound_extraction"
+    meta_override: QuantitativeBoundMetaV1 | None = None
+    fixtures_dir: Path | None = None
+
+    def supports(self, task: RevmathTaskV1) -> bool:
+        return task.task_kind == self.task_kind
+
+    def plan_check(
+        self,
+        task: RevmathTaskV1,
+        *,
+        lean_root: Path,
+        hermetic: bool,
+    ) -> RevmathCheckPlan:
+        if hermetic:
+            checker = HERMETIC_QUANT_CHECKER
+            if self.fixtures_dir is not None:
+                checker = self.fixtures_dir / "hermetic_quantitative_bound_checker.py"
+            if not checker.is_file():
+                raise RevmathSchemaError(
+                    f"hermetic quantitative-bound checker missing at {checker}"
+                )
+            meta = load_quantitative_bound_meta_for_task(
+                task, meta=self.meta_override, fixtures_dir=self.fixtures_dir
+            )
+            if meta is None:
+                raise RevmathSchemaError(
+                    f"no quantitative-bound meta for task_id={task.task_id!r}"
+                )
+            stem: str | None = None
+            for prefix, name in _QUANT_META_BY_TASK_PREFIX.items():
+                if task.task_id == prefix or task.task_id.startswith(prefix + "."):
+                    stem = name
+                    break
+            if stem is None and self.meta_override is not None:
+                for name in _QUANT_META_BY_TASK_PREFIX.values():
+                    candidate = (self.fixtures_dir or FIXTURES_DIR) / f"{name}.meta.json"
+                    if not candidate.is_file():
+                        continue
+                    loaded = parse_quantitative_bound_meta(
+                        json.loads(candidate.read_text(encoding="utf-8"))
+                    )
+                    if loaded.meta_id == self.meta_override.meta_id:
+                        stem = name
+                        break
+            if stem is None:
+                raise RevmathSchemaError(
+                    f"cannot resolve meta path for task_id={task.task_id!r}"
+                )
+            meta_path = (self.fixtures_dir or FIXTURES_DIR) / f"{stem}.meta.json"
+            return RevmathCheckPlan(
+                command=(
+                    "python",
+                    "-u",
+                    str(checker),
+                    "--task-id",
+                    task.task_id,
+                    "--statement-sha256",
+                    task.proposition.statement_sha256,
+                    "--meta-path",
+                    str(meta_path),
+                    "--scenario",
+                    meta.hermetic_scenario,
+                    "--mode",
+                    "auto",
+                ),
+                cwd=checker.parent,
+                requires_lean_tool=False,
+                lean_project_root=None,
+                checker_id="revmath.hermetic_quantitative_bound",
+            )
+        root = lean_root.resolve()
+        return RevmathCheckPlan(
+            command=("make", "test"),
+            cwd=root,
+            requires_lean_tool=True,
+            lean_project_root=root,
+            checker_id="revmath.lean_quantitative_bound",
+        )
+
+    def interpret_capture(
+        self,
+        task: RevmathTaskV1,
+        proc: BoundedProcessResult,
+        *,
+        plan: RevmathCheckPlan,
+    ) -> PluginCheckEvidence:
+        report_sha = content_sha(
+            {
+                "stdout": proc.stdout,
+                "stderr": proc.stderr,
+                "returncode": proc.returncode,
+                "outcome": proc.outcome.value,
+            }
+        )
+        if plan.checker_id != "revmath.hermetic_quantitative_bound":
+            return PluginCheckEvidence(
+                checker_id=plan.checker_id,
+                checked=False,
+                incomplete=True,
+                checker_report_sha256=report_sha,
+                detail="lean quantitative-bound check deferred to hermetic/EVID-04 path",
+            )
+
+        payload = _parse_checker_json(proc.stdout)
+        if payload is None:
+            return PluginCheckEvidence(
+                checker_id=plan.checker_id,
+                checked=True,
+                malformed_proof=True,
+                checker_report_sha256=report_sha,
+                detail="hermetic quantitative-bound checker emitted no JSON trailer",
+            )
+
+        status = str(payload.get("status", ""))
+        if status == "malformed":
+            return PluginCheckEvidence(
+                checker_id=plan.checker_id,
+                checked=True,
+                malformed_proof=True,
+                checker_report_sha256=report_sha,
+                detail=str(payload.get("detail", "malformed")),
+            )
+        if status == "incomplete":
+            return PluginCheckEvidence(
+                checker_id=plan.checker_id,
+                checked=False,
+                incomplete=True,
+                checker_report_sha256=report_sha,
+                detail=str(payload.get("detail", "incomplete")),
+            )
+        if status == "nonextractable":
+            digest = str(payload.get("proof_sha256") or report_sha)
+            return PluginCheckEvidence(
+                checker_id=plan.checker_id,
+                checked=True,
+                proof_present=True,
+                proof_sha256=digest,
+                checker_report_sha256=report_sha,
+                detail=str(payload.get("detail", "nonextractable")),
+            )
+        if status == "ok":
+            if payload.get("empirical_timing_claimed"):
+                return PluginCheckEvidence(
+                    checker_id=plan.checker_id,
+                    checked=True,
+                    malformed_proof=True,
+                    checker_report_sha256=report_sha,
+                    detail="empirical_timing_claimed must be false for theorem-derived bounds",
+                )
+            if not payload.get("theorem_derived_bound"):
+                return PluginCheckEvidence(
+                    checker_id=plan.checker_id,
+                    checked=True,
+                    malformed_proof=True,
+                    checker_report_sha256=report_sha,
+                    detail="ok status requires theorem_derived_bound=true",
+                )
+            proof_sha = payload.get("proof_sha256")
+            if not isinstance(proof_sha, str) or len(proof_sha) != 64:
+                return PluginCheckEvidence(
+                    checker_id=plan.checker_id,
+                    checked=True,
+                    malformed_proof=True,
+                    checker_report_sha256=report_sha,
+                    detail="ok status missing proof_sha256",
+                )
+            return PluginCheckEvidence(
+                checker_id=plan.checker_id,
+                checked=True,
+                proof_present=True,
+                proof_sha256=proof_sha,
+                checker_report_sha256=report_sha,
+                detail=str(payload.get("detail", "ok")),
+            )
+        return PluginCheckEvidence(
+            checker_id=plan.checker_id,
+            checked=False,
+            incomplete=True,
+            checker_report_sha256=report_sha,
+            detail=f"unrecognized hermetic quantitative-bound status {status!r}",
+        )
+
+
 @dataclass(frozen=True)
 class UnsupportedKindPlugin:
     """Explicit unsupported marker for kinds without a validator yet."""
@@ -873,9 +1100,9 @@ _DEFAULT_PLUGINS: tuple[RevmathTaskPlugin, ...] = (
     HermeticForwardPlugin(),
     AssumptionAblationPlugin(),
     ReversalPlugin(),
+    QuantitativeBoundPlugin(),
     UnsupportedKindPlugin("constructivization"),
     UnsupportedKindPlugin("computable_finite_counterexample"),
-    UnsupportedKindPlugin("quantitative_bound_extraction"),
     UnsupportedKindPlugin("computability_classification"),
 )
 
@@ -922,10 +1149,12 @@ __all__ = [
     "HERMETIC_ABLATION_CHECKER",
     "HERMETIC_CHECKER",
     "HERMETIC_REVERSAL_CHECKER",
+    "HERMETIC_QUANT_CHECKER",
     "AssumptionAblationPlugin",
     "HermeticForwardPlugin",
     "PluginCheckEvidence",
     "ReversalPlugin",
+    "QuantitativeBoundPlugin",
     "RevmathCheckPlan",
     "RevmathTaskPlugin",
     "UnsupportedKindPlugin",
@@ -934,6 +1163,7 @@ __all__ = [
     "lean_tool_available",
     "load_ablation_meta_for_task",
     "load_reversal_meta_for_task",
+    "load_quantitative_bound_meta_for_task",
     "override_hermetic_mode",
     "register_plugin",
     "resolve_plugin",

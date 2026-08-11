@@ -100,6 +100,14 @@
       "notes": "HARN-05 bidirectional reversal generator/validator; equivalence only when both directions succeed over the same base/interpretation; one-way/unknown/invalid preserved explicitly."
     },
     {
+      "id": "task_validators.quantitative_bound_extraction",
+      "category": "schemas",
+      "required_owner": "src/slm_training/harnesses/reasoning/revmath/quantitative_bound.py",
+      "status": "present",
+      "blocker_issue": null,
+      "notes": "HARN-07 quantitative-bound extractor/validator; theorem-derived bounds via EVID-04 AST; nonextractable outcomes list missing assumptions; never invent rates."
+    },
+    {
       "id": "resources.owner_map",
       "category": "resources",
       "required_owner": "src/slm_training/resources/revmath_owner_map.json",

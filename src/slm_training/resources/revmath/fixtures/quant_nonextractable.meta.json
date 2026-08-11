@@ -1,0 +1,32 @@
+{
+  "bound_ast_id": null,
+  "domain_values_for_exhaustive": null,
+  "exhaustive_small_instance": false,
+  "expected_bound_value": null,
+  "hermetic_scenario": "nonextractable",
+  "kern_target": "none",
+  "lean_def": null,
+  "lean_module": null,
+  "machine_model": {
+    "cost_per_expansion": null,
+    "cost_per_verification": null,
+    "name": "none",
+    "notes": "no machine model supplied",
+    "wall_clock": false
+  },
+  "meta_id": "meta.quant.nonextractable",
+  "missing_assumption_notes": "Qualitative neural convergence without finite-size/cost-model assumptions cannot yield a theorem-derived rate.",
+  "present_assumptions": [],
+  "qualitative_statement": "qualitative: neural training converges to a global minimum (no finite-size or cost model assumptions)",
+  "qualitative_statement_sha256": "d742182aa5d3fc995b1c98104d772e59a1c51b3322f90f09a140ceb6411497ec",
+  "qualitative_theorem_id": "thm.neural.global_min",
+  "required_assumptions": [
+    "finite_parameter_dimension",
+    "explicit_stepsize_schedule",
+    "named_cost_model",
+    "finite_horizon"
+  ],
+  "schema_version": "revmath_quantitative_bound_meta/v1",
+  "size_parameters": {},
+  "theorem_ref": "(no extractable project theorem)"
+}

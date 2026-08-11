@@ -1,0 +1,53 @@
+{
+  "bound_ast_id": "bound.finite_search.prefix_tree.v1",
+  "domain_values_for_exhaustive": [
+    [
+      0,
+      1
+    ],
+    [
+      0,
+      1,
+      2
+    ]
+  ],
+  "exhaustive_small_instance": true,
+  "expected_bound_value": "15",
+  "hermetic_scenario": "extractable",
+  "kern_target": "finite_search",
+  "lean_def": "totalQueryBound",
+  "lean_module": "LeverProofLean.FiniteSearchBounds",
+  "machine_model": {
+    "cost_per_expansion": 1,
+    "cost_per_verification": 1,
+    "name": "ExpansionVerificationQueryModel",
+    "notes": "KERN-03 ExpansionVerificationQueryModel; query counts only",
+    "wall_clock": false
+  },
+  "meta_id": "meta.quant.finite_search",
+  "missing_assumption_notes": "",
+  "present_assumptions": [
+    "finite_domain_sizes",
+    "algorithm_correspondence_prefix_tree_enumeration",
+    "cost_model:ExpansionVerificationQueryModel",
+    "not_wall_clock"
+  ],
+  "qualitative_statement": "qualitative: finite complete domains imply finite exhaustive assignment search with prefix-tree expansion bound",
+  "qualitative_statement_sha256": "d7074d4cb58fdcca3a8576ec9a2413246a0152be5242cad4c969ff523d0e2efa",
+  "qualitative_theorem_id": "thm.finite_search.completion",
+  "required_assumptions": [
+    "finite_domain_sizes",
+    "algorithm_correspondence_prefix_tree_enumeration",
+    "cost_model:ExpansionVerificationQueryModel"
+  ],
+  "schema_version": "revmath_quantitative_bound_meta/v1",
+  "size_parameters": {
+    "c_exp": 1,
+    "c_ver": 1,
+    "domain_sizes": [
+      2,
+      3
+    ]
+  },
+  "theorem_ref": "FiniteSearchBounds.prefix_tree_le_one_plus_holes_mul_assignments"
+}
