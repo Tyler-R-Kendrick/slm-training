@@ -560,6 +560,37 @@ batch here avoids treating adjacent papers as independent evidence for one lever
 No solver, experiment, checkpoint, or ship status follows from this spec-only
 anchor set; the contract is implemented behind a feature flag by later VSS issues.
 
+## Proof-carrying goal support (PGS0)
+
+[`proof-carrying-goal-support.md`](proof-carrying-goal-support.md) (PGS-I01,
+SLM-512) is the canonical design, authority, and threat-model owner for the
+integrated goal-support stack (PGS-A through PGS-H). It documents how compiled
+goal constraints, terminal verification, VSS support certificates, sidecars,
+obstruction cores, domain-adequacy classification, decision-event materialization,
+and opt-in decode modes compose — without a parallel search engine, verifier
+stack, synthesis envelope, or evidence root. Structural finite laws live in
+[`proof-carrying-goal-support-proofs.md`](proof-carrying-goal-support-proofs.md)
+(PGS-F01); fixture wiring evidence in
+[`proof-carrying-goal-support-fixture-results.md`](proof-carrying-goal-support-fixture-results.md)
+(PGS-H02). No MODEL_CARD or ship claim follows from this documentation pass.
+
+| Source | Fidelity | PGS use | Boundary |
+| --- | --- | --- | --- |
+| SyGuS / SemGuS (Alur et al.; SemGuS) | **Adjacent** | Typed constraint vocabulary and capability-report interoperability (`SyGuSCapabilityReportV1`) | No SyGuS-IF `(check-synth)` conformance |
+| CEGIS / LLM-Modulo planning | **Adapted boundary** | Obstruction cores and adequacy diagnosis adopt counterexample → refinement; no neural CEGIS trainer | Deduction/decision split only |
+| Proof-carrying code / certifying algorithms (Necula; Appel) | **Adapted** | `SupportCertificate` + digest-bound sidecar replay | Finite bounded domains only — not general PCC |
+| VSS0 support oracle ([`verified-scope-solver.md`](verified-scope-solver.md)) | **Faithful (mechanism)** | `EnumerativeSupportOracle`, `exact_closure`, verdict algebra reused | Goal terminal verifier adds constraint-aware acceptance |
+| SPV0 semantic plans ([`semantic-planning-valid-state.md`](semantic-planning-valid-state.md)) | **Adapted** | `SemanticPlanV1` projected in `OpenUIGoalVerifier` | Plans never authorize prune |
+| LDI0 DecisionEventV2 ([`local-decision-interventions.md`](local-decision-interventions.md)) | **Adapted** | `materialize_goal_support` maps partitions to objective views | No new decision schema |
+| OpenAI o-series reasoning walkthroughs | **Adjacent** | Motivation for replayable bounded evidence | No hidden chain-of-thought authority |
+| Community LLM+Lean proof manuscripts | **Adjacent** | Lean `GoalSupport.lean` finite partition laws | **Not** Astra theorem reproduction |
+| G0–G12 verifier stack ([`verifier-stack.md`](verifier-stack.md)) | **Adapted** | Terminal gate/evaluator composition | Gates necessary, not globally sufficient |
+
+Positive fidelity: replayable witness/obstruction certificates, representation-bound
+digests, bounded search with explicit profile/bounds dependence. Explicit
+non-goal: global semantic synthesis, unconstrained NL as prune authority, ship
+inference from fixture campaigns.
+
 ## DSL diffusion research program (Tracks A-G)
 
 The 2026-07-16 prior-art sweep for the DSL diffusion SLM research program
