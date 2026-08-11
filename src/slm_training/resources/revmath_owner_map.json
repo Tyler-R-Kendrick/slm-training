@@ -227,7 +227,22 @@
       ],
       "design_doc": "docs/design/integ-01-canonical-proof-trace.md",
       "ownership_map_subsystem": null,
-      "notes": "INTEG-01 (SLM-528) projects existing ReplayBundleV1 / DecodeStats / MechanismActivationV1 / VerifierWitnessV1 into a canonical proof-trace vocabulary reusing KERN-06 Event/cost models. Not a second telemetry stack; claims_abstract_refinement always false (KERN-11 deferred)."
+      "notes": "INTEG-01 (SLM-528) projects existing ReplayBundleV1 / DecodeStats / MechanismActivationV1 / VerifierWitnessV1 into a canonical proof-trace vocabulary reusing KERN-06 Event/cost models. Not a second telemetry stack; projection seals with claims_abstract_refinement=false. KERN-11 (SLM-539) owns fixture-level refinement separately via formal/trace_refinement.py."
+    },
+    {
+      "id": "proof_trace_refinement",
+      "kind": "refinement",
+      "owner_module": "src/slm_training/formal/trace_refinement.py",
+      "owner_symbols": [
+        "check_trace_refinement",
+        "emit_refinement_certificate",
+        "bind_refinement_authority",
+        "RefinementCertificateV1"
+      ],
+      "lean_module": "LeverProofLean.ProofTraceRefinement",
+      "design_doc": "docs/design/kern-11-proof-trace-refinement.md",
+      "ownership_map_subsystem": "formal_objects",
+      "notes": "KERN-11 (SLM-539) fixture-subset refinement of sealed INTEG-01 CanonicalProofTraceV1 against abstract Judgment/CompleteDomain/EventTrace/DecodeInvariants semantics. Runtime untrusted; compact trace checked. Does not claim full PyTorch semantics or physical latency equivalence. Successful checks bind formal_authority/v2."
     },
     {
       "id": "solver_replay",
@@ -726,6 +741,12 @@
       "canonical_owner": "src/slm_training/formal/proof_trace.py::project_runtime_evidence",
       "shadow_pattern": "ProofTraceRecorder|SecondTelemetryStack|parallel.*proof.?trace.?recorder",
       "status": "blocked-by-adr"
+    },
+    {
+      "concern": "parallel runtime-trace refinement / second proof-trace checker",
+      "canonical_owner": "src/slm_training/formal/trace_refinement.py::check_trace_refinement",
+      "shadow_pattern": "duplicate Lean/Python refinement checkers over CanonicalProofTraceV1 outside ProofTraceRefinement / trace_refinement.py",
+      "status": "prohibited"
     }
   ],
   "absorbed_predecessors": [

@@ -4,7 +4,8 @@ Projects ``ReplayBundleV1``, ``DecodeStats`` / ``DecodeStatsRecordV1``,
 ``MechanismActivationV1``, and ``VerifierWitnessV1`` into one ordered abstract
 trace that reuses KERN-06 ``Event`` / cost vocabulary for observed work.
 Does **not** introduce a second runtime recorder and does **not** claim
-abstract refinement (KERN-11 / SLM-539 owns that proof separately).
+abstract refinement — KERN-11 / SLM-539 (`formal/trace_refinement.py`) owns
+fixture-subset refinement separately.
 """
 
 from __future__ import annotations

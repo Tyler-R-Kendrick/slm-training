@@ -1,0 +1,59 @@
+{
+  "schema": "proof_trace_refinement/v1",
+  "issue": "SLM-539",
+  "key": "KERN-11",
+  "proof_trace_schema": "canonical_proof_trace/v1",
+  "supported_fixture_ids": [
+    "bundle_stats_mechanism"
+  ],
+  "assumptions": {
+    "complete_requires_digest": true,
+    "legacy_coverage_never_authorizes": true,
+    "dense_ordinals": true,
+    "identity_must_match": true,
+    "cost_forwards_require_invocation": true,
+    "unknown_never_removes": true,
+    "claims_full_pytorch_semantics": false,
+    "claims_physical_latency_equivalence": false,
+    "fixture_subset_scoped": true
+  },
+  "claims_full_pytorch_semantics": false,
+  "claims_physical_latency_equivalence": false,
+  "cases": [
+    {
+      "id": "bundle_stats_mechanism",
+      "supported": true,
+      "trace_hash": "16422c059f03ef88adaffd3ca5c72dcf69aa8fd164a59a797dc3c9144fd0b52c",
+      "integ01_row_id": "bundle_stats_mechanism",
+      "accepted": true,
+      "expected_cost": 28,
+      "expected_forwards": 11,
+      "decode_unit_work_cost": 28,
+      "machine_model": "DecodeUnitWorkModel",
+      "theorem_ref": "ProofTraceRefinement.fixture_bundle_stats_mechanism_refines",
+      "certificate_sha256": "e07e0edf943f17cbd01d853350af40b6b75dfedc9158f9f7f57485e5a41bec46",
+      "assumptions": {
+        "complete_requires_digest": true,
+        "legacy_coverage_never_authorizes": true,
+        "dense_ordinals": true,
+        "identity_must_match": true,
+        "cost_forwards_require_invocation": true,
+        "unknown_never_removes": true,
+        "claims_full_pytorch_semantics": false,
+        "claims_physical_latency_equivalence": false,
+        "fixture_subset_scoped": true
+      },
+      "canonical_fields": [
+        "state_input_identity",
+        "legal_domain",
+        "ranker_model_invocation",
+        "chosen_action",
+        "verifier_solver_certificate",
+        "cache_mechanism",
+        "state_transition",
+        "observed_work"
+      ],
+      "proof_trace_schema": "canonical_proof_trace/v1"
+    }
+  ]
+}
