@@ -968,7 +968,9 @@ class GoalSupportProvider:
 
     @property
     def backend_version(self) -> str:
-        return goal_support_backend_version(self._profile)
+        base = goal_support_backend_version(self._profile)
+        expander_backend = getattr(self._expander, "backend_version", None)
+        return f"{base}/{expander_backend}" if expander_backend else base
 
     def _fresh_verifier(self) -> Verifier:
         verifier = self._verifier_factory()

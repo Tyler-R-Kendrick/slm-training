@@ -15,14 +15,22 @@ import pytest
 from slm_training.data.contract import RuntimeSymbol
 from slm_training.dsl.grammar.fastpath.compiler_draft import build_completion_forest
 from slm_training.dsl.solver.adapters import completion_forest_state
+from slm_training.dsl.solver.closure import EnumerativeSupportProvider
 from slm_training.dsl.solver.openui_support import (
     OpenUIForestExpander,
     OpenUIWellFormedVerifier,
 )
-from slm_training.dsl.solver.state import SolverBounds
+from slm_training.dsl.solver.state import (
+    DomainValue,
+    FiniteDomainState,
+    HoleDomain,
+    HoleId,
+    SolverBounds,
+)
 from slm_training.dsl.solver.support import (
     EnumerativeSupportOracle,
     ExpandStatus,
+    ExpandStep,
     SupportQuery,
     SupportVerdict,
     VerifyOutcome,
@@ -55,13 +63,14 @@ def _expander(tok, prefix, bounds) -> OpenUIForestExpander:
     )
 
 
-def _reference_state(tok, prefix, forest, bounds):
+def _reference_state(tok, prefix, forest, bounds, *, authority_digest=None):
     return completion_forest_state(
         prefix_ids=prefix,
         forest=forest,
         pack_id="openui",
         constraint_version="test-cv",
         bounds=bounds,
+        authority_digest=authority_digest,
     )
 
 
@@ -75,13 +84,6 @@ def _request_bound_expander(
     runtime_symbols=(),
     remaining_tokens=32,
 ):
-    request_bounds = SolverBounds(
-        max_tokens=max(1, remaining_tokens),
-        max_nodes=bounds.max_nodes,
-        max_depth=bounds.max_depth,
-        max_backtracks=bounds.max_backtracks,
-        max_verifier_calls=bounds.max_verifier_calls,
-    )
     decode_state = make_grammar_state()
     forest = build_completion_forest(
         tok,
@@ -98,7 +100,7 @@ def _request_bound_expander(
         prefix,
         pack_id="openui",
         constraint_version="test-cv",
-        bounds=request_bounds,
+        bounds=bounds,
         max_path_tokens=8,
         slot_contract=slot_contract,
         min_content=min_content,
@@ -140,6 +142,7 @@ def test_expander_root_payload_matches_fresh_forest(
         prefix,
         build_completion_forest(tok, list(prefix), max_path_tokens=8),
         bounds,
+        authority_digest=expander.authority_digest,
     )
     assert _state_payload(expander.root_state()) == _state_payload(reference)
 
@@ -161,7 +164,13 @@ def test_request_bound_root_reuses_exact_session_and_forest(
 
     assert expander._session is decode_state.completion_session
     assert _state_payload(expander.root_state()) == _state_payload(
-        _reference_state(tok, prefix, forest, expander.bounds)
+        _reference_state(
+            tok,
+            prefix,
+            forest,
+            expander.bounds,
+            authority_digest=expander.authority_digest,
+        )
     )
 
 
@@ -199,34 +208,6 @@ def test_request_authority_mismatch_rejects_root_forest(
     )
 
     with pytest.raises(ValueError, match="root forest differs"):
-        request_bounds = SolverBounds(
-            max_tokens=max(1, expander_kwargs["remaining_tokens"]),
-            max_nodes=bounds.max_nodes,
-            max_depth=bounds.max_depth,
-            max_backtracks=bounds.max_backtracks,
-            max_verifier_calls=bounds.max_verifier_calls,
-        )
-        OpenUIForestExpander(
-            tok,
-            prefix,
-            pack_id="openui",
-            constraint_version="test-cv",
-            bounds=request_bounds,
-            max_path_tokens=8,
-            root_forest=forest,
-            **expander_kwargs,
-        )
-
-
-def test_request_horizon_must_equal_solver_token_bound(
-    tok: DSLNativeTokenizer, bounds: SolverBounds
-) -> None:
-    prefix = tuple([tok.bos_id, *tok.encode("root = Card([", add_special=False)])
-    forest = build_completion_forest(
-        tok, list(prefix), max_path_tokens=8, remaining_tokens=32
-    )
-
-    with pytest.raises(ValueError, match="token bound must equal"):
         OpenUIForestExpander(
             tok,
             prefix,
@@ -234,9 +215,131 @@ def test_request_horizon_must_equal_solver_token_bound(
             constraint_version="test-cv",
             bounds=bounds,
             max_path_tokens=8,
-            remaining_tokens=32,
+            root_forest=forest,
+            **expander_kwargs,
+        )
+
+
+def test_request_horizon_is_independent_of_solver_work_bound(
+    tok: DSLNativeTokenizer, bounds: SolverBounds
+) -> None:
+    prefix = tuple([tok.bos_id, *tok.encode("root = Card([", add_special=False)])
+    forest = build_completion_forest(
+        tok, list(prefix), max_path_tokens=8, remaining_tokens=32
+    )
+
+    expander = OpenUIForestExpander(
+        tok,
+        prefix,
+        pack_id="openui",
+        constraint_version="test-cv",
+        bounds=bounds,
+        max_path_tokens=8,
+        remaining_tokens=32,
+        root_forest=forest,
+    )
+
+    assert expander.bounds.max_tokens == 4000
+    assert expander._remaining_tokens == 32
+
+
+def test_horizon_changes_state_backend_and_certificate_identity(
+    tok: DSLNativeTokenizer, bounds: SolverBounds
+) -> None:
+    class _AcceptingVerifier:
+        profile = "test/accepting"
+
+        def verify(self, _program: str) -> VerifyOutcome:
+            return VerifyOutcome(VerifyStatus.ACCEPT)
+
+    prefix = tuple([tok.bos_id, *tok.encode("root = Card([])", add_special=False)])
+
+    def _for_horizon(horizon: int):
+        forest = build_completion_forest(
+            tok, list(prefix), max_path_tokens=8, remaining_tokens=horizon
+        )
+        expander = OpenUIForestExpander(
+            tok,
+            prefix,
+            pack_id="openui",
+            constraint_version="test-cv",
+            bounds=bounds,
+            max_path_tokens=8,
+            remaining_tokens=horizon,
             root_forest=forest,
         )
+        root = expander.root_state()
+        query = SupportQuery(
+            root.fingerprint, root.holes[0].hole_id, root.holes[0].values[0]
+        )
+        provider = EnumerativeSupportProvider(expander, _AcceptingVerifier())
+        return expander, root, provider, provider.check(root, query)
+
+    expander_32, root_32, provider_32, result_32 = _for_horizon(32)
+    expander_33, root_33, provider_33, result_33 = _for_horizon(33)
+
+    assert expander_32.authority_digest != expander_33.authority_digest
+    assert expander_32.problem_id != expander_33.problem_id
+    assert root_32.fingerprint != root_33.fingerprint
+    assert provider_32.backend_version != provider_33.backend_version
+    assert result_32.certificate.digest != result_33.certificate.digest
+    assert not provider_33.replay(result_32.certificate, state=root_33).ok
+
+
+def test_horizon_32_does_not_become_payload_json_token_budget() -> None:
+    """A >32-byte action still reaches a terminal under an independent budget."""
+
+    value = DomainValue.create(
+        "completion_path",
+        {"kind": "terminal", "token_ids": [7], "padding": "x" * 32},
+    )
+    bounds = SolverBounds(256, 8, 4, 8, 4)
+    state = FiniteDomainState(
+        problem_id="horizon-32-fixture",
+        pack_id="openui",
+        constraint_version="test-cv",
+        bounds=bounds,
+        holes=(
+            HoleDomain(
+                HoleId("fixture", (0,), "action"),
+                (value,),
+                (("coverage", "complete"), ("remaining_tokens", 32)),
+            ),
+        ),
+    )
+
+    class _TerminalExpander:
+        problem_id = state.problem_id
+        pack_id = state.pack_id
+        constraint_version = state.constraint_version
+        remaining_tokens = 32
+
+        @property
+        def bounds(self):
+            return bounds
+
+        def successor(self, _state, _hole_id, _value):
+            return ExpandStep(
+                ExpandStatus.TERMINAL,
+                program="root = Card([])",
+                coverage="complete",
+            )
+
+    class _AcceptingVerifier:
+        profile = "test/accepting"
+
+        def verify(self, _program: str) -> VerifyOutcome:
+            return VerifyOutcome(VerifyStatus.ACCEPT)
+
+    query = SupportQuery(state.fingerprint, state.holes[0].hole_id, value)
+    result = EnumerativeSupportOracle(
+        _TerminalExpander(), _AcceptingVerifier()
+    ).check(state, query)
+
+    assert len(value.payload_json) > 32
+    assert result.counters.tokens > 32
+    assert result.verdict is SupportVerdict.SUPPORTED
+    assert result.certificate.stop_reason is None
 
 
 def test_successor_forwards_runtime_authority_and_reduces_horizon(
@@ -308,7 +411,13 @@ def test_expander_successor_payloads_match_fresh_forest(
             assert step.status is ExpandStatus.INCOMPLETE
             continue
         assert step.status is ExpandStatus.CONTINUE
-        reference = _reference_state(tok, new_prefix, reference_forest, bounds)
+        reference = _reference_state(
+            tok,
+            new_prefix,
+            reference_forest,
+            bounds,
+            authority_digest=expander.authority_digest,
+        )
         assert _state_payload(step.next_state) == _state_payload(reference)
 
 

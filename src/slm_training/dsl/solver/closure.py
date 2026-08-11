@@ -81,7 +81,9 @@ class EnumerativeSupportProvider:
 
     @property
     def backend_version(self) -> str:
-        return f"enumerative/{self._verifier.profile}"
+        base = f"enumerative/{self._verifier.profile}"
+        expander_backend = getattr(self._expander, "backend_version", None)
+        return f"{base}/{expander_backend}" if expander_backend else base
 
     def check(self, state: FiniteDomainState, query: SupportQuery) -> SupportResult:
         return self._oracle.check(state, query)

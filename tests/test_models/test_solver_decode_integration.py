@@ -352,6 +352,44 @@ def test_solver_prune_forest_runs_real_closure_and_returns_subset() -> None:
     assert survivors <= original
 
 
+def test_solver_work_budget_is_independent_from_completion_horizon(monkeypatch) -> None:
+    import slm_training.dsl.solver.openui_support as openui_support
+    from slm_training.dsl.grammar.fastpath.compiler_draft import build_completion_forest
+    from slm_training.models.grammar import make_grammar_state
+
+    model = _model(verified_solver_decode=True, solver_max_nodes=4)
+    prefix = [
+        model.tokenizer.bos_id,
+        *model.tokenizer.encode("root = Card([])", add_special=False),
+    ]
+    decode_state = make_grammar_state()
+    forest = build_completion_forest(
+        model.tokenizer,
+        prefix,
+        state=decode_state,
+        max_path_tokens=8,
+        remaining_tokens=32,
+    )
+    captured = {}
+    real_expander = openui_support.OpenUIForestExpander
+
+    def _capturing_expander(*args, **kwargs):
+        captured.update(kwargs)
+        return real_expander(*args, **kwargs)
+
+    monkeypatch.setattr(openui_support, "OpenUIForestExpander", _capturing_expander)
+    model._solver_prune_forest(
+        forest,
+        prefix,
+        remaining_tokens=32,
+        completion_session=decode_state.completion_session,
+        completion_state_id=decode_state.completion_state_id,
+    )
+
+    assert captured["remaining_tokens"] == 32
+    assert captured["bounds"].max_tokens == 4 * 64
+
+
 def test_enabled_requires_dsl_native_tokenizer() -> None:
     model = _model(verified_solver_decode=True)
     prefix = [model.tokenizer.bos_id]

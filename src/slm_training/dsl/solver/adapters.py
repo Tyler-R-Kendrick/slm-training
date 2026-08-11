@@ -37,6 +37,7 @@ def completion_forest_state(
     pack_id: str,
     constraint_version: str,
     bounds: SolverBounds,
+    authority_digest: str | None = None,
 ) -> FiniteDomainState:
     """Project the current next compiler decision, not a globally solved program."""
     if any(
@@ -61,6 +62,11 @@ def completion_forest_state(
     prefix = tuple(prefix_ids)
     payload = json.dumps(prefix, separators=(",", ":"))
     prefix_sha = hashlib.sha256(payload.encode()).hexdigest()
+    if authority_digest is not None and (
+        len(authority_digest) != 64
+        or any(char not in "0123456789abcdef" for char in authority_digest)
+    ):
+        raise ValueError("completion authority_digest must be a SHA-256 hex digest")
     hole_id = HoleId(
         namespace="completion_forest",
         path=(len(prefix), prefix_sha),
@@ -73,16 +79,23 @@ def completion_forest_state(
         )
         for path in forest.paths
     )
+    metadata = (
+        ("coverage", forest.coverage),
+        ("support_verdict", SupportVerdict.UNKNOWN.value),
+    )
+    if authority_digest:
+        metadata += (("authority_digest", authority_digest),)
     domain = HoleDomain(
         hole_id=hole_id,
         values=values,
-        metadata=(
-            ("coverage", forest.coverage),
-            ("support_verdict", SupportVerdict.UNKNOWN.value),
-        ),
+        metadata=metadata,
     )
     return FiniteDomainState(
-        problem_id=f"completion-forest:{prefix_sha}",
+        problem_id=(
+            f"completion-forest:{prefix_sha}:{authority_digest}"
+            if authority_digest
+            else f"completion-forest:{prefix_sha}"
+        ),
         pack_id=pack_id,
         constraint_version=constraint_version,
         bounds=bounds,

@@ -27,6 +27,7 @@ This module is Torch-free and is not invoked by decode by default.
 from __future__ import annotations
 
 import hashlib
+import json
 from typing import Any
 
 from slm_training.data.contract import GenerationRequest
@@ -948,12 +949,6 @@ class OpenUIForestExpander:
         self._remaining_tokens = (
             None if remaining_tokens is None else max(0, int(remaining_tokens))
         )
-        if self._remaining_tokens is not None and bounds.max_tokens != max(
-            1, self._remaining_tokens
-        ):
-            raise ValueError(
-                "solver token bound must equal the request completion horizon"
-            )
         self._root_prefix = tuple(int(t) for t in prefix_ids)
         self._eos = int(tokenizer.eos_id)
         if (completion_session is None) != (completion_state_id is None):
@@ -976,10 +971,28 @@ class OpenUIForestExpander:
             raise ValueError(
                 "solver root forest differs from request-bound completion authority"
             )
+        active_root = root_forest if root_forest is not None else rebuilt_root
+        self._authority_digest = hashlib.sha256(
+            json.dumps(
+                {
+                    "schema": "openui-forest-authority/v1",
+                    "tokenizer": tokenizer_authority(tokenizer),
+                    "slot_contract": self._slot_contract,
+                    "min_content": self._min_content,
+                    "runtime_symbols": self._runtime_symbols,
+                    "remaining_tokens": self._remaining_tokens,
+                    "max_path_tokens": self._mpt,
+                    "root_forest": self._forest_key(active_root),
+                },
+                default=str,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
         self._root = self._project(
             self._root_prefix,
             completion_state_id,
-            forest=root_forest if root_forest is not None else rebuilt_root,
+            forest=active_root,
         )
 
     @staticmethod
@@ -1025,6 +1038,7 @@ class OpenUIForestExpander:
             pack_id=self._pack_id,
             constraint_version=self._cv,
             bounds=self._bounds,
+            authority_digest=self._authority_digest,
         )
         self._prefix_by_fp[state.fingerprint] = prefix
         self._sid_by_fp[state.fingerprint] = sid
@@ -1046,6 +1060,14 @@ class OpenUIForestExpander:
     @property
     def bounds(self) -> SolverBounds:
         return self._bounds
+
+    @property
+    def authority_digest(self) -> str:
+        return self._authority_digest
+
+    @property
+    def backend_version(self) -> str:
+        return f"openui-forest/v1/{self._authority_digest}"
 
     def root_state(self) -> FiniteDomainState:
         return self._root
@@ -1106,6 +1128,7 @@ class OpenUIForestExpander:
             pack_id=self._pack_id,
             constraint_version=self._cv,
             bounds=self._bounds,
+            authority_digest=self._authority_digest,
         )
         self._prefix_by_fp[child.fingerprint] = new_prefix
         self._sid_by_fp[child.fingerprint] = child_sid

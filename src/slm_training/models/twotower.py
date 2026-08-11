@@ -11725,12 +11725,7 @@ class TwoTowerModel(nn.Module):
 
         max_nodes = int(getattr(self.config, "solver_max_nodes", 512) or 512)
         bounds = SolverBounds(
-            max_tokens=max(
-                1,
-                int(remaining_tokens)
-                if remaining_tokens is not None
-                else max_nodes * 64,
-            ),
+            max_tokens=max(1, max_nodes * 64),
             max_nodes=max_nodes,
             max_depth=int(getattr(self.config, "solver_max_depth", 64) or 64),
             max_backtracks=int(getattr(self.config, "solver_max_backtracks", 64) or 64),
