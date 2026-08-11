@@ -1,0 +1,251 @@
+{
+  "schema": "goal_support_formal_mapping/v1",
+  "cases": [
+    {
+      "id": "adequate_selected_supported",
+      "input": {
+        "schema": "goal_support_formal_mapping/v1",
+        "partitions": {
+          "legal": [1, 2, 3],
+          "supported": [2],
+          "unsupported": [1],
+          "unknown": [],
+          "unobserved": [3]
+        },
+        "evidence": [
+          {"action": 1, "partition": "unsupported", "replay_ok": true, "hard_profile": true},
+          {"action": 2, "partition": "supported", "replay_ok": true, "hard_profile": true},
+          {"action": 3, "partition": "unobserved", "replay_ok": false, "hard_profile": true}
+        ],
+        "inputs": {
+          "selected": 2,
+          "hard_profile": true,
+          "cap_applied": false,
+          "all_unsupported_replay_valid": true,
+          "obstruction_present": false
+        },
+        "failures": [],
+        "core": [],
+        "required_constraints": [],
+        "satisfied_constraints": [],
+        "live": [],
+        "removed": []
+      },
+      "expect": {
+        "classification": "domain_adequate_selected_supported",
+        "certified_removal": [1],
+        "partition_violations": []
+      }
+    },
+    {
+      "id": "selection_regret",
+      "input": {
+        "schema": "goal_support_formal_mapping/v1",
+        "partitions": {
+          "legal": [1, 2],
+          "supported": [1],
+          "unsupported": [2],
+          "unknown": [],
+          "unobserved": []
+        },
+        "evidence": [
+          {"action": 1, "partition": "supported", "replay_ok": true, "hard_profile": true},
+          {"action": 2, "partition": "unsupported", "replay_ok": true, "hard_profile": true}
+        ],
+        "inputs": {
+          "selected": 2,
+          "hard_profile": true,
+          "cap_applied": false,
+          "all_unsupported_replay_valid": true,
+          "obstruction_present": false
+        },
+        "failures": [],
+        "core": [],
+        "required_constraints": [],
+        "satisfied_constraints": [],
+        "live": [],
+        "removed": []
+      },
+      "expect": {
+        "classification": "selection_regret",
+        "certified_removal": [2]
+      }
+    },
+    {
+      "id": "selection_unresolved",
+      "input": {
+        "schema": "goal_support_formal_mapping/v1",
+        "partitions": {
+          "legal": [1, 2, 3],
+          "supported": [1],
+          "unsupported": [],
+          "unknown": [2],
+          "unobserved": [3]
+        },
+        "evidence": [
+          {"action": 1, "partition": "supported", "replay_ok": true, "hard_profile": true},
+          {"action": 2, "partition": "unknown", "replay_ok": false, "hard_profile": true},
+          {"action": 3, "partition": "unobserved", "replay_ok": false, "hard_profile": true}
+        ],
+        "inputs": {
+          "selected": 3,
+          "hard_profile": true,
+          "cap_applied": true,
+          "all_unsupported_replay_valid": false,
+          "obstruction_present": false
+        },
+        "failures": [],
+        "core": [],
+        "required_constraints": [],
+        "satisfied_constraints": [],
+        "live": [],
+        "removed": []
+      },
+      "expect": {
+        "classification": "selection_unresolved",
+        "certified_removal": []
+      }
+    },
+    {
+      "id": "domain_inadequate_under_bounds",
+      "input": {
+        "schema": "goal_support_formal_mapping/v1",
+        "partitions": {
+          "legal": [10, 11],
+          "supported": [],
+          "unsupported": [10, 11],
+          "unknown": [],
+          "unobserved": []
+        },
+        "evidence": [
+          {"action": 10, "partition": "unsupported", "replay_ok": true, "hard_profile": true},
+          {"action": 11, "partition": "unsupported", "replay_ok": true, "hard_profile": true}
+        ],
+        "inputs": {
+          "selected": 10,
+          "hard_profile": true,
+          "cap_applied": false,
+          "all_unsupported_replay_valid": true,
+          "obstruction_present": true
+        },
+        "failures": [],
+        "core": [],
+        "required_constraints": [],
+        "satisfied_constraints": [],
+        "live": [],
+        "removed": []
+      },
+      "expect": {
+        "classification": "domain_inadequate_under_bounds",
+        "certified_removal": [10, 11]
+      }
+    },
+    {
+      "id": "coverage_unknown",
+      "input": {
+        "schema": "goal_support_formal_mapping/v1",
+        "partitions": {
+          "legal": [1, 2],
+          "supported": [],
+          "unsupported": [1],
+          "unknown": [2],
+          "unobserved": []
+        },
+        "evidence": [
+          {"action": 1, "partition": "unsupported", "replay_ok": true, "hard_profile": true},
+          {"action": 2, "partition": "unknown", "replay_ok": false, "hard_profile": true}
+        ],
+        "inputs": {
+          "selected": 2,
+          "hard_profile": true,
+          "cap_applied": false,
+          "all_unsupported_replay_valid": false,
+          "obstruction_present": false
+        },
+        "failures": [],
+        "core": [],
+        "required_constraints": [],
+        "satisfied_constraints": [],
+        "live": [],
+        "removed": []
+      },
+      "expect": {
+        "classification": "coverage_unknown",
+        "certified_removal": [1]
+      }
+    },
+    {
+      "id": "subset_minimal_core",
+      "input": {
+        "schema": "goal_support_formal_mapping/v1",
+        "partitions": {
+          "legal": [1],
+          "supported": [],
+          "unsupported": [1],
+          "unknown": [],
+          "unobserved": []
+        },
+        "evidence": [
+          {"action": 1, "partition": "unsupported", "replay_ok": true, "hard_profile": true}
+        ],
+        "inputs": {
+          "selected": 1,
+          "hard_profile": true,
+          "cap_applied": false,
+          "all_unsupported_replay_valid": true,
+          "obstruction_present": true
+        },
+        "failures": [
+          {"terminal": 0, "atoms": [10]},
+          {"terminal": 1, "atoms": [11]}
+        ],
+        "core": [10, 11],
+        "required_constraints": [1, 2, 3],
+        "satisfied_constraints": [1, 2, 3, 4],
+        "live": [5, 6],
+        "removed": [6]
+      },
+      "expect": {
+        "hits_all": true,
+        "subset_minimal_exact": true,
+        "witness_ok": true,
+        "witness_ok_after_required_subset": true,
+        "survivors": [5]
+      }
+    },
+    {
+      "id": "minimum_cardinality_core_not_subset_minimal",
+      "input": {
+        "schema": "goal_support_formal_mapping/v1",
+        "partitions": {
+          "legal": [1],
+          "supported": [],
+          "unsupported": [1],
+          "unknown": [],
+          "unobserved": []
+        },
+        "evidence": [],
+        "inputs": {
+          "selected": 1,
+          "hard_profile": true,
+          "cap_applied": false,
+          "all_unsupported_replay_valid": true,
+          "obstruction_present": true
+        },
+        "failures": [
+          {"terminal": 0, "atoms": [10, 12]},
+          {"terminal": 1, "atoms": [11, 12]}
+        ],
+        "core": [10, 11, 12],
+        "required_constraints": [],
+        "satisfied_constraints": [],
+        "live": [9],
+        "removed": []
+      },
+      "expect": {
+        "hits_all": true,
+        "subset_minimal_exact": false
+      }
+    }
+  ]
+}

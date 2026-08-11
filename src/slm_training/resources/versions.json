@@ -12,7 +12,7 @@
   ],
   "components": {
     "formal.leverproof": {
-      "version": "v11",
+      "version": "v12",
       "kind": "harness",
       "paths": [
         "src/leverproof_lean/",
@@ -21,10 +21,20 @@
         "src/leverproof_lean/LeverProofLean/ConstrainedDiffusion.lean",
         "docs/design/adr-constrained-diffusion-topology-proofs.md",
         "src/leverproof_lean/LeverProofLean/AdvisoryResidual.lean",
+        "src/leverproof_lean/LeverProofLean/GoalSupport.lean",
+        "docs/design/proof-carrying-goal-support-proofs.md",
+        "src/slm_training/formal/goal_support_mapping.py",
+        "src/slm_training/resources/formal/goal_support_golden_cases.v1.json",
+        "tests/test_formal/test_goal_support_mapping.py",
         "src/leverproof_lean/LeverProofLean.lean",
         "src/leverproof_lean/Test/Proofs.lean"
       ],
       "history": [
+        {
+          "version": "v12",
+          "date": "2026-08-10",
+          "note": "PGS-F01 (SLM-506): GoalSupport Lean finite structural laws, Python golden mapping, and proof-carrying goal-support docs."
+        },
         {
           "version": "v11",
           "date": "2026-08-03",
@@ -17035,7 +17045,7 @@
       ]
     },
     "formal.objects": {
-      "version": "v4",
+      "version": "v5",
       "kind": "harness",
       "paths": [
         "src/slm_training/formal/__init__.py",
@@ -17046,6 +17056,11 @@
         "docs/design/formal-objects-multi-prover.md"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-08-10",
+          "note": "PGS-F01 (SLM-506): register GoalSupport Lean claim catalog entries for finite goal-support structural laws."
+        },
         {
           "version": "v4",
           "date": "2026-08-10",
