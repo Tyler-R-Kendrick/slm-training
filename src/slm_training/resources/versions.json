@@ -47,6 +47,11 @@
         {
           "version": "v26",
           "date": "2026-08-11",
+          "note": "no-bump: INTEG-01 (SLM-528) docs-only cross-link from kern-06-event-trace-machine-cost.md to integ-01-canonical-proof-trace.md; Lean/Python EventTrace kernel unchanged."
+        },
+        {
+          "version": "v26",
+          "date": "2026-08-11",
           "note": "KERN-12 (SLM-532): import LeverProofLean.ComputabilityClassification"
         },
         {
@@ -3110,7 +3115,7 @@
       ]
     },
     "governance.ownership_map": {
-      "version": "v24",
+      "version": "v25",
       "kind": "gate",
       "paths": [
         "docs/design/repository-ownership-map.md",
@@ -3123,6 +3128,11 @@
         "tests/test_scripts/test_verify_ownership_map.py"
       ],
       "history": [
+        {
+          "version": "v25",
+          "date": "2026-08-11",
+          "note": "INTEG-01 (SLM-528): note runtime_telemetry projects into formal/proof_trace (no second recorder; refinement deferred to KERN-11)."
+        },
         {
           "version": "v24",
           "date": "2026-08-11",
@@ -3426,7 +3436,7 @@
       ]
     },
     "governance.revmath_owners": {
-      "version": "v16",
+      "version": "v17",
       "kind": "gate",
       "paths": [
         "docs/design/adr-revmath-reasoning-profile.md",
@@ -3436,6 +3446,11 @@
         "tests/test_scripts/test_verify_revmath_owners.py"
       ],
       "history": [
+        {
+          "version": "v17",
+          "date": "2026-08-11",
+          "note": "INTEG-01 (SLM-528): register canonical_proof_trace surface + prohibit parallel proof-trace recorder."
+        },
         {
           "version": "v16",
           "date": "2026-08-11",
@@ -17583,9 +17598,13 @@
       ]
     },
     "formal.objects": {
-      "version": "v19",
+      "version": "v20",
       "kind": "harness",
       "paths": [
+        "src/slm_training/formal/proof_trace.py",
+        "src/slm_training/resources/formal/proof_trace_fixtures.v1.json",
+        "tests/test_formal/test_proof_trace.py",
+        "docs/design/integ-01-canonical-proof-trace.md",
         "docs/design/evid-08-checker-capabilities.md",
         "src/slm_training/formal/checker_capability.py",
         "src/slm_training/resources/formal/checker_capability_registry.v1.json",
@@ -17633,6 +17652,11 @@
         "src/slm_training/resources/formal/goal_support_golden_cases.v1.json"
       ],
       "history": [
+        {
+          "version": "v20",
+          "date": "2026-08-11",
+          "note": "INTEG-01 (SLM-528): canonical proof-trace projection from ReplayBundleV1/DecodeStats/MechanismActivation/VerifierWitness into KERN-06 event/cost vocabulary; hash+replay+mutation suite; no second recorder; refinement claim deferred to KERN-11."
+        },
         {
           "version": "v19",
           "date": "2026-08-11",

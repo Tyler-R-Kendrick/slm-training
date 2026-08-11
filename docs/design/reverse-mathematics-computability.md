@@ -1,6 +1,6 @@
 # Reverse mathematics, computability, and canonical evidence ownership
 
-**Status:** HARN-09 proposition-preserving self-healing (SLM-560); HARN-08 conservative RM labeling / anti-overclaim (SLM-537); HARN-06 constructivization + counterexample validators landed (SLM-546); HARN-07 quantitative-bound extraction (SLM-547); HARN-05 reversal/bidirectional validation (SLM-545); HARN-04 assumption ablation (SLM-544); EVID-03 four-axis ledger (SLM-519); HARN-03 runner/replay/report (SLM-536); HARN-02 schemas (SLM-527); profile + parity (HARN-01 / SLM-520); owner map (EVID-01 / SLM-515)  
+**Status:** INTEG-01 canonical proof-trace projection (SLM-528); HARN-09 proposition-preserving self-healing (SLM-560); HARN-08 conservative RM labeling / anti-overclaim (SLM-537); HARN-06 constructivization + counterexample validators landed (SLM-546); HARN-07 quantitative-bound extraction (SLM-547); HARN-05 reversal/bidirectional validation (SLM-545); HARN-04 assumption ablation (SLM-544); EVID-03 four-axis ledger (SLM-519); HARN-03 runner/replay/report (SLM-536); HARN-02 schemas (SLM-527); profile + parity (HARN-01 / SLM-520); owner map (EVID-01 / SLM-515)  
 **Base SHA:** `980aa465223adf7822f82930550c92b9240333ca` (`origin/main` at audit)  
 **Machine-readable map:** [`src/slm_training/resources/revmath_owner_map.json`](../../src/slm_training/resources/revmath_owner_map.json)  
 **Harness parity matrix:** [`src/slm_training/resources/revmath_harness_parity.json`](../../src/slm_training/resources/revmath_harness_parity.json)  
@@ -80,6 +80,17 @@ reverse mathematics (`report_labeling_disclaimer` /
 Fixtures: `resources/revmath/fixtures/labeling_*.claim.json` (positive +
 negative).
 
+## INTEG-01 canonical proof-trace projection
+
+Owner: `formal/proof_trace.py` (design:
+[integ-01-canonical-proof-trace.md](integ-01-canonical-proof-trace.md)).
+
+Projects `ReplayBundleV1`, decode stats / mechanism activation, and optional
+verifier witnesses into `canonical_proof_trace/v1`, reusing KERN-06 Event/cost
+models for observed work. Unobserved fields stay explicit. Sealed traces never
+set `claims_abstract_refinement` — KERN-11 proves refinement separately. No
+second runtime recorder.
+
 ## KERN-12 practical computability vocabulary
 
 Owner: `formal/computability_classification.py` (+ Lean
@@ -152,6 +163,7 @@ reject weaken-theorem / add-axiom / increase-budget / change-corpus paths.
 | `revmath_counterexample` | task_validator | `harnesses/reasoning/revmath/counterexample.py` | `check_counterexample_against_theorem`, `evaluate_counterexample` | HARN-06 checked finite/computable counterexamples; search≠refutation |
 | `revmath_quantitative_bound` | task_validator | `harnesses/reasoning/revmath/quantitative_bound.py` | `extract_quantitative_bound`, `QuantitativeBoundReportV1` | HARN-07 theorem-derived bounds via EVID-04; no invented rates |
 | `revmath_labeling` | task_validator | `harnesses/reasoning/revmath/labeling.py` | `validate_label_claim`, `anti_overclaim_reasons`, `RmLabelClaimV1` | HARN-08 conservative Big-Five labeling; anti-overclaim |
+| `canonical_proof_trace` | projection | `formal/proof_trace.py` | `CanonicalProofTraceV1`, `project_runtime_evidence`, `match_proof_trace_to_evidence` | INTEG-01 project existing evidence into canonical proof trace |
 | `formal_computability_classification` | schema | `formal/computability_classification.py` | `CLASS_CONTRACTS`, `validate_classification_claim`, `ClassificationClaimV1` | KERN-12 practical computability vocabulary + evidence contracts |
 | `revmath_self_healing` | repair | `harnesses/reasoning/revmath/self_healing.py` | `run_self_healing`, `propose_repair_attempts`, `RevmathRepairSessionV1` | HARN-09 proposition-preserving self-healing |
 | `revmath_replay` | replay | `harnesses/reasoning/revmath/replay.py` | `build_revmath_replay_bundle` | HARN-03 ReplayBundleV1 composition |
