@@ -3772,6 +3772,11 @@
         {
           "version": "v207",
           "date": "2026-08-11",
+          "note": "no-bump: include rebuilt evidence_ledger.v1.json (scanned=2113) after EVID-12 design docs landed; deterministic fold only."
+        },
+        {
+          "version": "v207",
+          "date": "2026-08-11",
           "note": "no-bump: rebuild evidence_ledger.v1.json after EVID-12 (SLM-543) evidence-interop-profile design docs; deterministic fold, no campaign contract change."
         },
         {
