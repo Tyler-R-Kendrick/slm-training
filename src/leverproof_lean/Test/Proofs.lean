@@ -76,6 +76,23 @@ open LeverProofLean
 #print axioms EventTrace.physical_bound_from_hypothesis
 #print axioms EventTrace.wallClockUpperBound_append
 #print axioms EventTrace.fixture_decode_unit_work_sum
+#print axioms MechanismTrigger.no_effect_of_necessary_and_absent
+#print axioms MechanismTrigger.necessary_implies_no_effect_contrapositive
+#print axioms MechanismTrigger.noEffectCertificate_outputs_equal
+#print axioms MechanismTrigger.unknown_not_in_no_effect_corpus
+#print axioms MechanismTrigger.dominanceCertificate_dominates
+#print axioms MechanismTrigger.singleton_bypass_output_change_implies_trigger
+#print axioms MechanismTrigger.singleton_bypass_necessary
+#print axioms MechanismTrigger.closure_removal_output_change_implies_trigger
+#print axioms MechanismTrigger.closure_removal_necessary
+#print axioms MechanismTrigger.cache_reuse_output_change_implies_trigger
+#print axioms MechanismTrigger.cache_reuse_necessary
+#print axioms MechanismTrigger.forced_span_output_change_implies_trigger
+#print axioms MechanismTrigger.forced_span_necessary
+#print axioms MechanismTrigger.unconstrained_rerank_no_safe_trigger_theorem
+#print axioms MechanismTrigger.unknown_activation_blocks_no_effect_certificate
+#print axioms MechanismTrigger.fixture_singleton_absent_no_effect
+#print axioms MechanismTrigger.fixture_dominated_locally
 #print axioms DecodeInvariants.singleton_bypasses_ranker
 #print axioms DecodeInvariants.forged_coverage_complete_never_bypasses
 #print axioms DecodeInvariants.coverage_complete_flag_not_singleton
@@ -307,3 +324,17 @@ open LeverProofLean
   ([.neuralForward 2] ++ [.solverExpansion 3]) = 5
 #guard EventTrace.wallClockUpperBound EventTrace.decodeUnitWorkModel ⟨10⟩
   [.neuralForward 3] = 30
+
+-- Mechanism triggers / no-effect / dominance (KERN-08)
+#guard MechanismTrigger.fixtureSingletonAbsent.enabledOutput ==
+  MechanismTrigger.fixtureSingletonAbsent.baselineOutput
+#guard MechanismTrigger.fixtureClosureAbsent.enabledOutput ==
+  MechanismTrigger.fixtureClosureAbsent.baselineOutput
+#guard MechanismTrigger.fixtureCacheAbsent.enabledOutput ==
+  MechanismTrigger.fixtureCacheAbsent.baselineOutput
+#guard MechanismTrigger.fixtureForcedAbsent.enabledOutput ==
+  MechanismTrigger.fixtureForcedAbsent.baselineOutput
+#guard MechanismTrigger.triggerEvidenceCompleteBool .absent
+#guard !(MechanismTrigger.triggerEvidenceCompleteBool .unknown)
+#guard MechanismTrigger.unconstrainedRerankMechanism.hasSafeTriggerTheorem == false
+#guard MechanismTrigger.singletonBypassMechanism.hasSafeTriggerTheorem
