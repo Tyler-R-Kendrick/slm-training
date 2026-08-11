@@ -11,6 +11,9 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, StrictInt, model_validator
 
 from slm_training.levers import MAX_RUN_MINUTES
+from slm_training.formal.bound_ast import REGISTERED_BOUND_AST_IDS
+
+BOUND_AST_ID_PLACEHOLDERS: frozenset[str] = REGISTERED_BOUND_AST_IDS
 
 _REV_MATH_ID = r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
 
@@ -741,15 +744,7 @@ FORBIDDEN_THEOREM_OVERCLAIM_KINDS: frozenset[str] = frozenset(
     {"wall_clock_latency", "neural_quality"}
 )
 
-# Bound-AST id placeholders until EVID-04 ships the safe evaluator (KERN-03 uses the
-# finite-search id; other ids may be recorded but are not evaluated here).
-BOUND_AST_ID_PLACEHOLDERS: frozenset[str] = frozenset(
-    {
-        "bound.finite_search.prefix_tree.v1",
-        "bound.placeholder.pending_evid04.v1",
-    }
-)
-
+# BOUND_AST_ID_PLACEHOLDERS aliases REGISTERED_BOUND_AST_IDS (EVID-04).
 
 class FormalPreflightFourAxisLedgerV1(StrictModel):
     """Four-axis analysis ledger owned by ``FormalPreflightV1`` (EVID-03 / SLM-519).
@@ -821,7 +816,7 @@ class FormalPreflightFourAxisLedgerV1(StrictModel):
         if rb.status in ("proved_axis", "refuted_axis") and rb.bound_ast_id is None:
             raise ValueError(
                 "resource_bounds proved/refuted claims require bound_ast_id "
-                "(EVID-04 safe AST id placeholder; no raw eval)"
+                "(EVID-04 registered safe AST id; no raw eval)"
             )
         if (
             self.computability_classification != "unclassified"

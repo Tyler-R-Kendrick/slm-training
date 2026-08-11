@@ -3340,7 +3340,7 @@
       ]
     },
     "governance.revmath_owners": {
-      "version": "v7",
+      "version": "v8",
       "kind": "gate",
       "paths": [
         "docs/design/adr-revmath-reasoning-profile.md",
@@ -3350,6 +3350,11 @@
         "tests/test_scripts/test_verify_revmath_owners.py"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-08-11",
+          "note": "EVID-04 (SLM-525): register bound_ast_schema surface and mark EVID-04 extension seam done."
+        },
         {
           "version": "v7",
           "date": "2026-08-11",
@@ -3497,6 +3502,11 @@
         "tests/test_autoresearch/test_evidence_ledger.py"
       ],
       "history": [
+        {
+          "version": "v205",
+          "date": "2026-08-11",
+          "note": "no-bump: EVID-04 (SLM-525) re-exports REGISTERED_BOUND_AST_IDS as BOUND_AST_ID_PLACEHOLDERS in schemas.py; campaign contracts unchanged."
+        },
         {
           "version": "v205",
           "date": "2026-08-11",
@@ -4770,7 +4780,7 @@
       ]
     },
     "harness.autoresearch.formal": {
-      "version": "v15",
+      "version": "v16",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/formal.py",
@@ -4783,6 +4793,11 @@
         "tests/test_autoresearch/test_formal_four_axis_ledger.py"
       ],
       "history": [
+        {
+          "version": "v16",
+          "date": "2026-08-11",
+          "note": "EVID-04 (SLM-525): wire FormalPreflight bound_ast_id allowlist to registered safe AST registry."
+        },
         {
           "version": "v15",
           "date": "2026-08-11",
@@ -18230,6 +18245,23 @@
           "version": "v1",
           "date": "2026-08-11",
           "note": "HARN-02 (SLM-527): strict revmath task/corpus/result/repair/report schemas with SolverJudgmentV1, four-axis attachment, repair identity freeze, JSON schema export."
+        }
+      ]
+    },
+    "formal.bound_ast": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/formal/bound_ast.py",
+        "src/slm_training/resources/formal/bound_ast_registry.v1.json",
+        "src/slm_training/resources/formal/bound_ast_parity_fixtures.v1.json",
+        "tests/test_formal/test_bound_ast.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-11",
+          "note": "EVID-04 (SLM-525): safe symbolic bound AST, exact Fraction evaluator, registry + Lean/Python parity fixtures."
         }
       ]
     }
