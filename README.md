@@ -32,7 +32,7 @@ completed outcomes and diagnoses become typed feedback for the next matrix and f
 future campaign evidence. The loop improves by evidence, never by rewriting its own
 code, frozen cases, or gates. RL remains locked until a model passes the frozen
 production readiness contract. Architecture hypotheses can additionally use
-[Lean formal preflights](docs/design/formal-autoresearch.md) to reject structural
+[Lean formal preflights](docs/design/formal-autoresearch.md) and the [`reasoning/revmath` profile](docs/design/reverse-mathematics-computability.md) (`revmath` skill; `verify_revmath_owners`) to reject structural
 contradictions before training; these prove explicit abstractions and assumptions,
 never empirical quality or ship readiness.
 

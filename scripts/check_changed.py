@@ -49,6 +49,8 @@ REVMATH_OWNER_FILES = frozenset(
         "scripts/verify_revmath_owners.py",
         "docs/design/reverse-mathematics-computability.md",
         "docs/design/adr-revmath-reasoning-profile.md",
+        ".agents/skills/revmath/SKILL.md",
+        "src/slm_training/resources/revmath/examples/README.md",
     }
 )
 REVMATH_HARNESS_PARITY_FILES = frozenset(

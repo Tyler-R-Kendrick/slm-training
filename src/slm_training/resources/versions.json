@@ -3142,6 +3142,11 @@
         {
           "version": "v27",
           "date": "2026-08-11",
+          "note": "no-bump: INTEG-09 (SLM-575) extends REVMATH_OWNER_FILES path set in check_changed only; ownership_map.json contract unchanged."
+        },
+        {
+          "version": "v27",
+          "date": "2026-08-11",
           "note": "KERN-11 (SLM-539): update ownership_map.json runtime_telemetry notes for trace_refinement / ProofTraceRefinement fixture-subset refinement; re-render md."
         },
         {
@@ -3457,16 +3462,23 @@
       ]
     },
     "governance.revmath_owners": {
-      "version": "v21",
+      "version": "v22",
       "kind": "gate",
       "paths": [
         "docs/design/adr-revmath-reasoning-profile.md",
         "docs/design/reverse-mathematics-computability.md",
         "scripts/verify_revmath_owners.py",
         "src/slm_training/resources/revmath_owner_map.json",
-        "tests/test_scripts/test_verify_revmath_owners.py"
+        "tests/test_scripts/test_verify_revmath_owners.py",
+        ".agents/skills/revmath/SKILL.md",
+        "src/slm_training/resources/revmath/examples/README.md"
       ],
       "history": [
+        {
+          "version": "v22",
+          "date": "2026-08-11",
+          "note": "INTEG-09 (SLM-575): finalize design/ADR discoverability, revmath skill surface, examples + doc/schema parity checks."
+        },
         {
           "version": "v21",
           "date": "2026-08-11",
@@ -3600,7 +3612,7 @@
       ]
     },
     "governance.revmath_harness_parity": {
-      "version": "v13",
+      "version": "v14",
       "kind": "gate",
       "paths": [
         "src/slm_training/resources/revmath_harness_parity.json",
@@ -3609,6 +3621,11 @@
         "tests/test_scripts/test_verify_revmath_harness_parity.py"
       ],
       "history": [
+        {
+          "version": "v14",
+          "date": "2026-08-11",
+          "note": "INTEG-09 (SLM-575): clear docs.skills_and_agent_surfaces blocker; skill is required_owner."
+        },
         {
           "version": "v13",
           "date": "2026-08-11",
@@ -9501,6 +9518,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-11",
+          "note": "no-bump: INTEG-09 (SLM-575) README discoverability pointer to reverse-mathematics-computability.md / revmath skill only; spectral disposition harness untouched."
+        },
         {
           "version": "v3",
           "date": "2026-08-11",
@@ -18710,7 +18732,7 @@
       ]
     },
     "harness.reasoning.revmath": {
-      "version": "v16",
+      "version": "v17",
       "kind": "harness",
       "paths": [
         "scripts/run_revmath_task.py",
@@ -18738,6 +18760,11 @@
         "tests/test_harnesses/reasoning/test_revmath_failure_witness.py"
       ],
       "history": [
+        {
+          "version": "v17",
+          "date": "2026-08-11",
+          "note": "INTEG-09 (SLM-575): CLI help points at canonical design/examples; no task-semantics change."
+        },
         {
           "version": "v16",
           "date": "2026-08-11",

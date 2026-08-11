@@ -11,6 +11,8 @@ Static only — parses source with :mod:`ast` and reads text, no imports. Certif
 5. Prohibited shadow patterns (parallel revmath campaign/evidence/proof stacks)
    do not appear as new module filenames under ``src/`` or ``scripts/``.
 6. ``profile_id`` is documented in the ADR and design doc.
+7. INTEG-09 discoverability: skill + examples use current schemas/commands;
+   design marks external solvers as experiments; no retired write-path ads.
 
 Run: ``python -m scripts.verify_revmath_owners``
 """
@@ -31,6 +33,20 @@ DESIGN_DOC = "docs/design/reverse-mathematics-computability.md"
 ADR_DOC = "docs/design/adr-revmath-reasoning-profile.md"
 SCHEMA = "revmath_owner_map/v1"
 SCAN_ROOTS = ("src", "scripts")
+SKILL_PATH = ".agents/skills/revmath/SKILL.md"
+EXAMPLES_README = "src/slm_training/resources/revmath/examples/README.md"
+AGENTS_MD = "AGENTS.md"
+ALLOWED_TASK_SCHEMAS = frozenset({"revmath_task/v1"})
+REQUIRED_DESIGN_MARKERS = (
+    "Trust boundaries",
+    "Practical vs genuine RM labels",
+    "Exact-refutation authority",
+    "Cost models",
+    "Runtime refinement scope",
+    "Self-healing invariants",
+    "Experiment promotion rules",
+    "Optional external tools (experiments, not prerequisites)",
+)
 
 
 class RevmathOwnerError(AssertionError):
@@ -151,6 +167,70 @@ def check_prohibited_shadows(doc: dict[str, Any]) -> list[str]:
     return []
 
 
+
+def check_integ09_discoverability(doc: dict[str, Any]) -> dict[str, Any]:
+    """Skill/examples/docs parity for INTEG-09 (no duplicate registry, no stale writes)."""
+    skill = _read(SKILL_PATH)
+    for marker in (
+        "reasoning/revmath",
+        "verify_revmath_owners",
+        "reverse-mathematics-computability.md",
+        "practical_computability_only",
+        "experiments, not prerequisites",
+        "run_revmath_task",
+        "run_revmath_profile",
+    ):
+        if marker not in skill:
+            raise RevmathOwnerError(f"{SKILL_PATH} missing required marker {marker!r}")
+    agents = _read(AGENTS_MD)
+    for marker in ("`revmath`", "verify_revmath_owners", "reverse-mathematics-computability.md"):
+        if marker not in agents:
+            raise RevmathOwnerError(f"{AGENTS_MD} missing revmath discoverability marker {marker!r}")
+    examples = _read(EXAMPLES_README)
+    for marker in ("revmath_task/v1", "run_revmath_task", "run_revmath_profile", "experiments"):
+        if marker not in examples:
+            raise RevmathOwnerError(f"{EXAMPLES_README} missing marker {marker!r}")
+    design = _read(doc["design_doc"])
+    for marker in REQUIRED_DESIGN_MARKERS:
+        if marker not in design:
+            raise RevmathOwnerError(
+                f"{doc['design_doc']} missing INTEG-09 section marker {marker!r}"
+            )
+    # Positive write ads only — mentioning a marker as retired/prohibited is fine.
+    positive_ads = (
+        'schema_version": "revmath_task/v0"',
+        "schema_version': 'revmath_task/v0'",
+        "RevMathCampaignStore",
+        "write_revmath_evidence(",
+    )
+    for relative in (SKILL_PATH, EXAMPLES_README, doc["design_doc"], doc["adr"]):
+        body = _read(relative)
+        for banned in positive_ads:
+            if banned in body:
+                raise RevmathOwnerError(
+                    f"{relative} advertises retired write marker {banned!r}"
+                )
+    fixtures = ROOT / "src/slm_training/resources/revmath/fixtures"
+    checked = 0
+    if fixtures.is_dir():
+        for path in sorted(fixtures.glob("*.task.json")):
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            schema = payload.get("schema_version")
+            if schema not in ALLOWED_TASK_SCHEMAS:
+                raise RevmathOwnerError(
+                    f"{path.relative_to(ROOT).as_posix()} uses schema_version "
+                    f"{schema!r}; expected one of {sorted(ALLOWED_TASK_SCHEMAS)}"
+                )
+            checked += 1
+    if checked < 1:
+        raise RevmathOwnerError("no revmath *.task.json fixtures found to parity-check")
+    return {
+        "skill": SKILL_PATH,
+        "examples": EXAMPLES_README,
+        "fixtures_checked": checked,
+    }
+
+
 def check_extension_seams(doc: dict[str, Any]) -> list[str]:
     surface_ids = {s["id"] for s in doc["surfaces"]}
     checked: list[str] = []
@@ -184,6 +264,7 @@ def certify() -> dict[str, Any]:
         "ownership_map_subsystems": check_global_subsystems(doc),
         "extension_seams": check_extension_seams(doc),
         "prohibited_shadows": check_prohibited_shadows(doc),
+        "integ09": check_integ09_discoverability(doc),
     }
 
 

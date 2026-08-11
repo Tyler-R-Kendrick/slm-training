@@ -19,6 +19,8 @@ def test_passes_on_the_real_repository():
     assert result["linear_id"] == "SLM-515"
     assert len(result["surfaces"]) >= 15
     assert result["docs"]["profile_id"] == "reasoning/revmath"
+    assert result["integ09"]["skill"] == ".agents/skills/revmath/SKILL.md"
+    assert result["integ09"]["fixtures_checked"] >= 1
 
 
 def test_catches_renamed_owner_symbol(tmp_path, monkeypatch):
@@ -64,3 +66,29 @@ def test_catches_prohibited_shadow_module(tmp_path, monkeypatch):
     shadow.write_text("# shadow owner\n", encoding="utf-8")
     with pytest.raises(verifier.RevmathOwnerError, match="prohibited revmath shadow"):
         verifier.check_prohibited_shadows(doc)
+
+
+def test_integ09_requires_skill_markers(tmp_path, monkeypatch):
+    monkeypatch.setattr(verifier, "ROOT", tmp_path)
+    doc = json.loads((REPO_ROOT / verifier.MAP_PATH).read_text(encoding="utf-8"))
+    # Minimal tree mirroring certify prerequisites for discoverability only.
+    for relative in (
+        verifier.MAP_PATH,
+        verifier.DESIGN_DOC,
+        verifier.ADR_DOC,
+        verifier.GLOBAL_MAP_PATH,
+        verifier.SKILL_PATH,
+        verifier.EXAMPLES_README,
+        verifier.AGENTS_MD,
+    ):
+        src = REPO_ROOT / relative
+        dst = tmp_path / relative
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        if relative == verifier.SKILL_PATH:
+            dst.write_text("incomplete skill\n", encoding="utf-8")
+        elif relative == verifier.GLOBAL_MAP_PATH:
+            dst.write_text(json.dumps({"subsystems": [{"id": "agent_surface_parity"}]}), encoding="utf-8")
+        elif src.is_file():
+            dst.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+    with pytest.raises(verifier.RevmathOwnerError, match="missing required marker"):
+        verifier.check_integ09_discoverability(doc)
