@@ -204,6 +204,21 @@ _LEAN_CLAIM_CATALOG: dict[str, dict[str, Any]] = {
         "tier": "production_core",
         "laws": ["singleton_bypass", "proved_complete_singleton"],
     },
+    "FiniteSearchBounds.prefix_tree_le_one_plus_holes_mul_assignments": {
+        "module": "LeverProofLean.FiniteSearchBounds",
+        "tier": "production_core",
+        "laws": ["proved_complete_singleton"],
+    },
+    "FiniteSearchBounds.pruning_memo_cannot_increase_bound": {
+        "module": "LeverProofLean.FiniteSearchBounds",
+        "tier": "production_core",
+        "laws": ["proved_complete_singleton"],
+    },
+    "FiniteSearchBounds.completeAssignmentCount_eq": {
+        "module": "LeverProofLean.FiniteSearchBounds",
+        "tier": "production_core",
+        "laws": ["proved_complete_singleton"],
+    },
     "ExactClosure.finite_search_rejects_stale_state": {
         "module": "LeverProofLean.ExactClosure",
         "tier": "production_core",

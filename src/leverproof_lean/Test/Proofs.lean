@@ -53,6 +53,12 @@ open LeverProofLean
 #print axioms CompleteDomain.singleton_is_legal
 #print axioms CompleteDomain.singleton_unique_legal
 #print axioms CompleteDomain.partial_never_authorizes_pruning
+#print axioms FiniteSearchBounds.completeAssignmentCount_eq
+#print axioms FiniteSearchBounds.prefix_tree_le_one_plus_holes_mul_assignments
+#print axioms FiniteSearchBounds.pruning_memo_cannot_increase_bound
+#print axioms FiniteSearchBounds.fixture_two_three_assignment_count
+#print axioms FiniteSearchBounds.fixture_empty_holes
+#print axioms FiniteSearchBounds.fixture_zero_domain
 #print axioms DecodeInvariants.singleton_bypasses_ranker
 #print axioms DecodeInvariants.forged_coverage_complete_never_bypasses
 #print axioms DecodeInvariants.coverage_complete_flag_not_singleton
@@ -250,3 +256,10 @@ open LeverProofLean
       hasCounterexampleDigest := false, exhausted := true, replayChecked := true,
       replayOk := true }
     true)
+
+-- Finite search bounds (KERN-03)
+#guard FiniteSearchBounds.completeAssignmentCount [2, 3] = 6
+#guard FiniteSearchBounds.prefixTreeNodeBound [2, 3] = 9
+#guard FiniteSearchBounds.completeAssignmentCount ([] : List Nat) = 1
+#guard FiniteSearchBounds.prefixTreeNodeBound ([] : List Nat) = 1
+#guard FiniteSearchBounds.completeAssignmentCount [2, 0, 4] = 0

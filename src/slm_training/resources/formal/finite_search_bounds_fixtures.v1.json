@@ -1,0 +1,73 @@
+{
+  "schema": "finite_search_bounds_fixtures/v1",
+  "cost_model": "ExpansionVerificationQueryModel",
+  "bound_ast_id": "bound.finite_search.prefix_tree.v1",
+  "wall_clock_claim": false,
+  "cases": [
+    {
+      "id": "empty_holes",
+      "domain_sizes": [],
+      "predicted_assignments": 1,
+      "predicted_prefix_nodes": 1,
+      "u64_overflow": "fits_u64",
+      "enumerate": true
+    },
+    {
+      "id": "single_hole_three",
+      "domain_sizes": [
+        3
+      ],
+      "predicted_assignments": 3,
+      "predicted_prefix_nodes": 4,
+      "u64_overflow": "fits_u64",
+      "enumerate": true
+    },
+    {
+      "id": "two_by_three",
+      "domain_sizes": [
+        2,
+        3
+      ],
+      "predicted_assignments": 6,
+      "predicted_prefix_nodes": 9,
+      "u64_overflow": "fits_u64",
+      "enumerate": true
+    },
+    {
+      "id": "zero_domain_middle",
+      "domain_sizes": [
+        2,
+        0,
+        4
+      ],
+      "predicted_assignments": 0,
+      "predicted_prefix_nodes": 3,
+      "u64_overflow": "fits_u64",
+      "enumerate": true
+    },
+    {
+      "id": "all_singletons",
+      "domain_sizes": [
+        1,
+        1,
+        1
+      ],
+      "predicted_assignments": 1,
+      "predicted_prefix_nodes": 4,
+      "u64_overflow": "fits_u64",
+      "enumerate": true
+    },
+    {
+      "id": "overflow_u64_product",
+      "domain_sizes": [
+        4294967296,
+        4294967296,
+        4
+      ],
+      "predicted_assignments": 73786976294838206464,
+      "predicted_prefix_nodes": 92233720372842725377,
+      "u64_overflow": "overflow_u64",
+      "enumerate": false
+    }
+  ]
+}
