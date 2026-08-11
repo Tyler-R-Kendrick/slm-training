@@ -44,6 +44,8 @@ This ADR is **violated** if:
 - Design: [reverse-mathematics-computability.md](reverse-mathematics-computability.md)
 - Map: [`src/slm_training/resources/revmath_owner_map.json`](../../src/slm_training/resources/revmath_owner_map.json)
 - Verifier: `python -m scripts.verify_revmath_owners`
+- Harness parity (HARN-01): [`revmath_harness_parity.json`](../../src/slm_training/resources/revmath_harness_parity.json) · `python -m scripts.verify_revmath_harness_parity`
+- Profile registration: [`harnesses/reasoning/profiles.py`](../../src/slm_training/harnesses/reasoning/profiles.py)
 - Formal autoresearch: [formal-autoresearch.md](formal-autoresearch.md)
 - Formal objects: [formal-objects-multi-prover.md](formal-objects-multi-prover.md)
 - Campaign law: [experiment-campaign-governance.md](experiment-campaign-governance.md)

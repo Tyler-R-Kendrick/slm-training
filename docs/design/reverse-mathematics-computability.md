@@ -1,10 +1,11 @@
 # Reverse mathematics, computability, and canonical evidence ownership
 
-**Status:** owner map frozen (EVID-01 / SLM-515)  
+**Status:** profile registered + harness/self-healing parity audited (HARN-01 / SLM-520); owner map frozen (EVID-01 / SLM-515)  
 **Base SHA:** `980aa465223adf7822f82930550c92b9240333ca` (`origin/main` at audit)  
 **Machine-readable map:** [`src/slm_training/resources/revmath_owner_map.json`](../../src/slm_training/resources/revmath_owner_map.json)  
+**Harness parity matrix:** [`src/slm_training/resources/revmath_harness_parity.json`](../../src/slm_training/resources/revmath_harness_parity.json)  
 **ADR:** [adr-revmath-reasoning-profile.md](adr-revmath-reasoning-profile.md)  
-**Verified by:** `python -m scripts.verify_revmath_owners`
+**Verified by:** `python -m scripts.verify_revmath_owners` · `python -m scripts.verify_revmath_harness_parity`
 
 > **Goal law:** bound by [decode-invariants.md](decode-invariants.md). Reverse mathematics here means *which assumptions suffice for which conclusion* — not a second training stack.
 
@@ -87,7 +88,46 @@ The profile id is **`reasoning/revmath`**. It parameterizes the G4 reasoning har
 - route all measured results through `ExperimentCampaignV1` and honest ship gates;
 - consume witnesses, activations, replay bundles, and dispositions from the owners above.
 
-Task semantics (decomposition, retrieval, tactic search) are downstream of this owner freeze (HARN-01, KERN-*, EVID-03+). This document owns **authority boundaries only**.
+**Registration seam (HARN-01):** [`harnesses/reasoning/profiles.py`](../../src/slm_training/harnesses/reasoning/profiles.py) registers `reasoning/g4` (default) and `reasoning/revmath` (opt-in, `task_semantics_ready=False`). `resolve_profile(None)` keeps the historical default — discovering/configuring revmath does not alter G4 bench or warmup behavior.
+
+Task schemas, runner, and repair controller are downstream (HARN-02+, HARN-03, HARN-09). This document owns **authority boundaries and parity obligations**; missing parity rows are explicit blockers in the matrix, never silent fallbacks.
+
+## Harness / self-healing parity matrix (HARN-01)
+
+Machine-checkable obligations live in [`revmath_harness_parity.json`](../../src/slm_training/resources/revmath_harness_parity.json) and are certified by `python -m scripts.verify_revmath_harness_parity`.
+
+| Category | Role |
+| --- | --- |
+| commands / schemas / resources | CLI + typed contracts + committed inputs |
+| campaign_binding / evidence / replay | No bypass of `ExperimentCampaignV1` or canonical envelopes |
+| bounded_execution | `run_bounded_process` / formal preflight only |
+| repair | Extend `SemanticRepairRecordV1`; honor freeze surface |
+| versions / docs / agent_surfaces | Single version registry; design/ADR; INTEG-09 for skill surfaces |
+
+Every row is either `status=present` with a live `required_owner` path, or `status=blocker` with a non-empty `blocker_issue`. Unknown statuses fail the verifier.
+
+### Self-healing freeze surface
+
+Declared in the parity resource (`self_healing`); implemented by HARN-09.
+
+| May modify (within locked budget) | Must freeze |
+| --- | --- |
+| tactic sequence, proof-search strategy, retrieval choices, type-equivalent theorem selection, serialization/bridge generation, temporary decomposition, resource allocation inside the locked budget | proposition, base theory / allowed assumptions, theorem direction, corpus membership, experiment arms, budgets / stopping rules, judge definitions, promotion gates, authority policy, expected counterexample semantics |
+
+`may_modify` and `must_freeze` must stay non-empty and disjoint — the verifier fails closed on overlap.
+
+## Absorbed predecessor: HARN-12
+
+**HARN-12** (*harness / self-healing parity audit for `reasoning/revmath`*) is **absorbed into HARN-01** and is no longer a separate Linear task.
+
+| HARN-12 planned deliverable | Where it lives now |
+| --- | --- |
+| Obligation matrix across commands/schemas/resources/campaign/evidence/replay/bounded-exec/repair/versions/docs/agent surfaces | `revmath_harness_parity.json` + `verify_revmath_harness_parity` |
+| Explicit blockers for missing seams (no silent fallback) | `status=blocker` + `blocker_issue` rows |
+| Self-healing may-modify / must-freeze freeze | `self_healing` object in the parity resource |
+| Discoverable profile registration without default drift | `harnesses/reasoning/profiles.py` |
+
+Reason: a standalone HARN-12 would duplicate the registration seam certificate and force a second verifier stack; folding the audit into HARN-01 keeps one owner for profile discovery + parity.
 
 ## Absorbed predecessor: EVID-02
 
@@ -110,6 +150,7 @@ This document freezes **ownership and extension seams** — not ship readiness, 
 
 ```bash
 python -m scripts.verify_revmath_owners
+python -m scripts.verify_revmath_harness_parity
 python -m scripts.verify_agent_surfaces
 python -m scripts.verify_ownership_map
 python -m scripts.repo_policy

@@ -65,7 +65,9 @@
       "id": "formal_preflight_seam",
       "kind": "command",
       "owner_module": "scripts/autoresearch.py",
-      "owner_symbols": ["cmd_formalize"],
+      "owner_symbols": [
+        "cmd_formalize"
+      ],
       "design_doc": "docs/design/formal-autoresearch.md",
       "ownership_map_subsystem": "experiment_campaign",
       "notes": "Autoresearch preflight seam; writes content-addressed artifacts under formal_preflights/."
@@ -90,7 +92,11 @@
       "id": "formal_object_loop",
       "kind": "formal_object",
       "owner_module": "src/slm_training/formal/loop.py",
-      "owner_symbols": ["close_formal_loop", "write_loop_report", "loop_requires_multi_backend"],
+      "owner_symbols": [
+        "close_formal_loop",
+        "write_loop_report",
+        "loop_requires_multi_backend"
+      ],
       "design_doc": "docs/design/formal-objects-multi-prover.md",
       "ownership_map_subsystem": null,
       "notes": "Multi-prover loop report; Lean is never sole authority."
@@ -113,7 +119,9 @@
       "id": "formal_objects_cli",
       "kind": "command",
       "owner_module": "scripts/verify_formal_objects.py",
-      "owner_symbols": ["main"],
+      "owner_symbols": [
+        "main"
+      ],
       "design_doc": "docs/design/formal-objects-multi-prover.md",
       "ownership_map_subsystem": null,
       "notes": "Export/verify CLI; diagnostic and loop-close, not promotion authority alone."
@@ -122,7 +130,11 @@
       "id": "bounded_process",
       "kind": "execution",
       "owner_module": "src/slm_training/harness_core/bounded_process.py",
-      "owner_symbols": ["run_bounded_process", "ProcessOutcome", "BoundedProcessResult"],
+      "owner_symbols": [
+        "run_bounded_process",
+        "ProcessOutcome",
+        "BoundedProcessResult"
+      ],
       "design_doc": "docs/design/formal-autoresearch.md",
       "ownership_map_subsystem": null,
       "notes": "Canonical bounded subprocess owner for Lean/Lake and other formal tools."
@@ -161,7 +173,10 @@
       "id": "mechanism_activation",
       "kind": "activation",
       "owner_module": "src/slm_training/models/decode_stats.py",
-      "owner_symbols": ["MechanismActivationV1", "build_mechanism_activation"],
+      "owner_symbols": [
+        "MechanismActivationV1",
+        "build_mechanism_activation"
+      ],
       "design_doc": "docs/design/decode-invariants.md",
       "ownership_map_subsystem": "decode_telemetry",
       "notes": "Eligible/invoked/changed-top-choice activation envelope."
@@ -184,7 +199,10 @@
       "id": "solver_replay",
       "kind": "replay",
       "owner_module": "src/slm_training/dsl/solver/replay.py",
-      "owner_symbols": ["solver_replay_violations", "solver_trace_counters"],
+      "owner_symbols": [
+        "solver_replay_violations",
+        "solver_trace_counters"
+      ],
       "design_doc": "docs/design/verified-scope-solver.md",
       "ownership_map_subsystem": "solver_replay",
       "notes": "Decode trace replay validation authority."
@@ -244,10 +262,14 @@
       "id": "agent_surface_parity",
       "kind": "agent_surface",
       "owner_module": "scripts/verify_agent_surfaces.py",
-      "owner_symbols": ["Obligation", "check", "AgentSurfaceError"],
+      "owner_symbols": [
+        "Obligation",
+        "check",
+        "AgentSurfaceError"
+      ],
       "design_doc": "docs/design/agent-harness-parity-audit.md",
       "ownership_map_subsystem": "agent_surface_parity",
-      "notes": "Obligation × harness-surface matrix; revmath docs must cite canonical owners here."
+      "notes": "Obligation \u00d7 harness-surface matrix; revmath docs must cite canonical owners here."
     },
     {
       "id": "reasoning_harness_parent",
@@ -298,7 +320,7 @@
       "linear_id": "SLM-520",
       "extends": "reasoning_harness_parent",
       "new_owner_justified": false,
-      "justification": "Registers reasoning/revmath profile registration and harness parity matrix."
+      "justification": "Registers reasoning/revmath in harnesses/reasoning/profiles.py and certifies harness/self-healing parity via revmath_harness_parity.json; absorbs HARN-12 audit scope."
     }
   ],
   "prohibited_duplicate_risks": [
@@ -327,6 +349,12 @@
       "title": "Machine-readable formal/evidence owner registry and duplicate-owner CI guard",
       "absorbed_into": "EVID-01",
       "reason": "Owner freeze, ADR, revmath_owner_map.json, and verify_revmath_owners.py deliver the registry and parity check without a separate ownership_map.json churn ticket or a second orchestration layer. Global ownership_map extensions remain parent-owned per swarm contract."
+    },
+    {
+      "issue_key": "HARN-12",
+      "title": "Harness / self-healing parity audit for reasoning/revmath",
+      "absorbed_into": "HARN-01",
+      "reason": "Standalone parity-audit ticket would duplicate HARN-01 machine-checkable obligation matrix, self-healing freeze declaration, and registration-seam certificate. See revmath_harness_parity.json + verify_revmath_harness_parity.py."
     }
   ]
 }

@@ -51,6 +51,15 @@ REVMATH_OWNER_FILES = frozenset(
         "docs/design/adr-revmath-reasoning-profile.md",
     }
 )
+REVMATH_HARNESS_PARITY_FILES = frozenset(
+    {
+        "src/slm_training/resources/revmath_harness_parity.json",
+        "scripts/verify_revmath_harness_parity.py",
+        "src/slm_training/harnesses/reasoning/profiles.py",
+        "docs/design/reverse-mathematics-computability.md",
+        "docs/design/adr-revmath-reasoning-profile.md",
+    }
+)
 GLOBAL_TEST_FILES = {
     "pyproject.toml",
     "pytest.ini",
@@ -132,6 +141,18 @@ SUITES_BY_PREFIX = (
     (
         "scripts/verify_revmath_owners.py",
         ("tests/test_scripts/test_verify_revmath_owners.py",),
+    ),
+    (
+        "scripts/verify_revmath_harness_parity.py",
+        ("tests/test_scripts/test_verify_revmath_harness_parity.py",),
+    ),
+    (
+        "src/slm_training/resources/revmath_harness_parity.json",
+        ("tests/test_scripts/test_verify_revmath_harness_parity.py",),
+    ),
+    (
+        "src/slm_training/harnesses/reasoning/profiles.py",
+        ("tests/test_scripts/test_verify_revmath_harness_parity.py",),
     ),
     (
         "scripts/check_changed.py",
@@ -399,6 +420,9 @@ def check(
             return 1
     if any(path in REVMATH_OWNER_FILES for path in paths):
         if _run([sys.executable, "-m", "scripts.verify_revmath_owners"]):
+            return 1
+    if any(path in REVMATH_HARNESS_PARITY_FILES for path in paths):
+        if _run([sys.executable, "-m", "scripts.verify_revmath_harness_parity"]):
             return 1
     tests = hook_test_targets(paths) if changed_tests_only else select_tests(paths)
     python_paths = [
