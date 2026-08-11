@@ -3470,6 +3470,11 @@
         {
           "version": "v21",
           "date": "2026-08-11",
+          "note": "no-bump: INTEG-06 (SLM-573) docs-only pointer to adversarial acceptance matrix in reverse-mathematics-computability.md."
+        },
+        {
+          "version": "v21",
+          "date": "2026-08-11",
           "note": "INTEG-04 (SLM-529): register harness_four_axis_ledger_adapters surface + extension seam on report seams (not campaign store)."
         },
         {
@@ -3747,6 +3752,11 @@
         "docs/design/integ-03-campaign-formal-evidence.md"
       ],
       "history": [
+        {
+          "version": "v207",
+          "date": "2026-08-11",
+          "note": "no-bump: evidence ledger rebuild after INTEG-06 (SLM-573) design doc addition; no campaign contract change."
+        },
         {
           "version": "v207",
           "date": "2026-08-11",
@@ -17677,9 +17687,15 @@
       ]
     },
     "formal.objects": {
-      "version": "v21",
+      "version": "v22",
       "kind": "harness",
       "paths": [
+        "tests/test_formal/test_integ06_acceptance.py",
+        "src/slm_training/formal/integ06_acceptance.py",
+        "src/slm_training/resources/formal/integ06_adversarial_matrix.v1.json",
+        "scripts/verify_integ06_adversarial_acceptance.py",
+        "docs/design/integ-06-adversarial-acceptance-results.json",
+        "docs/design/integ-06-adversarial-acceptance.md",
         "docs/design/kern-11-proof-trace-refinement.md",
         "tests/test_formal/test_trace_refinement.py",
         "src/slm_training/resources/formal/trace_refinement_fixtures.v1.json",
@@ -17735,6 +17751,11 @@
         "src/slm_training/resources/formal/goal_support_golden_cases.v1.json"
       ],
       "history": [
+        {
+          "version": "v22",
+          "note": "INTEG-06 (SLM-573): adversarial end-to-end acceptance matrix over EVID-11/KERN-07/08/11/HARN-09/11/INTEG-01/02/03/05 gates; canonical verify CLI + CampaignStore/profile surface.",
+          "date": "2026-08-11"
+        },
         {
           "version": "v21",
           "date": "2026-08-11",
@@ -18198,7 +18219,7 @@
       ]
     },
     "ci.local_merge_gate": {
-      "version": "v5",
+      "version": "v6",
       "kind": "harness",
       "paths": [
         "scripts/verify_merge_ready.py",
@@ -18208,6 +18229,11 @@
         "tests/test_scripts/test_merge_ready_gate.py"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-08-11",
+          "note": "INTEG-06 (SLM-573): wire verify_integ06_adversarial_acceptance --check into merge-ready gate."
+        },
         {
           "version": "v5",
           "date": "2026-08-11",

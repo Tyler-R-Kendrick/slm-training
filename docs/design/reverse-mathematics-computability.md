@@ -224,6 +224,17 @@ statuses are independent: proved preflight + failed empirical (or weak formal +
 successful empirical) must not conflate. Query via `decision_support_report`.
 Design note: [`integ-03-campaign-formal-evidence.md`](integ-03-campaign-formal-evidence.md).
 
+
+## INTEG-06 — Adversarial end-to-end acceptance (SLM-573)
+
+Release-blocking matrix over existing EVID-11 / KERN-07/08/11 / HARN-09/11 /
+INTEG-01/02/03/05 gates. Orchestrator:
+`formal/integ06_acceptance.py`; verify:
+`scripts/verify_integ06_adversarial_acceptance.py`; design:
+[`integ-06-adversarial-acceptance.md`](integ-06-adversarial-acceptance.md).
+Positive controls pass; adversarial mutations fail at the named gate; failures
+never become destructive semantic authority.
+
 ## INTEG-05 — Failure/repair routing through witness & disposition (SLM-571)
 
 Adapter owner: [`harnesses/reasoning/revmath/failure_witness.py`](../../src/slm_training/harnesses/reasoning/revmath/failure_witness.py).
