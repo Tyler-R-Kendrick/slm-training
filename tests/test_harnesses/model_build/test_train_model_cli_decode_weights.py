@@ -7,6 +7,7 @@ import pytest
 from tests.casefiles import case_values
 
 import scripts.train_model as train_model
+import scripts.evaluate_model as evaluate_model
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 
 NEWLY_WIRED_DECODE_WEIGHT_FIELDS = (
@@ -212,3 +213,9 @@ def test_train_model_cli_decode_weights_default_to_zero_not_none(
     config = captured["config"]
     for field in NEWLY_WIRED_DECODE_WEIGHT_FIELDS:
         assert getattr(config, field) == 0.0, field
+
+
+@pytest.mark.parametrize("entrypoint", (train_model.main, evaluate_model.main))
+def test_goal_support_mode_is_not_an_unbound_cli_surface(entrypoint) -> None:
+    with pytest.raises(SystemExit):
+        entrypoint(["--goal-support-mode", "diagnostic"])

@@ -278,6 +278,23 @@ def test_unknown_statement_recorded_as_uncompiled() -> None:
     )
 
 
+def test_pack_unsupported_productions_wait_for_exact_terminal_trace() -> None:
+    pack = get_pack("openui")
+    alternatives = pack.grammar_capability_authority.unsupported_alternatives
+    assert alternatives
+
+    compiled = compile_goal_constraints(_problem(), _request(), pack)
+
+    assert not any(
+        item.constraint_id.startswith("hard.pack.unsupported.")
+        for item in compiled.constraints
+    )
+    assert {
+        f"pgs-a02.pack_unsupported_production.v1:{production_id}"
+        for production_id in alternatives
+    }.issubset(compiled.uncompiled_source_ids)
+
+
 def test_evaluation_fixture_stays_evaluation_only() -> None:
     fact = RequirementFact(
         fact_id="eval.button.required",

@@ -486,12 +486,6 @@ def main(argv: list[str] | None = None) -> int:
         help="VSS1-03: prune the compiler forest via certified exact closure before ranking",
     )
     parser.add_argument(
-        "--goal-support-mode",
-        choices=("off", "diagnostic", "certified"),
-        default="off",
-        help="PGS-E01: goal-support decode mode on the compiler-tree seam (default off)",
-    )
-    parser.add_argument(
         "--flags-json",
         default=None,
         help=(
@@ -831,7 +825,6 @@ def main(argv: list[str] | None = None) -> int:
         grammar_top_k=args.grammar_top_k,
         compiler_decode_mode=args.compiler_decode_mode,
         verified_solver_decode=args.verified_solver_decode,
-        goal_support_mode=args.goal_support_mode,
         solver_max_nodes=args.solver_max_nodes,
         solver_unknown_policy=args.solver_unknown_policy,
         solver_certificate_mode=args.solver_certificate_mode,

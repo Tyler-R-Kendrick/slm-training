@@ -181,6 +181,21 @@ unless the recorded `algorithm_mode` explicitly claims finite search and
 Emission requires replay-valid hard `UNSUPPORTED`, complete action coverage, no
 cap, and no budget-stop classification — see `obstruction_core_emission_allowed`.
 
+### Same-state preference integration
+
+`run_goal_support_probe` collects same-state evidence through the existing
+counterfactual probe owner. `materialize_goal_support` uses materializer
+`goal_support_set_v2`:
+
+- good = supported;
+- bad = unsupported;
+- ambiguous = unknown;
+- unobserved = unqueried.
+
+Unknown and unobserved actions are masked from hard losses while retaining
+their grammar legality. Evaluation-only profiles are refused by default; an
+explicitly permitted diagnostic view is non-trainable and non-promotable.
+
 ---
 
 ## Authority matrix — sources, profiles, and operations

@@ -88,6 +88,10 @@ _INADEQUATE_TREE = {
     "": (("a", "terminal", "complete"), ("b", "terminal", "complete")),
 }
 
+_DEAD_TREE = {
+    "": (("a", "dead", "complete"), ("b", "dead", "complete")),
+}
+
 _CAP_TREE = {
     "": (
         ("a", "terminal", "complete"),
@@ -217,7 +221,13 @@ class _TracingGoalVerifier:
     def verify(self, program: str) -> VerifyOutcome:
         if program in self._unavailable:
             return VerifyOutcome(VerifyStatus.UNAVAILABLE, detail="fixture_unavailable")
-        overall = "ACCEPT" if program in self._accept else "REJECT"
+        overall = (
+            "UNAVAILABLE"
+            if self._unknown_atoms
+            else "ACCEPT"
+            if program in self._accept
+            else "REJECT"
+        )
         evidence = GoalTerminalEvidenceV1(
             profile_digest=self._profile_digest,
             program_digest=_program_digest(program),
@@ -230,7 +240,7 @@ class _TracingGoalVerifier:
             required_gate_results=(GoalGateResultV1(gate_id="G0", status="ACCEPT"),),
             mandatory_unknown_atoms=self._unknown_atoms,
             mandatory_failure_atoms=self._failure_atoms,
-            structural_status="ACCEPT" if overall == "ACCEPT" else "REJECT",
+            structural_status="REJECT" if overall == "REJECT" else "ACCEPT",
             overall_status=overall,
         )
         payload = evidence.to_dict(include_digest=True)
@@ -238,7 +248,9 @@ class _TracingGoalVerifier:
         self._trace.append(bound)
         digest = bound.evidence_digest or bound.compute_digest()
         detail = f"overall={overall};reason=fixture;evidence={digest}"
-        if program in self._accept:
+        if overall == "UNAVAILABLE":
+            return VerifyOutcome(VerifyStatus.UNAVAILABLE, detail=detail)
+        if overall == "ACCEPT":
             return VerifyOutcome(VerifyStatus.ACCEPT, detail=detail)
         return VerifyOutcome(VerifyStatus.REJECT, detail=detail)
 
@@ -522,6 +534,23 @@ def test_domain_inadequate_under_bounds_with_obstruction_summary():
     assert report.obstruction_summary is not None
     assert report.obstruction_summary.obstruction_core_digests
     assert all(item.obstruction_core_digest for item in evidence if item.partition == "unsupported")
+
+
+def test_domain_inadequate_dead_branches_need_no_obstruction_core() -> None:
+    expander, provider = _provider(set(), tree=_DEAD_TREE)
+    report, evidence = analyze_goal_domain(
+        state=expander.root_state(),
+        hole_id=_hole(expander),
+        selected_action=_selected(expander, "a"),
+        provider=provider,
+        exact_action_cap=10,
+    )
+
+    assert report.classification == "domain_inadequate_under_bounds"
+    assert len(report.partitions.unsupported) == 2
+    assert report.obstruction_summary is None
+    assert all(item.replay_ok for item in evidence)
+    assert all(item.obstruction_core_digest is None for item in evidence)
 
 
 def test_partial_domain_cannot_claim_inadequacy() -> None:

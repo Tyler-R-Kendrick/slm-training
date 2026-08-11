@@ -118,6 +118,8 @@ class GoalActionEvidenceV1(_StrictModel):
     def from_dict(cls, value: dict[str, Any]) -> "GoalActionEvidenceV1":
         if str(value.get("schema_version")) != GOAL_ACTION_EVIDENCE_SCHEMA_VERSION:
             raise ValueError("unsupported GoalActionEvidenceV1 version")
+        if not value.get("evidence_digest"):
+            raise ValueError("persisted GoalActionEvidenceV1 requires evidence_digest")
         return cls.model_validate(value)
 
 
@@ -243,10 +245,6 @@ class GoalDomainAdequacyReportV1(_StrictModel):
             if self.domain_coverage != "complete":
                 raise ValueError(
                     "domain_inadequate_under_bounds requires complete domain coverage"
-                )
-            if self.obstruction_summary is None:
-                raise ValueError(
-                    "domain_inadequate_under_bounds requires obstruction_summary"
                 )
         return self
 
@@ -404,7 +402,6 @@ def _classify_domain_adequacy(
         and hard_profile
         and not cap_applied
         and domain_complete
-        and obstruction_summary is not None
     ):
         return "domain_inadequate_under_bounds"
     return "coverage_unknown"

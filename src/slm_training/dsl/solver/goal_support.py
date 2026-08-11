@@ -149,8 +149,6 @@ def redact_bounded_string(text: str) -> str:
     """Strip secret-shaped substrings and bound length for terminal evidence."""
     if not text:
         return text
-    if len(text) == 64 and all(char in "0123456789abcdef" for char in text):
-        return text
     if text.startswith("[REDACTED:") and text.endswith("]"):
         return text
     scrubbed = text
@@ -672,15 +670,33 @@ class GoalTerminalEvidenceV1(_StrictModel):
 def redact_terminal_evidence_dict(payload: dict[str, Any]) -> dict[str, Any]:
     """Recursively redact string leaves and reject forbidden persistence keys."""
 
-    def _walk(value: Any, *, path: str) -> Any:
+    def _walk(value: Any, *, path: str, digest_field: bool = False) -> Any:
         if isinstance(value, dict):
             for key in value:
                 if key in _FORBIDDEN_EVIDENCE_FIELD_NAMES:
                     raise ValueError(f"forbidden terminal-evidence field at {path}.{key}")
-            return {key: _walk(item, path=f"{path}.{key}") for key, item in value.items()}
+            return {
+                key: _walk(
+                    item,
+                    path=f"{path}.{key}",
+                    digest_field=(
+                        key == "digest"
+                        or key.endswith("_digest")
+                        or key.endswith("_digests")
+                    ),
+                )
+                for key, item in value.items()
+            }
         if isinstance(value, list):
-            return [_walk(item, path=f"{path}[{index}]") for index, item in enumerate(value)]
+            return [
+                _walk(item, path=f"{path}[{index}]", digest_field=digest_field)
+                for index, item in enumerate(value)
+            ]
         if isinstance(value, str):
+            if digest_field and len(value) == 64 and all(
+                char in "0123456789abcdef" for char in value
+            ):
+                return value
             return redact_bounded_string(value)
         return value
 
@@ -736,13 +752,14 @@ def exact_goal_closure_authority_table() -> dict[str, Any]:
     return {
         "accepted": {
             "mode": "production_exact",
-            "authority_tiers": sorted(_HARD_AUTHORITIES),
+            "authority_tiers": ["compiler-hard"],
         },
         "rejected_modes": sorted(
             mode for mode in _MODE_ALLOWED_AUTHORITY if mode != "production_exact"
         ),
         "rejected_authority_tiers": sorted(
             tier for tier in (
+                "verifier-hard",
                 *_EVALUATION_AUTHORITIES,
                 *_ADVISORY_AUTHORITIES,
             )
@@ -927,6 +944,7 @@ class GoalSupportProvider:
         self._verifier_factory = verifier_factory
         self._profile_digest = profile.digest or profile.compute_digest()
         self._verifier_instances: list[Verifier] = []
+        self._certificates: dict[str, SupportCertificate] = {}
         self._sidecars: dict[str, GoalSupportResultV1] = {}
         self._obstruction_cores: dict[str, Any] = {}
 
@@ -990,6 +1008,7 @@ class GoalSupportProvider:
             raise ValueError("sidecar base_certificate_digest drift")
         if sidecar.base_verdict != result.verdict.value:
             raise ValueError("sidecar base_verdict drift")
+        self._certificates[result.certificate.digest] = result.certificate
         previous = self._sidecars.get(result.certificate.digest)
         if previous is not None and previous.digest != sidecar.digest:
             raise ValueError("same base certificate produced conflicting goal sidecars")
@@ -1036,6 +1055,12 @@ class GoalSupportProvider:
             return self._sidecars[base_certificate_digest]
         except KeyError as exc:
             raise LookupError("no goal sidecar for base certificate") from exc
+
+    def certificate(self, base_certificate_digest: str) -> SupportCertificate:
+        try:
+            return self._certificates[base_certificate_digest]
+        except KeyError as exc:
+            raise LookupError("no base certificate for goal sidecar") from exc
 
     def obstruction_core(self, base_certificate_digest: str) -> Any | None:
         return self._obstruction_cores.get(base_certificate_digest)
@@ -1135,9 +1160,10 @@ def exact_goal_closure(
         raise ValueError(
             f"exact_goal_closure rejects non-production profile mode {profile.mode!r}"
         )
-    if profile.authority_tier not in _HARD_AUTHORITIES:
+    if profile.authority_tier != "compiler-hard":
         raise ValueError(
-            f"exact_goal_closure rejects non-hard authority tier {profile.authority_tier!r}"
+            "exact_goal_closure requires compiler-hard authority; "
+            f"got {profile.authority_tier!r}"
         )
     provider.validate_identities(state)
 

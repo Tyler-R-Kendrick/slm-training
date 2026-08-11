@@ -156,14 +156,12 @@ def test_stale_report_digest_fails():
 
 
 def test_evidence_partition_mismatch_fails():
-    state, report, evidence, binding = _probe_bundle(accept={"ax", "by"})
+    _state, _report, evidence, _binding = _probe_bundle(accept={"ax", "by"})
     row = evidence[0]
-    tampered_row = GoalActionEvidenceV1.from_dict(
-        {**row.to_dict(include_digest=False), "partition": "unknown"}
-    )
-    bad = (tampered_row, *evidence[1:])
-    with pytest.raises(ValueError, match="partition"):
-        _materialize(state, report, bad, binding)
+    with pytest.raises(ValueError, match="evidence_digest"):
+        GoalActionEvidenceV1.from_dict(
+            {**row.to_dict(include_digest=True), "partition": "unknown"}
+        )
 
 
 def test_evaluation_oracle_requires_diagnostic_permission():

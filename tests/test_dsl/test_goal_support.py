@@ -372,10 +372,19 @@ def test_exact_goal_closure_rejects_advisory_profile():
         exact_goal_closure(expander.root_state(), provider)
 
 
+def test_exact_goal_closure_rejects_verifier_hard_profile():
+    profile = _profile(authority_tier="verifier-hard")
+    expander, provider = _provider({"ax"}, profile=profile)
+    with pytest.raises(ValueError, match="requires compiler-hard authority"):
+        exact_goal_closure(expander.root_state(), provider)
+
+
 def test_exact_goal_closure_authority_table():
     table = exact_goal_closure_authority_table()
     assert table["accepted"]["mode"] == "production_exact"
+    assert table["accepted"]["authority_tiers"] == ["compiler-hard"]
     assert "evaluation_oracle" in table["rejected_modes"]
+    assert "verifier-hard" in table["rejected_authority_tiers"]
     assert "advisory-learned" in table["rejected_authority_tiers"]
 
 

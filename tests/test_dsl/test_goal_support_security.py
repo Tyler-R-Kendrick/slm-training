@@ -300,6 +300,21 @@ def test_terminal_serialization_does_not_retain_long_opaque_prefix() -> None:
     assert opaque not in wire
 
 
+def test_terminal_serialization_redacts_hex_secret_outside_digest_fields() -> None:
+    secret = "a" * 64
+    evidence = _terminal(
+        required_gate_results=(
+            GoalGateResultV1(gate_id="G0", status="REJECT", reason_code=secret),
+        ),
+        overall_status="REJECT",
+        structural_status="REJECT",
+    )
+
+    wire = json.dumps(evidence.to_dict())
+    assert secret not in wire
+    assert evidence.profile_digest in wire
+
+
 def test_terminal_digest_is_invariant_to_evidence_order() -> None:
     forward = _terminal(
         required_gate_results=(

@@ -183,7 +183,7 @@ class _GoalTraceVerifier:
 
 
 def _goal_provider_for_forest(
-    forest: CompletionForest, prefix: list[int]
+    forest: CompletionForest, prefix: list[int], *, all_unsupported: bool = False
 ) -> tuple[FiniteDomainState, GoalSupportProvider]:
     pack_identity = PackIdentityV1(
         pack_id="openui",
@@ -239,7 +239,7 @@ def _goal_provider_for_forest(
     expander = _TerminalExpander(
         state,
         {
-            values[0]: "goal-satisfying",
+            values[0]: "goal-violating" if all_unsupported else "goal-satisfying",
             values[1]: "goal-violating",
         },
     )
@@ -475,3 +475,42 @@ def test_goal_certified_singleton_uses_existing_zero_forward_path(monkeypatch) -
     assert len(certificate_store) == 2
     assert proves_zero_neural_work(stats)
     assert stats.semantic_singleton_bypasses == 1
+
+
+def test_certified_inadequacy_records_obstruction_cores() -> None:
+    from slm_training.dsl.solver.decode import goal_support_prune
+    from slm_training.models.decode_stats import collect_decode_stats
+
+    forest = CompletionForest(
+        (
+            CompletionPath((10,), "first"),
+            CompletionPath((20,), "second"),
+        ),
+        "complete",
+    )
+    prefix = [1]
+    state, provider = _goal_provider_for_forest(
+        forest, prefix, all_unsupported=True
+    )
+    certificate_store: dict = {}
+
+    with collect_decode_stats() as stats:
+        pruned, result = goal_support_prune(
+            forest,
+            prefix,
+            provider,
+            mode="certified",
+            pack_id="openui",
+            constraint_version="goal/v1",
+            bounds=state.bounds,
+            state=state,
+            certificate_store=certificate_store,
+        )
+        stats.goal_support_obstruction_cores += sum(
+            provider.goal_result(digest).obstruction_core_digest is not None
+            for digest in certificate_store
+        )
+
+    assert not pruned.paths
+    assert result is not None and result.state.is_bottom
+    assert stats.goal_support_obstruction_cores == 2

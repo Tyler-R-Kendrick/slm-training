@@ -252,10 +252,42 @@ def test_run_goal_support_probe_is_resumable_via_cache():
     first_report, first_evidence = run_goal_support_probe(inputs, cache=cache)
     assert cache
     second_report, second_evidence = run_goal_support_probe(inputs, cache=cache)
-    assert first_report.report_digest == second_report.report_digest
+    assert first_report.partitions == second_report.partitions
+    assert second_report.stats.verifier_calls > 0
     assert [item.evidence_digest for item in first_evidence] == [
         item.evidence_digest for item in second_evidence
     ]
+
+
+def test_wrong_key_cache_row_is_replayed_and_replaced() -> None:
+    inputs = _inputs(accept={"ax"}, selected_letter="a", cap=10)
+    cache: dict[str, GoalActionEvidenceV1] = {}
+    first_report, _ = run_goal_support_probe(inputs, cache=cache)
+    keys = sorted(cache)
+    assert len(keys) == 2
+    cache[keys[0]], cache[keys[1]] = cache[keys[1]], cache[keys[0]]
+
+    second_report, _ = run_goal_support_probe(inputs, cache=cache)
+
+    assert second_report.partitions == first_report.partitions
+    assert second_report.classification == "domain_adequate_selected_supported"
+
+
+def test_cross_provider_cached_unsupported_rows_cannot_label() -> None:
+    stale_inputs = _inputs(
+        accept=set(), tree=_INADEQUATE_TREE, selected_letter="a", cap=10
+    )
+    cache: dict[str, GoalActionEvidenceV1] = {}
+    stale_report, _ = run_goal_support_probe(stale_inputs, cache=cache)
+    assert len(stale_report.partitions.unsupported) == stale_report.stats.action_count
+
+    live_inputs = _inputs(
+        accept={"a"}, tree=_INADEQUATE_TREE, selected_letter="a", cap=10
+    )
+    live_report, _ = run_goal_support_probe(live_inputs, cache=cache)
+
+    assert live_report.partitions.supported
+    assert live_report.classification == "domain_adequate_selected_supported"
 
 
 def test_selection_regret_classification():

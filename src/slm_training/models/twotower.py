@@ -11841,7 +11841,7 @@ class TwoTowerModel(nn.Module):
                     stats.goal_support_coverage_unknown += 1
                 if hasattr(provider, "goal_result"):
                     stats.goal_support_obstruction_cores += sum(
-                        provider.goal_result(digest).obstruction_core is not None
+                        provider.goal_result(digest).obstruction_core_digest is not None
                         for digest in certificate_store
                     )
             if goal_mode != "off":
