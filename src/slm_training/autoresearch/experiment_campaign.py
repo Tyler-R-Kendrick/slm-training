@@ -10,6 +10,10 @@ from typing import Any, Literal, Sequence
 
 from pydantic import Field, StrictInt, field_validator, model_validator
 
+from slm_training.autoresearch.campaign_formal_evidence import (
+    CampaignFormalEmpiricalSplitV1,
+    validate_formal_empirical_separation,
+)
 from slm_training.autoresearch.schemas import (
     CampaignBudget,
     FormalObligationV1,
@@ -427,6 +431,10 @@ class CampaignResultV1(StrictModel):
     artifacts: tuple[CampaignArtifactV1, ...] = ()
     exploratory: bool = False
     ship_gates_passed: bool = False
+    # INTEG-03 (SLM-556): optional formal↔empirical linkage. Absent on
+    # historical results; never enters ExperimentCampaignV1 lock digests.
+    # Formal status cannot authorize ship/promotion by itself.
+    formal_empirical: CampaignFormalEmpiricalSplitV1 | None = None
 
 
 class HolmResultV1(StrictModel):
@@ -568,6 +576,18 @@ def validate_result_claim(
         )
         if not climb.eligible:
             failures.extend(f"climb:{f}" for f in climb.failures)
+    # INTEG-03: formal/empirical separation applies to every claim class that
+    # carries the optional split (including fixture/wiring diagnostics).
+    if result.formal_empirical is not None:
+        failures.extend(
+            validate_formal_empirical_separation(
+                formal_status=result.formal_empirical.formal_status,
+                empirical_status=result.formal_empirical.empirical_status,
+                ship_gates_passed=result.ship_gates_passed,
+                claim_class=result.claim_class,
+                exploratory=result.exploratory,
+            )
+        )
     if result.claim_class not in {"promotion_candidate", "ship_gate"}:
         return tuple(failures)
     if not result.locked_eval_manifest_sha256:

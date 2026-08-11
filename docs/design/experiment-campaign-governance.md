@@ -156,3 +156,11 @@ claim. Machine-readable and rendered evidence remain in
 [`iter-slm183-power-protocol-20260720.json`](iter-slm183-power-protocol-20260720.json)
 and
 [`iter-slm183-power-protocol-20260720.md`](iter-slm183-power-protocol-20260720.md).
+
+## INTEG-03 formal/empirical evidence refs (SLM-556)
+
+Optional ``CampaignResultV1.formal_empirical`` links FormalAuthorityV2, four-axis
+ledgers, and revmath report/result digests without changing lock digests or
+empirical promotion semantics. See
+[`integ-03-campaign-formal-evidence.md`](integ-03-campaign-formal-evidence.md).
+
