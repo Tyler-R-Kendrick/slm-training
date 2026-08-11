@@ -205,6 +205,42 @@ Prune law: `may_prune=True` requires hard authority + EXACT + source ∈
 | May authorize pruning | **True** | False | False |
 | Unresolved hard ambiguity forbidden | **True** | False | False |
 
+## Persisted schemas and invalidation
+
+All persisted contracts are exact-version only; there is no implicit migration
+or permissive compatibility path.
+
+| Contract | Accepted schema version |
+| --- | --- |
+| `GoalConstraintV1` | `goal_constraint/v1` |
+| `CompiledGoalConstraintSetV1` | `compiled_goal_constraint_set/v1` |
+| `GoalConstraintEvaluationV1` | `goal_constraint_evaluation/v1` |
+| `GoalVerifierProfileV1` | `goal_verifier_profile/v1` |
+| `GoalTerminalEvidenceV1` | `goal_terminal_evidence/v1` |
+| `GoalSupportResultV1` | `goal_support_result/v1` |
+| `GoalActionEvidenceV1` | `goal_action_evidence/v1` |
+| `DomainObstructionCoreV1` | `domain_obstruction_core/v1` |
+| `GoalDomainAdequacyReportV1` | `goal_domain_adequacy_report/v1` |
+
+An unknown version, unknown field, digest mismatch, or identity mismatch is
+rejected; old records must be replayed and re-emitted under the new pinned
+profile rather than silently upgraded.
+
+Generated strict schemas are under `src/slm_training/resources/`:
+
+- `compiled_goal_constraint_set.schema.json`;
+- `goal_verifier_profile.schema.json`;
+- `goal_terminal_evidence.schema.json`;
+- `goal_support_result.schema.json`;
+- `goal_action_evidence.schema.json`;
+- `domain_obstruction_core.schema.json`;
+- `goal_domain_adequacy_report.schema.json`.
+
+Digests bind the problem/request, constraint payload, pack/contract/grammar/
+tokenizer/canonicalizer identities, required gate/evaluator/metric identities,
+solver bounds, and implementation/schema versions. Any change prevents stale
+cache or replay reuse.
+
 ### C. Operation permissions (closed)
 
 Legend: ✅ allowed · ⚠ diagnostic only · ❌ forbidden · — not applicable
