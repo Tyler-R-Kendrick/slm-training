@@ -229,6 +229,29 @@ _LEAN_CLAIM_CATALOG: dict[str, dict[str, Any]] = {
         "tier": "production_core",
         "laws": ["certified_live_singleton_no_learned_choice"],
     },
+    "Judgment.timeout_never_refuted": {
+        "module": "LeverProofLean.Judgment",
+        "tier": "production_core",
+        "laws": ["timeout_never_refuted", "skipped_replay_never_refuted"],
+    },
+    "Judgment.authorizes_semantic_only_when_checked": {
+        "module": "LeverProofLean.Judgment",
+        "tier": "production_core",
+        "laws": [
+            "invalid_never_authorizes",
+            "unknown_never_authorizes",
+            "unchecked_never_authorizes",
+        ],
+    },
+    "Judgment.failure_flags_never_authorize_removal": {
+        "module": "LeverProofLean.Judgment",
+        "tier": "production_core",
+        "laws": [
+            "timeout_never_authorizes_removal",
+            "skipped_replay_never_authorizes_removal",
+            "exact_closure_unknown_never_authorizes_removal",
+        ],
+    },
 }
 
 

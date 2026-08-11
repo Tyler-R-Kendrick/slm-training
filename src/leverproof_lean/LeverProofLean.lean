@@ -17,3 +17,4 @@ import LeverProofLean.ConstrainedDiffusion
 -- Advisory residual plane (SFF scorer control + factor membership)
 import LeverProofLean.AdvisoryResidual
 import LeverProofLean.GoalSupport
+import LeverProofLean.Judgment
