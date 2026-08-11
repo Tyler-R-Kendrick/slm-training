@@ -12,9 +12,10 @@
   ],
   "components": {
     "formal.leverproof": {
-      "version": "v22",
+      "version": "v23",
       "kind": "harness",
       "paths": [
+        "src/leverproof_lean/LeverProofLean/VerifiedEncoding.lean",
         "src/leverproof_lean/",
         "scripts/leverproof_metrics.py",
         "docs/design/leverproof-integration.md",
@@ -41,6 +42,11 @@
         "docs/design/kern-08-mechanism-trigger-no-effect.md"
       ],
       "history": [
+        {
+          "version": "v23",
+          "date": "2026-08-11",
+          "note": "EVID-10 (SLM-553): VerifiedEncoding sat_encode_iff_satisfies + unsupported-feature/mutation fixtures for encoding bridge."
+        },
         {
           "version": "v22",
           "date": "2026-08-11",
@@ -17535,9 +17541,12 @@
       ]
     },
     "formal.objects": {
-      "version": "v16",
+      "version": "v17",
       "kind": "harness",
       "paths": [
+        "tests/test_formal/test_encoding_adapter.py",
+        "src/slm_training/resources/formal/encoding_adapter_fixtures.v1.json",
+        "src/slm_training/formal/encoding_adapter.py",
         "tests/test_formal/test_theorem_binding.py",
         "src/slm_training/formal/theorem_binding.py",
         "src/slm_training/formal/authority.py",
@@ -17571,6 +17580,11 @@
         "src/slm_training/resources/formal/goal_support_golden_cases.v1.json"
       ],
       "history": [
+        {
+          "version": "v17",
+          "date": "2026-08-11",
+          "note": "EVID-10 (SLM-553): verified encoding adapters bridge checked certificates to original problem semantics; unsupported features fail closed; mutation suite."
+        },
         {
           "version": "v16",
           "date": "2026-08-11",

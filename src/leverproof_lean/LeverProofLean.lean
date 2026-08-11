@@ -23,3 +23,4 @@ import LeverProofLean.ConstrainedDiffusion
 import LeverProofLean.AdvisoryResidual
 import LeverProofLean.GoalSupport
 import LeverProofLean.Judgment
+import LeverProofLean.VerifiedEncoding
