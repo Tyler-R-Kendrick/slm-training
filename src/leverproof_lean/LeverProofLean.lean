@@ -11,6 +11,7 @@ import LeverProofLean.Trace
 import LeverProofLean.StructuralMetrics
 import LeverProofLean.CompleteDomain
 import LeverProofLean.FiniteSearchBounds
+import LeverProofLean.BlackBoxUnsupportedLowerBound
 import LeverProofLean.ExactClosure
 import LeverProofLean.DecodeInvariants
 import LeverProofLean.EcosystemTier

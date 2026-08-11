@@ -1,0 +1,73 @@
+{
+  "schema": "black_box_unsupported_fixtures/v1",
+  "cost_model": "BlackBoxVerifierQueryModel",
+  "bound_ast_id": "bound.black_box.unsupported_query_lower.v1",
+  "wall_clock_claim": false,
+  "universal_solver_claim": false,
+  "cases": [
+    {
+      "id": "P0_empty",
+      "domain_sizes": null,
+      "P": 0,
+      "lower_bound": 0,
+      "exhaustive_ok": true,
+      "partial_subsets_checked": 0,
+      "u64_overflow": "fits_u64"
+    },
+    {
+      "id": "P1_singleton",
+      "domain_sizes": null,
+      "P": 1,
+      "lower_bound": 1,
+      "exhaustive_ok": true,
+      "partial_subsets_checked": 1,
+      "u64_overflow": "fits_u64"
+    },
+    {
+      "id": "P2_pair",
+      "domain_sizes": null,
+      "P": 2,
+      "lower_bound": 2,
+      "exhaustive_ok": true,
+      "partial_subsets_checked": 3,
+      "u64_overflow": "fits_u64"
+    },
+    {
+      "id": "P3_triple",
+      "domain_sizes": null,
+      "P": 3,
+      "lower_bound": 3,
+      "exhaustive_ok": true,
+      "partial_subsets_checked": 7,
+      "u64_overflow": "fits_u64"
+    },
+    {
+      "id": "P4_exhaustive",
+      "domain_sizes": null,
+      "P": 4,
+      "lower_bound": 4,
+      "exhaustive_ok": true,
+      "partial_subsets_checked": 15,
+      "u64_overflow": "fits_u64"
+    },
+    {
+      "id": "sizes_2x3",
+      "domain_sizes": [
+        2,
+        3
+      ],
+      "P": 6,
+      "lower_bound": 6,
+      "exhaustive_ok": true,
+      "u64_overflow": "fits_u64"
+    },
+    {
+      "id": "sizes_empty_holes",
+      "domain_sizes": [],
+      "P": 1,
+      "lower_bound": 1,
+      "exhaustive_ok": true,
+      "u64_overflow": "fits_u64"
+    }
+  ]
+}

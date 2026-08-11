@@ -246,7 +246,7 @@ Migration: `migrate_formal_preflight_v1` / `formal_preflight_payload` / `formal_
 | Module / artifact | Role |
 | --- | --- |
 | [`formal/bound_ast.py`](../../src/slm_training/formal/bound_ast.py) | Typed AST (`ConstInt`/`ConstRat`/`Var`/`Add`/`Mul`/`Max`/`Min`/`Div`/`Floor`/`Ceil`/`SumOver`/`ProdOver`/`PrefixCumprodSum`/`Len` + `Le`/`Lt`/`Eq`), exact `Fraction` evaluator, pretty printer, canonical digest |
-| `resources/formal/bound_ast_registry.v1.json` | Registered `bound.*` documents with digests; KERN-03 prefix-tree id resolves here |
+| `resources/formal/bound_ast_registry.v1.json` | Registered `bound.*` documents with digests; KERN-03 prefix-tree and KERN-04 black-box lower-bound ids resolve here |
 | `resources/formal/bound_ast_parity_fixtures.v1.json` | Lean↔Python parity cases for search/closure/cost bounds |
 
 Fail closed: no `eval`/`exec`, unknown variables, division by zero, code-like payloads, or unregistered `bound_ast_id` on proved/refuted resource-bounds axes.

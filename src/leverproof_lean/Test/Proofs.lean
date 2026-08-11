@@ -66,6 +66,10 @@ open LeverProofLean
 #print axioms FiniteSearchBounds.fixture_two_three_assignment_count
 #print axioms FiniteSearchBounds.fixture_empty_holes
 #print axioms FiniteSearchBounds.fixture_zero_domain
+#print axioms BlackBoxUnsupportedLowerBound.black_box_unsupported_query_lower_bound
+#print axioms BlackBoxUnsupportedLowerBound.early_stop_distinguishes
+#print axioms BlackBoxUnsupportedLowerBound.worst_case_bound_eq_P
+#print axioms BlackBoxUnsupportedLowerBound.fixture_two_three_P
 #print axioms DecodeInvariants.singleton_bypasses_ranker
 #print axioms DecodeInvariants.forged_coverage_complete_never_bypasses
 #print axioms DecodeInvariants.coverage_complete_flag_not_singleton
@@ -270,3 +274,9 @@ open LeverProofLean
 #guard FiniteSearchBounds.completeAssignmentCount ([] : List Nat) = 1
 #guard FiniteSearchBounds.prefixTreeNodeBound ([] : List Nat) = 1
 #guard FiniteSearchBounds.completeAssignmentCount [2, 0, 4] = 0
+
+-- Black-box UNSUPPORTED lower bound (KERN-04)
+#guard (BlackBoxUnsupportedLowerBound.modelFromDomainSizes [2, 3]).assignmentCount = 6
+#guard (BlackBoxUnsupportedLowerBound.modelFromDomainSizes ([] : List Nat)).assignmentCount = 1
+#guard BlackBoxUnsupportedLowerBound.worstCaseQueryLowerBound ⟨6⟩ = 6
+#guard BlackBoxUnsupportedLowerBound.escapeLeavesBlackBox .symbolicConstraint = true
