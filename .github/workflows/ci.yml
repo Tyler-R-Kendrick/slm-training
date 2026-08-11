@@ -222,6 +222,10 @@ jobs:
         # this gate fails closed on drift so it can never silently rot. Rebuild
         # with `python -m scripts.build_evidence_ledger --write`.
         run: python -m scripts.build_evidence_ledger --check
+      - name: Certify INTEG-06 adversarial end-to-end acceptance
+        run: PYTHONPATH=src python -m scripts.verify_integ06_adversarial_acceptance --check
+      - name: Certify INTEG-07 activation-preflight recall
+        run: PYTHONPATH=src python -m scripts.verify_integ07_activation_preflight --check
 
   lean-formal:
     runs-on: ubuntu-latest

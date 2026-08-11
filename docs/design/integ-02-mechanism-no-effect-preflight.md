@@ -50,5 +50,9 @@ not rewritten — admission only decides spend vs skip.
 
 ## Related
 
+Activation-preflight recall + false-skip gate (100% known-activating recall
+before beyond-fixture skips):
+[`integ-07-activation-preflight-recall.md`](integ-07-activation-preflight-recall.md).
+
 Corpus-local dominance skip evidence (same output and not cheaper):
 [`integ-08-corpus-local-dominance.md`](integ-08-corpus-local-dominance.md).
