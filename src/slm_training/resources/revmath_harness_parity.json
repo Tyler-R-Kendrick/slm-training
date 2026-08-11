@@ -196,6 +196,14 @@
       "notes": "VerifierWitnessV1."
     },
     {
+      "id": "evidence.revmath_failure_witness",
+      "category": "evidence",
+      "required_owner": "src/slm_training/harnesses/reasoning/revmath/failure_witness.py",
+      "status": "present",
+      "blocker_issue": null,
+      "notes": "INTEG-05 / SLM-571: revmath failure classes adapt into VerifierWitnessV1; HARN-09 before/after refs feed mechanism disposition."
+    },
+    {
       "id": "evidence.mechanism_disposition",
       "category": "evidence",
       "required_owner": "src/slm_training/harnesses/experiments/mechanism_disposition_report.py",

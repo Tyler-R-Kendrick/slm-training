@@ -501,6 +501,22 @@
       "notes": "HARN-09 proposition-preserving self-healing controller; mutable knobs only; immutable attempt lineage; extends SemanticRepairRecordV1 lineage without forking distill repair."
     },
     {
+      "id": "revmath_failure_witness",
+      "kind": "witness_adapter",
+      "owner_module": "src/slm_training/harnesses/reasoning/revmath/failure_witness.py",
+      "owner_symbols": [
+        "RevmathFailureClass",
+        "RevmathFailureEvidenceV1",
+        "route_revmath_failure",
+        "feed_repair_session_to_disposition",
+        "build_revmath_verifier_witness",
+        "bounded_repair_actions_for"
+      ],
+      "design_doc": "docs/design/reverse-mathematics-computability.md",
+      "ownership_map_subsystem": "semantic_failure_taxonomy",
+      "notes": "INTEG-05 adapter: route revmath failures/repairs through VerifierWitnessV1 + mechanism disposition; no parallel failure store."
+    },
+    {
       "id": "revmath_fixture_corpus",
       "kind": "resource",
       "owner_module": "src/slm_training/harnesses/reasoning/revmath/corpus.py",
@@ -676,6 +692,14 @@
       "extends": "revmath_plugins",
       "new_owner_justified": true,
       "justification": "Frozen fixture corpus under harnesses/reasoning/revmath/corpus.py + resources/revmath/corpus/; assembles existing hermetic fixtures into a content-addressed manifest without forking plugins, campaigns, or evidence stores."
+    },
+    {
+      "issue": "INTEG-05",
+      "linear_id": "SLM-571",
+      "extends": "verifier_witness",
+      "new_owner_justified": true,
+      "justification": "Adapter module under revmath/ localizes failures into evals.semantic_failure.VerifierWitnessV1 and feeds HARN-09 before/after refs into mechanism_disposition; does not fork a failure store.",
+      "status": "done"
     }
   ],
   "prohibited_duplicate_risks": [

@@ -406,6 +406,46 @@ def witness_integrity_ok(witness: VerifierWitnessV1) -> bool:
     return _witness_digest(witness) == witness.witness_digest
 
 
+def seal_verifier_witness(
+    *,
+    source_trace_fingerprint: str,
+    taxonomy_version: str,
+    evaluator_version: str,
+    evaluator_hash: str,
+    first_failed_gate: str | None,
+    localizations: tuple[VerifierLocalizationV1, ...] | list[VerifierLocalizationV1],
+    unresolved_localizations: tuple[str, ...] | list[str],
+    schema_version: str = WITNESS_SCHEMA_VERSION,
+) -> VerifierWitnessV1:
+    """Seal a typed witness with a tamper-evident digest (adapter entrypoint).
+
+    Does not score anything: adapters (OpenUI trace re-localization, revmath
+    failure routing) supply already-derived localizations; this only freezes
+    them under ``witness_digest``. Rejects unknown schema versions rather than
+    silently widening the contract.
+    """
+    if schema_version != WITNESS_SCHEMA_VERSION:
+        raise ValueError(f"unsupported verifier witness schema: {schema_version!r}")
+    for item in localizations:
+        if item.completeness_class not in _LOCALIZATION_COMPLETENESS_CLASSES:
+            raise ValueError(
+                "unsupported verifier localization completeness_class: "
+                f"{item.completeness_class!r}"
+            )
+    witness = VerifierWitnessV1(
+        schema_version=schema_version,
+        source_trace_fingerprint=source_trace_fingerprint,
+        taxonomy_version=taxonomy_version,
+        evaluator_version=evaluator_version,
+        evaluator_hash=evaluator_hash,
+        first_failed_gate=first_failed_gate,
+        localizations=tuple(localizations),
+        unresolved_localizations=tuple(dict.fromkeys(unresolved_localizations)),
+        witness_digest="",
+    )
+    return replace(witness, witness_digest=_witness_digest(witness))
+
+
 def build_verifier_witness(trace: SemanticFailureTraceV1) -> VerifierWitnessV1:
     """Losslessly re-localize an existing trace's evidence into typed witnesses.
 
@@ -477,8 +517,7 @@ def build_verifier_witness(trace: SemanticFailureTraceV1) -> VerifierWitnessV1:
                 )
             )
 
-    witness = VerifierWitnessV1(
-        schema_version=WITNESS_SCHEMA_VERSION,
+    return seal_verifier_witness(
         source_trace_fingerprint=trace.trace_fingerprint,
         taxonomy_version=trace.taxonomy_version,
         evaluator_version=trace.evaluator_version,
@@ -486,6 +525,4 @@ def build_verifier_witness(trace: SemanticFailureTraceV1) -> VerifierWitnessV1:
         first_failed_gate=trace.first_failed_gate,
         localizations=tuple(localizations),
         unresolved_localizations=tuple(dict.fromkeys(unresolved)),
-        witness_digest="",
     )
-    return replace(witness, witness_digest=_witness_digest(witness))

@@ -9,7 +9,7 @@ Native reason codes, source evidence, and every gate outcome remain in each
 ## Typed verifier witnesses (VCE-001)
 
 `build_verifier_witness(trace)` (`src/slm_training/evals/semantic_failure.py`)
-re-localizes an existing `SemanticFailureTraceV1` into a `VerifierWitnessV1`:
+re-localizes an existing `SemanticFailureTraceV1` into a `VerifierWitnessV1 (plus `seal_verifier_witness` adapter entrypoint used by INTEG-05 revmath routing)`:
 one `VerifierLocalizationV1` per gate outcome and per semantic-check evidence
 item, each carrying a `completeness_class` (`EXACT`/`HEURISTIC`/`UNKNOWN`), a
 redaction-safe `detail`, and (where an authority provides one) an AST

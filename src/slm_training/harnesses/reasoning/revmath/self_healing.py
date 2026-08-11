@@ -380,6 +380,14 @@ def _failure_family_from_inputs(
     witness: VerifierWitnessV1 | Mapping[str, Any] | None,
     run: RevmathRunRecord | None,
 ) -> str:
+    # Prefer INTEG-05 revmath localizations on the existing witness owner.
+    from slm_training.harnesses.reasoning.revmath.failure_witness import (
+        failure_family_from_revmath_witness,
+    )
+
+    mapped = failure_family_from_revmath_witness(witness)
+    if mapped:
+        return mapped
     if isinstance(failure, SemanticFailureTraceV1):
         fam = failure.first_failure_family
         if fam:
@@ -391,6 +399,7 @@ def _failure_family_from_inputs(
             failure.get("first_failure_family")
             or failure.get("primary_family")
             or failure.get("failure_family")
+            or failure.get("semantic_failure_family")
         )
         if fam:
             return str(fam)
