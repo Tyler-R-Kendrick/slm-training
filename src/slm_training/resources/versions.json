@@ -3357,6 +3357,11 @@
         {
           "version": "v204",
           "date": "2026-08-11",
+          "note": "no-bump: rebuild evidence_ledger.v1.json after SLM-514 (PGS-J01) proof-carrying-goal-support-disposition.{json,md} changed the deterministic scan count; saturation and retirement behavior remain v204."
+        },
+        {
+          "version": "v204",
+          "date": "2026-08-11",
           "note": "no-bump: rebuild evidence_ledger.v1.json after the proof-carrying goal-support design and fixture records changed the deterministic scan digest; campaign selection behavior is unchanged."
         },
         {

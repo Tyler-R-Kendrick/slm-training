@@ -1,0 +1,328 @@
+{
+  "schema": "proof_carrying_goal_support_disposition/v1",
+  "linear_issue": "SLM-514",
+  "parent_issue": "SLM-493",
+  "phase_id": "PGS-J01",
+  "conclusion": "sound_within_claimed_bounds",
+  "claim_class": "independent_red_team_review",
+  "promotion": false,
+  "review_commit": "dfa65fb93d0a26dfc6276587a8893b4d5b95089b",
+  "integrated_through": "PGS-I02 (SLM-513, PR #1602)",
+  "reviewer_role": "independent_adversarial_security_formal_methods",
+  "generated_at": "2026-08-11T06:45:00+00:00",
+  "disposition_digest": "e904cd15c17b47132d043df444d6d77a0dabfbd9be75f84ea1d762df7a77b851",
+  "bounded_claim": "Under default-off goal_support_mode, production_exact profile, compiler/verifier-hard prune-eligible sources only, bounded word-tree fixture evidence, and replay-valid SupportCertificate + GoalSupportResultV1 sidecars: unknown/unobserved/advisory/evaluation/oracle evidence never authorizes certified forest removal; false_hard_prune_count=0; diagnostic mode preserves forest identity; certified pruning flows through exact_goal_closure → solver_prune canonical path. Not a model-quality, ship-gate, global-UNSAT, ONNX-production, or full OpenUI semantic-completeness claim.",
+  "evidence_identities": {
+    "design_doc": "docs/design/proof-carrying-goal-support.md",
+    "proofs_doc": "docs/design/proof-carrying-goal-support-proofs.md",
+    "fixture_json": "docs/design/proof-carrying-goal-support-fixture-results.json",
+    "fixture_md": "docs/design/proof-carrying-goal-support-fixture-results.md",
+    "fixture_result_digest": "f4c1baac277fff157b9f384cd30a85d6156909e60677f0404408fa4e24945268",
+    "fixture_manifest_sha256": "3b8c082a04bab1191048dfda4587612ff3e24b01f6968fe7bf281f93c719e951",
+    "deterministic_rerun_digest_match": true,
+    "j01_rerun_out_dir": "outputs/runs/pgs_j01_rerun",
+    "implementation_version": "goal_support/v1",
+    "lean_module": "src/leverproof_lean/LeverProofLean/GoalSupport.lean",
+    "python_mapping": "src/slm_training/formal/goal_support_mapping.py"
+  },
+  "review_methods": {
+    "tests_run": [
+      "tests/test_dsl/test_goal_support_adversarial.py",
+      "tests/test_dsl/test_goal_support_decode_g03.py",
+      "tests/test_formal/test_goal_support_mapping.py",
+      "tests/test_harnesses/experiments/test_goal_support_domain_adequacy.py"
+    ],
+    "pytest_passed": 105,
+    "static_checks": [
+      "python -m scripts.repo_policy",
+      "python -m scripts.verify_decode_invariants",
+      "python -m scripts.verify_version_stamps --check",
+      "python -m scripts.verify_merge_ready --fast"
+    ],
+    "static_checks_status": "green",
+    "campaign_rerun_command": "python -m scripts.run_goal_support_domain_adequacy --mode fixture --out-dir outputs/runs/pgs_j01_rerun --docs-out outputs/runs/pgs_j01_rerun/result.json --claim-class diagnostic",
+    "campaign_rerun_false_hard_prune_count": 0,
+    "campaign_rerun_result_digest": "f4c1baac277fff157b9f384cd30a85d6156909e60677f0404408fa4e24945268",
+    "lean_rerun": "make -C src/leverproof_lean test",
+    "lean_rerun_status": "skipped_lake_unavailable",
+    "prohibited_pattern_search": "no global unsat claims in goal_support owners; no except:pass in goal_support*.py; goal_support_mode not in CONSTRAINT_WEAKENING_LEVERS"
+  },
+  "finding_ledger": [
+    {
+      "finding_id": "J01-L01",
+      "severity": "low",
+      "status": "accepted_limitation",
+      "claim_invariant_violated": "Lean structural proofs re-verified in review environment",
+      "file_symbol_line": "src/leverproof_lean/ (lake unavailable on reviewer host)",
+      "minimal_reproduction": "make -C src/leverproof_lean test → lake: No such file or directory",
+      "impact": "Formal proof replay not independently re-executed in J01 host; Python golden mapping tests (105/105 green) remain the executed correspondence guard.",
+      "required_correction": "Parent CI / developer host with lake installed retains canonical Lean test obligation.",
+      "test_strengthened": "tests/test_formal/test_goal_support_mapping.py (already present; passed)"
+    },
+    {
+      "finding_id": "J01-L02",
+      "severity": "low",
+      "status": "documented_expected",
+      "claim_invariant_violated": "certified_singleton_forward_violations=0 under all fixtures",
+      "file_symbol_line": "docs/design/proof-carrying-goal-support-fixture-results.json falsifier.certified_singleton_forward_violations=1 (bound_exhaustion fixture)",
+      "minimal_reproduction": "bound_exhaustion arm: budget:max_verifier_calls → all actions UNKNOWN → no certified removal; forwards may proceed without singleton bypass",
+      "impact": "Does not authorize false hard prune; I2 singleton bypass applies only when exactly one certified survivor remains.",
+      "required_correction": "None for soundness; successor hypothesis: tighter bound-exhaustion certified policy without weakening UNKNOWN law (documented in PGS-I01).",
+      "test_strengthened": "tests/test_harnesses/experiments/test_goal_support_domain_adequacy.py falsifier counters"
+    }
+  ],
+  "adversarial_questions": [
+    {
+      "id": "Q1",
+      "question": "Can soft/learned/evaluation/oracle evidence become compiler-hard through construction, deserialization, merge, projection, profile selection, or permissive default?",
+      "answer": "No under tested paths. Closed source_to_authority_matrix assigns prompt/oracle/advisory/evaluation tiers with may_prune=False; GoalConstraintV1 enforces may_prune law; merge_goal_constraints uses combine_authority (never escalates); validate_profile_against_constraint_set rejects eval/advisory ids in production_exact required set; exact_goal_closure rejects non-production modes.",
+      "evidence": [
+        "src/slm_training/data/semantic_plan/requirements_compile.py:source_to_authority_matrix",
+        "src/slm_training/data/progspec/goal_constraints.py:_may_prune_allowed",
+        "src/slm_training/dsl/solver/goal_support.py:exact_goal_closure",
+        "tests/test_dsl/test_goal_support_adversarial.py::test_adversarial_from_dict_cannot_launder_evaluation_into_production_profile",
+        "tests/test_dsl/test_goal_support_adversarial.py::test_authority_launder_merge_never_escalates"
+      ]
+    },
+    {
+      "id": "Q2",
+      "question": "Can ordinary free text masquerade as an exact structured goal obligation?",
+      "answer": "No for prune authority. Gate-like prompt text compiles as prompt_requirement with advisory-learned/HEURISTIC/may_prune=False; OpenUIGoalVerifier terminal evidence forbids raw prompt/source fields; redact_bounded_string strips secrets.",
+      "evidence": [
+        "tests/test_dsl/test_goal_support_adversarial.py::test_adversarial_prompt_gate_like_text_stays_advisory_not_pruning",
+        "src/slm_training/dsl/solver/openui_support.py GoalTerminalEvidenceV1 forbidden fields",
+        "fixture raw_content_redaction"
+      ]
+    },
+    {
+      "id": "Q3",
+      "question": "Can SKIP/unavailable evaluator/ambiguity/partial domain/omitted action/stale identity/timeout/exhausted bound become REJECT/UNSUPPORTED/obstruction/inadequacy/pruning authority?",
+      "answer": "No for hard prune authority. Mandatory unavailable → terminal UNAVAILABLE → coverage_unknown; partial forest → incomplete skip; budget stop → UNKNOWN + coverage_unknown; stale digests fail replay; sidecar replay failure preserves UNKNOWN (never upgrades to UNSUPPORTED).",
+      "evidence": [
+        "tests/test_dsl/test_goal_support_adversarial.py::test_adversarial_missing_mandatory_gate_yields_unavailable_not_prune",
+        "src/slm_training/dsl/solver/goal_support.py:replay_goal_support_result (UNKNOWN preserved)",
+        "fixture unknown_mandatory_evidence, partial_forest, bound_exhaustion",
+        "docs/design/proof-carrying-goal-support-fixture-results.json false_hard_prune_count=0"
+      ]
+    },
+    {
+      "id": "Q4",
+      "question": "Can unobserved actions be conflated with unknown or unsupported actions?",
+      "answer": "No. Four disjoint partitions in GoalActionPartition; cap-truncated actions → unobserved; _assign_partition and domain classifier keep buckets separate; Lean unknown_not_in_certified_removal / unobserved_not_in_certified_removal.",
+      "evidence": [
+        "src/slm_training/dsl/solver/goal_support_domain_adequacy.py:_assign_partition",
+        "fixture cap_excludes_unique_support",
+        "tests/test_formal/test_goal_support_mapping.py",
+        "src/leverproof_lean/LeverProofLean/GoalSupport.lean"
+      ]
+    },
+    {
+      "id": "Q5",
+      "question": "Does every destructive removal flow through canonical replay-valid SupportCertificate, exact_closure, and solver_prune path?",
+      "answer": "Yes. goal_support_certified_prune → _prune_with_closure(closure_fn=exact_goal_closure); exact_goal_closure wraps exact_closure after profile guard; VSS SupportCertificate remains base authority.",
+      "evidence": [
+        "src/slm_training/dsl/solver/decode.py:goal_support_certified_prune",
+        "src/slm_training/dsl/solver/goal_support.py:exact_goal_closure",
+        "tests/test_dsl/test_goal_support_decode_g03.py::test_certified_prune_uses_exact_goal_closure_not_parallel_engine"
+      ]
+    },
+    {
+      "id": "Q6",
+      "question": "Is the goal sidecar subordinate to the base certificate?",
+      "answer": "Yes. GoalSupportResultV1 keyed by base_certificate_digest; replay_goal_support_result validates base replay first; no second search engine — sidecar annotates VSS certificate only.",
+      "evidence": [
+        "src/slm_training/dsl/solver/goal_support.py:GoalSupportProvider.check_with_sidecar",
+        "tests/test_dsl/test_goal_support_adversarial.py::test_adversarial_stale_base_certificate_digest_sidecar_rejected"
+      ]
+    },
+    {
+      "id": "Q7",
+      "question": "Are cache/backend identities complete and profile-sensitive?",
+      "answer": "Yes. goal_support_backend_version(profile) differs across profiles; state fingerprint includes bounds; profile/constraint/pack digests bound in GoalVerifierProfileV1 validation.",
+      "evidence": [
+        "tests/test_dsl/test_goal_support_adversarial.py::test_adversarial_profile_sensitive_backend_version_prevents_cross_profile_cache",
+        "tests/test_dsl/test_goal_support_adversarial.py::test_adversarial_bounds_change_invalidates_cache_key",
+        "tests/test_dsl/test_goal_support_adversarial.py::test_profile_identity_tamper_rejected"
+      ]
+    },
+    {
+      "id": "Q8",
+      "question": "Is mutable verifier/terminal trace state isolated per query and replay?",
+      "answer": "Yes. GoalTerminalEvidenceTrace is query-local; GoalTerminalEvidenceV1 records are frozen/redacted; replay recomputes terminal_evidence_digests per query.",
+      "evidence": [
+        "src/slm_training/dsl/solver/openui_support.py:GoalTerminalEvidenceTrace",
+        "tests/test_dsl/test_goal_support_adversarial.py trace isolation tests"
+      ]
+    },
+    {
+      "id": "Q9",
+      "question": "Can candidate/terminal ordering change verdict, partition, core, or report identity beyond canonical serialization?",
+      "answer": "No beyond declared canonical ordering. Legal actions sorted for cap policy; permutation_invariance fixture shows stable classification; report digests bind sorted partition lists.",
+      "evidence": [
+        "fixture permutation_invariance",
+        "src/slm_training/dsl/solver/goal_support_domain_adequacy.py:legal_set_fingerprint",
+        "tests/test_dsl/test_goal_support_obstruction.py permutation tests"
+      ]
+    },
+    {
+      "id": "Q10",
+      "question": "Is every obstruction honestly a bounded domain-relative hitting set with recorded minimality mode, never global UNSAT?",
+      "answer": "Yes. DOMAIN_OBSTRUCTION_CLAIM and obstruction_core_algorithm_table forbid global UNSAT language; emission gated by obstruction_core_emission_allowed; Lean proves subset-minimal deletion only; Python sound_overapprox explicitly not subset-minimal.",
+      "evidence": [
+        "src/slm_training/dsl/solver/goal_support_obstruction.py",
+        "docs/design/proof-carrying-goal-support-proofs.md",
+        "src/slm_training/harnesses/experiments/goal_support_domain_adequacy.py prohibited terms set",
+        "fixture bounded_domain_inadequacy"
+      ]
+    },
+    {
+      "id": "Q11",
+      "question": "Does candidate addition/removal or bound/profile/evaluator change invalidate old inadequacy/obstruction evidence?",
+      "answer": "Yes via digest binding. Profile/constraint/bounds/legal-set digests in reports; stale replay fails; candidate_addition_stale_identity fixture demonstrates invalidation.",
+      "evidence": [
+        "fixture candidate_addition_stale_identity",
+        "tests/test_dsl/test_goal_support_adversarial.py::test_state_identity_mismatch_rejected",
+        "tests/test_dsl/test_goal_support_adversarial.py::test_sidecar_identity_tamper_replay_fails"
+      ]
+    },
+    {
+      "id": "Q12",
+      "question": "Can raw prompt/program/secret data leak through certificates, sidecars, terminal evidence, telemetry, or durable docs?",
+      "answer": "Not through designed fields; heuristic redaction only. Forbidden substring scan on serialized evidence; raw_content_redaction fixture passes; GoalTerminalEvidenceV1 forbids raw OpenUI/prompt/witness text.",
+      "evidence": [
+        "tests/test_dsl/test_goal_support_adversarial.py privacy/leak tests",
+        "fixture raw_content_redaction",
+        "src/slm_training/dsl/solver/goal_support.py:redact_bounded_string"
+      ]
+    },
+    {
+      "id": "Q13",
+      "question": "Is diagnostic mode exactly observational for domain, ordering, output, ranking inputs, fallback, compatibility?",
+      "answer": "Yes. goal_support_diagnostic_observe returns original forest unchanged; diagnostic_domain_digest_changes=0 in H02; default goal_support_mode=off preserves historical behavior.",
+      "evidence": [
+        "src/slm_training/dsl/solver/decode.py:goal_support_diagnostic_observe",
+        "tests/test_dsl/test_goal_support_decode_g03.py diagnostic parity tests",
+        "docs/design/proof-carrying-goal-support-fixture-results.json falsifier.diagnostic_domain_digest_changes=0"
+      ]
+    },
+    {
+      "id": "Q14",
+      "question": "Does certified mode reject non-hard profiles and incomplete forests before pruning?",
+      "answer": "Yes. exact_goal_closure rejects evaluation_oracle/advisory_diagnostic; validate_goal_support_config requires production_exact + compiler_decode_mode≠off; incomplete forest skips certified closure.",
+      "evidence": [
+        "tests/test_dsl/test_goal_support_adversarial.py::test_adversarial_evaluation_oracle_exact_goal_closure_rejected",
+        "tests/test_dsl/test_goal_support_decode_g03.py incomplete forest skip tests",
+        "src/slm_training/dsl/solver/decode.py:validate_goal_support_config"
+      ]
+    },
+    {
+      "id": "Q15",
+      "question": "Does certified singleton selection produce zero neural forwards and zero learned ranking in supported production paths?",
+      "answer": "Yes when exactly one certified survivor remains. test_certified_singleton_bypass_zero_forwards_with_spies proves forwards_count=0 with spies; certified_singleton_zero_forward fixture records forwards=0. bound_exhaustion is not a singleton case (all UNKNOWN) — documented limitation J01-L02.",
+      "evidence": [
+        "tests/test_dsl/test_goal_support_decode_g03.py::test_certified_singleton_bypass_zero_forwards_with_spies",
+        "fixture certified_singleton_zero_forward",
+        "docs/design/proof-carrying-goal-support-fixture-results.json"
+      ]
+    },
+    {
+      "id": "Q16",
+      "question": "Can certified bottom trigger unconstrained/full-vocabulary fallback?",
+      "answer": "No. goal_support_mode not in CONSTRAINT_WEAKENING_LEVERS; require_constrained_production_config unchanged; empty legal domain remains constrained dead end; certified with no survivors does not widen vocabulary.",
+      "evidence": [
+        "tests/test_dsl/test_goal_support_decode_g03.py lever/constraint tests",
+        "src/slm_training/levers.py CONSTRAINT_WEAKENING_LEVERS",
+        "scripts.verify_decode_invariants (green)"
+      ]
+    },
+    {
+      "id": "Q17",
+      "question": "Did parameter count, checkpoint keys, default config, ONNX/backend, or old serialized records change unexpectedly?",
+      "answer": "No unexpected changes detected. Historical TwoTowerConfig without goal_support fields defaults off; checkpoint round-trip drops goal_support keys to off; ModelBuildConfig factory defaults off; no new trainable params from PGS layer.",
+      "evidence": [
+        "tests/test_dsl/test_goal_support_decode_g03.py::test_historical_twotower_config_without_goal_support_fields_defaults_off",
+        "tests/test_dsl/test_goal_support_decode_g03.py::test_historical_checkpoint_dict_missing_goal_support_round_trips_off",
+        "tests/test_dsl/test_goal_support_decode_g03.py::test_model_build_config_and_factory_default_goal_support_off"
+      ]
+    },
+    {
+      "id": "Q18",
+      "question": "Are DecisionEvent objective sets trainable only under honest authority/split/lineage rules, with unknown/unobserved masked and multiple positives preserved?",
+      "answer": "Yes. materialize_goal_support maps four partitions to good/bad/ambiguous/unobserved; _goal_support_trainable gates production_exact hard evidence only; guard_goal_support_view raises on non-trainable views; evaluation/advisory forbidden without explicit allow_evaluation_diagnostic.",
+      "evidence": [
+        "src/slm_training/harnesses/preference/decision_events_v2.py:materialize_goal_support",
+        "goal_support_trainability_table in docs/design/proof-carrying-goal-support.md",
+        "tests covering materialize_goal_support in decision_events tests"
+      ]
+    },
+    {
+      "id": "Q19",
+      "question": "Are Lean statements non-vacuous, theorems real, assumptions explicit, axiom audits clean? Does prose overstate Lean?",
+      "answer": "Prose bounded correctly in proof-carrying-goal-support-proofs.md (Not proved section lists OpenUI/NL/global SAT). Python mapping golden tests pass. Lean test execution skipped on reviewer host (J01-L01); CI owns lake test.",
+      "evidence": [
+        "docs/design/proof-carrying-goal-support-proofs.md",
+        "tests/test_formal/test_goal_support_mapping.py (passed)",
+        "src/leverproof_lean/Test/Proofs.lean axiom audit reference"
+      ]
+    },
+    {
+      "id": "Q20",
+      "question": "Does the campaign compare matched domains/bounds, preserve arm isolation, rerun deterministically, label fixture evidence honestly?",
+      "answer": "Yes. Four isolated arms on same 15-fixture matrix; claim_class=diagnostic, promotion=false; deterministic_rerun digest_match=True on J01 rerun at dfa65fb; evaluation_oracle_called_certified_closure=False.",
+      "evidence": [
+        "docs/design/proof-carrying-goal-support-fixture-results.json",
+        "J01 campaign rerun result_digest match",
+        "tests/test_harnesses/experiments/test_goal_support_domain_adequacy.py"
+      ]
+    },
+    {
+      "id": "Q21",
+      "question": "Were evaluator/gate/threshold/frozen fixture/claim definitions altered to pass?",
+      "answer": "No retuning detected. pre_run_admission.preregistration_lock.evaluator_gate_threshold_fixture_changes_after_prereg=false; falsifier_holds with documented bound_exhaustion forward note; partial/advisory fixtures correctly land coverage_unknown.",
+      "evidence": [
+        "docs/design/proof-carrying-goal-support-fixture-results.json pre_run_admission",
+        "git log PGS-A..I02 — no gate weakening in goal_support owners (reviewer spot-check + adversarial tests green)"
+      ]
+    },
+    {
+      "id": "Q22",
+      "question": "Are ownership/version/schema changes singular and mechanically consistent?",
+      "answer": "Yes. PGS-I02 integrated ownership map, sync_goal_support_schema.py, versions.json dsl.solver.goal_support + harness.experiments components; scripts.verify_merge_ready ownership_map green; no shadow search/verifier stacks.",
+      "evidence": [
+        "docs/design/repository-ownership-map.md goal_support rows",
+        "scripts/sync_goal_support_schema.py",
+        "python -m scripts.verify_merge_ready --fast ownership_map ok"
+      ]
+    }
+  ],
+  "limitations": {
+    "evidence_class": "fixture_diagnostic_word_tree",
+    "default_goal_support_mode": "off",
+    "unsupported_backends": [
+      "ONNX certified singleton path not independently re-run in J01 (torch CPU path tested in decode_g03)",
+      "Lean lake proof replay skipped on reviewer host"
+    ],
+    "unsupported_claims": [
+      "model quality / ship gates / MODEL_CARD promotion",
+      "global OpenUI semantic satisfiability or UNSAT",
+      "production latency SLA",
+      "frontier-scale pack/compiler coverage beyond word-tree fixtures"
+    ],
+    "known_fixture_behaviors": [
+      "bound_exhaustion certified_singleton_forward_violations=1 under tight max_verifier_calls (no false hard prune)"
+    ]
+  },
+  "successor_hypotheses": [
+    "Frontier-scale domain adequacy under real pack/compiler coverage (not word-tree fixtures)",
+    "Matched production-exact vs structural-only arms on trained checkpoints",
+    "Tighter bound-exhaustion certified policy without weakening UNKNOWN law",
+    "ONNX backend parity for certified singleton zero-forward (I2) beyond torch CPU spy test"
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "dfa65fb93d0a26dfc6276587a8893b4d5b95089b",
+    "code_dirty": false,
+    "components": {},
+    "stamped_at": "2026-08-11T06:45:00+00:00"
+  }
+}
