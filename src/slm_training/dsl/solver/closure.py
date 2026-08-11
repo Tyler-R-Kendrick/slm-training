@@ -163,6 +163,7 @@ class ClosureCounters:
     candidates_removed: int = 0
     verifier_calls: int = 0
     expanded_nodes: int = 0
+    backtracks: int = 0
 
     def to_dict(self) -> dict[str, int]:
         return {
@@ -175,6 +176,7 @@ class ClosureCounters:
             "candidates_removed": self.candidates_removed,
             "verifier_calls": self.verifier_calls,
             "expanded_nodes": self.expanded_nodes,
+            "backtracks": self.backtracks,
         }
 
 
@@ -207,6 +209,7 @@ class _MutCounters:
     __slots__ = (
         "passes", "support_queries", "cache_hits", "supported", "unsupported",
         "unknown", "candidates_removed", "verifier_calls", "expanded_nodes",
+        "backtracks",
     )
 
     def __init__(self) -> None:
@@ -284,6 +287,7 @@ def exact_closure(
                     counters.support_queries += 1
                     counters.verifier_calls += result.counters.verifier_calls
                     counters.expanded_nodes += result.counters.nodes
+                    counters.backtracks += result.counters.backtracks
                     if cache is not None:
                         cache[key] = result
 
@@ -307,6 +311,7 @@ def exact_closure(
                     replay = provider.replay(result.certificate, state=current)
                     counters.verifier_calls += replay.counters.verifier_calls
                     counters.expanded_nodes += replay.counters.nodes
+                    counters.backtracks += replay.counters.backtracks
                     if replay.ok and replay.verdict is SupportVerdict.UNSUPPORTED:
                         removed.append(value)
                         cert_ids.append(result.certificate.digest)

@@ -40,12 +40,13 @@ from slm_training.data.semantic_plan.requirements_compile import (
 )
 from slm_training.dsl.pack import get_pack
 from slm_training.dsl.solver.goal_support import (
+    GoalActionEvidenceV1,
     GoalDomainAdequacyReportV1,
     GoalSupportProvider,
     GoalVerifierProfileV1,
+    action_id_from_value,
     analyze_goal_domain,
     exact_goal_closure,
-    goal_action_digest,
 )
 from slm_training.dsl.solver.openui_support import (
     OpenUIGoalVerifier,
@@ -465,26 +466,30 @@ def _rate(numerator: int, denominator: int) -> float:
 
 def _summarize_goal_reports(
     reports: list[GoalDomainAdequacyReportV1],
+    evidence_sets: list[tuple[GoalActionEvidenceV1, ...]],
     providers: list[GoalSupportProvider],
     *,
     elapsed: float,
 ) -> dict[str, float | int]:
     metrics = _empty_metrics()
-    legal_n = sum(len(report.legal_action_digests) for report in reports)
-    observed_n = sum(report.goal_support_queries for report in reports)
-    supported_n = sum(len(report.supported_action_digests) for report in reports)
-    unsupported_n = sum(len(report.unsupported_action_digests) for report in reports)
-    unknown_n = sum(len(report.unknown_action_digests) for report in reports)
-    unobserved_n = sum(len(report.unobserved_action_digests) for report in reports)
+    legal_n = sum(report.stats.action_count for report in reports)
+    observed_n = sum(report.stats.queried_action_count for report in reports)
+    supported_n = sum(len(report.partitions.supported) for report in reports)
+    unsupported_n = sum(len(report.partitions.unsupported) for report in reports)
+    unknown_n = sum(len(report.partitions.unknown) for report in reports)
+    unobserved_n = sum(len(report.partitions.unobserved) for report in reports)
     classifications = [report.classification for report in reports]
     cores = []
-    for report, provider in zip(reports, providers, strict=True):
-        for action in report.action_evidence:
-            if action.base_certificate_digest is None:
+    replay_failures = 0
+    for actions, provider in zip(evidence_sets, providers, strict=True):
+        for action in actions:
+            if action.partition != "unobserved" and not action.replay_ok:
+                replay_failures += 1
+            if not action.base_certificate_digest:
                 continue
-            sidecar = provider.goal_result(action.base_certificate_digest)
-            if sidecar.obstruction_core is not None:
-                cores.append(sidecar.obstruction_core)
+            core = provider.obstruction_core(action.base_certificate_digest)
+            if core is not None:
+                cores.append(core)
     metrics.update(
         exact_action_coverage_rate=_rate(observed_n, legal_n),
         supported_action_rate=_rate(supported_n, legal_n),
@@ -508,19 +513,17 @@ def _summarize_goal_reports(
         ),
         obstruction_core_emission_rate=_rate(len(cores), unsupported_n),
         obstruction_core_replay_rate=(
-            1.0 if cores and not sum(r.replay_failures for r in reports) else 0.0
+            1.0 if cores and not replay_failures else 0.0
         ),
         mean_obstruction_core_size=(
-            round(sum(len(core.atom_ids) for core in cores) / len(cores), 6)
+            round(sum(len(core.core_atoms) for core in cores) / len(cores), 6)
             if cores
             else 0.0
         ),
-        support_certificate_replay_failure_count=sum(
-            r.replay_failures for r in reports
-        ),
-        verifier_calls=sum(r.verifier_calls for r in reports),
-        expanded_nodes=sum(r.expanded_nodes for r in reports),
-        backtracks=sum(r.backtracks for r in reports),
+        support_certificate_replay_failure_count=replay_failures,
+        verifier_calls=sum(r.stats.verifier_calls for r in reports),
+        expanded_nodes=sum(r.stats.expanded_nodes for r in reports),
+        backtracks=sum(r.stats.backtracks for r in reports),
         wall_time=round(elapsed, 6),
     )
     return metrics
@@ -535,6 +538,7 @@ def _run_goal_arm(
     started = time.perf_counter()
     remaining = campaign.goal_support_query_cap
     reports: list[GoalDomainAdequacyReportV1] = []
+    evidence_sets: list[tuple[GoalActionEvidenceV1, ...]] = []
     providers: list[GoalSupportProvider] = []
     for case in _CASES:
         if time.monotonic() >= deadline:
@@ -542,17 +546,30 @@ def _run_goal_arm(
         state, selected = _state(case, context.constraints.digest)
         provider = _provider(state, context)
         cap = min(campaign.exact_action_cap, len(state.holes[0].values), remaining)
-        report = analyze_goal_domain(
-            state, provider, selected_action=selected, exact_action_cap=cap
+        report, action_evidence = analyze_goal_domain(
+            state=state,
+            hole_id=state.holes[0].hole_id,
+            provider=provider,
+            selected_action=selected,
+            exact_action_cap=cap,
         )
-        remaining -= report.goal_support_queries
+        remaining -= report.stats.query_count
         reports.append(report)
+        evidence_sets.append(action_evidence)
         providers.append(provider)
     elapsed = time.perf_counter() - started
     return (
         {
-            "metrics": _summarize_goal_reports(reports, providers, elapsed=elapsed),
-            "case_reports": [report.to_dict() for report in reports],
+            "metrics": _summarize_goal_reports(
+                reports, evidence_sets, providers, elapsed=elapsed
+            ),
+            "case_reports": [
+                {
+                    "report": report.to_dict(),
+                    "action_evidence": [item.to_dict() for item in actions],
+                }
+                for report, actions in zip(reports, evidence_sets, strict=True)
+            ],
             "query_cap": campaign.goal_support_query_cap,
             "query_cap_remaining": remaining,
         },
@@ -579,7 +596,7 @@ def _run_structural_arm(
             raise TimeoutError("goal-support fixture campaign exceeded max_wall_minutes")
         state, selected = _state(case, constraint_version)
         expander = _TerminalFixtureExpander(state)
-        values = tuple(sorted(state.holes[0].values, key=goal_action_digest))
+        values = tuple(sorted(state.holes[0].values, key=action_id_from_value))
         cap = min(campaign.exact_action_cap, len(values), remaining)
         observed = values[:cap]
         unobserved = values[cap:]
@@ -600,7 +617,7 @@ def _run_structural_arm(
             verifier_calls += result.counters.verifier_calls + replay.counters.verifier_calls
             expanded_nodes += result.counters.nodes + replay.counters.nodes
             backtracks += result.counters.backtracks + replay.counters.backtracks
-            action_digest = _digest(value.to_dict())
+            action_digest = action_id_from_value(value)
             if value == selected:
                 selected_verdict = verdict
             action_rows.append(
@@ -615,7 +632,7 @@ def _run_structural_arm(
         for value in unobserved:
             action_rows.append(
                 {
-                    "action_digest": _digest(value.to_dict()),
+                    "action_digest": action_id_from_value(value),
                     "observation_status": "unobserved",
                 }
             )
@@ -626,7 +643,7 @@ def _run_structural_arm(
             {
                 "case_id": case.case_id,
                 "state_fingerprint": state.fingerprint,
-                "selected_action_digest": _digest(selected.to_dict()),
+                "selected_action_digest": action_id_from_value(selected),
                 "action_evidence": sorted(
                     action_rows, key=lambda row: row["action_digest"]
                 ),
@@ -671,17 +688,22 @@ def _run_certified_arm(
     remaining = int(result["query_cap_remaining"])
     false_prunes = pruned_n = empty_domains = skipped_n = 0
     certified_rows: list[dict[str, Any]] = []
-    closure_verifier_calls = closure_nodes = 0
+    closure_verifier_calls = closure_nodes = closure_backtracks = 0
     for case, report in zip(_CASES, reports, strict=True):
         if time.monotonic() >= deadline:
             raise TimeoutError("goal-support fixture campaign exceeded max_wall_minutes")
         state, _ = _state(case, context.constraints.digest)
-        legal = set(report.legal_action_digests)
-        unsupported = set(report.unsupported_action_digests)
+        legal = {
+            *report.partitions.supported,
+            *report.partitions.unsupported,
+            *report.partitions.unknown,
+            *report.partitions.unobserved,
+        }
+        unsupported = set(report.partitions.unsupported)
         can_certify = (
             case.coverage == "complete"
-            and not report.unknown_action_digests
-            and not report.unobserved_action_digests
+            and not report.partitions.unknown
+            and not report.partitions.unobserved
             and len(legal) <= remaining
         )
         if not can_certify:
@@ -692,7 +714,7 @@ def _run_certified_arm(
                     "status": "unchanged",
                     "reason_code": (
                         "incomplete_or_unresolved"
-                        if case.coverage != "complete" or report.unknown_action_digests
+                        if case.coverage != "complete" or report.partitions.unknown
                         else "query_cap_or_unobserved"
                     ),
                     "live_action_digests": sorted(legal),
@@ -700,11 +722,16 @@ def _run_certified_arm(
                 }
             )
             continue
-        closure = exact_goal_closure(state, _provider(state, context))
+        closure = exact_goal_closure(
+            state, _provider(state, context), max_queries=remaining
+        )
         remaining -= closure.counters.support_queries
         closure_verifier_calls += closure.counters.verifier_calls
         closure_nodes += closure.counters.expanded_nodes
-        live = {_digest(value.to_dict()) for value in closure.state.holes[0].values}
+        closure_backtracks += closure.counters.backtracks
+        live = {
+            action_id_from_value(value) for value in closure.state.holes[0].values
+        }
         removed = legal - live
         false_prunes += len(removed - unsupported)
         pruned_n += len(removed)
@@ -721,6 +748,7 @@ def _run_certified_arm(
     result["metrics"]["false_hard_prune_count"] = false_prunes
     result["metrics"]["verifier_calls"] += closure_verifier_calls
     result["metrics"]["expanded_nodes"] += closure_nodes
+    result["metrics"]["backtracks"] += closure_backtracks
     result["metrics"]["wall_time"] = round(time.perf_counter() - started, 6)
     result.update(
         certified_case_reports=certified_rows,
@@ -795,13 +823,13 @@ def run_campaign(
                     for action in structural_case["action_evidence"]
                     if action.get("support_verdict") == "SUPPORTED"
                 }
-                & set(report.unsupported_action_digests)
+                & set(report.partitions.unsupported)
             )
             for structural_case, report in zip(
                 structural["case_reports"], reports, strict=True
             )
         )
-        observed = sum(report.goal_support_queries for report in reports)
+        observed = sum(report.stats.query_count for report in reports)
         arm["metrics"]["structural_supported_but_goal_unsupported_rate"] = _rate(
             structural_goal_mismatches, observed
         )

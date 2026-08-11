@@ -146,6 +146,11 @@ N `action_id`s in lexicographic order are queried; remainder → `unobserved`.
 | `UNSUPPORTED` | Complete bounded search proves no goal-verified terminal | `production_exact` + hard replay only |
 | `UNKNOWN` | Partial coverage, budget stop, stale identity, replay failure | **Never** |
 
+Replay creates another fresh verifier, replays the base certificate, rederives
+the sidecar, and checks the problem, constraint, pack, profile, bounds,
+implementation, and evidence identities. `UNKNOWN` remains non-pruning.
+Search, replay, and obstruction work is charged to the bounded counters.
+
 ### Five domain-adequacy classifications (`DomainAdequacyClassification`)
 
 Closed table in `domain_adequacy_classification_table()`:

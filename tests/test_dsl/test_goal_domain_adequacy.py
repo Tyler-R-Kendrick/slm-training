@@ -53,7 +53,7 @@ from slm_training.dsl.solver.support import (
     VerifyOutcome,
     VerifyStatus,
 )
-from tests.test_dsl.test_solver.test_goal_support import _profile
+from tests.test_dsl.test_solver.test_goal_support import _compiled_set, _profile
 
 _SEED = 508
 _MAX_LEGAL_ACTIONS = 4
@@ -104,10 +104,18 @@ _UNKNOWN_TREE = {
 
 
 class _WordExpander:
-    def __init__(self, tree, *, bounds=_GENEROUS, constraint_version="v1"):
+    def __init__(
+        self,
+        tree,
+        *,
+        bounds=_GENEROUS,
+        constraint_version="v1",
+        coverage="complete",
+    ):
         self._tree = tree
         self._bounds = bounds
         self._cv = constraint_version
+        self._coverage = coverage
         self._prefix_by_fp: dict[str, str] = {}
         self._root = self._state_for("")
         self._prefix_by_fp[self._root.fingerprint] = ""
@@ -138,7 +146,11 @@ class _WordExpander:
         branches = self._tree.get(prefix, ())
         hole = HoleId(namespace="word", path=(len(prefix), prefix or "ROOT"), kind="next")
         values = tuple(self.value_for(prefix, branch[0]) for branch in branches)
-        domain = HoleDomain(hole, values, metadata=(("node", prefix or "ROOT"),))
+        domain = HoleDomain(
+            hole,
+            values,
+            metadata=(("coverage", self._coverage), ("node", prefix or "ROOT")),
+        )
         return FiniteDomainState(
             problem_id=f"word:{prefix or 'ROOT'}",
             pack_id=self.pack_id,
@@ -239,10 +251,11 @@ def _provider(
     unavailable: set[str] | None = None,
     unknown_atoms: tuple[GoalUnknownAtomV1, ...] = (),
     failure_atoms: tuple[GoalFailureAtomV1, ...] = (),
+    coverage: str = "complete",
 ) -> tuple[_WordExpander, GoalSupportProvider]:
     prof = profile or _profile()
     digest = prof.digest or prof.compute_digest()
-    expander = _WordExpander(tree or _REGRET_TREE)
+    expander = _WordExpander(tree or _REGRET_TREE, coverage=coverage)
 
     def factory() -> _TracingGoalVerifier:
         return _TracingGoalVerifier(
@@ -254,7 +267,9 @@ def _provider(
             failure_atoms=failure_atoms,
         )
 
-    return expander, GoalSupportProvider(expander, prof, factory)
+    return expander, GoalSupportProvider(
+        expander, prof, factory, constraint_set=_compiled_set()
+    )
 
 
 def _selected(expander: _WordExpander, letter: str) -> DomainValue:
@@ -462,6 +477,10 @@ def test_selection_regret_with_supported_and_unsupported_alternatives():
     assert selected_id in report.partitions.unsupported
     assert report.obstruction_summary is None
     assert len(evidence) == 2
+    assert report.stats.verifier_calls == sum(
+        item.work_counters.verifier_calls for item in evidence
+    )
+    assert all(item.work_counters.verifier_calls >= 2 for item in evidence)
 
 
 def test_domain_adequate_selected_supported():
@@ -503,6 +522,31 @@ def test_domain_inadequate_under_bounds_with_obstruction_summary():
     assert report.obstruction_summary is not None
     assert report.obstruction_summary.obstruction_core_digests
     assert all(item.obstruction_core_digest for item in evidence if item.partition == "unsupported")
+
+
+def test_partial_domain_cannot_claim_inadequacy() -> None:
+    failure = GoalFailureAtomV1(
+        atom_id="fixture_fail",
+        reason_code="no_witness",
+        source_kind="constraint",
+        completeness_class="EXACT",
+    )
+    expander, provider = _provider(
+        set(),
+        tree=_INADEQUATE_TREE,
+        failure_atoms=(failure,),
+        coverage="partial",
+    )
+    report, _ = analyze_goal_domain(
+        state=expander.root_state(),
+        hole_id=_hole(expander),
+        selected_action=_selected(expander, "a"),
+        provider=provider,
+        exact_action_cap=10,
+    )
+    assert report.domain_coverage == "partial"
+    assert report.classification == "coverage_unknown"
+    assert report.obstruction_summary is None
 
 
 def _action_id_for_letter(expander: _WordExpander, letter: str) -> str:

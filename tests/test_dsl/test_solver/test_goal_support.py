@@ -15,14 +15,12 @@ from slm_training.data.progspec.goal_constraints import (
 )
 from slm_training.data.progspec.synthesis_problem import PackIdentityV1
 from slm_training.dsl.solver.goal_support import (
-    EvaluatorIdentityV1,
     GoalEvaluatorResultV1,
     GoalFailureAtomV1,
     GoalGateResultV1,
     GoalTerminalEvidenceV1,
     GoalUnknownAtomV1,
     GoalVerifierProfileV1,
-    MetricIdentityV1,
     compute_pack_identity_digest,
     profile_digest_inputs,
     profile_mode_authority_table,
@@ -107,20 +105,8 @@ def _profile(**overrides: object) -> GoalVerifierProfileV1:
         "pack_identity_digest": compute_pack_identity_digest(pack),
         "required_constraint_ids": ("c_slot_button",),
         "required_gates": ("G0", "G3"),
-        "required_evaluators": (
-            EvaluatorIdentityV1(
-                evaluator_id="meaningful_program/v2",
-                version="v2",
-                implementation_hash="c" * 64,
-            ),
-        ),
-        "metric_identities": (
-            MetricIdentityV1(
-                metric_id="meaningful_program",
-                version="v2",
-                implementation_hash="d" * 64,
-            ),
-        ),
+        "required_evaluators": (),
+        "metric_identities": (),
         "authority_tier": "compiler-hard",
     }
     defaults.update(overrides)

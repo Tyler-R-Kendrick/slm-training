@@ -37,7 +37,7 @@ from slm_training.dsl.solver.support import (
     VerifyOutcome,
     VerifyStatus,
 )
-from tests.test_dsl.test_solver.test_goal_support import _profile
+from tests.test_dsl.test_solver.test_goal_support import _compiled_set, _profile
 
 _GENEROUS = SolverBounds(
     max_tokens=100_000,
@@ -181,7 +181,9 @@ def _provider(
     def factory() -> _TracingGoalVerifier:
         return _TracingGoalVerifier(accept, profile_label="fixture-goal", profile_digest=digest)
 
-    return expander, GoalSupportProvider(expander, prof, factory)
+    return expander, GoalSupportProvider(
+        expander, prof, factory, constraint_set=_compiled_set()
+    )
 
 
 def _query(expander: _WordExpander, letter: str) -> SupportQuery:
@@ -241,6 +243,24 @@ def test_fresh_verifier_factory_prevents_trace_contamination():
     )
 
 
+def test_reused_mutable_verifier_factory_fails_closed():
+    profile = _profile()
+    expander = _WordExpander(_LINEAR_TREE)
+    verifier = _TracingGoalVerifier(
+        {"ax"},
+        profile_label="fixture-goal",
+        profile_digest=profile.digest,
+    )
+    provider = GoalSupportProvider(
+        expander,
+        profile,
+        lambda: verifier,
+        constraint_set=_compiled_set(),
+    )
+    with pytest.raises(ValueError, match="reused mutable query state"):
+        provider.check_with_sidecar(expander.root_state(), _query(expander, "a"))
+
+
 def test_sidecar_digest_tampering_rejected():
     expander, provider = _provider({"ax"})
     result, sidecar = provider.check_with_sidecar(expander.root_state(), _query(expander, "a"))
@@ -281,6 +301,21 @@ def test_replay_rejects_stale_profile_digest():
     assert any("profile_digest" in item for item in replay.violations)
 
 
+def test_provider_replay_reports_stale_state_instead_of_raising():
+    expander, provider = _provider({"ax"})
+    state = expander.root_state()
+    result, _sidecar = provider.check_with_sidecar(state, _query(expander, "a"))
+
+    replay = provider.replay(
+        result.certificate,
+        state=replace(state, constraint_version="stale-constraint-set"),
+    )
+
+    assert not replay.ok
+    assert replay.verdict is SupportVerdict.SUPPORTED
+    assert replay.violations == ("goal support state identity does not match expander",)
+
+
 def test_replay_failure_never_upgrades_unknown_to_unsupported():
     tree = {
         "": (("b", "continue", "complete"),),
@@ -310,6 +345,7 @@ def test_exact_goal_closure_accepts_production_exact_hard_profile():
     state = expander.root_state()
     result = exact_goal_closure(state, provider, max_queries=8)
     assert result.reached_fixed_point or result.stop_reason is not None
+    assert result.counters.verifier_calls > result.counters.support_queries
 
 
 def test_exact_goal_closure_rejects_evaluation_oracle_profile():

@@ -603,6 +603,41 @@ def _query_goal_action_evidence(
         hard_profile=hard_profile,
     )
     terminal_count = len(sidecar.terminal_evidence_digests)
+    nodes = result.counters.nodes + replay.counters.nodes
+    tokens = result.counters.tokens + replay.counters.tokens
+    depth = max(result.counters.depth, replay.counters.depth)
+    backtracks = result.counters.backtracks + replay.counters.backtracks
+    verifier_calls = result.counters.verifier_calls + replay.counters.verifier_calls
+
+    core_atoms: tuple[str, ...] = ()
+    if (
+        partition == "unsupported"
+        and replay_ok
+        and sidecar.obstruction_core_digest
+    ):
+        from slm_training.dsl.solver.goal_support_obstruction import (
+            compute_domain_obstruction_core,
+        )
+
+        replay_verifier = provider._fresh_verifier()
+        core_result = EnumerativeSupportOracle(
+            provider.expander, replay_verifier
+        ).check(state, query)
+        nodes += core_result.counters.nodes
+        tokens += core_result.counters.tokens
+        depth = max(depth, core_result.counters.depth)
+        backtracks += core_result.counters.backtracks
+        verifier_calls += core_result.counters.verifier_calls
+        core = compute_domain_obstruction_core(
+            certificate=result.certificate,
+            terminal_records=_terminal_records(replay_verifier),
+            profile=provider.profile,
+            state=state,
+            replay_ok=True,
+        )
+        if core is not None:
+            core_atoms = core.core_atoms
+
     sidecar_bound = GoalSupportResultV1.from_dict(sidecar.to_dict(include_digest=True))
     row = GoalActionEvidenceV1(
         state_fingerprint=state.fingerprint,
@@ -616,46 +651,28 @@ def _query_goal_action_evidence(
         authority_tier=provider.profile.authority_tier,
         replay_ok=replay_ok,
         work_counters=GoalActionWorkCountersV1(
-            nodes=result.counters.nodes,
-            tokens=result.counters.tokens,
-            depth=result.counters.depth,
-            backtracks=result.counters.backtracks,
-            verifier_calls=result.counters.verifier_calls,
+            nodes=nodes,
+            tokens=tokens,
+            depth=depth,
+            backtracks=backtracks,
+            verifier_calls=verifier_calls,
             terminal_count=terminal_count,
         ),
-        obstruction_core_digest=sidecar.obstruction_core_digest,
+        obstruction_core_digest=(
+            sidecar.obstruction_core_digest
+            if partition == "unsupported" and replay_ok
+            else None
+        ),
         stop_reason=result.certificate.stop_reason,
     )
     bound = GoalActionEvidenceV1.from_dict(row.to_dict(include_digest=True))
 
-    core_atoms: tuple[str, ...] = ()
-    if (
-        partition == "unsupported"
-        and replay_ok
-        and sidecar.obstruction_core_digest
-    ):
-        from slm_training.dsl.solver.goal_support_obstruction import (
-            compute_domain_obstruction_core,
-        )
-
-        replay_verifier = provider._fresh_verifier()
-        EnumerativeSupportOracle(provider.expander, replay_verifier).check(state, query)
-        core = compute_domain_obstruction_core(
-            certificate=result.certificate,
-            terminal_records=_terminal_records(replay_verifier),
-            profile=provider.profile,
-            state=state,
-            replay_ok=True,
-        )
-        if core is not None:
-            core_atoms = core.core_atoms
-
     return (
         bound,
         core_atoms,
-        result.counters.nodes,
-        result.counters.backtracks,
-        result.counters.verifier_calls,
+        nodes,
+        backtracks,
+        verifier_calls,
         terminal_count,
         result.certificate.stop_reason,
     )
@@ -677,6 +694,11 @@ def run_goal_support_probe(
     cache = cache if cache is not None else {}
     state = inputs.domain_state
     hole_id = inputs.hole_id
+    domain_coverage = str(
+        dict(state.domain(hole_id).metadata).get("coverage", "complete")
+    )
+    if domain_coverage not in {"complete", "partial", "none"}:
+        raise ValueError("domain coverage must be complete, partial, or none")
     provider = inputs.provider
     provider.validate_identities(state)
 
@@ -823,6 +845,7 @@ def run_goal_support_probe(
         all_unsupported_replay_valid=all_unsupported_replay_valid,
         hard_profile=hard_profile,
         cap_applied=cap_applied,
+        domain_complete=domain_coverage == "complete",
         obstruction_summary=candidate_summary,
     )
     obstruction_summary = (
@@ -860,6 +883,7 @@ def run_goal_support_probe(
         obstruction_summary=obstruction_summary,
         exact_action_cap=inputs.config.exact_action_cap,
         cap_applied=cap_applied,
+        domain_coverage=domain_coverage,
     )
     bound = GoalDomainAdequacyReportV1.from_dict(report.to_dict(include_digest=True))
     return bound, evidence_tuple
