@@ -233,6 +233,9 @@ class ModelBuildConfig:
     solver_max_wall_ms: int = 0
     solver_unknown_policy: str = "keep_and_rank"
     solver_certificate_mode: str = "summary"
+    # PGS-E01 goal-support decode (disabled by default; decode-time only).
+    goal_support_mode: str = "off"  # off | diagnostic | certified
+    goal_support_profile_mode: str | None = None  # certified => production_exact only
     decode_min_content: int = 0  # A4: 0 off | >0 floor | -1 auto-from-inventory
     asap_decode: bool = False  # A2: ASAp-style constraint-mass removal in MaskGIT
     fastpath_aux_weight: float = 0.0
@@ -612,6 +615,9 @@ class ModelBuildConfig:
             validate_model_build_config(self)
         except NumericValidationError as exc:
             raise ValueError(str(exc)) from exc
+        from slm_training.dsl.solver.decode import validate_goal_support_config
+
+        validate_goal_support_config(self, context="ModelBuildConfig")
 
     @property
     def run_dir(self) -> Path:

@@ -566,6 +566,11 @@ class TwoTowerConfig:
     solver_max_wall_ms: int = 0
     solver_unknown_policy: str = "keep_and_rank"
     solver_certificate_mode: str = "summary"  # none | summary | full
+    # PGS-E01 (SLM-504): default-off goal-support decode modes on the compiler-tree
+    # seam. ``off`` is byte-identical to existing decode; ``diagnostic`` observes
+    # only; ``certified`` prunes via ``exact_goal_closure`` + ``solver_prune``.
+    goal_support_mode: str = "off"  # off | diagnostic | certified
+    goal_support_profile_mode: str | None = None
     # VSS3-02 learned cost-to-go energy scorer. Ranking-only: it orders the exact
     # live candidates and never alters hard membership, certificates, or UNKNOWN.
     # Disabled by default; ``solver_ranker="deterministic"`` is byte-identical to
@@ -2105,6 +2110,7 @@ class TwoTowerModel(nn.Module):
         self._component_edge_cache: dict[str, tuple[tuple[int, int], ...]] = {}
         self._abstract_plan_target_cache: dict[str, tuple[int, ...]] = {}
         self._slot_contracts: list[list[str] | None] | None = None
+        self._goal_support_bindings: list[object] | None = None
         self._semantic_role_candidates: list[dict[str, tuple[str, ...]]] | None = None
         self._semantic_role_properties: list[dict[str, tuple[str, ...]]] | None = None
         self._semantic_plan_action_scores: list[dict[int, float]] | None = None
@@ -11426,6 +11432,213 @@ class TwoTowerModel(nn.Module):
         )
         return tuple(paths[chosen].token_ids)
 
+    def _goal_support_mode(self) -> str:
+        from slm_training.dsl.solver.decode import normalize_goal_support_mode
+
+        return normalize_goal_support_mode(getattr(self.config, "goal_support_mode", "off"))
+
+    def _goal_support_certified_active(self) -> bool:
+        return self._goal_support_mode() == "certified"
+
+    def _prepare_goal_support_bindings(
+        self,
+        prompts: list[str],
+        *,
+        slot_contracts: list[list[str] | None] | None = None,
+        schemas: list[str | None] | None = None,
+        design_mds: list[str | None] | None = None,
+        runtime_symbols: list[list[RuntimeSymbol] | None] | None = None,
+        output_kinds: list[str] | None = None,
+        output_categories: list[str | None] | None = None,
+    ) -> None:
+        mode = self._goal_support_mode()
+        if mode == "off":
+            self._goal_support_bindings = None
+            return
+        from slm_training.data.contract import GenerationRequest
+        from slm_training.dsl.solver.decode import build_goal_support_decode_binding
+
+        bindings = []
+        for index, prompt in enumerate(prompts):
+            contract = (
+                tuple(slot_contracts[index] or ())
+                if slot_contracts is not None and index < len(slot_contracts)
+                else ()
+            )
+            symbols = (
+                tuple(runtime_symbols[index] or ())
+                if runtime_symbols is not None and index < len(runtime_symbols)
+                else ()
+            )
+            request = GenerationRequest(
+                prompt=prompt,
+                slot_contract=contract,
+                schema=(
+                    schemas[index]
+                    if schemas is not None and index < len(schemas)
+                    else None
+                ),
+                design_md=(
+                    design_mds[index]
+                    if design_mds is not None and index < len(design_mds)
+                    else None
+                ),
+                runtime_symbols=symbols,
+                output_kind=(
+                    output_kinds[index]
+                    if output_kinds is not None and index < len(output_kinds)
+                    else "document"
+                ),
+                output_category=(
+                    output_categories[index]
+                    if output_categories is not None and index < len(output_categories)
+                    else None
+                ),
+            )
+            binding = build_goal_support_decode_binding(request)
+            if mode == "certified" and not binding.ready:
+                raise ValueError(
+                    "goal_support_mode=certified requires structured request/profile "
+                    f"inputs for row {index}: {binding.disable_reason}"
+                )
+            bindings.append(binding)
+        self._goal_support_bindings = bindings
+
+    def _goal_support_binding_for_row(self, row: int):
+        if not self._goal_support_bindings or row >= len(self._goal_support_bindings):
+            return None
+        return self._goal_support_bindings[row]
+
+    def _goal_support_solver_bounds(self):
+        from slm_training.dsl.solver.state import SolverBounds
+
+        max_nodes = int(getattr(self.config, "solver_max_nodes", 512) or 512)
+        return SolverBounds(
+            max_tokens=max(1, max_nodes * 64),
+            max_nodes=max_nodes,
+            max_depth=int(getattr(self.config, "solver_max_depth", 64) or 64),
+            max_backtracks=int(getattr(self.config, "solver_max_backtracks", 64) or 64),
+            max_verifier_calls=int(
+                getattr(self.config, "solver_max_verifier_calls", 64) or 64
+            ),
+        )
+
+    def _build_goal_support_provider(self, prefix, binding):
+        from slm_training.dsl.language_contract import contract_id
+        from slm_training.dsl.solver.goal_support import GoalSupportProvider
+        from slm_training.dsl.solver.openui_support import (
+            OpenUIForestExpander,
+            OpenUIGoalVerifier,
+        )
+        from slm_training.models.dsl_tokenizer import is_dsl_native_tokenizer
+
+        if binding is None or not binding.ready:
+            raise ValueError("goal support provider requires a ready decode binding")
+        if not is_dsl_native_tokenizer(self.tokenizer):
+            raise ValueError(
+                "goal_support_mode requires a DSL-native tokenizer/pack; "
+                f"{type(self.tokenizer).__name__} is unsupported"
+            )
+        bounds = self._goal_support_solver_bounds()
+        cv = contract_id()
+        window = int(getattr(self.config, "grammar_draft_window", 8) or 8)
+        expander = OpenUIForestExpander(
+            self.tokenizer,
+            prefix,
+            pack_id="openui",
+            constraint_version=cv,
+            bounds=bounds,
+            max_path_tokens=window,
+        )
+        profile = binding.profile
+        constraint_set = binding.constraint_set
+        request = binding.request
+
+        def factory() -> OpenUIGoalVerifier:
+            return OpenUIGoalVerifier(
+                profile=profile,
+                constraint_set=constraint_set,
+                request=request,
+            )
+
+        return GoalSupportProvider(expander, profile, factory), expander, bounds, cv
+
+    def _record_goal_support_diagnostic(self, observation, stats) -> None:
+        if stats is None:
+            return
+        stats.solver_enabled += 1
+        if not observation.observed:
+            return
+        result = observation.closure_result
+        if result is None:
+            return
+        stats.solver_closure_passes += 1
+        stats.solver_support_queries += int(result.counters.support_queries)
+        stats.solver_supported += int(result.counters.supported)
+        stats.solver_unsupported += int(result.counters.unsupported)
+        stats.solver_unknown += int(result.counters.unknown)
+        stats.solver_certified_removed += int(result.counters.candidates_removed)
+
+    def _goal_support_apply_forest(self, forest, prefix, plan_row: int):
+        mode = self._goal_support_mode()
+        if mode == "off":
+            return forest
+        binding = self._goal_support_binding_for_row(plan_row)
+        if binding is None or not binding.ready:
+            if mode == "certified":
+                reason = None if binding is None else binding.disable_reason
+                raise ValueError(
+                    "goal_support_mode=certified requires structured inputs: "
+                    f"{reason or 'missing_goal_support_binding'}"
+                )
+            return forest
+        from slm_training.dsl.solver.decode import (
+            goal_support_certified_prune,
+            goal_support_diagnostic_observe,
+        )
+        from slm_training.models.decode_stats import get_active_stats, timed_ms
+
+        provider, expander, bounds, cv = self._build_goal_support_provider(
+            prefix, binding
+        )
+        policy = str(getattr(self.config, "solver_unknown_policy", "keep_and_rank"))
+        root_state = expander.root_state()
+        certificate_store: dict = {}
+        stats = get_active_stats()
+        if forest.coverage != "complete" or not forest.paths:
+            return forest
+        if mode == "diagnostic":
+            with timed_ms(stats, "solver_ms"):
+                forest, observation = goal_support_diagnostic_observe(
+                    forest,
+                    prefix,
+                    provider,
+                    pack_id="openui",
+                    constraint_version=cv,
+                    bounds=bounds,
+                    state=root_state,
+                    cache={},
+                    certificate_store=certificate_store,
+                )
+            self._record_goal_support_diagnostic(observation, stats)
+            return forest
+        with timed_ms(stats, "solver_ms"):
+            pruned, result = goal_support_certified_prune(
+                forest,
+                prefix,
+                provider,
+                pack_id="openui",
+                constraint_version=cv,
+                bounds=bounds,
+                unknown_policy=policy,
+                state=root_state,
+                cache={},
+                certificate_store=certificate_store,
+            )
+        if result is not None:
+            self._record_solver_metrics(result, root_state, certificate_store, stats)
+        return pruned
+
     def _solver_prune_forest(self, forest, prefix):
         """VSS1-03: prune the compiler forest to the certified live subset.
 
@@ -11630,6 +11843,7 @@ class TwoTowerModel(nn.Module):
             verified_solver_decode = bool(
                 getattr(self.config, "verified_solver_decode", False)
             )
+            goal_support_certified = self._goal_support_certified_active()
             with timed_ms(stats, "compiler_ms"):
                 forest = build_completion_forest(
                     self.tokenizer,
@@ -11650,7 +11864,11 @@ class TwoTowerModel(nn.Module):
                 # compiler-tree search cost as the call it chains from and
                 # must not silently fall into unattributed_ms — see
                 # docs/design/compiler-tree-forced-closure-decode-metering-gap.md.
-                if forest.coverage == "complete" and not verified_solver_decode:
+                if (
+                    forest.coverage == "complete"
+                    and not verified_solver_decode
+                    and not goal_support_certified
+                ):
                     closure = state.completion_forced_closure(length - len(prefix))
                     if closure is not None:
                         closure_tokens, _closure_state, closure_coverage = closure
@@ -11658,6 +11876,8 @@ class TwoTowerModel(nn.Module):
                             forced_closure = tuple(
                                 int(token_id) for token_id in closure_tokens
                             )
+            if self._goal_support_mode() != "off":
+                forest = self._goal_support_apply_forest(forest, prefix, _plan_row)
             if verified_solver_decode:
                 # VSS1-03: certified exact closure prunes the forest to the live
                 # subset before any soft ranking. Disabled by default (guard above),
@@ -12150,6 +12370,7 @@ class TwoTowerModel(nn.Module):
                 verified_solver_decode = bool(
                     getattr(self.config, "verified_solver_decode", False)
                 )
+                goal_support_certified = self._goal_support_certified_active()
                 with timed_ms(stats, "compiler_ms"):
                     try:
                         forest = build_completion_forest(
@@ -12169,7 +12390,7 @@ class TwoTowerModel(nn.Module):
                         # compiler-tree search cost as the call it chains from
                         # and must not silently fall into unattributed_ms —
                         # see docs/design/compiler-tree-forced-closure-decode-metering-gap.md.
-                        if forest.coverage == "complete" and not verified_solver_decode:
+                        if forest.coverage == "complete" and not verified_solver_decode and not goal_support_certified:
                             closure = state.completion_forced_closure(
                                 length - len(prefix)
                             )
@@ -12184,6 +12405,8 @@ class TwoTowerModel(nn.Module):
                     finally:
                         state._collect_completion_stats()
                 check_decode_deadline()
+                if self._goal_support_mode() != "off":
+                    forest = self._goal_support_apply_forest(forest, prefix, row)
                 if verified_solver_decode:
                     forest = self._solver_prune_forest(forest, prefix)
                 forests[row] = forest
@@ -14188,6 +14411,15 @@ class TwoTowerModel(nn.Module):
                 )
         else:
             self._slot_contracts = None
+        self._prepare_goal_support_bindings(
+            prompts,
+            slot_contracts=slot_contracts,
+            schemas=schemas,
+            design_mds=design_mds,
+            runtime_symbols=runtime_symbols,
+            output_kinds=output_kinds,
+            output_categories=output_categories,
+        )
         if not use_contract_decode:
             # E617: schema_role_slot_decode_weight, slot_coverage_close_decode_weight,
             # the semantic_plan_typed_array_*/repeated_slot_margin decode weights,
