@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "computability_classification.schema.json",
+  "title": "Practical computability classification (KERN-12 / SLM-532)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "issue", "kern", "cases"],
+  "properties": {
+    "schema": { "const": "computability_classification/v1" },
+    "issue": { "const": "SLM-532" },
+    "kern": { "const": "KERN-12" },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/case" }
+    }
+  },
+  "$defs": {
+    "practicalClass": {
+      "type": "string",
+      "enum": [
+        "finite_decidable",
+        "primitive_recursive",
+        "bounded_search",
+        "total_recursive",
+        "semidecidable",
+        "co_semidecidable",
+        "oracle_relative",
+        "classical_propositional",
+        "noncomputable_existence",
+        "unclassified",
+        "classical_noncomputable_existence"
+      ]
+    },
+    "classId": {
+      "oneOf": [
+        { "$ref": "#/$defs/practicalClass" },
+        {
+          "type": "string",
+          "pattern": "^rm_research:[A-Za-z0-9_]+$"
+        }
+      ]
+    },
+    "hex64": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "interpretationPackage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "base_theory_id",
+        "coding_id",
+        "interpretation_status",
+        "forward_evidence_sha256"
+      ],
+      "properties": {
+        "base_theory_id": { "type": "string", "minLength": 1 },
+        "coding_id": { "type": "string", "minLength": 1 },
+        "interpretation_status": {
+          "type": "string",
+          "enum": ["explicit_interpretation", "explicit_reversal"]
+        },
+        "forward_evidence_sha256": { "$ref": "#/$defs/hex64" },
+        "reversal_evidence_sha256": {
+          "oneOf": [{ "$ref": "#/$defs/hex64" }, { "type": "null" }]
+        }
+      }
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "claim_id",
+        "class_id",
+        "evidence_kinds",
+        "source_family"
+      ],
+      "properties": {
+        "schema_version": { "const": "computability_classification/v1" },
+        "claim_id": { "type": "string", "minLength": 1 },
+        "class_id": { "$ref": "#/$defs/classId" },
+        "evidence_kinds": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "source_family": { "type": "string", "minLength": 1 },
+        "notes": { "type": "string" },
+        "interpretation_package": { "$ref": "#/$defs/interpretationPackage" }
+      }
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "family", "claim", "expect"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "family": {
+          "type": "string",
+          "enum": [
+            "finite_vss",
+            "bounded_closure",
+            "external_oracle",
+            "theorem_existence",
+            "primitive_recursive",
+            "semidecidable",
+            "co_semidecidable",
+            "classical_propositional",
+            "rm_research",
+            "adversarial"
+          ]
+        },
+        "lean_label": { "type": "string" },
+        "claim": { "$ref": "#/$defs/claim" },
+        "expect": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["accepted"],
+          "properties": {
+            "accepted": { "type": "boolean" },
+            "class_id": { "$ref": "#/$defs/classId" },
+            "rejection_contains": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

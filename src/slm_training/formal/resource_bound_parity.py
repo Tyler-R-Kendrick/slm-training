@@ -27,6 +27,10 @@ from slm_training.formal.closure_stabilization import (
     strict_removal_upper_bound,
 )
 from slm_training.formal.complete_domain import from_legacy_coverage_flag
+from slm_training.formal.computability_classification import (
+    COMPUTABILITY_LABELS,
+    normalize_class_id,
+)
 from slm_training.formal.event_trace import (
     DECODE_UNIT_WORK_MODEL,
     DecodeUnitWorkCounts,
@@ -53,19 +57,8 @@ SCHEMA = "resource_bound_trigger_parity/v1"
 ISSUE = "SLM-538"
 KERN = "KERN-10"
 
-# Practical labels already admitted by FormalPreflightFourAxisLedgerV1.
-# KERN-12 may refine; unknown labels fail closed here.
-COMPUTABILITY_LABELS = frozenset(
-    {
-        "finite_decidable",
-        "bounded_search",
-        "total_recursive",
-        "semidecidable",
-        "oracle_relative",
-        "classical_noncomputable_existence",
-        "unclassified",
-    }
-)
+# Practical labels owned by KERN-12 computability_classification (canonical +
+# legacy alias). Unknown labels fail closed here.
 
 SUPPORTED_FAMILIES = frozenset(
     {
@@ -170,12 +163,16 @@ def fixtures_content_sha() -> str:
 
 
 def _require_label(case_id: str, label: str) -> str:
+    # Accept canonical or KERN-10 legacy alias; never rm_research without package.
     if label not in COMPUTABILITY_LABELS:
         raise UnsupportedConstructError(
             case_id,
             "unknown_computability_label",
             label=label,
         )
+    # Preserve authored spelling for KERN-10 expect bit-parity; KERN-12
+    # normalize_class_id is available for cross-vocabulary compares.
+    _ = normalize_class_id(label)
     return label
 
 

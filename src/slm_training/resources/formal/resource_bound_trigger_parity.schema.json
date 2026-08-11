@@ -40,10 +40,14 @@
       "type": "string",
       "enum": [
         "finite_decidable",
+        "primitive_recursive",
         "bounded_search",
         "total_recursive",
         "semidecidable",
+        "co_semidecidable",
         "oracle_relative",
+        "classical_propositional",
+        "noncomputable_existence",
         "classical_noncomputable_existence",
         "unclassified"
       ]

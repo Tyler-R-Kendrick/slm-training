@@ -12,7 +12,7 @@
   ],
   "components": {
     "formal.leverproof": {
-      "version": "v24",
+      "version": "v26",
       "kind": "harness",
       "paths": [
         "src/leverproof_lean/LeverProofLean/VerifiedEncoding.lean",
@@ -44,6 +44,11 @@
         "docs/design/kern-10-resource-bound-trigger-parity.md"
       ],
       "history": [
+        {
+          "version": "v26",
+          "date": "2026-08-11",
+          "note": "KERN-12 (SLM-532): import LeverProofLean.ComputabilityClassification"
+        },
         {
           "version": "v24",
           "note": "KERN-10 (SLM-538): ResourceBoundParity Lean mirrors + Proofs wiring",
@@ -3421,7 +3426,7 @@
       ]
     },
     "governance.revmath_owners": {
-      "version": "v15",
+      "version": "v16",
       "kind": "gate",
       "paths": [
         "docs/design/adr-revmath-reasoning-profile.md",
@@ -3431,6 +3436,16 @@
         "tests/test_scripts/test_verify_revmath_owners.py"
       ],
       "history": [
+        {
+          "version": "v16",
+          "date": "2026-08-11",
+          "note": "KERN-12 (SLM-532): register formal_computability_classification owner surface"
+        },
+        {
+          "version": "v15",
+          "date": "2026-08-11",
+          "note": "no-bump: KERN-12 docs cross-link only in reverse-mathematics-computability.md"
+        },
         {
           "version": "v15",
           "date": "2026-08-11T13:29:36Z",
@@ -3610,7 +3625,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v205",
+      "version": "v206",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -3663,6 +3678,11 @@
         "tests/test_autoresearch/test_evidence_ledger.py"
       ],
       "history": [
+        {
+          "version": "v206",
+          "date": "2026-08-11",
+          "note": "KERN-12 (SLM-532): expand ComputabilityClassification literal to production vocabulary"
+        },
         {
           "version": "v205",
           "date": "2026-08-11",
@@ -18493,7 +18513,7 @@
       ]
     },
     "harness.reasoning.revmath": {
-      "version": "v12",
+      "version": "v13",
       "kind": "harness",
       "paths": [
         "scripts/run_revmath_task.py",
@@ -18519,6 +18539,11 @@
         "tests/test_harnesses/reasoning/test_revmath_corpus.py"
       ],
       "history": [
+        {
+          "version": "v13",
+          "date": "2026-08-11",
+          "note": "KERN-12 (SLM-532): validate practical_class against shared computability vocabulary"
+        },
         {
           "version": "v12",
           "date": "2026-08-11T13:29:36Z",
@@ -18614,7 +18639,7 @@
       ]
     },
     "formal.resource_bound_parity": {
-      "version": "v1",
+      "version": "v2",
       "paths": [
         "src/slm_training/formal/resource_bound_parity.py",
         "src/slm_training/resources/formal/resource_bound_trigger_parity.schema.json",
@@ -18624,12 +18649,37 @@
       ],
       "history": [
         {
+          "version": "v2",
+          "date": "2026-08-11",
+          "note": "KERN-12 (SLM-532): import COMPUTABILITY_LABELS from computability_classification; expand schema enum"
+        },
+        {
           "version": "v1",
           "note": "KERN-10 (SLM-538): frozen Python/Lean resource-bound and trigger parity fixtures",
           "date": "2026-08-11"
         }
       ],
       "kind": "harness"
+    },
+    "formal.computability_classification": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/formal/computability_classification.py",
+        "src/slm_training/resources/formal/computability_classification.schema.json",
+        "src/slm_training/resources/formal/computability_classification_fixtures.v1.json",
+        "tests/test_formal/test_computability_classification.py",
+        "scripts/verify_computability_classification.py",
+        "src/leverproof_lean/LeverProofLean/ComputabilityClassification.lean",
+        "docs/design/kern-12-computability-classification.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-11",
+          "note": "KERN-12 (SLM-532): practical computability vocabulary + evidence contracts + Lean/Python parity fixtures"
+        }
+      ]
     }
   }
 }
