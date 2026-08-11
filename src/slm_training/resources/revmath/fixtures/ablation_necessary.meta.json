@@ -1,0 +1,30 @@
+{
+  "baseline_assumption_ids": [
+    "ISigma1",
+    "extra_unused"
+  ],
+  "hermetic_scenario": "necessary",
+  "import_edges": {
+    "ax.ISigma1": [
+      "ISigma1"
+    ]
+  },
+  "meta_id": "meta.ablation.necessary",
+  "oracle_by_removed": {
+    "": "ok",
+    "ISigma1": "refuted"
+  },
+  "proof_deps_by_removed": {
+    "": [
+      "ax.ISigma1"
+    ],
+    "ISigma1": []
+  },
+  "removable_assumption_ids": [
+    "ISigma1"
+  ],
+  "schema_version": "revmath_assumption_ablation_meta/v1",
+  "strength_bearing_lemmas": [
+    "ax.ISigma1"
+  ]
+}

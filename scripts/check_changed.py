@@ -61,6 +61,7 @@ REVMATH_HARNESS_PARITY_FILES = frozenset(
         "src/slm_training/harnesses/reasoning/revmath/replay.py",
         "src/slm_training/harnesses/reasoning/revmath/report.py",
         "src/slm_training/harnesses/reasoning/revmath/plugins.py",
+        "src/slm_training/harnesses/reasoning/revmath/assumption_ablation.py",
         "scripts/run_revmath_task.py",
         "docs/design/reverse-mathematics-computability.md",
         "docs/design/adr-revmath-reasoning-profile.md",
@@ -163,6 +164,18 @@ SUITES_BY_PREFIX = (
     (
         "scripts/check_changed.py",
         ("tests/test_scripts/test_check_changed.py",),
+    ),
+    (
+        "src/slm_training/harnesses/reasoning/revmath/",
+        ("tests/test_harnesses/reasoning/",),
+    ),
+    (
+        "src/slm_training/resources/revmath/",
+        ("tests/test_harnesses/reasoning/",),
+    ),
+    (
+        "src/slm_training/harnesses/reasoning/revmath/assumption_ablation.py",
+        ("tests/test_harnesses/reasoning/test_revmath_assumption_ablation.py",),
     ),
     ("scripts/", ("tests/test_scripts",)),
     (

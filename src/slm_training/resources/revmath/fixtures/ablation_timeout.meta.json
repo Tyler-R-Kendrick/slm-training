@@ -1,0 +1,22 @@
+{
+  "baseline_assumption_ids": [
+    "ISigma1",
+    "WKL_redundant"
+  ],
+  "hermetic_scenario": "timeout",
+  "import_edges": {},
+  "meta_id": "meta.ablation.timeout",
+  "oracle_by_removed": {
+    "": "timeout",
+    "WKL_redundant": "timeout"
+  },
+  "proof_deps_by_removed": {
+    "": [],
+    "WKL_redundant": []
+  },
+  "removable_assumption_ids": [
+    "WKL_redundant"
+  ],
+  "schema_version": "revmath_assumption_ablation_meta/v1",
+  "strength_bearing_lemmas": []
+}

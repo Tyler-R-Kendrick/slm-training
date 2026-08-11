@@ -1,0 +1,53 @@
+{
+  "baseline_assumption_ids": [
+    "ACA_fluff",
+    "ISigma1",
+    "WKL_redundant"
+  ],
+  "hermetic_scenario": "redundant",
+  "import_edges": {
+    "ax.ACA_fluff": [
+      "ACA_fluff"
+    ],
+    "ax.ISigma1": [
+      "ISigma1"
+    ],
+    "ax.WKL_redundant": [
+      "WKL_redundant"
+    ]
+  },
+  "meta_id": "meta.ablation.redundant",
+  "oracle_by_removed": {
+    "": "ok",
+    "ACA_fluff": "ok",
+    "ACA_fluff,WKL_redundant": "ok",
+    "WKL_redundant": "ok"
+  },
+  "proof_deps_by_removed": {
+    "": [
+      "ax.ACA_fluff",
+      "ax.ISigma1",
+      "ax.WKL_redundant"
+    ],
+    "ACA_fluff": [
+      "ax.ISigma1",
+      "ax.WKL_redundant"
+    ],
+    "ACA_fluff,WKL_redundant": [
+      "ax.ISigma1"
+    ],
+    "WKL_redundant": [
+      "ax.ACA_fluff",
+      "ax.ISigma1"
+    ]
+  },
+  "removable_assumption_ids": [
+    "ACA_fluff",
+    "WKL_redundant"
+  ],
+  "schema_version": "revmath_assumption_ablation_meta/v1",
+  "strength_bearing_lemmas": [
+    "ax.WKL_redundant",
+    "ax.ACA_fluff"
+  ]
+}

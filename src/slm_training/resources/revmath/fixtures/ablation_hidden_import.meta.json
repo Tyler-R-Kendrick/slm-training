@@ -1,0 +1,37 @@
+{
+  "baseline_assumption_ids": [
+    "Choice_strong",
+    "ISigma1"
+  ],
+  "hermetic_scenario": "hidden_import",
+  "import_edges": {
+    "ax.ISigma1": [
+      "ISigma1"
+    ],
+    "lemma.hidden_choice": [
+      "Choice_strong"
+    ]
+  },
+  "meta_id": "meta.ablation.hidden_import",
+  "oracle_by_removed": {
+    "": "ok",
+    "Choice_strong": "hidden_ok"
+  },
+  "proof_deps_by_removed": {
+    "": [
+      "ax.Choice_strong",
+      "ax.ISigma1"
+    ],
+    "Choice_strong": [
+      "lemma.hidden_choice",
+      "ax.ISigma1"
+    ]
+  },
+  "removable_assumption_ids": [
+    "Choice_strong"
+  ],
+  "schema_version": "revmath_assumption_ablation_meta/v1",
+  "strength_bearing_lemmas": [
+    "lemma.hidden_choice"
+  ]
+}

@@ -84,6 +84,14 @@
       "notes": "HARN-02 strict task/corpus/result/repair/report schemas; SolverJudgmentV1 + four-axis attachment; repair freeze enforced."
     },
     {
+      "id": "task_validators.assumption_ablation",
+      "category": "schemas",
+      "required_owner": "src/slm_training/harnesses/reasoning/revmath/assumption_ablation.py",
+      "status": "present",
+      "blocker_issue": null,
+      "notes": "HARN-04 finite-lattice ablation generator/validator; minimality scoped to explored candidates only; hidden reintroduction audited."
+    },
+    {
       "id": "resources.owner_map",
       "category": "resources",
       "required_owner": "src/slm_training/resources/revmath_owner_map.json",

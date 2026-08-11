@@ -112,7 +112,7 @@ def test_incomplete_check_stays_unknown(hermetic_task: RevmathTaskV1) -> None:
 
 
 def test_unsupported_task_kind_stays_unknown(hermetic_task: RevmathTaskV1) -> None:
-    task = hermetic_task.model_copy(update={"task_kind": "assumption_ablation"})
+    task = hermetic_task.model_copy(update={"task_kind": "reversal"})
     record = run_revmath_task(task, hermetic=True)
     judgment = record.result.solver_judgment()
     assert judgment.outcome is JudgmentOutcome.UNKNOWN
