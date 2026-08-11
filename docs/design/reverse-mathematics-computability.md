@@ -1,6 +1,6 @@
 # Reverse mathematics, computability, and canonical evidence ownership
 
-**Status:** HARN-04 assumption ablation landed (SLM-544); EVID-03 four-axis ledger (SLM-519); HARN-03 runner/replay/report (SLM-536); HARN-02 schemas (SLM-527); profile + parity (HARN-01 / SLM-520); owner map (EVID-01 / SLM-515)  
+**Status:** HARN-05 reversal/bidirectional validation landed (SLM-545); HARN-04 assumption ablation (SLM-544); EVID-03 four-axis ledger (SLM-519); HARN-03 runner/replay/report (SLM-536); HARN-02 schemas (SLM-527); profile + parity (HARN-01 / SLM-520); owner map (EVID-01 / SLM-515)  
 **Base SHA:** `980aa465223adf7822f82930550c92b9240333ca` (`origin/main` at audit)  
 **Machine-readable map:** [`src/slm_training/resources/revmath_owner_map.json`](../../src/slm_training/resources/revmath_owner_map.json)  
 **Harness parity matrix:** [`src/slm_training/resources/revmath_harness_parity.json`](../../src/slm_training/resources/revmath_harness_parity.json)  
@@ -19,6 +19,18 @@ Reverse mathematics in this repository is a typed **`reasoning/revmath` profile*
 - a parallel subprocess runner or version registry.
 
 Every revmath run **must** bind to `ExperimentCampaignV1`, emit or consume evidence only through the canonical envelopes below, and respect bounded execution via `run_bounded_process` / `run_formal_process`. Timeout, skipped replay, incomplete coverage, and missing tools map to **unknown/inconclusive** — never semantic refutation.
+
+## HARN-05 bidirectional reversal
+
+Owner: `harnesses/reasoning/revmath/reversal.py` (+ `ReversalPlugin` in `plugins.py`).
+Given base `B`, principle `A`, theorem `T`, both `B+A ⊢ T` and `B+T ⊢ A` are
+generated and checked with separate evidence. Reports label **equivalent** only
+when both directions witness over the same base theory and explicit
+`RmInterpretationStatus` / `InterpretationStatus` (`explicit_reversal` or
+`explicit_interpretation`). One-way implications, timeouts/unsupported
+(unknown), strength mismatches, hidden stronger assumptions, and changed
+propositions are preserved explicitly and never promoted to equivalence.
+Toy fixtures live under `resources/revmath/fixtures/reversal_*.{task,meta}.json`.
 
 ## Owner map (one canonical owner per surface)
 

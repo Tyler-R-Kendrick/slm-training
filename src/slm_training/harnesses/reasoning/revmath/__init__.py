@@ -1,11 +1,20 @@
-"""reasoning/revmath typed contracts + deterministic runner (HARN-02/03/04).
+"""reasoning/revmath typed contracts + deterministic runner (HARN-02/03/04/05).
 
 Schemas: HARN-02. Runner / replay / report: HARN-03.
-Assumption ablation: HARN-04.
+Assumption ablation: HARN-04. Reversal / bidirectional: HARN-05.
 """
 
 from __future__ import annotations
 
+from slm_training.harnesses.reasoning.revmath.reversal import (
+    ReversalMetaV1,
+    ReversalObligationV1,
+    ReversalReportV1,
+    evaluate_reversal,
+    generate_reversal_obligations,
+    materialize_obligation_task,
+    parse_reversal_meta,
+)
 from slm_training.harnesses.reasoning.revmath.assumption_ablation import (
     MINIMALITY_CLAIM_SCOPE,
     AblationCandidateV1,
@@ -20,6 +29,7 @@ from slm_training.harnesses.reasoning.revmath.assumption_ablation import (
 from slm_training.harnesses.reasoning.revmath.plugins import (
     AssumptionAblationPlugin,
     HermeticForwardPlugin,
+    ReversalPlugin,
     PluginCheckEvidence,
     RevmathCheckPlan,
     RevmathTaskPlugin,
@@ -68,6 +78,14 @@ __all__ = [
     "REVMATH_SCHEMA_VERSIONS",
     "AxisCertificateRefV1",
     "AssumptionAblationPlugin",
+    "evaluate_reversal",
+    "generate_reversal_obligations",
+    "materialize_obligation_task",
+    "parse_reversal_meta",
+    "ReversalObligationV1",
+    "ReversalMetaV1",
+    "ReversalReportV1",
+    "ReversalPlugin",
     "HermeticForwardPlugin",
     "parse_ablation_meta",
     "materialize_candidate_task",

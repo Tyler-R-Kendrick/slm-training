@@ -92,6 +92,14 @@
       "notes": "HARN-04 finite-lattice ablation generator/validator; minimality scoped to explored candidates only; hidden reintroduction audited."
     },
     {
+      "id": "task_validators.reversal",
+      "category": "schemas",
+      "required_owner": "src/slm_training/harnesses/reasoning/revmath/reversal.py",
+      "status": "present",
+      "blocker_issue": null,
+      "notes": "HARN-05 bidirectional reversal generator/validator; equivalence only when both directions succeed over the same base/interpretation; one-way/unknown/invalid preserved explicitly."
+    },
+    {
       "id": "resources.owner_map",
       "category": "resources",
       "required_owner": "src/slm_training/resources/revmath_owner_map.json",

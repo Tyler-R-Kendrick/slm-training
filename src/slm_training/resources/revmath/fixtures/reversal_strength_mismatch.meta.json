@@ -1,0 +1,50 @@
+{
+  "base_theory_id": "RCA0",
+  "claim_statement_sha256": "fc39976f717394469417e9ff08dba6f0e082d09121e6badc468f8bde733de810",
+  "coding_id": "coding.strength.v1",
+  "hermetic_scenario": "strength_mismatch",
+  "import_edges": {
+    "ax.ISigma1": [
+      "ISigma1"
+    ],
+    "ax.principle.A": [
+      "principle.A"
+    ],
+    "ax.theorem.T": [
+      "theorem.T"
+    ]
+  },
+  "interpretation_status": "explicit_reversal",
+  "meta_id": "meta.reversal.strength_mismatch",
+  "oracle_by_direction": {
+    "forward": "ok",
+    "reverse": "ok"
+  },
+  "principle": {
+    "statement": "principle: weak Konig lemma (toy)",
+    "statement_id": "principle.A",
+    "statement_sha256": "2ac4471e59f0a8b4d2bbece7190d80ef3418137eb6236c80ddaf91bb95dfe264",
+    "strength_class": "WKL"
+  },
+  "proof_deps_by_direction": {
+    "forward": [
+      "ax.ISigma1",
+      "ax.principle.A"
+    ],
+    "reverse": [
+      "ax.ISigma1",
+      "ax.theorem.T"
+    ]
+  },
+  "schema_version": "revmath_reversal_meta/v1",
+  "strength_bearing_lemmas": [
+    "ax.principle.A",
+    "ax.theorem.T"
+  ],
+  "theorem": {
+    "statement": "theorem: sequential compactness of [0,1] (toy)",
+    "statement_id": "theorem.T",
+    "statement_sha256": "0cda9d449fb7f5b5ca01e6f02b9ed16bbd5653398683350ea8c1972391211691",
+    "strength_class": "ACA"
+  }
+}
