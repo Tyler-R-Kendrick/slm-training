@@ -278,6 +278,15 @@ SUITES_BY_PREFIX = (
         "src/slm_training/resources/versions.json",
         ("tests/test_versioning",),
     ),
+    ("src/slm_training/formal/", ("tests/test_formal",)),
+    (
+        "src/slm_training/resources/formal/",
+        ("tests/test_formal",),
+    ),
+    (
+        "scripts/verify_resource_bound_parity.py",
+        ("tests/test_formal/test_resource_bound_parity.py",),
+    ),
     ("src/slm_training/runtime/", ("tests/test_runtime",)),
     ("src/slm_training/versioning.py", ("tests/test_versioning",)),
     ("src/slm_training/web/", ("tests/test_web",)),

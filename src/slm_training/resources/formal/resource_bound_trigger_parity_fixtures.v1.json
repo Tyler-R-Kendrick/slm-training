@@ -1,0 +1,791 @@
+{
+  "schema": "resource_bound_trigger_parity/v1",
+  "issue": "SLM-538",
+  "kern": "KERN-10",
+  "wall_clock_claim": false,
+  "notes": [
+    "Python and Lean must agree bit-for-bit / canonically on every supported case.",
+    "Unsupported probes fail closed with unsupported_reason \u2014 never silent drift.",
+    "Parity mismatches name case id, field, lean_module, lean_theorem, and model_id.",
+    "Computability labels use the FormalPreflight vocabulary; KERN-12 may refine."
+  ],
+  "cases": [
+    {
+      "id": "fs_empty",
+      "family": "finite_search",
+      "status": "supported",
+      "lean_module": "LeverProofLean.FiniteSearchBounds",
+      "lean_theorem": "fixture_empty_holes",
+      "model_id": "ExpansionVerificationQueryModel",
+      "inputs": {
+        "domain_sizes": []
+      },
+      "expect": {
+        "assignment_count": 1,
+        "prefix_tree_nodes": 1,
+        "coarse_nodes": 1,
+        "total_query_bound": 2,
+        "u64_overflow": "fits_u64",
+        "computability_classification": "finite_decidable"
+      }
+    },
+    {
+      "id": "fs_one",
+      "family": "finite_search",
+      "status": "supported",
+      "lean_module": "LeverProofLean.FiniteSearchBounds",
+      "lean_theorem": "completeAssignmentCount",
+      "model_id": "ExpansionVerificationQueryModel",
+      "inputs": {
+        "domain_sizes": [
+          1
+        ]
+      },
+      "expect": {
+        "assignment_count": 1,
+        "prefix_tree_nodes": 2,
+        "coarse_nodes": 2,
+        "total_query_bound": 3,
+        "u64_overflow": "fits_u64",
+        "computability_classification": "finite_decidable"
+      }
+    },
+    {
+      "id": "fs_two_three",
+      "family": "finite_search",
+      "status": "supported",
+      "lean_module": "LeverProofLean.FiniteSearchBounds",
+      "lean_theorem": "fixture_two_three_assignment_count",
+      "model_id": "ExpansionVerificationQueryModel",
+      "inputs": {
+        "domain_sizes": [
+          2,
+          3
+        ]
+      },
+      "expect": {
+        "assignment_count": 6,
+        "prefix_tree_nodes": 9,
+        "coarse_nodes": 13,
+        "total_query_bound": 15,
+        "u64_overflow": "fits_u64",
+        "computability_classification": "finite_decidable"
+      }
+    },
+    {
+      "id": "fs_zero_mid",
+      "family": "finite_search",
+      "status": "supported",
+      "lean_module": "LeverProofLean.FiniteSearchBounds",
+      "lean_theorem": "fixture_zero_domain",
+      "model_id": "ExpansionVerificationQueryModel",
+      "inputs": {
+        "domain_sizes": [
+          2,
+          0,
+          4
+        ]
+      },
+      "expect": {
+        "assignment_count": 0,
+        "prefix_tree_nodes": 3,
+        "coarse_nodes": 1,
+        "total_query_bound": 3,
+        "u64_overflow": "fits_u64",
+        "computability_classification": "finite_decidable"
+      }
+    },
+    {
+      "id": "fs_many_singletons",
+      "family": "finite_search",
+      "status": "supported",
+      "lean_module": "LeverProofLean.FiniteSearchBounds",
+      "lean_theorem": "fixture_singleton_domains_from_proved",
+      "model_id": "ExpansionVerificationQueryModel",
+      "inputs": {
+        "domain_sizes": [
+          1,
+          1,
+          1
+        ]
+      },
+      "expect": {
+        "assignment_count": 1,
+        "prefix_tree_nodes": 4,
+        "coarse_nodes": 4,
+        "total_query_bound": 5,
+        "u64_overflow": "fits_u64",
+        "computability_classification": "finite_decidable"
+      }
+    },
+    {
+      "id": "fs_many_duplicates",
+      "family": "finite_search",
+      "status": "supported",
+      "lean_module": "LeverProofLean.FiniteSearchBounds",
+      "lean_theorem": "completeAssignmentCount",
+      "model_id": "ExpansionVerificationQueryModel",
+      "inputs": {
+        "domain_sizes": [
+          2,
+          2,
+          2
+        ]
+      },
+      "expect": {
+        "assignment_count": 8,
+        "prefix_tree_nodes": 15,
+        "coarse_nodes": 25,
+        "total_query_bound": 23,
+        "u64_overflow": "fits_u64",
+        "computability_classification": "finite_decidable"
+      }
+    },
+    {
+      "id": "fs_huge_product",
+      "family": "finite_search",
+      "status": "supported",
+      "lean_module": "LeverProofLean.FiniteSearchBounds",
+      "lean_theorem": "completeAssignmentCount",
+      "model_id": "ExpansionVerificationQueryModel",
+      "inputs": {
+        "domain_sizes": [
+          1048576,
+          1048576
+        ]
+      },
+      "expect": {
+        "assignment_count": 1099511627776,
+        "prefix_tree_nodes": 1099512676353,
+        "coarse_nodes": 2199023255553,
+        "total_query_bound": 2199024304129,
+        "u64_overflow": "fits_u64",
+        "computability_classification": "finite_decidable"
+      }
+    },
+    {
+      "id": "bb_empty",
+      "family": "black_box",
+      "status": "supported",
+      "lean_module": "LeverProofLean.BlackBoxUnsupportedLowerBound",
+      "lean_theorem": "fixture_empty_domain_P_one",
+      "model_id": "BlackBoxVerifierQueryModel",
+      "inputs": {
+        "domain_sizes": []
+      },
+      "expect": {
+        "P": 1,
+        "lower_bound": 1,
+        "computability_classification": "oracle_relative"
+      }
+    },
+    {
+      "id": "bb_two_three",
+      "family": "black_box",
+      "status": "supported",
+      "lean_module": "LeverProofLean.BlackBoxUnsupportedLowerBound",
+      "lean_theorem": "fixture_two_three_P",
+      "model_id": "BlackBoxVerifierQueryModel",
+      "inputs": {
+        "domain_sizes": [
+          2,
+          3
+        ]
+      },
+      "expect": {
+        "P": 6,
+        "lower_bound": 6,
+        "computability_classification": "oracle_relative"
+      }
+    },
+    {
+      "id": "bb_zero_domain",
+      "family": "black_box",
+      "status": "supported",
+      "lean_module": "LeverProofLean.BlackBoxUnsupportedLowerBound",
+      "lean_theorem": "worstCaseQueryLowerBound",
+      "model_id": "BlackBoxVerifierQueryModel",
+      "inputs": {
+        "domain_sizes": [
+          0
+        ]
+      },
+      "expect": {
+        "P": 0,
+        "lower_bound": 0,
+        "computability_classification": "oracle_relative"
+      }
+    },
+    {
+      "id": "cl_empty",
+      "family": "closure",
+      "status": "supported",
+      "lean_module": "LeverProofLean.ExactClosure",
+      "lean_theorem": "strictRemovalUpperBound",
+      "model_id": "ExactClosure",
+      "inputs": {
+        "domain_sizes": []
+      },
+      "expect": {
+        "strict_removal_upper_bound": 0,
+        "nonempty_invariant_upper_bound": 0,
+        "assignment_search_bound": 1,
+        "computability_classification": "finite_decidable"
+      }
+    },
+    {
+      "id": "cl_one",
+      "family": "closure",
+      "status": "supported",
+      "lean_module": "LeverProofLean.ExactClosure",
+      "lean_theorem": "strictRemovalUpperBound",
+      "model_id": "ExactClosure",
+      "inputs": {
+        "domain_sizes": [
+          1
+        ]
+      },
+      "expect": {
+        "strict_removal_upper_bound": 1,
+        "nonempty_invariant_upper_bound": 0,
+        "assignment_search_bound": 1,
+        "computability_classification": "finite_decidable"
+      }
+    },
+    {
+      "id": "cl_two_three",
+      "family": "closure",
+      "status": "supported",
+      "lean_module": "LeverProofLean.ExactClosure",
+      "lean_theorem": "fixture_two_three_stabilization_bounds",
+      "model_id": "ExactClosure",
+      "inputs": {
+        "domain_sizes": [
+          2,
+          3
+        ]
+      },
+      "expect": {
+        "strict_removal_upper_bound": 5,
+        "nonempty_invariant_upper_bound": 3,
+        "assignment_search_bound": 6,
+        "computability_classification": "finite_decidable"
+      }
+    },
+    {
+      "id": "et_unit_28",
+      "family": "event_trace",
+      "status": "supported",
+      "lean_module": "LeverProofLean.EventTrace",
+      "lean_theorem": "fixture_decode_unit_work_sum",
+      "model_id": "DecodeUnitWorkModel",
+      "inputs": {
+        "tokenize": 2,
+        "grammar_transition": 3,
+        "solver_expansion": 5,
+        "certificate_check": 7,
+        "neural_forward": 11,
+        "model_id": "DecodeUnitWorkModel"
+      },
+      "expect": {
+        "cost": 28,
+        "computability_classification": "finite_decidable"
+      }
+    },
+    {
+      "id": "et_zero",
+      "family": "event_trace",
+      "status": "supported",
+      "lean_module": "LeverProofLean.EventTrace",
+      "lean_theorem": "decodeUnitWorkCostOfCounts",
+      "model_id": "DecodeUnitWorkModel",
+      "inputs": {
+        "tokenize": 0,
+        "grammar_transition": 0,
+        "solver_expansion": 0,
+        "certificate_check": 0,
+        "neural_forward": 0,
+        "model_id": "DecodeUnitWorkModel"
+      },
+      "expect": {
+        "cost": 0,
+        "computability_classification": "finite_decidable"
+      }
+    },
+    {
+      "id": "et_forward_only_three",
+      "family": "event_trace",
+      "status": "supported",
+      "lean_module": "LeverProofLean.EventTrace",
+      "lean_theorem": "decodeUnitWorkCostOfCounts",
+      "model_id": "DecodeUnitWorkModel",
+      "inputs": {
+        "tokenize": 0,
+        "grammar_transition": 0,
+        "solver_expansion": 0,
+        "certificate_check": 0,
+        "neural_forward": 3,
+        "model_id": "DecodeUnitWorkModel"
+      },
+      "expect": {
+        "cost": 3,
+        "computability_classification": "finite_decidable"
+      }
+    },
+    {
+      "id": "sn_certified_singleton_zero_forward",
+      "family": "singleton",
+      "status": "supported",
+      "lean_module": "LeverProofLean.ConstrainedDiffusion",
+      "lean_theorem": "singleton_policy_neural_cost_zero",
+      "model_id": "NeuralForwardOnlyModel",
+      "inputs": {
+        "fixture_id": "certified_singleton_zero_forward"
+      },
+      "expect": {
+        "proof_valid": true,
+        "projected_neural_cost": 0,
+        "observed_forwards": 0,
+        "computability_classification": "finite_decidable"
+      }
+    },
+    {
+      "id": "sn_certified_singleton_bypass_empty_solver",
+      "family": "singleton",
+      "status": "supported",
+      "lean_module": "LeverProofLean.ConstrainedDiffusion",
+      "lean_theorem": "singleton_policy_neural_cost_zero",
+      "model_id": "NeuralForwardOnlyModel",
+      "inputs": {
+        "fixture_id": "certified_singleton_bypass_empty_solver"
+      },
+      "expect": {
+        "proof_valid": true,
+        "projected_neural_cost": 0,
+        "observed_forwards": 0,
+        "computability_classification": "finite_decidable"
+      }
+    },
+    {
+      "id": "sn_mutation_mismatched_forced_token",
+      "family": "singleton",
+      "status": "supported",
+      "lean_module": "LeverProofLean.ConstrainedDiffusion",
+      "lean_theorem": "singleton_policy_neural_cost_zero",
+      "model_id": "NeuralForwardOnlyModel",
+      "inputs": {
+        "fixture_id": "mutation_mismatched_forced_token"
+      },
+      "expect": {
+        "proof_valid": false,
+        "projected_neural_cost": 0,
+        "observed_forwards": 0,
+        "computability_classification": "finite_decidable"
+      }
+    },
+    {
+      "id": "sn_mutation_incomplete_singleton_domain",
+      "family": "singleton",
+      "status": "supported",
+      "lean_module": "LeverProofLean.ConstrainedDiffusion",
+      "lean_theorem": "singleton_policy_neural_cost_zero",
+      "model_id": "NeuralForwardOnlyModel",
+      "inputs": {
+        "fixture_id": "mutation_incomplete_singleton_domain"
+      },
+      "expect": {
+        "proof_valid": false,
+        "projected_neural_cost": 0,
+        "observed_forwards": 0,
+        "computability_classification": "finite_decidable"
+      }
+    },
+    {
+      "id": "mt_singleton_bypass_absent_no_effect",
+      "family": "mechanism_trigger",
+      "status": "supported",
+      "lean_module": "LeverProofLean.MechanismTrigger",
+      "lean_theorem": "MechanismTrigger.singleton_bypass_output_change_implies_trigger",
+      "model_id": "NeuralForwardOnlyModel",
+      "inputs": {
+        "fixture_id": "singleton_bypass_absent_no_effect"
+      },
+      "expect": {
+        "kind": "no_effect",
+        "necessary_trigger": true,
+        "trigger_evidence_complete": true,
+        "outputs_equal": true,
+        "dominates_locally": true,
+        "certificate_error": false,
+        "computability_classification": "finite_decidable"
+      }
+    },
+    {
+      "id": "mt_closure_removal_absent_no_effect",
+      "family": "mechanism_trigger",
+      "status": "supported",
+      "lean_module": "LeverProofLean.MechanismTrigger",
+      "lean_theorem": "MechanismTrigger.closure_removal_output_change_implies_trigger",
+      "model_id": "DecodeUnitWorkModel",
+      "inputs": {
+        "fixture_id": "closure_removal_absent_no_effect"
+      },
+      "expect": {
+        "kind": "no_effect",
+        "necessary_trigger": true,
+        "trigger_evidence_complete": true,
+        "outputs_equal": true,
+        "dominates_locally": true,
+        "certificate_error": false,
+        "computability_classification": "finite_decidable"
+      }
+    },
+    {
+      "id": "mt_cache_reuse_absent_no_effect",
+      "family": "mechanism_trigger",
+      "status": "supported",
+      "lean_module": "LeverProofLean.MechanismTrigger",
+      "lean_theorem": "MechanismTrigger.cache_reuse_output_change_implies_trigger",
+      "model_id": "DecodeUnitWorkModel",
+      "inputs": {
+        "fixture_id": "cache_reuse_absent_no_effect"
+      },
+      "expect": {
+        "kind": "no_effect",
+        "necessary_trigger": true,
+        "trigger_evidence_complete": true,
+        "outputs_equal": true,
+        "dominates_locally": true,
+        "certificate_error": false,
+        "computability_classification": "finite_decidable"
+      }
+    },
+    {
+      "id": "mt_forced_span_absent_no_effect",
+      "family": "mechanism_trigger",
+      "status": "supported",
+      "lean_module": "LeverProofLean.MechanismTrigger",
+      "lean_theorem": "MechanismTrigger.forced_span_output_change_implies_trigger",
+      "model_id": "NeuralForwardOnlyModel",
+      "inputs": {
+        "fixture_id": "forced_span_absent_no_effect"
+      },
+      "expect": {
+        "kind": "no_effect",
+        "necessary_trigger": true,
+        "trigger_evidence_complete": true,
+        "outputs_equal": true,
+        "dominates_locally": true,
+        "certificate_error": false,
+        "computability_classification": "finite_decidable"
+      }
+    },
+    {
+      "id": "mt_singleton_bypass_dominated",
+      "family": "mechanism_trigger",
+      "status": "supported",
+      "lean_module": "LeverProofLean.MechanismTrigger",
+      "lean_theorem": "MechanismTrigger.dominanceCertificate_dominates",
+      "model_id": "NeuralForwardOnlyModel",
+      "inputs": {
+        "fixture_id": "singleton_bypass_dominated"
+      },
+      "expect": {
+        "kind": "dominance",
+        "necessary_trigger": true,
+        "trigger_evidence_complete": true,
+        "outputs_equal": true,
+        "dominates_locally": true,
+        "certificate_error": false,
+        "computability_classification": "finite_decidable"
+      }
+    },
+    {
+      "id": "mt_unknown_activation_rejected",
+      "family": "mechanism_trigger",
+      "status": "supported",
+      "lean_module": "LeverProofLean.MechanismTrigger",
+      "lean_theorem": "unknown_activation_blocks_no_effect_certificate",
+      "model_id": "MechanismTrigger",
+      "inputs": {
+        "fixture_id": "unknown_activation_rejected"
+      },
+      "expect": {
+        "kind": "counterexample",
+        "necessary_trigger": true,
+        "trigger_evidence_complete": false,
+        "outputs_equal": true,
+        "dominates_locally": true,
+        "certificate_error": true,
+        "computability_classification": "finite_decidable"
+      }
+    },
+    {
+      "id": "mt_unconstrained_rerank_no_safe_theorem",
+      "family": "mechanism_trigger",
+      "status": "supported",
+      "lean_module": "LeverProofLean.MechanismTrigger",
+      "lean_theorem": "unconstrained_rerank_no_safe_trigger_theorem",
+      "model_id": "MechanismTrigger",
+      "inputs": {
+        "fixture_id": "unconstrained_rerank_no_safe_theorem"
+      },
+      "expect": {
+        "kind": "counterexample",
+        "necessary_trigger": false,
+        "trigger_evidence_complete": false,
+        "outputs_equal": false,
+        "dominates_locally": false,
+        "certificate_error": true,
+        "computability_classification": "finite_decidable"
+      }
+    },
+    {
+      "id": "ba_prefix_tree_two_three",
+      "family": "bound_ast",
+      "status": "supported",
+      "lean_module": "LeverProofLean.FiniteSearchBounds",
+      "lean_theorem": "totalQueryBound",
+      "model_id": "bound.finite_search.prefix_tree.v1",
+      "inputs": {
+        "bound_ast_id": "bound.finite_search.prefix_tree.v1",
+        "env": {
+          "domain_sizes": [
+            2,
+            3
+          ],
+          "c_exp": 1,
+          "c_ver": 1
+        }
+      },
+      "expect": {
+        "value": "15",
+        "as_fraction_numerator": 15,
+        "as_fraction_denominator": 1,
+        "is_integer": true,
+        "u64_overflow": "fits_u64",
+        "computability_classification": "finite_decidable"
+      }
+    },
+    {
+      "id": "jd_invalid_malformed",
+      "family": "judgment",
+      "status": "supported",
+      "lean_module": "LeverProofLean.Judgment",
+      "lean_theorem": "classify",
+      "model_id": "SolverJudgmentV1",
+      "inputs": {
+        "truth_case": {
+          "id": "invalid_malformed",
+          "inputs": {
+            "malformed_input": true
+          },
+          "checked": false,
+          "expect": {
+            "outcome": "invalid",
+            "payload_kind": "invalid_reason",
+            "unknown_reason": null,
+            "invalid_reason": "malformed_input",
+            "authorizes_semantic": false,
+            "authorizes_removal": false
+          }
+        }
+      },
+      "expect": {
+        "outcome": "invalid",
+        "payload_kind": "invalid_reason",
+        "unknown_reason": null,
+        "invalid_reason": "malformed_input",
+        "authorizes_semantic": false,
+        "authorizes_removal": false,
+        "computability_classification": "finite_decidable"
+      }
+    },
+    {
+      "id": "jd_unknown_timeout",
+      "family": "judgment",
+      "status": "supported",
+      "lean_module": "LeverProofLean.Judgment",
+      "lean_theorem": "classify",
+      "model_id": "SolverJudgmentV1",
+      "inputs": {
+        "truth_case": {
+          "id": "unknown_timeout",
+          "inputs": {
+            "timed_out": true,
+            "vss_verdict": "unsupported",
+            "exhausted": true,
+            "replay_checked": true,
+            "replay_ok": true
+          },
+          "checked": false,
+          "expect": {
+            "outcome": "unknown",
+            "payload_kind": "unknown_reason",
+            "unknown_reason": "timeout",
+            "invalid_reason": null,
+            "authorizes_semantic": false,
+            "authorizes_removal": false
+          }
+        }
+      },
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "timeout",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false,
+        "computability_classification": "finite_decidable"
+      }
+    },
+    {
+      "id": "jd_adversarial_timed_out_blocks_refuted",
+      "family": "judgment",
+      "status": "supported",
+      "lean_module": "LeverProofLean.Judgment",
+      "lean_theorem": "classify",
+      "model_id": "SolverJudgmentV1",
+      "inputs": {
+        "truth_case": {
+          "id": "adversarial_timed_out_blocks_refuted",
+          "inputs": {
+            "vss_verdict": "unsupported",
+            "exhausted": true,
+            "replay_checked": true,
+            "replay_ok": true,
+            "timed_out": true
+          },
+          "checked": false,
+          "expect": {
+            "outcome": "unknown",
+            "payload_kind": "unknown_reason",
+            "unknown_reason": "timeout",
+            "invalid_reason": null,
+            "authorizes_semantic": false,
+            "authorizes_removal": false
+          }
+        }
+      },
+      "expect": {
+        "outcome": "unknown",
+        "payload_kind": "unknown_reason",
+        "unknown_reason": "timeout",
+        "invalid_reason": null,
+        "authorizes_semantic": false,
+        "authorizes_removal": false,
+        "computability_classification": "finite_decidable"
+      }
+    },
+    {
+      "id": "cv_finite_decidable_empty",
+      "family": "computability",
+      "status": "supported",
+      "lean_module": "LeverProofLean.FiniteSearchBounds",
+      "lean_theorem": "fixture_empty_holes",
+      "model_id": "ExpansionVerificationQueryModel",
+      "inputs": {
+        "domain_sizes": []
+      },
+      "expect": {
+        "assignment_count": 1,
+        "prefix_tree_nodes": 1,
+        "coarse_nodes": 1,
+        "total_query_bound": 2,
+        "u64_overflow": "fits_u64",
+        "computability_classification": "finite_decidable"
+      }
+    },
+    {
+      "id": "adv_stale_schema",
+      "family": "adversarial",
+      "status": "unsupported",
+      "unsupported_reason": "stale_schema_version",
+      "lean_module": null,
+      "lean_theorem": null,
+      "model_id": null,
+      "inputs": {
+        "probe": "stale_schema_version",
+        "claimed_schema": "resource_bound_trigger_parity/v0"
+      },
+      "expect": {}
+    },
+    {
+      "id": "adv_unknown_trigger",
+      "family": "adversarial",
+      "status": "unsupported",
+      "unsupported_reason": "unknown_trigger",
+      "lean_module": "LeverProofLean.MechanismTrigger",
+      "lean_theorem": "unknown_activation_blocks_no_effect_certificate",
+      "model_id": "MechanismTrigger",
+      "inputs": {
+        "probe": "unknown_trigger",
+        "trigger": "not_a_real_trigger"
+      },
+      "expect": {}
+    },
+    {
+      "id": "adv_incomplete_domain",
+      "family": "adversarial",
+      "status": "unsupported",
+      "unsupported_reason": "incomplete_domain",
+      "lean_module": "LeverProofLean.FiniteSearchBounds",
+      "lean_theorem": "sizesFromProvedDomains",
+      "model_id": "ExpansionVerificationQueryModel",
+      "inputs": {
+        "probe": "incomplete_domain"
+      },
+      "expect": {
+        "rejected": true,
+        "reject_class": "incomplete_domain",
+        "message_contains": "proved-complete",
+        "computability_classification": "unclassified"
+      }
+    },
+    {
+      "id": "adv_cost_model_mismatch",
+      "family": "adversarial",
+      "status": "unsupported",
+      "unsupported_reason": "cost_model_mismatch",
+      "lean_module": "LeverProofLean.EventTrace",
+      "lean_theorem": "traceCost",
+      "model_id": "DecodeUnitWorkModel",
+      "inputs": {
+        "probe": "cost_model_mismatch",
+        "model_id": "TrainStepModel"
+      },
+      "expect": {}
+    },
+    {
+      "id": "adv_unknown_computability_label",
+      "family": "adversarial",
+      "status": "unsupported",
+      "unsupported_reason": "unknown_computability_label",
+      "lean_module": null,
+      "lean_theorem": null,
+      "model_id": null,
+      "inputs": {
+        "probe": "unknown_computability_label",
+        "label": "rm_research:fake_RCA0"
+      },
+      "expect": {}
+    },
+    {
+      "id": "adv_duplicate_live",
+      "family": "adversarial",
+      "status": "unsupported",
+      "unsupported_reason": "duplicate_live",
+      "lean_module": "LeverProofLean.ExactClosure",
+      "lean_theorem": "unique_live",
+      "model_id": "ExactClosure",
+      "inputs": {
+        "probe": "duplicate_live_rejected"
+      },
+      "expect": {
+        "rejected": true,
+        "reject_class": "duplicate_live",
+        "computability_classification": "finite_decidable"
+      }
+    }
+  ]
+}

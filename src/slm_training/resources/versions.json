@@ -12,7 +12,7 @@
   ],
   "components": {
     "formal.leverproof": {
-      "version": "v23",
+      "version": "v24",
       "kind": "harness",
       "paths": [
         "src/leverproof_lean/LeverProofLean/VerifiedEncoding.lean",
@@ -39,9 +39,16 @@
         "docs/design/kern-06-event-trace-machine-cost.md",
         "docs/design/kern-07-singleton-zero-neural-policy.md",
         "src/leverproof_lean/LeverProofLean/MechanismTrigger.lean",
-        "docs/design/kern-08-mechanism-trigger-no-effect.md"
+        "docs/design/kern-08-mechanism-trigger-no-effect.md",
+        "src/leverproof_lean/LeverProofLean/ResourceBoundParity.lean",
+        "docs/design/kern-10-resource-bound-trigger-parity.md"
       ],
       "history": [
+        {
+          "version": "v24",
+          "note": "KERN-10 (SLM-538): ResourceBoundParity Lean mirrors + Proofs wiring",
+          "date": "2026-08-11"
+        },
         {
           "version": "v23",
           "date": "2026-08-11",
@@ -3098,7 +3105,7 @@
       ]
     },
     "governance.ownership_map": {
-      "version": "v23",
+      "version": "v24",
       "kind": "gate",
       "paths": [
         "docs/design/repository-ownership-map.md",
@@ -3111,6 +3118,11 @@
         "tests/test_scripts/test_verify_ownership_map.py"
       ],
       "history": [
+        {
+          "version": "v24",
+          "date": "2026-08-11",
+          "note": "KERN-10 (SLM-538): map formal/ and resource_bound_parity verifier into tests/test_formal"
+        },
         {
           "version": "v23",
           "date": "2026-08-11T13:14:39Z",
@@ -18574,6 +18586,24 @@
           "note": "EVID-04 (SLM-525): safe symbolic bound AST, exact Fraction evaluator, registry + Lean/Python parity fixtures."
         }
       ]
+    },
+    "formal.resource_bound_parity": {
+      "version": "v1",
+      "paths": [
+        "src/slm_training/formal/resource_bound_parity.py",
+        "src/slm_training/resources/formal/resource_bound_trigger_parity.schema.json",
+        "src/slm_training/resources/formal/resource_bound_trigger_parity_fixtures.v1.json",
+        "tests/test_formal/test_resource_bound_parity.py",
+        "scripts/verify_resource_bound_parity.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "note": "KERN-10 (SLM-538): frozen Python/Lean resource-bound and trigger parity fixtures",
+          "date": "2026-08-11"
+        }
+      ],
+      "kind": "harness"
     }
   }
 }
