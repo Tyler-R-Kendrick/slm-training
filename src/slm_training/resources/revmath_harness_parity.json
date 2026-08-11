@@ -1,0 +1,239 @@
+{
+  "schema": "revmath_harness_parity/v1",
+  "linear_id": "SLM-520",
+  "issue_key": "HARN-01",
+  "profile_id": "reasoning/revmath",
+  "default_profile_id": "reasoning/g4",
+  "registration_module": "src/slm_training/harnesses/reasoning/profiles.py",
+  "registration_symbols": [
+    "DEFAULT_PROFILE_ID",
+    "REVMATH_PROFILE_ID",
+    "PROFILES",
+    "ReasoningProfileV1",
+    "get_profile",
+    "resolve_profile",
+    "assert_default_unchanged"
+  ],
+  "owner_map": "src/slm_training/resources/revmath_owner_map.json",
+  "design_doc": "docs/design/reverse-mathematics-computability.md",
+  "adr": "docs/design/adr-revmath-reasoning-profile.md",
+  "verified_by": "scripts/verify_revmath_harness_parity.py",
+  "self_healing": {
+    "notes": "Freeze surface for proposition-preserving repair (implemented by HARN-09; declared here so parity audits fail closed before repair code lands).",
+    "may_modify": [
+      "tactic_sequence",
+      "proof_search_strategy",
+      "retrieval_choices",
+      "type_equivalent_theorem_selection",
+      "serialization_bridge_generation",
+      "temporary_decomposition",
+      "resource_allocation_within_locked_budget"
+    ],
+    "must_freeze": [
+      "proposition",
+      "base_theory_or_allowed_assumptions",
+      "theorem_direction",
+      "corpus_membership",
+      "experiment_arms",
+      "budgets_and_stopping_rules",
+      "judge_definitions",
+      "promotion_gates",
+      "authority_policy",
+      "expected_counterexample_semantics"
+    ]
+  },
+  "absorbed_predecessors": [
+    {
+      "issue_key": "HARN-12",
+      "title": "Harness / self-healing parity audit for reasoning/revmath",
+      "absorbed_into": "HARN-01",
+      "reason": "Standalone parity-audit ticket would duplicate HARN-01's machine-checkable obligation matrix, self-healing freeze declaration, and registration-seam certificate. Recording blockers explicitly here closes the audit without a second owner or verifier stack."
+    }
+  ],
+  "obligations": [
+    {
+      "id": "commands.reasoning_bench_cli",
+      "category": "commands",
+      "required_owner": "scripts/run_reasoning_bench.py",
+      "status": "present",
+      "blocker_issue": null,
+      "notes": "Existing G4 CLI; default path must stay profile-agnostic."
+    },
+    {
+      "id": "commands.abstract_cot_warmup_cli",
+      "category": "commands",
+      "required_owner": "scripts/run_abstract_cot_warmup.py",
+      "status": "present",
+      "blocker_issue": null,
+      "notes": "Existing warmup CLI; unchanged by revmath registration."
+    },
+    {
+      "id": "commands.revmath_profile_cli",
+      "category": "commands",
+      "required_owner": null,
+      "status": "blocker",
+      "blocker_issue": "HARN-10",
+      "notes": "Opt-in revmath CLI / skill entry that materializes ExperimentCampaignV1 is downstream."
+    },
+    {
+      "id": "schemas.revmath_task_corpus_result_repair",
+      "category": "schemas",
+      "required_owner": null,
+      "status": "blocker",
+      "blocker_issue": "HARN-02",
+      "notes": "Strict task/corpus/result/repair/report schemas; registration must not invent interim schemas."
+    },
+    {
+      "id": "resources.owner_map",
+      "category": "resources",
+      "required_owner": "src/slm_training/resources/revmath_owner_map.json",
+      "status": "present",
+      "blocker_issue": null,
+      "notes": "EVID-01 canonical owner freeze."
+    },
+    {
+      "id": "resources.harness_parity_matrix",
+      "category": "resources",
+      "required_owner": "src/slm_training/resources/revmath_harness_parity.json",
+      "status": "present",
+      "blocker_issue": null,
+      "notes": "This matrix; missing rows must be explicit blockers."
+    },
+    {
+      "id": "resources.profile_registration",
+      "category": "resources",
+      "required_owner": "src/slm_training/harnesses/reasoning/profiles.py",
+      "status": "present",
+      "blocker_issue": null,
+      "notes": "Smallest discovery seam under harnesses/reasoning/."
+    },
+    {
+      "id": "campaign.experiment_campaign_v1",
+      "category": "campaign_binding",
+      "required_owner": "src/slm_training/autoresearch/experiment_campaign.py",
+      "status": "present",
+      "blocker_issue": null,
+      "notes": "Canonical campaign owner; no revmath-local campaign store."
+    },
+    {
+      "id": "campaign.revmath_run_binding",
+      "category": "campaign_binding",
+      "required_owner": null,
+      "status": "blocker",
+      "blocker_issue": "HARN-10",
+      "notes": "Wire live revmath runs to locked ExperimentCampaignV1 manifests."
+    },
+    {
+      "id": "evidence.decode_stats_record",
+      "category": "evidence",
+      "required_owner": "src/slm_training/models/decode_stats.py",
+      "status": "present",
+      "blocker_issue": null,
+      "notes": "DecodeStatsRecordV1 / MechanismActivationV1."
+    },
+    {
+      "id": "evidence.verifier_witness",
+      "category": "evidence",
+      "required_owner": "src/slm_training/evals/semantic_failure.py",
+      "status": "present",
+      "blocker_issue": null,
+      "notes": "VerifierWitnessV1."
+    },
+    {
+      "id": "evidence.mechanism_disposition",
+      "category": "evidence",
+      "required_owner": "src/slm_training/harnesses/experiments/mechanism_disposition_report.py",
+      "status": "present",
+      "blocker_issue": null,
+      "notes": "MechanismDispositionRecordV1."
+    },
+    {
+      "id": "evidence.revmath_emit_path",
+      "category": "evidence",
+      "required_owner": null,
+      "status": "blocker",
+      "blocker_issue": "HARN-03",
+      "notes": "Runner must emit canonical envelopes; no profile-local evidence store."
+    },
+    {
+      "id": "replay.replay_bundle",
+      "category": "replay",
+      "required_owner": "src/slm_training/runtime/telemetry/replay_bundle.py",
+      "status": "present",
+      "blocker_issue": null,
+      "notes": "ReplayBundleV1."
+    },
+    {
+      "id": "replay.revmath_deterministic_path",
+      "category": "replay",
+      "required_owner": null,
+      "status": "blocker",
+      "blocker_issue": "HARN-03",
+      "notes": "Deterministic revmath runner + replay bundles."
+    },
+    {
+      "id": "bounded_execution.run_bounded_process",
+      "category": "bounded_execution",
+      "required_owner": "src/slm_training/harness_core/bounded_process.py",
+      "status": "present",
+      "blocker_issue": null,
+      "notes": "Hard run-cap subprocess owner."
+    },
+    {
+      "id": "bounded_execution.formal_preflight",
+      "category": "bounded_execution",
+      "required_owner": "src/slm_training/autoresearch/formal.py",
+      "status": "present",
+      "blocker_issue": null,
+      "notes": "run_formal_preflight / validate_formal_preflight_artifact."
+    },
+    {
+      "id": "repair.semantic_repair_record",
+      "category": "repair",
+      "required_owner": "src/slm_training/harnesses/distill/semantic_repair.py",
+      "status": "present",
+      "blocker_issue": null,
+      "notes": "SemanticRepairRecordV1 / RepairResidualV1 — extend, do not fork."
+    },
+    {
+      "id": "repair.proposition_preserving_controller",
+      "category": "repair",
+      "required_owner": null,
+      "status": "blocker",
+      "blocker_issue": "HARN-09",
+      "notes": "Self-healing controller must honor may_modify / must_freeze declared above."
+    },
+    {
+      "id": "versions.governance_revmath_owners",
+      "category": "versions",
+      "required_owner": "src/slm_training/resources/versions.json",
+      "status": "present",
+      "blocker_issue": null,
+      "notes": "Existing version registry; no parallel revmath version file."
+    },
+    {
+      "id": "docs.design_and_adr",
+      "category": "docs",
+      "required_owner": "docs/design/reverse-mathematics-computability.md",
+      "status": "present",
+      "blocker_issue": null,
+      "notes": "Design + ADR cite profile id and extension seams."
+    },
+    {
+      "id": "docs.skills_and_agent_surfaces",
+      "category": "agent_surfaces",
+      "required_owner": null,
+      "status": "blocker",
+      "blocker_issue": "INTEG-09",
+      "notes": "Canonical skills + verify_agent_surfaces obligation coverage for revmath profile."
+    },
+    {
+      "id": "self_healing.freeze_declared",
+      "category": "repair",
+      "required_owner": "src/slm_training/resources/revmath_harness_parity.json",
+      "status": "present",
+      "blocker_issue": null,
+      "notes": "may_modify / must_freeze sets are machine-checked for disjointness and non-emptiness."
+    }
+  ]
+}

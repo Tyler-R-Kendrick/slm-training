@@ -3051,6 +3051,11 @@
         {
           "version": "v23",
           "date": "2026-08-11",
+          "note": "no-bump: wire REVMATH_HARNESS_PARITY_FILES into check_changed only; ownership_map contract and verify_ownership_map behavior unchanged."
+        },
+        {
+          "version": "v23",
+          "date": "2026-08-11",
           "note": "no-bump: EVID-01 (SLM-515) wires verify_revmath_owners into check_changed REVMATH_OWNER_FILES; no ownership_map.json structural change."
         },
         {
@@ -3296,7 +3301,7 @@
       ]
     },
     "governance.revmath_owners": {
-      "version": "v1",
+      "version": "v2",
       "kind": "gate",
       "paths": [
         "docs/design/adr-revmath-reasoning-profile.md",
@@ -3307,9 +3312,31 @@
       ],
       "history": [
         {
+          "version": "v2",
+          "date": "2026-08-11",
+          "note": "HARN-01 (SLM-520): document harness parity matrix, self-healing freeze, and absorbed HARN-12 scope on the revmath owner design surface."
+        },
+        {
           "version": "v1",
           "date": "2026-08-11",
           "note": "EVID-01 (SLM-515): freeze formal/evidence/revmath canonical owner map, ADR for reasoning/revmath profile, and verify_revmath_owners parity certificate; absorbs EVID-02 registry scope."
+        }
+      ]
+    },
+    "governance.revmath_harness_parity": {
+      "version": "v1",
+      "kind": "gate",
+      "paths": [
+        "src/slm_training/resources/revmath_harness_parity.json",
+        "scripts/verify_revmath_harness_parity.py",
+        "src/slm_training/harnesses/reasoning/profiles.py",
+        "tests/test_scripts/test_verify_revmath_harness_parity.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-11",
+          "note": "HARN-01 (SLM-520): machine-checkable reasoning/revmath harness parity matrix, self-healing freeze surface, and registration-seam certificate; absorbs HARN-12 parity-audit scope."
         }
       ]
     },
@@ -5192,7 +5219,7 @@
         {
           "version": "v163",
           "date": "2026-08-11",
-          "note": "PGS-H01 (SLM-510): add goal_support_domain_adequacy.py fixture campaign harness + scripts/run_goal_support_domain_adequacy.py — default-off bounded diagnostic ExperimentCampaignV1 over word-tree fixtures with structural/production-exact/evaluation-oracle/certified arms, falsifiers (zero false hard prune), deterministic result digest, and harness/CLI tests. Harness + tests only; SLM-511 publishes measured evidence."
+          "note": "PGS-H01 (SLM-510): add goal_support_domain_adequacy.py fixture campaign harness + scripts/run_goal_support_domain_adequacy.py \u2014 default-off bounded diagnostic ExperimentCampaignV1 over word-tree fixtures with structural/production-exact/evaluation-oracle/certified arms, falsifiers (zero false hard prune), deterministic result digest, and harness/CLI tests. Harness + tests only; SLM-511 publishes measured evidence."
         },
         {
           "version": "v162",
@@ -11807,6 +11834,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-08-11",
+          "note": "no-bump: re-export reasoning profile discovery symbols from harnesses/reasoning/__init__.py; abstract CoT warmup campaign behavior unchanged."
+        },
+        {
+          "version": "v1",
           "date": "2026-07-26",
           "note": "no-bump: refresh committed local fixture and AgentV evidence after rebasing SLM-311; orchestration behavior and the v1 contract are unchanged"
         },
@@ -13529,12 +13561,17 @@
       ]
     },
     "harness.reasoning.bench": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/reasoning/"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-11",
+          "note": "HARN-01 (SLM-520): register opt-in reasoning/revmath profile discovery in harnesses/reasoning/profiles.py without changing G4 default behavior."
+        },
         {
           "version": "v1",
           "date": "2026-07-18",
