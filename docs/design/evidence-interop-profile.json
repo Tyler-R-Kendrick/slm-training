@@ -1,0 +1,47 @@
+{
+  "schema": "evidence_interop_profile/v1",
+  "profile_id": "slm-evidence-interop/v1",
+  "version": "v1",
+  "issue": "SLM-543",
+  "key": "EVID-12",
+  "semantic_authority_default": false,
+  "formats": [
+    "prov-o-jsonld",
+    "ro-crate",
+    "spdx3",
+    "intoto",
+    "oci-referrer"
+  ],
+  "authority_fields": {
+    "formal_object": ["object_id", "content_digest", "required_checkers"],
+    "evidence_bundle": [
+      "run_id",
+      "config_sha256",
+      "corpus_sha256",
+      "checkpoint_sha256",
+      "suite_hashes",
+      "raw_envelope_sha256"
+    ],
+    "experiment_campaign": [
+      "campaign_id",
+      "locked_eval_manifest_sha256",
+      "source_commit"
+    ],
+    "data_snapshot": ["snapshot_id", "records_sha", "annotations_sha"]
+  },
+  "standards": {
+    "prov-o": "https://www.w3.org/TR/prov-o/",
+    "ro-crate": "https://www.researchobject.org/ro-crate/",
+    "spdx3": "https://spdx.github.io/spdx-spec/v3.0.1/",
+    "intoto_test_result": "https://github.com/in-toto/attestation/blob/main/spec/predicates/test-result.md",
+    "oci_image_spec": "https://github.com/opencontainers/image-spec"
+  },
+  "non_claims": [
+    "PROV-O does not prove ship gates or Lean kernel checks",
+    "RO-Crate does not prove evidence-bundle publishability",
+    "SPDX does not prove required_checkers ran",
+    "in-toto/SLSA projections here are unsigned packaging only",
+    "OCI referrers do not prove registry presence or semantic authority",
+    "Importing any projection never sets semantic_authority=true"
+  ]
+}

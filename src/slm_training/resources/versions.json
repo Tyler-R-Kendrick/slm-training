@@ -3772,6 +3772,11 @@
         {
           "version": "v207",
           "date": "2026-08-11",
+          "note": "no-bump: rebuild evidence_ledger.v1.json after EVID-12 (SLM-543) evidence-interop-profile design docs; deterministic fold, no campaign contract change."
+        },
+        {
+          "version": "v207",
+          "date": "2026-08-11",
           "note": "no-bump: rebuild evidence_ledger.v1.json after INTEG-10 design/results docs; deterministic fold, no ledger schema or selection behavior change."
         },
         {
@@ -18962,6 +18967,23 @@
           "version": "v1",
           "date": "2026-08-11",
           "note": "INTEG-04 (SLM-529): opt-in four-axis ledger projection adapters for harness report seams; absent evidence stays absent/unknown; authority ceiling fail-closed."
+        }
+      ]
+    },
+    "evidence.interop": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/evidence_interop/",
+        "docs/design/evidence-interop-profile.md",
+        "docs/design/evidence-interop-profile.json",
+        "tests/test_evidence_interop/"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-11",
+          "note": "EVID-12 (SLM-543): thin PROV-O / RO-Crate / SPDX 3 / in-toto-SLSA / OCI-referrer projection profile; authority ids stay native; import never upgrades semantic_authority."
         }
       ]
     }
