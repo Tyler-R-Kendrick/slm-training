@@ -364,6 +364,60 @@ SERIALIZED_CONTRACTS: tuple[SerializedContract, ...] = (
         version_symbol="COMPUTE_STATE_FEATURES_SCHEMA",
         reader="from_dict",
     ),
+    SerializedContract(
+        contract_id="GoalConstraintV1",
+        module="src/slm_training/data/progspec/goal_constraints.py",
+        version_symbol="GOAL_CONSTRAINT_SCHEMA_VERSION",
+        reader="from_dict",
+    ),
+    SerializedContract(
+        contract_id="CompiledGoalConstraintSetV1",
+        module="src/slm_training/data/progspec/goal_constraints.py",
+        version_symbol="COMPILED_GOAL_CONSTRAINT_SET_SCHEMA_VERSION",
+        reader="from_dict",
+    ),
+    SerializedContract(
+        contract_id="GoalConstraintEvaluationV1",
+        module="src/slm_training/data/progspec/goal_constraints.py",
+        version_symbol="GOAL_CONSTRAINT_EVALUATION_SCHEMA_VERSION",
+        reader="from_dict",
+    ),
+    SerializedContract(
+        contract_id="GoalVerifierProfileV1",
+        module="src/slm_training/dsl/solver/goal_support.py",
+        version_symbol="GOAL_VERIFIER_PROFILE_SCHEMA_VERSION",
+        reader="from_dict",
+    ),
+    SerializedContract(
+        contract_id="GoalTerminalEvidenceV1",
+        module="src/slm_training/dsl/solver/goal_support.py",
+        version_symbol="GOAL_TERMINAL_EVIDENCE_SCHEMA_VERSION",
+        reader="from_dict",
+    ),
+    SerializedContract(
+        contract_id="GoalSupportResultV1",
+        module="src/slm_training/dsl/solver/goal_support.py",
+        version_symbol="GOAL_SUPPORT_RESULT_SCHEMA_VERSION",
+        reader="from_dict",
+    ),
+    SerializedContract(
+        contract_id="DomainObstructionCoreV1",
+        module="src/slm_training/dsl/solver/goal_support_obstruction.py",
+        version_symbol="DOMAIN_OBSTRUCTION_CORE_SCHEMA_VERSION",
+        reader="from_dict",
+    ),
+    SerializedContract(
+        contract_id="GoalActionEvidenceV1",
+        module="src/slm_training/dsl/solver/goal_support_domain_adequacy.py",
+        version_symbol="GOAL_ACTION_EVIDENCE_SCHEMA_VERSION",
+        reader="from_dict",
+    ),
+    SerializedContract(
+        contract_id="GoalDomainAdequacyReportV1",
+        module="src/slm_training/dsl/solver/goal_support_domain_adequacy.py",
+        version_symbol="GOAL_DOMAIN_ADEQUACY_REPORT_SCHEMA_VERSION",
+        reader="from_dict",
+    ),
 )
 
 

@@ -1,0 +1,88 @@
+{
+  "additionalProperties": false,
+  "description": "Digest-bound sidecar keyed by the canonical base certificate digest.",
+  "properties": {
+    "schema_version": {
+      "default": "goal_support_result/v1",
+      "pattern": "^goal_support_result/v1$",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "base_certificate_digest": {
+      "minLength": 1,
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Base Certificate Digest",
+      "type": "string"
+    },
+    "base_verdict": {
+      "minLength": 1,
+      "title": "Base Verdict",
+      "type": "string"
+    },
+    "profile_digest": {
+      "minLength": 1,
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Profile Digest",
+      "type": "string"
+    },
+    "authority_tier": {
+      "enum": [
+        "compiler-hard",
+        "verifier-hard",
+        "evaluation-only",
+        "advisory-learned",
+        "oracle-diagnostic"
+      ],
+      "title": "Authority Tier",
+      "type": "string"
+    },
+    "terminal_evidence_digests": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Terminal Evidence Digests",
+      "type": "array"
+    },
+    "witness_terminal_evidence_digest": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$|^$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Witness Terminal Evidence Digest"
+    },
+    "obstruction_core_digest": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$|^$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Obstruction Core Digest"
+    },
+    "digest": {
+      "default": "",
+      "pattern": "^[0-9a-f]{64}$|^$",
+      "title": "Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "base_certificate_digest",
+    "base_verdict",
+    "profile_digest",
+    "authority_tier"
+  ],
+  "title": "GoalSupportResultV1",
+  "type": "object"
+}

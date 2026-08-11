@@ -38,6 +38,7 @@ OWNERSHIP_MAP_FILES = frozenset(
     {
         "src/slm_training/resources/ownership_map.json",
         "scripts/verify_ownership_map.py",
+        "scripts/render_repository_ownership_map.py",
         "docs/design/repository-ownership-map.md",
         "docs/design/symbol-only-output-contract.md",
     }
@@ -380,6 +381,8 @@ def check(
         if _run([sys.executable, "-m", "scripts.verify_agent_surfaces"]):
             return 1
     if any(path in OWNERSHIP_MAP_FILES for path in paths):
+        if _run([sys.executable, "-m", "scripts.render_repository_ownership_map", "--check"]):
+            return 1
         if _run([sys.executable, "-m", "scripts.verify_ownership_map"]):
             return 1
     tests = hook_test_targets(paths) if changed_tests_only else select_tests(paths)

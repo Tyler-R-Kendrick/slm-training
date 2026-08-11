@@ -33,6 +33,10 @@ from slm_training.data.semantic_plan.oracle import (
     select_shuffled_oracle,
 )
 from slm_training.data.semantic_plan.seed import PlanSeedBuilder
+from slm_training.data.semantic_plan.requirements_compile import (
+    compile_goal_constraints,
+    evaluate_goal_constraints,
+)
 
 __all__ = [
     "AuthorityProjectionV1",
@@ -56,6 +60,8 @@ __all__ = [
     "apply_plan_intervention",
     "build_baseline_intervention",
     "canonicalize_plan",
+    "compile_goal_constraints",
+    "evaluate_goal_constraints",
     "filter_manifest_safe",
     "intervention_record_integrity_ok",
     "plan_factor_fingerprints",
