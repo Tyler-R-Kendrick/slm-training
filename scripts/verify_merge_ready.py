@@ -107,10 +107,6 @@ def merge_gate_steps(*, fast: bool = False) -> tuple[Step, ...]:
             (python, "-m", "scripts.verify_version_stamps", "--check"),
         ),
         Step(
-            "evidence_ledger",
-            (python, "-m", "scripts.build_evidence_ledger", "--check"),
-        ),
-        Step(
             "formal_evidence_mutations",
             (
                 python,
@@ -120,11 +116,24 @@ def merge_gate_steps(*, fast: bool = False) -> tuple[Step, ...]:
             ),
         ),
         Step(
+            "evidence_ledger",
+            (python, "-m", "scripts.build_evidence_ledger", "--check"),
+        ),
+        Step(
             "integ06_adversarial_acceptance",
             (
                 python,
                 "-m",
                 "scripts.verify_integ06_adversarial_acceptance",
+                "--check",
+            ),
+        ),
+        Step(
+            "integ07_activation_preflight_recall",
+            (
+                python,
+                "-m",
+                "scripts.verify_integ07_activation_preflight",
                 "--check",
             ),
         ),

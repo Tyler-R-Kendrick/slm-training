@@ -1,0 +1,452 @@
+{
+  "schema": "integ07_activation_preflight_replay/v1",
+  "issue": "SLM-561",
+  "integ": "INTEG-07",
+  "claim_class": "fixture",
+  "generalizes_beyond_corpus": false,
+  "kernel": "slm_training.formal.mechanism_trigger",
+  "admission": "slm_training.autoresearch.preflight.mechanism_no_effect",
+  "revmath_corpus": {
+    "source": "HARN-11",
+    "corpus_id": "corpus.rm.hermetic.v1",
+    "manifest_relpath": "src/slm_training/resources/revmath/corpus/hermetic_v1.manifest.json",
+    "positive_entry_ids": [
+      "entry.corpus.constructivization_success",
+      "entry.corpus.counterexample_checked",
+      "entry.corpus.quant_success"
+    ],
+    "negative_entry_ids": [
+      "entry.corpus.timeout",
+      "entry.corpus.malformed_evidence",
+      "entry.corpus.incomplete_domain"
+    ]
+  },
+  "acceptance": {
+    "known_activating_recall_min": 1.0,
+    "false_skip_of_activating_is_release_blocking": true,
+    "unknown_must_run": true,
+    "beyond_fixture_skips_require_identity_match": true
+  },
+  "notes": [
+    "Replay set for activation/no-effect preflight recall. Reuses INTEG-02 admit_mechanism_treatment — no parallel admission path.",
+    "A false skip of a known activating case is release-blocking.",
+    "Unknown / incomplete / identity-mismatched evidence must effective-run, never authorize beyond-fixture skips."
+  ],
+  "cases": [
+    {
+      "id": "act.singleton_bypass.present",
+      "cohort": "known_activating",
+      "ground_truth": "activating",
+      "expect_disposition": "run",
+      "source": "historical_mechanism",
+      "mechanism_id": "singleton_bypass",
+      "corpus_id": "integ07/activating/singleton_bypass",
+      "locked_corpus_id": "integ07/activating/singleton_bypass",
+      "theorem_ref": "MechanismTrigger.singleton_bypass_output_change_implies_trigger",
+      "expected_theorem_ref": "MechanismTrigger.singleton_bypass_output_change_implies_trigger",
+      "cost_model": "NeuralForwardOnlyModel",
+      "cost_model_version": 1,
+      "expected_cost_model_version": 1,
+      "scan_complete": true,
+      "treatment_compute_units": 4,
+      "observations": [
+        {
+          "input_id": "historical/singleton_present_effect",
+          "baseline_output": 1,
+          "enabled_output": 2,
+          "baseline_cost": 4,
+          "enabled_cost": 1,
+          "trigger": "present"
+        }
+      ]
+    },
+    {
+      "id": "act.closure_removal.present",
+      "cohort": "known_activating",
+      "ground_truth": "activating",
+      "expect_disposition": "run",
+      "source": "historical_mechanism",
+      "mechanism_id": "closure_removal",
+      "corpus_id": "integ07/activating/closure_removal",
+      "locked_corpus_id": "integ07/activating/closure_removal",
+      "theorem_ref": "MechanismTrigger.closure_removal_output_change_implies_trigger",
+      "expected_theorem_ref": "MechanismTrigger.closure_removal_output_change_implies_trigger",
+      "cost_model": "DecodeUnitWorkModel",
+      "cost_model_version": 1,
+      "expected_cost_model_version": 1,
+      "scan_complete": true,
+      "treatment_compute_units": 5,
+      "observations": [
+        {
+          "input_id": "historical/closure_present_effect",
+          "baseline_output": 7,
+          "enabled_output": 9,
+          "baseline_cost": 5,
+          "enabled_cost": 3,
+          "trigger": "present"
+        }
+      ]
+    },
+    {
+      "id": "act.cache_reuse.present",
+      "cohort": "known_activating",
+      "ground_truth": "activating",
+      "expect_disposition": "run",
+      "source": "historical_mechanism",
+      "mechanism_id": "cache_reuse",
+      "corpus_id": "integ07/activating/cache_reuse",
+      "locked_corpus_id": "integ07/activating/cache_reuse",
+      "theorem_ref": "MechanismTrigger.cache_reuse_output_change_implies_trigger",
+      "expected_theorem_ref": "MechanismTrigger.cache_reuse_output_change_implies_trigger",
+      "cost_model": "DecodeUnitWorkModel",
+      "cost_model_version": 1,
+      "expected_cost_model_version": 1,
+      "scan_complete": true,
+      "treatment_compute_units": 9,
+      "observations": [
+        {
+          "input_id": "historical/cache_present_effect",
+          "baseline_output": 11,
+          "enabled_output": 13,
+          "baseline_cost": 9,
+          "enabled_cost": 2,
+          "trigger": "present"
+        }
+      ]
+    },
+    {
+      "id": "act.forced_span.present",
+      "cohort": "known_activating",
+      "ground_truth": "activating",
+      "expect_disposition": "run",
+      "source": "historical_mechanism",
+      "mechanism_id": "forced_span",
+      "corpus_id": "integ07/activating/forced_span",
+      "locked_corpus_id": "integ07/activating/forced_span",
+      "theorem_ref": "MechanismTrigger.forced_span_output_change_implies_trigger",
+      "expected_theorem_ref": "MechanismTrigger.forced_span_output_change_implies_trigger",
+      "cost_model": "NeuralForwardOnlyModel",
+      "cost_model_version": 1,
+      "expected_cost_model_version": 1,
+      "scan_complete": true,
+      "treatment_compute_units": 4,
+      "observations": [
+        {
+          "input_id": "historical/forced_present_effect",
+          "baseline_output": 13,
+          "enabled_output": 17,
+          "baseline_cost": 4,
+          "enabled_cost": 1,
+          "trigger": "present"
+        }
+      ]
+    },
+    {
+      "id": "inact.singleton_bypass.absent",
+      "cohort": "provably_inactive",
+      "ground_truth": "inactive",
+      "expect_disposition": "skip_no_effect",
+      "source": "kern08_fixture:singleton_bypass_absent_no_effect",
+      "mechanism_id": "singleton_bypass",
+      "corpus_id": "kern08/singleton_bypass",
+      "locked_corpus_id": "kern08/singleton_bypass",
+      "theorem_ref": "MechanismTrigger.singleton_bypass_output_change_implies_trigger",
+      "expected_theorem_ref": "MechanismTrigger.singleton_bypass_output_change_implies_trigger",
+      "cost_model": "NeuralForwardOnlyModel",
+      "cost_model_version": 1,
+      "expected_cost_model_version": 1,
+      "scan_complete": true,
+      "treatment_compute_units": 3,
+      "observations": [
+        {
+          "input_id": "fixture/singleton_absent",
+          "baseline_output": 42,
+          "enabled_output": 42,
+          "baseline_cost": 3,
+          "enabled_cost": 3,
+          "trigger": "absent"
+        }
+      ]
+    },
+    {
+      "id": "inact.closure_removal.absent",
+      "cohort": "provably_inactive",
+      "ground_truth": "inactive",
+      "expect_disposition": "skip_no_effect",
+      "source": "kern08_fixture:closure_removal_absent_no_effect",
+      "mechanism_id": "closure_removal",
+      "corpus_id": "kern08/closure_removal",
+      "locked_corpus_id": "kern08/closure_removal",
+      "theorem_ref": "MechanismTrigger.closure_removal_output_change_implies_trigger",
+      "expected_theorem_ref": "MechanismTrigger.closure_removal_output_change_implies_trigger",
+      "cost_model": "DecodeUnitWorkModel",
+      "cost_model_version": 1,
+      "expected_cost_model_version": 1,
+      "scan_complete": true,
+      "treatment_compute_units": 5,
+      "observations": [
+        {
+          "input_id": "fixture/closure_absent",
+          "baseline_output": 7,
+          "enabled_output": 7,
+          "baseline_cost": 5,
+          "enabled_cost": 5,
+          "trigger": "absent"
+        }
+      ]
+    },
+    {
+      "id": "inact.cache_reuse.absent",
+      "cohort": "provably_inactive",
+      "ground_truth": "inactive",
+      "expect_disposition": "skip_no_effect",
+      "source": "kern08_fixture:cache_reuse_absent_no_effect",
+      "mechanism_id": "cache_reuse",
+      "corpus_id": "kern08/cache_reuse",
+      "locked_corpus_id": "kern08/cache_reuse",
+      "theorem_ref": "MechanismTrigger.cache_reuse_output_change_implies_trigger",
+      "expected_theorem_ref": "MechanismTrigger.cache_reuse_output_change_implies_trigger",
+      "cost_model": "DecodeUnitWorkModel",
+      "cost_model_version": 1,
+      "expected_cost_model_version": 1,
+      "scan_complete": true,
+      "treatment_compute_units": 9,
+      "observations": [
+        {
+          "input_id": "fixture/cache_absent",
+          "baseline_output": 11,
+          "enabled_output": 11,
+          "baseline_cost": 9,
+          "enabled_cost": 9,
+          "trigger": "absent"
+        }
+      ]
+    },
+    {
+      "id": "inact.forced_span.absent",
+      "cohort": "provably_inactive",
+      "ground_truth": "inactive",
+      "expect_disposition": "skip_no_effect",
+      "source": "kern08_fixture:forced_span_absent_no_effect",
+      "mechanism_id": "forced_span",
+      "corpus_id": "kern08/forced_span",
+      "locked_corpus_id": "kern08/forced_span",
+      "theorem_ref": "MechanismTrigger.forced_span_output_change_implies_trigger",
+      "expected_theorem_ref": "MechanismTrigger.forced_span_output_change_implies_trigger",
+      "cost_model": "NeuralForwardOnlyModel",
+      "cost_model_version": 1,
+      "expected_cost_model_version": 1,
+      "scan_complete": true,
+      "treatment_compute_units": 4,
+      "observations": [
+        {
+          "input_id": "fixture/forced_absent",
+          "baseline_output": 13,
+          "enabled_output": 13,
+          "baseline_cost": 4,
+          "enabled_cost": 4,
+          "trigger": "absent"
+        }
+      ]
+    },
+    {
+      "id": "unk.trigger_unknown",
+      "cohort": "unknown_fallback",
+      "ground_truth": "unknown",
+      "expect_disposition": "run",
+      "source": "kern08_fixture:unknown_activation_rejected",
+      "mechanism_id": "singleton_bypass",
+      "corpus_id": "counterexample/unknown",
+      "locked_corpus_id": "counterexample/unknown",
+      "theorem_ref": "MechanismTrigger.no_effect_of_necessary_and_absent",
+      "expected_theorem_ref": "MechanismTrigger.no_effect_of_necessary_and_absent",
+      "cost_model": "NeuralForwardOnlyModel",
+      "cost_model_version": 1,
+      "expected_cost_model_version": 1,
+      "scan_complete": true,
+      "treatment_compute_units": 1,
+      "observations": [
+        {
+          "input_id": "counterexample/unknown_activation",
+          "baseline_output": 1,
+          "enabled_output": 1,
+          "baseline_cost": 1,
+          "enabled_cost": 1,
+          "trigger": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "unk.revmath_negative_timeout_bound",
+      "cohort": "unknown_fallback",
+      "ground_truth": "unknown",
+      "expect_disposition": "run",
+      "source": "harn11_negative:entry.corpus.timeout",
+      "mechanism_id": "singleton_bypass",
+      "corpus_id": "corpus.rm.hermetic.v1",
+      "locked_corpus_id": "corpus.rm.hermetic.v1",
+      "bind_revmath_entry_id": "entry.corpus.timeout",
+      "theorem_ref": "MechanismTrigger.no_effect_of_necessary_and_absent",
+      "expected_theorem_ref": "MechanismTrigger.no_effect_of_necessary_and_absent",
+      "cost_model": "NeuralForwardOnlyModel",
+      "cost_model_version": 1,
+      "expected_cost_model_version": 1,
+      "scan_complete": true,
+      "treatment_compute_units": 2,
+      "observations": [
+        {
+          "input_id": "revmath/entry.corpus.timeout",
+          "baseline_output": 0,
+          "enabled_output": 0,
+          "baseline_cost": 2,
+          "enabled_cost": 2,
+          "trigger": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "adv.incomplete_scan",
+      "cohort": "adversarial",
+      "adversarial_kind": "incomplete_scan",
+      "ground_truth": "unknown",
+      "expect_disposition": "run",
+      "source": "adversarial",
+      "mechanism_id": "singleton_bypass",
+      "corpus_id": "integ07/adversarial/incomplete",
+      "locked_corpus_id": "integ07/adversarial/incomplete",
+      "theorem_ref": "MechanismTrigger.singleton_bypass_output_change_implies_trigger",
+      "expected_theorem_ref": "MechanismTrigger.singleton_bypass_output_change_implies_trigger",
+      "cost_model": "NeuralForwardOnlyModel",
+      "cost_model_version": 1,
+      "expected_cost_model_version": 1,
+      "scan_complete": false,
+      "treatment_compute_units": 3,
+      "observations": [
+        {
+          "input_id": "adversarial/incomplete_absent_only",
+          "baseline_output": 42,
+          "enabled_output": 42,
+          "baseline_cost": 3,
+          "enabled_cost": 3,
+          "trigger": "absent"
+        }
+      ]
+    },
+    {
+      "id": "adv.stale_trigger_evidence",
+      "cohort": "adversarial",
+      "adversarial_kind": "stale_trigger",
+      "ground_truth": "activating",
+      "expect_disposition": "run",
+      "source": "adversarial",
+      "mechanism_id": "singleton_bypass",
+      "corpus_id": "integ07/adversarial/stale",
+      "locked_corpus_id": "integ07/adversarial/stale",
+      "theorem_ref": "MechanismTrigger.singleton_bypass_output_change_implies_trigger",
+      "expected_theorem_ref": "MechanismTrigger.singleton_bypass_output_change_implies_trigger",
+      "cost_model": "NeuralForwardOnlyModel",
+      "cost_model_version": 1,
+      "expected_cost_model_version": 1,
+      "scan_complete": true,
+      "treatment_compute_units": 4,
+      "notes": "Stale row claims absent while outputs differ — necessary-trigger law fails; must run.",
+      "observations": [
+        {
+          "input_id": "adversarial/stale_absent_claim",
+          "baseline_output": 1,
+          "enabled_output": 9,
+          "baseline_cost": 4,
+          "enabled_cost": 4,
+          "trigger": "absent"
+        }
+      ]
+    },
+    {
+      "id": "adv.corpus_mismatch",
+      "cohort": "adversarial",
+      "adversarial_kind": "corpus_mismatch",
+      "ground_truth": "inactive",
+      "expect_disposition": "run",
+      "source": "adversarial",
+      "mechanism_id": "singleton_bypass",
+      "corpus_id": "wrong/corpus/not-locked",
+      "locked_corpus_id": "corpus.rm.hermetic.v1",
+      "bind_revmath_entry_id": "entry.corpus.constructivization_success",
+      "theorem_ref": "MechanismTrigger.singleton_bypass_output_change_implies_trigger",
+      "expected_theorem_ref": "MechanismTrigger.singleton_bypass_output_change_implies_trigger",
+      "cost_model": "NeuralForwardOnlyModel",
+      "cost_model_version": 1,
+      "expected_cost_model_version": 1,
+      "scan_complete": true,
+      "treatment_compute_units": 3,
+      "notes": "Complete absent evidence on the wrong corpus_id must not authorize a beyond-fixture skip against the locked HARN-11 corpus.",
+      "observations": [
+        {
+          "input_id": "adversarial/corpus_mismatch_absent",
+          "baseline_output": 42,
+          "enabled_output": 42,
+          "baseline_cost": 3,
+          "enabled_cost": 3,
+          "trigger": "absent"
+        }
+      ]
+    },
+    {
+      "id": "adv.mechanism_version_mismatch",
+      "cohort": "adversarial",
+      "adversarial_kind": "mechanism_version_mismatch",
+      "ground_truth": "inactive",
+      "expect_disposition": "run",
+      "source": "adversarial",
+      "mechanism_id": "singleton_bypass",
+      "corpus_id": "kern08/singleton_bypass",
+      "locked_corpus_id": "kern08/singleton_bypass",
+      "theorem_ref": "MechanismTrigger.forced_span_output_change_implies_trigger",
+      "expected_theorem_ref": "MechanismTrigger.singleton_bypass_output_change_implies_trigger",
+      "cost_model": "NeuralForwardOnlyModel",
+      "cost_model_version": 99,
+      "expected_cost_model_version": 1,
+      "scan_complete": true,
+      "treatment_compute_units": 3,
+      "notes": "Wrong theorem_ref + cost_model version vs locked mechanism identity — beyond-fixture skip unauthorized.",
+      "observations": [
+        {
+          "input_id": "fixture/singleton_absent",
+          "baseline_output": 42,
+          "enabled_output": 42,
+          "baseline_cost": 3,
+          "enabled_cost": 3,
+          "trigger": "absent"
+        }
+      ]
+    },
+    {
+      "id": "adv.unsafe_mechanism",
+      "cohort": "adversarial",
+      "adversarial_kind": "mechanism_version_mismatch",
+      "ground_truth": "unknown",
+      "expect_disposition": "run",
+      "source": "kern08_fixture:unconstrained_rerank_no_safe_theorem",
+      "mechanism_id": "unconstrained_rerank",
+      "corpus_id": "counterexample/unconstrained",
+      "locked_corpus_id": "counterexample/unconstrained",
+      "theorem_ref": null,
+      "expected_theorem_ref": null,
+      "cost_model": "NeuralForwardOnlyModel",
+      "cost_model_version": 1,
+      "expected_cost_model_version": 1,
+      "scan_complete": true,
+      "treatment_compute_units": 1,
+      "observations": [
+        {
+          "input_id": "counterexample/unconstrained_rerank",
+          "baseline_output": 0,
+          "enabled_output": 1,
+          "baseline_cost": 1,
+          "enabled_cost": 1,
+          "trigger": "unknown"
+        }
+      ]
+    }
+  ]
+}

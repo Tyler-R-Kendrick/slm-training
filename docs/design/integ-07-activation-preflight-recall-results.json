@@ -1,0 +1,412 @@
+{
+  "acceptance": {
+    "adversarial_kinds_missing": [],
+    "adversarial_kinds_required": [
+      "corpus_mismatch",
+      "incomplete_scan",
+      "mechanism_version_mismatch",
+      "stale_trigger"
+    ],
+    "adversarial_kinds_seen": [
+      "corpus_mismatch",
+      "incomplete_scan",
+      "mechanism_version_mismatch",
+      "stale_trigger"
+    ],
+    "known_activating_recall_min": 1.0,
+    "recall_gate_passed": true,
+    "unknown_must_run": true
+  },
+  "admission_schema": "mechanism_no_effect_admission/v1",
+  "cases": [
+    {
+      "adversarial_kind": null,
+      "case_id": "act.singleton_bypass.present",
+      "certificate_sha256": null,
+      "cohort": "known_activating",
+      "compute_saved": 0,
+      "corpus_id": "integ07/activating/singleton_bypass",
+      "detail": "identity ok; necessary trigger present on historical/singleton_present_effect; run normal experimentation",
+      "effective_disposition": "run",
+      "expect_disposition": "run",
+      "false_skip": false,
+      "ground_truth": "activating",
+      "identity_ok": true,
+      "locked_corpus_id": "integ07/activating/singleton_bypass",
+      "ok": true,
+      "raw_disposition": "run",
+      "reasons": [
+        "necessary trigger present on historical/singleton_present_effect; run normal experimentation"
+      ],
+      "theorem_ref": "MechanismTrigger.singleton_bypass_output_change_implies_trigger",
+      "treatment_compute_units": 4
+    },
+    {
+      "adversarial_kind": null,
+      "case_id": "act.closure_removal.present",
+      "certificate_sha256": null,
+      "cohort": "known_activating",
+      "compute_saved": 0,
+      "corpus_id": "integ07/activating/closure_removal",
+      "detail": "identity ok; necessary trigger present on historical/closure_present_effect; run normal experimentation",
+      "effective_disposition": "run",
+      "expect_disposition": "run",
+      "false_skip": false,
+      "ground_truth": "activating",
+      "identity_ok": true,
+      "locked_corpus_id": "integ07/activating/closure_removal",
+      "ok": true,
+      "raw_disposition": "run",
+      "reasons": [
+        "necessary trigger present on historical/closure_present_effect; run normal experimentation"
+      ],
+      "theorem_ref": "MechanismTrigger.closure_removal_output_change_implies_trigger",
+      "treatment_compute_units": 5
+    },
+    {
+      "adversarial_kind": null,
+      "case_id": "act.cache_reuse.present",
+      "certificate_sha256": null,
+      "cohort": "known_activating",
+      "compute_saved": 0,
+      "corpus_id": "integ07/activating/cache_reuse",
+      "detail": "identity ok; necessary trigger present on historical/cache_present_effect; run normal experimentation",
+      "effective_disposition": "run",
+      "expect_disposition": "run",
+      "false_skip": false,
+      "ground_truth": "activating",
+      "identity_ok": true,
+      "locked_corpus_id": "integ07/activating/cache_reuse",
+      "ok": true,
+      "raw_disposition": "run",
+      "reasons": [
+        "necessary trigger present on historical/cache_present_effect; run normal experimentation"
+      ],
+      "theorem_ref": "MechanismTrigger.cache_reuse_output_change_implies_trigger",
+      "treatment_compute_units": 9
+    },
+    {
+      "adversarial_kind": null,
+      "case_id": "act.forced_span.present",
+      "certificate_sha256": null,
+      "cohort": "known_activating",
+      "compute_saved": 0,
+      "corpus_id": "integ07/activating/forced_span",
+      "detail": "identity ok; necessary trigger present on historical/forced_present_effect; run normal experimentation",
+      "effective_disposition": "run",
+      "expect_disposition": "run",
+      "false_skip": false,
+      "ground_truth": "activating",
+      "identity_ok": true,
+      "locked_corpus_id": "integ07/activating/forced_span",
+      "ok": true,
+      "raw_disposition": "run",
+      "reasons": [
+        "necessary trigger present on historical/forced_present_effect; run normal experimentation"
+      ],
+      "theorem_ref": "MechanismTrigger.forced_span_output_change_implies_trigger",
+      "treatment_compute_units": 4
+    },
+    {
+      "adversarial_kind": null,
+      "case_id": "inact.singleton_bypass.absent",
+      "certificate_sha256": "8575d9598b156d7bd34fba14c1deddebb454638c0c89964d2abd75afeaeeb269",
+      "cohort": "provably_inactive",
+      "compute_saved": 3,
+      "corpus_id": "kern08/singleton_bypass",
+      "detail": "identity ok; all triggers proved absent on complete locked corpus 'kern08/singleton_bypass'; skip treatment (theorem-backed no-effect)",
+      "effective_disposition": "skip_no_effect",
+      "expect_disposition": "skip_no_effect",
+      "false_skip": false,
+      "ground_truth": "inactive",
+      "identity_ok": true,
+      "locked_corpus_id": "kern08/singleton_bypass",
+      "ok": true,
+      "raw_disposition": "skip_no_effect",
+      "reasons": [
+        "all triggers proved absent on complete locked corpus 'kern08/singleton_bypass'; skip treatment (theorem-backed no-effect)"
+      ],
+      "theorem_ref": "MechanismTrigger.singleton_bypass_output_change_implies_trigger",
+      "treatment_compute_units": 3
+    },
+    {
+      "adversarial_kind": null,
+      "case_id": "inact.closure_removal.absent",
+      "certificate_sha256": "816c9062fe262ad8b1fb0bfe8b1ae1a0ad6c7df6f1e0aa809c895256574629b3",
+      "cohort": "provably_inactive",
+      "compute_saved": 5,
+      "corpus_id": "kern08/closure_removal",
+      "detail": "identity ok; all triggers proved absent on complete locked corpus 'kern08/closure_removal'; skip treatment (theorem-backed no-effect)",
+      "effective_disposition": "skip_no_effect",
+      "expect_disposition": "skip_no_effect",
+      "false_skip": false,
+      "ground_truth": "inactive",
+      "identity_ok": true,
+      "locked_corpus_id": "kern08/closure_removal",
+      "ok": true,
+      "raw_disposition": "skip_no_effect",
+      "reasons": [
+        "all triggers proved absent on complete locked corpus 'kern08/closure_removal'; skip treatment (theorem-backed no-effect)"
+      ],
+      "theorem_ref": "MechanismTrigger.closure_removal_output_change_implies_trigger",
+      "treatment_compute_units": 5
+    },
+    {
+      "adversarial_kind": null,
+      "case_id": "inact.cache_reuse.absent",
+      "certificate_sha256": "91e3dc3e2c1334edc81d95750c9648cc68121f7fd9d8d957d40b6c905fd426a1",
+      "cohort": "provably_inactive",
+      "compute_saved": 9,
+      "corpus_id": "kern08/cache_reuse",
+      "detail": "identity ok; all triggers proved absent on complete locked corpus 'kern08/cache_reuse'; skip treatment (theorem-backed no-effect)",
+      "effective_disposition": "skip_no_effect",
+      "expect_disposition": "skip_no_effect",
+      "false_skip": false,
+      "ground_truth": "inactive",
+      "identity_ok": true,
+      "locked_corpus_id": "kern08/cache_reuse",
+      "ok": true,
+      "raw_disposition": "skip_no_effect",
+      "reasons": [
+        "all triggers proved absent on complete locked corpus 'kern08/cache_reuse'; skip treatment (theorem-backed no-effect)"
+      ],
+      "theorem_ref": "MechanismTrigger.cache_reuse_output_change_implies_trigger",
+      "treatment_compute_units": 9
+    },
+    {
+      "adversarial_kind": null,
+      "case_id": "inact.forced_span.absent",
+      "certificate_sha256": "6398f5e7b9905bc5b0f67c047066d14a8238806cbdbe35d36d8b58e17488ecdf",
+      "cohort": "provably_inactive",
+      "compute_saved": 4,
+      "corpus_id": "kern08/forced_span",
+      "detail": "identity ok; all triggers proved absent on complete locked corpus 'kern08/forced_span'; skip treatment (theorem-backed no-effect)",
+      "effective_disposition": "skip_no_effect",
+      "expect_disposition": "skip_no_effect",
+      "false_skip": false,
+      "ground_truth": "inactive",
+      "identity_ok": true,
+      "locked_corpus_id": "kern08/forced_span",
+      "ok": true,
+      "raw_disposition": "skip_no_effect",
+      "reasons": [
+        "all triggers proved absent on complete locked corpus 'kern08/forced_span'; skip treatment (theorem-backed no-effect)"
+      ],
+      "theorem_ref": "MechanismTrigger.forced_span_output_change_implies_trigger",
+      "treatment_compute_units": 4
+    },
+    {
+      "adversarial_kind": null,
+      "case_id": "unk.trigger_unknown",
+      "certificate_sha256": null,
+      "cohort": "unknown_fallback",
+      "compute_saved": 0,
+      "corpus_id": "counterexample/unknown",
+      "detail": "identity ok; unknown/incomplete trigger evidence on counterexample/unknown_activation; fall back to run",
+      "effective_disposition": "run",
+      "expect_disposition": "run",
+      "false_skip": false,
+      "ground_truth": "unknown",
+      "identity_ok": true,
+      "locked_corpus_id": "counterexample/unknown",
+      "ok": true,
+      "raw_disposition": "run",
+      "reasons": [
+        "unknown/incomplete trigger evidence on counterexample/unknown_activation; fall back to run"
+      ],
+      "theorem_ref": "MechanismTrigger.no_effect_of_necessary_and_absent",
+      "treatment_compute_units": 1
+    },
+    {
+      "adversarial_kind": null,
+      "case_id": "unk.revmath_negative_timeout_bound",
+      "certificate_sha256": null,
+      "cohort": "unknown_fallback",
+      "compute_saved": 0,
+      "corpus_id": "corpus.rm.hermetic.v1",
+      "detail": "identity ok; unknown/incomplete trigger evidence on revmath/entry.corpus.timeout; fall back to run; revmath_entry=entry.corpus.timeout corpus_sha256=f52e7514c02a",
+      "effective_disposition": "run",
+      "expect_disposition": "run",
+      "false_skip": false,
+      "ground_truth": "unknown",
+      "identity_ok": true,
+      "locked_corpus_id": "corpus.rm.hermetic.v1",
+      "ok": true,
+      "raw_disposition": "run",
+      "reasons": [
+        "unknown/incomplete trigger evidence on revmath/entry.corpus.timeout; fall back to run"
+      ],
+      "theorem_ref": "MechanismTrigger.no_effect_of_necessary_and_absent",
+      "treatment_compute_units": 2
+    },
+    {
+      "adversarial_kind": "incomplete_scan",
+      "case_id": "adv.incomplete_scan",
+      "certificate_sha256": null,
+      "cohort": "adversarial",
+      "compute_saved": 0,
+      "corpus_id": "integ07/adversarial/incomplete",
+      "detail": "identity ok; incomplete corpus scan: zero observed activation is not no-effect; run",
+      "effective_disposition": "run",
+      "expect_disposition": "run",
+      "false_skip": false,
+      "ground_truth": "unknown",
+      "identity_ok": true,
+      "locked_corpus_id": "integ07/adversarial/incomplete",
+      "ok": true,
+      "raw_disposition": "run",
+      "reasons": [
+        "incomplete corpus scan: zero observed activation is not no-effect; run"
+      ],
+      "theorem_ref": "MechanismTrigger.singleton_bypass_output_change_implies_trigger",
+      "treatment_compute_units": 3
+    },
+    {
+      "adversarial_kind": "stale_trigger",
+      "case_id": "adv.stale_trigger_evidence",
+      "certificate_sha256": null,
+      "cohort": "adversarial",
+      "compute_saved": 0,
+      "corpus_id": "integ07/adversarial/stale",
+      "detail": "identity ok; no-effect certificate refused: necessary-trigger law fails on 'adversarial/stale_absent_claim'",
+      "effective_disposition": "run",
+      "expect_disposition": "run",
+      "false_skip": false,
+      "ground_truth": "activating",
+      "identity_ok": true,
+      "locked_corpus_id": "integ07/adversarial/stale",
+      "ok": true,
+      "raw_disposition": "run",
+      "reasons": [
+        "no-effect certificate refused: necessary-trigger law fails on 'adversarial/stale_absent_claim'"
+      ],
+      "theorem_ref": "MechanismTrigger.singleton_bypass_output_change_implies_trigger",
+      "treatment_compute_units": 4
+    },
+    {
+      "adversarial_kind": "corpus_mismatch",
+      "case_id": "adv.corpus_mismatch",
+      "certificate_sha256": "6e60821b49b089a82f3864a9e51f41d61c026f06fb27818e013df59aaee9efe1",
+      "cohort": "adversarial",
+      "compute_saved": 0,
+      "corpus_id": "wrong/corpus/not-locked",
+      "detail": "corpus mismatch vs live HARN-11 'corpus.rm.hermetic.v1': admission corpus_id='wrong/corpus/not-locked'; all triggers proved absent on complete locked corpus 'wrong/corpus/not-locked'; skip treatment (theorem-backed no-effect); revmath_entry=entry.corpus.constructivization_success corpus_sha256=f52e7514c02a",
+      "effective_disposition": "run",
+      "expect_disposition": "run",
+      "false_skip": false,
+      "ground_truth": "inactive",
+      "identity_ok": false,
+      "locked_corpus_id": "corpus.rm.hermetic.v1",
+      "ok": true,
+      "raw_disposition": "skip_no_effect",
+      "reasons": [
+        "all triggers proved absent on complete locked corpus 'wrong/corpus/not-locked'; skip treatment (theorem-backed no-effect)"
+      ],
+      "theorem_ref": "MechanismTrigger.singleton_bypass_output_change_implies_trigger",
+      "treatment_compute_units": 3
+    },
+    {
+      "adversarial_kind": "mechanism_version_mismatch",
+      "case_id": "adv.mechanism_version_mismatch",
+      "certificate_sha256": "adcb0bac750a0c602f444da690bc53829367b8f4e6d2cfaa40e28d267f13e6c8",
+      "cohort": "adversarial",
+      "compute_saved": 0,
+      "corpus_id": "kern08/singleton_bypass",
+      "detail": "theorem mismatch: admission='MechanismTrigger.forced_span_output_change_implies_trigger' expected='MechanismTrigger.singleton_bypass_output_change_implies_trigger'; all triggers proved absent on complete locked corpus 'kern08/singleton_bypass'; skip treatment (theorem-backed no-effect)",
+      "effective_disposition": "run",
+      "expect_disposition": "run",
+      "false_skip": false,
+      "ground_truth": "inactive",
+      "identity_ok": false,
+      "locked_corpus_id": "kern08/singleton_bypass",
+      "ok": true,
+      "raw_disposition": "skip_no_effect",
+      "reasons": [
+        "all triggers proved absent on complete locked corpus 'kern08/singleton_bypass'; skip treatment (theorem-backed no-effect)"
+      ],
+      "theorem_ref": "MechanismTrigger.forced_span_output_change_implies_trigger",
+      "treatment_compute_units": 3
+    },
+    {
+      "adversarial_kind": "mechanism_version_mismatch",
+      "case_id": "adv.unsafe_mechanism",
+      "certificate_sha256": null,
+      "cohort": "adversarial",
+      "compute_saved": 0,
+      "corpus_id": "counterexample/unconstrained",
+      "detail": "identity ok; mechanism 'unconstrained_rerank' has no safe trigger theorem; run normal experimentation",
+      "effective_disposition": "run",
+      "expect_disposition": "run",
+      "false_skip": false,
+      "ground_truth": "unknown",
+      "identity_ok": true,
+      "locked_corpus_id": "counterexample/unconstrained",
+      "ok": true,
+      "raw_disposition": "run",
+      "reasons": [
+        "mechanism 'unconstrained_rerank' has no safe trigger theorem; run normal experimentation"
+      ],
+      "theorem_ref": null,
+      "treatment_compute_units": 1
+    }
+  ],
+  "cohort_counts": {
+    "adversarial": 5,
+    "known_activating": 4,
+    "provably_inactive": 4,
+    "unknown_fallback": 2
+  },
+  "identities": {
+    "admission": "slm_training.autoresearch.preflight.mechanism_no_effect",
+    "kernel": "slm_training.formal.mechanism_trigger",
+    "locked_corpus_ids": [
+      "corpus.rm.hermetic.v1",
+      "counterexample/unconstrained",
+      "counterexample/unknown",
+      "integ07/activating/cache_reuse",
+      "integ07/activating/closure_removal",
+      "integ07/activating/forced_span",
+      "integ07/activating/singleton_bypass",
+      "integ07/adversarial/incomplete",
+      "integ07/adversarial/stale",
+      "kern08/cache_reuse",
+      "kern08/closure_removal",
+      "kern08/forced_span",
+      "kern08/singleton_bypass"
+    ],
+    "revmath_corpus_id": "corpus.rm.hermetic.v1",
+    "revmath_corpus_sha256": "f52e7514c02a79fdb21f694c5268f9d44abc870c1ca4f474a6e814c1fbb1da4a",
+    "trigger_theorem_refs": [
+      "MechanismTrigger.cache_reuse_output_change_implies_trigger",
+      "MechanismTrigger.closure_removal_output_change_implies_trigger",
+      "MechanismTrigger.forced_span_output_change_implies_trigger",
+      "MechanismTrigger.singleton_bypass_output_change_implies_trigger"
+    ]
+  },
+  "integ": "INTEG-07",
+  "issue": "SLM-561",
+  "metrics": {
+    "compute_eligible_inactive": 21,
+    "compute_saved": 21,
+    "false_skip_case_ids": [],
+    "false_skip_count": 0,
+    "known_activating_n": 4,
+    "known_activating_recall": 1.0,
+    "provably_inactive_n": 4,
+    "provably_inactive_specificity": 1.0,
+    "unknown_fallback_n": 7,
+    "unknown_fallback_rate": 1.0
+  },
+  "passed": true,
+  "replay_schema": "integ07_activation_preflight_replay/v1",
+  "schema": "integ07_activation_preflight_recall_report/v1",
+  "version_stamp": {
+    "code_commit": "51af64528ecee3c4c35461d0fd888aea19046b9f",
+    "code_dirty": true,
+    "components": {
+      "formal.objects": "v23"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-11T16:08:33.964507+00:00"
+  }
+}
