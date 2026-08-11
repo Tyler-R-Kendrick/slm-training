@@ -387,6 +387,10 @@ def validate_profile_against_constraint_set(
                 raise ValueError(
                     f"production_exact requires EXACT completeness for {constraint_id!r}"
                 )
+            if not constraint.may_prune:
+                raise ValueError(
+                    f"production_exact requires explicit may_prune authority for {constraint_id!r}"
+                )
         for group in constraint_set.ambiguity_groups:
             members = set(group.member_constraint_ids)
             if members & set(profile.required_constraint_ids):
