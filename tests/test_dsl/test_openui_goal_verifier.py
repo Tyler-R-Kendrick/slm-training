@@ -571,6 +571,65 @@ def test_constraint_evaluation_timeout_is_unavailable(monkeypatch) -> None:
     assert verifier.verify('root = Button(":slot_0")').status is VerifyStatus.UNAVAILABLE
 
 
+@pytest.mark.parametrize("gate_id", ("G1", "G2", "G8"))
+@pytest.mark.parametrize("error", (TimeoutError("deadline"), RuntimeError("unavailable")))
+def test_required_gate_backend_unavailability_is_unavailable(
+    monkeypatch: pytest.MonkeyPatch,
+    gate_id: str,
+    error: Exception,
+) -> None:
+    from slm_training.data.verify import stack
+    from slm_training.dsl.solver import openui_support
+
+    def raise_error(*_args, **_kwargs):
+        raise error
+
+    monkeypatch.setattr(openui_support, "evaluate_gate", stack.evaluate_gate)
+    if gate_id == "G1":
+        backend = type("UnavailableBackend", (), {"validate": raise_error})()
+        monkeypatch.setattr(stack, "_grammar_backend", lambda: backend)
+    else:
+        monkeypatch.setattr(stack, "validate", raise_error)
+
+    constraint_set = _compiled_set()
+    profile = _profile_for(constraint_set, required_gates=(gate_id,))
+    verifier = _verifier(profile=profile, constraint_set=constraint_set)
+    assert verifier.verify('root = Button(":slot_0")').status is VerifyStatus.UNAVAILABLE
+    evidence = verifier.terminal_evidence[-1]
+    assert evidence.required_gate_results[0].status == "UNAVAILABLE"
+    assert any(atom.source_kind == "gate" for atom in evidence.mandatory_unknown_atoms)
+
+
+@pytest.mark.parametrize("gate_id", ("G1", "G2", "G8"))
+def test_required_gate_backend_candidate_failure_remains_reject(
+    monkeypatch: pytest.MonkeyPatch,
+    gate_id: str,
+) -> None:
+    from slm_training.data.verify import stack
+    from slm_training.dsl.solver import openui_support
+
+    error: Exception = (
+        ValueError("invalid grammar") if gate_id == "G1" else stack.ParseError("invalid program")
+    )
+
+    def raise_error(*_args, **_kwargs):
+        raise error
+
+    monkeypatch.setattr(openui_support, "evaluate_gate", stack.evaluate_gate)
+    if gate_id == "G1":
+        backend = type("RejectingBackend", (), {"validate": raise_error})()
+        monkeypatch.setattr(stack, "_grammar_backend", lambda: backend)
+    else:
+        monkeypatch.setattr(stack, "validate", raise_error)
+
+    constraint_set = _compiled_set()
+    profile = _profile_for(constraint_set, required_gates=(gate_id,))
+    verifier = _verifier(profile=profile, constraint_set=constraint_set)
+    assert verifier.verify('root = Button(":slot_0")').status is VerifyStatus.REJECT
+    evidence = verifier.terminal_evidence[-1]
+    assert evidence.required_gate_results[0].status == "REJECT"
+
+
 def test_verify_is_deterministic() -> None:
     source = 'root = Button(":slot_0")'
     verifier = _verifier()
