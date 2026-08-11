@@ -28,6 +28,8 @@ gates, and they do not prove that a particular PyTorch backend matches the model
 | `StructuralMetrics` | Metric direction | `recall_mono`, `structural_similarity_mono`, `mean_mono`, `extra_component_can_reduce_similarity` |
 | `ExactClosure` | VSS exact-closure honesty | pass subset, supported/unknown/failed-replay never remove, iterate monotone, certified bottom, honest fixed point |
 | `DecodeInvariants` | I1 / I2 / I6 | singleton bypass ignores ranker, empty domain is dead end, ranked token must be legal, unconstrained paths are illegal |
+| `ConstrainedDiffusion` (KERN-07) | I2 policy neural cost | valid singleton (forced = sole) admits zero neural-forward policy under `NeuralForwardOnlyModel`; not wall-clock optimality |
+| `EventTrace` (KERN-06) | named machine costs | Nat fold over Event traces; NeuralForwardOnlyModel / DecodeUnitWorkModel |
 
 ## What each theory is (and is not)
 

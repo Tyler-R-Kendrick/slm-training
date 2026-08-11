@@ -1,0 +1,94 @@
+{
+  "schema": "singleton_neural_policy_fixtures/v1",
+  "cost_model": "NeuralForwardOnlyModel",
+  "cost_model_version": 1,
+  "theorem_ref": "ConstrainedDiffusion.singleton_policy_neural_cost_zero",
+  "wall_clock_claim": false,
+  "outside_theorem": [
+    "grammar_transition",
+    "certificate_check",
+    "memory_read",
+    "memory_write",
+    "kernel_launch",
+    "wall_clock_ms"
+  ],
+  "claim_class": "fixture",
+  "implementation_refinement_status": "empirical_remainder",
+  "cases": [
+    {
+      "id": "certified_singleton_zero_forward",
+      "proof": {
+        "status": "complete",
+        "candidates": [[7]],
+        "forced_token": 7
+      },
+      "decode_stats": {
+        "forwards_count": 0,
+        "tokens_emitted": 1,
+        "dfa_sync_count": 2,
+        "solver_expanded_nodes": 0,
+        "solver_verifier_calls": 1,
+        "denoiser_rows_evaluated": 0,
+        "ambiguous_rows_forwarded": 0,
+        "total_ms": 4.5
+      },
+      "expected_proof_valid": true,
+      "expected_observed_forwards": 0,
+      "expected_projected_neural_cost": 0,
+      "claim_class": "fixture",
+      "notes": "Certified singleton fixture: observed neural forwards are 0; grammar/certificate/ms remain outside the Lean theorem."
+    },
+    {
+      "id": "certified_singleton_bypass_empty_solver",
+      "proof": {
+        "status": "complete",
+        "candidates": [[0]],
+        "forced_token": 0
+      },
+      "decode_stats": {
+        "forwards_count": 0,
+        "tokens_emitted": 1,
+        "dfa_sync_count": 0,
+        "solver_expanded_nodes": 0,
+        "solver_verifier_calls": 0,
+        "denoiser_rows_evaluated": 0,
+        "ambiguous_rows_forwarded": 0,
+        "total_ms": 1.0
+      },
+      "expected_proof_valid": true,
+      "expected_observed_forwards": 0,
+      "expected_projected_neural_cost": 0,
+      "claim_class": "fixture"
+    },
+    {
+      "id": "mutation_mismatched_forced_token",
+      "proof": {
+        "status": "complete",
+        "candidates": [[0]],
+        "forced_token": 1
+      },
+      "decode_stats": {
+        "forwards_count": 0
+      },
+      "expected_proof_valid": false,
+      "expected_observed_forwards": 0,
+      "expected_projected_neural_cost": 0,
+      "claim_class": "fixture"
+    },
+    {
+      "id": "mutation_incomplete_singleton_domain",
+      "proof": {
+        "status": "incomplete",
+        "candidates": [[0]],
+        "forced_token": 0
+      },
+      "decode_stats": {
+        "forwards_count": 0
+      },
+      "expected_proof_valid": false,
+      "expected_observed_forwards": 0,
+      "expected_projected_neural_cost": 0,
+      "claim_class": "fixture"
+    }
+  ]
+}

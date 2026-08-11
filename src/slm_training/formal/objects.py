@@ -244,6 +244,21 @@ _LEAN_CLAIM_CATALOG: dict[str, dict[str, Any]] = {
         "tier": "production_core",
         "laws": ["proved_complete_singleton"],
     },
+    "ConstrainedDiffusion.singleton_policy_neural_cost_zero": {
+        "module": "LeverProofLean.ConstrainedDiffusion",
+        "tier": "production_core",
+        "laws": ["proved_complete_singleton", "singleton_bypass"],
+    },
+    "ConstrainedDiffusion.singleton_admits_zero_neural_policy": {
+        "module": "LeverProofLean.ConstrainedDiffusion",
+        "tier": "production_core",
+        "laws": ["proved_complete_singleton", "singleton_bypass"],
+    },
+    "ConstrainedDiffusion.singleton_forced_eq_sole_candidate": {
+        "module": "LeverProofLean.ConstrainedDiffusion",
+        "tier": "production_core",
+        "laws": ["proved_complete_singleton", "singleton_bypass"],
+    },
     "ExactClosure.finite_search_rejects_stale_state": {
         "module": "LeverProofLean.ExactClosure",
         "tier": "production_core",

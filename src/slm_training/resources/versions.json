@@ -12,7 +12,7 @@
   ],
   "components": {
     "formal.leverproof": {
-      "version": "v19",
+      "version": "v20",
       "kind": "harness",
       "paths": [
         "src/leverproof_lean/",
@@ -35,9 +35,15 @@
         "src/leverproof_lean/LeverProofLean/BlackBoxUnsupportedLowerBound.lean",
         "docs/design/kern-04-black-box-unsupported-lower-bound.md",
         "src/leverproof_lean/LeverProofLean/EventTrace.lean",
-        "docs/design/kern-06-event-trace-machine-cost.md"
+        "docs/design/kern-06-event-trace-machine-cost.md",
+        "docs/design/kern-07-singleton-zero-neural-policy.md"
       ],
       "history": [
+        {
+          "version": "v20",
+          "date": "2026-08-11",
+          "note": "KERN-07 (SLM-530): replace definitional ForwardsOptimum/Nat.zero_le minimum with SingletonProof.valid (forced=sole) + policyNeuralCost zero under NeuralForwardOnlyModel; runtime refinement fixtures."
+        },
         {
           "version": "v19",
           "date": "2026-08-11",
@@ -17502,7 +17508,7 @@
       ]
     },
     "formal.objects": {
-      "version": "v13",
+      "version": "v14",
       "kind": "harness",
       "paths": [
         "tests/test_formal/test_theorem_binding.py",
@@ -17524,9 +17530,17 @@
         "tests/test_formal/test_black_box_unsupported_lower_bound.py",
         "src/slm_training/formal/event_trace.py",
         "src/slm_training/resources/formal/event_trace_fixtures.v1.json",
-        "tests/test_formal/test_event_trace.py"
+        "tests/test_formal/test_event_trace.py",
+        "src/slm_training/formal/singleton_neural_policy.py",
+        "src/slm_training/resources/formal/singleton_neural_policy_fixtures.v1.json",
+        "tests/test_formal/test_singleton_neural_policy.py"
       ],
       "history": [
+        {
+          "version": "v14",
+          "date": "2026-08-11",
+          "note": "KERN-07 (SLM-530): singleton neural policy Python mirror + decode telemetry fixtures; claim catalog entries for policy neural cost theorems."
+        },
         {
           "version": "v13",
           "date": "2026-08-11",
