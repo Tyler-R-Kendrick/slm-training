@@ -55,6 +55,25 @@ remove candidates. Skipped replay, timeout, missing tool/context, incomplete
 coverage, malformed input, or unsupported features return `unknown`/`invalid`
 and strip evidence at the adapter boundary.
 
+
+### Verified encoding adapters (EVID-10)
+
+Code: `src/slm_training/formal/encoding_adapter.py` (Lean mirror
+`LeverProofLean.VerifiedEncoding`; fixtures
+`resources/formal/encoding_adapter_fixtures.v1.json`).
+
+A checked solver certificate has **no** semantic authority without a trusted
+encoding bridge from the original bounded problem to the SAT/PB/SMT encoding.
+The generic adapter exposes a supported-subset predicate, deterministic encode,
+decode/witness map, problem+encoding identity, and theorem/checker refs. The
+promoted reference family proves
+`Satisfiable(encode p) ↔ ∃ x, Satisfies p x`. Unsupported features return
+`unsupported`/`unknown` (never silently dropped). v2 evidence records encoder
+version/hash, theorem FQN/type binding, certificate format, checker
+capability/trust domain, and original problem digest on `FormalAuthorityV2`.
+Pilot formats (`lrat_pilot` / `pblean_pilot` / `alethe_pilot`) are named for
+future RESEARCH pilots and are not production dependencies.
+
 ### Exact theorem binding (EVID-07)
 
 Schema: `lean.theorem_binding/v1`  

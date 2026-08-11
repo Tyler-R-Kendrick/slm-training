@@ -376,6 +376,21 @@ _LEAN_CLAIM_CATALOG: dict[str, dict[str, Any]] = {
         "tier": "production_core",
         "laws": ["supported_not_removable", "unknown_not_removable"],
     },
+    "VerifiedEncoding.sat_encode_iff_satisfies": {
+        "module": "LeverProofLean.VerifiedEncoding",
+        "tier": "production_core",
+        "laws": ["failed_replay_not_removable", "unknown_not_removable"],
+    },
+    "VerifiedEncoding.cardinality_feature_unsupported": {
+        "module": "LeverProofLean.VerifiedEncoding",
+        "tier": "production_core",
+        "laws": ["unknown_not_removable"],
+    },
+    "VerifiedEncoding.mutated_encoding_ne_original": {
+        "module": "LeverProofLean.VerifiedEncoding",
+        "tier": "production_core",
+        "laws": ["failed_replay_not_removable"],
+    },
 }
 
 

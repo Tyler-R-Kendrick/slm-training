@@ -1,0 +1,96 @@
+{
+  "schema": "encoding_adapter_fixtures/v1",
+  "issue": "SLM-553",
+  "evid": "EVID-10",
+  "claim_class": "fixture",
+  "generalizes_beyond_corpus": false,
+  "notes": [
+    "Reference CNF encoding bridge only — LRAT/PBLean/Alethe remain pilot formats.",
+    "Unsupported features must surface as unsupported/unknown, never silently dropped.",
+    "Encoding mutations must break semantic authority even when a certificate checks."
+  ],
+  "cases": [
+    {
+      "id": "sat_unit_positive",
+      "kind": "supported_sat",
+      "expect_status": "supported",
+      "expect_satisfiable": true,
+      "problem": {
+        "problem_id": "evid10/sat_unit_positive",
+        "domains": {"x": [0, 1]},
+        "clauses": [[{"var": "x", "positive": true}]],
+        "features": ["bool_domain", "clause"]
+      }
+    },
+    {
+      "id": "unsat_contradiction",
+      "kind": "supported_unsat",
+      "expect_status": "supported",
+      "expect_satisfiable": false,
+      "problem": {
+        "problem_id": "evid10/unsat_contradiction",
+        "domains": {"x": [0, 1]},
+        "clauses": [
+          [{"var": "x", "positive": true}],
+          [{"var": "x", "positive": false}]
+        ],
+        "features": ["bool_domain", "clause"]
+      }
+    },
+    {
+      "id": "sat_two_var_or",
+      "kind": "supported_sat",
+      "expect_status": "supported",
+      "expect_satisfiable": true,
+      "problem": {
+        "problem_id": "evid10/sat_two_var_or",
+        "domains": {"a": [0, 1], "b": [0, 1]},
+        "clauses": [
+          [
+            {"var": "a", "positive": true},
+            {"var": "b", "positive": true}
+          ]
+        ],
+        "features": ["bool_domain", "clause"]
+      }
+    },
+    {
+      "id": "unsupported_cardinality",
+      "kind": "unsupported_feature",
+      "expect_status": "unsupported",
+      "problem": {
+        "problem_id": "evid10/unsupported_cardinality",
+        "domains": {"x": [0, 1], "y": [0, 1]},
+        "clauses": [[{"var": "x", "positive": true}]],
+        "features": ["bool_domain", "clause", "cardinality"]
+      }
+    },
+    {
+      "id": "unknown_missing_feature_tags",
+      "kind": "unknown_feature",
+      "expect_status": "unknown",
+      "problem": {
+        "problem_id": "evid10/unknown_missing_tags",
+        "domains": {"x": [0, 1]},
+        "clauses": [[{"var": "x", "positive": true}]],
+        "features": []
+      }
+    },
+    {
+      "id": "mutation_flip_literal",
+      "kind": "encoding_mutation",
+      "expect_status": "supported",
+      "expect_satisfiable": false,
+      "mutation": "flip_first_literal",
+      "problem": {
+        "problem_id": "evid10/mutation_unsat",
+        "domains": {"x": [0, 1]},
+        "clauses": [
+          [{"var": "x", "positive": true}],
+          [{"var": "x", "positive": false}]
+        ],
+        "features": ["bool_domain", "clause"]
+      }
+    }
+  ]
+}

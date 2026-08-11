@@ -34,6 +34,12 @@ from slm_training.formal.refutation_authority import (
     CheckedRefutationEvidenceV1,
     evidence_authorizes_removal,
 )
+from slm_training.formal.encoding_adapter import (
+    CnfRefEncodingAdapter,
+    VerifiedEncodingEvidenceV2,
+    encoding_authorizes_semantic_result,
+    mint_checked_certificate_via_encoding,
+)
 from slm_training.formal.theorem_binding import (
     LEAN_THEOREM_BINDING_SCHEMA,
     LeanTheoremBindingV1,
@@ -57,7 +63,11 @@ __all__ = [
     "FORMAL_AUTHORITY_SCHEMA",
     "BindingIdsV1",
     "CheckedRefutationEvidenceV1",
+    "CnfRefEncodingAdapter",
+    "VerifiedEncodingEvidenceV2",
     "evidence_authorizes_removal",
+    "encoding_authorizes_semantic_result",
+    "mint_checked_certificate_via_encoding",
     "FORMAL_OBJECT_SCHEMA",
     "CheckerResult",
     "FormalAuthorityV2",

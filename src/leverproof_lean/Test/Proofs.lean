@@ -209,6 +209,9 @@ open LeverProofLean
 #print axioms Judgment.incomplete_coverage_never_refuted
 #print axioms Judgment.missing_tool_never_refuted
 #print axioms Judgment.timeout_never_authorizes_removal
+#print axioms VerifiedEncoding.sat_encode_iff_satisfies
+#print axioms VerifiedEncoding.cardinality_feature_unsupported
+#print axioms VerifiedEncoding.mutated_encoding_ne_original
 #print axioms Judgment.skipped_replay_never_authorizes_removal
 #print axioms Judgment.classification_exhaustive
 #print axioms Judgment.classified_payload_matches

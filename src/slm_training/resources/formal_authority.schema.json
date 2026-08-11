@@ -243,6 +243,13 @@
         "null"
       ],
       "description": "EVID-07 exact Lean theorem binding (proposition + env + axioms)"
+    },
+    "encoding_evidence": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "EVID-10 verified encoding bridge evidence (encoder/theorem/cert/trust + problem digest)"
     }
   },
   "additionalProperties": false

@@ -1,4 +1,4 @@
-"""Formal claim/evidence authority envelope (EVID-06 / EVID-07 / EVID-09).
+"""Formal claim/evidence authority envelope (EVID-06 / EVID-07 / EVID-09 / EVID-10).
 
 Converges portable ``FormalObjectV1`` and campaign ``FormalPreflightV1`` into
 one ``formal_authority/v2`` contract via adapters — not a third evidence stack,
@@ -265,6 +265,7 @@ class FormalAuthorityV2:
     empirical_remainder_notes: str
     content_digest: str
     theorem_binding: dict[str, Any] | None = None
+    encoding_evidence: dict[str, Any] | None = None
     schema: str = FORMAL_AUTHORITY_SCHEMA
 
     def to_dict(self) -> dict[str, Any]:
@@ -292,6 +293,8 @@ class FormalAuthorityV2:
         }
         if self.theorem_binding is not None:
             out["theorem_binding"] = dict(self.theorem_binding)
+        if self.encoding_evidence is not None:
+            out["encoding_evidence"] = dict(self.encoding_evidence)
         return out
 
     @classmethod
@@ -367,6 +370,11 @@ class FormalAuthorityV2:
                 if data.get("theorem_binding") is None
                 else dict(data["theorem_binding"])
             ),
+            encoding_evidence=(
+                None
+                if data.get("encoding_evidence") is None
+                else dict(data["encoding_evidence"])
+            ),
             schema=str(data["schema"]),
         )
         recomputed = _sha256(_canonical_json(_authority_digest_body(obj.to_dict())))
@@ -397,6 +405,7 @@ def build_formal_authority_v2(
     empirical_remainder_notes: str = "",
     authority_class: AuthorityClassName | None = None,
     theorem_binding: Mapping[str, Any] | None = None,
+    encoding_evidence: Mapping[str, Any] | None = None,
 ) -> FormalAuthorityV2:
     """Construct a validated v2 envelope (preferred write path)."""
 
@@ -437,6 +446,8 @@ def build_formal_authority_v2(
     }
     if theorem_binding is not None:
         provisional["theorem_binding"] = dict(theorem_binding)
+    if encoding_evidence is not None:
+        provisional["encoding_evidence"] = dict(encoding_evidence)
     digest = _sha256(_canonical_json(provisional))
     return FormalAuthorityV2.from_dict({**provisional, "content_digest": digest})
 
