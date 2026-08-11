@@ -2896,7 +2896,7 @@
       ]
     },
     "governance.ownership_map": {
-      "version": "v15",
+      "version": "v16",
       "kind": "gate",
       "paths": [
         "src/slm_training/resources/ownership_map.json",
@@ -2908,6 +2908,11 @@
         "tests/test_data/test_synthesis_contract_versions.py"
       ],
       "history": [
+        {
+          "version": "v16",
+          "date": "2026-08-10",
+          "note": "no-bump: fix goal_support owner_symbols to match goal_support.py public API and mirror goal_support row in repository-ownership-map.md after PGS-B01 landed stale names."
+        },
         {
           "version": "v15",
           "date": "2026-08-10",
