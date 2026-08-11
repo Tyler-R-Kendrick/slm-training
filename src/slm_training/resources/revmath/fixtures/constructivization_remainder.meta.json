@@ -1,0 +1,16 @@
+{
+  "bound_ast_id": null,
+  "constructivized_statement": "classical existence of unbounded ascending f; nonconstructive remainder: choice on infinite branch",
+  "constructivized_statement_sha256": "1353cb026ccc2e523f93d7f0f0a00485d0b2126dc225019ec511119f6f4f7cee",
+  "hermetic_scenario": "remainder_ok",
+  "meta_id": "meta.constructivization.remainder",
+  "mode": "documented_nonconstructive_remainder",
+  "oracle_id": null,
+  "oracle_status": "ok",
+  "original_statement": "exists f : Nat -> Nat, forall n, f n > n",
+  "original_statement_sha256": "23edb1c1916525d99a571bd503fce59944774d120e007ad4917747f61d723761",
+  "remainder_note": "choice on infinite branch remains nonconstructive",
+  "schema_version": "revmath_constructivization_meta/v1",
+  "weakening_description": "Document nonconstructive remainder: infinite-branch choice; no finite witness claimed.",
+  "witness_spec": null
+}

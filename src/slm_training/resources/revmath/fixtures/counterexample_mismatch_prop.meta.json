@@ -1,0 +1,29 @@
+{
+  "baseline_assumption_ids": [
+    "ISigma1",
+    "WKL"
+  ],
+  "hermetic_scenario": "mismatched_proposition",
+  "meta_id": "meta.counterexample.mismatch_prop",
+  "model": {
+    "model_digest": "0890807ac1212f4c8e57237d2fe012a3e4e70e1a9b0863c16a8cede8e436c656",
+    "model_id": "model.cex.mismatch.prop",
+    "model_kind": "finite_model",
+    "payload": "targets classical not weakened",
+    "schema_version": "revmath_counterexample_model/v1",
+    "target_assumption_ids": [
+      "ISigma1"
+    ],
+    "target_statement_sha256": "090ebf973b63a3c9f2f68822799ffd011f6d485b090daaf1f98c1231868991fd"
+  },
+  "removed_assumption_ids": [
+    "WKL"
+  ],
+  "schema_version": "revmath_counterexample_meta/v1",
+  "search_status": "ok",
+  "weakened_assumption_ids": [
+    "ISigma1"
+  ],
+  "weakened_statement": "forall X infinite, exists Y subset X, Y is path through the tree (no WKL)",
+  "weakened_statement_sha256": "d404a5f0236fb040ab4071e80fbccfbc8b9d93b1da8deaeff186c08d8b03df8a"
+}

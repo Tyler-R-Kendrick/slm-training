@@ -1,4 +1,4 @@
-"""Revmath task plugins (HARN-03/HARN-04/HARN-05/HARN-07).
+"""Revmath task plugins (HARN-03/HARN-04/HARN-05/HARN-06/HARN-07).
 
 Plugins plan a bounded check command and interpret capture; the shared
 runner owns orchestration, judgment classification, replay, and reports.
@@ -26,6 +26,14 @@ from slm_training.harnesses.reasoning.revmath.quantitative_bound import (
     QuantitativeBoundMetaV1,
     parse_quantitative_bound_meta,
 )
+from slm_training.harnesses.reasoning.revmath.constructivization import (
+    ConstructivizationMetaV1,
+    parse_constructivization_meta,
+)
+from slm_training.harnesses.reasoning.revmath.counterexample import (
+    CounterexampleMetaV1,
+    parse_counterexample_meta,
+)
 from slm_training.harnesses.reasoning.revmath.reversal import (
     ReversalMetaV1,
     ReversalObligationV1,
@@ -47,6 +55,8 @@ HERMETIC_CHECKER = FIXTURES_DIR / "hermetic_checker.py"
 HERMETIC_ABLATION_CHECKER = FIXTURES_DIR / "hermetic_ablation_checker.py"
 HERMETIC_REVERSAL_CHECKER = FIXTURES_DIR / "hermetic_reversal_checker.py"
 HERMETIC_QUANT_CHECKER = FIXTURES_DIR / "hermetic_quantitative_bound_checker.py"
+HERMETIC_CONSTRUCTIVIZATION_CHECKER = FIXTURES_DIR / "hermetic_constructivization_checker.py"
+HERMETIC_COUNTEREXAMPLE_CHECKER = FIXTURES_DIR / "hermetic_counterexample_checker.py"
 
 # Frozen fixture task_id prefix → sidecar meta filename stem.
 _ABLATION_META_BY_TASK_PREFIX: Mapping[str, str] = {
@@ -68,6 +78,21 @@ _QUANT_META_BY_TASK_PREFIX: Mapping[str, str] = {
     "task.quant.closure_live_upper": "quant_closure_live_upper",
     "task.quant.nonextractable": "quant_nonextractable",
 }
+
+_CONSTRUCTIVIZATION_META_BY_TASK_PREFIX: Mapping[str, str] = {
+    "task.constructivization.bounded": "constructivization_bounded",
+    "task.constructivization.witness": "constructivization_witness",
+    "task.constructivization.oracle": "constructivization_oracle",
+    "task.constructivization.remainder": "constructivization_remainder",
+    "task.constructivization.timeout": "constructivization_timeout",
+}
+_COUNTEREXAMPLE_META_BY_TASK_PREFIX: Mapping[str, str] = {
+    "task.counterexample.checked": "counterexample_checked",
+    "task.counterexample.search_failed": "counterexample_search_failed",
+    "task.counterexample.no_counterexample": "counterexample_no_counterexample",
+    "task.counterexample.mismatch_prop": "counterexample_mismatch_prop",
+}
+
 
 
 @dataclass(frozen=True)
@@ -1042,6 +1067,378 @@ class QuantitativeBoundPlugin:
         )
 
 
+def load_constructivization_meta_for_task(
+    task: RevmathTaskV1,
+    *,
+    meta: ConstructivizationMetaV1 | None = None,
+    fixtures_dir: Path | None = None,
+) -> ConstructivizationMetaV1 | None:
+    if meta is not None:
+        return meta
+    root = fixtures_dir or FIXTURES_DIR
+    stem: str | None = None
+    for prefix, name in _CONSTRUCTIVIZATION_META_BY_TASK_PREFIX.items():
+        if task.task_id == prefix or task.task_id.startswith(prefix + "."):
+            stem = name
+            break
+    if stem is None:
+        return None
+    path = root / f"{stem}.meta.json"
+    if not path.is_file():
+        raise RevmathSchemaError(f"constructivization meta missing at {path}")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise RevmathSchemaError(f"constructivization meta at {path} must be an object")
+    return parse_constructivization_meta(payload)
+
+
+def load_counterexample_meta_for_task(
+    task: RevmathTaskV1,
+    *,
+    meta: CounterexampleMetaV1 | None = None,
+    fixtures_dir: Path | None = None,
+) -> CounterexampleMetaV1 | None:
+    if meta is not None:
+        return meta
+    root = fixtures_dir or FIXTURES_DIR
+    stem: str | None = None
+    for prefix, name in _COUNTEREXAMPLE_META_BY_TASK_PREFIX.items():
+        if task.task_id == prefix or task.task_id.startswith(prefix + "."):
+            stem = name
+            break
+    if stem is None:
+        return None
+    path = root / f"{stem}.meta.json"
+    if not path.is_file():
+        raise RevmathSchemaError(f"counterexample meta missing at {path}")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise RevmathSchemaError(f"counterexample meta at {path} must be an object")
+    return parse_counterexample_meta(payload)
+
+
+@dataclass(frozen=True)
+class ConstructivizationPlugin:
+    """Hermetic constructivization checks (HARN-06); plan/interpret only."""
+
+    task_kind: RevmathTaskKind = "constructivization"
+    meta_override: ConstructivizationMetaV1 | None = None
+    fixtures_dir: Path | None = None
+
+    def supports(self, task: RevmathTaskV1) -> bool:
+        return task.task_kind == self.task_kind
+
+    def plan_check(
+        self,
+        task: RevmathTaskV1,
+        *,
+        lean_root: Path,
+        hermetic: bool,
+    ) -> RevmathCheckPlan:
+        if hermetic:
+            checker = HERMETIC_CONSTRUCTIVIZATION_CHECKER
+            if self.fixtures_dir is not None:
+                checker = self.fixtures_dir / "hermetic_constructivization_checker.py"
+            if not checker.is_file():
+                raise RevmathSchemaError(
+                    f"hermetic constructivization checker missing at {checker}"
+                )
+            meta = load_constructivization_meta_for_task(
+                task, meta=self.meta_override, fixtures_dir=self.fixtures_dir
+            )
+            scenario = meta.hermetic_scenario if meta is not None else "bounded_ok"
+            original_sha = (
+                meta.original_statement_sha256 if meta is not None else ""
+            )
+            constructivized_sha = (
+                meta.constructivized_statement_sha256
+                if meta is not None
+                else task.proposition.statement_sha256
+            )
+            weakening = meta.weakening_description if meta is not None else ""
+            bound_ast = meta.bound_ast_id if meta is not None and meta.bound_ast_id else ""
+            return RevmathCheckPlan(
+                command=(
+                    "python",
+                    "-u",
+                    str(checker),
+                    "--task-id",
+                    task.task_id,
+                    "--statement-sha256",
+                    task.proposition.statement_sha256,
+                    "--original-statement-sha256",
+                    original_sha,
+                    "--constructivized-statement-sha256",
+                    constructivized_sha,
+                    "--scenario",
+                    scenario,
+                    "--weakening-description",
+                    weakening,
+                    "--bound-ast-id",
+                    bound_ast,
+                    "--mode",
+                    "auto",
+                ),
+                cwd=checker.parent,
+                requires_lean_tool=False,
+                lean_project_root=None,
+                checker_id="revmath.hermetic_constructivization",
+            )
+        root = lean_root.resolve()
+        return RevmathCheckPlan(
+            command=("make", "test"),
+            cwd=root,
+            requires_lean_tool=True,
+            lean_project_root=root,
+            checker_id="revmath.lean_constructivization",
+        )
+
+    def interpret_capture(
+        self,
+        task: RevmathTaskV1,
+        proc: BoundedProcessResult,
+        *,
+        plan: RevmathCheckPlan,
+    ) -> PluginCheckEvidence:
+        report_sha = content_sha(
+            {
+                "stdout": proc.stdout,
+                "stderr": proc.stderr,
+                "returncode": proc.returncode,
+                "outcome": proc.outcome.value,
+            }
+        )
+        if plan.checker_id != "revmath.hermetic_constructivization":
+            return PluginCheckEvidence(
+                checker_id=plan.checker_id,
+                checked=False,
+                incomplete=True,
+                checker_report_sha256=report_sha,
+                detail="lean constructivization check incomplete; witness deferred",
+            )
+        payload = _parse_checker_json(proc.stdout)
+        if payload is None:
+            return PluginCheckEvidence(
+                checker_id=plan.checker_id,
+                checked=False,
+                malformed_proof=True,
+                checker_report_sha256=report_sha,
+                detail="hermetic constructivization checker emitted no JSON trailer",
+            )
+        status = str(payload.get("status", ""))
+        if status in ("malformed", "masquerade"):
+            return PluginCheckEvidence(
+                checker_id=plan.checker_id,
+                checked=True,
+                malformed_proof=True,
+                checker_report_sha256=report_sha,
+                detail=str(payload.get("detail", status)),
+            )
+        if status == "incomplete":
+            return PluginCheckEvidence(
+                checker_id=plan.checker_id,
+                checked=False,
+                incomplete=True,
+                checker_report_sha256=report_sha,
+                detail=str(payload.get("detail", "incomplete check")),
+            )
+        if status == "ok":
+            proof_sha = payload.get("proof_sha256")
+            if not isinstance(proof_sha, str) or len(proof_sha) != 64:
+                return PluginCheckEvidence(
+                    checker_id=plan.checker_id,
+                    checked=True,
+                    malformed_proof=True,
+                    checker_report_sha256=report_sha,
+                    detail="ok status missing proof_sha256",
+                )
+            return PluginCheckEvidence(
+                checker_id=plan.checker_id,
+                checked=True,
+                proof_present=True,
+                proof_sha256=proof_sha,
+                checker_report_sha256=report_sha,
+                detail=str(payload.get("detail", "ok")),
+            )
+        return PluginCheckEvidence(
+            checker_id=plan.checker_id,
+            checked=False,
+            incomplete=True,
+            checker_report_sha256=report_sha,
+            detail=f"unrecognized hermetic constructivization status {status!r}",
+        )
+
+
+@dataclass(frozen=True)
+class CounterexamplePlugin:
+    """Hermetic computable/finite counterexample checks (HARN-06)."""
+
+    task_kind: RevmathTaskKind = "computable_finite_counterexample"
+    meta_override: CounterexampleMetaV1 | None = None
+    fixtures_dir: Path | None = None
+
+    def supports(self, task: RevmathTaskV1) -> bool:
+        return task.task_kind == self.task_kind
+
+    def plan_check(
+        self,
+        task: RevmathTaskV1,
+        *,
+        lean_root: Path,
+        hermetic: bool,
+    ) -> RevmathCheckPlan:
+        if hermetic:
+            checker = HERMETIC_COUNTEREXAMPLE_CHECKER
+            if self.fixtures_dir is not None:
+                checker = self.fixtures_dir / "hermetic_counterexample_checker.py"
+            if not checker.is_file():
+                raise RevmathSchemaError(
+                    f"hermetic counterexample checker missing at {checker}"
+                )
+            meta = load_counterexample_meta_for_task(
+                task, meta=self.meta_override, fixtures_dir=self.fixtures_dir
+            )
+            scenario = (
+                meta.hermetic_scenario if meta is not None else "search_failed"
+            )
+            search_status = meta.search_status if meta is not None else "unknown"
+            model_digest = ""
+            model_kind = ""
+            model_payload = ""
+            model_target_sha = ""
+            model_target_assumps = ""
+            if meta is not None and meta.model is not None:
+                model_digest = meta.model.model_digest
+                model_kind = meta.model.model_kind
+                model_payload = meta.model.payload
+                model_target_sha = meta.model.target_statement_sha256
+                model_target_assumps = ",".join(meta.model.target_assumption_ids)
+            assumptions = ",".join(sorted(task.base_theory.allowed_assumption_ids))
+            return RevmathCheckPlan(
+                command=(
+                    "python",
+                    "-u",
+                    str(checker),
+                    "--task-id",
+                    task.task_id,
+                    "--statement-sha256",
+                    task.proposition.statement_sha256,
+                    "--assumptions",
+                    assumptions,
+                    "--scenario",
+                    scenario,
+                    "--model-digest",
+                    model_digest,
+                    "--model-kind",
+                    model_kind,
+                    "--model-payload",
+                    model_payload,
+                    "--model-target-statement-sha256",
+                    model_target_sha,
+                    "--model-target-assumptions",
+                    model_target_assumps,
+                    "--search-status",
+                    search_status,
+                    "--mode",
+                    "auto",
+                ),
+                cwd=checker.parent,
+                requires_lean_tool=False,
+                lean_project_root=None,
+                checker_id="revmath.hermetic_counterexample",
+            )
+        root = lean_root.resolve()
+        return RevmathCheckPlan(
+            command=("make", "test"),
+            cwd=root,
+            requires_lean_tool=True,
+            lean_project_root=root,
+            checker_id="revmath.lean_counterexample",
+        )
+
+    def interpret_capture(
+        self,
+        task: RevmathTaskV1,
+        proc: BoundedProcessResult,
+        *,
+        plan: RevmathCheckPlan,
+    ) -> PluginCheckEvidence:
+        report_sha = content_sha(
+            {
+                "stdout": proc.stdout,
+                "stderr": proc.stderr,
+                "returncode": proc.returncode,
+                "outcome": proc.outcome.value,
+            }
+        )
+        if plan.checker_id != "revmath.hermetic_counterexample":
+            return PluginCheckEvidence(
+                checker_id=plan.checker_id,
+                checked=False,
+                incomplete=True,
+                checker_report_sha256=report_sha,
+                detail="lean counterexample check incomplete; witness deferred",
+            )
+        payload = _parse_checker_json(proc.stdout)
+        if payload is None:
+            return PluginCheckEvidence(
+                checker_id=plan.checker_id,
+                checked=False,
+                malformed_proof=True,
+                checker_report_sha256=report_sha,
+                detail="hermetic counterexample checker emitted no JSON trailer",
+            )
+        status = str(payload.get("status", ""))
+        if status == "malformed":
+            return PluginCheckEvidence(
+                checker_id=plan.checker_id,
+                checked=True,
+                malformed_proof=True,
+                checker_report_sha256=report_sha,
+                detail=str(payload.get("detail", "malformed")),
+            )
+        if status == "incomplete":
+            return PluginCheckEvidence(
+                checker_id=plan.checker_id,
+                checked=False,
+                incomplete=True,
+                checker_report_sha256=report_sha,
+                detail=str(
+                    payload.get(
+                        "detail",
+                        "search failed; unknown (not refutation)",
+                    )
+                ),
+            )
+        if status == "refuted":
+            digest = str(payload.get("refutation_digest") or payload.get("proof_sha256") or "")
+            if len(digest) != 64:
+                return PluginCheckEvidence(
+                    checker_id=plan.checker_id,
+                    checked=True,
+                    malformed_proof=True,
+                    checker_report_sha256=report_sha,
+                    detail="refuted status missing refutation digest",
+                )
+            return PluginCheckEvidence(
+                checker_id=plan.checker_id,
+                checked=True,
+                refuted=True,
+                refutation_digest=digest,
+                proof_present=True,
+                proof_sha256=digest,
+                checker_report_sha256=report_sha,
+                detail=str(payload.get("detail", "refuted")),
+            )
+        return PluginCheckEvidence(
+            checker_id=plan.checker_id,
+            checked=False,
+            incomplete=True,
+            checker_report_sha256=report_sha,
+            detail=f"unrecognized hermetic counterexample status {status!r}",
+        )
+
+
 @dataclass(frozen=True)
 class UnsupportedKindPlugin:
     """Explicit unsupported marker for kinds without a validator yet."""
@@ -1101,8 +1498,8 @@ _DEFAULT_PLUGINS: tuple[RevmathTaskPlugin, ...] = (
     AssumptionAblationPlugin(),
     ReversalPlugin(),
     QuantitativeBoundPlugin(),
-    UnsupportedKindPlugin("constructivization"),
-    UnsupportedKindPlugin("computable_finite_counterexample"),
+    ConstructivizationPlugin(),
+    CounterexamplePlugin(),
     UnsupportedKindPlugin("computability_classification"),
 )
 
@@ -1151,6 +1548,8 @@ __all__ = [
     "HERMETIC_REVERSAL_CHECKER",
     "HERMETIC_QUANT_CHECKER",
     "AssumptionAblationPlugin",
+    "CounterexamplePlugin",
+    "ConstructivizationPlugin",
     "HermeticForwardPlugin",
     "PluginCheckEvidence",
     "ReversalPlugin",
@@ -1162,6 +1561,10 @@ __all__ = [
     "default_plugin_registry",
     "lean_tool_available",
     "load_ablation_meta_for_task",
+    "load_counterexample_meta_for_task",
+    "load_constructivization_meta_for_task",
+    "HERMETIC_COUNTEREXAMPLE_CHECKER",
+    "HERMETIC_CONSTRUCTIVIZATION_CHECKER",
     "load_reversal_meta_for_task",
     "load_quantitative_bound_meta_for_task",
     "override_hermetic_mode",

@@ -1,0 +1,16 @@
+{
+  "bound_ast_id": "bound.finite_N_8",
+  "constructivized_statement": "exists N : Nat, exists f : Fin N -> Nat, forall n : Fin N, f n.val > n.val  (bound N <= 8)",
+  "constructivized_statement_sha256": "45344fdd5dcbbae8b55ab7e1facc54135aff2eff219c73567e4c96a90eb74e3b",
+  "hermetic_scenario": "bounded_ok",
+  "meta_id": "meta.constructivization.bounded",
+  "mode": "bounded_finite_analogue",
+  "oracle_id": null,
+  "oracle_status": "ok",
+  "original_statement": "exists f : Nat -> Nat, forall n, f n > n",
+  "original_statement_sha256": "23edb1c1916525d99a571bd503fce59944774d120e007ad4917747f61d723761",
+  "remainder_note": null,
+  "schema_version": "revmath_constructivization_meta/v1",
+  "weakening_description": "Replace classical Nat->Nat existence with Fin N analogue; bound N<=8 (bound.finite_N_8).",
+  "witness_spec": null
+}

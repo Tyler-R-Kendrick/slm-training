@@ -100,6 +100,22 @@
       "notes": "HARN-05 bidirectional reversal generator/validator; equivalence only when both directions succeed over the same base/interpretation; one-way/unknown/invalid preserved explicitly."
     },
     {
+      "id": "task_validators.constructivization",
+      "category": "schemas",
+      "required_owner": "src/slm_training/harnesses/reasoning/revmath/constructivization.py",
+      "status": "present",
+      "blocker_issue": null,
+      "notes": "HARN-06 constructivization modes; weakening explicit; constructivized claim must not masquerade as original theorem."
+    },
+    {
+      "id": "task_validators.computable_finite_counterexample",
+      "category": "schemas",
+      "required_owner": "src/slm_training/harnesses/reasoning/revmath/counterexample.py",
+      "status": "present",
+      "blocker_issue": null,
+      "notes": "HARN-06 counterexample validator; independent check against exact weakened theorem; search failure never becomes refutation."
+    },
+    {
       "id": "task_validators.quantitative_bound_extraction",
       "category": "schemas",
       "required_owner": "src/slm_training/harnesses/reasoning/revmath/quantitative_bound.py",
