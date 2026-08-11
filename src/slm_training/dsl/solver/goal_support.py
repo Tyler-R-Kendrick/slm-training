@@ -16,6 +16,10 @@ with a compiler-hard ``exact_goal_closure`` authority guard.
 ``DomainObstructionCoreV1`` (PGS-C02 / SLM-500) records deterministic bounded
 domain-relative hitting sets over exact mandatory failure atoms when legal
 emission preconditions hold.
+
+``GoalActionEvidenceV1`` and ``GoalDomainAdequacyReportV1`` (PGS-C03 / SLM-501)
+classify one exact legal set into supported/unsupported/unknown/unobserved
+partitions and diagnose domain adequacy vs selection regret.
 """
 
 from __future__ import annotations
@@ -964,7 +968,8 @@ def exact_goal_closure(
     return exact_closure(state, provider, **kwargs)
 
 
-from slm_training.dsl.solver import goal_support_obstruction as _obstruction
+from slm_training.dsl.solver import goal_support_obstruction as _obstruction  # noqa: E402
+from slm_training.dsl.solver import goal_support_domain_adequacy as _adequacy  # noqa: E402
 
 DOMAIN_OBSTRUCTION_CLAIM = _obstruction.DOMAIN_OBSTRUCTION_CLAIM
 DOMAIN_OBSTRUCTION_CORE_SCHEMA_VERSION = _obstruction.DOMAIN_OBSTRUCTION_CORE_SCHEMA_VERSION
@@ -983,11 +988,36 @@ replay_obstruction_core = _obstruction.replay_obstruction_core
 terminal_failure_set_from_evidence = _obstruction.terminal_failure_set_from_evidence
 validate_domain_obstruction_core = _obstruction.validate_domain_obstruction_core
 
+GOAL_ACTION_EVIDENCE_SCHEMA_VERSION = _adequacy.GOAL_ACTION_EVIDENCE_SCHEMA_VERSION
+GOAL_DOMAIN_ADEQUACY_REPORT_SCHEMA_VERSION = (
+    _adequacy.GOAL_DOMAIN_ADEQUACY_REPORT_SCHEMA_VERSION
+)
+DOMAIN_ADEQUACY_CLASSIFIER_ID = _adequacy.DOMAIN_ADEQUACY_CLASSIFIER_ID
+DOMAIN_ADEQUACY_CLASSIFIER_VERSION = _adequacy.DOMAIN_ADEQUACY_CLASSIFIER_VERSION
+GoalActionEvidenceV1 = _adequacy.GoalActionEvidenceV1
+GoalActionWorkCountersV1 = _adequacy.GoalActionWorkCountersV1
+GoalDomainActionPartitionsV1 = _adequacy.GoalDomainActionPartitionsV1
+GoalDomainAdequacyReportV1 = _adequacy.GoalDomainAdequacyReportV1
+GoalDomainAdequacyStatsV1 = _adequacy.GoalDomainAdequacyStatsV1
+AggregateObstructionSummaryV1 = _adequacy.AggregateObstructionSummaryV1
+DomainAdequacyClassification = _adequacy.DomainAdequacyClassification
+GoalActionPartition = _adequacy.GoalActionPartition
+action_id_from_value = _adequacy.action_id_from_value
+legal_set_fingerprint = _adequacy.legal_set_fingerprint
+bounds_digest_from_state = _adequacy.bounds_digest_from_state
+domain_adequacy_cap_policy_table = _adequacy.domain_adequacy_cap_policy_table
+domain_adequacy_classification_table = _adequacy.domain_adequacy_classification_table
+analyze_goal_domain = _adequacy.analyze_goal_domain
+
 __all__ = [
     "GOAL_VERIFIER_PROFILE_SCHEMA_VERSION",
     "GOAL_TERMINAL_EVIDENCE_SCHEMA_VERSION",
     "GOAL_SUPPORT_RESULT_SCHEMA_VERSION",
     "GOAL_SUPPORT_IMPLEMENTATION_VERSION",
+    "GOAL_ACTION_EVIDENCE_SCHEMA_VERSION",
+    "GOAL_DOMAIN_ADEQUACY_REPORT_SCHEMA_VERSION",
+    "DOMAIN_ADEQUACY_CLASSIFIER_ID",
+    "DOMAIN_ADEQUACY_CLASSIFIER_VERSION",
     "DOMAIN_OBSTRUCTION_CORE_SCHEMA_VERSION",
     "DOMAIN_OBSTRUCTION_CLAIM",
     "OBSTRUCTION_ALGORITHM_ID",
@@ -1009,6 +1039,14 @@ __all__ = [
     "GoalTerminalEvidenceV1",
     "GoalSupportResultV1",
     "GoalSupportProvider",
+    "GoalActionEvidenceV1",
+    "GoalActionWorkCountersV1",
+    "GoalDomainActionPartitionsV1",
+    "GoalDomainAdequacyReportV1",
+    "GoalDomainAdequacyStatsV1",
+    "AggregateObstructionSummaryV1",
+    "DomainAdequacyClassification",
+    "GoalActionPartition",
     "DomainObstructionCoreV1",
     "TerminalFailureSetV1",
     "ObstructionCoreStatsV1",
@@ -1029,6 +1067,12 @@ __all__ = [
     "compute_domain_obstruction_core",
     "validate_domain_obstruction_core",
     "replay_obstruction_core",
+    "action_id_from_value",
+    "legal_set_fingerprint",
+    "bounds_digest_from_state",
+    "domain_adequacy_cap_policy_table",
+    "domain_adequacy_classification_table",
+    "analyze_goal_domain",
     "replay_goal_support_result",
     "exact_goal_closure",
 ]
