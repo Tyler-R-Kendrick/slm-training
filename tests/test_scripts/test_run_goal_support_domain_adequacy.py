@@ -49,6 +49,7 @@ def test_fixture_runs_twice_and_writes_durable_json_and_markdown(
     )
     assert payload["version_stamp"]["stamp_schema"] == "version_stamp/v1"
     assert payload["recipe"]["suite_n"] == 4
+    assert (tmp_path / "raw" / "proof-carrying-goal-support-fixture").is_dir()
     assert payload["checkpoint_created"] is False
     markdown = markdown_path.read_text(encoding="utf-8")
     assert "fixture/diagnostic only" in markdown

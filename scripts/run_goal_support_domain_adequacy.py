@@ -35,6 +35,7 @@ def _markdown(payload: dict[str, Any]) -> str:
         f"- Suite: `n={recipe['suite_n']}`, seed `{recipe['seed']}`, local CPU/in-process, no model",
         f"- Solver bounds: `{json.dumps(recipe['solver_bounds'], sort_keys=True)}`",
         f"- Exact action cap: `{recipe['exact_action_cap']}`; goal-query cap per arm: `{recipe['goal_support_query_cap']}`",
+        f"- Canonical raw bundle: `{recipe['raw_bundle']}`",
         f"- Manifest: `{payload['campaign_governance']['manifest_sha256']}`",
         f"- Canonical result digest: `{payload['determinism']['canonical_result_digest_a']}`",
         f"- Deterministic rerun: `{'PASS' if payload['determinism']['match'] else 'FAIL'}`",
@@ -91,7 +92,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--out-dir",
         type=Path,
-        default=Path("outputs/autoresearch/proof-carrying-goal-support-fixture"),
+        default=Path("outputs/autoresearch"),
     )
     parser.add_argument(
         "--docs-out",
@@ -136,8 +137,8 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 0
 
-    first = run_campaign(campaign, root=args.out_dir / "run_a")
-    second = run_campaign(campaign, root=args.out_dir / "run_b")
+    first = run_campaign(campaign, root=args.out_dir)
+    second = run_campaign(campaign, root=args.out_dir / "deterministic-reruns")
     digest_a = first["canonical_result_digest"]
     digest_b = second["canonical_result_digest"]
     if digest_a != digest_b:
@@ -165,6 +166,7 @@ def main(argv: list[str] | None = None) -> int:
             "solver_bounds": first["bounds"]["solver"],
             "exact_action_cap": args.exact_action_cap,
             "goal_support_query_cap": args.goal_support_query_cap,
+            "raw_bundle": str(args.out_dir / campaign.campaign_id),
             "honesty_mode": "fixture_diagnostic_no_model_no_ship_claim",
         },
         "campaign_governance": {
