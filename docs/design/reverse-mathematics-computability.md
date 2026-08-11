@@ -72,7 +72,7 @@ Cross-links to the global ownership map (`ownership_map.json` subsystems): where
 | Issue | Extends | New owner? | Rule |
 | --- | --- | --- | --- |
 | EVID-03 / SLM-519 | `formal_preflight_schema` | no | **done** — `FormalPreflightV1.four_axis_ledger` + `FormalPreflightFourAxisLedgerV1` |
-| EVID-04 / SLM-525 | `formal_preflight_schema` | yes (eval submodule) | safe symbolic bound AST consumed by ledger |
+| EVID-04 / SLM-525 | `formal_preflight_schema` → `bound_ast_schema` | yes (`formal/bound_ast.py`) | **done** — safe symbolic bound AST + exact Fraction evaluator; registry ids cited by ledger |
 | EVID-06 / SLM-526 | `formal_object_schema` | no | v2 envelope adapts v1 objects |
 | HARN-01 / SLM-520 | `reasoning_harness_parent` | no | register `reasoning/revmath` profile + parity matrix |
 
@@ -183,11 +183,21 @@ Malformed tasks fail closed. Repairs cannot alter proposition / assumption / cam
 | `FormalPreflightFourAxisLedgerV1.analysis` | `RevmathFourAxisAnalysisV1` (assumption / computability / resource_bounds / implementation_refinement) |
 | `computability_classification` | Practical labels: `finite_decidable`, `bounded_search`, `total_recursive`, `semidecidable`, `oracle_relative`, `classical_noncomputable_existence`, `unclassified` |
 | `rm_subsystem_id` + `rm_interpretation_status` | Genuine `RCA0`/`WKL0`/… labels require `explicit_reversal` or `explicit_interpretation` (never inferred from `#print axioms`) |
-| `resource_bounds.bound_ast_id` | Stable id into EVID-04 safe bound AST (`bound.finite_search.prefix_tree.v1`, `bound.placeholder.pending_evid04.v1`, …); no raw `eval` |
+| `resource_bounds.bound_ast_id` | Stable id into EVID-04 registry (`formal/bound_ast.py` / `bound_ast_registry.v1.json`): `bound.finite_search.prefix_tree.v1`, `bound.finite_search.coarse.v1`, `bound.closure.live_upper.v1`, `bound.placeholder.pending_evid04.v1`; exact `Fraction` eval; no raw `eval` |
 | `empirical_remainder_claim_ids` | Claims that remain empirical (e.g. wall-clock, neural quality) |
 | `theorem_claim_kinds` | Fail closed if `wall_clock_latency` or `neural_quality` are asserted as theorem consequences |
 
 Migration: `migrate_formal_preflight_v1` / `formal_preflight_payload` / `formal_preflight_sha256` in `autoresearch/formal.py`. Digests omit an unset ledger so historical artifacts keep their hashes.
+
+### EVID-04 safe bound AST (SLM-525)
+
+| Module / artifact | Role |
+| --- | --- |
+| [`formal/bound_ast.py`](../../src/slm_training/formal/bound_ast.py) | Typed AST (`ConstInt`/`ConstRat`/`Var`/`Add`/`Mul`/`Max`/`Min`/`Div`/`Floor`/`Ceil`/`SumOver`/`ProdOver`/`PrefixCumprodSum`/`Len` + `Le`/`Lt`/`Eq`), exact `Fraction` evaluator, pretty printer, canonical digest |
+| `resources/formal/bound_ast_registry.v1.json` | Registered `bound.*` documents with digests; KERN-03 prefix-tree id resolves here |
+| `resources/formal/bound_ast_parity_fixtures.v1.json` | Lean↔Python parity cases for search/closure/cost bounds |
+
+Fail closed: no `eval`/`exec`, unknown variables, division by zero, code-like payloads, or unregistered `bound_ast_id` on proved/refuted resource-bounds axes.
 
 ## HARN-03 runner / replay / report (SLM-536)
 

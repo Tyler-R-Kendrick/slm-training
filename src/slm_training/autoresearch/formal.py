@@ -739,16 +739,24 @@ def attach_four_axis_ledger(
         analysis = analysis.model_copy(update={"formal_preflight_sha256": digest})
         ledger = ledger.model_copy(update={"analysis": analysis})
     rb = ledger.analysis.resource_bounds
-    if (
-        rb.status in ("proved_axis", "refuted_axis")
-        and rb.bound_ast_id is not None
-        and rb.bound_ast_id not in BOUND_AST_ID_PLACEHOLDERS
-        and not rb.bound_ast_id.startswith("bound.")
-    ):
-        raise ValueError(
-            f"bound_ast_id {rb.bound_ast_id!r} must be a stable bound.* id "
-            "(EVID-04 AST placeholder; no raw eval expressions)"
+    if rb.status in ("proved_axis", "refuted_axis") and rb.bound_ast_id is not None:
+        from slm_training.formal.bound_ast import (
+            BoundAstError,
+            assert_registered_bound_ast_id,
         )
+
+        try:
+            assert_registered_bound_ast_id(rb.bound_ast_id)
+        except BoundAstError as exc:
+            raise ValueError(
+                f"bound_ast_id {rb.bound_ast_id!r} must be a registered EVID-04 "
+                "bound AST id (no raw eval expressions)"
+            ) from exc
+        if rb.bound_ast_id not in BOUND_AST_ID_PLACEHOLDERS:
+            raise ValueError(
+                f"bound_ast_id {rb.bound_ast_id!r} missing from "
+                "BOUND_AST_ID_PLACEHOLDERS allowlist sync"
+            )
     return preflight.model_copy(update={"four_axis_ledger": ledger})
 
 

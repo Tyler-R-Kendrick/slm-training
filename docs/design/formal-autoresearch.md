@@ -179,7 +179,7 @@ early. It does not use a toy proof as a surrogate quality score.
 (`FormalPreflightFourAxisLedgerV1`) with the HARN-02
 `RevmathFourAxisAnalysisV1` vocabulary. The ledger records assumption strength,
 computability classification, resource upper/lower bounds by stable
-`bound_ast_id` (EVID-04 AST placeholders; KERN-03
+`bound_ast_id` (EVID-04 registered AST ids in `formal/bound_ast.py`; KERN-03
 `bound.finite_search.prefix_tree.v1`), and implementation refinement with
 explicit empirical remainders.
 

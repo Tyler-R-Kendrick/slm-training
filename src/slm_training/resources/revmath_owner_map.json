@@ -46,6 +46,24 @@
       "notes": "Typed preflight artifact contract only; execution lives in autoresearch/formal.py."
     },
     {
+      "id": "bound_ast_schema",
+      "kind": "schema",
+      "owner_module": "src/slm_training/formal/bound_ast.py",
+      "owner_symbols": [
+        "BoundAstDocumentV1",
+        "BoundVarDeclV1",
+        "EvalResult",
+        "evaluate",
+        "evaluate_bound",
+        "resolve_bound_ast",
+        "REGISTERED_BOUND_AST_IDS",
+        "pretty"
+      ],
+      "design_doc": "docs/design/reverse-mathematics-computability.md",
+      "ownership_map_subsystem": null,
+      "notes": "EVID-04 safe symbolic bound AST + exact Fraction evaluator; consumed by FormalPreflight four-axis ledger bound_ast_id fields. No eval/exec."
+    },
+    {
       "id": "formal_preflight_execution",
       "kind": "formal_preflight",
       "owner_module": "src/slm_training/autoresearch/formal.py",
@@ -420,7 +438,8 @@
       "linear_id": "SLM-525",
       "extends": "formal_preflight_schema",
       "new_owner_justified": true,
-      "justification": "Safe symbolic bound AST is a new eval-only submodule consumed by preflight ledger fields."
+      "justification": "Safe symbolic bound AST lives in formal/bound_ast.py (bound_ast_schema surface); ledger fields continue to cite registered bound.* ids without a second ledger.",
+      "status": "done"
     },
     {
       "issue": "EVID-06",
