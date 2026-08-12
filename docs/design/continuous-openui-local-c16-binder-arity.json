@@ -1,0 +1,35 @@
+{
+  "schema_version": "autotrain_measured_results/v1",
+  "loop_id": "continuous-openui-local",
+  "cycle_index": 16,
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c16",
+  "positive": false,
+  "arms": {
+    "binder-arity": {
+      "structural_similarity": 0.17416666666666666,
+      "meaningful_program_rate": 0.3333333333333333,
+      "binder_reference_f1": 0.6333333333333333,
+      "parse_rate": 1.0,
+      "latency_ms_p50": 795.82,
+      "decode_timeout_count": 0
+    },
+    "control": {
+      "structural_similarity": 0.17416666666666666,
+      "meaningful_program_rate": 0.3333333333333333,
+      "binder_reference_f1": 0.6333333333333333,
+      "parse_rate": 1.0,
+      "latency_ms_p50": 848.99,
+      "decode_timeout_count": 0
+    }
+  },
+  "delta_struct": 0.0,
+  "sdlc_reasons": [
+    "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c16-binder-arity",
+    "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c16-control",
+    "efficiency_win:mpr_per_ms:0.00039262339->0.00041885519:gain_fraction=0.066811591:minimum=0.05",
+    "quality_held:parse=1.0 mpr=0.3333333333333333",
+    "primary_metric_null_or_worse:smoke.structural_similarity:control=0.17416666666666666 candidate=0.17416666666666666 improvement=0.0",
+    "fixture_insufficient_n_alone"
+  ],
+  "recorded_at": "2026-08-04T22:25:28.334868+00:00"
+}

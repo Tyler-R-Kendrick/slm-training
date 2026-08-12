@@ -1,0 +1,35 @@
+{
+  "schema_version": "autotrain_measured_results/v1",
+  "loop_id": "continuous-openui-local",
+  "cycle_index": 28,
+  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c28",
+  "positive": false,
+  "arms": {
+    "confirm": {
+      "structural_similarity": 0.057499999999999996,
+      "meaningful_program_rate": 0.0,
+      "binder_reference_f1": 0.8222222222222223,
+      "parse_rate": 1.0,
+      "latency_ms_p50": 981.3,
+      "decode_timeout_count": 0
+    },
+    "control": {
+      "structural_similarity": 0.057499999999999996,
+      "meaningful_program_rate": 0.0,
+      "binder_reference_f1": 0.0,
+      "parse_rate": 1.0,
+      "latency_ms_p50": 859.68,
+      "decode_timeout_count": 0
+    }
+  },
+  "delta_struct": 0.0,
+  "sdlc_reasons": [
+    "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c28-control",
+    "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c28-confirm",
+    "primary_metric_null_or_worse:smoke.structural_similarity:control=0.057499999999999996 candidate=0.057499999999999996 improvement=0.0",
+    "fixture_insufficient_n_alone",
+    "eg_params_block:capacity growth blocked for climb/promotion: capacity_increased_without_parameter_efficiency_evidence",
+    "confirmation_rejected:primary_quality_not_reheld"
+  ],
+  "recorded_at": "2026-08-05T17:12:56.299786+00:00"
+}

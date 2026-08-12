@@ -1,0 +1,36 @@
+{
+  "schema_version": "autotrain_measured_results/v1",
+  "loop_id": "continuous-openui-local",
+  "cycle_index": 15,
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c15",
+  "positive": false,
+  "arms": {
+    "binder-topology": {
+      "structural_similarity": 0.3433333333333333,
+      "meaningful_program_rate": 0.6666666666666666,
+      "binder_reference_f1": 0.8222222222222223,
+      "parse_rate": 1.0,
+      "latency_ms_p50": 2024.91,
+      "decode_timeout_count": 0
+    },
+    "control": {
+      "structural_similarity": 0.22846666666666668,
+      "meaningful_program_rate": 0.6666666666666666,
+      "binder_reference_f1": 1.0,
+      "parse_rate": 1.0,
+      "latency_ms_p50": 3950.06,
+      "decode_timeout_count": 0
+    }
+  },
+  "delta_struct": 0.11486666666666664,
+  "sdlc_reasons": [
+    "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c15-control",
+    "fixture_insufficient_n:c20260804-continuous-openui-local-8c0b60dd-c15-binder-topology",
+    "efficiency_win:mpr_per_ms:0.00016877381->0.00032923274:gain_fraction=0.95073361:minimum=0.05",
+    "quality_held:parse=1.0 mpr=0.6666666666666666",
+    "non_regression_fail:binder_reference_f1:1.0->0.8222222222222223",
+    "primary_metric_null_or_worse:smoke.structural_similarity:control=0.22846666666666668 candidate=0.3433333333333333 improvement=0.11486666666666664",
+    "fixture_insufficient_n_alone"
+  ],
+  "recorded_at": "2026-08-04T22:24:24.548958+00:00"
+}

@@ -1,0 +1,42 @@
+{
+  "schema_version": "autotrain_measured_results/v1",
+  "loop_id": "continuous-openui-local",
+  "cycle_index": 9,
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c9",
+  "positive": true,
+  "sdlc_stack_layer": false,
+  "sdlc_action": "positive_no_tracked_delta_skip_stack",
+  "primary_metric": "smoke.structural_similarity",
+  "arms": {
+    "control": {
+      "structural_similarity": 0.2769333333333333,
+      "meaningful_program_rate": 0.6666666666666666,
+      "binder_reference_f1": 1.0,
+      "parse_rate": 1.0,
+      "latency_ms_p50": 6404.45,
+      "decode_timeout_count": 0,
+      "n": 3
+    },
+    "component-inventory": {
+      "structural_similarity": 0.44803333333333334,
+      "meaningful_program_rate": 0.6666666666666666,
+      "binder_reference_f1": 1.0,
+      "parse_rate": 1.0,
+      "latency_ms_p50": 4874.27,
+      "decode_timeout_count": 0,
+      "n": 3
+    }
+  },
+  "delta": {
+    "smoke.structural_similarity": 0.17110000000000003,
+    "efficiency_mpr_per_ms_gain_fraction": 0.31393009
+  },
+  "quality_held": {
+    "parse": 1.0,
+    "mpr": 0.6666666666666666
+  },
+  "champion_enqueued": "champ-continuous-openui-local-9-96cb85cae43e4d25",
+  "honesty": "fixture smoke n=3; fresh-seed confirmation required before promotion",
+  "params": 1682360,
+  "recorded_at": "2026-08-04T22:13:53.315031+00:00"
+}

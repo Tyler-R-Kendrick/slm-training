@@ -1,0 +1,18 @@
+{
+  "schema_version": "autotrain_measured_results/v1",
+  "loop_id": "continuous-openui-local",
+  "cycle_index": 10,
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c10",
+  "intent": "confirm",
+  "positive": false,
+  "verdict": "confirmation_rejected:primary_quality_not_reheld",
+  "champion": "champ-continuous-openui-local-9-96cb85cae43e4d25",
+  "champion_status": "rejected",
+  "primary": {
+    "control": 0.0693667,
+    "confirm": 0.0693667,
+    "delta": 0.0
+  },
+  "note": "Fresh-seed confirmation nullified c9 fixture win; exhaust fingerprint and rotate thrash.",
+  "recorded_at": "2026-08-04T22:15:54.327969+00:00"
+}

@@ -1,0 +1,36 @@
+{
+  "schema_version": "autotrain_measured_results/v1",
+  "loop_id": "continuous-openui-local",
+  "cycle_index": 25,
+  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c25",
+  "positive": false,
+  "arms": {
+    "control": {
+      "structural_similarity": 0.3764,
+      "meaningful_program_rate": 0.6666666666666666,
+      "binder_reference_f1": 0.9523809523809524,
+      "parse_rate": 1.0,
+      "latency_ms_p50": 3126.15,
+      "decode_timeout_count": 0
+    },
+    "slot-component-fidelity-coupling": {
+      "structural_similarity": 0.23783333333333334,
+      "meaningful_program_rate": 0.6666666666666666,
+      "binder_reference_f1": 1.0,
+      "parse_rate": 1.0,
+      "latency_ms_p50": 2572.55,
+      "decode_timeout_count": 0
+    }
+  },
+  "delta_struct": -0.13856666666666667,
+  "sdlc_reasons": [
+    "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c25-control",
+    "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c25-slot-component-fidelity-coupling",
+    "efficiency_win:mpr_per_ms:0.00021325486->0.00025914624:gain_fraction=0.21519504:minimum=0.05",
+    "quality_held:parse=1.0 mpr=0.6666666666666666",
+    "primary_metric_null_or_worse:smoke.structural_similarity:control=0.3764 candidate=0.23783333333333334 improvement=-0.13856666666666667",
+    "fixture_insufficient_n_alone",
+    "eg_params_block:capacity growth blocked for climb/promotion: capacity_increased_without_parameter_efficiency_evidence"
+  ],
+  "recorded_at": "2026-08-05T17:08:28.848648+00:00"
+}

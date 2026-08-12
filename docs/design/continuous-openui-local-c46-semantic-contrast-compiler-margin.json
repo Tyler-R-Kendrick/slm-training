@@ -1,0 +1,36 @@
+{
+  "schema_version": "autotrain_measured_results/v1",
+  "loop_id": "continuous-openui-local",
+  "cycle_index": 46,
+  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c46",
+  "positive": false,
+  "arms": {
+    "control": {
+      "structural_similarity": 0.13526666666666667,
+      "meaningful_program_rate": 0.3333333333333333,
+      "binder_reference_f1": 0.6333333333333333,
+      "parse_rate": 1.0,
+      "latency_ms_p50": 888.63,
+      "decode_timeout_count": 0
+    },
+    "semantic-contrast-compiler-margin": {
+      "structural_similarity": 0.3275,
+      "meaningful_program_rate": 1.0,
+      "binder_reference_f1": 1.0,
+      "parse_rate": 1.0,
+      "latency_ms_p50": 3520.63,
+      "decode_timeout_count": 1
+    }
+  },
+  "delta_struct": 0.19223333333333334,
+  "sdlc_reasons": [
+    "measurement_incomplete:c20260805-continuous-openui-local-8c0b60dd-c46-semantic-contrast-compiler-margin:smoke:incomplete_document_n=1:decode_timeout_count=1",
+    "harness_failure:c20260805-continuous-openui-local-8c0b60dd-c46-semantic-contrast-compiler-margin:experiment_failed",
+    "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c46-semantic-contrast-compiler-margin",
+    "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c46-control",
+    "primary_quality_win_rejected_latency_budget:smoke.structural_similarity:lat=888.63->3520.63",
+    "quality_win_rejected_latency_budget:mpr=0.3333333333333333->1.0 lat=888.63->3520.63",
+    "primary_metric_win:smoke.structural_similarity:0.13526666666666667->0.3275:improvement=0.19223333333333334"
+  ],
+  "recorded_at": "2026-08-05T17:40:29.745211+00:00"
+}
