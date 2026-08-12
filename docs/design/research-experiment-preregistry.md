@@ -147,6 +147,14 @@ Disposition: see evidence doc (fixture HARN-07 extraction over frozen theorem re
 Evidence: [`iter-revmath-research-17-preregistered.md`](iter-revmath-research-17-preregistered.md).
 Still `default_off` / `research_only` — not production authority.
 
+## RESEARCH-11 status (SLM-574)
+
+Preregistered process-verified reward shaping pilot executed under campaign lock
+(see `src/slm_training/resources/formal/research_11_campaign_lock.v1.json`).
+Disposition: **rejected** (process shaping did not beat terminal correlation on fixture corpus).
+Evidence: [`iter-revmath-research-11-preregistered.md`](iter-revmath-research-11-preregistered.md).
+Still `default_off` / `research_only` — not production authority.
+
 ## RESEARCH-07 status (SLM-565)
 
 Preregistered VSS Alethe/SMT proof-reconstruction pilot executed under campaign lock
