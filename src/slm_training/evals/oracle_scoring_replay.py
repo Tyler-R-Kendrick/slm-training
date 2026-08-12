@@ -15,7 +15,7 @@ import re
 from dataclasses import asdict, dataclass, field
 from typing import Any, Iterable
 
-from slm_training.data.contract import GenerationRequest
+from slm_training.data.contract import GenerationRequest, canonicalize_example_template_markers
 from slm_training.dsl.parser import validate
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.evals.meaningful_program import binding_aware_meaningful_v2
@@ -345,13 +345,15 @@ def build_fixture_records() -> list[ExampleRecord]:
             continue
         slots = tuple(str(s) for s in arch.get("slot_contract", ()))
         records.append(
-            ExampleRecord(
-                id=str(arch["id"]),
-                prompt=str(arch["prompt"]),
-                openui=str(arch["positive"]),
-                placeholders=list(slots),
-                split="adversarial",
-                source="oracle_scoring_replay_fixture",
+            canonicalize_example_template_markers(
+                ExampleRecord(
+                    id=str(arch["id"]),
+                    prompt=str(arch["prompt"]),
+                    openui=str(arch["positive"]),
+                    placeholders=list(slots),
+                    split="adversarial",
+                    source="oracle_scoring_replay_fixture",
+                )
             )
         )
     return records

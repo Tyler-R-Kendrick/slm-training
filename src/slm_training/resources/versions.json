@@ -3982,6 +3982,11 @@
       "history": [
         {
           "date": "2026-08-12",
+          "note": "no-bump: GH-1263 skip .claude/** in check_changed select_tests so config-only hook edits do not require the full tests/ fallback; ownership map contract unchanged.",
+          "version": "v27"
+        },
+        {
+          "date": "2026-08-12",
           "note": "no-bump: RESEARCH-20/SLM-552 ownership map extension + render; no authority tier change.",
           "version": "v27"
         },
@@ -4858,6 +4863,11 @@
     },
     "harness.autoresearch.experiment_campaign": {
       "history": [
+        {
+          "date": "2026-08-12",
+          "note": "no-bump: GH-1263 docs/design/gh-1263-cd-remaining-debt-20260812.md measured-results for fresh-checkout bootstrap + named-marker test debt cleanup; campaign contract unchanged.",
+          "version": "v211"
+        },
         {
           "date": "2026-08-12",
           "note": "no-bump: rebuild evidence_ledger.v1.json after RESEARCH-20 (SLM-552) cost formalism compare evidence docs; deterministic fold, no campaign contract change.",
@@ -16004,6 +16014,11 @@
     "harness.oracle_scoring_replay": {
       "history": [
         {
+          "date": "2026-08-12",
+          "note": "GH-1263: canonicalize oracle replay fixture records via canonicalize_example_template_markers so GenerationRequest.from_record satisfies assert_canonical_template_marker_inventory.",
+          "version": "v2"
+        },
+        {
           "date": "2026-07-24",
           "note": "no-bump: record a local 66-row oracle replay under unchanged scorer and harness behavior",
           "version": "v1"
@@ -16023,7 +16038,7 @@
         "docs/design/iter-slm260-oracle-scoring-replay-20260721.json",
         "docs/design/iter-slm260-oracle-scoring-replay-20260724.json"
       ],
-      "version": "v1"
+      "version": "v2"
     },
     "harness.preference.constraint_debt": {
       "history": [
