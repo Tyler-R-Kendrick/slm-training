@@ -12,7 +12,7 @@
   ],
   "components": {
     "formal.leverproof": {
-      "version": "v27",
+      "version": "v28",
       "kind": "harness",
       "paths": [
         "src/leverproof_lean/LeverProofLean/ProofTraceRefinement.lean",
@@ -45,6 +45,11 @@
         "docs/design/kern-10-resource-bound-trigger-parity.md"
       ],
       "history": [
+        {
+          "version": "v28",
+          "date": "2026-08-12",
+          "note": "Replace forbidden native_decide fixture proofs in ProofTraceRefinement with kernel-checked decide so the proof-source trust gate and formal preflight remain authoritative."
+        },
         {
           "version": "v27",
           "date": "2026-08-11",
