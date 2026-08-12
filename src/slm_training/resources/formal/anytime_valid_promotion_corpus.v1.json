@@ -1,0 +1,31 @@
+{
+  "alpha": 0.05,
+  "holm_family_size": 3,
+  "lambda_grid": [
+    0.05,
+    0.1,
+    0.2,
+    0.3,
+    0.4,
+    0.5,
+    0.6,
+    0.7,
+    0.8,
+    0.9,
+    0.95
+  ],
+  "null_p": 0.5,
+  "null_scenarios": {
+    "count": 200,
+    "seed_base": 1,
+    "success_p": 0.5
+  },
+  "planted_scenarios": {
+    "count": 50,
+    "seed_base": 10001,
+    "success_p": 0.65
+  },
+  "schema": "anytime_valid_promotion_corpus/v1",
+  "stream_length": 40,
+  "type_i_tolerance": 0.02
+}

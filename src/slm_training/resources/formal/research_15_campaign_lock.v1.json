@@ -1,0 +1,120 @@
+{
+  "locked_at": "2026-08-12T18:17:04.962215Z",
+  "manifest": {
+    "arms": [
+      {
+        "arm_id": "holm_adaptive_peek_control",
+        "config_sha256": "89ff67cd35f2ac28f2183c7dad703eef5a8bc111399701aee53ac2bde1f35e32",
+        "role": "control"
+      },
+      {
+        "arm_id": "mixture_e_process_treatment",
+        "config_sha256": "41faeeb67206141e2ea0278ac4dc8a477f0e2952aba6155bd8e3e3ab81645fa7",
+        "role": "candidate"
+      }
+    ],
+    "artifact_requirements": [
+      {
+        "kind": "version_stamp",
+        "minimum_count": 1
+      },
+      {
+        "kind": "paired_examples",
+        "minimum_count": 1
+      }
+    ],
+    "author": "research-15",
+    "budget": {
+      "max_experiments": 1,
+      "max_gpu_hours": 0.0,
+      "max_wall_minutes": 30.0
+    },
+    "campaign_id": "research-15-anytime-valid-promotion",
+    "claim_class": "fixture",
+    "controls": [
+      {
+        "control_id": "holm_adaptive_peek",
+        "description": "Fixed-n Holm gate reused at adaptive peeks.",
+        "kind": "positive"
+      },
+      {
+        "control_id": "type_i_fails_closed",
+        "description": "Treatment must not exceed alpha tolerance on null replay.",
+        "kind": "negative"
+      }
+    ],
+    "created_at": "1970-01-01T00:00:00Z",
+    "decision": "Accept iff treatment type-I rate stays within alpha tolerance under null replay and planted-stream power remains usable vs fixed-n oracle; else reject/retire.",
+    "endpoints": [
+      {
+        "direction": "increase",
+        "endpoint_id": "type_i_control",
+        "metric": "anytime_valid_type_i_error_control_under_optional_stopping",
+        "minimum_effect": 1.0,
+        "role": "primary"
+      },
+      {
+        "direction": "decrease",
+        "endpoint_id": "power_loss",
+        "metric": "power_loss",
+        "minimum_effect": 0.35,
+        "role": "secondary"
+      }
+    ],
+    "executable_kill_criteria": [],
+    "experiment_id": "research_15_anytime_valid_promotion",
+    "formal_obligations": [],
+    "hypothesis": "Anytime-valid e-process evidence can govern adaptive autoresearch promotion without invalidating type-I control under optional stopping.",
+    "locked_eval_manifest_sha256": null,
+    "mechanism_off_arm_ids": [],
+    "metric_expectations_sha256": null,
+    "multiplicity_families": [
+      {
+        "alpha": 0.05,
+        "family_id": "research15_primary",
+        "hypothesis_ids": [
+          "type_i_control"
+        ],
+        "method": "holm"
+      }
+    ],
+    "negative_controls": [
+      "type_i_fails_closed"
+    ],
+    "power_feasibility": null,
+    "promotion_gates": [
+      {
+        "endpoint_id": "type_i_control",
+        "gate_id": "type_i_control",
+        "operator": "ge",
+        "threshold": 1.0
+      }
+    ],
+    "replay_of_manifest_sha256": null,
+    "replay_reason": null,
+    "replicate_ledger_schema": null,
+    "replicate_seed_floor": null,
+    "requires_rl": false,
+    "rl_evaluation_sha256": null,
+    "rl_readiness_report_sha256": null,
+    "rollback_gates": [
+      {
+        "endpoint_id": "power_loss",
+        "gate_id": "power_loss",
+        "operator": "gt",
+        "threshold": 0.35
+      }
+    ],
+    "schema_version": "ExperimentCampaignV1",
+    "seeds": [
+      0
+    ],
+    "source_commit": "0000000000000000000000000000000000000000",
+    "source_dirty": false,
+    "stopping_rules": [
+      "fixture null/planted Bernoulli streams stop after paired calibration"
+    ]
+  },
+  "manifest_sha256": "e98337a6f0aea62a62559383deacbdcff9051e42dfa833747d7b587011e1a75c",
+  "schema_version": "CampaignLockV1"
+}

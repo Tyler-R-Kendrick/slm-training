@@ -828,7 +828,7 @@
           "status": "completed"
         }
       ],
-      "campaign_lock_sha256": null,
+      "campaign_lock_sha256": "e98337a6f0aea62a62559383deacbdcff9051e42dfa833747d7b587011e1a75c",
       "cited_lineage": [
         "repo-research-lineage",
         "repo-only-hypothesis",
@@ -836,7 +836,7 @@
       ],
       "decision_rule": "Accept if type-I control holds under optional stopping with usable power.",
       "default_off": true,
-      "disposition": "registered",
+      "disposition": "completed",
       "evidence_path": "docs/design/iter-revmath-research-15-preregistered.md",
       "experiment_key": "RESEARCH-15",
       "falsifier": "Anytime procedure fails type-I control or collapses power unusably.",

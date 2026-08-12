@@ -171,6 +171,14 @@ Disposition: see evidence doc (fixture HARN-06 independent validation).
 Evidence: [`iter-revmath-research-13-preregistered.md`](iter-revmath-research-13-preregistered.md).
 Still `default_off` / `research_only` — not production authority.
 
+## RESEARCH-15 status (SLM-569)
+
+Preregistered anytime-valid adaptive promotion pilot executed under campaign lock
+(see `src/slm_training/resources/formal/research_15_campaign_lock.v1.json`).
+Disposition: see evidence doc (fixture sequential-inference calibration).
+Evidence: [`iter-revmath-research-15-preregistered.md`](iter-revmath-research-15-preregistered.md).
+Still `default_off` / `research_only` — not production authority.
+
 ## RESEARCH-07 status (SLM-565)
 
 Preregistered VSS Alethe/SMT proof-reconstruction pilot executed under campaign lock
