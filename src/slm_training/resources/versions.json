@@ -3142,6 +3142,11 @@
         {
           "version": "v27",
           "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-03/SLM-549 downstream_extension_map + experiment_campaign notes only."
+        },
+        {
+          "version": "v27",
+          "date": "2026-08-12",
           "note": "no-bump: RESEARCH-09 (SLM-541) downstream_extension_map row over experiment_campaign; no new subsystem."
         },
         {
@@ -3515,7 +3520,7 @@
       ]
     },
     "governance.research_experiment_preregistry": {
-      "version": "v1",
+      "version": "v2",
       "kind": "gate",
       "paths": [
         "docs/design/research-experiment-preregistry.md",
@@ -3525,6 +3530,11 @@
         "tests/test_scripts/test_verify_research_experiment_preregistry.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-12",
+          "note": "RESEARCH-03/SLM-549: activate campaign lock + completed disposition for Big-Five interpretation pilot."
+        },
         {
           "version": "v1",
           "date": "2026-08-12",
@@ -3570,6 +3580,11 @@
         "src/slm_training/resources/revmath/examples/README.md"
       ],
       "history": [
+        {
+          "version": "v22",
+          "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-03/SLM-549 docs-only pointer to iter-revmath-research-03-preregistered.md in reverse-mathematics-computability.md; owner map unchanged."
+        },
         {
           "version": "v22",
           "date": "2026-08-12",
@@ -3895,6 +3910,31 @@
         "docs/design/integ-03-campaign-formal-evidence.md"
       ],
       "history": [
+        {
+          "version": "v208",
+          "date": "2026-08-12",
+          "note": "no-bump: rebuild evidence_ledger.v1.json after RESEARCH-03 (SLM-549) design/results docs; deterministic fold, no campaign contract change."
+        },
+        {
+          "version": "v208",
+          "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-03/SLM-549 evidence_ledger rebuild after rebase onto RESEARCH-09 main; campaign schema unchanged."
+        },
+        {
+          "version": "v208",
+          "date": "2026-08-12",
+          "note": "no-bump: rebuild evidence_ledger.v1.json after RESEARCH-03 (SLM-549) design/results docs; deterministic fold, no campaign contract change."
+        },
+        {
+          "version": "v208",
+          "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-03/SLM-549 evidence_ledger rebuild after iter-revmath-research-03 evidence (merge-ready parity); campaign schema unchanged."
+        },
+        {
+          "version": "v208",
+          "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-03/SLM-549 rebuilt autotrain_climb evidence_ledger.v1.json from docs/design after adding iter-revmath-research-03 evidence; campaign schema unchanged."
+        },
         {
           "version": "v208",
           "date": "2026-08-12",
@@ -19326,6 +19366,34 @@
           "version": "v1",
           "date": "2026-08-12",
           "note": "RESEARCH-09/SLM-541: default-off parameterized/treewidth-aware VSS campaign adapter+harness+runner+lock+fixture evidence; never production authority."
+        }
+      ]
+    },
+    "harness.experiments.slm549_research03_big_five": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/revmath_research_lean/lakefile.toml",
+        "src/revmath_research_lean/RevMathResearch.lean",
+        "src/revmath_research_lean/RevMathResearch/Coding.lean",
+        "src/revmath_research_lean/RevMathResearch/Base.lean",
+        "src/revmath_research_lean/RevMathResearch/Principles.lean",
+        "src/revmath_research_lean/RevMathResearch/Forward.lean",
+        "src/revmath_research_lean/RevMathResearch/Reverse.lean",
+        "src/revmath_research_lean/RevMathResearch/Interpretation.lean",
+        "src/slm_training/resources/formal/research_03_campaign_lock.v1.json",
+        "src/slm_training/harnesses/experiments/research_03_big_five_interpretation.py",
+        "scripts/run_research_03_big_five.py",
+        "docs/design/iter-revmath-research-03-preregistered.json",
+        "docs/design/iter-revmath-research-03-preregistered.md",
+        "tests/test_harnesses/experiments/test_research_03_big_five_interpretation.py",
+        "tests/test_scripts/test_run_research_03_big_five.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-12",
+          "note": "RESEARCH-03/SLM-549: default-off Big-Five interpretation Lean package + harness + lock + four-axis evidence; never production authority."
         }
       ]
     }

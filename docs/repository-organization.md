@@ -17,6 +17,7 @@ owner from that map as their extension point before adding a new one.
 | --- | --- |
 | Python implementation | `src/slm_training/` or the existing `src/gpu_multi_farm/` package |
 | Lean proofs and executable metric checker (metric oracle + core formal claims) | `src/leverproof_lean/` |
+| Isolated research-only reverse-mathematics Lean package (RESEARCH-03; not production) | `src/revmath_research_lean/` |
 | Exportable multi-prover formal objects (VSS certs + Lean claims + loop) | `src/slm_training/formal/` |
 | Evidence interop projections (PROV-O / RO-Crate / SPDX / in-toto / OCI; authority stays native) | `src/slm_training/evidence_interop/` (see [`design/evidence-interop-profile.md`](design/evidence-interop-profile.md)) |
 | Frozen DSL-agnostic harness machinery (versioning, lineage, gate/promotion engines) | `src/slm_training/harness_core/` (see `docs/design/harness-core.md`) |

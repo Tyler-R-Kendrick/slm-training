@@ -30,9 +30,19 @@
           "blocker_id": "SLM-533",
           "note": "RESEARCH-02 preregistry (this registry) must exist before execution",
           "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-532",
+          "note": "KERN-12 computability vocabulary landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-536",
+          "note": "HARN-03 revmath runner landed",
+          "status": "completed"
         }
       ],
-      "campaign_lock_sha256": null,
+      "campaign_lock_sha256": "4a67246dd3793a45bcd2c979b282462beac0e5f860c882080cc50d3c3a49c19f",
       "cited_lineage": [
         "simpson-sosoa",
         "arxiv-1804.05495",
@@ -40,7 +50,7 @@
       ],
       "decision_rule": "Promote research lessons only after explicit transfer doc; never auto-promote to production RM labels.",
       "default_off": true,
-      "disposition": "registered",
+      "disposition": "completed",
       "evidence_path": "docs/design/iter-revmath-research-03-preregistered.md",
       "experiment_key": "RESEARCH-03",
       "falsifier": "Encoding/library burden disproportionate, reversal unfaithful, or hidden stronger axioms required.",
