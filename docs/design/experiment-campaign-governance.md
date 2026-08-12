@@ -164,3 +164,19 @@ ledgers, and revmath report/result digests without changing lock digests or
 empirical promotion semantics. See
 [`integ-03-campaign-formal-evidence.md`](integ-03-campaign-formal-evidence.md).
 
+## Research default-off preregistry (RESEARCH-02)
+
+Revmath / computability RESEARCH-* pilots file through the default-off
+registry owned by RESEARCH-02 / SLM-533:
+
+- Design: [research-experiment-preregistry.md](research-experiment-preregistry.md)
+- Resource: `src/slm_training/resources/research_experiment_preregistry.json`
+- Loader: `src/slm_training/research_preregistry.py`
+- Verify: `python -m scripts.verify_research_experiment_preregistry`
+
+The registry does **not** replace `ExperimentCampaignV1`. It requires blocker
+completion and an exact `CampaignLockV1` digest before execution, keeps every
+pilot `default_off` / `research_only`, and rejects equivalent reruns of
+completed/rejected knob+hypothesis signatures unless explicitly reopened.
+Filing an entry is not evidence.
+

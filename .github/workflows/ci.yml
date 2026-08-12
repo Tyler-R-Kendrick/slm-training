@@ -197,6 +197,8 @@ jobs:
         run: python -m scripts.verify_ownership_map
       - name: Certify the RESEARCH-01 research citation catalog
         run: PYTHONPATH=src python -m scripts.verify_research_citation_catalog
+      - name: Certify the RESEARCH-02 experiment preregistration registry
+        run: PYTHONPATH=src python -m scripts.verify_research_experiment_preregistry
       - name: Validate external test and eval cases
         run: |
           python -m scripts.extract_test_cases
