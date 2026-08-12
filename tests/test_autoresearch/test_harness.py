@@ -2485,6 +2485,20 @@ def test_compile_commands_routes_typed_ltr_prefix_training_lever() -> None:
     assert train[train.index("--ltr-prefix-loss-weight") + 1] == "1.0"
 
 
+def test_compile_commands_routes_ambiguity_only_loss() -> None:
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            train_version="wf_smoke_v2",
+            steps=20,
+            ambiguity_only_loss=True,
+        )
+    )
+
+    commands = compile_commands(campaign(), spec)
+    train = next(command for command in commands if "scripts.train_model" in command)
+    assert "--ambiguity-only-loss" in train
+
+
 def test_compile_commands_routes_solver_energy_and_hazard_levers() -> None:
     spec = experiment(
         knobs=ExperimentKnobs(

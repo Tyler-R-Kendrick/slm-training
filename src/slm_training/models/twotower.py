@@ -371,6 +371,9 @@ class TwoTowerConfig:
     grammar_ltr_primary: bool = False
     # Mix teacher-forced next-token CE into training (helps LTR generate).
     ltr_loss_weight: float = 0.5
+    # Default-off train-only arm: deterministic complete singleton positions
+    # contribute no reconstruction loss; incomplete domains remain scored.
+    ambiguity_only_loss: bool = False
     # Extra weight on the first content transitions (root -> assignment).
     ltr_prefix_loss_weight: float = 0.0
     # Extra reconstruction weight on component-type tokens. Zero-parameter;
@@ -3419,6 +3422,36 @@ class TwoTowerModel(nn.Module):
                 target_ids, noisy, predict_mask
             )
 
+        singleton_mask = torch.zeros_like(predict_mask)
+        ambiguity_only = bool(getattr(self.config, "ambiguity_only_loss", False))
+        if ambiguity_only:
+            from slm_training.dsl.grammar.fastpath.compiler_draft import (
+                gold_complete_singleton_positions,
+            )
+
+            for row, record in enumerate(batch):
+                for position in gold_complete_singleton_positions(
+                    self.tokenizer,
+                    target_ids[row].tolist(),
+                    slot_contract=list(record.placeholders or ()),
+                ):
+                    singleton_mask[row, position] = True
+            excluded = predict_mask & singleton_mask
+            predict_mask = predict_mask & ~singleton_mask
+        else:
+            excluded = singleton_mask
+        self.last_training_metrics.update(
+            {
+                "ambiguity_only_loss_enabled": ambiguity_only,
+                "complete_singleton_loss_tokens_excluded": int(
+                    excluded.sum().detach().cpu()
+                ),
+                "ambiguity_loss_tokens_retained": int(
+                    predict_mask.sum().detach().cpu()
+                ),
+            }
+        )
+
         from slm_training.runtime.telemetry import timed
 
         abstract_trace: AbstractPlanTrace | None = None
@@ -4012,6 +4045,8 @@ class TwoTowerModel(nn.Module):
                     if int(target_ids[i, j]) == self.tokenizer.pad_id:
                         break
                     ltr_mask[i, j] = True
+            if ambiguity_only:
+                ltr_mask &= ~singleton_mask
             ltr_logits = self.denoiser(
                 ltr_noisy, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
             )

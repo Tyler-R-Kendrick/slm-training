@@ -563,6 +563,15 @@ def main(argv: list[str] | None = None) -> int:
         help="Auxiliary prefix-LM loss weight (helps LTR generate).",
     )
     parser.add_argument(
+        "--ambiguity-only-loss",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help=(
+            "Exclude only complete-domain deterministic singleton positions "
+            "from reconstruction loss (default: off)."
+        ),
+    )
+    parser.add_argument(
         "--ltr-prefix-loss-weight",
         type=float,
         default=0.0,
@@ -1611,6 +1620,7 @@ def main(argv: list[str] | None = None) -> int:
         design_md_dropout=args.design_md_dropout,
         emit_record_nll=bool(args.emit_record_nll),
         ltr_loss_weight=args.ltr_loss_weight,
+        ambiguity_only_loss=args.ambiguity_only_loss,
         ltr_prefix_loss_weight=args.ltr_prefix_loss_weight,
         component_token_loss_weight=args.component_token_loss_weight,
         component_edge_token_loss_weight=args.component_edge_token_loss_weight,

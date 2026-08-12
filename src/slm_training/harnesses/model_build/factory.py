@@ -381,6 +381,7 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         grammar_ltr_stages=tuple(ltr_stages),
         grammar_finalize_validate=getattr(config, "grammar_finalize_validate", False),
         ltr_loss_weight=getattr(config, "ltr_loss_weight", 0.5),
+        ambiguity_only_loss=bool(getattr(config, "ambiguity_only_loss", False)),
         fidelity_loss_weight=getattr(config, "fidelity_loss_weight", 0.0),
         semantic_contrast_loss_weight=float(
             getattr(config, "semantic_contrast_loss_weight", 0.0) or 0.0

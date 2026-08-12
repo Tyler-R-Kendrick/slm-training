@@ -22,6 +22,7 @@ from slm_training.dsl.grammar.fastpath.compiler_draft import (
     bound_binder_reference_counts,
     bound_binder_slot_ids,
     build_completion_forest,
+    gold_complete_singleton_positions,
     gold_compiler_decisions,
     gold_compiler_decision_positions,
     root_declaration_reference_arity_target,
@@ -61,6 +62,39 @@ def test_canonical_valid_openui_propagates_decode_deadline(monkeypatch) -> None:
     monkeypatch.setattr(parser, "validate", _deadline)
     with pytest.raises(TimeoutError, match="decode deadline"):
         TwoTowerModel._canonical_valid_openui("root = Separator()")
+
+
+def test_ambiguity_loss_positions_require_complete_matching_singletons(
+    monkeypatch,
+) -> None:
+    from slm_training.dsl.grammar.fastpath import compiler_draft
+
+    class Tokenizer:
+        bos_id = 1
+        pad_id = 0
+
+    forests = {
+        1: CompletionForest((CompletionPath((10,), "forced"),), "complete"),
+        2: CompletionForest(
+            (
+                CompletionPath((11,), "branch"),
+                CompletionPath((99,), "branch"),
+            ),
+            "complete",
+        ),
+        3: CompletionForest((CompletionPath((12,), "unknown"),), "partial"),
+        4: CompletionForest((CompletionPath((99,), "mismatch"),), "complete"),
+    }
+
+    def _forest(_tokenizer, prefix, **kwargs):
+        assert kwargs["remaining_tokens"] == 5 - len(prefix)
+        return forests[len(prefix)]
+
+    monkeypatch.setattr(compiler_draft, "build_completion_forest", _forest)
+
+    assert gold_complete_singleton_positions(
+        Tokenizer(), (1, 10, 11, 12, 13, 0)
+    ) == (1,)
 
 
 def test_compiler_batch_propagates_decode_deadline(monkeypatch) -> None:
