@@ -119,6 +119,16 @@ unordered control on eval pass rate under fixed budget; no root leakage).
 Evidence: [`iter-revmath-research-10-preregistered.md`](iter-revmath-research-10-preregistered.md).
 Still `default_off` / `research_only` — not production authority.
 
+## RESEARCH-14 status (SLM-572)
+
+Preregistered checker diversity pilot executed under campaign lock (see
+`src/slm_training/resources/formal/research_14_campaign_lock.v1.json`).
+Disposition: **completed** (accept — diverse checkers detect additional
+kernel/encoding fault classes with zero false alarms; shared blind spot
+documented).
+Evidence: [`iter-revmath-research-14-preregistered.md`](iter-revmath-research-14-preregistered.md).
+Still `default_off` / `research_only` — not production authority.
+
 ## RESEARCH-07 status (SLM-565)
 
 Preregistered VSS Alethe/SMT proof-reconstruction pilot executed under campaign lock

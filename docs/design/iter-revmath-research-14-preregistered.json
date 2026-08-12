@@ -1,0 +1,143 @@
+{
+  "campaign_id": "research-14-checker-diversity",
+  "campaign_lock_sha256": "2f3969f98f653574496fc50fcaba6c9b790d22df3f663c98f43459b5042492c2",
+  "claim_class": "fixture",
+  "decision": "accept",
+  "default_off": true,
+  "evidence_path": "docs/design/iter-revmath-research-14-preregistered.md",
+  "executed": true,
+  "experiment_id": "research_14_checker_diversity",
+  "experiment_key": "RESEARCH-14",
+  "false_alarm_rate": 0.0,
+  "linear_id": "SLM-572",
+  "paired_report": {
+    "control_arm": {
+      "arm": "single_checker",
+      "blind_spot_case_ids": [
+        "kernel_axiom_footprint_drift",
+        "kernel_module_binding_mismatch",
+        "encoding_literal_flip",
+        "encoding_stale_problem_digest",
+        "shared_serialization_common_mode"
+      ],
+      "checkers": [
+        "python_structural"
+      ],
+      "detected_case_ids": [
+        "parser_proposition_mutation",
+        "parser_toolchain_lock_drift"
+      ],
+      "detected_fault_classes": [
+        "parser_proposition",
+        "parser_toolchain"
+      ],
+      "distinct_trust_domains": [
+        "python_cpython_formal_structural_family"
+      ],
+      "false_alarm_case_ids": [],
+      "false_alarm_rate": 0.0
+    },
+    "control_detected_classes": [
+      "parser_proposition",
+      "parser_toolchain"
+    ],
+    "corpus_digest": "5749ed74c8013c1fdd1cf5722084751774af4a6735f3918021d7d064e1be0e54",
+    "decision": "accept",
+    "evid08_trust_domains": {
+      "encoding": "python_encoding_bridge",
+      "lean_kernel": "lean4_kernel",
+      "structural": "python_cpython_formal_structural_family"
+    },
+    "false_alarm_rate": 0.0,
+    "independent_fault_classes": [
+      "encoding_digest",
+      "encoding_literal",
+      "kernel_axiom",
+      "kernel_binding",
+      "parser_proposition",
+      "parser_toolchain"
+    ],
+    "reason": "diverse_checkers_add_unique_fault_classes",
+    "schema": "checker_diversity_report/v1",
+    "shared_blind_spot_residual": 1,
+    "timeout_unknown_rate": 0.0,
+    "toolchain": {
+      "backend_id": "checker_diversity_pilot",
+      "control_checkers": "python_structural",
+      "corpus_relpath": "src/slm_training/resources/formal/checker_diversity_corpus.v1.json",
+      "toolchain_id": "hermetic_python_checker_diversity_v1",
+      "treatment_checkers": "python_structural,lean_kernel,python_encoding_ref",
+      "trust_domain": "research_only/checker_diversity"
+    },
+    "treatment_arm": {
+      "arm": "diverse_checkers",
+      "blind_spot_case_ids": [
+        "shared_serialization_common_mode"
+      ],
+      "checkers": [
+        "python_structural",
+        "lean_kernel",
+        "python_encoding_ref"
+      ],
+      "detected_case_ids": [
+        "parser_proposition_mutation",
+        "parser_toolchain_lock_drift",
+        "kernel_axiom_footprint_drift",
+        "kernel_module_binding_mismatch",
+        "encoding_literal_flip",
+        "encoding_stale_problem_digest"
+      ],
+      "detected_fault_classes": [
+        "encoding_digest",
+        "encoding_literal",
+        "kernel_axiom",
+        "kernel_binding",
+        "parser_proposition",
+        "parser_toolchain"
+      ],
+      "distinct_trust_domains": [
+        "lean4_kernel",
+        "python_cpython_formal_structural_family",
+        "python_encoding_bridge"
+      ],
+      "false_alarm_case_ids": [],
+      "false_alarm_rate": 0.0
+    },
+    "treatment_detected_classes": [
+      "encoding_digest",
+      "encoding_literal",
+      "kernel_axiom",
+      "kernel_binding",
+      "parser_proposition",
+      "parser_toolchain"
+    ],
+    "unique_defect_detection_gain_vs_single_checker": 0.6666666666666666,
+    "unique_fault_class_gain_count": 4
+  },
+  "primary_metric": "unique_defect_detection_gain_vs_single_checker",
+  "primary_value": 0.6666666666666666,
+  "reason": "diverse_checkers_add_unique_fault_classes",
+  "research_only": true,
+  "schema": "research_14_experiment_result/v1",
+  "shared_blind_spot_residual": 1,
+  "timeout_unknown_rate": 0.0,
+  "toolchain": {
+    "backend_id": "checker_diversity_pilot",
+    "control_checkers": "python_structural",
+    "corpus_relpath": "src/slm_training/resources/formal/checker_diversity_corpus.v1.json",
+    "toolchain_id": "hermetic_python_checker_diversity_v1",
+    "treatment_checkers": "python_structural,lean_kernel,python_encoding_ref",
+    "trust_domain": "research_only/checker_diversity"
+  },
+  "unique_fault_class_gain_count": 4,
+  "version_stamp": {
+    "code_commit": "d8a0b2501e19019512218b01aa1aa52d9d5398eb",
+    "code_dirty": true,
+    "components": {
+      "governance.research_experiment_preregistry": "v2",
+      "harness.experiments.slm572_research14_checker_diversity": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-12T17:22:27.559542+00:00"
+  }
+}

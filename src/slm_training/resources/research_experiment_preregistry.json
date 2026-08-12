@@ -767,7 +767,7 @@
           "status": "completed"
         }
       ],
-      "campaign_lock_sha256": null,
+      "campaign_lock_sha256": "2f3969f98f653574496fc50fcaba6c9b790d22df3f663c98f43459b5042492c2",
       "cited_lineage": [
         "szs-ontology",
         "repo-only-hypothesis",
@@ -775,7 +775,7 @@
       ],
       "decision_rule": "Accept if unique defects rise without false-alarm blow-up.",
       "default_off": true,
-      "disposition": "registered",
+      "disposition": "completed",
       "evidence_path": "docs/design/iter-revmath-research-14-preregistered.md",
       "experiment_key": "RESEARCH-14",
       "falsifier": "Diversity adds cost without unique defect gain.",
