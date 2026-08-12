@@ -93,6 +93,10 @@ def merge_gate_steps(*, fast: bool = False) -> tuple[Step, ...]:
             "research_citation_catalog",
             (python, "-m", "scripts.verify_research_citation_catalog"),
         ),
+        Step(
+            "research_experiment_preregistry",
+            (python, "-m", "scripts.verify_research_experiment_preregistry"),
+        ),
         Step("extract_test_cases", (python, "-m", "scripts.extract_test_cases")),
         Step(
             "refresh_test_cases",

@@ -63,6 +63,17 @@ RESEARCH_CITATION_CATALOG_FILES = frozenset(
         "tests/test_scripts/test_verify_research_citation_catalog.py",
     }
 )
+RESEARCH_EXPERIMENT_PREREGISTRY_FILES = frozenset(
+    {
+        "src/slm_training/resources/research_experiment_preregistry.json",
+        "scripts/verify_research_experiment_preregistry.py",
+        "src/slm_training/research_preregistry.py",
+        "docs/design/research-experiment-preregistry.md",
+        "docs/design/research-citation-catalog.md",
+        "docs/design/experiment-campaign-governance.md",
+        "tests/test_scripts/test_verify_research_experiment_preregistry.py",
+    }
+)
 REVMATH_HARNESS_PARITY_FILES = frozenset(
     {
         "src/slm_training/resources/revmath_harness_parity.json",
@@ -499,6 +510,9 @@ def check(
             return 1
     if any(path in RESEARCH_CITATION_CATALOG_FILES for path in paths):
         if _run([sys.executable, "-m", "scripts.verify_research_citation_catalog"]):
+            return 1
+    if any(path in RESEARCH_EXPERIMENT_PREREGISTRY_FILES for path in paths):
+        if _run([sys.executable, "-m", "scripts.verify_research_experiment_preregistry"]):
             return 1
     if any(path in REVMATH_HARNESS_PARITY_FILES for path in paths):
         if _run([sys.executable, "-m", "scripts.verify_revmath_harness_parity"]):

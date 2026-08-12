@@ -356,7 +356,7 @@
       ],
       "authority_tier": "compiler-hard",
       "design_doc": "docs/design/experiment-campaign-governance.md",
-      "notes": "AP-007+ runners and every promotion candidate use this contract. No competing implementation found."
+      "notes": "AP-007+ runners and every promotion candidate use this contract. No competing implementation found. RESEARCH-02/SLM-533 adds default-off research_preregistry.py over this owner (knob/hypothesis signatures + blocker/campaign-lock activation); not a parallel campaign store."
     },
     {
       "id": "decode_telemetry",
@@ -1626,6 +1626,16 @@
       ],
       "new_owner_justified": false,
       "justification": "Follows the SLM-160 disposition-report precedent and this map's known_drift/duplicate_subsystem_risks pattern; no new owner."
+    },
+    {
+      "issue": "RESEARCH-02",
+      "linear_id": "SLM-533",
+      "title": "Default-off experiment preregistration registry",
+      "extension_points": [
+        "experiment_campaign"
+      ],
+      "new_owner_justified": false,
+      "justification": "Thin default-off/research-only registry over ExperimentCampaignV1/CampaignLockV1 plus RESEARCH-01 citations; no parallel campaign store."
     }
   ],
   "contract_version_governance": {

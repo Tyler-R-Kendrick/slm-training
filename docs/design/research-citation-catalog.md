@@ -92,8 +92,10 @@ citations:
   - source_id: repo-only-hypothesis
 ```
 
-`RESEARCH-02` (SLM-533) owns the preregistration registry that will enforce
-this at experiment execution time. This issue owns **catalog + validation only**.
+`RESEARCH-02` (SLM-533) owns the preregistration registry that enforces
+this at experiment execution time — see
+[research-experiment-preregistry.md](research-experiment-preregistry.md).
+This issue owns **catalog + validation only**.
 
 ## Validation
 
