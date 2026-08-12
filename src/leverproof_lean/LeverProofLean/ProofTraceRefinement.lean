@@ -300,7 +300,7 @@ theorem illegal_empty_complete_commit_detected :
         forwardsCount := 0
         neuralForward := 0
         abstractCost := 0 } = true := by
-  native_decide
+  decide
 
 /-- Fabricated completeness without digest is detected. -/
 theorem fabricated_completeness_detected :
@@ -319,7 +319,7 @@ theorem fabricated_completeness_detected :
         forwardsCount := 0
         neuralForward := 0
         abstractCost := 0 } = true := by
-  native_decide
+  decide
 
 /-- Fabricated refutation (removal under unknown) is detected. -/
 theorem fabricated_refutation_detected :
@@ -338,7 +338,7 @@ theorem fabricated_refutation_detected :
         forwardsCount := 0
         neuralForward := 0
         abstractCost := 0 } = true := by
-  native_decide
+  decide
 
 /-- Reordered ordinals fail ``ordinalsOk``. -/
 theorem reordered_ordinals_rejected :
@@ -373,7 +373,7 @@ theorem reordered_ordinals_rejected :
           neuralForward := 0
           abstractCost := 0 }
       ] : List CompactEvent) = false := by
-  native_decide
+  decide
 
 /-- Omitted model forwards: cost claims forwards but no invocation event. -/
 theorem omitted_forwards_finalize_fails :
@@ -388,7 +388,7 @@ theorem omitted_forwards_finalize_fails :
         sawRankerInvocation := false
         sawObservedWork := true }
       28 11 = false := by
-  native_decide
+  decide
 
 /-- Mismatched identity digest is rejected by ``step``. -/
 theorem mismatched_identity_step_none :
@@ -416,7 +416,7 @@ theorem mismatched_identity_step_none :
         forwardsCount := 0
         neuralForward := 0
         abstractCost := 0 } = none := by
-  native_decide
+  decide
 
 /-! ### Frozen fixture: ``bundle_stats_mechanism`` (INTEG-01) -/
 
@@ -484,7 +484,7 @@ theorem fixture_bundle_stats_mechanism_cost :
 theorem fixture_bundle_stats_mechanism_refines :
     checkTrace defaultAssumptions fixtureEnvelopeId
       fixtureBundleStatsMechanism 28 11 = true := by
-  native_decide
+  decide
 
 /-- Injected illegal empty-domain commit fails the checker. -/
 theorem injected_illegal_commit_fails :
@@ -501,7 +501,7 @@ theorem injected_illegal_commit_fails :
           tokenId := some 3, judgment := .none, removedCount := 0
           forwardsCount := 0, neuralForward := 0, abstractCost := 0 }
       ] : List CompactEvent) 0 0 = false := by
-  native_decide
+  decide
 
 /-- Scope disclaimer: theorems are fixture-subset only. -/
 theorem scope_is_fixture_subset :

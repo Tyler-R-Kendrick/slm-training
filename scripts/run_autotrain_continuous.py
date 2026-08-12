@@ -112,6 +112,10 @@ _PROMOTE_EXPECTATIONS_REL = Path(
     "src/slm_training/resources/experiments/autotrain_climb/"
     "metric_expectations.promote.v1.json"
 )
+_SCREENING_EXPECTATIONS_REL = Path(
+    "src/slm_training/resources/experiments/autotrain_climb/"
+    "metric_expectations.screening.v1.json"
+)
 _PROMOTE_FORMAL_TEMPLATE_ID = "metrics.structural_similarity_monotone"
 _FIVE_LANES = (
     "measurement_control",
@@ -6077,6 +6081,16 @@ def locked_promote_expectations_sha256() -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def screening_expectations_path() -> Path:
+    """Repo-relative exact-zero expectations for decision-bearing screening."""
+    return promote_expectations_path().with_name(_SCREENING_EXPECTATIONS_REL.name)
+
+
+def locked_screening_expectations_sha256() -> str:
+    """SHA-256 of the locked continuous screening expectation manifest."""
+    return hashlib.sha256(screening_expectations_path().read_bytes()).hexdigest()
+
+
 def _formal_status_is_timeout(status: str | None) -> bool:
     return str(status or "") in _FORMAL_TIMEOUT_STATUSES or str(
         status or ""
@@ -11243,6 +11257,9 @@ def _manifest(
         )
     else:
         claim_class = str(defaults.get("claim_class_screening") or "diagnostic")
+        # Screening does not calibrate empirical quality/latency with Lean, but
+        # its decision-bearing exact runtime invariants are still preregistered.
+        metric_expectations_sha = locked_screening_expectations_sha256()
         seeds = (int(experiment.get("knobs", {}).get("seed") or 7),)
         mechanism_off = ()
         kill_criteria = ()

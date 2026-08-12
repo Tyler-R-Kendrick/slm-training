@@ -12,7 +12,7 @@
   ],
   "components": {
     "formal.leverproof": {
-      "version": "v27",
+      "version": "v28",
       "kind": "harness",
       "paths": [
         "src/leverproof_lean/LeverProofLean/ProofTraceRefinement.lean",
@@ -45,6 +45,11 @@
         "docs/design/kern-10-resource-bound-trigger-parity.md"
       ],
       "history": [
+        {
+          "version": "v28",
+          "date": "2026-08-12",
+          "note": "Replace forbidden native_decide fixture proofs in ProofTraceRefinement with kernel-checked decide so the proof-source trust gate and formal preflight remain authoritative."
+        },
         {
           "version": "v27",
           "date": "2026-08-11",
@@ -3854,7 +3859,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v209",
+      "version": "v210",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -3910,6 +3915,11 @@
         "docs/design/integ-03-campaign-formal-evidence.md"
       ],
       "history": [
+        {
+          "version": "v210",
+          "date": "2026-08-12",
+          "note": "Bind decision-bearing screening campaigns to theorem-backed zero expectations for invalid grammar, uncertified fallback, singleton neural forwards, missing observations, and runtime timeouts without treating empirical quality or latency as Lean-calibrated."
+        },
         {
           "version": "v209",
           "date": "2026-08-12",

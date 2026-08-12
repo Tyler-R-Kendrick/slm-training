@@ -1,0 +1,41 @@
+{
+  "schema": "metric_expectations/v1",
+  "description": "Locked theorem-backed zero invariants for decision-bearing continuous screening. These are exact runtime/completeness obligations, not empirical quality or latency calibration.",
+  "metrics": [
+    {
+      "metric_id": "invalid_grammar_count",
+      "unit": "count",
+      "authority": "theorem",
+      "dependencies": [],
+      "program": [{ "op": "constant", "value": { "numerator": 0, "denominator": 1 } }]
+    },
+    {
+      "metric_id": "uncertified_fallback_count",
+      "unit": "count",
+      "authority": "theorem",
+      "dependencies": [],
+      "program": [{ "op": "constant", "value": { "numerator": 0, "denominator": 1 } }]
+    },
+    {
+      "metric_id": "singleton_neural_forward_count",
+      "unit": "count",
+      "authority": "theorem",
+      "dependencies": [],
+      "program": [{ "op": "constant", "value": { "numerator": 0, "denominator": 1 } }]
+    },
+    {
+      "metric_id": "missing_observation_count",
+      "unit": "count",
+      "authority": "theorem",
+      "dependencies": [],
+      "program": [{ "op": "constant", "value": { "numerator": 0, "denominator": 1 } }]
+    },
+    {
+      "metric_id": "runtime_timeout_count",
+      "unit": "count",
+      "authority": "theorem",
+      "dependencies": [],
+      "program": [{ "op": "constant", "value": { "numerator": 0, "denominator": 1 } }]
+    }
+  ]
+}
