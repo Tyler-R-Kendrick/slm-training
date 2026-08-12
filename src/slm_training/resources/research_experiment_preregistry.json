@@ -454,7 +454,7 @@
           "status": "completed"
         }
       ],
-      "campaign_lock_sha256": null,
+      "campaign_lock_sha256": "fa5b8e97eb1f97f04e66e6fec9f5aeb725aa6b920bdcfd1b917adaa8d95267a0",
       "cited_lineage": [
         "buss-marktoberdorf95",
         "repo-only-hypothesis",
@@ -462,7 +462,7 @@
       ],
       "decision_rule": "Accept if correlation improves without converting timeouts into refutations.",
       "default_off": true,
-      "disposition": "registered",
+      "disposition": "rejected",
       "evidence_path": "docs/design/iter-revmath-research-09-preregistered.md",
       "experiment_key": "RESEARCH-09",
       "falsifier": "Parameterized features do not beat flat proxies or encourage overclaim.",

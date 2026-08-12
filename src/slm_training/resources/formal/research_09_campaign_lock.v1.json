@@ -1,0 +1,152 @@
+{
+  "locked_at": "2026-08-12T16:43:21.683394Z",
+  "manifest": {
+    "arms": [
+      {
+        "arm_id": "flat_size_proxy",
+        "config_sha256": "ddc9368ad7c380dba895a81ca59713aa7b59772931cf1f4d58acdb7b016b20d7",
+        "role": "control"
+      },
+      {
+        "arm_id": "treewidth_proxy",
+        "config_sha256": "5390d44bcabbe6c6a6aadb1ab644d4dc3ec67ff1ebeb22ec68b76533d0a6ba41",
+        "role": "candidate"
+      }
+    ],
+    "artifact_requirements": [
+      {
+        "kind": "version_stamp",
+        "minimum_count": 1
+      },
+      {
+        "kind": "paired_examples",
+        "minimum_count": 1
+      }
+    ],
+    "author": "research-09",
+    "budget": {
+      "max_experiments": 1,
+      "max_gpu_hours": 0.0,
+      "max_wall_minutes": 30.0
+    },
+    "campaign_id": "research-09-vss-treewidth",
+    "claim_class": "fixture",
+    "controls": [
+      {
+        "control_id": "flat_size_proxy",
+        "description": "Flat product-domain \u00d7 clause-count cost proxy paired with production enumerative outcomes on the identical suite.",
+        "kind": "positive"
+      },
+      {
+        "control_id": "unsupported_stays_unknown",
+        "description": "Outside the preregistered tw/n support caps, treatment must stay unknown (never invent refutation).",
+        "kind": "negative"
+      },
+      {
+        "control_id": "clause_polarity_flip",
+        "description": "Mutated clause polarity must re-solve; no stale unsat authority from the original instance.",
+        "kind": "negative"
+      },
+      {
+        "control_id": "empty_problem_unknown",
+        "description": "Empty problem must stay unknown, never unsat.",
+        "kind": "negative"
+      }
+    ],
+    "created_at": "1970-01-01T00:00:00Z",
+    "decision": "Accept iff treewidth-proxy Spearman correlation exceeds the flat size proxy on the frozen suite, witness disagreements stay 0, timeout-as-refutation stays 0, and mutation rejection is 1.0; else reject/retire (honest null if params do not help).",
+    "endpoints": [
+      {
+        "direction": "increase",
+        "endpoint_id": "rank_correlation",
+        "metric": "rank_correlation_of_predicted_vs_observed_solver_cost",
+        "minimum_effect": 0.0,
+        "role": "primary"
+      },
+      {
+        "direction": "decrease",
+        "endpoint_id": "witness_disagreement_count",
+        "metric": "witness_disagreement_count",
+        "minimum_effect": 0.0,
+        "role": "secondary"
+      },
+      {
+        "direction": "decrease",
+        "endpoint_id": "timeout_as_refutation_count",
+        "metric": "timeout_as_refutation_count",
+        "minimum_effect": 0.0,
+        "role": "secondary"
+      },
+      {
+        "direction": "decrease",
+        "endpoint_id": "parameter_estimation_failures",
+        "metric": "parameter_estimation_failures",
+        "minimum_effect": 0.0,
+        "role": "secondary"
+      }
+    ],
+    "executable_kill_criteria": [],
+    "experiment_id": "research_09_vss_treewidth",
+    "formal_obligations": [],
+    "hypothesis": "Parameterized/treewidth-aware VSS complexity bounds predict practical solver cost better than flat instance size on a frozen suite.",
+    "locked_eval_manifest_sha256": null,
+    "mechanism_off_arm_ids": [],
+    "metric_expectations_sha256": null,
+    "multiplicity_families": [
+      {
+        "alpha": 0.05,
+        "family_id": "research09_primary",
+        "hypothesis_ids": [
+          "rank_correlation"
+        ],
+        "method": "holm"
+      }
+    ],
+    "negative_controls": [
+      "unsupported_stays_unknown",
+      "clause_polarity_flip",
+      "empty_problem_unknown"
+    ],
+    "power_feasibility": null,
+    "promotion_gates": [
+      {
+        "endpoint_id": "rank_correlation",
+        "gate_id": "correlation_improves",
+        "operator": "gt",
+        "threshold": 0.0
+      }
+    ],
+    "replay_of_manifest_sha256": null,
+    "replay_reason": null,
+    "replicate_ledger_schema": null,
+    "replicate_seed_floor": null,
+    "requires_rl": false,
+    "rl_evaluation_sha256": null,
+    "rl_readiness_report_sha256": null,
+    "rollback_gates": [
+      {
+        "endpoint_id": "witness_disagreement_count",
+        "gate_id": "any_disagreement",
+        "operator": "gt",
+        "threshold": 0.0
+      },
+      {
+        "endpoint_id": "timeout_as_refutation_count",
+        "gate_id": "any_fake_refutation",
+        "operator": "gt",
+        "threshold": 0.0
+      }
+    ],
+    "schema_version": "ExperimentCampaignV1",
+    "seeds": [
+      0
+    ],
+    "source_commit": "0000000000000000000000000000000000000000",
+    "source_dirty": false,
+    "stopping_rules": [
+      "single fixture suite stop after paired param report"
+    ]
+  },
+  "manifest_sha256": "fa5b8e97eb1f97f04e66e6fec9f5aeb725aa6b920bdcfd1b917adaa8d95267a0",
+  "schema_version": "CampaignLockV1"
+}

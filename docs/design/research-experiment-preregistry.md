@@ -53,7 +53,7 @@ bespoke runner. Execution still goes through the existing
 
 ## Pilot span
 
-Registry seeds **RESEARCH-03 … RESEARCH-20** (eighteen pilots). RESEARCH-08 (SLM-540) fixture evidence: [iter-revmath-research-08-preregistered.md](iter-revmath-research-08-preregistered.md) (disposition `completed`, still `default_off` / no production authority). RESEARCH-05 (SLM-563) fixture evidence: [iter-revmath-research-05-preregistered.md](iter-revmath-research-05-preregistered.md) (disposition `completed`, still `default_off` / no production authority). RESEARCH-06 (SLM-564) fixture evidence: [iter-revmath-research-06-preregistered.md](iter-revmath-research-06-preregistered.md) (disposition `rejected` — correctness ok, ratio ≥ 1.0; still `default_off` / no production authority). RESEARCH-07 (SLM-565) fixture evidence: [iter-revmath-research-07-preregistered.md](iter-revmath-research-07-preregistered.md) (disposition `completed`, still `default_off` / no production authority). Individual experimental mechanisms are **not** implemented here — only preregistration
+Registry seeds **RESEARCH-03 … RESEARCH-20** (eighteen pilots). RESEARCH-08 (SLM-540) fixture evidence: [iter-revmath-research-08-preregistered.md](iter-revmath-research-08-preregistered.md) (disposition `completed`, still `default_off` / no production authority). RESEARCH-05 (SLM-563) fixture evidence: [iter-revmath-research-05-preregistered.md](iter-revmath-research-05-preregistered.md) (disposition `completed`, still `default_off` / no production authority). RESEARCH-06 (SLM-564) fixture evidence: [iter-revmath-research-06-preregistered.md](iter-revmath-research-06-preregistered.md) (disposition `rejected` — correctness ok, ratio ≥ 1.0; still `default_off` / no production authority). RESEARCH-07 (SLM-565) fixture evidence: [iter-revmath-research-07-preregistered.md](iter-revmath-research-07-preregistered.md) (disposition `completed`, still `default_off` / no production authority). RESEARCH-09 (SLM-541) fixture evidence: [iter-revmath-research-09-preregistered.md](iter-revmath-research-09-preregistered.md) (disposition `rejected` — correctness ok, treewidth proxy did not beat flat size; still `default_off` / no production authority). Individual experimental mechanisms are **not** implemented here — only preregistration
 contracts.
 
 ## Validation
@@ -100,3 +100,13 @@ Disposition: **completed** (accept — exact agreement on supported theory subse
 mutation rejection; unknowns preserved).
 Evidence: [`iter-revmath-research-07-preregistered.md`](iter-revmath-research-07-preregistered.md).
 Still `default_off` / `research_only` — not production authority.
+
+## RESEARCH-09 status (SLM-541)
+
+Preregistered parameterized / treewidth-aware VSS cost-proxy pilot executed under campaign lock
+`fa5b8e97eb1f97f04e66e6fec9f5aeb725aa6b920bdcfd1b917adaa8d95267a0`.
+Disposition: **rejected** (correctness ok — zero witness disagreements / timeout-as-refutation;
+treewidth-proxy Spearman ρ did not beat flat size proxy on the frozen suite; honest null).
+Evidence: [`iter-revmath-research-09-preregistered.md`](iter-revmath-research-09-preregistered.md).
+Still `default_off` / `research_only` — not production authority.
+
