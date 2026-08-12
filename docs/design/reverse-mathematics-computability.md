@@ -10,6 +10,7 @@
 **Research citations (RESEARCH-01):** [research-citation-catalog.md](research-citation-catalog.md) · machine-readable [`research_citation_catalog.json`](../../src/slm_training/resources/research_citation_catalog.json) · `python -m scripts.verify_research_citation_catalog`  
 **Experiment preregistry (RESEARCH-02):** [research-experiment-preregistry.md](research-experiment-preregistry.md) · [`research_experiment_preregistry.json`](../../src/slm_training/resources/research_experiment_preregistry.json) · `python -m scripts.verify_research_experiment_preregistry`
 **RESEARCH-07 (Alethe/SMT pilot):** [iter-revmath-research-07-preregistered.md](iter-revmath-research-07-preregistered.md) (default-off; completed accept under campaign lock).
+**RESEARCH-09 (treewidth/param VSS pilot):** [iter-revmath-research-09-preregistered.md](iter-revmath-research-09-preregistered.md) (default-off; rejected — correctness ok, treewidth proxy did not beat flat size).
 
 **RESEARCH-05 (VSS LRAT pilot):** [iter-revmath-research-05-preregistered.md](iter-revmath-research-05-preregistered.md) (default-off; completed accept under campaign lock).
 **RESEARCH-06 (VSS PBLean pilot):** [iter-revmath-research-06-preregistered.md](iter-revmath-research-06-preregistered.md) (default-off; rejected — correctness ok, ratio ≥ 1.0; successor noted).

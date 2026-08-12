@@ -1,0 +1,271 @@
+{
+  "campaign_id": "research-09-vss-treewidth",
+  "campaign_lock_sha256": "fa5b8e97eb1f97f04e66e6fec9f5aeb725aa6b920bdcfd1b917adaa8d95267a0",
+  "claim_class": "fixture",
+  "correctness_ok": true,
+  "correlation_improves_vs_flat": false,
+  "decision": "reject",
+  "default_off": true,
+  "evidence_path": "docs/design/iter-revmath-research-09-preregistered.md",
+  "executed": true,
+  "experiment_id": "research_09_vss_treewidth",
+  "experiment_key": "RESEARCH-09",
+  "linear_id": "SLM-541",
+  "miscalibration_rate": 0.0,
+  "mutation_rejection_rate": 1.0,
+  "paired_report": {
+    "correctness_ok": true,
+    "correlation_improves_vs_flat": false,
+    "decision": "reject",
+    "miscalibration_rate": 0.0,
+    "mutation": {
+      "cases": [
+        {
+          "case_id": "clause_polarity_flip",
+          "outcome": "sat",
+          "reason": "tracks_mutated_control",
+          "rejected": true
+        },
+        {
+          "case_id": "unsupported_stays_unknown",
+          "outcome": "unknown",
+          "reason": "unsupported_subset:unsupported",
+          "rejected": true
+        },
+        {
+          "case_id": "empty_problem_unknown",
+          "outcome": "unknown",
+          "reason": "unsupported_subset:unsupported",
+          "rejected": true
+        }
+      ],
+      "ok": true,
+      "reason": "all_mutations_rejected",
+      "rejection_rate": 1.0
+    },
+    "mutation_rejection_rate": 1.0,
+    "parameter_estimation_failures": 0,
+    "proof_format_version": "treewidth_param_pilot/v1",
+    "rank_correlation_flat_size_proxy": 0.9910312089651149,
+    "rank_correlation_of_predicted_vs_observed_solver_cost": 0.7928249671720918,
+    "rank_correlation_treewidth_proxy": 0.7928249671720918,
+    "rows": [
+      {
+        "control_elapsed_s": 1.1641001037787646e-05,
+        "control_outcome": "unsat",
+        "flat_size_proxy": 48.0,
+        "observed_work_units": 8,
+        "params": {
+          "ambiguity": 0.0,
+          "binder_depth": 2,
+          "exact_treewidth": true,
+          "n_clauses": 6,
+          "n_vars": 3,
+          "product_domain": 8,
+          "residual_class_count": 1,
+          "treewidth": 1,
+          "treewidth_ub": 1
+        },
+        "problem_id": "research09/path_unsat_3",
+        "status": "ok",
+        "support": "supported",
+        "treatment_elapsed_s": 7.470499986084178e-05,
+        "treatment_outcome": "unsat",
+        "treatment_work_units": 10,
+        "treewidth_proxy": 72.0
+      },
+      {
+        "control_elapsed_s": 9.752900041348767e-05,
+        "control_outcome": "unsat",
+        "flat_size_proxy": 768.0,
+        "observed_work_units": 64,
+        "params": {
+          "ambiguity": 0.0,
+          "binder_depth": 2,
+          "exact_treewidth": true,
+          "n_clauses": 12,
+          "n_vars": 6,
+          "product_domain": 64,
+          "residual_class_count": 1,
+          "treewidth": 1,
+          "treewidth_ub": 1
+        },
+        "problem_id": "research09/path_unsat_6",
+        "status": "ok",
+        "support": "supported",
+        "treatment_elapsed_s": 0.006957080999200116,
+        "treatment_outcome": "unsat",
+        "treatment_work_units": 64,
+        "treewidth_proxy": 288.0
+      },
+      {
+        "control_elapsed_s": 0.0004565700000966899,
+        "control_outcome": "unsat",
+        "flat_size_proxy": 4096.0,
+        "observed_work_units": 256,
+        "params": {
+          "ambiguity": 0.0,
+          "binder_depth": 2,
+          "exact_treewidth": true,
+          "n_clauses": 16,
+          "n_vars": 8,
+          "product_domain": 256,
+          "residual_class_count": 1,
+          "treewidth": 1,
+          "treewidth_ub": 1
+        },
+        "problem_id": "research09/path_unsat_8",
+        "status": "ok",
+        "support": "supported",
+        "treatment_elapsed_s": 0.4665099689991621,
+        "treatment_outcome": "unsat",
+        "treatment_work_units": 256,
+        "treewidth_proxy": 512.0
+      },
+      {
+        "control_elapsed_s": 2.3832000806578435e-05,
+        "control_outcome": "unsat",
+        "flat_size_proxy": 160.0,
+        "observed_work_units": 16,
+        "params": {
+          "ambiguity": 0.0,
+          "binder_depth": 2,
+          "exact_treewidth": true,
+          "n_clauses": 10,
+          "n_vars": 4,
+          "product_domain": 16,
+          "residual_class_count": 1,
+          "treewidth": 2,
+          "treewidth_ub": 2
+        },
+        "problem_id": "research09/cycle_unsat_4",
+        "status": "ok",
+        "support": "supported",
+        "treatment_elapsed_s": 0.00017296700025326572,
+        "treatment_outcome": "unsat",
+        "treatment_work_units": 22,
+        "treewidth_proxy": 320.0
+      },
+      {
+        "control_elapsed_s": 8.798999260761775e-06,
+        "control_outcome": "unsat",
+        "flat_size_proxy": 64.0,
+        "observed_work_units": 8,
+        "params": {
+          "ambiguity": 0.0,
+          "binder_depth": 2,
+          "exact_treewidth": true,
+          "n_clauses": 8,
+          "n_vars": 3,
+          "product_domain": 8,
+          "residual_class_count": 1,
+          "treewidth": 2,
+          "treewidth_ub": 2
+        },
+        "problem_id": "research09/dense_unsat_3",
+        "status": "ok",
+        "support": "supported",
+        "treatment_elapsed_s": 5.279800097923726e-05,
+        "treatment_outcome": "unsat",
+        "treatment_work_units": 14,
+        "treewidth_proxy": 192.0
+      },
+      {
+        "control_elapsed_s": 4.6564999138354324e-05,
+        "control_outcome": "sat",
+        "flat_size_proxy": 288.0,
+        "observed_work_units": 32,
+        "params": {
+          "ambiguity": 0.03125,
+          "binder_depth": 2,
+          "exact_treewidth": true,
+          "n_clauses": 9,
+          "n_vars": 5,
+          "product_domain": 32,
+          "residual_class_count": 1,
+          "treewidth": 1,
+          "treewidth_ub": 1
+        },
+        "problem_id": "research09/path_sat_5",
+        "status": "ok",
+        "support": "supported",
+        "treatment_elapsed_s": 0.0007926039997983025,
+        "treatment_outcome": "sat",
+        "treatment_work_units": 32,
+        "treewidth_proxy": 180.0
+      },
+      {
+        "control_elapsed_s": 0.00021632399875670671,
+        "control_outcome": "sat",
+        "flat_size_proxy": 1664.0,
+        "observed_work_units": 128,
+        "params": {
+          "ambiguity": 0.0078125,
+          "binder_depth": 2,
+          "exact_treewidth": true,
+          "n_clauses": 13,
+          "n_vars": 7,
+          "product_domain": 128,
+          "residual_class_count": 1,
+          "treewidth": 1,
+          "treewidth_ub": 1
+        },
+        "problem_id": "research09/path_sat_7",
+        "status": "ok",
+        "support": "supported",
+        "treatment_elapsed_s": 0.04968979700061027,
+        "treatment_outcome": "sat",
+        "treatment_work_units": 128,
+        "treewidth_proxy": 364.0
+      }
+    ],
+    "schema": "research_09_cost_proxy_report/v1",
+    "suite_n": 7,
+    "supported": 7,
+    "supported_subset_coverage": 1.0,
+    "timeout_as_refutation_count": 0,
+    "toolchain": {
+      "backend_id": "vss_treewidth_param_pilot",
+      "enumerator": "encoding_adapter.exists_satisfying_assignment",
+      "n_support_max": "8",
+      "proof_format_version": "treewidth_param_pilot/v1",
+      "toolchain_id": "hermetic_python_treewidth_proxy_v1",
+      "treatment_solver": "bag_dp_on_nice_elimination",
+      "treewidth_method": "exact_elimination_order_nle8",
+      "trust_domain": "research_only/treewidth_proxy",
+      "tw_support_max": "2"
+    },
+    "witness_disagreement_count": 0
+  },
+  "parameter_estimation_failures": 0,
+  "primary_metric": "rank_correlation_of_predicted_vs_observed_solver_cost",
+  "primary_value": 0.7928249671720918,
+  "proof_format_version": "treewidth_param_pilot/v1",
+  "rank_correlation_flat_size_proxy": 0.9910312089651149,
+  "rank_correlation_treewidth_proxy": 0.7928249671720918,
+  "research_only": true,
+  "schema": "research_09_experiment_result/v1",
+  "timeout_as_refutation_count": 0,
+  "toolchain": {
+    "backend_id": "vss_treewidth_param_pilot",
+    "enumerator": "encoding_adapter.exists_satisfying_assignment",
+    "n_support_max": "8",
+    "proof_format_version": "treewidth_param_pilot/v1",
+    "toolchain_id": "hermetic_python_treewidth_proxy_v1",
+    "treatment_solver": "bag_dp_on_nice_elimination",
+    "treewidth_method": "exact_elimination_order_nle8",
+    "trust_domain": "research_only/treewidth_proxy",
+    "tw_support_max": "2"
+  },
+  "version_stamp": {
+    "code_commit": "7bed8119335458892052f36f5ea504d39c75a2ca",
+    "code_dirty": true,
+    "components": {
+      "governance.research_experiment_preregistry": "v1",
+      "harness.experiments.slm541_research09_vss_treewidth": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-12T16:44:39.592989+00:00"
+  },
+  "witness_disagreement_count": 0
+}

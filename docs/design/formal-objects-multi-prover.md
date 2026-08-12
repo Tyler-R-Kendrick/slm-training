@@ -105,6 +105,20 @@ finite-domain replay (SAT/CNF overlap where applicable); treatment = EVID-10
 Never production decode / ship-gate / serving authority.
 
 
+
+### RESEARCH-09 — parameterized / treewidth-aware VSS (SLM-541)
+
+Default-off research adapter: `src/slm_training/formal/vss_treewidth_backend.py` +
+`harnesses/experiments/research_09_vss_treewidth.py`. Control = flat size /
+clause-count cost proxy + exhaustive enumerator; treatment = structural-param
+instrumentation (treewidth / binder / ambiguity / residual-class) + bag DP on
+the declared low-treewidth bool subset. Unsupported / incomplete → `unknown`
+(never fake refutation). Evidence:
+[`iter-revmath-research-09-preregistered.md`](iter-revmath-research-09-preregistered.md)
+(disposition **rejected** — correctness ok, treewidth proxy did not beat flat
+size on fixture suite). Never production decode / ship-gate / serving authority.
+
+
 ### Mutation / red-team acceptance suite (EVID-11)
 
 Code: `src/slm_training/formal/mutation_suite.py`  
