@@ -2664,6 +2664,11 @@
     "evals.loss_suite": {
       "history": [
         {
+          "date": "2026-08-12",
+          "note": "no-bump: SLM-577 emptiness_probe.minimal_valid_program logs rejected candidates instead of silent continue; LOSS_SUITE_VERSION and scoring behavior unchanged.",
+          "version": "v1"
+        },
+        {
           "date": "2026-07-30",
           "note": "no-bump: relocate the unchanged frozen loss-suite resource under the canonical packaged eval-resource directory",
           "version": "v1"
@@ -2868,6 +2873,11 @@
     "evals.scoring": {
       "history": [
         {
+          "date": "2026-08-12",
+          "note": "SLM-577: canonicalize metric_gaming._archetypes and adversarial transforms to opaque :slot_N markers; assert_canonical_template_marker_inventory on every archetype contract.",
+          "version": "v24"
+        },
+        {
           "date": "2026-08-03",
           "note": "Add unseen schema-family, binder-rename, declaration-reorder, and alternate-grammar transfer evidence to deterministic generalization reports.",
           "version": "v23"
@@ -3007,7 +3017,7 @@
       "paths": [
         "src/slm_training/evals/"
       ],
-      "version": "v23"
+      "version": "v24"
     },
     "evals.semantic_bits": {
       "history": [
@@ -4863,6 +4873,11 @@
     },
     "harness.autoresearch.experiment_campaign": {
       "history": [
+        {
+          "date": "2026-08-12",
+          "note": "no-bump: SLM-577 docs/design measured-results for metric_gaming archetype canonicalization + emptiness_probe tracing; campaign contract unchanged.",
+          "version": "v211"
+        },
         {
           "date": "2026-08-12",
           "note": "no-bump: GH-1263 docs/design/gh-1263-cd-remaining-debt-20260812.md measured-results for fresh-checkout bootstrap + named-marker test debt cleanup; campaign contract unchanged.",
@@ -16015,6 +16030,11 @@
       "history": [
         {
           "date": "2026-08-12",
+          "note": "SLM-577: oracle adversarial transform tables use canonical :slot_N markers aligned with metric_gaming archetypes.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-12",
           "note": "GH-1263: canonicalize oracle replay fixture records via canonicalize_example_template_markers so GenerationRequest.from_record satisfies assert_canonical_template_marker_inventory.",
           "version": "v2"
         },
@@ -16038,7 +16058,7 @@
         "docs/design/iter-slm260-oracle-scoring-replay-20260721.json",
         "docs/design/iter-slm260-oracle-scoring-replay-20260724.json"
       ],
-      "version": "v2"
+      "version": "v3"
     },
     "harness.preference.constraint_debt": {
       "history": [

@@ -233,91 +233,101 @@ def score_cases(cases: Iterable[MetricGamingCase]) -> list[ScoredCase]:
 
 
 def _archetypes() -> list[dict[str, Any]]:
-    """Canonical positive archetypes used to derive adversarial negatives."""
-    return [
+    """Canonical positive archetypes used to derive adversarial negatives.
+
+    Slot identities are opaque ``:slot_N`` markers so production consumers
+    satisfy ``assert_canonical_template_marker_inventory`` without a second
+    fixture-only rewrite.
+    """
+    from slm_training.data.contract import assert_canonical_template_marker_inventory
+
+    archetypes = [
         {
             "id": "card",
             "prompt": (
-                "Build a card with title :card.title and body :card.body. "
-                "Placeholders: :card.title :card.body"
+                "Build a card with title :slot_0 and body :slot_1. "
+                "Placeholders: :slot_0 :slot_1"
             ),
             "positive": (
                 'root = Card([header, body])\n'
-                'header = CardHeader(":card.title")\n'
-                'body = TextContent(":card.body")\n'
+                'header = CardHeader(":slot_0")\n'
+                'body = TextContent(":slot_1")\n'
             ),
-            "slot_contract": (":card.title", ":card.body"),
+            "slot_contract": (":slot_0", ":slot_1"),
         },
         {
             "id": "slider",
             "prompt": (
-                "Build a Slider for volume with caption :settings.caption. "
-                "Placeholders: :settings.caption"
+                "Build a Slider for volume with caption :slot_0. "
+                "Placeholders: :slot_0"
             ),
             "positive": (
                 'root = Stack([s])\n'
-                's = Slider("$0", "continuous", 0, 100, 1, [50], ":settings.caption")\n'
+                's = Slider("$0", "continuous", 0, 100, 1, [50], ":slot_0")\n'
             ),
-            "slot_contract": (":settings.caption",),
+            "slot_contract": (":slot_0",),
         },
         {
             "id": "switch",
             "prompt": (
-                "Build a switch item for notifications with caption :settings.caption "
-                "and description :settings.desc. "
-                "Placeholders: :settings.caption :settings.desc"
+                "Build a switch item for notifications with caption :slot_0 "
+                "and description :slot_1. "
+                "Placeholders: :slot_0 :slot_1"
             ),
             "positive": (
                 'root = Stack([s])\n'
-                's = SwitchItem(":settings.caption", ":settings.desc", "$0")\n'
+                's = SwitchItem(":slot_0", ":slot_1", "$0")\n'
             ),
             "slot_contract": (
-                ":settings.caption",
-                ":settings.desc",
+                ":slot_0",
+                ":slot_1",
             ),
         },
         {
             "id": "tabs",
             "prompt": (
-                "Build tabs with a tab trigger :tab.trigger and content :tab.content. "
-                "Placeholders: :tab.trigger :tab.content"
+                "Build tabs with a tab trigger :slot_0 and content :slot_1. "
+                "Placeholders: :slot_0 :slot_1"
             ),
             "positive": (
                 'root = Tabs([tab1])\n'
-                'tab1 = TabItem("$0", ":tab.trigger", [TextContent(":tab.content")])\n'
+                'tab1 = TabItem("$0", ":slot_0", [TextContent(":slot_1")])\n'
             ),
-            "slot_contract": (":tab.trigger", ":tab.content"),
+            "slot_contract": (":slot_0", ":slot_1"),
         },
         {
             "id": "button",
             "prompt": (
-                "Build a Button with action :btn.action. "
-                "Placeholders: :btn.action"
+                "Build a Button with action :slot_0. "
+                "Placeholders: :slot_0"
             ),
-            "positive": 'root = Button(":btn.action")\n',
-            "slot_contract": (":btn.action",),
+            "positive": 'root = Button(":slot_0")\n',
+            "slot_contract": (":slot_0",),
         },
         {
             "id": "callout",
             "prompt": (
-                "Build a Callout with title :callout.title and description "
-                ":callout.desc. Placeholders: :callout.title :callout.desc"
+                "Build a Callout with title :slot_0 and description "
+                ":slot_1. Placeholders: :slot_0 :slot_1"
             ),
             "positive": (
-                'root = Callout("info", ":callout.title", ":callout.desc")\n'
+                'root = Callout("info", ":slot_0", ":slot_1")\n'
             ),
-            "slot_contract": (":callout.title", ":callout.desc"),
+            "slot_contract": (":slot_0", ":slot_1"),
         },
         {
             "id": "image_block",
             "prompt": (
-                "Build an image block with source :img.src and alt :img.alt. "
-                "Placeholders: :img.src :img.alt"
+                "Build an image block with source :slot_0 and alt :slot_1. "
+                "Placeholders: :slot_0 :slot_1"
             ),
-            "positive": 'root = ImageBlock(":img.src", ":img.alt")\n',
-            "slot_contract": (":img.src", ":img.alt"),
+            "positive": 'root = ImageBlock(":slot_0", ":slot_1")\n',
+            "slot_contract": (":slot_0", ":slot_1"),
         },
     ]
+    for arch in archetypes:
+        assert_canonical_template_marker_inventory(arch["slot_contract"])
+    return archetypes
 
 
 def build_minimal_valid_trap_cases(seed: int = 0) -> list[MetricGamingCase]:
@@ -373,13 +383,13 @@ def build_minimal_valid_trap_cases(seed: int = 0) -> list[MetricGamingCase]:
 
         # 3. Common-root substitution that preserves one placeholder.
         substitution = {
-            "card": 'root = Card([TextContent(":card.title")])\n',
-            "slider": 'root = Stack([TextContent(":settings.caption")])\n',
-            "switch": 'root = Stack([TextContent(":settings.caption")])\n',
-            "tabs": 'root = Tabs([TabItem("$0", ":tab.trigger", [])])\n',
-            "button": 'root = Stack([TextContent(":btn.action")])\n',
-            "callout": 'root = Callout("info", ":callout.title", ":callout.title")\n',
-            "image_block": 'root = Stack([TextContent(":img.alt")])\n',
+            "card": 'root = Card([TextContent(":slot_0")])\n',
+            "slider": 'root = Stack([TextContent(":slot_0")])\n',
+            "switch": 'root = Stack([TextContent(":slot_0")])\n',
+            "tabs": 'root = Tabs([TabItem("$0", ":slot_0", [])])\n',
+            "button": 'root = Stack([TextContent(":slot_0")])\n',
+            "callout": 'root = Callout("info", ":slot_0", ":slot_0")\n',
+            "image_block": 'root = Stack([TextContent(":slot_1")])\n',
         }[base_id]
         partial_reasons = {
             "slider": ("required_component_missing",),
@@ -402,13 +412,13 @@ def build_minimal_valid_trap_cases(seed: int = 0) -> list[MetricGamingCase]:
 
         # 4. Swap the requested component type for another valid component.
         type_swap = {
-            "card": 'root = Stack([Button(":card.title")])\n',
-            "slider": 'root = Card([TextContent(":settings.caption")])\n',
-            "switch": 'root = Slider("$0", "continuous", 0, 100, 1, [50], ":settings.caption")\n',
-            "tabs": 'root = Stack([Button(":tab.trigger")])\n',
-            "button": 'root = TextContent(":btn.action")\n',
-            "callout": 'root = Card([TextContent(":callout.title")])\n',
-            "image_block": 'root = TextContent(":img.alt")\n',
+            "card": 'root = Stack([Button(":slot_0")])\n',
+            "slider": 'root = Card([TextContent(":slot_0")])\n',
+            "switch": 'root = Slider("$0", "continuous", 0, 100, 1, [50], ":slot_0")\n',
+            "tabs": 'root = Stack([Button(":slot_0")])\n',
+            "button": 'root = TextContent(":slot_0")\n',
+            "callout": 'root = Card([TextContent(":slot_0")])\n',
+            "image_block": 'root = TextContent(":slot_1")\n',
         }[base_id]
         cases.append(
             MetricGamingCase(
@@ -430,10 +440,10 @@ def build_minimal_valid_trap_cases(seed: int = 0) -> list[MetricGamingCase]:
             "card": 'root = Card([Stack([])])\n',
             "slider": 'root = Stack([Card([])])\n',
             "switch": 'root = Stack([Card([])])\n',
-            "tabs": 'root = Tabs([TabItem("tab1", ":tab.trigger", [Stack([])])])\n',
+            "tabs": 'root = Tabs([TabItem("tab1", ":slot_0", [Stack([])])])\n',
             "button": 'root = Stack([Card([])])\n',
-            "callout": 'root = Callout("info", ":callout.title", ":callout.title")\n',
-            "image_block": 'root = Stack([ImageBlock(":img.src", ":img.src")])\n',
+            "callout": 'root = Callout("info", ":slot_0", ":slot_0")\n',
+            "image_block": 'root = Stack([ImageBlock(":slot_0", ":slot_0")])\n',
         }[base_id]
         cases.append(
             MetricGamingCase(
@@ -460,36 +470,36 @@ def build_rare_component_omission_cases(seed: int = 0) -> list[MetricGamingCase]
     rare_positive_programs = {
         "Tabs": {
             "prompt": (
-                "Build tabs with a tab item whose trigger is :tab.trigger "
-                "and content is :tab.content. Placeholders: :tab.trigger :tab.content"
+                "Build tabs with a tab item whose trigger is :slot_0 "
+                "and content is :slot_1. Placeholders: :slot_0 :slot_1"
             ),
             "positive": (
                 'root = Tabs([tab1])\n'
-                'tab1 = TabItem("tab1", ":tab.trigger", [TextContent(":tab.content")])\n'
+                'tab1 = TabItem("tab1", ":slot_0", [TextContent(":slot_1")])\n'
             ),
-            "slots": (":tab.trigger", ":tab.content"),
+            "slots": (":slot_0", ":slot_1"),
         },
         "Slider": {
             "prompt": (
-                "Build a Slider with caption :settings.caption. "
-                "Placeholders: :settings.caption"
+                "Build a Slider with caption :slot_0. "
+                "Placeholders: :slot_0"
             ),
             "positive": (
                 'root = Stack([s])\n'
-                's = Slider("$0", "continuous", 0, 100, 1, [50], ":settings.caption")\n'
+                's = Slider("$0", "continuous", 0, 100, 1, [50], ":slot_0")\n'
             ),
-            "slots": (":settings.caption",),
+            "slots": (":slot_0",),
         },
         "SwitchItem": {
             "prompt": (
-                "Build a switch item with caption :settings.caption and description "
-                ":settings.desc. Placeholders: :settings.caption :settings.desc"
+                "Build a switch item with caption :slot_0 and description "
+                ":slot_1. Placeholders: :slot_0 :slot_1"
             ),
             "positive": (
                 'root = Stack([s])\n'
-                's = SwitchItem(":settings.caption", ":settings.desc", "$0")\n'
+                's = SwitchItem(":slot_0", ":slot_1", "$0")\n'
             ),
-            "slots": (":settings.caption", ":settings.desc"),
+            "slots": (":slot_0", ":slot_1"),
         },
         "Form": {
             "prompt": (
@@ -509,18 +519,18 @@ def build_rare_component_omission_cases(seed: int = 0) -> list[MetricGamingCase]
 
     substitutions = {
         "Tabs": [
-            ('root = Stack([TextContent(":tab.trigger")])\n', "replace_with_stack"),
-            ('root = Stack([Button(":tab.trigger")])\n', "replace_with_button"),
+            ('root = Stack([TextContent(":slot_0")])\n', "replace_with_stack"),
+            ('root = Stack([Button(":slot_0")])\n', "replace_with_button"),
             ('root = Stack([])\n', "omit"),
         ],
         "Slider": [
-            ('root = Stack([Button(":settings.caption")])\n', "replace_with_button"),
-            ('root = Stack([TextContent(":settings.caption")])\n', "replace_with_text"),
+            ('root = Stack([Button(":slot_0")])\n', "replace_with_button"),
+            ('root = Stack([TextContent(":slot_0")])\n', "replace_with_text"),
             ('root = Stack([])\n', "omit"),
         ],
         "SwitchItem": [
-            ('root = Stack([TextContent(":settings.caption")])\n', "replace_with_text"),
-            ('root = Stack([Button(":settings.caption")])\n', "replace_with_button"),
+            ('root = Stack([TextContent(":slot_0")])\n', "replace_with_text"),
+            ('root = Stack([Button(":slot_0")])\n', "replace_with_button"),
             ('root = Stack([])\n', "omit"),
         ],
         "Form": [
@@ -645,13 +655,13 @@ def build_retry_sensitive_cases(seed: int = 0) -> list[MetricGamingCase]:
     cases: list[MetricGamingCase] = []
     archetypes = _archetypes()
     partial_attempt = {
-        "card": 'root = Card([TextContent(":card.title")])\n',
-        "slider": 'root = Stack([TextContent(":settings.caption")])\n',
-        "switch": 'root = Stack([TextContent(":settings.caption")])\n',
-        "tabs": 'root = Tabs([TabItem("tab1", ":tab.trigger", [])])\n',
-        "button": 'root = Stack([TextContent(":btn.action")])\n',
-        "callout": 'root = Callout("info", ":callout.title", ":callout.title")\n',
-        "image_block": 'root = Stack([TextContent(":img.alt")])\n',
+        "card": 'root = Card([TextContent(":slot_0")])\n',
+        "slider": 'root = Stack([TextContent(":slot_0")])\n',
+        "switch": 'root = Stack([TextContent(":slot_0")])\n',
+        "tabs": 'root = Tabs([TabItem("tab1", ":slot_0", [])])\n',
+        "button": 'root = Stack([TextContent(":slot_0")])\n',
+        "callout": 'root = Callout("info", ":slot_0", ":slot_0")\n',
+        "image_block": 'root = Stack([TextContent(":slot_1")])\n',
     }
     empty_attempt = {
         "card": 'root = Card([])\n',
@@ -735,28 +745,28 @@ def build_canary_right_role_wrong_binding_cases(seed: int = 0) -> list[MetricGam
             id="canary_card_role_wrong_binding",
             slice=SLICE_CANARY_RIGHT_ROLE_WRONG_BINDING,
             prompt=(
-                "Build a card with title :card.title and body :card.body. "
-                "Placeholders: :card.title :card.body"
+                "Build a card with title :slot_0 and body :slot_1. "
+                "Placeholders: :slot_0 :slot_1"
             ),
             pred_openui=(
                 'root = Card([header, body])\n'
                 'header = CardHeader(":other.title")\n'
-                'body = TextContent(":card.body")\n'
+                'body = TextContent(":slot_1")\n'
             ),
             request=_request(
-                "Build a card with title :card.title and body :card.body. "
-                "Placeholders: :card.title :card.body",
-                (":card.title", ":card.body"),
+                "Build a card with title :slot_0 and body :slot_1. "
+                "Placeholders: :slot_0 :slot_1",
+                (":slot_0", ":slot_1"),
             ),
             expected_verdict=False,
             expected_reason_substrings=("unexpected_placeholder_identity",),
             gold_openui=(
                 'root = Card([header, body])\n'
-                'header = CardHeader(":card.title")\n'
-                'body = TextContent(":card.body")\n'
+                'header = CardHeader(":slot_0")\n'
+                'body = TextContent(":slot_1")\n'
             ),
             transform="bind_title_to_out_of_inventory_slot",
-            notes="CardHeader binds an out-of-inventory slot instead of :card.title.",
+            notes="CardHeader binds an out-of-inventory slot instead of :slot_0.",
         )
     )
 
@@ -765,23 +775,23 @@ def build_canary_right_role_wrong_binding_cases(seed: int = 0) -> list[MetricGam
             id="canary_switch_role_wrong_binding",
             slice=SLICE_CANARY_RIGHT_ROLE_WRONG_BINDING,
             prompt=(
-                "Build a switch item for notifications with caption :settings.caption "
-                "and description :settings.desc. Placeholders: :settings.caption :settings.desc"
+                "Build a switch item for notifications with caption :slot_0 "
+                "and description :slot_1. Placeholders: :slot_0 :slot_1"
             ),
             pred_openui=(
                 'root = Stack([s])\n'
-                's = SwitchItem(":settings.caption", ":other.desc", "$0")\n'
+                's = SwitchItem(":slot_0", ":other.desc", "$0")\n'
             ),
             request=_request(
-                "Build a switch item for notifications with caption :settings.caption "
-                "and description :settings.desc. Placeholders: :settings.caption :settings.desc",
-                (":settings.caption", ":settings.desc"),
+                "Build a switch item for notifications with caption :slot_0 "
+                "and description :slot_1. Placeholders: :slot_0 :slot_1",
+                (":slot_0", ":slot_1"),
             ),
             expected_verdict=False,
             expected_reason_substrings=("unexpected_placeholder_identity",),
             gold_openui=(
                 'root = Stack([s])\n'
-                's = SwitchItem(":settings.caption", ":settings.desc", "$0")\n'
+                's = SwitchItem(":slot_0", ":slot_1", "$0")\n'
             ),
             transform="bind_description_to_out_of_inventory_slot",
             notes="SwitchItem description binds an out-of-inventory slot.",
@@ -793,18 +803,18 @@ def build_canary_right_role_wrong_binding_cases(seed: int = 0) -> list[MetricGam
             id="canary_image_role_wrong_binding",
             slice=SLICE_CANARY_RIGHT_ROLE_WRONG_BINDING,
             prompt=(
-                "Build an image block with source :img.src and alt :img.alt. "
-                "Placeholders: :img.src :img.alt"
+                "Build an image block with source :slot_0 and alt :slot_1. "
+                "Placeholders: :slot_0 :slot_1"
             ),
-            pred_openui='root = ImageBlock(":img.src", ":other.alt")\n',
+            pred_openui='root = ImageBlock(":slot_0", ":other.alt")\n',
             request=_request(
-                "Build an image block with source :img.src and alt :img.alt. "
-                "Placeholders: :img.src :img.alt",
-                (":img.src", ":img.alt"),
+                "Build an image block with source :slot_0 and alt :slot_1. "
+                "Placeholders: :slot_0 :slot_1",
+                (":slot_0", ":slot_1"),
             ),
             expected_verdict=False,
             expected_reason_substrings=("unexpected_placeholder_identity",),
-            gold_openui='root = ImageBlock(":img.src", ":img.alt")\n',
+            gold_openui='root = ImageBlock(":slot_0", ":slot_1")\n',
             transform="bind_alt_to_out_of_inventory_slot",
             notes="ImageBlock alt binds an out-of-inventory slot.",
         )
@@ -823,25 +833,25 @@ def build_canary_right_inventory_wrong_hierarchy_cases(seed: int = 0) -> list[Me
             id="canary_card_header_as_sibling",
             slice=SLICE_CANARY_RIGHT_INVENTORY_WRONG_HIERARCHY,
             prompt=(
-                "Build a card with title :card.title and body :card.body. "
-                "Placeholders: :card.title :card.body"
+                "Build a card with title :slot_0 and body :slot_1. "
+                "Placeholders: :slot_0 :slot_1"
             ),
             pred_openui=(
                 'root = Stack([header, body])\n'
-                'header = CardHeader(":card.title")\n'
-                'body = TextContent(":card.body")\n'
+                'header = CardHeader(":slot_0")\n'
+                'body = TextContent(":slot_1")\n'
             ),
             request=_request(
-                "Build a card with title :card.title and body :card.body. "
-                "Placeholders: :card.title :card.body",
-                (":card.title", ":card.body"),
+                "Build a card with title :slot_0 and body :slot_1. "
+                "Placeholders: :slot_0 :slot_1",
+                (":slot_0", ":slot_1"),
             ),
             expected_verdict=False,
             expected_reason_substrings=("prompt_component_missing",),
             gold_openui=(
                 'root = Card([header, body])\n'
-                'header = CardHeader(":card.title")\n'
-                'body = TextContent(":card.body")\n'
+                'header = CardHeader(":slot_0")\n'
+                'body = TextContent(":slot_1")\n'
             ),
             transform="card_children_as_stack_siblings",
             notes="CardHeader and TextContent are siblings in a Stack instead of inside a Card.",
@@ -853,24 +863,24 @@ def build_canary_right_inventory_wrong_hierarchy_cases(seed: int = 0) -> list[Me
             id="canary_tabs_content_as_sibling",
             slice=SLICE_CANARY_RIGHT_INVENTORY_WRONG_HIERARCHY,
             prompt=(
-                "Build tabs with a tab item whose trigger is :tab.trigger "
-                "and content is :tab.content. Placeholders: :tab.trigger :tab.content"
+                "Build tabs with a tab item whose trigger is :slot_0 "
+                "and content is :slot_1. Placeholders: :slot_0 :slot_1"
             ),
             pred_openui=(
                 'root = Tabs([tab1, content])\n'
-                'tab1 = TabItem("tab1", ":tab.trigger", [])\n'
-                'content = TextContent(":tab.content")\n'
+                'tab1 = TabItem("tab1", ":slot_0", [])\n'
+                'content = TextContent(":slot_1")\n'
             ),
             request=_request(
-                "Build tabs with a tab item whose trigger is :tab.trigger "
-                "and content is :tab.content. Placeholders: :tab.trigger :tab.content",
-                (":tab.trigger", ":tab.content"),
+                "Build tabs with a tab item whose trigger is :slot_0 "
+                "and content is :slot_1. Placeholders: :slot_0 :slot_1",
+                (":slot_0", ":slot_1"),
             ),
             expected_verdict=False,
             expected_reason_substrings=("schema_value_role_mismatch:Tabs.items",),
             gold_openui=(
                 'root = Tabs([tab1])\n'
-                'tab1 = TabItem("tab1", ":tab.trigger", [TextContent(":tab.content")])\n'
+                'tab1 = TabItem("tab1", ":slot_0", [TextContent(":slot_1")])\n'
             ),
             transform="tab_content_as_sibling",
             notes="Tab content is a sibling of the TabItem instead of nested inside it.",
@@ -923,22 +933,22 @@ def build_canary_render_semantics_mismatch_cases(seed: int = 0) -> list[MetricGa
             id="canary_callout_replaced_by_card",
             slice=SLICE_CANARY_RENDER_SEMANTICS_MISMATCH,
             prompt=(
-                "Build an info Callout with title :callout.title and description "
-                ":callout.desc. Placeholders: :callout.title :callout.desc"
+                "Build an info Callout with title :slot_0 and description "
+                ":slot_1. Placeholders: :slot_0 :slot_1"
             ),
             pred_openui=(
                 'root = Card([title, desc])\n'
-                'title = TextContent(":callout.title")\n'
-                'desc = TextContent(":callout.desc")\n'
+                'title = TextContent(":slot_0")\n'
+                'desc = TextContent(":slot_1")\n'
             ),
             request=_request(
-                "Build an info Callout with title :callout.title and description "
-                ":callout.desc. Placeholders: :callout.title :callout.desc",
-                (":callout.title", ":callout.desc"),
+                "Build an info Callout with title :slot_0 and description "
+                ":slot_1. Placeholders: :slot_0 :slot_1",
+                (":slot_0", ":slot_1"),
             ),
             expected_verdict=False,
             expected_reason_substrings=("prompt_component_missing",),
-            gold_openui='root = Callout("info", ":callout.title", ":callout.desc")\n',
+            gold_openui='root = Callout("info", ":slot_0", ":slot_1")\n',
             transform="callout_replaced_by_card",
             notes="Card with title/description text replaces the requested Callout component.",
         )
@@ -949,16 +959,16 @@ def build_canary_render_semantics_mismatch_cases(seed: int = 0) -> list[MetricGa
             id="canary_button_as_text",
             slice=SLICE_CANARY_RENDER_SEMANTICS_MISMATCH,
             prompt=(
-                "Build a Button with action :btn.action. Placeholders: :btn.action"
+                "Build a Button with action :slot_0. Placeholders: :slot_0"
             ),
-            pred_openui='root = TextContent(":btn.action")\n',
+            pred_openui='root = TextContent(":slot_0")\n',
             request=_request(
-                "Build a Button with action :btn.action. Placeholders: :btn.action",
-                (":btn.action",),
+                "Build a Button with action :slot_0. Placeholders: :slot_0",
+                (":slot_0",),
             ),
             expected_verdict=False,
             expected_reason_substrings=("prompt_component_missing",),
-            gold_openui='root = Button(":btn.action")\n',
+            gold_openui='root = Button(":slot_0")\n',
             transform="button_replaced_by_text_content",
             notes="TextContent displays the action string but is not an interactive Button.",
         )
@@ -969,18 +979,18 @@ def build_canary_render_semantics_mismatch_cases(seed: int = 0) -> list[MetricGa
             id="canary_slider_replaced_by_button",
             slice=SLICE_CANARY_RENDER_SEMANTICS_MISMATCH,
             prompt=(
-                "Build a continuous Slider for volume with caption :settings.caption. "
-                "Placeholders: :settings.caption"
+                "Build a continuous Slider for volume with caption :slot_0. "
+                "Placeholders: :slot_0"
             ),
-            pred_openui='root = Stack([s])\ns = Button(":settings.caption")\n',
+            pred_openui='root = Stack([s])\ns = Button(":slot_0")\n',
             request=_request(
-                "Build a continuous Slider for volume with caption :settings.caption. "
-                "Placeholders: :settings.caption",
-                (":settings.caption",),
+                "Build a continuous Slider for volume with caption :slot_0. "
+                "Placeholders: :slot_0",
+                (":slot_0",),
             ),
             expected_verdict=False,
             expected_reason_substrings=("prompt_component_missing",),
-            gold_openui='root = Stack([s])\ns = Slider("$0", "continuous", 0, 100, 1, [50], ":settings.caption")\n',
+            gold_openui='root = Stack([s])\ns = Slider("$0", "continuous", 0, 100, 1, [50], ":slot_0")\n',
             transform="slider_replaced_by_button",
             notes="Button replaces the requested Slider component.",
         )
@@ -999,24 +1009,24 @@ def build_canary_ast_similar_missing_component_cases(seed: int = 0) -> list[Metr
             id="canary_card_missing_header",
             slice=SLICE_CANARY_AST_SIMILAR_MISSING_COMPONENT,
             prompt=(
-                "Build a card with title :card.title and body :card.body. "
-                "Placeholders: :card.title :card.body"
+                "Build a card with title :slot_0 and body :slot_1. "
+                "Placeholders: :slot_0 :slot_1"
             ),
             pred_openui=(
                 'root = Card([body])\n'
-                'body = TextContent(":card.body")\n'
+                'body = TextContent(":slot_1")\n'
             ),
             request=_request(
-                "Build a card with title :card.title and body :card.body. "
-                "Placeholders: :card.title :card.body",
-                (":card.title", ":card.body"),
+                "Build a card with title :slot_0 and body :slot_1. "
+                "Placeholders: :slot_0 :slot_1",
+                (":slot_0", ":slot_1"),
             ),
             expected_verdict=False,
             expected_reason_substrings=("required_placeholder_missing",),
             gold_openui=(
                 'root = Card([header, body])\n'
-                'header = CardHeader(":card.title")\n'
-                'body = TextContent(":card.body")\n'
+                'header = CardHeader(":slot_0")\n'
+                'body = TextContent(":slot_1")\n'
             ),
             transform="omit_card_header_keep_body",
             notes="Card body remains but CardHeader (title) is removed.",
@@ -1028,21 +1038,21 @@ def build_canary_ast_similar_missing_component_cases(seed: int = 0) -> list[Metr
             id="canary_callout_missing_description",
             slice=SLICE_CANARY_AST_SIMILAR_MISSING_COMPONENT,
             prompt=(
-                "Build a Callout with title :callout.title and description "
-                ":callout.desc. Placeholders: :callout.title :callout.desc"
+                "Build a Callout with title :slot_0 and description "
+                ":slot_1. Placeholders: :slot_0 :slot_1"
             ),
             pred_openui=(
-                'root = Callout("info", ":callout.title", ":callout.title")\n'
+                'root = Callout("info", ":slot_0", ":slot_0")\n'
             ),
             request=_request(
-                "Build a Callout with title :callout.title and description "
-                ":callout.desc. Placeholders: :callout.title :callout.desc",
-                (":callout.title", ":callout.desc"),
+                "Build a Callout with title :slot_0 and description "
+                ":slot_1. Placeholders: :slot_0 :slot_1",
+                (":slot_0", ":slot_1"),
             ),
             expected_verdict=False,
             expected_reason_substrings=("required_placeholder_missing",),
             gold_openui=(
-                'root = Callout("info", ":callout.title", ":callout.desc")\n'
+                'root = Callout("info", ":slot_0", ":slot_1")\n'
             ),
             transform="omit_callout_description",
             notes="Callout reuses title for description; the requested desc slot is missing.",
@@ -1090,9 +1100,9 @@ def build_canary_overlong_economy_violation_cases(seed: int = 0) -> list[MetricG
     del seed
     cases: list[MetricGamingCase] = []
 
-    prompt = "Build a Button with action :btn.action. Placeholders: :btn.action"
-    slots = (":btn.action",)
-    positive = 'root = Button(":btn.action")\n'
+    prompt = "Build a Button with action :slot_0. Placeholders: :slot_0"
+    slots = (":slot_0",)
+    positive = 'root = Button(":slot_0")\n'
 
     # Overlong: many nested Stacks but no Button.
     pred = (
@@ -1102,7 +1112,7 @@ def build_canary_overlong_economy_violation_cases(seed: int = 0) -> list[MetricG
         's3 = Stack([s4])\n'
         's4 = Stack([s5])\n'
         's5 = Stack([t])\n'
-        't = TextContent(":btn.action")\n'
+        't = TextContent(":slot_0")\n'
     )
     cases.append(
         MetricGamingCase(
@@ -1121,7 +1131,7 @@ def build_canary_overlong_economy_violation_cases(seed: int = 0) -> list[MetricG
 
     # Overlong: repeat TextContent many times, no Button.
     repeated = "\n".join(
-        f't{i} = TextContent(":btn.action")'
+        f't{i} = TextContent(":slot_0")'
         for i in range(8)
     )
     pred = f'root = Stack([{", ".join(f"t{i}" for i in range(8))}])\n{repeated}\n'
@@ -1143,9 +1153,9 @@ def build_canary_overlong_economy_violation_cases(seed: int = 0) -> list[MetricG
     # Overlong: many duplicate placeholders but no requested component.
     pred = (
         'root = Stack([t1, t2, t3])\n'
-        't1 = TextContent(":btn.action")\n'
-        't2 = TextContent(":btn.action")\n'
-        't3 = TextContent(":btn.action")\n'
+        't1 = TextContent(":slot_0")\n'
+        't2 = TextContent(":slot_0")\n'
+        't3 = TextContent(":slot_0")\n'
     )
     cases.append(
         MetricGamingCase(
@@ -1174,15 +1184,15 @@ def build_canary_canonical_equivalent_positive_cases(seed: int = 0) -> list[Metr
         MetricGamingCase(
             id="canary_button_wrapped_positive",
             slice=SLICE_CANARY_CANONICAL_EQUIVALENT_POSITIVE,
-            prompt="Build a Button with action :btn.action. Placeholders: :btn.action",
-            pred_openui='root = Stack([Button(":btn.action")])\n',
+            prompt="Build a Button with action :slot_0. Placeholders: :slot_0",
+            pred_openui='root = Stack([Button(":slot_0")])\n',
             request=_request(
-                "Build a Button with action :btn.action. Placeholders: :btn.action",
-                (":btn.action",),
+                "Build a Button with action :slot_0. Placeholders: :slot_0",
+                (":slot_0",),
             ),
             expected_verdict=True,
             expected_reason_substrings=(),
-            gold_openui='root = Button(":btn.action")\n',
+            gold_openui='root = Button(":slot_0")\n',
             transform="trivial_stack_wrapper",
             notes="Button wrapped in a single Stack is semantically equivalent for this prompt.",
         )
@@ -1193,25 +1203,25 @@ def build_canary_canonical_equivalent_positive_cases(seed: int = 0) -> list[Metr
             id="canary_switch_wrapped_positive",
             slice=SLICE_CANARY_CANONICAL_EQUIVALENT_POSITIVE,
             prompt=(
-                "Build a switch item for notifications with caption :settings.caption "
-                "and description :settings.desc using name :settings.name. "
-                "Placeholders: :settings.caption :settings.desc :settings.name"
+                "Build a switch item for notifications with caption :slot_0 "
+                "and description :slot_1 using name :settings.name. "
+                "Placeholders: :slot_0 :slot_1 :settings.name"
             ),
             pred_openui=(
                 'root = Stack([s])\n'
-                's = SwitchItem(":settings.caption", ":settings.desc", ":settings.name")\n'
+                's = SwitchItem(":slot_0", ":slot_1", ":settings.name")\n'
             ),
             request=_request(
-                "Build a switch item for notifications with caption :settings.caption "
-                "and description :settings.desc using name :settings.name. "
-                "Placeholders: :settings.caption :settings.desc :settings.name",
-                (":settings.caption", ":settings.desc", ":settings.name"),
+                "Build a switch item for notifications with caption :slot_0 "
+                "and description :slot_1 using name :settings.name. "
+                "Placeholders: :slot_0 :slot_1 :settings.name",
+                (":slot_0", ":slot_1", ":settings.name"),
             ),
             expected_verdict=True,
             expected_reason_substrings=(),
             gold_openui=(
                 'root = Stack([s])\n'
-                's = SwitchItem(":settings.caption", ":settings.desc", ":settings.name")\n'
+                's = SwitchItem(":slot_0", ":slot_1", ":settings.name")\n'
             ),
             transform="stack_wrapped_switch",
             notes="SwitchItem wrapped in a Stack remains a valid switch item.",
@@ -1223,25 +1233,25 @@ def build_canary_canonical_equivalent_positive_cases(seed: int = 0) -> list[Metr
             id="canary_card_reordered_children_positive",
             slice=SLICE_CANARY_CANONICAL_EQUIVALENT_POSITIVE,
             prompt=(
-                "Build a card with title :card.title and body :card.body. "
-                "Placeholders: :card.title :card.body"
+                "Build a card with title :slot_0 and body :slot_1. "
+                "Placeholders: :slot_0 :slot_1"
             ),
             pred_openui=(
                 'root = Card([body, header])\n'
-                'header = CardHeader(":card.title")\n'
-                'body = TextContent(":card.body")\n'
+                'header = CardHeader(":slot_0")\n'
+                'body = TextContent(":slot_1")\n'
             ),
             request=_request(
-                "Build a card with title :card.title and body :card.body. "
-                "Placeholders: :card.title :card.body",
-                (":card.title", ":card.body"),
+                "Build a card with title :slot_0 and body :slot_1. "
+                "Placeholders: :slot_0 :slot_1",
+                (":slot_0", ":slot_1"),
             ),
             expected_verdict=True,
             expected_reason_substrings=(),
             gold_openui=(
                 'root = Card([header, body])\n'
-                'header = CardHeader(":card.title")\n'
-                'body = TextContent(":card.body")\n'
+                'header = CardHeader(":slot_0")\n'
+                'body = TextContent(":slot_1")\n'
             ),
             transform="reorder_card_children",
             notes="Card children are reordered; both forms contain the same title and body.",

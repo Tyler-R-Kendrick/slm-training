@@ -1,10 +1,11 @@
 # GH-1263 continuous-delivery follow-up — landed scope and remaining debt
 
 **Issue:** https://github.com/Tyler-R-Kendrick/slm-training/issues/1263  
+**Linear:** [SLM-577](https://linear.app/quickdeploy-ai/issue/SLM-577/gh-1263-follow-up-canonicalize-metric-gaming-archetypes-emptiness)  
 **Honesty:** fixture/scratch wiring evidence for fresh-checkout bootstrap and
 pre-existing test debt cleanup — not ship.
 
-## Landed in this PR
+## Landed in GH-1263 (#1679)
 
 1. **Fresh-checkout bootstrap** — `.claude/hooks/session-start.sh` (remote-only
    via `CLAUDE_CODE_REMOTE=true`) idempotently provisions `.venv`, pinned CPU
@@ -25,13 +26,13 @@ pre-existing test debt cleanup — not ship.
 5. **`check_changed` blast radius** — `.claude/**` config-only edits no longer
    fall through to the full `tests/` suite fallback.
 
-## Remaining debt (honest, pre-existing on main)
+## Remaining debt (status)
 
 | Item | Status | Notes |
 | --- | --- | --- |
-| `metric_gaming._archetypes()` named markers | **open** | Production adversarial archetypes still use semantic names (`:card.title`, …). `metric_gaming` tests pass because they do not call `assert_canonical_template_markers`. Oracle replay now canonicalizes at fixture build time only. Full archetype canonicalization needs a careful audit of every negative transform that references named slots. |
-| `emptiness_probe.minimal_valid_program` flake under concurrent hook shards | **open** | Issue §3c: `except Exception: continue` can swallow transient grammar/backend errors under load; passes standalone. Needs tracing/logging, not gate weakening. |
-| Grammar packed-decode (`grammar.py:326`) | **not reproduced** | `test_v4_levers::test_generate_batch_requests_consumes_harness_slot_contract` passes on current `main` tip (`4a05eb8e1`). Treat as environment- or revision-specific until reconfirmed. |
+| `metric_gaming._archetypes()` named markers | **closed (SLM-577)** | Production archetypes + negative transforms in `metric_gaming.py` / `oracle_scoring_replay.py` now emit opaque `:slot_N` markers. `_archetypes()` asserts `assert_canonical_template_marker_inventory` on every contract. Oracle `build_fixture_records()` still belt-and-suspenders-canonicalizes. |
+| `emptiness_probe.minimal_valid_program` flake under concurrent hook shards | **closed (SLM-577)** | Silent `except Exception: continue` replaced with debug tracing per rejected candidate and a warning when no candidate validates. Gates unchanged; I6 untouched. |
+| Grammar packed-decode (`grammar.py:326`) | **not reproduced** | `test_v4_levers::test_generate_batch_requests_consumes_harness_slot_contract` passes on current `main` tip. Treat as environment- or revision-specific until reconfirmed. |
 
 ## Verification recipe (fresh container)
 
@@ -40,6 +41,6 @@ uv sync --extra dev
 uv pip install -e . --no-deps
 scripts/setup_dev_env.sh   # or rely on session-start hook when CLAUDE_CODE_REMOTE=true
 pytest tests/test_evals/test_agentv.py tests/test_evals/test_emptiness_probe.py \
-  tests/test_evals/test_oracle_scoring_replay.py -q
+  tests/test_evals/test_oracle_scoring_replay.py tests/test_evals/test_metric_gaming.py -q
 python -m scripts.verify_merge_ready --fast
 ```

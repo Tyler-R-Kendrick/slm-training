@@ -34,6 +34,25 @@ def all_cases() -> list[MetricGamingCase]:
     return build_all_cases(seed=0)
 
 
+def test_archetypes_use_canonical_slot_markers() -> None:
+    from slm_training.data.contract import assert_canonical_template_marker_inventory
+    from slm_training.dsl.placeholders import extract_placeholders
+    from slm_training.evals.metric_gaming import _archetypes
+
+    for arch in _archetypes():
+        slots = tuple(arch["slot_contract"])
+        assert_canonical_template_marker_inventory(slots)
+        observed = tuple(
+            dict.fromkeys(
+                marker
+                for surface in (arch["prompt"], arch["positive"])
+                for marker in extract_placeholders(surface)
+            )
+        )
+        assert_canonical_template_marker_inventory(observed)
+        assert set(observed) <= set(slots)
+
+
 def test_build_all_cases_count_and_slices(all_cases: list[MetricGamingCase]) -> None:
     assert len(all_cases) == 119
     by_slice = {}
