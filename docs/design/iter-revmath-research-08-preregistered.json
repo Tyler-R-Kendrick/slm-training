@@ -1,0 +1,93 @@
+{
+  "campaign_id": "research08-myhill-nerode-static-residual",
+  "claim_class": "fixture",
+  "default_off": true,
+  "experiment_key": "RESEARCH-08",
+  "host": {
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+    "python": "3.12.3"
+  },
+  "linear_id": "SLM-540",
+  "manifest_sha256": "eddf497518c466fe2164d9b3fcb732004bf7ea757770aea668e93a846fcbfaea",
+  "pilot": {
+    "activation_telemetry": {
+      "abstraction": "terminal_continuation_singleton_stack",
+      "coverage_states": 119,
+      "enabled": true,
+      "pilot": "myhill_nerode_minimize",
+      "quotient_blocks": 28,
+      "scope": "static_regular_subset"
+    },
+    "complete_domain_parity": {
+      "n_fixtures": 18,
+      "n_passed": 18,
+      "parity_ok": true
+    },
+    "control": {
+      "bytes": 61019,
+      "cold_load": {
+        "bytes": 61019.0,
+        "max_ms": 1.4113260003796313,
+        "min_ms": 0.3038609997929598,
+        "p50_ms": 0.32210100016527576,
+        "trials": 31.0
+      },
+      "n_states": 119,
+      "n_terminals": 34
+    },
+    "decision": "accept_research_only",
+    "default_off": true,
+    "enabled": true,
+    "language_equivalence": {
+      "disagreement_count": 0,
+      "disagreements_sample": [],
+      "equivalent": true
+    },
+    "primary_metric": {
+      "control_p50_ms": 0.32210100016527576,
+      "delta_ms": 0.21925600049144123,
+      "improved": true,
+      "name": "cold_artifact_load_initialization_time",
+      "treatment_p50_ms": 0.10284499967383454
+    },
+    "production_authority": false,
+    "request_local_overlays_isolated": true,
+    "schema": "research08_pilot_result/v1",
+    "secondary": {
+      "artifact_bytes_control": 61019,
+      "artifact_bytes_treatment": 15656,
+      "language_equivalence_failures": 0,
+      "state_count_control": 119,
+      "state_count_treatment": 28
+    },
+    "treatment": {
+      "bytes": 15656,
+      "cold_load": {
+        "bytes": 15656.0,
+        "max_ms": 0.5390669998632802,
+        "min_ms": 0.09954600000128266,
+        "p50_ms": 0.10284499967383454,
+        "trials": 31.0
+      },
+      "n_states": 28,
+      "n_terminals": 34,
+      "state_reduction": 91
+    },
+    "zero_semantic_disagreement": true
+  },
+  "production_authority": false,
+  "promotion": false,
+  "recommendation": "accept_research_only",
+  "schema": "research08_campaign_result/v1",
+  "scope_disclaimer": "Fixture-scale RESEARCH-08 evidence for Myhill\u2013Nerode quotienting of the terminal-continuation abstraction of the static residual graph. claim_class=fixture; default_off; never promotion_candidate/ship_gate.",
+  "version_stamp": {
+    "code_commit": "bfc84a2c3363fa5aecf110d8a98a66a665745523",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v163",
+      "harness.experiments.slm540_research08_myhill_nerode": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-12T14:36:30.653542+00:00"
+  }
+}

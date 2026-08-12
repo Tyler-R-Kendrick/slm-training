@@ -1,15 +1,1117 @@
 {
-  "schema": "research_experiment_preregistry/v1",
-  "issue_key": "RESEARCH-02",
-  "linear_id": "SLM-533",
+  "authority_note": "Filing or compiling an experiment is not evidence. Execution requires blocker completion + exact campaign lock digest.",
   "base_sha": "cae3ed70f713bda9b36dccac21cec0d8e5927d98",
   "base_sha_note": "origin/main tip when RESEARCH-02 registry filed; experiments remain default_off/research_only until blockers complete and CampaignLockV1 binds.",
-  "design_doc": "docs/design/research-experiment-preregistry.md",
-  "citation_catalog": "src/slm_training/resources/research_citation_catalog.json",
   "campaign_owner": "src/slm_training/autoresearch/experiment_campaign.py",
-  "verified_by": "scripts/verify_research_experiment_preregistry.py",
+  "citation_catalog": "src/slm_training/resources/research_citation_catalog.json",
   "default_off": true,
-  "research_only": true,
+  "design_doc": "docs/design/research-experiment-preregistry.md",
+  "experiments": [
+    {
+      "activation_preflight": [
+        "blockers_complete",
+        "campaign_lock",
+        "citations_grounded",
+        "default_off",
+        "research_only_authority"
+      ],
+      "blockers": [
+        {
+          "blocker_id": "SLM-518",
+          "note": "RESEARCH-01 citation catalog landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-519",
+          "note": "EVID-03 four-axis ledger landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-533",
+          "note": "RESEARCH-02 preregistry (this registry) must exist before execution",
+          "status": "completed"
+        }
+      ],
+      "campaign_lock_sha256": null,
+      "cited_lineage": [
+        "simpson-sosoa",
+        "arxiv-1804.05495",
+        "repo-revmath-policy"
+      ],
+      "decision_rule": "Promote research lessons only after explicit transfer doc; never auto-promote to production RM labels.",
+      "default_off": true,
+      "disposition": "registered",
+      "evidence_path": "docs/design/iter-revmath-research-03-preregistered.md",
+      "experiment_key": "RESEARCH-03",
+      "falsifier": "Encoding/library burden disproportionate, reversal unfaithful, or hidden stronger axioms required.",
+      "hypothesis": "An isolated Lean research package can encode one genuine Big-Five bidirectional classification without contaminating the production finite kernel.",
+      "knob_hypothesis_signature": "3aaf1ba3ee28e2b5ea82a40fc41401d87e73de904b74b6bf870a8ea69ff85812",
+      "knobs": {
+        "isolated_package": true,
+        "pilot": "big_five_lean_package",
+        "production_import": false
+      },
+      "linear_id": "SLM-549",
+      "matched_control": "Production finite-kernel labeling path without research package import.",
+      "primary_metric": "checked_bidirectional_classification_with_documented_assumptions",
+      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
+      "reopen_evidence_path": null,
+      "repo_motivation": "Production kernel must not import genuine RM encodings; need a research-only package boundary.",
+      "research_only": true,
+      "resource_cap": {
+        "max_gpu_hours": 0,
+        "max_run_minutes": 30,
+        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
+      },
+      "secondary_safety_metrics": [
+        "production_import_contamination",
+        "hidden_stronger_axioms",
+        "overclaim_rate"
+      ]
+    },
+    {
+      "activation_preflight": [
+        "blockers_complete",
+        "campaign_lock",
+        "citations_grounded",
+        "default_off",
+        "research_only_authority"
+      ],
+      "blockers": [
+        {
+          "blocker_id": "SLM-518",
+          "note": "RESEARCH-01 citation catalog landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-519",
+          "note": "EVID-03 four-axis ledger landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-533",
+          "note": "RESEARCH-02 preregistry (this registry) must exist before execution",
+          "status": "completed"
+        }
+      ],
+      "campaign_lock_sha256": null,
+      "cited_lineage": [
+        "arxiv-2212.00489",
+        "simpson-sosoa",
+        "repo-revmath-policy"
+      ],
+      "decision_rule": "Accept only if non-Big-Five tasks improve genuine reversal metrics without raising overclaim.",
+      "default_off": true,
+      "disposition": "registered",
+      "evidence_path": "docs/design/iter-revmath-research-04-preregistered.md",
+      "experiment_key": "RESEARCH-04",
+      "falsifier": "Added corpus only measures library retrieval or classifications cannot be represented faithfully.",
+      "hypothesis": "A non-Big-Five Reverse Mathematics Zoo benchmark exposes whether the revmath harness learns assumption/reversal reasoning rather than five-label mapping.",
+      "knob_hypothesis_signature": "a9b4cf9c562f4d194d7d730f00dcc0f9d38683b257d3753adfac9f1ff961beec",
+      "knobs": {
+        "include_non_big_five": true,
+        "pilot": "rm_zoo_benchmark"
+      },
+      "linear_id": "SLM-550",
+      "matched_control": "Big-Five-only benchmark of comparable proof length/difficulty.",
+      "primary_metric": "exact_classification_reversal_success_dependency_disjoint",
+      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
+      "reopen_evidence_path": null,
+      "repo_motivation": "Current fixtures risk teaching Big-Five label retrieval instead of genuine reversal reasoning.",
+      "research_only": true,
+      "resource_cap": {
+        "max_gpu_hours": 0,
+        "max_run_minutes": 30,
+        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
+      },
+      "secondary_safety_metrics": [
+        "overclaim_rate",
+        "unknown_calibration",
+        "library_retrieval_only"
+      ]
+    },
+    {
+      "activation_preflight": [
+        "blockers_complete",
+        "campaign_lock",
+        "citations_grounded",
+        "default_off",
+        "research_only_authority"
+      ],
+      "blockers": [
+        {
+          "blocker_id": "SLM-518",
+          "note": "RESEARCH-01 citation catalog landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-519",
+          "note": "EVID-03 four-axis ledger landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-533",
+          "note": "RESEARCH-02 preregistry (this registry) must exist before execution",
+          "status": "completed"
+        }
+      ],
+      "campaign_lock_sha256": null,
+      "cited_lineage": [
+        "arxiv-2607.00815",
+        "szs-ontology",
+        "repo-only-hypothesis"
+      ],
+      "decision_rule": "Correctness gates pass and warm time ratio < 1.0; otherwise reject/retire.",
+      "default_off": true,
+      "disposition": "registered",
+      "evidence_path": "docs/design/iter-revmath-research-05-preregistered.md",
+      "experiment_key": "RESEARCH-05",
+      "falsifier": "Correctness disagreement, mutation miss, or ratio >= 1.0 with no coverage gain.",
+      "hypothesis": "For a declared bounded VSS subset, verified VSS-to-CNF plus checked LRAT preserves exact agreement while making warm refutation cheaper than exhaustive replay.",
+      "knob_hypothesis_signature": "a0d9195ab89f44a00b1016268dcdf77bba379341557b0f96427593b2c573d6dd",
+      "knobs": {
+        "backend": "lrat",
+        "default_off": true,
+        "pilot": "vss_lrat_sat"
+      },
+      "linear_id": "SLM-563",
+      "matched_control": "Canonical exhaustive VSS replay on identical instances and process caps.",
+      "primary_metric": "median_paired_warm_lrat_check_over_exhaustive_replay_time_ratio",
+      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
+      "reopen_evidence_path": null,
+      "repo_motivation": "Exhaustive VSS replay is correct but cold/warm cost limits formal suite scale.",
+      "research_only": true,
+      "resource_cap": {
+        "max_gpu_hours": 0,
+        "max_run_minutes": 30,
+        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
+      },
+      "secondary_safety_metrics": [
+        "witness_disagreement_count",
+        "mutation_rejection_rate",
+        "supported_subset_coverage"
+      ]
+    },
+    {
+      "activation_preflight": [
+        "blockers_complete",
+        "campaign_lock",
+        "citations_grounded",
+        "default_off",
+        "research_only_authority"
+      ],
+      "blockers": [
+        {
+          "blocker_id": "SLM-518",
+          "note": "RESEARCH-01 citation catalog landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-519",
+          "note": "EVID-03 four-axis ledger landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-533",
+          "note": "RESEARCH-02 preregistry (this registry) must exist before execution",
+          "status": "completed"
+        }
+      ],
+      "campaign_lock_sha256": null,
+      "cited_lineage": [
+        "arxiv-2602.08692",
+        "szs-ontology",
+        "repo-only-hypothesis"
+      ],
+      "decision_rule": "Accept only with zero disagreements on supported subset and 100% mutation rejection.",
+      "default_off": true,
+      "disposition": "registered",
+      "evidence_path": "docs/design/iter-revmath-research-06-preregistered.md",
+      "experiment_key": "RESEARCH-06",
+      "falsifier": "Disagreement on supported subset, or tool gaps silently treated as refutation.",
+      "hypothesis": "A proof-producing VSS pseudo-Boolean backend with PBLean can certify a declared PB subset with exact semantic agreement versus the canonical checker.",
+      "knob_hypothesis_signature": "e4a39672a30d25d8eb14ee8102c91bdd185e02ab728c78663eaf137ea4257d0d",
+      "knobs": {
+        "backend": "pblean",
+        "default_off": true,
+        "pilot": "vss_pblean"
+      },
+      "linear_id": "SLM-564",
+      "matched_control": "Canonical VSS checker without PBLean certificates on the same instances.",
+      "primary_metric": "exact_semantic_agreement_rate_on_supported_pb_subset",
+      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
+      "reopen_evidence_path": null,
+      "repo_motivation": "SAT-only certificates leave PB-shaped VSS constraints without a checked proof path.",
+      "research_only": true,
+      "resource_cap": {
+        "max_gpu_hours": 0,
+        "max_run_minutes": 30,
+        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
+      },
+      "secondary_safety_metrics": [
+        "certificate_check_failures",
+        "unsupported_feature_unknown_rate",
+        "mutation_rejection_rate"
+      ]
+    },
+    {
+      "activation_preflight": [
+        "blockers_complete",
+        "campaign_lock",
+        "citations_grounded",
+        "default_off",
+        "research_only_authority"
+      ],
+      "blockers": [
+        {
+          "blocker_id": "SLM-518",
+          "note": "RESEARCH-01 citation catalog landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-519",
+          "note": "EVID-03 four-axis ledger landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-533",
+          "note": "RESEARCH-02 preregistry (this registry) must exist before execution",
+          "status": "completed"
+        }
+      ],
+      "campaign_lock_sha256": null,
+      "cited_lineage": [
+        "szs-ontology",
+        "repo-only-hypothesis",
+        "repo-research-lineage"
+      ],
+      "decision_rule": "Accept only if unknowns stay unknown and supported reconstructions agree exactly.",
+      "default_off": true,
+      "disposition": "registered",
+      "evidence_path": "docs/design/iter-revmath-research-07-preregistered.md",
+      "experiment_key": "RESEARCH-07",
+      "falsifier": "Reconstruction failure counted as refutation, or theory support silently widened.",
+      "hypothesis": "Alethe/SMT proof reconstruction for theory-rich VSS constraints preserves exact agreement on a declared theory subset without widening unknown into refutation.",
+      "knob_hypothesis_signature": "b67efeda6b4313f2dd08c2a79f7fcd0e264544c3712029b3de4cd33641f3f4f6",
+      "knobs": {
+        "backend": "alethe",
+        "default_off": true,
+        "pilot": "vss_alethe_smt"
+      },
+      "linear_id": "SLM-565",
+      "matched_control": "Canonical VSS path without Alethe reconstruction on matched theory instances.",
+      "primary_metric": "exact_agreement_rate_on_supported_theory_subset",
+      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
+      "reopen_evidence_path": null,
+      "repo_motivation": "Theory-rich constraints currently stop at unknown; need checked reconstruction research path.",
+      "research_only": true,
+      "resource_cap": {
+        "max_gpu_hours": 0,
+        "max_run_minutes": 30,
+        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
+      },
+      "secondary_safety_metrics": [
+        "unknown_preservation_rate",
+        "reconstruction_failure_as_refutation_count",
+        "mutation_rejection_rate"
+      ]
+    },
+    {
+      "activation_preflight": [
+        "blockers_complete",
+        "campaign_lock",
+        "citations_grounded",
+        "default_off",
+        "research_only_authority"
+      ],
+      "blockers": [
+        {
+          "blocker_id": "SLM-518",
+          "note": "RESEARCH-01 citation catalog landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-519",
+          "note": "EVID-03 four-axis ledger landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-533",
+          "note": "RESEARCH-02 preregistry (this registry) must exist before execution",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-517",
+          "note": "KERN-02 CompleteDomain proof-bearing contracts landed; used for fixture parity",
+          "status": "completed"
+        }
+      ],
+      "campaign_lock_sha256": "eddf497518c466fe2164d9b3fcb732004bf7ea757770aea668e93a846fcbfaea",
+      "cited_lineage": [
+        "mathlib-partrec",
+        "repo-research-lineage",
+        "repo-only-hypothesis"
+      ],
+      "decision_rule": "Zero semantic disagreement and measurable cold-state improvement; else reject.",
+      "default_off": true,
+      "disposition": "completed",
+      "evidence_path": "docs/design/iter-revmath-research-08-preregistered.md",
+      "experiment_key": "RESEARCH-08",
+      "falsifier": "Automaton already minimal for chosen abstraction, or quotient overhead erases benefit.",
+      "hypothesis": "Myhill-Nerode quotienting of the regular/static residual decoder graph reduces cold artifact size/load without changing accepted continuations.",
+      "knob_hypothesis_signature": "6046861020dba8de0c19a4d5242782019406463dc797aed84bfba5c5c06f7427",
+      "knobs": {
+        "pilot": "myhill_nerode_minimize",
+        "scope": "static_regular_subset"
+      },
+      "linear_id": "SLM-540",
+      "matched_control": "Current static compiled residual graph/artifact without minimization.",
+      "primary_metric": "cold_artifact_load_initialization_time",
+      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
+      "reopen_evidence_path": null,
+      "repo_motivation": "Static residual graphs may carry equivalent states that inflate cold-load cost.",
+      "research_only": true,
+      "resource_cap": {
+        "max_gpu_hours": 0,
+        "max_run_minutes": 30,
+        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
+      },
+      "secondary_safety_metrics": [
+        "language_equivalence_failures",
+        "state_count",
+        "artifact_bytes",
+        "transition_latency"
+      ]
+    },
+    {
+      "activation_preflight": [
+        "blockers_complete",
+        "campaign_lock",
+        "citations_grounded",
+        "default_off",
+        "research_only_authority"
+      ],
+      "blockers": [
+        {
+          "blocker_id": "SLM-518",
+          "note": "RESEARCH-01 citation catalog landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-519",
+          "note": "EVID-03 four-axis ledger landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-533",
+          "note": "RESEARCH-02 preregistry (this registry) must exist before execution",
+          "status": "completed"
+        }
+      ],
+      "campaign_lock_sha256": null,
+      "cited_lineage": [
+        "buss-marktoberdorf95",
+        "repo-only-hypothesis",
+        "repo-research-lineage"
+      ],
+      "decision_rule": "Accept if correlation improves without converting timeouts into refutations.",
+      "default_off": true,
+      "disposition": "registered",
+      "evidence_path": "docs/design/iter-revmath-research-09-preregistered.md",
+      "experiment_key": "RESEARCH-09",
+      "falsifier": "Parameterized features do not beat flat proxies or encourage overclaim.",
+      "hypothesis": "Parameterized/treewidth-aware VSS complexity bounds predict practical solver cost better than flat instance size on a frozen suite.",
+      "knob_hypothesis_signature": "9843db37bd64b79ac7fdc9e642d8391cb1d88a0f24ce8c1d7612b1e7d16a184e",
+      "knobs": {
+        "feature": "treewidth_proxy",
+        "pilot": "vss_treewidth"
+      },
+      "linear_id": "SLM-541",
+      "matched_control": "Flat size / clause-count cost proxy on the same suite.",
+      "primary_metric": "rank_correlation_of_predicted_vs_observed_solver_cost",
+      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
+      "reopen_evidence_path": null,
+      "repo_motivation": "Flat size proxies mis-rank VSS instances; need parameterized research metrics default-off.",
+      "research_only": true,
+      "resource_cap": {
+        "max_gpu_hours": 0,
+        "max_run_minutes": 30,
+        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
+      },
+      "secondary_safety_metrics": [
+        "miscalibration_rate",
+        "timeout_as_refutation_count",
+        "parameter_estimation_failures"
+      ]
+    },
+    {
+      "activation_preflight": [
+        "blockers_complete",
+        "campaign_lock",
+        "citations_grounded",
+        "default_off",
+        "research_only_authority"
+      ],
+      "blockers": [
+        {
+          "blocker_id": "SLM-518",
+          "note": "RESEARCH-01 citation catalog landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-519",
+          "note": "EVID-03 four-axis ledger landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-533",
+          "note": "RESEARCH-02 preregistry (this registry) must exist before execution",
+          "status": "completed"
+        }
+      ],
+      "campaign_lock_sha256": null,
+      "cited_lineage": [
+        "leandojo",
+        "arxiv-2605.20244",
+        "repo-research-lineage"
+      ],
+      "decision_rule": "Accept only with efficiency gain and no easy-task regression or axiom leakage.",
+      "default_off": true,
+      "disposition": "registered",
+      "evidence_path": "docs/design/iter-revmath-research-10-preregistered.md",
+      "experiment_key": "RESEARCH-10",
+      "falsifier": "Curriculum gains come from leakage or regressions on weaker obligations.",
+      "hypothesis": "A proof-strength curriculum ordered by formal obligation difficulty improves Lean training sample efficiency versus unordered mixing.",
+      "knob_hypothesis_signature": "eb37574596c858a17a28f9c0d5db7798efd8841b655e1f31c97c6b84ec7f224b",
+      "knobs": {
+        "ordering": "obligation_difficulty",
+        "pilot": "lean_proof_strength_curriculum"
+      },
+      "linear_id": "SLM-566",
+      "matched_control": "Unordered mixed-strength Lean training schedule with matched compute.",
+      "primary_metric": "sample_efficiency_to_target_obligation_pass_rate",
+      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
+      "reopen_evidence_path": null,
+      "repo_motivation": "Lean training currently mixes strengths; curriculum may reduce thrash on hard obligations.",
+      "research_only": true,
+      "resource_cap": {
+        "max_gpu_hours": 0,
+        "max_run_minutes": 30,
+        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
+      },
+      "secondary_safety_metrics": [
+        "easy_task_regression",
+        "hidden_axiom_reliance",
+        "curriculum_leakage"
+      ]
+    },
+    {
+      "activation_preflight": [
+        "blockers_complete",
+        "campaign_lock",
+        "citations_grounded",
+        "default_off",
+        "research_only_authority"
+      ],
+      "blockers": [
+        {
+          "blocker_id": "SLM-518",
+          "note": "RESEARCH-01 citation catalog landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-519",
+          "note": "EVID-03 four-axis ledger landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-533",
+          "note": "RESEARCH-02 preregistry (this registry) must exist before execution",
+          "status": "completed"
+        }
+      ],
+      "campaign_lock_sha256": null,
+      "cited_lineage": [
+        "repo-revmath-policy",
+        "repo-research-lineage",
+        "repo-only-hypothesis"
+      ],
+      "decision_rule": "Accept only if shaping improves success without unverifiable intermediates scoring.",
+      "default_off": true,
+      "disposition": "registered",
+      "evidence_path": "docs/design/iter-revmath-research-11-preregistered.md",
+      "experiment_key": "RESEARCH-11",
+      "falsifier": "Reward can be maximized without checked process evidence.",
+      "hypothesis": "Process-verified reward shaping for revmath proof tasks improves learning signal without rewarding unverifiable intermediate states.",
+      "knob_hypothesis_signature": "0d7a4fdb742ad952ef106051b81729859d08c4c06427b0dc713b4962bd7ea17b",
+      "knobs": {
+        "pilot": "revmath_process_reward",
+        "verified_process": true
+      },
+      "linear_id": "SLM-574",
+      "matched_control": "Outcome-only reward without process verification on matched tasks.",
+      "primary_metric": "verified_process_reward_correlation_with_final_proof_success",
+      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
+      "reopen_evidence_path": null,
+      "repo_motivation": "Unverified shaping can reward non-proof processes; need process-checked rewards research-only.",
+      "research_only": true,
+      "resource_cap": {
+        "max_gpu_hours": 0,
+        "max_run_minutes": 30,
+        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
+      },
+      "secondary_safety_metrics": [
+        "unverifiable_intermediate_reward_rate",
+        "reward_hacking_incidents",
+        "safety_gate_failures"
+      ]
+    },
+    {
+      "activation_preflight": [
+        "blockers_complete",
+        "campaign_lock",
+        "citations_grounded",
+        "default_off",
+        "research_only_authority"
+      ],
+      "blockers": [
+        {
+          "blocker_id": "SLM-518",
+          "note": "RESEARCH-01 citation catalog landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-519",
+          "note": "EVID-03 four-axis ledger landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-533",
+          "note": "RESEARCH-02 preregistry (this registry) must exist before execution",
+          "status": "completed"
+        }
+      ],
+      "campaign_lock_sha256": null,
+      "cited_lineage": [
+        "arxiv-2601.15571",
+        "leandojo",
+        "repo-revmath-policy"
+      ],
+      "decision_rule": "Accept if meaning-changing successors are caught without excessive false blocks.",
+      "default_off": true,
+      "disposition": "registered",
+      "evidence_path": "docs/design/iter-revmath-research-12-preregistered.md",
+      "experiment_key": "RESEARCH-12",
+      "falsifier": "Semantic validator cannot distinguish meaning change from compile-success variants.",
+      "hypothesis": "Successor-theorem semantic validation catches generated theorem statements that compile but change meaning relative to the parent obligation.",
+      "knob_hypothesis_signature": "5e203615d30cf91aa9ea5899aa9c3384d66f3f07d55a40f780fcc6300bb9a4b9",
+      "knobs": {
+        "pilot": "successor_theorem_semantic_validation"
+      },
+      "linear_id": "SLM-567",
+      "matched_control": "Compile-only acceptance of generated successor statements.",
+      "primary_metric": "semantic_validation_catch_rate_on_meaning_changing_successors",
+      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
+      "reopen_evidence_path": null,
+      "repo_motivation": "Compile success alone is insufficient for generated successor theorems.",
+      "research_only": true,
+      "resource_cap": {
+        "max_gpu_hours": 0,
+        "max_run_minutes": 30,
+        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
+      },
+      "secondary_safety_metrics": [
+        "false_positive_block_rate",
+        "compile_only_pass_smuggling",
+        "unknown_rate"
+      ]
+    },
+    {
+      "activation_preflight": [
+        "blockers_complete",
+        "campaign_lock",
+        "citations_grounded",
+        "default_off",
+        "research_only_authority"
+      ],
+      "blockers": [
+        {
+          "blocker_id": "SLM-518",
+          "note": "RESEARCH-01 citation catalog landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-519",
+          "note": "EVID-03 four-axis ledger landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-533",
+          "note": "RESEARCH-02 preregistry (this registry) must exist before execution",
+          "status": "completed"
+        }
+      ],
+      "campaign_lock_sha256": null,
+      "cited_lineage": [
+        "simpson-sosoa",
+        "repo-revmath-policy",
+        "repo-only-hypothesis"
+      ],
+      "decision_rule": "Accept only independently checked models; search failure stays unknown.",
+      "default_off": true,
+      "disposition": "registered",
+      "evidence_path": "docs/design/iter-revmath-research-13-preregistered.md",
+      "experiment_key": "RESEARCH-13",
+      "falsifier": "Counterexamples are not replayable or assumption sets drift silently.",
+      "hypothesis": "Formal counterexample generation under dropped assumptions produces independently checkable finite models rather than search-failure unknowns.",
+      "knob_hypothesis_signature": "f5c42fd72bbbd0c831c3ad7078d596107a91898283d3799c69b75e56dad3e314",
+      "knobs": {
+        "pilot": "formal_counterexample_dropped_assumptions"
+      },
+      "linear_id": "SLM-568",
+      "matched_control": "Proof-search failure labeled as counterexample without finite model.",
+      "primary_metric": "independently_checked_finite_model_counterexample_rate",
+      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
+      "reopen_evidence_path": null,
+      "repo_motivation": "Dropped-assumption tasks need counterexamples that stay unknown on search failure.",
+      "research_only": true,
+      "resource_cap": {
+        "max_gpu_hours": 0,
+        "max_run_minutes": 30,
+        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
+      },
+      "secondary_safety_metrics": [
+        "search_failure_as_refutation_count",
+        "model_check_disagreements",
+        "assumption_set_drift"
+      ]
+    },
+    {
+      "activation_preflight": [
+        "blockers_complete",
+        "campaign_lock",
+        "citations_grounded",
+        "default_off",
+        "research_only_authority"
+      ],
+      "blockers": [
+        {
+          "blocker_id": "SLM-518",
+          "note": "RESEARCH-01 citation catalog landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-519",
+          "note": "EVID-03 four-axis ledger landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-533",
+          "note": "RESEARCH-02 preregistry (this registry) must exist before execution",
+          "status": "completed"
+        }
+      ],
+      "campaign_lock_sha256": null,
+      "cited_lineage": [
+        "szs-ontology",
+        "repo-only-hypothesis",
+        "repo-research-lineage"
+      ],
+      "decision_rule": "Accept if unique defects rise without false-alarm blow-up.",
+      "default_off": true,
+      "disposition": "registered",
+      "evidence_path": "docs/design/iter-revmath-research-14-preregistered.md",
+      "experiment_key": "RESEARCH-14",
+      "falsifier": "Diversity adds cost without unique defect gain.",
+      "hypothesis": "Checker diversity across independent fault domains increases defect detection versus a single checker family on frozen certificate corpora.",
+      "knob_hypothesis_signature": "2c0ec84ac86f902c394d9c7fdde652482ecf66e95b7345e8dd0e1ba36af46670",
+      "knobs": {
+        "fault_domains": "independent",
+        "pilot": "checker_diversity"
+      },
+      "linear_id": "SLM-572",
+      "matched_control": "Single canonical checker family on the same corpus.",
+      "primary_metric": "unique_defect_detection_gain_vs_single_checker",
+      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
+      "reopen_evidence_path": null,
+      "repo_motivation": "Single-checker pipelines share blind spots; diversity is a research measurement question.",
+      "research_only": true,
+      "resource_cap": {
+        "max_gpu_hours": 0,
+        "max_run_minutes": 30,
+        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
+      },
+      "secondary_safety_metrics": [
+        "false_alarm_rate",
+        "shared_blind_spot_residual",
+        "timeout_unknown_rate"
+      ]
+    },
+    {
+      "activation_preflight": [
+        "blockers_complete",
+        "campaign_lock",
+        "citations_grounded",
+        "default_off",
+        "research_only_authority"
+      ],
+      "blockers": [
+        {
+          "blocker_id": "SLM-518",
+          "note": "RESEARCH-01 citation catalog landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-519",
+          "note": "EVID-03 four-axis ledger landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-533",
+          "note": "RESEARCH-02 preregistry (this registry) must exist before execution",
+          "status": "completed"
+        }
+      ],
+      "campaign_lock_sha256": null,
+      "cited_lineage": [
+        "repo-research-lineage",
+        "repo-only-hypothesis",
+        "w3c-prov-o"
+      ],
+      "decision_rule": "Accept if type-I control holds under optional stopping with usable power.",
+      "default_off": true,
+      "disposition": "registered",
+      "evidence_path": "docs/design/iter-revmath-research-15-preregistered.md",
+      "experiment_key": "RESEARCH-15",
+      "falsifier": "Anytime procedure fails type-I control or collapses power unusably.",
+      "hypothesis": "Anytime-valid evidence sequences can govern adaptive autoresearch promotion without invalidating error control under optional stopping.",
+      "knob_hypothesis_signature": "98d15969f74da6725faba43b2b6423c12ce4835b700fdb3a54c70e17ee86361b",
+      "knobs": {
+        "adaptive": true,
+        "pilot": "anytime_valid_promotion"
+      },
+      "linear_id": "SLM-569",
+      "matched_control": "Fixed-sample-size Holm/promotion gate on matched adaptive streams.",
+      "primary_metric": "anytime_valid_type_i_error_control_under_optional_stopping",
+      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
+      "reopen_evidence_path": null,
+      "repo_motivation": "Fixed-n promotion gates are brittle under adaptive autoresearch stopping.",
+      "research_only": true,
+      "resource_cap": {
+        "max_gpu_hours": 0,
+        "max_run_minutes": 30,
+        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
+      },
+      "secondary_safety_metrics": [
+        "power_loss",
+        "premature_promotion_rate",
+        "ledger_integrity_failures"
+      ]
+    },
+    {
+      "activation_preflight": [
+        "blockers_complete",
+        "campaign_lock",
+        "citations_grounded",
+        "default_off",
+        "research_only_authority"
+      ],
+      "blockers": [
+        {
+          "blocker_id": "SLM-518",
+          "note": "RESEARCH-01 citation catalog landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-519",
+          "note": "EVID-03 four-axis ledger landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-533",
+          "note": "RESEARCH-02 preregistry (this registry) must exist before execution",
+          "status": "completed"
+        }
+      ],
+      "campaign_lock_sha256": null,
+      "cited_lineage": [
+        "repo-only-hypothesis",
+        "repo-research-lineage",
+        "buss-marktoberdorf95"
+      ],
+      "decision_rule": "Accept if certificates cover selected gates and catch bound violations.",
+      "default_off": true,
+      "disposition": "registered",
+      "evidence_path": "docs/design/iter-revmath-research-16-preregistered.md",
+      "experiment_key": "RESEARCH-16",
+      "falsifier": "Certificates miss violations or overhead makes gates unusable.",
+      "hypothesis": "Rational-to-float transfer certificates can bound selected metric/gate float evaluations without pretending float equality is exact.",
+      "knob_hypothesis_signature": "2cd897d38b220c45dac431069b3941455ebbbd561f7d06af2d46894407ff6fcf",
+      "knobs": {
+        "pilot": "rational_float_transfer_certs"
+      },
+      "linear_id": "SLM-570",
+      "matched_control": "Direct float comparison gates without rational certificate bounds.",
+      "primary_metric": "transfer_certificate_coverage_on_selected_metric_gates",
+      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
+      "reopen_evidence_path": null,
+      "repo_motivation": "Float metric gates need explicit transfer certificates rather than silent casts.",
+      "research_only": true,
+      "resource_cap": {
+        "max_gpu_hours": 0,
+        "max_run_minutes": 30,
+        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
+      },
+      "secondary_safety_metrics": [
+        "silent_cast_incidents",
+        "bound_violation_miss_rate",
+        "performance_overhead"
+      ]
+    },
+    {
+      "activation_preflight": [
+        "blockers_complete",
+        "campaign_lock",
+        "citations_grounded",
+        "default_off",
+        "research_only_authority"
+      ],
+      "blockers": [
+        {
+          "blocker_id": "SLM-518",
+          "note": "RESEARCH-01 citation catalog landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-519",
+          "note": "EVID-03 four-axis ledger landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-533",
+          "note": "RESEARCH-02 preregistry (this registry) must exist before execution",
+          "status": "completed"
+        }
+      ],
+      "campaign_lock_sha256": null,
+      "cited_lineage": [
+        "arxiv-2410.15986",
+        "repo-research-lineage",
+        "repo-revmath-policy"
+      ],
+      "decision_rule": "Accept if mined bounds are replayable and tighten gates without spurious constants.",
+      "default_off": true,
+      "disposition": "registered",
+      "evidence_path": "docs/design/iter-revmath-research-17-preregistered.md",
+      "experiment_key": "RESEARCH-17",
+      "falsifier": "Extracted bounds are non-actionable or not replayably certified.",
+      "hypothesis": "Proof mining can extract quantitative bounds from qualitative project theorems that improve actionable gate thresholds versus qualitative-only statements.",
+      "knob_hypothesis_signature": "d8cfbed014bcbeb11dca25c555fe9e6e5fbeec62fbb30e5a6a5a9dbd681c6df0",
+      "knobs": {
+        "pilot": "proof_mined_quantitative_bounds"
+      },
+      "linear_id": "SLM-557",
+      "matched_control": "Qualitative-only theorem statements without mined quantitative bounds.",
+      "primary_metric": "actionable_bound_extraction_success_with_replayable_certificate",
+      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
+      "reopen_evidence_path": null,
+      "repo_motivation": "Qualitative theorems under-specify numeric gates used in harnesses.",
+      "research_only": true,
+      "resource_cap": {
+        "max_gpu_hours": 0,
+        "max_run_minutes": 30,
+        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
+      },
+      "secondary_safety_metrics": [
+        "spurious_constant_rate",
+        "bound_uselessness_rate",
+        "proof_mining_failures_as_unknown"
+      ]
+    },
+    {
+      "activation_preflight": [
+        "blockers_complete",
+        "campaign_lock",
+        "citations_grounded",
+        "default_off",
+        "research_only_authority"
+      ],
+      "blockers": [
+        {
+          "blocker_id": "SLM-518",
+          "note": "RESEARCH-01 citation catalog landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-519",
+          "note": "EVID-03 four-axis ledger landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-533",
+          "note": "RESEARCH-02 preregistry (this registry) must exist before execution",
+          "status": "completed"
+        }
+      ],
+      "campaign_lock_sha256": null,
+      "cited_lineage": [
+        "arxiv-1707.03202",
+        "repo-revmath-policy",
+        "repo-only-hypothesis"
+      ],
+      "decision_rule": "Accept if classifications stay faithful and never auto-upgrade to RCA0/WKL0.",
+      "default_off": true,
+      "disposition": "registered",
+      "evidence_path": "docs/design/iter-revmath-research-18-preregistered.md",
+      "experiment_key": "RESEARCH-18",
+      "falsifier": "Weihrauch labels inflate into Big-Five production claims.",
+      "hypothesis": "Oracle/Weihrauch classification of multi-valued proof/completion tasks separates computable cores from oracle-relative remainders without RCA0 label inflation.",
+      "knob_hypothesis_signature": "5203b511460289f7d4e9334406b7490c4c1283511718b32b5608412edb6f1818",
+      "knobs": {
+        "pilot": "weihrauch_multivalued_classification"
+      },
+      "linear_id": "SLM-551",
+      "matched_control": "Unclassified multi-valued tasks treated as ordinary total computable work.",
+      "primary_metric": "faithful_weihrauch_class_assignment_rate_on_frozen_task_set",
+      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
+      "reopen_evidence_path": null,
+      "repo_motivation": "Multi-valued completion tasks need Weihrauch-style classification research without Big-Five overclaim.",
+      "research_only": true,
+      "resource_cap": {
+        "max_gpu_hours": 0,
+        "max_run_minutes": 30,
+        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
+      },
+      "secondary_safety_metrics": [
+        "big_five_label_inflation",
+        "oracle_relative_smuggling",
+        "unknown_collapse_rate"
+      ]
+    },
+    {
+      "activation_preflight": [
+        "blockers_complete",
+        "campaign_lock",
+        "citations_grounded",
+        "default_off",
+        "research_only_authority"
+      ],
+      "blockers": [
+        {
+          "blocker_id": "SLM-518",
+          "note": "RESEARCH-01 citation catalog landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-519",
+          "note": "EVID-03 four-axis ledger landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-533",
+          "note": "RESEARCH-02 preregistry (this registry) must exist before execution",
+          "status": "completed"
+        }
+      ],
+      "campaign_lock_sha256": null,
+      "cited_lineage": [
+        "arxiv-2410.15986",
+        "repo-only-hypothesis",
+        "repo-research-lineage"
+      ],
+      "decision_rule": "Accept research certificate only; never ship-gate authority from this pilot alone.",
+      "default_off": true,
+      "disposition": "registered",
+      "evidence_path": "docs/design/iter-revmath-research-19-preregistered.md",
+      "experiment_key": "RESEARCH-19",
+      "falsifier": "Bound is vacuous or used to authorize ship gates without separate promotion.",
+      "hypothesis": "A Lean-checked Rademacher/generalization-bound pilot can certify a toy bound without claiming neural ship-gate authority.",
+      "knob_hypothesis_signature": "7cd96f7e0781fdba5989de1237f4142e9c38944af1f8906376cbf7b658e0a1d9",
+      "knobs": {
+        "pilot": "lean_rademacher_bound",
+        "ship_authority": false
+      },
+      "linear_id": "SLM-558",
+      "matched_control": "Narrative generalization claims without Lean-checked bound artifact.",
+      "primary_metric": "lean_checked_toy_bound_certificate_validity",
+      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
+      "reopen_evidence_path": null,
+      "repo_motivation": "Generalization rhetoric currently lacks a research-only Lean-checked bound pilot.",
+      "research_only": true,
+      "resource_cap": {
+        "max_gpu_hours": 0,
+        "max_run_minutes": 30,
+        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
+      },
+      "secondary_safety_metrics": [
+        "ship_gate_authority_smuggling",
+        "assumption_under_declaration",
+        "bound_vacuity"
+      ]
+    },
+    {
+      "activation_preflight": [
+        "blockers_complete",
+        "campaign_lock",
+        "citations_grounded",
+        "default_off",
+        "research_only_authority"
+      ],
+      "blockers": [
+        {
+          "blocker_id": "SLM-518",
+          "note": "RESEARCH-01 citation catalog landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-519",
+          "note": "EVID-03 four-axis ledger landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-533",
+          "note": "RESEARCH-02 preregistry (this registry) must exist before execution",
+          "status": "completed"
+        }
+      ],
+      "campaign_lock_sha256": null,
+      "cited_lineage": [
+        "arxiv-2601.15571",
+        "repo-only-hypothesis",
+        "repo-research-lineage"
+      ],
+      "decision_rule": "Accept a comparison report; do not merge formalisms without explicit transfer theorems.",
+      "default_off": true,
+      "disposition": "registered",
+      "evidence_path": "docs/design/iter-revmath-research-20-preregistered.md",
+      "experiment_key": "RESEARCH-20",
+      "falsifier": "Approaches are incomparable yet treated as equivalent cost authority.",
+      "hypothesis": "Comparing the local cost kernel against CSLib/Calf/AARA clarifies which cost claims transfer and which remain repository-local heuristics.",
+      "knob_hypothesis_signature": "6ae08a27c6fca53f40fa0f6783bd8b0473270250a58042b147a9a9b6ea4ee50c",
+      "knobs": {
+        "pilot": "cost_kernel_cslib_calf_aara_compare"
+      },
+      "linear_id": "SLM-552",
+      "matched_control": "Local cost kernel scores without CSLib/Calf/AARA comparison arms.",
+      "primary_metric": "transferability_disagreement_rate_across_cost_formalisms",
+      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
+      "reopen_evidence_path": null,
+      "repo_motivation": "Local cost kernel needs an explicit external-approach comparison before any transfer claim.",
+      "research_only": true,
+      "resource_cap": {
+        "max_gpu_hours": 0,
+        "max_run_minutes": 30,
+        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
+      },
+      "secondary_safety_metrics": [
+        "silent_equivalence_claims",
+        "incomparable_metric_smuggling",
+        "maintenance_cost"
+      ]
+    }
+  ],
+  "issue_key": "RESEARCH-02",
+  "linear_id": "SLM-533",
   "required_pilot_keys": [
     "RESEARCH-03",
     "RESEARCH-04",
@@ -30,1104 +1132,7 @@
     "RESEARCH-19",
     "RESEARCH-20"
   ],
-  "authority_note": "Filing or compiling an experiment is not evidence. Execution requires blocker completion + exact campaign lock digest.",
-  "experiments": [
-    {
-      "experiment_key": "RESEARCH-03",
-      "linear_id": "SLM-549",
-      "hypothesis": "An isolated Lean research package can encode one genuine Big-Five bidirectional classification without contaminating the production finite kernel.",
-      "cited_lineage": [
-        "simpson-sosoa",
-        "arxiv-1804.05495",
-        "repo-revmath-policy"
-      ],
-      "repo_motivation": "Production kernel must not import genuine RM encodings; need a research-only package boundary.",
-      "blockers": [
-        {
-          "blocker_id": "SLM-518",
-          "status": "completed",
-          "note": "RESEARCH-01 citation catalog landed"
-        },
-        {
-          "blocker_id": "SLM-519",
-          "status": "completed",
-          "note": "EVID-03 four-axis ledger landed"
-        },
-        {
-          "blocker_id": "SLM-533",
-          "status": "completed",
-          "note": "RESEARCH-02 preregistry (this registry) must exist before execution"
-        }
-      ],
-      "matched_control": "Production finite-kernel labeling path without research package import.",
-      "primary_metric": "checked_bidirectional_classification_with_documented_assumptions",
-      "secondary_safety_metrics": [
-        "production_import_contamination",
-        "hidden_stronger_axioms",
-        "overclaim_rate"
-      ],
-      "decision_rule": "Promote research lessons only after explicit transfer doc; never auto-promote to production RM labels.",
-      "activation_preflight": [
-        "blockers_complete",
-        "campaign_lock",
-        "citations_grounded",
-        "default_off",
-        "research_only_authority"
-      ],
-      "resource_cap": {
-        "max_run_minutes": 30,
-        "max_gpu_hours": 0,
-        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
-      },
-      "falsifier": "Encoding/library burden disproportionate, reversal unfaithful, or hidden stronger axioms required.",
-      "evidence_path": "docs/design/iter-revmath-research-03-preregistered.md",
-      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
-      "knobs": {
-        "pilot": "big_five_lean_package",
-        "isolated_package": true,
-        "production_import": false
-      },
-      "disposition": "registered",
-      "default_off": true,
-      "research_only": true,
-      "knob_hypothesis_signature": "3aaf1ba3ee28e2b5ea82a40fc41401d87e73de904b74b6bf870a8ea69ff85812",
-      "campaign_lock_sha256": null,
-      "reopen_evidence_path": null
-    },
-    {
-      "experiment_key": "RESEARCH-04",
-      "linear_id": "SLM-550",
-      "hypothesis": "A non-Big-Five Reverse Mathematics Zoo benchmark exposes whether the revmath harness learns assumption/reversal reasoning rather than five-label mapping.",
-      "cited_lineage": [
-        "arxiv-2212.00489",
-        "simpson-sosoa",
-        "repo-revmath-policy"
-      ],
-      "repo_motivation": "Current fixtures risk teaching Big-Five label retrieval instead of genuine reversal reasoning.",
-      "blockers": [
-        {
-          "blocker_id": "SLM-518",
-          "status": "completed",
-          "note": "RESEARCH-01 citation catalog landed"
-        },
-        {
-          "blocker_id": "SLM-519",
-          "status": "completed",
-          "note": "EVID-03 four-axis ledger landed"
-        },
-        {
-          "blocker_id": "SLM-533",
-          "status": "completed",
-          "note": "RESEARCH-02 preregistry (this registry) must exist before execution"
-        }
-      ],
-      "matched_control": "Big-Five-only benchmark of comparable proof length/difficulty.",
-      "primary_metric": "exact_classification_reversal_success_dependency_disjoint",
-      "secondary_safety_metrics": [
-        "overclaim_rate",
-        "unknown_calibration",
-        "library_retrieval_only"
-      ],
-      "decision_rule": "Accept only if non-Big-Five tasks improve genuine reversal metrics without raising overclaim.",
-      "activation_preflight": [
-        "blockers_complete",
-        "campaign_lock",
-        "citations_grounded",
-        "default_off",
-        "research_only_authority"
-      ],
-      "resource_cap": {
-        "max_run_minutes": 30,
-        "max_gpu_hours": 0,
-        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
-      },
-      "falsifier": "Added corpus only measures library retrieval or classifications cannot be represented faithfully.",
-      "evidence_path": "docs/design/iter-revmath-research-04-preregistered.md",
-      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
-      "knobs": {
-        "pilot": "rm_zoo_benchmark",
-        "include_non_big_five": true
-      },
-      "disposition": "registered",
-      "default_off": true,
-      "research_only": true,
-      "knob_hypothesis_signature": "a9b4cf9c562f4d194d7d730f00dcc0f9d38683b257d3753adfac9f1ff961beec",
-      "campaign_lock_sha256": null,
-      "reopen_evidence_path": null
-    },
-    {
-      "experiment_key": "RESEARCH-05",
-      "linear_id": "SLM-563",
-      "hypothesis": "For a declared bounded VSS subset, verified VSS-to-CNF plus checked LRAT preserves exact agreement while making warm refutation cheaper than exhaustive replay.",
-      "cited_lineage": [
-        "arxiv-2607.00815",
-        "szs-ontology",
-        "repo-only-hypothesis"
-      ],
-      "repo_motivation": "Exhaustive VSS replay is correct but cold/warm cost limits formal suite scale.",
-      "blockers": [
-        {
-          "blocker_id": "SLM-518",
-          "status": "completed",
-          "note": "RESEARCH-01 citation catalog landed"
-        },
-        {
-          "blocker_id": "SLM-519",
-          "status": "completed",
-          "note": "EVID-03 four-axis ledger landed"
-        },
-        {
-          "blocker_id": "SLM-533",
-          "status": "completed",
-          "note": "RESEARCH-02 preregistry (this registry) must exist before execution"
-        }
-      ],
-      "matched_control": "Canonical exhaustive VSS replay on identical instances and process caps.",
-      "primary_metric": "median_paired_warm_lrat_check_over_exhaustive_replay_time_ratio",
-      "secondary_safety_metrics": [
-        "witness_disagreement_count",
-        "mutation_rejection_rate",
-        "supported_subset_coverage"
-      ],
-      "decision_rule": "Correctness gates pass and warm time ratio < 1.0; otherwise reject/retire.",
-      "activation_preflight": [
-        "blockers_complete",
-        "campaign_lock",
-        "citations_grounded",
-        "default_off",
-        "research_only_authority"
-      ],
-      "resource_cap": {
-        "max_run_minutes": 30,
-        "max_gpu_hours": 0,
-        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
-      },
-      "falsifier": "Correctness disagreement, mutation miss, or ratio >= 1.0 with no coverage gain.",
-      "evidence_path": "docs/design/iter-revmath-research-05-preregistered.md",
-      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
-      "knobs": {
-        "pilot": "vss_lrat_sat",
-        "backend": "lrat",
-        "default_off": true
-      },
-      "disposition": "registered",
-      "default_off": true,
-      "research_only": true,
-      "knob_hypothesis_signature": "a0d9195ab89f44a00b1016268dcdf77bba379341557b0f96427593b2c573d6dd",
-      "campaign_lock_sha256": null,
-      "reopen_evidence_path": null
-    },
-    {
-      "experiment_key": "RESEARCH-06",
-      "linear_id": "SLM-564",
-      "hypothesis": "A proof-producing VSS pseudo-Boolean backend with PBLean can certify a declared PB subset with exact semantic agreement versus the canonical checker.",
-      "cited_lineage": [
-        "arxiv-2602.08692",
-        "szs-ontology",
-        "repo-only-hypothesis"
-      ],
-      "repo_motivation": "SAT-only certificates leave PB-shaped VSS constraints without a checked proof path.",
-      "blockers": [
-        {
-          "blocker_id": "SLM-518",
-          "status": "completed",
-          "note": "RESEARCH-01 citation catalog landed"
-        },
-        {
-          "blocker_id": "SLM-519",
-          "status": "completed",
-          "note": "EVID-03 four-axis ledger landed"
-        },
-        {
-          "blocker_id": "SLM-533",
-          "status": "completed",
-          "note": "RESEARCH-02 preregistry (this registry) must exist before execution"
-        }
-      ],
-      "matched_control": "Canonical VSS checker without PBLean certificates on the same instances.",
-      "primary_metric": "exact_semantic_agreement_rate_on_supported_pb_subset",
-      "secondary_safety_metrics": [
-        "certificate_check_failures",
-        "unsupported_feature_unknown_rate",
-        "mutation_rejection_rate"
-      ],
-      "decision_rule": "Accept only with zero disagreements on supported subset and 100% mutation rejection.",
-      "activation_preflight": [
-        "blockers_complete",
-        "campaign_lock",
-        "citations_grounded",
-        "default_off",
-        "research_only_authority"
-      ],
-      "resource_cap": {
-        "max_run_minutes": 30,
-        "max_gpu_hours": 0,
-        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
-      },
-      "falsifier": "Disagreement on supported subset, or tool gaps silently treated as refutation.",
-      "evidence_path": "docs/design/iter-revmath-research-06-preregistered.md",
-      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
-      "knobs": {
-        "pilot": "vss_pblean",
-        "backend": "pblean",
-        "default_off": true
-      },
-      "disposition": "registered",
-      "default_off": true,
-      "research_only": true,
-      "knob_hypothesis_signature": "e4a39672a30d25d8eb14ee8102c91bdd185e02ab728c78663eaf137ea4257d0d",
-      "campaign_lock_sha256": null,
-      "reopen_evidence_path": null
-    },
-    {
-      "experiment_key": "RESEARCH-07",
-      "linear_id": "SLM-565",
-      "hypothesis": "Alethe/SMT proof reconstruction for theory-rich VSS constraints preserves exact agreement on a declared theory subset without widening unknown into refutation.",
-      "cited_lineage": [
-        "szs-ontology",
-        "repo-only-hypothesis",
-        "repo-research-lineage"
-      ],
-      "repo_motivation": "Theory-rich constraints currently stop at unknown; need checked reconstruction research path.",
-      "blockers": [
-        {
-          "blocker_id": "SLM-518",
-          "status": "completed",
-          "note": "RESEARCH-01 citation catalog landed"
-        },
-        {
-          "blocker_id": "SLM-519",
-          "status": "completed",
-          "note": "EVID-03 four-axis ledger landed"
-        },
-        {
-          "blocker_id": "SLM-533",
-          "status": "completed",
-          "note": "RESEARCH-02 preregistry (this registry) must exist before execution"
-        }
-      ],
-      "matched_control": "Canonical VSS path without Alethe reconstruction on matched theory instances.",
-      "primary_metric": "exact_agreement_rate_on_supported_theory_subset",
-      "secondary_safety_metrics": [
-        "unknown_preservation_rate",
-        "reconstruction_failure_as_refutation_count",
-        "mutation_rejection_rate"
-      ],
-      "decision_rule": "Accept only if unknowns stay unknown and supported reconstructions agree exactly.",
-      "activation_preflight": [
-        "blockers_complete",
-        "campaign_lock",
-        "citations_grounded",
-        "default_off",
-        "research_only_authority"
-      ],
-      "resource_cap": {
-        "max_run_minutes": 30,
-        "max_gpu_hours": 0,
-        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
-      },
-      "falsifier": "Reconstruction failure counted as refutation, or theory support silently widened.",
-      "evidence_path": "docs/design/iter-revmath-research-07-preregistered.md",
-      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
-      "knobs": {
-        "pilot": "vss_alethe_smt",
-        "backend": "alethe",
-        "default_off": true
-      },
-      "disposition": "registered",
-      "default_off": true,
-      "research_only": true,
-      "knob_hypothesis_signature": "b67efeda6b4313f2dd08c2a79f7fcd0e264544c3712029b3de4cd33641f3f4f6",
-      "campaign_lock_sha256": null,
-      "reopen_evidence_path": null
-    },
-    {
-      "experiment_key": "RESEARCH-08",
-      "linear_id": "SLM-540",
-      "hypothesis": "Myhill-Nerode quotienting of the regular/static residual decoder graph reduces cold artifact size/load without changing accepted continuations.",
-      "cited_lineage": [
-        "mathlib-partrec",
-        "repo-research-lineage",
-        "repo-only-hypothesis"
-      ],
-      "repo_motivation": "Static residual graphs may carry equivalent states that inflate cold-load cost.",
-      "blockers": [
-        {
-          "blocker_id": "SLM-518",
-          "status": "completed",
-          "note": "RESEARCH-01 citation catalog landed"
-        },
-        {
-          "blocker_id": "SLM-519",
-          "status": "completed",
-          "note": "EVID-03 four-axis ledger landed"
-        },
-        {
-          "blocker_id": "SLM-533",
-          "status": "completed",
-          "note": "RESEARCH-02 preregistry (this registry) must exist before execution"
-        }
-      ],
-      "matched_control": "Current static compiled residual graph/artifact without minimization.",
-      "primary_metric": "cold_artifact_load_initialization_time",
-      "secondary_safety_metrics": [
-        "language_equivalence_failures",
-        "state_count",
-        "artifact_bytes",
-        "transition_latency"
-      ],
-      "decision_rule": "Zero semantic disagreement and measurable cold-state improvement; else reject.",
-      "activation_preflight": [
-        "blockers_complete",
-        "campaign_lock",
-        "citations_grounded",
-        "default_off",
-        "research_only_authority"
-      ],
-      "resource_cap": {
-        "max_run_minutes": 30,
-        "max_gpu_hours": 0,
-        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
-      },
-      "falsifier": "Automaton already minimal for chosen abstraction, or quotient overhead erases benefit.",
-      "evidence_path": "docs/design/iter-revmath-research-08-preregistered.md",
-      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
-      "knobs": {
-        "pilot": "myhill_nerode_minimize",
-        "scope": "static_regular_subset"
-      },
-      "disposition": "registered",
-      "default_off": true,
-      "research_only": true,
-      "knob_hypothesis_signature": "6046861020dba8de0c19a4d5242782019406463dc797aed84bfba5c5c06f7427",
-      "campaign_lock_sha256": null,
-      "reopen_evidence_path": null
-    },
-    {
-      "experiment_key": "RESEARCH-09",
-      "linear_id": "SLM-541",
-      "hypothesis": "Parameterized/treewidth-aware VSS complexity bounds predict practical solver cost better than flat instance size on a frozen suite.",
-      "cited_lineage": [
-        "buss-marktoberdorf95",
-        "repo-only-hypothesis",
-        "repo-research-lineage"
-      ],
-      "repo_motivation": "Flat size proxies mis-rank VSS instances; need parameterized research metrics default-off.",
-      "blockers": [
-        {
-          "blocker_id": "SLM-518",
-          "status": "completed",
-          "note": "RESEARCH-01 citation catalog landed"
-        },
-        {
-          "blocker_id": "SLM-519",
-          "status": "completed",
-          "note": "EVID-03 four-axis ledger landed"
-        },
-        {
-          "blocker_id": "SLM-533",
-          "status": "completed",
-          "note": "RESEARCH-02 preregistry (this registry) must exist before execution"
-        }
-      ],
-      "matched_control": "Flat size / clause-count cost proxy on the same suite.",
-      "primary_metric": "rank_correlation_of_predicted_vs_observed_solver_cost",
-      "secondary_safety_metrics": [
-        "miscalibration_rate",
-        "timeout_as_refutation_count",
-        "parameter_estimation_failures"
-      ],
-      "decision_rule": "Accept if correlation improves without converting timeouts into refutations.",
-      "activation_preflight": [
-        "blockers_complete",
-        "campaign_lock",
-        "citations_grounded",
-        "default_off",
-        "research_only_authority"
-      ],
-      "resource_cap": {
-        "max_run_minutes": 30,
-        "max_gpu_hours": 0,
-        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
-      },
-      "falsifier": "Parameterized features do not beat flat proxies or encourage overclaim.",
-      "evidence_path": "docs/design/iter-revmath-research-09-preregistered.md",
-      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
-      "knobs": {
-        "pilot": "vss_treewidth",
-        "feature": "treewidth_proxy"
-      },
-      "disposition": "registered",
-      "default_off": true,
-      "research_only": true,
-      "knob_hypothesis_signature": "9843db37bd64b79ac7fdc9e642d8391cb1d88a0f24ce8c1d7612b1e7d16a184e",
-      "campaign_lock_sha256": null,
-      "reopen_evidence_path": null
-    },
-    {
-      "experiment_key": "RESEARCH-10",
-      "linear_id": "SLM-566",
-      "hypothesis": "A proof-strength curriculum ordered by formal obligation difficulty improves Lean training sample efficiency versus unordered mixing.",
-      "cited_lineage": [
-        "leandojo",
-        "arxiv-2605.20244",
-        "repo-research-lineage"
-      ],
-      "repo_motivation": "Lean training currently mixes strengths; curriculum may reduce thrash on hard obligations.",
-      "blockers": [
-        {
-          "blocker_id": "SLM-518",
-          "status": "completed",
-          "note": "RESEARCH-01 citation catalog landed"
-        },
-        {
-          "blocker_id": "SLM-519",
-          "status": "completed",
-          "note": "EVID-03 four-axis ledger landed"
-        },
-        {
-          "blocker_id": "SLM-533",
-          "status": "completed",
-          "note": "RESEARCH-02 preregistry (this registry) must exist before execution"
-        }
-      ],
-      "matched_control": "Unordered mixed-strength Lean training schedule with matched compute.",
-      "primary_metric": "sample_efficiency_to_target_obligation_pass_rate",
-      "secondary_safety_metrics": [
-        "easy_task_regression",
-        "hidden_axiom_reliance",
-        "curriculum_leakage"
-      ],
-      "decision_rule": "Accept only with efficiency gain and no easy-task regression or axiom leakage.",
-      "activation_preflight": [
-        "blockers_complete",
-        "campaign_lock",
-        "citations_grounded",
-        "default_off",
-        "research_only_authority"
-      ],
-      "resource_cap": {
-        "max_run_minutes": 30,
-        "max_gpu_hours": 0,
-        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
-      },
-      "falsifier": "Curriculum gains come from leakage or regressions on weaker obligations.",
-      "evidence_path": "docs/design/iter-revmath-research-10-preregistered.md",
-      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
-      "knobs": {
-        "pilot": "lean_proof_strength_curriculum",
-        "ordering": "obligation_difficulty"
-      },
-      "disposition": "registered",
-      "default_off": true,
-      "research_only": true,
-      "knob_hypothesis_signature": "eb37574596c858a17a28f9c0d5db7798efd8841b655e1f31c97c6b84ec7f224b",
-      "campaign_lock_sha256": null,
-      "reopen_evidence_path": null
-    },
-    {
-      "experiment_key": "RESEARCH-11",
-      "linear_id": "SLM-574",
-      "hypothesis": "Process-verified reward shaping for revmath proof tasks improves learning signal without rewarding unverifiable intermediate states.",
-      "cited_lineage": [
-        "repo-revmath-policy",
-        "repo-research-lineage",
-        "repo-only-hypothesis"
-      ],
-      "repo_motivation": "Unverified shaping can reward non-proof processes; need process-checked rewards research-only.",
-      "blockers": [
-        {
-          "blocker_id": "SLM-518",
-          "status": "completed",
-          "note": "RESEARCH-01 citation catalog landed"
-        },
-        {
-          "blocker_id": "SLM-519",
-          "status": "completed",
-          "note": "EVID-03 four-axis ledger landed"
-        },
-        {
-          "blocker_id": "SLM-533",
-          "status": "completed",
-          "note": "RESEARCH-02 preregistry (this registry) must exist before execution"
-        }
-      ],
-      "matched_control": "Outcome-only reward without process verification on matched tasks.",
-      "primary_metric": "verified_process_reward_correlation_with_final_proof_success",
-      "secondary_safety_metrics": [
-        "unverifiable_intermediate_reward_rate",
-        "reward_hacking_incidents",
-        "safety_gate_failures"
-      ],
-      "decision_rule": "Accept only if shaping improves success without unverifiable intermediates scoring.",
-      "activation_preflight": [
-        "blockers_complete",
-        "campaign_lock",
-        "citations_grounded",
-        "default_off",
-        "research_only_authority"
-      ],
-      "resource_cap": {
-        "max_run_minutes": 30,
-        "max_gpu_hours": 0,
-        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
-      },
-      "falsifier": "Reward can be maximized without checked process evidence.",
-      "evidence_path": "docs/design/iter-revmath-research-11-preregistered.md",
-      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
-      "knobs": {
-        "pilot": "revmath_process_reward",
-        "verified_process": true
-      },
-      "disposition": "registered",
-      "default_off": true,
-      "research_only": true,
-      "knob_hypothesis_signature": "0d7a4fdb742ad952ef106051b81729859d08c4c06427b0dc713b4962bd7ea17b",
-      "campaign_lock_sha256": null,
-      "reopen_evidence_path": null
-    },
-    {
-      "experiment_key": "RESEARCH-12",
-      "linear_id": "SLM-567",
-      "hypothesis": "Successor-theorem semantic validation catches generated theorem statements that compile but change meaning relative to the parent obligation.",
-      "cited_lineage": [
-        "arxiv-2601.15571",
-        "leandojo",
-        "repo-revmath-policy"
-      ],
-      "repo_motivation": "Compile success alone is insufficient for generated successor theorems.",
-      "blockers": [
-        {
-          "blocker_id": "SLM-518",
-          "status": "completed",
-          "note": "RESEARCH-01 citation catalog landed"
-        },
-        {
-          "blocker_id": "SLM-519",
-          "status": "completed",
-          "note": "EVID-03 four-axis ledger landed"
-        },
-        {
-          "blocker_id": "SLM-533",
-          "status": "completed",
-          "note": "RESEARCH-02 preregistry (this registry) must exist before execution"
-        }
-      ],
-      "matched_control": "Compile-only acceptance of generated successor statements.",
-      "primary_metric": "semantic_validation_catch_rate_on_meaning_changing_successors",
-      "secondary_safety_metrics": [
-        "false_positive_block_rate",
-        "compile_only_pass_smuggling",
-        "unknown_rate"
-      ],
-      "decision_rule": "Accept if meaning-changing successors are caught without excessive false blocks.",
-      "activation_preflight": [
-        "blockers_complete",
-        "campaign_lock",
-        "citations_grounded",
-        "default_off",
-        "research_only_authority"
-      ],
-      "resource_cap": {
-        "max_run_minutes": 30,
-        "max_gpu_hours": 0,
-        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
-      },
-      "falsifier": "Semantic validator cannot distinguish meaning change from compile-success variants.",
-      "evidence_path": "docs/design/iter-revmath-research-12-preregistered.md",
-      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
-      "knobs": {
-        "pilot": "successor_theorem_semantic_validation"
-      },
-      "disposition": "registered",
-      "default_off": true,
-      "research_only": true,
-      "knob_hypothesis_signature": "5e203615d30cf91aa9ea5899aa9c3384d66f3f07d55a40f780fcc6300bb9a4b9",
-      "campaign_lock_sha256": null,
-      "reopen_evidence_path": null
-    },
-    {
-      "experiment_key": "RESEARCH-13",
-      "linear_id": "SLM-568",
-      "hypothesis": "Formal counterexample generation under dropped assumptions produces independently checkable finite models rather than search-failure unknowns.",
-      "cited_lineage": [
-        "simpson-sosoa",
-        "repo-revmath-policy",
-        "repo-only-hypothesis"
-      ],
-      "repo_motivation": "Dropped-assumption tasks need counterexamples that stay unknown on search failure.",
-      "blockers": [
-        {
-          "blocker_id": "SLM-518",
-          "status": "completed",
-          "note": "RESEARCH-01 citation catalog landed"
-        },
-        {
-          "blocker_id": "SLM-519",
-          "status": "completed",
-          "note": "EVID-03 four-axis ledger landed"
-        },
-        {
-          "blocker_id": "SLM-533",
-          "status": "completed",
-          "note": "RESEARCH-02 preregistry (this registry) must exist before execution"
-        }
-      ],
-      "matched_control": "Proof-search failure labeled as counterexample without finite model.",
-      "primary_metric": "independently_checked_finite_model_counterexample_rate",
-      "secondary_safety_metrics": [
-        "search_failure_as_refutation_count",
-        "model_check_disagreements",
-        "assumption_set_drift"
-      ],
-      "decision_rule": "Accept only independently checked models; search failure stays unknown.",
-      "activation_preflight": [
-        "blockers_complete",
-        "campaign_lock",
-        "citations_grounded",
-        "default_off",
-        "research_only_authority"
-      ],
-      "resource_cap": {
-        "max_run_minutes": 30,
-        "max_gpu_hours": 0,
-        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
-      },
-      "falsifier": "Counterexamples are not replayable or assumption sets drift silently.",
-      "evidence_path": "docs/design/iter-revmath-research-13-preregistered.md",
-      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
-      "knobs": {
-        "pilot": "formal_counterexample_dropped_assumptions"
-      },
-      "disposition": "registered",
-      "default_off": true,
-      "research_only": true,
-      "knob_hypothesis_signature": "f5c42fd72bbbd0c831c3ad7078d596107a91898283d3799c69b75e56dad3e314",
-      "campaign_lock_sha256": null,
-      "reopen_evidence_path": null
-    },
-    {
-      "experiment_key": "RESEARCH-14",
-      "linear_id": "SLM-572",
-      "hypothesis": "Checker diversity across independent fault domains increases defect detection versus a single checker family on frozen certificate corpora.",
-      "cited_lineage": [
-        "szs-ontology",
-        "repo-only-hypothesis",
-        "repo-research-lineage"
-      ],
-      "repo_motivation": "Single-checker pipelines share blind spots; diversity is a research measurement question.",
-      "blockers": [
-        {
-          "blocker_id": "SLM-518",
-          "status": "completed",
-          "note": "RESEARCH-01 citation catalog landed"
-        },
-        {
-          "blocker_id": "SLM-519",
-          "status": "completed",
-          "note": "EVID-03 four-axis ledger landed"
-        },
-        {
-          "blocker_id": "SLM-533",
-          "status": "completed",
-          "note": "RESEARCH-02 preregistry (this registry) must exist before execution"
-        }
-      ],
-      "matched_control": "Single canonical checker family on the same corpus.",
-      "primary_metric": "unique_defect_detection_gain_vs_single_checker",
-      "secondary_safety_metrics": [
-        "false_alarm_rate",
-        "shared_blind_spot_residual",
-        "timeout_unknown_rate"
-      ],
-      "decision_rule": "Accept if unique defects rise without false-alarm blow-up.",
-      "activation_preflight": [
-        "blockers_complete",
-        "campaign_lock",
-        "citations_grounded",
-        "default_off",
-        "research_only_authority"
-      ],
-      "resource_cap": {
-        "max_run_minutes": 30,
-        "max_gpu_hours": 0,
-        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
-      },
-      "falsifier": "Diversity adds cost without unique defect gain.",
-      "evidence_path": "docs/design/iter-revmath-research-14-preregistered.md",
-      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
-      "knobs": {
-        "pilot": "checker_diversity",
-        "fault_domains": "independent"
-      },
-      "disposition": "registered",
-      "default_off": true,
-      "research_only": true,
-      "knob_hypothesis_signature": "2c0ec84ac86f902c394d9c7fdde652482ecf66e95b7345e8dd0e1ba36af46670",
-      "campaign_lock_sha256": null,
-      "reopen_evidence_path": null
-    },
-    {
-      "experiment_key": "RESEARCH-15",
-      "linear_id": "SLM-569",
-      "hypothesis": "Anytime-valid evidence sequences can govern adaptive autoresearch promotion without invalidating error control under optional stopping.",
-      "cited_lineage": [
-        "repo-research-lineage",
-        "repo-only-hypothesis",
-        "w3c-prov-o"
-      ],
-      "repo_motivation": "Fixed-n promotion gates are brittle under adaptive autoresearch stopping.",
-      "blockers": [
-        {
-          "blocker_id": "SLM-518",
-          "status": "completed",
-          "note": "RESEARCH-01 citation catalog landed"
-        },
-        {
-          "blocker_id": "SLM-519",
-          "status": "completed",
-          "note": "EVID-03 four-axis ledger landed"
-        },
-        {
-          "blocker_id": "SLM-533",
-          "status": "completed",
-          "note": "RESEARCH-02 preregistry (this registry) must exist before execution"
-        }
-      ],
-      "matched_control": "Fixed-sample-size Holm/promotion gate on matched adaptive streams.",
-      "primary_metric": "anytime_valid_type_i_error_control_under_optional_stopping",
-      "secondary_safety_metrics": [
-        "power_loss",
-        "premature_promotion_rate",
-        "ledger_integrity_failures"
-      ],
-      "decision_rule": "Accept if type-I control holds under optional stopping with usable power.",
-      "activation_preflight": [
-        "blockers_complete",
-        "campaign_lock",
-        "citations_grounded",
-        "default_off",
-        "research_only_authority"
-      ],
-      "resource_cap": {
-        "max_run_minutes": 30,
-        "max_gpu_hours": 0,
-        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
-      },
-      "falsifier": "Anytime procedure fails type-I control or collapses power unusably.",
-      "evidence_path": "docs/design/iter-revmath-research-15-preregistered.md",
-      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
-      "knobs": {
-        "pilot": "anytime_valid_promotion",
-        "adaptive": true
-      },
-      "disposition": "registered",
-      "default_off": true,
-      "research_only": true,
-      "knob_hypothesis_signature": "98d15969f74da6725faba43b2b6423c12ce4835b700fdb3a54c70e17ee86361b",
-      "campaign_lock_sha256": null,
-      "reopen_evidence_path": null
-    },
-    {
-      "experiment_key": "RESEARCH-16",
-      "linear_id": "SLM-570",
-      "hypothesis": "Rational-to-float transfer certificates can bound selected metric/gate float evaluations without pretending float equality is exact.",
-      "cited_lineage": [
-        "repo-only-hypothesis",
-        "repo-research-lineage",
-        "buss-marktoberdorf95"
-      ],
-      "repo_motivation": "Float metric gates need explicit transfer certificates rather than silent casts.",
-      "blockers": [
-        {
-          "blocker_id": "SLM-518",
-          "status": "completed",
-          "note": "RESEARCH-01 citation catalog landed"
-        },
-        {
-          "blocker_id": "SLM-519",
-          "status": "completed",
-          "note": "EVID-03 four-axis ledger landed"
-        },
-        {
-          "blocker_id": "SLM-533",
-          "status": "completed",
-          "note": "RESEARCH-02 preregistry (this registry) must exist before execution"
-        }
-      ],
-      "matched_control": "Direct float comparison gates without rational certificate bounds.",
-      "primary_metric": "transfer_certificate_coverage_on_selected_metric_gates",
-      "secondary_safety_metrics": [
-        "silent_cast_incidents",
-        "bound_violation_miss_rate",
-        "performance_overhead"
-      ],
-      "decision_rule": "Accept if certificates cover selected gates and catch bound violations.",
-      "activation_preflight": [
-        "blockers_complete",
-        "campaign_lock",
-        "citations_grounded",
-        "default_off",
-        "research_only_authority"
-      ],
-      "resource_cap": {
-        "max_run_minutes": 30,
-        "max_gpu_hours": 0,
-        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
-      },
-      "falsifier": "Certificates miss violations or overhead makes gates unusable.",
-      "evidence_path": "docs/design/iter-revmath-research-16-preregistered.md",
-      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
-      "knobs": {
-        "pilot": "rational_float_transfer_certs"
-      },
-      "disposition": "registered",
-      "default_off": true,
-      "research_only": true,
-      "knob_hypothesis_signature": "2cd897d38b220c45dac431069b3941455ebbbd561f7d06af2d46894407ff6fcf",
-      "campaign_lock_sha256": null,
-      "reopen_evidence_path": null
-    },
-    {
-      "experiment_key": "RESEARCH-17",
-      "linear_id": "SLM-557",
-      "hypothesis": "Proof mining can extract quantitative bounds from qualitative project theorems that improve actionable gate thresholds versus qualitative-only statements.",
-      "cited_lineage": [
-        "arxiv-2410.15986",
-        "repo-research-lineage",
-        "repo-revmath-policy"
-      ],
-      "repo_motivation": "Qualitative theorems under-specify numeric gates used in harnesses.",
-      "blockers": [
-        {
-          "blocker_id": "SLM-518",
-          "status": "completed",
-          "note": "RESEARCH-01 citation catalog landed"
-        },
-        {
-          "blocker_id": "SLM-519",
-          "status": "completed",
-          "note": "EVID-03 four-axis ledger landed"
-        },
-        {
-          "blocker_id": "SLM-533",
-          "status": "completed",
-          "note": "RESEARCH-02 preregistry (this registry) must exist before execution"
-        }
-      ],
-      "matched_control": "Qualitative-only theorem statements without mined quantitative bounds.",
-      "primary_metric": "actionable_bound_extraction_success_with_replayable_certificate",
-      "secondary_safety_metrics": [
-        "spurious_constant_rate",
-        "bound_uselessness_rate",
-        "proof_mining_failures_as_unknown"
-      ],
-      "decision_rule": "Accept if mined bounds are replayable and tighten gates without spurious constants.",
-      "activation_preflight": [
-        "blockers_complete",
-        "campaign_lock",
-        "citations_grounded",
-        "default_off",
-        "research_only_authority"
-      ],
-      "resource_cap": {
-        "max_run_minutes": 30,
-        "max_gpu_hours": 0,
-        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
-      },
-      "falsifier": "Extracted bounds are non-actionable or not replayably certified.",
-      "evidence_path": "docs/design/iter-revmath-research-17-preregistered.md",
-      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
-      "knobs": {
-        "pilot": "proof_mined_quantitative_bounds"
-      },
-      "disposition": "registered",
-      "default_off": true,
-      "research_only": true,
-      "knob_hypothesis_signature": "d8cfbed014bcbeb11dca25c555fe9e6e5fbeec62fbb30e5a6a5a9dbd681c6df0",
-      "campaign_lock_sha256": null,
-      "reopen_evidence_path": null
-    },
-    {
-      "experiment_key": "RESEARCH-18",
-      "linear_id": "SLM-551",
-      "hypothesis": "Oracle/Weihrauch classification of multi-valued proof/completion tasks separates computable cores from oracle-relative remainders without RCA0 label inflation.",
-      "cited_lineage": [
-        "arxiv-1707.03202",
-        "repo-revmath-policy",
-        "repo-only-hypothesis"
-      ],
-      "repo_motivation": "Multi-valued completion tasks need Weihrauch-style classification research without Big-Five overclaim.",
-      "blockers": [
-        {
-          "blocker_id": "SLM-518",
-          "status": "completed",
-          "note": "RESEARCH-01 citation catalog landed"
-        },
-        {
-          "blocker_id": "SLM-519",
-          "status": "completed",
-          "note": "EVID-03 four-axis ledger landed"
-        },
-        {
-          "blocker_id": "SLM-533",
-          "status": "completed",
-          "note": "RESEARCH-02 preregistry (this registry) must exist before execution"
-        }
-      ],
-      "matched_control": "Unclassified multi-valued tasks treated as ordinary total computable work.",
-      "primary_metric": "faithful_weihrauch_class_assignment_rate_on_frozen_task_set",
-      "secondary_safety_metrics": [
-        "big_five_label_inflation",
-        "oracle_relative_smuggling",
-        "unknown_collapse_rate"
-      ],
-      "decision_rule": "Accept if classifications stay faithful and never auto-upgrade to RCA0/WKL0.",
-      "activation_preflight": [
-        "blockers_complete",
-        "campaign_lock",
-        "citations_grounded",
-        "default_off",
-        "research_only_authority"
-      ],
-      "resource_cap": {
-        "max_run_minutes": 30,
-        "max_gpu_hours": 0,
-        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
-      },
-      "falsifier": "Weihrauch labels inflate into Big-Five production claims.",
-      "evidence_path": "docs/design/iter-revmath-research-18-preregistered.md",
-      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
-      "knobs": {
-        "pilot": "weihrauch_multivalued_classification"
-      },
-      "disposition": "registered",
-      "default_off": true,
-      "research_only": true,
-      "knob_hypothesis_signature": "5203b511460289f7d4e9334406b7490c4c1283511718b32b5608412edb6f1818",
-      "campaign_lock_sha256": null,
-      "reopen_evidence_path": null
-    },
-    {
-      "experiment_key": "RESEARCH-19",
-      "linear_id": "SLM-558",
-      "hypothesis": "A Lean-checked Rademacher/generalization-bound pilot can certify a toy bound without claiming neural ship-gate authority.",
-      "cited_lineage": [
-        "arxiv-2410.15986",
-        "repo-only-hypothesis",
-        "repo-research-lineage"
-      ],
-      "repo_motivation": "Generalization rhetoric currently lacks a research-only Lean-checked bound pilot.",
-      "blockers": [
-        {
-          "blocker_id": "SLM-518",
-          "status": "completed",
-          "note": "RESEARCH-01 citation catalog landed"
-        },
-        {
-          "blocker_id": "SLM-519",
-          "status": "completed",
-          "note": "EVID-03 four-axis ledger landed"
-        },
-        {
-          "blocker_id": "SLM-533",
-          "status": "completed",
-          "note": "RESEARCH-02 preregistry (this registry) must exist before execution"
-        }
-      ],
-      "matched_control": "Narrative generalization claims without Lean-checked bound artifact.",
-      "primary_metric": "lean_checked_toy_bound_certificate_validity",
-      "secondary_safety_metrics": [
-        "ship_gate_authority_smuggling",
-        "assumption_under_declaration",
-        "bound_vacuity"
-      ],
-      "decision_rule": "Accept research certificate only; never ship-gate authority from this pilot alone.",
-      "activation_preflight": [
-        "blockers_complete",
-        "campaign_lock",
-        "citations_grounded",
-        "default_off",
-        "research_only_authority"
-      ],
-      "resource_cap": {
-        "max_run_minutes": 30,
-        "max_gpu_hours": 0,
-        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
-      },
-      "falsifier": "Bound is vacuous or used to authorize ship gates without separate promotion.",
-      "evidence_path": "docs/design/iter-revmath-research-19-preregistered.md",
-      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
-      "knobs": {
-        "pilot": "lean_rademacher_bound",
-        "ship_authority": false
-      },
-      "disposition": "registered",
-      "default_off": true,
-      "research_only": true,
-      "knob_hypothesis_signature": "7cd96f7e0781fdba5989de1237f4142e9c38944af1f8906376cbf7b658e0a1d9",
-      "campaign_lock_sha256": null,
-      "reopen_evidence_path": null
-    },
-    {
-      "experiment_key": "RESEARCH-20",
-      "linear_id": "SLM-552",
-      "hypothesis": "Comparing the local cost kernel against CSLib/Calf/AARA clarifies which cost claims transfer and which remain repository-local heuristics.",
-      "cited_lineage": [
-        "arxiv-2601.15571",
-        "repo-only-hypothesis",
-        "repo-research-lineage"
-      ],
-      "repo_motivation": "Local cost kernel needs an explicit external-approach comparison before any transfer claim.",
-      "blockers": [
-        {
-          "blocker_id": "SLM-518",
-          "status": "completed",
-          "note": "RESEARCH-01 citation catalog landed"
-        },
-        {
-          "blocker_id": "SLM-519",
-          "status": "completed",
-          "note": "EVID-03 four-axis ledger landed"
-        },
-        {
-          "blocker_id": "SLM-533",
-          "status": "completed",
-          "note": "RESEARCH-02 preregistry (this registry) must exist before execution"
-        }
-      ],
-      "matched_control": "Local cost kernel scores without CSLib/Calf/AARA comparison arms.",
-      "primary_metric": "transferability_disagreement_rate_across_cost_formalisms",
-      "secondary_safety_metrics": [
-        "silent_equivalence_claims",
-        "incomparable_metric_smuggling",
-        "maintenance_cost"
-      ],
-      "decision_rule": "Accept a comparison report; do not merge formalisms without explicit transfer theorems.",
-      "activation_preflight": [
-        "blockers_complete",
-        "campaign_lock",
-        "citations_grounded",
-        "default_off",
-        "research_only_authority"
-      ],
-      "resource_cap": {
-        "max_run_minutes": 30,
-        "max_gpu_hours": 0,
-        "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
-      },
-      "falsifier": "Approaches are incomparable yet treated as equivalent cost authority.",
-      "evidence_path": "docs/design/iter-revmath-research-20-preregistered.md",
-      "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
-      "knobs": {
-        "pilot": "cost_kernel_cslib_calf_aara_compare"
-      },
-      "disposition": "registered",
-      "default_off": true,
-      "research_only": true,
-      "knob_hypothesis_signature": "6ae08a27c6fca53f40fa0f6783bd8b0473270250a58042b147a9a9b6ea4ee50c",
-      "campaign_lock_sha256": null,
-      "reopen_evidence_path": null
-    }
-  ]
+  "research_only": true,
+  "schema": "research_experiment_preregistry/v1",
+  "verified_by": "scripts/verify_research_experiment_preregistry.py"
 }
