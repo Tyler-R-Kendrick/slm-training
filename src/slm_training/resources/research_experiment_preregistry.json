@@ -104,7 +104,7 @@
           "status": "completed"
         }
       ],
-      "campaign_lock_sha256": null,
+      "campaign_lock_sha256": "1051ec7b9bf7c09f3cb6bef5c101be336699fbdd4a55d2b8eb738b5656adc43e",
       "cited_lineage": [
         "arxiv-2212.00489",
         "simpson-sosoa",
@@ -112,7 +112,7 @@
       ],
       "decision_rule": "Accept only if non-Big-Five tasks improve genuine reversal metrics without raising overclaim.",
       "default_off": true,
-      "disposition": "registered",
+      "disposition": "completed",
       "evidence_path": "docs/design/iter-revmath-research-04-preregistered.md",
       "experiment_key": "RESEARCH-04",
       "falsifier": "Added corpus only measures library retrieval or classifications cannot be represented faithfully.",

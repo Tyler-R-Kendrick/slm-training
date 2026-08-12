@@ -1,0 +1,127 @@
+{
+  "locked_at": "2026-08-12T17:03:59.500359Z",
+  "manifest": {
+    "arms": [
+      {
+        "arm_id": "big_five_only",
+        "config_sha256": "7ed2c12671198c317be654ed7e2c55e7609a2bc33c0760b7a275c30a2d4a4e99",
+        "role": "control"
+      },
+      {
+        "arm_id": "rm_zoo_mixed",
+        "config_sha256": "b688e502f1178cd27ca6345a9fd8aca7e854988584b4832fb186b7a40328e26f",
+        "role": "candidate"
+      }
+    ],
+    "artifact_requirements": [
+      {
+        "kind": "version_stamp",
+        "minimum_count": 1
+      },
+      {
+        "kind": "paired_examples",
+        "minimum_count": 1
+      }
+    ],
+    "author": "research-04",
+    "budget": {
+      "max_experiments": 1,
+      "max_gpu_hours": 0.0,
+      "max_wall_minutes": 30.0
+    },
+    "campaign_id": "research-04-rm-zoo-benchmark",
+    "claim_class": "fixture",
+    "controls": [
+      {
+        "control_id": "big_five_only_train",
+        "description": "Big-Five-only label claims of comparable difficulty on train split (WKL0 reversal + overclaim negatives).",
+        "kind": "positive"
+      },
+      {
+        "control_id": "zoo_overclaim_rejected",
+        "description": "Zoo principles must not inherit Big-Five equivalence from print_axioms/compile alone.",
+        "kind": "negative"
+      }
+    ],
+    "created_at": "1970-01-01T00:00:00Z",
+    "decision": "Accept iff dependency-disjoint eval exact rate == 1.0, overclaim_rate == 0, unknown calibration == 1.0, and zoo discriminates from Big-Five-only retrieval; else reject/retire.",
+    "endpoints": [
+      {
+        "direction": "increase",
+        "endpoint_id": "eval_exact_rate",
+        "metric": "exact_classification_reversal_success_dependency_disjoint",
+        "minimum_effect": 1.0,
+        "role": "primary"
+      },
+      {
+        "direction": "decrease",
+        "endpoint_id": "overclaim_rate",
+        "metric": "overclaim_rate",
+        "minimum_effect": 0.0,
+        "role": "secondary"
+      },
+      {
+        "direction": "increase",
+        "endpoint_id": "unknown_calibration",
+        "metric": "unknown_calibration",
+        "minimum_effect": 1.0,
+        "role": "secondary"
+      }
+    ],
+    "executable_kill_criteria": [],
+    "experiment_id": "research_04_rm_zoo_benchmark",
+    "formal_obligations": [],
+    "hypothesis": "A non-Big-Five Reverse Mathematics Zoo benchmark exposes whether the revmath harness learns assumption/reversal reasoning rather than five-label mapping.",
+    "locked_eval_manifest_sha256": null,
+    "mechanism_off_arm_ids": [],
+    "metric_expectations_sha256": null,
+    "multiplicity_families": [
+      {
+        "alpha": 0.05,
+        "family_id": "research04_primary",
+        "hypothesis_ids": [
+          "eval_exact_rate"
+        ],
+        "method": "holm"
+      }
+    ],
+    "negative_controls": [
+      "zoo_overclaim_rejected"
+    ],
+    "power_feasibility": null,
+    "promotion_gates": [
+      {
+        "endpoint_id": "eval_exact_rate",
+        "gate_id": "eval_exact",
+        "operator": "eq",
+        "threshold": 1.0
+      }
+    ],
+    "replay_of_manifest_sha256": null,
+    "replay_reason": null,
+    "replicate_ledger_schema": null,
+    "replicate_seed_floor": null,
+    "requires_rl": false,
+    "rl_evaluation_sha256": null,
+    "rl_readiness_report_sha256": null,
+    "rollback_gates": [
+      {
+        "endpoint_id": "overclaim_rate",
+        "gate_id": "any_overclaim",
+        "operator": "gt",
+        "threshold": 0.0
+      }
+    ],
+    "schema_version": "ExperimentCampaignV1",
+    "seeds": [
+      0
+    ],
+    "source_commit": "0000000000000000000000000000000000000000",
+    "source_dirty": false,
+    "stopping_rules": [
+      "single fixture zoo corpus stop after paired benchmark report"
+    ]
+  },
+  "manifest_sha256": "1051ec7b9bf7c09f3cb6bef5c101be336699fbdd4a55d2b8eb738b5656adc43e",
+  "schema_version": "CampaignLockV1"
+}
