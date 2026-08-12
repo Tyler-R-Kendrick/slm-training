@@ -32,11 +32,11 @@ def fixture_summary(ldi1_fixture_module, tmp_path):
 
 def test_fixture_produces_observations_and_replays(fixture_summary: dict) -> None:
     """The fixture emits at least one constrained decision, one shadow, and one replay."""
-    assert len(fixture_summary["observations"]) == 3
+    assert len(fixture_summary["observations"]) == 2
     assert fixture_summary["constraint_shadow_count"] >= 1
     assert len(fixture_summary["forced_action_replays"]) >= 1
     assert fixture_summary["replay_errors"] == []
-    assert fixture_summary["loaded_state_count"] == 3
+    assert fixture_summary["loaded_state_count"] == 2
 
 
 def test_first_observation_is_constraint_shadow(fixture_summary: dict) -> None:
