@@ -53,7 +53,7 @@ bespoke runner. Execution still goes through the existing
 
 ## Pilot span
 
-Registry seeds **RESEARCH-03 … RESEARCH-20** (eighteen pilots). RESEARCH-08 (SLM-540) fixture evidence: [iter-revmath-research-08-preregistered.md](iter-revmath-research-08-preregistered.md) (disposition `completed`, still `default_off` / no production authority). RESEARCH-05 (SLM-563) fixture evidence: [iter-revmath-research-05-preregistered.md](iter-revmath-research-05-preregistered.md) (disposition `completed`, still `default_off` / no production authority). Individual experimental mechanisms are **not** implemented here — only preregistration
+Registry seeds **RESEARCH-03 … RESEARCH-20** (eighteen pilots). RESEARCH-08 (SLM-540) fixture evidence: [iter-revmath-research-08-preregistered.md](iter-revmath-research-08-preregistered.md) (disposition `completed`, still `default_off` / no production authority). RESEARCH-05 (SLM-563) fixture evidence: [iter-revmath-research-05-preregistered.md](iter-revmath-research-05-preregistered.md) (disposition `completed`, still `default_off` / no production authority). RESEARCH-06 (SLM-564) fixture evidence: [iter-revmath-research-06-preregistered.md](iter-revmath-research-06-preregistered.md) (disposition `rejected` — correctness ok, ratio ≥ 1.0; still `default_off` / no production authority). Individual experimental mechanisms are **not** implemented here — only preregistration
 contracts.
 
 ## Validation
@@ -74,4 +74,19 @@ Preregistered VSS LRAT SAT pilot executed under campaign lock
 Disposition: **completed** (accept — correctness gates + warm/exhaustive ratio < 1.0).
 Evidence: [`iter-revmath-research-05-preregistered.md`](iter-revmath-research-05-preregistered.md).
 Still `default_off` / `research_only` — not production authority.
+
+## RESEARCH-06 status (SLM-564)
+
+Preregistered VSS PBLean/PB pilot executed under campaign lock
+`66de4aee53e75b402b7a9d90e7ae72ac64bd14211c6a013b4afd579b7b3a924f`.
+Disposition: **rejected** (correctness gates passed; median warm PBLean/exhaustive
+ratio ≥ 1.0 on the frozen fixture suite — no Pareto win).
+Evidence: [`iter-revmath-research-06-preregistered.md`](iter-revmath-research-06-preregistered.md).
+Still `default_off` / `research_only` — not production authority.
+
+**Successor approach (I14):** keep the hermetic encoding+mutation contract; next
+attempt should either (a) enlarge the exhaustive cost foil / warm-cache amortization
+so checked-refutation cost can beat enumeration on a meaningful subset, or
+(b) integrate a real PBLean/VeriPB toolchain under the same default-off lock when
+available — without widening production authority from fixture success alone.
 

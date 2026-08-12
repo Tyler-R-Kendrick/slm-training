@@ -230,30 +230,45 @@
           "blocker_id": "SLM-533",
           "note": "RESEARCH-02 preregistry (this registry) must exist before execution",
           "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-517",
+          "note": "KERN-02 CompleteDomain landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-542",
+          "note": "EVID-09 checked refutation authority landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-553",
+          "note": "EVID-10 verified encoding adapters landed",
+          "status": "completed"
         }
       ],
-      "campaign_lock_sha256": null,
+      "campaign_lock_sha256": "66de4aee53e75b402b7a9d90e7ae72ac64bd14211c6a013b4afd579b7b3a924f",
       "cited_lineage": [
         "arxiv-2602.08692",
         "szs-ontology",
         "repo-only-hypothesis"
       ],
-      "decision_rule": "Accept only with zero disagreements on supported subset and 100% mutation rejection.",
+      "decision_rule": "Correctness gates pass and warm time ratio < 1.0; otherwise reject/retire.",
       "default_off": true,
-      "disposition": "registered",
+      "disposition": "rejected",
       "evidence_path": "docs/design/iter-revmath-research-06-preregistered.md",
       "experiment_key": "RESEARCH-06",
-      "falsifier": "Disagreement on supported subset, or tool gaps silently treated as refutation.",
-      "hypothesis": "A proof-producing VSS pseudo-Boolean backend with PBLean can certify a declared PB subset with exact semantic agreement versus the canonical checker.",
-      "knob_hypothesis_signature": "e4a39672a30d25d8eb14ee8102c91bdd185e02ab728c78663eaf137ea4257d0d",
+      "falsifier": "Correctness disagreement, mutation miss, or ratio >= 1.0 with no coverage gain.",
+      "hypothesis": "For bounded VSS subsets dominated by cardinality-style constraints, verified VSS-to-PB plus checked PBLean/VeriPB-style certificates preserve exact agreement while making warm refutation cheaper than exhaustive replay.",
+      "knob_hypothesis_signature": "af3f1c3a6ddc125154b10ae1ff984bacc1cc416cbb230b6abd8c994bf1e17e30",
       "knobs": {
         "backend": "pblean",
         "default_off": true,
         "pilot": "vss_pblean"
       },
       "linear_id": "SLM-564",
-      "matched_control": "Canonical VSS checker without PBLean certificates on the same instances.",
-      "primary_metric": "exact_semantic_agreement_rate_on_supported_pb_subset",
+      "matched_control": "Canonical exhaustive VSS replay on identical instances and process caps; include RESEARCH-05 LRAT when comparable.",
+      "primary_metric": "median_paired_warm_pblean_check_over_exhaustive_replay_time_ratio",
       "promotion_boundary": "research_only / default_off: filing is not evidence; no production decode, ship-gate, or serving authority without a separate promotion_candidate ExperimentCampaignV1 lock and promotion evaluate.",
       "reopen_evidence_path": null,
       "repo_motivation": "SAT-only certificates leave PB-shaped VSS constraints without a checked proof path.",
@@ -264,9 +279,10 @@
         "notes": "Default-off research pilot; CPU/fixture preferred; obey MAX_RUN_MINUTES."
       },
       "secondary_safety_metrics": [
-        "certificate_check_failures",
-        "unsupported_feature_unknown_rate",
-        "mutation_rejection_rate"
+        "witness_disagreement_count",
+        "mutation_rejection_rate",
+        "supported_subset_coverage",
+        "exact_semantic_agreement_rate_on_supported_pb_subset"
       ]
     },
     {
