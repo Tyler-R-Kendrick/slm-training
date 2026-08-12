@@ -106,6 +106,7 @@ class ModelBuildConfig:
     grammar_ltr_primary: bool = True
     grammar_finalize_validate: bool = True
     ltr_loss_weight: float = 0.5
+    ambiguity_only_loss: bool = False
     fidelity_loss_weight: float = 0.5
     # SLM-292: explicit immutable contrast corpus; disabled unless weight > 0.
     semantic_contrast_dir: Path | None = None

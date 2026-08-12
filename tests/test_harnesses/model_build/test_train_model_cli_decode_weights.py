@@ -215,6 +215,32 @@ def test_train_model_cli_decode_weights_default_to_zero_not_none(
         assert getattr(config, field) == 0.0, field
 
 
+def test_train_model_cli_threads_ambiguity_only_loss(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured: dict[str, ModelBuildConfig] = {}
+    monkeypatch.setattr(
+        train_model,
+        "train",
+        lambda config: captured.setdefault("config", config) and {},
+    )
+
+    assert train_model.main(
+        [
+            "--train-dir",
+            str(tmp_path),
+            "--run-root",
+            str(tmp_path / "runs"),
+            "--run-id",
+            "ambiguity-only-loss-wiring",
+            "--steps",
+            "0",
+            "--ambiguity-only-loss",
+        ]
+    ) == 0
+    assert captured["config"].ambiguity_only_loss is True
+
+
 @pytest.mark.parametrize("entrypoint", (train_model.main, evaluate_model.main))
 def test_goal_support_mode_is_not_an_unbound_cli_surface(entrypoint) -> None:
     with pytest.raises(SystemExit):

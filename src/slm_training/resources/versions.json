@@ -3829,7 +3829,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v210",
+      "version": "v211",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -3885,6 +3885,11 @@
         "docs/design/integ-03-campaign-formal-evidence.md"
       ],
       "history": [
+        {
+          "version": "v211",
+          "date": "2026-08-12",
+          "note": "Allow preregistered TwoTower campaigns to select the default-off ambiguity_only_loss training lever through the typed ExperimentKnobs contract and compiled train command."
+        },
         {
           "version": "v210",
           "date": "2026-08-12",
@@ -15698,7 +15703,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v317",
+      "version": "v318",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -15743,6 +15748,11 @@
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
       "history": [
+        {
+          "version": "v318",
+          "date": "2026-08-12",
+          "note": "Add default-off ambiguity_only_loss wiring: the existing complete completion-domain authority suppresses reconstruction loss only for gold-matching deterministic singleton positions; ambiguous, partial, unsupported, and mismatched domains remain scored, with excluded/retained token telemetry. No training result or promotion claim."
+        },
         {
           "version": "v317",
           "date": "2026-08-11",

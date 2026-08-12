@@ -136,6 +136,11 @@ Leakage checks use exact + **structural** OpenUI fingerprints (placeholder/binde
   mixture samplers instead of silently composing policies. Source-stratified
   per-example masked-token loss proxies report overall, first-20, and last-20
   means without changing the scalar training objective.
+- `--ambiguity-only-loss` — default-off, preregisterable training arm that
+  removes reconstruction loss only at gold positions where the existing
+  forward-calculated completion domain is complete and has exactly one legal
+  next token. Ambiguous, partial, unsupported, and mismatched positions remain
+  scored. This is wiring, not evidence of a quality or efficiency win.
 - `scripts/train_preference.py` — build-pairs / train (reference-free)
 - `scripts/export_cactus.py` / `scripts/bench_cactus.py`
 - `scripts/remote_train.py` — SSH pod train + pull (trains the `v1` corpus it builds)

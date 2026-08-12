@@ -235,6 +235,7 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "compiler_alignment_stratified",
         "compiler_alignment_semantic_exhaustive",
         "compiler_alignment_kind_filter",
+        "ambiguity_only_loss",
         "component_inventory_loss_weight",
         "component_token_loss_weight",
         "component_edge_token_loss_weight",
@@ -543,6 +544,7 @@ class ExperimentKnobs(StrictModel):
     screening_regime_epoch: int | None = Field(default=None, ge=0, le=1_000_000)
     context_backend: Literal["scratch", "hf"] | None = None
     output_tokenizer: Literal["compositional", "lexer"] | None = None
+    ambiguity_only_loss: bool | None = None
     compiler_alignment_loss_weight: float | None = Field(default=None, ge=0, le=10)
     compiler_alignment_margin: float | None = Field(default=None, ge=0, le=20)
     compiler_alignment_stratified: bool | None = None

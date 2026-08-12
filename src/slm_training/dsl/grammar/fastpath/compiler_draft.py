@@ -2963,6 +2963,35 @@ def gold_compiler_decisions(
     return tuple(decisions)
 
 
+def gold_complete_singleton_positions(
+    tokenizer: Any,
+    token_ids: list[int] | tuple[int, ...],
+    *,
+    slot_contract: list[str] | None = None,
+    max_path_tokens: int = 8,
+) -> tuple[int, ...]:
+    """Return gold positions whose complete next-token domain is a singleton."""
+    ids = tuple(int(token_id) for token_id in token_ids)
+    end = next(
+        (index for index, token_id in enumerate(ids) if token_id == tokenizer.pad_id),
+        len(ids),
+    )
+    start = 1 if ids and ids[0] == int(tokenizer.bos_id) else 0
+    positions: list[int] = []
+    for cursor in range(start, end):
+        forest = build_completion_forest(
+            tokenizer,
+            list(ids[:cursor]),
+            slot_contract=slot_contract,
+            max_path_tokens=max_path_tokens,
+            remaining_tokens=end - cursor,
+        )
+        candidates = set(forest.candidate_ids)
+        if forest.coverage == "complete" and candidates == {ids[cursor]}:
+            positions.append(cursor)
+    return tuple(positions)
+
+
 def gold_compiler_decision_positions(
     tokenizer: Any,
     token_ids: list[int] | tuple[int, ...],
@@ -2999,6 +3028,7 @@ __all__ = [
     "Coverage",
     "build_completion_forest",
     "gold_compiler_decisions",
+    "gold_complete_singleton_positions",
     "literal_frame_is_open",
     "semantic_component_edges",
     "gold_compiler_decision_positions",

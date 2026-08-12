@@ -429,6 +429,52 @@ def test_model_build_config_threads_ltr_tail_controls() -> None:
     assert (config.ltr_tail_loss_weight, config.ltr_tail_tokens) == (1.25, 2)
 
 
+def test_ambiguity_only_loss_masks_only_proven_positions(monkeypatch) -> None:
+    from slm_training.dsl.grammar.fastpath import compiler_draft
+
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            ambiguity_only_loss=True,
+            ltr_loss_weight=0.0,
+            fidelity_loss_weight=0.0,
+        ),
+        device="cpu",
+    )
+
+    def _mask(target_ids):
+        mask = target_ids.ne(model.tokenizer.pad_id)
+        mask[:, 0] = False
+        noisy = target_ids.masked_fill(mask, model.tokenizer.mask_id)
+        return noisy, mask, None
+
+    monkeypatch.setattr(model, "_mask_targets", _mask)
+    monkeypatch.setattr(
+        compiler_draft, "gold_complete_singleton_positions", lambda *_a, **_k: (1,)
+    )
+
+    loss = model.training_loss(records)
+    assert torch.isfinite(loss)
+    assert model.last_training_metrics["complete_singleton_loss_tokens_excluded"] == 1
+    assert model.last_training_metrics["ambiguity_loss_tokens_retained"] > 0
+
+
+def test_model_build_config_threads_ambiguity_only_loss() -> None:
+    config = _twotower_config_from_build(
+        ModelBuildConfig(
+            train_dir=Path("fixtures"),
+            context_backend="scratch",
+            ambiguity_only_loss=True,
+        )
+    )
+    assert config.ambiguity_only_loss is True
+
+
 def test_component_token_weight_changes_loss_and_emits_attribution() -> None:
     records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
     base = TwoTowerModel.from_records(

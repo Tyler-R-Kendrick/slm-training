@@ -554,6 +554,12 @@ def compile_commands(
             train.extend(["--decode-min-content", str(knobs.decode_min_content)])
         if knobs.asap_decode:
             train.append("--asap-decode")
+        if knobs.ambiguity_only_loss is not None:
+            train.append(
+                "--ambiguity-only-loss"
+                if knobs.ambiguity_only_loss
+                else "--no-ambiguity-only-loss"
+            )
         if knobs.compiler_alignment_loss_weight is not None:
             train.extend(
                 [
