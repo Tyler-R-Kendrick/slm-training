@@ -1,0 +1,132 @@
+{
+  "assumption_set_drift": 0,
+  "campaign_id": "research-13-dropped-assumption-counterexample",
+  "campaign_lock_sha256": "e04e671c1269a91b5f406cc5870233d8eb505f201e5093107310217423574a05",
+  "claim_class": "fixture",
+  "decision": "accept",
+  "default_off": true,
+  "evidence_path": "docs/design/iter-revmath-research-13-preregistered.md",
+  "executed": true,
+  "experiment_id": "research_13_dropped_assumption_counterexample",
+  "experiment_key": "RESEARCH-13",
+  "linear_id": "SLM-568",
+  "model_check_disagreements": 0,
+  "paired_report": {
+    "assumption_set_drift": 0,
+    "control_rows": [
+      {
+        "arm": "proof_search_terminal",
+        "fixture_stem": "counterexample_checked",
+        "independently_checked": true,
+        "necessity_label": "necessary",
+        "outcome": "refuted",
+        "search_status": "ok",
+        "task_id": "task.cex.checked"
+      },
+      {
+        "arm": "proof_search_terminal",
+        "fixture_stem": "counterexample_search_failed",
+        "independently_checked": false,
+        "necessity_label": "unknown",
+        "outcome": "unknown",
+        "search_status": "failed",
+        "task_id": "task.cex.search_failed"
+      },
+      {
+        "arm": "proof_search_terminal",
+        "fixture_stem": "counterexample_no_counterexample",
+        "independently_checked": false,
+        "necessity_label": "unknown",
+        "outcome": "unknown",
+        "search_status": "no_result",
+        "task_id": "task.cex.no_result"
+      },
+      {
+        "arm": "proof_search_terminal",
+        "fixture_stem": "counterexample_mismatch_prop",
+        "independently_checked": false,
+        "necessity_label": "invalid",
+        "outcome": "invalid",
+        "search_status": "ok",
+        "task_id": "task.cex.mismatch_prop"
+      }
+    ],
+    "corpus_digest": "3f9877c4aced4e873fc4c5feaf432478f8ded41c7ae63bf9b5c31db3c322a00b",
+    "decision": "accept",
+    "expected_independent_check_count": 1,
+    "independent_check_success_count": 1,
+    "independently_checked_finite_model_counterexample_rate": 1.0,
+    "model_check_disagreements": 0,
+    "reason": "checked_finite_models_without_search_failure_refutation",
+    "schema": "dropped_assumption_counterexample_report/v1",
+    "search_failure_as_refutation_count": 0,
+    "toolchain": {
+      "backend_id": "dropped_assumption_counterexample_pilot",
+      "corpus_relpath": "src/slm_training/resources/formal/dropped_assumption_tasks.v1.json",
+      "fixtures_relpath": "src/slm_training/resources/revmath/fixtures",
+      "toolchain_id": "hermetic_python_dropped_assumption_cex_v1",
+      "trust_domain": "research_only/dropped_assumption_counterexample"
+    },
+    "treatment_rows": [
+      {
+        "arm": "bounded_counterexample_validation",
+        "fixture_stem": "counterexample_checked",
+        "independently_checked": true,
+        "necessity_label": "necessary",
+        "outcome": "refuted",
+        "search_status": "ok",
+        "task_id": "task.cex.checked"
+      },
+      {
+        "arm": "bounded_counterexample_validation",
+        "fixture_stem": "counterexample_search_failed",
+        "independently_checked": false,
+        "necessity_label": "unknown",
+        "outcome": "unknown",
+        "search_status": "failed",
+        "task_id": "task.cex.search_failed"
+      },
+      {
+        "arm": "bounded_counterexample_validation",
+        "fixture_stem": "counterexample_no_counterexample",
+        "independently_checked": false,
+        "necessity_label": "unknown",
+        "outcome": "unknown",
+        "search_status": "no_result",
+        "task_id": "task.cex.no_result"
+      },
+      {
+        "arm": "bounded_counterexample_validation",
+        "fixture_stem": "counterexample_mismatch_prop",
+        "independently_checked": false,
+        "necessity_label": "invalid",
+        "outcome": "invalid",
+        "search_status": "ok",
+        "task_id": "task.cex.mismatch_prop"
+      }
+    ]
+  },
+  "primary_metric": "independently_checked_finite_model_counterexample_rate",
+  "primary_value": 1.0,
+  "reason": "checked_finite_models_without_search_failure_refutation",
+  "research_only": true,
+  "schema": "research_13_experiment_result/v1",
+  "search_failure_as_refutation_count": 0,
+  "toolchain": {
+    "backend_id": "dropped_assumption_counterexample_pilot",
+    "corpus_relpath": "src/slm_training/resources/formal/dropped_assumption_tasks.v1.json",
+    "fixtures_relpath": "src/slm_training/resources/revmath/fixtures",
+    "toolchain_id": "hermetic_python_dropped_assumption_cex_v1",
+    "trust_domain": "research_only/dropped_assumption_counterexample"
+  },
+  "version_stamp": {
+    "code_commit": "07520710dbb4d992430d88d5862392acc54706d5",
+    "code_dirty": true,
+    "components": {
+      "governance.research_experiment_preregistry": "v2",
+      "harness.experiments.slm568_research13_dropped_cex": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-12T18:01:47.254402+00:00"
+  }
+}

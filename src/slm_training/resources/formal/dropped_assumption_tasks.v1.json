@@ -1,0 +1,34 @@
+{
+  "corpus_id": "dropped_assumption_tasks.v1",
+  "schema_version": "dropped_assumption_tasks/v1",
+  "tasks": [
+    {
+      "expects_independent_check": true,
+      "fixture_stem": "counterexample_checked",
+      "ground_truth_necessity": "necessary",
+      "notes": "WKL dropped; finite model independently refutes weakened claim",
+      "task_id": "task.cex.checked"
+    },
+    {
+      "expects_independent_check": false,
+      "fixture_stem": "counterexample_search_failed",
+      "ground_truth_necessity": "unknown",
+      "notes": "Search failed; must stay unknown not refuted",
+      "task_id": "task.cex.search_failed"
+    },
+    {
+      "expects_independent_check": false,
+      "fixture_stem": "counterexample_no_counterexample",
+      "ground_truth_necessity": "unknown",
+      "notes": "No counterexample found; unresolved stays unknown",
+      "task_id": "task.cex.no_result"
+    },
+    {
+      "expects_independent_check": false,
+      "fixture_stem": "counterexample_mismatch_prop",
+      "ground_truth_necessity": "necessary",
+      "notes": "Model targets mismatched proposition; must not count as checked",
+      "task_id": "task.cex.mismatch_prop"
+    }
+  ]
+}

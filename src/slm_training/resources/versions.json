@@ -3147,6 +3147,11 @@
         {
           "version": "v27",
           "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-13/SLM-568 ownership-map row only; no authority change."
+        },
+        {
+          "version": "v27",
+          "date": "2026-08-12",
           "note": "no-bump: RESEARCH-12/SLM-567 ownership-map row only; no authority change."
         },
         {
@@ -3570,6 +3575,11 @@
         "tests/test_scripts/test_verify_research_experiment_preregistry.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-13/SLM-568 pilot-span status doc line only; schema+loader unchanged."
+        },
         {
           "version": "v2",
           "date": "2026-08-12",
@@ -4005,6 +4015,11 @@
         "docs/design/integ-03-campaign-formal-evidence.md"
       ],
       "history": [
+        {
+          "version": "v211",
+          "date": "2026-08-12",
+          "note": "no-bump: rebuild evidence_ledger.v1.json after RESEARCH-13 (SLM-568) design/results docs; deterministic fold, no campaign contract change."
+        },
         {
           "version": "v211",
           "date": "2026-08-12",
@@ -19715,6 +19730,29 @@
           "version": "v1",
           "date": "2026-08-12",
           "note": "RESEARCH-12/SLM-567: default-off successor-theorem semantic validation backend+harness+runner+lock+fixture evidence; never production authority."
+        }
+      ]
+    },
+    "harness.experiments.slm568_research13_dropped_cex": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/formal/dropped_assumption_counterexample.py",
+        "src/slm_training/resources/formal/dropped_assumption_tasks.v1.json",
+        "tests/test_formal/test_dropped_assumption_counterexample.py",
+        "src/slm_training/resources/formal/research_13_campaign_lock.v1.json",
+        "src/slm_training/harnesses/experiments/research_13_dropped_assumption_counterexample.py",
+        "scripts/run_research_13_dropped_assumption.py",
+        "docs/design/iter-revmath-research-13-preregistered.json",
+        "docs/design/iter-revmath-research-13-preregistered.md",
+        "tests/test_harnesses/experiments/test_research_13_dropped_assumption_counterexample.py",
+        "tests/test_scripts/test_run_research_13_dropped_assumption.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-12",
+          "note": "RESEARCH-13/SLM-568: default-off dropped-assumption counterexample backend+harness+runner+lock+fixture evidence; never production authority."
         }
       ]
     }

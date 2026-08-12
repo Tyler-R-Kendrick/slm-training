@@ -1,0 +1,120 @@
+{
+  "locked_at": "2026-08-12T18:01:42.386959Z",
+  "manifest": {
+    "arms": [
+      {
+        "arm_id": "search_control",
+        "config_sha256": "5dc00dcd6a9e3648b8516a7b2236c1331d3304abf4eeac8c8c8c9656376174ba",
+        "role": "control"
+      },
+      {
+        "arm_id": "counterexample_treatment",
+        "config_sha256": "7b9741ed7d5b838683324da597d500b5c4ba20d1db9c9e7852bae667c4445e5d",
+        "role": "candidate"
+      }
+    ],
+    "artifact_requirements": [
+      {
+        "kind": "version_stamp",
+        "minimum_count": 1
+      },
+      {
+        "kind": "paired_examples",
+        "minimum_count": 1
+      }
+    ],
+    "author": "research-13",
+    "budget": {
+      "max_experiments": 1,
+      "max_gpu_hours": 0.0,
+      "max_wall_minutes": 30.0
+    },
+    "campaign_id": "research-13-dropped-assumption-counterexample",
+    "claim_class": "fixture",
+    "controls": [
+      {
+        "control_id": "search_terminal_baseline",
+        "description": "Proof-search terminal success/failure only.",
+        "kind": "positive"
+      },
+      {
+        "control_id": "unknown_on_search_failure",
+        "description": "Search failure must remain unknown.",
+        "kind": "negative"
+      }
+    ],
+    "created_at": "1970-01-01T00:00:00Z",
+    "decision": "Accept iff all expected independent checks succeed with zero search-failure-as-refutation and zero assumption-set drift; else reject/retire.",
+    "endpoints": [
+      {
+        "direction": "increase",
+        "endpoint_id": "independent_check",
+        "metric": "independently_checked_finite_model_counterexample_rate",
+        "minimum_effect": 1.0,
+        "role": "primary"
+      },
+      {
+        "direction": "decrease",
+        "endpoint_id": "search_failure_refutation",
+        "metric": "search_failure_as_refutation_count",
+        "minimum_effect": 0.0,
+        "role": "secondary"
+      }
+    ],
+    "executable_kill_criteria": [],
+    "experiment_id": "research_13_dropped_assumption_counterexample",
+    "formal_obligations": [],
+    "hypothesis": "Bounded counterexample synthesis with HARN-06 independent validation yields checked finite models under dropped assumptions without promoting proof-search failure to refutation.",
+    "locked_eval_manifest_sha256": null,
+    "mechanism_off_arm_ids": [],
+    "metric_expectations_sha256": null,
+    "multiplicity_families": [
+      {
+        "alpha": 0.05,
+        "family_id": "research13_primary",
+        "hypothesis_ids": [
+          "independent_check"
+        ],
+        "method": "holm"
+      }
+    ],
+    "negative_controls": [
+      "unknown_on_search_failure"
+    ],
+    "power_feasibility": null,
+    "promotion_gates": [
+      {
+        "endpoint_id": "independent_check",
+        "gate_id": "full_independent_check",
+        "operator": "ge",
+        "threshold": 1.0
+      }
+    ],
+    "replay_of_manifest_sha256": null,
+    "replay_reason": null,
+    "replicate_ledger_schema": null,
+    "replicate_seed_floor": null,
+    "requires_rl": false,
+    "rl_evaluation_sha256": null,
+    "rl_readiness_report_sha256": null,
+    "rollback_gates": [
+      {
+        "endpoint_id": "search_failure_refutation",
+        "gate_id": "search_failure_refutation",
+        "operator": "gt",
+        "threshold": 0.0
+      }
+    ],
+    "schema_version": "ExperimentCampaignV1",
+    "seeds": [
+      0
+    ],
+    "source_commit": "0000000000000000000000000000000000000000",
+    "source_dirty": false,
+    "stopping_rules": [
+      "single fixture corpus stop after paired report"
+    ]
+  },
+  "manifest_sha256": "e04e671c1269a91b5f406cc5870233d8eb505f201e5093107310217423574a05",
+  "schema_version": "CampaignLockV1"
+}
