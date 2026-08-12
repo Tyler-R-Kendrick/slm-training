@@ -1,0 +1,38 @@
+{
+  "schema_version": "autotrain_measured_results/v1",
+  "loop_id": "continuous-openui-local",
+  "cycle_index": 31,
+  "campaign_id": "continuous-loop-20260805-continuous-openui-local-8c0b60dd-c31",
+  "positive": false,
+  "arms": {
+    "control": {
+      "structural_similarity": 0.3117,
+      "meaningful_program_rate": 0.0,
+      "binder_reference_f1": 0.75,
+      "parse_rate": 1.0,
+      "latency_ms_p50": 3160.37,
+      "decode_timeout_count": 1
+    },
+    "slot-component-fidelity-coupling": {
+      "structural_similarity": 0.27623333333333333,
+      "meaningful_program_rate": 0.0,
+      "binder_reference_f1": 0.6333333333333333,
+      "parse_rate": 1.0,
+      "latency_ms_p50": 3666.65,
+      "decode_timeout_count": 0
+    }
+  },
+  "delta_struct": -0.035466666666666646,
+  "sdlc_reasons": [
+    "measurement_incomplete:c20260805-continuous-openui-local-8c0b60dd-c31-control:smoke:incomplete_document_n=1:decode_timeout_count=1",
+    "harness_failure:c20260805-continuous-openui-local-8c0b60dd-c31-control:experiment_failed",
+    "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c31-slot-component-fidelity-coupling",
+    "fixture_insufficient_n:c20260805-continuous-openui-local-8c0b60dd-c31-control",
+    "executable_unblock_rejected_low_mpr:mpr=0.0",
+    "non_regression_fail:binder_reference_f1:0.75->0.6333333333333333",
+    "primary_metric_null_or_worse:smoke.structural_similarity:control=0.3117 candidate=0.27623333333333333 improvement=-0.035466666666666646",
+    "fixture_insufficient_n_alone",
+    "eg_params_block:capacity growth blocked for climb/promotion: capacity_increased_without_parameter_efficiency_evidence"
+  ],
+  "recorded_at": "2026-08-05T17:18:07.345460+00:00"
+}

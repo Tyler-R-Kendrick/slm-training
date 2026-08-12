@@ -4875,6 +4875,11 @@
       "history": [
         {
           "date": "2026-08-12",
+          "note": "no-bump: SLM-578 harvest of 97 docs/design measured-results from agent/autotrain-continuous-live (continuous-openui-local-* + related autotrain-cycle / decode-timeout self-heal notes) + evidence_ledger.v1.json rebuild; campaign contract unchanged. Live tip self-heal already superseded on main \u2014 no run_autotrain_continuous.py port.",
+          "version": "v211"
+        },
+        {
+          "date": "2026-08-12",
           "note": "no-bump: SLM-577 docs/design measured-results for metric_gaming archetype canonicalization + emptiness_probe tracing; campaign contract unchanged.",
           "version": "v211"
         },

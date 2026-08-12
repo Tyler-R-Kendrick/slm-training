@@ -1,0 +1,28 @@
+{
+  "schema_version": "autotrain_measured_results/v1",
+  "loop_id": "continuous-openui-local",
+  "cycle_index": 1,
+  "campaign_id": "continuous-loop-20260804-continuous-openui-local-8c0b60dd-c1",
+  "integration_commit": "bf31eb7a3a4f7306cf2abecee76c1e2be433a57e",
+  "status": "harness_failure",
+  "positive": false,
+  "diagnosis": "model_vs_harness=harness",
+  "primary_metric": "smoke.structural_similarity",
+  "failure": {
+    "kind": "HypothesisMatrix.extra_forbidden",
+    "knob": "generate_batch_size",
+    "summary": "Screening matrix injects generate_batch_size=1 (PR #1433) but ExperimentKnobs forbade the field, so HypothesisMatrix validation rejected every thrash arm before train/eval."
+  },
+  "repair": {
+    "owner": "improve-openui-harnesses",
+    "family": "autoresearch",
+    "changes": [
+      "ExperimentKnobs + DEFAULT_ALLOWED_KNOBS accept generate_batch_size",
+      "engine.compile_commands forwards --generate-batch-size",
+      "regression tests on matrix validate + evaluate CLI routing",
+      "harness.autoresearch.experiment_campaign v180 -> v181"
+    ]
+  },
+  "honesty": "fixture/smoke screening only; no ship claim",
+  "recorded_at": "2026-08-04T21:53:09.670323+00:00"
+}
