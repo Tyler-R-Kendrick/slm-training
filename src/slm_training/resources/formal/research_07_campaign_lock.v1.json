@@ -1,0 +1,152 @@
+{
+  "locked_at": "2026-08-12T16:11:46.185181Z",
+  "manifest": {
+    "arms": [
+      {
+        "arm_id": "exhaustive_replay",
+        "config_sha256": "fe54db9967d77b60cf96189f32ae903d9ccc87c059e33b8e833cdbb753776747",
+        "role": "control"
+      },
+      {
+        "arm_id": "alethe_pilot",
+        "config_sha256": "35d4e8c4818c4e907d9af81f27e9ec37d23b48f03c44be9677988d0b23c2bb19",
+        "role": "candidate"
+      }
+    ],
+    "artifact_requirements": [
+      {
+        "kind": "version_stamp",
+        "minimum_count": 1
+      },
+      {
+        "kind": "paired_examples",
+        "minimum_count": 1
+      }
+    ],
+    "author": "research-07",
+    "budget": {
+      "max_experiments": 1,
+      "max_gpu_hours": 0.0,
+      "max_wall_minutes": 30.0
+    },
+    "campaign_id": "research-07-vss-alethe-smt",
+    "claim_class": "fixture",
+    "controls": [
+      {
+        "control_id": "exhaustive_replay",
+        "description": "Canonical exhaustive finite-domain replay on identical theory instances (SAT/CNF overlap where applicable).",
+        "kind": "positive"
+      },
+      {
+        "control_id": "certificate_premise_corrupt",
+        "description": "Corrupt Alethe premises must not authorize unsat.",
+        "kind": "negative"
+      },
+      {
+        "control_id": "theory_metadata_corrupt",
+        "description": "Altered theory metadata must not authorize unsat.",
+        "kind": "negative"
+      },
+      {
+        "control_id": "incomplete_reconstruction_unknown",
+        "description": "Incomplete reconstruction / unsupported theory must stay unknown, never refuted.",
+        "kind": "negative"
+      }
+    ],
+    "created_at": "1970-01-01T00:00:00Z",
+    "decision": "Accept iff exact agreement rate on the supported theory subset is 1.0, mutation rejection is 1.0, and reconstruction failures stay unknown (never counted as refutation); else reject/retire.",
+    "endpoints": [
+      {
+        "direction": "increase",
+        "endpoint_id": "theory_agreement_rate",
+        "metric": "exact_agreement_rate_on_supported_theory_subset",
+        "minimum_effect": 0.0,
+        "role": "primary"
+      },
+      {
+        "direction": "decrease",
+        "endpoint_id": "witness_disagreement_count",
+        "metric": "witness_disagreement_count",
+        "minimum_effect": 0.0,
+        "role": "secondary"
+      },
+      {
+        "direction": "increase",
+        "endpoint_id": "mutation_rejection_rate",
+        "metric": "mutation_rejection_rate",
+        "minimum_effect": 0.0,
+        "role": "secondary"
+      },
+      {
+        "direction": "decrease",
+        "endpoint_id": "fake_refutation_count",
+        "metric": "reconstruction_failure_as_refutation_count",
+        "minimum_effect": 0.0,
+        "role": "secondary"
+      }
+    ],
+    "executable_kill_criteria": [],
+    "experiment_id": "research_07_vss_alethe_smt",
+    "formal_obligations": [],
+    "hypothesis": "Alethe/SMT proof reconstruction for theory-rich VSS constraints preserves exact agreement on a declared theory subset without widening unknown into refutation.",
+    "locked_eval_manifest_sha256": null,
+    "mechanism_off_arm_ids": [],
+    "metric_expectations_sha256": null,
+    "multiplicity_families": [
+      {
+        "alpha": 0.05,
+        "family_id": "research07_primary",
+        "hypothesis_ids": [
+          "theory_agreement_rate"
+        ],
+        "method": "holm"
+      }
+    ],
+    "negative_controls": [
+      "certificate_premise_corrupt",
+      "theory_metadata_corrupt",
+      "incomplete_reconstruction_unknown"
+    ],
+    "power_feasibility": null,
+    "promotion_gates": [
+      {
+        "endpoint_id": "theory_agreement_rate",
+        "gate_id": "agreement_eq_one",
+        "operator": "eq",
+        "threshold": 1.0
+      }
+    ],
+    "replay_of_manifest_sha256": null,
+    "replay_reason": null,
+    "replicate_ledger_schema": null,
+    "replicate_seed_floor": null,
+    "requires_rl": false,
+    "rl_evaluation_sha256": null,
+    "rl_readiness_report_sha256": null,
+    "rollback_gates": [
+      {
+        "endpoint_id": "witness_disagreement_count",
+        "gate_id": "any_disagreement",
+        "operator": "gt",
+        "threshold": 0.0
+      },
+      {
+        "endpoint_id": "fake_refutation_count",
+        "gate_id": "any_fake_refutation",
+        "operator": "gt",
+        "threshold": 0.0
+      }
+    ],
+    "schema_version": "ExperimentCampaignV1",
+    "seeds": [
+      0
+    ],
+    "source_commit": "0000000000000000000000000000000000000000",
+    "source_dirty": false,
+    "stopping_rules": [
+      "single fixture suite stop after theory agreement report"
+    ]
+  },
+  "manifest_sha256": "9ca3a98359aeb757ff1b44e26006cead56952da73fa16797a22c7efa72c577df",
+  "schema_version": "CampaignLockV1"
+}

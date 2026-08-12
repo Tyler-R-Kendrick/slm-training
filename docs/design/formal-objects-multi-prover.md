@@ -93,6 +93,18 @@ certificate check (external PBLean optional/unavailable). Evidence:
 Still `default_off` / no production decode / ship-gate / serving authority.
 
 
+### RESEARCH-07 — Alethe/SMT proof reconstruction (SLM-565)
+
+Default-off research adapter: `src/slm_training/formal/vss_alethe_backend.py` +
+`harnesses/experiments/research_07_vss_alethe.py`. Control = exhaustive
+finite-domain replay (SAT/CNF overlap where applicable); treatment = EVID-10
+`alethe_pilot` encoding + hermetic reconstructed Alethe check on declared
+`QF_BOOL`/`QF_UF` subset. Unsupported theory / incomplete reconstruction →
+`unknown` (never fake refutation). Evidence:
+[`iter-revmath-research-07-preregistered.md`](iter-revmath-research-07-preregistered.md).
+Never production decode / ship-gate / serving authority.
+
+
 ### Mutation / red-team acceptance suite (EVID-11)
 
 Code: `src/slm_training/formal/mutation_suite.py`  

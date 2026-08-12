@@ -53,7 +53,7 @@ bespoke runner. Execution still goes through the existing
 
 ## Pilot span
 
-Registry seeds **RESEARCH-03 … RESEARCH-20** (eighteen pilots). RESEARCH-08 (SLM-540) fixture evidence: [iter-revmath-research-08-preregistered.md](iter-revmath-research-08-preregistered.md) (disposition `completed`, still `default_off` / no production authority). RESEARCH-05 (SLM-563) fixture evidence: [iter-revmath-research-05-preregistered.md](iter-revmath-research-05-preregistered.md) (disposition `completed`, still `default_off` / no production authority). RESEARCH-06 (SLM-564) fixture evidence: [iter-revmath-research-06-preregistered.md](iter-revmath-research-06-preregistered.md) (disposition `rejected` — correctness ok, ratio ≥ 1.0; still `default_off` / no production authority). Individual experimental mechanisms are **not** implemented here — only preregistration
+Registry seeds **RESEARCH-03 … RESEARCH-20** (eighteen pilots). RESEARCH-08 (SLM-540) fixture evidence: [iter-revmath-research-08-preregistered.md](iter-revmath-research-08-preregistered.md) (disposition `completed`, still `default_off` / no production authority). RESEARCH-05 (SLM-563) fixture evidence: [iter-revmath-research-05-preregistered.md](iter-revmath-research-05-preregistered.md) (disposition `completed`, still `default_off` / no production authority). RESEARCH-06 (SLM-564) fixture evidence: [iter-revmath-research-06-preregistered.md](iter-revmath-research-06-preregistered.md) (disposition `rejected` — correctness ok, ratio ≥ 1.0; still `default_off` / no production authority). RESEARCH-07 (SLM-565) fixture evidence: [iter-revmath-research-07-preregistered.md](iter-revmath-research-07-preregistered.md) (disposition `completed`, still `default_off` / no production authority). Individual experimental mechanisms are **not** implemented here — only preregistration
 contracts.
 
 ## Validation
@@ -90,3 +90,13 @@ so checked-refutation cost can beat enumeration on a meaningful subset, or
 (b) integrate a real PBLean/VeriPB toolchain under the same default-off lock when
 available — without widening production authority from fixture success alone.
 
+
+
+## RESEARCH-07 status (SLM-565)
+
+Preregistered VSS Alethe/SMT proof-reconstruction pilot executed under campaign lock
+`9ca3a98359aeb757ff1b44e26006cead56952da73fa16797a22c7efa72c577df`.
+Disposition: **completed** (accept — exact agreement on supported theory subset +
+mutation rejection; unknowns preserved).
+Evidence: [`iter-revmath-research-07-preregistered.md`](iter-revmath-research-07-preregistered.md).
+Still `default_off` / `research_only` — not production authority.
