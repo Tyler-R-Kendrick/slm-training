@@ -1,0 +1,221 @@
+{
+  "citation_ids": [
+    "arxiv-2212.00489",
+    "simpson-sosoa"
+  ],
+  "corpus_id": "rm_zoo_benchmark.v1",
+  "entries": [
+    {
+      "arm": "control_big_five",
+      "claim": {
+        "analysis_kind": "genuine_reverse_mathematics",
+        "base_theory_id": "RCA0",
+        "claim_id": "control.wkl.reversed_equivalent",
+        "coding_id": "coding.wkl_path.v1",
+        "evidence_kinds": [
+          "interpretation_package",
+          "forward_implication",
+          "reversal"
+        ],
+        "forward_evidence_sha256": "abababababababababababababababababababababababababababababababab",
+        "interpretation_status": "explicit_reversal",
+        "labeling_state": "reversed_equivalent",
+        "notes": "Big-Five control: genuine WKL0 reversal package",
+        "practical_class": null,
+        "proposed_subsystem_id": "WKL0",
+        "reversal_evidence_sha256": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "schema_version": "revmath_label_claim/v1"
+      },
+      "entry_id": "control.wkl.reversed_equivalent",
+      "expected_label_accepted": true,
+      "principle_id": "WKL0",
+      "root_family_id": "big_five.wkl",
+      "split": "train",
+      "task_kind": "reversal"
+    },
+    {
+      "arm": "control_big_five",
+      "claim": {
+        "analysis_kind": "genuine_reverse_mathematics",
+        "base_theory_id": "RCA0",
+        "claim_id": "control.print_axioms_only",
+        "coding_id": null,
+        "evidence_kinds": [
+          "print_axioms_only"
+        ],
+        "forward_evidence_sha256": null,
+        "interpretation_status": "uninterpreted",
+        "labeling_state": "reversed_equivalent",
+        "notes": "Negative control: axiom print alone must not justify WKL0",
+        "practical_class": null,
+        "proposed_subsystem_id": "WKL0",
+        "reversal_evidence_sha256": null,
+        "schema_version": "revmath_label_claim/v1"
+      },
+      "entry_id": "control.print_axioms_only",
+      "expected_label_accepted": false,
+      "principle_id": "WKL0",
+      "root_family_id": "big_five.wkl",
+      "split": "train",
+      "task_kind": "forward"
+    },
+    {
+      "arm": "control_big_five",
+      "claim": {
+        "analysis_kind": "genuine_reverse_mathematics",
+        "base_theory_id": "RCA0",
+        "claim_id": "control.empirical_as_wkl0",
+        "coding_id": null,
+        "evidence_kinds": [
+          "empirical_claim"
+        ],
+        "forward_evidence_sha256": null,
+        "interpretation_status": "uninterpreted",
+        "labeling_state": "reversed_equivalent",
+        "notes": "Negative control: empirical measurement is not RM equivalence",
+        "practical_class": null,
+        "proposed_subsystem_id": "WKL0",
+        "reversal_evidence_sha256": null,
+        "schema_version": "revmath_label_claim/v1"
+      },
+      "entry_id": "control.empirical_as_wkl0",
+      "expected_label_accepted": false,
+      "principle_id": "WKL0",
+      "root_family_id": "big_five.wkl",
+      "split": "train",
+      "task_kind": "forward"
+    },
+    {
+      "arm": "treatment_zoo",
+      "claim": {
+        "analysis_kind": "unclassified_analysis",
+        "base_theory_id": "RCA0",
+        "claim_id": "zoo.dnr.unclassified",
+        "coding_id": null,
+        "evidence_kinds": [
+          "practical_computability_certificate"
+        ],
+        "forward_evidence_sha256": null,
+        "interpretation_status": "not_applicable",
+        "labeling_state": "unclassified",
+        "notes": "RM Zoo DNR: literature disagreements — do not force Big-Five label",
+        "practical_class": "bounded_search",
+        "proposed_subsystem_id": "zoo:DNR",
+        "reversal_evidence_sha256": null,
+        "schema_version": "revmath_label_claim/v1"
+      },
+      "entry_id": "zoo.dnr.unclassified",
+      "expected_label_accepted": true,
+      "principle_id": "zoo:DNR",
+      "root_family_id": "zoo.dnr",
+      "split": "eval",
+      "task_kind": "unknown"
+    },
+    {
+      "arm": "treatment_zoo",
+      "claim": {
+        "analysis_kind": "rm_inspired_assumption_minimization",
+        "base_theory_id": "RCA0",
+        "claim_id": "zoo.coh.candidate_upper_bound",
+        "coding_id": null,
+        "evidence_kinds": [
+          "assumption_ablation_lattice",
+          "forward_implication"
+        ],
+        "forward_evidence_sha256": "efefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefef",
+        "interpretation_status": "explicit_interpretation",
+        "labeling_state": "candidate_upper_bound",
+        "notes": "RM Zoo COH: candidate upper bound without full reversal",
+        "practical_class": null,
+        "proposed_subsystem_id": "zoo:COH",
+        "reversal_evidence_sha256": null,
+        "schema_version": "revmath_label_claim/v1"
+      },
+      "entry_id": "zoo.coh.candidate_upper_bound",
+      "expected_label_accepted": true,
+      "principle_id": "zoo:COH",
+      "root_family_id": "zoo.coh",
+      "split": "eval",
+      "task_kind": "forward"
+    },
+    {
+      "arm": "treatment_zoo",
+      "claim": {
+        "analysis_kind": "genuine_reverse_mathematics",
+        "base_theory_id": "RCA0",
+        "claim_id": "zoo.fip.overclaim_rca0",
+        "coding_id": null,
+        "evidence_kinds": [
+          "print_axioms_only",
+          "lean_compile_success"
+        ],
+        "forward_evidence_sha256": null,
+        "interpretation_status": "uninterpreted",
+        "labeling_state": "reversed_equivalent",
+        "notes": "Overclaim probe: FIP is not RCA0/WKL0 equivalence",
+        "practical_class": null,
+        "proposed_subsystem_id": "zoo:FIP",
+        "reversal_evidence_sha256": null,
+        "schema_version": "revmath_label_claim/v1"
+      },
+      "entry_id": "zoo.fip.overclaim_rca0",
+      "expected_label_accepted": false,
+      "principle_id": "zoo:FIP",
+      "root_family_id": "zoo.fip",
+      "split": "eval",
+      "task_kind": "counterexample"
+    },
+    {
+      "arm": "treatment_zoo",
+      "claim": {
+        "analysis_kind": "genuine_reverse_mathematics",
+        "base_theory_id": "RCA0",
+        "claim_id": "zoo.rt22.interpreted",
+        "coding_id": "coding.rt22_pairs.v1",
+        "evidence_kinds": [
+          "interpretation_package",
+          "forward_implication"
+        ],
+        "forward_evidence_sha256": "1212121212121212121212121212121212121212121212121212121212121212",
+        "interpretation_status": "explicit_interpretation",
+        "labeling_state": "interpreted",
+        "notes": "RM Zoo RT22: forward interpretation without claiming Big-Five class",
+        "practical_class": null,
+        "proposed_subsystem_id": "zoo:RT22",
+        "reversal_evidence_sha256": null,
+        "schema_version": "revmath_label_claim/v1"
+      },
+      "entry_id": "zoo.rt22.interpreted",
+      "expected_label_accepted": true,
+      "principle_id": "zoo:RT22",
+      "root_family_id": "zoo.rt22",
+      "split": "eval",
+      "task_kind": "forward"
+    },
+    {
+      "arm": "treatment_zoo",
+      "claim": {
+        "analysis_kind": "unclassified_analysis",
+        "base_theory_id": "RCA0",
+        "claim_id": "zoo.cads.unknown_calibration",
+        "coding_id": null,
+        "evidence_kinds": [],
+        "forward_evidence_sha256": null,
+        "interpretation_status": "not_applicable",
+        "labeling_state": "unclassified",
+        "notes": "CADS: insufficient evidence — must stay unknown/unclassified",
+        "practical_class": null,
+        "proposed_subsystem_id": "zoo:CADS",
+        "reversal_evidence_sha256": null,
+        "schema_version": "revmath_label_claim/v1"
+      },
+      "entry_id": "zoo.cads.unknown_calibration",
+      "expected_label_accepted": true,
+      "principle_id": "zoo:CADS",
+      "root_family_id": "zoo.cads",
+      "split": "eval",
+      "task_kind": "unknown"
+    }
+  ],
+  "schema_version": "rm_zoo_corpus/v1"
+}

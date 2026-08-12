@@ -1,0 +1,179 @@
+{
+  "campaign_id": "research-04-rm-zoo-benchmark",
+  "campaign_lock_sha256": "1051ec7b9bf7c09f3cb6bef5c101be336699fbdd4a55d2b8eb738b5656adc43e",
+  "claim_class": "fixture",
+  "correctness_ok": true,
+  "decision": "accept",
+  "default_off": true,
+  "eval_entry_count": 5,
+  "evidence_path": "docs/design/iter-revmath-research-04-preregistered.md",
+  "executed": true,
+  "experiment_id": "research_04_rm_zoo_benchmark",
+  "experiment_key": "RESEARCH-04",
+  "library_retrieval_only": false,
+  "linear_id": "SLM-550",
+  "overclaim_rate": 0.0,
+  "paired_report": {
+    "corpus_digest": "21589fe8b19938d126ecb149893460de1cf26cca9a03ab35f196c86d0962dc22",
+    "correctness_ok": true,
+    "decision": "accept",
+    "entries": [
+      {
+        "arm": "control_big_five",
+        "entry_id": "control.wkl.reversed_equivalent",
+        "exact_match": true,
+        "expected_label_accepted": true,
+        "is_big_five": true,
+        "labeling_state": "reversed_equivalent",
+        "observed_label_accepted": true,
+        "principle_id": "WKL0",
+        "rejection_reasons": [],
+        "split": "train",
+        "task_kind": "reversal"
+      },
+      {
+        "arm": "control_big_five",
+        "entry_id": "control.print_axioms_only",
+        "exact_match": true,
+        "expected_label_accepted": false,
+        "is_big_five": true,
+        "labeling_state": "reversed_equivalent",
+        "observed_label_accepted": false,
+        "principle_id": "WKL0",
+        "rejection_reasons": [
+          "Big-Five subsystem label cannot rest solely on insufficient evidence ['print_axioms_only'] (never #print axioms / compile / finite / classical / empirical alone)",
+          "#print axioms footprint alone cannot classify a theorem as 'WKL0'",
+          "reversed_equivalent / Big-Five equivalence requires explicit base_theory_id, coding_id, interpretation_status in {explicit_interpretation, explicit_reversal}, forward_evidence_sha256, reversal_evidence_sha256, and evidence_kinds {interpretation_package, forward_implication, reversal}"
+        ],
+        "split": "train",
+        "task_kind": "forward"
+      },
+      {
+        "arm": "control_big_five",
+        "entry_id": "control.empirical_as_wkl0",
+        "exact_match": true,
+        "expected_label_accepted": false,
+        "is_big_five": true,
+        "labeling_state": "reversed_equivalent",
+        "observed_label_accepted": false,
+        "principle_id": "WKL0",
+        "rejection_reasons": [
+          "Big-Five subsystem label cannot rest solely on insufficient evidence ['empirical_claim'] (never #print axioms / compile / finite / classical / empirical alone)",
+          "empirical claims cannot support genuine reverse-mathematics or Big-Five labels",
+          "reversed_equivalent / Big-Five equivalence requires explicit base_theory_id, coding_id, interpretation_status in {explicit_interpretation, explicit_reversal}, forward_evidence_sha256, reversal_evidence_sha256, and evidence_kinds {interpretation_package, forward_implication, reversal}"
+        ],
+        "split": "train",
+        "task_kind": "forward"
+      },
+      {
+        "arm": "treatment_zoo",
+        "entry_id": "zoo.dnr.unclassified",
+        "exact_match": true,
+        "expected_label_accepted": true,
+        "is_big_five": false,
+        "labeling_state": "unclassified",
+        "observed_label_accepted": true,
+        "principle_id": "zoo:DNR",
+        "rejection_reasons": [],
+        "split": "eval",
+        "task_kind": "unknown"
+      },
+      {
+        "arm": "treatment_zoo",
+        "entry_id": "zoo.coh.candidate_upper_bound",
+        "exact_match": true,
+        "expected_label_accepted": true,
+        "is_big_five": false,
+        "labeling_state": "candidate_upper_bound",
+        "observed_label_accepted": true,
+        "principle_id": "zoo:COH",
+        "rejection_reasons": [],
+        "split": "eval",
+        "task_kind": "forward"
+      },
+      {
+        "arm": "treatment_zoo",
+        "entry_id": "zoo.fip.overclaim_rca0",
+        "exact_match": true,
+        "expected_label_accepted": false,
+        "is_big_five": false,
+        "labeling_state": "reversed_equivalent",
+        "observed_label_accepted": false,
+        "principle_id": "zoo:FIP",
+        "rejection_reasons": [
+          "reversed_equivalent / Big-Five equivalence requires explicit base_theory_id, coding_id, interpretation_status in {explicit_interpretation, explicit_reversal}, forward_evidence_sha256, reversal_evidence_sha256, and evidence_kinds {interpretation_package, forward_implication, reversal}"
+        ],
+        "split": "eval",
+        "task_kind": "counterexample"
+      },
+      {
+        "arm": "treatment_zoo",
+        "entry_id": "zoo.rt22.interpreted",
+        "exact_match": true,
+        "expected_label_accepted": true,
+        "is_big_five": false,
+        "labeling_state": "interpreted",
+        "observed_label_accepted": true,
+        "principle_id": "zoo:RT22",
+        "rejection_reasons": [],
+        "split": "eval",
+        "task_kind": "forward"
+      },
+      {
+        "arm": "treatment_zoo",
+        "entry_id": "zoo.cads.unknown_calibration",
+        "exact_match": true,
+        "expected_label_accepted": true,
+        "is_big_five": false,
+        "labeling_state": "unclassified",
+        "observed_label_accepted": true,
+        "principle_id": "zoo:CADS",
+        "rejection_reasons": [],
+        "split": "eval",
+        "task_kind": "unknown"
+      }
+    ],
+    "eval_entry_count": 5,
+    "exact_classification_reversal_success_dependency_disjoint": 1.0,
+    "library_retrieval_only": false,
+    "overclaim_rate": 0.0,
+    "reason": "zoo_benchmark_pass",
+    "schema": "rm_zoo_benchmark_report/v1",
+    "toolchain": {
+      "backend_id": "rm_zoo_benchmark_pilot",
+      "corpus_relpath": "src/slm_training/resources/formal/rm_zoo_corpus.v1.json",
+      "label_validator": "harn08.validate_label_claim",
+      "toolchain_id": "hermetic_python_rm_zoo_v1",
+      "trust_domain": "research_only/rm_zoo_benchmark"
+    },
+    "train_control_exact_rate": 1.0,
+    "unknown_calibration": 1.0,
+    "zoo_discriminates": true,
+    "zoo_eval_count": 5
+  },
+  "primary_metric": "exact_classification_reversal_success_dependency_disjoint",
+  "primary_value": 1.0,
+  "reason": "zoo_benchmark_pass",
+  "research_only": true,
+  "schema": "research_04_experiment_result/v1",
+  "toolchain": {
+    "backend_id": "rm_zoo_benchmark_pilot",
+    "corpus_relpath": "src/slm_training/resources/formal/rm_zoo_corpus.v1.json",
+    "label_validator": "harn08.validate_label_claim",
+    "toolchain_id": "hermetic_python_rm_zoo_v1",
+    "trust_domain": "research_only/rm_zoo_benchmark"
+  },
+  "train_control_exact_rate": 1.0,
+  "unknown_calibration": 1.0,
+  "version_stamp": {
+    "code_commit": "7803080fc0c16c09f770163d9afdcf997f1c9f1c",
+    "code_dirty": true,
+    "components": {
+      "governance.research_experiment_preregistry": "v2",
+      "harness.experiments.slm550_research04_rm_zoo": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-12T17:05:22.376811+00:00"
+  },
+  "zoo_discriminates": true
+}

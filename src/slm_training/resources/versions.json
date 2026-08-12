@@ -3142,6 +3142,11 @@
         {
           "version": "v27",
           "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-04/SLM-550 downstream_extension_map row + experiment_campaign notes only."
+        },
+        {
+          "version": "v27",
+          "date": "2026-08-12",
           "note": "no-bump: RESEARCH-03/SLM-549 downstream_extension_map + experiment_campaign notes only."
         },
         {
@@ -3533,6 +3538,11 @@
         {
           "version": "v2",
           "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-04/SLM-550 updates RESEARCH-04 row disposition/campaign_lock_sha256 only; schema+loader unchanged."
+        },
+        {
+          "version": "v2",
+          "date": "2026-08-12",
           "note": "RESEARCH-03/SLM-549: activate campaign lock + completed disposition for Big-Five interpretation pilot."
         },
         {
@@ -3910,6 +3920,11 @@
         "docs/design/integ-03-campaign-formal-evidence.md"
       ],
       "history": [
+        {
+          "version": "v208",
+          "date": "2026-08-12",
+          "note": "no-bump: rebuild evidence_ledger.v1.json after RESEARCH-04 (SLM-550) design/results docs; deterministic fold, no campaign contract change."
+        },
         {
           "version": "v208",
           "date": "2026-08-12",
@@ -19394,6 +19409,29 @@
           "version": "v1",
           "date": "2026-08-12",
           "note": "RESEARCH-03/SLM-549: default-off Big-Five interpretation Lean package + harness + lock + four-axis evidence; never production authority."
+        }
+      ]
+    },
+    "harness.experiments.slm550_research04_rm_zoo": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/formal/rm_zoo_benchmark.py",
+        "src/slm_training/resources/formal/rm_zoo_corpus.v1.json",
+        "tests/test_formal/test_rm_zoo_benchmark.py",
+        "src/slm_training/resources/formal/research_04_campaign_lock.v1.json",
+        "src/slm_training/harnesses/experiments/research_04_rm_zoo_benchmark.py",
+        "scripts/run_research_04_rm_zoo.py",
+        "docs/design/iter-revmath-research-04-preregistered.json",
+        "docs/design/iter-revmath-research-04-preregistered.md",
+        "tests/test_harnesses/experiments/test_research_04_rm_zoo_benchmark.py",
+        "tests/test_scripts/test_run_research_04_rm_zoo.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-12",
+          "note": "RESEARCH-04/SLM-550: default-off RM Zoo benchmark backend+harness+runner+lock+fixture evidence; never production authority."
         }
       ]
     }
