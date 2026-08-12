@@ -586,7 +586,7 @@
           "status": "completed"
         }
       ],
-      "campaign_lock_sha256": null,
+      "campaign_lock_sha256": "bf26ab9c01c38088aeedb004505428af57339c12db60a42108ecf0326e27f6bb",
       "cited_lineage": [
         "repo-revmath-policy",
         "repo-research-lineage",
@@ -594,7 +594,7 @@
       ],
       "decision_rule": "Accept only if shaping improves success without unverifiable intermediates scoring.",
       "default_off": true,
-      "disposition": "registered",
+      "disposition": "rejected",
       "evidence_path": "docs/design/iter-revmath-research-11-preregistered.md",
       "experiment_key": "RESEARCH-11",
       "falsifier": "Reward can be maximized without checked process evidence.",

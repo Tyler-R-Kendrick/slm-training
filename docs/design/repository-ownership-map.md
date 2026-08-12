@@ -273,6 +273,7 @@ Every SGS/VCE/PCT/SRP/SIE/RSP/PGS backlog item mapped to the existing subsystem(
 | **RESEARCH-14** — Experiment: checker diversity and independent fault-domain coverage | SLM-572 | `experiment_campaign` | no | Isolated default-off checker diversity backend + harness over ExperimentCampaignV1/CampaignLockV1 and EVID-08/EVID-11 trust-domain fixtures; RESEARCH-02 preregistry activation only — no mandatory external checker dependency or production authority. |
 | **RESEARCH-16** — Experiment: rational-to-float transfer certificates for selected metrics and gates | SLM-570 | `experiment_campaign` | no | Isolated default-off rational-to-float transfer certificate backend + harness over ExperimentCampaignV1/CampaignLockV1 and EVID-04 exact-arithmetic fixtures; RESEARCH-02 preregistry activation only — no production gate authority. |
 | **RESEARCH-17** — Experiment: proof-mined quantitative bounds from qualitative project theorems | SLM-557 | `experiment_campaign` | no | Isolated default-off proof-mined quantitative bounds backend + harness over ExperimentCampaignV1/CampaignLockV1 and HARN-07 revmath fixtures; RESEARCH-02 preregistry activation only — no production gate authority. |
+| **RESEARCH-11** — Experiment: process-verified reward shaping for revmath proof tasks | SLM-574 | `experiment_campaign` | no | Isolated default-off process-verified reward shaping backend + harness over ExperimentCampaignV1/CampaignLockV1 and INTEG-05 failure witness fixtures; RESEARCH-02 preregistry activation only — no production gate authority. |
 
 ## Validation
 

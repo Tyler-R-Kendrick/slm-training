@@ -1,0 +1,130 @@
+{
+  "campaign_id": "research-11-process-verified-reward",
+  "campaign_lock_sha256": "bf26ab9c01c38088aeedb004505428af57339c12db60a42108ecf0326e27f6bb",
+  "claim_class": "fixture",
+  "correlation_gain": -0.0023004401300430466,
+  "decision": "reject",
+  "default_off": true,
+  "evidence_path": "docs/design/iter-revmath-research-11-preregistered.md",
+  "executed": true,
+  "experiment_id": "research_11_process_verified_reward",
+  "experiment_key": "RESEARCH-11",
+  "linear_id": "SLM-574",
+  "paired_report": {
+    "control_rows": [
+      {
+        "arm": "terminal_only",
+        "attempt_id": "att.prefix_success",
+        "final_success": true,
+        "reward": 1.0
+      },
+      {
+        "arm": "terminal_only",
+        "attempt_id": "att.partial_then_success",
+        "final_success": true,
+        "reward": 1.0
+      },
+      {
+        "arm": "terminal_only",
+        "attempt_id": "att.failure_no_prefix",
+        "final_success": false,
+        "reward": 0.0
+      },
+      {
+        "arm": "terminal_only",
+        "attempt_id": "att.unverifiable_intermediate",
+        "final_success": false,
+        "reward": 0.0
+      },
+      {
+        "arm": "terminal_only",
+        "attempt_id": "att.leakage_control",
+        "final_success": true,
+        "reward": 1.0
+      }
+    ],
+    "corpus_digest": "3f354cc77460be909117167a3cbda15728f3d36f3abddf17b20199ef5ffe9265",
+    "correlation_gain": -0.0023004401300430466,
+    "decision": "reject",
+    "leakage_violations": 0,
+    "process_reward_correlation": 0.9976995598699567,
+    "reason": "process_reward_no_correlation_gain",
+    "reward_hacking_incidents": 0,
+    "schema": "process_verified_reward_report/v1",
+    "terminal_reward_correlation": 0.9999999999999998,
+    "toolchain": {
+      "backend_id": "process_verified_reward_pilot",
+      "corpus_relpath": "src/slm_training/resources/formal/process_verified_reward_corpus.v1.json",
+      "toolchain_id": "hermetic_python_process_reward_v1",
+      "trust_domain": "research_only/process_verified_reward"
+    },
+    "treatment_rows": [
+      {
+        "arm": "process_verified",
+        "attempt_id": "att.prefix_success",
+        "final_success": true,
+        "reward": 1.0,
+        "unverifiable_intermediate_reward": false,
+        "verified_prefix_steps": 3
+      },
+      {
+        "arm": "process_verified",
+        "attempt_id": "att.partial_then_success",
+        "final_success": true,
+        "reward": 1.0,
+        "unverifiable_intermediate_reward": false,
+        "verified_prefix_steps": 1
+      },
+      {
+        "arm": "process_verified",
+        "attempt_id": "att.failure_no_prefix",
+        "final_success": false,
+        "reward": 0.1,
+        "unverifiable_intermediate_reward": false,
+        "verified_prefix_steps": 0
+      },
+      {
+        "arm": "process_verified",
+        "attempt_id": "att.unverifiable_intermediate",
+        "final_success": false,
+        "reward": 0.0,
+        "unverifiable_intermediate_reward": false,
+        "verified_prefix_steps": 0
+      },
+      {
+        "arm": "process_verified",
+        "attempt_id": "att.leakage_control",
+        "final_success": true,
+        "reward": 1.0,
+        "unverifiable_intermediate_reward": false,
+        "verified_prefix_steps": 2
+      }
+    ],
+    "unverifiable_intermediate_reward_rate": 0.0,
+    "verified_process_reward_correlation_with_final_proof_success": 0.9976995598699567
+  },
+  "primary_metric": "verified_process_reward_correlation_with_final_proof_success",
+  "primary_value": 0.9976995598699567,
+  "reason": "process_reward_no_correlation_gain",
+  "research_only": true,
+  "reward_hacking_incidents": 0,
+  "schema": "research_11_experiment_result/v1",
+  "terminal_reward_correlation": 0.9999999999999998,
+  "toolchain": {
+    "backend_id": "process_verified_reward_pilot",
+    "corpus_relpath": "src/slm_training/resources/formal/process_verified_reward_corpus.v1.json",
+    "toolchain_id": "hermetic_python_process_reward_v1",
+    "trust_domain": "research_only/process_verified_reward"
+  },
+  "unverifiable_intermediate_reward_rate": 0.0,
+  "version_stamp": {
+    "code_commit": "6104d1053ae96673514a1b74378813780c4dd094",
+    "code_dirty": true,
+    "components": {
+      "governance.research_experiment_preregistry": "v2",
+      "harness.experiments.slm574_research11_process_reward": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-12T17:43:50.514005+00:00"
+  }
+}

@@ -3147,6 +3147,11 @@
         {
           "version": "v27",
           "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-11/SLM-574 ownership-map row only; no authority change."
+        },
+        {
+          "version": "v27",
+          "date": "2026-08-12",
           "note": "no-bump: RESEARCH-17/SLM-557 ownership-map row only; no authority change."
         },
         {
@@ -3560,6 +3565,16 @@
         "tests/test_scripts/test_verify_research_experiment_preregistry.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-11/SLM-574 pilot-span status doc line only; schema+loader unchanged."
+        },
+        {
+          "version": "v2",
+          "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-11/SLM-574 updates RESEARCH-11 row disposition/campaign_lock_sha256 only; schema+loader unchanged."
+        },
         {
           "version": "v2",
           "date": "2026-08-12",
@@ -3980,6 +3995,16 @@
         "docs/design/integ-03-campaign-formal-evidence.md"
       ],
       "history": [
+        {
+          "version": "v211",
+          "date": "2026-08-12",
+          "note": "no-bump: rebuild evidence_ledger.v1.json after RESEARCH-11 rebase onto main (SLM-574); deterministic fold, no campaign contract change."
+        },
+        {
+          "version": "v211",
+          "date": "2026-08-12",
+          "note": "no-bump: rebuild evidence_ledger.v1.json after RESEARCH-11 (SLM-574) design/results docs; deterministic fold, no campaign contract change."
+        },
         {
           "version": "v211",
           "date": "2026-08-12",
@@ -19629,6 +19654,29 @@
           "version": "v1",
           "date": "2026-08-12",
           "note": "RESEARCH-17/SLM-557: default-off proof-mined quantitative bounds backend+harness+runner+lock+fixture evidence; never production authority."
+        }
+      ]
+    },
+    "harness.experiments.slm574_research11_process_reward": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/formal/process_verified_reward.py",
+        "src/slm_training/resources/formal/process_verified_reward_corpus.v1.json",
+        "tests/test_formal/test_process_verified_reward.py",
+        "src/slm_training/resources/formal/research_11_campaign_lock.v1.json",
+        "src/slm_training/harnesses/experiments/research_11_process_verified_reward.py",
+        "scripts/run_research_11_process_reward.py",
+        "docs/design/iter-revmath-research-11-preregistered.json",
+        "docs/design/iter-revmath-research-11-preregistered.md",
+        "tests/test_harnesses/experiments/test_research_11_process_verified_reward.py",
+        "tests/test_scripts/test_run_research_11_process_reward.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-12",
+          "note": "RESEARCH-11/SLM-574: default-off process-verified reward shaping backend+harness+runner+lock+fixture evidence; never production authority."
         }
       ]
     }

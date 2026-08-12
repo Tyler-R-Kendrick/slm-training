@@ -1736,6 +1736,16 @@
       ],
       "new_owner_justified": false,
       "justification": "Isolated default-off proof-mined quantitative bounds backend + harness over ExperimentCampaignV1/CampaignLockV1 and HARN-07 revmath fixtures; RESEARCH-02 preregistry activation only \u2014 no production gate authority."
+    },
+    {
+      "issue": "RESEARCH-11",
+      "linear_id": "SLM-574",
+      "title": "Experiment: process-verified reward shaping for revmath proof tasks",
+      "extension_points": [
+        "experiment_campaign"
+      ],
+      "new_owner_justified": false,
+      "justification": "Isolated default-off process-verified reward shaping backend + harness over ExperimentCampaignV1/CampaignLockV1 and INTEG-05 failure witness fixtures; RESEARCH-02 preregistry activation only \u2014 no production gate authority."
     }
   ],
   "contract_version_governance": {

@@ -1,0 +1,51 @@
+{
+  "corpus_id": "process_verified_reward.v1",
+  "schema_version": "process_verified_reward/v1",
+  "attempts": [
+    {
+      "attempt_id": "att.prefix_success",
+      "final_success": true,
+      "leakage_fields_present": false,
+      "notes": "Verified tactic prefix leads to terminal proof success",
+      "verified_prefix_steps": 3,
+      "verified_failure_class": null,
+      "total_steps": 4
+    },
+    {
+      "attempt_id": "att.partial_then_success",
+      "final_success": true,
+      "leakage_fields_present": false,
+      "notes": "Early failure localized then repaired to success",
+      "verified_prefix_steps": 1,
+      "verified_failure_class": "missing_assumption",
+      "total_steps": 5
+    },
+    {
+      "attempt_id": "att.failure_no_prefix",
+      "final_success": false,
+      "leakage_fields_present": false,
+      "notes": "No verified prefix; terminal failure only",
+      "verified_prefix_steps": 0,
+      "verified_failure_class": "proof_search_exhausted",
+      "total_steps": 2
+    },
+    {
+      "attempt_id": "att.unverifiable_intermediate",
+      "final_success": false,
+      "leakage_fields_present": false,
+      "notes": "High step count but zero verified prefix — must not inflate process reward",
+      "verified_prefix_steps": 0,
+      "verified_failure_class": "unlocalized",
+      "total_steps": 6
+    },
+    {
+      "attempt_id": "att.leakage_control",
+      "final_success": true,
+      "leakage_fields_present": true,
+      "notes": "Negative control: label metadata present; shaping must ignore",
+      "verified_prefix_steps": 2,
+      "verified_failure_class": null,
+      "total_steps": 3
+    }
+  ]
+}
