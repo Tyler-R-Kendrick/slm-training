@@ -82,6 +82,16 @@ replay; treatment = EVID-10 `lrat_pilot` encoding + hermetic RUP certificate
 check. Evidence: [`iter-revmath-research-05-preregistered.md`](iter-revmath-research-05-preregistered.md).
 Never production decode / ship-gate / serving authority.
 
+### RESEARCH-06 — VSS PBLean PB pilot (SLM-564)
+
+Default-off research adapter: `src/slm_training/formal/vss_pblean_backend.py` +
+`harnesses/experiments/research_06_vss_pblean.py`. Control = exhaustive VSS/CNF
+replay; treatment = EVID-10 `pblean_pilot` CNF→PB encoding + hermetic VeriPB-style
+certificate check (external PBLean optional/unavailable). Evidence:
+[`iter-revmath-research-06-preregistered.md`](iter-revmath-research-06-preregistered.md)
+(disposition **rejected** — correctness ok, warm/exhaustive ratio ≥ 1.0 on fixture suite).
+Still `default_off` / no production decode / ship-gate / serving authority.
+
 
 ### Mutation / red-team acceptance suite (EVID-11)
 

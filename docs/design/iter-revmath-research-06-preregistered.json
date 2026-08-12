@@ -1,0 +1,235 @@
+{
+  "campaign_id": "research-06-vss-pblean",
+  "campaign_lock_sha256": "66de4aee53e75b402b7a9d90e7ae72ac64bd14211c6a013b4afd579b7b3a924f",
+  "claim_class": "fixture",
+  "correctness_ok": true,
+  "decision": "reject",
+  "default_off": true,
+  "evidence_path": "docs/design/iter-revmath-research-06-preregistered.md",
+  "exact_semantic_agreement_rate_on_supported_pb_subset": 1.0,
+  "executed": true,
+  "experiment_id": "research_06_vss_pblean_pb",
+  "experiment_key": "RESEARCH-06",
+  "linear_id": "SLM-564",
+  "lrat_agreement_n": 4,
+  "lrat_comparable_n": 4,
+  "mutation_rejection_rate": 1.0,
+  "paired_report": {
+    "correctness_ok": true,
+    "covered": 4,
+    "decision": "reject",
+    "exact_semantic_agreement_rate_on_supported_pb_subset": 1.0,
+    "lrat_agreement_n": 4,
+    "lrat_comparable_n": 4,
+    "median_paired_warm_pblean_check_over_exhaustive_replay_time_ratio": 1.0719906505980101,
+    "mutation": {
+      "cases": [
+        {
+          "case_id": "encoding_flip_literal",
+          "outcome": "unknown",
+          "reason": "pblean_check_encoded_digest_mismatch",
+          "rejected": true
+        },
+        {
+          "case_id": "certificate_hint_corrupt",
+          "outcome": "unknown",
+          "reason": "pblean_check_hint_missing",
+          "rejected": true
+        },
+        {
+          "case_id": "stale_problem_digest",
+          "outcome": "unknown",
+          "reason": "pblean_check_stale_problem",
+          "rejected": true
+        }
+      ],
+      "ok": true,
+      "reason": "all_mutations_rejected",
+      "rejection_rate": 1.0
+    },
+    "mutation_rejection_rate": 1.0,
+    "rows": [
+      {
+        "certificate_bytes": 997,
+        "cold_elapsed_s": 0.00018763300067803357,
+        "control_elapsed_s": 2.9240000003483146e-05,
+        "identities": {
+          "backend_id": "vss_pblean_pb_pilot",
+          "certificate_digest": "e1d71274cfb77faf83838a97d61fa19ceb3c38a8017f8915bfe1b35eb1fd9e2c",
+          "certificate_format": "pblean_pilot",
+          "certificate_schema": "vss_pblean_certificate/v1",
+          "checker_backend": "python_pblean_veripb_pilot",
+          "encoded_digest": "95ee647915c9cfa2c06ed88e696efb61f5072a6c08f80aad0c9b7cb57c36a8a3",
+          "encoder_family": "cnf_ref",
+          "encoder_hash": "0752e7e4570417794e8a3cbed145d659438cd055170e59d05ddcfe043bc4e270",
+          "encoder_version": "cnf_ref_v1",
+          "external_pblean": "optional_unavailable_fixture_stub",
+          "pb_digest": "7cac73276787a9d102ff8b1f5d8d06f5f7fcd4fdfa2c70c1d00d4af1da4b06ea",
+          "problem_digest": "a93552a72bff68dc5a10d52cecb575901e0b518f10a02704565ee8f2760fe7b9",
+          "toolchain_id": "hermetic_python_pblean_pilot_v1",
+          "trust_domain": "encoding_bridge/cnf_ref+pblean_pilot"
+        },
+        "lrat_comparison": {
+          "agree_with_pblean": true,
+          "comparable": true,
+          "lrat_outcome": "unsat",
+          "lrat_warm_elapsed_s": 5.1423000513750594e-05,
+          "pblean_warm_median_s": 5.9946999499516096e-05
+        },
+        "pb_encoding_bytes": 290,
+        "problem_id": "research06/unsat_pad0",
+        "status": "ok",
+        "warm_median_s": 5.9946999499516096e-05,
+        "warm_over_exhaustive_ratio": 2.0501709812713766
+      },
+      {
+        "certificate_bytes": 997,
+        "cold_elapsed_s": 0.00019230699945183005,
+        "control_elapsed_s": 5.9854999562958255e-05,
+        "identities": {
+          "backend_id": "vss_pblean_pb_pilot",
+          "certificate_digest": "c51c8c848a01521545a9a61962cac1dea049245ea4a2b81adf5353d23846674b",
+          "certificate_format": "pblean_pilot",
+          "certificate_schema": "vss_pblean_certificate/v1",
+          "checker_backend": "python_pblean_veripb_pilot",
+          "encoded_digest": "8e3bc65d0918f2581720d48fe9540940ca15d05ffad7f9e4f306bf4e401d767b",
+          "encoder_family": "cnf_ref",
+          "encoder_hash": "0752e7e4570417794e8a3cbed145d659438cd055170e59d05ddcfe043bc4e270",
+          "encoder_version": "cnf_ref_v1",
+          "external_pblean": "optional_unavailable_fixture_stub",
+          "pb_digest": "d4d4bf79bc95407450b30b8679e59b138015442bf466af0cfaf5ae3a43cc727c",
+          "problem_digest": "02c5a360903cdf93236464e93e9629a59e8a12508febfc944c6704119ab8a610",
+          "toolchain_id": "hermetic_python_pblean_pilot_v1",
+          "trust_domain": "encoding_bridge/cnf_ref+pblean_pilot"
+        },
+        "lrat_comparison": {
+          "agree_with_pblean": true,
+          "comparable": true,
+          "lrat_outcome": "unsat",
+          "lrat_warm_elapsed_s": 5.5639000493101776e-05,
+          "pblean_warm_median_s": 6.416399992303923e-05
+        },
+        "pb_encoding_bytes": 310,
+        "problem_id": "research06/unsat_pad4",
+        "status": "ok",
+        "warm_median_s": 6.416399992303923e-05,
+        "warm_over_exhaustive_ratio": 1.0719906505980101
+      },
+      {
+        "certificate_bytes": 997,
+        "cold_elapsed_s": 0.0008510849993399461,
+        "control_elapsed_s": 0.0011700700006258558,
+        "identities": {
+          "backend_id": "vss_pblean_pb_pilot",
+          "certificate_digest": "18b1ba9709842b6bbb462a3472e8c432bd81afbe5faafe3ae09fca18bcb67ecb",
+          "certificate_format": "pblean_pilot",
+          "certificate_schema": "vss_pblean_certificate/v1",
+          "checker_backend": "python_pblean_veripb_pilot",
+          "encoded_digest": "c7895641b1d86e615cd9d484deef287416aa81336abc6dedff1b93814ec9ab89",
+          "encoder_family": "cnf_ref",
+          "encoder_hash": "0752e7e4570417794e8a3cbed145d659438cd055170e59d05ddcfe043bc4e270",
+          "encoder_version": "cnf_ref_v1",
+          "external_pblean": "optional_unavailable_fixture_stub",
+          "pb_digest": "82e1c56cce5a656570576d06e5556aef18796ca1c4e78d25b7f15787c2e50809",
+          "problem_digest": "d7c4086bab538fd79fbbff3a680950527420644d4e0d451c98b16058d6aab365",
+          "toolchain_id": "hermetic_python_pblean_pilot_v1",
+          "trust_domain": "encoding_bridge/cnf_ref+pblean_pilot"
+        },
+        "lrat_comparison": {
+          "agree_with_pblean": true,
+          "comparable": true,
+          "lrat_outcome": "unsat",
+          "lrat_warm_elapsed_s": 8.157899992511375e-05,
+          "pblean_warm_median_s": 6.819600002927473e-05
+        },
+        "pb_encoding_bytes": 330,
+        "problem_id": "research06/unsat_pad8",
+        "status": "ok",
+        "warm_median_s": 6.819600002927473e-05,
+        "warm_over_exhaustive_ratio": 0.05828369242250254
+      },
+      {
+        "certificate_bytes": 997,
+        "cold_elapsed_s": 0.003551916000105848,
+        "control_elapsed_s": 0.005803876999380009,
+        "identities": {
+          "backend_id": "vss_pblean_pb_pilot",
+          "certificate_digest": "94ec9389cc9eca13d150a067876fd76abe9bf555a7267c0eee79c04e2250e0f7",
+          "certificate_format": "pblean_pilot",
+          "certificate_schema": "vss_pblean_certificate/v1",
+          "checker_backend": "python_pblean_veripb_pilot",
+          "encoded_digest": "320e2f2d6d087f8b8e2ac4c547828ad083a79b9579d82bb815e0fe7413534d70",
+          "encoder_family": "cnf_ref",
+          "encoder_hash": "0752e7e4570417794e8a3cbed145d659438cd055170e59d05ddcfe043bc4e270",
+          "encoder_version": "cnf_ref_v1",
+          "external_pblean": "optional_unavailable_fixture_stub",
+          "pb_digest": "e02f12b986a4d63a8aa864b2ffa20bf6dacab4b5366979af8cf41901634944f2",
+          "problem_digest": "eade6c3e56674f9925b0027fba032da8464839fe7b1208f04802a1473ae13395",
+          "toolchain_id": "hermetic_python_pblean_pilot_v1",
+          "trust_domain": "encoding_bridge/cnf_ref+pblean_pilot"
+        },
+        "lrat_comparison": {
+          "agree_with_pblean": true,
+          "comparable": true,
+          "lrat_outcome": "unsat",
+          "lrat_warm_elapsed_s": 6.746300005033845e-05,
+          "pblean_warm_median_s": 7.351299973379355e-05
+        },
+        "pb_encoding_bytes": 341,
+        "problem_id": "research06/unsat_pad10",
+        "status": "ok",
+        "warm_median_s": 7.351299973379355e-05,
+        "warm_over_exhaustive_ratio": 0.012666188436048262
+      }
+    ],
+    "schema": "research_06_paired_warm_report/v1",
+    "secondary": {
+      "certificate_bytes_median": 997,
+      "cold_elapsed_s_median": 0.0008510849993399461,
+      "pb_encoding_bytes_median": 330
+    },
+    "suite_n": 4,
+    "supported_subset_coverage": 1.0,
+    "toolchain": {
+      "backend_id": "vss_pblean_pb_pilot",
+      "certificate_format": "pblean_pilot",
+      "certificate_schema": "vss_pblean_certificate/v1",
+      "checker_backend": "python_pblean_veripb_pilot",
+      "encoder_family": "cnf_ref",
+      "encoder_hash": "0752e7e4570417794e8a3cbed145d659438cd055170e59d05ddcfe043bc4e270",
+      "encoder_version": "cnf_ref_v1",
+      "external_pblean": "optional_unavailable_fixture_stub",
+      "toolchain_id": "hermetic_python_pblean_pilot_v1",
+      "trust_domain": "encoding_bridge/cnf_ref+pblean_pilot"
+    },
+    "witness_disagreement_count": 0
+  },
+  "primary_metric": "median_paired_warm_pblean_check_over_exhaustive_replay_time_ratio",
+  "primary_value": 1.0719906505980101,
+  "research_only": true,
+  "schema": "research_06_experiment_result/v1",
+  "supported_subset_coverage": 1.0,
+  "toolchain": {
+    "backend_id": "vss_pblean_pb_pilot",
+    "certificate_format": "pblean_pilot",
+    "certificate_schema": "vss_pblean_certificate/v1",
+    "checker_backend": "python_pblean_veripb_pilot",
+    "encoder_family": "cnf_ref",
+    "encoder_hash": "0752e7e4570417794e8a3cbed145d659438cd055170e59d05ddcfe043bc4e270",
+    "encoder_version": "cnf_ref_v1",
+    "external_pblean": "optional_unavailable_fixture_stub",
+    "toolchain_id": "hermetic_python_pblean_pilot_v1",
+    "trust_domain": "encoding_bridge/cnf_ref+pblean_pilot"
+  },
+  "version_stamp": {
+    "code_commit": "5d56c2dc5a23c32362ef834656d56b5b5537143f",
+    "code_dirty": true,
+    "components": {
+      "governance.research_experiment_preregistry": "v1",
+      "harness.experiments.slm564_research06_vss_pblean": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-12T16:10:08.848697+00:00"
+  },
+  "witness_disagreement_count": 0
+}

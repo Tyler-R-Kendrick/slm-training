@@ -3142,6 +3142,11 @@
         {
           "version": "v27",
           "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-06/SLM-564 ownership_map + repository-ownership-map pointer rows only; schema unchanged."
+        },
+        {
+          "version": "v27",
+          "date": "2026-08-12",
           "note": "no-bump: RESEARCH-05 (SLM-563) downstream_extension_map row over experiment_campaign; no new subsystem."
         },
         {
@@ -3513,6 +3518,11 @@
         {
           "version": "v1",
           "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-06 (SLM-564) updates RESEARCH-06 row disposition/campaign_lock_sha256/blockers/metrics only; schema+loader unchanged."
+        },
+        {
+          "version": "v1",
+          "date": "2026-08-12",
           "note": "no-bump: RESEARCH-05 (SLM-563) updates RESEARCH-05 row disposition/campaign_lock_sha256/blockers only; schema+loader unchanged."
         },
         {
@@ -3540,6 +3550,11 @@
         "src/slm_training/resources/revmath/examples/README.md"
       ],
       "history": [
+        {
+          "version": "v22",
+          "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-06/SLM-564 reverse-mathematics-computability.md evidence pointer only; owner map schema unchanged."
+        },
         {
           "version": "v22",
           "date": "2026-08-12",
@@ -3850,6 +3865,11 @@
         "docs/design/integ-03-campaign-formal-evidence.md"
       ],
       "history": [
+        {
+          "version": "v208",
+          "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-06/SLM-564 evidence_ledger --write scanned-count refresh only."
+        },
         {
           "version": "v208",
           "date": "2026-08-12",
@@ -5789,6 +5809,11 @@
         "tests/test_scripts/test_run_goal_support_domain_adequacy.py"
       ],
       "history": [
+        {
+          "version": "v163",
+          "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-06/SLM-564 lives under dedicated component harness.experiments.slm564_research06_vss_pblean (v1)."
+        },
         {
           "version": "v163",
           "date": "2026-08-12",
@@ -17957,6 +17982,11 @@
         {
           "version": "v25",
           "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-06/SLM-564 adapter+lock owned exclusively by harness.experiments.slm564_research06_vss_pblean; formal-objects doc pointer only."
+        },
+        {
+          "version": "v25",
+          "date": "2026-08-12",
           "note": "RESEARCH-05 (SLM-563): default-off VSS LRAT SAT pilot adapter, campaign lock, paired warm/exhaustive evidence; formal-objects-multi-prover.md RESEARCH-05 section."
         },
         {
@@ -19186,6 +19216,26 @@
           "version": "v1",
           "date": "2026-08-12",
           "note": "RESEARCH-05/SLM-563: default-off VSS LRAT campaign harness + runner + preregistered evidence; never production authority."
+        }
+      ]
+    },
+    "harness.experiments.slm564_research06_vss_pblean": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/formal/vss_pblean_backend.py",
+        "tests/test_formal/test_vss_pblean_backend.py",
+        "src/slm_training/resources/formal/research_06_campaign_lock.v1.json",
+        "src/slm_training/harnesses/experiments/research_06_vss_pblean.py",
+        "scripts/run_research_06_vss_pblean.py",
+        "docs/design/iter-revmath-research-06-preregistered.json",
+        "docs/design/iter-revmath-research-06-preregistered.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-12",
+          "note": "RESEARCH-06/SLM-564: default-off VSS PBLean/PB campaign adapter+harness+runner+lock+fixture evidence; never production authority."
         }
       ]
     }
