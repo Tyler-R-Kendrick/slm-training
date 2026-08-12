@@ -1,0 +1,135 @@
+{
+  "locked_at": "2026-08-12T16:35:32.449501Z",
+  "manifest": {
+    "arms": [
+      {
+        "arm_id": "control_production_finite_kernel",
+        "config_sha256": "08cc6f87ae8ed5b39136467cd2cab4432b7cae2d0ff2c287a64292b52015ba62",
+        "role": "control"
+      },
+      {
+        "arm_id": "treatment_revmath_research_lean",
+        "config_sha256": "b238138c52a2ad339dcdb9fede5c0e3c6a11e4682d9a58ee1ce80d5451e3f2d4",
+        "role": "candidate"
+      }
+    ],
+    "artifact_requirements": [
+      {
+        "kind": "version_stamp",
+        "minimum_count": 1
+      },
+      {
+        "kind": "paired_examples",
+        "minimum_count": 1
+      }
+    ],
+    "author": "research-03",
+    "budget": {
+      "max_experiments": 2,
+      "max_gpu_hours": 0.0,
+      "max_wall_minutes": 30.0
+    },
+    "campaign_id": "research-03-big-five-interpretation",
+    "claim_class": "fixture",
+    "controls": [
+      {
+        "control_id": "matched_production_finite_kernel",
+        "description": "Control is the production finite-kernel labeling path without research package import.",
+        "kind": "positive"
+      },
+      {
+        "control_id": "print_axioms_alone_negative",
+        "description": "#print axioms alone must not authorize rm_research:WKL0.",
+        "kind": "negative"
+      },
+      {
+        "control_id": "production_import_contamination_negative",
+        "description": "LeverProofLean / OpenUIProofs must not import RevMathResearch.",
+        "kind": "negative"
+      }
+    ],
+    "created_at": "1970-01-01T00:00:00Z",
+    "decision": "Accept iff lake build + explicit interpretation package validate a bidirectional WKL\u2194\u03a3\u2070\u2081-Sep classification, production trees do not import the package, and #print-axioms-alone stays insufficient; else reject/unknown.",
+    "endpoints": [
+      {
+        "direction": "increase",
+        "endpoint_id": "bidirectional_classification",
+        "metric": "checked_bidirectional_classification_with_documented_assumptions",
+        "minimum_effect": 1.0,
+        "role": "primary"
+      },
+      {
+        "direction": "decrease",
+        "endpoint_id": "production_import_contamination",
+        "metric": "production_import_contamination",
+        "minimum_effect": 0.0,
+        "role": "secondary"
+      },
+      {
+        "direction": "increase",
+        "endpoint_id": "print_axioms_alone_rejected",
+        "metric": "print_axioms_alone_rejected",
+        "minimum_effect": 1.0,
+        "role": "secondary"
+      }
+    ],
+    "executable_kill_criteria": [],
+    "experiment_id": "research_03_big_five_interpretation",
+    "formal_obligations": [],
+    "hypothesis": "An isolated Lean research package can encode one genuine Big-Five bidirectional classification without contaminating the production finite kernel.",
+    "locked_eval_manifest_sha256": null,
+    "mechanism_off_arm_ids": [],
+    "metric_expectations_sha256": null,
+    "multiplicity_families": [
+      {
+        "alpha": 0.05,
+        "family_id": "research03_primary",
+        "hypothesis_ids": [
+          "bidirectional_classification"
+        ],
+        "method": "holm"
+      }
+    ],
+    "negative_controls": [
+      "print_axioms_alone_negative",
+      "production_import_contamination_negative"
+    ],
+    "power_feasibility": null,
+    "promotion_gates": [
+      {
+        "endpoint_id": "bidirectional_classification",
+        "gate_id": "classification_checked",
+        "operator": "eq",
+        "threshold": 1.0
+      }
+    ],
+    "replay_of_manifest_sha256": null,
+    "replay_reason": null,
+    "replicate_ledger_schema": null,
+    "replicate_seed_floor": null,
+    "requires_rl": false,
+    "rl_evaluation_sha256": null,
+    "rl_readiness_report_sha256": null,
+    "rollback_gates": [
+      {
+        "endpoint_id": "production_import_contamination",
+        "gate_id": "any_contamination",
+        "operator": "gt",
+        "threshold": 0.0
+      }
+    ],
+    "schema_version": "ExperimentCampaignV1",
+    "seeds": [
+      0
+    ],
+    "source_commit": "0000000000000000000000000000000000000000",
+    "source_dirty": false,
+    "stopping_rules": [
+      "Abort on production import contamination.",
+      "Unknown when lake unavailable or encoding burden disproportionate.",
+      "Reject when interpretation package fails validation."
+    ]
+  },
+  "manifest_sha256": "4a67246dd3793a45bcd2c979b282462beac0e5f860c882080cc50d3c3a49c19f",
+  "schema_version": "CampaignLockV1"
+}

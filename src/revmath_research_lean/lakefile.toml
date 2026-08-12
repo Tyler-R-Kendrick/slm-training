@@ -1,0 +1,6 @@
+name = "revmath-research-lean"
+version = "0.1.0"
+defaultTargets = ["RevMathResearch"]
+
+[[lean_lib]]
+name = "RevMathResearch"

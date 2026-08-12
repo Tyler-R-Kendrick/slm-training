@@ -1,0 +1,117 @@
+{
+  "campaign_id": "research-03-big-five-interpretation",
+  "campaign_lock_sha256": "4a67246dd3793a45bcd2c979b282462beac0e5f860c882080cc50d3c3a49c19f",
+  "checked_bidirectional_classification_with_documented_assumptions": 1.0,
+  "claim_class": "fixture",
+  "coding_id": "coding.wkl_sigma01_sep.v1",
+  "contamination_hits": [],
+  "control": {
+    "accepted": false,
+    "reason": "print_axioms_alone",
+    "rejected": true,
+    "rejection_reasons": [
+      "Big-Five subsystem label cannot rest solely on insufficient evidence ['print_axioms_only'] (never #print axioms / compile / finite / classical / empirical alone)",
+      "#print axioms footprint alone cannot classify a theorem as 'WKL0'",
+      "reversed_equivalent / Big-Five equivalence requires explicit base_theory_id, coding_id, interpretation_status in {explicit_interpretation, explicit_reversal}, forward_evidence_sha256, reversal_evidence_sha256, and evidence_kinds {interpretation_package, forward_implication, reversal}"
+    ]
+  },
+  "decision": "accept",
+  "default_off": true,
+  "executed": true,
+  "experiment_id": "research_03_big_five_interpretation",
+  "experiment_key": "RESEARCH-03",
+  "four_axis": {
+    "assumption_strength": {
+      "axis": "assumption_strength",
+      "bound_ast_id": null,
+      "certificate_sha256": "23650a15e0d553be6fde9ed514c7016a13339d5c40beb4222fc9a0d134a27dd1",
+      "notes": "RCA0 research base + named Simpson glue axioms",
+      "status": "proved_axis",
+      "theorem_ref": "RevMathResearch.Interpretation.forward_from_wkl"
+    },
+    "computability": {
+      "axis": "computability",
+      "bound_ast_id": null,
+      "certificate_sha256": "5c454d1c2ecaba9af6c34121c1598523c6c094a5aa2ccab99f7d8d075946e9df",
+      "notes": "rm_research:WKL0 via explicit interpretation package",
+      "status": "proved_axis",
+      "theorem_ref": "RevMathResearch.Interpretation.reverse_from_sep"
+    },
+    "formal_preflight_sha256": null,
+    "implementation_refinement": {
+      "axis": "implementation_refinement",
+      "bound_ast_id": null,
+      "certificate_sha256": "a52cb598c88ba94aa4d22170524565ed6195ffae6f72e94c727be1e179cecc0d",
+      "notes": "Production Lean trees do not import RevMathResearch",
+      "status": "proved_axis",
+      "theorem_ref": "package_isolation_scan"
+    },
+    "resource_bounds": {
+      "axis": "resource_bounds",
+      "bound_ast_id": null,
+      "certificate_sha256": null,
+      "notes": "Not the subject of RESEARCH-03",
+      "status": "not_claimed",
+      "theorem_ref": null
+    },
+    "schema_version": "revmath_four_axis/v1"
+  },
+  "lake": {
+    "ok": true,
+    "reason": "lake_build",
+    "returncode": 0,
+    "status": "ok"
+  },
+  "linear_id": "SLM-549",
+  "named_axioms": [
+    "RevMathResearch.Forward.wkl_implies_sigma01_sep",
+    "RevMathResearch.Reverse.sigma01_sep_implies_wkl",
+    "RevMathResearch.Reverse.not_both_dead_bridge"
+  ],
+  "package_path": "src/revmath_research_lean",
+  "primary_metric": "checked_bidirectional_classification_with_documented_assumptions",
+  "primary_value": 1.0,
+  "print_axioms_alone_rejected": true,
+  "production_import_contamination": 0,
+  "promotion_boundary": "research_only / default_off: no production decode, ship-gate, or serving authority",
+  "reason": "bidirectional_classification_checked",
+  "research_only": true,
+  "schema": "research_03_experiment_result/v1",
+  "transfer_lessons": [
+    "Keep genuine RM encodings in an isolated Lake package; never import into LeverProofLean/OpenUIProofs.",
+    "Big-Five labels require InterpretationPackageV1 (coding_id + both evidence digests); #print axioms is a negative control only.",
+    "Named literature glue axioms are acceptable research scaffolding when listed in the interpretation package \u2014 they must not become production authority.",
+    "Assumption-minimization tasks can reuse the four-axis split: assumption_strength vs computability vs isolation refinement."
+  ],
+  "treatment": {
+    "classification_accepted": true,
+    "classification_digest": "e5713215853152efaf097fa527d2b2c32fc8e47d6ffc7e03572d688c58ab166d",
+    "forward_evidence_sha256": "23650a15e0d553be6fde9ed514c7016a13339d5c40beb4222fc9a0d134a27dd1",
+    "label_accepted": true,
+    "label_rejection_reasons": [],
+    "label_state": "reversed_equivalent",
+    "named_axioms": [
+      "RevMathResearch.Forward.wkl_implies_sigma01_sep",
+      "RevMathResearch.Reverse.sigma01_sep_implies_wkl",
+      "RevMathResearch.Reverse.not_both_dead_bridge"
+    ],
+    "package": {
+      "base_theory_id": "RCA0",
+      "coding_id": "coding.wkl_sigma01_sep.v1",
+      "forward_evidence_sha256": "23650a15e0d553be6fde9ed514c7016a13339d5c40beb4222fc9a0d134a27dd1",
+      "interpretation_status": "explicit_reversal",
+      "reversal_evidence_sha256": "5c454d1c2ecaba9af6c34121c1598523c6c094a5aa2ccab99f7d8d075946e9df"
+    },
+    "reversal_evidence_sha256": "5c454d1c2ecaba9af6c34121c1598523c6c094a5aa2ccab99f7d8d075946e9df"
+  },
+  "version_stamp": {
+    "code_commit": "7bed8119335458892052f36f5ea504d39c75a2ca",
+    "code_dirty": true,
+    "components": {
+      "governance.research_experiment_preregistry": "v2",
+      "harness.experiments.slm549_research03_big_five": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-12T16:35:41.125246+00:00"
+  }
+}
