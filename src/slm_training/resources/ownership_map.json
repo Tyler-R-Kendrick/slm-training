@@ -1,5 +1,4 @@
 {
-  "schema": "ownership_map/v1",
   "_readme": [
     "Machine-readable owner/authority map for the live OpenUI synthesis stack (SGS-001, SLM-435).",
     "Contract: docs/design/repository-ownership-map.md. Enforced by scripts/verify_ownership_map.py.",
@@ -11,16 +10,1082 @@
     "one-sentence `justification` explaining why no existing owner fits. See downstream_extension_map."
   ],
   "authority_tiers": {
-    "compiler-hard": "Deterministic, grammar/contract-derived authority. Wrong output is a bug, never a soft preference; verified by static/AST checks, not sampling.",
-    "verifier-hard": "Authority derived from running the G0-G12 verifier stack or an equivalent oracle against a candidate; pass/fail is binding, not advisory.",
     "advisory-learned": "Model- or heuristic-derived signal used to rank or prioritize among options that are already legal under a compiler-hard or verifier-hard gate. Never authorizes an illegal output and never substitutes for a missing verifier-hard check.",
+    "compiler-hard": "Deterministic, grammar/contract-derived authority. Wrong output is a bug, never a soft preference; verified by static/AST checks, not sampling.",
+    "evaluation-only": "Scoring, telemetry, or reporting surface. Observes and records; does not gate production decode and is not cited as decode-time authority.",
     "oracle-diagnostic": "Ground-truth substitution or intervention used to diagnose or attribute causes (e.g. plan-oracle substitution, counterfactual probes). Used for measurement and repair-target construction, not served to users.",
-    "evaluation-only": "Scoring, telemetry, or reporting surface. Observes and records; does not gate production decode and is not cited as decode-time authority."
+    "verifier-hard": "Authority derived from running the G0-G12 verifier stack or an equivalent oracle against a candidate; pass/fail is binding, not advisory."
   },
+  "contract_version_governance": {
+    "checked_identities": [
+      "OUTPUT_CONTRACT_VERSION",
+      "DSL_TOKENIZER_VERSION"
+    ],
+    "checkpoint_load_enforcement": {
+      "called_from": [
+        "src/slm_training/models/twotower.py",
+        "src/slm_training/models/grammar_diffusion.py"
+      ],
+      "description": "OUTPUT_CONTRACT_VERSION is enforced a second, independent time at model-checkpoint load: require_current_output_contract() raises OutputContractError on any mismatch. A stale checkpoint is rejected outright, never silently reinterpreted (SGS-002 acceptance criterion).",
+      "enforced_by_module": "src/slm_training/dsl/language_contract.py",
+      "enforced_by_symbol": "require_current_output_contract",
+      "regression_tests": [
+        "tests/test_harnesses/model_build/test_twotower.py",
+        "tests/test_models/test_grammar_diffusion.py"
+      ]
+    },
+    "ci_wiring": ".github/workflows/ci.yml python-static job, step \"Certify the repository ownership map\"",
+    "mechanism": "scripts/verify_ownership_map.py CONTRACT_VERSION_CHECKS -- table-driven code<->doc version consistency (SGS-002/SLM-436)",
+    "precommit_wiring": "scripts/check_changed.py OWNERSHIP_MAP_FILES set triggers python -m scripts.verify_ownership_map when a watched file changes"
+  },
+  "downstream_extension_map": [
+    {
+      "extension_points": [
+        "output_contract",
+        "version_registry"
+      ],
+      "issue": "SGS-002",
+      "justification": "Extends the code/docs consistency check this audit establishes (see known_drift) into a standing CI guard.",
+      "linear_id": "SLM-436",
+      "new_owner_justified": false,
+      "title": "Enforce machine-checkable contract/documentation version consistency"
+    },
+    {
+      "extension_points": [
+        "semantic_plan"
+      ],
+      "issue": "SGS-003",
+      "justification": "SemanticPlanV1 is the program-side output contract, not a prompt-side input type; a new adjacent 'prompt_requirements' owner is justified because merging into SemanticPlanV1 would violate its single-schema contract.",
+      "linear_id": "SLM-437",
+      "new_owner_justified": true,
+      "title": "Add prompt-side partial semantic requirements without duplicating SemanticPlanV1"
+    },
+    {
+      "extension_points": [
+        "semantic_plan"
+      ],
+      "issue": "SGS-004",
+      "justification": "Extends the SGS-003 prompt_requirements owner; no new owner beyond it.",
+      "linear_id": "SLM-442",
+      "new_owner_justified": false,
+      "title": "Implement conservative deterministic request-to-requirement extraction"
+    },
+    {
+      "extension_points": [
+        "semantic_plan"
+      ],
+      "issue": "SGS-005",
+      "justification": "Extends SGS-003/004's prompt_requirements owner using the authority_tiers vocabulary this map publishes.",
+      "linear_id": "SLM-443",
+      "new_owner_justified": false,
+      "title": "Add production/oracle/hard-authority projections with invariance tests"
+    },
+    {
+      "extension_points": [
+        "semantic_plan",
+        "verifier_gate_stack",
+        "decode_telemetry"
+      ],
+      "issue": "SGS-006",
+      "justification": "Pure integration issue across three existing owners; no new owner.",
+      "linear_id": "SLM-454",
+      "new_owner_justified": false,
+      "title": "Integrate prompt requirements with existing semantic-plan/evaluation/decode owners"
+    },
+    {
+      "extension_points": [
+        "semantic_plan",
+        "verifier_gate_stack",
+        "dsl_pack_registry_canonical"
+      ],
+      "issue": "SGS-007",
+      "justification": "No existing contract shapes a pack-supplied, verifier-checked synthesis problem; a new VerifiedSynthesisProblemV1 owner is justified, layered on the three existing owners it must not duplicate.",
+      "linear_id": "SLM-444",
+      "new_owner_justified": true,
+      "title": "Implement VerifiedSynthesisProblemV1 and generated JSON Schema"
+    },
+    {
+      "extension_points": [
+        "verified_synthesis_problem",
+        "prompt_requirements",
+        "semantic_plan",
+        "verifier_gate_stack"
+      ],
+      "issue": "PGS-A01",
+      "justification": "No existing contract compiles pack/request/plan/verifier inputs into authority-labeled, prune-gated goal constraints; CompiledGoalConstraintSetV1 is a new owner layered on the four extension points it must not duplicate.",
+      "linear_id": "SLM-494",
+      "new_owner_justified": true,
+      "title": "Implement compiled goal-constraint contract (GoalConstraintV1 / CompiledGoalConstraintSetV1)"
+    },
+    {
+      "extension_points": [
+        "compiled_goal_constraints",
+        "verified_synthesis_problem",
+        "prompt_requirements",
+        "dsl_pack_registry_canonical"
+      ],
+      "issue": "PGS-A02",
+      "justification": "No existing owner compiles request/problem/pack inputs into CompiledGoalConstraintSetV1; requirements_compile.py is a new compiler-hard owner layered on compiled_goal_constraints, verified_synthesis_problem, prompt_requirements, and the canonical pack registry without modifying SGS-004 extractor authority.",
+      "linear_id": "SLM-495",
+      "new_owner_justified": true,
+      "title": "Compile structured request, synthesis-problem, and pack facts into typed goal constraints"
+    },
+    {
+      "extension_points": [
+        "compiled_goal_constraints",
+        "requirements_compile"
+      ],
+      "issue": "PGS-A03",
+      "justification": "Extends requirements_compile with evaluate_goal_constraints and GoalConstraintEvaluationV1; no new owner beyond the PGS-A02 compiler.",
+      "linear_id": "SLM-496",
+      "new_owner_justified": false,
+      "title": "Add deterministic candidate-side goal-constraint evaluation"
+    },
+    {
+      "extension_points": [
+        "compiled_goal_constraints",
+        "verifier_gate_stack"
+      ],
+      "issue": "PGS-B01",
+      "justification": "No existing contract pins goal-verifier mode, required constraint/gate/evaluator identities, and digest-bound terminal evidence; goal_support.py is a new verifier-hard owner layered on compiled_goal_constraints and the gate stack without duplicating either.",
+      "linear_id": "SLM-497",
+      "new_owner_justified": true,
+      "title": "Implement GoalVerifierProfileV1 and GoalTerminalEvidenceV1 contracts"
+    },
+    {
+      "extension_points": [
+        "goal_support",
+        "verifier_gate_stack",
+        "compiled_goal_constraints"
+      ],
+      "issue": "PGS-B02",
+      "justification": "OpenUIGoalVerifier in openui_support.py composes existing well-formedness, ProgramSpec/SemanticPlanV1 projection, evaluate_goal_constraints, and G0-G12 gates under the goal_support profile contract; no new search or verifier-stack owner.",
+      "linear_id": "SLM-498",
+      "new_owner_justified": false,
+      "title": "Implement OpenUIGoalVerifier with mandatory tri-state terminal semantics"
+    },
+    {
+      "extension_points": [
+        "goal_support",
+        "valid_state_search_generic",
+        "solver_replay"
+      ],
+      "issue": "PGS-C01",
+      "justification": "Goal-aware wrapper over EnumerativeSupportOracle and certificate replay; canonical search proof remains SupportCertificate with GoalSupportResultV1 sidecars \u2014 no parallel search engine.",
+      "linear_id": "SLM-499",
+      "new_owner_justified": false,
+      "title": "Implement GoalSupportProvider, replay sidecars, and exact_goal_closure guard"
+    },
+    {
+      "extension_points": [
+        "goal_support"
+      ],
+      "issue": "PGS-C02",
+      "justification": "Bounded obstruction cores and replay live under goal_support_obstruction.py as goal_support extensions; no new search owner.",
+      "linear_id": "SLM-500",
+      "new_owner_justified": false,
+      "title": "Implement DomainObstructionCoreV1 bounded hitting-set cores"
+    },
+    {
+      "extension_points": [
+        "goal_support"
+      ],
+      "issue": "PGS-C03",
+      "justification": "GoalActionEvidenceV1/GoalDomainAdequacyReportV1 and analyze_goal_domain extend goal_support_domain_adequacy.py under the goal_support owner; no new search or verifier owner.",
+      "linear_id": "SLM-501",
+      "new_owner_justified": false,
+      "title": "Implement goal-action evidence and domain-adequacy classification"
+    },
+    {
+      "extension_points": [
+        "counterfactual_probe",
+        "goal_support"
+      ],
+      "issue": "PGS-D01",
+      "justification": "Distinct GoalSupportProbeInputs/run_goal_support_probe path under counterfactual_probe; does not alias semantic_partition relative rollout evidence.",
+      "linear_id": "SLM-502",
+      "new_owner_justified": false,
+      "title": "Add distinct goal-support path to counterfactual probe"
+    },
+    {
+      "extension_points": [
+        "decision_events_v2",
+        "goal_support"
+      ],
+      "issue": "PGS-D02",
+      "justification": "materialize_goal_support maps goal-support evidence into existing DecisionEventV2 ObjectiveView sets with profile trainability guards; no new decision schema owner.",
+      "linear_id": "SLM-503",
+      "new_owner_justified": false,
+      "title": "Materialize goal-support ObjectiveView sets in DecisionEventV2"
+    },
+    {
+      "extension_points": [
+        "goal_support",
+        "valid_state_search_generic",
+        "lattice_search_forest_adapter"
+      ],
+      "issue": "PGS-E01",
+      "justification": "Opt-in goal_support_mode seam in dsl/solver/decode.py composes existing forest search with goal_support_certified_prune and diagnostic observe paths; no new decode engine.",
+      "linear_id": "SLM-504",
+      "new_owner_justified": false,
+      "title": "Wire default-off goal support into canonical decode"
+    },
+    {
+      "extension_points": [
+        "decode_telemetry",
+        "goal_support"
+      ],
+      "issue": "PGS-E02",
+      "justification": "goal_support_* counters and GoalSupportTelemetrySink extend decode_telemetry; observation-only fields never authorize prune.",
+      "linear_id": "SLM-505",
+      "new_owner_justified": false,
+      "title": "Add canonical goal-support decode telemetry counters"
+    },
+    {
+      "extension_points": [
+        "goal_support"
+      ],
+      "issue": "PGS-F01",
+      "justification": "Formal drift guard (GoalSupport.lean + goal_support_mapping.py golden cases) over landed Python partition/obstruction contracts; no new runtime search or verifier owner.",
+      "linear_id": "SLM-506",
+      "new_owner_justified": false,
+      "title": "Prove finite goal-support structural laws in Lean"
+    },
+    {
+      "extension_points": [
+        "goal_support",
+        "compiled_goal_constraints"
+      ],
+      "issue": "PGS-G01",
+      "justification": "Adversarial regression tests over landed goal_support and compiled_goal_constraints contracts; tests only, no new owner.",
+      "linear_id": "SLM-507",
+      "new_owner_justified": false,
+      "title": "Add adversarial goal-support regression suite"
+    },
+    {
+      "extension_points": [
+        "goal_support"
+      ],
+      "issue": "PGS-G02",
+      "justification": "Property/oracle-cross-check tests for domain adequacy and obstruction tables; tests only.",
+      "linear_id": "SLM-508",
+      "new_owner_justified": false,
+      "title": "Add property tests for partitions, classifier, and obstruction"
+    },
+    {
+      "extension_points": [
+        "goal_support",
+        "decode_telemetry"
+      ],
+      "issue": "PGS-G03",
+      "justification": "Decode singleton-bypass and forest-parity regression tests for the PGS-E01 seam; tests only.",
+      "linear_id": "SLM-509",
+      "new_owner_justified": false,
+      "title": "Add adversarial decode parity suite for goal support"
+    },
+    {
+      "extension_points": [
+        "experiment_campaign",
+        "goal_support"
+      ],
+      "issue": "PGS-H01",
+      "justification": "Default-off bounded diagnostic ExperimentCampaignV1 over word-tree fixtures composing goal_support analyze_goal_domain and exact_goal_closure; result schema goal_support_domain_adequacy_campaign_fixture/v1.",
+      "linear_id": "SLM-510",
+      "new_owner_justified": false,
+      "title": "Add goal-support domain-adequacy fixture campaign harness"
+    },
+    {
+      "extension_points": [
+        "experiment_campaign"
+      ],
+      "issue": "PGS-H02",
+      "justification": "Measured-results documentation for the PGS-H01 fixture campaign (claim_class=diagnostic); no new harness owner.",
+      "linear_id": "SLM-511",
+      "new_owner_justified": false,
+      "title": "Publish goal-support domain-adequacy fixture campaign evidence"
+    },
+    {
+      "extension_points": [
+        "goal_support",
+        "compiled_goal_constraints",
+        "requirements_compile",
+        "counterfactual_probe",
+        "decision_events_v2",
+        "decode_telemetry",
+        "experiment_campaign"
+      ],
+      "issue": "PGS-I01",
+      "justification": "Pure design documentation over landed PGS owners; no new production code, campaign execution, or ship claim.",
+      "linear_id": "SLM-512",
+      "new_owner_justified": false,
+      "title": "Document proof-carrying goal support design, authority, and threat model"
+    },
+    {
+      "extension_points": [
+        "dsl_pack_registry_canonical",
+        "completion_domain"
+      ],
+      "issue": "SGS-008",
+      "justification": "Extends the canonical pack registry's capability surface; no new owner.",
+      "linear_id": "SLM-455",
+      "new_owner_justified": false,
+      "title": "Add fail-closed SyGuS/SemGuS capability reports and conformance fixtures"
+    },
+    {
+      "extension_points": [],
+      "issue": "SGS-009",
+      "justification": "No existing subsystem owns disposition/supersession reporting as reusable code; it follows the documented narrative precedent in docs/design/semantic-planning-valid-state-disposition.md (SLM-160) rather than a registered code owner, and its output feeds version_registry once mechanisms are actually retired/frozen/promoted.",
+      "linear_id": "SLM-456",
+      "new_owner_justified": true,
+      "title": "Generate mechanism disposition and stale-evidence supersession reports"
+    },
+    {
+      "extension_points": [
+        "version_registry"
+      ],
+      "issue": "SGS-010",
+      "justification": "Extends version_registry to cover SGS-007's VerifiedSynthesisProblemV1 once it exists.",
+      "linear_id": "SLM-445",
+      "new_owner_justified": false,
+      "title": "Close schema versioning, migrations, and compatibility tests for synthesis contracts"
+    },
+    {
+      "extension_points": [
+        "semantic_failure_taxonomy",
+        "verifier_gate_stack"
+      ],
+      "issue": "VCE-001",
+      "justification": "Extends the existing taxonomy adapter and gate stack; witnesses are a lossless superset of current traces.",
+      "linear_id": "SLM-438",
+      "new_owner_justified": false,
+      "title": "Extend semantic-failure traces into lossless typed verifier witnesses"
+    },
+    {
+      "extension_points": [
+        "semantic_repair"
+      ],
+      "issue": "VCE-002",
+      "justification": "Title names the existing owner directly.",
+      "linear_id": "SLM-446",
+      "new_owner_justified": false,
+      "title": "Unify repair residuals with existing SemanticRepairRecordV1 and conflict slices"
+    },
+    {
+      "extension_points": [
+        "solver_replay",
+        "verifier_gate_stack"
+      ],
+      "issue": "VCE-003",
+      "justification": "Tests the VCE-001 witness type through the existing replay owner.",
+      "linear_id": "SLM-457",
+      "new_owner_justified": false,
+      "title": "Add verifier-witness determinism, replay, tamper, and redaction security tests"
+    },
+    {
+      "extension_points": [
+        "plan_oracle_substitutor"
+      ],
+      "issue": "VCE-004",
+      "justification": "Title names the existing owner directly.",
+      "linear_id": "SLM-447",
+      "new_owner_justified": false,
+      "title": "Promote existing PlanOracleSubstitutor into a full factor-wise intervention harness"
+    },
+    {
+      "extension_points": [
+        "plan_oracle_substitutor"
+      ],
+      "issue": "VCE-005",
+      "justification": "Extends the VCE-004 intervention harness with control arms.",
+      "linear_id": "SLM-458",
+      "new_owner_justified": false,
+      "title": "Add no-op, destructive, shuffled, one-factor, and all-oracle intervention controls"
+    },
+    {
+      "extension_points": [
+        "semantic_plan"
+      ],
+      "issue": "VCE-006",
+      "justification": "Extends data/semantic_contrast/transforms.py, an existing SemanticPlanV1 consumer.",
+      "linear_id": "SLM-448",
+      "new_owner_justified": false,
+      "title": "Extend the existing hard-valid semantic contrast corpus for missing factor families"
+    },
+    {
+      "extension_points": [
+        "semantic_plan",
+        "counterfactual_replay"
+      ],
+      "issue": "VCE-007",
+      "justification": "Extends the VCE-006 contrast corpus and the existing judge-based replay verifier.",
+      "linear_id": "SLM-459",
+      "new_owner_justified": false,
+      "title": "Add metamorphic prompt/program, alpha-renaming, and positive-equivalence generators"
+    },
+    {
+      "extension_points": [
+        "data_corpus_audit"
+      ],
+      "issue": "VCE-008",
+      "justification": "Extends the existing data_corpus_audit tool (scripts/audit_data_corpora.py) named in AGENTS.md data-quality law, not a new owner.",
+      "linear_id": "SLM-463",
+      "new_owner_justified": false,
+      "title": "Add leakage, deduplication, topology, and OOD split audits"
+    },
+    {
+      "extension_points": [
+        "experiment_campaign"
+      ],
+      "issue": "VCE-009",
+      "justification": "ExperimentCampaignV1 is the existing governed-evidence-envelope owner.",
+      "linear_id": "SLM-468",
+      "new_owner_justified": false,
+      "title": "Record oracle/contrast fixture campaigns in governed evidence envelopes"
+    },
+    {
+      "extension_points": [
+        "verifier_gate_stack"
+      ],
+      "issue": "VCE-010",
+      "justification": "Must coordinate with the existing judge-independence audit (SLM-106, see related_overlaps) rather than duplicate it.",
+      "linear_id": "SLM-469",
+      "new_owner_justified": false,
+      "title": "Define evaluator calibration, blinded adjudication, and risk-coverage protocol"
+    },
+    {
+      "extension_points": [
+        "decode_telemetry"
+      ],
+      "issue": "PCT-001",
+      "justification": "Title names the existing owner directly.",
+      "linear_id": "SLM-439",
+      "new_owner_justified": false,
+      "title": "Extend immutable telemetry with authority, exact-work, witness, and cold/warm fields"
+    },
+    {
+      "extension_points": [
+        "runtime_telemetry",
+        "solver_replay"
+      ],
+      "issue": "PCT-002",
+      "justification": "Extends the existing runtime telemetry sink and solver replay recorder.",
+      "linear_id": "SLM-449",
+      "new_owner_justified": false,
+      "title": "Add hermetic replay traces and an optional observability sink"
+    },
+    {
+      "extension_points": [
+        "decode_telemetry"
+      ],
+      "issue": "PCT-003",
+      "justification": "Extends the existing bench_* harness family named in AGENTS.md's experiment triggers list; no new owner.",
+      "linear_id": "SLM-450",
+      "new_owner_justified": false,
+      "title": "Implement an honest end-to-end cold and warm benchmark harness"
+    },
+    {
+      "extension_points": [
+        "certified_completion_artifact",
+        "dsl_pack_registry_canonical"
+      ],
+      "issue": "PCT-004",
+      "justification": "Title names both existing owners directly.",
+      "linear_id": "SLM-440",
+      "new_owner_justified": false,
+      "title": "Generalize the certified OpenUI completion artifact behind a pack-owned provider seam"
+    },
+    {
+      "extension_points": [
+        "certified_completion_artifact"
+      ],
+      "issue": "PCT-005",
+      "justification": "Verifies the PCT-004 provider seam.",
+      "linear_id": "SLM-451",
+      "new_owner_justified": false,
+      "title": "Prove OpenUI artifact byte, digest, decision, and tamper parity through the provider seam"
+    },
+    {
+      "extension_points": [
+        "certified_completion_artifact",
+        "completion_domain"
+      ],
+      "issue": "PCT-006",
+      "justification": "Extends the existing artifact and completion-domain owners; guards goal-invariant I2 (forced bypass on singletons).",
+      "linear_id": "SLM-460",
+      "new_owner_justified": false,
+      "title": "Add static/request-boundary differential tests and singleton zero-work guards"
+    },
+    {
+      "extension_points": [
+        "decode_telemetry"
+      ],
+      "issue": "PCT-007",
+      "justification": "Extends decode_telemetry with the disposition concept SGS-009 formalizes.",
+      "linear_id": "SLM-452",
+      "new_owner_justified": false,
+      "title": "Add mechanism activation, choice-change, and disposition telemetry"
+    },
+    {
+      "extension_points": [
+        "experiment_campaign",
+        "certified_completion_artifact"
+      ],
+      "issue": "PCT-008",
+      "justification": "Runs PCT-003/004/005/006 work through the existing campaign contract.",
+      "linear_id": "SLM-464",
+      "new_owner_justified": false,
+      "title": "Run fixture cold/warm and artifact-parity evidence campaign"
+    },
+    {
+      "extension_points": [
+        "dsl_pack_registry_canonical"
+      ],
+      "issue": "SRP-001",
+      "justification": "New pack instance is expected and correct; MUST register with the canonical dsl.pack.DslPack registry, not the shadow dsl/packs/ registry (see duplicate_subsystem_risks).",
+      "linear_id": "SLM-441",
+      "new_owner_justified": true,
+      "title": "Register an isolated symbolic-regression DslPack and problem contract"
+    },
+    {
+      "extension_points": [
+        "output_contract",
+        "production_codec"
+      ],
+      "issue": "SRP-002",
+      "justification": "New pack-local IR is justified (no existing symbolic-expression grammar) but must layer under the shared output_contract, not fork it.",
+      "linear_id": "SLM-453",
+      "new_owner_justified": true,
+      "title": "Implement typed symbolic-expression IR, grammar, codec, and symbol-only contract"
+    },
+    {
+      "extension_points": [
+        "dsl_pack_registry_canonical"
+      ],
+      "issue": "SRP-003",
+      "justification": "No existing numeric evaluator for this pack; new owner justified, scoped inside SRP-001's pack.",
+      "linear_id": "SLM-461",
+      "new_owner_justified": true,
+      "title": "Implement a safe vectorized NumPy evaluator with explicit numerical-domain policies"
+    },
+    {
+      "extension_points": [
+        "dsl_pack_registry_canonical"
+      ],
+      "issue": "SRP-004",
+      "justification": "Extends the SRP-003 evaluator.",
+      "linear_id": "SLM-465",
+      "new_owner_justified": false,
+      "title": "Implement affine coefficient analysis and deterministic least-squares fitting"
+    },
+    {
+      "extension_points": [
+        "verifier_gate_stack"
+      ],
+      "issue": "SRP-005",
+      "justification": "New pack-local canonicalizer justified; its rewrite-certificate must follow the VCE-001 witness pattern rather than invent a parallel proof format.",
+      "linear_id": "SLM-462",
+      "new_owner_justified": true,
+      "title": "Implement canonicalization and a proof-scoped rewrite-certificate schema"
+    },
+    {
+      "extension_points": [
+        "dsl_pack_registry_canonical"
+      ],
+      "issue": "SRP-006",
+      "justification": "Tests SRP-003/004/005; no new owner.",
+      "linear_id": "SLM-470",
+      "new_owner_justified": false,
+      "title": "Add evaluator, fitting, canonicalization, and numerical differential tests"
+    },
+    {
+      "extension_points": [
+        "dsl_pack_registry_canonical"
+      ],
+      "issue": "SRP-007",
+      "justification": "Reporting layer over SRP-003/004/005.",
+      "linear_id": "SLM-466",
+      "new_owner_justified": false,
+      "title": "Implement validity, fit, extrapolation, complexity, and Pareto reporting"
+    },
+    {
+      "extension_points": [
+        "data_corpus_audit"
+      ],
+      "issue": "SRP-008",
+      "justification": "Reuses data_corpus_audit (scripts/audit_data_corpora.py) leakage-control machinery for a new corpus, not a new owner.",
+      "linear_id": "SLM-471",
+      "new_owner_justified": false,
+      "title": "Implement deterministic symbolic-regression corpus generation with OOD and leakage controls"
+    },
+    {
+      "extension_points": [
+        "valid_state_search_generic"
+      ],
+      "issue": "SRP-009",
+      "justification": "Reuses the generic bounded search controller as the search backbone rather than inventing a new search owner.",
+      "linear_id": "SLM-472",
+      "new_owner_justified": false,
+      "title": "Implement a bounded canonical enumerative symbolic-regression baseline"
+    },
+    {
+      "extension_points": [
+        "dsl_pack_registry_canonical"
+      ],
+      "issue": "SRP-010",
+      "justification": "Extends the canonical pack registry's portability guarantees to the SRP-001 pack.",
+      "linear_id": "SLM-474",
+      "new_owner_justified": false,
+      "title": "Add end-to-end symbolic-pack portability, default-isolation, and standards fixtures"
+    },
+    {
+      "extension_points": [],
+      "issue": "SRP-011",
+      "justification": "External, optional dependency by design; isolated deliberately and does not extend any internal owner.",
+      "linear_id": "SLM-475",
+      "new_owner_justified": true,
+      "title": "Define an optional PySR/SRBench adapter with isolated environment manifest"
+    },
+    {
+      "extension_points": [
+        "experiment_campaign"
+      ],
+      "issue": "SIE-001",
+      "justification": "Registers the EXP-SR catalogue in the existing ExperimentCampaignV1 contract.",
+      "linear_id": "SLM-467",
+      "new_owner_justified": false,
+      "title": "Register EXP-SR campaign catalogue and promotion guardrails"
+    },
+    {
+      "extension_points": [
+        "plan_oracle_substitutor",
+        "experiment_campaign"
+      ],
+      "issue": "SIE-002",
+      "justification": "Runs the VCE-004/VCE-009 intervention harness through the campaign contract. Fixture evidence: docs/design/iter-slm476-sie-002-oracle-localization-20260810.md (authorized_factors: roles, bindings; claim_class=fixture; no promotion).",
+      "linear_id": "SLM-476",
+      "new_owner_justified": false,
+      "title": "Execute held-out factor-wise semantic oracle localization (EXP-SR-1)"
+    },
+    {
+      "extension_points": [
+        "semantic_plan"
+      ],
+      "issue": "SIE-003",
+      "justification": "Extends SGS-003/004's prompt_requirements owner; must stay advisory-learned, never promoted to compiler-hard.",
+      "linear_id": "SLM-477",
+      "new_owner_justified": false,
+      "title": "Implement prompt-to-partial-requirements prediction behind the advisory-only seam (EXP-SR-2)"
+    },
+    {
+      "extension_points": [
+        "experiment_campaign"
+      ],
+      "issue": "SIE-004",
+      "justification": "Runs SIE-003 through the campaign contract. Fixture evidence: docs/design/iter-slm482-sie-004-predictor-campaign-20260810.md (claim_class=fixture; legal_support_parity exact; SIE-002 authorized_factors roles+bindings gate RequirementFact emission; no promotion).",
+      "linear_id": "SLM-482",
+      "new_owner_justified": false,
+      "title": "Run matched prompt-requirement predictor campaign (EXP-SR-2)"
+    },
+    {
+      "extension_points": [
+        "verifier_gate_stack"
+      ],
+      "issue": "SIE-005",
+      "justification": "Coordinates with the existing SLM-106 judge-independence track (see related_overlaps) and VCE-010's protocol. Fixture packet: docs/design/iter-slm478-sie-005-blinded-packet-20260810.md. Campaign successor: SIE-006 / EXP-SR-3 (SLM-483).",
+      "linear_id": "SLM-478",
+      "new_owner_justified": false,
+      "title": "Prepare blinded human/independent-judge data, adjudication packet, and credential runbook"
+    },
+    {
+      "extension_points": [
+        "experiment_campaign",
+        "verifier_gate_stack"
+      ],
+      "issue": "SIE-006",
+      "justification": "Runs VCE-010 + SIE-005 through the campaign contract. Diagnostic evidence: docs/design/iter-slm483-sie-006-calibration-campaign-20260810.md (claim_class=diagnostic; evaluator_human_agreement_kappa=0.0 on mock/synthetic evidence, below the 0.1 minimum_effect and the catalogue's own le-0.0 kill gate -- an honest negative result on labeled-mock external-judge/human-rater fixtures, since this environment has no real external-judge credentials or human raters; not a construct-validity claim). Fixture/external-blocked construct-validity campaign: docs/design/iter-slm483-sie-006-construct-validity-20260810.md.",
+      "linear_id": "SLM-483",
+      "new_owner_justified": false,
+      "title": "Execute evaluator construct-validity and human calibration campaign (EXP-SR-3)"
+    },
+    {
+      "extension_points": [
+        "decode_telemetry",
+        "solver_replay"
+      ],
+      "issue": "SIE-007",
+      "justification": "New typed feature record justified (no existing compute-state feature schema), layered on the existing telemetry and replay owners it must not duplicate.",
+      "linear_id": "SLM-473",
+      "new_owner_justified": true,
+      "title": "Implement ComputeStateFeaturesV1 and a safe symbolic-controller replay substrate"
+    },
+    {
+      "extension_points": [
+        "experiment_campaign"
+      ],
+      "issue": "SIE-008",
+      "justification": "Runs SIE-007 through the campaign contract; capacity/compute claims must stay advisory-learned and size-matched per goal-invariant VI.",
+      "linear_id": "SLM-484",
+      "new_owner_justified": false,
+      "title": "Execute symbolic value-of-compute controller campaign (EXP-SR-5)"
+    },
+    {
+      "extension_points": [
+        "semantic_repair",
+        "verifier_gate_stack",
+        "experiment_campaign"
+      ],
+      "issue": "RSP-001",
+      "justification": "Runs semantic_repair + VCE-001 witnesses through the campaign contract.",
+      "linear_id": "SLM-488",
+      "new_owner_justified": false,
+      "title": "Execute witness-guided CEGIS repair experiment (EXP-SR-4)"
+    },
+    {
+      "extension_points": [
+        "valid_state_search_generic",
+        "experiment_campaign"
+      ],
+      "issue": "RSP-002",
+      "justification": "Runs the generic search controller through the campaign contract; arms must be size-matched per goal-invariant VI.",
+      "linear_id": "SLM-489",
+      "new_owner_justified": false,
+      "title": "Execute neural-guided bounded search and infilling-order experiment (EXP-SR-6)"
+    },
+    {
+      "extension_points": [
+        "certified_completion_artifact",
+        "experiment_campaign"
+      ],
+      "issue": "RSP-003",
+      "justification": "Runs the PCT-004/005 provider seam through the campaign contract.",
+      "linear_id": "SLM-485",
+      "new_owner_justified": false,
+      "title": "Execute extended static-artifact and packed semantic-summary experiment (EXP-SR-7)"
+    },
+    {
+      "extension_points": [
+        "dsl_pack_registry_canonical",
+        "experiment_campaign"
+      ],
+      "issue": "RSP-004",
+      "justification": "Runs SRP-005's canonicalization/rewrite-certificate work through the campaign contract.",
+      "linear_id": "SLM-479",
+      "new_owner_justified": false,
+      "title": "Execute a proof-scoped e-graph/equivalence-region experiment in the symbolic pack (EXP-SR-8)"
+    },
+    {
+      "extension_points": [
+        "dsl_pack_registry_canonical",
+        "certified_completion_artifact",
+        "experiment_campaign"
+      ],
+      "issue": "RSP-005",
+      "justification": "Runs pack + artifact owners through the campaign contract.",
+      "linear_id": "SLM-480",
+      "new_owner_justified": false,
+      "title": "Execute prospective certified macro/library-learning experiment (EXP-SR-9)"
+    },
+    {
+      "extension_points": [
+        "experiment_campaign"
+      ],
+      "issue": "RSP-006",
+      "justification": "Runs SRP-008 corpus generation through the campaign contract.",
+      "linear_id": "SLM-481",
+      "new_owner_justified": false,
+      "title": "Execute quality-diversity corpus generation experiment (EXP-SR-10)"
+    },
+    {
+      "extension_points": [
+        "experiment_campaign"
+      ],
+      "issue": "RSP-007",
+      "justification": "Runs the SRP-011 optional external adapter through the campaign contract.",
+      "linear_id": "SLM-486",
+      "new_owner_justified": false,
+      "title": "Execute matched PySR and SRBench-compatible symbolic benchmark (EXP-SR-11)"
+    },
+    {
+      "extension_points": [
+        "dsl_pack_registry_canonical",
+        "experiment_campaign"
+      ],
+      "issue": "RSP-008",
+      "justification": "Runs SRP-010 portability work through ExperimentCampaignV1 (claim_class=diagnostic); evidence in docs/design/iter-slm487-rsp-008-portability-20260810.md. Follows the SLM-159 replication precedent.",
+      "linear_id": "SLM-487",
+      "new_owner_justified": false,
+      "title": "Run real OpenUI + symbolic-regression second-pack portability certification (EXP-SR-12)"
+    },
+    {
+      "extension_points": [
+        "version_registry",
+        "experiment_campaign"
+      ],
+      "issue": "RSP-009",
+      "justification": "Follows the SLM-160 disposition-report precedent and this map's known_drift/duplicate_subsystem_risks pattern; no new owner.",
+      "linear_id": "SLM-490",
+      "new_owner_justified": false,
+      "title": "Publish cross-experiment disposition and retire, freeze, or promote mechanisms honestly"
+    },
+    {
+      "extension_points": [
+        "experiment_campaign"
+      ],
+      "issue": "RESEARCH-02",
+      "justification": "Thin default-off/research-only registry over ExperimentCampaignV1/CampaignLockV1 plus RESEARCH-01 citations; no parallel campaign store.",
+      "linear_id": "SLM-533",
+      "new_owner_justified": false,
+      "title": "Default-off experiment preregistration registry"
+    },
+    {
+      "extension_points": [
+        "experiment_campaign"
+      ],
+      "issue": "RESEARCH-05",
+      "justification": "Isolated default-off research adapter + harness over ExperimentCampaignV1/CampaignLockV1 and EVID-10 verified encoding (lrat_pilot); RESEARCH-02 preregistry activation only \u2014 no parallel campaign store or production decode authority.",
+      "linear_id": "SLM-563",
+      "new_owner_justified": false,
+      "title": "Experiment: proof-producing VSS SAT backend with LRAT"
+    },
+    {
+      "extension_points": [
+        "experiment_campaign"
+      ],
+      "issue": "RESEARCH-06",
+      "justification": "Isolated default-off research adapter + harness over ExperimentCampaignV1/CampaignLockV1 and EVID-10 verified encoding (pblean_pilot); RESEARCH-02 preregistry activation only \u2014 no parallel campaign store or production decode authority.",
+      "linear_id": "SLM-564",
+      "new_owner_justified": false,
+      "title": "Experiment: proof-producing VSS pseudo-Boolean backend with PBLean"
+    },
+    {
+      "extension_points": [
+        "experiment_campaign"
+      ],
+      "issue": "RESEARCH-07",
+      "justification": "Isolated default-off research adapter + harness over ExperimentCampaignV1/CampaignLockV1 and EVID-10 verified encoding (alethe_pilot); RESEARCH-02 preregistry activation only \u2014 no parallel campaign store or production decode authority.",
+      "linear_id": "SLM-565",
+      "new_owner_justified": false,
+      "title": "Experiment: Alethe/SMT proof reconstruction for theory-rich VSS"
+    },
+    {
+      "extension_points": [
+        "experiment_campaign"
+      ],
+      "issue": "RESEARCH-09",
+      "justification": "Isolated default-off research adapter + harness over ExperimentCampaignV1/CampaignLockV1 with structural-param instrumentation; RESEARCH-02 preregistry activation only \u2014 no parallel campaign store or production decode authority.",
+      "linear_id": "SLM-541",
+      "new_owner_justified": false,
+      "title": "Experiment: parameterized and treewidth-aware VSS complexity"
+    },
+    {
+      "extension_points": [
+        "experiment_campaign"
+      ],
+      "issue": "RESEARCH-03",
+      "justification": "Isolated default-off research Lean package + harness over ExperimentCampaignV1/CampaignLockV1 and HARN-08/KERN-12 interpretation packages; RESEARCH-02 preregistry activation only \u2014 no parallel campaign store or production decode authority.",
+      "linear_id": "SLM-549",
+      "new_owner_justified": false,
+      "title": "Experiment: genuine Big-Five interpretation pilot in a separate Lean research package"
+    },
+    {
+      "extension_points": [
+        "experiment_campaign"
+      ],
+      "issue": "RESEARCH-04",
+      "justification": "Isolated default-off RM Zoo benchmark backend + harness over ExperimentCampaignV1/CampaignLockV1 and HARN-08 labeling; RESEARCH-02 preregistry activation only \u2014 no parallel campaign store or production decode authority.",
+      "linear_id": "SLM-550",
+      "new_owner_justified": false,
+      "title": "Experiment: Reverse Mathematics Zoo classification and task benchmark"
+    },
+    {
+      "extension_points": [
+        "experiment_campaign"
+      ],
+      "issue": "RESEARCH-10",
+      "justification": "Isolated default-off proof-strength curriculum backend + harness over ExperimentCampaignV1/CampaignLockV1 and HARN-11 root-family isolation; RESEARCH-02 preregistry activation only \u2014 no parallel trainer or production authority.",
+      "linear_id": "SLM-566",
+      "new_owner_justified": false,
+      "title": "Experiment: proof-strength curriculum for the Lean training pipeline"
+    },
+    {
+      "extension_points": [
+        "experiment_campaign"
+      ],
+      "issue": "RESEARCH-14",
+      "justification": "Isolated default-off checker diversity backend + harness over ExperimentCampaignV1/CampaignLockV1 and EVID-08/EVID-11 trust-domain fixtures; RESEARCH-02 preregistry activation only \u2014 no mandatory external checker dependency or production authority.",
+      "linear_id": "SLM-572",
+      "new_owner_justified": false,
+      "title": "Experiment: checker diversity and independent fault-domain coverage"
+    },
+    {
+      "extension_points": [
+        "experiment_campaign"
+      ],
+      "issue": "RESEARCH-16",
+      "justification": "Isolated default-off rational-to-float transfer certificate backend + harness over ExperimentCampaignV1/CampaignLockV1 and EVID-04 exact-arithmetic fixtures; RESEARCH-02 preregistry activation only \u2014 no production gate authority.",
+      "linear_id": "SLM-570",
+      "new_owner_justified": false,
+      "title": "Experiment: rational-to-float transfer certificates for selected metrics and gates"
+    },
+    {
+      "extension_points": [
+        "experiment_campaign"
+      ],
+      "issue": "RESEARCH-17",
+      "justification": "Isolated default-off proof-mined quantitative bounds backend + harness over ExperimentCampaignV1/CampaignLockV1 and HARN-07 revmath fixtures; RESEARCH-02 preregistry activation only \u2014 no production gate authority.",
+      "linear_id": "SLM-557",
+      "new_owner_justified": false,
+      "title": "Experiment: proof-mined quantitative bounds from qualitative project theorems"
+    },
+    {
+      "extension_points": [
+        "experiment_campaign"
+      ],
+      "issue": "RESEARCH-11",
+      "justification": "Isolated default-off process-verified reward shaping backend + harness over ExperimentCampaignV1/CampaignLockV1 and INTEG-05 failure witness fixtures; RESEARCH-02 preregistry activation only \u2014 no production gate authority.",
+      "linear_id": "SLM-574",
+      "new_owner_justified": false,
+      "title": "Experiment: process-verified reward shaping for revmath proof tasks"
+    },
+    {
+      "extension_points": [
+        "experiment_campaign"
+      ],
+      "issue": "RESEARCH-12",
+      "justification": "Isolated default-off successor-theorem semantic validation backend + harness over ExperimentCampaignV1/CampaignLockV1 and HARN-11 revmath fixtures; RESEARCH-02 preregistry activation only \u2014 no production gate authority.",
+      "linear_id": "SLM-567",
+      "new_owner_justified": false,
+      "title": "Experiment: successor-theorem semantic validation for generated theorem statements"
+    },
+    {
+      "extension_points": [
+        "experiment_campaign"
+      ],
+      "issue": "RESEARCH-13",
+      "justification": "Isolated default-off dropped-assumption counterexample backend + harness over ExperimentCampaignV1/CampaignLockV1 and HARN-06 revmath fixtures; RESEARCH-02 preregistry activation only \u2014 no production gate authority.",
+      "linear_id": "SLM-568",
+      "new_owner_justified": false,
+      "title": "Experiment: formal counterexample generation under dropped assumptions"
+    },
+    {
+      "extension_points": [
+        "experiment_campaign"
+      ],
+      "issue": "RESEARCH-15",
+      "justification": "Isolated default-off anytime-valid promotion backend + harness over ExperimentCampaignV1/CampaignLockV1 and frozen Bernoulli stream fixtures; RESEARCH-02 preregistry activation only \u2014 no production promotion authority.",
+      "linear_id": "SLM-569",
+      "new_owner_justified": false,
+      "title": "Experiment: anytime-valid evidence for adaptive autoresearch promotion"
+    }
+  ],
+  "duplicate_subsystem_risks": [
+    {
+      "canonical_owner": "src/slm_training/dsl/pack.py",
+      "concern": "DSL pack registry",
+      "evidence": "Both cite ticket F1/SLM-34 as origin. Canonical has 114 importers incl. the dashboard pack API (web/routes.py); shadow has 7 importers, all confined to dsl/packs/* and harnesses/reasoning/bench.py.",
+      "recommendation": "New DSL packs (including SRP-001's symbolic-regression pack) register with the canonical dsl.pack.DslPack registry. Consolidating or retiring dsl/packs/ is out of scope for this audit (non-goal: no new semantic/search behavior) and should be filed as its own follow-up.",
+      "shadow_owner": "src/slm_training/dsl/packs/types.py",
+      "status": "unresolved-duplicate"
+    },
+    {
+      "canonical_owner": "src/slm_training/dsl/solver/controller.py",
+      "concern": "Valid-state / lattice search",
+      "evidence": "controller.py (generic search controller, VSS1-02) docstring states the forest-specific LatticeSearchState in lattice_search.py is retained unchanged as an adapter beneath it.",
+      "recommendation": "Not a defect; record as an intentional layered design so future audits do not re-flag it.",
+      "shadow_owner": "src/slm_training/dsl/grammar/fastpath/lattice_search.py",
+      "status": "reconciled-by-docstring"
+    }
+  ],
+  "known_drift": [
+    {
+      "description": "docs/design/symbol-only-output-contract.md stated 'The canonical contract is OUTPUT_CONTRACT_VERSION = 4' while src/slm_training/dsl/language_contract.py defines OUTPUT_CONTRACT_VERSION = 2. AGENTS.md, .cursor/rules/decode-invariants.mdc, docs/design/decode-invariants.md, and the current test suite (tests/test_dsl/test_language_contract.py) all agree with the code at 2. A prior investigation (docs/design/autotrain-cycle-a6r56e-c2-allowed-id-set-fingerprint-fix.md) found and fixed the same drift in the test suite but never fixed the design doc.",
+      "fix": "docs/design/symbol-only-output-contract.md corrected to cite OUTPUT_CONTRACT_VERSION = 2, matching src/slm_training/dsl/language_contract.py. scripts/verify_ownership_map.py now checks this pair on every run so the drift cannot silently return.",
+      "id": "output_contract_version_doc_mismatch",
+      "status": "fixed-in-SGS-001"
+    }
+  ],
+  "related_overlaps": [
+    {
+      "doc": "docs/design/judge-independence-audit.md",
+      "linear_id": "SLM-106",
+      "relation": "VCE-010 (evaluator calibration/blinded adjudication) and SIE-005/SIE-006 must coordinate with this existing judge-independence track rather than re-run it.",
+      "status": "in-progress, incomplete",
+      "title": "EFS0-04: Audit judge independence with cross-family scoring and a blinded human pair study"
+    },
+    {
+      "doc": "docs/design/ldi3-03-counterfactual-action-values-20260718.md",
+      "linear_id": "SLM-131",
+      "relation": "Owner of counterfactual_probe; semantic_repair.py names it as the eventual authority for verifier-backed repair action values.",
+      "title": "LDI3-03: Generate verifier-backed counterfactual action values for delayed failures"
+    },
+    {
+      "doc": "docs/design/iter-slm159-cross-dsl-replication-20260720.md",
+      "linear_id": "SLM-159",
+      "relation": "Precedent for SRP-001/SRP-010 second-pack portability work; do not re-derive the replication protocol.",
+      "title": "SPV4-01: Replicate the winning semantic-plan and valid-state stack on GraphQL plus a second DSL pack"
+    },
+    {
+      "doc": "docs/design/iter-slm474-srp-010-portability-20260810.md",
+      "linear_id": "SLM-474",
+      "relation": "Fixture-scale SR pack portability / default-isolation evidence (claim_class=fixture); RSP-008/EXP-SR-12 certification successor must build on this inventory rather than re-deriving it.",
+      "title": "SRP-010: Add end-to-end symbolic-pack portability, default-isolation, and standards fixtures"
+    },
+    {
+      "doc": "docs/design/iter-slm487-rsp-008-portability-20260810.md",
+      "linear_id": "SLM-487",
+      "relation": "Diagnostic EXP-SR-12 certification over SRP-010 seams (claim_class=diagnostic); inventored shared-seam forks falsify zero-fork certification; never promotion_candidate/ship_gate.",
+      "status": "diagnostic",
+      "title": "RSP-008: Run real OpenUI + symbolic-regression second-pack portability certification (EXP-SR-12)"
+    },
+    {
+      "doc": "docs/design/semantic-planning-valid-state-disposition.md",
+      "linear_id": "SLM-160",
+      "relation": "Canonical disposition-report pattern that SGS-009 (mechanism disposition reports) and RSP-009 (cross-experiment disposition) should follow, not reinvent.",
+      "title": "SPV4-02: Publish the causal architecture disposition and integrate only qualified winners into model lineage"
+    },
+    {
+      "doc": "docs/design/iter-slm476-sie-002-oracle-localization-20260810.md",
+      "linear_id": "SLM-476",
+      "relation": "Fixture-scale EXP-SR-1 oracle localization (claim_class=fixture); authorized_factors roles+bindings for later learned-predictor work; no checkpoint promotion.",
+      "status": "fixture",
+      "title": "SIE-002: Execute held-out factor-wise semantic oracle localization (EXP-SR-1)"
+    },
+    {
+      "doc": "docs/design/iter-slm482-sie-004-predictor-campaign-20260810.md",
+      "linear_id": "SLM-482",
+      "relation": "Fixture-scale EXP-SR-2 predictor campaign (claim_class=fixture); SIE-003 seam + SIE-002 authorized_factors gate; legal_support_parity exact; no checkpoint promotion.",
+      "status": "fixture",
+      "title": "SIE-004: Run matched prompt-requirement predictor campaign (EXP-SR-2)"
+    },
+    {
+      "doc": "docs/design/iter-slm483-sie-006-calibration-campaign-20260810.md",
+      "linear_id": "SLM-483",
+      "relation": "Diagnostic EXP-SR-3 calibration campaign (claim_class=diagnostic) wrapping VCE-010's evaluator_calibration_protocol under the locked catalogue identity; evaluator_human_agreement_kappa=0.0 on labeled-mock external-judge/synthetic-human evidence, below minimum_effect and the catalogue kill gate -- an honest negative result, not a construct-validity claim (no real external-judge credentials or human raters in this environment).",
+      "status": "diagnostic",
+      "title": "SIE-006: Execute evaluator construct-validity and human calibration campaign (EXP-SR-3)"
+    },
+    {
+      "doc": "docs/design/proof-carrying-goal-support.md",
+      "linear_id": "SLM-512",
+      "relation": "Canonical design/authority owner for the integrated PGS stack (PGS-A through PGS-H); machine-readable ownership maintained by PGS-I02 (SLM-513).",
+      "title": "PGS-I01: Document proof-carrying goal support design, authority, and threat model"
+    },
+    {
+      "doc": "docs/design/proof-carrying-goal-support-fixture-results.md",
+      "linear_id": "SLM-511",
+      "relation": "Fixture-scale PGS-H01 campaign evidence (claim_class=diagnostic); wiring/diagnostic only \u2014 not model quality, ship gates, or promotion.",
+      "status": "diagnostic",
+      "title": "PGS-H02: Publish goal-support domain-adequacy fixture campaign evidence"
+    }
+  ],
+  "schema": "ownership_map/v1",
   "subsystems": [
     {
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/semantic-planning-valid-state.md",
       "id": "semantic_plan",
       "name": "SemanticPlanV1 program-side plan contract",
+      "notes": "Versioned, provenance-aware, pack-neutral plan IR. Single definition site; all consumers (models/semantic_plan_factors.py, data/semantic_contrast/transforms.py, data/semantic_plan/*) import from here.",
       "owner_module": "src/slm_training/data/progspec/semantic_plan.py",
       "owner_symbols": [
         "SemanticPlanV1",
@@ -28,28 +1093,28 @@
         "PlanArchetype",
         "RoleSlot",
         "PlanTopology"
-      ],
-      "authority_tier": "compiler-hard",
-      "design_doc": "docs/design/semantic-planning-valid-state.md",
-      "notes": "Versioned, provenance-aware, pack-neutral plan IR. Single definition site; all consumers (models/semantic_plan_factors.py, data/semantic_contrast/transforms.py, data/semantic_plan/*) import from here."
+      ]
     },
     {
+      "authority_tier": "advisory-learned",
+      "design_doc": "docs/design/semantic-planning-valid-state.md",
       "id": "prompt_requirements",
       "name": "PromptSemanticRequirementsV1 prompt-side partial requirements contract",
+      "notes": "SGS-004 extractor/canonicalize live beside the contract under data/semantic_plan/requirements_extract.py and requirements_canonicalize.py (extract_prompt_requirements, ExtractorRule, EXTRACTOR_RULES, GoldTargetAccessError, canonicalize_requirements, requirement_fact_fingerprints). Advisory-only; refuses gold/target kwargs. Owner_symbols stay on the contract module because verify_ownership_map binds symbols to a single owner_module file.",
       "owner_module": "src/slm_training/data/progspec/prompt_requirements.py",
       "owner_symbols": [
         "PromptSemanticRequirementsV1",
         "RequirementFact",
         "AmbiguityGroup",
         "combine_authority"
-      ],
-      "authority_tier": "advisory-learned",
-      "design_doc": "docs/design/semantic-planning-valid-state.md",
-      "notes": "SGS-004 extractor/canonicalize live beside the contract under data/semantic_plan/requirements_extract.py and requirements_canonicalize.py (extract_prompt_requirements, ExtractorRule, EXTRACTOR_RULES, GoldTargetAccessError, canonicalize_requirements, requirement_fact_fingerprints). Advisory-only; refuses gold/target kwargs. Owner_symbols stay on the contract module because verify_ownership_map binds symbols to a single owner_module file."
+      ]
     },
     {
+      "authority_tier": "advisory-learned",
+      "design_doc": "docs/design/semantic-planning-valid-state.md",
       "id": "verified_synthesis_problem",
       "name": "VerifiedSynthesisProblemV1 pack-neutral synthesis-request envelope",
+      "notes": "SGS-007 (SLM-444): new owner layered on semantic_plan, verifier_gate_stack, and dsl_pack_registry_canonical without duplicating any of them -- carries a PromptSemanticRequirementsV1 verbatim, references verifier/evaluator identities by string, and bounds search resources without granting search authority. Excludes authority in {compiler-hard, verifier-hard} at the type level, mirroring prompt_requirements, so no request can declare itself compiler-certified merely through this envelope. Generated JSON Schema: src/slm_training/resources/verified_synthesis_problem.schema.json (scripts/sync_verified_synthesis_problem_schema.py --check).",
       "owner_module": "src/slm_training/data/progspec/synthesis_problem.py",
       "owner_symbols": [
         "VerifiedSynthesisProblemV1",
@@ -59,14 +1124,14 @@
         "SearchBudgetV1",
         "ObjectiveTermV1",
         "EvidenceProvenanceV1"
-      ],
-      "authority_tier": "advisory-learned",
-      "design_doc": "docs/design/semantic-planning-valid-state.md",
-      "notes": "SGS-007 (SLM-444): new owner layered on semantic_plan, verifier_gate_stack, and dsl_pack_registry_canonical without duplicating any of them -- carries a PromptSemanticRequirementsV1 verbatim, references verifier/evaluator identities by string, and bounds search resources without granting search authority. Excludes authority in {compiler-hard, verifier-hard} at the type level, mirroring prompt_requirements, so no request can declare itself compiler-certified merely through this envelope. Generated JSON Schema: src/slm_training/resources/verified_synthesis_problem.schema.json (scripts/sync_verified_synthesis_problem_schema.py --check)."
+      ]
     },
     {
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/semantic-planning-valid-state.md",
       "id": "compiled_goal_constraints",
       "name": "CompiledGoalConstraintSetV1 compiled goal-constraint contract",
+      "notes": "PGS-A01 (SLM-494): compiled, authority-labeled goal constraints layered on verified_synthesis_problem, prompt_requirements, semantic_plan, and verifier_gate_stack without duplicating request-side or plan-side contracts. may_prune is fail-closed to independently exact sources (pack_contract, verification_requirement) with EXACT completeness and compiler-hard/verifier-hard authority only. Generated JSON Schema: src/slm_training/resources/compiled_goal_constraint_set.schema.json (scripts/sync_compiled_goal_constraint_set_schema.py --check).",
       "owner_module": "src/slm_training/data/progspec/goal_constraints.py",
       "owner_symbols": [
         "GoalConstraintV1",
@@ -76,14 +1141,14 @@
         "combine_completeness",
         "merge_goal_constraints",
         "authority_matrix"
-      ],
-      "authority_tier": "compiler-hard",
-      "design_doc": "docs/design/semantic-planning-valid-state.md",
-      "notes": "PGS-A01 (SLM-494): compiled, authority-labeled goal constraints layered on verified_synthesis_problem, prompt_requirements, semantic_plan, and verifier_gate_stack without duplicating request-side or plan-side contracts. may_prune is fail-closed to independently exact sources (pack_contract, verification_requirement) with EXACT completeness and compiler-hard/verifier-hard authority only. Generated JSON Schema: src/slm_training/resources/compiled_goal_constraint_set.schema.json (scripts/sync_compiled_goal_constraint_set_schema.py --check)."
+      ]
     },
     {
+      "authority_tier": "verifier-hard",
+      "design_doc": "docs/design/verified-scope-solver.md",
       "id": "goal_support",
       "name": "Goal-verifier profiles, terminal evidence, and goal-aware support",
+      "notes": "PGS-B01/B02/C01/C02/C03 (SLM-497/498/499/500/501): digest-bound GoalVerifierProfileV1 and GoalTerminalEvidenceV1 contracts; GoalSupportProvider sidecars over VSS oracle replay; DomainObstructionCoreV1 bounded hitting sets; GoalActionEvidenceV1/GoalDomainAdequacyReportV1 domain-adequacy classification; OpenUIGoalVerifier terminal composition in openui_support.py. Generated JSON Schema: goal_verifier_profile.schema.json, goal_terminal_evidence.schema.json, goal_support_result.schema.json, domain_obstruction_core.schema.json, goal_action_evidence.schema.json, goal_domain_adequacy_report.schema.json (scripts/sync_goal_support_schema.py --check).",
       "owner_module": "src/slm_training/dsl/solver/goal_support.py",
       "owner_symbols": [
         "GoalVerifierProfileV1",
@@ -110,14 +1175,14 @@
         "obstruction_core_algorithm_table",
         "redact_bounded_string",
         "redact_terminal_evidence_dict"
-      ],
-      "authority_tier": "verifier-hard",
-      "design_doc": "docs/design/verified-scope-solver.md",
-      "notes": "PGS-B01/B02/C01/C02/C03 (SLM-497/498/499/500/501): digest-bound GoalVerifierProfileV1 and GoalTerminalEvidenceV1 contracts; GoalSupportProvider sidecars over VSS oracle replay; DomainObstructionCoreV1 bounded hitting sets; GoalActionEvidenceV1/GoalDomainAdequacyReportV1 domain-adequacy classification; OpenUIGoalVerifier terminal composition in openui_support.py. Generated JSON Schema: goal_verifier_profile.schema.json, goal_terminal_evidence.schema.json, goal_support_result.schema.json, domain_obstruction_core.schema.json, goal_action_evidence.schema.json, goal_domain_adequacy_report.schema.json (scripts/sync_goal_support_schema.py --check)."
+      ]
     },
     {
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/semantic-planning-valid-state.md",
       "id": "requirements_compile",
       "name": "Deterministic goal-constraint compiler (PGS-A02)",
+      "notes": "PGS-A02 (SLM-495): deterministic compilation from VerifiedSynthesisProblemV1, GenerationRequest, and DslPack into CompiledGoalConstraintSetV1. Structured request/pack/verifier facts compile exact; RequirementFact values compile only through a closed rule table into advisory/oracle/evaluation predicates; unknown statements land in uncompiled_source_ids. Does not modify SGS-004 extractor authority.",
       "owner_module": "src/slm_training/data/semantic_plan/requirements_compile.py",
       "owner_symbols": [
         "compile_goal_constraints",
@@ -130,27 +1195,27 @@
         "pack_identity_digest",
         "GoldTargetAccessError",
         "IdentityMismatchError"
-      ],
-      "authority_tier": "compiler-hard",
-      "design_doc": "docs/design/semantic-planning-valid-state.md",
-      "notes": "PGS-A02 (SLM-495): deterministic compilation from VerifiedSynthesisProblemV1, GenerationRequest, and DslPack into CompiledGoalConstraintSetV1. Structured request/pack/verifier facts compile exact; RequirementFact values compile only through a closed rule table into advisory/oracle/evaluation predicates; unknown statements land in uncompiled_source_ids. Does not modify SGS-004 extractor authority."
+      ]
     },
     {
+      "authority_tier": "evaluation-only",
+      "design_doc": "docs/design/semantic-planning-valid-state.md",
       "id": "sygus_capability_report",
       "name": "SyGuS/SemGuS capability report over VerifiedSynthesisProblemV1",
+      "notes": "SGS-008/SLM-455. The downstream_extension_map row for SGS-008 predicted extending dsl_pack_registry_canonical/completion_domain directly (new_owner_justified: false); implementation instead built a small, self-contained new module over verified_synthesis_problem's envelope, so it is registered here as its own subsystem rather than force-fit into pack.py/grammar_capabilities.py, whose owner_symbols it does not touch. Reuses grammar_capabilities.py's UnsupportedCapabilityV1 status/reason idiom (generalized to representable/non_representable/extension_required) and symbolic_expr_ir.py's BINARY_OPERATORS/UNARY_OPERATORS for the one demonstrably faithful fragment (a symbolic-regression synth-fun grammar); every other requirement-bearing element (verification requirements, prompt facts/ambiguity groups, objectives, search budget, evidence provenance) is reported non_representable/extension_required with a reason, never silently dropped. Introduces no solver dependency and calls no external solver, so nothing here can widen exact compiler support. conformance='inspired_interoperability' documents that the emitted SyGuS-IF-shaped text is not standards-conformant (no (check-synth), no example-table constraints).",
       "owner_module": "src/slm_training/data/progspec/synthesis_capability_report.py",
       "owner_symbols": [
         "SyGuSCapabilityReportV1",
         "CapabilityFindingV1",
         "build_sygus_capability_report"
-      ],
-      "authority_tier": "evaluation-only",
-      "design_doc": "docs/design/semantic-planning-valid-state.md",
-      "notes": "SGS-008/SLM-455. The downstream_extension_map row for SGS-008 predicted extending dsl_pack_registry_canonical/completion_domain directly (new_owner_justified: false); implementation instead built a small, self-contained new module over verified_synthesis_problem's envelope, so it is registered here as its own subsystem rather than force-fit into pack.py/grammar_capabilities.py, whose owner_symbols it does not touch. Reuses grammar_capabilities.py's UnsupportedCapabilityV1 status/reason idiom (generalized to representable/non_representable/extension_required) and symbolic_expr_ir.py's BINARY_OPERATORS/UNARY_OPERATORS for the one demonstrably faithful fragment (a symbolic-regression synth-fun grammar); every other requirement-bearing element (verification requirements, prompt facts/ambiguity groups, objectives, search budget, evidence provenance) is reported non_representable/extension_required with a reason, never silently dropped. Introduces no solver dependency and calls no external solver, so nothing here can widen exact compiler support. conformance='inspired_interoperability' documents that the emitted SyGuS-IF-shaped text is not standards-conformant (no (check-synth), no example-table constraints)."
+      ]
     },
     {
+      "authority_tier": "evaluation-only",
+      "design_doc": "docs/design/semantic-planning-valid-state-disposition.md",
       "id": "mechanism_disposition_report",
       "name": "Mechanism disposition and stale-evidence supersession reports",
+      "notes": "SGS-009/SLM-456 (new_owner_justified: true, extension_points: [] in the downstream_extension_map -- genuinely new). Generalizes the SLM-160/SPV4-02 narrative precedent (SPVMechanismDisposition, docs/design/semantic-planning-valid-state-disposition.md) into reusable code covering any mechanism, not just the SPV family; reuses that module's Disposition enum directly rather than redefining the same seven values. Is the canonical EVIDENCE_CLASSES registry PCT-007 (models/decode_stats.py's MECHANISM_EVIDENCE_CLASSES) named as still-Backlog when it stayed a caller-declared advisory field. Fails closed on both AC1/AC2: adopt_primary/adopt_optional requires evidence_class in {measured,promotable,ship} plus non-empty activation_evidence (a wired-but-unmeasured mechanism can never be recorded as adopted), and evidence_class='fixture' can never pair with default_state='on'. Supersession is a pure, append-only pointer between two same-mechanism_id records; the superseded record is never rewritten or removed, only linked. Scope note: ships the reusable schema/validation/generator proven against a fixture matrix (the issue's own validation ask), not a completed audit of every real mechanism across the current SGS/VCE/PCT/SRP/SIE/RSP backlog -- that data-entry pass is follow-on work, mirroring how SLM-160's own audit was a separate pass from building its harness.",
       "owner_module": "src/slm_training/harnesses/experiments/mechanism_disposition_report.py",
       "owner_symbols": [
         "MechanismDispositionRecordV1",
@@ -160,40 +1225,40 @@
         "build_mechanism_disposition_record",
         "build_supersession_entry",
         "build_disposition_report"
-      ],
-      "authority_tier": "evaluation-only",
-      "design_doc": "docs/design/semantic-planning-valid-state-disposition.md",
-      "notes": "SGS-009/SLM-456 (new_owner_justified: true, extension_points: [] in the downstream_extension_map -- genuinely new). Generalizes the SLM-160/SPV4-02 narrative precedent (SPVMechanismDisposition, docs/design/semantic-planning-valid-state-disposition.md) into reusable code covering any mechanism, not just the SPV family; reuses that module's Disposition enum directly rather than redefining the same seven values. Is the canonical EVIDENCE_CLASSES registry PCT-007 (models/decode_stats.py's MECHANISM_EVIDENCE_CLASSES) named as still-Backlog when it stayed a caller-declared advisory field. Fails closed on both AC1/AC2: adopt_primary/adopt_optional requires evidence_class in {measured,promotable,ship} plus non-empty activation_evidence (a wired-but-unmeasured mechanism can never be recorded as adopted), and evidence_class='fixture' can never pair with default_state='on'. Supersession is a pure, append-only pointer between two same-mechanism_id records; the superseded record is never rewritten or removed, only linked. Scope note: ships the reusable schema/validation/generator proven against a fixture matrix (the issue's own validation ask), not a completed audit of every real mechanism across the current SGS/VCE/PCT/SRP/SIE/RSP backlog -- that data-entry pass is follow-on work, mirroring how SLM-160's own audit was a separate pass from building its harness."
+      ]
     },
     {
+      "authority_tier": "evaluation-only",
+      "design_doc": "docs/design/semantic-failure-census.md",
       "id": "semantic_failure_taxonomy",
       "name": "Semantic-failure taxonomy / evidence labeling",
+      "notes": "Deliberately an adapter over the G0-G12 verifier stack; it versions/labels verifier evidence, it does not re-score it.",
       "owner_module": "src/slm_training/evals/semantic_failure.py",
       "owner_symbols": [
         "SemanticFailureFamily",
         "SemanticFailureTaxonomyV1"
-      ],
-      "authority_tier": "evaluation-only",
-      "design_doc": "docs/design/semantic-failure-census.md",
-      "notes": "Deliberately an adapter over the G0-G12 verifier stack; it versions/labels verifier evidence, it does not re-score it."
+      ]
     },
     {
+      "authority_tier": "verifier-hard",
+      "design_doc": "docs/design/verifier-stack.md",
       "id": "verifier_gate_stack",
       "name": "G0-G12 deterministic verifier gate sequence",
+      "notes": "Canonical G0(Lexical)..G12(HumanAudit) gate numbering and pass/fail. Any module that reimplements gate numbering instead of importing this Gate enum is a duplicate risk.",
       "owner_module": "src/slm_training/data/verify/stack.py",
       "owner_symbols": [
         "Gate",
         "GATE_NAMES",
         "GateResult",
         "verify_record"
-      ],
-      "authority_tier": "verifier-hard",
-      "design_doc": "docs/design/verifier-stack.md",
-      "notes": "Canonical G0(Lexical)..G12(HumanAudit) gate numbering and pass/fail. Any module that reimplements gate numbering instead of importing this Gate enum is a duplicate risk."
+      ]
     },
     {
+      "authority_tier": "evaluation-only",
+      "design_doc": "docs/design/verifier-stack.md",
       "id": "verifier_cascade_eval",
       "name": "Eval-time verifier cascade wiring",
+      "notes": "Re-imports Gate/GATE_NAMES from data/verify/stack.py directly; correct precedent for reuse, not a second gate authority.",
       "owner_module": "src/slm_training/evals/verifier_cascade.py",
       "owner_symbols": [
         "VerifierCascade",
@@ -201,14 +1266,14 @@
         "VerifierStage",
         "make_gate_stage",
         "default_openui_cascade"
-      ],
-      "authority_tier": "evaluation-only",
-      "design_doc": "docs/design/verifier-stack.md",
-      "notes": "Re-imports Gate/GATE_NAMES from data/verify/stack.py directly; correct precedent for reuse, not a second gate authority."
+      ]
     },
     {
+      "authority_tier": "advisory-learned",
+      "design_doc": "docs/design/iter-spv2-05-semantic-repair-20260720.md",
       "id": "semantic_repair",
       "name": "Verifier-guided minimal semantic repair targets",
+      "notes": "Fixture-only interim baseline (SPV2-05). Its own docstring defers real verifier-backed counterfactual action values to SLM-131/VSS (counterfactual_probe). Not dead code; a documented pending supersession. VCE-002/SLM-446 added RepairResidualV1 -- a pure projection of SemanticRepairRecordV1/ConflictSlice (plus optional VCE-001 VerifierWitnessV1 reconciliation) into an advisory residual-obligation view; it owns no new authority and is not a second repair registry.",
       "owner_module": "src/slm_training/harnesses/distill/semantic_repair.py",
       "owner_symbols": [
         "SemanticRepairRecordV1",
@@ -218,14 +1283,14 @@
         "SemanticRepairScorer",
         "RepairResidualV1",
         "project_repair_residual"
-      ],
-      "authority_tier": "advisory-learned",
-      "design_doc": "docs/design/iter-spv2-05-semantic-repair-20260720.md",
-      "notes": "Fixture-only interim baseline (SPV2-05). Its own docstring defers real verifier-backed counterfactual action values to SLM-131/VSS (counterfactual_probe). Not dead code; a documented pending supersession. VCE-002/SLM-446 added RepairResidualV1 -- a pure projection of SemanticRepairRecordV1/ConflictSlice (plus optional VCE-001 VerifierWitnessV1 reconciliation) into an advisory residual-obligation view; it owns no new authority and is not a second repair registry."
+      ]
     },
     {
+      "authority_tier": "oracle-diagnostic",
+      "design_doc": "docs/design/semantic-planning-valid-state.md",
       "id": "plan_oracle_substitutor",
       "name": "Plan-level oracle substitution",
+      "notes": "Distinct from semantic_repair's corruption-repair targets: this substitutes ground-truth oracle values for factor-wise diagnosis, not corruption recovery. VCE-004/SLM-447 added PlanInterventionRecordV1/apply_plan_intervention -- an immutable, replayable paired baseline/intervention observation (before/after plan hashes, declared-vs-observed changed factors, frozen model/request/seed/verifier/hardware identity, downstream decision/quality/compute evidence) plus filter_manifest_safe to exclude contamination-bannered records from any manifest. VCE-005/SLM-458 extended PlanSource with 'destructive'/'random' (PlanOracleSubstitutor.apply permutes baseline's own existing per-factor content -- same element count, matched serialization/work -- rather than reading any second plan; neither is contamination-bannered, since neither ever saw real oracle content), added select_shuffled_oracle (content-only compatibility key over archetype id + structure sizes, never identity.source_program_fingerprint/prompt_context_hash, so a shuffled control cannot access target identity through those hidden fields), and build_baseline_intervention (an explicit, first-class matched-telemetry no-intervention control -- same apply_plan_intervention bookkeeping as every other arm). No new record schema, no second substitution authority.",
       "owner_module": "src/slm_training/data/semantic_plan/oracle.py",
       "owner_symbols": [
         "PlanOracleSubstitutor",
@@ -235,14 +1300,14 @@
         "filter_manifest_safe",
         "select_shuffled_oracle",
         "build_baseline_intervention"
-      ],
-      "authority_tier": "oracle-diagnostic",
-      "design_doc": "docs/design/semantic-planning-valid-state.md",
-      "notes": "Distinct from semantic_repair's corruption-repair targets: this substitutes ground-truth oracle values for factor-wise diagnosis, not corruption recovery. VCE-004/SLM-447 added PlanInterventionRecordV1/apply_plan_intervention -- an immutable, replayable paired baseline/intervention observation (before/after plan hashes, declared-vs-observed changed factors, frozen model/request/seed/verifier/hardware identity, downstream decision/quality/compute evidence) plus filter_manifest_safe to exclude contamination-bannered records from any manifest. VCE-005/SLM-458 extended PlanSource with 'destructive'/'random' (PlanOracleSubstitutor.apply permutes baseline's own existing per-factor content -- same element count, matched serialization/work -- rather than reading any second plan; neither is contamination-bannered, since neither ever saw real oracle content), added select_shuffled_oracle (content-only compatibility key over archetype id + structure sizes, never identity.source_program_fingerprint/prompt_context_hash, so a shuffled control cannot access target identity through those hidden fields), and build_baseline_intervention (an explicit, first-class matched-telemetry no-intervention control -- same apply_plan_intervention bookkeeping as every other arm). No new record schema, no second substitution authority."
+      ]
     },
     {
+      "authority_tier": "advisory-learned",
+      "design_doc": "docs/design/ldi3-03-counterfactual-action-values-20260718.md",
       "id": "counterfactual_probe",
       "name": "Verifier-backed counterfactual action-value probe",
+      "notes": "LDI3-03/SLM-131 relative rollout probe plus PGS-D01/SLM-502 distinct goal-support path (GoalSupportProbeInputs, run_goal_support_probe). Named by semantic_repair.py as the eventual authority for verifier-backed repair action values -- currently a parallel, not yet merged, track.",
       "owner_module": "src/slm_training/harnesses/preference/counterfactual_probe.py",
       "owner_symbols": [
         "GoalSupportProbeConfig",
@@ -252,25 +1317,25 @@
         "goal_support_probe_cap_policy_table",
         "run_goal_support_probe",
         "select_goal_support_actions"
-      ],
-      "authority_tier": "advisory-learned",
-      "design_doc": "docs/design/ldi3-03-counterfactual-action-values-20260718.md",
-      "notes": "LDI3-03/SLM-131 relative rollout probe plus PGS-D01/SLM-502 distinct goal-support path (GoalSupportProbeInputs, run_goal_support_probe). Named by semantic_repair.py as the eventual authority for verifier-backed repair action values -- currently a parallel, not yet merged, track."
+      ]
     },
     {
+      "authority_tier": "verifier-hard",
+      "design_doc": "docs/design/ldi3-04-remine-intervene-campaign-20260718.md",
       "id": "counterfactual_replay",
       "name": "Judge-based grammar-legal continuation replay",
+      "notes": "Actively imported by decision_events_v2.py and local_decisions.py. Does not cross-reference counterfactual_probe.py; audit should confirm the split is intentional layering, not redundancy.",
       "owner_module": "src/slm_training/harnesses/preference/counterfactuals.py",
       "owner_symbols": [
         "SEMANTIC_VERIFIER_V1"
-      ],
-      "authority_tier": "verifier-hard",
-      "design_doc": "docs/design/ldi3-04-remine-intervene-campaign-20260718.md",
-      "notes": "Actively imported by decision_events_v2.py and local_decisions.py. Does not cross-reference counterfactual_probe.py; audit should confirm the split is intentional layering, not redundancy."
+      ]
     },
     {
+      "authority_tier": "verifier-hard",
+      "design_doc": "docs/design/local-decision-interventions.md",
       "id": "decision_events_v2",
       "name": "DecisionEventV2 state / evidence / objective-view contract",
+      "notes": "LDI0-02 DecisionEventV2 plus PGS-D02/SLM-503 goal-support ObjectiveView materialization (materialize_goal_support) with profile trainability guards; does not redefine legality or counterfactual relative value.",
       "owner_module": "src/slm_training/harnesses/preference/decision_events_v2.py",
       "owner_symbols": [
         "DecisionStateV2",
@@ -287,64 +1352,64 @@
         "materialize_pareto",
         "materialize_set_valued",
         "admit_semantic_corpus"
-      ],
-      "authority_tier": "verifier-hard",
-      "design_doc": "docs/design/local-decision-interventions.md",
-      "notes": "LDI0-02 DecisionEventV2 plus PGS-D02/SLM-503 goal-support ObjectiveView materialization (materialize_goal_support) with profile trainability guards; does not redefine legality or counterfactual relative value."
+      ]
     },
     {
+      "authority_tier": "evaluation-only",
+      "design_doc": "docs/design/iter-slm366-counterfactuals-20260725.md",
       "id": "semantic_counterfactual_synthesis",
       "name": "Training-pair counterfactual mutation generator",
+      "notes": "DSH2-06/SLM-366. Data-synthesis purpose (one-fact training-pair mutation), distinct from decode-time replay owners above.",
       "owner_module": "src/slm_training/harnesses/train_data/semantic_counterfactuals.py",
       "owner_symbols": [
         "CounterfactualPairV1"
-      ],
-      "authority_tier": "evaluation-only",
-      "design_doc": "docs/design/iter-slm366-counterfactuals-20260725.md",
-      "notes": "DSH2-06/SLM-366. Data-synthesis purpose (one-fact training-pair mutation), distinct from decode-time replay owners above."
+      ]
     },
     {
+      "authority_tier": "verifier-hard",
+      "design_doc": "docs/design/verified-scope-solver.md",
       "id": "solver_replay",
       "name": "Decode trace recording and replay validation",
+      "notes": "VSS1-04/SLM-64. Validates the event stream produced by DecodeTraceRecorder (owned separately by src/slm_training/harnesses/distill/trace_store.py) against the solver search trace; does not own DecodeTraceRecorder itself.",
       "owner_module": "src/slm_training/dsl/solver/replay.py",
       "owner_symbols": [
         "solver_replay_violations",
         "solver_events_from_closure",
         "solver_events_from_search",
         "solver_trace_counters"
-      ],
-      "authority_tier": "verifier-hard",
-      "design_doc": "docs/design/verified-scope-solver.md",
-      "notes": "VSS1-04/SLM-64. Validates the event stream produced by DecodeTraceRecorder (owned separately by src/slm_training/harnesses/distill/trace_store.py) against the solver search trace; does not own DecodeTraceRecorder itself."
+      ]
     },
     {
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/verified-scope-solver.md",
       "id": "valid_state_search_generic",
       "name": "Bounded proof-carrying search controller (generic)",
+      "notes": "VSS1-02. Docstring states explicitly: this is the new generic controller; the compiler-forest LatticeSearchState is retained unchanged as the forest-specific adapter. This split is a documented, intentional reconciliation, not an accidental duplicate.",
       "owner_module": "src/slm_training/dsl/solver/controller.py",
       "owner_symbols": [
         "SearchStatus",
         "SearchDecision",
         "SearchResult",
         "search"
-      ],
-      "authority_tier": "compiler-hard",
-      "design_doc": "docs/design/verified-scope-solver.md",
-      "notes": "VSS1-02. Docstring states explicitly: this is the new generic controller; the compiler-forest LatticeSearchState is retained unchanged as the forest-specific adapter. This split is a documented, intentional reconciliation, not an accidental duplicate."
+      ]
     },
     {
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/lattice-recursive-search.md",
       "id": "lattice_search_forest_adapter",
       "name": "Compiler-forest-specific lattice search",
+      "notes": "Retained forest adapter beneath valid_state_search_generic; not superseded, not dead code.",
       "owner_module": "src/slm_training/dsl/grammar/fastpath/lattice_search.py",
       "owner_symbols": [
         "LatticeSearchState"
-      ],
-      "authority_tier": "compiler-hard",
-      "design_doc": "docs/design/lattice-recursive-search.md",
-      "notes": "Retained forest adapter beneath valid_state_search_generic; not superseded, not dead code."
+      ]
     },
     {
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/experiment-campaign-governance.md",
       "id": "experiment_campaign",
       "name": "Pre-registered experiment campaign contract",
+      "notes": "AP-007+ runners and every promotion candidate use this contract. No competing implementation found. RESEARCH-02/SLM-533 adds default-off research_preregistry.py over this owner (knob/hypothesis signatures + blocker/campaign-lock activation); not a parallel campaign store. RESEARCH-05/SLM-563 adds default-off VSS LRAT pilot harness over this owner (campaign lock + paired warm/exhaustive evidence); not a parallel campaign store. RESEARCH-06/SLM-564 adds default-off VSS PBLean/PB pilot harness over this owner (campaign lock + paired warm/exhaustive evidence); not a parallel campaign store. RESEARCH-07/SLM-565 adds default-off VSS Alethe/SMT pilot harness over this owner (campaign lock + theory agreement evidence); not a parallel campaign store. RESEARCH-09/SLM-541 adds default-off parameterized/treewidth-aware VSS pilot harness over this owner (campaign lock + structural-param correlation evidence); not a parallel campaign store. RESEARCH-03/SLM-549 adds default-off Big-Five interpretation Lean package pilot over this owner (campaign lock + four-axis evidence); not a parallel campaign store. RESEARCH-04/SLM-550 adds default-off RM Zoo classification benchmark pilot over this owner (campaign lock + HARN-08 zoo corpus evidence); not a parallel campaign store. RESEARCH-10/SLM-566 adds default-off proof-strength curriculum pilot over this owner (campaign lock + obligation-ordering fixture evidence); not a parallel campaign store. RESEARCH-14/SLM-572 adds default-off checker diversity pilot over this owner (campaign lock + EVID-08/EVID-11 fixture evidence); not a parallel campaign store. RESEARCH-16/SLM-570 adds default-off rational-to-float transfer certificate pilot over this owner (campaign lock + EVID-04 gate fixture evidence); not a parallel campaign store. RESEARCH-15/SLM-569 adds default-off anytime-valid promotion pilot harness over this owner (campaign lock + sequential inference fixture evidence); not a parallel campaign store.",
       "owner_module": "src/slm_training/autoresearch/experiment_campaign.py",
       "owner_symbols": [
         "ExperimentCampaignV1",
@@ -353,14 +1418,14 @@
         "CampaignGateV1",
         "campaign_manifest_sha256",
         "validate_result_claim"
-      ],
-      "authority_tier": "compiler-hard",
-      "design_doc": "docs/design/experiment-campaign-governance.md",
-      "notes": "AP-007+ runners and every promotion candidate use this contract. No competing implementation found. RESEARCH-02/SLM-533 adds default-off research_preregistry.py over this owner (knob/hypothesis signatures + blocker/campaign-lock activation); not a parallel campaign store. RESEARCH-05/SLM-563 adds default-off VSS LRAT pilot harness over this owner (campaign lock + paired warm/exhaustive evidence); not a parallel campaign store. RESEARCH-06/SLM-564 adds default-off VSS PBLean/PB pilot harness over this owner (campaign lock + paired warm/exhaustive evidence); not a parallel campaign store. RESEARCH-07/SLM-565 adds default-off VSS Alethe/SMT pilot harness over this owner (campaign lock + theory agreement evidence); not a parallel campaign store. RESEARCH-09/SLM-541 adds default-off parameterized/treewidth-aware VSS pilot harness over this owner (campaign lock + structural-param correlation evidence); not a parallel campaign store. RESEARCH-03/SLM-549 adds default-off Big-Five interpretation Lean package pilot over this owner (campaign lock + four-axis evidence); not a parallel campaign store. RESEARCH-04/SLM-550 adds default-off RM Zoo classification benchmark pilot over this owner (campaign lock + HARN-08 zoo corpus evidence); not a parallel campaign store. RESEARCH-10/SLM-566 adds default-off proof-strength curriculum pilot over this owner (campaign lock + obligation-ordering fixture evidence); not a parallel campaign store. RESEARCH-14/SLM-572 adds default-off checker diversity pilot over this owner (campaign lock + EVID-08/EVID-11 fixture evidence); not a parallel campaign store. RESEARCH-16/SLM-570 adds default-off rational-to-float transfer certificate pilot over this owner (campaign lock + EVID-04 gate fixture evidence); not a parallel campaign store."
+      ]
     },
     {
+      "authority_tier": "evaluation-only",
+      "design_doc": "docs/design/decode-invariants.md",
       "id": "decode_telemetry",
       "name": "Per-decode-call immutable telemetry",
+      "notes": "Timing/step-count/fastpath hit-miss telemetry collected during inference/eval. PCT-003/SLM-450 added src/slm_training/harnesses/model_build/cold_warm_bench.py (BenchTrialV1, HardwareIdentityV1, run_cold_trial/run_warm_trial/summarize_trials), a fresh-subprocess cold and in-process warm benchmark harness reusing this owner's MEASUREMENT_STAGES/COMPLETENESS_STATES taxonomy directly rather than inventing a second one; extends the bench_* script family (scripts/bench_accel.py etc.), introduces no new telemetry authority. PCT-007/SLM-452 added MechanismActivationV1/build_mechanism_activation directly in decode_stats.py: a common eligible/invoked/abstained/no_op/changed_top_choice/changed_final_program envelope any optional mechanism can emit, fail-closed against representing a never-active mechanism as a successful intervention. evidence_class/default_state stay caller-declared advisory fields (MECHANISM_EVIDENCE_CLASSES is illustrative only) pending SGS-009/SLM-456 (still Backlog), which is the actual future owner of a canonical disposition enum -- this does not fabricate that registry ahead of it.",
       "owner_module": "src/slm_training/models/decode_stats.py",
       "owner_symbols": [
         "DecodeStats",
@@ -368,130 +1433,130 @@
         "aggregate_stats",
         "MechanismActivationV1",
         "build_mechanism_activation"
-      ],
-      "authority_tier": "evaluation-only",
-      "design_doc": "docs/design/decode-invariants.md",
-      "notes": "Timing/step-count/fastpath hit-miss telemetry collected during inference/eval. PCT-003/SLM-450 added src/slm_training/harnesses/model_build/cold_warm_bench.py (BenchTrialV1, HardwareIdentityV1, run_cold_trial/run_warm_trial/summarize_trials), a fresh-subprocess cold and in-process warm benchmark harness reusing this owner's MEASUREMENT_STAGES/COMPLETENESS_STATES taxonomy directly rather than inventing a second one; extends the bench_* script family (scripts/bench_accel.py etc.), introduces no new telemetry authority. PCT-007/SLM-452 added MechanismActivationV1/build_mechanism_activation directly in decode_stats.py: a common eligible/invoked/abstained/no_op/changed_top_choice/changed_final_program envelope any optional mechanism can emit, fail-closed against representing a never-active mechanism as a successful intervention. evidence_class/default_state stay caller-declared advisory fields (MECHANISM_EVIDENCE_CLASSES is illustrative only) pending SGS-009/SLM-456 (still Backlog), which is the actual future owner of a canonical disposition enum -- this does not fabricate that registry ahead of it."
+      ]
     },
     {
+      "authority_tier": "evaluation-only",
+      "design_doc": "docs/design/decode-invariants.md",
       "id": "runtime_telemetry",
       "name": "Runtime-level telemetry sink",
+      "notes": "Lower-level runtime namespace used by runtime/decode_schedule.py. Consumes/produces DecodeStats; not a re-implementation of it. PCT-002/SLM-449 added a sibling submodule src/slm_training/runtime/telemetry/replay_bundle.py (ReplayBundleV1, build_replay_bundle, append_replay_bundle, iter_replay_bundles, mirror_bundle_best_effort, replay_bundle_integrity_ok -- re-exported through this package's __init__.py) composing DecodeIdentityV1 (decode_telemetry) and solver_replay_violations (solver_replay) into a compact, content-bound, offline-replayable evidence envelope; introduces no new decode/verifier authority and no new store (persistence reuses any ReplayBundleStore-shaped append-only store the caller already has). INTEG-01/SLM-528 projects ReplayBundleV1 (with DecodeStats / MechanismActivation / VerifierWitness) into formal/proof_trace.py::CanonicalProofTraceV1 \u2014 a pure projection adapter reusing KERN-06 Event/cost vocabulary; introduces no second runtime recorder and never claims abstract refinement. KERN-11/SLM-539 (formal/trace_refinement.py + LeverProofLean.ProofTraceRefinement) checks sealed compact traces for a bounded fixture subset against abstract decode/search semantics and binds success into formal_authority/v2 \u2014 still not a second recorder.",
       "owner_module": "src/slm_training/runtime/telemetry/__init__.py",
       "owner_symbols": [
         "SpanStats",
         "CycleTelemetry",
         "get_telemetry",
         "timed"
-      ],
-      "authority_tier": "evaluation-only",
-      "design_doc": "docs/design/decode-invariants.md",
-      "notes": "Lower-level runtime namespace used by runtime/decode_schedule.py. Consumes/produces DecodeStats; not a re-implementation of it. PCT-002/SLM-449 added a sibling submodule src/slm_training/runtime/telemetry/replay_bundle.py (ReplayBundleV1, build_replay_bundle, append_replay_bundle, iter_replay_bundles, mirror_bundle_best_effort, replay_bundle_integrity_ok -- re-exported through this package's __init__.py) composing DecodeIdentityV1 (decode_telemetry) and solver_replay_violations (solver_replay) into a compact, content-bound, offline-replayable evidence envelope; introduces no new decode/verifier authority and no new store (persistence reuses any ReplayBundleStore-shaped append-only store the caller already has). INTEG-01/SLM-528 projects ReplayBundleV1 (with DecodeStats / MechanismActivation / VerifierWitness) into formal/proof_trace.py::CanonicalProofTraceV1 \u2014 a pure projection adapter reusing KERN-06 Event/cost vocabulary; introduces no second runtime recorder and never claims abstract refinement. KERN-11/SLM-539 (formal/trace_refinement.py + LeverProofLean.ProofTraceRefinement) checks sealed compact traces for a bounded fixture subset against abstract decode/search semantics and binds success into formal_authority/v2 \u2014 still not a second recorder."
+      ]
     },
     {
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/certified-completion-artifact-and-tps-target.md",
       "id": "certified_completion_artifact",
       "name": "Certified static-LALR completion artifact",
+      "notes": "Checkpoint-bound, safetensors-encoded control-table artifact. Generated via scripts/build_completion_artifact.py; certified by dsl/grammar/fastpath/static_control_domain.py.",
       "owner_module": "src/slm_training/dsl/grammar/fastpath/completion_artifact.py",
       "owner_symbols": [
         "CompletionArtifact",
         "StaticLalrAdapter",
         "build_completion_artifact",
         "load_checked_completion_artifact"
-      ],
-      "authority_tier": "compiler-hard",
-      "design_doc": "docs/design/certified-completion-artifact-and-tps-target.md",
-      "notes": "Checkpoint-bound, safetensors-encoded control-table artifact. Generated via scripts/build_completion_artifact.py; certified by dsl/grammar/fastpath/static_control_domain.py."
+      ]
     },
     {
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/dsl-pack-contract.md",
       "id": "dsl_pack_registry_canonical",
       "name": "DSL pack registry (canonical, singular)",
+      "notes": "F1/SLM-34. 114 importers across dsl/operators/*, dsl/harness_dsl.py, dsl/grammar/fastpath/*, and web/routes.py (dashboard pack API). This is the live, wired-in pack registry.",
       "owner_module": "src/slm_training/dsl/pack.py",
       "owner_symbols": [
         "DslPack",
         "register_pack",
         "get_pack",
         "list_packs"
-      ],
-      "authority_tier": "compiler-hard",
-      "design_doc": "docs/design/dsl-pack-contract.md",
-      "notes": "F1/SLM-34. 114 importers across dsl/operators/*, dsl/harness_dsl.py, dsl/grammar/fastpath/*, and web/routes.py (dashboard pack API). This is the live, wired-in pack registry."
+      ]
     },
     {
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/dsl-pack-contract.md",
       "id": "dsl_pack_registry_shadow",
       "name": "DSL pack registry (shadow, plural) -- DUPLICATE RISK",
+      "notes": "Also cites F1/SLM-34 but is a second, independently-registered pack system (note capitalization DSLPack vs DslPack). Only 7 importers, all under dsl/packs/*, harnesses/reasoning/bench.py, and their tests. See duplicate_subsystem_risks below; flagged for consolidation, not rewritten by this audit (non-goal: no new search/semantic behavior). Registry functions (register_pack/get_pack/list_packs) live in dsl/packs/__init__.py; the DSLPack dataclass itself is defined in dsl/packs/types.py.",
       "owner_module": "src/slm_training/dsl/packs/types.py",
       "owner_symbols": [
         "DSLPack",
         "PlaceholderPolicy"
-      ],
-      "authority_tier": "compiler-hard",
-      "design_doc": "docs/design/dsl-pack-contract.md",
-      "notes": "Also cites F1/SLM-34 but is a second, independently-registered pack system (note capitalization DSLPack vs DslPack). Only 7 importers, all under dsl/packs/*, harnesses/reasoning/bench.py, and their tests. See duplicate_subsystem_risks below; flagged for consolidation, not rewritten by this audit (non-goal: no new search/semantic behavior). Registry functions (register_pack/get_pack/list_packs) live in dsl/packs/__init__.py; the DSLPack dataclass itself is defined in dsl/packs/types.py."
+      ]
     },
     {
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/symbol-only-output-contract.md",
       "id": "output_contract",
       "name": "Symbol-only output contract / OUTPUT_CONTRACT_VERSION",
+      "notes": "OUTPUT_CONTRACT_VERSION=2 (checkpoint-incompatible with v1). See known_drift for the doc mismatch this audit reconciles.",
       "owner_module": "src/slm_training/dsl/language_contract.py",
       "owner_symbols": [
         "OUTPUT_CONTRACT_VERSION"
-      ],
-      "authority_tier": "compiler-hard",
-      "design_doc": "docs/design/symbol-only-output-contract.md",
-      "notes": "OUTPUT_CONTRACT_VERSION=2 (checkpoint-incompatible with v1). See known_drift for the doc mismatch this audit reconciles."
+      ]
     },
     {
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/decode-invariants.md",
       "id": "completion_domain",
       "name": "Grammar-capability-derived completion domain",
+      "notes": "Single definition site; used by the fastpath engine to compute legal-symbol candidates.",
       "owner_module": "src/slm_training/dsl/grammar_capabilities.py",
       "owner_symbols": [
         "CompletionDomainV1",
         "GrammarCapabilityAdapterV1",
         "GrammarCapabilityAuthorityV1"
-      ],
-      "authority_tier": "compiler-hard",
-      "design_doc": "docs/design/decode-invariants.md",
-      "notes": "Single definition site; used by the fastpath engine to compute legal-symbol candidates."
+      ]
     },
     {
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/agent-harness-parity-audit.md",
       "id": "dsl_tokenizer",
       "name": "DSL/grammar-native tokenizer (symbol-only decode target)",
+      "notes": "DSL_TOKENIZER_VERSION=5, machine-checked against docs/design/agent-harness-parity-audit.md (\"DSL_TOKENIZER_VERSION stays 5\") by scripts/verify_ownership_map.py CONTRACT_VERSION_CHECKS (SGS-002/SLM-436). Distinct from choice_codec (models/choice_tokenizer.py): this is the lexer-native tokenizer, the choice codec is the fastpath alternative.",
       "owner_module": "src/slm_training/models/dsl_tokenizer.py",
       "owner_symbols": [
         "DSL_TOKENIZER_VERSION",
         "DSLNativeTokenizer",
         "SymbolTable"
-      ],
-      "authority_tier": "compiler-hard",
-      "design_doc": "docs/design/agent-harness-parity-audit.md",
-      "notes": "DSL_TOKENIZER_VERSION=5, machine-checked against docs/design/agent-harness-parity-audit.md (\"DSL_TOKENIZER_VERSION stays 5\") by scripts/verify_ownership_map.py CONTRACT_VERSION_CHECKS (SGS-002/SLM-436). Distinct from choice_codec (models/choice_tokenizer.py): this is the lexer-native tokenizer, the choice codec is the fastpath alternative."
+      ]
     },
     {
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/decode-invariants.md",
       "id": "choice_codec",
       "name": "Deterministic choice-sequence codec",
+      "notes": "Fastpath alternative to open-vocab tokenization. Coexists deliberately with the DSL-native tokenizer (is_choice_tokenizer discriminator); not a duplicate.",
       "owner_module": "src/slm_training/models/choice_tokenizer.py",
       "owner_symbols": [
         "ChoiceTokenizer",
         "ChoiceDecodeState"
-      ],
-      "authority_tier": "compiler-hard",
-      "design_doc": "docs/design/decode-invariants.md",
-      "notes": "Fastpath alternative to open-vocab tokenization. Coexists deliberately with the DSL-native tokenizer (is_choice_tokenizer discriminator); not a duplicate."
+      ]
     },
     {
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/decode-invariants.md",
       "id": "production_codec",
       "name": "Grammar production codec",
+      "notes": "Related production-level codec consumed alongside choice_codec.",
       "owner_module": "src/slm_training/dsl/production_codec.py",
       "owner_symbols": [
         "ProductionProgram",
         "ProductionVocab",
         "decode_productions"
-      ],
-      "authority_tier": "compiler-hard",
-      "design_doc": "docs/design/decode-invariants.md",
-      "notes": "Related production-level codec consumed alongside choice_codec."
+      ]
     },
     {
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/symbol-only-output-contract.md",
       "id": "symbolic_expr_ir",
       "name": "Typed symbolic-expression IR, codec, and symbol table",
+      "notes": "SRP-002/SLM-453. New pack-local subsystem for the symbolic-regression pack (SRP-001/SLM-441, owner symbolic_regression_pack.py), pre-authorized by the downstream_extension_map row for SRP-002 (new_owner_justified: true, layer under output_contract, do not fork it). Variables and coefficients are opaque indices only -- never names or free numeric literals -- so the structural codec's output space is symbol-only by construction without introducing a second OUTPUT_CONTRACT_VERSION or reusing production_codec's OpenUI-specific encode/decode logic. Supersedes the untyped dict-shaped expression tree in symbolic_regression_pack.py as the canonical structural form; the Lark surface grammar registered there (dsl/grammar/backends/symbolic_regression.py) remains input-surface syntax only.",
       "owner_module": "src/slm_training/dsl/symbolic_expr_ir.py",
       "owner_symbols": [
         "VarRef",
@@ -501,28 +1566,28 @@
         "serialize_expr",
         "collect_symbols",
         "validate_expr_budget"
-      ],
-      "authority_tier": "compiler-hard",
-      "design_doc": "docs/design/symbol-only-output-contract.md",
-      "notes": "SRP-002/SLM-453. New pack-local subsystem for the symbolic-regression pack (SRP-001/SLM-441, owner symbolic_regression_pack.py), pre-authorized by the downstream_extension_map row for SRP-002 (new_owner_justified: true, layer under output_contract, do not fork it). Variables and coefficients are opaque indices only -- never names or free numeric literals -- so the structural codec's output space is symbol-only by construction without introducing a second OUTPUT_CONTRACT_VERSION or reusing production_codec's OpenUI-specific encode/decode logic. Supersedes the untyped dict-shaped expression tree in symbolic_regression_pack.py as the canonical structural form; the Lark surface grammar registered there (dsl/grammar/backends/symbolic_regression.py) remains input-surface syntax only."
+      ]
     },
     {
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/symbol-only-output-contract.md",
       "id": "symbolic_expr_evaluator",
       "name": "Vectorized NumPy evaluator with explicit numerical-domain policies",
+      "notes": "SRP-003/SLM-461. New pack-local subsystem for the symbolic-regression pack, pre-authorized by the downstream_extension_map row for SRP-003 (new_owner_justified: true, extension_point dsl_pack_registry_canonical -- this evaluator is consumed by/registered through that registry, it does not fork it). Evaluates symbolic_expr_ir's typed AST (VarRef/CoefficientHole/OpApply) over NumPy arrays via a fixed, hardcoded per-operator dispatch table -- no eval/exec/getattr/importlib path exists. Honors symbolic_regression_pack.SymbolicRegressionProblemV1.numeric_domain_policy (reject_nonfinite/allow_nonfinite), which no evaluator previously consulted. Supersedes symbolic_regression_pack.evaluate_expression for real search/fitting use; that scalar reference evaluator is kept only to prove the parse/evaluate round trip. SRP-004 (SLM-465) is pre-registered to extend this owner rather than create a new one.",
       "owner_module": "src/slm_training/dsl/symbolic_expr_evaluator.py",
       "owner_symbols": [
         "DomainViolationV1",
         "EvaluationResultV1",
         "evaluate_vectorized",
         "NUMERIC_DOMAIN_POLICIES"
-      ],
-      "authority_tier": "compiler-hard",
-      "design_doc": "docs/design/symbol-only-output-contract.md",
-      "notes": "SRP-003/SLM-461. New pack-local subsystem for the symbolic-regression pack, pre-authorized by the downstream_extension_map row for SRP-003 (new_owner_justified: true, extension_point dsl_pack_registry_canonical -- this evaluator is consumed by/registered through that registry, it does not fork it). Evaluates symbolic_expr_ir's typed AST (VarRef/CoefficientHole/OpApply) over NumPy arrays via a fixed, hardcoded per-operator dispatch table -- no eval/exec/getattr/importlib path exists. Honors symbolic_regression_pack.SymbolicRegressionProblemV1.numeric_domain_policy (reject_nonfinite/allow_nonfinite), which no evaluator previously consulted. Supersedes symbolic_regression_pack.evaluate_expression for real search/fitting use; that scalar reference evaluator is kept only to prove the parse/evaluate round trip. SRP-004 (SLM-465) is pre-registered to extend this owner rather than create a new one."
+      ]
     },
     {
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/symbol-only-output-contract.md",
       "id": "symbolic_expr_canonicalize",
       "name": "Pack-owned canonicalization and tamper-evident rewrite-certificate schema",
+      "notes": "SRP-005/SLM-462. New pack-local subsystem for the symbolic-regression pack, pre-authorized by the downstream_extension_map row for SRP-005 (new_owner_justified: true). That row's extension_points list ['verifier_gate_stack'] as a predicted layering point and constrains the certificate shape to follow the VCE-001 witness pattern; the certificate schema (RewriteCertificateV1) is deliberately templated on evals/semantic_failure.py's VerifierWitnessV1 (schema version + typed evidence + trailing self-digest + fail-closed from_dict), satisfying that constraint. The predicted verifier_gate_stack layering itself is a documented divergence (same precedent as SGS-008): data/verify/stack.py's Gate/GateResult score LLM decode/verifier evidence, which a purely structural algebraic rewrite has no pass/fail outcome to compose with, so this module does not import or extend Gate/GateResult. Initial REWRITE_RULES set is small and exact-IEEE-754-safe by construction (commutative operand ordering for binary +/*, double-negation elimination, abs idempotence) -- none require a numeric side condition, so none can fold a not-yet-fit CoefficientHole or change declared numerical semantics.",
       "owner_module": "src/slm_training/dsl/symbolic_expr_canonicalize.py",
       "owner_symbols": [
         "RewriteRuleV1",
@@ -532,14 +1597,14 @@
         "canonicalize_with_certificates",
         "apply_rewrite_rule",
         "certificate_integrity_ok"
-      ],
-      "authority_tier": "compiler-hard",
-      "design_doc": "docs/design/symbol-only-output-contract.md",
-      "notes": "SRP-005/SLM-462. New pack-local subsystem for the symbolic-regression pack, pre-authorized by the downstream_extension_map row for SRP-005 (new_owner_justified: true). That row's extension_points list ['verifier_gate_stack'] as a predicted layering point and constrains the certificate shape to follow the VCE-001 witness pattern; the certificate schema (RewriteCertificateV1) is deliberately templated on evals/semantic_failure.py's VerifierWitnessV1 (schema version + typed evidence + trailing self-digest + fail-closed from_dict), satisfying that constraint. The predicted verifier_gate_stack layering itself is a documented divergence (same precedent as SGS-008): data/verify/stack.py's Gate/GateResult score LLM decode/verifier evidence, which a purely structural algebraic rewrite has no pass/fail outcome to compose with, so this module does not import or extend Gate/GateResult. Initial REWRITE_RULES set is small and exact-IEEE-754-safe by construction (commutative operand ordering for binary +/*, double-negation elimination, abs idempotence) -- none require a numeric side condition, so none can fold a not-yet-fit CoefficientHole or change declared numerical semantics."
+      ]
     },
     {
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/symbol-only-output-contract.md",
       "id": "symbolic_expr_fit",
       "name": "Affine coefficient-dependence analysis and deterministic least-squares fitting",
+      "notes": "SRP-004/SLM-465. The downstream_extension_map row for SRP-004 predicted new_owner_justified: false ('Extends the SRP-003 evaluator'), i.e. adding these symbols directly to symbolic_expr_evaluator's owner_symbols. The real implementation is a self-contained module whose dataclasses (AffineClassificationV1, LeastSquaresFitV1) are not literally defined in symbolic_expr_evaluator.py -- per this map's own rule that a symbol living in a sibling file cannot be added to another module's owner_symbols -- so it is registered as its own subsystem instead, and the divergence is documented here (same precedent as SGS-008/SRP-005). It does reuse symbolic_expr_evaluator.evaluate_vectorized directly (every coefficient-free subtree is evaluated through it, never re-implemented) rather than forking evaluator arithmetic. classify_affine_dependence is a purely structural, data-independent check built on the identical recursive rule set fit_least_squares uses to build the design matrix (via a single-row dummy evaluation), so the two can never silently disagree. Non-affine coefficient holes are unsupported by design -- no optimizer is ever silently substituted.",
       "owner_module": "src/slm_training/dsl/symbolic_expr_fit.py",
       "owner_symbols": [
         "AffineClassificationV1",
@@ -548,14 +1613,14 @@
         "classify_affine_dependence",
         "fit_least_squares",
         "fit_integrity_ok"
-      ],
-      "authority_tier": "compiler-hard",
-      "design_doc": "docs/design/symbol-only-output-contract.md",
-      "notes": "SRP-004/SLM-465. The downstream_extension_map row for SRP-004 predicted new_owner_justified: false ('Extends the SRP-003 evaluator'), i.e. adding these symbols directly to symbolic_expr_evaluator's owner_symbols. The real implementation is a self-contained module whose dataclasses (AffineClassificationV1, LeastSquaresFitV1) are not literally defined in symbolic_expr_evaluator.py -- per this map's own rule that a symbol living in a sibling file cannot be added to another module's owner_symbols -- so it is registered as its own subsystem instead, and the divergence is documented here (same precedent as SGS-008/SRP-005). It does reuse symbolic_expr_evaluator.evaluate_vectorized directly (every coefficient-free subtree is evaluated through it, never re-implemented) rather than forking evaluator arithmetic. classify_affine_dependence is a purely structural, data-independent check built on the identical recursive rule set fit_least_squares uses to build the design matrix (via a single-row dummy evaluation), so the two can never silently disagree. Non-affine coefficient holes are unsupported by design -- no optimizer is ever silently substituted."
+      ]
     },
     {
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/symbol-only-output-contract.md",
       "id": "symbolic_expr_report",
       "name": "Validity, fit, extrapolation, complexity, and Pareto reporting",
+      "notes": "SRP-007/SLM-466. The downstream_extension_map row for SRP-007 predicted new_owner_justified: false ('Reporting layer over SRP-003/004/005'), i.e. adding these symbols directly to an existing owner's owner_symbols. The real implementation's dataclasses (ExpressionEvidenceV1, ParetoFrontV1, SplitEvidenceV1) are not literally defined in symbolic_expr_evaluator.py/symbolic_expr_fit.py/symbolic_expr_canonicalize.py -- per this map's own rule that a symbol living in a sibling file cannot be added to another module's owner_symbols -- so it is registered as its own subsystem instead, and the divergence is documented here (same precedent as SGS-008/SRP-004/SRP-005). It composes rather than re-derives: complexity comes from symbolic_expr_ir.expr_depth_and_node_count, validity/predictions from symbolic_expr_evaluator.evaluate_vectorized, fitted coefficients from symbolic_expr_fit.fit_least_squares (train_indices only -- validation/extrapolation rows are scored afterward, never fit on), and canonical identity from symbolic_expr_canonicalize.canonicalize_expr. Per-expression evidence is reported as a vector (train/validation/extrapolation loss kept separate, never averaged into one number); a split with any numerically invalid row is scored math.inf rather than averaged over only its valid rows, so invalid output can never buy a better score. pareto_front's dominance function follows evals/verified_utility.pareto_dominance's factor-list style, generalized to N objectives, and requires every input record to share one problem_fingerprint/pack_id/resource budget so a comparison artifact never silently mixes identities.",
       "owner_module": "src/slm_training/dsl/symbolic_expr_report.py",
       "owner_symbols": [
         "ExpressionEvidenceV1",
@@ -565,14 +1630,14 @@
         "evidence_integrity_ok",
         "front_integrity_ok",
         "pareto_front"
-      ],
-      "authority_tier": "compiler-hard",
-      "design_doc": "docs/design/symbol-only-output-contract.md",
-      "notes": "SRP-007/SLM-466. The downstream_extension_map row for SRP-007 predicted new_owner_justified: false ('Reporting layer over SRP-003/004/005'), i.e. adding these symbols directly to an existing owner's owner_symbols. The real implementation's dataclasses (ExpressionEvidenceV1, ParetoFrontV1, SplitEvidenceV1) are not literally defined in symbolic_expr_evaluator.py/symbolic_expr_fit.py/symbolic_expr_canonicalize.py -- per this map's own rule that a symbol living in a sibling file cannot be added to another module's owner_symbols -- so it is registered as its own subsystem instead, and the divergence is documented here (same precedent as SGS-008/SRP-004/SRP-005). It composes rather than re-derives: complexity comes from symbolic_expr_ir.expr_depth_and_node_count, validity/predictions from symbolic_expr_evaluator.evaluate_vectorized, fitted coefficients from symbolic_expr_fit.fit_least_squares (train_indices only -- validation/extrapolation rows are scored afterward, never fit on), and canonical identity from symbolic_expr_canonicalize.canonicalize_expr. Per-expression evidence is reported as a vector (train/validation/extrapolation loss kept separate, never averaged into one number); a split with any numerically invalid row is scored math.inf rather than averaged over only its valid rows, so invalid output can never buy a better score. pareto_front's dominance function follows evals/verified_utility.pareto_dominance's factor-list style, generalized to N objectives, and requires every input record to share one problem_fingerprint/pack_id/resource budget so a comparison artifact never silently mixes identities."
+      ]
     },
     {
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/symbol-only-output-contract.md",
       "id": "symbolic_expr_corpus",
       "name": "Deterministic symbolic-regression corpus generation with OOD and leakage controls",
+      "notes": "SRP-008/SLM-471. The downstream_extension_map row for SRP-008 predicted new_owner_justified: false ('Reuses data_corpus_audit (scripts/audit_data_corpora.py) leakage-control machinery for a new corpus, not a new owner'). The generation contract itself (CorpusGenerationConfigV1/CorpusRecordV1/CorpusOracleV1/SymbolicRegressionCorpusV1/CorpusLeakageAuditV1) is not literally defined in scripts/audit_data_corpora.py, so per this map's own sibling-file rule it is registered as its own subsystem instead (same precedent as SGS-008/SRP-004/SRP-005/SRP-007) -- but the row's actual constraint (run leakage/dedup auditing through the existing data_corpus_audit tool, per AGENTS.md's data-quality law) is honored literally: scripts/audit_data_corpora.py gained symbolic_regression_corpus_leakage_report()/--mode symbolic-regression-audit (data.corpus_certification bumped v3->v4), which calls this module's generate_corpus/audit_corpus_leakage directly rather than a second, parallel leakage checker. Canonical-family/topology split assignment reuses harnesses/train_data/split_policy.py's RootFamilySplitPolicyV1 (already-generic root_family_id->split hashing) keyed on the canonicalized expression's hash, so equivalent expressions are assigned a split before any numeric row is sampled, never after. Coefficient placement is guaranteed affine by construction (sum_i(c_i * basis_i(vars)) + offset, mirroring SRP-004/SRP-006's coefficient-free-factor * basis pattern); a candidate whose true coefficients would not be uniquely identifiable from its own train rows (collinear basis terms, detected via symbolic_expr_fit.fit_least_squares.is_rank_deficient) is filtered as collinear_coefficient_terms rather than silently kept with non-recoverable ground truth. The true equation/coefficients live only in CorpusOracleV1; the generated SymbolicRegressionProblemV1's provenance is always left empty, so no oracle field is ever copied onto anything model-visible.",
       "owner_module": "src/slm_training/dsl/symbolic_expr_corpus.py",
       "owner_symbols": [
         "CorpusGenerationConfigV1",
@@ -584,28 +1649,28 @@
         "SymbolicRegressionCorpusV1",
         "audit_corpus_leakage",
         "generate_corpus"
-      ],
-      "authority_tier": "compiler-hard",
-      "design_doc": "docs/design/symbol-only-output-contract.md",
-      "notes": "SRP-008/SLM-471. The downstream_extension_map row for SRP-008 predicted new_owner_justified: false ('Reuses data_corpus_audit (scripts/audit_data_corpora.py) leakage-control machinery for a new corpus, not a new owner'). The generation contract itself (CorpusGenerationConfigV1/CorpusRecordV1/CorpusOracleV1/SymbolicRegressionCorpusV1/CorpusLeakageAuditV1) is not literally defined in scripts/audit_data_corpora.py, so per this map's own sibling-file rule it is registered as its own subsystem instead (same precedent as SGS-008/SRP-004/SRP-005/SRP-007) -- but the row's actual constraint (run leakage/dedup auditing through the existing data_corpus_audit tool, per AGENTS.md's data-quality law) is honored literally: scripts/audit_data_corpora.py gained symbolic_regression_corpus_leakage_report()/--mode symbolic-regression-audit (data.corpus_certification bumped v3->v4), which calls this module's generate_corpus/audit_corpus_leakage directly rather than a second, parallel leakage checker. Canonical-family/topology split assignment reuses harnesses/train_data/split_policy.py's RootFamilySplitPolicyV1 (already-generic root_family_id->split hashing) keyed on the canonicalized expression's hash, so equivalent expressions are assigned a split before any numeric row is sampled, never after. Coefficient placement is guaranteed affine by construction (sum_i(c_i * basis_i(vars)) + offset, mirroring SRP-004/SRP-006's coefficient-free-factor * basis pattern); a candidate whose true coefficients would not be uniquely identifiable from its own train rows (collinear basis terms, detected via symbolic_expr_fit.fit_least_squares.is_rank_deficient) is filtered as collinear_coefficient_terms rather than silently kept with non-recoverable ground truth. The true equation/coefficients live only in CorpusOracleV1; the generated SymbolicRegressionProblemV1's provenance is always left empty, so no oracle field is ever copied onto anything model-visible."
+      ]
     },
     {
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/symbol-only-output-contract.md",
       "id": "symbolic_expr_enumerate",
       "name": "Bounded canonical enumerative symbolic-regression baseline",
+      "notes": "SRP-009/SLM-472. The downstream_extension_map row for SRP-009 predicted extension_points: [valid_state_search_generic] (the fixed-hole finite-domain CSP controller, dsl/solver/controller.py) as the search backbone. That controller's state model is a fixed set of holes each drawn from a finite domain, solved via backtracking + certificate-backed closure; it does not naturally represent 'generate a variable-shaped tree up to a depth/node budget' without an artificial fixed-arity template encoding that would add real complexity without a matching correctness benefit, especially since this issue's core acceptance criterion (tiny fixtures must match an independent brute-force oracle exactly) is best served by a small, directly-auditable recursive enumerator over the grammar symbolic_expr_ir already declares. Registered as its own subsystem (same precedent as SGS-008/SRP-004/SRP-005/SRP-007) rather than extending valid_state_search_generic's owner_symbols. Composes rather than re-derives: candidate generation reads only symbolic_expr_ir's operator arity table and budgets (never targets/models), canonical identity and dedup come from symbolic_expr_canonicalize.canonicalize_expr, and every unique candidate is scored through symbolic_expr_report.build_evidence_record/pareto_front unmodified. Deduplicates by canonical hash before evaluation; a truncated enumeration (max_states cap reached before natural exhaustion) is structurally forbidden from claiming optimality_claim='exhaustive_under_declared_bounds' (EnumerativeBaselineResultV1.__post_init__ raises on the mismatched combination).",
       "owner_module": "src/slm_training/dsl/symbolic_expr_enumerate.py",
       "owner_symbols": [
         "EnumerationCountersV1",
         "EnumerativeBaselineResultV1",
         "generate_all_expressions",
         "run_enumerative_baseline"
-      ],
-      "authority_tier": "compiler-hard",
-      "design_doc": "docs/design/symbol-only-output-contract.md",
-      "notes": "SRP-009/SLM-472. The downstream_extension_map row for SRP-009 predicted extension_points: [valid_state_search_generic] (the fixed-hole finite-domain CSP controller, dsl/solver/controller.py) as the search backbone. That controller's state model is a fixed set of holes each drawn from a finite domain, solved via backtracking + certificate-backed closure; it does not naturally represent 'generate a variable-shaped tree up to a depth/node budget' without an artificial fixed-arity template encoding that would add real complexity without a matching correctness benefit, especially since this issue's core acceptance criterion (tiny fixtures must match an independent brute-force oracle exactly) is best served by a small, directly-auditable recursive enumerator over the grammar symbolic_expr_ir already declares. Registered as its own subsystem (same precedent as SGS-008/SRP-004/SRP-005/SRP-007) rather than extending valid_state_search_generic's owner_symbols. Composes rather than re-derives: candidate generation reads only symbolic_expr_ir's operator arity table and budgets (never targets/models), canonical identity and dedup come from symbolic_expr_canonicalize.canonicalize_expr, and every unique candidate is scored through symbolic_expr_report.build_evidence_record/pareto_front unmodified. Deduplicates by canonical hash before evaluation; a truncated enumeration (max_states cap reached before natural exhaustion) is structurally forbidden from claiming optimality_claim='exhaustive_under_declared_bounds' (EnumerativeBaselineResultV1.__post_init__ raises on the mismatched combination)."
+      ]
     },
     {
+      "authority_tier": "evaluation-only",
+      "design_doc": "docs/design/symbol-only-output-contract.md",
       "id": "symbolic_expr_pysr_adapter",
       "name": "Optional PySR/SRBench adapter with isolated environment manifest",
+      "notes": "SRP-011/SLM-475. The downstream_extension_map row for SRP-011 already predicted new_owner_justified: true, extension_points: [] ('External, optional dependency by design; isolated deliberately and does not extend any internal owner') -- unlike the SRP-004/005/007/008/009 siblings, this is not a divergence from the pre-registered plan. Never imports pysr/Julia and is never imported by any core path; the external call is injected as a plain str->str raw_output_provider callable, so core tests use mocked/golden output exclusively (no live PySR install exists or is verifiable in this environment). Translation is bidirectional over the already-existing IR: build_adapter_run_input serializes a SymbolicRegressionProblemV1's variable names/operator allowlist/row count (never raw training data) into external runner configuration; parse_external_expression parses the tool's returned infix text back into VarRef/CoefficientHole/OpApply via a hand-rolled tokenizer/recursive-descent parser (no eval/exec), mapping every numeric literal to a fresh CoefficientHole with its value carried in a parallel coefficients tuple so the IR's symbol-only contract is never violated. Every recovered expression is rescored through symbolic_expr_report.build_evidence_record unmodified -- an external tool's self-reported loss is never trusted or persisted. Any operator/identifier outside the pack's declared grammar (PySR's '^'/'square', etc.) is reported in unsupported_operators rather than approximated; any external-call exception, timeout, or malformed-output parse failure produces a typed non-'ok' AdapterRunResultV1 with evidence=None (enforced in __post_init__), never a fabricated benchmark loss.",
       "owner_module": "src/slm_training/dsl/symbolic_expr_pysr_adapter.py",
       "owner_symbols": [
         "AdapterEnvironmentManifestV1",
@@ -615,14 +1680,14 @@
         "build_adapter_run_input",
         "parse_external_expression",
         "run_adapter"
-      ],
-      "authority_tier": "evaluation-only",
-      "design_doc": "docs/design/symbol-only-output-contract.md",
-      "notes": "SRP-011/SLM-475. The downstream_extension_map row for SRP-011 already predicted new_owner_justified: true, extension_points: [] ('External, optional dependency by design; isolated deliberately and does not extend any internal owner') -- unlike the SRP-004/005/007/008/009 siblings, this is not a divergence from the pre-registered plan. Never imports pysr/Julia and is never imported by any core path; the external call is injected as a plain str->str raw_output_provider callable, so core tests use mocked/golden output exclusively (no live PySR install exists or is verifiable in this environment). Translation is bidirectional over the already-existing IR: build_adapter_run_input serializes a SymbolicRegressionProblemV1's variable names/operator allowlist/row count (never raw training data) into external runner configuration; parse_external_expression parses the tool's returned infix text back into VarRef/CoefficientHole/OpApply via a hand-rolled tokenizer/recursive-descent parser (no eval/exec), mapping every numeric literal to a fresh CoefficientHole with its value carried in a parallel coefficients tuple so the IR's symbol-only contract is never violated. Every recovered expression is rescored through symbolic_expr_report.build_evidence_record unmodified -- an external tool's self-reported loss is never trusted or persisted. Any operator/identifier outside the pack's declared grammar (PySR's '^'/'square', etc.) is reported in unsupported_operators rather than approximated; any external-call exception, timeout, or malformed-output parse failure produces a typed non-'ok' AdapterRunResultV1 with evidence=None (enforced in __post_init__), never a fabricated benchmark loss."
+      ]
     },
     {
+      "authority_tier": "evaluation-only",
+      "design_doc": "docs/design/exp-sr-8-egraph-equivalence-experiment.md",
       "id": "symbolic_egraph",
       "name": "Proof-scoped e-graph/equivalence-region experiment (EXP-SR-8)",
+      "notes": "RSP-004/SLM-479. The downstream_extension_map row for RSP-004 predicted new_owner_justified: false ('Runs SRP-005's canonicalization/rewrite-certificate work through the campaign contract'), i.e. no new owner beyond dsl_pack_registry_canonical/experiment_campaign. The e-graph union-find contract itself (EGraph/ENodeV1/RewriteApplicationV1/CertificateVerificationV1) is not literally defined in symbolic_expr_canonicalize.py or experiment_campaign.py, so per this map's own sibling-file rule it is registered as its own subsystem instead (same precedent as SGS-008/SRP-004/005/007/008) -- but the row's actual constraint is honored literally: every union this module performs carries the certificate symbolic_expr_canonicalize.apply_rewrite_rule already produces (REWRITE_RULES is the sole seed, no new rewrite semantics), and the experiment runs through the pre-registered SIE-001 exp_sr_catalogue.py identity (family_id 'exp-sr-8', campaign_manifest_sha256 referenced in the results doc) rather than inventing a parallel campaign. Extraction is a cycle-safe bottom-up fixed point (safe_representatives): rules like double-negation elimination union a class with one of its own descendants, which can leave e-nodes only reconstructible by re-entering their own class -- a naive recursive walk over an arbitrary member recurses forever, so extraction only ever selects an already-proven-acyclic representative per class. Every rewrite application is independently re-verified numerically (verify_rewrite_numerically, NaN-aware) before counting toward the locked primary endpoint egraph_certified_equivalence_rate (kill_threshold=1.0/lt: any uncertified or numerically-unverified union kills the candidate arm). Measured result (docs/design/exp-sr-8-egraph-equivalence-experiment.{json,md}): e-graph regions matched canonical-hash dedup's unique-form set and Pareto frontier exactly on the fixture corpus -- expected, since SRP-005's current REWRITE_RULES are each complexity-non-increasing and confluent, so e-graph saturation is mathematically guaranteed to converge to the same fixed point canonicalize_expr already computes. Per SLM-479's own acceptance criterion ('Result remains default-off regardless of fixture win'), nothing in dsl/symbolic_regression_pack.py or any production canonicalization path imports this module.",
       "owner_module": "src/slm_training/harnesses/experiments/symbolic_egraph.py",
       "owner_symbols": [
         "EGraph",
@@ -631,14 +1696,14 @@
         "CertificateVerificationV1",
         "saturate",
         "verify_rewrite_numerically"
-      ],
-      "authority_tier": "evaluation-only",
-      "design_doc": "docs/design/exp-sr-8-egraph-equivalence-experiment.md",
-      "notes": "RSP-004/SLM-479. The downstream_extension_map row for RSP-004 predicted new_owner_justified: false ('Runs SRP-005's canonicalization/rewrite-certificate work through the campaign contract'), i.e. no new owner beyond dsl_pack_registry_canonical/experiment_campaign. The e-graph union-find contract itself (EGraph/ENodeV1/RewriteApplicationV1/CertificateVerificationV1) is not literally defined in symbolic_expr_canonicalize.py or experiment_campaign.py, so per this map's own sibling-file rule it is registered as its own subsystem instead (same precedent as SGS-008/SRP-004/005/007/008) -- but the row's actual constraint is honored literally: every union this module performs carries the certificate symbolic_expr_canonicalize.apply_rewrite_rule already produces (REWRITE_RULES is the sole seed, no new rewrite semantics), and the experiment runs through the pre-registered SIE-001 exp_sr_catalogue.py identity (family_id 'exp-sr-8', campaign_manifest_sha256 referenced in the results doc) rather than inventing a parallel campaign. Extraction is a cycle-safe bottom-up fixed point (safe_representatives): rules like double-negation elimination union a class with one of its own descendants, which can leave e-nodes only reconstructible by re-entering their own class -- a naive recursive walk over an arbitrary member recurses forever, so extraction only ever selects an already-proven-acyclic representative per class. Every rewrite application is independently re-verified numerically (verify_rewrite_numerically, NaN-aware) before counting toward the locked primary endpoint egraph_certified_equivalence_rate (kill_threshold=1.0/lt: any uncertified or numerically-unverified union kills the candidate arm). Measured result (docs/design/exp-sr-8-egraph-equivalence-experiment.{json,md}): e-graph regions matched canonical-hash dedup's unique-form set and Pareto frontier exactly on the fixture corpus -- expected, since SRP-005's current REWRITE_RULES are each complexity-non-increasing and confluent, so e-graph saturation is mathematically guaranteed to converge to the same fixed point canonicalize_expr already computes. Per SLM-479's own acceptance criterion ('Result remains default-off regardless of fixture win'), nothing in dsl/symbolic_regression_pack.py or any production canonicalization path imports this module."
+      ]
     },
     {
+      "authority_tier": "evaluation-only",
+      "design_doc": "docs/design/exp-sr-9-macro-library-experiment.md",
       "id": "symbolic_macro_library",
       "name": "Prospective certified macro/library-learning experiment (EXP-SR-9)",
+      "notes": "RSP-005/SLM-480. The downstream_extension_map row for RSP-005 predicted new_owner_justified: false ('Runs pack + artifact owners through the campaign contract'), i.e. no new owner beyond dsl_pack_registry_canonical/certified_completion_artifact/experiment_campaign. The macro-library contract itself (MacroLibraryV1/MacroEntryV1/mining and selection functions) is not literally defined in dsl/pack.py or dsl/grammar/fastpath/completion_artifact.py, so per this map's own sibling-file rule it is registered as its own subsystem instead (same precedent as SGS-008/SRP-004/005/007/008/009/RSP-004) -- but the row's actual constraint is honored literally for the piece that IS genuinely reused: Rsp005CampaignV1 builds a real autoresearch.experiment_campaign.ExperimentCampaignV1 and runs it through the shared autoresearch.storage.CampaignStore, exactly like SIE-002/RSP-004 (no forked campaign machinery). Every admitted macro is a closed (0-arity), content-addressed (macro_id=sha256(expansion_expr)-derived) recurring canonical subtree -- never a parametrized/anti-unified template -- mined exclusively from corpus_split=='train' symbolic-regression records (never a held-out/eval AST) and evaluated prospectively on the frozen corpus_split=='test' slice; expansion is exactly parse_expr of the stored canonical string, independently re-verified numerically (verify_expansion_equivalence, NaN-aware) against a real occurrence rather than trusted by construction, mirroring RSP-004's verify_rewrite_numerically pattern. Content-addressed macro_ids mean admitting or retiring a macro never renumbers another macro's identity. This module does not touch, extend, or compete with data/macro_induction.py or models/dsl_tokenizer.py -- that is a separate, production, compiler-hard, version-governed macro system over the OpenUI DSL token stream; this module mines macros over the unrelated symbolic-regression AST domain and stays evaluation-only, imported by no production canonicalization path.",
       "owner_module": "src/slm_training/harnesses/experiments/symbolic_macro_library.py",
       "owner_symbols": [
         "MacroCandidateV1",
@@ -653,14 +1718,14 @@
         "expand_macro",
         "verify_expansion_equivalence",
         "run_campaign"
-      ],
-      "authority_tier": "evaluation-only",
-      "design_doc": "docs/design/exp-sr-9-macro-library-experiment.md",
-      "notes": "RSP-005/SLM-480. The downstream_extension_map row for RSP-005 predicted new_owner_justified: false ('Runs pack + artifact owners through the campaign contract'), i.e. no new owner beyond dsl_pack_registry_canonical/certified_completion_artifact/experiment_campaign. The macro-library contract itself (MacroLibraryV1/MacroEntryV1/mining and selection functions) is not literally defined in dsl/pack.py or dsl/grammar/fastpath/completion_artifact.py, so per this map's own sibling-file rule it is registered as its own subsystem instead (same precedent as SGS-008/SRP-004/005/007/008/009/RSP-004) -- but the row's actual constraint is honored literally for the piece that IS genuinely reused: Rsp005CampaignV1 builds a real autoresearch.experiment_campaign.ExperimentCampaignV1 and runs it through the shared autoresearch.storage.CampaignStore, exactly like SIE-002/RSP-004 (no forked campaign machinery). Every admitted macro is a closed (0-arity), content-addressed (macro_id=sha256(expansion_expr)-derived) recurring canonical subtree -- never a parametrized/anti-unified template -- mined exclusively from corpus_split=='train' symbolic-regression records (never a held-out/eval AST) and evaluated prospectively on the frozen corpus_split=='test' slice; expansion is exactly parse_expr of the stored canonical string, independently re-verified numerically (verify_expansion_equivalence, NaN-aware) against a real occurrence rather than trusted by construction, mirroring RSP-004's verify_rewrite_numerically pattern. Content-addressed macro_ids mean admitting or retiring a macro never renumbers another macro's identity. This module does not touch, extend, or compete with data/macro_induction.py or models/dsl_tokenizer.py -- that is a separate, production, compiler-hard, version-governed macro system over the OpenUI DSL token stream; this module mines macros over the unrelated symbolic-regression AST domain and stays evaluation-only, imported by no production canonicalization path."
+      ]
     },
     {
+      "authority_tier": "advisory-learned",
+      "design_doc": "docs/design/semantic-planning-valid-state.md",
       "id": "prompt_factor_predictor",
       "name": "Prompt-to-partial-requirements prediction behind the advisory-only seam",
+      "notes": "SIE-003/SLM-477. The downstream_extension_map row for SIE-003 predicted new_owner_justified: false ('Extends SGS-003/004's prompt_requirements owner'), i.e. adding these symbols directly to prompt_requirements.py's owner_symbols. The real dataclasses/classifier are not literally defined in prompt_requirements.py or semantic_plan.py -- per this map's own sibling-file rule it is registered as its own subsystem instead (same precedent as SGS-008/SRP-004/005/007/008/009/011). Honest scope note on 'authorized factor families' (AC: 'No factor without an oracle ceiling is promoted into the model merely for convenience'): EXP-SR-1 (SIE-002/SLM-476) authorized roles+bindings (not archetype/style_layout); DEFAULT_AUTHORIZED_FACTOR_FAMILIES=('style_layout',) remains an explicit placeholder for this seam's archetype target \u2014 SIE-004 gates RequirementFact emission on the real SIE-002-mapped set; prediction_to_requirement_fact fails closed (returns None) for any factor family outside the caller-supplied authorized set. TinyBagOfWordsClassifier is a from-scratch, pure-NumPy multinomial-Naive-Bayes baseline (the issue's own 'tiny trainable baseline') trained only on role='positive' (never the corpus's deliberately-corrupted contrast-negative) rows of the committed openui_hard_valid_v1 corpus, split at the source-program level before train/held-out (EXP-SR-2's own declared leakage control). Calibration/abstention reuses evals/VCE-010's dsl.grammar.fastpath.trust_train.gate_calibration_report directly rather than a second calibration mechanism; resolve_confidence_threshold's fallback (abstain on every call) is exercised for real against the actual fixture corpus, which this tiny baseline does not clear a 5% selective-risk bar on -- an honest negative result, not hidden. predict_factor's signature accepts only prompt text (no plan/oracle parameter exists), and prediction_to_requirement_fact always emits provenance='predicted'/authority='advisory-learned' (RequirementProvenance has no 'gold' value at all), so gold data has no path into production inference. requirements_hard_prune_allowed already requires COMPILER_AUTHORED_CERTIFIED evidence this predictor never produces, so exact legal support is unaffected by the predictor being on or off.",
       "owner_module": "src/slm_training/models/prompt_factor_predictor.py",
       "owner_symbols": [
         "PromptFactorExampleV1",
@@ -670,1124 +1735,69 @@
         "prediction_to_requirement_fact",
         "calibrate_abstention_threshold",
         "resolve_confidence_threshold"
-      ],
-      "authority_tier": "advisory-learned",
-      "design_doc": "docs/design/semantic-planning-valid-state.md",
-      "notes": "SIE-003/SLM-477. The downstream_extension_map row for SIE-003 predicted new_owner_justified: false ('Extends SGS-003/004's prompt_requirements owner'), i.e. adding these symbols directly to prompt_requirements.py's owner_symbols. The real dataclasses/classifier are not literally defined in prompt_requirements.py or semantic_plan.py -- per this map's own sibling-file rule it is registered as its own subsystem instead (same precedent as SGS-008/SRP-004/005/007/008/009/011). Honest scope note on 'authorized factor families' (AC: 'No factor without an oracle ceiling is promoted into the model merely for convenience'): EXP-SR-1 (SIE-002/SLM-476) authorized roles+bindings (not archetype/style_layout); DEFAULT_AUTHORIZED_FACTOR_FAMILIES=('style_layout',) remains an explicit placeholder for this seam's archetype target \u2014 SIE-004 gates RequirementFact emission on the real SIE-002-mapped set; prediction_to_requirement_fact fails closed (returns None) for any factor family outside the caller-supplied authorized set. TinyBagOfWordsClassifier is a from-scratch, pure-NumPy multinomial-Naive-Bayes baseline (the issue's own 'tiny trainable baseline') trained only on role='positive' (never the corpus's deliberately-corrupted contrast-negative) rows of the committed openui_hard_valid_v1 corpus, split at the source-program level before train/held-out (EXP-SR-2's own declared leakage control). Calibration/abstention reuses evals/VCE-010's dsl.grammar.fastpath.trust_train.gate_calibration_report directly rather than a second calibration mechanism; resolve_confidence_threshold's fallback (abstain on every call) is exercised for real against the actual fixture corpus, which this tiny baseline does not clear a 5% selective-risk bar on -- an honest negative result, not hidden. predict_factor's signature accepts only prompt text (no plan/oracle parameter exists), and prediction_to_requirement_fact always emits provenance='predicted'/authority='advisory-learned' (RequirementProvenance has no 'gold' value at all), so gold data has no path into production inference. requirements_hard_prune_allowed already requires COMPILER_AUTHORED_CERTIFIED evidence this predictor never produces, so exact legal support is unaffected by the predictor being on or off."
+      ]
     },
     {
-      "id": "version_registry",
-      "name": "Component-version registry and enforcement",
-      "owner_module": "src/slm_training/resources/versions.json",
-      "owner_symbols": [],
       "authority_tier": "compiler-hard",
       "design_doc": "docs/design/version-stamp-contract.md",
-      "notes": "Enforced by scripts/verify_version_stamps.py in CI, pre-commit, and agent hooks. Governs every other component id in this map."
+      "id": "version_registry",
+      "name": "Component-version registry and enforcement",
+      "notes": "Enforced by scripts/verify_version_stamps.py in CI, pre-commit, and agent hooks. Governs every other component id in this map.",
+      "owner_module": "src/slm_training/resources/versions.json",
+      "owner_symbols": []
     },
     {
+      "authority_tier": "evaluation-only",
+      "design_doc": "docs/design/data-corpus-audit.md",
       "id": "data_corpus_audit",
       "name": "Cross-snapshot data-corpus leakage/dedup audit",
+      "notes": "AGENTS.md data-quality law: cross-snapshot overlap/leakage/near-dup auditing owner. New corpora (e.g. SRP-008 symbolic-regression corpus, VCE-008 split audits) run through this existing tool rather than a new leakage checker. VCE-008/SLM-463 landed as contrast_corpus_leakage_report + --mode contrast-audit: a read-only leakage/dedup/topology/OOD-split audit over the immutable openui_hard_valid_v1 corpus, per this row's own downstream_extension_map entry (new_owner_justified: false).",
       "owner_module": "scripts/audit_data_corpora.py",
       "owner_symbols": [
         "main",
         "_overlap_matrix",
         "_near_dup_clusters",
         "contrast_corpus_leakage_report"
-      ],
-      "authority_tier": "evaluation-only",
-      "design_doc": "docs/design/data-corpus-audit.md",
-      "notes": "AGENTS.md data-quality law: cross-snapshot overlap/leakage/near-dup auditing owner. New corpora (e.g. SRP-008 symbolic-regression corpus, VCE-008 split audits) run through this existing tool rather than a new leakage checker. VCE-008/SLM-463 landed as contrast_corpus_leakage_report + --mode contrast-audit: a read-only leakage/dedup/topology/OOD-split audit over the immutable openui_hard_valid_v1 corpus, per this row's own downstream_extension_map entry (new_owner_justified: false)."
+      ]
     },
     {
+      "authority_tier": "evaluation-only",
+      "design_doc": "docs/openwiki/quickstart.md",
       "id": "openwiki_generation",
       "name": "Generated agent-navigation documentation",
+      "notes": "Regenerates docs/openwiki/*; do not hand-edit generated pages.",
       "owner_module": "scripts/update_openwiki.py",
       "owner_symbols": [
         "run_openwiki",
         "main"
-      ],
-      "authority_tier": "evaluation-only",
-      "design_doc": "docs/openwiki/quickstart.md",
-      "notes": "Regenerates docs/openwiki/*; do not hand-edit generated pages."
+      ]
     },
     {
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/agent-harness-parity-audit.md",
       "id": "agent_surface_parity",
       "name": "Obligation x agent-harness-surface parity",
+      "notes": "Certifies every repository law appears on every configured coding-harness instruction surface (AGENTS.md, CLAUDE.md, GEMINI.md, .github/copilot-instructions.md, .cursor/rules/*.mdc, .codex/, .grok/).",
       "owner_module": "scripts/verify_agent_surfaces.py",
       "owner_symbols": [
         "AgentSurfaceError",
         "Obligation",
         "check",
         "main"
-      ],
-      "authority_tier": "compiler-hard",
-      "design_doc": "docs/design/agent-harness-parity-audit.md",
-      "notes": "Certifies every repository law appears on every configured coding-harness instruction surface (AGENTS.md, CLAUDE.md, GEMINI.md, .github/copilot-instructions.md, .cursor/rules/*.mdc, .codex/, .grok/)."
+      ]
     },
     {
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/repository-organization.md",
       "id": "repository_organization_policy",
       "name": "Tracked-file placement policy",
+      "notes": "Enforces ALLOWED_ROOTS and validate_skill_mirrors; executable counterpart to docs/repository-organization.md and .agents/skills/organize-repository/SKILL.md.",
       "owner_module": "scripts/repo_policy.py",
       "owner_symbols": [
         "ALLOWED_ROOTS",
         "validate_skill_mirrors",
         "main"
-      ],
-      "authority_tier": "compiler-hard",
-      "design_doc": "docs/repository-organization.md",
-      "notes": "Enforces ALLOWED_ROOTS and validate_skill_mirrors; executable counterpart to docs/repository-organization.md and .agents/skills/organize-repository/SKILL.md."
-    }
-  ],
-  "duplicate_subsystem_risks": [
-    {
-      "concern": "DSL pack registry",
-      "canonical_owner": "src/slm_training/dsl/pack.py",
-      "shadow_owner": "src/slm_training/dsl/packs/types.py",
-      "status": "unresolved-duplicate",
-      "evidence": "Both cite ticket F1/SLM-34 as origin. Canonical has 114 importers incl. the dashboard pack API (web/routes.py); shadow has 7 importers, all confined to dsl/packs/* and harnesses/reasoning/bench.py.",
-      "recommendation": "New DSL packs (including SRP-001's symbolic-regression pack) register with the canonical dsl.pack.DslPack registry. Consolidating or retiring dsl/packs/ is out of scope for this audit (non-goal: no new semantic/search behavior) and should be filed as its own follow-up."
-    },
-    {
-      "concern": "Valid-state / lattice search",
-      "canonical_owner": "src/slm_training/dsl/solver/controller.py",
-      "shadow_owner": "src/slm_training/dsl/grammar/fastpath/lattice_search.py",
-      "status": "reconciled-by-docstring",
-      "evidence": "controller.py (generic search controller, VSS1-02) docstring states the forest-specific LatticeSearchState in lattice_search.py is retained unchanged as an adapter beneath it.",
-      "recommendation": "Not a defect; record as an intentional layered design so future audits do not re-flag it."
-    }
-  ],
-  "known_drift": [
-    {
-      "id": "output_contract_version_doc_mismatch",
-      "description": "docs/design/symbol-only-output-contract.md stated 'The canonical contract is OUTPUT_CONTRACT_VERSION = 4' while src/slm_training/dsl/language_contract.py defines OUTPUT_CONTRACT_VERSION = 2. AGENTS.md, .cursor/rules/decode-invariants.mdc, docs/design/decode-invariants.md, and the current test suite (tests/test_dsl/test_language_contract.py) all agree with the code at 2. A prior investigation (docs/design/autotrain-cycle-a6r56e-c2-allowed-id-set-fingerprint-fix.md) found and fixed the same drift in the test suite but never fixed the design doc.",
-      "status": "fixed-in-SGS-001",
-      "fix": "docs/design/symbol-only-output-contract.md corrected to cite OUTPUT_CONTRACT_VERSION = 2, matching src/slm_training/dsl/language_contract.py. scripts/verify_ownership_map.py now checks this pair on every run so the drift cannot silently return."
-    }
-  ],
-  "related_overlaps": [
-    {
-      "linear_id": "SLM-106",
-      "title": "EFS0-04: Audit judge independence with cross-family scoring and a blinded human pair study",
-      "doc": "docs/design/judge-independence-audit.md",
-      "status": "in-progress, incomplete",
-      "relation": "VCE-010 (evaluator calibration/blinded adjudication) and SIE-005/SIE-006 must coordinate with this existing judge-independence track rather than re-run it."
-    },
-    {
-      "linear_id": "SLM-131",
-      "title": "LDI3-03: Generate verifier-backed counterfactual action values for delayed failures",
-      "doc": "docs/design/ldi3-03-counterfactual-action-values-20260718.md",
-      "relation": "Owner of counterfactual_probe; semantic_repair.py names it as the eventual authority for verifier-backed repair action values."
-    },
-    {
-      "linear_id": "SLM-159",
-      "title": "SPV4-01: Replicate the winning semantic-plan and valid-state stack on GraphQL plus a second DSL pack",
-      "doc": "docs/design/iter-slm159-cross-dsl-replication-20260720.md",
-      "relation": "Precedent for SRP-001/SRP-010 second-pack portability work; do not re-derive the replication protocol."
-    },
-    {
-      "linear_id": "SLM-474",
-      "title": "SRP-010: Add end-to-end symbolic-pack portability, default-isolation, and standards fixtures",
-      "doc": "docs/design/iter-slm474-srp-010-portability-20260810.md",
-      "relation": "Fixture-scale SR pack portability / default-isolation evidence (claim_class=fixture); RSP-008/EXP-SR-12 certification successor must build on this inventory rather than re-deriving it."
-    },
-    {
-      "linear_id": "SLM-487",
-      "title": "RSP-008: Run real OpenUI + symbolic-regression second-pack portability certification (EXP-SR-12)",
-      "doc": "docs/design/iter-slm487-rsp-008-portability-20260810.md",
-      "status": "diagnostic",
-      "relation": "Diagnostic EXP-SR-12 certification over SRP-010 seams (claim_class=diagnostic); inventored shared-seam forks falsify zero-fork certification; never promotion_candidate/ship_gate."
-    },
-    {
-      "linear_id": "SLM-160",
-      "title": "SPV4-02: Publish the causal architecture disposition and integrate only qualified winners into model lineage",
-      "doc": "docs/design/semantic-planning-valid-state-disposition.md",
-      "relation": "Canonical disposition-report pattern that SGS-009 (mechanism disposition reports) and RSP-009 (cross-experiment disposition) should follow, not reinvent."
-    },
-    {
-      "linear_id": "SLM-476",
-      "title": "SIE-002: Execute held-out factor-wise semantic oracle localization (EXP-SR-1)",
-      "doc": "docs/design/iter-slm476-sie-002-oracle-localization-20260810.md",
-      "status": "fixture",
-      "relation": "Fixture-scale EXP-SR-1 oracle localization (claim_class=fixture); authorized_factors roles+bindings for later learned-predictor work; no checkpoint promotion."
-    },
-    {
-      "linear_id": "SLM-482",
-      "title": "SIE-004: Run matched prompt-requirement predictor campaign (EXP-SR-2)",
-      "doc": "docs/design/iter-slm482-sie-004-predictor-campaign-20260810.md",
-      "status": "fixture",
-      "relation": "Fixture-scale EXP-SR-2 predictor campaign (claim_class=fixture); SIE-003 seam + SIE-002 authorized_factors gate; legal_support_parity exact; no checkpoint promotion."
-    },
-    {
-      "linear_id": "SLM-483",
-      "title": "SIE-006: Execute evaluator construct-validity and human calibration campaign (EXP-SR-3)",
-      "doc": "docs/design/iter-slm483-sie-006-calibration-campaign-20260810.md",
-      "status": "diagnostic",
-      "relation": "Diagnostic EXP-SR-3 calibration campaign (claim_class=diagnostic) wrapping VCE-010's evaluator_calibration_protocol under the locked catalogue identity; evaluator_human_agreement_kappa=0.0 on labeled-mock external-judge/synthetic-human evidence, below minimum_effect and the catalogue kill gate -- an honest negative result, not a construct-validity claim (no real external-judge credentials or human raters in this environment)."
-    },
-    {
-      "linear_id": "SLM-512",
-      "title": "PGS-I01: Document proof-carrying goal support design, authority, and threat model",
-      "doc": "docs/design/proof-carrying-goal-support.md",
-      "relation": "Canonical design/authority owner for the integrated PGS stack (PGS-A through PGS-H); machine-readable ownership maintained by PGS-I02 (SLM-513)."
-    },
-    {
-      "linear_id": "SLM-511",
-      "title": "PGS-H02: Publish goal-support domain-adequacy fixture campaign evidence",
-      "doc": "docs/design/proof-carrying-goal-support-fixture-results.md",
-      "status": "diagnostic",
-      "relation": "Fixture-scale PGS-H01 campaign evidence (claim_class=diagnostic); wiring/diagnostic only \u2014 not model quality, ship gates, or promotion."
-    }
-  ],
-  "downstream_extension_map": [
-    {
-      "issue": "SGS-002",
-      "linear_id": "SLM-436",
-      "title": "Enforce machine-checkable contract/documentation version consistency",
-      "extension_points": [
-        "output_contract",
-        "version_registry"
-      ],
-      "new_owner_justified": false,
-      "justification": "Extends the code/docs consistency check this audit establishes (see known_drift) into a standing CI guard."
-    },
-    {
-      "issue": "SGS-003",
-      "linear_id": "SLM-437",
-      "title": "Add prompt-side partial semantic requirements without duplicating SemanticPlanV1",
-      "extension_points": [
-        "semantic_plan"
-      ],
-      "new_owner_justified": true,
-      "justification": "SemanticPlanV1 is the program-side output contract, not a prompt-side input type; a new adjacent 'prompt_requirements' owner is justified because merging into SemanticPlanV1 would violate its single-schema contract."
-    },
-    {
-      "issue": "SGS-004",
-      "linear_id": "SLM-442",
-      "title": "Implement conservative deterministic request-to-requirement extraction",
-      "extension_points": [
-        "semantic_plan"
-      ],
-      "new_owner_justified": false,
-      "justification": "Extends the SGS-003 prompt_requirements owner; no new owner beyond it."
-    },
-    {
-      "issue": "SGS-005",
-      "linear_id": "SLM-443",
-      "title": "Add production/oracle/hard-authority projections with invariance tests",
-      "extension_points": [
-        "semantic_plan"
-      ],
-      "new_owner_justified": false,
-      "justification": "Extends SGS-003/004's prompt_requirements owner using the authority_tiers vocabulary this map publishes."
-    },
-    {
-      "issue": "SGS-006",
-      "linear_id": "SLM-454",
-      "title": "Integrate prompt requirements with existing semantic-plan/evaluation/decode owners",
-      "extension_points": [
-        "semantic_plan",
-        "verifier_gate_stack",
-        "decode_telemetry"
-      ],
-      "new_owner_justified": false,
-      "justification": "Pure integration issue across three existing owners; no new owner."
-    },
-    {
-      "issue": "SGS-007",
-      "linear_id": "SLM-444",
-      "title": "Implement VerifiedSynthesisProblemV1 and generated JSON Schema",
-      "extension_points": [
-        "semantic_plan",
-        "verifier_gate_stack",
-        "dsl_pack_registry_canonical"
-      ],
-      "new_owner_justified": true,
-      "justification": "No existing contract shapes a pack-supplied, verifier-checked synthesis problem; a new VerifiedSynthesisProblemV1 owner is justified, layered on the three existing owners it must not duplicate."
-    },
-    {
-      "issue": "PGS-A01",
-      "linear_id": "SLM-494",
-      "title": "Implement compiled goal-constraint contract (GoalConstraintV1 / CompiledGoalConstraintSetV1)",
-      "extension_points": [
-        "verified_synthesis_problem",
-        "prompt_requirements",
-        "semantic_plan",
-        "verifier_gate_stack"
-      ],
-      "new_owner_justified": true,
-      "justification": "No existing contract compiles pack/request/plan/verifier inputs into authority-labeled, prune-gated goal constraints; CompiledGoalConstraintSetV1 is a new owner layered on the four extension points it must not duplicate."
-    },
-    {
-      "issue": "PGS-A02",
-      "linear_id": "SLM-495",
-      "title": "Compile structured request, synthesis-problem, and pack facts into typed goal constraints",
-      "extension_points": [
-        "compiled_goal_constraints",
-        "verified_synthesis_problem",
-        "prompt_requirements",
-        "dsl_pack_registry_canonical"
-      ],
-      "new_owner_justified": true,
-      "justification": "No existing owner compiles request/problem/pack inputs into CompiledGoalConstraintSetV1; requirements_compile.py is a new compiler-hard owner layered on compiled_goal_constraints, verified_synthesis_problem, prompt_requirements, and the canonical pack registry without modifying SGS-004 extractor authority."
-    },
-    {
-      "issue": "PGS-A03",
-      "linear_id": "SLM-496",
-      "title": "Add deterministic candidate-side goal-constraint evaluation",
-      "extension_points": [
-        "compiled_goal_constraints",
-        "requirements_compile"
-      ],
-      "new_owner_justified": false,
-      "justification": "Extends requirements_compile with evaluate_goal_constraints and GoalConstraintEvaluationV1; no new owner beyond the PGS-A02 compiler."
-    },
-    {
-      "issue": "PGS-B01",
-      "linear_id": "SLM-497",
-      "title": "Implement GoalVerifierProfileV1 and GoalTerminalEvidenceV1 contracts",
-      "extension_points": [
-        "compiled_goal_constraints",
-        "verifier_gate_stack"
-      ],
-      "new_owner_justified": true,
-      "justification": "No existing contract pins goal-verifier mode, required constraint/gate/evaluator identities, and digest-bound terminal evidence; goal_support.py is a new verifier-hard owner layered on compiled_goal_constraints and the gate stack without duplicating either."
-    },
-    {
-      "issue": "PGS-B02",
-      "linear_id": "SLM-498",
-      "title": "Implement OpenUIGoalVerifier with mandatory tri-state terminal semantics",
-      "extension_points": [
-        "goal_support",
-        "verifier_gate_stack",
-        "compiled_goal_constraints"
-      ],
-      "new_owner_justified": false,
-      "justification": "OpenUIGoalVerifier in openui_support.py composes existing well-formedness, ProgramSpec/SemanticPlanV1 projection, evaluate_goal_constraints, and G0-G12 gates under the goal_support profile contract; no new search or verifier-stack owner."
-    },
-    {
-      "issue": "PGS-C01",
-      "linear_id": "SLM-499",
-      "title": "Implement GoalSupportProvider, replay sidecars, and exact_goal_closure guard",
-      "extension_points": [
-        "goal_support",
-        "valid_state_search_generic",
-        "solver_replay"
-      ],
-      "new_owner_justified": false,
-      "justification": "Goal-aware wrapper over EnumerativeSupportOracle and certificate replay; canonical search proof remains SupportCertificate with GoalSupportResultV1 sidecars \u2014 no parallel search engine."
-    },
-    {
-      "issue": "PGS-C02",
-      "linear_id": "SLM-500",
-      "title": "Implement DomainObstructionCoreV1 bounded hitting-set cores",
-      "extension_points": [
-        "goal_support"
-      ],
-      "new_owner_justified": false,
-      "justification": "Bounded obstruction cores and replay live under goal_support_obstruction.py as goal_support extensions; no new search owner."
-    },
-    {
-      "issue": "PGS-C03",
-      "linear_id": "SLM-501",
-      "title": "Implement goal-action evidence and domain-adequacy classification",
-      "extension_points": [
-        "goal_support"
-      ],
-      "new_owner_justified": false,
-      "justification": "GoalActionEvidenceV1/GoalDomainAdequacyReportV1 and analyze_goal_domain extend goal_support_domain_adequacy.py under the goal_support owner; no new search or verifier owner."
-    },
-    {
-      "issue": "PGS-D01",
-      "linear_id": "SLM-502",
-      "title": "Add distinct goal-support path to counterfactual probe",
-      "extension_points": [
-        "counterfactual_probe",
-        "goal_support"
-      ],
-      "new_owner_justified": false,
-      "justification": "Distinct GoalSupportProbeInputs/run_goal_support_probe path under counterfactual_probe; does not alias semantic_partition relative rollout evidence."
-    },
-    {
-      "issue": "PGS-D02",
-      "linear_id": "SLM-503",
-      "title": "Materialize goal-support ObjectiveView sets in DecisionEventV2",
-      "extension_points": [
-        "decision_events_v2",
-        "goal_support"
-      ],
-      "new_owner_justified": false,
-      "justification": "materialize_goal_support maps goal-support evidence into existing DecisionEventV2 ObjectiveView sets with profile trainability guards; no new decision schema owner."
-    },
-    {
-      "issue": "PGS-E01",
-      "linear_id": "SLM-504",
-      "title": "Wire default-off goal support into canonical decode",
-      "extension_points": [
-        "goal_support",
-        "valid_state_search_generic",
-        "lattice_search_forest_adapter"
-      ],
-      "new_owner_justified": false,
-      "justification": "Opt-in goal_support_mode seam in dsl/solver/decode.py composes existing forest search with goal_support_certified_prune and diagnostic observe paths; no new decode engine."
-    },
-    {
-      "issue": "PGS-E02",
-      "linear_id": "SLM-505",
-      "title": "Add canonical goal-support decode telemetry counters",
-      "extension_points": [
-        "decode_telemetry",
-        "goal_support"
-      ],
-      "new_owner_justified": false,
-      "justification": "goal_support_* counters and GoalSupportTelemetrySink extend decode_telemetry; observation-only fields never authorize prune."
-    },
-    {
-      "issue": "PGS-F01",
-      "linear_id": "SLM-506",
-      "title": "Prove finite goal-support structural laws in Lean",
-      "extension_points": [
-        "goal_support"
-      ],
-      "new_owner_justified": false,
-      "justification": "Formal drift guard (GoalSupport.lean + goal_support_mapping.py golden cases) over landed Python partition/obstruction contracts; no new runtime search or verifier owner."
-    },
-    {
-      "issue": "PGS-G01",
-      "linear_id": "SLM-507",
-      "title": "Add adversarial goal-support regression suite",
-      "extension_points": [
-        "goal_support",
-        "compiled_goal_constraints"
-      ],
-      "new_owner_justified": false,
-      "justification": "Adversarial regression tests over landed goal_support and compiled_goal_constraints contracts; tests only, no new owner."
-    },
-    {
-      "issue": "PGS-G02",
-      "linear_id": "SLM-508",
-      "title": "Add property tests for partitions, classifier, and obstruction",
-      "extension_points": [
-        "goal_support"
-      ],
-      "new_owner_justified": false,
-      "justification": "Property/oracle-cross-check tests for domain adequacy and obstruction tables; tests only."
-    },
-    {
-      "issue": "PGS-G03",
-      "linear_id": "SLM-509",
-      "title": "Add adversarial decode parity suite for goal support",
-      "extension_points": [
-        "goal_support",
-        "decode_telemetry"
-      ],
-      "new_owner_justified": false,
-      "justification": "Decode singleton-bypass and forest-parity regression tests for the PGS-E01 seam; tests only."
-    },
-    {
-      "issue": "PGS-H01",
-      "linear_id": "SLM-510",
-      "title": "Add goal-support domain-adequacy fixture campaign harness",
-      "extension_points": [
-        "experiment_campaign",
-        "goal_support"
-      ],
-      "new_owner_justified": false,
-      "justification": "Default-off bounded diagnostic ExperimentCampaignV1 over word-tree fixtures composing goal_support analyze_goal_domain and exact_goal_closure; result schema goal_support_domain_adequacy_campaign_fixture/v1."
-    },
-    {
-      "issue": "PGS-H02",
-      "linear_id": "SLM-511",
-      "title": "Publish goal-support domain-adequacy fixture campaign evidence",
-      "extension_points": [
-        "experiment_campaign"
-      ],
-      "new_owner_justified": false,
-      "justification": "Measured-results documentation for the PGS-H01 fixture campaign (claim_class=diagnostic); no new harness owner."
-    },
-    {
-      "issue": "PGS-I01",
-      "linear_id": "SLM-512",
-      "title": "Document proof-carrying goal support design, authority, and threat model",
-      "extension_points": [
-        "goal_support",
-        "compiled_goal_constraints",
-        "requirements_compile",
-        "counterfactual_probe",
-        "decision_events_v2",
-        "decode_telemetry",
-        "experiment_campaign"
-      ],
-      "new_owner_justified": false,
-      "justification": "Pure design documentation over landed PGS owners; no new production code, campaign execution, or ship claim."
-    },
-    {
-      "issue": "SGS-008",
-      "linear_id": "SLM-455",
-      "title": "Add fail-closed SyGuS/SemGuS capability reports and conformance fixtures",
-      "extension_points": [
-        "dsl_pack_registry_canonical",
-        "completion_domain"
-      ],
-      "new_owner_justified": false,
-      "justification": "Extends the canonical pack registry's capability surface; no new owner."
-    },
-    {
-      "issue": "SGS-009",
-      "linear_id": "SLM-456",
-      "title": "Generate mechanism disposition and stale-evidence supersession reports",
-      "extension_points": [],
-      "new_owner_justified": true,
-      "justification": "No existing subsystem owns disposition/supersession reporting as reusable code; it follows the documented narrative precedent in docs/design/semantic-planning-valid-state-disposition.md (SLM-160) rather than a registered code owner, and its output feeds version_registry once mechanisms are actually retired/frozen/promoted."
-    },
-    {
-      "issue": "SGS-010",
-      "linear_id": "SLM-445",
-      "title": "Close schema versioning, migrations, and compatibility tests for synthesis contracts",
-      "extension_points": [
-        "version_registry"
-      ],
-      "new_owner_justified": false,
-      "justification": "Extends version_registry to cover SGS-007's VerifiedSynthesisProblemV1 once it exists."
-    },
-    {
-      "issue": "VCE-001",
-      "linear_id": "SLM-438",
-      "title": "Extend semantic-failure traces into lossless typed verifier witnesses",
-      "extension_points": [
-        "semantic_failure_taxonomy",
-        "verifier_gate_stack"
-      ],
-      "new_owner_justified": false,
-      "justification": "Extends the existing taxonomy adapter and gate stack; witnesses are a lossless superset of current traces."
-    },
-    {
-      "issue": "VCE-002",
-      "linear_id": "SLM-446",
-      "title": "Unify repair residuals with existing SemanticRepairRecordV1 and conflict slices",
-      "extension_points": [
-        "semantic_repair"
-      ],
-      "new_owner_justified": false,
-      "justification": "Title names the existing owner directly."
-    },
-    {
-      "issue": "VCE-003",
-      "linear_id": "SLM-457",
-      "title": "Add verifier-witness determinism, replay, tamper, and redaction security tests",
-      "extension_points": [
-        "solver_replay",
-        "verifier_gate_stack"
-      ],
-      "new_owner_justified": false,
-      "justification": "Tests the VCE-001 witness type through the existing replay owner."
-    },
-    {
-      "issue": "VCE-004",
-      "linear_id": "SLM-447",
-      "title": "Promote existing PlanOracleSubstitutor into a full factor-wise intervention harness",
-      "extension_points": [
-        "plan_oracle_substitutor"
-      ],
-      "new_owner_justified": false,
-      "justification": "Title names the existing owner directly."
-    },
-    {
-      "issue": "VCE-005",
-      "linear_id": "SLM-458",
-      "title": "Add no-op, destructive, shuffled, one-factor, and all-oracle intervention controls",
-      "extension_points": [
-        "plan_oracle_substitutor"
-      ],
-      "new_owner_justified": false,
-      "justification": "Extends the VCE-004 intervention harness with control arms."
-    },
-    {
-      "issue": "VCE-006",
-      "linear_id": "SLM-448",
-      "title": "Extend the existing hard-valid semantic contrast corpus for missing factor families",
-      "extension_points": [
-        "semantic_plan"
-      ],
-      "new_owner_justified": false,
-      "justification": "Extends data/semantic_contrast/transforms.py, an existing SemanticPlanV1 consumer."
-    },
-    {
-      "issue": "VCE-007",
-      "linear_id": "SLM-459",
-      "title": "Add metamorphic prompt/program, alpha-renaming, and positive-equivalence generators",
-      "extension_points": [
-        "semantic_plan",
-        "counterfactual_replay"
-      ],
-      "new_owner_justified": false,
-      "justification": "Extends the VCE-006 contrast corpus and the existing judge-based replay verifier."
-    },
-    {
-      "issue": "VCE-008",
-      "linear_id": "SLM-463",
-      "title": "Add leakage, deduplication, topology, and OOD split audits",
-      "extension_points": [
-        "data_corpus_audit"
-      ],
-      "new_owner_justified": false,
-      "justification": "Extends the existing data_corpus_audit tool (scripts/audit_data_corpora.py) named in AGENTS.md data-quality law, not a new owner."
-    },
-    {
-      "issue": "VCE-009",
-      "linear_id": "SLM-468",
-      "title": "Record oracle/contrast fixture campaigns in governed evidence envelopes",
-      "extension_points": [
-        "experiment_campaign"
-      ],
-      "new_owner_justified": false,
-      "justification": "ExperimentCampaignV1 is the existing governed-evidence-envelope owner."
-    },
-    {
-      "issue": "VCE-010",
-      "linear_id": "SLM-469",
-      "title": "Define evaluator calibration, blinded adjudication, and risk-coverage protocol",
-      "extension_points": [
-        "verifier_gate_stack"
-      ],
-      "new_owner_justified": false,
-      "justification": "Must coordinate with the existing judge-independence audit (SLM-106, see related_overlaps) rather than duplicate it."
-    },
-    {
-      "issue": "PCT-001",
-      "linear_id": "SLM-439",
-      "title": "Extend immutable telemetry with authority, exact-work, witness, and cold/warm fields",
-      "extension_points": [
-        "decode_telemetry"
-      ],
-      "new_owner_justified": false,
-      "justification": "Title names the existing owner directly."
-    },
-    {
-      "issue": "PCT-002",
-      "linear_id": "SLM-449",
-      "title": "Add hermetic replay traces and an optional observability sink",
-      "extension_points": [
-        "runtime_telemetry",
-        "solver_replay"
-      ],
-      "new_owner_justified": false,
-      "justification": "Extends the existing runtime telemetry sink and solver replay recorder."
-    },
-    {
-      "issue": "PCT-003",
-      "linear_id": "SLM-450",
-      "title": "Implement an honest end-to-end cold and warm benchmark harness",
-      "extension_points": [
-        "decode_telemetry"
-      ],
-      "new_owner_justified": false,
-      "justification": "Extends the existing bench_* harness family named in AGENTS.md's experiment triggers list; no new owner."
-    },
-    {
-      "issue": "PCT-004",
-      "linear_id": "SLM-440",
-      "title": "Generalize the certified OpenUI completion artifact behind a pack-owned provider seam",
-      "extension_points": [
-        "certified_completion_artifact",
-        "dsl_pack_registry_canonical"
-      ],
-      "new_owner_justified": false,
-      "justification": "Title names both existing owners directly."
-    },
-    {
-      "issue": "PCT-005",
-      "linear_id": "SLM-451",
-      "title": "Prove OpenUI artifact byte, digest, decision, and tamper parity through the provider seam",
-      "extension_points": [
-        "certified_completion_artifact"
-      ],
-      "new_owner_justified": false,
-      "justification": "Verifies the PCT-004 provider seam."
-    },
-    {
-      "issue": "PCT-006",
-      "linear_id": "SLM-460",
-      "title": "Add static/request-boundary differential tests and singleton zero-work guards",
-      "extension_points": [
-        "certified_completion_artifact",
-        "completion_domain"
-      ],
-      "new_owner_justified": false,
-      "justification": "Extends the existing artifact and completion-domain owners; guards goal-invariant I2 (forced bypass on singletons)."
-    },
-    {
-      "issue": "PCT-007",
-      "linear_id": "SLM-452",
-      "title": "Add mechanism activation, choice-change, and disposition telemetry",
-      "extension_points": [
-        "decode_telemetry"
-      ],
-      "new_owner_justified": false,
-      "justification": "Extends decode_telemetry with the disposition concept SGS-009 formalizes."
-    },
-    {
-      "issue": "PCT-008",
-      "linear_id": "SLM-464",
-      "title": "Run fixture cold/warm and artifact-parity evidence campaign",
-      "extension_points": [
-        "experiment_campaign",
-        "certified_completion_artifact"
-      ],
-      "new_owner_justified": false,
-      "justification": "Runs PCT-003/004/005/006 work through the existing campaign contract."
-    },
-    {
-      "issue": "SRP-001",
-      "linear_id": "SLM-441",
-      "title": "Register an isolated symbolic-regression DslPack and problem contract",
-      "extension_points": [
-        "dsl_pack_registry_canonical"
-      ],
-      "new_owner_justified": true,
-      "justification": "New pack instance is expected and correct; MUST register with the canonical dsl.pack.DslPack registry, not the shadow dsl/packs/ registry (see duplicate_subsystem_risks)."
-    },
-    {
-      "issue": "SRP-002",
-      "linear_id": "SLM-453",
-      "title": "Implement typed symbolic-expression IR, grammar, codec, and symbol-only contract",
-      "extension_points": [
-        "output_contract",
-        "production_codec"
-      ],
-      "new_owner_justified": true,
-      "justification": "New pack-local IR is justified (no existing symbolic-expression grammar) but must layer under the shared output_contract, not fork it."
-    },
-    {
-      "issue": "SRP-003",
-      "linear_id": "SLM-461",
-      "title": "Implement a safe vectorized NumPy evaluator with explicit numerical-domain policies",
-      "extension_points": [
-        "dsl_pack_registry_canonical"
-      ],
-      "new_owner_justified": true,
-      "justification": "No existing numeric evaluator for this pack; new owner justified, scoped inside SRP-001's pack."
-    },
-    {
-      "issue": "SRP-004",
-      "linear_id": "SLM-465",
-      "title": "Implement affine coefficient analysis and deterministic least-squares fitting",
-      "extension_points": [
-        "dsl_pack_registry_canonical"
-      ],
-      "new_owner_justified": false,
-      "justification": "Extends the SRP-003 evaluator."
-    },
-    {
-      "issue": "SRP-005",
-      "linear_id": "SLM-462",
-      "title": "Implement canonicalization and a proof-scoped rewrite-certificate schema",
-      "extension_points": [
-        "verifier_gate_stack"
-      ],
-      "new_owner_justified": true,
-      "justification": "New pack-local canonicalizer justified; its rewrite-certificate must follow the VCE-001 witness pattern rather than invent a parallel proof format."
-    },
-    {
-      "issue": "SRP-006",
-      "linear_id": "SLM-470",
-      "title": "Add evaluator, fitting, canonicalization, and numerical differential tests",
-      "extension_points": [
-        "dsl_pack_registry_canonical"
-      ],
-      "new_owner_justified": false,
-      "justification": "Tests SRP-003/004/005; no new owner."
-    },
-    {
-      "issue": "SRP-007",
-      "linear_id": "SLM-466",
-      "title": "Implement validity, fit, extrapolation, complexity, and Pareto reporting",
-      "extension_points": [
-        "dsl_pack_registry_canonical"
-      ],
-      "new_owner_justified": false,
-      "justification": "Reporting layer over SRP-003/004/005."
-    },
-    {
-      "issue": "SRP-008",
-      "linear_id": "SLM-471",
-      "title": "Implement deterministic symbolic-regression corpus generation with OOD and leakage controls",
-      "extension_points": [
-        "data_corpus_audit"
-      ],
-      "new_owner_justified": false,
-      "justification": "Reuses data_corpus_audit (scripts/audit_data_corpora.py) leakage-control machinery for a new corpus, not a new owner."
-    },
-    {
-      "issue": "SRP-009",
-      "linear_id": "SLM-472",
-      "title": "Implement a bounded canonical enumerative symbolic-regression baseline",
-      "extension_points": [
-        "valid_state_search_generic"
-      ],
-      "new_owner_justified": false,
-      "justification": "Reuses the generic bounded search controller as the search backbone rather than inventing a new search owner."
-    },
-    {
-      "issue": "SRP-010",
-      "linear_id": "SLM-474",
-      "title": "Add end-to-end symbolic-pack portability, default-isolation, and standards fixtures",
-      "extension_points": [
-        "dsl_pack_registry_canonical"
-      ],
-      "new_owner_justified": false,
-      "justification": "Extends the canonical pack registry's portability guarantees to the SRP-001 pack."
-    },
-    {
-      "issue": "SRP-011",
-      "linear_id": "SLM-475",
-      "title": "Define an optional PySR/SRBench adapter with isolated environment manifest",
-      "extension_points": [],
-      "new_owner_justified": true,
-      "justification": "External, optional dependency by design; isolated deliberately and does not extend any internal owner."
-    },
-    {
-      "issue": "SIE-001",
-      "linear_id": "SLM-467",
-      "title": "Register EXP-SR campaign catalogue and promotion guardrails",
-      "extension_points": [
-        "experiment_campaign"
-      ],
-      "new_owner_justified": false,
-      "justification": "Registers the EXP-SR catalogue in the existing ExperimentCampaignV1 contract."
-    },
-    {
-      "issue": "SIE-002",
-      "linear_id": "SLM-476",
-      "title": "Execute held-out factor-wise semantic oracle localization (EXP-SR-1)",
-      "extension_points": [
-        "plan_oracle_substitutor",
-        "experiment_campaign"
-      ],
-      "new_owner_justified": false,
-      "justification": "Runs the VCE-004/VCE-009 intervention harness through the campaign contract. Fixture evidence: docs/design/iter-slm476-sie-002-oracle-localization-20260810.md (authorized_factors: roles, bindings; claim_class=fixture; no promotion)."
-    },
-    {
-      "issue": "SIE-003",
-      "linear_id": "SLM-477",
-      "title": "Implement prompt-to-partial-requirements prediction behind the advisory-only seam (EXP-SR-2)",
-      "extension_points": [
-        "semantic_plan"
-      ],
-      "new_owner_justified": false,
-      "justification": "Extends SGS-003/004's prompt_requirements owner; must stay advisory-learned, never promoted to compiler-hard."
-    },
-    {
-      "issue": "SIE-004",
-      "linear_id": "SLM-482",
-      "title": "Run matched prompt-requirement predictor campaign (EXP-SR-2)",
-      "extension_points": [
-        "experiment_campaign"
-      ],
-      "new_owner_justified": false,
-      "justification": "Runs SIE-003 through the campaign contract. Fixture evidence: docs/design/iter-slm482-sie-004-predictor-campaign-20260810.md (claim_class=fixture; legal_support_parity exact; SIE-002 authorized_factors roles+bindings gate RequirementFact emission; no promotion)."
-    },
-    {
-      "issue": "SIE-005",
-      "linear_id": "SLM-478",
-      "title": "Prepare blinded human/independent-judge data, adjudication packet, and credential runbook",
-      "extension_points": [
-        "verifier_gate_stack"
-      ],
-      "new_owner_justified": false,
-      "justification": "Coordinates with the existing SLM-106 judge-independence track (see related_overlaps) and VCE-010's protocol. Fixture packet: docs/design/iter-slm478-sie-005-blinded-packet-20260810.md. Campaign successor: SIE-006 / EXP-SR-3 (SLM-483)."
-    },
-    {
-      "issue": "SIE-006",
-      "linear_id": "SLM-483",
-      "title": "Execute evaluator construct-validity and human calibration campaign (EXP-SR-3)",
-      "extension_points": [
-        "experiment_campaign",
-        "verifier_gate_stack"
-      ],
-      "new_owner_justified": false,
-      "justification": "Runs VCE-010 + SIE-005 through the campaign contract. Diagnostic evidence: docs/design/iter-slm483-sie-006-calibration-campaign-20260810.md (claim_class=diagnostic; evaluator_human_agreement_kappa=0.0 on mock/synthetic evidence, below the 0.1 minimum_effect and the catalogue's own le-0.0 kill gate -- an honest negative result on labeled-mock external-judge/human-rater fixtures, since this environment has no real external-judge credentials or human raters; not a construct-validity claim). Fixture/external-blocked construct-validity campaign: docs/design/iter-slm483-sie-006-construct-validity-20260810.md."
-    },
-    {
-      "issue": "SIE-007",
-      "linear_id": "SLM-473",
-      "title": "Implement ComputeStateFeaturesV1 and a safe symbolic-controller replay substrate",
-      "extension_points": [
-        "decode_telemetry",
-        "solver_replay"
-      ],
-      "new_owner_justified": true,
-      "justification": "New typed feature record justified (no existing compute-state feature schema), layered on the existing telemetry and replay owners it must not duplicate."
-    },
-    {
-      "issue": "SIE-008",
-      "linear_id": "SLM-484",
-      "title": "Execute symbolic value-of-compute controller campaign (EXP-SR-5)",
-      "extension_points": [
-        "experiment_campaign"
-      ],
-      "new_owner_justified": false,
-      "justification": "Runs SIE-007 through the campaign contract; capacity/compute claims must stay advisory-learned and size-matched per goal-invariant VI."
-    },
-    {
-      "issue": "RSP-001",
-      "linear_id": "SLM-488",
-      "title": "Execute witness-guided CEGIS repair experiment (EXP-SR-4)",
-      "extension_points": [
-        "semantic_repair",
-        "verifier_gate_stack",
-        "experiment_campaign"
-      ],
-      "new_owner_justified": false,
-      "justification": "Runs semantic_repair + VCE-001 witnesses through the campaign contract."
-    },
-    {
-      "issue": "RSP-002",
-      "linear_id": "SLM-489",
-      "title": "Execute neural-guided bounded search and infilling-order experiment (EXP-SR-6)",
-      "extension_points": [
-        "valid_state_search_generic",
-        "experiment_campaign"
-      ],
-      "new_owner_justified": false,
-      "justification": "Runs the generic search controller through the campaign contract; arms must be size-matched per goal-invariant VI."
-    },
-    {
-      "issue": "RSP-003",
-      "linear_id": "SLM-485",
-      "title": "Execute extended static-artifact and packed semantic-summary experiment (EXP-SR-7)",
-      "extension_points": [
-        "certified_completion_artifact",
-        "experiment_campaign"
-      ],
-      "new_owner_justified": false,
-      "justification": "Runs the PCT-004/005 provider seam through the campaign contract."
-    },
-    {
-      "issue": "RSP-004",
-      "linear_id": "SLM-479",
-      "title": "Execute a proof-scoped e-graph/equivalence-region experiment in the symbolic pack (EXP-SR-8)",
-      "extension_points": [
-        "dsl_pack_registry_canonical",
-        "experiment_campaign"
-      ],
-      "new_owner_justified": false,
-      "justification": "Runs SRP-005's canonicalization/rewrite-certificate work through the campaign contract."
-    },
-    {
-      "issue": "RSP-005",
-      "linear_id": "SLM-480",
-      "title": "Execute prospective certified macro/library-learning experiment (EXP-SR-9)",
-      "extension_points": [
-        "dsl_pack_registry_canonical",
-        "certified_completion_artifact",
-        "experiment_campaign"
-      ],
-      "new_owner_justified": false,
-      "justification": "Runs pack + artifact owners through the campaign contract."
-    },
-    {
-      "issue": "RSP-006",
-      "linear_id": "SLM-481",
-      "title": "Execute quality-diversity corpus generation experiment (EXP-SR-10)",
-      "extension_points": [
-        "experiment_campaign"
-      ],
-      "new_owner_justified": false,
-      "justification": "Runs SRP-008 corpus generation through the campaign contract."
-    },
-    {
-      "issue": "RSP-007",
-      "linear_id": "SLM-486",
-      "title": "Execute matched PySR and SRBench-compatible symbolic benchmark (EXP-SR-11)",
-      "extension_points": [
-        "experiment_campaign"
-      ],
-      "new_owner_justified": false,
-      "justification": "Runs the SRP-011 optional external adapter through the campaign contract."
-    },
-    {
-      "issue": "RSP-008",
-      "linear_id": "SLM-487",
-      "title": "Run real OpenUI + symbolic-regression second-pack portability certification (EXP-SR-12)",
-      "extension_points": [
-        "dsl_pack_registry_canonical",
-        "experiment_campaign"
-      ],
-      "new_owner_justified": false,
-      "justification": "Runs SRP-010 portability work through ExperimentCampaignV1 (claim_class=diagnostic); evidence in docs/design/iter-slm487-rsp-008-portability-20260810.md. Follows the SLM-159 replication precedent."
-    },
-    {
-      "issue": "RSP-009",
-      "linear_id": "SLM-490",
-      "title": "Publish cross-experiment disposition and retire, freeze, or promote mechanisms honestly",
-      "extension_points": [
-        "version_registry",
-        "experiment_campaign"
-      ],
-      "new_owner_justified": false,
-      "justification": "Follows the SLM-160 disposition-report precedent and this map's known_drift/duplicate_subsystem_risks pattern; no new owner."
-    },
-    {
-      "issue": "RESEARCH-02",
-      "linear_id": "SLM-533",
-      "title": "Default-off experiment preregistration registry",
-      "extension_points": [
-        "experiment_campaign"
-      ],
-      "new_owner_justified": false,
-      "justification": "Thin default-off/research-only registry over ExperimentCampaignV1/CampaignLockV1 plus RESEARCH-01 citations; no parallel campaign store."
-    },
-    {
-      "issue": "RESEARCH-05",
-      "linear_id": "SLM-563",
-      "title": "Experiment: proof-producing VSS SAT backend with LRAT",
-      "extension_points": [
-        "experiment_campaign"
-      ],
-      "new_owner_justified": false,
-      "justification": "Isolated default-off research adapter + harness over ExperimentCampaignV1/CampaignLockV1 and EVID-10 verified encoding (lrat_pilot); RESEARCH-02 preregistry activation only \u2014 no parallel campaign store or production decode authority."
-    },
-    {
-      "issue": "RESEARCH-06",
-      "linear_id": "SLM-564",
-      "title": "Experiment: proof-producing VSS pseudo-Boolean backend with PBLean",
-      "extension_points": [
-        "experiment_campaign"
-      ],
-      "new_owner_justified": false,
-      "justification": "Isolated default-off research adapter + harness over ExperimentCampaignV1/CampaignLockV1 and EVID-10 verified encoding (pblean_pilot); RESEARCH-02 preregistry activation only \u2014 no parallel campaign store or production decode authority."
-    },
-    {
-      "issue": "RESEARCH-07",
-      "linear_id": "SLM-565",
-      "title": "Experiment: Alethe/SMT proof reconstruction for theory-rich VSS",
-      "extension_points": [
-        "experiment_campaign"
-      ],
-      "new_owner_justified": false,
-      "justification": "Isolated default-off research adapter + harness over ExperimentCampaignV1/CampaignLockV1 and EVID-10 verified encoding (alethe_pilot); RESEARCH-02 preregistry activation only \u2014 no parallel campaign store or production decode authority."
-    },
-    {
-      "issue": "RESEARCH-09",
-      "linear_id": "SLM-541",
-      "title": "Experiment: parameterized and treewidth-aware VSS complexity",
-      "extension_points": [
-        "experiment_campaign"
-      ],
-      "new_owner_justified": false,
-      "justification": "Isolated default-off research adapter + harness over ExperimentCampaignV1/CampaignLockV1 with structural-param instrumentation; RESEARCH-02 preregistry activation only \u2014 no parallel campaign store or production decode authority."
-    },
-    {
-      "issue": "RESEARCH-03",
-      "linear_id": "SLM-549",
-      "title": "Experiment: genuine Big-Five interpretation pilot in a separate Lean research package",
-      "extension_points": [
-        "experiment_campaign"
-      ],
-      "new_owner_justified": false,
-      "justification": "Isolated default-off research Lean package + harness over ExperimentCampaignV1/CampaignLockV1 and HARN-08/KERN-12 interpretation packages; RESEARCH-02 preregistry activation only \u2014 no parallel campaign store or production decode authority."
-    },
-    {
-      "issue": "RESEARCH-04",
-      "linear_id": "SLM-550",
-      "title": "Experiment: Reverse Mathematics Zoo classification and task benchmark",
-      "extension_points": [
-        "experiment_campaign"
-      ],
-      "new_owner_justified": false,
-      "justification": "Isolated default-off RM Zoo benchmark backend + harness over ExperimentCampaignV1/CampaignLockV1 and HARN-08 labeling; RESEARCH-02 preregistry activation only \u2014 no parallel campaign store or production decode authority."
-    },
-    {
-      "issue": "RESEARCH-10",
-      "linear_id": "SLM-566",
-      "title": "Experiment: proof-strength curriculum for the Lean training pipeline",
-      "extension_points": [
-        "experiment_campaign"
-      ],
-      "new_owner_justified": false,
-      "justification": "Isolated default-off proof-strength curriculum backend + harness over ExperimentCampaignV1/CampaignLockV1 and HARN-11 root-family isolation; RESEARCH-02 preregistry activation only \u2014 no parallel trainer or production authority."
-    },
-    {
-      "issue": "RESEARCH-14",
-      "linear_id": "SLM-572",
-      "title": "Experiment: checker diversity and independent fault-domain coverage",
-      "extension_points": [
-        "experiment_campaign"
-      ],
-      "new_owner_justified": false,
-      "justification": "Isolated default-off checker diversity backend + harness over ExperimentCampaignV1/CampaignLockV1 and EVID-08/EVID-11 trust-domain fixtures; RESEARCH-02 preregistry activation only \u2014 no mandatory external checker dependency or production authority."
-    },
-    {
-      "issue": "RESEARCH-16",
-      "linear_id": "SLM-570",
-      "title": "Experiment: rational-to-float transfer certificates for selected metrics and gates",
-      "extension_points": [
-        "experiment_campaign"
-      ],
-      "new_owner_justified": false,
-      "justification": "Isolated default-off rational-to-float transfer certificate backend + harness over ExperimentCampaignV1/CampaignLockV1 and EVID-04 exact-arithmetic fixtures; RESEARCH-02 preregistry activation only \u2014 no production gate authority."
-    },
-    {
-      "issue": "RESEARCH-17",
-      "linear_id": "SLM-557",
-      "title": "Experiment: proof-mined quantitative bounds from qualitative project theorems",
-      "extension_points": [
-        "experiment_campaign"
-      ],
-      "new_owner_justified": false,
-      "justification": "Isolated default-off proof-mined quantitative bounds backend + harness over ExperimentCampaignV1/CampaignLockV1 and HARN-07 revmath fixtures; RESEARCH-02 preregistry activation only \u2014 no production gate authority."
-    },
-    {
-      "issue": "RESEARCH-11",
-      "linear_id": "SLM-574",
-      "title": "Experiment: process-verified reward shaping for revmath proof tasks",
-      "extension_points": [
-        "experiment_campaign"
-      ],
-      "new_owner_justified": false,
-      "justification": "Isolated default-off process-verified reward shaping backend + harness over ExperimentCampaignV1/CampaignLockV1 and INTEG-05 failure witness fixtures; RESEARCH-02 preregistry activation only \u2014 no production gate authority."
-    },
-    {
-      "issue": "RESEARCH-12",
-      "linear_id": "SLM-567",
-      "title": "Experiment: successor-theorem semantic validation for generated theorem statements",
-      "extension_points": [
-        "experiment_campaign"
-      ],
-      "new_owner_justified": false,
-      "justification": "Isolated default-off successor-theorem semantic validation backend + harness over ExperimentCampaignV1/CampaignLockV1 and HARN-11 revmath fixtures; RESEARCH-02 preregistry activation only \u2014 no production gate authority."
-    },
-    {
-      "issue": "RESEARCH-13",
-      "linear_id": "SLM-568",
-      "title": "Experiment: formal counterexample generation under dropped assumptions",
-      "extension_points": [
-        "experiment_campaign"
-      ],
-      "new_owner_justified": false,
-      "justification": "Isolated default-off dropped-assumption counterexample backend + harness over ExperimentCampaignV1/CampaignLockV1 and HARN-06 revmath fixtures; RESEARCH-02 preregistry activation only \u2014 no production gate authority."
-    }
-  ],
-  "contract_version_governance": {
-    "mechanism": "scripts/verify_ownership_map.py CONTRACT_VERSION_CHECKS -- table-driven code<->doc version consistency (SGS-002/SLM-436)",
-    "ci_wiring": ".github/workflows/ci.yml python-static job, step \"Certify the repository ownership map\"",
-    "precommit_wiring": "scripts/check_changed.py OWNERSHIP_MAP_FILES set triggers python -m scripts.verify_ownership_map when a watched file changes",
-    "checked_identities": [
-      "OUTPUT_CONTRACT_VERSION",
-      "DSL_TOKENIZER_VERSION"
-    ],
-    "checkpoint_load_enforcement": {
-      "description": "OUTPUT_CONTRACT_VERSION is enforced a second, independent time at model-checkpoint load: require_current_output_contract() raises OutputContractError on any mismatch. A stale checkpoint is rejected outright, never silently reinterpreted (SGS-002 acceptance criterion).",
-      "enforced_by_module": "src/slm_training/dsl/language_contract.py",
-      "enforced_by_symbol": "require_current_output_contract",
-      "called_from": [
-        "src/slm_training/models/twotower.py",
-        "src/slm_training/models/grammar_diffusion.py"
-      ],
-      "regression_tests": [
-        "tests/test_harnesses/model_build/test_twotower.py",
-        "tests/test_models/test_grammar_diffusion.py"
       ]
     }
-  }
+  ]
 }

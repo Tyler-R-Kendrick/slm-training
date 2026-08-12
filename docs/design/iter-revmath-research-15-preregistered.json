@@ -1,0 +1,184 @@
+{
+  "campaign_id": "research-15-anytime-valid-promotion",
+  "campaign_lock_sha256": "e98337a6f0aea62a62559383deacbdcff9051e42dfa833747d7b587011e1a75c",
+  "claim_class": "fixture",
+  "control_null_promotion_rate": 0.055,
+  "decision": "accept",
+  "default_off": true,
+  "evidence_path": "docs/design/iter-revmath-research-15-preregistered.md",
+  "executed": true,
+  "experiment_id": "research_15_anytime_valid_promotion",
+  "experiment_key": "RESEARCH-15",
+  "fixed_n_oracle_power": 0.38,
+  "ledger_integrity_failures": 0,
+  "linear_id": "SLM-569",
+  "paired_report": {
+    "alpha": 0.05,
+    "anytime_valid_type_i_error_control_under_optional_stopping": 1.0,
+    "control_inflated_vs_alpha": false,
+    "control_null_promotion_rate": 0.055,
+    "control_planted_power": 0.56,
+    "corpus_digest": "d4c4821eb54cd567e739aa77240606f18b3a0fb89ea05eb4780b19b64888d9dd",
+    "decision": "accept",
+    "fixed_n_oracle_power": 0.38,
+    "ledger_integrity_failures": 0,
+    "null_scenario_count": 200,
+    "planted_scenario_count": 50,
+    "power_loss": 0.0,
+    "premature_promotion_rate": 0.02,
+    "reason": "anytime_valid_controls_optional_stopping_with_usable_power",
+    "sample_null_rows": [
+      {
+        "control": {
+          "arm": "holm_adaptive_peek",
+          "final_p_value": 0.014408359827939431,
+          "holm_family_size": 3,
+          "promoted": true,
+          "stop_t": 36
+        },
+        "kind": "null",
+        "scenario_id": "null_001",
+        "seed": 1,
+        "treatment": {
+          "arm": "mixture_e_process",
+          "final_e_value": 2.141587867115628,
+          "promoted": false,
+          "stop_t": 40,
+          "threshold": 20.0
+        }
+      },
+      {
+        "control": {
+          "arm": "holm_adaptive_peek",
+          "final_p_value": 0.7852047460783068,
+          "holm_family_size": 3,
+          "promoted": false,
+          "stop_t": 40
+        },
+        "kind": "null",
+        "scenario_id": "null_002",
+        "seed": 2,
+        "treatment": {
+          "arm": "mixture_e_process",
+          "final_e_value": 0.1429581336149422,
+          "promoted": false,
+          "stop_t": 40,
+          "threshold": 20.0
+        }
+      },
+      {
+        "control": {
+          "arm": "holm_adaptive_peek",
+          "final_p_value": 0.7852047460783068,
+          "holm_family_size": 3,
+          "promoted": false,
+          "stop_t": 40
+        },
+        "kind": "null",
+        "scenario_id": "null_003",
+        "seed": 3,
+        "treatment": {
+          "arm": "mixture_e_process",
+          "final_e_value": 0.1429581336149422,
+          "promoted": false,
+          "stop_t": 40,
+          "threshold": 20.0
+        }
+      }
+    ],
+    "sample_planted_rows": [
+      {
+        "control": {
+          "arm": "holm_adaptive_peek",
+          "final_p_value": 0.015441894531249997,
+          "holm_family_size": 3,
+          "promoted": true,
+          "stop_t": 18
+        },
+        "kind": "planted",
+        "scenario_id": "planted_001",
+        "seed": 10001,
+        "treatment": {
+          "arm": "mixture_e_process",
+          "final_e_value": 20.92194456374555,
+          "promoted": true,
+          "stop_t": 29,
+          "threshold": 20.0
+        }
+      },
+      {
+        "control": {
+          "arm": "holm_adaptive_peek",
+          "final_p_value": 0.3179140013144209,
+          "holm_family_size": 3,
+          "promoted": false,
+          "stop_t": 40
+        },
+        "kind": "planted",
+        "scenario_id": "planted_002",
+        "seed": 10002,
+        "treatment": {
+          "arm": "mixture_e_process",
+          "final_e_value": 0.3725958148641961,
+          "promoted": false,
+          "stop_t": 40,
+          "threshold": 20.0
+        }
+      },
+      {
+        "control": {
+          "arm": "holm_adaptive_peek",
+          "final_p_value": 0.07692997208141611,
+          "holm_family_size": 3,
+          "promoted": false,
+          "stop_t": 40
+        },
+        "kind": "planted",
+        "scenario_id": "planted_003",
+        "seed": 10003,
+        "treatment": {
+          "arm": "mixture_e_process",
+          "final_e_value": 1.2306382619495961,
+          "promoted": false,
+          "stop_t": 40,
+          "threshold": 20.0
+        }
+      }
+    ],
+    "schema": "anytime_valid_promotion_report/v1",
+    "toolchain": {
+      "backend_id": "anytime_valid_promotion_pilot",
+      "corpus_relpath": "src/slm_training/resources/formal/anytime_valid_promotion_corpus.v1.json",
+      "toolchain_id": "hermetic_python_anytime_valid_v1",
+      "trust_domain": "research_only/anytime_valid_promotion"
+    },
+    "treatment_null_promotion_rate": 0.02,
+    "treatment_planted_power": 0.42,
+    "type_i_tolerance": 0.02
+  },
+  "power_loss": 0.0,
+  "premature_promotion_rate": 0.02,
+  "primary_metric": "anytime_valid_type_i_error_control_under_optional_stopping",
+  "primary_value": 1.0,
+  "reason": "anytime_valid_controls_optional_stopping_with_usable_power",
+  "research_only": true,
+  "schema": "research_15_experiment_result/v1",
+  "toolchain": {
+    "backend_id": "anytime_valid_promotion_pilot",
+    "corpus_relpath": "src/slm_training/resources/formal/anytime_valid_promotion_corpus.v1.json",
+    "toolchain_id": "hermetic_python_anytime_valid_v1",
+    "trust_domain": "research_only/anytime_valid_promotion"
+  },
+  "treatment_null_promotion_rate": 0.02,
+  "treatment_planted_power": 0.42,
+  "version_stamp": {
+    "code_commit": "320e2aca1e38b7ee3007dabec4d3321b1ab4bfc7",
+    "code_dirty": true,
+    "components": {
+      "governance.research_experiment_preregistry": "v2",
+      "harness.experiments.slm569_research15_anytime_valid": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-12T18:18:05.870409+00:00"
+  }
+}
