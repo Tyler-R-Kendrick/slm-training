@@ -3982,6 +3982,11 @@
       "history": [
         {
           "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-19/SLM-558 ownership map extension + render; no authority tier change.",
+          "version": "v27"
+        },
+        {
+          "date": "2026-08-12",
           "note": "no-bump: RESEARCH-18/SLM-551 ownership map extension + render; no authority tier change.",
           "version": "v27"
         },
@@ -4431,6 +4436,11 @@
       "history": [
         {
           "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-19/SLM-558 preregistry disposition + evidence doc pointers; contract unchanged.",
+          "version": "v2"
+        },
+        {
+          "date": "2026-08-12",
           "note": "no-bump: RESEARCH-18/SLM-551 preregistry disposition + evidence doc pointers; contract unchanged.",
           "version": "v2"
         },
@@ -4838,6 +4848,11 @@
     },
     "harness.autoresearch.experiment_campaign": {
       "history": [
+        {
+          "date": "2026-08-12",
+          "note": "no-bump: rebuild evidence_ledger.v1.json after RESEARCH-19 (SLM-558) Rademacher bound evidence docs; deterministic fold, no campaign contract change.",
+          "version": "v211"
+        },
         {
           "date": "2026-08-12",
           "note": "no-bump: rebuild evidence_ledger.v1.json after RESEARCH-18 (SLM-551) Weihrauch classification evidence docs; deterministic fold, no campaign contract change.",
@@ -14516,6 +14531,29 @@
         "docs/design/iter-revmath-research-17-preregistered.md",
         "tests/test_harnesses/experiments/test_research_17_proof_mined_quantitative_bounds.py",
         "tests/test_scripts/test_run_research_17_proof_mined.py"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm558_research19_rademacher": {
+      "history": [
+        {
+          "date": "2026-08-12",
+          "note": "RESEARCH-19/SLM-558: default-off Lean-checked Rademacher bound backend+harness+runner+lock+fixture evidence; never ship-gate authority.",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/formal/lean_rademacher_bound.py",
+        "src/slm_training/resources/formal/lean_rademacher_corpus.v1.json",
+        "tests/test_formal/test_lean_rademacher_bound.py",
+        "src/slm_training/resources/formal/research_19_campaign_lock.v1.json",
+        "src/slm_training/harnesses/experiments/research_19_lean_rademacher_bound.py",
+        "scripts/run_research_19_lean_rademacher.py",
+        "docs/design/iter-revmath-research-19-preregistered.json",
+        "docs/design/iter-revmath-research-19-preregistered.md",
+        "tests/test_harnesses/experiments/test_research_19_lean_rademacher_bound.py",
+        "tests/test_scripts/test_run_research_19_lean_rademacher.py"
       ],
       "version": "v1"
     },

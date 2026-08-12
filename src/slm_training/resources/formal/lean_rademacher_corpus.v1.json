@@ -1,0 +1,86 @@
+{
+  "cases": [
+    {
+      "arm": "treatment_lean_certificate",
+      "case_id": "constant_class_eval",
+      "certificate": {
+        "assumptions": [
+          "iid",
+          "bounded_loss_0_1",
+          "confidence_delta_declared"
+        ],
+        "certificate_sha256": "19bbee77a36456978f1db273179ec38c4ef35b48ff2567e97429f952498184fa",
+        "lean_theorem": "RevMathResearch.Rademacher.ToyConstantClassBound",
+        "rademacher_bound": 0.13
+      },
+      "confidence_delta": 0.05,
+      "empirical_risk": 0.11,
+      "expected_useful": true,
+      "expected_valid": true,
+      "hypothesis_class_size": 2,
+      "sample_n": 500,
+      "split": "eval",
+      "true_risk": 0.15
+    },
+    {
+      "arm": "control_narrative",
+      "case_id": "narrative_control_eval",
+      "certificate": null,
+      "confidence_delta": 0.05,
+      "empirical_risk": 0.11,
+      "expected_useful": false,
+      "expected_valid": false,
+      "hypothesis_class_size": 2,
+      "sample_n": 500,
+      "split": "eval",
+      "true_risk": 0.15
+    },
+    {
+      "arm": "treatment_lean_certificate",
+      "case_id": "vacuous_class_eval",
+      "certificate": {
+        "assumptions": [
+          "iid",
+          "bounded_loss_0_1",
+          "confidence_delta_declared"
+        ],
+        "certificate_sha256": "57b5c083285bfcde92cf95b94c234acd38f31f5caf7eddd02db23c67f4ba4e9c",
+        "lean_theorem": "RevMathResearch.Rademacher.VacuousProbe",
+        "rademacher_bound": 1.25
+      },
+      "confidence_delta": 0.05,
+      "empirical_risk": 0.4,
+      "expected_useful": false,
+      "expected_valid": false,
+      "hypothesis_class_size": 10000,
+      "sample_n": 50,
+      "split": "eval",
+      "true_risk": 0.45
+    },
+    {
+      "arm": "treatment_lean_certificate",
+      "case_id": "constant_class_train",
+      "certificate": {
+        "assumptions": [
+          "iid",
+          "bounded_loss_0_1",
+          "confidence_delta_declared"
+        ],
+        "certificate_sha256": "19bbee77a36456978f1db273179ec38c4ef35b48ff2567e97429f952498184fa",
+        "lean_theorem": "RevMathResearch.Rademacher.ToyConstantClassBound",
+        "rademacher_bound": 0.13
+      },
+      "confidence_delta": 0.05,
+      "empirical_risk": 0.11,
+      "expected_useful": true,
+      "expected_valid": true,
+      "hypothesis_class_size": 2,
+      "sample_n": 500,
+      "split": "train",
+      "true_risk": 0.15
+    }
+  ],
+  "citation": "arxiv-2503.19605",
+  "schema": "lean_rademacher_corpus/v1",
+  "version": 1
+}
