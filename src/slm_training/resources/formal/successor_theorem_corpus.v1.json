@@ -1,0 +1,91 @@
+{
+  "corpus_id": "successor_theorem_corpus.v1",
+  "schema_version": "successor_theorem_corpus/v1",
+  "records": [
+    {
+      "compiles": true,
+      "counterexample_refutes": false,
+      "expected_statement_sha256": "a57e5a404ed69965bc146576bae8528a6fecafb7f10299d4f589a367bfdecd85",
+      "ground_truth_meaning_changing": false,
+      "notes": "Faithful add-zero successor; compile and semantics align",
+      "record_id": "rec.faithful.add_zero",
+      "statement_sha256": "a57e5a404ed69965bc146576bae8528a6fecafb7f10299d4f589a367bfdecd85",
+      "successor_obligations": [
+        {
+          "holds": true,
+          "obligation_id": "succ.add_zero_refl"
+        }
+      ]
+    },
+    {
+      "compiles": true,
+      "counterexample_refutes": false,
+      "expected_statement_sha256": "b1c2d3e4f5a6789012345678901234567890abcdef1234567890abcdef123456",
+      "ground_truth_meaning_changing": false,
+      "notes": "Faithful commutation lemma with satisfied downstream obligation",
+      "record_id": "rec.faithful.comm",
+      "statement_sha256": "b1c2d3e4f5a6789012345678901234567890abcdef1234567890abcdef123456",
+      "successor_obligations": [
+        {
+          "holds": true,
+          "obligation_id": "succ.comm.instance"
+        }
+      ]
+    },
+    {
+      "compiles": true,
+      "counterexample_refutes": false,
+      "expected_statement_sha256": "a57e5a404ed69965bc146576bae8528a6fecafb7f10299d4f589a367bfdecd85",
+      "ground_truth_meaning_changing": true,
+      "notes": "Obvious mutation: fingerprint mismatch catches compile-smuggling",
+      "record_id": "rec.mutation.fingerprint",
+      "statement_sha256": "cafebabe00000000000000000000000000000000000000000000000000000001",
+      "successor_obligations": [
+        {
+          "holds": false,
+          "obligation_id": "succ.add_zero_refl"
+        }
+      ]
+    },
+    {
+      "compiles": true,
+      "counterexample_refutes": false,
+      "expected_statement_sha256": "a57e5a404ed69965bc146576bae8528a6fecafb7f10299d4f589a367bfdecd85",
+      "ground_truth_meaning_changing": true,
+      "notes": "Subtle mutation: same proposition fingerprint but successor obligation fails",
+      "record_id": "rec.mutation.subtle_successor",
+      "statement_sha256": "a57e5a404ed69965bc146576bae8528a6fecafb7f10299d4f589a367bfdecd85",
+      "successor_obligations": [
+        {
+          "holds": false,
+          "obligation_id": "succ.add_zero_implies_add_one"
+        }
+      ]
+    },
+    {
+      "compiles": true,
+      "counterexample_refutes": true,
+      "expected_statement_sha256": "a57e5a404ed69965bc146576bae8528a6fecafb7f10299d4f589a367bfdecd85",
+      "ground_truth_meaning_changing": true,
+      "notes": "Mutation refuted by checked finite counterexample on weakened claim",
+      "record_id": "rec.mutation.counterexample",
+      "statement_sha256": "a57e5a404ed69965bc146576bae8528a6fecafb7f10299d4f589a367bfdecd85",
+      "successor_obligations": [
+        {
+          "holds": true,
+          "obligation_id": "succ.add_zero_refl"
+        }
+      ]
+    },
+    {
+      "compiles": false,
+      "counterexample_refutes": false,
+      "expected_statement_sha256": "a57e5a404ed69965bc146576bae8528a6fecafb7f10299d4f589a367bfdecd85",
+      "ground_truth_meaning_changing": true,
+      "notes": "Compile failure; neither arm may smuggle acceptance",
+      "record_id": "rec.compile_fail",
+      "statement_sha256": "deadbeef00000000000000000000000000000000000000000000000000000001",
+      "successor_obligations": []
+    }
+  ]
+}

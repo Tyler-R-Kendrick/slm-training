@@ -1,0 +1,120 @@
+{
+  "locked_at": "2026-08-12T17:58:42.594244Z",
+  "manifest": {
+    "arms": [
+      {
+        "arm_id": "compile_control",
+        "config_sha256": "8ba7b535833266c63a31149c7911d5b3e973a9e1b330bb38178705a2f8a9f28a",
+        "role": "control"
+      },
+      {
+        "arm_id": "successor_treatment",
+        "config_sha256": "f971d93fcddc4b4a999195bc248dd9a76195b8e6f4daf46fe72181cc17604054",
+        "role": "candidate"
+      }
+    ],
+    "artifact_requirements": [
+      {
+        "kind": "version_stamp",
+        "minimum_count": 1
+      },
+      {
+        "kind": "paired_examples",
+        "minimum_count": 1
+      }
+    ],
+    "author": "research-12",
+    "budget": {
+      "max_experiments": 1,
+      "max_gpu_hours": 0.0,
+      "max_wall_minutes": 30.0
+    },
+    "campaign_id": "research-12-successor-theorem-semantic-validation",
+    "claim_class": "fixture",
+    "controls": [
+      {
+        "control_id": "compile_baseline",
+        "description": "Compile-only acceptance of generated statements.",
+        "kind": "positive"
+      },
+      {
+        "control_id": "faithful_pass",
+        "description": "Faithful records must pass treatment.",
+        "kind": "negative"
+      }
+    ],
+    "created_at": "1970-01-01T00:00:00Z",
+    "decision": "Accept iff all compile-smuggling meaning-changing records are rejected by treatment with zero false-positive blocks on faithful records and at least one incremental catch beyond fingerprint/counterexample checks; else reject/retire.",
+    "endpoints": [
+      {
+        "direction": "increase",
+        "endpoint_id": "semantic_catch",
+        "metric": "semantic_validation_catch_rate_on_meaning_changing_successors",
+        "minimum_effect": 1.0,
+        "role": "primary"
+      },
+      {
+        "direction": "decrease",
+        "endpoint_id": "false_positive",
+        "metric": "false_positive_block_rate",
+        "minimum_effect": 0.0,
+        "role": "secondary"
+      }
+    ],
+    "executable_kill_criteria": [],
+    "experiment_id": "research_12_successor_theorem_semantic_validation",
+    "formal_obligations": [],
+    "hypothesis": "Successor-theorem semantic validation catches generated theorem statements that compile but change meaning relative to the parent obligation.",
+    "locked_eval_manifest_sha256": null,
+    "mechanism_off_arm_ids": [],
+    "metric_expectations_sha256": null,
+    "multiplicity_families": [
+      {
+        "alpha": 0.05,
+        "family_id": "research12_primary",
+        "hypothesis_ids": [
+          "semantic_catch"
+        ],
+        "method": "holm"
+      }
+    ],
+    "negative_controls": [
+      "faithful_pass"
+    ],
+    "power_feasibility": null,
+    "promotion_gates": [
+      {
+        "endpoint_id": "semantic_catch",
+        "gate_id": "full_catch",
+        "operator": "ge",
+        "threshold": 1.0
+      }
+    ],
+    "replay_of_manifest_sha256": null,
+    "replay_reason": null,
+    "replicate_ledger_schema": null,
+    "replicate_seed_floor": null,
+    "requires_rl": false,
+    "rl_evaluation_sha256": null,
+    "rl_readiness_report_sha256": null,
+    "rollback_gates": [
+      {
+        "endpoint_id": "false_positive",
+        "gate_id": "false_positive",
+        "operator": "gt",
+        "threshold": 0.0
+      }
+    ],
+    "schema_version": "ExperimentCampaignV1",
+    "seeds": [
+      0
+    ],
+    "source_commit": "0000000000000000000000000000000000000000",
+    "source_dirty": false,
+    "stopping_rules": [
+      "single fixture corpus stop after paired report"
+    ]
+  },
+  "manifest_sha256": "be369585113325f5303fc7e09939991fe15a1fb6c3a9125f8db3a1fed3573c51",
+  "schema_version": "CampaignLockV1"
+}

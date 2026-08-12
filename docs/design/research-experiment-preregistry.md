@@ -155,6 +155,14 @@ Disposition: **rejected** (process shaping did not beat terminal correlation on 
 Evidence: [`iter-revmath-research-11-preregistered.md`](iter-revmath-research-11-preregistered.md).
 Still `default_off` / `research_only` — not production authority.
 
+## RESEARCH-12 status (SLM-567)
+
+Preregistered successor-theorem semantic validation pilot executed under campaign lock
+(see `src/slm_training/resources/formal/research_12_campaign_lock.v1.json`).
+Disposition: see evidence doc (fixture compile-smuggling vs successor validation).
+Evidence: [`iter-revmath-research-12-preregistered.md`](iter-revmath-research-12-preregistered.md).
+Still `default_off` / `research_only` — not production authority.
+
 ## RESEARCH-07 status (SLM-565)
 
 Preregistered VSS Alethe/SMT proof-reconstruction pilot executed under campaign lock
