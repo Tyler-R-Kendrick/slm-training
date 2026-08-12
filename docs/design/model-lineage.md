@@ -3,12 +3,15 @@
 This is the operational contract for production model iteration. E/X/P matrix
 rows remain ablation evidence; they are not deployable identities.
 
-## Equal production tracks
+## Production track contracts
 
-| Track | Frozen base | Branch artifact | Deployment artifact |
-| --- | --- | --- | --- |
-| `twotower` | E53 recipe + `HuggingFaceTB/SmolLM2-135M@93efa2f097d58c2a74874c7e644dbc9b0cee75a2` | complete child weights | quantized TwoTower ONNX, ≤1GB |
-| `causal_lm` | winner of the pinned Qwen bakeoff | LoRA adapter | merged-LoRA ONNX/GGUF, ≤1GB |
+Both tracks are eligible for the same promotion gates once initialized; that
+does not imply equal current readiness.
+
+| Track | Operational status | Frozen base | Branch artifact | Deployment artifact |
+| --- | --- | --- | --- | --- |
+| `twotower` | implemented; no current champion pointer | E53 recipe + `HuggingFaceTB/SmolLM2-135M@93efa2f097d58c2a74874c7e644dbc9b0cee75a2` | complete child weights | quantized TwoTower ONNX, ≤1GB |
+| `causal_lm` | uninitialized until `model-cycle lock-causal-base` resolves the pinned bakeoff | winner of the pinned Qwen bakeoff | LoRA adapter | merged-LoRA ONNX/GGUF, ≤1GB |
 
 The causal bakeoff candidates are permanently pinned to
 `Qwen/Qwen2.5-Coder-0.5B-Instruct@ea3f2471cf1b1f0db85067f1ef93848e38e88c25`

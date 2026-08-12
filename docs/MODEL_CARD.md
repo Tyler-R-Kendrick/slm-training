@@ -79,7 +79,19 @@ never a ship claim.
 
 ---
 
+## Active reusable checkpoint status
+
+No checkpoint in this card is currently a ship-qualified champion; canonical
+champion pointers are empty. The TwoTower track is implemented, while the
+causal-LM track remains uninitialized until its pinned base bakeoff is run and
+locked. The table below is append-only checkpoint evidence and provenance, not
+an active deployment list.
+
 ## Current checkpoint roster
+
+This compatibility-stable heading is retained for tooling. Rows may be local,
+rejected, incomplete, or superseded; use the active status above and canonical
+lineage pointers for current deployment truth.
 
 **Compatibility notice (2026-07-21):** output contract v2 permits only
 grammar/AST symbols and template placeholders. All pre-E714 checkpoints below
