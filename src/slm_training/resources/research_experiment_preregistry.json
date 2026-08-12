@@ -308,9 +308,24 @@
           "blocker_id": "SLM-533",
           "note": "RESEARCH-02 preregistry (this registry) must exist before execution",
           "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-517",
+          "note": "KERN-02 CompleteDomain landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-542",
+          "note": "EVID-09 checked refutation authority landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-553",
+          "note": "EVID-10 verified encoding adapters landed",
+          "status": "completed"
         }
       ],
-      "campaign_lock_sha256": null,
+      "campaign_lock_sha256": "9ca3a98359aeb757ff1b44e26006cead56952da73fa16797a22c7efa72c577df",
       "cited_lineage": [
         "szs-ontology",
         "repo-only-hypothesis",
@@ -318,7 +333,7 @@
       ],
       "decision_rule": "Accept only if unknowns stay unknown and supported reconstructions agree exactly.",
       "default_off": true,
-      "disposition": "registered",
+      "disposition": "completed",
       "evidence_path": "docs/design/iter-revmath-research-07-preregistered.md",
       "experiment_key": "RESEARCH-07",
       "falsifier": "Reconstruction failure counted as refutation, or theory support silently widened.",

@@ -1,0 +1,222 @@
+{
+  "campaign_id": "research-07-vss-alethe-smt",
+  "campaign_lock_sha256": "9ca3a98359aeb757ff1b44e26006cead56952da73fa16797a22c7efa72c577df",
+  "claim_class": "fixture",
+  "correctness_ok": true,
+  "decision": "accept",
+  "default_off": true,
+  "evidence_path": "docs/design/iter-revmath-research-07-preregistered.md",
+  "executed": true,
+  "experiment_id": "research_07_vss_alethe_smt",
+  "experiment_key": "RESEARCH-07",
+  "linear_id": "SLM-565",
+  "mutation_rejection_rate": 1.0,
+  "paired_report": {
+    "correctness_ok": true,
+    "decision": "accept",
+    "exact_agreement_rate_on_supported_theory_subset": 1.0,
+    "mutation": {
+      "cases": [
+        {
+          "case_id": "certificate_premise_corrupt",
+          "outcome": "unknown",
+          "reason": "alethe_check_premise_missing",
+          "rejected": true
+        },
+        {
+          "case_id": "stale_problem_digest",
+          "outcome": "unknown",
+          "reason": "alethe_check_stale_problem",
+          "rejected": true
+        },
+        {
+          "case_id": "theory_metadata_corrupt",
+          "outcome": "unknown",
+          "reason": "alethe_check_theory_mismatch",
+          "rejected": true
+        }
+      ],
+      "ok": true,
+      "reason": "all_mutations_rejected",
+      "rejection_rate": 1.0
+    },
+    "mutation_rejection_rate": 1.0,
+    "proof_format_version": "alethe_reconstructed_pilot/v1",
+    "reconstruction_failure_as_refutation_count": 0,
+    "rows": [
+      {
+        "control_outcome": "unsat",
+        "identities": {
+          "backend_id": "vss_alethe_smt_pilot",
+          "certificate_digest": "9b6a9cf5e1fbf939c9843896e89a00b8947c7b371d8c0b48aa2a5c755adc1c27",
+          "certificate_format": "alethe_pilot",
+          "certificate_schema": "vss_alethe_certificate/v1",
+          "checker_backend": "python_alethe_reconstruct_stub",
+          "cvc5_proof_format": "alethe",
+          "cvc5_version_pin": "cvc5>=1.0.0 (optional; fixture stub when unavailable)",
+          "encoded_digest": "d2076a3c66cf1051f7e2a4468b1ee4227ba20b5e819ba1141c612531a2b5d42d",
+          "encoder_family": "cnf_ref+smt_eq_stub",
+          "encoder_hash": "0752e7e4570417794e8a3cbed145d659438cd055170e59d05ddcfe043bc4e270",
+          "encoder_version": "cnf_ref_v1",
+          "problem_digest": "b3b0f46fb66bc09b04bfde89ab4431c532a938139e4ff52ea18537668aee0513",
+          "proof_format_version": "alethe_reconstructed_pilot/v1",
+          "solver_mode": "fixture_stub",
+          "supported_smt_theories": "QF_BOOL,QF_UF",
+          "toolchain_id": "hermetic_python_alethe_stub_v1",
+          "trust_domain": "encoding_bridge/cnf_ref+alethe_pilot"
+        },
+        "problem_id": "research07/bool_unit",
+        "status": "ok",
+        "theory": "QF_BOOL",
+        "treatment_outcome": "unsat",
+        "warm_ok": true
+      },
+      {
+        "control_outcome": "unsat",
+        "identities": {
+          "backend_id": "vss_alethe_smt_pilot",
+          "certificate_digest": "f1fb0686089b267cc57c415ed03eee78a92946cfae7e0ef75e74367f2b858ce7",
+          "certificate_format": "alethe_pilot",
+          "certificate_schema": "vss_alethe_certificate/v1",
+          "checker_backend": "python_alethe_reconstruct_stub",
+          "cvc5_proof_format": "alethe",
+          "cvc5_version_pin": "cvc5>=1.0.0 (optional; fixture stub when unavailable)",
+          "encoded_digest": "26c72b19c8e817e696a4632edf48311e50173c91fe4ca1aa277c3891d943bd79",
+          "encoder_family": "cnf_ref+smt_eq_stub",
+          "encoder_hash": "0752e7e4570417794e8a3cbed145d659438cd055170e59d05ddcfe043bc4e270",
+          "encoder_version": "cnf_ref_v1",
+          "problem_digest": "c79f24340381ae9a6912faa46e36e7462348224303b84b8ab3031b7e4d37a25b",
+          "proof_format_version": "alethe_reconstructed_pilot/v1",
+          "solver_mode": "fixture_stub",
+          "supported_smt_theories": "QF_BOOL,QF_UF",
+          "toolchain_id": "hermetic_python_alethe_stub_v1",
+          "trust_domain": "encoding_bridge/cnf_ref+alethe_pilot"
+        },
+        "problem_id": "research07/bool_unit_pad6",
+        "status": "ok",
+        "theory": "QF_BOOL",
+        "treatment_outcome": "unsat",
+        "warm_ok": true
+      },
+      {
+        "control_outcome": "unsat",
+        "identities": {
+          "backend_id": "vss_alethe_smt_pilot",
+          "certificate_digest": "9eb354ce2facc8a21d43c589bb4d99b6ad27dab0742c2d0ebf8d10c2ac0f987e",
+          "certificate_format": "alethe_pilot",
+          "certificate_schema": "vss_alethe_certificate/v1",
+          "checker_backend": "python_alethe_reconstruct_stub",
+          "cvc5_proof_format": "alethe",
+          "cvc5_version_pin": "cvc5>=1.0.0 (optional; fixture stub when unavailable)",
+          "encoded_digest": "6acf5588bbedfe39516ef94c35c0644630b01ee6e1bfbd0ebc3e4d84f1e05d30",
+          "encoder_family": "cnf_ref+smt_eq_stub",
+          "encoder_hash": "0752e7e4570417794e8a3cbed145d659438cd055170e59d05ddcfe043bc4e270",
+          "encoder_version": "cnf_ref_v1",
+          "problem_digest": "0f8e1a4d7a2403a5def91790873e9bfb0c5843d5f7b9636ae8d767ba6cd6edde",
+          "proof_format_version": "alethe_reconstructed_pilot/v1",
+          "solver_mode": "fixture_stub",
+          "supported_smt_theories": "QF_BOOL,QF_UF",
+          "toolchain_id": "hermetic_python_alethe_stub_v1",
+          "trust_domain": "encoding_bridge/cnf_ref+alethe_pilot"
+        },
+        "problem_id": "research07/eq_neq",
+        "status": "ok",
+        "theory": "QF_UF",
+        "treatment_outcome": "unsat",
+        "warm_ok": true
+      },
+      {
+        "control_outcome": "unsat",
+        "identities": {
+          "backend_id": "vss_alethe_smt_pilot",
+          "certificate_digest": "b695cd18b51365a89c4a754bf807795d6d2ddc7a0bf8779e8728651a763b9480",
+          "certificate_format": "alethe_pilot",
+          "certificate_schema": "vss_alethe_certificate/v1",
+          "checker_backend": "python_alethe_reconstruct_stub",
+          "cvc5_proof_format": "alethe",
+          "cvc5_version_pin": "cvc5>=1.0.0 (optional; fixture stub when unavailable)",
+          "encoded_digest": "69be7cdf73cc9a0d611742c99b8fd9d6bd9e506e771ba2e9fae0ba66a126f155",
+          "encoder_family": "cnf_ref+smt_eq_stub",
+          "encoder_hash": "0752e7e4570417794e8a3cbed145d659438cd055170e59d05ddcfe043bc4e270",
+          "encoder_version": "cnf_ref_v1",
+          "problem_digest": "3174fcd131ccecb4f2ad3e56ad2e4ea946e8b34a1b1027319ef3741ebf6df08e",
+          "proof_format_version": "alethe_reconstructed_pilot/v1",
+          "solver_mode": "fixture_stub",
+          "supported_smt_theories": "QF_BOOL,QF_UF",
+          "toolchain_id": "hermetic_python_alethe_stub_v1",
+          "trust_domain": "encoding_bridge/cnf_ref+alethe_pilot"
+        },
+        "problem_id": "research07/eq_neq_dom4",
+        "status": "ok",
+        "theory": "QF_UF",
+        "treatment_outcome": "unsat",
+        "warm_ok": true
+      }
+    ],
+    "sat_overlap_agreement_rate": 1.0,
+    "schema": "research_07_theory_agreement_report/v1",
+    "suite_n": 4,
+    "supported": 4,
+    "supported_smt_theories": [
+      "QF_BOOL",
+      "QF_UF"
+    ],
+    "toolchain": {
+      "backend_id": "vss_alethe_smt_pilot",
+      "certificate_format": "alethe_pilot",
+      "certificate_schema": "vss_alethe_certificate/v1",
+      "checker_backend": "python_alethe_reconstruct_stub",
+      "cvc5_proof_format": "alethe",
+      "cvc5_version_pin": "cvc5>=1.0.0 (optional; fixture stub when unavailable)",
+      "encoder_family": "cnf_ref+smt_eq_stub",
+      "encoder_hash": "0752e7e4570417794e8a3cbed145d659438cd055170e59d05ddcfe043bc4e270",
+      "encoder_version": "cnf_ref_v1",
+      "proof_format_version": "alethe_reconstructed_pilot/v1",
+      "solver_mode": "fixture_stub",
+      "supported_smt_theories": "QF_BOOL,QF_UF",
+      "toolchain_id": "hermetic_python_alethe_stub_v1",
+      "trust_domain": "encoding_bridge/cnf_ref+alethe_pilot"
+    },
+    "unknown_preservation_rate": 1.0,
+    "witness_disagreement_count": 0
+  },
+  "primary_metric": "exact_agreement_rate_on_supported_theory_subset",
+  "primary_value": 1.0,
+  "proof_format_version": "alethe_reconstructed_pilot/v1",
+  "reconstruction_failure_as_refutation_count": 0,
+  "research_only": true,
+  "sat_overlap_agreement_rate": 1.0,
+  "schema": "research_07_experiment_result/v1",
+  "supported_smt_theories": [
+    "QF_BOOL",
+    "QF_UF"
+  ],
+  "toolchain": {
+    "backend_id": "vss_alethe_smt_pilot",
+    "certificate_format": "alethe_pilot",
+    "certificate_schema": "vss_alethe_certificate/v1",
+    "checker_backend": "python_alethe_reconstruct_stub",
+    "cvc5_proof_format": "alethe",
+    "cvc5_version_pin": "cvc5>=1.0.0 (optional; fixture stub when unavailable)",
+    "encoder_family": "cnf_ref+smt_eq_stub",
+    "encoder_hash": "0752e7e4570417794e8a3cbed145d659438cd055170e59d05ddcfe043bc4e270",
+    "encoder_version": "cnf_ref_v1",
+    "proof_format_version": "alethe_reconstructed_pilot/v1",
+    "solver_mode": "fixture_stub",
+    "supported_smt_theories": "QF_BOOL,QF_UF",
+    "toolchain_id": "hermetic_python_alethe_stub_v1",
+    "trust_domain": "encoding_bridge/cnf_ref+alethe_pilot"
+  },
+  "unknown_preservation_rate": 1.0,
+  "version_stamp": {
+    "code_commit": "f629e13358079c68267e17b8fdfd901b7ac556eb",
+    "code_dirty": true,
+    "components": {
+      "governance.research_experiment_preregistry": "v1",
+      "harness.experiments.slm565_research07_vss_alethe": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-12T16:22:19.493224+00:00"
+  },
+  "witness_disagreement_count": 0
+}
