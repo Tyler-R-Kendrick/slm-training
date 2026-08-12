@@ -1130,7 +1130,7 @@
           "status": "completed"
         }
       ],
-      "campaign_lock_sha256": null,
+      "campaign_lock_sha256": "9e9b114697caace39a16b258e9925813265162601ee23228db5592e8322cf1ac",
       "cited_lineage": [
         "arxiv-2601.15571",
         "repo-only-hypothesis",
@@ -1138,7 +1138,7 @@
       ],
       "decision_rule": "Accept a comparison report; do not merge formalisms without explicit transfer theorems.",
       "default_off": true,
-      "disposition": "registered",
+      "disposition": "rejected",
       "evidence_path": "docs/design/iter-revmath-research-20-preregistered.md",
       "experiment_key": "RESEARCH-20",
       "falsifier": "Approaches are incomparable yet treated as equivalent cost authority.",
