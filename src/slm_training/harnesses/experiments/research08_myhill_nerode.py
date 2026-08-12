@@ -73,7 +73,12 @@ class Research08CampaignV1:
 
     @property
     def fingerprint(self) -> str:
-        return content_sha(asdict(self))
+        # cold_trials / enabled are measurement knobs, not campaign identity —
+        # locking the registry on them would break fixture vs short test runs.
+        payload = asdict(self)
+        payload.pop("cold_trials", None)
+        payload.pop("enabled", None)
+        return content_sha(payload)
 
     def manifest(self) -> ExperimentCampaignV1:
         fingerprint = self.fingerprint

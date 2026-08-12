@@ -346,7 +346,7 @@
           "status": "completed"
         }
       ],
-      "campaign_lock_sha256": "eddf497518c466fe2164d9b3fcb732004bf7ea757770aea668e93a846fcbfaea",
+      "campaign_lock_sha256": "fc35e3034549040e100d524b9069c93fdd9e21e218a688996cf1fa049c5a4297",
       "cited_lineage": [
         "mathlib-partrec",
         "repo-research-lineage",
